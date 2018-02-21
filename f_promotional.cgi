@@ -230,7 +230,7 @@ foreach my $client (@clients) {
     my $client_authenticated = ($client->client_fully_authenticated) ? 'yes' : 'no';
     my $datetime             = $client->promo_code_apply_date;
 
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my $user = BOM::User->new({email => $client->email});
     my $login_history = $user->find_login_history(
         sort_by => 'history_date desc',
         limit   => 1,

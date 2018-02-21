@@ -18,7 +18,7 @@ if (my $email_list = request()->param('email')) {
 
     foreach my $email (split(/\s+/, lc($email_list))) {
         Bar($email . " Login History");
-        my $user = BOM::Platform::User->new({email => $email});
+        my $user = BOM::User->new({email => $email});
         no warnings 'numeric';    ## no critic (ProhibitNoWarnings)
         my $limit = int(request()->param('limit')) // 100;
         my $history;

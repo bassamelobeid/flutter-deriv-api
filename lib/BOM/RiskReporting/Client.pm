@@ -14,7 +14,7 @@ use strict;
 use warnings;
 use Moose;
 extends 'BOM::RiskReporting::Base';
-use BOM::Platform::User;
+use BOM::User;
 use Date::Utility;
 use Encode;
 use JSON::MaybeXS;
@@ -73,7 +73,7 @@ sub _documents_on_file {
 sub _change_of_country {
     my $self = shift;
 
-    my $user = BOM::Platform::User->new({email => $self->client->email});
+    my $user = BOM::User->new({email => $self->client->email});
     my $login_history = $user->find_login_history(
         sort_by => 'history_date',
     );

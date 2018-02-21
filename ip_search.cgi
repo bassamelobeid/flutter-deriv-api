@@ -7,7 +7,7 @@ use warnings;
 use HTML::Entities;
 
 use f_brokerincludeall;
-use BOM::Platform::User;
+use BOM::User;
 use BOM::Database::UserDB;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();

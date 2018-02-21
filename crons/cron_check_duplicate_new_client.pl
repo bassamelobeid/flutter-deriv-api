@@ -9,7 +9,7 @@ BEGIN {
 
 use BOM::Backoffice::Sysinit ();
 use BOM::Database::DataMapper::CollectorReporting;
-use BOM::Platform::User;
+use BOM::User;
 use Client::Account;
 
 BOM::Backoffice::Sysinit::init();
@@ -42,7 +42,7 @@ foreach my $client_hash (@{$client_dup_list}) {
 
     my $loginid = $client_hash->{new_loginid};
     my $client  = Client::Account::get_instance({loginid => $loginid});
-    my $user    = BOM::Platform::User->new({email => $client->email});
+    my $user    = BOM::User->new({email => $client->email});
 
     my $siblings = {map { $_->loginid => 1 } $user->clients};
     my @duplicate_clients = map {

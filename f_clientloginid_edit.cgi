@@ -22,7 +22,7 @@ use Client::Account;
 
 use BOM::Platform::Runtime;
 use BOM::Backoffice::Request qw(request);
-use BOM::Platform::User;
+use BOM::User;
 use BOM::Platform::Client::IDAuthentication;
 use BOM::Platform::Client::Utility;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -384,7 +384,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     exists $input{$_} && $client->$_($input{$_}) for @simple_updates;
 
     # Handing the professional client status (For all existing clients)
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my $user = BOM::User->new({email => $client->email});
     my $result = "";
 
     # Only allow CR and MF
@@ -725,7 +725,7 @@ if ($link_acc) {
     print $link_acc;
 }
 
-my $user = BOM::Platform::User->new({loginid => $client->loginid});
+my $user = BOM::User->new({loginid => $client->loginid});
 my $siblings;
 if ($user) {
     $siblings = $user->loginid_details;
