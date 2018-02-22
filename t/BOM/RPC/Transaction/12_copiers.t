@@ -212,6 +212,8 @@ my $trader_VRTC = create_client('VRTC', 0, {email => 'trader_vrtc@binary.com'});
 my $copier_VRTC = create_client('VRTC', 0, {email => 'copier_vrtc@binary.com'});
 set_allow_copiers($trader_VRTC);
 
+my $copier_MLT = create_client('MLT', 0, {email => 'copier_mlt@binary.com'});
+
 ####################################################################
 # real tests begin here
 ####################################################################
@@ -222,8 +224,10 @@ my ($trader, $trader_acc, $copier, $trader_acc_mapper, $copier_acc_mapper, $txni
 my @test_pairs = (
     [$trader_CR, $copier_CR],
     [$trader_CR, $copier_VRTC],
+    [$trader_CR, $copier_MLT],
     [$trader_VRTC, $copier_CR],
-    [$trader_VRTC, $copier_VRTC]
+    [$trader_VRTC, $copier_VRTC],
+    [$trader_VRTC, $copier_MLT],
 );
 
 foreach my $pair (@test_pairs){
