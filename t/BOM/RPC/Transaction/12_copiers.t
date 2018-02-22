@@ -200,6 +200,44 @@ sub stop_copy_trade {
     ok($res && $res->{status}, "stop following");
 }
 
+sub buy_bet_and_check {
+    my ($trader_acc, $trader_acc_mapper, $copier_acc_mapper, $copy_success_expected) = @_;
+
+    my $copier_balance = $copier_acc_mapper->get_balance + 0;
+    my $trader_balance = $trader_acc_mapper->get_balance + 0;
+
+    my ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
+
+    my $expected_copier_balance = $copier_balance - ($copy_success_expected ? $buy_price : 0);
+    my $expected_trader_balance = $trader_balance - $buy_price;
+
+    is(int $balance_after, int $expected_trader_balance, 'correct balance_after');
+    is(int $copier_acc_mapper->get_balance, int $expected_copier_balance, "correct copier balance");
+    is(int $trader_acc_mapper->get_balance, int $expected_trader_balance, "correct trader balance");
+
+    return $fmbid;
+}
+
+sub sell_bet_and_check {
+    my ($trader_acc, $trader_acc_mapper, $copier_acc_mapper, $fmbid, $copy_success_expected) = @_;
+
+    my $copier_balance = $copier_acc_mapper->get_balance + 0;
+    my $trader_balance = $trader_acc_mapper->get_balance + 0;
+
+    my ($balance_after, $sell_price) = sell_one_bet(
+            $trader_acc,
+            +{
+                id => $fmbid,
+            });
+
+    my $expected_copier_balance = $copier_balance + ($copy_success_expected ? $sell_price : 0);
+    my $expected_trader_balance = $trader_balance + $sell_price;
+
+    is(int $balance_after, int $expected_trader_balance, 'correct balance_after');
+    is(int $copier_acc_mapper->get_balance, int $expected_copier_balance, "correct copier balance");
+    is(int $trader_acc_mapper->get_balance, int $expected_trader_balance, "correct trader balance");
+}
+
 ####################################################################
 # setup clients
 ####################################################################
@@ -249,6 +287,11 @@ sub copy_trading_test_routine {
             'currency_code'  => 'USD',
         });
 
+        $copier_acc_mapper = BOM::Database::DataMapper::Account->new({
+            'client_loginid' => $copier->loginid,
+            'currency_code'  => 'USD',
+        });
+
         $balance = 15000;
         top_up $trader, 'USD', $balance;
         top_up $copier, 'USD', 1;
@@ -261,45 +304,24 @@ sub copy_trading_test_routine {
     };
 
     subtest 'Buy USD bet' => sub {
-        ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
-
-        $balance -= $buy_price;
-        is(int $balance_after, int $balance, 'correct balance_after');
+        $fmbid = buy_bet_and_check($trader_acc, $trader_acc_mapper, $copier_acc_mapper, 0);
+        # Expect the copier to fail on this call because it is not yet properly funded
     };
 
     subtest 'Fund copier' => sub {
         top_up $copier, 'USD', 14999;
-        $copier_acc_mapper = BOM::Database::DataMapper::Account->new({
-            'client_loginid' => $copier->loginid,
-            'currency_code'  => 'USD',
-        });
 
         is(int $copier_acc_mapper->get_balance, 15000, 'USD balance is 15000 got: ' . $balance);
     };
 
     subtest 'Buy 2nd USD bet' => sub {
-        ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
-
-        is(int $copier_acc_mapper->get_balance, int(15000 - $buy_price), 'correct copier balance');
-        $balance -= $buy_price;
-        is(int $balance_after, int $balance, 'correct balance_after');
+        $fmbid = buy_bet_and_check($trader_acc, $trader_acc_mapper, $copier_acc_mapper, 1);
     };
 
     sleep 1;
 
     subtest 'Sell 2nd USD bet' => sub {
-        my $copier_balance = $copier_acc_mapper->get_balance + 0;
-        my $trader_balance = $trader_acc_mapper->get_balance + 0;
-
-        ($balance_after, my $sell_price) = sell_one_bet(
-            $trader_acc,
-            +{
-                id => $fmbid,
-            });
-
-        is(int $copier_acc_mapper->get_balance, int($copier_balance + $sell_price), "correct copier balance");
-
-        is(int $trader_acc_mapper->get_balance, int($trader_balance + $sell_price), "correct trader balance");
+        sell_bet_and_check ($trader_acc, $trader_acc_mapper, $copier_acc_mapper, $fmbid, 1);
     };
 
     subtest 'Get trader copiers' => sub {
