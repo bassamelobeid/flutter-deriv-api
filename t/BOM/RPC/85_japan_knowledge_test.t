@@ -45,6 +45,7 @@ my %jp_client_details = (
     trading_purpose                             => 'Hedging',
     hedge_asset                                 => 'Foreign currency deposit',
     hedge_asset_amount                          => 1000000,
+    motivation_circumstances                    => 'Web Advertisement',
     agree_use_electronic_doc                    => 1,
     agree_warnings_and_policies                 => 1,
     confirm_understand_own_judgment             => 1,
