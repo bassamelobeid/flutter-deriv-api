@@ -195,9 +195,7 @@ rpc jp_knowledge_test => sub {
     }
 
     if (not $jp_client->save()) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InternalServerError',
-                message_to_client => localize('Sorry, an error occurred while processing your request.')});
+        return BOM::RPC::v3::Utility::client_error;
     }
 
     if ($status eq 'pass') {
@@ -392,9 +390,7 @@ sub set_jp_settings {
 
     $client->latest_environment(Date::Utility->new->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
     if (not $client->save()) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InternalServerError',
-                message_to_client => localize('Sorry, an error occurred while processing your account.')});
+        return BOM::RPC::v3::Utility::client_error;
     }
 
     my $message = localize(

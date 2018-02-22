@@ -193,6 +193,12 @@ sub site_limits {
     return $limits;
 }
 
+sub client_error {
+    return create_error({
+            code              => 'InternalServerError',
+            message_to_client => localize('Sorry, an error occurred while processing your account.')});
+}
+
 sub website_name {
     my $server_name = shift;
 
@@ -630,12 +636,10 @@ sub set_professional_status {
     $client->set_status('professional_requested', 'SYSTEM', 'Professional account requested') if $set_prof_request;
 
     if (not $client->save) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InternalServerError',
-                message_to_client => localize('Sorry, an error occurred while processing your account.')});
+        return client_error;
     }
 
-    BOM::RPC::v3::Utility::send_professional_requested_email($client->loginid, $client->residence) if $set_prof_request;
+    send_professional_requested_email($client->loginid, $client->residence) if $set_prof_request;
 
     return undef;
 }
