@@ -306,6 +306,7 @@ sub copy_trading_test_routine {
                 trader_id => $trader->loginid,
             });
         is(scalar @$copiers, 1, 'get_trade_copiers');
+        is($copiers->[0], $copier->loginid, 'trade copier is correct');
         note explain $copiers;
     };
 
