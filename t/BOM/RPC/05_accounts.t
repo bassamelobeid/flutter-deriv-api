@@ -1654,12 +1654,14 @@ subtest 'get and set self_exclusion' => sub {
     ok(@msgs, "msg sent to marketing and compliance email");
     like($msgs[0]{body}, qr/.*Exclude from website until/s, 'email content is ok');
 
-    delete $params->{args};
     like(
-        $c->tcall('get_self_exclusion', $params)->{error}{message_to_client},
+        $c->tcall($method, $params)->{error}->{message_to_client},
         qr/Sorry, you have excluded yourself until/,
-        'this client has self excluded'
+        'Self excluded client cannot access set self exclusion'
     );
+
+    delete $params->{args};
+    ok($c->tcall('get_self_exclusion', $params), 'Get response even if client is self excluded');
 
     $test_client->load();
     my $self_excl = $test_client->get_self_exclusion;
