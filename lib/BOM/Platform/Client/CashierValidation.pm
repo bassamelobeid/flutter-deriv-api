@@ -45,6 +45,12 @@ sub validate {
     return _create_error(localize('This is a virtual-money account. Please switch to a real-money account to access cashier.'))
         if $client->is_virtual;
 
+    # for self excluded clients we only allow withdrawal
+    if ($action eq 'deposit') {
+        my $lim = $client->get_self_exclusion_until_dt;
+        return _create_error(localize('Sorry, you have excluded yourself until [_1].', $lim), 'SelfExclusion') if $lim;
+    }
+
     my $currency = $client->default_account ? $client->default_account->currency_code : '';
     return _create_error(localize('Please set the currency.'), 'ASK_CURRENCY') unless $currency;
 
