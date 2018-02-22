@@ -239,8 +239,7 @@ subtest 'User Login' => sub {
 
             $status = $user3->login(%pass);
 
-            ok $status->{error} =~ /Sorry, you have excluded yourself until $exclude_until_31/,
-                'It should return the earlist until date in message error';
+            ok $status->{success}, 'Excluded client can login';
         };
 
         subtest 'cannot login if he has all self timeouted account' => sub {
@@ -255,8 +254,7 @@ subtest 'User Login' => sub {
             $status = $user3->login(%pass);
 
             my $timeout_until_31_date = $timeout_until_31->date;
-            ok $status->{error} =~ /Sorry, you have excluded yourself until $timeout_until_31_date/,
-                'It should return the earlist until date in message error';
+            ok $status->{success}, 'Timeout until client can login';
         };
 
         subtest 'if user has vr account and other accounts is self excluded' => sub {
