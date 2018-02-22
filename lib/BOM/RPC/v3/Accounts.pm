@@ -1099,9 +1099,7 @@ rpc set_settings => sub {
         [localize('Tax identification number'), ($client->tax_identification_number || '')],
         );
     push @updated_fields,
-        [
-        localize('Receive news and special offers'),
-        BOM::User->new({email => $client->email})->email_consent ? localize("Yes") : localize("No")]
+        [localize('Receive news and special offers'), BOM::User->new({email => $client->email})->email_consent ? localize("Yes") : localize("No")]
         if exists $args->{email_consent};
     push @updated_fields, [localize('Allow copiers'), $client->allow_copiers ? localize("Yes") : localize("No")]
         if defined $allow_copiers;
