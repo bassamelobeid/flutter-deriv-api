@@ -294,22 +294,22 @@ sub payment_account_transfer {
     my $currency = delete $args{currency} || die "no currency";
     my $amount   = delete $args{amount}   || die "no amount";
     # fees can be zero as well
-    my $fees     = delete $args{fees}     // die "no fees";
+    my $fees = delete $args{fees} // die "no fees";
     my $staff    = delete $args{staff}    || 'system';
     my $toStaff  = delete $args{toStaff}  || $staff;
     my $fmStaff  = delete $args{fmStaff}  || $staff;
     my $remark   = delete $args{remark};
     my $toRemark = delete $args{toRemark} || $remark || ("Transfer from " . $fmClient->loginid);
     my $fmRemark = delete $args{fmRemark} || $remark || ("Transfer to " . $toClient->loginid);
-    my $source   = delete $args{source};
+    my $source = delete $args{source};
 
     # if client has no default account then error out
-    my $fmAccount    = $fmClient->default_account  || die 'no account';
-    my $toAccount    = $toClient->default_account  || die 'no account';
+    my $fmAccount = $fmClient->default_account || die 'no account';
+    my $toAccount = $toClient->default_account || die 'no account';
 
     my $inter_db_transfer;
     $inter_db_transfer = delete $args{inter_db_transfer} if (exists $args{inter_db_transfer});
-    my $gateway_code   = delete $args{gateway_code} || 'account_transfer';
+    my $gateway_code = delete $args{gateway_code} || 'account_transfer';
 
     unless ($inter_db_transfer) {
         # here we rely on ->set_default_account above
@@ -320,8 +320,10 @@ sub payment_account_transfer {
             my $records = $dbic->run(
                 ping => sub {
                     my $sth = $_->prepare('SELECT (v_from_trans).id FROM payment.payment_account_transfer(?,?,?,?,?,?,?,?,?,?,?)');
-                    $sth->execute($fmClient->loginid, $toClient->loginid, $currency, $amount, $fmStaff, $toStaff, $fmRemark, $toRemark, $source,
-                        $fees, $gateway_code);
+                    $sth->execute(
+                        $fmClient->loginid, $toClient->loginid, $currency, $amount, $fmStaff, $toStaff,
+                        $fmRemark,          $toRemark,          $source,   $fees,   $gateway_code
+                    );
                     return $sth->fetchall_arrayref({});
                 });
             if (scalar @{$records}) {

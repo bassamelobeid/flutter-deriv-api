@@ -575,7 +575,7 @@ sub get_self_exclusion_until_dt {
         undef $timeout_until
             if $timeout_until and Date::Utility->new($timeout_until)->is_before($today);
     }
-    
+
     return undef unless $exclude_until || $timeout_until;
 
     if ($exclude_until && $timeout_until) {
