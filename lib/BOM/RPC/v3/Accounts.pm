@@ -1197,6 +1197,12 @@ rpc set_self_exclusion => sub {
     my $client = $params->{client};
     return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
 
+    my $lim = $client->get_self_exclusion_until_dt;
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'SelfExclusion',
+            message_to_client => localize('Sorry, you have excluded yourself until [_1].', $lim),
+        }) if $lim;
+
     # get old from above sub _get_self_exclusion_details
     my $self_exclusion = _get_self_exclusion_details($client);
 

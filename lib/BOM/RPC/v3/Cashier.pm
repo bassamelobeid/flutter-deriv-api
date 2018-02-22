@@ -100,12 +100,10 @@ rpc "cashier", sub {
             message_to_client => $validation->{error}->{message_to_client}}) if exists $validation->{error};
 
     my ($brand, $currency) = (Brands->new(name => request()->brand), $client->default_account->currency_code);
-    ## if cashier provider == 'epg', we'll return epg url
     if ($provider eq 'epg') {
         return _get_epg_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language}, $brand->name);
     }
 
-    ## if currency is a cryptocurrency, use cryptocurrency cashier
     if (LandingCompany::Registry::get('costarica')->legal_allowed_currencies->{$currency} eq 'crypto') {
         return _get_cryptocurrency_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language}, $brand->name);
     }
