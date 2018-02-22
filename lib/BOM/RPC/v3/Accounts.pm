@@ -870,13 +870,13 @@ rpc set_settings => sub {
         # - email_consent (common to real account as well)
         if (not $client->residence and $residence and $residence ne 'jp') {
             if (Brands->new(name => request()->brand)->countries_instance->restricted_country($residence)) {
-                $err = BOM::RPC::v3::Utility::create_error({
+                return BOM::RPC::v3::Utility::create_error({
                         code              => 'invalid residence',
                         message_to_client => localize('Sorry, our service is not available for your country of residence.')});
             } else {
                 $client->residence($residence);
                 if (not $client->save()) {
-                    $err = BOM::RPC::v3::Utility::create_error({
+                    return BOM::RPC::v3::Utility::create_error({
                             code              => 'InternalServerError',
                             message_to_client => localize('Sorry, an error occurred while processing your account.')});
                 }
@@ -888,28 +888,29 @@ rpc set_settings => sub {
             )
         {
             # we only allow these keys in virtual set settings any other key will result in permission error
-            $err = BOM::RPC::v3::Utility::permission_error();
+            return BOM::RPC::v3::Utility::permission_error();
         }
     } else {
         # real client is not allowed to update residence
-        $err = BOM::RPC::v3::Utility::permission_error() if $residence;
+        return BOM::RPC::v3::Utility::permission_error() if $residence;
 
         # handle Japan settings update separately
         if ($client->residence eq 'jp') {
             # this may return error or {status => 1}
             $err = BOM::RPC::v3::Japan::NewAccount::set_jp_settings($params);
+            return $err if $err->{error};
         } elsif ($client->account_opening_reason
             and $args->{account_opening_reason}
             and $args->{account_opening_reason} ne $client->account_opening_reason)
         {
             # cannot set account_opening_reason with a different value
-            $err = BOM::RPC::v3::Utility::create_error({
+            return BOM::RPC::v3::Utility::create_error({
                 code              => 'PermissionDenied',
                 message_to_client => localize("Value of account_opening_reason cannot be changed."),
             });
         } elsif (not $client->account_opening_reason and not $args->{account_opening_reason}) {
             # required to set account_opening_reason if empty
-            $err = BOM::RPC::v3::Utility::create_error({
+            return BOM::RPC::v3::Utility::create_error({
                     code              => 'InputValidationFailed',
                     message_to_client => localize("Input validation failed: account_opening_reason"),
                     details           => {
@@ -918,13 +919,13 @@ rpc set_settings => sub {
                 });
         }
 
-        $err = BOM::RPC::v3::Utility::create_error({
+        return BOM::RPC::v3::Utility::create_error({
                 code              => 'PermissionDenied',
                 message_to_client => localize("Value of place_of_birth cannot be changed.")}
         ) if ($client->place_of_birth and $args->{place_of_birth} and $args->{place_of_birth} ne $client->place_of_birth);
 
         if ($client->residence eq 'gb' and defined $args->{address_postcode} and $args->{address_postcode} eq '') {
-            $err = BOM::RPC::v3::Utility::create_error({
+            return BOM::RPC::v3::Utility::create_error({
                     code              => 'InputValidationFailed',
                     message_to_client => localize("Input validation failed: address_postcode"),
                     details           => {
@@ -933,13 +934,11 @@ rpc set_settings => sub {
                 });
         }
     }
-    return $err if $err->{error};
 
     my $invalid_broker_for_allow_copiers = $client->landing_company->short ne 'costarica' && not $client->is_virtual;
-    $err = BOM::RPC::v3::Utility::permission_error()
+    return BOM::RPC::v3::Utility::permission_error()
         if $allow_copiers
         && ($invalid_broker_for_allow_copiers || $client->get_status('ico_only'));
-    return $err if $err->{error};
 
     if (
         $allow_copiers

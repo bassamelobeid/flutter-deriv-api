@@ -1304,6 +1304,8 @@ subtest $method => sub {
 
     # test real account
     $params->{token} = $token1;
+    # Need to delete this parameter so this next call returns the error of interest
+    delete $params->{args}{residence};
     my %full_args = (
         address_line_1 => 'address line 1',
         address_line_2 => 'address line 2',
@@ -1318,6 +1320,7 @@ subtest $method => sub {
         'real account without account opening reason has to set it'
     );
 
+    $params->{args}{residence} = 'kr';
     $full_args{account_opening_reason} = 'Income Earning';
 
     $params->{args} = {%{$params->{args}}, %full_args};
