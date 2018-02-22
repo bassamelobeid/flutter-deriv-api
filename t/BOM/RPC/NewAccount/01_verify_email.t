@@ -14,7 +14,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::RPC::v3::Utility;
 use BOM::Database::Model::AccessToken;
 use Email::Folder::Search;
-use BOM::Platform::User;
+use BOM::User;
 
 use utf8;
 
@@ -44,7 +44,7 @@ subtest 'Initialization' => sub {
 
         $email = 'exists_email' . rand(999) . '@binary.com';
 
-        $user = BOM::Platform::User->create(
+        $user = BOM::User->create(
             email    => $email,
             password => $hash_pwd
         );

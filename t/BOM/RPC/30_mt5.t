@@ -9,7 +9,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Helper::Client qw(create_client top_up);
-use BOM::Platform::User;
+use BOM::User;
 use BOM::MT5::User;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
@@ -33,7 +33,7 @@ my $test_client = create_client('MF');    # broker_code = MF to ensure ID_DOCUME
 $test_client->email($DETAILS{email});
 $test_client->save;
 
-my $user = BOM::Platform::User->create(
+my $user = BOM::User->create(
     email    => $DETAILS{email},
     password => 's3kr1t',
 );

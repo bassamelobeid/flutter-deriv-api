@@ -18,7 +18,7 @@ use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Cashier;
 use BOM::Platform::Config;
 use BOM::Platform::Context qw (localize request);
-use BOM::Platform::User;
+use BOM::User;
 use BOM::MT5::User;
 use BOM::Database::ClientDB;
 use BOM::Platform::Runtime;
@@ -82,7 +82,7 @@ rpc mt5_login_list => sub {
     my $setting;
 
     my @array;
-    foreach (BOM::Platform::User->new({email => $client->email})->mt5_logins) {
+    foreach (BOM::User->new({email => $client->email})->mt5_logins) {
         $_ =~ /^MT(\d+)$/;
         my $login = $1;
         my $acc = {login => $login};
@@ -208,7 +208,7 @@ rpc mt5_new_account => sub {
             message_to_client => localize('Request too frequent. Please try again later.')}) if _throttle($client->loginid);
 
     # client can have only 1 MT demo & 1 MT real a/c
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my $user = BOM::User->new({email => $client->email});
 
     foreach my $loginid ($user->mt5_logins) {
         $loginid =~ /^MT(\d+)$/;
@@ -271,7 +271,7 @@ rpc mt5_new_account => sub {
 
 sub _check_logins {
     my ($client, $logins) = @_;
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my $user = BOM::User->new({email => $client->email});
 
     foreach my $login (@{$logins}) {
         return unless (any { $login eq $_->loginid } ($user->loginid));

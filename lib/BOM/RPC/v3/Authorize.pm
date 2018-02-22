@@ -14,10 +14,10 @@ use BOM::RPC::Registry '-dsl';
 
 use BOM::Platform::AuditLog;
 use BOM::RPC::v3::Utility;
-use BOM::Platform::User;
+use BOM::User;
 use BOM::Platform::Context qw (localize request);
 use BOM::RPC::v3::Utility;
-use BOM::Platform::User;
+use BOM::User;
 
 use LandingCompany::Registry;
 
@@ -134,7 +134,7 @@ rpc authorize => sub {
                 message_to_client => BOM::Platform::Context::localize("Sorry, you have excluded yourself until [_1].", $limit_excludeuntil)});
     }
 
-    my ($user, $token_type) = (BOM::Platform::User->new({email => $client->email}));
+    my ($user, $token_type) = (BOM::User->new({email => $client->email}));
     if (length $token == 15) {
         $token_type = 'api_token';
         # add to login history for api token only as oauth login already creates an entry
@@ -210,7 +210,7 @@ rpc logout => sub {
         my $token_details = $params->{token_details};
         my ($loginid, $scopes) = ($token_details and exists $token_details->{loginid}) ? @{$token_details}{qw/loginid scopes/} : ();
 
-        if (my $user = BOM::Platform::User->new({email => $email})) {
+        if (my $user = BOM::User->new({email => $email})) {
             my $skip_login_history;
 
             if ($params->{token_type} eq 'oauth_token') {

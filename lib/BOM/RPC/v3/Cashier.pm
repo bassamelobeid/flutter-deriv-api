@@ -28,7 +28,7 @@ use Postgres::FeedDB::CurrencyConverter qw/amount_from_to_currency/;
 use BOM::RPC::Registry '-dsl';
 
 use BOM::MarketData qw(create_underlying);
-use BOM::Platform::User;
+use BOM::User;
 use BOM::Platform::Client::DoughFlowClient;
 use BOM::Platform::Doughflow qw( get_sportsbook get_doughflow_language_code_for );
 use BOM::Platform::Runtime;

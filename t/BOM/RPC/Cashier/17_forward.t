@@ -15,7 +15,7 @@ use BOM::RPC::v3::Cashier;
 use BOM::RPC::v3::Accounts;
 use BOM::Platform::Password;
 use BOM::Platform::Token;
-use BOM::Platform::User;
+use BOM::User;
 use Client::Account;
 
 my ($t, $rpc_ct);
@@ -80,8 +80,8 @@ subtest 'common' => sub {
         ->error_message_is('This is a virtual-money account. Please switch to a real-money account to access cashier.',
         'Correct error message for virtual account');
 
-    my $user_mocked = Test::MockModule->new('BOM::Platform::User');
-    $user_mocked->mock('new', sub { bless {}, 'BOM::Platform::User' });
+    my $user_mocked = Test::MockModule->new('BOM::User');
+    $user_mocked->mock('new', sub { bless {}, 'BOM::User' });
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr1->loginid, 'test token');
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_TNC_APPROVAL', 'Client needs to approve tnc before')

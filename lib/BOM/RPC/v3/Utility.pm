@@ -342,7 +342,7 @@ sub filter_siblings_by_landing_company {
 sub get_real_account_siblings_information {
     my ($loginid, $no_disabled) = @_;
 
-    my $user = BOM::Platform::User->new({loginid => $loginid});
+    my $user = BOM::User->new({loginid => $loginid});
     # return empty if we are not able to find user, this should not
     # happen but added as additional check
     return {} unless $user;

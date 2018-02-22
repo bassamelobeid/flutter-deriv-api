@@ -9,7 +9,7 @@ use utf8;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Platform::User;
+use BOM::User;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::Password;
 
@@ -36,7 +36,7 @@ my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $test_client_mf->email($email);
 $test_client_mf->save;
 
-my $user = BOM::Platform::User->create(
+my $user = BOM::User->create(
     email    => $email,
     password => $hash_pwd
 );

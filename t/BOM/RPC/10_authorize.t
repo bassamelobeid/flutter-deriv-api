@@ -6,7 +6,7 @@ use Test::Mojo;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Platform::User;
+use BOM::User;
 use BOM::RPC::v3::Accounts;
 use BOM::Database::Model::OAuth;
 use utf8;
@@ -41,7 +41,7 @@ $test_client_duplicated->email($email);
 $test_client_duplicated->set_status('duplicate_account', 'system', 'reason');
 $test_client_duplicated->save;
 
-my $user = BOM::Platform::User->create(
+my $user = BOM::User->create(
     email    => $email,
     password => '1234',
 );
@@ -75,7 +75,7 @@ my $test_client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 $test_client_mx->email($email_mx);
 $test_client_mx->save;
-my $user_mx = BOM::Platform::User->create(
+my $user_mx = BOM::User->create(
     email    => $email_mx,
     password => '1234',
 );
@@ -223,7 +223,7 @@ subtest 'upgradeable_landing_companies' => sub {
     my $params = {};
     my $email  = 'denmark@binary.com';
 
-    my $user = BOM::Platform::User->create(
+    my $user = BOM::User->create(
         email    => $email,
         password => '1234',
     );

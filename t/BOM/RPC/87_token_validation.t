@@ -5,7 +5,7 @@ use Test::Most;
 use Test::Mojo;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Platform::User;
+use BOM::User;
 use utf8;
 use BOM::Platform::Token;
 use BOM::Platform::Runtime;
@@ -22,7 +22,7 @@ $client_cr->set_status('tnc_approval', 'system', BOM::Platform::Runtime->instanc
 $client_cr->set_default_account('USD');
 $client_cr->save;
 
-my $user_cr = BOM::Platform::User->create(
+my $user_cr = BOM::User->create(
     email    => $email_cr,
     password => BOM::Platform::Password::hashpw('jskjd8292922'));
 $user_cr->save;

@@ -10,7 +10,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::RPC::Client;
 
-use BOM::Platform::User;
+use BOM::User;
 use Client::Account;
 use BOM::RPC::v3::Accounts;
 use BOM::Database::Model::AccessToken;
