@@ -14,7 +14,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Platform::User;
+use BOM::User;
 
 use await;
 
@@ -34,7 +34,7 @@ $test_client->save;
 $test_client->set_default_account('USD');
 
 my $loginid = $test_client->loginid;
-my $user    = BOM::Platform::User->create(
+my $user    = BOM::User->create(
     email    => $email,
     password => '1234',
 );

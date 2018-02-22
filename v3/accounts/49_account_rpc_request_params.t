@@ -21,7 +21,7 @@ my $t = build_wsapi_test({language => 'EN'});
 
 # UK Client testing (Start)
 my $email = 'uk_client@binary.com';
-my $user  = BOM::Platform::User->create(
+my $user  = BOM::User->create(
     email    => $email,
     password => '1234'
 );
@@ -87,7 +87,7 @@ $client->save;
 $client->set_default_account('USD');
 
 my $loginid = $client->loginid;
-$user = BOM::Platform::User->create(
+$user = BOM::User->create(
     email    => $email,
     password => '1234',
 );

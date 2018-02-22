@@ -12,7 +12,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::Password;
-use BOM::Platform::User;
+use BOM::User;
 use Client::Account;
 
 use await;
@@ -36,7 +36,7 @@ $client_cr->save;
 my $vr_1 = $client_vr->loginid;
 my $cr_1 = $client_cr->loginid;
 
-my $user = BOM::Platform::User->create(
+my $user = BOM::User->create(
     email    => $email,
     password => $hash_pwd
 );
@@ -98,7 +98,7 @@ is($change_password->{change_password}, 1);
 test_schema('change_password', $change_password);
 
 # refetch user
-$user = BOM::Platform::User->new({
+$user = BOM::User->new({
     email => $email,
 });
 $status = $user->login(password => $password);

@@ -10,7 +10,7 @@ use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Platform::User;
+use BOM::User;
 use Client::Account;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::Password;
@@ -25,7 +25,7 @@ $test_client->email($email);
 $test_client->save;
 my $json = JSON::MaybeXS->new;
 
-my $user = BOM::Platform::User->create(
+my $user = BOM::User->create(
     email    => $email,
     password => $password,
 );

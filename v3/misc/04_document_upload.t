@@ -18,7 +18,7 @@ use Net::Async::Webservice::S3;
 
 use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
 use Binary::WebSocketAPI::Hooks;
-use BOM::Platform::User;
+use BOM::User;
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);

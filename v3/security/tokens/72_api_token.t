@@ -29,7 +29,7 @@ $client->email($email);
 $client->save;
 
 my $loginid = $client->loginid;
-my $user    = BOM::Platform::User->create(
+my $user    = BOM::User->create(
     email    => $email,
     password => '1234',
 );
