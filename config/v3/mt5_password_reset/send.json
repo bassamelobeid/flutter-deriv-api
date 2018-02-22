@@ -18,7 +18,8 @@
     },
     "new_password": {
       "type": "string",
-      "description": "New password of the account.",
+      "pattern": "^[ -~]{8,25}$",
+      "description": "New password of the account (length within 8-25 chars, accepts any printable ASCII character).",
       "required": "1"
     },
     "password_type": {

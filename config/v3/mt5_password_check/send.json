@@ -18,6 +18,7 @@
     },
     "password": {
       "type": "string",
+      "pattern": "^[ -~]+$",
       "description": "the password of the account.",
       "required": "1"
     },
