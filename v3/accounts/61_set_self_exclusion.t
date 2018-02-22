@@ -226,10 +226,22 @@ $res = $t->await::set_self_exclusion({
 ok($res->{set_self_exclusion});
 test_schema('set_self_exclusion', $res);
 
-# re-get should be exclude yourself
+# re-set should throw an error
+$res = $t->await::set_self_exclusion({
+    set_self_exclusion     => 1,
+    max_balance            => 9998,
+    max_turnover           => 1000,
+    max_open_bets          => 50,
+    session_duration_limit => 1440,
+    exclude_until          => $exclude_until,
+    timeout_until          => $timeout_until->epoch,
+});
+ok($res->{error});
+is $res->{error}->{code}, 'SelfExclusion', 'Self excluded client cannot call set self exclusion again';
+
 $res = $t->await::get_self_exclusion({get_self_exclusion => 1});
-is $res->{error}->{code}, 'ClientSelfExclusion';
-ok $res->{error}->{message} =~ /you have excluded yourself until/;
+ok $res->{get_self_exclusion};
+test_schema('get_self_exclusion', $res);
 
 ## try read from db
 my $client = Client::Account->new({loginid => $test_client->loginid});
