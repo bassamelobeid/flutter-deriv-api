@@ -6,13 +6,13 @@ use Test::More qw(no_plan);
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
-use Client::Account;
+use User::Client;
 
 my $login_id = 'CR0011';
 my $client;
 
-Test::Exception::lives_ok { $client = Client::Account::get_instance({'loginid' => $login_id}); }
-"Can create client object 'Client::Account::get_instance({'loginid' => $login_id})'";
+Test::Exception::lives_ok { $client = User::Client::get_instance({'loginid' => $login_id}); }
+"Can create client object 'User::Client::get_instance({'loginid' => $login_id})'";
 
 my $broker = $client->broker;
 
@@ -31,7 +31,7 @@ Test::Exception::lives_ok { $client->set_status('withdrawal_locked', $clerk, $re
 Test::Exception::lives_ok { $client->save } "can save client with new status";
 
 # recreate client
-Test::Exception::lives_ok { $client = Client::Account::get_instance({loginid => $login_id}) } "Can create client $login_id";
+Test::Exception::lives_ok { $client = User::Client::get_instance({loginid => $login_id}) } "Can create client $login_id";
 
 # re-read from CR.lockcashierlogins, whether client is disabled cashier
 my $lock_ref = $client->get_status('cashier_locked');

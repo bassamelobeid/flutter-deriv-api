@@ -8,12 +8,12 @@ use Test::More qw(no_plan);
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
-use Client::Account;
+use User::Client;
 
 # create client object
 my $client;
-Test::Exception::lives_ok { $client = Client::Account::get_instance({'loginid' => 'CR0030'}); }
-"Can create client object 'Client::Account::get_instance({'loginid' => CR0030})'";
+Test::Exception::lives_ok { $client = User::Client::get_instance({'loginid' => 'CR0030'}); }
+"Can create client object 'User::Client::get_instance({'loginid' => CR0030})'";
 
 my $account_balance_limit = $client->get_limit({'for' => 'account_balance'});
 is($account_balance_limit, 300000, 'balance limit = 300000');
@@ -43,9 +43,9 @@ Test::Exception::lives_ok { $client->save(); } 'Can save client';
 
 $client = undef;
 
-#$client = Client::Account::get_instance({'loginid' => 'CR0030'});
+#$client = User::Client::get_instance({'loginid' => 'CR0030'});
 
-Test::Exception::lives_ok { $client = Client::Account->new({'loginid' => 'CR0030'}); } "Force re-pull of client";
+Test::Exception::lives_ok { $client = User::Client->new({'loginid' => 'CR0030'}); } "Force re-pull of client";
 
 $account_balance_limit = $client->get_limit({'for' => 'account_balance'});
 is($account_balance_limit, 111111, 'balance limit = 111111');

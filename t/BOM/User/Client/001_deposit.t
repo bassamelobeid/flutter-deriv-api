@@ -7,8 +7,8 @@ use warnings;
 use Test::More;
 use Test::Exception;
 
-use Client::Account;
-use Client::Account::Payments;
+use User::Client;
+use User::Client::Payments;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my $client_details = {
@@ -33,7 +33,7 @@ my %deposit = (
     payment_type => 'free_gift'
 );
 
-my $client = Client::Account->register_and_return_new_client($client_details);
+my $client = User::Client->register_and_return_new_client($client_details);
 $client->set_default_account('USD');
 
 $client->cashier_setting_password('12345');

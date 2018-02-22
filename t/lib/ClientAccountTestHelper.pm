@@ -2,7 +2,7 @@ package ClientAccountTestHelper;
 
 use MooseX::Singleton;
 use BOM::Database::ClientDB;
-use Client::Account;
+use User::Client;
 use DBI;
 
 use Date::Utility;
@@ -73,7 +73,7 @@ sub create_client {
         $client_data->{$_} = $args->{$_};
     }
 
-    my $client = Client::Account->rnew;
+    my $client = User::Client->rnew;
 
     for (keys %$client_data) {
         $client->$_($client_data->{$_});
