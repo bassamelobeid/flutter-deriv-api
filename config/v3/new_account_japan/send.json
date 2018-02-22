@@ -169,7 +169,7 @@
       "description": "Hedge asset amount in JPY. This field is only required if 'Hedging' is selected for 'trading_purpose'."
     },
     "motivation_circumstances" : {
-      "enum": ["Web Advertisement", "Homepage", "Introduction by acquaintance", "Other"],
+      "enum": ["Web Advertisement", "Homepage", "Introduction by acquaintance", "Others"],
       "description": "Reason or circumstances that motivated you to open an account."
     },
     "agree_use_electronic_doc" : {

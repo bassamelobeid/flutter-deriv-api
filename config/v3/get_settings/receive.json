@@ -191,7 +191,7 @@
               "description": "Hedge asset amount in JPY (note: only set for Japan real-money accounts, if 'Hedging' is selected for 'Trading purpose')"
             },
             "motivation_circumstances" : {
-              "enum": ["Web Advertisement", "Homepage", "Introduction by acquaintance", "Other"],
+              "enum": ["Web Advertisement", "Homepage", "Introduction by acquaintance", "Others"],
               "description": "Reason or circumstances that motivated you to open an account."
             }
           }
