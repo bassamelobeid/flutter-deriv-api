@@ -252,6 +252,8 @@ set_allow_copiers($trader_VRTC);
 
 my $copier_MLT = create_client('MLT', 0, {email => 'copier_mlt@binary.com'});
 
+my $copier_MF = create_client('MLT', 0, {email => 'copier_mf@binary.com'});
+
 ####################################################################
 # real tests begin here
 ####################################################################
@@ -279,6 +281,7 @@ sub copy_trading_test_routine {
 
     $trader = shift;
     $copier = shift;
+    my $valid_copier = shift || 1;
 
     subtest 'Setup and fund trader' => sub {
 
@@ -315,13 +318,13 @@ sub copy_trading_test_routine {
     };
 
     subtest 'Buy 2nd USD bet' => sub {
-        $fmbid = buy_bet_and_check($trader_acc, $trader_acc_mapper, $copier_acc_mapper, 1);
+        $fmbid = buy_bet_and_check($trader_acc, $trader_acc_mapper, $copier_acc_mapper, $valid_copier);
     };
 
     sleep 1;
 
     subtest 'Sell 2nd USD bet' => sub {
-        sell_bet_and_check ($trader_acc, $trader_acc_mapper, $copier_acc_mapper, $fmbid, 1);
+        sell_bet_and_check ($trader_acc, $trader_acc_mapper, $copier_acc_mapper, $fmbid, $valid_copier);
     };
 
     subtest 'Get trader copiers' => sub {
@@ -339,13 +342,8 @@ sub copy_trading_test_routine {
     subtest 'Unfollow' => sub {
         stop_copy_trade($trader, $copier);
 
-        my $copier_balance = $copier_acc_mapper->get_balance + 0;
-        my $trader_balance = $trader_acc_mapper->get_balance + 0;
-
-        ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
-        is(int($copier_acc_mapper->get_balance), int($copier_balance), "correct copier balance");
-
-        is(int($trader_acc_mapper->get_balance), int($trader_balance - $buy_price), "correct trader balance");
+        $fmbid = buy_bet_and_check($trader_acc, $trader_acc_mapper, $copier_acc_mapper, 0);
+        # Copy should fail because we've unfollowed
 
         # Reset accounts back to zero
         top_up $trader, 'USD', $trader_acc_mapper->get_balance * (-1);
