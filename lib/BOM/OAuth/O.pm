@@ -230,9 +230,8 @@ sub _login {
 
         last if ($err = $result->{error});
 
-        # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
         my @clients = $user->clients;
-        $client = $user->get_default_client();
+        $client = $clients[0];
 
         if (grep { $client->loginid =~ /^$_/ } @{BOM::Platform::Runtime->instance->app_config->system->suspend->logins}) {
             $err = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
