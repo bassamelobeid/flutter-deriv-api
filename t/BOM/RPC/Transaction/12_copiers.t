@@ -277,6 +277,12 @@ foreach my $pair (@test_pairs){
     };
 }
 
+# All copies should fail on this subtest becase this test suite uses volatility contracts,
+#   which MF broker clients are forbidden to trade.
+subtest 'Illegal copier' => sub {
+    copy_trading_test_routine($trader_VRTC, $copier_MF, 0);
+};
+
 sub copy_trading_test_routine {
 
     $trader = shift;
