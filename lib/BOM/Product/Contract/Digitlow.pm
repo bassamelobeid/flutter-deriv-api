@@ -13,11 +13,11 @@ use BOM::Product::Contract::Strike::Digit;
 use BOM::Product::Pricing::Greeks::Digits;
 
 has selected_tick {
-    is => 'ro',
+    is       => 'ro',
     required => 1,
-}
+    }
 
-sub ticks_to_expiry {
+    sub ticks_to_expiry {
     return 5;
 }
 
@@ -33,9 +33,12 @@ sub check_expiry_conditions {
     my $self = shift;
 
     if ($self->exit_tick) {
-        my $ticks = $self->underlying->ticks_in_between_start_limit({start_time => $self->date_start, limit => 5});
-        my $min = min(map{$_->{quote}} @$ticks);
-        my $min_index = first_index{$_->{quote} == $min} @$ticks;
+        my $ticks = $self->underlying->ticks_in_between_start_limit({
+            start_time => $self->date_start,
+            limit      => 5
+        });
+        my $min = min(map { $_->{quote} } @$ticks);
+        my $min_index = first_index { $_->{quote} == $min } @$ticks;
         my $contract_value = ($self->selected_tick == $min_index + 1) ? $self->payout : 0;
 
         $self->value($contract_value);
