@@ -1,6 +1,6 @@
 ## no critic (RequireFilenameMatchesPackage)
 
-package User::Client;
+package BOM::User::Client;
 
 use strict;
 use warnings;
@@ -18,7 +18,7 @@ use BOM::Database::ClientDB;
 
 ## VERSION
 
-# NOTE.. this is a 'mix-in' of extra subs for User::Client.  It is not a distinct Class.
+# NOTE.. this is a 'mix-in' of extra subs for BOM::User::Client.  It is not a distinct Class.
 
 my $payment_limits = LoadFile(File::ShareDir::dist_file('Client-Account', 'payment_limits.yml'));
 

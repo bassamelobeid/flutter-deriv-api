@@ -6,7 +6,7 @@ use warnings;
 use Try::Tiny;
 use Date::Utility;
 
-use User::Client;
+use BOM::User::Client;
 
 use BOM::Database::UserDB;
 use BOM::Platform::Password;
@@ -176,7 +176,7 @@ sub clients_for_landing_company {
     my $self      = shift;
     my $lc_short  = shift // die 'need landing_company';
     my @login_ids = keys %{$self->loginid_details};
-    return map { User::Client->new({loginid => $_, db_operation => 'replica'}) }
+    return map { BOM::User::Client->new({loginid => $_, db_operation => 'replica'}) }
         grep { LandingCompany::Registry->get_by_loginid($_)->short eq $lc_short } @login_ids;
 }
 
@@ -237,19 +237,19 @@ sub get_clients_in_sorted_order {
     my (@enabled_accounts, @virtual_accounts, @self_excluded_accounts, @disabled_accounts);
     foreach my $loginid (sort @$loginid_list) {
         my $cl = try {
-            User::Client->new({
+            BOM::User::Client->new({
                 loginid      => $loginid,
                 db_operation => 'replica'
             });
         }
         catch {
             # try master if replica is down
-            User::Client->new({loginid => $loginid});
+            BOM::User::Client->new({loginid => $loginid});
         };
 
         next unless $cl;
 
-        my $all_status = User::Client::client_status_types();
+        my $all_status = BOM::User::Client::client_status_types();
         my @do_not_display_status = grep { $all_status->{$_} == 0 } keys %$all_status;
 
         # don't include clients that we don't want to show

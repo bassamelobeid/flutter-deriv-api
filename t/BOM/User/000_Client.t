@@ -10,7 +10,7 @@ use Date::Utility;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 
-use User::Client;
+use BOM::User::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use ClientAccountTestHelper;
 
@@ -93,7 +93,7 @@ subtest 'prepare' => sub {
     'Expect to initialize the client data mapper';
 
     lives_ok {
-        my $client_CR = User::Client->new({loginid => 'CR656234'});
+        my $client_CR = BOM::User::Client->new({loginid => 'CR656234'});
         my $account = $client_CR->set_default_account('USD');
     }
     'New client and account created ok';

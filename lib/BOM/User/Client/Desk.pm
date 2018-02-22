@@ -1,8 +1,8 @@
-package User::Client::Desk;
+package BOM::User::Client::Desk;
 
 =head1 NAME
 
-User::Client::Desk
+BOM::User::Client::Desk
 
 =head1 DESCRIPTION
 
@@ -10,7 +10,7 @@ This is a wrapper around WWW::Desk - Desk.com API.
 
 =head1 SYNOPSIS
 
-    my $api = User::Client::Desk->new({
+    my $api = BOM::User::Client::Desk->new({
             api_key      => '...',
 
             secret_key   => '...',

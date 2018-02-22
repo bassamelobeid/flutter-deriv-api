@@ -5,7 +5,7 @@ use Test::MockTime;
 use Test::More qw(no_plan);
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use User::Client;
+use BOM::User::Client;
 
 my $login_id = 'CR0009';
 
@@ -13,8 +13,8 @@ subtest 'Almost all accessor/modifiers' => sub {
     plan tests => 41;
 
     my $client;
-    lives_ok { $client = User::Client::get_instance({'loginid' => $login_id}); }
-    "Can create client object 'User::Client::get_instance({'loginid' => $login_id})'";
+    lives_ok { $client = BOM::User::Client::get_instance({'loginid' => $login_id}); }
+    "Can create client object 'BOM::User::Client::get_instance({'loginid' => $login_id})'";
     note "broker_code ", $client->broker_code;
     note "broker ",      $client->broker;
 

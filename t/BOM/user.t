@@ -383,7 +383,7 @@ subtest 'MirrorBinaryUserId' => sub {
     plan tests => 12;
     use YAML::XS qw/LoadFile/;
     use BOM::Platform::Script::MirrorBinaryUserId;
-    use User::Client;
+    use BOM::User::Client;
 
     my $cfg            = LoadFile '/etc/rmg/userdb.yml';
     my $pgservice_conf = "/tmp/pgservice.conf.$$";
@@ -422,7 +422,7 @@ CONF
         if ($el->[1] =~ /^MT/) {
             ok 1, "survived MT account $el->[1]";
         } else {
-            my $client = User::Client->new({loginid => $el->[1]});
+            my $client = BOM::User::Client->new({loginid => $el->[1]});
             is $client->binary_user_id, $el->[0], "$el->[1] has binary_user_id $el->[0]";
         }
     }
