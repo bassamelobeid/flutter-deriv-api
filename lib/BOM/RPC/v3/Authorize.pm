@@ -147,7 +147,7 @@ rpc authorize => sub {
     my $_get_account_details = sub {
         my ($clnt, $curr) = @_;
 
-        my $exclude_until = $clnt->get_self_exclusion_until_dt;
+        my $exclude_until = $clnt->get_self_exclusion_until_date;
 
         return {
             loginid              => $clnt->loginid,
