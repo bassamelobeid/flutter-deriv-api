@@ -70,7 +70,7 @@ subtest 'client Balance' => sub {
     }
     'Successfully get Balance related figure for client, GBP';
 
-    $aggregate_deposit    = $payment_mapper->get_total_deposit_of_account();
+    $aggregate_deposit    = $payment_mapper->get_total_deposit();
     $aggregate_withdrawal = $payment_mapper->get_total_withdrawal();
 
     $aggregate_deposit_withdrawal = $aggregate_deposit - $aggregate_withdrawal;
@@ -95,7 +95,7 @@ subtest 'client Balance' => sub {
     }
     'Successfully get Balance related figure for MX0013, USD';
 
-    $aggregate_deposit    = $payment_mapper->get_total_deposit_of_account();
+    $aggregate_deposit    = $payment_mapper->get_total_deposit();
     $aggregate_withdrawal = $payment_mapper->get_total_withdrawal();
 
     $aggregate_deposit_withdrawal = $aggregate_deposit - $aggregate_withdrawal;
@@ -120,7 +120,7 @@ subtest 'client Balance' => sub {
     }
     'Successfully get Balance related figure for TEST9999, USD';
 
-    throws_ok { $aggregate_deposit = $payment_mapper->get_total_deposit_of_account(); } qr/No such domain with the broker code TEST/,
+    throws_ok { $aggregate_deposit = $payment_mapper->get_total_deposit(); } qr/No such domain with the broker code TEST/,
         'Get total deposit of unknown broker code failed';
     throws_ok { $aggregate_withdrawal = $payment_mapper->get_total_withdrawal(); } qr/No such domain with the broker code TEST/,
         'Get total withdrawal failed for unknow broker code failed';

@@ -753,7 +753,7 @@ sub get_promocode_dependent_limit {
             my $min_turnover = $pc->{_json}{min_turnover};
             my $amount       = $pc->{_json}{amount};
 
-            my $made_actual_deposit = $payment_mapper->get_total_deposit_of_account() - $amount;
+            my $made_actual_deposit = $payment_mapper->get_total_deposit() - $amount;
             if ($made_actual_deposit) {
                 $frozen_free_gift = $free_gift_deposits;
             } else {
