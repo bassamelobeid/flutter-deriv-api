@@ -375,7 +375,7 @@ sub get_real_account_siblings_information {
 =head2 get_client_currency_information
 
     get_client_currency_information($siblings, $landing_company_name)
-    
+
     Get the currency statuses (fiat and crypto) of the clients, based on the landing company.
 
 =cut
