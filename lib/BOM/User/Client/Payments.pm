@@ -20,7 +20,7 @@ use BOM::Database::ClientDB;
 
 # NOTE.. this is a 'mix-in' of extra subs for BOM::User::Client.  It is not a distinct Class.
 
-my $payment_limits = LoadFile(File::ShareDir::dist_file('Client-Account', 'payment_limits.yml'));
+my $payment_limits = LoadFile('/home/git/regentmarkets/bom-user/config/payment_limits.yml');
 
 sub validate_payment {
     my ($self, %args) = @_;
