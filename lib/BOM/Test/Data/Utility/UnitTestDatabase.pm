@@ -3,7 +3,7 @@ package BOM::Test::Data::Utility::UnitTestDatabase;
 use strict;
 use warnings;
 
-use Client::Account;
+use BOM::User::Client;
 use Date::Utility;
 use MooseX::Singleton;
 use Postgres::FeedDB;
@@ -119,7 +119,7 @@ sub create_client {
         $client_data->{$_} = $args->{$_};
     }
 
-    my $client = Client::Account->rnew;
+    my $client = BOM::User::Client->rnew;
 
     for (keys %$client_data) {
         $client->$_($client_data->{$_});

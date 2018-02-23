@@ -19,7 +19,7 @@ use Sereal::Encoder;
 
 use BOM::Database::Model::OAuth;
 use BOM::Platform::RedisReplicated;
-use Client::Account;
+use BOM::User::Client;
 use BOM::Test::Data::Utility::UnitTestMarketData;    # we :init later for unit/auth test DBs
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::AuthTestDatabase;
@@ -325,7 +325,7 @@ sub _get_stashed {
 
 sub _free_gift {
     my ($loginid) = @_;
-    my $client = Client::Account->new({loginid => $loginid});
+    my $client = BOM::User::Client->new({loginid => $loginid});
     $client->payment_free_gift(
         currency => 'USD',
         amount   => 10000,
@@ -336,7 +336,7 @@ sub _free_gift {
 
 sub _change_status {
     my ($loginid, $action, $status) = @_;
-    my $client = Client::Account->new({loginid => $loginid});
+    my $client = BOM::User::Client->new({loginid => $loginid});
     if ($action eq 'set') {
         $client->set_status($status, 'system', 'for test');
     } else {

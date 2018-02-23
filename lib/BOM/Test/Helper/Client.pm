@@ -5,7 +5,7 @@ use warnings;
 
 use Exporter qw( import );
 
-use Client::Account;
+use BOM::User::Client;
 use BOM::Platform::Client::IDAuthentication;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Password;
