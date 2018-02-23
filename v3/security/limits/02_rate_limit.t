@@ -29,7 +29,7 @@ websocket_call_expensive:
 websocket_call_pricing:
     1m: 30
     1h: 60
-websocket_call_email:
+websocket_call_restricted:
     1m: 3
     1h: 5
 websocket_real_pricing:
