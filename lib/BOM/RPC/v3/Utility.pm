@@ -193,7 +193,7 @@ sub site_limits {
     return $limits;
 }
 
-sub client_error {
+sub client_error() {
     return create_error({
             code              => 'InternalServerError',
             message_to_client => localize('Sorry, an error occurred while processing your account.')});
@@ -636,7 +636,7 @@ sub set_professional_status {
     $client->set_status('professional_requested', 'SYSTEM', 'Professional account requested') if $set_prof_request;
 
     if (not $client->save) {
-        return client_error;
+        return client_error();
     }
 
     send_professional_requested_email($client->loginid, $client->residence) if $set_prof_request;

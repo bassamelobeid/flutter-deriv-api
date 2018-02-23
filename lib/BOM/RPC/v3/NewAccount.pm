@@ -321,7 +321,7 @@ rpc new_account_real => sub {
         $new_client->set_status('ukrts_max_turnover_limit_not_set', 'system', 'new GB client - have to set turnover limit');
 
         if (not $new_client->save) {
-            return BOM::RPC::v3::Utility::client_error;
+            return BOM::RPC::v3::Utility::client_error();
         }
     }
 
@@ -380,7 +380,7 @@ rpc new_account_maltainvest => sub {
 
         if (not $client->save) {
             stats_inc('bom_rpc.v_3.call_failure.count', {tags => ["rpc:new_account_maltainvest"]});
-            return BOM::RPC::v3::Utility::client_error;
+            return BOM::RPC::v3::Utility::client_error();
         }
     }
 
@@ -418,7 +418,7 @@ rpc new_account_maltainvest => sub {
     # Save new account
     if (not $new_client->save) {
         stats_inc('bom_rpc.v_3.call_failure.count', {tags => ["rpc:new_account_maltainvest"]});
-        return BOM::RPC::v3::Utility::client_error;
+        return BOM::RPC::v3::Utility::client_error();
 
     }
 
