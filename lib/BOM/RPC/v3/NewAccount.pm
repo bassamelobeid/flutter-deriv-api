@@ -409,7 +409,10 @@ rpc new_account_maltainvest => sub {
     my $new_client      = $acc->{client};
     my $landing_company = $new_client->landing_company;
 
-    # Update citizenship of new client
+    # Malta/IOM client's citizenship can be updated from backoffice (it is not set by default)
+    # However, when a Maltainvest account is created, the citizenship is not updated
+    # This is because the citizenship field is not present in the form
+    # Hence, the following check is necessary
     $new_client->citizen($client->citizen) if ($client->citizen && !$client->is_virtual);
 
     # Save new account
