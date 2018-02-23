@@ -466,8 +466,9 @@ rpc new_account_japan => sub {
     my $details = $details_ref->{details};
     $details->{$_} = $args->{$_} for ('gender', 'occupation', 'daily_loss_limit');
 
-    my %financial_data = map { $_ => $args->{$_} }
-        (keys %{BOM::Platform::Account::Real::japan::get_financial_input_mapping()}, 'trading_purpose', 'hedge_asset', 'hedge_asset_amount');
+    my %financial_data = map { $_ => $args->{$_} } (
+        keys %{BOM::Platform::Account::Real::japan::get_financial_input_mapping()},
+        keys %{BOM::Platform::Account::Real::japan::get_other_input_mapping()});
 
     my %agreement = map { $_ => $args->{$_} } (BOM::Platform::Account::Real::japan::agreement_fields());
 
