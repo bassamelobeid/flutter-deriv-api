@@ -371,7 +371,10 @@ rpc new_account_maltainvest => sub {
 
     my $user = BOM::Platform::User->new({email => $client->email});
 
-    # Update MLT/MX client place of birth, only if their place of birth is not set
+    # When a Malta/IOM account is created, the 'place of birth' field is not present
+    # After creating Malta/IOM account, client can select their place of birth in their profile settings
+    # However, when Maltainvest account is created, the place of birth field is mandatory
+    # Hence, this check is added for backward compatibility (assuming no place of birth is selected)
     if (!$client->place_of_birth && $args->{place_of_birth} && !$client->is_virtual) {
         $client->place_of_birth($args->{place_of_birth});
 
