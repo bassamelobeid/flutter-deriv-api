@@ -902,7 +902,7 @@ is not able to purchase contract
 sub _validate_client_self_exclusion {
     my ($self, $client) = (shift, shift);
 
-    if (my $limit_excludeuntil = $client->get_self_exclusion_until_dt) {
+    if (my $limit_excludeuntil = $client->get_self_exclusion_until_date) {
         return Error::Base->cuss(
             -type              => 'ClientSelfExcluded',
             -mesg              => 'your account is not authorised for any further contract purchases.',
