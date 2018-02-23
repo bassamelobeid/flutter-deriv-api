@@ -101,7 +101,7 @@ my %rate_limit_map = (
     profit_table_real              => 'websocket_call_expensive',
     proposal_real                  => 'websocket_real_pricing',
     proposal_open_contract_real    => 'websocket_real_pricing',
-    verify_email_real              => 'websocket_call_email',
+    verify_email_real              => 'websocket_call_restricted',
     buy_real                       => 'websocket_real_pricing',
     sell_real                      => 'websocket_real_pricing',
     buy_virtual                    => 'virtual_buy_transaction',
@@ -114,7 +114,9 @@ my %rate_limit_map = (
     profit_table_virtual           => 'websocket_call_expensive',
     proposal_virtual               => 'websocket_call_pricing',
     proposal_open_contract_virtual => 'websocket_call_pricing',
-    verify_email_virtual           => 'websocket_call_email',
+    verify_email_virtual           => 'websocket_call_restricted',
+    cashier_password_real          => 'websocket_call_restricted',
+    cashier_password_virtual       => 'websocket_call_restricted',
 );
 
 sub reached_limit_check {
