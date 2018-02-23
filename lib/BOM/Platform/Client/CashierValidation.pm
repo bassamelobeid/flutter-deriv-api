@@ -18,7 +18,7 @@ use Scalar::Util qw(looks_like_number);
 use Postgres::FeedDB::CurrencyConverter qw/amount_from_to_currency/;
 
 use Brands;
-use Client::Account;
+use BOM::User::Client;
 use LandingCompany::Registry;
 
 use BOM::Platform::Runtime;
@@ -37,7 +37,7 @@ sub validate {
     return _create_error(localize('Sorry, cashier is temporarily unavailable due to system maintenance.'))
         if (is_system_suspended() or is_payment_suspended());
 
-    my $client = Client::Account->new({
+    my $client = BOM::User::Client->new({
             loginid      => $loginid,
             db_operation => 'replica'
         }) or return _create_error(localize('Invalid account.'));
@@ -166,7 +166,7 @@ sub pre_withdrawal_validation {
 
     return _create_error(localize('Invalid amount.')) if (not $amount or not looks_like_number($amount) or $amount <= 0);
 
-    my $client = Client::Account->new({
+    my $client = BOM::User::Client->new({
             loginid      => $loginid,
             db_operation => 'replica'
         }) or return _create_error(localize('Invalid account.'));
@@ -200,7 +200,7 @@ sub calculate_to_amount_with_fees {
     # currency type
     my ($fees, $fees_percent) = (0, 0);
     if (($from_currency_type ne $to_currency_type) and ($from_currency ne $to_currency)) {
-        my $client = Client::Account->new({
+        my $client = BOM::User::Client->new({
                 loginid      => $loginid,
                 db_operation => 'replica'
             }) or return ();

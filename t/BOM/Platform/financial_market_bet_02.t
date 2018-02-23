@@ -7,7 +7,7 @@ use Test::More tests => 28;
 use Test::Warnings;
 use Test::Exception;
 
-use Client::Account;
+use BOM::User::Client;
 
 use BOM::Database::ClientDB;
 use BOM::Database::Helper::FinancialMarketBet;

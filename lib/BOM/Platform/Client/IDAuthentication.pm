@@ -5,7 +5,7 @@ use namespace::autoclean;
 use Try::Tiny;
 
 use Brands;
-use Client::Account;
+use BOM::User::Client;
 use BOM::Platform::Config;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(localize request);
@@ -13,7 +13,7 @@ use BOM::Platform::ProveID;
 
 has client => (
     is  => 'ro',
-    isa => 'Client::Account'
+    isa => 'BOM::User::Client'
 );
 
 has force_recheck => (

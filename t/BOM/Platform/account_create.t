@@ -10,7 +10,7 @@ use Test::Warn;
 use Test::MockModule;
 use Test::Warnings;
 
-use Client::Account;
+use BOM::User::Client;
 
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Account::Virtual;
@@ -39,7 +39,7 @@ is($vr_acc->{error}, 'invalid residence', 'create VR acc failed: restricted coun
 
 $on_production = 0;
 
-my $client_mocked = Test::MockModule->new('Client::Account');
+my $client_mocked = Test::MockModule->new('BOM::User::Client');
 $client_mocked->mock('add_note', sub { return 1 });
 
 my $vr_details = {
@@ -163,7 +163,7 @@ subtest 'create account' => sub {
         if ($broker eq 'MLT' or $broker eq 'MX') {
             lives_ok { $real_acc = create_mf_acc($real_client, $user); } "create MF acc";
             is($real_acc->{client}->broker, 'MF', "Successfully create " . $real_acc->{client}->loginid);
-            my $cl = Client::Account->new({loginid => $real_acc->{client}->loginid});
+            my $cl = BOM::User::Client->new({loginid => $real_acc->{client}->loginid});
             my $data = JSON::MaybeXS->new->decode($cl->financial_assessment()->data);
             is $data->{total_score}, 20, "got the total score";
         } else {

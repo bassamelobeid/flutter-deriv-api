@@ -9,8 +9,8 @@ use Locale::Country;
 use List::MoreUtils qw(any);
 
 use Brands;
-use Client::Account;
-use Client::Account::Desk;
+use BOM::User::Client;
+use BOM::User::Client::Desk;
 
 use BOM::Database::ClientDB;
 use BOM::Platform::Config;
@@ -112,7 +112,7 @@ sub register_client {
     my $details = shift;
 
     my ($client, $error);
-    try { $client = Client::Account->register_and_return_new_client($details); }
+    try { $client = BOM::User::Client->register_and_return_new_client($details); }
     catch {
         $error = $_;
     };
@@ -169,7 +169,7 @@ sub add_details_to_desk {
 
     if (BOM::Platform::Config::on_production()) {
         try {
-            my $desk_api = Client::Account::Desk->new({
+            my $desk_api = BOM::User::Client::Desk->new({
                 desk_url     => BOM::Platform::Config::third_party->{desk}->{api_uri},
                 api_key      => BOM::Platform::Config::third_party->{desk}->{api_key},
                 secret_key   => BOM::Platform::Config::third_party->{desk}->{api_key_secret},

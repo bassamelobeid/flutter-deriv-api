@@ -22,7 +22,7 @@ use Encode;
 use JSON::MaybeXS;
 use YAML::XS qw(LoadFile);
 use IO::Socket::IP;
-use Client::Account;
+use BOM::User::Client;
 use BOM::User;
 
 use DataDog::DogStatsd::Helper qw(stats_timing stats_gauge stats_inc);
@@ -60,7 +60,7 @@ sub add {
     return if $args{loginid} =~ /^VR/ and ($args{type} eq 'deposit' or $args{type} eq 'withdrawal');
 
     try {
-        my $client = Client::Account->new({
+        my $client = BOM::User::Client->new({
                 loginid      => $args{loginid},
                 db_operation => 'replica'
             }) or die 'client not found';
