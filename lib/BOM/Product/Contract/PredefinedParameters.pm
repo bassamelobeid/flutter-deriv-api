@@ -175,7 +175,7 @@ sub _get_predefined_highlow {
 }
 
 =head2 next_generation_interval
-Always the even hour and 15 minutes, e.g. 00:15::00, 02:15:00.
+Always the even hour and even hour 15 minutes, e.g. 00:15:00, 02:00:00, 02:15:00.
 =cut
 
 sub next_generation_epoch {
@@ -188,7 +188,7 @@ sub next_generation_epoch {
 
     my $minute = $from_date->minute;
     return $current_hour->plus_time_interval('15m')->epoch if $minute < 15;
-    return $current_hour->plus_time_interval('2h15m')->epoch;
+    return $current_hour->plus_time_interval('2h')->epoch;
 }
 
 =head2 get_expired_barriers
@@ -443,10 +443,10 @@ sub _get_strike_from_call_bs_price {
 # - 6-hour window
 #
 # 2-hour window:
-# - 00:00-02:00, 02:00-04:00, 04:00-06:00, 06:00-08:00, 08:00-10:00 ... 16:00-18:00
+# - 00:15:00-02:15:00, 02:15:00-04:15:00, 04:15:00-06:15:00, 06:15:00-08:15:00, ... 16:15:00-18:15:00
 #
 # 6-hour window:
-# - 00:00-06:00, 06:00-12:00, 12:00-18:00
+# - 00:15:00-06:15:00, 06:15:00-12:15:00, 12:15:00-18:15:00
 #
 
 sub _fixed_windows {
