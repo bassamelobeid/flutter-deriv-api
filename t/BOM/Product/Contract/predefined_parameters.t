@@ -329,7 +329,7 @@ subtest 'next_generation_epoch' => sub {
         [Date::Utility->new('2018-01-02 01:00:00'), Date::Utility->new('2018-01-02 02:00:00')],
         [Date::Utility->new('2018-01-02 01:14:00'), Date::Utility->new('2018-01-02 02:00:00')],
         [Date::Utility->new('2018-01-02 02:00:00'), Date::Utility->new('2018-01-02 02:15:00')],
-        [Date::Utility->new('2018-01-02 02:16:00'), Date::Utility->new('2018-01-02 04:15:00')]);
+        [Date::Utility->new('2018-01-02 02:16:00'), Date::Utility->new('2018-01-02 04:00:00')]);
 
     foreach my $test (@tests) {
         my $next = next_generation_epoch($test->[0]);
