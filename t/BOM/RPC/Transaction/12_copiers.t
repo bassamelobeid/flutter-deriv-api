@@ -165,11 +165,8 @@ sub start_copy_trade {
 }
 
 sub start_copy_trade_with_error_code {
-    my $trader      = shift;
-    my $copier      = shift;
-    my $error_code  = shift;
-    my $error_msg   = shift;
-    my $extra_args  = shift || {};
+    my ($trader, $copier, $error_code, $error_msg, $extra_args) = @_;
+    $extra_args ||= {};
 
     my ($trader_token) = (defined $trader) ? BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid) : "Invalid";
     my ($copier_token) = (defined $copier) ? BOM::Database::Model::OAuth->new->store_access_token_only(1, $copier->loginid) : "Invalid";
