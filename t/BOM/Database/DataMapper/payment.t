@@ -41,8 +41,8 @@ subtest 'get total deposit & withdrawal' => sub {
     }
     'Expect to initialize payment datamapper for CR0031 USD';
 
-    cmp_ok($payment_data_mapper->get_total_deposit_of_account, '==', 5000, 'check total deposit of account');
-    cmp_ok($payment_data_mapper->get_total_withdrawal(),       '==', 500,  'check total withdrawal in USD');
+    cmp_ok($payment_data_mapper->get_total_deposit,      '==', 5000, 'check total deposit of account');
+    cmp_ok($payment_data_mapper->get_total_withdrawal(), '==', 500,  'check total withdrawal in USD');
 
     my $currency = 'GBP';
     lives_ok {
@@ -53,8 +53,8 @@ subtest 'get total deposit & withdrawal' => sub {
     }
     'Expect to initialize payment datamapper for MX1001 GBP';
 
-    cmp_ok($payment_data_mapper->get_total_deposit_of_account, '==', 4350, 'check total deposit of account');
-    cmp_ok($payment_data_mapper->get_total_withdrawal(),       '==', 100,  'check total withdrawal in GBP');
+    cmp_ok($payment_data_mapper->get_total_deposit,      '==', 4350, 'check total deposit of account');
+    cmp_ok($payment_data_mapper->get_total_withdrawal(), '==', 100,  'check total withdrawal in GBP');
     my ($start_time1, $start_time2, $end_time);
     lives_ok {
         use Date::Utility;
@@ -97,8 +97,8 @@ subtest 'get total deposit & withdrawal' => sub {
     }
     "Expect to initialize payment datamapper for MX0012, $currency";
 
-    cmp_ok($payment_data_mapper->get_total_deposit_of_account, '==', 5.04, 'check total deposit of account');
-    cmp_ok($payment_data_mapper->get_total_withdrawal(),       '==', 0,    'check total withdrawal of account');
+    cmp_ok($payment_data_mapper->get_total_deposit,      '==', 5.04, 'check total deposit of account');
+    cmp_ok($payment_data_mapper->get_total_withdrawal(), '==', 0,    'check total withdrawal of account');
 };
 
 subtest 'Payment DataMapper initial tests done.' => sub {
