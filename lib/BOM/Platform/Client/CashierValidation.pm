@@ -47,7 +47,7 @@ sub validate {
 
     # for self excluded clients we only allow withdrawal
     if ($action eq 'deposit') {
-        my $lim = $client->get_self_exclusion_until_dt;
+        my $lim = $client->get_self_exclusion_until_date;
         return _create_error(localize('Sorry, you have excluded yourself until [_1].', $lim), 'SelfExclusion') if $lim;
     }
 

@@ -248,7 +248,7 @@ sub get_clients_in_sorted_order {
             next;
         }
 
-        if ($cl->get_self_exclusion_until_dt) {
+        if ($cl->get_self_exclusion_until_date) {
             push @self_excluded_accounts, $cl;
             next;
         }
