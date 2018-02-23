@@ -18,6 +18,7 @@ use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Cashier;
 use BOM::Platform::Config;
 use BOM::Platform::Context qw (localize request);
+use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
 use BOM::MT5::User;
 use BOM::Database::ClientDB;
@@ -681,8 +682,9 @@ rpc mt5_password_change => sub {
     }
 
     $status = BOM::MT5::User::password_change({
-            login        => $login,
-            new_password => $args->{new_password}});
+            login         => $login,
+            new_password  => $args->{new_password},
+            password_type => $args->{password_type}});
     if ($status->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'MT5PasswordChangeError',
@@ -691,36 +693,125 @@ rpc mt5_password_change => sub {
     return 1;
 };
 
+=head2 mt5_password_reset
+
+    $mt5_pass_change = mt5_password_reser({
+        client  => $client,
+        args    => $args
+    })
+    
+Takes a client object and a hash reference as inputs and returns 1 upon successful
+reset the user's MT5 account password.
+    
+Takes the following (named) parameters as inputs:
+    
+=over 3
+
+=item * C<params> hashref that contains:
+
+=over 3
+
+=item * A Client::Account object under the key C<client>.
+
+=item * A hash reference under the key C<args> that contains:
+
+=over 3
+
+=item * C<login> that contains the MT5 login id.
+
+=item * C<new_password> that contains the user's new password. 
+
+=back
+
+=back
+
+=back
+
+Returns any of the following:
+
+=over 3
+
+=item * A hashref error message that contains the following keys, based on the given error:
+
+=over 3
+
+=item * MT5 suspended
+
+=over 4
+
+=item * C<code> stating C<MT5APISuspendedError>.
+
+=back
+
+=item * Permission denied
+
+=over 3
+
+=item * C<code> stating C<PermissionDenied>.
+
+=back
+
+=item * Retrieval Error
+
+=over 3
+
+=item * C<code> stating C<MT5PasswordChangeError>.
+
+=back
+
+=back
+
+=item * Returns 1, indicating successful reset.
+
+=back
+
+=cut
+
 rpc mt5_password_reset => sub {
     my $params = shift;
     my $client = $params->{client};
     my $args   = $params->{args};
     my $login  = $args->{login};
+    my $email  = BOM::Platform::Token->new({token => $args->{verification_code}})->email;
+    if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email, 'mt5_password_reset')->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $err->{code},
+                message_to_client => $err->{message_to_client}});
+    }
+
+    my $user = BOM::Platform::User->new({email => $email});
 
     # MT5 login not belongs to user
     return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $login]);
 
-    return _mt5_set_password($args->{login}, $args->{new_password}, $args->{password_type});
-};
-
-
-sub _mt5_set_password {
-    my $login        = shift;
-    my $new_password = shift;
-    my $pwd_type     = shift;
-
     my $status = BOM::MT5::User::password_change({
-        login         => $login,
-        new_password  => $new_password,
-        password_type => $pwd_type,
-    });
+            login        => $login,
+            new_password => $args->{new_password},
+            password_type => $args->{password_type}});
     if ($status->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'MT5PasswordChangeError',
                 message_to_client => $status->{error}});
     }
-    return {status => 1};
-}
+    
+    send_email({
+            from    => Brands->new(name => request()->brand)->emails('support'),
+            to      => $email,
+            subject => localize('Your MT5 password has been reset.'),
+            message => [
+                localize(
+                    'The password for your MT5 account [_1] has been reset. If this request was not performed by you, please immediately contact Customer Support.',
+                    $email
+                )
+            ],
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            template_loginid      => $login,
+        });
+ 
+    return 1;
+};
+
 
 sub _send_email {
     my %args = @_;
