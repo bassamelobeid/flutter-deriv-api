@@ -3,6 +3,9 @@ use warnings;
 
 use Test::Most;
 use Test::Mojo;
+use Test::MockModule;
+
+use Postgres::FeedDB::CurrencyConverter qw(in_USD amount_from_to_currency);
 
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -185,13 +188,14 @@ subtest 'deposit' => sub {
         args     => {
             from_binary => $test_client->loginid,
             to_mt5      => $DETAILS{login},
-            amount      => 150,
+            amount      => 180,
         },
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_deposit');
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
 
-    # TODO(leonerd): assert that account balance is now 1000-150 = 850
+    # assert that account balance is now 1000-180 = 820
+    cmp_ok $test_client->default_account->load->balance, '==', 820, "Correct balance after deposited to mt5 account";
 
     $params->{args}{to_mt5} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_deposit wrong login')
@@ -213,6 +217,9 @@ subtest 'withdrawal' => sub {
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_withdrawal');
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
+
+    cmp_ok $test_client->default_account->load->balance, '==', 820 + 150,
+        "Correct balance after withdrawal";
 
     $params->{args}{from_mt5} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_withdrawal wrong login')

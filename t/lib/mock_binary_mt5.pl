@@ -69,10 +69,9 @@ sub cmd_UserDepositChange {
 
     # This command is invoked for both deposits and withdrawals, the sign of
     # the amount indicating which
-    # Additionally as this is a demo account it is precharged with 10000 on setup
-           $input->{new_deposit} == 10000
-        or $input->{new_deposit} == 150
-        or $input->{new_deposit} == -150
+           $input->{new_deposit} == 10000  # initial balance
+        or $input->{new_deposit} == 180    # deposit
+        or $input->{new_deposit} == -150   # withdrawal
         or die "TODO: mock UserDepositChange on unknown new_deposit amount\n";
 
     return {
