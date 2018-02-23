@@ -265,9 +265,7 @@ my @test_pairs = (
     [$trader_CR, $copier_CR],
     [$trader_CR, $copier_VRTC],
     [$trader_CR, $copier_MLT],
-    [$trader_VRTC, $copier_CR],
     [$trader_VRTC, $copier_VRTC],
-    [$trader_VRTC, $copier_MLT],
 );
 
 foreach my $pair (@test_pairs){
@@ -360,6 +358,14 @@ sub copy_trading_test_routine {
 ####################################################################
 # error checking
 ####################################################################
+
+subtest 'Real account follow virtual error 1' => sub {
+    start_copy_trade_with_error_code($trader_VRTC, $copier_CR, 'CopyTradingNotAllowed', 'CR following VRTC attempt. CopyTradingNotAllowed');
+};
+
+subtest 'Real account follow virtual error 2' => sub {
+    start_copy_trade_with_error_code($trader_VRTC, $copier_MLT, 'CopyTradingNotAllowed', 'MLT following VRTC attempt. CopyTradingNotAllowed');
+};
 
 subtest 'Invalid trade type error' => sub {
     my $wrong_copier = create_client;

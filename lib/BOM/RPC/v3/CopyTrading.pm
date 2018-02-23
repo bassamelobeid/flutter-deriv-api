@@ -58,6 +58,11 @@ rpc copy_start => sub {
                 code              => 'CopyTradingNotAllowed',
                 message_to_client => localize('Traders are not allowed to copy trades.')});
     }
+    if ($trader->is_virtual && not $client->is_virtual) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'CopyTradingNotAllowed',
+                message_to_client => localize('Real money accounts cannot follow virtual traders.')});
+    }
 
     unless ($client->default_account
         && $trader->default_account
