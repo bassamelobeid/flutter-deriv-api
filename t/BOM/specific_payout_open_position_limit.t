@@ -8,7 +8,7 @@ use Test::MockModule;
 use Test::More;    # tests => 4;
 use Test::Exception;
 use Guard;
-use Client::Account;
+use BOM::User::Client;
 use BOM::Platform::Password;
 use BOM::Platform::Client::Utility;
 
@@ -638,7 +638,7 @@ sub db {
 }
 
 sub create_client {
-    return Client::Account->register_and_return_new_client({
+    return BOM::User::Client->register_and_return_new_client({
         broker_code      => 'CR',
         client_password  => BOM::Platform::Password::hashpw('12345678'),
         salutation       => 'Ms',

@@ -7,16 +7,16 @@ use Test::More qw(no_plan);
 use Test::Exception;
 
 use Date::Utility;
-use Client::Account;
+use BOM::User::Client;
 use BOM::Transaction::Validation;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
-my $rose_client = Client::Account->new({loginid => 'CR2002'});
+my $rose_client = BOM::User::Client->new({loginid => 'CR2002'});
 my $loginid     = $rose_client->loginid;
 my $account     = $rose_client->default_account;
 
 my $client;
-lives_ok { $client = Client::Account->new({loginid => $loginid}) } 'Can create client object.';
+lives_ok { $client = BOM::User::Client->new({loginid => $loginid}) } 'Can create client object.';
 
 $client->payment_legacy_payment(
     currency     => 'USD',
@@ -98,7 +98,7 @@ my %deposit = (
     payment_type => 'free_gift'
 );
 
-my $client_new = Client::Account->register_and_return_new_client($client_details);
+my $client_new = BOM::User::Client->register_and_return_new_client($client_details);
 $validation_obj = BOM::Transaction::Validation->new({clients => [$client_new]});
 $client_new->set_default_account('USD');
 

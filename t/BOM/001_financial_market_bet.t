@@ -15,7 +15,7 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
-use Client::Account;
+use BOM::User::Client;
 use BOM::Transaction;
 use BOM::Transaction::Validation;
 

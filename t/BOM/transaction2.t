@@ -9,7 +9,7 @@ use Test::MockModule;
 use Test::More;    # tests => 4;
 use Test::Exception;
 use Guard;
-use Client::Account;
+use BOM::User::Client;
 use BOM::Platform::Password;
 use BOM::Platform::Client::Utility;
 

@@ -16,7 +16,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase;
 use BOM::Test::Helper::Client qw(create_client);
-use Client::Account;
+use BOM::User::Client;
 use BOM::Platform::Runtime;
 use BOM::Transaction;
 use BOM::Transaction::Validation;
@@ -50,7 +50,7 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
 });
 
-my $client = Client::Account->new({loginid => 'CR2002'});
+my $client = BOM::User::Client->new({loginid => 'CR2002'});
 
 my $loginid  = $client->loginid;
 my $currency = 'USD';

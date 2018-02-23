@@ -14,7 +14,7 @@ use Format::Util::Numbers qw(roundcommon);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use Client::Account;
+use BOM::User::Client;
 use BOM::Transaction;
 use BOM::Transaction::Validation;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
@@ -63,7 +63,7 @@ my $random_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_50',
 });
 
-my $client     = Client::Account->new({loginid => 'MX1001'});
+my $client     = BOM::User::Client->new({loginid => 'MX1001'});
 my $currency   = 'GBP';
 my $account    = $client->default_account;
 my $loginid    = $client->loginid;
@@ -303,7 +303,7 @@ subtest 'contract date pricing Validation' => sub {
 subtest 'valid currency test' => sub {
     plan tests => 3;
 
-    my $mock_contract = Test::MockModule->new('Client::Account');
+    my $mock_contract = Test::MockModule->new('BOM::User::Client');
 
     subtest 'invalid currency' => sub {
         $mock_contract->mock('currency', sub { 'ABC' });
@@ -1023,9 +1023,9 @@ subtest 'SELL - sell pricing adjustment' => sub {
 subtest 'Purchase Sell Contract' => sub {
     plan tests => 5;
 
-    my $client = Client::Account->new({loginid => 'CR2002'});
-    $client = Client::Account::get_instance({'loginid' => $client->loginid});
-    my $mocked_client = Test::MockModule->new('Client::Account');
+    my $client = BOM::User::Client->new({loginid => 'CR2002'});
+    $client = BOM::User::Client::get_instance({'loginid' => $client->loginid});
+    my $mocked_client = Test::MockModule->new('BOM::User::Client');
     $mocked_client->mock('residence', sub { return 'al' });
     my $currency = 'USD';
     $client->set_default_account($currency);

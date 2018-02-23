@@ -10,7 +10,7 @@ use List::Util qw(max);
 use Time::HiRes;
 use Try::Tiny;
 
-use Client::Account;
+use BOM::User::Client;
 use BOM::Transaction;
 
 STDOUT->autoflush(1);
@@ -51,7 +51,7 @@ sub _daemon_run {
         while (my $info = $iterator->()) {            # Blocking for next available.
             try {
                 my $contract_id = $info->{contract_id};
-                my $client = Client::Account->new({loginid => $info->{held_by}, db_operation => 'replica'});
+                my $client = BOM::User::Client->new({loginid => $info->{held_by}, db_operation => 'replica'});
                 if ($info->{in_currency} ne $client->currency) {
                     warn(     'Skip on currency mismatch for contract '
                             . $contract_id

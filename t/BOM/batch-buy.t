@@ -10,7 +10,7 @@ use Test::MockModule;
 use Test::More;
 use Test::Exception;
 
-use Client::Account;
+use BOM::User::Client;
 use Date::Utility;
 use ExpiryQueue ();
 use Guard;
@@ -208,7 +208,7 @@ subtest 'batch-buy success + multisell', sub {
         });
 
         subtest 'check limits' => sub {
-            my $mock_client  = Test::MockModule->new('Client::Account');
+            my $mock_client  = Test::MockModule->new('BOM::User::Client');
             my $mocked_limit = 100;
             $mock_client->mock(
                 get_limit_for_account_balance => sub {
@@ -220,7 +220,7 @@ subtest 'batch-buy success + multisell', sub {
             foreach my $m (@{$txn->multiple}) {
                 next if $m->{code} && $m->{code} eq 'ignore';
                 ok(!$m->{code}, 'no error');
-                ok($m->{client} && ref $m->{client} eq 'Client::Account', 'check client');
+                ok($m->{client} && ref $m->{client} eq 'BOM::User::Client', 'check client');
                 is($m->{limits}{max_balance}, $m->{client}->loginid, 'check_limit');
             }
         };
