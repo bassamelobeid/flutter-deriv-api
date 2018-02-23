@@ -39,7 +39,7 @@ before_install:
 
 install:
     - source /tmp/travis-scripts/devbox_path.sh
-    - sudo ln -s $PWD /home/git/regentmarkets/bom-platform
+    - sudo ln -s $PWD /home/git/regentmarkets/bom-user
     - /tmp/travis-scripts/devbox.sh *.yml
 
     - /tmp/travis-scripts/remove_postgresdb_config.sh
