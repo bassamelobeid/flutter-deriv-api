@@ -106,6 +106,29 @@ sub _build_custom_profiles {
     return \@profiles;
 }
 
+has non_binary_custom_profiles => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_non_binary_custom_profiles {
+    my $self = shift;
+
+    my @profiles = grep { $self->_match_conditions($_) } values %{$self->raw_custom_profiles};
+
+    my $risk_profile = $self->underlying_risk_profile;
+    my $setter       = $self->underlying_risk_profile_setter;
+    # default market level profile
+    push @profiles,
+        +{
+        risk_profile => $risk_profile,
+        name         => $self->contract_info->{$setter} . '_turnover_limit',
+        $setter      => $self->contract_info->{$setter},
+        };
+
+    return \@profiles;
+}
+
 has [qw(raw_custom_risk_profiles raw_custom_commission_profiles)] => (
     is         => 'ro',
     lazy_build => 1,
@@ -168,7 +191,6 @@ sub get_non_binary_limit_parameters {
     return [
         map {
             my $params;
-
             if ($_->{non_binary_contract_limit}) {
                 $params = {
                     name                      => $_->{name},
@@ -177,7 +199,7 @@ sub get_non_binary_limit_parameters {
             }
 
             $params;
-            } @{$self->custom_profiles},
+            } @{$self->non_binary_custom_profiles},
         @$ap
     ];
 }
@@ -336,6 +358,7 @@ sub _match_conditions {
     $additional_info = {} unless defined $additional_info;
     my $real_tests_performed;
     my $ci = {%{$self->contract_info}, %$additional_info};
+
     foreach my $key (keys %$custom) {
         next if exists $_no_condition{$key};    # skip test
         $real_tests_performed = 1;
