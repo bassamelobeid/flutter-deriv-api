@@ -272,7 +272,6 @@ sub get_financial_input_mapping {
                 'Tertiary'  => 3
             }
         },
-
         income_source => {
             'label'           => 'Income Source',
             'possible_answer' => {
