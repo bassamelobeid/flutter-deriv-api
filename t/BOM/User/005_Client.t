@@ -140,7 +140,6 @@ subtest 'create client' => sub {
     is($client->email,                   'test@betonmarkets.com', '[save] client email is: shuwnyuan@betonmarkets.com');
     is($client->aml_risk_classification, 'low',                   'by default risk classification is low for new client');
     throws_ok { $client->aml_risk_classification('dummy') } qr/Invalid aml_risk_classification/, $client->aml_risk_classification('standard');
-    'risk classification value can only be in predefined values';
     Test::Exception::lives_ok { $client->save(); } "[save] call client save OK";
     is($client->aml_risk_classification, 'standard', 'correct risk classification after update');
 
