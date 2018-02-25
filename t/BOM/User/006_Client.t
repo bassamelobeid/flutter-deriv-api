@@ -12,7 +12,7 @@ use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Account;
 
 use FindBin;
-use lib "$FindBin::Bin/../lib";
+use lib "$FindBin::Bin/../../../lib";
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 use ClientAccountTestHelper;
