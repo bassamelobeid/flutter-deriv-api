@@ -6,7 +6,7 @@ use warnings;
 use Try::Tiny;
 use HTML::Entities;
 
-use Client::Account::PaymentAgent;
+use BOM::User::Client::PaymentAgent;
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Runtime;
@@ -29,7 +29,7 @@ Bar('Payment Agent Setting');
 print "<b>Please note that payment agent currency and country of service will be same as client account currency and residence respectively.</b>";
 
 if ($whattodo eq 'create') {
-    my $client = Client::Account->new({loginid => $loginid});
+    my $client = BOM::User::Client->new({loginid => $loginid});
 
     code_exit_BO("Error : wrong loginid ($loginid) could not get client instance")                 unless $client;
     code_exit_BO("Client has not set account currency. Currency is mandatory for payment agent")   unless $client->default_account;
@@ -42,7 +42,7 @@ if ($whattodo eq 'create') {
 }
 
 if ($whattodo eq 'show') {
-    my $pa = Client::Account::PaymentAgent->new({loginid => $loginid});
+    my $pa = BOM::User::Client::PaymentAgent->new({loginid => $loginid});
     my $payment_agent_registration_form = BOM::Backoffice::Form::get_payment_agent_registration_form($loginid, $broker);
 
     my $input_fields = {
@@ -67,11 +67,11 @@ if ($whattodo eq 'show') {
 
     code_exit_BO();
 } elsif ($whattodo eq 'apply') {
-    my $client = Client::Account->new({loginid => $loginid});
+    my $client = BOM::User::Client->new({loginid => $loginid});
     code_exit_BO("Error : wrong loginid ($loginid) could not get client instance") unless $client;
     code_exit_BO("Client has not set account currency. Currency is mandatory for payment agent") unless $client->default_account;
 
-    my $pa = Client::Account::PaymentAgent->new({loginid => $loginid});
+    my $pa = BOM::User::Client::PaymentAgent->new({loginid => $loginid});
     unless ($pa) {
         # if its new so we need to set it
         $pa = $client->set_payment_agent;

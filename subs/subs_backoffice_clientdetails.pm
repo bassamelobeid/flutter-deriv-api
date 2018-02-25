@@ -198,7 +198,7 @@ sub build_client_statement_form {
 ######################################################################
 sub build_client_warning_message {
     my $login_id = shift;
-    my $client   = Client::Account->new({'loginid' => $login_id}) || return "<p>The Client's details can not be found [$login_id]</p>";
+    my $client   = BOM::User::Client->new({'loginid' => $login_id}) || return "<p>The Client's details can not be found [$login_id]</p>";
     my $broker   = $client->broker;
     my @output;
 

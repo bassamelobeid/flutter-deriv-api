@@ -9,7 +9,7 @@ use Test::More tests => 3;
 use Test::Warn;
 use Test::Warnings;
 
-use Client::Account;
+use BOM::User::Client;
 use Crypt::NamedKeys;
 use Date::Utility;
 

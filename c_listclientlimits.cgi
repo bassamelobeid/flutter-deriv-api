@@ -5,7 +5,7 @@ use warnings;
 
 use f_brokerincludeall;
 
-use Client::Account;
+use BOM::User::Client;
 use HTML::Entities;
 
 use BOM::Database::DataMapper::Account;
@@ -28,7 +28,7 @@ if ($login !~ /^$broker\d+$/) {
 }
 
 # Withdrawal limits
-my $client = Client::Account::get_instance({
+my $client = BOM::User::Client::get_instance({
         'loginid'    => $login,
         db_operation => 'replica'
     }) || die "[$0] could not get client for $login";

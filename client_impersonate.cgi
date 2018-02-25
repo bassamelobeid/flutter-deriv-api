@@ -8,7 +8,7 @@ use HTML::Entities;
 use f_brokerincludeall;
 use BOM::Backoffice::Auth0;
 use BOM::Database::Model::OAuth;
-use Client::Account;
+use BOM::User::Client;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -28,7 +28,7 @@ if ($login !~ /^$broker\d+$/) {
     code_exit_BO();
 }
 
-my $client = Client::Account::get_instance({
+my $client = BOM::User::Client::get_instance({
     'loginid'    => uc $login,
     db_operation => 'replica'
 });

@@ -28,7 +28,7 @@ my $grandtotal = 0;
 CLIENT:
 foreach my $loginID (split(/,/, $listaccounts)) {
     my $encoded_loginID = encode_entities($loginID);
-    my $client = eval { Client::Account->new({loginid => $loginID}) } || do {
+    my $client = eval { BOM::User::Client->new({loginid => $loginID}) } || do {
         print "<br/>error: cannot find client '$encoded_loginID'";
         next CLIENT;
     };

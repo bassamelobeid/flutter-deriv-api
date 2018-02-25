@@ -17,7 +17,7 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Config;
-use Client::Account;
+use BOM::User::Client;
 use feature "state";
 
 BOM::Backoffice::Sysinit::init();
@@ -29,7 +29,7 @@ my $enddate         = request()->param('enddate');
 my $encoded_loginid = encode_entities($loginid);
 
 # get client complete transaction statements
-my $client = Client::Account::get_instance({
+my $client = BOM::User::Client::get_instance({
     'loginid'    => $loginid,
     db_operation => 'replica'
 });

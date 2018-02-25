@@ -7,7 +7,7 @@ use Try::Tiny;
 use Scalar::Util qw(looks_like_number);
 
 use Brands;
-use Client::Account;
+use BOM::User::Client;
 
 use BOM::Backoffice::PlackHelpers qw/PrintContentType_excel PrintContentType/;
 use BOM::Backoffice::Request qw(request localize);
@@ -30,7 +30,7 @@ code_exit_BO("Action type can only be deposit or withdrawal.")     if (not $acti
 code_exit_BO("Invalid date, date should be in yyyy-mm-dd format.") if (not $payment_date or $payment_date !~ /^(\d{4})-(\d{2})-(\d{2})$/);
 code_exit_BO("Invalid reference id.")                              if (not $reference_id or $reference_id !~ /^\w+$/);
 
-my $client = Client::Account->new({loginid => $loginid}) or code_exit_BO("Error : wrong loginid ($loginid) could not get client instance");
+my $client = BOM::User::Client->new({loginid => $loginid}) or code_exit_BO("Error : wrong loginid ($loginid) could not get client instance");
 
 code_exit_BO("Please provide valid loginid.") unless $client->landing_company->short eq 'japan';
 

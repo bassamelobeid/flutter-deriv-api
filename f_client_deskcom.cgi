@@ -13,7 +13,7 @@ use HTML::Entities;
 
 use f_brokerincludeall;
 use BOM::Platform::Config;
-use Client::Account;
+use BOM::User::Client;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 
@@ -31,7 +31,7 @@ if (request()->param('created')) {
     $created = lc(request()->param('created'));
 }
 
-my $client = Client::Account::get_instance({
+my $client = BOM::User::Client::get_instance({
     'loginid'    => $loginid,
     db_operation => 'replica'
 });

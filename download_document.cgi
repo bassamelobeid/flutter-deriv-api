@@ -11,7 +11,7 @@ use BOM::Backoffice::PlackHelpers qw/PrintContentType_XSendfile/;
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::Config qw/get_tmp_path_or_die/;
 
-use Client::Account;
+use BOM::User::Client;
 
 use f_brokerincludeall;
 BOM::Backoffice::Sysinit::init();
@@ -50,7 +50,7 @@ if (request()->param('deleteit') eq 'yes') {
     my $msg;
     my $loginid = encode_entities(request()->param('loginid'));
     my $doc_id  = request()->param('doc_id');
-    my $client  = Client::Account::get_instance({loginid => $loginid});
+    my $client  = BOM::User::Client::get_instance({loginid => $loginid});
     if ($client) {
         $client->set_db('write');
         my ($doc) = $client->find_client_authentication_document(query => [id => $doc_id]);    # Rose

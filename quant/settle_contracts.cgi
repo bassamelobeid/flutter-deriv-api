@@ -11,7 +11,7 @@ use HTML::Entities;
 use List::Util qw( first );
 use Try::Tiny;
 
-use Client::Account;
+use BOM::User::Client;
 
 use Cache::RedisDB;
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -72,7 +72,7 @@ if (request()->param('perform_actions')) {
 
             if ($action eq 'cancel') {
                 # For cancelled bets, now adjust their account for the purchase price
-                my $client = Client::Account::get_instance({'loginid' => $bet_info->{loginid}});
+                my $client = BOM::User::Client::get_instance({'loginid' => $bet_info->{loginid}});
                 my $remark = 'Adjustment contract purchase ref ' . $bet_info->{ref};
                 $client->payment_legacy_payment(
                     currency     => $bet_info->{currency},

@@ -4,7 +4,7 @@ package main;
 use strict;
 use warnings;
 
-use Client::Account;
+use BOM::User::Client;
 use HTML::Entities;
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -40,7 +40,7 @@ Bar("UNTRUSTED/DISABLE CLIENT");
 
 LOGIN:
 foreach my $login_id (split(/\s+/, $clientID)) {
-    my $client = Client::Account::get_instance({'loginid' => $login_id});
+    my $client = BOM::User::Client::get_instance({'loginid' => $login_id});
     if (not $client) {
         push @invalid_logins, encode_entities($login_id);
         next LOGIN;

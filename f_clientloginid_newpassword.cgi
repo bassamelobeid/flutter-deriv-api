@@ -6,7 +6,7 @@ use warnings;
 use URL::Encode qw( url_encode );
 use HTML::Entities;
 
-use Client::Account;
+use BOM::User::Client;
 use Brands;
 
 use f_brokerincludeall;
@@ -29,7 +29,7 @@ if (not $loginID) {
     code_exit_BO();
 }
 
-my $client = Client::Account::get_instance({
+my $client = BOM::User::Client::get_instance({
         'loginid'    => uc $loginID,
         db_operation => 'replica'
     }) || die "[f_clientloginid_newpassword cgi] bad client $loginID";

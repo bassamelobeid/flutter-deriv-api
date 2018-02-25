@@ -8,7 +8,7 @@ use Format::Util::Strings qw( defang );
 use Path::Tiny;
 use HTML::Entities;
 
-use Client::Account;
+use BOM::User::Client;
 
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -53,7 +53,7 @@ if ($input->{'dcctype'} ne 'file_content') {
         code_exit_BO();
     }
 
-    $client = Client::Account::get_instance({
+    $client = BOM::User::Client::get_instance({
         'loginid'    => uc($input->{'clientloginid'}),
         db_operation => 'replica'
     });

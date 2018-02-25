@@ -39,7 +39,7 @@ sub Rescind_FreeGifts {
         my $loginID      = $account->{'client_loginid'};
         my $txn_date     = $account->{'transaction_time'};
 
-        my $client = Client::Account->new({loginid => $loginID});
+        my $client = BOM::User::Client->new({loginid => $loginID});
 
         my $bal = $client->default_account->balance;
         if ($creditamount != $bal) {

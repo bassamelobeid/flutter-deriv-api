@@ -123,7 +123,7 @@ read_csv_row_and_callback(
             $action !~ /^(debit|credit)$/ and $error = "Invalid transaction type [$action]", last;
             $amount !~ $curr_regex || $amount == 0 and $error = "Invalid amount [$amount]", last;
             !$statement_comment and $error = 'Statement comment can not be empty', last;
-            $client = eval { Client::Account->new({loginid => $login_id}) } or $error = ($@ || 'No such client'), last;
+            $client = eval { BOM::User::Client->new({loginid => $login_id}) } or $error = ($@ || 'No such client'), last;
             my $signed_amount = $action eq 'debit' ? $amount * -1 : $amount;
 
             unless ($skip_validation) {

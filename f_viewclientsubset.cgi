@@ -9,7 +9,7 @@ use POSIX ();
 use Date::Utility;
 use Path::Tiny;
 use Brands;
-use Client::Account;
+use BOM::User::Client;
 use HTML::Entities;
 use Format::Util::Numbers qw/roundcommon/;
 
@@ -449,7 +449,7 @@ sub RecoverFromClientAccount {
         die "[$0] bad loginID $loginID";
     }
 
-    my $client = Client::Account::get_instance({'loginid' => $loginID})
+    my $client = BOM::User::Client::get_instance({'loginid' => $loginID})
         || die "[$0] RecoverFromClientAccount could not get client for $loginID";
     if (not $client->get_status('disabled')) {
         $result->{'msg'} = "span style='color:red;font-weight:bold;'>ERROR: $loginID ($broker) is not disabled</font>";

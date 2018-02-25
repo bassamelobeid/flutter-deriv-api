@@ -18,7 +18,7 @@ use LandingCompany::Registry;
 
 use f_brokerincludeall;
 
-use Client::Account;
+use BOM::User::Client;
 
 use BOM::Platform::Runtime;
 use BOM::Backoffice::Request qw(request);
@@ -55,7 +55,7 @@ my $self_href       = request()->url_for('backoffice/f_clientloginid_edit.cgi', 
 # let the client-check offer a chance to retry.
 eval { BrokerPresentation("$encoded_loginid CLIENT DETAILS") };    ## no critic (RequireCheckingReturnValueOfEval)
 
-my $client = eval { Client::Account->new({loginid => $loginid}) } || do {
+my $client = eval { BOM::User::Client->new({loginid => $loginid}) } || do {
     my $err = $@;
     print "<p>ERROR: Client [$encoded_loginid] not found.</p>";
     if ($err) {
@@ -565,12 +565,12 @@ my $client_broker = $client->broker;
 my $len = length($number);
 for (1 .. $attempts) {
     $prev_loginid = sprintf "$client_broker%0*d", $len, $number - $_;
-    last if $prev_client = Client::Account->new({loginid => $prev_loginid});
+    last if $prev_client = BOM::User::Client->new({loginid => $prev_loginid});
 }
 
 for (1 .. $attempts) {
     $next_loginid = sprintf "$client_broker%0*d", $len, $number + $_;
-    last if $next_client = Client::Account->new({loginid => $next_loginid});
+    last if $next_client = BOM::User::Client->new({loginid => $next_loginid});
 }
 
 my $encoded_prev_loginid = encode_entities($prev_loginid);

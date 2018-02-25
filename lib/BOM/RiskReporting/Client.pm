@@ -29,7 +29,7 @@ has client => (
 
 sub _build_client {
     my $self = shift;
-    return Client::Account::get_instance({'loginid' => $self->loginid});
+    return BOM::User::Client::get_instance({'loginid' => $self->loginid});
 }
 
 has loginid => (

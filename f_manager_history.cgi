@@ -6,7 +6,7 @@ use warnings;
 use Locale::Country;
 use f_brokerincludeall;
 use HTML::Entities;
-use Client::Account;
+use BOM::User::Client;
 
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -44,7 +44,7 @@ if ($depositswithdrawalsonly eq 'yes') {
     Bar($loginID);
 }
 
-my $client = Client::Account::get_instance({
+my $client = BOM::User::Client::get_instance({
     'loginid'    => $loginID,
     db_operation => 'replica'
 });

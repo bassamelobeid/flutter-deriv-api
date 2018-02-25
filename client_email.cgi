@@ -12,7 +12,7 @@ use f_brokerincludeall;
 use Format::Util::Strings qw( defang );
 use Text::Trim;
 use Date::Utility;
-use Client::Account;
+use BOM::User::Client;
 use BOM::User;
 use BOM::Platform::Runtime;
 use BOM::Backoffice::Request qw(request);
@@ -96,7 +96,7 @@ if ($email ne $new_email) {
 
         foreach my $lid ($user->loginid) {
             next unless $lid->loginid !~ /^MT\d+$/;
-            my $client_obj = Client::Account->new({loginid => $lid->loginid});
+            my $client_obj = BOM::User::Client->new({loginid => $lid->loginid});
             $client_obj->email($new_email);
             $client_obj->save;
         }
