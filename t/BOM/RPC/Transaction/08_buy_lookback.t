@@ -66,8 +66,6 @@ subtest 'buy' => sub {
         "duration"      => "120",
         "duration_unit" => "s",
         "symbol"        => "R_75",
-        "amount_type"   => "payout",
-        "barrier"       => "S20P",
     };
 
     $params->{args}{price} = 7.59 * 0.5;
