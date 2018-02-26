@@ -14,7 +14,7 @@ use HTML::Entities;
 use Format::Util::Strings qw( defang );
 use List::MoreUtils qw(none);
 
-use Client::Account;
+use BOM::User::Client;
 use LandingCompany::Registry;
 use Brands;
 
@@ -393,7 +393,7 @@ sub _login_env {
 sub _get_client {
     my $c = shift;
 
-    my $client = Client::Account->new({
+    my $client = BOM::User::Client->new({
         loginid      => $c->session('_loginid'),
         db_operation => 'replica'
     });
