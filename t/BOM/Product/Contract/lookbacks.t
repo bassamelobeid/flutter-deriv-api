@@ -215,7 +215,48 @@ subtest 'spot_min and spot_max checks' => sub {
     note 'high is 103 and low is 102';
     is $c->spot_min, 102, 'spot_min is 102';
     is $c->spot_max, 103, 'spot_max is 103';
+};
 
+subtest 'lookback expiry conditions' => sub {
+    foreach my $test_case (['LBFLOATCALL', 2], ['LBFLOATPUT', 0], ['LBHIGHLOW', 2]) {
+        note "testing for $test_case->[0]";
+        BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
+        my $now    = Date::Utility->new;
+        my $expiry = $now->plus_time_interval('1m');
+        my $args   = {
+            bet_type     => $test_case->[0],
+            underlying   => 'R_100',
+            date_start   => $now,
+            date_pricing => $expiry->epoch + 1,
+            date_expiry  => $expiry,
+            currency     => 'USD',
+            multiplier   => 1,
+            amount_type  => 'multiplier',
+        };
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                underlying => 'R_100',
+                quote      => $_->[0],
+                epoch      => $_->[1],
+            }) for ([102, $now->epoch + 1], [103, $now->epoch + 2], [104, $now->epoch + 59]);
+        my $c = produce_contract($args);
+        ok $c->is_expired, 'contract is expired';
+        is $c->exit_tick->quote, 104, 'exit tick is present';
+        ok !$c->is_valid_exit_tick, 'not valid exit tick because we are still waiting for the next tick';
+        is $c->value,     0, 'value of contract is zero';
+        is $c->bid_price, 0, 'bid price is zero';
+
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'R_100',
+            quote      => 105,
+            epoch      => $now->epoch + 61,
+        });
+        $c = produce_contract($args);
+        ok $c->is_expired, 'contract is expired';
+        is $c->exit_tick->quote, 104, 'exit tick present';
+        ok $c->is_valid_exit_tick, 'exit tick is valid';
+        is $c->value,              $test_case->[1], 'value is ' . $test_case->[1];
+        is $c->bid_price,          $test_case->[1], 'bid price ' . $test_case->[1];
+    }
 };
 
 done_testing();
