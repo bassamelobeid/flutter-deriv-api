@@ -1012,18 +1012,11 @@ rpc transfer_between_accounts => sub {
         # Although this is hardcoded as BTC, the intention is that any risky transfer should be blocked at weekends.
         # Currently, this implies crypto to fiat or vice versa, and BTC is our most volatile (and popular) crypto
         # currency. If the exchange is updated to something other than forex, this check should start allowing
-        # transfers at weekends again - note that we expect https://trello.com/c/bvhH85GJ/5700-13-tom-centralredisexchangerates
-        # to block exchange when the quotes are too old.
+        # transfers at weekends again.
         if (my $ul = create_underlying('frxBTCUSD')) {
-            # This is protected by an `eval` call since the author is currently in Cambodia and likely to
-            # be making mistakes at this time on a Friday. Technically we should not need it - if we can't
-            # instantiate the trading calendar, we have bigger problems than a stray exception during rare
-            # RPC calls such as account transfer.
             $can_transfer = 1
-                if eval {
-                Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader)
-                    ->is_open_at($ul->exchange, Date::Utility->new);
-                };
+                if Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader)
+                ->is_open_at($ul->exchange, Date::Utility->new);
         }
         return _transfer_between_accounts_error(localize('Account transfers are currently suspended.')) unless $can_transfer;
     }
@@ -1346,7 +1339,7 @@ sub _validate_transfer_between_accounts {
 
     return _transfer_between_accounts_error(
         localize(
-            'Invalid amount. Amount provided can not have more than [_1] decimal places',
+            'Invalid amount. Amount provided can not have more than [_1] decimal places.',
             Format::Util::Numbers::get_precision_config()->{amount}->{$currency})) if ($amount != financialrounding('amount', $currency, $amount));
 
     my $to_currency_type = LandingCompany::Registry::get_currency_type($to_currency);
