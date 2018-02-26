@@ -73,11 +73,8 @@ my $copier_MLT = create_client('MLT', 0, {email => 'copier_mlt@binary.com'});
 my $copier_MF = create_client('MLT', 0, {email => 'copier_mf@binary.com'});
 
 ####################################################################
-# Real tests begin here
+# Tests begin here
 ####################################################################
-
-my $balance;
-my ($trader, $trader_acc, $copier, $trader_acc_mapper, $copier_acc_mapper, $txnid, $fmbid, $balance_after, $buy_price);
 
 ####################################################################
 # Test valid copy-trade pairs
@@ -165,8 +162,10 @@ subtest 'Copy trader without allow_copiers set' => sub {
 
 sub copy_trading_test_routine {
 
-    $trader = shift;
-    $copier = shift;
+    my ($trader, $copier) = @_;
+    my ($trader_acc, $trader_acc_mapper, $copier_acc_mapper, $fmbid);
+    
+    my $opening_balance = 15000;
 
     subtest 'Setup and fund trader' => sub {
 
@@ -180,13 +179,12 @@ sub copy_trading_test_routine {
             'currency_code'  => 'USD',
         });
 
-        $balance = 15000;
-        top_up $trader, 'USD', $balance;
+        top_up $trader, 'USD', $opening_balance;
         top_up $copier, 'USD', 1;
 
         isnt($trader_acc = $trader->find_account(query => [currency_code => 'USD'])->[0], undef, 'got USD account');
 
-        is(int($trader_acc_mapper->get_balance), 15000, 'USD balance is 15000 got: ' . $balance);
+        is(int($trader_acc_mapper->get_balance), 15000, 'USD balance is 15000 got: ' . $opening_balance);
 
         start_copy_trade($trader, $copier);
     };
@@ -199,7 +197,7 @@ sub copy_trading_test_routine {
     subtest 'Fund copier' => sub {
         top_up $copier, 'USD', 14999;
 
-        is(int $copier_acc_mapper->get_balance, 15000, 'USD balance is 15000 got: ' . $balance);
+        is(int $copier_acc_mapper->get_balance, 15000, 'USD balance is 15000 got: ' . $opening_balance);
     };
 
     subtest 'Buy 2nd USD bet' => sub {
