@@ -115,13 +115,16 @@
     </td>
     <td class="all_payment_types bank_money_transfer">
         <select name="bom_bank_info">
-            <option value="RBSI 5880-58269864"      >RBSI 5880-58269864</option>
-            <option value="RBSI 5880-58321386"      >RBSI 5880-58321386</option>
-            <option value="RBSI 5880-58442434"      >RBSI 5880-58442434</option>
-            <option value="WB21 1902057146"         >WB21 1902057146</option>
-            <option value="WB21 1902531831"         >WB21 1902531831</option>
-            <option value="Sparkasse 10000030588040">Sparkasse 10000030588040</option>
-            <option value="NBG 12901091"            >NBG 12901091</option>
+            <option value="RBSI BSL 5880-58511983">RBSI BSL 5880-58511983</option>
+            <option value="NBG BSL EUR 12901168">NBG BSL EUR 12901168</option>
+            <option value="NBG BSL USD 12901169">NBG BSL USD 12901169</option>
+            <option value="NBG BSL GBP 12901170">NBG BSL GBP 12901170</option>
+            <option value="NBG BSL AUD 12901171">NBG BSL AUD 12901171</option>
+            <option value="Sparkasse MLTEUR 10000030590000">Sparkasse MLTEUR 10000030590000</option>
+            <option value="Sparkasse MLTGBP 10000030590080">Sparkasse MLTGBP 10000030590080</option>
+            <option value="Sparkasse MFEUR 10000030593000">Sparkasse MFEUR 10000030593000</option>
+            <option value="Sparkasse MFUSD 10000030593040">Sparkasse MFUSD 10000030593040</option>
+            <option value="Sparkasse MFGBP 10000030593080">Sparkasse MFGBP 10000030593080</option>
         </select>
     </td>
     <td class="all_payment_types "><input type="text" name="payment_processor" insist/></td>
