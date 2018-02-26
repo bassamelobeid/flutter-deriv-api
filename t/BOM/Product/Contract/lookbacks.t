@@ -167,11 +167,55 @@ subtest 'invalid amount_type' => sub {
     $args->{amount_type} = 'unkown';
     try {
         produce_contract($args);
-    } catch {
+    }
+    catch {
         isa_ok $_, 'BOM::Product::Exception';
         is $_->error_code, 'WrongAmountTypeNonBinary', 'correct error code';
         is $_->message_to_client->[0], 'Basis has to be equal to multiplier for non-binary options.';
     };
+};
+
+subtest 'spot_min and spot_max checks' => sub {
+    BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
+    my $now  = Date::Utility->new;
+    my $args = {
+        bet_type     => 'LBFLOATCALL',
+        underlying   => 'R_100',
+        date_start   => $now,
+        date_pricing => $now,
+        duration     => '1h',
+        currency     => 'USD',
+        multiplier   => 1,
+        amount_type  => 'multiplier',
+    };
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        quote      => 101,
+        epoch      => $now->epoch,
+    });
+    my $c = produce_contract($args);
+    note 'high/low are undefined because first tick of the contract is the next tick. Hence using pricing spot as min and max values';
+    is $c->spot_min, 101, 'spot_min is 101';
+    is $c->spot_max, 101, 'spot_max is 101';
+
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'R_100',
+            quote      => $_->[0],
+            epoch      => $_->[1],
+        }) for ([102, $now->epoch + 1], [103, $now->epoch + 2], [104, $now->epoch + 3]);
+
+    $args->{date_pricing} = $now->epoch + 1;
+    $c = produce_contract($args);
+    note 'high/low is 102, which is the next tick';
+    is $c->spot_min, 102, 'spot_min is 102';
+    is $c->spot_max, 102, 'spot_max is 102';
+
+    $args->{date_pricing} = $now->epoch + 2;
+    $c = produce_contract($args);
+    note 'high is 103 and low is 102';
+    is $c->spot_min, 102, 'spot_min is 102';
+    is $c->spot_max, 103, 'spot_max is 103';
+
 };
 
 done_testing();
