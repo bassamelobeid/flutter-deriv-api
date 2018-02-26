@@ -258,25 +258,43 @@ my $copier_MF = create_client('MLT', 0, {email => 'copier_mf@binary.com'});
 my $balance;
 my ($trader, $trader_acc, $copier, $trader_acc_mapper, $copier_acc_mapper, $txnid, $fmbid, $balance_after, $buy_price);
 
-my @test_pairs = (
+####################################################################
+# Test valid copy-trade pairs
+####################################################################
+
+my @valid_test_pairs = (
     [$trader_CR, $copier_CR],
-    [$trader_CR, $copier_VRTC],
-    [$trader_CR, $copier_MLT],
     [$trader_VRTC, $copier_VRTC],
 );
 
-foreach my $pair (@test_pairs){
-    my $test_name = join(' ','Trader:',$pair->[0]->loginid,'Copier:',$pair->[1]->loginid);
+foreach my $pair (@valid_test_pairs){
+    my $test_name = join(' ','Valid Pair | Trader:',$pair->[0]->loginid,'Copier:',$pair->[1]->loginid);
     subtest $test_name => sub {
         copy_trading_test_routine($pair->[0], $pair->[1]);
     };
 }
 
-# All copies should fail on this subtest becase this test suite uses volatility contracts,
-#   which MF broker clients are forbidden to trade.
-subtest 'Illegal copier' => sub {
-    copy_trading_test_routine($trader_CR, $copier_MF, 0);
-};
+####################################################################
+# Test Invalid copy-trade pairs
+####################################################################
+
+my @invalid_test_pairs = (
+    [$trader_CR, $copier_VRTC],
+    [$trader_CR, $copier_MLT],
+    [$trader_CR, $copier_MF],
+    [$trader_VRTC, $copier_CR],
+    [$trader_VRTC, $copier_MLT],
+    [$trader_VRTC, $copier_MF],
+);
+
+foreach my $pair (@valid_test_pairs){
+    my $test_name = join(' ','Invalid Pair | Trader:',$pair->[0]->loginid,'Copier:',$pair->[1]->loginid);
+    my $test_message =  join(' ',$pair->[1]->loginid,'following',$pair->[0]->loginid,'attempt. CopyTradingNotAllowed');
+    subtest $test_name => sub {
+        start_copy_trade_with_error_code($trader_VRTC, $copier_CR, 'CopyTradingNotAllowed', $test_message);
+    };
+}
+
 
 sub copy_trading_test_routine {
 
@@ -353,60 +371,47 @@ sub copy_trading_test_routine {
 };
 
 ####################################################################
-# error checking
+# Test error checking
 ####################################################################
 
-subtest 'Real account follow virtual error 1' => sub {
-    start_copy_trade_with_error_code($trader_VRTC, $copier_CR, 'CopyTradingNotAllowed', 'CR following VRTC attempt. CopyTradingNotAllowed');
-};
-
-subtest 'Real account follow virtual error 2' => sub {
-    start_copy_trade_with_error_code($trader_VRTC, $copier_MLT, 'CopyTradingNotAllowed', 'MLT following VRTC attempt. CopyTradingNotAllowed');
-};
-
 subtest 'Invalid trade type error' => sub {
-    my $wrong_copier = create_client;
-    top_up $wrong_copier, 'USD', 15000;
-
     my $extra_args = {
             trade_types => 'CAL',
     };
-    start_copy_trade_with_error_code($trader, $wrong_copier, 'InvalidTradeType', 'following attempt. InvalidTradeType', $extra_args);
+    start_copy_trade_with_error_code($trader_CR, $copier_CR, 'InvalidTradeType', 'following attempt. InvalidTradeType', $extra_args);
 };
 
 subtest 'Invalid symbol error' => sub {
-    my $wrong_copier = create_client;
-    top_up $wrong_copier, 'USD', 15000;
-
     my $extra_args = {
             trade_types => 'CALL',
             assets      => 'R666'
     };
-    start_copy_trade_with_error_code($trader, $wrong_copier, 'InvalidSymbol', 'following attempt. InvalidSymbol', $extra_args);
+    start_copy_trade_with_error_code($trader_CR, $copier_CR, 'InvalidSymbol', 'following attempt. InvalidSymbol', $extra_args);
 };
 
 subtest 'Invalid token error' => sub {
-    my $wrong_copier = create_client;
-    top_up $wrong_copier, 'USD', 15000;
-
-    start_copy_trade_with_error_code(undef, $wrong_copier, 'InvalidToken', 'following attempt. InvalidToken');
+    start_copy_trade_with_error_code(undef, $copier_CR, 'InvalidToken', 'following attempt. InvalidToken');
 };
 
 subtest 'Copy trading not allowed error' => sub {
-    my $wrong_copier = create_client;
-    top_up $wrong_copier, 'USD', 15000;
-
-    start_copy_trade_with_error_code($wrong_copier, $trader, 'CopyTradingNotAllowed', 'following attempt. CopyTradingNotAllowed');
+    start_copy_trade_with_error_code($copier_CR, $trader_CR, 'CopyTradingNotAllowed', 'following attempt. CopyTradingNotAllowed');
 };
 
 subtest 'Wrong currency error' => sub {
-    my $wrong_copier = create_client('MF');
-    top_up $wrong_copier, 'EUR', 1000;
+    my $EUR_copier = create_client('CR');
+    top_up $EUR_copier, 'EUR', 1000;
 
     my $extra_args = {
             trade_types => 'CALL',
     };
-    start_copy_trade_with_error_code($trader, $wrong_copier, 'CopyTradingWrongCurrency', 'check currency', $extra_args);
+    start_copy_trade_with_error_code($trader_CR, $EUR_copier, 'CopyTradingWrongCurrency', 'check currency', $extra_args);
 };
+
+subtest 'Copy trader without allow_copiers set' => sub {
+    my $unset_trader = create_client('CR');
+
+    start_copy_trade_with_error_code($unset_trader, $copier_CR, 'CopyTradingNotAllowed', 'cannot follow trader without allow_copiers set');
+};
+
 
 done_testing;
