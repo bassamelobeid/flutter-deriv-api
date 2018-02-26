@@ -110,7 +110,7 @@ sub _build_spot_min_max {
     my ($high, $low) = @{
         $self->underlying->get_high_low_for_period({
                 start => $self->date_start->epoch + 1,
-                end   => $self->date_expiry->epoch,
+                end   => $self->effective_start->epoch,
             })}{'high', 'low'};
 
     my $high_low = {
