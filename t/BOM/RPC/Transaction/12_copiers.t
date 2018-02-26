@@ -167,7 +167,6 @@ sub copy_trading_test_routine {
 
     $trader = shift;
     $copier = shift;
-    my $valid_copier = shift || 1;
 
     subtest 'Setup and fund trader' => sub {
 
@@ -204,13 +203,13 @@ sub copy_trading_test_routine {
     };
 
     subtest 'Buy 2nd USD bet' => sub {
-        $fmbid = buy_bet_and_check($trader_acc, $trader_acc_mapper, $copier_acc_mapper, $valid_copier);
+        $fmbid = buy_bet_and_check($trader_acc, $trader_acc_mapper, $copier_acc_mapper, 1);
     };
 
     sleep 1;
 
     subtest 'Sell 2nd USD bet' => sub {
-        sell_bet_and_check ($trader_acc, $trader_acc_mapper, $copier_acc_mapper, $fmbid, $valid_copier);
+        sell_bet_and_check ($trader_acc, $trader_acc_mapper, $copier_acc_mapper, $fmbid, 1);
     };
 
     subtest 'Get trader copiers' => sub {
