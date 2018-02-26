@@ -60,29 +60,6 @@ has factor => (
     lazy_build => 1,
 );
 
-=head2 base_commission
-
-For lookback options, base commission is the static commission
-charged per underlying basis.
-
-=cut
-
-has base_commission => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_base_commission {
-    my $self = shift;
-
-    my $args = {underlying_symbol => $self->underlying->symbol};
-    if ($self->can('landing_company')) {
-        $args->{landing_company} = $self->landing_company;
-    }
-    my $underlying_base = get_underlying_base_commission($args);
-    return $underlying_base;
-}
-
 sub _build_factor {
     my $self          = shift;
     my $currency_type = LandingCompany::Registry::get_currency_type($self->currency);
@@ -151,6 +128,17 @@ sub get_ohlc_for_period {
         end   => $end_epoch
     });
 }
+
+override _build_base_commission => sub {
+    my $self = shift;
+
+    my $args = {underlying_symbol => $self->underlying->symbol};
+    if ($self->can('landing_company')) {
+        $args->{landing_company} = $self->landing_company;
+    }
+    my $underlying_base = get_underlying_base_commission($args);
+    return $underlying_base;
+};
 
 override _build_ask_price => sub {
     my $self = shift;
