@@ -62,7 +62,7 @@ rpc copy_start => sub {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'CopyTradingNotAllowed',
                 message_to_client => localize('Trader and copier must have the same landing company.')});
-                # This is a business decision, not a technical limitation.
+        # This is a business decision, not a technical limitation.
     }
 
     unless ($client->default_account
