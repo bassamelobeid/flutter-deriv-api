@@ -12,12 +12,12 @@ use Pricing::Engine::Digits;
 use BOM::Product::Contract::Strike::Digit;
 use BOM::Product::Pricing::Greeks::Digits;
 
-has selected_tick {
+has 'selected_tick' => (
     is       => 'ro',
     required => 1,
-    }
+);
 
-    sub ticks_to_expiry {
+sub ticks_to_expiry {
     return 5;
 }
 
