@@ -10,21 +10,49 @@ use LandingCompany::Registry;
 
 my $minimum_multiplier_config = LoadFile('/home/git/regentmarkets/bom/config/files/lookback_minimum_multiplier.yml');
 
+=head2 spot_min
+
+The lowest spot price throughout the contract period.
+
+=head2 spot_max
+
+The highest spot price throughout the contract period.
+
+=cut
+
 has [qw(spot_min spot_max)] => (
     is         => 'ro',
     lazy_build => 1,
 );
+
+=head2 multiplier
+
+The number of units.
+
+=cut
 
 has multiplier => (
     is  => 'ro',
     isa => 'Num',
 );
 
+=head2 minimum_multiplier
+
+The minimum allowed unit.
+
+=cut
+
 has minimum_multiplier => (
     is         => 'ro',
     isa        => 'Num',
     lazy_build => 1,
 );
+
+=head2 factor
+
+This is the cryptocurrency factor. Currently set to 0.01.
+
+=cut
 
 has factor => (
     is         => 'ro',
