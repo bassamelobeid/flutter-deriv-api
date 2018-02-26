@@ -405,14 +405,6 @@ sub _validate_input_parameters {
                 message_to_client => [$ERROR_MAPPING->{MultiplierDecimalPlace}],
             };
         }
-
-        my $params = $self->build_parameters;
-        if (defined $params->{amount_type}) {
-            return {
-                message           => 'Amount type is only used for binary options.',
-                message_to_client => [$ERROR_MAPPING->{LookbackBasisUsage}],
-            };
-        }
     }
 
     return;
