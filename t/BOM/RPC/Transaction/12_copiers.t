@@ -178,13 +178,11 @@ sub copy_trading_test_routine {
             'client_loginid' => $copier->loginid,
             'currency_code'  => 'USD',
         });
-
-        top_up $trader, 'USD', $opening_balance;
-        top_up $copier, 'USD', 1;
-
+        
+        top_up_account_and_check($trader, $trader_acc_mapper, 'USD', $opening_balance);
+        top_up_account_and_check($copier, $copier_acc_mapper, 'USD', 1);
+    
         isnt($trader_acc = $trader->find_account(query => [currency_code => 'USD'])->[0], undef, 'got USD account');
-
-        is(int($trader_acc_mapper->get_balance), 15000, 'USD balance is 15000 got: ' . $opening_balance);
 
         start_copy_trade($trader, $copier);
     };
@@ -195,9 +193,7 @@ sub copy_trading_test_routine {
     };
 
     subtest 'Fund copier' => sub {
-        top_up $copier, 'USD', 14999;
-
-        is(int $copier_acc_mapper->get_balance, 15000, 'USD balance is 15000 got: ' . $opening_balance);
+        top_up_account_and_check($copier, $copier_acc_mapper, 'USD', $opening_balance - 1);
     };
 
     subtest 'Buy 2nd USD bet' => sub {
@@ -229,8 +225,8 @@ sub copy_trading_test_routine {
         # Copy should fail because we've unfollowed
 
         # Reset accounts back to zero
-        top_up $trader, 'USD', $trader_acc_mapper->get_balance * (-1);
-        top_up $copier, 'USD', $copier_acc_mapper->get_balance * (-1);
+        top_up_account_and_check($trader, $trader_acc_mapper, 'USD', $trader_acc_mapper->get_balance * (-1));
+        top_up_account_and_check($copier, $copier_acc_mapper, 'USD', $copier_acc_mapper->get_balance * (-1));
     };
 }
 
@@ -411,6 +407,18 @@ sub sell_bet_and_check {
     is(int $balance_after, int $expected_trader_balance, 'correct balance_after');
     is(int $copier_acc_mapper->get_balance, int $expected_copier_balance, "correct copier balance");
     is(int $trader_acc_mapper->get_balance, int $expected_trader_balance, "correct trader balance");
+}
+
+sub top_up_account_and_check {
+    my ($client, $client_acc_mapper, $currency, $amount) = @_;
+    
+    my $previous_balance = $client_acc_mapper->get_balance;
+    my $expected_balance = $previous_balance + $amount;
+    
+    top_up $client, $currency, $amount;
+    
+    my $new_balance = $client_acc_mapper->get_balance;
+    is(int($new_balance), int($expected_balance), $currency.' balance should be '.$expected_balance.' got: ' . $new_balance);
 }
 
 done_testing;
