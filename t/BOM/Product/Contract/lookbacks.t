@@ -3,7 +3,8 @@
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More;
+use Test::FailWarnings;
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -11,6 +12,7 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Format::Util::Numbers qw(roundnear);
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
+use Try::Tiny;
 
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('10-Mar-2015');
@@ -160,3 +162,16 @@ subtest 'lbhighlow' => sub {
     cmp_ok $c->date_pricing->epoch, '>', $c->date_expiry->epoch, 'after expiry';
     ok $c->is_expired, 'expired';
 };
+
+subtest 'invalid amount_type' => sub {
+    $args->{amount_type} = 'unkown';
+    try {
+        produce_contract($args);
+    } catch {
+        isa_ok $_, 'BOM::Product::Exception';
+        is $_->error_code, 'WrongAmountTypeNonBinary', 'correct error code';
+        is $_->message_to_client->[0], 'Basis has to be equal to multiplier for non-binary options.';
+    };
+};
+
+done_testing();
