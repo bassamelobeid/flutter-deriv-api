@@ -935,10 +935,10 @@ rpc set_settings => sub {
         }
     }
 
-    my $invalid_broker_for_allow_copiers = $client->landing_company->short ne 'costarica' && not $client->is_virtual;
     return BOM::RPC::v3::Utility::permission_error()
         if $allow_copiers
-        && ($invalid_broker_for_allow_copiers || $client->get_status('ico_only'));
+        and (($client->landing_company->short ne 'costarica' and not $client->is_virtual)
+        or $client->get_status('ico_only'));
 
     if (
         $allow_copiers
