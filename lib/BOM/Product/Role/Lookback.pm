@@ -141,12 +141,7 @@ sub get_ohlc_for_period {
     my $self = shift;
 
     my $start_epoch = $self->date_start->epoch;
-    my $end_epoch;
-    if ($self->date_pricing->is_after($self->date_expiry)) {
-        $end_epoch = $self->expiry_daily ? $self->date_expiry->truncate_to_day->epoch : $self->date_settlement->epoch;
-    } else {
-        $end_epoch = $self->date_pricing->epoch;
-    }
+    my $end_epoch = $self->date_pricing->is_after($self->date_expiry) ? $self->date_expiry->epoch : $self->date_pricing->epoch;
 
     return $self->underlying->get_high_low_for_period({
         start => $start_epoch + 1,
