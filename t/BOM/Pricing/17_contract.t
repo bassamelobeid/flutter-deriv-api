@@ -94,7 +94,8 @@ subtest 'prepare_ask' => sub {
         'underlying'  => 'R_50',
         'currency'    => 'USD',
         'proposal'    => 1,
-        'date_start'  => 0
+        'date_start'  => 0,
+        'amount_type' => 'multiplier'
     };
 
     cmp_deeply(BOM::Pricing::v3::Contract::prepare_ask($params), $expected, 'prepare_ask result ok');
@@ -266,6 +267,7 @@ subtest 'get_ask' => sub {
             'currency'              => 'USD',
             base_commission         => '0.015',
             'multiplier'            => '100',
+            'amount_type'           => 'multiplier',
             'app_markup_percentage' => 0,
             'proposal'              => 1,
             'date_start'            => ignore(),
