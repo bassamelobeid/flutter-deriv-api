@@ -107,10 +107,13 @@ sub _build_spot_min_max {
     my $self = shift;
 
     # date_start + 1 because the first tick of the contract is the next tick.
+    my $start = $self->date_start->epoch + 1;
+    my $end = max($start, $self->effectve_start->epoch);
+
     my ($high, $low) = @{
         $self->underlying->get_high_low_for_period({
-                start => $self->date_start->epoch + 1,
-                end   => $self->effective_start->epoch,
+                start => $start,
+                end   => $end,
             })}{'high', 'low'};
 
     my $high_low = {
