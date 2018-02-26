@@ -115,6 +115,9 @@ sub cmd_UserPasswordChange {
     $input->{login} eq $DETAILS{login}
         or die "TODO: mock UserUpdate on unknown login\n";
 
+    $input->{type} eq "MTProtocolConsts::WEB_VAL_USER_PASS_MAIN"
+        or die "UserPasswordChange with unexpected password_type\n";
+
     $input->{new_password} eq "Ijkl6789"
         or die "UserPasswordChange with unexpected new_password=$input->{new_password}\n";
 
