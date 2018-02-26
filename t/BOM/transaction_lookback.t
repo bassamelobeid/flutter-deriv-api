@@ -373,6 +373,7 @@ subtest 'buy a bet', sub {
             duration     => '30m',
             current_tick => $tick,
             barrier      => 'S20P',
+            amount_type  => 'multiplier',
         });
 
         my $txn = BOM::Transaction->new({
@@ -380,7 +381,7 @@ subtest 'buy a bet', sub {
             contract      => $contract,
             price         => $contract->ask_price,
             multiplier    => $contract->multiplier,
-            amount_type   => 'unit',
+            amount_type   => 'multiplier',
             source        => 19,
             purchase_date => Date::Utility->new(),
         });
@@ -486,6 +487,7 @@ subtest 'sell a bet', sub {
             bet_type     => 'LBFLOATCALL',
             currency     => 'USD',
             multiplier   => 5,
+            amount_type  => 'multiplier',
             duration     => '30m',
             current_tick => $tick,
             entry_tick   => $tick,
@@ -530,6 +532,7 @@ subtest 'sell_expired_contracts', sub {
             bet_type     => 'LBFLOATCALL',
             currency     => 'USD',
             multiplier   => 5,
+            amount_type  => 'multiplier',
             date_start   => ($now->epoch - 50) - (30 * 60),
             date_expiry  => $now->epoch - 50,
             current_tick => $tick,
@@ -542,8 +545,8 @@ subtest 'sell_expired_contracts', sub {
             client        => $cl,
             contract      => $contract_expired,
             price         => $contract_expired->ask_price,
-            amount_type   => 'unit',
-            unit          => 10,
+            amount_type   => 'multiplier',
+            multiplier    => 10,
             purchase_date => $now->epoch - (30 * 60 + 51),
         });
 
