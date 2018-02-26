@@ -75,7 +75,6 @@ subtest 'lbfloatcall' => sub {
     isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
 
     $args->{duration} = '1d';
-    $args->{barrier}  = 100.030;
     $c                = produce_contract($args);
     isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
 
@@ -86,7 +85,6 @@ subtest 'lbfloatcall' => sub {
     $c = produce_contract($args);
     ok !$c->is_expired, 'expired';
 
-    $args->{barrier}            = 100.050;
     $args->{date_pricing}       = $now->truncate_to_day->plus_time_interval('2d');
     $args->{exit_tick}          = $close_tick;                                       # INJECT OHLC since cannot find it in the test DB.
     $args->{is_valid_exit_tick} = 1;
@@ -109,7 +107,6 @@ subtest 'lbfloatput' => sub {
     isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
 
     $args->{duration} = '1d';
-    $args->{barrier}  = 100.030;
     $c                = produce_contract($args);
     isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
 
@@ -120,7 +117,6 @@ subtest 'lbfloatput' => sub {
     $c = produce_contract($args);
     ok !$c->is_expired, 'expired';
 
-    $args->{barrier}            = 100.050;
     $args->{date_pricing}       = $now->truncate_to_day->plus_time_interval('2d');
     $args->{exit_tick}          = $close_tick;                                       # INJECT OHLC since cannot find it in the test DB.
     $args->{is_valid_exit_tick} = 1;
@@ -143,7 +139,6 @@ subtest 'lbhighlow' => sub {
     isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
 
     $args->{duration} = '1d';
-    $args->{barrier}  = 100.030;
     $c                = produce_contract($args);
     isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
 
@@ -154,7 +149,6 @@ subtest 'lbhighlow' => sub {
     $c = produce_contract($args);
     ok !$c->is_expired, 'expired';
 
-    $args->{barrier}            = 100.050;
     $args->{date_pricing}       = $now->truncate_to_day->plus_time_interval('2d');
     $args->{exit_tick}          = $close_tick;                                       # INJECT OHLC since cannot find it in the test DB.
     $args->{is_valid_exit_tick} = 1;
@@ -239,6 +233,7 @@ subtest 'lookback expiry conditions' => sub {
                 epoch      => $_->[1],
             }) for ([102, $now->epoch + 1], [103, $now->epoch + 2], [104, $now->epoch + 59]);
         my $c = produce_contract($args);
+        ok !$c->is_atm_bet, 'non-ATM contract';
         ok $c->is_expired, 'contract is expired';
         is $c->exit_tick->quote, 104, 'exit tick is present';
         ok !$c->is_valid_exit_tick, 'not valid exit tick because we are still waiting for the next tick';
@@ -257,6 +252,28 @@ subtest 'lookback expiry conditions' => sub {
         is $c->value,              $test_case->[1], 'value is ' . $test_case->[1];
         is $c->bid_price,          $test_case->[1], 'bid price ' . $test_case->[1];
     }
+};
+
+subtest 'throws exception when barrier is passed as input' => sub {
+    my $args   = {
+        bet_type     => 'LBFLOATCALL',
+        underlying   => 'R_100',
+        date_start   => time,
+        duration     => '1m',
+        currency     => 'USD',
+        multiplier   => 1,
+        amount_type  => 'multiplier',
+        barrier => 'S0P',
+    };
+    try {
+        produce_contract($args);
+        fail "barrier is not allowed";
+    }
+    catch {
+        isa_ok $_, 'BOM::Product::Exception';
+        is $_->error_code, 'InvalidBarrierNone', 'correct error code';
+        is $_->message_to_client->[0], 'Barrier is not allowed for this contract.';
+    };
 };
 
 done_testing();
