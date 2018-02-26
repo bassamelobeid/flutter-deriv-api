@@ -8,9 +8,9 @@ sub check_expiry_conditions {
     my $self = shift;
 
     if ($self->exit_tick) {
-        my ($low, $close) = @{$self->get_ohlc_for_period()}{qw(low close)};
-        if (defined $low and defined $close) {
-            my $value = $self->exit_tick->quote - $low;
+        my ($low) = @{$self->get_ohlc_for_period()}{qw(low)};
+        if (defined $low) {
+            my $value = ($self->exit_tick->quote - $low) * $self->multiplier;
             $self->value($value);
         }
     }

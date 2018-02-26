@@ -10,7 +10,7 @@ sub check_expiry_conditions {
     if ($self->exit_tick) {
         my ($high, $low) = @{$self->get_ohlc_for_period()}{qw(high low)};
         if (defined $high and defined $low) {
-            my $value = $high - $low;
+            my $value = ($high - $low) * $self->multiplier;
             $self->value($value);
         }
     }

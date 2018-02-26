@@ -108,7 +108,7 @@ sub _build_spot_min_max {
 
     # date_start + 1 because the first tick of the contract is the next tick.
     my $start = $self->date_start->epoch + 1;
-    my $end = max($start, $self->effectve_start->epoch);
+    my $end = max($start, $self->effective_start->epoch);
 
     my ($high, $low) = @{
         $self->underlying->get_high_low_for_period({
@@ -152,17 +152,6 @@ sub get_ohlc_for_period {
     });
 }
 
-override _build_theo_price => sub {
-    my $self = shift;
-
-    if ($self->is_expired) {
-        my $final_price = $self->value;
-        return $final_price > 0 ? $final_price * $self->multiplier : 0;
-    }
-
-    return $self->pricing_engine->theo_price * $self->multiplier;
-};
-
 override _build_ask_price => sub {
     my $self = shift;
 
@@ -182,11 +171,12 @@ override _build_bid_price => sub {
     my $self = shift;
 
     if ($self->is_expired) {
-        my $bid_price = $self->theo_price;
-        return financialrounding('price', $self->currency, $bid_price);
+        return financialrounding('price', $self->currency, $self->value);
     }
 
-    return financialrounding('price', $self->currency, $self->theo_price * (1 - $self->base_commission));
+    my $theo_price = $self->pricing_engine->theo_price * $self->multiplier;
+
+    return financialrounding('price', $self->currency, $theo_price * (1 - $self->base_commission));
 };
 
 override _validate_price => sub {
