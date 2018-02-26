@@ -871,7 +871,7 @@ rpc set_settings => sub {
         if (not $client->residence and $residence and $residence ne 'jp') {
             if (Brands->new(name => request()->brand)->countries_instance->restricted_country($residence)) {
                 return BOM::RPC::v3::Utility::create_error({
-                        code              => 'invalid residence',
+                        code              => 'InvalidResidence',
                         message_to_client => localize('Sorry, our service is not available for your country of residence.')});
             } else {
                 $client->residence($residence);

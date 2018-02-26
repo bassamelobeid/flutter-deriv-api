@@ -301,7 +301,7 @@ subtest $method => sub {
         $params->{args}->{residence} = 'id';
 
         warnings_like {
-            $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('invalid residence',
+            $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('InvalidResidence',
                 'It should return error if residence does not fit with maltainvest')->error_message_is(
                 'Sorry, our service is not available for your country of residence.',
                 'It should return error if residence does not fit with maltainvest'
