@@ -118,6 +118,34 @@ sub process {
     my $contract_params = $self->_initialize_contract_parameters();
 
     foreach my $c_type (@$c_types) {
+
+        if ($c_type->{category}->is_binary) {
+            # if amount_type and amount are defined, give them priority.
+            if ($contract_params->{amount} and $contract_params->{amount_type}) {
+                if ($contract_params->{amount_type} eq 'payout') {
+                    $contract_params->{payout} = $contract_params->{amount};
+                } elsif ($contract_params->{amount_type} eq 'stake') {
+                    $contract_params->{ask_price} = $contract_params->{amount};
+                } else {
+                    $contract_params->{payout} = 0;    # if we don't know what it is, set payout to zero
+                }
+            }
+
+            # if stake is defined, set it to ask_price.
+            if ($contract_params->{stake}) {
+                $contract_params->{ask_price} = $contract_params->{stake};
+            }
+
+            unless (defined $contract_params->{payout} or defined $contract_params->{ask_price}) {
+                $contract_params->{payout} = 0;        # last safety net
+            }
+
+        } else {
+            if ($contract_params->{amount_type} ne 'multiplier') {
+                BOM::Product::Exception->throw(error_code => 'WrongAmountTypeNonBinary');
+            }
+        }
+
         if (@$barriers) {
             foreach my $barrier (@$barriers) {
                 my $barrier_info = $self->_initialize_barrier($barrier);
@@ -196,33 +224,6 @@ sub _initialize_contract_parameters {
     # hash reference reusef
     delete $pp->{expiry_daily};
     delete $pp->{is_intraday};
-
-    if ($pp->{category}->is_binary) {
-        # if amount_type and amount are defined, give them priority.
-        if ($pp->{amount} and $pp->{amount_type}) {
-            if ($pp->{amount_type} eq 'payout') {
-                $pp->{payout} = $pp->{amount};
-            } elsif ($pp->{amount_type} eq 'stake') {
-                $pp->{ask_price} = $pp->{amount};
-            } else {
-                $pp->{payout} = 0;    # if we don't know what it is, set payout to zero
-            }
-        }
-
-        # if stake is defined, set it to ask_price.
-        if ($pp->{stake}) {
-            $pp->{ask_price} = $pp->{stake};
-        }
-
-        unless (defined $pp->{payout} or defined $pp->{ask_price}) {
-            $pp->{payout} = 0;        # last safety net
-        }
-
-    } else {
-        if ($pp->{amount_type} ne 'multiplier') {
-            BOM::Product::Exception->throw(error_code => 'WrongAmountTypeNonBinary');
-        }
-    }
 
     if (defined $pp->{tick_expiry}) {
         my $interval = 2 * $pp->{tick_count};
