@@ -22,7 +22,7 @@ GetOptions(
 );
 
 my $show_help = $help;
-die <<"EOF" if (not($status || defined $is_on || $message) || $show_help);
+die <<"EOF" if (!($status || defined $is_on || $message) || $show_help);
 usage: $0 OPTIONS
 These options are available:
   -s, --status                   Site status. up or down. up by default
