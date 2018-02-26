@@ -175,10 +175,6 @@ override _validate_price => sub {
     return @err;
 };
 
-sub is_binary {
-    return 0;
-}
-
 sub _build_pricing_engine_name {
     return 'Pricing::Engine::Lookback';
 }
