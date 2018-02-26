@@ -140,6 +140,16 @@ override _build_base_commission => sub {
     return $underlying_base;
 };
 
+# There's no financial rounding here because we should never be exposing this to client.
+# ->theo_price should only be used for internal purposes only.
+override _build_theo_price => sub {
+    my $self = shift;
+
+    # pricing_engine->theo_price gives the price per unit. It is then multiplied with $self->multiplier
+    # to get the theo price of the option.
+    return $self->is_expired ? $self->value : $self->pricing_engine->theo_price * $self->multiplier;
+};
+
 override _build_ask_price => sub {
     my $self = shift;
 
@@ -158,13 +168,9 @@ override _build_ask_price => sub {
 override _build_bid_price => sub {
     my $self = shift;
 
-    if ($self->is_expired) {
-        return financialrounding('price', $self->currency, $self->value);
-    }
+    my $commission_multiplier = $self->is_expired ? 1 : (1 - $self->base_commission);
 
-    my $theo_price = $self->pricing_engine->theo_price * $self->multiplier;
-
-    return financialrounding('price', $self->currency, $theo_price * (1 - $self->base_commission));
+    return financialrounding('price', $self->currency, $self->theo_price * $commission_multiplier);
 };
 
 override _validate_price => sub {
