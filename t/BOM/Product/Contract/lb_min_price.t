@@ -54,6 +54,7 @@ my $bet_params = {
     duration     => '15m',
     currency     => 'USD',
     multiplier   => 1,
+    amount_type  => 'multiplier'
 };
 
 subtest 'minimum lookback price and rounding strategy' => sub {

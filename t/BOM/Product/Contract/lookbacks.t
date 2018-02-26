@@ -56,6 +56,7 @@ my $args = {
     duration     => '1h',
     currency     => 'USD',
     multiplier   => 1,
+    amount_type  => 'multiplier',
 };
 
 subtest 'lbfloatcall' => sub {

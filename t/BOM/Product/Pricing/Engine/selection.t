@@ -63,6 +63,7 @@ subtest 'test everything' => sub {
                 currency     => 'USD',
                 payout       => 100,
                 multiplier   => 1,
+                amount_type  => 'multiplier',
                 %barriers
             });
             next unless exists $expected->{$c->shortcode};
