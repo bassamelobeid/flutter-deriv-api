@@ -36,7 +36,6 @@ my $config = {
         MissingRequiredCurrency     => 'Missing required contract parameters (currency).',
         MissingRequiredMultiplier   => 'Missing required contract parameters (multiplier).',
         MinimumMultiplier           => 'Minimum multiplier of',
-        LookbackBasisUsage          => 'Basis is only used for binary options.',
         MultiplierDecimalPlace      => 'Only 3 decimal places are allowed.',
         AlreadyExpired              => 'This contract has already expired.',
         BarrierNotInRange           => 'Barrier is not an integer in range of [_1] to [_2].',
