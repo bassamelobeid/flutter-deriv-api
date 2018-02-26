@@ -60,14 +60,21 @@ has factor => (
     lazy_build => 1,
 );
 
-has lookback_base_commission => (
+=head2 base_commission
+
+For lookback options, base commission is the static commission
+charged per underlying basis.
+
+=cut
+
+has base_commission => (
     is         => 'ro',
-    isa        => 'Num',
     lazy_build => 1,
 );
 
-sub _build_lookback_base_commission {
+sub _build_base_commission {
     my $self = shift;
+
     my $args = {underlying_symbol => $self->underlying->symbol};
     if ($self->can('landing_company')) {
         $args->{landing_company} = $self->landing_company;
@@ -99,6 +106,7 @@ has [qw(spot_min_max)] => (
 sub _build_spot_min_max {
     my $self = shift;
 
+    # date_start + 1 because the first tick of the contract is the next tick.
     my ($high, $low) = @{
         $self->underlying->get_high_low_for_period({
                 start => $self->date_start->epoch + 1,
@@ -113,9 +121,6 @@ sub _build_spot_min_max {
     return $high_low;
 }
 
-# Notes:
-# The date_start + 1 is because for min and max we use nest tick after
-# date_start.
 sub _build_spot_min {
     my $self = shift;
 
@@ -165,7 +170,7 @@ override _build_ask_price => sub {
 
     my $theo_price = $self->pricing_engine->theo_price;
 
-    my $commission = $theo_price * $self->lookback_base_commission;
+    my $commission = $theo_price * $self->base_commission;
     $commission = max(0.01, $commission);
 
     my $final_price = max(0.50, ($theo_price + $commission));
@@ -183,7 +188,7 @@ override _build_bid_price => sub {
         return financialrounding('price', $self->currency, $bid_price);
     }
 
-    return financialrounding('price', $self->currency, $self->theo_price * (1 - $self->lookback_base_commission));
+    return financialrounding('price', $self->currency, $self->theo_price * (1 - $self->base_commission));
 };
 
 override _validate_price => sub {
