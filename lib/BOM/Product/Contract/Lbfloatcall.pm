@@ -4,8 +4,6 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::Lookback', 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
-sub code { return 'LBFLOATCALL'; }
-
 sub check_expiry_conditions {
     my $self = shift;
 
