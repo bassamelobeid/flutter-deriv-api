@@ -63,7 +63,7 @@ my $client = eval { Client::Account->new({loginid => $loginid}) } || do {
         print "<p>(Support: details in errorlog)</p>";
     }
     code_exit_BO(
-        qq[<form action="$self_post" method="post">
+        qq[<form action="$self_post" method="get">
                 Try Again: <input type="text" name="loginID" value="$encoded_loginid"></input>
               </form>]
     );
@@ -579,7 +579,7 @@ my $encoded_next_loginid = encode_entities($next_loginid);
 if ($prev_client) {
     print qq{
         <div class="flat">
-            <form action="$self_post" method="post">
+            <form action="$self_post" method="get">
                 <input type="hidden" name="loginID" value="$encoded_prev_loginid">
                 <input type="submit" value="Previous Client ($encoded_prev_loginid)">
             </form>
@@ -592,7 +592,7 @@ if ($prev_client) {
 if ($next_client) {
     print qq{
         <div class="flat">
-            <form action="$self_post" method="post">
+            <form action="$self_post" method="get">
                 <input type="hidden" name="loginID" value="$encoded_next_loginid">
                 <input type="submit" value="Next client ($encoded_next_loginid)">
             </form>
@@ -609,20 +609,20 @@ my $impersonate_url = request()->url_for('backoffice/client_impersonate.cgi');
 my $risk_report_url = request()->url_for('backoffice/client_risk_report.cgi');
 print qq{<br/>
     <div class="flat">
-    <form action="$self_post" method="POST">
+    <form action="$self_post" method="get">
         <input type="text" size="15" maxlength="15" name="loginID" value="$encoded_loginid">
     </form>
     </div>
 
     <div class="flat">
-    <form action="$risk_report_url" method="POST">
+    <form action="$risk_report_url" method="get">
     <input type="hidden" name="loginid" value="$encoded_loginid">
     <input type="submit" name="action" value="show risk report">
     </form>
     </div>
 
     <div class="flat">
-    <form action="$statmnt_url" method="POST">
+    <form action="$statmnt_url" method="get">
         <input type="hidden" name="loginID" value="$encoded_loginid">
         <input type="submit" value="View $encoded_loginid Portfolio">
         <input type="hidden" name="broker" value="$encoded_broker">
@@ -630,7 +630,7 @@ print qq{<br/>
     </form>
     </div>
     <div class="flat">
-    <form action="$history_url" method="POST">
+    <form action="$history_url" method="get">
     <input type="hidden" name="loginID" value="$encoded_loginid">
     <input type="submit" value="View $encoded_loginid statement">
     <input type="checkbox" value="yes" name="depositswithdrawalsonly">Deposits and Withdrawals only
@@ -638,7 +638,7 @@ print qq{<br/>
     </div>
 
 <div  style="float: right">
-<form action="$impersonate_url" method="post">
+<form action="$impersonate_url" method="get">
 <input type='hidden' size=30 name="impersonate_loginid" value="$encoded_loginid">
 <input type='hidden' name='broker' value='$encoded_broker'>
 <input type="submit" value="Impersonate"></form>
@@ -763,7 +763,7 @@ my $log_args = {
 my $new_log_href = request()->url_for('backoffice/show_audit_trail.cgi', $log_args);
 print qq{<p>Click for <a href="$new_log_href">history of changes</a> to $encoded_loginid</p>};
 
-print qq[<form action="$self_post" method="POST">
+print qq[<form action="$self_post" method="get">
     <input type="submit" value="Save Client Details">
     <input type="hidden" name="broker" value="$encoded_broker">
     <input type="hidden" name="loginID" value="$encoded_loginid">];
@@ -776,7 +776,7 @@ if (not $client->is_virtual) {
     Bar("Sync Client Authentication Status to Doughflow");
     print qq{
         <p>Click to sync client authentication status to Doughflow: </p>
-        <form action="$self_post" method="post">
+        <form action="$self_post" method="get">
             <input type="hidden" name="whattodo" value="sync_to_DF">
             <input type="hidden" name="broker" value="$encoded_broker">
             <input type="hidden" name="loginID" value="$encoded_loginid">
