@@ -197,24 +197,31 @@ sub _initialize_contract_parameters {
     delete $pp->{expiry_daily};
     delete $pp->{is_intraday};
 
-    # if amount_type and amount are defined, give them priority.
-    if ($pp->{amount} and $pp->{amount_type}) {
-        if ($pp->{amount_type} eq 'payout') {
-            $pp->{payout} = $pp->{amount};
-        } elsif ($pp->{amount_type} eq 'stake') {
-            $pp->{ask_price} = $pp->{amount};
-        } else {
-            $pp->{payout} = 0;    # if we don't know what it is, set payout to zero
+    if ($pp->{category}->is_binary) {
+        # if amount_type and amount are defined, give them priority.
+        if ($pp->{amount} and $pp->{amount_type}) {
+            if ($pp->{amount_type} eq 'payout') {
+                $pp->{payout} = $pp->{amount};
+            } elsif ($pp->{amount_type} eq 'stake') {
+                $pp->{ask_price} = $pp->{amount};
+            } else {
+                $pp->{payout} = 0;    # if we don't know what it is, set payout to zero
+            }
         }
-    }
 
-    # if stake is defined, set it to ask_price.
-    if ($pp->{stake}) {
-        $pp->{ask_price} = $pp->{stake};
-    }
+        # if stake is defined, set it to ask_price.
+        if ($pp->{stake}) {
+            $pp->{ask_price} = $pp->{stake};
+        }
 
-    unless (defined $pp->{payout} or defined $pp->{ask_price}) {
-        $pp->{payout} = 0;        # last safety net
+        unless (defined $pp->{payout} or defined $pp->{ask_price}) {
+            $pp->{payout} = 0;        # last safety net
+        }
+
+    } else {
+        if ($pp->{amount_type} ne 'multiplier') {
+            BOM::Product::Exception->throw(error_code => 'WrongAmountTypeNonBinary');
+        }
     }
 
     if (defined $pp->{tick_expiry}) {

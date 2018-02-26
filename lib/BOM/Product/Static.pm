@@ -106,6 +106,7 @@ my $config = {
         TradingNotAvailable           => 'Trading is not available from [_1] to [_2].',
         TradingSuspendedSpecificHours => 'Trading on forex contracts with duration less than 5 hours is not available from [_1] to [_2]',
         WaitForContractSettlement     => 'Please wait for contract settlement. The final settlement price may differ from the indicative price.',
+        WrongAmountTypeNonBinary      => 'Basis has to be equal to multiplier for non binary options.',
         ZeroAbsoluteBarrier           => 'Absolute barrier cannot be zero.',
         CountrySpecificError          => '[_1] is not allowed for residence of [_2].',
     },
