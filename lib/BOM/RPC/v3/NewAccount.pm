@@ -15,7 +15,7 @@ use BOM::RPC::Registry '-dsl';
 
 use Brands;
 
-use Client::Account;
+use BOM::User::Client;
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::EmailVerification qw(email_verification);
@@ -164,7 +164,7 @@ rpc "verify_email",
         # in next version need to remove else
         if ($loginid) {
             $skip_email = 1 unless (
-                Client::Account->new({
+                BOM::User::Client->new({
                         loginid      => $loginid,
                         db_operation => 'replica'
                     }

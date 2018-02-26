@@ -8,7 +8,7 @@ use Test::MockModule;
 use Test::Exception;
 use Test::Mojo;
 
-use Client::Account;
+use BOM::User::Client;
 
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Account;

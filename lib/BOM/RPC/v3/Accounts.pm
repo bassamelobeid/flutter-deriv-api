@@ -20,7 +20,7 @@ use HTML::Entities qw(encode_entities);
 use List::Util qw(any sum0);
 
 use Brands;
-use Client::Account;
+use BOM::User::Client;
 use LandingCompany::Registry;
 use Format::Util::Numbers qw/formatnumber financialrounding/;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
@@ -98,7 +98,7 @@ rpc "payout_currencies",
     my $token_details = $params->{token_details};
     my $client;
     if ($token_details and exists $token_details->{loginid}) {
-        $client = Client::Account->new({
+        $client = BOM::User::Client->new({
             loginid      => $token_details->{loginid},
             db_operation => 'replica'
         });
@@ -431,7 +431,7 @@ Takes the following (named) parameters:
 
 =over 4
 
-=item * C<params> - A hashref with reference to Client::Account object under the key C<client>
+=item * C<params> - A hashref with reference to BOM::User::Client object under the key C<client>
 
 =back
 
@@ -1051,7 +1051,7 @@ rpc set_settings => sub {
         BOM::RPC::v3::Utility::send_professional_requested_email($cli->loginid, $cli->residence) if ($set_status);
     }
     # update client value after latest changes
-    $client = Client::Account->new({loginid => $client->loginid});
+    $client = BOM::User::Client->new({loginid => $client->loginid});
 
     # only allow current client to set allow_copiers
     if (defined $allow_copiers) {

@@ -53,7 +53,7 @@ is($c->result->{status}, 1, 'set currency ok');
 
 # here I tried $test_client->load directly but failed
 # But recreating the client will work. weird
-my $client = Client::Account->new({loginid => $test_client->loginid});
+my $client = BOM::User::Client->new({loginid => $test_client->loginid});
 
 isnt($client->default_account, undef, 'default account set');
 is($client->default_account->currency_code, 'EUR', 'default account updated');

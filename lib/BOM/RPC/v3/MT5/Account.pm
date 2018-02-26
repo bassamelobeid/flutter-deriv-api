@@ -41,7 +41,7 @@ Takes the following (named) parameters:
 
 =over 4
 
-=item * C<params> hashref that contains a Client::Account object under the key C<client>.
+=item * C<params> hashref that contains a BOM::User::Client object under the key C<client>.
 
 =back
 
@@ -297,7 +297,7 @@ Takes the following (named) parameters as inputs:
 
 =over 4
 
-=item * A Client::Account object under the key C<client>.
+=item * A BOM::User::Client object under the key C<client>.
 
 =item * A hash reference under the key C<args> that contains the MT5 login id 
 under C<login> key.
@@ -409,7 +409,7 @@ Takes the following (named) parameters as inputs:
 
 =over 4
 
-=item * A Client::Account object under the key C<client>.
+=item * A BOM::User::Client object under the key C<client>.
 
 =item * A hash reference under the key C<args> that contains some of the following keys:
 
@@ -511,7 +511,7 @@ Takes the following (named) parameters as inputs:
 
 =over 4
 
-=item * A Client::Account object under the key C<client>.
+=item * A BOM::User::Client object under the key C<client>.
 
 =item * A hash reference under the key C<args> that contains the MT5 login id 
 under C<login> key.
@@ -600,7 +600,7 @@ Takes the following (named) parameters as inputs:
 
 =over 4
 
-=item * A Client::Account object under the key C<client>.
+=item * A BOM::User::Client object under the key C<client>.
 
 =item * A hash reference under the key C<args> that contains:
 
@@ -744,7 +744,7 @@ rpc mt5_deposit => sub {
     # MT5 login or binary loginid not belongs to user
     return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $to_mt5, $fm_loginid]);
 
-    my $fm_client = Client::Account->new({loginid => $fm_loginid});
+    my $fm_client = BOM::User::Client->new({loginid => $fm_loginid});
 
     # only for real money account
     return BOM::RPC::v3::Utility::permission_error() if ($fm_client->is_virtual);
@@ -870,7 +870,7 @@ rpc mt5_withdrawal => sub {
     # MT5 login or binary loginid not belongs to user
     return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $fm_mt5, $to_loginid]);
 
-    my $to_client = Client::Account->new({loginid => $to_loginid});
+    my $to_client = BOM::User::Client->new({loginid => $to_loginid});
 
     # only for real money account
     return BOM::RPC::v3::Utility::permission_error() if ($to_client->is_virtual);

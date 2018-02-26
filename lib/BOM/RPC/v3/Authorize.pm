@@ -7,7 +7,7 @@ use Date::Utility;
 use List::MoreUtils qw(any);
 use Format::Util::Numbers qw/formatnumber/;
 
-use Client::Account;
+use BOM::User::Client;
 use Brands;
 
 use BOM::RPC::Registry '-dsl';
@@ -113,7 +113,7 @@ rpc authorize => sub {
 
     my ($loginid, $scopes) = @{$token_details}{qw/loginid scopes/};
 
-    my $client = Client::Account->new({
+    my $client = BOM::User::Client->new({
         loginid      => $loginid,
         db_operation => 'replica'
     });

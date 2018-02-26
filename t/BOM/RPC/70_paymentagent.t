@@ -12,7 +12,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::Model::AccessToken;
 use BOM::Database::ClientDB;
 
-my $client_mocked = Test::MockModule->new('Client::Account');
+my $client_mocked = Test::MockModule->new('BOM::User::Client');
 $client_mocked->mock('add_note', sub { return 1 });
 
 my $mocked_CurrencyConverter = Test::MockModule->new('Postgres::FeedDB::CurrencyConverter');
@@ -110,7 +110,7 @@ my ($res, $client_db, $pa_client_db, $client_b_balance, $pa_client_b_balance);
 subtest 'paymentagent_withdraw' => sub {
     my $code = 'mocked';
     subtest 'payment agent USD' => sub {
-        $client              = Client::Account->new({loginid => $client->loginid});
+        $client              = BOM::User::Client->new({loginid => $client->loginid});
         $client_b_balance    = $client->default_account->balance;
         $pa_client_b_balance = $pa_client->default_account->balance;
 
@@ -127,9 +127,9 @@ subtest 'paymentagent_withdraw' => sub {
         is $res->{paymentagent_name}, 'Joe', 'Got correct payment agent name';
 
         ## after withdraw, check both balance
-        $client = Client::Account->new({loginid => $client->loginid});
+        $client = BOM::User::Client->new({loginid => $client->loginid});
         ok $client->default_account->balance == $client_b_balance - 100, '- 100';
-        $pa_client = Client::Account->new({loginid => $pa_client->loginid});
+        $pa_client = BOM::User::Client->new({loginid => $pa_client->loginid});
         ok $pa_client->default_account->balance == $pa_client_b_balance + 100, '+ 100';
 
         ## test for failure
@@ -274,7 +274,7 @@ subtest 'paymentagent_withdraw' => sub {
     };
 
     subtest 'paymentagent BTC' => sub {
-        $crypto_client       = Client::Account->new({loginid => $crypto_client->loginid});
+        $crypto_client       = BOM::User::Client->new({loginid => $crypto_client->loginid});
         $client_b_balance    = $crypto_client->default_account->balance;
         $pa_client_b_balance = $crypto_pa_client->default_account->balance;
 
@@ -316,9 +316,9 @@ subtest 'paymentagent_withdraw' => sub {
         diag explain $res unless $res->{status};
         is $res->{status}, 1, 'paymentagent_withdraw ok again';
 
-        $crypto_client = Client::Account->new({loginid => $crypto_client->loginid});
+        $crypto_client = BOM::User::Client->new({loginid => $crypto_client->loginid});
         ok $crypto_client->default_account->balance == $client_b_balance - 0.004, '- 0.004';
-        $crypto_pa_client = Client::Account->new({loginid => $crypto_pa_client->loginid});
+        $crypto_pa_client = BOM::User::Client->new({loginid => $crypto_pa_client->loginid});
         ok $crypto_pa_client->default_account->balance == $pa_client_b_balance + 0.004, '+ 0.004';
     };
 };
@@ -326,8 +326,8 @@ subtest 'paymentagent_withdraw' => sub {
 ## transfer
 subtest 'paymentagent_transfer' => sub {
     subtest 'paymentagent USD' => sub {
-        $pa_client = Client::Account->new({loginid => $pa_client->loginid});
-        $client    = Client::Account->new({loginid => $client->loginid});
+        $pa_client = BOM::User::Client->new({loginid => $pa_client->loginid});
+        $client    = BOM::User::Client->new({loginid => $client->loginid});
         $client_b_balance    = $client->default_account->balance;
         $pa_client_b_balance = $pa_client->default_account->balance;
 
@@ -355,9 +355,9 @@ subtest 'paymentagent_transfer' => sub {
         is $res->{client_to_loginid},   $client->loginid,   'Got correct client to loginid';
 
         ## after withdraw, check both balance
-        $client = Client::Account->new({loginid => $client->loginid});
+        $client = BOM::User::Client->new({loginid => $client->loginid});
         ok $client->default_account->balance == $client_b_balance + 100, '+ 100';
-        $pa_client = Client::Account->new({loginid => $pa_client->loginid});
+        $pa_client = BOM::User::Client->new({loginid => $pa_client->loginid});
         ok $pa_client->default_account->balance == $pa_client_b_balance - 100, '- 100';
 
         ## test for failure
@@ -538,8 +538,8 @@ subtest 'paymentagent_transfer' => sub {
     };
 
     subtest 'paymentagent BTC' => sub {
-        $crypto_pa_client = Client::Account->new({loginid => $crypto_pa_client->loginid});
-        $crypto_client    = Client::Account->new({loginid => $crypto_client->loginid});
+        $crypto_pa_client = BOM::User::Client->new({loginid => $crypto_pa_client->loginid});
+        $crypto_client    = BOM::User::Client->new({loginid => $crypto_client->loginid});
         $client_b_balance = $crypto_client->default_account->balance;
         $pa_client_b_balance = $crypto_pa_client->default_account->balance;
 
@@ -571,9 +571,9 @@ subtest 'paymentagent_transfer' => sub {
         is $res->{client_to_loginid},   $crypto_client->loginid,   'Got correct client to loginid';
 
         ## after withdraw, check both balance
-        $crypto_client = Client::Account->new({loginid => $crypto_client->loginid});
+        $crypto_client = BOM::User::Client->new({loginid => $crypto_client->loginid});
         ok $crypto_client->default_account->balance == $client_b_balance + 0.002, '+ 0.002';
-        $crypto_pa_client = Client::Account->new({loginid => $crypto_pa_client->loginid});
+        $crypto_pa_client = BOM::User::Client->new({loginid => $crypto_pa_client->loginid});
         ok $crypto_pa_client->default_account->balance == $pa_client_b_balance - 0.002, '- 0.002';
     };
 };

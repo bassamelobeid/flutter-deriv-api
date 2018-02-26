@@ -16,10 +16,10 @@ use BOM::RPC::v3::Accounts;
 use BOM::Platform::Password;
 use BOM::Platform::Token;
 use BOM::User;
-use Client::Account;
+use BOM::User::Client;
 
 my ($t, $rpc_ct);
-my $client_mocked = Test::MockModule->new('Client::Account');
+my $client_mocked = Test::MockModule->new('BOM::User::Client');
 my %seen;
 $client_mocked->mock(
     'get_status',
@@ -270,7 +270,7 @@ subtest 'landing_companies_specific' => sub {
 };
 
 subtest 'all status are covered' => sub {
-    my $all_status = Client::Account::client_status_types;
+    my $all_status = BOM::User::Client::client_status_types;
     # Flags to represent state, rather than status for preventing cashier access:
     # * social signup, jp_transaction_detail, duplicate_account, migrated_single_email
     # * document_under_review, document_needs_action - for document_upload state
