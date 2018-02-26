@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 2;
+use Test::More tests => 4;
 use Test::Warnings;
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -23,19 +23,19 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         date   => Date::Utility->new
     });
 my $args = {
-    bet_type     => 'DIGITHIGH',
-    underlying   => 'R_100',
+    bet_type      => 'DIGITHIGH',
+    underlying    => 'R_100',
     selected_tick => 5,
-    date_start   => $now,
-    date_pricing => $now,
-    duration     => '5t',
-    currency     => 'USD',
-    payout       => 10,
+    date_start    => $now,
+    date_pricing  => $now,
+    duration      => '5t',
+    currency      => 'USD',
+    payout        => 10,
 };
 
 my $c = produce_contract($args);
 
-subtest 'digits test it all' => sub {
+subtest 'Test that contract can be created correctly' => sub {
     lives_ok {
         my $c = produce_contract($args);
         is $c->code,            'DIGITHIGH';
@@ -53,12 +53,15 @@ subtest 'digits test it all' => sub {
         is $c->selected_tick,   5;
     }
     'Ensure that contract is produced with the correct parameters';
+};
+
+subtest 'Test that when the selected tick reflects the highest tick, a payout is given' => sub {
 
     my $quote = 100.000;
     for (0 .. 4) {
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
-            quote => $quote,
+            quote      => $quote,
             epoch      => $now->epoch + $_,
         });
         $quote += 0.002;
@@ -78,6 +81,41 @@ subtest 'digits test it all' => sub {
         is $c->exit_tick->quote, 100.01, 'correct exit tick';
         ok $c->is_expired, 'expired';
         cmp_ok $c->value, '==', $c->payout, 'full payout';
+    }
+    'check expiry';
+};
+
+subtest 'Test that when the selected tick reflects the lowest tick, no payout is given' => sub {
+
+    $now                   = Date::Utility->new('11-Mar-2015');
+    $args->{date_start}    = $now;
+    $args->{date_pricing}  = $now;
+    $args->{selected_tick} = 1;
+
+    my $quote = 100.000;
+    for (0 .. 4) {
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'R_100',
+            quote      => $quote,
+            epoch      => $now->epoch + $_,
+        });
+        $quote += 0.002;
+    }
+
+    lives_ok {
+        $args->{date_pricing} = $now->plus_time_interval('4s');
+        my $c = produce_contract({%$args, selected_tick => 1});
+        ok !$c->exit_tick,  'first tick is next tick';
+        ok !$c->is_expired, 'not expired';
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'R_100',
+            epoch      => $now->epoch + 5,
+            quote      => 100.01,
+        });
+        $c = produce_contract({%$args, selected_tick => 1});
+        is $c->exit_tick->quote, 100.01, 'correct exit tick';
+        ok $c->is_expired, 'expired';
+        is $c->value, 0, 'payout is 0 as contract is lost';
     }
     'check expiry';
 };
