@@ -210,11 +210,4 @@ override shortcode => sub {
     return uc join '_', @shortcode_elements;
 };
 
-override allowed_slippage => sub {
-    my $self = shift;
-
-    #We will use same value as binary for now.
-    return 0.01;
-};
-
 1;
