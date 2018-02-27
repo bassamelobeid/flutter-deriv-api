@@ -316,7 +316,7 @@ sub _validate_sell_pricing_adjustment_non_binary {
     my $final_value;
     if ($allowed_move == 0) {
         $final_value = $recomputed_price;
-    } elsif (abs($move) > $allowed_move) {
+    } elsif ($move < -$allowed_move) {
         return $self->_write_to_rejected({
             type              => 'slippage',
             action            => 'sell',
@@ -328,7 +328,7 @@ sub _validate_sell_pricing_adjustment_non_binary {
             $final_value = $requested_price;
             # We absorbed the price difference here and we want to keep it in our book.
             $self->transaction->price_slippage($slippage);
-        } elsif ($move > 0) {
+        } elsif ($move > $allowed_move) {
             $self->transaction->execute_at_better_price(1);
             # We need to keep record of slippage even it is executed at better price
             $self->transaction->price_slippage($slippage);
@@ -451,7 +451,7 @@ sub _validate_trade_pricing_adjustment_non_binary {
 
     if ($allowed_move == 0) {
         $final_value = $recomputed_amount;
-    } elsif (abs($move) > $allowed_move) {
+    } elsif ($move < -$allowed_move) {
         return $self->_write_to_rejected({
             type              => 'slippage',
             action            => 'buy',
@@ -463,7 +463,7 @@ sub _validate_trade_pricing_adjustment_non_binary {
             $final_value = $amount;
             # We absorbed the price difference here and we want to keep it in our book.
             $self->transaction->price_slippage($slippage);
-        } elsif ($move > 0) {
+        } elsif ($move > $allowed_move) {
             $self->transaction->execute_at_better_price(1);
             # We need to keep record of slippage even it is executed at better price
             $self->transaction->price_slippage($slippage);
