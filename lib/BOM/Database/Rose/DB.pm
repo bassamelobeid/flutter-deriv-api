@@ -151,7 +151,13 @@ sub dbi_connect {
         # Please refer to the document of DBIx::Connector .
         $self->{dbic}->mode('fixup');
     }
-    return $self->{dbic}->dbh;
+    my $dbh = $self->{dbic}->dbh;
+
+    if ($ENV{AUDIT_STAFF_NAME} and $ENV{AUDIT_STAFF_IP}) {
+        $dbh->selectall_arrayref('SELECT audit.set_staff(?::TEXT, ?::CIDR)', undef, @ENV{qw/AUDIT_STAFF_NAME AUDIT_STAFF_IP/});
+    }
+
+    return $dbh;
 }
 
 1;
