@@ -45,7 +45,8 @@ my $channel_name = "NOTIFY::broadcast::channel";
 my $state_key    = "NOTIFY::broadcast::state";
 my $is_on_key    = "NOTIFY::broadcast::is_on";     ### TODO: to config
 
-ws_redis_master->on(
+my $redis = ws_redis_master() or die 'no redis connection';
+$redis->on(
     error => sub {
         my ($self, $err) = @_;
         warn "ws write redis error: $err";
@@ -53,15 +54,15 @@ ws_redis_master->on(
 
 if ($status || $message) {
     my $is_on_value = $is_on;
-    print ws_redis_master->set($is_on_key, $is_on_value), "\n" if $is_on_value;
+    print $redis->set($is_on_key, $is_on_value), "\n" if $is_on_value;
 
     my $mess_obj = Encode::encode_utf8(
         encode_json({
                 site_status => $status // "up",
                 message     => $message // ""
             }));
-    print ws_redis_master->set($state_key, $mess_obj), "\n";
+    print $redis->set($state_key, $mess_obj), "\n";
 
-    my $subscribes_count = ws_redis_master->publish($channel_name, $mess_obj);
+    my $subscribes_count = $redis->publish($channel_name, $mess_obj);
     print $subscribes_count . " workers subscribed\n";
 }
