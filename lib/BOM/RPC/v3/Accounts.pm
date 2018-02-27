@@ -881,10 +881,7 @@ rpc set_settings => sub {
                             message_to_client => localize('Sorry, an error occurred while processing your account.')});
                 }
             }
-        } elsif (
-            grep (!/$allowed_fields_for_virtual/, keys %$args)
-            )
-        {
+        } elsif (grep (!/$allowed_fields_for_virtual/, keys %$args)) {
             # we only allow these keys in virtual set settings any other key will result in permission error
             return BOM::RPC::v3::Utility::permission_error();
         }
