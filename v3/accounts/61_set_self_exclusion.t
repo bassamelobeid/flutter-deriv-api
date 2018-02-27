@@ -237,7 +237,8 @@ $res = $t->await::set_self_exclusion({
     timeout_until          => $timeout_until->epoch,
 });
 ok($res->{error});
-is $res->{error}->{code}, 'SelfExclusion', 'Self excluded client cannot call set self exclusion again';
+is $res->{error}->{code}, 'SelfExclusion',
+    "Self-excluded clients are not allowed to change their self-exclusion settings. Error message will be shown upon self-excluded client's attempt to change self-exclusion settings.";
 
 $res = $t->await::get_self_exclusion({get_self_exclusion => 1});
 ok $res->{get_self_exclusion};
