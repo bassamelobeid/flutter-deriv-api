@@ -13,6 +13,7 @@ use Encode;
 use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
 
 use Binary::WebSocketAPI::v3::Instance::Redis 'ws_redis_master';
+use BOM::Platform::Context 'localize';
 
 STDOUT->autoflush(1);
 
@@ -30,13 +31,29 @@ usage: $0 OPTIONS
 These options are available:
   -s, --status                   Site status. up or down. up by default
       --no-send-notifications    Do not send notifications
-  -m, --message                  Message ( in quotes )
+  -m, --message                  Message (in quotes, or a keyword)
   -h, --help                     Show this message.
+
+Message to set can be a keyword from the following: release_due,
+suspended, unstable, feed_issues, mt5_issues, cashier_issues.  This will
+use a preset localized message for the chosen keyword to use for the
+site status message.  If the keyword is unrecognized, the keyword will
+be used directly in the site status message.
 EOF
 
 if (!$status || $status ne 'up' && $status ne 'down') {
     $status = 'up';
 }
+
+my %status_message = (
+    release_due    => localize('Heads-up: We are releasing something...'),
+    suspended      => localize('System is suspended until further notice.'),
+    feed_issues    => localize('Something is wrong with the feed'),
+    mt5_issues     => localize('Something is wrong with MT5'),
+    cashier_issues => localize('Something is wrong with the cashier'),
+    unstable       => localize('System is experiencing high load'),
+);
+$message = $status_message{$message} || $message if $message;
 
 my $channel_name = "NOTIFY::broadcast::channel";
 my $state_key    = "NOTIFY::broadcast::state";
