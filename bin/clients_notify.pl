@@ -6,9 +6,9 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 # load this file to force Mojo::JSON to use JSON::MaybeXS
 use Mojo::JSON::MaybeXS;
+use Mojo::JSON 'encode_json';
 use YAML::XS;
 use Mojo::Redis2;
-use JSON::MaybeXS;
 use Encode;
 use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
 
@@ -61,7 +61,7 @@ if ($status || $message) {
     print $ws_redis_master->set($is_on_key, $is_on_value), "\n" if $is_on_value;
 
     my $mess_obj = Encode::encode_utf8(
-        JSON::MaybeXS->new->encode({
+        encode_json({
                 site_status => $status // "up",
                 message     => $message // ""
             }));
