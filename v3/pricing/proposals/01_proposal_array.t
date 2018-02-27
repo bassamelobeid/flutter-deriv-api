@@ -216,11 +216,12 @@ SKIP: {
         $proposal_array_req_tpl->{amount}        = 1000;
         $proposal_array_req_tpl->{barriers}      = [{barrier => 111}];
         $proposal_array_req_tpl->{contract_type} = ['CALLE'];
-        $proposal_array_req_tpl->{product_type} = 'multi_barrier';
-        $response = $t->await::proposal_array($proposal_array_req_tpl);
+        $proposal_array_req_tpl->{product_type}  = 'multi_barrier';
+        $response                                = $t->await::proposal_array($proposal_array_req_tpl);
         test_schema('proposal_array', $response);
 
-        is $response->{proposal_array}{proposals}{CALLE}[0]{error}{message}, 'Invalid expiry time.',  "ContractBuyValidationError : Invalid expiry time";
+        is $response->{proposal_array}{proposals}{CALLE}[0]{error}{message}, 'Invalid expiry time.',
+            "ContractBuyValidationError : Invalid expiry time";
 
         $proposal_array_req_tpl->{barriers} = [{barrier => 111}];
 # Here we reset the amount back to 100 to ensure we get the minimum stake error for the next test.
