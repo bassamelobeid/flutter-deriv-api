@@ -8,7 +8,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 
-use Client::Account;
+use BOM::User::Client;
 
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -20,7 +20,7 @@ use await;
 
 ## do not send email
 use Test::MockModule;
-my $client_mocked = Test::MockModule->new('Client::Account');
+my $client_mocked = Test::MockModule->new('BOM::User::Client');
 $client_mocked->mock('add_note', sub { return 1 });
 
 my $t = build_wsapi_test();
@@ -232,7 +232,7 @@ is $res->{error}->{code}, 'ClientSelfExclusion';
 ok $res->{error}->{message} =~ /you have excluded yourself until/;
 
 ## try read from db
-my $client = Client::Account->new({loginid => $test_client->loginid});
+my $client = BOM::User::Client->new({loginid => $test_client->loginid});
 my $self_excl = $client->get_self_exclusion;
 is $self_excl->max_balance, 9998, 'set correct in db';
 is $self_excl->exclude_until, $exclude_until . 'T00:00:00', 'exclude_until in db is right';

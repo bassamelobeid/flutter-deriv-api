@@ -13,13 +13,13 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::Password;
 use BOM::User;
-use Client::Account;
+use BOM::User::Client;
 
 use await;
 
 ## do not send email
 use Test::MockModule;
-my $client_mocked = Test::MockModule->new('Client::Account');
+my $client_mocked = Test::MockModule->new('BOM::User::Client');
 $client_mocked->mock('add_note', sub { return 1 });
 
 my $t = build_wsapi_test({language => 'EN'});
@@ -81,7 +81,7 @@ $res = $t->await::cashier_password({
         lock_password    => rand()});
 ok $res->{error}->{message} =~ /Your cashier was locked/, 'Your cashier was locked';
 
-$client_cr = Client::Account->new({loginid => $client_cr->loginid});
+$client_cr = BOM::User::Client->new({loginid => $client_cr->loginid});
 ok length $client_cr->cashier_setting_password, 'cashier_setting_password is set';
 
 # unlock
@@ -102,7 +102,7 @@ $res = $t->await::cashier_password({cashier_password => 1});
 ok $res->{cashier_password} == 0, 'password was clear';
 test_schema('cashier_password', $res);
 
-$client_cr = Client::Account->new({loginid => $client_cr->loginid});
+$client_cr = BOM::User::Client->new({loginid => $client_cr->loginid});
 ok(length($client_cr->cashier_setting_password) == 0, 'cashier_setting_password is clear');
 
 $res = $t->await::cashier_password({

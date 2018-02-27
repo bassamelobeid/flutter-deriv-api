@@ -13,7 +13,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::Password;
 use BOM::User;
-use Client::Account;
+use BOM::User::Client;
 
 use await;
 

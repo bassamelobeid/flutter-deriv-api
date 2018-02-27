@@ -14,7 +14,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::Password;
 use BOM::User;
-use Client::Account;
+use BOM::User::Client;
 use BOM::Database::Model::OAuth;
 use Test::Deep;
 use Test::Warnings qw(warnings);
