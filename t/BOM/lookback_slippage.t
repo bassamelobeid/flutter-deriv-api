@@ -369,19 +369,19 @@ subtest 'test slippage', sub {
             underlying   => $underlying_R50,
             bet_type     => 'LBFLOATCALL',
             currency     => 'USD',
-            multiplier   => 5.0,
+            multiplier   => 100,
             duration     => '30m',
             current_tick => $tick,
             barrier      => 'S0P',
             amount_type  => 'multiplier',
         });
 
-#Case 1 , recomputed price 2.5 requested price 2.51
-
+#Case 1 , recomputed price 50 requested price 50.01
+warn ">>> " . $contract->ask_price;
         my $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
-            price         => 2.51,
+            price         => 50.01,
             multiplier    => $contract->multiplier,
             amount_type   => 'multiplier',
             source        => 19,
@@ -395,19 +395,19 @@ subtest 'test slippage', sub {
 
         subtest 'case 2 fmb row', sub {
             plan tests => 1;
-            is $fmb->{buy_price} + 0, 2.51, 'buy_price';
+            is $fmb->{buy_price} + 0, 50.01, 'buy_price';
         };
 
         subtest 'case 2 qv row', sub {
             plan tests => 1;
-            is $qv1->{trade} + 0, 2.51, 'trade';
+            is $qv1->{trade} + 0, 50.01, 'trade';
         };
 
-#Case 2 , recomputed price 2.5 requested price 2.49
+#Case 2 , recomputed price 50 requested price 49.99
        $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
-            price         => 2.49,
+            price         => 49.99,
             multiplier    => $contract->multiplier,
             amount_type   => 'multiplier',
             source        => 19,
@@ -421,19 +421,19 @@ subtest 'test slippage', sub {
         
         subtest 'case 2 fmb row', sub {
             plan tests => 1;
-            is $fmb->{buy_price} + 0, 2.49, 'buy_price';
+            is $fmb->{buy_price} + 0, 49.99, 'buy_price';
         };
 
         subtest 'case 2 qv row', sub {
             plan tests => 1;
-            is $qv1->{trade} + 0, 2.49, 'trade';
+            is $qv1->{trade} + 0, 49.99, 'trade';
         };
 
-#Case 3 , recomputed price 2.5 requested price 5.0
+#Case 3 , recomputed price 50 requested price 60
        $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
-            price         => 5.00,
+            price         => 60.00,
             multiplier    => $contract->multiplier,
             amount_type   => 'multiplier',
             source        => 19,
@@ -447,19 +447,19 @@ subtest 'test slippage', sub {
 
         subtest 'case 3 fmb row', sub {
             plan tests => 1;
-            is $fmb->{buy_price} + 0, 2.50, 'buy_price';
+            is $fmb->{buy_price} + 0, 50.00, 'buy_price';
         };
 
         subtest 'case 3 qv row', sub {
             plan tests => 1;
-            is $qv1->{trade} + 0, 2.50, 'trade';
+            is $qv1->{trade} + 0, 50.00, 'trade';
         };
 
-#Case 4 , recomputed price 2.5 requested price 1.0
+#Case 4 , recomputed price 50 requested price 40
        $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
-            price         => 1.00,
+            price         => 40.00,
             multiplier    => $contract->multiplier,
             amount_type   => 'multiplier',
             source        => 19,

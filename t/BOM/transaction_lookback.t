@@ -383,7 +383,7 @@ subtest 'buy a bet', sub {
             multiplier    => $contract->multiplier,
             amount_type   => 'multiplier',
             source        => 19,
-            purchase_date => Date::Utility->new(),
+            purchase_date => $contract->date_start,
         });
 
         my $error = $txn->buy;
