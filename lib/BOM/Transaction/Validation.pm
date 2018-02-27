@@ -349,7 +349,7 @@ sub _slippage {
     my ($self, $p) = @_;
 
     my $what_changed = $p->{action} eq 'sell' ? 'sell price' : undef;
-    $what_changed //= $self->transaction->amount_type eq 'payout' ? 'price' : 'payout';
+    $what_changed //= ($self->transaction->amount_type eq 'payout' or $self->transaction->amount_type eq 'multiplier') ? 'price' : 'payout';
     my ($market_moved, $contract) =
         (localize('The underlying market has moved too much since you priced the contract. '), $self->transaction->contract);
     my $currency = $contract->currency;
