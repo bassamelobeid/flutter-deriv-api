@@ -16,26 +16,23 @@ use Binary::WebSocketAPI::v3::Instance::Redis 'ws_redis_master';
 
 STDOUT->autoflush(1);
 
+my $send_notification = 1;
 GetOptions(
-    's|status=s'           => \my $status,
-    'o|notifications-on=i' => \my $is_on,
-    'm|message=s'          => \my $message,
-    'h|help'               => \my $help,
+    's|status=s'          => \my $status,
+    'send-notifications!' => \$send_notification,
+    'm|message=s'         => \my $message,
+    'h|help'              => \my $help,
 );
 
 my $show_help = $help;
-die <<"EOF" if (!($status || defined $is_on || $message) || $show_help);
+die <<"EOF" if (!($status || $message) || $show_help);
 usage: $0 OPTIONS
 These options are available:
   -s, --status                   Site status. up or down. up by default
-  -o, --notifications-on         Notifications turn on/off ( 1 or 0 ). 1 by default
+      --no-send-notifications    Do not send notifications
   -m, --message                  Message ( in quotes )
   -h, --help                     Show this message.
 EOF
-
-if (!$is_on || $is_on != 0 && $is_on != 1) {
-    $is_on = 1;
-}
 
 if (!$status || $status ne 'up' && $status ne 'down') {
     $status = 'up';
@@ -53,8 +50,7 @@ $redis->on(
     });
 
 if ($status || $message) {
-    my $is_on_value = $is_on;
-    print $redis->set($is_on_key, $is_on_value), "\n" if $is_on_value;
+    print $redis->set($is_on_key, $send_notification), "\n";
 
     my $mess_obj = Encode::encode_utf8(
         encode_json({
