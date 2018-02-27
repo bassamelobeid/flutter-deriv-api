@@ -98,7 +98,7 @@ sub email_verification {
         },
         mt5_password_reset => sub {
             return {
-                subject => localize('[_1] New Password Request', $website_name),
+                subject => localize('[_1] New MT5 Password Request', $website_name),
                 message => $verification_uri
                 ? localize(
                     '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Before we can help you change your MT5 password, please help us to verify your identity by clicking the link below:</p><p><a href="[_1]">[_1]</a></p><p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
