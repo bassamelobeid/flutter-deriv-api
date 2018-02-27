@@ -54,7 +54,7 @@ my $client_email = $client->email;
 
 Bar("$loginID ($client_email) Portfolio");
 
-print "<form style=\"float:left\" action=\"" . request()->url_for('backoffice/f_clientloginid_edit.cgi') . "\" METHOD=POST>";
+print "<form style=\"float:left\" action=\"" . request()->url_for('backoffice/f_clientloginid_edit.cgi') . "\" METHOD=get>";
 print "<input type=hidden name=broker value=$encoded_broker>";
 print "<input type=hidden name=loginID value=\"$encoded_loginID\">";
 print "<INPUT type=\"submit\" value=\"EDIT $encoded_loginID DETAILS\">";

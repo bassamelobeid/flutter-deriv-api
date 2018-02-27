@@ -1,10 +1,10 @@
-<form action="[% clientedit_url %]" method=post>
+<form action="[% clientedit_url %]" method=get>
 <input type=hidden name=broker value="[% broker %]">
 <input type=hidden name=loginID value="[% loginid %]">
 <input type=submit value="View/edit [% loginid %] details">
 </form>
 
-<form  action="[% self_post %]" method=post>
+<form  action="[% self_post %]" method=get>
 [% INCLUDE 'backoffice/account/statement_summary.html.tt' %]
 <table width=100%>
 <tr><td align=left> Client deposits for the lifetime of the account: [% deposits_to_date %] [% currency %] </td></tr>
