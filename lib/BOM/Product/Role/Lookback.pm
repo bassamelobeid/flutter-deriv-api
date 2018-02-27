@@ -83,15 +83,7 @@ has [qw(spot_min_max)] => (
 sub _build_spot_min_max {
     my $self = shift;
 
-    # date_start + 1 because the first tick of the contract is the next tick.
-    my $start = $self->date_start->epoch + 1;
-    my $end = max($start, $self->effective_start->epoch);
-
-    my ($high, $low) = @{
-        $self->underlying->get_high_low_for_period({
-                start => $start,
-                end   => $end,
-            })}{'high', 'low'};
+    my ($high, $low) = @{$self->get_ohlc_for_period}{'high', 'low'};
 
     my $high_low = {
         high => $high // $self->pricing_spot,
@@ -120,11 +112,13 @@ sub _build_priced_with_intraday_model {
 sub get_ohlc_for_period {
     my $self = shift;
 
-    my $start_epoch = $self->date_start->epoch;
+    # date_start + 1 because the first tick of the contract is the next tick.
+    my $start_epoch = $self->date_start->epoch + 1;
     my $end_epoch = $self->date_pricing->is_after($self->date_expiry) ? $self->date_expiry->epoch : $self->date_pricing->epoch;
+    $end_epoch = max($start_epoch, $end_epoch);
 
     return $self->underlying->get_high_low_for_period({
-        start => $start_epoch + 1,
+        start => $start_epoch,
         end   => $end_epoch
     });
 }
