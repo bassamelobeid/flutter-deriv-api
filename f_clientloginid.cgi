@@ -42,7 +42,7 @@ print '<table border=0 width=100% cellpadding=4><tr><td>';
 # client details
 print '<form action="'
     . request()->url_for('backoffice/f_clientloginid_edit.cgi')
-    . '" method=post>'
+    . '" method=get>'
     . '<font size=2>'
     . '<input type=hidden name=broker value='
     . $encoded_broker . '>'
@@ -60,12 +60,12 @@ print '<tr><td>&nbsp;</td><td>' . '&nbsp;&nbsp;<input type="submit" value="EDIT 
 print '</td></tr></table>';
 
 Bar("VIEW/EDIT CLIENT'S Email");
-print '<form action="' . request()->url_for('backoffice/client_email.cgi') . '" method="post">' . '<b>Client\'s Email : </b>';
+print '<form action="' . request()->url_for('backoffice/client_email.cgi') . '" method="get">' . '<b>Client\'s Email : </b>';
 print '<input type=text size=30 name="email">';
 print '&nbsp;&nbsp;<input type="submit" value="View / Edit"></b>' . '</form>';
 
 Bar("IMPERSONATE CLIENT");
-print '<form action="' . request()->url_for('backoffice/client_impersonate.cgi') . '" method="post">';
+print '<form action="' . request()->url_for('backoffice/client_impersonate.cgi') . '" method="get">';
 print '<b>Enter client loginid: </b>';
 print '<input type=text size=30 name="impersonate_loginid"><br>';
 print "<input type='hidden' name='broker' value='$encoded_broker'>";
@@ -79,7 +79,7 @@ print
     "To update client details we require 2 staff members to authorise. One staff member needs to generate a 'Dual Control Code' that is then used by the other staff member when updating the details.<br><br>";
 print "<form id='clientdetailsDCC' action='"
     . request()->url_for('backoffice/f_makeclientdcc.cgi')
-    . "' method='post' class='bo_ajax_form'>"
+    . "' method='get' class='bo_ajax_form'>"
     . "<input type='hidden' name='broker' value='$encoded_broker'>"
     . "<input type='hidden' name='l' value='EN'>"
     . " Type of transaction: <select name='transtype'>"
@@ -177,7 +177,7 @@ print "<br /><br /><table border=\"1\" cellpadding=\"3\">" . "<tr>"
 print '<hr><b>To view all disabled accounts and their a/c details</b><br />'
     . "<form action=\""
     . request()->url_for('backoffice/f_viewclientsubset.cgi')
-    . "\" method=\"post\">"
+    . "\" method=\"get\">"
     . "<input type=\"hidden\" name=\"broker\" value=\"$encoded_broker\">"
     . "<input type=\"hidden\" name=\"show\" value=\"disabled\">"
     . '<br /><input type="checkbox" value="1" checked name="onlylarge"> Only those with more than $5 equity';
@@ -197,7 +197,7 @@ print "Kindly select status to monitor clients on.";
 
 print "<br /><br /><form action=\""
     . request()->url_for('backoffice/f_viewclientsubset.cgi')
-    . "\" method=post>"
+    . "\" method=get>"
     . "<input type=hidden name=broker value=$encoded_broker>"
     . "Select list : <select name=show>"
     . "<option value='age_verification'>Age Verified</option>"
@@ -214,7 +214,7 @@ print "<br /><br /><form action=\""
 Bar('Client complete audit log');
 print 'View client sequential combined activity<br/><br/>';
 
-print "<form action=\"" . request()->url_for('backoffice/f_client_combined_audit.cgi') . "\" method=post>";
+print "<form action=\"" . request()->url_for('backoffice/f_client_combined_audit.cgi') . "\" method=get>";
 print qq~
     <table>
         <tr>
@@ -239,7 +239,7 @@ print "<input type=\"submit\" value=\"Submit\">";
 print "</form>";
 
 Bar('Client Desk.com cases');
-print "<form action=\"" . request()->url_for('backoffice/f_client_deskcom.cgi') . "\" method=post>";
+print "<form action=\"" . request()->url_for('backoffice/f_client_deskcom.cgi') . "\" method=get>";
 print qq~
     <table>
         <tr>
