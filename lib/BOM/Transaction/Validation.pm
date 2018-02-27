@@ -324,7 +324,7 @@ sub _validate_trade_pricing_adjustment {
     }
 
     # adjust the value here
-    if ($amount_type eq 'payout' and $amount_type eq 'multiplier') {
+    if ($amount_type eq 'payout' or $amount_type eq 'multiplier') {
         $self->transaction->price($final_value);
     } else {
         $self->transaction->payout($final_value);
