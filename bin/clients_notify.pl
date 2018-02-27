@@ -12,6 +12,8 @@ use Mojo::Redis2;
 use Encode;
 use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
 
+use Binary::WebSocketAPI::v3::Instance::Redis 'ws_redis_master';
+
 STDOUT->autoflush(1);
 
 GetOptions(
@@ -43,14 +45,7 @@ my $channel_name = "NOTIFY::broadcast::channel";
 my $state_key    = "NOTIFY::broadcast::state";
 my $is_on_key    = "NOTIFY::broadcast::is_on";     ### TODO: to config
 
-my $ws_redis_master_config = YAML::XS::LoadFile('/etc/rmg/ws-redis.yml')->{write};
-my $ws_redis_master_url    = do {
-    my ($host, $port, $password) = @{$ws_redis_master_config}{qw/host port password/};
-    "redis://" . (defined $password ? "dummy:$password\@" : "") . "$host:$port";
-};
-
-my $ws_redis_master = Mojo::Redis2->new(url => $ws_redis_master_url);
-$ws_redis_master->on(
+ws_redis_master->on(
     error => sub {
         my ($self, $err) = @_;
         warn "ws write redis error: $err";
@@ -58,15 +53,15 @@ $ws_redis_master->on(
 
 if ($status || $message) {
     my $is_on_value = $is_on;
-    print $ws_redis_master->set($is_on_key, $is_on_value), "\n" if $is_on_value;
+    print ws_redis_master->set($is_on_key, $is_on_value), "\n" if $is_on_value;
 
     my $mess_obj = Encode::encode_utf8(
         encode_json({
                 site_status => $status // "up",
                 message     => $message // ""
             }));
-    print $ws_redis_master->set($state_key, $mess_obj), "\n";
+    print ws_redis_master->set($state_key, $mess_obj), "\n";
 
-    my $subscribes_count = $ws_redis_master->publish($channel_name, $mess_obj);
+    my $subscribes_count = ws_redis_master->publish($channel_name, $mess_obj);
     print $subscribes_count . " workers subscribed\n";
 }
