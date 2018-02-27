@@ -26,7 +26,7 @@
           "description":"Proposed payout or stake value"
         },
         "basis": {
-          "description":"Indicates whether amount is 'payout' or 'stake', and 'multiplier' for lookbacks.",
+          "description":"Indicates whether amount is 'payout' or 'stake' for binary options, and 'multiplier' for lookbacks.",
           "enum": ["payout", "stake", "multiplier"]
         },
         "contract_type": {
