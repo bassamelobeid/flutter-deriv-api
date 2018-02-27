@@ -73,7 +73,7 @@ sub _build_symbols_to_update {
             contract_category => 'ANY',
         );
         # forcing it here since we don't have offerings for the index.
-        push @symbols_to_update, qw(FTSE IXIC DJI OTC_IBEX35 OTC_SX5E);
+        push @symbols_to_update, qw(FTSE DJI OTC_IBEX35 OTC_SX5E);
 
     }
 
