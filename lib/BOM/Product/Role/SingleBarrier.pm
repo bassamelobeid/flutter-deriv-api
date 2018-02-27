@@ -46,6 +46,10 @@ sub _validate_barrier {
     my ($barrier, $pip_move) = $self->barrier ? ($self->barrier, $self->barrier->pip_difference) : ();
     my $current_spot = $self->current_spot;
 
+    # Barriers for lookback are not user-defined barriers, hence these validations do not make sense.
+    # Skipping it here.
+    return if $self->category->code eq 'lookback';
+
     return ($barrier->all_errors)[0] if defined $barrier and not $barrier->confirm_validity;
 
     my ($min_move, $max_move) = (0.25, 2.5);
