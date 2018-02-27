@@ -69,7 +69,7 @@ subtest 'CR - USD' => sub {
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
     # Load limits for CR, which is in USD
-    my $limits = LoadFile(File::ShareDir::dist_file('Client-Account', 'payment_limits.yml'))->{withdrawal_limits}->{costarica};
+    my $limits = LoadFile('/home/git/regentmarkets/bom-user/config/payment_limits.yml')->{withdrawal_limits}->{costarica};
 
     # Test for expected errors, such as invalid tokens
     subtest 'expected errors' => sub {
