@@ -87,10 +87,6 @@ sub _build_barriers_for_pricing {
 sub _validate_barrier {
     my $self = shift;
 
-    # Barriers for lookback are not user-defined barriers, hence these validations do not make sense.
-    # Skipping it here.
-    return if $self->category->code eq 'lookback';
-
     my $high_barrier = $self->high_barrier;
     my $low_barrier  = $self->low_barrier;
     my $current_spot = $self->current_spot;
