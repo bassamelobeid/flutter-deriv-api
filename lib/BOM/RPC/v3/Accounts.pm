@@ -49,7 +49,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
 use BOM::Platform::Runtime;
 
-use constant CHANGEABLE_FIELDS_FOR_VIRTUAL => qr(passthrough|set_settings|email_consent|residence|allow_copiers);
+my $allowed_fields_for_virtual = qr/(passthrough|set_settings|email_consent|residence|allow_copiers)/;
 
 my $json = JSON::MaybeXS->new;
 
@@ -882,9 +882,7 @@ rpc set_settings => sub {
                 }
             }
         } elsif (
-            grep {
-                $_ !~ CHANGEABLE_FIELDS_FOR_VIRTUAL
-            } keys %$args
+            grep (!/$allowed_fields_for_virtual/, keys %$args)
             )
         {
             # we only allow these keys in virtual set settings any other key will result in permission error
