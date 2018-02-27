@@ -213,19 +213,6 @@ sub _validate_sell_pricing_adjustment {
     my $self = shift;
 
     my $contract = $self->transaction->contract;
-    if ($contract->is_binary) {
-
-        return $self->_validate_sell_pricing_adjustment_binary;
-    } else {
-
-        return $self->_validate_sell_pricing_adjustment_non_binary;
-    }
-}
-
-sub _validate_sell_pricing_adjustment_binary {
-    my $self = shift;
-
-    my $contract = $self->transaction->contract;
 
     if (not defined $self->transaction->price) {
         $self->transaction->price($contract->bid_price);
@@ -240,13 +227,13 @@ sub _validate_sell_pricing_adjustment_binary {
         );
     }
 
-    my $requested = $self->transaction->price / $self->transaction->payout;
+    my $requested = $contract->is_binary ? $self->transaction->price / $self->transaction->payout : $self->transaction->price;
     my ($amount, $recomputed_amount) = ($self->transaction->price, $contract->bid_price);
     # set the requested price and recomputed  price to be store in db
     ### TODO: move out from validation
     $self->transaction->requested_price($amount);
     $self->transaction->recomputed_price($recomputed_amount);
-    my $recomputed   = $contract->bid_probability->amount;
+    my $recomputed   = $contract->is_binary ? $contract->bid_probability->amount : $contract->bid_price;
     my $move         = $recomputed - $requested;
     my $slippage     = $recomputed_amount - $amount;
     my $allowed_move = $contract->allowed_slippage;
@@ -283,64 +270,6 @@ sub _validate_sell_pricing_adjustment_binary {
     return;
 }
 
-sub _validate_sell_pricing_adjustment_non_binary {
-    my $self = shift;
-
-    my $contract = $self->transaction->contract;
-
-    if (not defined $self->transaction->price) {
-        $self->transaction->price($contract->bid_price);
-        return;
-    }
-
-    if ($contract->is_expired) {
-        return Error::Base->cuss(
-            -type              => 'BetExpired',
-            -mesg              => 'Contract expired with a new price',
-            -message_to_client => localize('The contract has expired'),
-        );
-    }
-
-    my $requested_price  = $self->transaction->price;
-    my $recomputed_price = $contract->bid_price;
-    # set the requested price and recomputed  price to be store in db
-    ### TODO: move out from validation
-    $self->transaction->requested_price($requested_price);
-    $self->transaction->recomputed_price($recomputed_price);
-    my $move         = ($recomputed_price - $requested_price) / $requested_price;
-    my $slippage     = $recomputed_price - $requested_price;
-    my $allowed_move = $contract->allowed_slippage;
-
-    return if $move == 0;
-
-    my $final_value;
-    if ($allowed_move == 0) {
-        $final_value = $recomputed_price;
-    } elsif ($move < -$allowed_move) {
-        return $self->_write_to_rejected({
-            type              => 'slippage',
-            action            => 'sell',
-            amount            => $requested_price,
-            recomputed_amount => $recomputed_price
-        });
-    } else {
-        if ($move <= $allowed_move) {
-            $final_value = $requested_price;
-            # We absorbed the price difference here and we want to keep it in our book.
-            $self->transaction->price_slippage($slippage);
-        } elsif ($move > $allowed_move) {
-            $self->transaction->execute_at_better_price(1);
-            # We need to keep record of slippage even it is executed at better price
-            $self->transaction->price_slippage($slippage);
-            $final_value = $recomputed_price;
-        }
-    }
-
-    $self->transaction->price($final_value);
-
-    return;
-}
-
 sub _validate_trade_pricing_adjustment {
     my $self = shift;
 
@@ -356,11 +285,11 @@ sub _validate_trade_pricing_adjustment {
     my $slippage     = $self->transaction->price - $contract->ask_price;
     my $allowed_move = $contract->allowed_slippage;
 
-    my ($amount, $recomputed_amount) = ($self->transaction->price, $contract->ask_price);
-
     $allowed_move = 0 if $recomputed == 1;
-    my ($amount, $recomputed_amount) =
-        $amount_type eq 'payout' ? ($self->transaction->price, $contract->ask_price) : ($self->transaction->payout, $contract->payout);
+    my ($amount, $recomputed_amount) = (
+               $amount_type eq 'payout'
+            or $amount_type eq 'multiplier'
+    ) ? ($self->transaction->price, $contract->ask_price) : ($self->transaction->payout, $contract->payout);
 
     return if $move == 0;
 
