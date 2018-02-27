@@ -254,26 +254,4 @@ subtest 'lookback expiry conditions' => sub {
     }
 };
 
-subtest 'throws exception when barrier is passed as input' => sub {
-    my $args   = {
-        bet_type     => 'LBFLOATCALL',
-        underlying   => 'R_100',
-        date_start   => time,
-        duration     => '1m',
-        currency     => 'USD',
-        multiplier   => 1,
-        amount_type  => 'multiplier',
-        barrier => 'S0P',
-    };
-    try {
-        produce_contract($args);
-        fail "barrier is not allowed";
-    }
-    catch {
-        isa_ok $_, 'BOM::Product::Exception';
-        is $_->error_code, 'InvalidBarrierNone', 'correct error code';
-        is $_->message_to_client->[0], 'Barrier is not allowed for this contract.';
-    };
-};
-
 done_testing();

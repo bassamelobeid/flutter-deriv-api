@@ -28,7 +28,6 @@ my $config = {
         InvalidBarrierMixedBarrier  => 'Invalid barrier (Contract can have only one type of barrier).',
         InvalidBarrierSingle        => 'Invalid barrier (Single barrier input is expected).',
         InvalidBarrierDouble        => 'Invalid barrier (Double barrier input is expected).',
-        InvalidBarrierNone          => 'Barrier is not allowed for this contract.',
         InvalidBarrierDifferentType => 'Invalid barrier (Barrier type must be the same for double-barrier contracts).',
         MissingRequiredUnderlying   => 'Missing required contract parameters (underlying).',
         MissingRequiredExpiry       => 'Missing required contract parameters (date_expiry or duration).',

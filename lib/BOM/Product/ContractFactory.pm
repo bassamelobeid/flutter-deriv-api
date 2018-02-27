@@ -153,11 +153,6 @@ sub _validate_input_parameters {
         BOM::Product::Exception->throw(error_code => 'InvalidInputAsset');
     }
 
-    # we will not have to check for supplied_high_barrier and supplied_low_barrier because lookback is single barrier contract now.
-    if ($params->{category}->code eq 'lookback' and defined $params->{supplied_barrier}) {
-        BOM::Product::Exception->throw(error_code => 'InvalidBarrierNone');
-    }
-
     return;
 }
 
