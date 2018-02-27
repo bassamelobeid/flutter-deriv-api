@@ -57,8 +57,7 @@ sub website_status {
                     $current_state = eval { $json->decode(Encode::decode_utf8($current_state)) }
                         if $current_state && !ref $current_state;
                     $website_status->{site_status} = $current_state->{site_status} // 'up';
-                    $website_status->{message}     = $current_state->{message}     // ''
-                        if $website_status->{site_status} eq 'down';
+                    $website_status->{message}     = $current_state->{message}     // '';
 
                     return {
                         website_status => $website_status,
@@ -107,7 +106,6 @@ sub send_notification {
         }
 
         $message = eval { $json->decode(Encode::decode_utf8($message)) } unless ref $message eq 'HASH';
-        delete $message->{message} if $message->{site_status} ne 'down';
 
         $client_shared->{c}->send({
                 json => {
