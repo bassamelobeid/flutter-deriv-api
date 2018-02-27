@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use Moo;
-use Role::Tiny::With;
 
 use Data::Dumper;
 use JSON::MaybeXS;
@@ -18,7 +17,7 @@ sub BUILD {
         : $args->{app} =~ /websocket/i ? 'WebSocket'
         :                                '';
 
-    Role::Tiny->apply_roles_to_object($self, 'BOM::Test::App::' . $role_name);
+    Moo::Role->apply_roles_to_object($self, 'BOM::Test::App::' . $role_name);
 
     $self->{t} = $self->build_test_app($args);
 
