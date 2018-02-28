@@ -240,10 +240,12 @@ sub _validate_sell_pricing_adjustment {
 
     $allowed_move = 0 if $recomputed == 1;
 
+    my $check_for_slippage = ($allowed_move * $contract->bid_price > 0.01) ? 1 : 0;
+
     return if $move == 0;
 
     my $final_value;
-    if ($allowed_move == 0) {
+    if ($allowed_move == 0 or not $check_for_slippage) {
         $final_value = $recomputed_amount;
     } elsif ($move < -$allowed_move) {
         return $self->_write_to_rejected({
@@ -288,7 +290,7 @@ sub _validate_trade_pricing_adjustment {
     $allowed_move = 0 if $recomputed == 1;
 
     # if the allowed move on the buy price is less than 1 cent, then we always allow buy to go through.
-    my $check_for_slippage = ($allowed_move * $self->transaction->price > 0.01) ? 1 : 0;
+    my $check_for_slippage = ($allowed_move * $contract->ask_price > 0.01) ? 1 : 0;
 
     # non-binary where $amount_type is multiplier always work in price space.
     my ($amount, $recomputed_amount) = (
