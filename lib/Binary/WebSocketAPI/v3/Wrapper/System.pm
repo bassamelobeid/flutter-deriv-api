@@ -34,18 +34,20 @@ sub forget_all {
     my ($c, $req_storage) = @_;
 
     my %removed_ids;
-    if (my $type = $req_storage->{args}->{forget_all}) {
-        if ($type eq 'balance' or $type eq 'transaction' or $type eq 'proposal_open_contract') {
-            @removed_ids{@{_forget_transaction_subscription($c, $type)}} = ();
-        }
-        if ($type eq 'proposal' or $type eq 'proposal_open_contract') {
-            @removed_ids{@{_forget_all_pricing_subscriptions($c, $type)}} = ();
-        }
-        if ($type ne 'proposal_open_contract') {
-            @removed_ids{@{_forget_feed_subscription($c, $type)}} = ();
-        }
-        if ($type eq 'proposal_array') {
-            @removed_ids{@{_forget_all_proposal_array($c)}} = ();
+    if (my @types = $req_storage->{args}->{forget_all}) {
+        foreach my $type (@types) {
+            if ($type eq 'balance' or $type eq 'transaction' or $type eq 'proposal_open_contract') {
+                @removed_ids{@{_forget_transaction_subscription($c, $type)}} = ();
+            }
+            if ($type eq 'proposal' or $type eq 'proposal_open_contract') {
+                @removed_ids{@{_forget_all_pricing_subscriptions($c, $type)}} = ();
+            }
+            if ($type ne 'proposal_open_contract') {
+                @removed_ids{@{_forget_feed_subscription($c, $type)}} = ();
+            }
+            if ($type eq 'proposal_array') {
+                @removed_ids{@{_forget_all_proposal_array($c)}} = ();
+            }
         }
     }
     return {
