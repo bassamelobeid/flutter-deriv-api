@@ -45,7 +45,7 @@ if (!$status || $status ne 'up' && $status ne 'down') {
     $status = 'up';
 }
 
-my %status_message = (
+my %status_codes = (
     release_due    => localize('Heads-up: We are releasing something...'),
     suspended      => localize('System is suspended until further notice.'),
     feed_issues    => localize('Something is wrong with the feed'),
@@ -53,7 +53,7 @@ my %status_message = (
     cashier_issues => localize('Something is wrong with the cashier'),
     unstable       => localize('System is experiencing high load'),
 );
-$message = $status_message{$message} || $message if $message;
+$message = $status_codes{$message} || $message if $message;
 
 my $channel_name = "NOTIFY::broadcast::channel";
 my $state_key    = "NOTIFY::broadcast::state";
