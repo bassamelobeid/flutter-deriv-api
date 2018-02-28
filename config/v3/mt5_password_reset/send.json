@@ -24,9 +24,9 @@
     },
     "password_type": {
       "type": "string",
-      "description": "Password type main/investor",
+      "description": "Password type main/investor (default: main)",
       "pattern": "^(main|investor)$",
-      "required": "1"
+      "default": "main"
     },
     "verification_code": {
       "type": "string",
