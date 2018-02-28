@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More tests => 5;
 use Test::Warnings;
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -79,6 +79,61 @@ subtest 'Test that when the selected tick reflects the lowest tick, a payout is 
         });
         $c = produce_contract($args);
         is $c->exit_tick->quote, 100.01, 'correct exit tick';
+        ok $c->is_expired, 'expired';
+        cmp_ok $c->value, '==', $c->payout, 'full payout';
+    }
+    'check expiry';
+};
+
+subtest 'Test that when any one of the minimum ticks is selected, a payout is given' => sub {
+
+    $now                   = Date::Utility->new('11-Mar-2015');
+    $args->{date_start}    = $now;
+    $args->{date_pricing}  = $now;
+    $args->{selected_tick} = 1;
+
+    # Five ticks of the same size, so all of these are the lowest, and hence, winning ticks
+    my $quote = 100.000;
+    for (0 .. 4) {
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'R_100',
+            quote      => $quote,
+            epoch      => $now->epoch + $_,
+        });
+    }
+
+    lives_ok {
+        $args->{date_pricing} = $now->plus_time_interval('4s');
+        my $c = produce_contract({%$args, selected_tick => 1});
+        ok !$c->exit_tick,  'first tick is next tick';
+        ok !$c->is_expired, 'not expired';
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'R_100',
+            epoch      => $now->epoch + 5,
+            quote      => 100.00,
+        });
+        $c = produce_contract({%$args, selected_tick => 1});
+        is $c->exit_tick->quote, 100.00, 'correct exit tick';
+        ok $c->is_expired, 'expired';
+        cmp_ok $c->value, '==', $c->payout, 'full payout';
+
+        $c = produce_contract({%$args, selected_tick => 2});
+        is $c->exit_tick->quote, 100.00, 'correct exit tick';
+        ok $c->is_expired, 'expired';
+        cmp_ok $c->value, '==', $c->payout, 'full payout';
+
+        $c = produce_contract({%$args, selected_tick => 3});
+        is $c->exit_tick->quote, 100.00, 'correct exit tick';
+        ok $c->is_expired, 'expired';
+        cmp_ok $c->value, '==', $c->payout, 'full payout';
+
+        $c = produce_contract({%$args, selected_tick => 4});
+        is $c->exit_tick->quote, 100.00, 'correct exit tick';
+        ok $c->is_expired, 'expired';
+        cmp_ok $c->value, '==', $c->payout, 'full payout';
+
+        $c = produce_contract({%$args, selected_tick => 5});
+        is $c->exit_tick->quote, 100.00, 'correct exit tick';
         ok $c->is_expired, 'expired';
         cmp_ok $c->value, '==', $c->payout, 'full payout';
     }
