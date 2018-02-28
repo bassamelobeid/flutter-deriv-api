@@ -377,7 +377,6 @@ subtest 'test slippage', sub {
         });
 
 #Case 1 , recomputed price 50 requested price 50.01
-warn ">>> " . $contract->ask_price;
         my $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
