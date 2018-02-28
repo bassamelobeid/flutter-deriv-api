@@ -142,7 +142,7 @@ subtest 'Test that when any one of the minimum ticks is selected, a payout is gi
 
 subtest 'Test that when the selected tick reflects the highest tick, no payout is given' => sub {
 
-    $now                   = Date::Utility->new('11-Mar-2015');
+    $now                   = Date::Utility->new('12-Mar-2015');
     $args->{date_start}    = $now;
     $args->{date_pricing}  = $now;
     $args->{selected_tick} = 5;

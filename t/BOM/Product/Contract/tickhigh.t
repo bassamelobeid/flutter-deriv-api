@@ -111,6 +111,7 @@ subtest 'Test that when any one of the maximum ticks is selected, a payout is gi
             epoch      => $now->epoch + 5,
             quote      => 100.00,
         });
+
         $c = produce_contract({%$args, selected_tick => 1});
         is $c->exit_tick->quote, 100.00, 'correct exit tick';
         ok $c->is_expired, 'expired';
