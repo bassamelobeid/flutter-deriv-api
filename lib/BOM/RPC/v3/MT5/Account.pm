@@ -706,7 +706,7 @@ rpc mt5_password_change => sub {
 
 =head2 mt5_password_reset
 
-    $mt5_pass_change = mt5_password_reser({
+    $mt5_pass_reset = mt5_password_reset({
         client  => $client,
         args    => $args
     })
