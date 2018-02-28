@@ -290,12 +290,6 @@ for my $transfer_currency ('USD', 'BTC') {
         like ( $res->{error}{message_to_client}, qr/your account is cashier locked/, $test );
         $agent->clr_status('cashier_locked');
 
-        $test = 'Transfer fails if payment agent account is ICO-only';
-        $agent->set_status('ico_only', 'Testy McTestington', 'Just running some tests');
-        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        like ( $res->{error}{message_to_client}, qr/This is an ICO-only account/, $test );
-        $agent->clr_status('ico_only');
-
         $test = 'Transfer fails if payment agent documents have expired';
         $mock_clientaccount->mock('documents_expired', sub { return 1; });
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
