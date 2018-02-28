@@ -4,8 +4,8 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
-use List::Util qw/min/;
-use List::MoreUtils qw/first_index/;
+use List::Util qw/any min/;
+use List::MoreUtils qw/indexes/;
 
 use Pricing::Engine::HighLowTicks;
 
@@ -37,9 +37,15 @@ sub check_expiry_conditions {
             start_time => $self->date_start,
             limit      => 5
         });
-        my $min = min(map { $_->{quote} } @$ticks);
-        my $min_index = first_index { $_->{quote} == $min } @$ticks;
-        my $contract_value = ($self->selected_tick == $min_index + 1) ? $self->payout : 0;
+
+        # Obtain the min value of all ticks
+        my $max = min(map { $_->{quote} } @$ticks);
+
+        # Obtain indexes where the tick is a minimum value
+        my @indexes = indexes { $_->{quote} == $max } @$ticks;
+
+        # Check if the selected tick index is the lowest tick
+        my $contract_value = (any { $self->selected_tick == $_ + 1 } @indexes) ? $self->payout : 0;
 
         $self->value($contract_value);
     }
