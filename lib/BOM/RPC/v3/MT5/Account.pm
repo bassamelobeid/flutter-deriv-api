@@ -693,9 +693,10 @@ rpc mt5_password_change => sub {
     }
 
     $status = BOM::MT5::User::password_change({
-            login         => $login,
-            new_password  => $args->{new_password},
-            password_type => $args->{password_type}});
+        login         => $login,
+        new_password  => $args->{new_password},
+        password_type => $args->{password_type} // 'main'
+    });
     if ($status->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'MT5PasswordChangeError',
@@ -797,9 +798,10 @@ rpc mt5_password_reset => sub {
         unless _check_logins($client, ['MT' . $login]);
 
     my $status = BOM::MT5::User::password_change({
-            login         => $login,
-            new_password  => $args->{new_password},
-            password_type => $args->{password_type}});
+        login         => $login,
+        new_password  => $args->{new_password},
+        password_type => $args->{password_type} // 'main'
+    });
     if ($status->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'MT5PasswordChangeError',
