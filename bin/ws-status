@@ -19,26 +19,25 @@ STDOUT->autoflush(1);
 
 my $send_notification = 1;
 GetOptions(
-    's|status=s'          => \my $status,
     'send-notifications!' => \$send_notification,
-    'm|message=s'         => \my $message,
     'h|help'              => \my $help,
 );
+my ($status, $message) = @ARGV;
 
 my $show_help = $help;
 die <<"EOF" if (!($status || $message) || $show_help);
-usage: $0 OPTIONS
+usage: $0 [--no-send-notifications] STATUS MESSAGE
 These options are available:
-  -s, --status                   Site status. up or down. up by default
       --no-send-notifications    Do not send notifications
-  -m, --message                  Message (in quotes, or a keyword)
   -h, --help                     Show this message.
 
-Message to set can be a keyword from the following: release_due,
-suspended, unstable, feed_issues, mt5_issues, cashier_issues.  This will
-use a preset localized message for the chosen keyword to use for the
-site status message.  If the keyword is unrecognized, the keyword will
-be used directly in the site status message.
+STATUS is either "up" or "down".
+
+MESSAGE to set can be a keyword from the following: "release_due",
+"suspended", "unstable", "feed_issues", "mt5_issues", "cashier_issues".
+This will use a preset localized message for the chosen keyword to use
+for the site status message.  If the keyword is unrecognized, the
+keyword will be used directly in the site status message.
 EOF
 
 if (!$status || $status ne 'up' && $status ne 'down') {
