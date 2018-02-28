@@ -566,8 +566,15 @@ sub get_self_exclusion_until_dt {
     my $exclude_until = $excl->exclude_until;
     my $timeout_until = $excl->timeout_until;
 
-    # If clients are from IOM or Malta, they need to be excluded even if the date has passed
-    if ($self->landing_company->short !~ /^(?:iom|malta)$/) {
+    # Don't uplift exclude_until date for clients under Binary (Europe) Ltd,
+    # Binary (IOM) Ltd, and Binary Investments (Europe) Ltd upon expiry.
+    # This is in compliance with Section 3.5.4 (5e) of the United Kingdom Gambling
+    # Commission licence conditions and codes of practice
+    # United Kingdom Gambling Commission licence conditions and codes of practice is
+    # applicable to clients under Binary (Europe) Ltd & Binary (IOM) Ltd only. Change is also
+    # applicable to clients under Binary Investments (Europe) Ltd for standardisation.
+    # (http://www.gamblingcommission.gov.uk/PDF/LCCP/Licence-conditions-and-codes-of-practice.pdf)
+    if ($self->landing_company->short !~ /^(?:iom|malta|maltainvest)$/) {
         my $today = Date::Utility->new;
         # undef if expired
         undef $exclude_until
