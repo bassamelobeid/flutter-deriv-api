@@ -75,7 +75,7 @@ subtest 'lbfloatcall' => sub {
     isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
 
     $args->{duration} = '1d';
-    $c                = produce_contract($args);
+    $c = produce_contract($args);
     isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
 
     is $c->expiry_type, 'daily';
@@ -107,7 +107,7 @@ subtest 'lbfloatput' => sub {
     isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
 
     $args->{duration} = '1d';
-    $c                = produce_contract($args);
+    $c = produce_contract($args);
     isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
 
     is $c->expiry_type, 'daily';
@@ -139,7 +139,7 @@ subtest 'lbhighlow' => sub {
     isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
 
     $args->{duration} = '1d';
-    $c                = produce_contract($args);
+    $c = produce_contract($args);
     isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
 
     is $c->expiry_type, 'daily';
@@ -237,8 +237,11 @@ subtest 'lookback expiry conditions' => sub {
         ok $c->is_expired, 'contract is expired';
         is $c->exit_tick->quote, 104, 'exit tick is present';
         ok !$c->is_valid_exit_tick, 'not valid exit tick because we are still waiting for the next tick';
-        is $c->value,     0, 'value of contract is zero';
-        is $c->bid_price, 0, 'bid price is zero';
+        is $c->value,     $test_case->[1], 'value is ' . $test_case->[1];
+        is $c->bid_price, $test_case->[1], 'bid price ' . $test_case->[1];
+        ok !$c->is_valid_to_sell, 'not valid to sell';
+        is $c->primary_validation_error->message_to_client->[0],
+            'Please wait for contract settlement. The final settlement price may differ from the indicative price.', 'correct error message';
 
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
@@ -251,6 +254,7 @@ subtest 'lookback expiry conditions' => sub {
         ok $c->is_valid_exit_tick, 'exit tick is valid';
         is $c->value,              $test_case->[1], 'value is ' . $test_case->[1];
         is $c->bid_price,          $test_case->[1], 'bid price ' . $test_case->[1];
+        ok $c->is_valid_to_sell,   'valid to sell';
     }
 };
 
