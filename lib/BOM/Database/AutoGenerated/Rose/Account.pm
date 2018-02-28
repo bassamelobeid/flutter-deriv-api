@@ -15,6 +15,7 @@ __PACKAGE__->meta->setup(
         balance        => { type => 'numeric', default => '0', not_null => 1 },
         is_default     => { type => 'boolean', default => 'true', not_null => 1 },
         last_modified  => { type => 'timestamp' },
+        binary_user_id => { type => 'bigint' },
     ],
 
     primary_key_columns => [ 'id' ],
