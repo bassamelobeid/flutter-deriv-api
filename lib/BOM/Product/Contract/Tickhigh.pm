@@ -1,4 +1,4 @@
-package BOM::Product::Contract::Digithigh;
+package BOM::Product::Contract::Tickhigh;
 
 use Moose;
 extends 'BOM::Product::Contract';
@@ -7,7 +7,7 @@ with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier', 'BOM::Pr
 use List::Util qw/max/;
 use List::MoreUtils qw/first_index/;
 
-use Pricing::Engine::Digits;
+use Pricing::Engine::HighLowTicks;
 
 use BOM::Product::Contract::Strike::Digit;
 use BOM::Product::Pricing::Greeks::Digits;
@@ -22,7 +22,7 @@ sub ticks_to_expiry {
 }
 
 sub _build_pricing_engine_name {
-    return 'Pricing::Engine::Digits';
+    return 'Pricing::Engine::HighLowTicks';
 }
 
 sub _build_greek_engine {
