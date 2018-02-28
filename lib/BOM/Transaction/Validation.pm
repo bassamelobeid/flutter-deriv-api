@@ -306,27 +306,25 @@ sub _validate_trade_pricing_adjustment {
         -message_to_client => localize('The contract has expired'),
     ) if $contract->is_expired;
 
-    if ($check_for_slippage) {
-        if ($allowed_move == 0) {
+    if ($allowed_move == 0 or not $check_for_slippage) {
+        $final_value = $recomputed_amount;
+    } elsif ($move < -$allowed_move) {
+        return $self->_write_to_rejected({
+            type              => 'slippage',
+            action            => 'buy',
+            amount            => $amount,
+            recomputed_amount => $recomputed_amount
+        });
+    } else {
+        if ($move <= $allowed_move and $move >= -$allowed_move) {
+            $final_value = $amount;
+            # We absorbed the price difference here and we want to keep it in our book.
+            $self->transaction->price_slippage($slippage);
+        } elsif ($move > $allowed_move) {
+            $self->transaction->execute_at_better_price(1);
+            # We need to keep record of slippage even it is executed at better price
+            $self->transaction->price_slippage($slippage);
             $final_value = $recomputed_amount;
-        } elsif ($move < -$allowed_move) {
-            return $self->_write_to_rejected({
-                type              => 'slippage',
-                action            => 'buy',
-                amount            => $amount,
-                recomputed_amount => $recomputed_amount
-            });
-        } else {
-            if ($move <= $allowed_move and $move >= -$allowed_move) {
-                $final_value = $amount;
-                # We absorbed the price difference here and we want to keep it in our book.
-                $self->transaction->price_slippage($slippage);
-            } elsif ($move > $allowed_move) {
-                $self->transaction->execute_at_better_price(1);
-                # We need to keep record of slippage even it is executed at better price
-                $self->transaction->price_slippage($slippage);
-                $final_value = $recomputed_amount;
-            }
         }
     }
 
