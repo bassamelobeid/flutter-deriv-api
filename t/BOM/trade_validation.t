@@ -99,7 +99,7 @@ my $contract = produce_contract({
 subtest 'IOM withdrawal limit' => sub {
     plan tests => 5;
 
-    my $withdraw_limit = LoadFile('/home/git/regentmarkets/bom-user/config/payment_limits.yml'))->{withdrawal_limits}->{iom}->{limit_for_days};
+    my $withdraw_limit = LoadFile('/home/git/regentmarkets/bom-user/config/payment_limits.yml')->{withdrawal_limits}->{iom}->{limit_for_days};
 
     $client->payment_free_gift(
         currency     => 'GBP',
