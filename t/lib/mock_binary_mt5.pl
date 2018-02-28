@@ -68,7 +68,7 @@ sub cmd_UserDepositChange {
     # the amount indicating which
     # Additionally as this is a demo account it is precharged with 10000 on setup
            $input->{new_deposit} == 10000
-        or $input->{new_deposit} == 150
+        or $input->{new_deposit} == 148.5
         or $input->{new_deposit} == -150
         or die "TODO: mock UserDepositChange on unknown new_deposit amount\n";
 
