@@ -238,7 +238,7 @@ sub _validate_sell_pricing_adjustment {
     my $slippage   = $recomputed_amount - $amount;
     my $allowed_move = $contract->allowed_slippage;
 
-    $allowed_move = 0 if $recomputed == 1;
+    $allowed_move = 0 if $contract->is_binary and $recomputed == 1;
 
     return if $move == 0;
 
@@ -285,7 +285,7 @@ sub _validate_trade_pricing_adjustment {
     my $slippage   = $self->transaction->price - $contract->ask_price;
     my $allowed_move = $contract->allowed_slippage;
 
-    $allowed_move = 0 if $recomputed == 1;
+    $allowed_move = 0 if $contract->is_binary and $recomputed == 1;
 
     # non-binary where $amount_type is multiplier always work in price space.
     my ($amount, $recomputed_amount) = (
