@@ -347,15 +347,6 @@ for my $transfer_currency ('USD', 'BTC') {
         $payee->cashier_setting_password(undef);
         $payee->save;
 
-        $test = 'Transfer fails if payee account is ICO-only';
-        $payee->set_status('ico_only', 'Testy McTestington', 'Just running some tests');
-        $payee->save;
-        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        ## Despite the message, the transfer client is ICO-only, not the agent
-        like ( $res->{error}{message_to_client}, qr/This is an ICO-only account/, $test );
-        $payee->clr_status('ico_only');
-        $payee->save;
-
         $test = 'Transfer fails if payee account documents are expired';
         $mock_clientaccount->mock('documents_expired', sub { return $_[0]->loginid eq $payee_id ? 1 : 0; });
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
@@ -681,12 +672,6 @@ for my $withdraw_currency ('USD', 'BTC') {
         like ( $res->{error}{message_to_client}, qr/instructions must not exceed $long_description/, $test );
         $testargs->{args}{description} = 'good';
 
-        $test = 'Withdrawal fails if client account is ICO-only';
-        $payer->set_status('ico_only', 'Testy McTestington', 'Just running some tests');
-        $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        like ( $res->{error}{message_to_client}, qr/ICO-only account/, $test );
-        $payer->clr_status('ico_only');
-
         $test = 'Withdrawal fails if client account is cashier locked';
         $payer->set_status('cashier_locked', 'Testy McTestington', 'Just running some tests');
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
@@ -736,14 +721,6 @@ for my $withdraw_currency ('USD', 'BTC') {
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like ( $res->{error}{message_to_client}, qr/agent's cashier is locked/, $test );
         $agent->cashier_setting_password(undef);
-        $agent->save;
-
-        $test = 'Withdrawal fails if payment agent account is ICO-only';
-        $agent->set_status('ico_only', 'Testy McTestington', 'Just running some tests');
-        $agent->save;
-        $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        like ( $res->{error}{message_to_client}, qr/ICO-only account/, $test );
-        $agent->clr_status('ico_only');
         $agent->save;
 
         $test = 'Withdrawal fails if payment agent documents have expired';
