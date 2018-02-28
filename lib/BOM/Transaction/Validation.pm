@@ -639,7 +639,7 @@ sub _validate_iom_withdrawal_limit {
     my $landing_company_short = $client->landing_company->short;
     return if ($landing_company_short ne 'iom');
 
-    my $payment_limits = LoadFile(File::ShareDir::dist_file('Client-Account', 'payment_limits.yml'));
+    my $payment_limits = LoadFile('/home/git/regentmarkets/bom-user/config/payment_limits.yml');
 
     my $withdrawal_limits = $payment_limits->{withdrawal_limits};
     my $numdays           = $withdrawal_limits->{$landing_company_short}->{for_days};
