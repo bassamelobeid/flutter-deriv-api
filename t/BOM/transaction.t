@@ -609,7 +609,7 @@ subtest 'insufficient balance: buy bet for 100.01 with a balance of 100', sub {
             price         => 100.01,
             payout        => $contract->payout,
             amount_type   => 'stake',
-            purchase_date => $now,
+            purchase_date => $contract->date_start,
         });
         my $error = $txn->buy;
 
