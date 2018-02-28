@@ -41,6 +41,8 @@ use constant {
     DOC_ID_2        => 'ABCD1235'
 };
 
+use constant MAX_FILE_SIZE => 3 * 2**20;
+
 my $invalid_token   = 12345;
 my $invalid_file_id = 1231531;
 
@@ -75,6 +77,12 @@ subtest 'Expired documents' => sub {
         ->has_error->error_message_is('Expiration date cannot be less than or equal to current date.', 'check expiration_date is before current date');
 };
 
+subtest 'Error for over-size file' => sub {
+    $args->{file_size} = MAX_FILE_SIZE + 1;
+    $c->call_ok($method, $params)->has_error->error_message_is('Maximum file size reached. Maximum allowed is '.MAX_FILE_SIZE, 'over-size file is denied');
+    $args->{file_size} = 1;
+};
+
 subtest 'Unsuccessful finished upload' => sub {
     $args->{expiration_date} = EXP_DATE_FUTURE;    # 100 years is all I give you, humanity!
     $c->call_ok($method, $params)
@@ -87,7 +95,7 @@ subtest 'Error for no document_id' => sub {
     $args->{expected_checksum} = CHECKSUM;
     
     $c->call_ok($method, $params)->has_error->error_message_is('Document ID is required.', 'document_id is required');
-    
+
     $args->{document_id} = DOC_ID_1;
     $result = $c->call_ok($method, $params)->result;
     ($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
