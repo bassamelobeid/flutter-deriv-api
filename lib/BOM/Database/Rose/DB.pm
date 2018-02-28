@@ -153,10 +153,6 @@ sub dbi_connect {
     }
     my $dbh = $self->{dbic}->dbh;
 
-    if ($ENV{AUDIT_STAFF_NAME} and $ENV{AUDIT_STAFF_IP}) {
-        $dbh->selectall_arrayref('SELECT audit.set_staff(?::TEXT, ?::CIDR)', undef, @ENV{qw/AUDIT_STAFF_NAME AUDIT_STAFF_IP/});
-    }
-
     return $dbh;
 }
 

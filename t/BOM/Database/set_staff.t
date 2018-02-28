@@ -43,10 +43,11 @@ is_deeply get_audit($loginid), [
 $client->comment('comment');
 $client->save;
 
+# NOTE: for future changes, this test is something we can sacrifice.
 is_deeply get_audit($loginid), [
     [qw!INSERT system 127.0.0.1/32!],
-    COMPATIBLE_MODE ? [qw!UPDATE tf 192.168.12.24/32!] : [qw!UPDATE system 127.0.0.1/32!],
-], 'audit records after updating client (envvars are ignored because DB connection is reused)';
+    [qw!UPDATE tf 192.168.12.24/32!],
+], 'audit records after updating client (envvars are respected even though DB connection is reused)';
 
 # since we don't re-create the client object, this is equivalent to
 # pgbouncer being restarted
@@ -57,7 +58,7 @@ $client->save;
 
 is_deeply get_audit($loginid), [
     [qw!INSERT system 127.0.0.1/32!],
-    COMPATIBLE_MODE ? [qw!UPDATE tf 192.168.12.24/32!] : [qw!UPDATE system 127.0.0.1/32!],
+    [qw!UPDATE tf 192.168.12.24/32!],
     [qw!UPDATE tf 192.168.12.24/32!],
 ], 'new connection now uses envvars';
 
@@ -72,7 +73,7 @@ $client->save;
 
 is_deeply get_audit($loginid), [
     [qw!INSERT system 127.0.0.1/32!],
-    COMPATIBLE_MODE ? [qw!UPDATE tf 192.168.12.24/32!] : [qw!UPDATE system 127.0.0.1/32!],
+    [qw!UPDATE tf 192.168.12.24/32!],
     [qw!UPDATE tf 192.168.12.24/32!],
     [qw!UPDATE xx 192.168.12.25/32!],
 ], 'new envvars';
@@ -85,7 +86,7 @@ $client->save;
 
 is_deeply get_audit($loginid), [
     [qw!INSERT system 127.0.0.1/32!],
-    COMPATIBLE_MODE ? [qw!UPDATE tf 192.168.12.24/32!] : [qw!UPDATE system 127.0.0.1/32!],
+    [qw!UPDATE tf 192.168.12.24/32!],
     [qw!UPDATE tf 192.168.12.24/32!],
     [qw!UPDATE xx 192.168.12.25/32!],
     [qw!UPDATE system 127.0.0.1/32!],
@@ -106,7 +107,7 @@ SQL
 
 is_deeply get_audit($loginid), [
     [qw!INSERT system 127.0.0.1/32!],
-    COMPATIBLE_MODE ? [qw!UPDATE tf 192.168.12.24/32!] : [qw!UPDATE system 127.0.0.1/32!],
+    [qw!UPDATE tf 192.168.12.24/32!],
     [qw!UPDATE tf 192.168.12.24/32!],
     [qw!UPDATE xx 192.168.12.25/32!],
     [qw!UPDATE system 127.0.0.1/32!],
