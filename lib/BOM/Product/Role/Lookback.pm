@@ -83,11 +83,15 @@ has [qw(spot_min_max)] => (
 sub _build_spot_min_max {
     my $self = shift;
 
-    my ($high, $low) = @{$self->get_ohlc_for_period}{'high', 'low'};
+    my ($high, $low) = ($self->pricing_spot, $self->pricing_spot);
+
+    if ($self->date_pricing->epoch > $self->date_start->epoch) {
+        ($high, $low) = @{$self->get_ohlc_for_period}{'high', 'low'};
+    }
 
     my $high_low = {
-        high => $high // $self->pricing_spot,
-        low  => $low  // $self->pricing_spot,
+        high => $high,
+        low  => $low,
     };
 
     return $high_low;
