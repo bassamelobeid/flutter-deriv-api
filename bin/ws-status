@@ -24,8 +24,7 @@ GetOptions(
 );
 my ($status, $message) = @ARGV;
 
-my $show_help = $help;
-die <<"EOF" if (!($status || $message) || $show_help);
+die <<"EOF" if (!($status || $message) || $status !~ /up|down/i || $help);
 usage: $0 [--no-send-notifications] STATUS MESSAGE
 These options are available:
       --no-send-notifications    Do not send notifications
@@ -39,10 +38,6 @@ This will use a preset localized message for the chosen keyword to use
 for the site status message.  If the keyword is unrecognized, the
 keyword will be used directly in the site status message.
 EOF
-
-if (!$status || $status ne 'up' && $status ne 'down') {
-    $status = 'up';
-}
 
 my %status_codes = (
     release_due    => localize('Heads-up: We are releasing something...'),
