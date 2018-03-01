@@ -69,16 +69,38 @@ initialize_realtime_ticks_db();
         is scalar(@{$res->{forget_all}}), 2, "Forget the relevant tick channel";
     }
 
-    _check_ticks('ticks', {ticks => 'R_50'});
-    _check_ticks(
-        'candles',
-        {
-            ticks_history => 'R_50',
-            end           => "latest",
-            count         => 10,
-            style         => "candles",
-            subscribe     => 1
-        });
+    my $req_tick   = {ticks => 'R_50'};
+    my $req_candle = {
+        ticks_history => 'R_50',
+        end           => "latest",
+        count         => 10,
+        style         => "candles",
+        subscribe     => 1
+    };
+
+    _check_ticks('ticks', $req_tick);
+    _check_ticks('candles', $req_candle);
+
+    # check forget_all works fine with array
+    my $pid = fork;
+    die "Failed fork for testing 'ticks' WS API call: $@" unless defined $pid;
+    unless ($pid) {
+        # disable end test of Test::Warnings in child process
+        Test::Warnings->import(':no_end_test');
+        do { sleep 1; _create_tick(700, 'R_50'); }
+            for 0 .. 1;
+        exit;
+    }
+
+    $req_tick->{req_id}   = 1;
+    $req_candle->{req_id} = 2;
+
+    $t->await::tick($req_tick);
+    $t->await::ohlc($req_candle);
+
+    my $res = $t->await::forget_all({forget_all => ['ticks', 'candles']});
+    ok $res->{forget_all}, "Manage to forget_all: ['ticks', 'candles']" or diag explain $res;
+    is scalar(@{$res->{forget_all}}), 2, "Forget the relevant channels";
 
     $t->finish_ok;
 }
