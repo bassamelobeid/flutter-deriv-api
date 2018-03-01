@@ -226,8 +226,8 @@ subtest 'password check investor' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login    => $DETAILS{login},
-            password => 'Abcd1234',
+            login         => $DETAILS{login},
+            password      => 'Abcd1234',
             password_type => 'investor'
         },
     };

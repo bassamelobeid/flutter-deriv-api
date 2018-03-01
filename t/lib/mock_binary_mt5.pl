@@ -18,14 +18,14 @@ use constant {
 my %DETAILS = (
     login    => '__MOCK__',
     password => {
-        main => 'Efgh4567',
+        main     => 'Efgh4567',
         investor => 'Abcd1234',
     },
-    email    => 'test.account@binary.com',
-    name     => 'Test',
-    group    => 'real\something',
-    country  => 'Malta',
-    balance  => '1234.56',
+    email   => 'test.account@binary.com',
+    name    => 'Test',
+    group   => 'real\something',
+    country => 'Malta',
+    balance => '1234.56',
 );
 
 my $json = JSON::MaybeXS->new;
