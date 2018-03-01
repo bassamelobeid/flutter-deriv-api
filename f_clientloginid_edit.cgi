@@ -277,19 +277,17 @@ if ($input{whattodo} eq 'uploadID') {
                 and $dbh->errstr =~ /duplicate_upload_error/;
         };
 
-        my $dbh;
         my $id;
         try {
-            my $STD_WARN_HANDLER = $SIG{__WARN__};
-            local $SIG{__WARN__} = sub {
-                return if _is_duplicate_upload_error->($dbh);
-                return $STD_WARN_HANDLER->(@_) if $STD_WARN_HANDLER;
-                warn @_;
-            };
             ($id) = $client->db->dbic->run(
                 ping => sub {
-                    $dbh = $_;
-                    $dbh->selectrow_array(
+                    my $STD_WARN_HANDLER = $SIG{__WARN__};
+                    local $SIG{__WARN__} = sub {
+                        return if _is_duplicate_upload_error->($_);
+                        return $STD_WARN_HANDLER->(@_) if $STD_WARN_HANDLER;
+                        warn @_;
+                    };
+                    $_->selectrow_array(
                         'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?)',
                         undef, $loginid, $doctype, $docformat,
                         $expiration_date || undef,
@@ -311,16 +309,15 @@ if ($input{whattodo} eq 'uploadID') {
 
         my $query_result;
         try {
-            my $STD_WARN_HANDLER = $SIG{__WARN__};
-            local $SIG{__WARN__} = sub {
-                return if _is_duplicate_upload_error->($dbh);
-                return $STD_WARN_HANDLER->(@_) if $STD_WARN_HANDLER;
-                warn @_;
-            };
             ($query_result) = $client->db->dbic->run(
                 ping => sub {
-                    $dbh = $_;
-                    $dbh->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?)', undef, $id, $comments);
+                    my $STD_WARN_HANDLER = $SIG{__WARN__};
+                    local $SIG{__WARN__} = sub {
+                        return if _is_duplicate_upload_error->($_);
+                        return $STD_WARN_HANDLER->(@_) if $STD_WARN_HANDLER;
+                        warn @_;
+                    };
+                    $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?)', undef, $id, $comments);
                 });
         }
         catch {
