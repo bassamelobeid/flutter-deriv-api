@@ -10,99 +10,111 @@ use BOM::Database::Model::OAuth;
 use Email::Folder::Search;
 use List::Util qw( all );
 
-my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
-$mailbox->init;
-
-my $email       = 'dummy@binary.com';
-my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'VRTC',
-});
-$test_client->email($email);
-$test_client->save;
-
-my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
+#########################################################
+## Setup test RPC
+#########################################################
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
-my $method = 'document_upload';
-my $params = {
-    language => 'EN',
-    token    => 12345
-};
+#########################################################
+## Setup mailbox
+#########################################################
 
-# Invalid token shouldn't be allowed to upload.
-$c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'check invalid token');
+my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
+$mailbox->init;
 
-$params->{token} = $token;
-# Valid token but virtual account.
-$c->call_ok($method, $params)
-    ->has_error->error_message_is("Virtual accounts don't require document uploads.", "don't allow virtual accounts to upload");
+#########################################################
+## Setup clients
+#########################################################
 
-# Creating new real account.
-$test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+my $email       = 'dummy@binary.com';
+
+my $virtual_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'VRTC',
+});
+$virtual_client->email($email);
+$virtual_client->save;
+
+my $real_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
-($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
 
-# For CR accounts.
-$params->{token}  = $token;
-$params->{upload} = "some_id";
+#########################################################
+## Setup tokens
+#########################################################
 
-my $args = {};
-$params->{args} = $args;
+my ($virtual_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $virtual_client->loginid);
+my ($real_token)    = BOM::Database::Model::OAuth->new->store_access_token_only(1, $real_client->loginid);
+my $invalid_token   = 12345;
 
-$args->{expiration_date} = "2017-08-09";    # Expired documents.
-$c->call_ok($method, $params)
-    ->has_error->error_message_is('Expiration date cannot be less than or equal to current date.', 'check expiration_date is before current date');
+#########################################################
+## Setup test paramaters
+#########################################################
 
-# Unsuccessful finished upload
-$args->{expiration_date} = "2117-08-11";    # 100 years is all I give you, humanity!
-$c->call_ok($method, $params)
-    ->has_error->error_message_is('Sorry, an error occurred while processing your request.', 'upload finished unsuccessfully');
+my $method          = 'document_upload';
 
-$args->{document_type}   = "passport";
-$args->{document_format} = "jpg";
+my %default_params = (
+    language => 'EN'
+);
 
-# Error for no document_id
-$c->call_ok($method, $params)->has_error->error_message_is('Document ID is required.', 'document_id is required');
+my %default_real_params = (
+    %default_params,
+    token => $real_token,
+    upload => "some_id",
+    args => {}
+);
 
-$args->{document_id} = "ABCD1234";
-my $result = $c->call_ok($method, $params)->result;
-my ($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
-# Succesfully retrieved object from database.
-is($doc->document_id, $args->{document_id}, 'document is saved in db');
-is($doc->status,      'uploading',          'document status is set to uploading');
+my $result;
+my $doc;
+my $client_id;
 
-# Document with no expiration_date
-$args->{expiration_date} = '';    # Document with no expiration_date
-$c->call_ok($method, $params)->result;
+use constant {
+    DOC_TYPE        => 'passport',
+    DOC_FORMAT      => 'jpg',
+    CHECKSUM        => 'FileChecksum',
+    EXP_DATE_PAST   => '2017-08-09',
+    EXP_DATE_FUTURE => '2117-08-11',
+    DOC_ID_1        => 'ABCD1234',
+    DOC_ID_2        => 'ABCD1235'
+};
 
-my $checksum = 'FileChecksum';
+use constant MAX_FILE_SIZE => 3 * 2**20;
 
-$args = {
-    status   => 'success',
-    checksum => $checksum,
-    file_id  => $result->{file_id}};
-$params->{args} = $args;
+my $invalid_file_id = 1231531;
 
-$mailbox->clear;
-my $client_id = uc $test_client->loginid;
-$result = $c->call_ok($method, $params)->result;
-like(get_notification_email()->{body}, qr/New document was uploaded for the account: $client_id/, 'CS notification email was sent successfully');
+#########################################################
+## Test cases start here
+#########################################################
 
-($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
-is($doc->status,                                              'uploaded',           'document\'s status changed');
-is($test_client->get_status('document_under_review')->reason, 'Documents uploaded', 'client\'s status changed');
-ok(!$test_client->get_status('document_needs_action'), 'Document should not be in needs_action state');
-ok $doc->file_name, 'Filename should not be empty';
-is $doc->checksum, $checksum, 'Checksum should be added correctly';
+subtest "Invalid token shouldn't be allowed to upload" => sub {
+    my $params = { %default_params };
+    $params->{token}  = $invalid_token;
+    $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'check invalid token');
+};
 
-$mailbox->clear;
-$result = $c->call_ok($method, $params)->result;
-ok(!get_notification_email(), 'CS notification email should only be sent once');
+subtest 'Valid token but virtual account' => sub {
+    my $params = { %default_params };
+    $params->{token} = $virtual_token;
+    $c->call_ok($method, $params)
+        ->has_error->error_message_is("Virtual accounts don't require document uploads.", "don't allow virtual accounts to upload");
+};
 
-$args->{file_id} = 1231531;
-$c->call_ok($method, $params)->has_error->error_message_is('Document not found.', 'error if document is not present');
+subtest 'Expired documents' => sub {
+    my $params = { %default_real_params };
+    $params->{args}->{expiration_date} = EXP_DATE_PAST;
+    $c->call_ok($method, $params)
+        ->has_error->error_message_is('Expiration date cannot be less than or equal to current date.', 'check expiration_date is before current date');
+};
+
+subtest 'Error for over-size file' => sub {
+    my $params = { %default_real_params };
+    $params->{args}->{file_size} = MAX_FILE_SIZE + 1;
+    $c->call_ok($method, $params)->has_error->error_message_is('Maximum file size reached. Maximum allowed is '.MAX_FILE_SIZE, 'over-size file is denied');
+};
+
+#########################################################
+## Helper methods
+#########################################################
 
 sub get_notification_email {
     my ($msg) = $mailbox->search(
@@ -111,14 +123,5 @@ sub get_notification_email {
     );
     return $msg;
 }
-
-subtest 'Check audit information after all above upload requests' => sub {
-    my $result = $test_client->db->dbic->run(
-        fixup => sub {
-            $_->selectall_arrayref('SELECT pg_userid, remote_addr FROM audit.client_authentication_document');
-        });
-
-    ok(all { $_->[0] eq 'system' and $_->[1] eq '127.0.0.1/32' } @$result), 'Check staff and staff IP for all audit info';
-};
 
 done_testing();
