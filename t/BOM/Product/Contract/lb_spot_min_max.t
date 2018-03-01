@@ -57,6 +57,7 @@ my $bet_params = {
     duration     => '1h',
     currency     => 'USD',
     multiplier   => 1,
+    amount_type  => 'multiplier'
 };
 
 #setup raw cache for R_100

@@ -19,7 +19,7 @@ subtest 'allowed_slippage' => sub {
     is $c->allowed_slippage, 0.0175, 'slippage is 1.75%';
     $args->{underlying} = 'R_10';
     $c = produce_contract($args);
-    is $c->allowed_slippage, 0.01, 'slippage is 1%';
+    is $c->allowed_slippage, 0.002, 'slippage is 0.2%';
 };
 
 done_testing();
