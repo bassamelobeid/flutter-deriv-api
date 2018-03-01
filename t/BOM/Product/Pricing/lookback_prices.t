@@ -92,17 +92,15 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                         duration     => $duration . 's',
                         currency     => $payout_currency,
                         multiplier   => 1,
-                        %$barrier,
+                        amount_type  => 'multiplier',
                     };
 
                     my $c = produce_contract($args);
-                    my @codes = ($c->code, $c->underlying->symbol, $c->multiplier, $c->date_start->epoch, $c->date_expiry->epoch);
-                    
-                    my $code = join '_', @codes;
+
                     isa_ok $c->pricing_engine_name, 'Pricing::Engine::Lookback';
 
                     is roundnear(0.00001, $c->theo_price), roundnear(0.00001, $expectation->{$c->shortcode}),
-                        'theo price matches [' . " - " . $c->shortcode . ']';
+                        'theo price matches ['. $c->shortcode . ']';
                 }
             }
         }

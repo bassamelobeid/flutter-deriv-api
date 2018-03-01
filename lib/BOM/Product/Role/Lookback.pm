@@ -10,15 +10,37 @@ use LandingCompany::Registry;
 
 my $minimum_multiplier_config = LoadFile('/home/git/regentmarkets/bom/config/files/lookback_minimum_multiplier.yml');
 
+=head2 spot_min
+
+The lowest spot price throughout the contract period.
+
+=head2 spot_max
+
+The highest spot price throughout the contract period.
+
+=cut
+
 has [qw(spot_min spot_max)] => (
     is         => 'ro',
     lazy_build => 1,
 );
 
+=head2 multiplier
+
+The number of units.
+
+=cut
+
 has multiplier => (
     is  => 'ro',
     isa => 'Num',
 );
+
+=head2 minimum_multiplier
+
+The minimum allowed unit.
+
+=cut
 
 has minimum_multiplier => (
     is         => 'ro',
@@ -26,27 +48,17 @@ has minimum_multiplier => (
     lazy_build => 1,
 );
 
+=head2 factor
+
+This is the cryptocurrency factor. Currently set to 0.01.
+
+=cut
+
 has factor => (
     is         => 'ro',
     isa        => 'Num',
     lazy_build => 1,
 );
-
-has lookback_base_commission => (
-    is         => 'ro',
-    isa        => 'Num',
-    lazy_build => 1,
-);
-
-sub _build_lookback_base_commission {
-    my $self = shift;
-    my $args = {underlying_symbol => $self->underlying->symbol};
-    if ($self->can('landing_company')) {
-        $args->{landing_company} = $self->landing_company;
-    }
-    my $underlying_base = get_underlying_base_commission($args);
-    return $underlying_base;
-}
 
 sub _build_factor {
     my $self          = shift;
@@ -71,23 +83,20 @@ has [qw(spot_min_max)] => (
 sub _build_spot_min_max {
     my $self = shift;
 
-    my ($high, $low) = @{
-        $self->underlying->get_high_low_for_period({
-                start => $self->date_start->epoch + 1,
-                end   => $self->date_expiry->epoch,
-            })}{'high', 'low'};
+    my ($high, $low) = ($self->pricing_spot, $self->pricing_spot);
+
+    if ($self->date_pricing->epoch > $self->date_start->epoch) {
+        ($high, $low) = @{$self->get_ohlc_for_period}{'high', 'low'};
+    }
 
     my $high_low = {
-        high => $high // $self->pricing_spot,
-        low  => $low  // $self->pricing_spot,
+        high => $high,
+        low  => $low,
     };
 
     return $high_low;
 }
 
-# Notes:
-# The date_start + 1 is because for min and max we use nest tick after
-# date_start.
 sub _build_spot_min {
     my $self = shift;
 
@@ -107,29 +116,36 @@ sub _build_priced_with_intraday_model {
 sub get_ohlc_for_period {
     my $self = shift;
 
-    my $start_epoch = $self->date_start->epoch;
-    my $end_epoch;
-    if ($self->date_pricing->is_after($self->date_expiry)) {
-        $end_epoch = $self->expiry_daily ? $self->date_expiry->truncate_to_day->epoch : $self->date_settlement->epoch;
-    } else {
-        $end_epoch = $self->date_pricing->epoch;
-    }
+    # date_start + 1 because the first tick of the contract is the next tick.
+    my $start_epoch = $self->date_start->epoch + 1;
+    my $end_epoch = $self->date_pricing->is_after($self->date_expiry) ? $self->date_expiry->epoch : $self->date_pricing->epoch;
+    $end_epoch = max($start_epoch, $end_epoch);
 
     return $self->underlying->get_high_low_for_period({
-        start => $start_epoch + 1,
+        start => $start_epoch,
         end   => $end_epoch
     });
 }
 
+override _build_base_commission => sub {
+    my $self = shift;
+
+    my $args = {underlying_symbol => $self->underlying->symbol};
+    if ($self->can('landing_company')) {
+        $args->{landing_company} = $self->landing_company;
+    }
+    my $underlying_base = get_underlying_base_commission($args);
+    return $underlying_base;
+};
+
+# There's no financial rounding here because we should never be exposing this to client.
+# ->theo_price should only be used for internal purposes only.
 override _build_theo_price => sub {
     my $self = shift;
 
-    if ($self->is_expired) {
-        my $final_price = $self->value;
-        return $final_price > 0 ? $final_price * $self->multiplier : 0;
-    }
-
-    return $self->pricing_engine->theo_price * $self->multiplier;
+    # pricing_engine->theo_price gives the price per unit. It is then multiplied with $self->multiplier
+    # to get the theo price of the option.
+    return $self->is_expired ? $self->value : $self->pricing_engine->theo_price * $self->multiplier;
 };
 
 override _build_ask_price => sub {
@@ -137,7 +153,7 @@ override _build_ask_price => sub {
 
     my $theo_price = $self->pricing_engine->theo_price;
 
-    my $commission = $theo_price * $self->lookback_base_commission;
+    my $commission = $theo_price * $self->base_commission;
     $commission = max(0.01, $commission);
 
     my $final_price = max(0.50, ($theo_price + $commission));
@@ -150,12 +166,9 @@ override _build_ask_price => sub {
 override _build_bid_price => sub {
     my $self = shift;
 
-    if ($self->is_expired) {
-        my $bid_price = $self->theo_price;
-        return financialrounding('price', $self->currency, $bid_price);
-    }
+    my $commission_multiplier = $self->is_expired ? 1 : (1 - $self->base_commission);
 
-    return financialrounding('price', $self->currency, $self->theo_price * (1 - $self->lookback_base_commission));
+    return financialrounding('price', $self->currency, $self->theo_price * $commission_multiplier);
 };
 
 override _validate_price => sub {
@@ -174,10 +187,6 @@ override _validate_price => sub {
 
     return @err;
 };
-
-sub is_binary {
-    return 0;
-}
 
 sub _build_pricing_engine_name {
     return 'Pricing::Engine::Lookback';
@@ -203,13 +212,6 @@ override shortcode => sub {
     my @shortcode_elements = ($contract_type, $self->underlying->symbol, $self->multiplier, $shortcode_date_start, $shortcode_date_expiry);
 
     return uc join '_', @shortcode_elements;
-};
-
-override allowed_slippage => sub {
-    my $self = shift;
-
-    #We will use same value as binary for now.
-    return 0.01;
 };
 
 1;
