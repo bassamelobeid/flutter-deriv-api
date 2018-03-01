@@ -62,7 +62,7 @@ subtest 'test everything' => sub {
                 duration     => $ref->{min_contract_duration},
                 currency     => 'USD',
                 payout       => 100,
-                unit         => 1,
+                multiplier   => 1,
                 %barriers
             });
             next unless exists $expected->{$c->shortcode};

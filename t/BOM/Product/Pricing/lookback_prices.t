@@ -91,7 +91,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                         date_pricing => $now,
                         duration     => $duration . 's',
                         currency     => $payout_currency,
-                        unit         => 1,
+                        multiplier   => 1,
                         %$barrier,
                     };
 

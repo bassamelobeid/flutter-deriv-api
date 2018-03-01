@@ -11,8 +11,17 @@ use Date::Utility;
 use List::Util qw(max min);
 use Scalar::Util qw(looks_like_number);
 use Parallel::ForkManager;
+use Quant::Framework;
+use BOM::Platform::Chronicle;
 
 #This daemon generates predefined trading periods for selected underlying symbols at every hour
+
+my $next_generation_time;
+
+sub _set_next_generation_time {
+    $next_generation_time = shift;
+    return;
+}
 
 sub run {
 
@@ -26,16 +35,45 @@ sub run {
     my $processes = min($cpu_info, scalar @selected_symbols);
     my $fm = Parallel::ForkManager->new($processes);
 
+    $fm->run_on_start(
+        sub {
+            my ($pid, $ident) = @_;
+            warn "Processing $ident. pid [$pid]";
+        });
+
+    $fm->run_on_finish(
+        sub {
+            my ($pid, $exit_code, $ident, $exit_signal, $core_dump, $data) = @_;
+            if (defined $data and $data->{next_generation_time}) {
+                warn "Failed to generate trading windows. Setting next generation time to "
+                    . Date::Utility->new($data->{next_generation_time})->datetime;
+                _set_next_generation_time($data->{next_generation_time});
+            }
+            warn "Finished processing $ident with exit_code[$exit_code]";
+        });
+
+    my $exchange = Finance::Exchange->create_exchange('FOREX');
+
     while (1) {
-        my $now  = Date::Utility->new;
-        my $next = next_generation_epoch($now);
+        my $now = Date::Utility->new;
+
+        my $trading_day = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader())->trades_on($exchange, $now);
+        _set_next_generation_time(next_generation_epoch($now));
 
         foreach my $symbol (@selected_symbols) {
-            $fm->start and next;
+            $fm->start($symbol) and next;
             my $tp = generate_trading_periods($symbol, $now);
-            next unless @$tp;
+
+            # don't use next here as it would cause it would spawn another child
+            unless (@$tp) {
+                # if we are not getting any trading period generated, chances are barrier calculation
+                # will fail. Retry again 2-second later
+                my %next = $trading_day ? (next_generation_time => $now->plus_time_interval('2s')->epoch) : ();
+                $fm->finish(0, \%next);
+            }
+
             my ($tp_namespace, $tp_key) = BOM::Product::Contract::PredefinedParameters::trading_period_key($symbol, $now);
-            my $ttl = max(1, $next - $now->epoch);
+            my $ttl = max(1, $next_generation_time - $now->epoch);
             # 1 - to save to chronicle database
             $chronicle_writer->set($tp_namespace, $tp_key, [grep { defined } @$tp], $now, 1, $ttl);
 
@@ -54,11 +92,12 @@ sub run {
             my ($category_namespace, $category_key) = BOM::Product::Contract::PredefinedParameters::barrier_by_category_key($symbol);
             my $by_category = $finder->multi_barrier_contracts_by_category_for({symbol => $symbol});
             $chronicle_writer->set($category_namespace, $category_key, $by_category, $now, 1, $ttl);
+
             $fm->finish;
         }
         $fm->wait_all_children;
 
-        clock_nanosleep(CLOCK_REALTIME, $next * 1e9, TIMER_ABSTIME);
+        clock_nanosleep(CLOCK_REALTIME, $next_generation_time * 1e9, TIMER_ABSTIME);
     }
     return;
 }
