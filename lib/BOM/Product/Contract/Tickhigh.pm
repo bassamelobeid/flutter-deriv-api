@@ -2,7 +2,7 @@ package BOM::Product::Contract::Tickhigh;
 
 use Moose;
 extends 'BOM::Product::Contract';
-with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
+with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::AmericanExpiry';
 
 use List::Util qw/max any/;
 use List::MoreUtils qw/indexes/;
@@ -11,6 +11,8 @@ use Pricing::Engine::HighLowTicks;
 
 use BOM::Product::Contract::Strike::Digit;
 use BOM::Product::Pricing::Greeks::Digits;
+
+use constant DURATION_IN_TICKS => 5;
 
 has 'selected_tick' => (
     is       => 'ro',
@@ -30,27 +32,36 @@ sub _build_greek_engine {
 }
 
 sub check_expiry_conditions {
+
     my $self = shift;
 
-    if ($self->exit_tick) {
-        my $ticks = $self->underlying->ticks_in_between_start_limit({
-            start_time => $self->date_start,
-            limit      => 5
-        });
+    my $ticks = $self->underlying->ticks_in_between_start_limit({
+        start_time => $self->date_start,
+        limit      => DURATION_IN_TICKS,
+    });
 
-        # Obtain the max value of all ticks
-        my $max = max(map { $_->{quote} } @$ticks);
+    my $number_of_ticks = scalar(@$ticks);
 
-        # Obtain indexes where the tick is a maximum value
-        my @indexes = indexes { $_->{quote} == $max } @$ticks;
+    # If there's no tick yet, the contract is not expired.
+    return 0 if $number_of_ticks < $self->selected_tick;
 
-        # Check if the selected tick index is the highest tick
-        my $contract_value = (any { $self->selected_tick == $_ + 1 } @indexes) ? $self->payout : 0;
+    my $selected_quote = $ticks->[$self->selected_tick - 1]->{quote};
 
-        $self->value($contract_value);
+    # selected quote is not the highest.
+    if (any { $_->{quote} > $selected_quote } @$ticks) {
+        $self->value(0);
+        return 1;    # contract expired
     }
 
-    return undef;
+    # we already have the full set of ticks, but no tick is higher than selected.
+    if ($number_of_ticks == DURATION_IN_TICKS) {
+        $self->value($self->payout);
+        return 1;
+    }
+
+    # not expired, still waiting for ticks.
+    return 0;
+
 }
 
 sub _validate_barrier {
