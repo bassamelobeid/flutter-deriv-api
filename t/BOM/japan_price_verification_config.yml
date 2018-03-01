@@ -59,12 +59,12 @@ intraday_historical:
     opposite_contract_intraday_historical_iv_risk: 0
     opposite_contract_intraday_vega: -0.184532897606929
     opposite_contract_intraday_vega_correction: -0.00162296060969017
-    opposite_contract_long_term_delta_correction: -0.00342574917611216
+    opposite_contract_long_term_delta_correction: -0.00338794646250118
     opposite_contract_long_term_prediction: 0.0879496626746316
     opposite_contract_mu: 0
     opposite_contract_payout: 1000
     opposite_contract_quiet_period_markup: 0
-    opposite_contract_risk_markup: 0.0192266448803464
+    opposite_contract_risk_markup: 0.0190227352741738
     opposite_contract_short_term_delta_correction: -0.0131432219167099
     opposite_contract_short_term_kurtosis_risk_markup: 0
     opposite_contract_t: 2.85388127853881e-05
