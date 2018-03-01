@@ -221,7 +221,7 @@ subtest $method => sub {
             'longcode'     => "Win USD 100 times Volatility 50 Index's close minus low over the next 50 seconds.",
             'display_name' => 'Volatility 50 Index',
             'date_expiry'  => $now->epoch - 50,
-            'barrier'      => '76.8996',
+            'barrier'      => '0.0001',
         },
         'result is ok'
     );
