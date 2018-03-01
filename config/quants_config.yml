@@ -133,32 +133,33 @@ bet_limits:
 #Assuming that 1% VaR is equal to the payout of binary options, we can use the following relationship to determine contract limit for each client:
 #
 #current_underlying_price * 1pc_VaR * client_contract_limit * contract_size = client_payout_limit
+#
+# var:
+#    intraday:
+#      R_100: 0.06415186562796626
+#      R_75: 0.047463777983804245
+#      R_50: 0.03120313936108904
+#      R_25: 0.015385016867331208
+#      R_10: 0.006103848574004506
+#    daily:
+#      R_100: 0.44644017285887516
+#      R_75: 0.3122480165035335
+#      R_50: 0.19371946771521417
+#      R_25: 0.09006447961871289
+#      R_10: 0.03444191548393187
 
 lookback_limits:
-  var:
-    intraday:
-      R_100: 0.06415186562796626
-      R_75: 0.047463777983804245
-      R_50: 0.03120313936108904
-      R_25: 0.015385016867331208
-      R_10: 0.006103848574004506
-    daily:
-      R_100: 0.44644017285887516
-      R_75: 0.3122480165035335
-      R_50: 0.19371946771521417
-      R_25: 0.09006447961871289
-      R_10: 0.03444191548393187
   open_position_limits:
-    USD: 5
-    EUR: 5
-    AUD: 5
-    GBP: 5
-    JPY: 5
-    BTC: 5
-    BCH: 5
-    ETH: 5
-    LTC: 5
-    ETC: 5
+    USD: 300
+    EUR: 300
+    AUD: 300
+    GBP: 300
+    JPY: 30000
+    BTC: 3
+    BCH: 3
+    ETH: 3
+    LTC: 3
+    ETC: 3
 
 risk_profile:
   no_business:
