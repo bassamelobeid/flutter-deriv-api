@@ -49,7 +49,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
 use BOM::Platform::Runtime;
 
-my $allowed_fields_for_virtual = qr/(passthrough|set_settings|email_consent|residence|allow_copiers)/;
+my $allowed_fields_for_virtual = qr/passthrough|set_settings|email_consent|residence|allow_copiers/;
 
 my $json = JSON::MaybeXS->new;
 
@@ -863,7 +863,7 @@ rpc set_settings => sub {
     my ($website_name, $client_ip, $user_agent, $language, $args) =
         @{$params}{qw/website_name client_ip user_agent language args/};
 
-    my ($residence, $allow_copiers, $err) = ($args->{residence}, $args->{allow_copiers});
+    my ($residence, $allow_copiers, $jp_status) = ($args->{residence}, $args->{allow_copiers});
     if ($client->is_virtual) {
         # Virtual client can update
         # - residence, if residence not set. But not for Japan
@@ -897,8 +897,8 @@ rpc set_settings => sub {
         # handle Japan settings update separately
         if ($client->residence eq 'jp') {
             # this may return error or {status => 1}
-            $err = BOM::RPC::v3::Japan::NewAccount::set_jp_settings($params);
-            return $err if $err->{error};
+            $jp_status = BOM::RPC::v3::Japan::NewAccount::set_jp_settings($params);
+            return $jp_status if $jp_status->{error};
         } elsif ($client->account_opening_reason
             and $args->{account_opening_reason}
             and $args->{account_opening_reason} ne $client->account_opening_reason)
@@ -961,8 +961,8 @@ rpc set_settings => sub {
         $user->save;
     }
 
-    # need to handle for $err->{status} as that come from japan settings
-    return {status => 1} if $err->{status};
+    # need to handle for $jp_status->{status} as that come from japan settings
+    return {status => 1} if $jp_status->{status};
 
     my $tax_residence             = $args->{'tax_residence'}             // '';
     my $tax_identification_number = $args->{'tax_identification_number'} // '';
