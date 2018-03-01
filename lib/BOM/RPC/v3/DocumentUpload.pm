@@ -44,20 +44,19 @@ sub start_document_upload {
 
     _set_staff($client);
 
-    my $dbh;
     my $id;
     my $error_occured;
+    my $error_duplicate;
     try {
-        my $STD_WARN_HANDLER = $SIG{__WARN__};
-        local $SIG{__WARN__} = sub {
-            return if _is_duplicate_upload_error($dbh);
-            return $STD_WARN_HANDLER->(@_) if $STD_WARN_HANDLER;
-            warn @_;
-        };
         ($id) = $client->db->dbic->run(
             ping => sub {
-                $dbh = $_;
-                $dbh->selectrow_array(
+                my $STD_WARN_HANDLER = $SIG{__WARN__};
+                local $SIG{__WARN__} = sub {
+                    return if $error_duplicate = _is_duplicate_upload_error($_);
+                    return $STD_WARN_HANDLER->(@_) if $STD_WARN_HANDLER;
+                    warn @_;
+                };
+                $_->selectrow_array(
                     'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?)',
                     undef, $loginid, $document_type, $document_format,
                     $args->{expiration_date},
@@ -70,7 +69,7 @@ sub start_document_upload {
         $error_occured = 1;
     };
 
-    return create_upload_error('duplicate_document') if $error_occured and _is_duplicate_upload_error($dbh);
+    return create_upload_error('duplicate_document') if $error_occured and $error_duplicate;
 
     if ($error_occured or not $id) {
         warn 'start_document_upload in the db was not successful';
@@ -95,27 +94,26 @@ sub successful_upload {
 
     _set_staff($client);
 
-    my $dbh;
     my $result;
     my $error_occured;
+    my $error_duplicate;
     try {
-        my $STD_WARN_HANDLER = $SIG{__WARN__};
-        local $SIG{__WARN__} = sub {
-            return if _is_duplicate_upload_error($dbh);
-            return $STD_WARN_HANDLER->(@_) if $STD_WARN_HANDLER;
-            warn @_;
-        };
         ($result) = $client->db->dbic->run(
             ping => sub {
-                $dbh = $_;
-                $dbh->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?)', undef, $args->{file_id}, undef);
+                my $STD_WARN_HANDLER = $SIG{__WARN__};
+                local $SIG{__WARN__} = sub {
+                    return if $error_duplicate = _is_duplicate_upload_error($_);
+                    return $STD_WARN_HANDLER->(@_) if $STD_WARN_HANDLER;
+                    warn @_;
+                };
+                $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?)', undef, $args->{file_id}, undef);
             });
     }
     catch {
         $error_occured = 1;
     };
 
-    return create_upload_error('duplicate_document') if $error_occured and _is_duplicate_upload_error($dbh);
+    return create_upload_error('duplicate_document') if $error_occured and $error_duplicate;
 
     return create_upload_error('doc_not_found') if not $result;
 
@@ -201,7 +199,7 @@ sub validate_expiration_date {
 }
 
 sub create_upload_error {
-    my $reason = shift || 'unkown';
+    my $reason = shift;
 
     state $default_error_code = 'UploadDenied';
     state $default_error_msg  = 'Sorry, an error occurred while processing your request.';
@@ -216,12 +214,11 @@ sub create_upload_error {
         checksum_mismatch  => ['Checksum verification failed.', 'ChecksumMismatch'],
     };
 
-    my $error_code = $errors->{$reason}[1] || $default_error_code;
-    my $message = localize($errors->{$reason}[0] || $default_error_msg);
+    my ($error_code, $message) = ($errors->{$reason}[1], localize($errors->{$reason}[0])) if $reason;
 
     return BOM::RPC::v3::Utility::create_error({
-        code              => $error_code,
-        message_to_client => $message
+        code              => $error_code || $default_error_code,
+        message_to_client => $message || $default_error_msg
     });
 }
 
