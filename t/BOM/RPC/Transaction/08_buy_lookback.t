@@ -61,13 +61,12 @@ subtest 'buy' => sub {
     $params->{contract_parameters} = {
         "proposal"      => 1,
         "multiplier"    => "1",
+        "basis"         => "multiplier",
         "contract_type" => "LBFLOATCALL",
         "currency"      => "USD",
         "duration"      => "120",
         "duration_unit" => "s",
         "symbol"        => "R_75",
-        "amount_type"   => "payout",
-        "barrier"       => "S20P",
     };
 
     $params->{args}{price} = 7.59 * 0.5;
