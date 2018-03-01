@@ -81,7 +81,7 @@ install:
     - sudo mkdir -p /var/log/httpd && sudo chmod 777 /var/log/httpd
     - perl /home/git/regentmarkets/bom-platform/bin/notify_pub.pl 2>&1 | grep -Ev '(connection has been closed unexpectedly)|(terminating connection due to administrator)' &
     - perl /home/git/regentmarkets/bom-pricing/bin/price_queue.pl   daemon > /dev/null 2>&1 &
-    - perl /home/git/regentmarkets/bom-pricing/bin/price_queue_priority.pl   daemon > /dev/null 2>&1 &
+    - perl /home/git/regentmarkets/bom-pricing/bin/price_queue.pl --priority daemon > /dev/null 2>&1 &
     - perl /home/git/regentmarkets/bom-pricing/bin/price_daemon.pl --no-warmup=1 daemon > /dev/null 2>&1 &
 
 before_script:
