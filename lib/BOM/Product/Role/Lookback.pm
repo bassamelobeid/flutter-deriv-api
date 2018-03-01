@@ -98,8 +98,8 @@ sub _build_spot_min_max {
         my $decimate = BOM::Market::DataDecimate->new({market => $self->market->name});
         my $ticks = $decimate->get({
             underlying  => $self->underlying,
-            start_epoch => $self->date_start->epoch + 1,
-            end_epoch   => $self->date_expiry->epoch,
+            start_epoch => $start_epoch,
+            end_epoch   => $end_epoch,
             backprice   => $self->underlying->for_date,
             decimate    => 0,
         });
