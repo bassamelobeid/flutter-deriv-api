@@ -204,7 +204,7 @@ subtest 'batch-buy success + multisell', sub {
             payout        => $contract->payout,
             amount_type   => 'payout',
             multiple      => [{loginid => $cl2->loginid}, {code => 'ignore'}, {loginid => $cl1->loginid}, {loginid => $cl2->loginid},],
-            purchase_date => Date::Utility->new,
+            purchase_date => $contract->date_start,
         });
 
         subtest 'check limits' => sub {

@@ -4,11 +4,11 @@ use strict;
 use warnings;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
-use Test::More tests => 9;
+use Test::More tests => 7;
 use Test::Exception;
 use Guard;
 use Crypt::NamedKeys;
-use BOM::User::Client;
+use Client::Account;
 use BOM::Platform::Password;
 use BOM::Platform::Client::Utility;
 
@@ -159,7 +159,7 @@ sub db {
 }
 
 sub create_client {
-    return BOM::User::Client->register_and_return_new_client({
+    return Client::Account->register_and_return_new_client({
         broker_code      => 'VRTC',
         client_password  => BOM::Platform::Password::hashpw('12345678'),
         salutation       => 'Ms',
@@ -362,24 +362,25 @@ my $new_client = create_client;
 top_up $new_client, 'USD', 5000;
 my $new_acc_usd = $new_client->find_account(query => [currency_code => 'USD'])->[0];
 
-subtest 'buy a bet', sub {
+subtest 'test slippage', sub {
     plan tests => 11;
     lives_ok {
         my $contract = produce_contract({
             underlying   => $underlying_R50,
             bet_type     => 'LBFLOATCALL',
             currency     => 'USD',
-            multiplier   => 5.0,
+            multiplier   => 100,
             duration     => '30m',
             current_tick => $tick,
-            barrier      => 'S20P',
+            barrier      => 'S0P',
             amount_type  => 'multiplier',
         });
 
+#Case 1 , recomputed price 50 requested price 50.01
         my $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
-            price         => $contract->ask_price,
+            price         => 50.01,
             multiplier    => $contract->multiplier,
             amount_type   => 'multiplier',
             source        => 19,
@@ -387,197 +388,87 @@ subtest 'buy a bet', sub {
         });
 
         my $error = $txn->buy;
-        is $error, undef, 'no error';
-
-        subtest 'transaction report', sub {
-            plan tests => 11;
-            note $txn->report;
-            my $report = $txn->report;
-            like $report, qr/\ATransaction Report:$/m,                                                    'header';
-            like $report, qr/^\s*Client: \Q${\$cl}\E$/m,                                                  'client';
-            like $report, qr/^\s*Contract: \Q${\$contract->code}\E$/m,                                    'contract';
-            like $report, qr/^\s*Price: \Q${\$txn->price}\E$/m,                                           'price';
-            like $report, qr/^\s*Payout: \Q${\$txn->payout}\E$/m,                                         'payout';
-            like $report, qr/^\s*Amount Type: \Q${\$txn->amount_type}\E$/m,                               'amount_type';
-            like $report, qr/^\s*Comment: \Q${\$txn->comment->[0]}\E$/m,                                  'comment';
-            like $report, qr/^\s*Staff: \Q${\$txn->staff}\E$/m,                                           'staff';
-            like $report, qr/^\s*Transaction Parameters: \$VAR1 = \{$/m,                                  'transaction parameters';
-            like $report, qr/^\s*Transaction ID: \Q${\$txn->transaction_id}\E$/m,                         'transaction id';
-            like $report, qr/^\s*Purchase Date: \Q${\$txn->purchase_date->datetime_yyyymmdd_hhmmss}\E$/m, 'purchase date';
-        };
+        is $error, undef, 'case 1 no error';
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
 
-        # note explain $trx;
-
-        subtest 'transaction row', sub {
-            plan tests => 12;
-            cmp_ok $trx->{id}, '>', 0, 'id';
-            is $trx->{account_id}, $acc_usd->id, 'account_id';
-            is $trx->{action_type}, 'buy', 'action_type';
-            is $trx->{amount} + 0, -2.5, 'amount';
-            is $trx->{balance_after} + 0, 5000 - 2.5, 'balance_after';
-            is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $trx->{payment_id},    undef,                  'payment_id';
-            is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
-            is $trx->{remark},        undef,                  'remark';
-            is $trx->{staff_loginid}, $cl->loginid, 'staff_loginid';
-            is $trx->{source}, 19, 'source';
-            cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
+        subtest 'case 2 fmb row', sub {
+            plan tests => 1;
+            is $fmb->{buy_price} + 0, 50.01, 'buy_price';
         };
 
-        # note explain $fmb;
-
-        subtest 'fmb row', sub {
-            plan tests => 19;
-            cmp_ok $fmb->{id}, '>', 0, 'id';
-            is $fmb->{account_id}, $acc_usd->id, 'account_id';
-            is $fmb->{bet_class}, 'lookback_option', 'bet_class';
-            is $fmb->{bet_type},  'LBFLOATCALL',     'bet_type';
-            is $fmb->{buy_price} + 0, 2.5, 'buy_price';
-            is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
-            cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
-            is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
-            is !$fmb->{is_expired}, !0, 'is_expired';
-            is !$fmb->{is_sold},    !0, 'is_sold';
-            cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
-            like $fmb->{remark},   qr/\btrade\[2\.50000\]/, 'remark';
-            is $fmb->{sell_price}, undef,                   'sell_price';
-            is $fmb->{sell_time},  undef,                   'sell_time';
-            cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
-            like $fmb->{short_code}, qr/CALL/, 'short_code';
-            cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
-            is $fmb->{tick_count},        undef,  'tick_count';
-            is $fmb->{underlying_symbol}, 'R_50', 'underlying_symbol';
+        subtest 'case 2 qv row', sub {
+            plan tests => 1;
+            is $qv1->{trade} + 0, 50.01, 'trade';
         };
 
-        # note explain $chld;
-
-        subtest 'chld row', sub {
-            plan tests => 3;
-            is $chld->{absolute_barrier}, undef, 'absolute_barrier';
-            is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{prediction},       undef,  'prediction';
-        };
-
-        # note explain $qv1;
-
-        subtest 'qv row', sub {
-            plan tests => 3;
-            is $qv1->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $qv1->{transaction_id},          $trx->{id}, 'transaction_id';
-            is $qv1->{trade} + 0, 2.5, 'trade';
-        };
-
-        is $txn->contract_id,    $fmb->{id},            'txn->contract_id';
-        is $txn->transaction_id, $trx->{id},            'txn->transaction_id';
-        is $txn->balance_after,  $trx->{balance_after}, 'txn->balance_after';
-        is $txn->execute_at_better_price, 0, 'txn->execute_at_better_price';
-    }
-    'survived';
-};
-
-subtest 'sell a bet', sub {
-    plan tests => 1;
-        set_relative_time 1;
-        my $reset_time = guard { restore_time };
-
-        my $contract = produce_contract({
-            underlying   => $underlying_R50,
-            bet_type     => 'LBFLOATCALL',
-            currency     => 'USD',
-            multiplier   => 5,
-            amount_type  => 'multiplier',
-            duration     => '30m',
-            current_tick => $tick,
-            entry_tick   => $tick,
-            exit_tick    => $tick,
-            barrier      => 'S20P',
-        });
-        my $txn;
-        
-        my $error = do {
-            my $mocked           = Test::MockModule->new('BOM::Transaction');
-            my $mocked_validator = Test::MockModule->new('BOM::Transaction::Validation');
-            $mocked_validator->mock('_validate_trade_pricing_adjustment', sub { });
-            $mocked->mock('price', sub { $contract->bid_price });
-            $txn = BOM::Transaction->new({
-                purchase_date => $contract->date_start,
-                client        => $cl,
-                contract      => $contract,
-                contract_id   => $fmb->{id},
-                price         => $contract->bid_price,
-                source        => 23,
-            });
-            $txn->sell;
-        };
-        isa_ok $error, 'Error::Base', 'sellback not allowed error';  
-
-};
-
-subtest 'sell_expired_contracts', sub {
-    plan tests => 7;
-    lives_ok {
-        my $cl = create_client;
-
-        top_up $cl, 'USD', 1000;
-
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
-
-        my $bal;
-        is + ($bal = $acc_usd->balance + 0), 1000, 'USD balance is 1000 got: ' . $bal;
-
-        my $contract_expired = produce_contract({
-            underlying   => $underlying_R50,
-            bet_type     => 'LBFLOATCALL',
-            currency     => 'USD',
-            multiplier   => 5,
-            amount_type  => 'multiplier',
-            date_start   => ($now->epoch - 50) - (30 * 60),
-            date_expiry  => $now->epoch - 50,
-            current_tick => $tick,
-            entry_tick   => $old_tick1,
-            exit_tick    => $old_tick2,
-            barrier      => 'S20P',
-        });
-
-        my $txn = BOM::Transaction->new({
+#Case 2 , recomputed price 50 requested price 49.99
+       $txn = BOM::Transaction->new({
             client        => $cl,
-            contract      => $contract_expired,
-            price         => $contract_expired->ask_price,
+            contract      => $contract,
+            price         => 49.99,
+            multiplier    => $contract->multiplier,
             amount_type   => 'multiplier',
-            multiplier    => 10,
-            purchase_date => $now->epoch - (30 * 60 + 51),
+            source        => 19,
+            purchase_date => $contract->date_start,
         });
 
-        my (@expired_txnids, @expired_fmbids, @unexpired_fmbids);
-        # buy 2 expired contracts
-        for (1 .. 2) {
-            my $error = $txn->buy(skip_validation => 1);
-            is $error, undef, 'no error: bought 1 expired contract for 100';
-            push @expired_txnids, $txn->transaction_id;
-            push @expired_fmbids, $txn->contract_id;
-        }
+        $error = $txn->buy;
+        is $error, undef, 'case 2 no error';
 
-        $acc_usd->load;
-        is $acc_usd->balance + 0, 995, 'USD balance is down to 900 plus';
-
-        # First sell some particular ones by id.
-        my $res = BOM::Transaction::sell_expired_contracts + {
-            client       => $cl,
-            source       => 29,
-            contract_ids => [@expired_fmbids[0 .. 1]],
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
+        
+        subtest 'case 2 fmb row', sub {
+            plan tests => 1;
+            is $fmb->{buy_price} + 0, 49.99, 'buy_price';
         };
 
-        is_deeply $res,
-            +{
-            number_of_sold_bets => 2,
-            skip_contract       => 0,
-            total_credited      => 1,
-            failures            => [],
-            },
-            'sold the two requested contracts';
+        subtest 'case 2 qv row', sub {
+            plan tests => 1;
+            is $qv1->{trade} + 0, 49.99, 'trade';
+        };
+
+#Case 3 , recomputed price 50 requested price 60
+       $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 60.00,
+            multiplier    => $contract->multiplier,
+            amount_type   => 'multiplier',
+            source        => 19,
+            purchase_date => $contract->date_start,
+        });
+
+        $error = $txn->buy;
+        is $error, undef, 'case 3 no error';
+
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
+
+        subtest 'case 3 fmb row', sub {
+            plan tests => 1;
+            is $fmb->{buy_price} + 0, 50.00, 'buy_price';
+        };
+
+        subtest 'case 3 qv row', sub {
+            plan tests => 1;
+            is $qv1->{trade} + 0, 50.00, 'trade';
+        };
+
+#Case 4 , recomputed price 50 requested price 40
+       $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 40.00,
+            multiplier    => $contract->multiplier,
+            amount_type   => 'multiplier',
+            source        => 19,
+            purchase_date => $contract->date_start,
+        });
+
+        $error = $txn->buy;
+        is $error->get_type, 'PriceMoved', 'case 4 error';
 
     }
     'survived';
 };
+
