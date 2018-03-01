@@ -32,27 +32,27 @@
         },
         "binary_options_trading_frequency": {
           "type": "string",
-          "description": "Indices trading frequency"
+          "description": "Binary options trading frequency"
         },
         "binary_options_trading_experience": {
           "type": "string",
-          "description": "Indices trading experience"
+          "description": "Binary options trading experience"
         },
         "cfd_trading_frequency": {
           "type": "string",
-          "description": "Commodities trading frequency"
+          "description": "CFDs trading frequency"
         },
         "cfd_trading_experience": {
           "type": "string",
-          "description": "Commodities trading experience"
+          "description": "CFDs trading experience"
         },
         "other_instruments_trading_frequency": {
           "type": "string",
-          "description": "Other financial instruments trading frequency"
+          "description": "Trading frequency in other financial instruments"
         },
         "other_instruments_trading_experience": {
           "type": "string",
-          "description": "Other financial instruments trading experience"
+          "description": "Trading experience in other financial instruments"
         },
         "employment_industry": {
           "type": "string",
