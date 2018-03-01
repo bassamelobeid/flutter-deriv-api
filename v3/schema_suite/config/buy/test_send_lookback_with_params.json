@@ -3,6 +3,7 @@
   "price": 162.85,
   "parameters": {
     "amount": 1,
+    "basis": "multiplier",
     "contract_type": "LBFLOATCALL",
     "currency": "USD",
     "symbol": "R_100",
