@@ -213,36 +213,20 @@ sub get_financial_input_mapping {
             'label'           => 'Forex trading frequency',
             'possible_answer' => $frequency_possible_answer
         },
-        indices_trading_experience => {
-            'label'           => 'Indices trading experience',
+        binary_options_trading_experience => {
+            'label'           => 'Binary options trading experience',
             'possible_answer' => $experience_possible_answer
         },
-        indices_trading_frequency => {
-            'label'           => 'Indices trading frequency',
+        binary_options_trading_frequency => {
+            'label'           => 'Binary options trading frequency',
             'possible_answer' => $frequency_possible_answer
         },
-        commodities_trading_experience => {
-            'label'           => 'Commodities trading experience',
+        cfd_trading_experience => {
+            'label'           => 'CFDs trading experience',
             'possible_answer' => $experience_possible_answer
         },
-        commodities_trading_frequency => {
-            'label'           => 'Commodities trading frequency',
-            'possible_answer' => $frequency_possible_answer
-        },
-        stocks_trading_experience => {
-            'label'           => 'Stocks trading experience',
-            'possible_answer' => $experience_possible_answer
-        },
-        stocks_trading_frequency => {
-            'label'           => 'Stocks trading frequency',
-            'possible_answer' => $frequency_possible_answer
-        },
-        other_derivatives_trading_experience => {
-            'label'           => 'Binary options or other financial derivatives trading experience',
-            'possible_answer' => $experience_possible_answer
-        },
-        other_derivatives_trading_frequency => {
-            'label'           => 'Binary options or other financial derivatives trading frequency',
+        cfd_trading_frequency => {
+            'label'           => 'CFDs trading frequency',
             'possible_answer' => $frequency_possible_answer
         },
         other_instruments_trading_experience => {
