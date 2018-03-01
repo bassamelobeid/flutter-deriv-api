@@ -52,7 +52,7 @@ subtest 'validate client error message' => sub {
         bet_type     => 'CALL',
         currency     => $currency,
         payout       => 1000,
-        date_start   => $now,
+    #    date_start   => $now,
         duration     => '5d',
         current_tick => $tick,
         barrier      => 'S0P',
@@ -63,7 +63,7 @@ subtest 'validate client error message' => sub {
     my $transaction = BOM::Transaction->new({
         client        => $cr,
         contract      => $contract,
-        purchase_date => $now,
+        purchase_date => $contract->date_start,
     });
 
     my $error = BOM::Transaction::Validation->new({
@@ -89,7 +89,7 @@ subtest 'validate client error message' => sub {
     $transaction = BOM::Transaction->new({
         client        => $mf,
         contract      => $contract,
-        purchase_date => $now,
+        purchase_date => $contract->date_start,
     });
 
     $error = BOM::Transaction::Validation->new({
