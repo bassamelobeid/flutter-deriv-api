@@ -34,8 +34,22 @@ sub forget_all {
     my ($c, $req_storage) = @_;
 
     my %removed_ids;
-    if (my @types = $req_storage->{args}->{forget_all}) {
-        foreach my $type (@types) {
+    if (my $types = $req_storage->{args}->{forget_all}) {
+        # if type is a string, turn it into an array
+        $types = [$types] unless ref($types) eq 'ARRAY';
+
+        # since we accept array, syntax check should be done here
+        my @failed_types;
+        for my $type (@$types) {
+            if ($type !~ /^(ticks|candles|proposal|portfolio|proposal_open_contract|balance|transaction|proposal_array)$/) {
+                push @failed_types, $type;
+            }
+        }
+        if (@failed_types) {
+            return $c->new_error('forget_all', 'InputValidationFailed', $c->l('Input validation failed: ') . join(', ', @failed_types));
+        }
+
+        for my $type (@$types) {
             if ($type eq 'balance' or $type eq 'transaction' or $type eq 'proposal_open_contract') {
                 @removed_ids{@{_forget_transaction_subscription($c, $type)}} = ();
             }
