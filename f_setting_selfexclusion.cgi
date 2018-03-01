@@ -132,8 +132,29 @@ $client->set_exclusion->max_balance(looks_like_number($v) ? $v : undef);
 $v = request()->param('SESSIONDURATION');
 $client->set_exclusion->session_duration_limit(looks_like_number($v) ? $v : undef);
 
-# by or-ing to 'undef' here we turn any blank exclude_until date to no-date.
-$client->set_exclusion->exclude_until(request()->param('EXCLUDEUNTIL') || undef);
+my $form_exclusion_until_date = request()->param('EXCLUDEUNTIL') || undef;
+
+$form_exclusion_until_date = Date::Utility->new($form_exclusion_until_date) if $form_exclusion_until_date;
+
+my $exclude_until_date;
+
+if ($client->get_self_exclusion->exclude_until) {
+    $exclude_until_date = Date::Utility->new($client->get_self_exclusion->exclude_until);
+}
+
+# If no change has been made in the exclude_until field, then ignore the checking
+if (!$exclude_until_date || !$form_exclusion_until_date || $form_exclusion_until_date->date ne $exclude_until_date->date) {
+    if (allow_uplift_self_exclusion($client, $exclude_until_date, $form_exclusion_until_date)) {
+
+        if ($form_exclusion_until_date) {
+            $client->set_exclusion->exclude_until($form_exclusion_until_date->date);
+        } else {
+            $client->set_exclusion->exclude_until(undef);
+        }
+    } else {
+        print "<p class=\"aligncenter\"><font color=red><b>WARNING: </b></font>Client's self-exclusion date cannot be changed</p>";
+    }
+}
 
 my $timeout_until = request()->param('TIMEOUTUNTIL') || undef;
 $timeout_until = Date::Utility->new($timeout_until)->epoch if $timeout_until;

@@ -20,6 +20,7 @@ use Encode;
 use JSON::MaybeXS;
 use Excel::Writer::XLSX;
 use File::Temp;
+use Format::Util::Numbers qw(formatnumber);
 
 my $json = JSON::MaybeXS->new;
 has client => (
@@ -108,13 +109,15 @@ sub _total_deposits_withdrawals {
     my $self = shift;
 
     my $total;
+    my $currency = $self->client->currency;
+
     my $payment_mapper = BOM::Database::DataMapper::Payment->new({
         'client_loginid' => $self->client->loginid,
         'currency_code'  => $self->client->currency,
     });
 
-    $total->{deposit}    = $payment_mapper->get_total_deposit_of_account;
-    $total->{withdrawal} = $payment_mapper->get_total_withdrawal;
+    $total->{deposit}    = formatnumber('amount', $currency, $payment_mapper->get_total_deposit);
+    $total->{withdrawal} = formatnumber('amount', $currency, $payment_mapper->get_total_withdrawal);
     $total->{balance}    = $self->client->default_account->balance;
     return $total;
 }
