@@ -214,11 +214,12 @@ sub create_upload_error {
         checksum_mismatch  => ['Checksum verification failed.', 'ChecksumMismatch'],
     };
 
-    my ($error_code, $message) = ($errors->{$reason}[1], localize($errors->{$reason}[0])) if $reason;
+    my ($error_code, $message);
+    ($error_code, $message) = ($errors->{$reason}[1], localize($errors->{$reason}[0])) if $reason;
 
     return BOM::RPC::v3::Utility::create_error({
         code              => $error_code || $default_error_code,
-        message_to_client => $message || $default_error_msg
+        message_to_client => $message    || $default_error_msg
     });
 }
 
