@@ -375,7 +375,7 @@ sub get_real_account_siblings_information {
 
 =head2 get_client_currency_information
     get_client_currency_information($siblings, $landing_company_name)
-    
+
     Get the currency statuses (fiat and crypto) of the clients, based on the landing company.
 =cut
 
@@ -710,7 +710,8 @@ sub longcode {    ## no critic(Subroutines::RequireArgUnpacking)
 
     foreach my $shortcode (@short_codes) {
         try {
-            $longcodes{$shortcode} = $shortcode =~ /^BINARYICO/ ? localize('Binary ICO') : localize(shortcode_to_longcode($shortcode));
+            $longcodes{$shortcode} =
+                $shortcode =~ /^BINARYICO/ ? localize('Binary ICO') : localize(shortcode_to_longcode($shortcode, $params->{currency}));
         }
         catch {
             warn "exception is thrown when executing shortcode_to_longcode, parameters: " . $shortcode . ' error: ' . $_;

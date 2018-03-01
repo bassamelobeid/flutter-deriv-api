@@ -4,6 +4,8 @@ use warnings;
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
+use Test::MockTime qw(:all);
+use Guard;
 use Test::FailWarnings;
 use Test::Warn;
 
@@ -21,6 +23,10 @@ use BOM::Platform::Token;
 use utf8;
 
 my ($t, $rpc_ct);
+
+# In the weekend the account transfers will be suspended. So we mock a valid day here
+set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
+scope_guard { restore_time() };
 
 subtest 'Initialization' => sub {
     lives_ok {
@@ -169,7 +175,6 @@ subtest 'validation' => sub {
     # random loginid to make it fail
     $params->{token} = $token;
     $params->{args}->{account_from} = 'CR123';
-
     my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for loginid that does not exists';
     is $result->{error}->{message_to_client}, 'Transfers between accounts are not available for your account.',
