@@ -277,14 +277,14 @@ subtest 'japan KLFB' => sub {
             name       => 'test'
         });
     my $contract = produce_contract({
-        underlying   => 'frxUSDJPY',
-        bet_type     => 'CALLE',
-        currency     => 'JPY',
-        payout       => 1501,
-        duration     => '1d',
-        current_tick => $tick,
-        barrier      => 'S10P',
-        product_type => 'multi_barrier',
+        underlying           => 'frxUSDJPY',
+        bet_type             => 'CALLE',
+        currency             => 'JPY',
+        payout               => 1501,
+        duration             => '1d',
+        current_tick         => $tick,
+        barrier              => 'S10P',
+        product_type         => 'multi_barrier',
         trading_period_start => $now->epoch,
     });
 
