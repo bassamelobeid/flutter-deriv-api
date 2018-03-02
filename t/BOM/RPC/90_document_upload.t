@@ -72,10 +72,9 @@ my %default_args = (
 use constant {
     EXP_DATE_PAST   => '2017-08-09',
     INVALID_FILE_ID => 1231531,
-    DOC_ID_2        => 'ABCD1235'
+    DOC_ID_2        => 'ABCD1235',
+    MAX_FILE_SIZE   => 3 * 2**20,
 };
-
-use constant MAX_FILE_SIZE => 3 * 2**20;
 
 #########################################################
 ## Tests for initial argument error handling
@@ -141,6 +140,10 @@ subtest 'Basic upload test sequence' => sub {
     };
 };
 
+#########################################################
+## Tests for upload fails
+#########################################################
+
 subtest 'Attempt to upload file with same checksum as "Basic upload test sequence"' => sub {
     # This is a new document upload, so change the ID
     my $custom_params = { args => { document_id => DOC_ID_2 } };
@@ -154,6 +157,10 @@ subtest 'Attempt to upload file with same checksum as "Basic upload test sequenc
                                  document_format => '' } };
     call_and_check_error($custom_params, 'Document already uploaded.', 'error if same document is uploaded twice');
 };
+
+#########################################################
+## Audit test (keep this last)
+#########################################################
 
 subtest 'Check audit information after all above upload requests' => sub {
     my $result = $real_client->db->dbic->run(
