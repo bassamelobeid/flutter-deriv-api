@@ -371,9 +371,12 @@ rpc new_account_maltainvest => sub {
 
     my $user = BOM::Platform::User->new({email => $client->email});
 
-    # When a Malta/IOM account is created, the 'place of birth' field is not present
-    # After creating Malta/IOM account, client can select their place of birth in their profile settings
-    # However, when Maltainvest account is created, the place of birth field is mandatory
+    # When a Binary (Europe) Ltd/Binary (IOM) Ltd account is created,
+    # the 'place of birth' field is not present.
+    # After creating Binary (Europe) Ltd/Binary (IOM) Ltd account, client can select
+    # their place of birth in their profile settings.
+    # However, when a Binary Investments (Europe) Ltd account account is created,
+    # the 'place of birth' field is mandatory.
     # Hence, this check is added for backward compatibility (assuming no place of birth is selected)
     if (!$client->place_of_birth && $args->{place_of_birth} && !$client->is_virtual) {
         $client->place_of_birth($args->{place_of_birth});
@@ -409,9 +412,9 @@ rpc new_account_maltainvest => sub {
     my $new_client      = $acc->{client};
     my $landing_company = $new_client->landing_company;
 
-    # Malta/IOM client's citizenship can be updated from backoffice (it is not set by default)
-    # However, when a Maltainvest account is created, the citizenship is not updated
-    # This is because the citizenship field is not present in the form
+    # Client's citizenship can only be set from backoffice.
+    # However, when a Binary Investments (Europe) Ltd account is created, the citizenship
+    # is not updated in the new account.
     # Hence, the following check is necessary
     $new_client->citizen($client->citizen) if ($client->citizen && !$client->is_virtual);
 
