@@ -18,7 +18,9 @@ use BOM::Platform::RedisReplicated;
 use Test::MockModule;
 use BOM::Platform::Runtime;
 
-BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles('{"yyy": {"market": "forex", "barrier_category": "euro_atm", "commission": "0.05", "name": "test commission", "updated_on": "xxx date", "updated_by": "xxyy"}}');
+BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+    '{"yyy": {"market": "forex", "barrier_category": "euro_atm", "commission": "0.05", "name": "test commission", "updated_on": "xxx date", "updated_by": "xxyy"}}'
+);
 
 my $mocked_decimate = Test::MockModule->new('BOM::Market::DataDecimate');
 $mocked_decimate->mock(
