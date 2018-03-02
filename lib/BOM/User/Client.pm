@@ -65,8 +65,6 @@ my $CLIENT_STATUS_TYPES = {
     document_under_review => 1,
     # indicates if there was a problem with uploaded documents.
     document_needs_action => 1,
-    # CR accounts with no trading but ICO access
-    ico_only               => 1,
     professional_requested => 1,
     professional           => 1,
 };
@@ -565,7 +563,7 @@ sub get_self_exclusion_until_dt {
 
     my $exclude_until = $excl->exclude_until;
     my $timeout_until = $excl->timeout_until;
-
+    my $today = Date::Utility->new;
     # Don't uplift exclude_until date for clients under Binary (Europe) Ltd,
     # Binary (IOM) Ltd, and Binary Investments (Europe) Ltd upon expiry.
     # This is in compliance with Section 3.5.4 (5e) of the United Kingdom Gambling
@@ -575,13 +573,12 @@ sub get_self_exclusion_until_dt {
     # applicable to clients under Binary Investments (Europe) Ltd for standardisation.
     # (http://www.gamblingcommission.gov.uk/PDF/LCCP/Licence-conditions-and-codes-of-practice.pdf)
     if ($self->landing_company->short !~ /^(?:iom|malta|maltainvest)$/) {
-        my $today = Date::Utility->new;
         # undef if expired
         undef $exclude_until
             if $exclude_until and Date::Utility->new($exclude_until)->is_before($today);
-        undef $timeout_until
-            if $timeout_until and Date::Utility->new($timeout_until)->is_before($today);
     }
+
+    undef $timeout_until if $timeout_until and Date::Utility->new($timeout_until)->is_before($today);
 
     return undef unless $exclude_until || $timeout_until;
 
