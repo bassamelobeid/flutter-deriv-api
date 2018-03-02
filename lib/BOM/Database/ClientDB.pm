@@ -112,6 +112,10 @@ sub _cached_db {
         BOM::Database::Rose::DB->db_cache->set_db($db);
     }
 
+    if ($ENV{AUDIT_STAFF_NAME} and $ENV{AUDIT_STAFF_IP}) {
+        $db->dbic->dbh->selectall_arrayref('SELECT audit.set_staff(?::TEXT, ?::CIDR)', undef, @ENV{qw/AUDIT_STAFF_NAME AUDIT_STAFF_IP/});
+    }
+
     return $db;
 }
 

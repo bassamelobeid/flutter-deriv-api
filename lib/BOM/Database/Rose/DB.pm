@@ -151,7 +151,9 @@ sub dbi_connect {
         # Please refer to the document of DBIx::Connector .
         $self->{dbic}->mode('fixup');
     }
-    return $self->{dbic}->dbh;
+    my $dbh = $self->{dbic}->dbh;
+
+    return $dbh;
 }
 
 1;

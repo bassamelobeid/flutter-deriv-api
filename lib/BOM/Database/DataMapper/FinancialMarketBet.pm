@@ -280,9 +280,6 @@ sub _fmb_rose_to_fmb_model {
     } elsif ($rose_object->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_SPREAD_BET) {
         $param->{'spread_bet_record'} = $rose_object->spread_bet;
         $model_class = 'BOM::Database::Model::FinancialMarketBet::SpreadBet';
-    } elsif ($rose_object->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_COINAUCTION_BET) {
-        $param->{'coinauction_bet_record'} = $rose_object->coinauction_bet;
-        $model_class = 'BOM::Database::Model::FinancialMarketBet::CoinauctionBet';
     } elsif ($rose_object->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_LOOKBACK_OPTION) {
         $param->{'lookback_option_record'} = $rose_object->lookback_option;
         $model_class = 'BOM::Database::Model::FinancialMarketBet::LookbackOption';
