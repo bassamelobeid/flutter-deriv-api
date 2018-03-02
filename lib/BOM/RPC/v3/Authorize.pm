@@ -33,9 +33,6 @@ sub _get_upgradeable_landing_companies {
     my $gaming_company    = $countries_instance->gaming_company_for_country($client->residence);
     my $financial_company = $countries_instance->financial_company_for_country($client->residence);
 
-    # Check if client is ICO or not
-    my $is_ico_client = $client->get_status('ico_only');
-
     # Check if client has a gaming account or financial account
     # Otherwise, add them to the list
     # NOTE: Gaming has higher priority over financial
@@ -64,11 +61,9 @@ sub _get_upgradeable_landing_companies {
     # Some countries have both financial and gaming. Financial is added:
     # - if the list is empty
     # - two companies are not same
-    # - there is no ico client
     # - current client is not virtual
     if (   !@upgradeable_landing_companies
         && ($gaming_company && $financial_company && $gaming_company ne $financial_company)
-        && !$is_ico_client
         && !$client->is_virtual
         && !(any { $_->landing_company->short eq $financial_company } @$client_list))
     {
@@ -77,9 +72,8 @@ sub _get_upgradeable_landing_companies {
 
     # Multiple CR account scenario:
     # - client's landing company is CR
-    # - there is no ico client
     # - client can upgrade to other CR accounts, assuming no fiat currency OR other cryptocurrencies
-    if ($client->landing_company->short eq 'costarica' && !$is_ico_client) {
+    if ($client->landing_company->short eq 'costarica') {
 
         # Get siblings of the current client
         my $siblings = BOM::RPC::v3::Utility::get_real_account_siblings_information($client->loginid);
@@ -160,7 +154,6 @@ rpc authorize => sub {
             currency             => $curr,
             landing_company_name => $clnt->landing_company->short,
             is_disabled          => $clnt->get_status('disabled') ? 1 : 0,
-            is_ico_only          => $clnt->get_status('ico_only') ? 1 : 0,
             is_virtual           => $clnt->is_virtual ? 1 : 0,
             $exclude_until ? (excluded_until => Date::Utility->new($exclude_until)->epoch) : ()};
     };
