@@ -429,7 +429,7 @@ SELECT id,
        comments,
        document_id,
        upload_date,
-       date_trunc('day', age(now(), upload_date)) AS age
+       age(date_trunc('day', now()), date_trunc('day', upload_date)) AS age
   FROM betonmarkets.client_authentication_document
  WHERE client_loginid = ? AND status != 'uploading'
 SQL
