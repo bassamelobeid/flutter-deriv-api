@@ -90,8 +90,6 @@ has underlying => (
     handles => [qw(market pip_size)],
 );
 
-sub is_binaryico { return 0; }
-
 #overriding Financial::Contract fields
 sub absolute_barrier_multiplier {
     my $self = shift;
@@ -489,7 +487,7 @@ sub allowed_slippage {
     my $self = shift;
 
     # our commission for volatility indices is 1.5% so we can let it slipped more than that.
-    return 0.01 if $self->market->name eq 'volidx';
+    return 0.002 if $self->market->name eq 'volidx';
     return 0.0175;
 }
 

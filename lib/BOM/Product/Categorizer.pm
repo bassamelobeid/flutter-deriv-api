@@ -118,6 +118,34 @@ sub process {
     my $contract_params = $self->_initialize_contract_parameters();
 
     foreach my $c_type (@$c_types) {
+
+        if ($c_type->{category}->is_binary) {
+            # if amount_type and amount are defined, give them priority.
+            if ($contract_params->{amount} and $contract_params->{amount_type}) {
+                if ($contract_params->{amount_type} eq 'payout') {
+                    $contract_params->{payout} = $contract_params->{amount};
+                } elsif ($contract_params->{amount_type} eq 'stake') {
+                    $contract_params->{ask_price} = $contract_params->{amount};
+                } else {
+                    $contract_params->{payout} = 0;    # if we don't know what it is, set payout to zero
+                }
+            }
+
+            # if stake is defined, set it to ask_price.
+            if ($contract_params->{stake}) {
+                $contract_params->{ask_price} = $contract_params->{stake};
+            }
+
+            unless (defined $contract_params->{payout} or defined $contract_params->{ask_price}) {
+                $contract_params->{payout} = 0;        # last safety net
+            }
+
+        } else {
+            if ($contract_params->{amount_type} ne 'multiplier') {
+                BOM::Product::Exception->throw(error_code => 'WrongAmountTypeNonBinary');
+            }
+        }
+
         if (@$barriers) {
             foreach my $barrier (@$barriers) {
                 my $barrier_info = $self->_initialize_barrier($barrier);
@@ -197,26 +225,6 @@ sub _initialize_contract_parameters {
     delete $pp->{expiry_daily};
     delete $pp->{is_intraday};
 
-    # if amount_type and amount are defined, give them priority.
-    if ($pp->{amount} and $pp->{amount_type}) {
-        if ($pp->{amount_type} eq 'payout') {
-            $pp->{payout} = $pp->{amount};
-        } elsif ($pp->{amount_type} eq 'stake') {
-            $pp->{ask_price} = $pp->{amount};
-        } else {
-            $pp->{payout} = 0;    # if we don't know what it is, set payout to zero
-        }
-    }
-
-    # if stake is defined, set it to ask_price.
-    if ($pp->{stake}) {
-        $pp->{ask_price} = $pp->{stake};
-    }
-
-    unless (defined $pp->{payout} or defined $pp->{ask_price}) {
-        $pp->{payout} = 0;        # last safety net
-    }
-
     if (defined $pp->{tick_expiry}) {
         my $interval = 2 * $pp->{tick_count};
         if ($pp->{underlying}->market->name eq 'volidx') {
@@ -228,12 +236,7 @@ sub _initialize_contract_parameters {
     }
 
     if (defined $pp->{duration}) {
-        if ($pp->{duration} =~ /(\d+)c$/) {
-            if ($pp->{bet_type} eq 'BINARYICO') {
-                $pp->{binaryico_number_of_tokens}    = $1;
-                $pp->{binaryico_per_token_bid_price} = $pp->{ask_price};
-            }
-        } elsif (my ($number_of_ticks) = $pp->{duration} =~ /(\d+)t$/) {
+        if (my ($number_of_ticks) = $pp->{duration} =~ /(\d+)t$/) {
             $pp->{tick_expiry} = 1;
             $pp->{tick_count}  = $number_of_ticks;
             $pp->{date_expiry} = $pp->{date_start}->plus_time_interval(2 * $pp->{tick_count});
@@ -265,13 +268,8 @@ sub _initialize_contract_parameters {
 
     $pp->{date_start} //= 1;    # Error conditions if it's not legacy or run, I guess.
 
-    if ($pp->{bet_type} and not($pp->{bet_type} eq 'BINARYICO' or $pp->{bet_type} eq 'Invalid') and not $pp->{date_expiry}) {
+    if ($pp->{bet_type} and $pp->{bet_type} ne 'Invalid' and not $pp->{date_expiry}) {
         BOM::Product::Exception->throw(error_code => 'MissingRequiredExpiry');
-    }
-
-    # For Ico, the date_start , date_expiry and ask price will be determined in the Coinauction object
-    if (defined $pp->{bet_type} and $pp->{bet_type} eq 'BINARYICO') {
-        delete @{$pp}{qw/date_start date_expiry ask_price/};
     }
 
     return $pp;
