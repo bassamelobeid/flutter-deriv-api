@@ -85,7 +85,7 @@ subtest 'Error for invalid client token' => sub {
     call_and_check_error($custom_params, 'The token is invalid.', 'check invalid token');
 };
 
-subtest 'Error for attemtping uploads on virtual account' => sub {
+subtest 'Error for attempting uploads on virtual account' => sub {
     my $custom_params = { token => $virtual_token };
     call_and_check_error($custom_params, "Virtual accounts don't require document uploads.", "don't allow virtual accounts to upload");
 };
@@ -108,6 +108,12 @@ subtest 'Error for no document_id' => sub {
 subtest 'Error for no expiration_date' => sub {
     my $custom_params = { args => { expiration_date => '' } };
     call_and_check_error($custom_params, 'Expiration date is required.', 'expiration_date is required');
+};
+
+subtest 'Generic upload fail test' => sub{
+    my $custom_params = { args => { document_type   => '',
+                                    document_format => '' } };
+    call_and_check_error($custom_params, 'Sorry, an error occurred while processing your request.', 'upload finished unsuccessfully');
 };
 
 subtest 'Error for calling success with non-existent file ID' => sub {

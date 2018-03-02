@@ -1,6 +1,0 @@
-subtest 'Unsuccessful finished upload' => sub {
-    my $params = { %default_real_params };
-    $params->{args}->{expiration_date} = EXP_DATE_FUTURE;    # 100 years is all I give you, humanity!
-    $c->call_ok($method, $params)
-        ->has_error->error_message_is('Sorry, an error occurred while processing your request.', 'upload finished unsuccessfully');
-};
