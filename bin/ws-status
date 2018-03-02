@@ -58,19 +58,16 @@ $redis->on(
         warn "ws write redis error: $err";
     });
 
-if ($status || $message) {
-    print $redis->set($is_on_key, $send_notification), "\n";
+print $redis->set($is_on_key, $send_notification), "\n";
 
-    my $mess_obj = Encode::encode_utf8(
-        encode_json({
-                site_status => $status // "up",
-                message     => $message // ""
-            }));
-    print $redis->set($state_key, $mess_obj), "\n";
+my $mess_obj = Encode::encode_utf8(
+    encode_json({
+            site_status => $status,
+            ($message ? (message => $message) : ())}));
+print $redis->set($state_key, $mess_obj), "\n";
 
-    my $subscribes_count = $redis->publish($channel_name, $mess_obj);
-    print $subscribes_count . " subscribers\n";
-}
+my $subscribes_count = $redis->publish($channel_name, $mess_obj);
+print $subscribes_count . " subscribers\n";
 
 __END__
 release_due
