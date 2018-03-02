@@ -119,7 +119,6 @@ subtest $method => sub {
         'upgradeable_landing_companies' => ['costarica'],
         'account_list'                  => [{
                 'currency'             => '',
-                'is_ico_only'          => '0',
                 'is_disabled'          => '0',
                 'is_virtual'           => '0',
                 'landing_company_name' => 'costarica',
@@ -128,7 +127,6 @@ subtest $method => sub {
             {
                 'currency'             => '',
                 'excluded_until'       => $exclude_until,
-                'is_ico_only'          => '0',
                 'is_disabled'          => '0',
                 'is_virtual'           => '0',
                 'landing_company_name' => 'costarica',
@@ -136,7 +134,6 @@ subtest $method => sub {
             },
             {
                 'currency'             => '',
-                'is_ico_only'          => '0',
                 'is_disabled'          => '1',
                 'is_virtual'           => '0',
                 'landing_company_name' => 'costarica',
