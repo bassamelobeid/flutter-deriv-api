@@ -937,8 +937,7 @@ rpc set_settings => sub {
 
     return BOM::RPC::v3::Utility::permission_error()
         if $allow_copiers
-        and (($client->landing_company->short ne 'costarica' and not $client->is_virtual)
-        or $client->get_status('ico_only'));
+        and ($client->landing_company->short ne 'costarica' and not $client->is_virtual);
 
     if (
         $allow_copiers
