@@ -539,7 +539,6 @@ subtest 'sell_expired_contracts', sub {
             current_tick => $tick,
             entry_tick   => $old_tick1,
             exit_tick    => $old_tick2,
-            barrier      => 'S20P',
         });
 
         my $txn = BOM::Transaction->new({
