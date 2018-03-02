@@ -60,7 +60,6 @@ use BOM::Product::Contract::Vanilla_put;
 use BOM::Product::Contract::Lbfloatcall;
 use BOM::Product::Contract::Lbfloatput;
 use BOM::Product::Contract::Lbhighlow;
-use BOM::Product::Contract::Binaryico;
 
 =head2 produce_contract
 
@@ -83,19 +82,13 @@ sub produce_contract {
     my $product_type = $params_ref->{product_type} // 'basic';
     $product_type =~ s/_//;
 
-    my $landing_company = $params_ref->{landing_company};
-    my $role            = 'BOM::Product::Role::' . ucfirst lc $product_type;
-    my $role_exists     = $role->can('meta');
+    my $role        = 'BOM::Product::Role::' . ucfirst lc $product_type;
+    my $role_exists = $role->can('meta');
 
     # This occurs after to hopefully make it more annoying to bypass the Factory.
     $params_ref->{'_produce_contract_ref'} = \&produce_contract;
 
     my $contract_class = 'BOM::Product::Contract::' . ucfirst lc $params_ref->{bet_type};
-
-    # XXX Remove this after ICO finishes
-    BOM::Product::Exception->throw(error_code => 'IcoNotAllowed')
-        if $contract_class->isa('BOM::Product::Contract::Coinauction')
-        and $landing_company ne 'costarica';
 
     return $contract_class->new($params_ref) unless $role_exists;
 
@@ -122,7 +115,7 @@ sub produce_batch_contract {
 sub _validate_input_parameters {
     my $params = shift;
 
-    return if $params->{bet_type} =~ /BINARYICO|INVALID/i or $params->{for_sale};
+    return if $params->{bet_type} =~ /INVALID/i or $params->{for_sale};
 
     BOM::Product::Exception->throw(error_code => 'MissingRequiredStart')
         unless $params->{date_start};    # date_expiry is validated in BOM::Product::Categorizer
