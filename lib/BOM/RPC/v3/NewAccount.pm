@@ -233,7 +233,7 @@ rpc new_account_real => sub {
     # send error if maltainvest and japan client tried to make this call
     # as they have their own separate api call for account opening
     return BOM::RPC::v3::Utility::permission_error()
-        if ($client->landing_company->short =~ /^(?:maltainvest|japan)$/);
+        if $client->landing_company->short =~ /^(?:maltainvest|japan)$/;
 
     $client->residence($args->{residence}) unless $client->residence;
 
