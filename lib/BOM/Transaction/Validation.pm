@@ -37,16 +37,10 @@ sub validate_trx_sell {
     $clients = $self->transaction->multiple if $self->transaction;
     $clients = [map { +{client => $_} } @{$self->clients}] unless $clients;
 
-    my @client_validation_method = qw/ check_trade_status _validate_available_currency _validate_currency /;
-    # For ico, there is no need to be restricted by with the withdrawal limit imposed on IOM region
-    push @client_validation_method, qw(_validate_iom_withdrawal_limit _validate_offerings_sell) unless $self->transaction->contract->is_binaryico;
+    my @client_validation_method =
+        qw/ check_trade_status _validate_available_currency _validate_currency _validate_iom_withdrawal_limit _validate_offerings_sell /;
 
-    my @contract_validation_method = qw/_is_valid_to_sell/;
-    # For ICO, there is no need to have slippage, date pricing validation
-    push @contract_validation_method, '_validate_sell_pricing_adjustment' unless $self->transaction->contract->is_binaryico;
-
-    push @contract_validation_method, qw(_validate_date_pricing)
-        unless $self->transaction->contract->is_binaryico;
+    my @contract_validation_method = qw/_is_valid_to_sell _validate_sell_pricing_adjustment _validate_date_pricing/;
 
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
@@ -87,12 +81,16 @@ sub validate_trx_buy {
     $res = $self->_is_valid_to_buy($self->transaction->client);
     return $res if $res;
 
-    my @client_validation_method = qw/ check_trade_status _validate_client_status _validate_available_currency _validate_currency /;
-    push @client_validation_method,
-        qw(validate_tnc _validate_iom_withdrawal_limit _validate_jurisdictional_restrictions _validate_client_self_exclusion _validate_offerings_buy)
-        unless $self->transaction->contract->is_binaryico;
-    push @client_validation_method, '_validate_ico_jurisdictional_restrictions' if $self->transaction->contract->is_binaryico;
-    push @client_validation_method, '_is_valid_to_buy';    # do this is as last of the validation
+    my @client_validation_method = qw/ check_trade_status
+        _validate_client_status
+        _validate_available_currency
+        _validate_currency
+        validate_tnc
+        _validate_iom_withdrawal_limit
+        _validate_jurisdictional_restrictions
+        _validate_client_self_exclusion
+        _validate_offerings_buy
+        _is_valid_to_buy/;    # do _is_valid_to_buy as last of the validation
 
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
@@ -108,15 +106,6 @@ sub validate_trx_buy {
             return $res;
         }
     }
-
-    # no need to do the subsequent check for binaryico
-    return if $self->transaction->contract->is_binaryico;
-
-    return Error::Base->cuss(
-        -type              => 'IcoOnly',
-        -mesg              => "Contract type is not allowed for this client",
-        -message_to_client => localize("This contract type is not available for this acccount"),
-    ) if any { $_->get_status('ico_only') } map { $_->{client} // () } @$clients;
 
     ### Order is very important
     ### _validate_trade_pricing_adjustment may contain some expensive calculations
@@ -213,19 +202,6 @@ sub _validate_sell_pricing_adjustment {
     my $self = shift;
 
     my $contract = $self->transaction->contract;
-    if ($contract->is_binary) {
-
-        return $self->_validate_sell_pricing_adjustment_binary;
-    } else {
-
-        return $self->_validate_sell_pricing_adjustment_non_binary;
-    }
-}
-
-sub _validate_sell_pricing_adjustment_binary {
-    my $self = shift;
-
-    my $contract = $self->transaction->contract;
 
     if (not defined $self->transaction->price) {
         $self->transaction->price($contract->bid_price);
@@ -240,23 +216,23 @@ sub _validate_sell_pricing_adjustment_binary {
         );
     }
 
-    my $requested = $self->transaction->price / $self->transaction->payout;
+    my $requested = $contract->is_binary ? $self->transaction->price / $self->transaction->payout : $self->transaction->price;
     my ($amount, $recomputed_amount) = ($self->transaction->price, $contract->bid_price);
     # set the requested price and recomputed  price to be store in db
     ### TODO: move out from validation
     $self->transaction->requested_price($amount);
     $self->transaction->recomputed_price($recomputed_amount);
-    my $recomputed   = $contract->bid_probability->amount;
-    my $move         = $recomputed - $requested;
-    my $slippage     = $recomputed_amount - $amount;
+    my $recomputed = $contract->is_binary ? $contract->bid_probability->amount : $contract->bid_price;
+    my $move       = $contract->is_binary ? $recomputed - $requested           : ($recomputed - $requested) / $requested;
+    my $slippage   = $recomputed_amount - $amount;
     my $allowed_move = $contract->allowed_slippage;
 
-    $allowed_move = 0 if $recomputed == 1;
+    $allowed_move = 0 if $contract->is_binary and $recomputed == 1;
 
     return if $move == 0;
 
     my $final_value;
-    if ($allowed_move == 0) {
+    if ($allowed_move == 0 or $slippage == 0) {
         $final_value = $recomputed_amount;
     } elsif ($move < -$allowed_move) {
         return $self->_write_to_rejected({
@@ -283,94 +259,28 @@ sub _validate_sell_pricing_adjustment_binary {
     return;
 }
 
-sub _validate_sell_pricing_adjustment_non_binary {
-    my $self = shift;
-
-    my $contract = $self->transaction->contract;
-
-    if (not defined $self->transaction->price) {
-        $self->transaction->price($contract->bid_price);
-        return;
-    }
-
-    if ($contract->is_expired) {
-        return Error::Base->cuss(
-            -type              => 'BetExpired',
-            -mesg              => 'Contract expired with a new price',
-            -message_to_client => localize('The contract has expired'),
-        );
-    }
-
-    my $requested_price  = $self->transaction->price;
-    my $recomputed_price = $contract->bid_price;
-    # set the requested price and recomputed  price to be store in db
-    ### TODO: move out from validation
-    $self->transaction->requested_price($requested_price);
-    $self->transaction->recomputed_price($recomputed_price);
-    my $move         = ($recomputed_price - $requested_price) / $requested_price;
-    my $slippage     = $recomputed_price - $requested_price;
-    my $allowed_move = $contract->allowed_slippage;
-
-    return if $move == 0;
-
-    my $final_value;
-    if ($allowed_move == 0) {
-        $final_value = $recomputed_price;
-    } elsif (abs($move) > $allowed_move) {
-        return $self->_write_to_rejected({
-            type              => 'slippage',
-            action            => 'sell',
-            amount            => $requested_price,
-            recomputed_amount => $recomputed_price
-        });
-    } else {
-        if ($move <= $allowed_move) {
-            $final_value = $requested_price;
-            # We absorbed the price difference here and we want to keep it in our book.
-            $self->transaction->price_slippage($slippage);
-        } elsif ($move > 0) {
-            $self->transaction->execute_at_better_price(1);
-            # We need to keep record of slippage even it is executed at better price
-            $self->transaction->price_slippage($slippage);
-            $final_value = $recomputed_price;
-        }
-    }
-
-    $self->transaction->price($final_value);
-
-    return;
-}
-
 sub _validate_trade_pricing_adjustment {
-    my $self = shift;
-
-    my $contract = $self->transaction->contract;
-
-    if ($contract->is_binary) {
-        return $self->_validate_trade_pricing_adjustment_binary;
-    } else {
-        return $self->_validate_trade_pricing_adjustment_non_binary;
-    }
-}
-
-sub _validate_trade_pricing_adjustment_binary {
     my $self = shift;
 
     my $amount_type = $self->transaction->amount_type;
     my $contract    = $self->transaction->contract;
 
-    my $requested = $self->transaction->price / $self->transaction->payout;
+    my $requested = $contract->is_binary ? $self->transaction->price / $self->transaction->payout : $self->transaction->price;
     # set the requested price and recomputed price to be store in db
     $self->transaction->requested_price($self->transaction->price);
     $self->transaction->recomputed_price($contract->ask_price);
-    my $recomputed   = $contract->ask_probability->amount;
-    my $move         = $requested - $recomputed;
-    my $slippage     = $self->transaction->price - $contract->ask_price;
+    my $recomputed = $contract->is_binary ? $contract->ask_probability->amount : $contract->ask_price;
+    my $move       = $contract->is_binary ? $requested - $recomputed           : ($requested - $recomputed) / $requested;
+    my $slippage   = $self->transaction->price - $contract->ask_price;
     my $allowed_move = $contract->allowed_slippage;
 
-    $allowed_move = 0 if $recomputed == 1;
-    my ($amount, $recomputed_amount) =
-        $amount_type eq 'payout' ? ($self->transaction->price, $contract->ask_price) : ($self->transaction->payout, $contract->payout);
+    $allowed_move = 0 if $contract->is_binary and $recomputed == 1;
+
+    # non-binary where $amount_type is multiplier always work in price space.
+    my ($amount, $recomputed_amount) = (
+               $amount_type eq 'payout'
+            or $amount_type eq 'multiplier'
+    ) ? ($self->transaction->price, $contract->ask_price) : ($self->transaction->payout, $contract->payout);
 
     return if $move == 0;
 
@@ -382,7 +292,7 @@ sub _validate_trade_pricing_adjustment_binary {
         -message_to_client => localize('The contract has expired'),
     ) if $contract->is_expired;
 
-    if ($allowed_move == 0) {
+    if ($allowed_move == 0 or $slippage == 0) {
         $final_value = $recomputed_amount;
     } elsif ($move < -$allowed_move) {
         return $self->_write_to_rejected({
@@ -404,8 +314,9 @@ sub _validate_trade_pricing_adjustment_binary {
         }
     }
 
-    # adjust the value here
-    if ($amount_type eq 'payout') {
+    # For non-binary where $amount_type is always equals to multiplier.
+    # We will non need to consider the case where it is 'payout'.
+    if ($amount_type eq 'payout' or $amount_type eq 'multiplier') {
         $self->transaction->price($final_value);
     } else {
         $self->transaction->payout($final_value);
@@ -423,65 +334,11 @@ sub _validate_trade_pricing_adjustment_binary {
     return;
 }
 
-sub _validate_trade_pricing_adjustment_non_binary {
-    my $self = shift;
-
-    my $contract = $self->transaction->contract;
-
-    my $requested_price = $self->transaction->price;
-    # set the requested price and recomputed price to be store in db
-    $self->transaction->requested_price($self->transaction->price);
-    $self->transaction->recomputed_price($contract->ask_price);
-    my $recomputed_price = $contract->ask_price;
-    my $move             = ($requested_price - $recomputed_price) / $requested_price;
-    my $slippage         = $self->transaction->price - $contract->ask_price;
-    my $allowed_move     = $contract->allowed_slippage;
-
-    my ($amount, $recomputed_amount) = ($self->transaction->price, $contract->ask_price);
-
-    return if $move == 0;
-
-    my $final_value;
-
-    return Error::Base->cuss(
-        -type              => 'BetExpired',
-        -mesg              => 'Bet expired with a new price[' . $recomputed_amount . '] (old price[' . $amount . '])',
-        -message_to_client => localize('The contract has expired'),
-    ) if $contract->is_expired;
-
-    if ($allowed_move == 0) {
-        $final_value = $recomputed_amount;
-    } elsif (abs($move) > $allowed_move) {
-        return $self->_write_to_rejected({
-            type              => 'slippage',
-            action            => 'buy',
-            amount            => $amount,
-            recomputed_amount => $recomputed_amount
-        });
-    } else {
-        if (abs($move) <= $allowed_move) {
-            $final_value = $amount;
-            # We absorbed the price difference here and we want to keep it in our book.
-            $self->transaction->price_slippage($slippage);
-        } elsif ($move > 0) {
-            $self->transaction->execute_at_better_price(1);
-            # We need to keep record of slippage even it is executed at better price
-            $self->transaction->price_slippage($slippage);
-            $final_value = $recomputed_amount;
-        }
-    }
-
-    # adjust the value here
-    $self->transaction->price($final_value);
-
-    return;
-}
-
 sub _slippage {
     my ($self, $p) = @_;
 
     my $what_changed = $p->{action} eq 'sell' ? 'sell price' : undef;
-    $what_changed //= $self->transaction->amount_type eq 'payout' ? 'price' : 'payout';
+    $what_changed //= ($self->transaction->amount_type eq 'payout' or $self->transaction->amount_type eq 'multiplier') ? 'price' : 'payout';
     my ($market_moved, $contract) =
         (localize('The underlying market has moved too much since you priced the contract. '), $self->transaction->contract);
     my $currency = $contract->currency;
@@ -538,34 +395,31 @@ sub _invalid_contract {
     my $contract          = $self->transaction->contract;
     my $message_to_client = localize($contract->primary_validation_error->message_to_client);
     #Record failed transaction here.
-    if (not $contract->is_binaryico) {
-        for my $c (@{$self->clients}) {
-            my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
-                    login_id => $c->loginid,
-                    ($p->{action} eq 'sell') ? (financial_market_bet_id => $self->transaction->contract_id) : (),
-                    shortcode   => $contract->shortcode,
-                    action_type => $p->{action},
-                    reason      => $message_to_client,
-                    details     => $json->encode({
-                            current_tick_epoch => $contract->current_tick->epoch,
-                            pricing_epoch      => $contract->date_pricing->epoch,
-                            option_type        => $contract->code,
-                            currency_pair      => $contract->underlying->symbol,
-                            ($self->transaction->trading_period_start)
-                            ? (trading_period_start => $self->transaction->trading_period_start->db_timestamp)
-                            : (),
-                            ($contract->two_barriers)
-                            ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
-                            : (barriers => $contract->barrier->as_absolute),
-                            expiry => $contract->date_expiry->db_timestamp,
-                            payout => $contract->payout
-                        }
-                    ),
-                    db => BOM::Database::ClientDB->new({broker_code => $c->broker_code})->db,
-                });
-            $rejected_trade->record_fail_txn();
-        }
+    for my $c (@{$self->clients}) {
+        my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
+                login_id => $c->loginid,
+                ($p->{action} eq 'sell') ? (financial_market_bet_id => $self->transaction->contract_id) : (),
+                shortcode   => $contract->shortcode,
+                action_type => $p->{action},
+                reason      => $message_to_client,
+                details     => $json->encode({
+                        current_tick_epoch => $contract->current_tick->epoch,
+                        pricing_epoch      => $contract->date_pricing->epoch,
+                        option_type        => $contract->code,
+                        currency_pair      => $contract->underlying->symbol,
+                        ($self->transaction->trading_period_start) ? (trading_period_start => $self->transaction->trading_period_start->db_timestamp)
+                        : (),
+                        ($contract->two_barriers) ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
+                        : (barriers => $contract->barrier->as_absolute),
+                        expiry => $contract->date_expiry->db_timestamp,
+                        payout => $contract->payout
+                    }
+                ),
+                db => BOM::Database::ClientDB->new({broker_code => $c->broker_code})->db,
+            });
+        $rejected_trade->record_fail_txn();
     }
+
     return Error::Base->cuss(
         -type => ($p->{action} eq 'buy' ? 'InvalidtoBuy' : 'InvalidtoSell'),
         -mesg => $contract->primary_validation_error->message,
@@ -819,52 +673,6 @@ sub _validate_jurisdictional_restrictions {
             -type              => 'NotLegalUnderlying',
             -mesg              => 'Clients are not allowed to trade on this underlying as its restricted for this landing company',
             -message_to_client => localize('Please switch accounts to trade this underlying.'),
-        );
-    }
-
-    return;
-}
-
-=head2 $self->_validate_ico_jurisdictional_restrictions
-
-Validates whether a client fullfill ICO jurisdicrtional restrictions
-
-=cut
-
-sub _validate_ico_jurisdictional_restrictions {
-    my ($self, $client) = (shift, shift);
-
-    my $residence = $client->residence;
-    my $loginid   = $client->loginid;
-
-    if (!$residence || $loginid =~ /^VR/) {
-        return Error::Base->cuss(
-            -type              => 'NoResidenceCountry',
-            -mesg              => 'Client cannot place ico as we do not know their residence.',
-            -message_to_client => localize(
-                'In order to participate in the ICO, we need to know your country of residence. Please update your account settings accordingly.'),
-        );
-    }
-
-    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
-    if ($countries_instance->ico_restricted_country($residence)) {
-        return Error::Base->cuss(
-            -type              => 'IcoRestrictedCountry',
-            -mesg              => 'Clients are not allowed to bid for ICO  as their country is restricted.',
-            -message_to_client => localize('Sorry, but the ICO is not available in your country of residence.'),
-        );
-    }
-
-    # For certain country, only professional investor is allow to place ico
-    if ($countries_instance->ico_restricted_professional_only_country($residence)
-        and not($client->get_status('professional') or $client->get_status('professional_requested')))
-    {
-        return Error::Base->cuss(
-            -type              => 'IcoProfessionalRestrictedCountry',
-            -mesg              => 'Clients are not allowed to place ICO  as it is restricted to offer only to professional in the relevant country.',
-            -message_to_client => localize(
-                'The ICO is only available to professional investors in your country of residence. If you are a professional investor, please contact our customer support team to verify your account status.'
-            ),
         );
     }
 
