@@ -69,21 +69,16 @@ my %default_args = (
     file_size           => 1,
 );
 
-my $result;
-my $doc;
-my $client_id;
-
 use constant {
     EXP_DATE_PAST   => '2017-08-09',
+    INVALID_FILE_ID => 1231531,
     DOC_ID_2        => 'ABCD1235'
 };
 
 use constant MAX_FILE_SIZE => 3 * 2**20;
 
-my $invalid_file_id = 1231531;
-
 #########################################################
-## Tests for argument error handling
+## Tests for initial argument error handling
 #########################################################
 
 subtest 'Error for invalid client token' => sub {
@@ -111,10 +106,125 @@ subtest 'Error for no document_id' => sub {
     call_and_check_error($custom_params, 'Document ID is required.', 'document_id is required');
 };
 
+subtest 'Error for no expiration_date' => sub {
+    my $custom_params = { args => { expiration_date => '' } };
+    call_and_check_error($custom_params, 'Expiration date is required.', 'expiration_date is required');
+};
+
+subtest 'Error for calling success with non-existent file ID' => sub {
+    my $custom_params = { args => { status          => 'success', 
+                                    file_id         => INVALID_FILE_ID,
+                                    # These need to be blanked or RPC will try to start an upload
+                                    document_type   => '',
+                                    document_format => '' } };
+    call_and_check_error($custom_params, 'Document not found.', 'error if document is not present');
+};
+
+#########################################################
+## Tests for successful upload
+#########################################################
+
+subtest 'Basic upload test sequence' => sub {
+
+    my $file_id;
+
+    subtest 'Start upload with all defaults' => sub {
+        $file_id = start_successful_upload($real_client);
+    };
+    
+    subtest 'Finish upload and verify CS notification email is receieved' => sub {
+        finish_successful_upload($real_client, $file_id, 1);
+    };
+    
+    subtest 'Call finish again to ensure CS team is only sent 1 email' => sub {
+        finish_successful_upload($real_client, $file_id, 0);
+    };
+};
+
+subtest 'Attempt to upload file with same checksum as "Basic upload test sequence"' => sub {
+    # This is a new document upload, so change the ID
+    my $custom_params = { args => { document_id => DOC_ID_2 } };
+    my $file_id = start_successful_upload($real_client, $custom_params);
+    
+    # Upload will commence and be blocked at finish
+    $custom_params = { args => { status          => 'success', 
+                                 file_id         => $file_id,
+                                 # These need to be blanked or RPC will try to start an upload
+                                 document_type   => '',
+                                 document_format => '' } };
+    call_and_check_error($custom_params, 'Document already uploaded.', 'error if same document is uploaded twice');
+};
+
+subtest 'Check audit information after all above upload requests' => sub {
+    my $result = $real_client->db->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref('SELECT pg_userid, remote_addr FROM audit.client_authentication_document');
+        });
+
+    ok(all { $_->[0] eq 'system' and $_->[1] eq '127.0.0.1/32' } @$result), 'Check staff and staff IP for all audit info';
+};
 
 #########################################################
 ## Helper methods
 #########################################################
+
+sub start_successful_upload {
+    my ($client, $custom_params) = @_;
+
+    # Initialise default params
+    my $params      = { %default_params };
+    $params->{args} = { %default_args };
+    
+    # Customise params
+    customise_params($params, $custom_params) if $custom_params;
+    
+    # Call to start upload
+    my $result = $c->call_ok($method, $params)->has_no_error->result;
+    
+    # Check doc is entered into database
+    my ($doc) = $client->find_client_authentication_document(query => [id => $result->{file_id}]);
+    is($doc->document_id, $params->{args}->{document_id}, 'document is saved in db');
+    is($doc->status,      'uploading',                    'document status is set to uploading');
+    
+    return $result->{file_id};
+}
+
+sub finish_successful_upload {
+    my ($client, $file_id, $mail_expected) = @_;
+
+    # Setup call paramaters
+    my $params      = { %default_params };
+    $params->{args} = {
+        status   => 'success',
+        file_id  => $file_id
+    };
+    
+    # Clear mailbox
+    $mailbox->clear;
+    
+    # Call successful upload
+    my $result = $c->call_ok($method, $params)->has_no_error->result;
+    
+    # Check mailbox for CS notification
+    my $client_id = uc $client->loginid;
+    if ($mail_expected){
+        #(COMMENTED OUT)like(get_notification_email($client_id)->{body}, qr/New document was uploaded for the account: $client_id/, 'CS notification email was sent successfully');
+    }
+    if (not $mail_expected){
+        ok(!get_notification_email($client_id), 'CS notification email should only be sent once');
+    }
+    
+    # Check doc is updated in database properly
+    my ($doc) = $client->find_client_authentication_document(query => [id => $result->{file_id}]);
+    is($doc->status,    'uploaded',           'document\'s status changed');
+    ok $doc->file_name, 'Filename should not be empty';
+    #(COMMENTED OUT)is $doc->checksum, CHECKSUM, 'Checksum should be added correctly';
+    
+    # Check client status is correct
+    is($client->get_status('document_under_review')->reason, 'Documents uploaded', 'client\'s status changed');
+    ok(!$client->get_status('document_needs_action'), 'Document should not be in needs_action state');
+
+}
 
 sub call_and_check_error {
     my ($custom_params, $expected_err_message, $test_print_message) = @_;
@@ -124,6 +234,15 @@ sub call_and_check_error {
     $params->{args} = { %default_args };
     
     # Customise params
+    customise_params($params, $custom_params);
+    
+    # Call and check error
+    $c->call_ok($method, $params)->has_error->error_message_is($expected_err_message, $test_print_message);
+}
+
+sub customise_params {
+    my ($params, $custom_params) = @_;
+    
     for my $key (keys $custom_params){
         $params->{$key} = $custom_params->{$key} unless $key eq 'args';
     }
@@ -132,12 +251,11 @@ sub call_and_check_error {
             $params->{args}->{$key} = $custom_params->{args}->{$key};
         }
     }
-    
-    # Call and check error
-    $c->call_ok($method, $params)->has_error->error_message_is($expected_err_message, $test_print_message);
 }
 
 sub get_notification_email {
+    my $client_id = shift;
+
     my ($msg) = $mailbox->search(
         email   => 'authentications@binary.com',
         subject => qr/New uploaded document for: $client_id/
