@@ -6,13 +6,8 @@ subtest 'Unsuccessful finished upload' => sub {
 };
 
 subtest 'Error for no document_id' => sub {
-    my $params = { %default_real_params };
-    $params->{args}->{document_type}   = DOC_TYPE;
-    $params->{args}->{document_format} = DOC_FORMAT;
-    $params->{args}->{expected_checksum} = CHECKSUM;
     
-    $c->call_ok($method, $params)->has_error->error_message_is('Document ID is required.', 'document_id is required');
-
+    # New test with ID
     $args->{document_id} = DOC_ID_1;
     $result = $c->call_ok($method, $params)->result;
     ($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
