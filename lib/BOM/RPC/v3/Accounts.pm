@@ -1200,7 +1200,10 @@ rpc set_self_exclusion => sub {
     my $lim = $client->get_self_exclusion_until_date;
     return BOM::RPC::v3::Utility::create_error({
             code              => 'SelfExclusion',
-            message_to_client => localize('Sorry, you have excluded yourself until [_1].', $lim),
+            message_to_client => localize(
+                'Sorry, but you have self-excluded yourself from the website until [_1]. If you are unable to place a trade or deposit after your self-exclusion period, please contact the Customer Support team for assistance.',
+                $lim
+            ),
         }) if $lim;
 
     # get old from above sub _get_self_exclusion_details

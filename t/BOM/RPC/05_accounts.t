@@ -1656,7 +1656,7 @@ subtest 'get and set self_exclusion' => sub {
 
     like(
         $c->tcall($method, $params)->{error}->{message_to_client},
-        qr/Sorry, you have excluded yourself until/,
+        qr/Sorry, but you have self-excluded yourself from the website until/,
         'Self excluded client cannot access set self exclusion'
     );
 
