@@ -714,7 +714,10 @@ sub _validate_client_self_exclusion {
         return Error::Base->cuss(
             -type              => 'ClientSelfExcluded',
             -mesg              => 'your account is not authorised for any further contract purchases.',
-            -message_to_client => localize('Sorry, you have excluded yourself from the website until [_1].', $limit_excludeuntil),
+            -message_to_client => localize(
+                'Sorry, but you have self-excluded yourself from the website until [_1]. If you are unable to place a trade or deposit after your self-exclusion period, please contact the Customer Support team for assistance.',
+                $limit_excludeuntil
+            ),
         );
     }
 
