@@ -583,7 +583,7 @@ rpc change_password => sub {
         $oauth->revoke_tokens_by_loginid($obj->loginid);
     }
 
-    BOM::Platform::AuditLog::log('password has been changed', $client->email);
+    BOM::User::AuditLog::log('password has been changed', $client->email);
     send_email({
             from    => Brands->new(name => request()->brand)->emails('support'),
             to      => $client->email,
@@ -674,7 +674,7 @@ rpc cashier_password => sub {
 
         my $cashier_password = $client->cashier_setting_password;
         if (!BOM::Platform::Password::checkpw($unlock_password, $cashier_password)) {
-            BOM::Platform::AuditLog::log('Failed attempt to unlock cashier', $client->loginid);
+            BOM::User::AuditLog::log('Failed attempt to unlock cashier', $client->loginid);
             send_email({
                     'from'    => Brands->new(name => request()->brand)->emails('support'),
                     'to'      => $client->email,
@@ -713,7 +713,7 @@ rpc cashier_password => sub {
                     'email_content_is_html' => 1,
                     template_loginid        => $client->loginid,
                 });
-            BOM::Platform::AuditLog::log('cashier unlocked', $client->loginid);
+            BOM::User::AuditLog::log('cashier unlocked', $client->loginid);
             return {status => 0};
         }
     }
@@ -777,7 +777,7 @@ rpc "reset_password",
         $oauth->revoke_tokens_by_loginid($obj->loginid);
     }
 
-    BOM::Platform::AuditLog::log('password has been reset', $email, $args->{verification_code});
+    BOM::User::AuditLog::log('password has been reset', $email, $args->{verification_code});
     send_email({
             from    => Brands->new(name => request()->brand)->emails('support'),
             to      => $email,
@@ -1132,7 +1132,7 @@ rpc set_settings => sub {
         email_content_is_html => 1,
         template_loginid      => $client->loginid,
     });
-    BOM::Platform::AuditLog::log('Your settings have been updated successfully', $client->loginid);
+    BOM::User::AuditLog::log('Your settings have been updated successfully', $client->loginid);
 
     return {status => 1};
 };

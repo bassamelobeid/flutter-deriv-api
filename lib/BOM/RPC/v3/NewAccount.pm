@@ -92,7 +92,7 @@ rpc "new_account_virtual",
     });
     $user->save;
 
-    BOM::Platform::AuditLog::log("successful login", "$email");
+    BOM::User::AuditLog::log("successful login", "$email");
     BOM::Platform::PaymentNotificationQueue->add(
         source        => 'virtual',
         currency      => 'USD',
@@ -316,7 +316,7 @@ rpc new_account_real => sub {
         }
     }
 
-    BOM::Platform::AuditLog::log("successful login", "$client->email");
+    BOM::User::AuditLog::log("successful login", "$client->email");
     BOM::Platform::PaymentNotificationQueue->add(
         source        => 'real',
         currency      => 'USD',
@@ -413,7 +413,7 @@ rpc new_account_maltainvest => sub {
     });
     $user->save;
 
-    BOM::Platform::AuditLog::log("successful login", "$client->email");
+    BOM::User::AuditLog::log("successful login", "$client->email");
     BOM::Platform::PaymentNotificationQueue->add(
         source        => 'real',
         currency      => 'USD',
@@ -489,7 +489,7 @@ rpc new_account_japan => sub {
     });
     $user->save;
 
-    BOM::Platform::AuditLog::log("successful login", "$client->email");
+    BOM::User::AuditLog::log("successful login", "$client->email");
     BOM::Platform::PaymentNotificationQueue->add(
         source        => 'real',
         currency      => 'USD',
