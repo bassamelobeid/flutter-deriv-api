@@ -59,12 +59,12 @@ sub get_self_exclusion_form {
 
         if ($limit_timeout_until) {
             $limit_timeout_until = Date::Utility->new($limit_timeout_until);
-            # Don't show date if it is expired. Exception for clients of IOM / Malta / Maltainvest
-            if ($limit_timeout_until->is_before(Date::Utility->new) && $client->landing_company->short !~ /^(?:iom|malta|maltainvest)$/) {
+            if ($limit_timeout_until->is_before(Date::Utility->new)) {
                 undef $limit_timeout_until;
             } else {
                 $limit_timeout_until = $limit_timeout_until->datetime_yyyymmdd_hhmmss;
             }
+
         }
 
         $se_map = {
