@@ -33,6 +33,7 @@ sub log {    ## no critic (ProhibitBuiltinHomonyms)
         user  => $user,
         staff => $staff
     });
+    return;
 }
 
 1;
