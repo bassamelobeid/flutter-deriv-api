@@ -40,10 +40,10 @@ sub get_s3_url {
 }
 
 sub upload {
-    my ($original_filename, $content, $checksum) = @_;
+    my ($original_filename, $upload_file_handle, $checksum) = @_;
 
     # content can be 0 therefore check with defined
-    die 'Unable to read the upload file handle' unless defined $content;
+    die 'Unable to read the upload file handle' unless tell($upload_file_handle) != -1;
 
     my %config = %$document_auth_s3;
     delete $config{region};
@@ -60,7 +60,7 @@ sub upload {
     try {
         ($etag) = $s3->put_object(
             key   => $original_filename,
-            value => $content,
+            value => do { local $/; <$upload_file_handle> },
             meta  => {checksum => $checksum},
         )->get;
     }

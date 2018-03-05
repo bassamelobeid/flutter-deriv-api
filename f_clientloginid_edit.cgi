@@ -12,7 +12,7 @@ use Data::Dumper;
 use HTML::Entities;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use Try::Tiny;
-use Digest::MD5 qw/md5_hex/;
+use Digest::MD5;
 
 use Brands;
 use LandingCompany::Registry;
@@ -267,8 +267,7 @@ if ($input{whattodo} eq 'uploadID') {
 
         die "Unable to set staff info, with error: $error_occured" if $error_occured;
 
-        my $file_contents = do { local $/; <$filetoupload> };
-        my $file_checksum = md5_hex($file_contents);
+        my $file_checksum = Digest::MD5->new->addfile($filetoupload)->hexdigest;
 
         my $_is_duplicate_upload_error = sub {
             my $dbh = shift;
@@ -304,7 +303,7 @@ if ($input{whattodo} eq 'uploadID') {
 
         my $new_file_name = "$loginid.$doctype.$id.$docformat";
 
-        my $checksum = BOM::Backoffice::Script::DocumentUpload::upload($new_file_name, $file_contents, $file_checksum)
+        my $checksum = BOM::Backoffice::Script::DocumentUpload::upload($new_file_name, $filetoupload, $file_checksum)
             or die "Upload failed for $filetoupload";
 
         my $query_result;
