@@ -241,6 +241,12 @@ sub startup {
                 require_auth => 'admin',
                 stash_params => [qw/ server_name client_ip user_agent /]}
         ],
+        [
+            'mt5_password_reset',
+            {
+                require_auth => 'admin',
+                stash_params => [qw/ server_name client_ip user_agent /]}
+        ],
         ['get_self_exclusion', {require_auth => 'read'}],
         [
             'set_self_exclusion',
