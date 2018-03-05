@@ -9,7 +9,7 @@ use Brands;
 use BOM::User::Client;
 use LandingCompany::Registry;
 
-use BOM::Platform::Password;
+use BOM::User::Password;
 use BOM::Platform::Runtime;
 use BOM::User;
 use BOM::Platform::Token;
@@ -20,7 +20,7 @@ sub create_account {
     my $details = $args->{details};
 
     my $email     = lc $details->{email};
-    my $password  = $details->{client_password} ? BOM::Platform::Password::hashpw($details->{client_password}) : '';
+    my $password  = $details->{client_password} ? BOM::User::Password::hashpw($details->{client_password}) : '';
     my $residence = $details->{residence};
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
