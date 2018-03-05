@@ -70,7 +70,7 @@ sub login {
     my $environment     = $args{environment}     || '';
     my $is_social_login = $args{is_social_login} || 0;
 
-    my ($error, $cfl, @clients);
+    my ($error, $cfl);
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->all_logins) {
         $error = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
         BOM::Platform::AuditLog::log('system suspend all login', $self->email);

@@ -59,12 +59,14 @@ sub set_gamstop_self_exclusion {
 
     my $gamstop_response;
     try {
-        my $instance = Webservice::GAMSTOP->new(api_url => $gamstop_config->{api_uri} api_key => $landing_company_config->{api_key});
+        my $instance = Webservice::GAMSTOP->new(
+            api_url => $gamstop_config->{api_uri},
+            api_key => $landing_company_config->{api_key});
 
         $gamstop_response = $instance->get_exclusion_for(
             first_name    => $client->first_name,
             last_name     => $client->last_name,
-            email         => $self->email,
+            email         => $client->email,
             date_of_birth => $client->date_of_birth,
             postcode      => $client->postcode,
         );
