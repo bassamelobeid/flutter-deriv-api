@@ -54,7 +54,7 @@ rpc active_symbols => sub {
         'legal_allowed_markets', join('::', ($params->{args}->{active_symbols}, $language, $offerings_obj->name, $product_type, $appconfig_revision))
     );
 
-    my $active_symbols;
+    my $active_symbols = [];    # API response expects an array eventhough it is empty
     if (my $cached_symbols = Cache::RedisDB->get($namespace, $key)) {
         $active_symbols = $cached_symbols;
     } else {
