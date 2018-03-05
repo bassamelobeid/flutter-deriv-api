@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 3;
+use Test::More tests => 5;
 use Test::Warnings;
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -55,7 +55,7 @@ subtest 'Test that contract can be created correctly' => sub {
     'Ensure that contract is produced with the correct parameters';
 };
 
-subtest 'Test that when the selected tick reflects the highest tick, a payout is given' => sub {
+subtest 'Test for condition where last tick is the highest' => sub {
 
     my $quote = 100.000;
     for my $i (0 .. 4) {
@@ -73,7 +73,6 @@ subtest 'Test that when the selected tick reflects the highest tick, a payout is
                 ok !$c->exit_tick,  'first tick is next tick';
                 ok !$c->is_expired, 'not expired';
                 $c = produce_contract($args);
-                #is $c->exit_tick->quote, 100.01, 'correct exit tick';
                 cmp_ok $c->value, '==', 0, 'full payout';
             }
             'check ticks before expiry';
@@ -94,99 +93,159 @@ subtest 'Test that when the selected tick reflects the highest tick, a payout is
         ok $c->is_expired, 'expired';
         cmp_ok $c->value, '==', $c->payout, 'full payout';
     }
-    'check expiry';
+    'check that last tick is the winning tick';
+
+    lives_ok {
+        $args->{date_pricing} = $now->plus_time_interval('4s');
+        $c = produce_contract({%$args, selected_tick => 1});
+        is $c->exit_tick->quote, 100.01, 'correct exit tick';
+        ok $c->is_expired, 'expired';
+        cmp_ok $c->value, '==', 0, 'payout is 0 as contract is lost';
+    }
+    'first tick is losing tick';
+
+    lives_ok {
+        $args->{date_pricing} = $now->plus_time_interval('4s');
+        $c = produce_contract({%$args, selected_tick => 2});
+        is $c->exit_tick->quote, 100.01, 'correct exit tick';
+        ok $c->is_expired, 'expired';
+        cmp_ok $c->value, '==', 0, 'payout is 0 as contract is lost';
+    }
+    'second tick is losing tick';
+
+    lives_ok {
+        $args->{date_pricing} = $now->plus_time_interval('4s');
+        $c = produce_contract({%$args, selected_tick => 3});
+        is $c->exit_tick->quote, 100.01, 'correct exit tick';
+        ok $c->is_expired, 'expired';
+        cmp_ok $c->value, '==', 0, 'payout is 0 as contract is lost';
+    }
+    'third tick is losing tick';
+
+    lives_ok {
+        $args->{date_pricing} = $now->plus_time_interval('4s');
+        $c = produce_contract({%$args, selected_tick => 4});
+        is $c->exit_tick->quote, 100.01, 'correct exit tick';
+        ok $c->is_expired, 'expired';
+        cmp_ok $c->value, '==', 0, 'payout is 0 as contract is lost';
+    }
+    'fourth tick is losing tick';
 };
 
-=head2
+subtest 'Test for condition where first tick is the highest' => sub {
 
-subtest 'Test that when any one of the maximum ticks is selected, a payout is given' => sub {
+    $now                  = Date::Utility->new('11-Mar-2015');
+    $args->{date_start}   = $now;
+    $args->{date_pricing} = $now;
 
-    $now                   = Date::Utility->new('11-Mar-2015');
-    $args->{date_start}    = $now;
-    $args->{date_pricing}  = $now;
-    $args->{selected_tick} = 1;
-
-    my $quote = 100.000;
-    for (0 .. 4) {
+    my $quote = 100.01;
+    for my $i (0 .. 4) {
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
             quote      => $quote,
-            epoch      => $now->epoch + $_,
+            epoch      => $now->epoch + $i,
         });
+        $quote -= 0.002;
+
+        if ($i < 4) {
+            lives_ok {
+                $args->{date_pricing} = $now->plus_time_interval($i . 's');
+                my $c = produce_contract($args);
+                ok !$c->exit_tick,  'first tick is next tick';
+                ok !$c->is_expired, 'not expired';
+                $c = produce_contract($args);
+                cmp_ok $c->value, '==', 0, 'full payout';
+            }
+            'check ticks before expiry';
+        }
     }
 
     lives_ok {
         $args->{date_pricing} = $now->plus_time_interval('4s');
-        my $c = produce_contract({%$args, selected_tick => 1});
-        ok !$c->exit_tick,  'first tick is next tick';
-        ok !$c->is_expired, 'not expired';
+        my $c = produce_contract($args);
+        ok !$c->exit_tick, 'first tick is next tick';
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
             epoch      => $now->epoch + 5,
             quote      => 100.00,
         });
-
         $c = produce_contract({%$args, selected_tick => 1});
         is $c->exit_tick->quote, 100.00, 'correct exit tick';
         ok $c->is_expired, 'expired';
         cmp_ok $c->value, '==', $c->payout, 'full payout';
+    }
+    'check that first tick is the winning tick';
 
+    lives_ok {
+        $args->{date_pricing} = $now->plus_time_interval('4s');
         $c = produce_contract({%$args, selected_tick => 2});
         is $c->exit_tick->quote, 100.00, 'correct exit tick';
         ok $c->is_expired, 'expired';
-        cmp_ok $c->value, '==', $c->payout, 'full payout';
+        cmp_ok $c->value, '==', 0, 'payout is 0 as contract is lost';
+    }
+    'second tick is losing tick';
 
+    lives_ok {
+        $args->{date_pricing} = $now->plus_time_interval('4s');
         $c = produce_contract({%$args, selected_tick => 3});
         is $c->exit_tick->quote, 100.00, 'correct exit tick';
         ok $c->is_expired, 'expired';
-        cmp_ok $c->value, '==', $c->payout, 'full payout';
+        cmp_ok $c->value, '==', 0, 'payout is 0 as contract is lost';
+    }
+    'third tick is losing tick';
 
+    lives_ok {
+        $args->{date_pricing} = $now->plus_time_interval('4s');
         $c = produce_contract({%$args, selected_tick => 4});
         is $c->exit_tick->quote, 100.00, 'correct exit tick';
         ok $c->is_expired, 'expired';
-        cmp_ok $c->value, '==', $c->payout, 'full payout';
+        cmp_ok $c->value, '==', 0, 'payout is 0 as contract is lost';
+    }
+    'fourth tick is losing tick';
 
+    lives_ok {
+        $args->{date_pricing} = $now->plus_time_interval('4s');
         $c = produce_contract({%$args, selected_tick => 5});
         is $c->exit_tick->quote, 100.00, 'correct exit tick';
         ok $c->is_expired, 'expired';
-        cmp_ok $c->value, '==', $c->payout, 'full payout';
+        cmp_ok $c->value, '==', 0, 'payout is 0 as contract is lost';
     }
-    'check expiry';
+    'last tick is losing tick';
 };
 
-subtest 'Test that when the selected tick reflects the lowest tick, no payout is given' => sub {
-
+subtest 'Where the second tick is higher than the selected first tick, the contract is lost' => sub {
     $now                   = Date::Utility->new('12-Mar-2015');
     $args->{date_start}    = $now;
     $args->{date_pricing}  = $now;
     $args->{selected_tick} = 1;
 
-    my $quote = 100.000;
-    for (0 .. 4) {
+    my @quotes = (102.12, 102.25);
+
+    foreach my $i (0 .. $#quotes) {
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
-            quote      => $quote,
-            epoch      => $now->epoch + $_,
+            quote      => $quotes[$i],
+            epoch      => $now->epoch + $i,
         });
-        $quote += 0.002;
     }
 
     lives_ok {
-        $args->{date_pricing} = $now->plus_time_interval('4s');
-        my $c = produce_contract({%$args, selected_tick => 1});
-        ok !$c->exit_tick,  'first tick is next tick';
-        ok !$c->is_expired, 'not expired';
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            underlying => 'R_100',
-            epoch      => $now->epoch + 5,
-            quote      => 100.01,
-        });
+        $args->{date_pricing} = $now->plus_time_interval('0s');
+        my $c = produce_contract($args);
+        ok !$c->exit_tick, 'first tick is next tick';
         $c = produce_contract({%$args, selected_tick => 1});
-        is $c->exit_tick->quote, 100.01, 'correct exit tick';
-        ok $c->is_expired, 'expired';
-        is $c->value, 0, 'payout is 0 as contract is lost';
+        cmp_ok $c->value, '==', 0, 'full payout';
     }
-    'check expiry';
-};
+    'check first tick';
 
-=cut
+    lives_ok {
+        $args->{date_pricing} = $now->plus_time_interval('1s');
+        my $c = produce_contract({%$args, selected_tick => 1});
+        ok !$c->exit_tick, 'first tick is next tick';
+        $c = produce_contract({%$args, selected_tick => 1});
+        ok $c->is_expired, 'is expired';
+
+        cmp_ok $c->value, '==', 0, 'full payout';
+    }
+    'check second tick';
+};

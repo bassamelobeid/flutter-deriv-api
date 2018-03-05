@@ -2,7 +2,7 @@ package BOM::Product::Contract::Ticklow;
 
 use Moose;
 extends 'BOM::Product::Contract';
-with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
+with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::AmericanExpiry';
 
 use List::Util qw/any min/;
 use List::MoreUtils qw/indexes/;
