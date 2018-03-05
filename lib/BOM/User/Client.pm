@@ -317,8 +317,8 @@ sub has_funded { return (shift->first_funded_date ? 1 : 0) }
 
 sub get_status {
   my ($self, $status_code) = @_;
-  use Carp qw(cluck);
-  cluck "error got from " unless exists $CLIENT_STATUS_TYPES->{$status_code};
+  use Carp qw(confess);
+  confess "error got from " unless exists $CLIENT_STATUS_TYPES->{$status_code};
     die "unknown status_code [$status_code]" unless exists $CLIENT_STATUS_TYPES->{$status_code};
     return List::Util::first {
         $_->status_code eq $status_code and not $self->{_clr_status}->{$status_code};
