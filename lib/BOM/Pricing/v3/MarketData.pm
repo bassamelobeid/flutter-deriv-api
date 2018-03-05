@@ -351,42 +351,54 @@ sub generate_asset_index {
             },
             expiries => sub {
                 my $underlying = shift;
-                my %offered    = %{
-                    _get_permitted_expiries(
-                        $offerings,
-                        {
-                            underlying_symbol => $underlying->symbol,
-                            contract_category => $_->code,
-                        })};
 
-                my @times;
-                foreach my $expiry (qw(intraday daily tick)) {
-                    if (my $included = $offered{$expiry}) {
-                        foreach my $key (qw(min max)) {
-                            if ($expiry eq 'tick') {
-                                # some tick is set to seconds somehow in this code.
-                                # don't want to waste time to figure out how it is set
-                                my $tick_count = (ref $included->{$key}) ? $included->{$key}->seconds : $included->{$key};
-                                push @times, [$tick_count, $tick_count . 't'];
-                            } else {
-                                $included->{$key} = Time::Duration::Concise::Localize->new(
-                                    interval => $included->{$key},
-                                    locale   => $language
-                                ) unless (ref $included->{$key});
-                                push @times, [$included->{$key}->seconds, $included->{$key}->as_concise_string];
+                my %times;
+                foreach my $barrier_category (
+                    $offerings->query({
+                            contract_category => $_->code,
+                            underlying_symbol => $underlying->symbol
+                        },
+                        ['barrier_category']))
+                {
+                    my %offered = %{
+                        _get_permitted_expiries(
+                            $offerings,
+                            {
+                                underlying_symbol => $underlying->symbol,
+                                contract_category => $_->code,
+                                barrier_category  => $barrier_category,
+                            })};
+
+                    foreach my $expiry (qw(intraday daily tick)) {
+                        if (my $included = $offered{$expiry}) {
+                            foreach my $key (qw(min max)) {
+                                if ($expiry eq 'tick') {
+                                    # some tick is set to seconds somehow in this code.
+                                    # don't want to waste time to figure out how it is set
+                                    my $tick_count = (ref $included->{$key}) ? $included->{$key}->seconds : $included->{$key};
+                                    push @{$times{$barrier_category}}, [$tick_count, $tick_count . 't'];
+                                } else {
+                                    $included->{$key} = Time::Duration::Concise::Localize->new(
+                                        interval => $included->{$key},
+                                        locale   => $language
+                                    ) unless (ref $included->{$key});
+                                    push @{$times{$barrier_category}}, [$included->{$key}->seconds, $included->{$key}->as_concise_string];
+                                }
                             }
                         }
                     }
+                    @{$times{$barrier_category}} = sort { $a->[0] <=> $b->[0] } @{$times{$barrier_category}};
                 }
-                @times = sort { $a->[0] <=> $b->[0] } @times;
-                return +{
-                    min => $times[0][1],
-                    max => $times[-1][1],
-                };
+                return \%times;
             },
         },
     );
 
+    # mapper for callput so that we can show the different expiries for them.
+    my %barrier_category_mapper = (
+        euro_atm     => 'Rise/Fall',
+        euro_non_atm => 'Higher/Lower',
+    );
     ## remove obj for json encode
     my @data;
     for my $market (@$asset_index) {
@@ -395,15 +407,23 @@ sub generate_asset_index {
             delete $submarket->{$_} for (qw/obj parent_obj children parent/);
             for my $ul (@{$submarket->{underlyings}}) {
                 delete $ul->{$_} for (qw/obj parent_obj children parent/);
-                for (@{$ul->{contract_categories}}) {
-                    $_ = [$_->{code}, $_->{name}, $_->{expiries}->{min}, $_->{expiries}->{max}];
+                my @category_expiries;
+                for my $contract_category (@{$ul->{contract_categories}}) {
+                    foreach my $barrier_category (keys %{$contract_category->{expiries}}) {
+                        my $name = $contract_category->{code} eq 'callput' ? $barrier_category_mapper{$barrier_category} : $contract_category->{name};
+                        push @category_expiries,
+                            [
+                            $contract_category->{code},
+                            $name,
+                            $contract_category->{expiries}->{$barrier_category}->[0][0],
+                            $contract_category->{expiries}->{$barrier_category}->[-1][1]];
+                    }
                 }
-                my $x = [$ul->{code}, $ul->{name}, $ul->{contract_categories}];
+                my $x = [$ul->{code}, $ul->{name}, \@category_expiries];
                 push @data, $x;
             }
         }
     }
-
     my $cache_key = $offerings->name . '_asset_index_' . $language;
 
     return (\@data, $cache_key);
