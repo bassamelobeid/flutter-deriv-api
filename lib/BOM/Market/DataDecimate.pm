@@ -144,8 +144,8 @@ has sampling_frequency => (
 );
 
 has market => (
-    is      => 'ro',
-    default => 'forex',
+    is       => 'ro',
+    required => 1,
 );
 
 # size is the number of ticks
