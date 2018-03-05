@@ -1,6 +1,6 @@
 #
 #Note:
-#multipliers by underlying are chosen as the smallest possible denomination {0.1,0.01,0.001,…} 
+#multipliers by underlying are chosen as the smallest possible denomination {0.1,0.01,0.001,…}
 #where a unit price of a 1 minute lookback float call contract would be above {currency}0.5
 #based on the latest spot on Feb 1st 2018 6:18pm MYT as below
 #
