@@ -415,7 +415,7 @@ sub generate_asset_index {
                             [
                             $contract_category->{code},
                             $name,
-                            $contract_category->{expiries}->{$barrier_category}->[0][0],
+                            $contract_category->{expiries}->{$barrier_category}->[0][1],
                             $contract_category->{expiries}->{$barrier_category}->[-1][1]];
                     }
                 }
