@@ -159,8 +159,9 @@ sub _build_data_cache_size {
     my $self   = shift;
     my $market = $self->market;
 
-    my $cache_size = 1860;
-    $cache_size = 18060 if ($market eq 'volidx');
+    my $cache_size;
+    $cache_size = 31 * 60  if ($market eq 'forex');
+    $cache_size = 301 * 60 if ($market eq 'volidx');
 
     return $cache_size;
 }
