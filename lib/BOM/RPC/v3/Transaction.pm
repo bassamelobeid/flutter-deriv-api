@@ -118,10 +118,10 @@ rpc buy => sub {
     $contract_parameters->{landing_company} = $client->landing_company->short;
 
     #Here again, we are re using amount in the API for specifying
-    #no of contracts. Internally for non-binary we will use unit.
+    #no of contracts. Internally for non-binary we will use multiplier.
     #If we use amount, this will create confusion with the amount use for
     #binary contract.
-    $contract_parameters->{unit} //= $contract_parameters->{amount};
+    $contract_parameters->{multiplier} //= $contract_parameters->{amount};
 
     my $error = BOM::RPC::v3::Contract::validate_barrier($contract_parameters);
     return $error if $error->{error};
@@ -133,7 +133,9 @@ rpc buy => sub {
     $error = _validate_price($price, $currency);
     return $error if $error;
 
-    $error = _validate_amount($amount, $currency);
+    #Temporary fix to skip amount validation for lookback.
+    my $nonbinary_list = 'LBFLOATCALL|LBFLOATPUT|LBHIGHLOW';
+    $error = _validate_amount($amount, $currency) if ($contract_parameters->{bet_type} !~ /$nonbinary_list/);
     return $error if $error;
 
     if (defined $price and defined $amount and defined $amount_type and $amount_type eq 'stake') {
@@ -214,11 +216,6 @@ rpc buy_contract_for_multiple_accounts => sub {
 
     my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($client, @validation_checks);
     return $validation_error if $validation_error;
-
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'IcoOnlyAccount',
-            message_to_client => BOM::Platform::Context::localize('This is not supported on an ICO-only account.')}
-    ) if $client->get_status('ico_only');
 
     my $args = $params->{args};
     my $tokens = $args->{tokens} // [];
@@ -366,11 +363,6 @@ rpc sell_contract_for_multiple_accounts => sub {
 
     my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($client, @validation_checks);
     return $validation_error if $validation_error;
-
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'IcoOnlyAccount',
-            message_to_client => BOM::Platform::Context::localize('This is not supported on an ICO-only account.')}
-    ) if $client->get_status('ico_only');
 
     my ($source, $args) = ($params->{source}, $params->{args});
 

@@ -508,9 +508,6 @@ rpc paymentagent_transfer => sub {
     return $error_sub->(localize('You cannot perform this action, as your account is cashier locked.'))
         if $client_fm->get_status('cashier_locked');
 
-    return $error_sub->(localize('This is an ICO-only account which does not support payment agent transfers.'))
-        if $client_fm->get_status('ico_only');
-
     return $error_sub->(localize('You cannot perform this action, as your verification documents have expired.')) if $client_fm->documents_expired;
 
     return $error_sub->(localize('Payment agent transfers are not allowed for the specified accounts.'))
@@ -526,8 +523,6 @@ rpc paymentagent_transfer => sub {
 
     return $error_sub->(localize('You cannot transfer to account [_1], as their cashier is locked.', $loginid_to))
         if ($client_to->get_status('cashier_locked') or $client_to->cashier_setting_password);
-    return $error_sub->(localize('This is an ICO-only account which does not support transfers.'))
-        if $client_to->get_status('ico_only');
 
     return $error_sub->(localize('You cannot transfer to account [_1], as their verification documents have expired.', $loginid_to))
         if $client_to->documents_expired;
@@ -772,9 +767,6 @@ rpc paymentagent_withdraw => sub {
     # check that the additional information does not exceeded the allowed limits
     return $error_sub->(localize('Further instructions must not exceed [_1] characters.', 300)) if (length($further_instruction) > 300);
 
-    return $error_sub->(localize('This is an ICO-only account which does not support transfers.'))
-        if $client->get_status('ico_only');
-
     # check that both the client payment agent cashier is not locked
     return $error_sub->(localize('You cannot perform this action, as your account is cashier locked.')) if $client->get_status('cashier_locked');
 
@@ -793,9 +785,6 @@ rpc paymentagent_withdraw => sub {
 
     return $error_sub->(localize("You cannot perform the withdrawal to account [_1], as the payment agent's cashier is locked.", $pa_client->loginid))
         if ($pa_client->get_status('cashier_locked') or $pa_client->cashier_setting_password);
-
-    return $error_sub->(localize('This is an ICO-only account which does not support transfers.'))
-        if $pa_client->get_status('ico_only');
 
     return $error_sub->(localize("You cannot perform withdrawal to account [_1], as payment agent's verification documents have expired."))
         if $pa_client->documents_expired;
@@ -1012,18 +1001,11 @@ rpc transfer_between_accounts => sub {
         # Although this is hardcoded as BTC, the intention is that any risky transfer should be blocked at weekends.
         # Currently, this implies crypto to fiat or vice versa, and BTC is our most volatile (and popular) crypto
         # currency. If the exchange is updated to something other than forex, this check should start allowing
-        # transfers at weekends again - note that we expect https://trello.com/c/bvhH85GJ/5700-13-tom-centralredisexchangerates
-        # to block exchange when the quotes are too old.
+        # transfers at weekends again.
         if (my $ul = create_underlying('frxBTCUSD')) {
-            # This is protected by an `eval` call since the author is currently in Cambodia and likely to
-            # be making mistakes at this time on a Friday. Technically we should not need it - if we can't
-            # instantiate the trading calendar, we have bigger problems than a stray exception during rare
-            # RPC calls such as account transfer.
             $can_transfer = 1
-                if eval {
-                Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader)
-                    ->is_open_at($ul->exchange, Date::Utility->new);
-                };
+                if Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader)
+                ->is_open_at($ul->exchange, Date::Utility->new);
         }
         return _transfer_between_accounts_error(localize('Account transfers are currently suspended.')) unless $can_transfer;
     }
@@ -1301,11 +1283,6 @@ sub _validate_transfer_between_accounts {
         if (($lc_from->short ne $lc_to->short)
         and ($lc_from->short !~ /^(?:malta|maltainvest)$/ or $lc_to->short !~ /^(?:malta|maltainvest)$/));
 
-    # block if client wants to transfer from ico to other or vice versa
-    # above check should block it but adding additional one
-    return _transfer_between_accounts_error()
-        if !!$client_from->get_status('ico_only') != !!$client_to->get_status('ico_only');
-
     # error if currency is not legal for landing company
     return _transfer_between_accounts_error(localize('Currency provided is not valid for your account.'))
         if (not $lc_from->is_currency_legal($currency) or not $lc_to->is_currency_legal($currency));
@@ -1346,7 +1323,7 @@ sub _validate_transfer_between_accounts {
 
     return _transfer_between_accounts_error(
         localize(
-            'Invalid amount. Amount provided can not have more than [_1] decimal places',
+            'Invalid amount. Amount provided can not have more than [_1] decimal places.',
             Format::Util::Numbers::get_precision_config()->{amount}->{$currency})) if ($amount != financialrounding('amount', $currency, $amount));
 
     my $to_currency_type = LandingCompany::Registry::get_currency_type($to_currency);
