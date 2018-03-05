@@ -90,8 +90,6 @@ has underlying => (
     handles => [qw(market pip_size)],
 );
 
-sub is_binaryico { return 0; }
-
 #overriding Financial::Contract fields
 sub absolute_barrier_multiplier {
     my $self = shift;
