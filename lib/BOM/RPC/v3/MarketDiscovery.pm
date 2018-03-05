@@ -45,7 +45,7 @@ rpc active_symbols => sub {
         my $landing_company = LandingCompany::Registry::get($landing_company_name);
         $product_type //= $landing_company->default_offerings;
         my $method = $product_type eq 'basic' ? 'basic_offerings_for_country' : 'multi_barrier_offerings_for_country';
-        $offerings_obj = $landing_company->$method(BOM::Platform::Runtime->instance->get_offerings_config);
+        $offerings_obj = $landing_company->$method($country_code, BOM::Platform::Runtime->instance->get_offerings_config);
     }
 
     die 'Could not retrieve offerings for landing_company[' . $landing_company_name . '] product_type[' . $product_type . ']' unless ($offerings_obj);
