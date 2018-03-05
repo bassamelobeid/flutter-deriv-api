@@ -7,11 +7,13 @@ use Test::MockModule;
 
 use Postgres::FeedDB::CurrencyConverter qw(in_USD amount_from_to_currency);
 
+use Email::Folder::Search;
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Helper::Client qw(create_client top_up);
+use BOM::Platform::Token;
 use BOM::Platform::User;
 use BOM::MT5::User;
 
@@ -138,14 +140,98 @@ subtest 'password change' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login        => $DETAILS{login},
-            old_password => $DETAILS{password},
-            new_password => 'Ijkl6789',
+            login         => $DETAILS{login},
+            old_password  => $DETAILS{password},
+            new_password  => 'Ijkl6789',
+            password_type => 'main'
         },
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_password_change');
     # This call yields a truth integer directly, not a hash
     is($c->result, 1, 'result');
+};
+
+my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
+$mailbox->init;
+
+subtest 'password reset' => sub {
+    my $method = 'mt5_password_reset';
+    $mailbox->clear;
+
+    my $code = BOM::Platform::Token->new({
+            email       => $DETAILS{email},
+            expires_in  => 3600,
+            created_for => 'mt5_password_reset'
+        })->token;
+
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            login             => $DETAILS{login},
+            new_password      => 'Ijkl6789',
+            password_type     => 'main',
+            verification_code => $code
+        }};
+
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_password_change');
+    # This call yields a truth integer directly, not a hash
+    is($c->result, 1, 'result');
+
+    my $subject = 'Your MT5 password has been reset.';
+    my @msgs    = $mailbox->search(
+        email   => $DETAILS{email},
+        subject => qr/\Q$subject\E/
+    );
+    ok(@msgs, "email received");
+
+};
+
+subtest 'investor password reset' => sub {
+    my $method = 'mt5_password_reset';
+    $mailbox->clear;
+
+    my $code = BOM::Platform::Token->new({
+            email       => $DETAILS{email},
+            expires_in  => 3600,
+            created_for => 'mt5_password_reset'
+        })->token;
+
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            login             => $DETAILS{login},
+            new_password      => 'Abcd1234',
+            password_type     => 'investor',
+            verification_code => $code
+        }};
+
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_password_change');
+    # This call yields a truth integer directly, not a hash
+    is($c->result, 1, 'result');
+
+    my $subject = 'Your MT5 password has been reset.';
+    my @msgs    = $mailbox->search(
+        email   => $DETAILS{email},
+        subject => qr/\Q$subject\E/
+    );
+    ok(@msgs, "email received");
+
+};
+
+subtest 'password check investor' => sub {
+    my $method = 'mt5_password_check';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            login         => $DETAILS{login},
+            password      => 'Abcd1234',
+            password_type => 'investor'
+        },
+    };
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_password_check');
 };
 
 subtest 'deposit' => sub {
