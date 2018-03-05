@@ -13,7 +13,7 @@ use BOM::Market::DataDecimate;
 use Date::Utility;
 use JSON::XS qw/encode_json/;
 
-my $dc = BOM::Market::DataDecimate->new;
+my $dc = BOM::Market::DataDecimate->new( {market=>'forex'} );
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'holiday',
     {
@@ -110,7 +110,7 @@ subtest 'hybrid fetch on tuesday where monday is a trading day' => sub {
     my @decimate_ticks = map { +{symbol => 'frxUSDJPY', epoch => $_, quote => 99} }
         ($tuesday->minus_time_interval('30m')->epoch .. $tuesday->plus_time_interval('30m')->epoch);
     fill_decimate_ticks(\@decimate_ticks);
-    my $dc = BOM::Market::DataDecimate->new;
+    my $dc = BOM::Market::DataDecimate->new( {market => 'forex'} );
     foreach my $test (
         [$tuesday->minus_time_interval('20m'), $tuesday,],
         [$tuesday->minus_time_interval('19m'), $tuesday->plus_time_interval('1m'),],
@@ -131,7 +131,7 @@ done_testing();
 sub fill_decimate_ticks {
     my $ticks = shift;
 
-    my $decimate_cache = BOM::Market::DataDecimate->new;
+    my $decimate_cache = BOM::Market::DataDecimate->new( {market => 'forex'} );
     my $decimate_data  = Data::Decimate::decimate($decimate_cache->sampling_frequency->seconds, $ticks);
     my $decimate_key   = $decimate_cache->_make_key($ticks->[0]->{symbol}, 1);
 
