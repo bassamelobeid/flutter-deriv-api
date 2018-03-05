@@ -13,6 +13,7 @@ use BOM::Database::UserDB;
 use BOM::Platform::Password;
 use BOM::Platform::AuditLog;
 use BOM::Platform::Runtime;
+use BOM::Platform::Client::Utility;
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Email qw(send_email);
 

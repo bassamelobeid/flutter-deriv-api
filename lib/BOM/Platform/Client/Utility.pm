@@ -5,9 +5,12 @@ use warnings;
 
 use Crypt::CBC;
 use Crypt::NamedKeys;
+use DataDog::DogStatsd::Helper qw(stats_inc);
+use DateTime;
+use Date::Utility;
 use Encode;
 use Encode::Detect::Detector;
-use DataDog::DogStatsd::Helper qw(stats_inc);
+use Try::Tiny;
 
 use Webservice::GAMSTOP;
 use Brands;
@@ -53,7 +56,7 @@ sub set_gamstop_self_exclusion {
 
     my $gamstop_config = BOM::Platform::Config::third_party->{gamstop};
 
-    my $landing_company_config = $gamstop_config->{config}->{$client->landing_company_short};
+    my $landing_company_config = $gamstop_config->{config}->{$client->landing_company->short};
     # don't request if we don't have gamstop key per landing company
     return undef unless $landing_company_config;
 
@@ -80,7 +83,7 @@ sub set_gamstop_self_exclusion {
     return undef if (not $client->get_self_exclusion_until_date and $gamstop_response->is_excluded);
 
     try {
-        my $excluded_date = $client->set_exclusion->exclude_until(Date::Utility->new(DateTime->now()->add(months => 6)->ymd));
+        my $excluded_date = $client->set_exclusion->exclude_until(Date::Utility->new(DateTime->now()->add(months => 6)->ymd)->date_yyyymmdd);
         $client->save();
 
         my $email_address = Brands->new(name => request()->brand)->emails('compliance');
@@ -92,10 +95,15 @@ sub set_gamstop_self_exclusion {
                 message => [
                           "Client "
                         . $client->loginid
-                        . " has been self excluded based on GASMSTOP response.\n\n"
+                        . " has been self excluded based on GAMSTOP response ("
+                        . $gamstop_response->get_exclusion
+                        . ").\n\n"
                         . "Excluded from website until: $excluded_date"
                 ],
             });
+    }
+    catch {
+        warn "An error occurred while setting client exclusion: $_";
     };
 
     return undef;
