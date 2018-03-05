@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (localize);
+use BOM::Platform::Client::DocumentUpload;
 use Date::Utility;
 use BOM::Platform::Email qw(send_email);
 use Try::Tiny;
@@ -44,41 +45,18 @@ sub start_document_upload {
 
     _set_staff($client);
 
-    my $id;
-    my $error_occured;
-    my $error_duplicate;
-    try {
-        ($id) = $client->db->dbic->run(
-            ping => sub {
-                my $STD_WARN_HANDLER = $SIG{__WARN__};
-                local $SIG{__WARN__} = sub {
-                    return if $error_duplicate = _is_duplicate_upload_error($_);
-                    return $STD_WARN_HANDLER->(@_) if $STD_WARN_HANDLER;
-                    warn @_;
-                };
-                $_->selectrow_array(
-                    'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?)',
-                    undef, $loginid, $document_type, $document_format,
-                    $args->{expiration_date},
-                    ($args->{document_id} || ''),
-                    $expected_checksum
-                );
-            });
-    }
-    catch {
-        $error_occured = 1;
-    };
+    my $query_result = BOM::Platform::Client::DocumentUpload::start_document_upload($client, $loginid, $document_type, $document_format, $expected_checksum, $args->{expiration_date}, ($args->{document_id} || ''));
 
-    return create_upload_error('duplicate_document') if $error_occured and $error_duplicate;
+    return create_upload_error('duplicate_document') if $query_result->{error} and $query_result->{error}->{dup};
 
-    if ($error_occured or not $id) {
+    if ($query_result->{error} or not $query_result->{result}) {
         warn 'start_document_upload in the db was not successful';
         return create_upload_error();
     }
 
     return {
-        file_name => join('.', $loginid, $document_type, $id, $document_format),
-        file_id   => $id,
+        file_name => join('.', $loginid, $document_type, $query_result->{result}, $document_format),
+        file_id   => $query_result->{result},
         call_type => 1,
     };
 }
@@ -94,30 +72,13 @@ sub successful_upload {
 
     _set_staff($client);
 
-    my $result;
-    my $error_occured;
-    my $error_duplicate;
-    try {
-        ($result) = $client->db->dbic->run(
-            ping => sub {
-                my $STD_WARN_HANDLER = $SIG{__WARN__};
-                local $SIG{__WARN__} = sub {
-                    return if $error_duplicate = _is_duplicate_upload_error($_);
-                    return $STD_WARN_HANDLER->(@_) if $STD_WARN_HANDLER;
-                    warn @_;
-                };
-                $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?)', undef, $args->{file_id}, undef);
-            });
-    }
-    catch {
-        $error_occured = 1;
-    };
+    my $query_result = BOM::Platform::Client::DocumentUpload::finish_document_upload($client, $args->{file_id}, undef);
 
-    return create_upload_error('duplicate_document') if $error_occured and $error_duplicate;
+    return create_upload_error('duplicate_document') if $query_result->{error} and $query_result->{error}->{dup};
 
-    return create_upload_error('doc_not_found') if not $result;
+    return create_upload_error('doc_not_found') if not $query_result->{result};
 
-    if ($error_occured) {
+    if ($query_result->{error}) {
         warn 'Failed to update the uploaded document in the db';
         return create_upload_error();
     }
@@ -125,6 +86,7 @@ sub successful_upload {
     my $client_id = $client->loginid;
 
     my $status_changed;
+    my $error_occured;
     try {
         ($status_changed) = $client->db->dbic->run(
             ping => sub {
