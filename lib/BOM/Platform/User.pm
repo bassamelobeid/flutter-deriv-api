@@ -108,52 +108,7 @@ sub login {
         $cfl->delete if $cfl;    # delete client failed login
         BOM::Platform::AuditLog::log('successful login', $self->email);
 
-        my $default_client = $self->get_default_client();
-        # gamstop is only applicable for UK residence
-        if ($default_client->residence eq 'gb') {
-            my $gamstop_config = BOM::Platform::Config::third_party->{gamstop};
-
-            # don't request if we don't have gamstop key per landing company
-            if (my $landing_company_config = $gamstop_config->{config}->{$default_client->landing_company_short}) {
-                my $gamstop_response;
-                try {
-                    my $instance = Webservice::GAMSTOP->new(api_url => $gamstop_config->{api_uri} api_key => $landing_company_config->{api_key});
-
-                    $gamstop_response = $instance->get_exclusion_for(
-                        first_name    => $default_client->first_name,
-                        last_name     => $default_client->last_name,
-                        email         => $self->email,
-                        date_of_birth => $default_client->date_of_birth,
-                        postcode      => $default_client->postcode,
-                    );
-
-                }
-                catch {
-                    warn "GAMSTOP: Following error $_ occurred while fetching response";
-                };
-
-                try {
-                    if (not $default_client->get_self_exclusion_until_date and $gamstop_response->is_excluded) {
-                        my $excluded_date = $default_client->set_exclusion->exclude_until(Date::Utility->new(DateTime->now()->add(months => 6)->ymd));
-                        $default_client->save();
-
-                        my $email_address = Brands->new(name => request()->brand)->emails('compliance');
-
-                        send_email({
-                                from    => $email_address,
-                                to      => $email_address,
-                                subject => 'Client ' . $default_client->loginid . ' self excluded based on GAMSTOP response',
-                                message => [
-                                          "Client "
-                                        . $default_client->loginid
-                                        . " has been self excluded based on GASMSTOP response.\n\n"
-                                        . "Excluded from website until: $excluded_date"
-                                ],
-                            });
-                    }
-                };
-            }
-        }
+        BOM::Platform::Client::Utility::set_gamstop_self_exclusion($self->get_default_client());
     }
 
     return {success => 1};
