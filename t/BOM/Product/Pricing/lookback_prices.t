@@ -100,7 +100,6 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
 
                     is roundnear(0.00001, $c->theo_price), roundnear(0.00001, $expectation->{$c->shortcode}),
                         'theo price matches ['. $c->shortcode . ']';
-                    
                 }
             }
         }
