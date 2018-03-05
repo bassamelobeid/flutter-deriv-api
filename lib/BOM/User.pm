@@ -9,7 +9,7 @@ use Date::Utility;
 use BOM::User::Client;
 
 use BOM::Database::UserDB;
-use BOM::Platform::Password;
+use BOM::User::Password;
 use BOM::User::AuditLog;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(localize);
@@ -79,7 +79,7 @@ sub login {
         $error = localize('Sorry, you have already had too many unsuccessful attempts. Please try again in 5 minutes.');
         BOM::User::AuditLog::log('failed login > 5 times', $self->email);
 
-    } elsif (not $is_social_login and not BOM::Platform::Password::checkpw($password, $self->password)) {
+    } elsif (not $is_social_login and not BOM::User::Password::checkpw($password, $self->password)) {
 
         my $fail_count = $cfl ? $cfl->fail_count : 0;
         $self->failed_login({
