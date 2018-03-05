@@ -64,7 +64,7 @@ my $CLIENT_STATUS_TYPES = {
     # indicate if there has been a change in uploaded documents.
     document_under_review => 1,
     # indicates if there was a problem with uploaded documents.
-    document_needs_action => 1,
+    document_needs_action  => 1,
     professional_requested => 1,
     professional           => 1,
 };
@@ -563,7 +563,7 @@ sub get_self_exclusion_until_dt {
 
     my $exclude_until = $excl->exclude_until;
     my $timeout_until = $excl->timeout_until;
-    my $today = Date::Utility->new;
+    my $today         = Date::Utility->new;
     # Don't uplift exclude_until date for clients under Binary (Europe) Ltd,
     # Binary (IOM) Ltd, and Binary Investments (Europe) Ltd upon expiry.
     # This is in compliance with Section 3.5.4 (5e) of the United Kingdom Gambling
