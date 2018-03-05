@@ -28,7 +28,7 @@ The source of the ticks used for this pricing.
 has tick_source => (
     is      => 'ro',
     default => sub {
-        BOM::Market::DataDecimate->new;
+        BOM::Market::DataDecimate->new({market => 'forex'});
     },
 );
 
