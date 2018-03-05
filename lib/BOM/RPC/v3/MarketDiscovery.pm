@@ -27,6 +27,7 @@ rpc active_symbols => sub {
     my $product_type         = $params->{args}->{product_type};
     my $language             = $params->{language} || 'EN';
     my $token_details        = $params->{token_details};
+    my $country_code         = $params->{country_code} // '';
 
     my $offerings_obj;
     if ($token_details and exists $token_details->{loginid}) {
@@ -42,7 +43,7 @@ rpc active_symbols => sub {
     unless ($offerings_obj) {
         my $landing_company = LandingCompany::Registry::get($landing_company_name);
         $product_type //= $landing_company->default_offerings;
-        my $method = $product_type eq 'basic' ? 'basic_offerings' : 'multi_barrier_offerings';
+        my $method = $product_type eq 'basic' ? 'basic_offerings_for_country' : 'multi_barrier_offerings_for_country';
         $offerings_obj = $landing_company->$method(BOM::Platform::Runtime->instance->get_offerings_config);
     }
     my $appconfig_revision = BOM::Platform::Runtime->instance->app_config->current_revision;
