@@ -791,7 +791,7 @@ rpc mt5_password_reset => sub {
                 message_to_client => $err->{message_to_client}});
     }
 
-    my $user = BOM::Platform::User->new({email => $email});
+    my $user = BOM::User->new({email => $email});
 
     # MT5 login not belongs to user
     return BOM::RPC::v3::Utility::permission_error()
