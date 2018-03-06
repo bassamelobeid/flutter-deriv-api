@@ -72,7 +72,7 @@ sub website_status {
                     $current_state = eval { $json->decode(Encode::decode_utf8($current_state)) }
                         if $current_state && !ref $current_state;
                     $website_status->{site_status} = $current_state->{site_status} // 'up';
-                    $website_status->{message}     = $status_msg{$current_state->{message}} // '';
+                    $website_status->{message} = $status_msg{$current_state->{message}} // '' if $current_state->{message};
 
                     return {
                         website_status => $website_status,
