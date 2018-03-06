@@ -4,13 +4,9 @@ use strict;
 use warnings;
 no indirect;
 
-use FindBin qw/$Bin/;
-use lib "$Bin/../lib";
 # load this file to force Mojo::JSON to use JSON::MaybeXS
 use Mojo::JSON::MaybeXS;
 use Mojo::JSON 'encode_json';
-use YAML::XS;
-use Mojo::Redis2;
 use Encode;
 use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
 use Try::Tiny;
