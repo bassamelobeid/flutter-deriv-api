@@ -51,7 +51,7 @@ sub decrypt_secret_answer {
 sub set_gamstop_self_exclusion {
     my $client = shift;
 
-    return undef unless $client->residence;
+    return undef unless $client and $client->residence;
 
     # gamstop is only applicable for UK residence
     return undef unless $client->residence eq 'gb';

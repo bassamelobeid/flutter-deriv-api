@@ -240,6 +240,7 @@ sub get_clients_in_sorted_order {
         }
 
         if ($cl->get_self_exclusion_until_date) {
+            $self->{_self_excluded_client} = $cl unless $self->{_self_excluded_client};
             push @self_excluded_accounts, $cl;
             next;
         }
@@ -267,7 +268,7 @@ Act as replacement for using "$siblings[0]" or "$clients[0]"
 sub get_default_client {
     my $self = shift;
 
-    return $self->{_first_enabled_real_client} // $self->{_real_client} // $self->{_virtual_client};
+    return $self->{_first_enabled_real_client} // $self->{_real_client} // $self->{_virtual_client} // $self->{_self_excluded_client};
 }
 
 1;
