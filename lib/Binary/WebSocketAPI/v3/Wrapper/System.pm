@@ -38,11 +38,6 @@ sub forget_all {
         # if type is a string, turn it into an array
         $types = [$types] unless ref($types) eq 'ARRAY';
 
-        # since we accept array, syntax check should be done here
-        my $accepted_types = qr/^(ticks|candles|proposal|portfolio|proposal_open_contract|balance|transaction|proposal_array)$/;
-        my @failed_types = grep { !/$accepted_types/ } @$types;
-        return $c->new_error('forget_all', 'InputValidationFailed', $c->l('Input validation failed: ') . join(', ', @failed_types)) if @failed_types;
-
         for my $type (@$types) {
             if ($type eq 'balance' or $type eq 'transaction' or $type eq 'proposal_open_contract') {
                 @removed_ids{@{_forget_transaction_subscription($c, $type)}} = ();
