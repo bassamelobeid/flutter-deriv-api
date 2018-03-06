@@ -8,11 +8,8 @@ sub check_expiry_conditions {
     my $self = shift;
 
     if ($self->exit_tick) {
-        my ($high) = @{$self->get_ohlc_for_period()}{qw(high)};
-        if (defined $high) {
-            my $value = ($high - $self->exit_tick->quote) * $self->multiplier;
-            $self->value($value);
-        }
+        my $value = ($self->barrier->as_absolute - $self->exit_tick->quote) * $self->multiplier;
+        $self->value($value);
     }
 
     return;
