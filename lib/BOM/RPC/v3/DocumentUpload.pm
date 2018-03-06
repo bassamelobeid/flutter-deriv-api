@@ -209,7 +209,7 @@ sub create_upload_error {
         missing_exp_date   => [localize('Expiration date is required.')],
         missing_doc_id     => [localize('Document ID is required.')],
         doc_not_found      => [localize('Document not found.')],
-        max_size           => [localize(sprintf("Maximum file size reached. Maximum allowed is %d", MAX_FILE_SIZE))],
+        max_size           => [localize("Maximum file size reached. Maximum allowed is [_1]", MAX_FILE_SIZE)],
         duplicate_document => [localize('Document already uploaded.'), 'DuplicateUpload'],
         checksum_mismatch  => [localize('Checksum verification failed.'), 'ChecksumMismatch'],
     };
