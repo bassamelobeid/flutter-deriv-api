@@ -63,8 +63,7 @@ lives_ok {
 }
 'Enable client and exclude him until tomorrow';
 lives_ok { $auth_result = BOM::RPC::v3::Utility::check_authorization($client) } 'Should return result of check';
-is $auth_result->{error}->{code}, 'ClientSelfExclusion', 'It should return error: ClientSelfExclusion';
-ok $auth_result->{error}->{message_to_client} =~ /$timeout_until_date/, 'It should return date until excluded';
+is $auth_result, undef, 'Self excluded client should not throw error';
 
 my $date_until = Date::Utility->new->plus_time_interval('2d')->date_yyyymmdd;
 lives_ok {
@@ -75,7 +74,6 @@ lives_ok {
 }
 'Enable client and exclude him until tomorrow';
 lives_ok { $auth_result = BOM::RPC::v3::Utility::check_authorization($client) } 'Should return result of check';
-is $auth_result->{error}->{code}, 'ClientSelfExclusion', 'It should return error: ClientSelfExclusion';
-ok $auth_result->{error}->{message_to_client} =~ /$date_until/, 'It should return date until excluded';
+is $auth_result, undef, 'Self excluded client should not throw error';
 
 done_testing();
