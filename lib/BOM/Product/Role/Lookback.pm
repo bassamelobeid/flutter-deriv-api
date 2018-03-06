@@ -10,21 +10,6 @@ use LandingCompany::Registry;
 
 my $minimum_multiplier_config = LoadFile('/home/git/regentmarkets/bom/config/files/lookback_minimum_multiplier.yml');
 
-=head2 spot_min
-
-The lowest spot price throughout the contract period.
-
-=head2 spot_max
-
-The highest spot price throughout the contract period.
-
-=cut
-
-has [qw(spot_min spot_max)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 =head2 multiplier
 
 The number of units.
@@ -95,18 +80,6 @@ sub _build_spot_min_max {
     };
 
     return $high_low;
-}
-
-sub _build_spot_min {
-    my $self = shift;
-
-    return $self->spot_min_max->{low};
-}
-
-sub _build_spot_max {
-    my $self = shift;
-
-    return $self->spot_min_max->{high};
 }
 
 sub _build_priced_with_intraday_model {
