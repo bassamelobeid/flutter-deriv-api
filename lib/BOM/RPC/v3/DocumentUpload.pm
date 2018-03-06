@@ -204,14 +204,20 @@ sub create_upload_error {
     state $default_error_code = 'UploadDenied';
     state $default_error_msg  = localize('Sorry, an error occurred while processing your request.');
     state $errors             = {
-        virtual            => {message => localize("Virtual accounts don't require document uploads.")},
-        already_expired    => {message => localize('Expiration date cannot be less than or equal to current date.')},
-        missing_exp_date   => {message => localize('Expiration date is required.')},
-        missing_doc_id     => {message => localize('Document ID is required.')},
-        doc_not_found      => {message => localize('Document not found.')},
-        max_size           => {message => localize("Maximum file size reached. Maximum allowed is [_1]", MAX_FILE_SIZE)},
-        duplicate_document => {message => localize('Document already uploaded.'), error_code => 'DuplicateUpload'},
-        checksum_mismatch  => {message => localize('Checksum verification failed.'), error_code => 'ChecksumMismatch'},
+        virtual          => {message => localize("Virtual accounts don't require document uploads.")},
+        already_expired  => {message => localize('Expiration date cannot be less than or equal to current date.')},
+        missing_exp_date => {message => localize('Expiration date is required.')},
+        missing_doc_id   => {message => localize('Document ID is required.')},
+        doc_not_found    => {message => localize('Document not found.')},
+        max_size         => {message => localize("Maximum file size reached. Maximum allowed is [_1]", MAX_FILE_SIZE)},
+        duplicate_document => {
+            message    => localize('Document already uploaded.'),
+            error_code => 'DuplicateUpload'
+        },
+        checksum_mismatch => {
+            message    => localize('Checksum verification failed.'),
+            error_code => 'ChecksumMismatch'
+        },
     };
 
     my ($error_code, $message);
