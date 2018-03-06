@@ -51,6 +51,8 @@ sub decrypt_secret_answer {
 sub set_gamstop_self_exclusion {
     my $client = shift;
 
+    return undef unless $client->residence;
+
     # gamstop is only applicable for UK residence
     return undef unless $client->residence eq 'gb';
 
@@ -80,7 +82,7 @@ sub set_gamstop_self_exclusion {
 
     return undef unless $gamstop_response;
 
-    return undef if (not $client->get_self_exclusion_until_date and $gamstop_response->is_excluded);
+    return undef if ($client->get_self_exclusion_until_date or not $gamstop_response->is_excluded);
 
     try {
         my $excluded_date = $client->set_exclusion->exclude_until(Date::Utility->new(DateTime->now()->add(months => 6)->ymd)->date_yyyymmdd);
