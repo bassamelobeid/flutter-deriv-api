@@ -24,10 +24,7 @@ sub website_status {
     my ($c, $req_storage) = @_;
 
     my %status_msg = (
-        release_due => $c->l(
-            'We are updating our site in a short while. Some services may be temporarily unavailable.
-'
-        ),
+        release_due => $c->l('We are updating our site in a short while. Some services may be temporarily unavailable.'),
         suspended   => $c->l('Sorry, but trading is unavailable until further notice due to an unexpected error. Please try again later.'),
         feed_issues => $c->l(
             'We are having an issue with one or more of our data feeds. We are working to resolve the issue but some markets may be unavailable for the time being.'
