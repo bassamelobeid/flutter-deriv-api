@@ -20,8 +20,8 @@ use Try::Tiny;
 
 my $json = JSON::MaybeXS->new;
 
-sub website_status {
-    my ($c, $req_storage) = @_;
+sub get_status_msg {
+    my ($c, $status_code) = @_;
 
     my %status_msg = (
         release_due => $c->l('We are updating our site in a short while. Some services may be temporarily unavailable.'),
@@ -37,6 +37,12 @@ sub website_status {
             'We are experiencing an unusually high load on our system. Some features and services may be unstable or temporarily unavailable. We hope to resolve this issue as soon as we can.'
         ),
     );
+
+    return $status_msg{$status_code};
+}
+
+sub website_status {
+    my ($c, $req_storage) = @_;
 
     my $args = $req_storage->{args};
 
@@ -72,7 +78,7 @@ sub website_status {
                     $current_state = eval { $json->decode(Encode::decode_utf8($current_state)) }
                         if $current_state && !ref $current_state;
                     $website_status->{site_status} = $current_state->{site_status} // 'up';
-                    $website_status->{message} = $status_msg{$current_state->{message}} // '' if $current_state->{message};
+                    $website_status->{message} = get_status_msg($c, $current_state->{message}) // '' if $current_state->{message};
 
                     return {
                         website_status => $website_status,
@@ -121,6 +127,7 @@ sub send_notification {
         }
 
         $message = eval { $json->decode(Encode::decode_utf8($message)) } unless ref $message eq 'HASH';
+        $message->{message} = get_status_msg($client_shared->{c}, $message->{message}) // '' if $message->{message};
 
         $client_shared->{c}->send({
                 json => {
