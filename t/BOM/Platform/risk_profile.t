@@ -170,6 +170,18 @@ subtest 'turnover limit parameters' => sub {
     is $param->[0]->{limit}, 0,             'turnover limit correctly set to zero';
     ok $param->[0]->{daily}, 'daily set to 1';
     is scalar(@{$param->[0]->{symbols}}), 7, '7 symbols selected';
+    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+        '{"xxx": {"underlying_symbol": "R_100,R_10", "expiry_type": "daily", "risk_profile": "no_business", "name": "test custom"}}');
+    $rp = BOM::Platform::RiskProfile->new(%args, expiry_type => 'daily');
+    is $rp->contract_info->{expiry_type}, 'daily', 'daily expiry';
+    $param = $rp->get_turnover_limit_parameters;
+    is $param->[0]->{name},  'test custom', 'correct name';
+    is $param->[0]->{limit}, 0,             'turnover limit correctly set to zero';
+    ok $param->[0]->{daily}, 'daily set to 1';
+    is scalar(@{$param->[0]->{symbols}}), 2, '2 symbols selected';
+    is $param->[0]->{symbols}->[0], 'R_100', 'first symbol is R_100';
+    is $param->[0]->{symbols}->[1], 'R_10', 'first symbol is R_10';
+
 };
 
 subtest 'empty limit condition' => sub {
