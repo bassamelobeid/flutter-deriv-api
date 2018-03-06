@@ -75,7 +75,7 @@ sub login {
     } elsif ($cfl = $self->failed_login and $cfl->fail_count > 5 and $cfl->last_attempt->epoch > time - 300) {
         $error = localize('Sorry, you have already had too many unsuccessful attempts. Please try again in 5 minutes.');
         BOM::User::AuditLog::log('failed login > 5 times', $self->email);
-    } elsif (not $is_social_login and not BOM::Platform::Password::checkpw($password, $self->password)) {
+    } elsif (not $is_social_login and not BOM::User::Password::checkpw($password, $self->password)) {
         my $fail_count = $cfl ? $cfl->fail_count : 0;
         $self->failed_login({
             fail_count   => ++$fail_count,
