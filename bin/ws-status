@@ -37,15 +37,9 @@ my $is_on_key    = "NOTIFY::broadcast::is_on";     ### TODO: to config
 
 my $redis = ws_redis_master() or die 'no redis connection';
 try {
-    $redis->on(
-        error => sub {
-            my ($self, $err) = @_;
-            warn "ws write redis error: $err";
-        });
-
     $redis->set($is_on_key, $send_notification);
 
-    my $mess_obj = {status => $status};
+    my $mess_obj = {site_status => $status};
     $mess_obj->{message} = $message if $message;
 
     $redis->set($state_key, encode_json_utf8($mess_obj));
