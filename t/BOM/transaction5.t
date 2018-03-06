@@ -48,11 +48,11 @@ subtest 'validate client error message' => sub {
 
     my $now      = Date::Utility->new;
     my $contract = produce_contract({
-        underlying   => $underlying,
-        bet_type     => 'CALL',
-        currency     => $currency,
-        payout       => 1000,
-    #    date_start   => $now,
+        underlying => $underlying,
+        bet_type   => 'CALL',
+        currency   => $currency,
+        payout     => 1000,
+        #    date_start   => $now,
         duration     => '5d',
         current_tick => $tick,
         barrier      => 'S0P',
