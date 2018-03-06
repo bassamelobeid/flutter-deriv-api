@@ -202,7 +202,7 @@ sub create_upload_error {
     my $reason = shift;
 
     state $default_error_code = 'UploadDenied';
-    state $default_error_msg  = 'Sorry, an error occurred while processing your request.';
+    state $default_error_msg  = localize('Sorry, an error occurred while processing your request.');
     state $errors             = {
         virtual            => [localize("Virtual accounts don't require document uploads.")],
         already_expired    => [localize('Expiration date cannot be less than or equal to current date.')],
@@ -210,8 +210,8 @@ sub create_upload_error {
         missing_doc_id     => [localize('Document ID is required.')],
         doc_not_found      => [localize('Document not found.')],
         max_size           => [localize(sprintf("Maximum file size reached. Maximum allowed is %d", MAX_FILE_SIZE))],
-        duplicate_document => [localize('Document already uploaded.', 'DuplicateUpload')],
-        checksum_mismatch  => [localize('Checksum verification failed.', 'ChecksumMismatch')],
+        duplicate_document => [localize('Document already uploaded.'), 'DuplicateUpload'],
+        checksum_mismatch  => [localize('Checksum verification failed.'), 'ChecksumMismatch'],
     };
 
     my ($error_code, $message);
