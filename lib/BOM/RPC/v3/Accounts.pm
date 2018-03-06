@@ -49,6 +49,8 @@ use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
 use BOM::Platform::Runtime;
 
+my $allowed_fields_for_virtual = qr/passthrough|set_settings|email_consent|residence|allow_copiers/;
+
 my $json = JSON::MaybeXS->new;
 
 requires_auth();
@@ -861,53 +863,54 @@ rpc set_settings => sub {
     my ($website_name, $client_ip, $user_agent, $language, $args) =
         @{$params}{qw/website_name client_ip user_agent language args/};
 
-    my ($residence, $allow_copiers, $err) = ($args->{residence}, $args->{allow_copiers});
+    my ($residence, $allow_copiers, $jp_status) = ($args->{residence}, $args->{allow_copiers});
     if ($client->is_virtual) {
         # Virtual client can update
         # - residence, if residence not set. But not for Japan
         # - email_consent (common to real account as well)
         if (not $client->residence and $residence and $residence ne 'jp') {
             if (Brands->new(name => request()->brand)->countries_instance->restricted_country($residence)) {
-                $err = BOM::RPC::v3::Utility::create_error({
-                        code              => 'invalid residence',
+                return BOM::RPC::v3::Utility::create_error({
+                        code              => 'InvalidResidence',
                         message_to_client => localize('Sorry, our service is not available for your country of residence.')});
             } else {
                 $client->residence($residence);
                 if (not $client->save()) {
-                    $err = BOM::RPC::v3::Utility::create_error({
+                    return BOM::RPC::v3::Utility::create_error({
                             code              => 'InternalServerError',
                             message_to_client => localize('Sorry, an error occurred while processing your account.')});
                 }
             }
         } elsif (
             grep {
-                $_ !~ /passthrough|set_settings|email_consent|residence/
+                !/$allowed_fields_for_virtual/
             } keys %$args
             )
         {
             # we only allow these keys in virtual set settings any other key will result in permission error
-            $err = BOM::RPC::v3::Utility::permission_error();
+            return BOM::RPC::v3::Utility::permission_error();
         }
     } else {
         # real client is not allowed to update residence
-        $err = BOM::RPC::v3::Utility::permission_error() if $residence;
+        return BOM::RPC::v3::Utility::permission_error() if $residence;
 
         # handle Japan settings update separately
         if ($client->residence eq 'jp') {
             # this may return error or {status => 1}
-            $err = BOM::RPC::v3::Japan::NewAccount::set_jp_settings($params);
+            $jp_status = BOM::RPC::v3::Japan::NewAccount::set_jp_settings($params);
+            return $jp_status if $jp_status->{error};
         } elsif ($client->account_opening_reason
             and $args->{account_opening_reason}
             and $args->{account_opening_reason} ne $client->account_opening_reason)
         {
             # cannot set account_opening_reason with a different value
-            $err = BOM::RPC::v3::Utility::create_error({
+            return BOM::RPC::v3::Utility::create_error({
                 code              => 'PermissionDenied',
                 message_to_client => localize("Value of account_opening_reason cannot be changed."),
             });
         } elsif (not $client->account_opening_reason and not $args->{account_opening_reason}) {
             # required to set account_opening_reason if empty
-            $err = BOM::RPC::v3::Utility::create_error({
+            return BOM::RPC::v3::Utility::create_error({
                     code              => 'InputValidationFailed',
                     message_to_client => localize("Input validation failed: account_opening_reason"),
                     details           => {
@@ -916,15 +919,13 @@ rpc set_settings => sub {
                 });
         }
 
-        $err = BOM::RPC::v3::Utility::create_error({
+        return BOM::RPC::v3::Utility::create_error({
                 code              => 'PermissionDenied',
                 message_to_client => localize("Value of place_of_birth cannot be changed.")}
         ) if ($client->place_of_birth and $args->{place_of_birth} and $args->{place_of_birth} ne $client->place_of_birth);
 
-        $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && ($client->broker_code ne 'CR' or $client->get_status('ico_only'));
-
         if ($client->residence eq 'gb' and defined $args->{address_postcode} and $args->{address_postcode} eq '') {
-            $err = BOM::RPC::v3::Utility::create_error({
+            return BOM::RPC::v3::Utility::create_error({
                     code              => 'InputValidationFailed',
                     message_to_client => localize("Input validation failed: address_postcode"),
                     details           => {
@@ -934,7 +935,9 @@ rpc set_settings => sub {
         }
     }
 
-    return $err if $err->{error};
+    return BOM::RPC::v3::Utility::permission_error()
+        if $allow_copiers
+        and ($client->landing_company->short ne 'costarica' and not $client->is_virtual);
 
     if (
         $allow_copiers
@@ -957,8 +960,8 @@ rpc set_settings => sub {
         $user->save;
     }
 
-    # need to handle for $err->{status} as that come from japan settings
-    return {status => 1} if ($client->is_virtual || $err->{status});
+    # need to handle for $jp_status->{status} as that come from japan settings
+    return {status => 1} if $jp_status->{status};
 
     my $tax_residence             = $args->{'tax_residence'}             // '';
     my $tax_identification_number = $args->{'tax_identification_number'} // '';
@@ -1196,6 +1199,15 @@ rpc set_self_exclusion => sub {
 
     my $client = $params->{client};
     return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
+
+    my $lim = $client->get_self_exclusion_until_date;
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'SelfExclusion',
+            message_to_client => localize(
+                'Sorry, but you have self-excluded yourself from the website until [_1]. If you are unable to place a trade or deposit after your self-exclusion period, please contact the Customer Support team for assistance.',
+                $lim
+            ),
+        }) if $lim;
 
     # get old from above sub _get_self_exclusion_details
     my $self_exclusion = _get_self_exclusion_details($client);
