@@ -204,18 +204,18 @@ sub create_upload_error {
     state $default_error_code = 'UploadDenied';
     state $default_error_msg  = 'Sorry, an error occurred while processing your request.';
     state $errors             = {
-        virtual            => ["Virtual accounts don't require document uploads."],
-        already_expired    => ['Expiration date cannot be less than or equal to current date.'],
-        missing_exp_date   => ['Expiration date is required.'],
-        missing_doc_id     => ['Document ID is required.'],
-        doc_not_found      => ['Document not found.'],
-        max_size           => [sprintf("Maximum file size reached. Maximum allowed is %d", MAX_FILE_SIZE)],
-        duplicate_document => ['Document already uploaded.', 'DuplicateUpload'],
-        checksum_mismatch  => ['Checksum verification failed.', 'ChecksumMismatch'],
+        virtual            => [localize("Virtual accounts don't require document uploads.")],
+        already_expired    => [localize('Expiration date cannot be less than or equal to current date.')],
+        missing_exp_date   => [localize('Expiration date is required.')],
+        missing_doc_id     => [localize('Document ID is required.')],
+        doc_not_found      => [localize('Document not found.')],
+        max_size           => [localize(sprintf("Maximum file size reached. Maximum allowed is %d", MAX_FILE_SIZE))],
+        duplicate_document => [localize('Document already uploaded.', 'DuplicateUpload')],
+        checksum_mismatch  => [localize('Checksum verification failed.', 'ChecksumMismatch')],
     };
 
     my ($error_code, $message);
-    ($error_code, $message) = ($errors->{$reason}[1], localize($errors->{$reason}[0])) if $reason;
+    ($error_code, $message) = ($errors->{$reason}[1], $errors->{$reason}[0]) if $reason;
 
     return BOM::RPC::v3::Utility::create_error({
         code              => $error_code || $default_error_code,
