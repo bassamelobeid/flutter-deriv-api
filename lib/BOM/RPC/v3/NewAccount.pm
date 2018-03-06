@@ -189,6 +189,8 @@ rpc "verify_email",
         $payment_sub->($type);
     } elsif ($type eq 'payment_withdraw') {
         $payment_sub->($type);
+    } elsif ($type eq 'mt5_password_reset') {
+        request_email($email, $verification->{mt5_password_reset}->());
     }
 
     # always return 1, so not to leak client's email
