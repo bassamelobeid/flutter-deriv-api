@@ -403,7 +403,7 @@ subtest 'test slippage', sub {
         };
 
 #Case 2 , recomputed price 50 requested price 49.99
-       $txn = BOM::Transaction->new({
+        $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
             price         => 49.99,
@@ -417,7 +417,7 @@ subtest 'test slippage', sub {
         is $error, undef, 'case 2 no error';
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
-        
+
         subtest 'case 2 fmb row', sub {
             plan tests => 1;
             is $fmb->{buy_price} + 0, 49.99, 'buy_price';
@@ -429,7 +429,7 @@ subtest 'test slippage', sub {
         };
 
 #Case 3 , recomputed price 50 requested price 60
-       $txn = BOM::Transaction->new({
+        $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
             price         => 60.00,
@@ -455,7 +455,7 @@ subtest 'test slippage', sub {
         };
 
 #Case 4 , recomputed price 50 requested price 40
-       $txn = BOM::Transaction->new({
+        $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
             price         => 40.00,
