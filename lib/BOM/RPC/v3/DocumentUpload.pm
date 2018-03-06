@@ -201,6 +201,7 @@ sub validate_expiration_date {
 sub create_upload_error {
     my $reason = shift;
 
+    # This data is all static, so a state declaration stops reinitialization on every call to this function.
     state $default_error_code = 'UploadDenied';
     state $default_error_msg  = localize('Sorry, an error occurred while processing your request.');
     state $errors             = {
