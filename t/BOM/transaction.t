@@ -2166,7 +2166,7 @@ subtest 'transaction slippage' => sub {
     my $fmb_id;
     my $mock_pc       = Test::MockModule->new('Price::Calculator');
     my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
-    $mock_contract->mock('ask_price', sub { 10 });
+    $mock_contract->mock('ask_price',        sub { 10 });
     $mock_contract->mock('allowed_slippage', sub { 0.01 });
     $mock_contract->mock(
         'commission_markup',
