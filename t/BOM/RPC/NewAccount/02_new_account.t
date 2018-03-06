@@ -130,7 +130,7 @@ subtest $method => sub {
 
             # Make virtual client with user
             my $password = 'jskjd8292922';
-            my $hash_pwd = BOM::Platform::Password::hashpw($password);
+            my $hash_pwd = BOM::User::Password::hashpw($password);
             $email = 'new_email' . rand(999) . '@binary.com';
             $user  = BOM::User->create(
                 email    => $email,
@@ -218,7 +218,7 @@ subtest $method => sub {
     subtest 'Initialization' => sub {
         lives_ok {
             my $password = 'jskjd8292922';
-            my $hash_pwd = BOM::Platform::Password::hashpw($password);
+            my $hash_pwd = BOM::User::Password::hashpw($password);
             $email = 'new_email' . rand(999) . '@binary.com';
             $user  = BOM::User->create(
                 email    => $email,
@@ -334,7 +334,7 @@ subtest $method => sub {
     subtest 'Init MLT MF' => sub {
         lives_ok {
             my $password = 'jskjd8292922';
-            my $hash_pwd = BOM::Platform::Password::hashpw($password);
+            my $hash_pwd = BOM::User::Password::hashpw($password);
             $email = 'new_email' . rand(999) . '@binary.com';
             $user  = BOM::User->create(
                 email    => $email,
@@ -389,7 +389,7 @@ subtest $method => sub {
     subtest 'Init MX MF' => sub {
         lives_ok {
             my $password = 'jskjd8292922';
-            my $hash_pwd = BOM::Platform::Password::hashpw($password);
+            my $hash_pwd = BOM::User::Password::hashpw($password);
             $email = 'mx_email' . rand(999) . '@binary.com';
             $user  = BOM::User->create(
                 email    => $email,
@@ -473,7 +473,7 @@ subtest $method => sub {
     subtest 'Initialization' => sub {
         lives_ok {
             my $password = 'jskjd8292922';
-            my $hash_pwd = BOM::Platform::Password::hashpw($password);
+            my $hash_pwd = BOM::User::Password::hashpw($password);
             $email = 'new_email' . rand(999) . '@binary.com';
             $user  = BOM::User->create(
                 email    => $email,

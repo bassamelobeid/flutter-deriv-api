@@ -10,7 +10,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::User;
 use BOM::Database::Model::OAuth;
-use BOM::Platform::Password;
+use BOM::User::Password;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({

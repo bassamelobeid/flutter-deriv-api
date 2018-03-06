@@ -260,7 +260,7 @@ sub _check_password {
 
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'PasswordError',
-                message_to_client => localize('Old password is wrong.')}) if (not BOM::Platform::Password::checkpw($old_password, $user_pass));
+                message_to_client => localize('Old password is wrong.')}) if (not BOM::User::Password::checkpw($old_password, $user_pass));
 
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'PasswordError',
