@@ -43,7 +43,7 @@ subtest 'digits test it all' => sub {
         is_deeply $c->supported_expiries, ['tick'];
         isa_ok $c, 'BOM::Product::Contract::Digitmatch';
         is $c->pricing_engine_name, 'Pricing::Engine::Digits';
-        isa_ok $c->greek_engine,    'BOM::Product::Pricing::Greeks::Digits';
+        isa_ok $c->greek_engine,    'BOM::Product::Pricing::Greeks::ZeroGreek';
         ok $c->tick_expiry;
         is $c->tick_count,      5;
         is $c->ticks_to_expiry, 5;

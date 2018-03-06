@@ -46,7 +46,7 @@ subtest 'Test that contract can be created correctly' => sub {
         is_deeply $c->supported_expiries, ['tick'];
         isa_ok $c, 'BOM::Product::Contract::Ticklow';
         is $c->pricing_engine_name, 'Pricing::Engine::HighLowTicks';
-        isa_ok $c->greek_engine,    'BOM::Product::Pricing::Greeks::Digits';
+        isa_ok $c->greek_engine,    'BOM::Product::Pricing::Greeks::ZeroGreek';
         ok $c->tick_expiry;
         is $c->tick_count,      5;
         is $c->ticks_to_expiry, 5;
@@ -196,7 +196,7 @@ subtest 'Test for condition with two winning ticks' => sub {
     $args->{date_pricing}  = $now;
     $args->{selected_tick} = 1;
 
-    my @quotes = (102.4, 102.3, 102.4, 102.3, 102.6);
+    my @quotes = (102.5, 102.4, 102.3, 102.4, 102.3, 102.6);
 
     foreach my $i (0 .. $#quotes) {
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -209,14 +209,9 @@ subtest 'Test for condition with two winning ticks' => sub {
     lives_ok {
         $args->{date_pricing} = $now->plus_time_interval('4s');
         my $c = produce_contract($args);
-        ok !$c->exit_tick, 'first tick is next tick';
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            underlying => 'R_100',
-            epoch      => $now->epoch + 5,
-            quote      => 102.4,
-        });
+        ok $c->exit_tick, 'first tick is next tick';
         $c = produce_contract($args);
-        is $c->exit_tick->quote, 102.4, 'correct exit tick';
+        is $c->exit_tick->quote, 102.6, 'correct exit tick';
         ok $c->is_expired, 'expired';
         cmp_ok $c->value, '==', 0, 'payout is 0 as contract is lost';
     }
@@ -225,7 +220,7 @@ subtest 'Test for condition with two winning ticks' => sub {
     lives_ok {
         $args->{date_pricing} = $now->plus_time_interval('4s');
         $c = produce_contract({%$args, selected_tick => 2});
-        is $c->exit_tick->quote, 102.4, 'correct exit tick';
+        is $c->exit_tick->quote, 102.6, 'correct exit tick';
         ok $c->is_expired, 'expired';
         cmp_ok $c->value, '==', $c->payout, 'full payout';
     }
@@ -234,7 +229,7 @@ subtest 'Test for condition with two winning ticks' => sub {
     lives_ok {
         $args->{date_pricing} = $now->plus_time_interval('4s');
         $c = produce_contract({%$args, selected_tick => 3});
-        is $c->exit_tick->quote, 102.4, 'correct exit tick';
+        is $c->exit_tick->quote, 102.6, 'correct exit tick';
         ok $c->is_expired, 'expired';
         cmp_ok $c->value, '==', 0, 'payout is 0 as contract is lost';
     }
@@ -243,7 +238,7 @@ subtest 'Test for condition with two winning ticks' => sub {
     lives_ok {
         $args->{date_pricing} = $now->plus_time_interval('4s');
         $c = produce_contract({%$args, selected_tick => 4});
-        is $c->exit_tick->quote, 102.4, 'correct exit tick';
+        is $c->exit_tick->quote, 102.6, 'correct exit tick';
         ok $c->is_expired, 'expired';
         cmp_ok $c->value, '==', $c->payout, 'full payout';
     }
@@ -252,7 +247,7 @@ subtest 'Test for condition with two winning ticks' => sub {
     lives_ok {
         $args->{date_pricing} = $now->plus_time_interval('4s');
         $c = produce_contract({%$args, selected_tick => 5});
-        is $c->exit_tick->quote, 102.4, 'correct exit tick';
+        is $c->exit_tick->quote, 102.6, 'correct exit tick';
         ok $c->is_expired, 'expired';
         cmp_ok $c->value, '==', 0, 'payout is 0 as contract is lost';
     }
@@ -266,7 +261,7 @@ subtest 'Where the second tick is higher than the selected first tick, the contr
     $args->{date_pricing}  = $now;
     $args->{selected_tick} = 1;
 
-    my @quotes = (102.36, 102.25);
+    my @quotes = (102.4, 102.36, 102.25);
 
     foreach my $i (0 .. $#quotes) {
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({

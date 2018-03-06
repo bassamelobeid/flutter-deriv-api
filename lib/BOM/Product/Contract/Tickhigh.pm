@@ -5,12 +5,10 @@ extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::AmericanExpiry';
 
 use List::Util qw/max any/;
-use List::MoreUtils qw/indexes/;
 
 use Pricing::Engine::HighLowTicks;
 
-use BOM::Product::Contract::Strike::Digit;
-use BOM::Product::Pricing::Greeks::Digits;
+use BOM::Product::Pricing::Greeks::ZeroGreek;
 
 use constant DURATION_IN_TICKS => 5;
 
@@ -19,8 +17,9 @@ has 'selected_tick' => (
     required => 1,
 );
 
+# Required to determine the exit tick
 sub ticks_to_expiry {
-    return 5;
+    return DURATION_IN_TICKS;
 }
 
 sub _build_pricing_engine_name {
@@ -28,7 +27,7 @@ sub _build_pricing_engine_name {
 }
 
 sub _build_greek_engine {
-    return BOM::Product::Pricing::Greeks::Digits->new({bet => shift});
+    return BOM::Product::Pricing::Greeks::ZeroGreek->new({bet => shift});
 }
 
 sub check_expiry_conditions {
@@ -36,7 +35,7 @@ sub check_expiry_conditions {
     my $self = shift;
 
     my $ticks = $self->underlying->ticks_in_between_start_limit({
-        start_time => $self->date_start,
+        start_time => $self->date_start->epoch + 1,
         limit      => DURATION_IN_TICKS,
     });
 
