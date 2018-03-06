@@ -38,6 +38,7 @@ use BOM::Backoffice::FormAccounts;
 use BOM::Database::Model::AccessToken;
 use BOM::Backoffice::Script::DocumentUpload;
 use Finance::MIFIR::CONCAT qw(mifir_concat);
+use BOM::Platform::Client::DocumentUpload;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -269,61 +270,18 @@ if ($input{whattodo} eq 'uploadID') {
 
         my $file_checksum = Digest::MD5->new->addfile($filetoupload)->hexdigest;
 
-        my $_is_duplicate_upload_error = sub {
-            my $dbh = shift;
+        my $query_result = BOM::Platform::Client::DocumentUpload::start_document_upload($client, $loginid, $doctype, $docformat, $file_checksum, $expiration_date, $document_id);
 
-            return $dbh->state eq '23505'
-                and $dbh->errstr =~ /duplicate_upload_error/;
-        };
-
-        my $id;
-        try {
-            ($id) = $client->db->dbic->run(
-                ping => sub {
-                    my $STD_WARN_HANDLER = $SIG{__WARN__};
-                    local $SIG{__WARN__} = sub {
-                        return if _is_duplicate_upload_error->($_);
-                        return $STD_WARN_HANDLER->(@_) if $STD_WARN_HANDLER;
-                        warn @_;
-                    };
-                    $_->selectrow_array(
-                        'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?)',
-                        undef, $loginid, $doctype, $docformat,
-                        $expiration_date || undef,
-                        $document_id     || '',
-                        $file_checksum,
-                    );
-                });
-        }
-        catch {
-            $error_occured = 1;
-        };
-
-        die 'start_document_upload in the db was not successful' if ($error_occured or not $id);
+        die 'start_document_upload in the db was not successful' if ($query_result->{error} or not $query_result->{result});
 
         my $new_file_name = "$loginid.$doctype.$id.$docformat";
 
         my $checksum = BOM::Backoffice::Script::DocumentUpload::upload($new_file_name, $filetoupload, $file_checksum)
             or die "Upload failed for $filetoupload";
 
-        my $query_result;
-        try {
-            ($query_result) = $client->db->dbic->run(
-                ping => sub {
-                    my $STD_WARN_HANDLER = $SIG{__WARN__};
-                    local $SIG{__WARN__} = sub {
-                        return if _is_duplicate_upload_error->($_);
-                        return $STD_WARN_HANDLER->(@_) if $STD_WARN_HANDLER;
-                        warn @_;
-                    };
-                    $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?)', undef, $id, $comments);
-                });
-        }
-        catch {
-            $error_occured = 1;
-        };
+        query_result = BOM::Platform::Client::DocumentUpload::finish_document_upload($client, $id, $comments);
 
-        die "Cannot record uploaded file $filetoupload in the db" if ($error_occured or not $query_result);
+        die "Cannot record uploaded file $filetoupload in the db" if ($query_result->{error} or not $query_result->{result});
 
         $result .= "<br /><p style=\"color:#eeee00; font-weight:bold;\">Ok! File $i: $new_file_name is uploaded.</p><br />";
     }
