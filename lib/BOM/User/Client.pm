@@ -555,7 +555,7 @@ sub get_limit_for_open_positions {
 }
 
 # return undef or an exclusion date string
-sub get_self_exclusion_until_dt {
+sub get_self_exclusion_until_date {
     my $self = shift;
 
     my $excl = $self->get_self_exclusion;
