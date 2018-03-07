@@ -302,7 +302,7 @@ subtest 'User Login' => sub {
     subtest 'Invalid Password' => sub {
         $status = $user->login(%args, password => 'mRX1E3Mi00oS8LG');
         ok !$status->{success}, 'Bad password; cannot login';
-        ok $status->{error} =~ /Incorrect email or password/;
+        like $status->{error}, qr/Incorrect email or password/, 'correct error message';
         my $login_history = $user->get_last_successful_login_history();
         is $login_history->{action}, 'login', 'correct last successful login history action';
         is $login_history->{status}, 1,       'correct last successful login history status';
