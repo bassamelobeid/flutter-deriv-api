@@ -40,7 +40,7 @@ sub BUILD {
 
     my $barrier_type_count = grep { $_->{category}->two_barriers } @$contract_types;
 
-    my $category = grep { $_->{category}->code eq 'lookback' } @$contract_types;
+    my $system_defined_barrier = grep { $_->{category}->code eq 'lookback' } @$contract_types;
 
     if ($barrier_type_count > 0 and $barrier_type_count < scalar(@$contract_types)) {
         BOM::Product::Exception->throw(error_code => 'InvalidBarrierMixedBarrier');
@@ -49,7 +49,7 @@ sub BUILD {
     # $barrier_type_count == 0, single barrier contract
     # $barrier_type_count == @$c_types, double barrier contract
 
-    unless ($category) {
+    unless ($system_defined_barrier) {
         BOM::Product::Exception->throw(error_code => 'InvalidBarrierSingle') if ($barrier_type_count == 0 and grep { ref $_ } @$barriers);
 
         BOM::Product::Exception->throw(error_code => 'InvalidBarrierDouble')
