@@ -75,6 +75,8 @@ sub set_gamstop_self_exclusion {
             date_of_birth => $client->date_of_birth,
             postcode      => $client->postcode,
         );
+
+        stats_inc('GAMSTOP_RESPONSE', {tags => ['EXCLUSION:' . ($gamstop_response->get_exclusion() // 'NA')]});
     }
     catch {
         stats_inc('GAMSTOP_CONNECT_FAILURE') if $_ =~ /^Error/;
@@ -82,7 +84,7 @@ sub set_gamstop_self_exclusion {
 
     return undef unless $gamstop_response;
 
-    return undef if ($client->get_self_exclusion_until_date or not $gamstop_response->is_excluded);
+    return undef if ($client->get_self_exclusion_until_date or not $gamstop_response->is_excluded());
 
     try {
         my $excluded_date = $client->set_exclusion->exclude_until(Date::Utility->new(DateTime->now()->add(months => 6)->ymd)->date_yyyymmdd);
