@@ -295,7 +295,7 @@ sub set_allow_copiers {
 
     my $email = $client->email;
     my $loginid = $client->loginid;
-    my $user    = BOM::Platform::User->create(
+    my $user    = BOM::User->create(
         email    => $email,
         password => '1234',
     );
