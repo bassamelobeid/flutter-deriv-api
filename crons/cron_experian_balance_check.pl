@@ -7,17 +7,27 @@
 use strict;
 use warnings;
 
+use Try::Tiny;
+
 use BOM::Backoffice::ExperianBalance;
 use BOM::Platform::Config;
 use BOM::Platform::Email qw(send_email);
 
 my $brand = Brands->new(name => 'binary');
 
-my ($used, $limit) = BOM::Backoffice::ExperianBalance::get_balance(BOM::Platform::Config::third_party->{proveid}->{username},
-    BOM::Platform::Config::third_party->{proveid}->{password});
+my ($used, $limit);
+try {
+    ($used, $limit) = BOM::Backoffice::ExperianBalance::get_balance(BOM::Platform::Config::third_party->{proveid}->{username},
+        BOM::Platform::Config::third_party->{proveid}->{password});
+}
+catch {
+    warn "An error occurred: $_";
+};
 
-my $threshold = shift // 25000;
-my $remain = $limit - $used;
+warn "Not able to get balance from experian." and exit(1) unless ($used and $limit);
+
+my $threshold = 25000;
+my $remain    = $limit - $used;
 
 if ($remain < $threshold) {
     my $message = <<"EOF";
