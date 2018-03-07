@@ -90,8 +90,6 @@
                 },
                 "place_of_birth": {
                     "type": "string",
-                    "pattern": "^id$",
-                    "required": "1"
                 },
                 "tax_residence": {
                     "type": ""
