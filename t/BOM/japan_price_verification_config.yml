@@ -1,51 +1,58 @@
 ---
 intraday_historical:
   ask_probability:
-    bs_probability: 0.477289803727543
+    bs_probability: 0.476950338225764
     commission_markup: 0.035
-    intraday_delta_correction: 0.00826558418960556
-    intraday_vega_correction: 0.00158709304753217
+    intraday_delta_correction: 0.00829115776959762
+    intraday_vega_correction: 0.00163571743253538
     risk_markup: 0.01
   bs_probability:
-    K: 79.820
-    S: 79.817
+    K: '79.820'
+    S: '79.817'
     discount_rate: 0
     mu: 0
-    payout: 1000
+    payout: '1000'
     t: 2.85388127853881e-05
-    vol: 0.124248779247416
+    vol: 0.122395784555014
   commission_markup:
     base_commission: 0.035
     commission_multiplier: 1
   contract_details:
     ccy: JPY
-    description: Win payout if USD/JPY is higher than or equal to entry spot plus  3 pips at 15 minutes after contract start time.
+    description:
+    - Win payout if [_1] is higher than or equal to [_4] at [_3] after [_2].
+    - USD/JPY
+    - - contract start time
+    - class: Time::Duration::Concise::Localize
+      value: 900
+    - - entry spot plus [plural,_1,%d pip, %d pips]
+      - 3
     loginID: NA
     order_price: 520
     order_type: buy
-    payout: 1000
+    payout: '1000'
     ref_spot: NA
     ref_vol: NA
     ref_vol2: NA
     short_code: CALLE_FRXUSDJPY_1000_1352345145_1352346045_S3P_0
     slippage_price: NA
-    tick_before_trade_time: 79.817
+    tick_before_trade_time: '79.817'
     trade_ask_price: NA
     trade_bid_price: NA
     trade_time: 2012-11-08 03:25:45
     trans_id: NA
   intraday_delta_correction:
-    long_term_delta_correction: 0.00338794646250118
+    long_term_delta_correction: 0.00343909362248529
     short_term_delta_correction: 0.0131432219167099
   intraday_vega_correction:
     historical_vol_mean_reversion: 0.10
-    intraday_vega: 0.180454705483476
+    intraday_vega: 0.185983366256525
     long_term_prediction: 0.0879496626746316
   opposite_contract:
-    opposite_contract_K: 79.820
-    opposite_contract_S: 79.817
+    opposite_contract_K: '79.820'
+    opposite_contract_S: '79.817'
     opposite_contract_base_commission: 0.035
-    opposite_contract_bs_probability: 0.522710196272457
+    opposite_contract_bs_probability: 0.523049661774236
     opposite_contract_commission_markup: 0.035
     opposite_contract_commission_multiplier: 1
     opposite_contract_discount_rate: 0
@@ -54,22 +61,22 @@ intraday_historical:
     opposite_contract_event_markup: 0
     opposite_contract_historical_vol_markup: 0
     opposite_contract_historical_vol_mean_reversion: 0.10
-    opposite_contract_intraday_delta_correction: -0.00826558418960556
+    opposite_contract_intraday_delta_correction: -0.00829115776959762
     opposite_contract_intraday_eod_markup: 0
     opposite_contract_intraday_historical_iv_risk: 0
-    opposite_contract_intraday_vega: -0.180454705483476
-    opposite_contract_intraday_vega_correction: -0.00158709304753217
-    opposite_contract_long_term_delta_correction: -0.00338794646250118
+    opposite_contract_intraday_vega: -0.185983366256525
+    opposite_contract_intraday_vega_correction: -0.00163571743253538
+    opposite_contract_long_term_delta_correction: -0.00343909362248529
     opposite_contract_long_term_prediction: 0.0879496626746316
     opposite_contract_mu: 0
-    opposite_contract_payout: 1000
+    opposite_contract_payout: '1000'
     opposite_contract_quiet_period_markup: 0
-    opposite_contract_risk_markup: 0.0190227352741738
+    opposite_contract_risk_markup: 0.0192991683128262
     opposite_contract_short_term_delta_correction: -0.0131432219167099
     opposite_contract_short_term_kurtosis_risk_markup: 0
     opposite_contract_t: 2.85388127853881e-05
-    opposite_contract_vol: 0.124248779247416
-    opposite_contract_vol_spread_markup: 0.00902273527417381
+    opposite_contract_vol: 0.122395784555014
+    opposite_contract_vol_spread_markup: 0.00929916831282623
   risk_markup:
     economic_events_markup: 0.01
     economic_events_spot_risk_markup: 0.01
@@ -98,7 +105,8 @@ slope:
     commission_multiplier: 1
   contract_details:
     ccy: JPY
-    description: Win payout if USD/JPY is higher than or equal to 78.300 at close on 2012-11-19.
+    description: Win payout if USD/JPY is higher than or equal to 78.300 at close
+      on 2012-11-19.
     loginID: NA
     order_price: 928
     order_type: buy
