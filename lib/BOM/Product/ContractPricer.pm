@@ -258,7 +258,7 @@ sub _create_new_interface_engine {
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::HighLowTicks') {
         %pricing_parameters = (
             contract_type => $self->pricing_code,
-            ($self->code =~ /TICK(HIGH|LOW)/ ? (selected_tick => $self->selected_tick) : ()),
+            selected_tick => $self->selected_tick,
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
         my $backprice = ($self->underlying->for_date) ? 1 : 0;
