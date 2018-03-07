@@ -191,7 +191,6 @@ sub startup {
         ['ping',           {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::ping}],
         ['time',           {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::server_time}],
         ['website_status', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::website_status}],
-        ['ico_status'],
         ['residence_list'],
         ['states_list'],
         ['payout_currencies', {stash_params => [qw/ token landing_company_name /]}],
@@ -238,6 +237,12 @@ sub startup {
         ],
         [
             'mt5_password_change',
+            {
+                require_auth => 'admin',
+                stash_params => [qw/ server_name client_ip user_agent /]}
+        ],
+        [
+            'mt5_password_reset',
             {
                 require_auth => 'admin',
                 stash_params => [qw/ server_name client_ip user_agent /]}
