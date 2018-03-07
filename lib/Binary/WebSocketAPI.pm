@@ -505,7 +505,7 @@ sub startup {
             binary_frame => \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::document_upload,
             # action hooks
             before_forward => [
-                \&Binary::WebSocketAPI::Hooks::before_forward,               \&Binary::WebSocketAPI::Hooks::assign_rpc_url,
+                \&Binary::WebSocketAPI::Hooks::before_forward, \&Binary::WebSocketAPI::Hooks::assign_rpc_url,
                 \&Binary::WebSocketAPI::Hooks::introspection_before_forward,
             ],
             before_call => [
