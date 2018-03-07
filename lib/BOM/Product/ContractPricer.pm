@@ -254,6 +254,10 @@ sub _create_new_interface_engine {
         %pricing_parameters = (
             strike => $self->barrier ? $self->barrier->as_absolute : undef,
             contract_type => $self->pricing_code,
+        );
+    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::HighLowTicks') {
+        %pricing_parameters = (
+            contract_type => $self->pricing_code,
             ($self->code =~ /TICK(HIGH|LOW)/ ? (selected_tick => $self->selected_tick) : ()),
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
