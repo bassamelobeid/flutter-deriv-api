@@ -872,7 +872,7 @@ rpc set_settings => sub {
             } else {
                 $client->residence($residence);
                 if (not $client->save()) {
-                    $err = BOM::RPC::v3::Utility::client_error();
+                    return BOM::RPC::v3::Utility::client_error();
                 }
             }
         } elsif (
