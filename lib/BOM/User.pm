@@ -65,11 +65,12 @@ Returns hashref, {success => 1} if successfully authenticated user or {error => 
 sub login {
     my ($self, %args) = @_;
     my $password        = $args{password}        || die "requires password argument";
+    my $runtime         = $args{runtime}         || die "requires runtime instance";
     my $environment     = $args{environment}     || '';
     my $is_social_login = $args{is_social_login} || 0;
 
     my ($error, $cfl, @clients);
-    if (BOM::Platform::Runtime->instance->app_config->system->suspend->all_logins) {
+    if ($runtime->app_config->system->suspend->all_logins) {
         $error = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
         BOM::User::AuditLog::log('system suspend all login', $self->email);
     } elsif ($cfl = $self->failed_login and $cfl->fail_count > 5 and $cfl->last_attempt->epoch > time - 300) {
