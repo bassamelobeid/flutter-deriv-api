@@ -2,7 +2,7 @@
 
 #### NAME
 BOM::User - Class representing a company's user object.
-Client::Account - Class representing a company's client related business logic
+BOM::User::Client - Class representing a company's client related business logic
 
 #### SYNOPSYS
 ```
