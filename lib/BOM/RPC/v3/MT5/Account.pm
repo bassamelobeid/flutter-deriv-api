@@ -723,7 +723,7 @@ Takes the following (named) parameters as inputs:
 
 =over 3
 
-=item * A Client::Account object under the key C<client>.
+=item * A BOM::User::Client object under the key C<client>.
 
 =item * A hash reference under the key C<args> that contains:
 

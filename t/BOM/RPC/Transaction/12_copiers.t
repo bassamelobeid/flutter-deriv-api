@@ -28,6 +28,12 @@ use BOM::Test::RPC::Client;
 
 use Test::BOM::RPC::Contract;
 
+my %default_call_params = (
+    client_ip    => '127.0.0.1',
+    user_agent   => '12_copiers.t',
+    language     => 'EN',
+);
+
 Crypt::NamedKeys->keyfile('/etc/rmg/aes_keys.yml');
 my $mock_rpc = Test::MockModule->new('BOM::Transaction::Validation');
 $mock_rpc->mock(_validate_tnc => sub { note "mocked BOM::Transaction::Validation->validate_tnc returning nothing"; undef });
@@ -49,6 +55,180 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 event_name   => 'FOMC',
             }]});
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+
+####################################################################
+# Setup clients
+####################################################################
+
+my $trader_CR = create_client('CR', 0, {email => 'trader_cr@binary.com'});
+my $copier_CR = create_client('CR', 0, {email => 'copier_cr@binary.com'});
+set_allow_copiers($trader_CR);
+
+my $trader_VRTC = create_client('VRTC', 0, {email => 'trader_vrtc@binary.com'});
+my $copier_VRTC = create_client('VRTC', 0, {email => 'copier_vrtc@binary.com'});
+set_allow_copiers($trader_VRTC);
+
+my $copier_MLT = create_client('MLT', 0, {email => 'copier_mlt@binary.com'});
+
+my $copier_MF = create_client('MLT', 0, {email => 'copier_mf@binary.com'});
+
+####################################################################
+# Tests begin here
+####################################################################
+
+####################################################################
+# Test valid copy-trade pairs
+####################################################################
+
+my @valid_test_pairs = (
+    [$trader_CR, $copier_CR],
+    [$trader_VRTC, $copier_VRTC],
+);
+
+foreach my $pair (@valid_test_pairs){
+    my $test_name = join(' ','Valid Pair | Trader:',$pair->[0]->loginid,'Copier:',$pair->[1]->loginid);
+    subtest $test_name => sub {
+        copy_trading_test_routine($pair->[0], $pair->[1]);
+    };
+}
+
+####################################################################
+# Test Invalid copy-trade pairs
+####################################################################
+
+my @invalid_test_pairs = (
+    [$trader_CR, $copier_VRTC],
+    [$trader_CR, $copier_MLT],
+    [$trader_CR, $copier_MF],
+    [$trader_VRTC, $copier_CR],
+    [$trader_VRTC, $copier_MLT],
+    [$trader_VRTC, $copier_MF],
+);
+
+foreach my $pair (@valid_test_pairs){
+    my $test_name = join(' ','Invalid Pair | Trader:',$pair->[0]->loginid,'Copier:',$pair->[1]->loginid);
+    my $test_message =  join(' ',$pair->[1]->loginid,'following',$pair->[0]->loginid,'attempt. CopyTradingNotAllowed');
+    subtest $test_name => sub {
+        start_copy_trade_with_error_code($trader_VRTC, $copier_CR, 'CopyTradingNotAllowed', $test_message);
+    };
+}
+
+####################################################################
+# Test error checking
+####################################################################
+
+subtest 'Invalid trade type error' => sub {
+    my $extra_args = {
+            trade_types => 'CAL',
+    };
+    start_copy_trade_with_error_code($trader_CR, $copier_CR, 'InvalidTradeType', 'following attempt. InvalidTradeType', $extra_args);
+};
+
+subtest 'Invalid symbol error' => sub {
+    my $extra_args = {
+            trade_types => 'CALL',
+            assets      => 'R666'
+    };
+    start_copy_trade_with_error_code($trader_CR, $copier_CR, 'InvalidSymbol', 'following attempt. InvalidSymbol', $extra_args);
+};
+
+subtest 'Invalid token error' => sub {
+    start_copy_trade_with_error_code(undef, $copier_CR, 'InvalidToken', 'following attempt. InvalidToken');
+};
+
+subtest 'Copy trading not allowed error' => sub {
+    start_copy_trade_with_error_code($copier_CR, $trader_CR, 'CopyTradingNotAllowed', 'following attempt. CopyTradingNotAllowed');
+};
+
+subtest 'Wrong currency error' => sub {
+    my $EUR_copier = create_client('CR');
+    top_up $EUR_copier, 'EUR', 1000;
+
+    my $extra_args = {
+            trade_types => 'CALL',
+    };
+    start_copy_trade_with_error_code($trader_CR, $EUR_copier, 'CopyTradingWrongCurrency', 'check currency', $extra_args);
+};
+
+subtest 'Copy trader without allow_copiers set' => sub {
+    my $unset_trader = create_client('CR');
+
+    start_copy_trade_with_error_code($unset_trader, $copier_CR, 'CopyTradingNotAllowed', 'cannot follow trader without allow_copiers set');
+};
+
+####################################################################
+# Helper methods
+####################################################################
+
+sub copy_trading_test_routine {
+
+    my ($trader, $copier) = @_;
+    my ($trader_acc, $trader_acc_mapper, $copier_acc_mapper, $fmbid);
+    
+    my $opening_balance = 15000;
+
+    subtest 'Setup and fund trader' => sub {
+
+        $trader_acc_mapper = BOM::Database::DataMapper::Account->new({
+            'client_loginid' => $trader->loginid,
+            'currency_code'  => 'USD',
+        });
+
+        $copier_acc_mapper = BOM::Database::DataMapper::Account->new({
+            'client_loginid' => $copier->loginid,
+            'currency_code'  => 'USD',
+        });
+        
+        top_up_account_and_check($trader, $trader_acc_mapper, 'USD', $opening_balance);
+        top_up_account_and_check($copier, $copier_acc_mapper, 'USD', 1);
+    
+        isnt($trader_acc = $trader->find_account(query => [currency_code => 'USD'])->[0], undef, 'got USD account');
+
+        start_copy_trade($trader, $copier);
+    };
+
+    subtest 'Buy USD bet' => sub {
+        $fmbid = buy_bet_and_check($trader_acc, $trader_acc_mapper, $copier_acc_mapper, 0);
+        # Expect the copier to fail on this call because it is not yet properly funded
+    };
+
+    subtest 'Fund copier' => sub {
+        top_up_account_and_check($copier, $copier_acc_mapper, 'USD', $opening_balance - 1);
+    };
+
+    subtest 'Buy 2nd USD bet' => sub {
+        $fmbid = buy_bet_and_check($trader_acc, $trader_acc_mapper, $copier_acc_mapper, 1);
+    };
+
+    sleep 1;
+
+    subtest 'Sell 2nd USD bet' => sub {
+        sell_bet_and_check ($trader_acc, $trader_acc_mapper, $copier_acc_mapper, $fmbid, 1);
+    };
+
+    subtest 'Get trader copiers' => sub {
+        my $copiers = BOM::Database::DataMapper::Copier->new(
+            broker_code => $trader->broker_code,
+            operation   => 'replica',
+            )->get_trade_copiers({
+                trader_id => $trader->loginid,
+            });
+        is(scalar @$copiers, 1, 'get_trade_copiers');
+        is($copiers->[0], $copier->loginid, 'trade copier is correct');
+        note explain $copiers;
+    };
+
+    subtest 'Unfollow' => sub {
+        stop_copy_trade($trader, $copier);
+
+        $fmbid = buy_bet_and_check($trader_acc, $trader_acc_mapper, $copier_acc_mapper, 0);
+        # Copy should fail because we've unfollowed
+
+        # Reset accounts back to zero
+        top_up_account_and_check($trader, $trader_acc_mapper, 'USD', $trader_acc_mapper->get_balance * (-1));
+        top_up_account_and_check($copier, $copier_acc_mapper, 'USD', $copier_acc_mapper->get_balance * (-1));
+    };
+}
 
 sub buy_one_bet {
     my ($acc, $args) = @_;
@@ -110,189 +290,135 @@ sub sell_one_bet {
     return @{$result}{qw| balance_after sold_for |};
 }
 
-####################################################################
-# real tests begin here
-####################################################################
+sub set_allow_copiers {
+    my $client = shift;
 
-my $balance;
-my ($trader, $trader_acc, $copier, $trader_acc_mapper, $copier_acc_mapper, $txnid, $fmbid, $balance_after, $buy_price);
+    my $email = $client->email;
+    my $loginid = $client->loginid;
+    my $user    = BOM::User->create(
+        email    => $email,
+        password => '1234',
+    );
+    $user->add_loginid({loginid => $loginid});
+    $user->save;
 
-lives_ok {
-    $trader = create_client;
-    $copier = create_client;
+    my $args = {
+        set_settings    => 1,
+        allow_copiers   => 1
+    };
+    if (not $client->is_virtual){
+        # This field is unrelated to the test, but required for this call to succeed on a real money account
+        $args->{account_opening_reason} = "Speculative";
+    }
 
-    $trader->allow_copiers(1);
-    $trader->save;
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
 
-    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($token);
-    $trader_acc_mapper = BOM::Database::DataMapper::Account->new({
-        'client_loginid' => $trader->loginid,
-        'currency_code'  => 'USD',
-    });
+    my $res = $c->call_ok('set_settings', {
+        args => $args,
+        token => $token,
+        %default_call_params
+    })->result;
 
-    $balance = 15000;
-    top_up $trader, 'USD', $balance;
-    top_up $copier, 'USD', 1;
+    is($res->{status}, 1, "allow_copiers set successfully");
+}
 
-    isnt($trader_acc = $trader->find_account(query => [currency_code => 'USD'])->[0], undef, 'got USD account');
+sub start_copy_trade {
+    my ($trader, $copier) = @_;
 
-    is(int($trader_acc_mapper->get_balance), 15000, 'USD balance is 15000 got: ' . $balance);
+    my ($trader_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
+    my ($copier_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $copier->loginid);
 
-    my $res = BOM::RPC::v3::CopyTrading::copy_start({
-            args => {
-                copy_start => $token,
-            },
-            client => $copier
-        });
-
+    my $res = $c->call_ok('copy_start', {
+        args => {
+            copy_start => $trader_token,
+        },
+        token => $copier_token,
+        %default_call_params
+    })->has_no_error->result;
     ok($res && $res->{status}, "start following");
 }
-'trader funded';
 
-lives_ok {
-    my $wrong_copier = create_client;
-    top_up $wrong_copier, 'USD', 15000;
+sub start_copy_trade_with_error_code {
+    my ($trader, $copier, $error_code, $error_msg, $extra_args) = @_;
+    $extra_args ||= {};
 
-    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
+    my ($trader_token) = (defined $trader) ? BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid) : "Invalid";
+    my ($copier_token) = (defined $copier) ? BOM::Database::Model::OAuth->new->store_access_token_only(1, $copier->loginid) : "Invalid";
 
-    my $res = BOM::RPC::v3::CopyTrading::copy_start({
-            args => {
-                copy_start  => $token,
-                trade_types => 'CAL',
-            },
-            client => $wrong_copier
-        });
-
-    is($res && $res->{error}{code}, 'InvalidTradeType', "following attepmt. InvalidTradeType");
-    $res = BOM::RPC::v3::CopyTrading::copy_start({
-            args => {
-                copy_start  => $token,
-                trade_types => 'CALL',
-                assets      => 'R666'
-            },
-            client => $wrong_copier
-        });
-
-    ok($res && $res->{error}{code}, "following attepmt. Invalid symbol");
-
-    $res = BOM::RPC::v3::CopyTrading::copy_start({
-            args => {
-                copy_start => "Invalid",
-            },
-            client => $wrong_copier
-        });
-
-    is($res->{error}{code}, "InvalidToken", "following attepmt. InvalidToken");
-
-    my ($token1) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $wrong_copier->loginid);
-
-    $res = BOM::RPC::v3::CopyTrading::copy_start({
-            args => {
-                copy_start => $token1,
-            },
-            client => $trader
-        });
-
-    is($res->{error}{code}, 'CopyTradingNotAllowed', "following attepmt. CopyTradingNotAllowed");
+    my $res = $c->call_ok('copy_start', {
+        args => {
+            copy_start => $trader_token,
+            %$extra_args
+        },
+        token => $copier_token,
+        %default_call_params
+    })->has_error->error_code_is($error_code, $error_msg);
 }
-'following validation';
 
-lives_ok {
-    my $wrong_copier = create_client('MF');
-    top_up $wrong_copier, 'EUR', 1000;
-    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
+sub stop_copy_trade {
+    my ($trader, $copier) = @_;
 
-    my $res = BOM::RPC::v3::CopyTrading::copy_start({
-            args => {
-                copy_start  => $token,
-                trade_types => 'CALL',
-            },
-            client => $wrong_copier
-        });
-    is($res->{error}{code}, 'CopyTradingWrongCurrency', 'check currency');
-}
-'Wrong currency';
+    my ($trader_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
+    my ($copier_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $copier->loginid);
 
-lives_ok {
-    ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
-
-    $balance -= $buy_price;
-    is(int $balance_after, int $balance, 'correct balance_after');
-}
-'bought USD bet';
-
-lives_ok {
-    top_up $copier, 'USD', 14999;
-    $copier_acc_mapper = BOM::Database::DataMapper::Account->new({
-        'client_loginid' => $copier->loginid,
-        'currency_code'  => 'USD',
-    });
-
-    is(int $copier_acc_mapper->get_balance, 15000, 'USD balance is 15000 got: ' . $balance);
-}
-'copier funded';
-
-lives_ok {
-    ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
-
-    is(int $copier_acc_mapper->get_balance, int(15000 - $buy_price), 'correct copier balance');
-    $balance -= $buy_price;
-    is(int $balance_after, int $balance, 'correct balance_after');
-}
-'bought 2nd USD bet';
-
-sleep 1;
-
-lives_ok {
-    my $copier_balance = $copier_acc_mapper->get_balance + 0;
-    my $trader_balance = $trader_acc_mapper->get_balance + 0;
-
-    ($balance_after, my $sell_price) = sell_one_bet(
-        $trader_acc,
-        +{
-            id => $fmbid,
-        });
-
-    is(int $copier_acc_mapper->get_balance, int($copier_balance + $sell_price), "correct copier balance");
-
-    is(int $trader_acc_mapper->get_balance, int($trader_balance + $sell_price), "correct trader balance");
-}
-'sell 2nd a bet';
-
-lives_ok {
-    my $copiers = BOM::Database::DataMapper::Copier->new(
-        broker_code => $trader->broker_code,
-        operation   => 'replica',
-        )->get_trade_copiers({
-            trader_id => $trader->loginid,
-        });
-    is(scalar @$copiers, 1, 'get_trade_copiers');
-    note explain $copiers;
-}
-'get_trader_copiers';
-
-lives_ok {
-    my $loginid = $trader->loginid;
-
-    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
-
-    my $res = BOM::RPC::v3::CopyTrading::copy_stop({
-            args => {
-                copy_stop => $token,
-            },
-            client => $copier
-        });
+    my $res = $c->call_ok('copy_stop', {
+        args => {
+            copy_stop => $trader_token,
+        },
+        token => $copier_token,
+        %default_call_params
+    })->has_no_error->result;
     ok($res && $res->{status}, "stop following");
+}
+
+sub buy_bet_and_check {
+    my ($trader_acc, $trader_acc_mapper, $copier_acc_mapper, $copy_success_expected) = @_;
+
     my $copier_balance = $copier_acc_mapper->get_balance + 0;
     my $trader_balance = $trader_acc_mapper->get_balance + 0;
 
-    ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
-    is(int($copier_acc_mapper->get_balance), int($copier_balance), "correct copier balance");
+    my ($txnid, $fmbid, $balance_after, $buy_price) = buy_one_bet($trader_acc);
 
-    is(int($trader_acc_mapper->get_balance), int($trader_balance - $buy_price), "correct trader balance");
+    my $expected_copier_balance = $copier_balance - ($copy_success_expected ? $buy_price : 0);
+    my $expected_trader_balance = $trader_balance - $buy_price;
 
+    is(int $balance_after, int $expected_trader_balance, 'correct balance_after');
+    is(int $copier_acc_mapper->get_balance, int $expected_copier_balance, "correct copier balance");
+    is(int $trader_acc_mapper->get_balance, int $expected_trader_balance, "correct trader balance");
+
+    return $fmbid;
 }
-'unfollowing';
+
+sub sell_bet_and_check {
+    my ($trader_acc, $trader_acc_mapper, $copier_acc_mapper, $fmbid, $copy_success_expected) = @_;
+
+    my $copier_balance = $copier_acc_mapper->get_balance + 0;
+    my $trader_balance = $trader_acc_mapper->get_balance + 0;
+
+    my ($balance_after, $sell_price) = sell_one_bet(
+            $trader_acc,
+            +{
+                id => $fmbid,
+            });
+
+    my $expected_copier_balance = $copier_balance + ($copy_success_expected ? $sell_price : 0);
+    my $expected_trader_balance = $trader_balance + $sell_price;
+
+    is(int $balance_after, int $expected_trader_balance, 'correct balance_after');
+    is(int $copier_acc_mapper->get_balance, int $expected_copier_balance, "correct copier balance");
+    is(int $trader_acc_mapper->get_balance, int $expected_trader_balance, "correct trader balance");
+}
+
+sub top_up_account_and_check {
+    my ($client, $client_acc_mapper, $currency, $amount) = @_;
+    
+    my $previous_balance = $client_acc_mapper->get_balance;
+    my $expected_balance = $previous_balance + $amount;
+    
+    top_up $client, $currency, $amount;
+    
+    my $new_balance = $client_acc_mapper->get_balance;
+    is(int($new_balance), int($expected_balance), $currency.' balance should be '.$expected_balance.' got: ' . $new_balance);
+}
 
 done_testing;

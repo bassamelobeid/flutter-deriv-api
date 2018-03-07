@@ -58,6 +58,12 @@ rpc copy_start => sub {
                 code              => 'CopyTradingNotAllowed',
                 message_to_client => localize('Traders are not allowed to copy trades.')});
     }
+    if ($client->landing_company->short ne $trader->landing_company->short) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'CopyTradingNotAllowed',
+                message_to_client => localize('Trader and copier must have the same landing company.')});
+        # This is a business decision, not a technical limitation.
+    }
 
     unless ($client->default_account
         && $trader->default_account
