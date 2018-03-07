@@ -331,26 +331,6 @@ sub add_brand {
     return;
 }
 
-# XXX: this is temporary check for debug purposes. At the end this check will be inside before_dispatch
-sub check_useragent {
-    my ($c) = @_;
-
-    if ((not $c->stash('user_agent')) and $c->stash('logged_requests') < 3 and ($c->stash('source') // 0) == 1) {
-        $c->stash('logged_requests', $c->stash('logged_requests') + 1);
-        try {
-            Path::Tiny::path('/var/log/httpd/missing_ua_appid1.log')->append_utf8((
-                    join ',',
-                    (map { $c->stash($_) // '' } qw/ source client_ip landing_company_name brand log_requests /),
-                    (map { $c->tx->req->headers->header($_) // '-' } qw/ Origin Referer /),
-                    $json->encode($c->stash('introspection')->{last_call_received} // {})
-                ),
-                "\n"
-            );
-        };
-    }
-    return;
-}
-
 sub _on_sanity_failed {
     my ($c) = @_;
     my $client_ip = $c->stash->{client_ip};
