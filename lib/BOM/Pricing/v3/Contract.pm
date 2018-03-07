@@ -513,7 +513,7 @@ sub send_ask {
 
     # Here we have to do something like this because we are re-using
     # amout in the API for specifiying no of contracts.
-    $params->{args}->{multiplier} //= $params->{args}->{amount} if $params->{args}->{basis} eq 'multiplier';
+    $params->{args}->{multiplier} //= $params->{args}->{amount} if (exists $params->{args}->{basis} and $params->{args}->{basis} eq 'multiplier');
 
     # copy country_code when it is available.
     $params->{args}->{country_code} = $params->{country_code} if $params->{country_code};
