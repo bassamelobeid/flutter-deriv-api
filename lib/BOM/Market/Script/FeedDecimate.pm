@@ -29,7 +29,7 @@ EOF
 
     print("Feed decimate starting\n");
 
-    my $decimate_cache = BOM::Market::DataDecimate->new();
+    my $decimate_cache = BOM::Market::DataDecimate->new({market => 'forex'});
 
     my @uls = map { create_underlying($_) } create_underlying_db->symbols_for_intraday_fx;
 
