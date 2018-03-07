@@ -296,7 +296,7 @@ subtest 'User Login' => sub {
         ok !$status->{success}, 'All logins suspended, user cannot login';
         ok $status->{error} =~ /Login to this account has been temporarily disabled/;
 
-        $mocked_runtime->set_true('all_logins');
+        $mocked_runtime->set_false('all_logins');
     };
 
     subtest 'Invalid Password' => sub {
