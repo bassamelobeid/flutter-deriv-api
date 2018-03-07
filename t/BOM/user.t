@@ -203,6 +203,10 @@ subtest 'create user by loginid' => sub {
 };
 
 subtest 'User Login' => sub {
+    subtest 'cannot login if missing argument' => sub {
+        throws_ok { $status = $user->login(); } qr/requires password argument/;
+        throws_ok { $status = $user->login(password => 'dummy'); } qr/requires runtime instance/;
+    };
     subtest 'cannot login if disabled' => sub {
         $client_vr->set_status('disabled', 'system', 'testing');
         $client_vr->save;
