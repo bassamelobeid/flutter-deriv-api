@@ -19,14 +19,7 @@ intraday_historical:
     commission_multiplier: 1
   contract_details:
     ccy: JPY
-    description:
-    - Win payout if [_1] is higher than or equal to [_4] at [_3] after [_2].
-    - USD/JPY
-    - - contract start time
-    - class: Time::Duration::Concise::Localize
-      value: 900
-    - - entry spot plus [plural,_1,%d pip, %d pips]
-      - 3
+    description: "Win payout if USD/JPY is higher than or equal to entry spot plus  3 pips at 15 minutes after contract start time."
     loginID: NA
     order_price: 520
     order_type: buy
