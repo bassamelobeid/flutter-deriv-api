@@ -82,10 +82,6 @@ sub _build_spot_min_max {
     return $high_low;
 }
 
-sub _build_priced_with_intraday_model {
-    return 0;
-}
-
 sub get_ohlc_for_period {
     my $self = shift;
 
