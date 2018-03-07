@@ -24,7 +24,7 @@ catch {
     warn "An error occurred: $_";
 };
 
-exit unless $used and $limit;
+warn "Not able to get balance from experian." and exit(1) unless ($used and $limit);
 
 my $threshold = 25000;
 my $remain    = $limit - $used;
