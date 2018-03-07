@@ -18,10 +18,20 @@ use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::User;
 use BOM::User::Password;
+use Test::MockObject;
 
 my $email    = 'abc@binary.com';
 my $password = 'jskjd8292922';
 my $hash_pwd = BOM::User::Password::hashpw($password);
+
+# mock BOM::Platform::Runtime to set BOM::Platform::Runtime->instance->app_config->system->suspend->all_logins false
+# we mock it to eliminate the dependency of bom-platform
+my $mocked_runtime = Test::MockObject->new;
+for my $method (qw(app_config system suspend)) {
+    $mocked_runtime->mock($method, sub { shift });
+}
+
+$mocked_runtime->set_false('all_logins');
 
 my ($vr_1, $cr_1);
 my ($client_vr, $client_cr, $client_cr_new);
@@ -44,7 +54,10 @@ lives_ok {
 }
 'creating clients';
 
-my %pass = (password => $password);
+my %args = (
+    password => $password,
+    runtime  => $mocked_runtime
+);
 my $status;
 my $user;
 
@@ -193,7 +206,7 @@ subtest 'User Login' => sub {
     subtest 'cannot login if disabled' => sub {
         $client_vr->set_status('disabled', 'system', 'testing');
         $client_vr->save;
-        $status = $user->login(%pass);
+        $status = $user->login(%args);
         ok !$status->{success}, 'All account disabled, user cannot login';
         ok $status->{error} =~ /account is unavailable/;
     };
@@ -234,7 +247,7 @@ subtest 'User Login' => sub {
             $cr_31->set_exclusion->exclude_until($exclude_until_31);
             $cr_31->save;
 
-            $status = $user3->login(%pass);
+            $status = $user3->login(%args);
 
             ok $status->{success}, 'Excluded client can login';
         };
@@ -248,7 +261,7 @@ subtest 'User Login' => sub {
             $cr_31->set_exclusion->timeout_until($timeout_until_31->epoch);
             $cr_31->save;
 
-            $status = $user3->login(%pass);
+            $status = $user3->login(%args);
 
             my $timeout_until_31_date = $timeout_until_31->date;
             ok $status->{success}, 'Timeout until client can login';
@@ -258,7 +271,7 @@ subtest 'User Login' => sub {
             $user3->add_loginid({loginid => $vr_3->loginid});
             $user3->save;
 
-            $status = $user3->login(%pass);
+            $status = $user3->login(%args);
             is $status->{success}, 1, 'it should use vr account to login';
         };
     };
@@ -266,7 +279,7 @@ subtest 'User Login' => sub {
     subtest 'can login' => sub {
         $client_vr->clr_status('disabled');
         $client_vr->save;
-        $status = $user->login(%pass);
+        $status = $user->login(%args);
         is $status->{success}, 1, 'login successfully';
         my $login_history = $user->get_last_successful_login_history();
         is $login_history->{action}, 'login', 'correct login history action';
@@ -276,7 +289,7 @@ subtest 'User Login' => sub {
     subtest 'Suspend All logins' => sub {
         BOM::Platform::Runtime->instance->app_config->system->suspend->all_logins(1);
 
-        $status = $user->login(%pass);
+        $status = $user->login(%args);
         ok !$status->{success}, 'All logins suspended, user cannot login';
         ok $status->{error} =~ /Login to this account has been temporarily disabled/;
 
@@ -284,7 +297,7 @@ subtest 'User Login' => sub {
     };
 
     subtest 'Invalid Password' => sub {
-        $status = $user->login(password => 'mRX1E3Mi00oS8LG');
+        $status = $user->login(%args, password => 'mRX1E3Mi00oS8LG');
         ok !$status->{success}, 'Bad password; cannot login';
         ok $status->{error} =~ /Incorrect email or password/;
         my $login_history = $user->get_last_successful_login_history();
@@ -296,20 +309,20 @@ subtest 'User Login' => sub {
         my $failed_login = $user->failed_login;
         is $failed_login->fail_count, 1, '1 bad attempt';
 
-        $status = $user->login(%pass);
+        $status = $user->login(%args);
         ok $status->{success}, 'logged in succesfully, it deletes the failed login count';
 
-        $user->login(password => 'wednesday') for 1 .. 6;
+        $user->login(%args, password => 'wednesday') for 1 .. 6;
         $failed_login = $user->failed_login;
         is $failed_login->fail_count, 6, 'failed login attempts';
 
-        $status = $user->login(%pass);
+        $status = $user->login(%args);
         ok !$status->{success}, 'Too many bad login attempts, cannot login';
         ok $status->{error} =~ 'Sorry, you have already had too many unsuccessful', "Correct error for too many wrong attempts";
 
         $failed_login = $user->failed_login;
         $failed_login->last_attempt(DateTime->now->subtract(days => 1));
-        ok $user->login(%pass)->{success}, 'clear failed login attempts; can now login';
+        ok $user->login(%args)->{success}, 'clear failed login attempts; can now login';
     };
 };
 

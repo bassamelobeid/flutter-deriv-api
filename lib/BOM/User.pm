@@ -57,7 +57,7 @@ sub new {
 
 =head2 $class->login(%args)
 
-Check user credentials. Requires password as argument.
+Check user credentials. Requires password and runtime object as argument.
 Returns hashref, {success => 1} if successfully authenticated user or {error => 'failed reason'} otherwise.
 
 =cut
