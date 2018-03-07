@@ -287,13 +287,12 @@ subtest 'User Login' => sub {
     };
 
     subtest 'Suspend All logins' => sub {
-        BOM::Platform::Runtime->instance->app_config->system->suspend->all_logins(1);
-
+        $mocked_runtime->set_true('all_logins');
         $status = $user->login(%args);
         ok !$status->{success}, 'All logins suspended, user cannot login';
         ok $status->{error} =~ /Login to this account has been temporarily disabled/;
 
-        BOM::Platform::Runtime->instance->app_config->system->suspend->all_logins(0);
+        $mocked_runtime->set_true('all_logins');
     };
 
     subtest 'Invalid Password' => sub {
