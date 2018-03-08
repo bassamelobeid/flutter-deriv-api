@@ -33,6 +33,17 @@ my $args = {
     currency     => 'JPY',
 };
 
+my $mock_intraday = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
+$mock_intraday->mock(
+    'base_probability',
+    sub {
+        return Math::Util::CalculatedValue::Validatable->new({
+            name        => 'base_probability',
+            set_by      => 'test',
+            description => 'test',
+            base_amount => 0.45,
+        });
+    });
 my $mock_underlying = Test::MockModule->new('Quant::Framework::Underlying');
 $mock_underlying->mock('pip_size', sub { 0.001 });
 my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
