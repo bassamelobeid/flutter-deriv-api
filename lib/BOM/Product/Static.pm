@@ -109,6 +109,8 @@ my $config = {
         entry_spot_cap => 'Entry Spot',
         closing_spot   => 'Closing Spot',
         time_and_spot  => '[_1] and [_2]',
+        risefall       => 'Rise/Fall',
+        higherlower    => 'Higher/Lower',
     },
 };
 
