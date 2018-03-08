@@ -1568,7 +1568,11 @@ rpc set_financial_assessment => sub {
 
     my ($response, $subject, $message);
     try {
-        my %financial_data = map { $_ => $params->{args}->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
+        my $input_mappings = BOM::Platform::Account::Real::default::get_financial_input_mapping();
+        my %financial_data = map {
+            my $k = $_;
+            map { $_ => $params->{args}->{$_} } keys %{$input_mappings->{$k}}
+        } (keys %{$input_mappings});
         my $financial_evaluation = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
 
         my $user = BOM::Platform::User->new({email => $client->email});
@@ -1580,7 +1584,10 @@ rpc set_financial_assessment => sub {
         }
 
         $response = {
-            score => $financial_evaluation->{total_score},
+            score                       => $financial_evaluation->{total_score},
+            cfd_score                   => $financial_evaluation->{cfd_score},
+            trading_score               => $financial_evaluation->{trading_score},
+            financial_information_score => $financial_evaluation->{financial_information_score},
         };
         $subject = $client_loginid . ' assessment test details have been updated';
         $message = ["$client_loginid score is " . $financial_evaluation->{total_score}];
@@ -1617,11 +1624,14 @@ rpc get_financial_assessment => sub {
         my $data = $json->decode($financial_assessment->data);
         if ($data) {
             foreach my $key (keys %$data) {
-                unless ($key =~ /total_score/) {
+                unless ($key =~ /^total_score|financial_information_score|trading_score|cfd_score$/) {
                     $response->{$key} = $data->{$key}->{answer};
                 }
             }
-            $response->{score} = $data->{total_score};
+            $response->{score}                       = $data->{total_score}                 // 0;
+            $response->{financial_information_score} = $data->{financial_information_score} // 0;
+            $response->{trading_score}               = $data->{trading_score}               // 0;
+            $response->{cfd_score}                   = $data->{cfd_score}                   // 0;
         }
     }
 
