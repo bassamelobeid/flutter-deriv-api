@@ -18,6 +18,18 @@
           "type": "integer",
           "description": "Total score based on client's answer for financial assessment"
         },
+        "cfd_score": {
+          "type": "integer",
+          "description": "CFD score"
+        },
+        "trading_score": {
+          "type": "integer",
+          "description": "Trading score"
+        },
+        "financial_information_score": {
+          "type": "integer",
+          "description": "Financial information score"
+        },
         "account_turnover": {
           "type":"string",
           "description": "The anticipated account turnover"
