@@ -410,7 +410,7 @@ sub generate_asset_index {
                 my @category_expiries;
                 for my $contract_category (@{$ul->{contract_categories}}) {
                     foreach my $barrier_category (keys %{$contract_category->{expiries}}) {
-                        my $name = $contract_category->{code} eq 'callput' ? $barrier_category_mapper{$barrier_category} : $contract_category->{name};
+                        my $name = $contract_category->{code} eq 'callput' ? localize($barrier_category_mapper{$barrier_category}) : $contract_category->{name};
                         push @category_expiries,
                             [
                             $contract_category->{code},
