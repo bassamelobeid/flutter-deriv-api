@@ -375,7 +375,7 @@ sub write_file {
 subtest 'MirrorBinaryUserId' => sub {
     plan tests => 12;
     use YAML::XS qw/LoadFile/;
-    use BOM::Platform::Script::MirrorBinaryUserId;
+    use BOM::User::Script::MirrorBinaryUserId;
     use BOM::User::Client;
 
     my $cfg            = LoadFile '/etc/rmg/userdb.yml';
@@ -399,7 +399,7 @@ CONF
 
         @ENV{qw/PGSERVICEFILE PGPASSFILE/} = ($pgservice_conf, $pgpass_conf);
 
-        $dbh = BOM::Platform::Script::MirrorBinaryUserId::userdb;
+        $dbh = BOM::User::Script::MirrorBinaryUserId::userdb;
     }
     'setup';
 
@@ -408,7 +408,7 @@ CONF
 
     is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 9, 'got expected number of queue entries';
 
-    BOM::Platform::Script::MirrorBinaryUserId::run_once $dbh;
+    BOM::User::Script::MirrorBinaryUserId::run_once $dbh;
     is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 0, 'all queue entries processed';
 
     for my $el (@$queue) {
