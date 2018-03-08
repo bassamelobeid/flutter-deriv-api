@@ -38,7 +38,7 @@ use BOM::Platform::Config;
 use BOM::User::AuditLog;
 use BOM::Platform::RiskProfile;
 use BOM::Platform::Client::CashierValidation;
-use BOM::Platform::PaymentNotificationQueue;
+use BOM::User::Client::PaymentNotificationQueue;
 use BOM::RPC::v3::Utility;
 use BOM::Transaction::Validation;
 use BOM::Database::Model::HandoffToken;
@@ -637,7 +637,7 @@ rpc paymentagent_transfer => sub {
         }
     }
 
-    BOM::Platform::PaymentNotificationQueue->add(
+    BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'payment_agent',
         currency      => $currency,
         loginid       => $loginid_to,
@@ -897,7 +897,7 @@ rpc paymentagent_withdraw => sub {
         }
     }
 
-    BOM::Platform::PaymentNotificationQueue->add(
+    BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'payment_agent',
         currency      => $currency,
         loginid       => $pa_client->loginid,
