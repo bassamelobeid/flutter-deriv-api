@@ -38,7 +38,8 @@ sub website_status {
                     country_code => $c->country_code,
                 },
                 response => sub {
-                    my $rpc_response   = shift;
+                    my ($rpc_response, $api_response, $req_storage) = @_;
+                    return $api_response if $rpc_response->{error};
                     my $website_status = {};
                     $rpc_response->{clients_country} //= '';
                     $website_status->{$_} = $rpc_response->{$_}
