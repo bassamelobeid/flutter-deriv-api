@@ -553,9 +553,7 @@ rpc change_password => sub {
     my $user = BOM::Platform::User->new({loginid => $client->loginid});
     my @clients;
     if (not $user or not @clients = $user->clients) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => "InternalServerError",
-                message_to_client => localize("Sorry, an error occurred while processing your account.")});
+        return BOM::RPC::v3::Utility::client_error();
     }
 
     # do not allow social based clients to reset password
@@ -736,9 +734,7 @@ rpc "reset_password",
     my $user = BOM::Platform::User->new({email => $email});
     my @clients = ();
     if (not $user or not @clients = $user->clients) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => "InternalServerError",
-                message_to_client => localize("Sorry, an error occurred while processing your account.")});
+        return BOM::RPC::v3::Utility::client_error();
     }
 
     # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
@@ -876,9 +872,7 @@ rpc set_settings => sub {
             } else {
                 $client->residence($residence);
                 if (not $client->save()) {
-                    return BOM::RPC::v3::Utility::create_error({
-                            code              => 'InternalServerError',
-                            message_to_client => localize('Sorry, an error occurred while processing your account.')});
+                    return BOM::RPC::v3::Utility::client_error();
                 }
             }
         } elsif (
@@ -1046,9 +1040,7 @@ rpc set_settings => sub {
         my $set_status = $update_professional_status->($cli);
 
         if (not $cli->save()) {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => 'InternalServerError',
-                    message_to_client => localize('Sorry, an error occurred while processing your account.')});
+            return BOM::RPC::v3::Utility::client_error();
         }
 
         BOM::RPC::v3::Utility::send_professional_requested_email($cli->loginid, $cli->residence) if ($set_status);
@@ -1061,9 +1053,7 @@ rpc set_settings => sub {
         $client->allow_copiers($allow_copiers);
     }
     if (not $client->save()) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InternalServerError',
-                message_to_client => localize('Sorry, an error occurred while processing your account.')});
+        return BOM::RPC::v3::Utility::client_error();
     }
 
     if ($cil_message) {
@@ -1475,9 +1465,7 @@ rpc tnc_approval => sub {
     if ($params->{args}->{ukgc_funds_protection}) {
         $client->set_status('ukgc_funds_protection', 'system', 'Client acknowledges the protection level of funds');
         if (not $client->save()) {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => 'InternalServerError',
-                    message_to_client => localize('Sorry, an error occurred while processing your request.')});
+            return BOM::RPC::v3::Utility::client_error();
         }
     } else {
         my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
@@ -1488,9 +1476,7 @@ rpc tnc_approval => sub {
         {
             $client->set_status('tnc_approval', 'system', $current_tnc_version);
             if (not $client->save()) {
-                return BOM::RPC::v3::Utility::create_error({
-                        code              => 'InternalServerError',
-                        message_to_client => localize('Sorry, an error occurred while processing your request.')});
+                return BOM::RPC::v3::Utility::client_error();
             }
         }
     }
