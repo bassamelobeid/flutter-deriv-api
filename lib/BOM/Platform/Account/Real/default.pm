@@ -203,139 +203,142 @@ sub get_financial_input_mapping {
         '6-10 transactions in the past 12 months'       => 1,
         '40 transactions or more in the past 12 months' => 2
     };
-
     my $financial_mapping = {
-        forex_trading_experience => {
-            'label'           => 'Forex trading experience',
-            'possible_answer' => $experience_possible_answer
-        },
-        forex_trading_frequency => {
-            'label'           => 'Forex trading frequency',
-            'possible_answer' => $frequency_possible_answer
-        },
-        binary_options_trading_experience => {
-            'label'           => 'Binary options trading experience',
-            'possible_answer' => $experience_possible_answer
-        },
-        binary_options_trading_frequency => {
-            'label'           => 'Binary options trading frequency',
-            'possible_answer' => $frequency_possible_answer
-        },
-        cfd_trading_experience => {
-            'label'           => 'CFDs trading experience',
-            'possible_answer' => $experience_possible_answer
-        },
-        cfd_trading_frequency => {
-            'label'           => 'CFDs trading frequency',
-            'possible_answer' => $frequency_possible_answer
-        },
-        other_instruments_trading_experience => {
-            'label'           => 'Other financial instruments trading experience',
-            'possible_answer' => $experience_possible_answer
-        },
-        other_instruments_trading_frequency => {
-            'label'           => 'Other financial instruments trading frequency',
-            'possible_answer' => $frequency_possible_answer
-        },
-        employment_industry => {
-            'label'           => 'Industry of Employment',
-            'possible_answer' => {
-                'Construction' => 0,
-                'Education'    => 0,
-                'Finance'      => 15,
-                'Health'       => 0,
-                'Tourism'      => 0,
-                'Other'        => 0
-            }
-        },
-        education_level => {
-            'label'           => 'Level of Education',
-            'possible_answer' => {
-                'Primary'   => 0,
-                'Secondary' => 1,
-                'Tertiary'  => 3
-            }
-        },
-
-        income_source => {
-            'label'           => 'Income Source',
-            'possible_answer' => {
-                'Salaried Employee'       => 0,
-                'Self-Employed'           => 0,
-                'Investments & Dividends' => 4,
-                'Pension'                 => 0,
-                'Other'                   => 0
-            }
-        },
-        net_income => {
-            'label'           => 'Net Annual Income',
-            'possible_answer' => {
-                'Less than $25,000'   => 0,
-                '$25,000 - $50,000'   => 1,
-                '$50,001 - $100,000'  => 2,
-                '$100,001 - $500,000' => 3,
-                'Over $500,000'       => 4
-            }
-        },
-        estimated_worth => {
-            'label'           => 'Estimated Net Worth',
-            'possible_answer' => {
-                'Less than $100,000'    => 0,
-                '$100,000 - $250,000'   => 1,
-                '$250,001 - $500,000'   => 2,
-                '$500,001 - $1,000,000' => 3,
-                'Over $1,000,000'       => 4
-            }
-        },
-        account_turnover => {
-            'label'           => 'The anticipated account turnover',
-            'possible_answer' => {
-                'Less than $25,000'   => 0,
-                '$25,000 - $50,000'   => 0,
-                '$50,001 - $100,000'  => 0,
-                '$100,001 - $500,000' => 0,
-                'Over $500,000'       => 0
-            }
-        },
-        occupation => {
-            'label'           => 'Occupation',
-            'possible_answer' => {
-                'Chief Executives, Senior Officials and Legislators'        => 0,
-                'Managers'                                                  => 0,
-                'Professionals'                                             => 0,
-                'Clerks'                                                    => 0,
-                'Personal Care, Sales and Service Workers'                  => 0,
-                'Agricultural, Forestry and Fishery Workers'                => 0,
-                'Craft, Metal, Electrical and Electronics Workers'          => 0,
-                'Plant and Machine Operators and Assemblers'                => 0,
-                'Cleaners and Helpers'                                      => 0,
-                'Mining, Construction, Manufacturing and Transport Workers' => 0,
-                'Armed Forces'                                              => 0,
-                'Government Officers'                                       => 0,
-                'Others'                                                    => 0
-            }
-        },
-        employment_status => {
-            label           => 'Employment Status',
-            possible_answer => {
-                'Employed'      => 0,
-                'Pensioner'     => 0,
-                'Self-Employed' => 0,
-                'Student'       => 0,
-                'Unemployed'    => 0,
+        trading_experience => {
+            forex_trading_experience => {
+                'label'           => 'Forex trading experience',
+                'possible_answer' => $experience_possible_answer
             },
+            forex_trading_frequency => {
+                'label'           => 'Forex trading frequency',
+                'possible_answer' => $frequency_possible_answer
+            },
+            binary_options_trading_experience => {
+                'label'           => 'Binary options trading experience',
+                'possible_answer' => $experience_possible_answer
+            },
+            binary_options_trading_frequency => {
+                'label'           => 'Binary options trading frequency',
+                'possible_answer' => $frequency_possible_answer
+            },
+            cfd_trading_experience => {
+                'label'           => 'CFDs trading experience',
+                'possible_answer' => $experience_possible_answer
+            },
+            cfd_trading_frequency => {
+                'label'           => 'CFDs trading frequency',
+                'possible_answer' => $frequency_possible_answer
+            },
+            other_instruments_trading_experience => {
+                'label'           => 'Other financial instruments trading experience',
+                'possible_answer' => $experience_possible_answer
+            },
+            other_instruments_trading_frequency => {
+                'label'           => 'Other financial instruments trading frequency',
+                'possible_answer' => $frequency_possible_answer
+            }
         },
-        source_of_wealth => {
-            'label'           => 'Source of wealth',
-            'possible_answer' => {
-                'Accumulation of Income/Savings' => 0,
-                'Cash Business'                  => 0,
-                'Company Ownership'              => 0,
-                'Divorce Settlement'             => 0,
-                'Inheritance'                    => 0,
-                'Investment Income'              => 0,
-                'Sale of Property'               => 0,
-                'Other'                          => 0,
+        financial_information => {
+            employment_industry => {
+                'label'           => 'Industry of Employment',
+                'possible_answer' => {
+                    'Construction' => 0,
+                    'Education'    => 0,
+                    'Finance'      => 15,
+                    'Health'       => 0,
+                    'Tourism'      => 0,
+                    'Other'        => 0
+                }
+            },
+            education_level => {
+                'label'           => 'Level of Education',
+                'possible_answer' => {
+                    'Primary'   => 0,
+                    'Secondary' => 1,
+                    'Tertiary'  => 3
+                }
+            },
+
+            income_source => {
+                'label'           => 'Income Source',
+                'possible_answer' => {
+                    'Salaried Employee'       => 0,
+                    'Self-Employed'           => 0,
+                    'Investments & Dividends' => 4,
+                    'Pension'                 => 0,
+                    'Other'                   => 0
+                }
+            },
+            net_income => {
+                'label'           => 'Net Annual Income',
+                'possible_answer' => {
+                    'Less than $25,000'   => 0,
+                    '$25,000 - $50,000'   => 1,
+                    '$50,001 - $100,000'  => 2,
+                    '$100,001 - $500,000' => 3,
+                    'Over $500,000'       => 4
+                }
+            },
+            estimated_worth => {
+                'label'           => 'Estimated Net Worth',
+                'possible_answer' => {
+                    'Less than $100,000'    => 0,
+                    '$100,000 - $250,000'   => 1,
+                    '$250,001 - $500,000'   => 2,
+                    '$500,001 - $1,000,000' => 3,
+                    'Over $1,000,000'       => 4
+                }
+            },
+            account_turnover => {
+                'label'           => 'The anticipated account turnover',
+                'possible_answer' => {
+                    'Less than $25,000'   => 0,
+                    '$25,000 - $50,000'   => 0,
+                    '$50,001 - $100,000'  => 0,
+                    '$100,001 - $500,000' => 0,
+                    'Over $500,000'       => 0
+                }
+            },
+            occupation => {
+                'label'           => 'Occupation',
+                'possible_answer' => {
+                    'Chief Executives, Senior Officials and Legislators'        => 0,
+                    'Managers'                                                  => 0,
+                    'Professionals'                                             => 0,
+                    'Clerks'                                                    => 0,
+                    'Personal Care, Sales and Service Workers'                  => 0,
+                    'Agricultural, Forestry and Fishery Workers'                => 0,
+                    'Craft, Metal, Electrical and Electronics Workers'          => 0,
+                    'Plant and Machine Operators and Assemblers'                => 0,
+                    'Cleaners and Helpers'                                      => 0,
+                    'Mining, Construction, Manufacturing and Transport Workers' => 0,
+                    'Armed Forces'                                              => 0,
+                    'Government Officers'                                       => 0,
+                    'Others'                                                    => 0
+                }
+            },
+            employment_status => {
+                label           => 'Employment Status',
+                possible_answer => {
+                    'Employed'      => 0,
+                    'Pensioner'     => 0,
+                    'Self-Employed' => 0,
+                    'Student'       => 0,
+                    'Unemployed'    => 0,
+                },
+            },
+            source_of_wealth => {
+                'label'           => 'Source of wealth',
+                'possible_answer' => {
+                    'Accumulation of Income/Savings' => 0,
+                    'Cash Business'                  => 0,
+                    'Company Ownership'              => 0,
+                    'Divorce Settlement'             => 0,
+                    'Inheritance'                    => 0,
+                    'Investment Income'              => 0,
+                    'Sale of Property'               => 0,
+                    'Other'                          => 0,
+                },
             },
         },
     };
