@@ -367,7 +367,7 @@ sub vol_spread_markup {
 
     my $bet = $self->bet;
 
-    my $long_term_average_vol = 0.07;
+    my $long_term_average_vol = ($self->is_in_quiet_period($bet->date_pricing)) ? 0.035 : 0.07;
     # We cap vol spread at +/-5%
     my $vol_spread = min(0.05, max(-0.05, $long_term_average_vol - $bet->_pricing_args->{iv}));
     my $vega       = $self->base_probability->peek_amount('intraday_vega');
