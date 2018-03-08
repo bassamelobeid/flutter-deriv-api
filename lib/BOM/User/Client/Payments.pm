@@ -13,7 +13,7 @@ use Format::Util::Numbers qw/financialrounding formatnumber/;
 
 use Postgres::FeedDB::CurrencyConverter qw/amount_from_to_currency/;
 
-use BOM::Platform::PaymentNotificationQueue;
+use BOM::User::Client::PaymentNotificationQueue;
 use BOM::Database::ClientDB;
 
 ## VERSION
@@ -274,7 +274,7 @@ sub payment_legacy_payment {
         ($transaction_time ? (transaction_time => $transaction_time) : ()),
     });
     $account->save(cascade => 1);
-    BOM::Platform::PaymentNotificationQueue->add(
+    BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'legacy',
         currency      => $currency,
         loginid       => $self->loginid,
@@ -425,7 +425,7 @@ sub payment_doughflow {
     });
     $account->save(cascade => 1);
 
-    BOM::Platform::PaymentNotificationQueue->add(
+    BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'doughflow',
         currency      => $currency,
         loginid       => $self->loginid,
@@ -477,7 +477,7 @@ sub payment_epg {
         source        => $source,
     });
     $account->save(cascade => 1);
-    BOM::Platform::PaymentNotificationQueue->add(
+    BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'epg',
         currency      => $currency,
         loginid       => $self->loginid,
@@ -599,7 +599,7 @@ sub payment_bank_wire {
         source        => $source,
     });
     $account->save(cascade => 1);
-    BOM::Platform::PaymentNotificationQueue->add(
+    BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'bankwire',
         currency      => $currency,
         loginid       => $self->loginid,
@@ -696,7 +696,7 @@ sub payment_western_union {
         source        => $source,
     });
     $account->save(cascade => 1);
-    BOM::Platform::PaymentNotificationQueue->add(
+    BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'westernunion',
         currency      => $currency,
         loginid       => $self->loginid,
