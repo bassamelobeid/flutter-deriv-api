@@ -362,12 +362,18 @@ sub economic_events_spot_risk_markup {
     )->markup;
 }
 
+sub long_term_average_vol {
+    my $self = shift;
+
+    return ($self->is_in_quiet_period($self->bet->date_pricing)) ? 0.035 : 0.07;
+}
+
 sub vol_spread_markup {
     my $self = shift;
 
     my $bet = $self->bet;
 
-    my $long_term_average_vol = 0.07;
+    my $long_term_average_vol = $self->long_term_average_vol;
     # We cap vol spread at +/-5%
     my $vol_spread = min(0.05, max(-0.05, $long_term_average_vol - $bet->_pricing_args->{iv}));
     my $vega       = $self->base_probability->peek_amount('intraday_vega');
