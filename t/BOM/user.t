@@ -18,20 +18,10 @@ use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::User;
 use BOM::User::Password;
-use Test::MockObject;
 
 my $email    = 'abc@binary.com';
 my $password = 'jskjd8292922';
 my $hash_pwd = BOM::User::Password::hashpw($password);
-
-# mock BOM::Platform::Runtime to set BOM::Platform::Runtime->instance->app_config->system->suspend->all_logins false
-# we mock it to eliminate the dependency of bom-platform
-my $mocked_runtime = Test::MockObject->new;
-for my $method (qw(app_config system suspend)) {
-    $mocked_runtime->mock($method, sub { shift });
-}
-
-$mocked_runtime->set_false('all_logins');
 
 my ($vr_1, $cr_1);
 my ($client_vr, $client_cr, $client_cr_new);
@@ -56,7 +46,6 @@ lives_ok {
 
 my %args = (
     password => $password,
-    runtime  => $mocked_runtime
 );
 my $status;
 my $user;
@@ -205,7 +194,6 @@ subtest 'create user by loginid' => sub {
 subtest 'User Login' => sub {
     subtest 'cannot login if missing argument' => sub {
         throws_ok { $status = $user->login(); } qr/requires password argument/;
-        throws_ok { $status = $user->login(password => 'dummy'); } qr/requires runtime instance/;
     };
     subtest 'cannot login if disabled' => sub {
         $client_vr->set_status('disabled', 'system', 'testing');
@@ -291,12 +279,10 @@ subtest 'User Login' => sub {
     };
 
     subtest 'Suspend All logins' => sub {
-        $mocked_runtime->set_true('all_logins');
         $status = $user->login(%args);
         ok !$status->{success}, 'All logins suspended, user cannot login';
         ok $status->{error} =~ /Login to this account has been temporarily disabled/;
 
-        $mocked_runtime->set_false('all_logins');
     };
 
     subtest 'Invalid Password' => sub {
