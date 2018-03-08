@@ -37,7 +37,10 @@ sub create_account {
     }
 
     my $financial_assessment = BOM::Platform::Account::Real::default::get_financial_assessment_score($financial_data);
-    if (not $accept_risk and $financial_assessment->{total_score} < 60) {
+    # Based on the scoring result of the test: show the
+    # Risk Disclosure if the score is 7 or less, don't show
+    # if the score is from 8 to 16 or CFD is 4
+    if (not $accept_risk and ($financial_assessment->{trading_score} < 8 or $financial_assessment->{cfd_score} < 4)) {
         return {error => 'show risk disclaimer'};
     }
 
