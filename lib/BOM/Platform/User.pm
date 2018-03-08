@@ -68,19 +68,14 @@ sub login {
     my $environment     = $args{environment}     || '';
     my $is_social_login = $args{is_social_login} || 0;
 
-    my ($error, $cfl, @clients, @self_excluded);
+    my ($error, $cfl, @clients);
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->all_logins) {
-
         $error = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
         BOM::Platform::AuditLog::log('system suspend all login', $self->email);
-
     } elsif ($cfl = $self->failed_login and $cfl->fail_count > 5 and $cfl->last_attempt->epoch > time - 300) {
-
         $error = localize('Sorry, you have already had too many unsuccessful attempts. Please try again in 5 minutes.');
         BOM::Platform::AuditLog::log('failed login > 5 times', $self->email);
-
     } elsif (not $is_social_login and not BOM::Platform::Password::checkpw($password, $self->password)) {
-
         my $fail_count = $cfl ? $cfl->fail_count : 0;
         $self->failed_login({
             fail_count   => ++$fail_count,
@@ -93,24 +88,6 @@ sub login {
     } elsif (not @clients = $self->clients) {
         $error = localize('This account is unavailable.');
         BOM::Platform::AuditLog::log('Account disabled', $self->email);
-    } elsif (
-        @self_excluded = grep {
-            $_->get_self_exclusion_until_dt
-        } @clients
-        and @self_excluded == @clients
-        )
-    {
-        # If all accounts are self excluded - show error
-        # Print the earliest time until user has excluded himself
-        my ($client) = sort {
-            my $tmp_a = $a->get_self_exclusion_until_dt;
-            $tmp_a =~ s/GMT$//;
-            my $tmp_b = $b->get_self_exclusion_until_dt;
-            $tmp_b =~ s/GMT$//;
-            Date::Utility->new($tmp_a)->epoch <=> Date::Utility->new($tmp_b)->epoch
-        } @self_excluded;
-        $error = localize('Sorry, you have excluded yourself until [_1].', $client->get_self_exclusion_until_dt);
-        BOM::Platform::AuditLog::log('Account self excluded', $self->email);
     }
 
     $self->add_login_history({
@@ -128,11 +105,6 @@ sub login {
     BOM::Platform::AuditLog::log('successful login', $self->email);
 
     my $success = {success => 1};
-
-    if (@self_excluded > 0) {
-        my %excluded = map { $_->loginid => 1 } @self_excluded;
-        $success->{self_excluded} = \%excluded;
-    }
 
     return $success;
 }
@@ -160,11 +132,7 @@ sub clients {
 sub _get_client_cookie_string {
     my $client = shift;
 
-    my $str = join(':',
-        $client->loginid,
-        $client->is_virtual             ? 'V' : 'R',
-        $client->get_status('disabled') ? 'D' : 'E',
-        $client->get_status('ico_only') ? 'I' : 'N');
+    my $str = join(':', $client->loginid, $client->is_virtual ? 'V' : 'R', $client->get_status('disabled') ? 'D' : 'E');
 
     return $str;
 }
@@ -229,7 +197,6 @@ sub get_last_successful_login_history {
 Return list of client in following order
 
 - real enabled accounts
-- ico only accounts
 - virtual accounts
 - self excluded accounts
 - disabled accounts
@@ -239,7 +206,7 @@ Return list of client in following order
 sub get_clients_in_sorted_order {
     my ($self, $loginid_list, $include_disabled) = @_;
 
-    my (@enabled_accounts, @ico_accounts, @virtual_accounts, @self_excluded_accounts, @disabled_accounts);
+    my (@enabled_accounts, @virtual_accounts, @self_excluded_accounts, @disabled_accounts);
     foreach my $loginid (sort @$loginid_list) {
         my $cl = try {
             Client::Account->new({
@@ -266,14 +233,8 @@ sub get_clients_in_sorted_order {
             next;
         }
 
-        if ($cl->get_self_exclusion_until_dt) {
+        if ($cl->get_self_exclusion_until_date) {
             push @self_excluded_accounts, $cl;
-            next;
-        }
-
-        if ($cl->get_status('ico_only')) {
-            $self->{_real_client} = $cl unless $self->{_real_client};
-            push @ico_accounts, $cl;
             next;
         }
 
@@ -287,7 +248,7 @@ sub get_clients_in_sorted_order {
         push @enabled_accounts, $cl;
     }
 
-    return [(@enabled_accounts, @ico_accounts, @virtual_accounts, @self_excluded_accounts, @disabled_accounts)];
+    return [(@enabled_accounts, @virtual_accounts, @self_excluded_accounts, @disabled_accounts)];
 }
 
 =head2 get_default_client

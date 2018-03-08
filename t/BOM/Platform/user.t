@@ -78,7 +78,7 @@ subtest 'default loginid & cookie' => sub {
         my $def_client = ($user->clients)[0];
         is $def_client->loginid, $vr_1, 'no real acc, VR as default';
 
-        my $cookie_str = "$vr_1:V:E:N";
+        my $cookie_str = "$vr_1:V:E";
         is $user->loginid_list_cookie_val, $cookie_str, 'cookie string OK';
     };
 
@@ -92,7 +92,7 @@ subtest 'default loginid & cookie' => sub {
         my $def_client = ($user->clients)[0];
         is $def_client->loginid, $cr_1, 'real acc as default';
 
-        my $cookie_str = "$cr_1:R:E:N+$vr_1:V:E:N";
+        my $cookie_str = "$cr_1:R:E+$vr_1:V:E";
         is $user->loginid_list_cookie_val, $cookie_str, 'cookie string OK';
     };
 
@@ -107,16 +107,13 @@ subtest 'default loginid & cookie' => sub {
         $user->add_loginid({loginid => $cr_2});
         $user->save;
 
-        $client_cr_new->set_status('ico_only', 'SYSTEM', 'mark as ico');
-        $client_cr_new->save;
-
         push @loginids, $cr_2;
         cmp_deeply([sort @loginids], [sort map { $_->loginid } $user->loginid], 'loginids array match');
 
         my $def_client = ($user->clients)[0];
         is $def_client->loginid, $cr_1, 'still first real acc as default';
 
-        my $cookie_str = "$cr_1:R:E:N+$cr_2:R:E:I+$vr_1:V:E:N";
+        my $cookie_str = "$cr_1:R:E+$cr_2:R:E+$vr_1:V:E";
         is $user->loginid_list_cookie_val, $cookie_str, 'cookie string OK';
     };
 
@@ -133,7 +130,7 @@ subtest 'default loginid & cookie' => sub {
             my $def_client = ($user->clients)[0];
             is $def_client->loginid, $cr_2, '2nd real acc as default';
 
-            my $cookie_str = "$cr_2:R:E:I+$vr_1:V:E:N+$cr_1:R:D:N";
+            my $cookie_str = "$cr_2:R:E+$vr_1:V:E+$cr_1:R:D";
             is $user->loginid_list_cookie_val, $cookie_str, 'cookie string OK';
         };
 
@@ -149,7 +146,7 @@ subtest 'default loginid & cookie' => sub {
             my $def_client = ($user->clients)[0];
             is $def_client->loginid, $vr_1, 'VR acc as default';
 
-            my $cookie_str = "$vr_1:V:E:N+$cr_1:R:D:N+$cr_2:R:D:I";
+            my $cookie_str = "$vr_1:V:E+$cr_1:R:D+$cr_2:R:D";
             is $user->loginid_list_cookie_val, $cookie_str, 'cookie string OK';
         };
 
@@ -165,7 +162,7 @@ subtest 'default loginid & cookie' => sub {
             my $def_client = ($user->clients)[0];
             is $def_client, undef, 'all acc disabled, no default';
 
-            my $cookie_str = "$cr_1:R:D:N+$cr_2:R:D:I+$vr_1:V:D:N";
+            my $cookie_str = "$cr_1:R:D+$cr_2:R:D+$vr_1:V:D";
             is $user->loginid_list_cookie_val, $cookie_str, 'cookie string OK';
         };
     };
@@ -239,8 +236,7 @@ subtest 'User Login' => sub {
 
             $status = $user3->login(%pass);
 
-            ok $status->{error} =~ /Sorry, you have excluded yourself until $exclude_until_31/,
-                'It should return the earlist until date in message error';
+            ok $status->{success}, 'Excluded client can login';
         };
 
         subtest 'cannot login if he has all self timeouted account' => sub {
@@ -255,8 +251,7 @@ subtest 'User Login' => sub {
             $status = $user3->login(%pass);
 
             my $timeout_until_31_date = $timeout_until_31->date;
-            ok $status->{error} =~ /Sorry, you have excluded yourself until $timeout_until_31_date/,
-                'It should return the earlist until date in message error';
+            ok $status->{success}, 'Timeout until client can login';
         };
 
         subtest 'if user has vr account and other accounts is self excluded' => sub {
