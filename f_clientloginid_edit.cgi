@@ -327,11 +327,10 @@ if ($input{whattodo} eq 'uploadID') {
             $error_occured = $_;
         };
 
-        if ($error_occured or not $query_result){
+        if ($error_occured or not $query_result) {
             $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: $error_occured</p><br />";
             next;
-        }
-        else {
+        } else {
             $result .= "<br /><p style=\"color:#eeee00; font-weight:bold;\">Ok! File $i: $new_file_name is uploaded.</p><br />";
         }
     }
