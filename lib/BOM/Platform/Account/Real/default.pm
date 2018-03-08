@@ -348,23 +348,47 @@ sub get_financial_input_mapping {
 sub get_financial_assessment_score {
     my $details = shift;
 
-    my $evaluated_data    = {};
-    my $financial_mapping = get_financial_input_mapping();
-    my $json_data         = {};
-    my $total_score       = 0;
+    my $evaluated_data        = {};
+    my $financial_mapping     = get_financial_input_mapping();
+    my $financial_information = $financial_mapping->{financial_information};
+    my $trading_experience    = $financial_mapping->{trading_experience};
+    my $json_data             = {};
 
-    foreach my $key (keys %{$financial_mapping}) {
+    my $cfd_score                   = 0;
+    my $trading_score               = 0;
+    my $financial_information_score = 0;
+    my $total_score                 = 0;
+
+    foreach my $key (keys %{$financial_information}) {
         if (my $answer = $details->{$key}) {
-            my $score = $financial_mapping->{$key}->{possible_answer}->{$answer};
-            $json_data->{$key}->{label}  = $financial_mapping->{$key}->{label};
+            my $score = $financial_information->{$key}->{possible_answer}->{$answer};
+            $json_data->{$key}->{label}  = $financial_information->{$key}->{label};
             $json_data->{$key}->{answer} = $answer;
             $json_data->{$key}->{score}  = $score;
-            $total_score += $score;
+            $financial_information_score += $score;
+            $total_score                 += $score;
         }
     }
-    $json_data->{total_score}      = $total_score;
-    $evaluated_data->{total_score} = $total_score;
-    $evaluated_data->{user_data}   = $json_data;
+    foreach my $key (keys %{$trading_experience}) {
+        if (my $answer = $details->{$key}) {
+            my $score = $trading_experience->{$key}->{possible_answer}->{$answer};
+            $json_data->{$key}->{label}  = $trading_experience->{$key}->{label};
+            $json_data->{$key}->{answer} = $answer;
+            $json_data->{$key}->{score}  = $score;
+            $cfd_score += $score if $key eq 'cfd_trading_frequency' or $key eq 'cfd_trading_experience';
+            $trading_score += $score;
+            $total_score   += $score;
+        }
+    }
+    $json_data->{total_score}                      = $total_score;
+    $json_data->{trading_score}                    = $trading_score;
+    $json_data->{financial_information_score}      = $financial_information_score;
+    $json_data->{cfd_score}                        = $cfd_score;
+    $evaluated_data->{total_score}                 = $total_score;
+    $evaluated_data->{trading_score}               = $trading_score;
+    $evaluated_data->{financial_information_score} = $financial_information_score;
+    $evaluated_data->{cfd_score}                   = $cfd_score;
+    $evaluated_data->{user_data}                   = $json_data;
 
     return $evaluated_data;
 }
