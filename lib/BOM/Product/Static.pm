@@ -109,8 +109,39 @@ my $config = {
         entry_spot_cap => 'Entry Spot',
         closing_spot   => 'Closing Spot',
         time_and_spot  => '[_1] and [_2]',
+        # sub-categories in trading page
         risefall       => 'Rise/Fall',
         higherlower    => 'Higher/Lower',
+        inout          => 'In/Out',
+        matchesdiffers => 'Matches/Differs',
+        evenodd        => 'Even/Odd',
+        overunder      => 'Over/Under',
+        # OHLC
+        high  => 'High',
+        low   => 'Low',
+        close => 'Close',
+        # limits page
+        atm            => 'ATM',
+        nonatm         => 'Non-ATM',
+        uptosevendays  => 'Duration up to 7 days',
+        abovesevendays => 'Duration above 7 days',
+        # trading times page
+        closeatnine => 'Closes early (at 21:00)',
+        closeatsix  => 'Closes early (at 18:00)',
+        newyear     => 'New Year\'s Day',
+        christmas   => 'Christmas Day',
+        fridays     => 'Fridays',
+        today       => 'today',
+        todayfriday => 'today, Fridays',
+
+        # statement
+        sell          => 'Sell',
+        buy           => 'Buy',
+        virtualcredit => 'Virtual money credit to account',
+        # etc
+        payout       => 'Payoff',
+        serverdown   => 'There was a problem accessing the server.',
+        purchasedown => 'There was a problem accessing the server during purchase.',
     },
 };
 
