@@ -111,8 +111,8 @@ sub _build_spot_min_max {
     }
 
     my $high_low = {
-        high => $high,
-        low  => $low,
+        high => $high // $self->pricing_spot,
+        low  => $low  // $self->pricing_spot,
     };
 
     return $high_low;
