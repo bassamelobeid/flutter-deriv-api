@@ -7,7 +7,7 @@ use strict;
 use warnings;
 
 use Test::MockTime;
-use Test::More tests => 12;
+use Test::More tests => 11;
 use Test::Exception;
 use Test::Deep qw(cmp_deeply);
 use Test::Warnings;
@@ -276,13 +276,6 @@ subtest 'User Login' => sub {
         my $login_history = $user->get_last_successful_login_history();
         is $login_history->{action}, 'login', 'correct login history action';
         is $login_history->{status}, 1,       'correct login history status';
-    };
-
-    subtest 'Suspend All logins' => sub {
-        $status = $user->login(%args);
-        ok !$status->{success}, 'All logins suspended, user cannot login';
-        ok $status->{error} =~ /Login to this account has been temporarily disabled/;
-
     };
 
     subtest 'Invalid Password' => sub {
