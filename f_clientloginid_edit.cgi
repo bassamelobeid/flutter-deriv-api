@@ -283,7 +283,7 @@ if ($input{whattodo} eq 'uploadID') {
                 ping => sub {
                     my $STD_WARN_HANDLER = $SIG{__WARN__};
                     local $SIG{__WARN__} = sub {
-                        return if _is_duplicate_upload_error->($_);
+                        return if $_is_duplicate_upload_error->($_);
                         return $STD_WARN_HANDLER->(@_) if $STD_WARN_HANDLER;
                         warn @_;
                     };
@@ -297,10 +297,13 @@ if ($input{whattodo} eq 'uploadID') {
                 });
         }
         catch {
-            $error_occured = 1;
+            $error_occured = $_;
         };
 
-        die 'start_document_upload in the db was not successful' if ($error_occured or not $id);
+        if ($error_occured or not $id) {
+            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: $error_occured</p><br />";
+            next;
+        }
 
         my $new_file_name = "$loginid.$doctype.$id.$docformat";
 
@@ -313,7 +316,7 @@ if ($input{whattodo} eq 'uploadID') {
                 ping => sub {
                     my $STD_WARN_HANDLER = $SIG{__WARN__};
                     local $SIG{__WARN__} = sub {
-                        return if _is_duplicate_upload_error->($_);
+                        return if $_is_duplicate_upload_error->($_);
                         return $STD_WARN_HANDLER->(@_) if $STD_WARN_HANDLER;
                         warn @_;
                     };
@@ -321,12 +324,16 @@ if ($input{whattodo} eq 'uploadID') {
                 });
         }
         catch {
-            $error_occured = 1;
+            $error_occured = $_;
         };
 
-        die "Cannot record uploaded file $filetoupload in the db" if ($error_occured or not $query_result);
-
-        $result .= "<br /><p style=\"color:#eeee00; font-weight:bold;\">Ok! File $i: $new_file_name is uploaded.</p><br />";
+        if ($error_occured or not $query_result){
+            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: $error_occured</p><br />";
+            next;
+        }
+        else {
+            $result .= "<br /><p style=\"color:#eeee00; font-weight:bold;\">Ok! File $i: $new_file_name is uploaded.</p><br />";
+        }
     }
     print $result;
     code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
