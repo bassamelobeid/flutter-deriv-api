@@ -28,7 +28,6 @@ before_install:
     - /tmp/travis-scripts/parallel_clone_branch.sh
       regentmarkets/bom-test
       regentmarkets/bom-postgres
-      regentmarkets/bom-platform
       binary-com/translations-websockets-api
 
     - /tmp/travis-scripts/postgres_restart.sh
