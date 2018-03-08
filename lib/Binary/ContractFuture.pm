@@ -78,7 +78,6 @@ sub pricing_future {
                     warn $err;
                     return;
                 }
-                $redis->publish('high_priority_prices', $channel);
             });
     }
     my $f = Future::Mojo->new;
