@@ -14,14 +14,10 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::User::Password;
 use BOM::User;
 use BOM::User::Client;
-use BOM::Platform::Runtime;
-use Test::MockObject;
 
 use await;
 
 my $t = build_wsapi_test();
-
-my $runtime = BOM::Platform::Runtime->instance;
 
 my $email    = 'abc@binary.com';
 my $password = 'jskjP8292922';
@@ -50,9 +46,9 @@ $user->add_loginid({loginid => $vr_1});
 $user->add_loginid({loginid => $cr_1});
 $user->save;
 
-my $status = $user->login(password => $password, runtime => $runtime);
+my $status = $user->login(password => $password);
 is $status->{success}, 1, 'login with correct password OK';
-$status = $user->login(password => 'mRX1E3Mi00oS8LG', runtime => $runtime);
+$status = $user->login(password => 'mRX1E3Mi00oS8LG');
 ok !$status->{success}, 'Bad password; cannot login';
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_1);
@@ -105,9 +101,9 @@ test_schema('change_password', $change_password);
 $user = BOM::User->new({
     email => $email,
 });
-$status = $user->login(password => $password, runtime => $runtime);
+$status = $user->login(password => $password);
 ok !$status->{success}, 'old password; cannot login';
-$status = $user->login(password => $new_password, runtime => $runtime);
+$status = $user->login(password => $new_password);
 is $status->{success}, 1, 'login with new password OK';
 
 ## client passwd should be changed as well
