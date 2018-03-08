@@ -327,9 +327,10 @@ sub event_markup {
                 underlying_symbol => $self->bet->underlying->symbol
             });
 
-        my $barrier_tier = $self->bet->barrier_tier;
-        my $c_start      = $self->bet->effective_start->epoch;
-        my $c_end        = $self->bet->date_expiry->epoch;
+        my $barrier_tier     = $self->bet->barrier_tier;
+        my $c_start          = $self->bet->effective_start->epoch;
+        my $c_end            = $self->bet->date_expiry->epoch;
+        my $base_probability = $self->base_probability->amount;
 
         foreach my $c (@$event_markup) {
             my $start_epoch     = Date::Utility->new($c->{start_time})->epoch;
@@ -337,7 +338,8 @@ sub event_markup {
             my $valid_timeframe = ($c_start >= $start_epoch && $c_start <= $end_epoch)
                 || ($c_end >= $start_epoch && $c_end <= $end_epoch || ($c_start < $start_epoch && $c_end > $end_epoch));
             if ($valid_timeframe and exists $c->{$barrier_tier}) {
-                push @markups, $c->{$barrier_tier};
+                my $OTM_max = $c->{OTM_max} // 0;
+                push @markups, max($OTM_max - $base_probability, $c->{$barrier_tier});
             }
         }
     }
