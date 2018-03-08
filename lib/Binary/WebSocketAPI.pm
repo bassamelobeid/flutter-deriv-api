@@ -172,7 +172,12 @@ sub startup {
             },
         ],
         ['trading_times'],
-        ['asset_index'],
+        [
+            'asset_index',
+            {
+                stash_params => [qw/ token /],
+            }
+        ],
         [
             'contracts_for',
             {
