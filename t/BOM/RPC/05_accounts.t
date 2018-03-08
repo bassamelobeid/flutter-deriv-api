@@ -1300,6 +1300,8 @@ subtest $method => sub {
 
     # test real account
     $params->{token} = $token1;
+    # Need to delete this parameter so this next call returns the error of interest
+    delete $params->{args}{residence};
     my %full_args = (
         address_line_1 => 'address line 1',
         address_line_2 => 'address line 2',
@@ -1314,6 +1316,7 @@ subtest $method => sub {
         'real account without account opening reason has to set it'
     );
 
+    $params->{args}{residence} = 'kr';
     $full_args{account_opening_reason} = 'Income Earning';
 
     $params->{args} = {%{$params->{args}}, %full_args};
@@ -1650,12 +1653,14 @@ subtest 'get and set self_exclusion' => sub {
     ok(@msgs, "msg sent to marketing and compliance email");
     like($msgs[0]{body}, qr/.*Exclude from website until/s, 'email content is ok');
 
-    delete $params->{args};
     like(
-        $c->tcall('get_self_exclusion', $params)->{error}{message_to_client},
-        qr/Sorry, you have excluded yourself until/,
-        'this client has self excluded'
+        $c->tcall($method, $params)->{error}->{message_to_client},
+        qr/Sorry, but you have self-excluded yourself from the website until/,
+        'Self excluded client cannot access set self exclusion'
     );
+
+    delete $params->{args};
+    ok($c->tcall('get_self_exclusion', $params), 'Get response even if client is self excluded');
 
     $test_client->load();
     my $self_excl = $test_client->get_self_exclusion;
