@@ -9,6 +9,7 @@ use BOM::Platform::Chronicle;
 use JSON::MaybeXS;
 use Try::Tiny;
 use List::Util qw(max);
+use Scalar::Util qw(looks_like_number);
 
 my $json = JSON::MaybeXS->new;
 
@@ -30,7 +31,7 @@ sub _check_value {
 
     return _err($what . '_max is not defined') unless exists $args->{$what . '_max'};
 
-    my @to_compare = map { $args->{$what . $_} } grep { exists $args->{$what . $_} } qw(_max _3 _2 _1);
+    my @to_compare = map { $args->{$what . $_} } grep { looks_like_number($args->{$what . $_}) } qw(_max _3 _2 _1);
 
     return if scalar(@to_compare) < 2;
 
@@ -91,7 +92,7 @@ sub _qc {
 sub _get_info {
     my $config = shift;
 
-    my %combined_commission = map { $_ => $config->{$_} } qw(ITM_1 ITM_2 ITM_3 atm OTM_1 OTM_2 OTM_3 OTM_max ITM_max);
+    my %combined_commission = map { $_ => $config->{$_} } qw(ITM_1 ITM_2 ITM_3 ATM OTM_1 OTM_2 OTM_3 OTM_max ITM_max);
 
     return {
         name       => $config->{name},
