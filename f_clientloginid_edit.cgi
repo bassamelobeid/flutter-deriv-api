@@ -787,16 +787,18 @@ print '<br/>';
 print 'Email consent for marketing: ' . ($user->email_consent ? 'Yes' : 'No');
 print '<br/><br/>';
 
-#upload new ID doc
-Bar("Upload new ID document");
-BOM::Backoffice::Request::template->process(
-    'backoffice/client_edit_upload_doc.html.tt',
-    {
-        self_post => $self_post,
-        broker    => $encoded_broker,
-        loginid   => $encoded_loginid,
-        countries => Brands->new(name => request()->brand)->countries_instance->countries,
-    });
+if (not $client->is_virtual) {
+    #upload new ID doc
+    Bar("Upload new ID document");
+    BOM::Backoffice::Request::template->process(
+        'backoffice/client_edit_upload_doc.html.tt',
+        {
+            self_post => $self_post,
+            broker    => $encoded_broker,
+            loginid   => $encoded_loginid,
+            countries => Brands->new(name => request()->brand)->countries_instance->countries,
+        });
+}
 
 if (my $financial_assessment = $client->financial_assessment()) {
     Bar("Financial Assessment");
