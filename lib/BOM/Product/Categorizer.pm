@@ -20,6 +20,7 @@ But we are not there yet because there's a lot of refactoring needed to have the
 use Date::Utility;
 use Quant::Framework;
 use Finance::Contract::Category;
+use List::Util qw(all);
 
 use BOM::Platform::Chronicle;
 use BOM::MarketData qw(create_underlying);
@@ -49,9 +50,10 @@ sub BUILD {
     if ($barrier_type_count == 0 and grep { ref $_ } @$barriers) {
         BOM::Product::Exception->throw(error_code => 'InvalidBarrierSingle');
     } elsif (
-        $barrier_type_count == scalar(@$c_types) and grep {
-            !ref $_
-        } @$barriers
+        $barrier_type_count == scalar(@$c_types) and not all {
+            ref $_ and defined $_->{barrier} and defined $_->{barrier2}
+        }
+        @$barriers
         )
     {
         BOM::Product::Exception->throw(error_code => 'InvalidBarrierDouble');
