@@ -361,7 +361,11 @@ rpc new_account_maltainvest => sub {
                 message_to_client => $error_map->{$err}});
     }
 
-    my %financial_data = map { $_ => $args->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
+    my $input_mappings = BOM::Platform::Account::Real::default::get_financial_input_mapping();
+    my %financial_data = map {
+        my $k = $_;
+        map { $_ => $params->{args}->{$_} } keys %{$input_mappings->{$k}}
+    } keys %{$input_mappings};
 
     my $user = BOM::Platform::User->new({email => $client->email});
 

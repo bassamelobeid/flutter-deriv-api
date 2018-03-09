@@ -1143,22 +1143,22 @@ $method = 'set_financial_assessment';
 subtest $method => sub {
     my $args = {
         "set_financial_assessment"             => 1,
-        "forex_trading_experience"             => "Over 3 years",
-        "forex_trading_frequency"              => "0-5 transactions in the past 12 months",
-        "binary_option_trading_experience"     => "1-2 years",
-        "binary_option_trading_frequency"      => "40 transactions or more in the past 12 months",
-        "cfd_trading_experience"               => "1-2 years",
-        "cfd_trading_frequency"                => "0-5 transactions in the past 12 months",
-        "other_instruments_trading_experience" => "Over 3 years",
-        "other_instruments_trading_frequency"  => "6-10 transactions in the past 12 months",
-        "employment_industry"                  => "Finance",
-        "education_level"                      => "Secondary",
-        "income_source"                        => "Self-Employed",
-        "net_income"                           => '$25,000 - $50,000',
-        "estimated_worth"                      => '$100,000 - $250,000',
-        "occupation"                           => 'Managers',
-        "employment_status"                    => "Self-Employed",
-        "source_of_wealth"                     => "Company Ownership",
+        "forex_trading_experience"             => "Over 3 years",                                     # +2
+        "forex_trading_frequency"              => "0-5 transactions in the past 12 months",           # +0
+        "binary_options_trading_experience"    => "1-2 years",                                        # +1
+        "binary_options_trading_frequency"     => "40 transactions or more in the past 12 months",    # +2
+        "cfd_trading_experience"               => "1-2 years",                                        # +1
+        "cfd_trading_frequency"                => "0-5 transactions in the past 12 months",           # +0
+        "other_instruments_trading_experience" => "Over 3 years",                                     # +2
+        "other_instruments_trading_frequency"  => "6-10 transactions in the past 12 months",          # +1
+        "employment_industry"                  => "Finance",                                          # +15
+        "education_level"                      => "Secondary",                                        # +1
+        "income_source"                        => "Self-Employed",                                    # +0
+        "net_income"                           => '$25,000 - $50,000',                                # +1
+        "estimated_worth"                      => '$100,000 - $250,000',                              # +1
+        "occupation"                           => 'Managers',                                         # +0
+        "employment_status"                    => "Self-Employed",                                    # +0
+        "source_of_wealth"                     => "Company Ownership",                                # +0
     };
 
     my $res = $c->tcall(
@@ -1183,7 +1183,10 @@ subtest $method => sub {
             args  => $args,
             token => $token1
         });
-    cmp_ok($res->{score}, "<", 60, "Got correct score");
+    cmp_ok($res->{score},                       "==", 26, "Got correct total score");
+    cmp_ok($res->{financial_information_score}, "==", 18, "Got correct financial information score");
+    cmp_ok($res->{trading_score},               "==", 9,  "Got correct trading score");
+    cmp_ok($res->{cfd_score},                   "==", 1,  "Got correct CFD score");
 
     # test that setting this for one client also sets it for client with different landing company
     is($c->tcall('get_financial_assessment', {token => $token_mlt})->{source_of_wealth}, undef, "Financial assessment not set for MLT client");
@@ -1239,7 +1242,10 @@ subtest $method => sub {
             args  => $args,
             token => $token1
         });
-    cmp_ok($res->{score}, "==", 30, "Got correct score");
+    cmp_ok($res->{score},                       "==", 26, "Got correct total score");
+    cmp_ok($res->{financial_information_score}, "==", 18, "Got correct financial information score");
+    cmp_ok($res->{trading_score},               "==", 9,  "Got correct trading score");
+    cmp_ok($res->{cfd_score},                   "==", 1,  "Got correct CFD score");
     is $res->{education_level}, 'Secondary', 'Got correct answer for assessment key';
 };
 

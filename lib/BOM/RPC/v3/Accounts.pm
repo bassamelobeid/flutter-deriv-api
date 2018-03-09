@@ -495,11 +495,19 @@ rpc get_account_status => sub {
     # check whether the user need to perform financial assessment
     my $financial_assessment = $client->financial_assessment();
     $financial_assessment = ref($financial_assessment) ? $json->decode($financial_assessment->data || '{}') : {};
+
+    my $input_mappings = BOM::Platform::Account::Real::default::get_financial_input_mapping();
+    my %financial_data = map {
+        my $k = $_;
+        map { $_ => $params->{args}->{$_} } keys %{$input_mappings->{$k}}
+    } keys %{$input_mappings};
+
     push @status,
         'financial_assessment_not_complete'
         if (
         any { !length $financial_assessment->{$_}->{answer} }
-        keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
+        keys %financial_data
+        );
 
     my $prompt_client_to_authenticate = 0;
     my $shortcode                     = $client->landing_company->short;
@@ -1570,7 +1578,7 @@ rpc set_financial_assessment => sub {
         my %financial_data = map {
             my $k = $_;
             map { $_ => $params->{args}->{$_} } keys %{$input_mappings->{$k}}
-        } (keys %{$input_mappings});
+        } keys %{$input_mappings};
         my $financial_evaluation = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
 
         my $user = BOM::Platform::User->new({email => $client->email});
