@@ -24,7 +24,7 @@
     <tr><td>OTM_3 </td><td> : <input type="text" name="OTM_3"></td></tr>
     <tr><td>OTM_2 </td><td> : <input type="text" name="OTM_2"></td></tr>
     <tr><td>OTM_1 </td><td> : <input type="text" name="OTM_1"></td></tr>
-    <tr><td>ATM </td><td> : <input type="text" name="atm"></td></tr>
+    <tr><td>ATM </td><td> : <input type="text" name="ATM"></td></tr>
     <tr><td>ITM_1 </td><td> : <input type="text" name="ITM_1"></td></tr>
     <tr><td>ITM_2 </td><td> : <input type="text" name="ITM_2"></td></tr>
     <tr><td>ITM_3 </td><td> : <input type="text" name="ITM_3"></td></tr>
@@ -57,7 +57,8 @@
                     OTM_2: el.find('input[name="OTM_2"]').val(),
                     OTM_3: el.find('input[name="OTM_3"]').val(),
                     OTM_max: el.find('input[name="OTM_max"]').val(),
-                    ITM_max: el.find('input[name="ITM_max"]').val()
+                    ITM_max: el.find('input[name="ITM_max"]').val(),
+                    ATM: el.find('input[name="ATM"]').val()
                 },
                 success: function(data){
                     var config = \$.parseJSON(data);
