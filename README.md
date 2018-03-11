@@ -1,4 +1,4 @@
-# perl-Client-Account
+# BOM-User
 
 #### NAME
 BOM::User - Class representing a company's user object.
