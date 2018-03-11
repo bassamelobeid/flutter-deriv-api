@@ -8,7 +8,7 @@ subtest 'unused vars' => sub {
 
     for my $file (qx{git ls-files lib}) {
         chomp $file;
-        if (-f $file and $file =~ /\.pm$/ and not $skipped_files{$file}) {
+        if (-f $file and $file =~ /\.pm$/) {
             vars_ok $file;
         }
     }
