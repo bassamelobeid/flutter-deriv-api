@@ -64,7 +64,8 @@ This repo contains objects to abstract company's business logic related to clien
 * BOM::User::Client::PaymentAgent - class to represent any client as a separate payment agent.
 * BOM::User::Client::Desk, which is a wrapper around WWW::Desk - Desk.com API.
 
-*This module contains dependencies to be removed in upcoming versions
+This module contains dependencies to be removed in upcoming versions
+* bom-platform
 
 Note about terminology:
 
