@@ -9,17 +9,18 @@ sub start_document_upload {
     my ($client, $loginid, $doctype, $docformat, $file_checksum, $expiration_date, $document_id) = @_;
     return _do_query(
         $client,
-        ['SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?)',
-        undef, $loginid, $doctype, $docformat,
-        $expiration_date || undef,
-        $document_id     || '',
-        $file_checksum]
-    );
+        [
+            'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?)',
+            undef, $loginid, $doctype, $docformat,
+            $expiration_date || undef,
+            $document_id     || '',
+            $file_checksum
+        ]);
 }
 
 sub finish_document_upload {
     my ($client, $file_id, $comments) = @_;
-    return _do_query($client, ['SELECT * FROM betonmarkets.finish_document_upload(?, ?)',undef, $file_id, $comments]);
+    return _do_query($client, ['SELECT * FROM betonmarkets.finish_document_upload(?, ?)', undef, $file_id, $comments]);
 }
 
 sub _do_query {
@@ -49,10 +50,8 @@ sub _do_query {
 
 sub _create_success {
     my ($result) = @_;
-    
-    return {
-        result => $result
-    };
+
+    return {result => $result};
 }
 
 sub _create_error {
@@ -78,5 +77,5 @@ sub _is_duplicate_upload_error {
     return $dbh->state eq '23505'
         and $dbh->errstr =~ /duplicate_upload_error/;
 }
- 
+
 1;
