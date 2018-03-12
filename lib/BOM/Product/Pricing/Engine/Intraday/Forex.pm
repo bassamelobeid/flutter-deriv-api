@@ -313,32 +313,30 @@ sub _build_risk_markup {
 sub event_markup {
     my $self = shift;
 
+    my $for_date = $self->bet->underlying->for_date;
+    my $qc       = BOM::Platform::QuantsConfig->new(
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($for_date),
+        for_date         => $for_date
+    );
+    my $event_markup = $qc->get_config(
+        'commission',
+        +{
+            contract_type     => $self->bet->code,
+            underlying_symbol => $self->bet->underlying->symbol
+        });
+
+    my $barrier_tier = $self->bet->barrier_tier;
+    my $c_start      = $self->bet->effective_start->epoch;
+    my $c_end        = $self->bet->date_expiry->epoch;
+
     my @markups = (0);
-    if ($self->bet->category_code eq 'callput' && !$self->bet->is_atm_bet) {
-        my $for_date = $self->bet->underlying->for_date;
-        my $qc       = BOM::Platform::QuantsConfig->new(
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($for_date),
-            for_date         => $for_date
-        );
-        my $event_markup = $qc->get_config(
-            'commission',
-            +{
-                contract_type     => $self->bet->code,
-                underlying_symbol => $self->bet->underlying->symbol
-            });
-
-        my $barrier_tier = $self->bet->barrier_tier;
-        my $c_start      = $self->bet->effective_start->epoch;
-        my $c_end        = $self->bet->date_expiry->epoch;
-
-        foreach my $c (@$event_markup) {
-            my $start_epoch     = Date::Utility->new($c->{start_time})->epoch;
-            my $end_epoch       = Date::Utility->new($c->{end_time})->epoch;
-            my $valid_timeframe = ($c_start >= $start_epoch && $c_start <= $end_epoch)
-                || ($c_end >= $start_epoch && $c_end <= $end_epoch || ($c_start < $start_epoch && $c_end > $end_epoch));
-            if ($valid_timeframe and exists $c->{$barrier_tier}) {
-                push @markups, $c->{$barrier_tier};
-            }
+    foreach my $c (@$event_markup) {
+        my $start_epoch     = Date::Utility->new($c->{start_time})->epoch;
+        my $end_epoch       = Date::Utility->new($c->{end_time})->epoch;
+        my $valid_timeframe = ($c_start >= $start_epoch && $c_start <= $end_epoch)
+            || ($c_end >= $start_epoch && $c_end <= $end_epoch || ($c_start < $start_epoch && $c_end > $end_epoch));
+        if ($valid_timeframe and exists $c->{$barrier_tier}) {
+            push @markups, $c->{$barrier_tier};
         }
     }
 
@@ -362,12 +360,18 @@ sub economic_events_spot_risk_markup {
     )->markup;
 }
 
+sub long_term_average_vol {
+    my $self = shift;
+
+    return ($self->is_in_quiet_period($self->bet->date_pricing)) ? 0.035 : 0.07;
+}
+
 sub vol_spread_markup {
     my $self = shift;
 
     my $bet = $self->bet;
 
-    my $long_term_average_vol = 0.07;
+    my $long_term_average_vol = $self->long_term_average_vol;
     # We cap vol spread at +/-5%
     my $vol_spread = min(0.05, max(-0.05, $long_term_average_vol - $bet->_pricing_args->{iv}));
     my $vega       = $self->base_probability->peek_amount('intraday_vega');

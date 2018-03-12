@@ -1119,8 +1119,11 @@ sub is_parameters_predefined {
 sub barrier_tier {
     my $self = shift;
 
-    # we do not need definition for two barrier contracts and only applicable to callput
-    return 'none' if $self->two_barriers or $self->category->code ne 'callput';
+    # we do not need definition for two barrier contracts
+    # because intraday forex engine only prices callput and touchnotouch
+    return 'none' if $self->two_barriers;
+
+    return 'ATM' if $self->is_atm_bet;
 
     my $barrier       = $self->barrier->as_absolute;
     my $current_spot  = $self->current_spot;
@@ -1152,6 +1155,10 @@ sub barrier_tier {
         $highlow = $diff > 0 ? 'ITM' : 'OTM';
     } elsif ($self->code =~ /PUT/) {
         $highlow = $diff < 0 ? 'ITM' : 'OTM';
+    } elsif ($self->code =~ /(ONETOUCH|NOTOUCH)/) {
+        $highlow = 'OTM';    # it is always out of the money for touch/notouch since contract expires when it is in the money
+    } else {
+        return 'none';       # unrecognize contract type for barrier_tier
     }
 
     return (join '_', ($highlow, $which_tier));
