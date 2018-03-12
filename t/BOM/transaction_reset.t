@@ -373,6 +373,7 @@ subtest 'buy a bet', sub {
                 payout     => 50,
                 duration   => '30m',
                 current_tick => $tick,
+                barrier    => 'S0P',
         });
 
         my $txn = BOM::Transaction->new({
@@ -494,6 +495,7 @@ subtest 'sell a bet', sub {
                 current_tick => $tick,
                 entry_tick   => $tick,
                 exit_tick    => $tick,
+                barrier      => 'S0P',
         });
         my $txn;
         #note 'bid price: ' . $contract->bid_price;
@@ -617,6 +619,7 @@ subtest 'sell_expired_contracts', sub {
             current_tick => $tick,
             entry_tick   => $old_tick1,
             exit_tick    => $old_tick2,
+            barrier      => 'S0P',
         });
 
         my $txn = BOM::Transaction->new({
