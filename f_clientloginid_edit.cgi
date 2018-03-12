@@ -278,7 +278,9 @@ if ($input{whattodo} eq 'uploadID') {
         }
         my $file_checksum = Digest::MD5->new->addfile($filetoupload)->hexdigest;
 
-        my $query_result = BOM::Platform::Client::DocumentUpload::start_document_upload($client, $loginid, $doctype, $docformat, $file_checksum, $expiration_date, $document_id);
+        my $query_result =
+            BOM::Platform::Client::DocumentUpload::start_document_upload($client, $loginid, $doctype, $docformat, $file_checksum, $expiration_date,
+            $document_id);
 
         if ($query_result->{error} or not $query_result->{result}) {
             $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: $error_occured</p><br />";
