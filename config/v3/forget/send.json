@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "title": "Cancel an Incoming Stream Send",
-  "description": "Immediately cancel the real-time stream of messages with id ID",
+  "description": "Immediately cancel the real-time stream of messages with a specific id",
   "properties": {
     "forget": {
       "type": "string",
