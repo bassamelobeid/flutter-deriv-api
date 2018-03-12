@@ -47,7 +47,7 @@ sub validate {
 
     # Self-excluded clients are not allowed to deposit
     if ($action eq 'deposit') {
-        my $lim = $client->get_self_exclusion_until_dt;
+        my $lim = $client->get_self_exclusion_until_date;
         return _create_error(
             localize(
                 'Sorry, but you have self-excluded yourself from the website until [_1]. If you are unable to place a trade or deposit after your self-exclusion period, please contact the Customer Support team for assistance.',
