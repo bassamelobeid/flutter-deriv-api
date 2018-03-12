@@ -287,7 +287,7 @@ if ($input{whattodo} eq 'uploadID') {
             next;
         }
 
-        my $file_id = $query_result->{result}
+        my $file_id = $query_result->{result};
         my $new_file_name = "$loginid.$doctype.$file_id.$docformat";
 
         my $checksum = BOM::Backoffice::Script::DocumentUpload::upload($new_file_name, $filetoupload, $file_checksum)
