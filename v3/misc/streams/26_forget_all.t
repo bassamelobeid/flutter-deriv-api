@@ -79,6 +79,12 @@ initialize_realtime_ticks_db();
                 note("ohlc 1 json :: " . encode_json($t->await::ohlc($msg)));
             }
         }
+        my $failed_res = $t->await::forget_all({forget_all => 'tick'});
+        is $failed_res->{error}->{code}, 'InputValidationFailed', "Correct error code for invalid string";
+
+        $failed_res = $t->await::forget_all({forget_all => ['ticks', 'candle']});
+        is $failed_res->{error}->{code}, 'InputValidationFailed', "Correct error code for invalid array";
+
         my $res = $t->await::forget_all({forget_all => $types});
         note("forget_all json :: " . encode_json($res->{forget_all}));
         ok $res->{forget_all}, "Manage to forget_all: " . join(', ', @$types) or diag explain $res;
