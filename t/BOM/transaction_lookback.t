@@ -457,7 +457,7 @@ subtest 'buy a bet', sub {
             plan tests => 3;
             is $chld->{absolute_barrier}, undef, 'absolute_barrier';
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{prediction},       undef,  'prediction';
+            is $chld->{prediction}, undef, 'prediction';
         };
 
         # note explain $qv1;
@@ -479,39 +479,39 @@ subtest 'buy a bet', sub {
 
 subtest 'sell a bet', sub {
     plan tests => 1;
-        set_relative_time 1;
-        my $reset_time = guard { restore_time };
+    set_relative_time 1;
+    my $reset_time = guard { restore_time };
 
-        my $contract = produce_contract({
-            underlying   => $underlying_R50,
-            bet_type     => 'LBFLOATCALL',
-            currency     => 'USD',
-            multiplier   => 5,
-            amount_type  => 'multiplier',
-            duration     => '30m',
-            current_tick => $tick,
-            entry_tick   => $tick,
-            exit_tick    => $tick,
-            barrier      => 'S20P',
+    my $contract = produce_contract({
+        underlying   => $underlying_R50,
+        bet_type     => 'LBFLOATCALL',
+        currency     => 'USD',
+        multiplier   => 5,
+        amount_type  => 'multiplier',
+        duration     => '30m',
+        current_tick => $tick,
+        entry_tick   => $tick,
+        exit_tick    => $tick,
+        barrier      => 'S20P',
+    });
+    my $txn;
+
+    my $error = do {
+        my $mocked           = Test::MockModule->new('BOM::Transaction');
+        my $mocked_validator = Test::MockModule->new('BOM::Transaction::Validation');
+        $mocked_validator->mock('_validate_trade_pricing_adjustment', sub { });
+        $mocked->mock('price', sub { $contract->bid_price });
+        $txn = BOM::Transaction->new({
+            purchase_date => $contract->date_start,
+            client        => $cl,
+            contract      => $contract,
+            contract_id   => $fmb->{id},
+            price         => $contract->bid_price,
+            source        => 23,
         });
-        my $txn;
-        
-        my $error = do {
-            my $mocked           = Test::MockModule->new('BOM::Transaction');
-            my $mocked_validator = Test::MockModule->new('BOM::Transaction::Validation');
-            $mocked_validator->mock('_validate_trade_pricing_adjustment', sub { });
-            $mocked->mock('price', sub { $contract->bid_price });
-            $txn = BOM::Transaction->new({
-                purchase_date => $contract->date_start,
-                client        => $cl,
-                contract      => $contract,
-                contract_id   => $fmb->{id},
-                price         => $contract->bid_price,
-                source        => 23,
-            });
-            $txn->sell;
-        };
-        isa_ok $error, 'Error::Base', 'sellback not allowed error';  
+        $txn->sell;
+    };
+    isa_ok $error, 'Error::Base', 'sellback not allowed error';
 
 };
 
