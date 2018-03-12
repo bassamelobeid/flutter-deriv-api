@@ -100,14 +100,24 @@ subtest 'Error for over-size file' => sub {
     call_and_check_error($custom_params, 'Maximum file size reached. Maximum allowed is '.MAX_FILE_SIZE, 'over-size file is denied');
 };
 
+# Only applies if document_type is passport, proofid, or driverslicense
 subtest 'Error for no document_id' => sub {
     my $custom_params = { args => { document_id => '' } };
     call_and_check_error($custom_params, 'Document ID is required.', 'document_id is required');
 };
 
+# Only applies if document_type is passport, proofid, or driverslicense
 subtest 'Error for no expiration_date' => sub {
     my $custom_params = { args => { expiration_date => '' } };
     call_and_check_error($custom_params, 'Expiration date is required.', 'expiration_date is required');
+};
+
+# Applies for any type not of passport, proofid, or driverslicense
+subtest 'No error for no document_id and expiration_date' => sub {
+    my $custom_params = { args => { document_id   => '',
+                                    expiration_date => '',
+                                    document_type => 'proofaddress' } };
+    start_successful_upload($real_client, $custom_params);
 };
 
 subtest 'Generic upload fail test' => sub{

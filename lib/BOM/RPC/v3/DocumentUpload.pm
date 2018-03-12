@@ -142,6 +142,9 @@ sub validate_id_and_exp_date {
     my $args          = shift;
     my $document_type = $args->{document_type};
 
+    # The fields expiration_date and document_id are only required for certain
+    #   document types, so only do this check in these cases.
+
     return if not $document_type or $document_type !~ /^passport|proofid|driverslicense$/;
 
     return 'missing_exp_date' if not $args->{expiration_date};
