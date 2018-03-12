@@ -6,7 +6,8 @@ BOM::MyAffiliates::ActivityReporter
 
 =head1 DESCRIPTION
 
-This class generates client trading activity reports, including turnover, profit and loss, deposits and withdrawals.
+This class generates client trading activity reports, including turnover,
+profit and loss, deposits and withdrawals.
 
 =head1 SYNOPSIS
 
@@ -38,8 +39,9 @@ use BOM::Database::DataMapper::MyAffiliates;
 
     Result is formatted to this form:
 
-    Date, Client Loginid, company profit/loss from client, deposits, turnover_runbets,
-    intraday turnover, other turnover, first funded date, withdrawals
+    Date, Client Loginid, company profit/loss from client, deposits,
+    turnover_runbets, intraday turnover, other turnover, first funded date,
+    withdrawals, first funded amount
 
 =cut
 
@@ -87,6 +89,7 @@ sub _generate_csv_output {
             push @output_fields, formatnumber('amount', $currency, $activity->{$loginid}->{turnover_others});
             push @output_fields, $first_funded_date;
             push @output_fields, formatnumber('amount', $currency, $activity->{$loginid}->{'withdrawals'});
+            push @output_fields, formatnumber('amount', $currency, $activity->{$loginid}->{'first_funded_amount'});
         } else {
             # we need to convert other currencies to USD as required
             # by myaffiliates system
@@ -97,6 +100,7 @@ sub _generate_csv_output {
             push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{turnover_others});
             push @output_fields, $first_funded_date;
             push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{'withdrawals'});
+            push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * $currency, $activity->{$loginid}->{'first_funded_amount'});
         }
 
         $csv->combine(@output_fields);
