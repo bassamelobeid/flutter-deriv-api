@@ -3,6 +3,7 @@ package main;
 
 use strict;
 use warnings;
+no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix these warnings
 
 use POSIX ();
 use Date::Utility;
@@ -78,8 +79,7 @@ if (request()->param('action') eq 'DOWNLOAD CSV') {
 
 # Show the "DOWNLOAD CSV" button.
 print '<form method="post" id="download_csv_form" action="'
-    . request()->url_for('backoffice/f_viewclientsubset.cgi') . '" '
-    . $on_submit_event . ' >'
+    . request()->url_for('backoffice/f_viewclientsubset.cgi') . '>'
     . '<input type="hidden" name="show" value="'
     . $show . '">'
     . '<input type="hidden" name="onlylarge" value="'
