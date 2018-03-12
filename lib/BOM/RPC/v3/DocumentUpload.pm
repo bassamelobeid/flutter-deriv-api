@@ -135,17 +135,17 @@ sub validate_input {
     my $invalid_date = validate_expiration_date($args->{expiration_date});
     return $invalid_date if $invalid_date;
 
-    return validate_doc_id_and_type($args);
+    return validate_id_and_exp_date($args);
 }
 
-sub validate_doc_id_and_type {
+sub validate_id_and_exp_date {
     my $args          = shift;
     my $document_type = $args->{document_type};
-    my $document_id   = $args->{document_id};
 
     return if not $document_type or $document_type !~ /^passport|proofid|driverslicense$/;
 
-    return 'missing_doc_id' if not $document_id;
+    return 'missing_exp_date' if not $args->{expiration_date};
+    return 'missing_doc_id'   if not $args->{document_id};
 
     return;
 }
@@ -153,7 +153,7 @@ sub validate_doc_id_and_type {
 sub validate_expiration_date {
     my $expiration_date = shift;
 
-    return 'missing_exp_date' if not $expiration_date;
+    return if not $expiration_date;
 
     my $current_date = Date::Utility->new;
     my $parsed_date  = Date::Utility->new($expiration_date);
