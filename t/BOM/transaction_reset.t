@@ -383,7 +383,7 @@ subtest 'buy a bet', sub {
             payout        => $contract->payout,
             amount_type   => 'payout',
             source        => 19,
-            purchase_date => Date::Utility->new(),
+            purchase_date => $contract->date_start,
         });
 
 
