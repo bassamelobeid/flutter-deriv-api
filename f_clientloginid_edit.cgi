@@ -270,8 +270,9 @@ if ($input{whattodo} eq 'uploadID') {
         die "Unable to set staff info, with error: $error_occured" if $error_occured;
 
         my $file_size = (stat($filetoupload))[7];
-        if ($file_size > MAX_FILE_SIZE){
-            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Exceeds maximum file size (".MAX_FILE_SIZE." bytes).</p><br />";
+        if ($file_size > MAX_FILE_SIZE) {
+            $result .=
+                "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Exceeds maximum file size (" . MAX_FILE_SIZE . " bytes).</p><br />";
             next;
         }
 
