@@ -132,17 +132,18 @@ subtest 'Error for calling success with non-existent file ID' => sub {
 subtest 'Basic upload test sequence' => sub {
 
     my $file_id;
+    my $checksum = $default_args{expected_checksum};
 
     subtest 'Start upload with all defaults' => sub {
         $file_id = start_successful_upload($real_client);
     };
-    
+
     subtest 'Finish upload and verify CS notification email is receieved' => sub {
-        finish_successful_upload($real_client, $file_id, 1);
+        finish_successful_upload($real_client, $file_id, $checksum, 1);
     };
     
     subtest 'Call finish again to ensure CS team is only sent 1 email' => sub {
-        finish_successful_upload($real_client, $file_id, 0);
+        finish_successful_upload($real_client, $file_id, $checksum, 0);
     };
 };
 
@@ -203,7 +204,7 @@ sub start_successful_upload {
 }
 
 sub finish_successful_upload {
-    my ($client, $file_id, $mail_expected) = @_;
+    my ($client, $file_id, $checksum, $mail_expected) = @_;
 
     # Setup call paramaters
     my $params      = { %default_params };
@@ -231,7 +232,7 @@ sub finish_successful_upload {
     my ($doc) = $client->find_client_authentication_document(query => [id => $result->{file_id}]);
     is($doc->status,    'uploaded',           'document\'s status changed');
     ok $doc->file_name, 'Filename should not be empty';
-    #(COMMENTED OUT)is $doc->checksum, CHECKSUM, 'Checksum should be added correctly';
+    is $doc->checksum, $checksum, 'Checksum should be added correctly';
     
     # Check client status is correct
     is($client->get_status('document_under_review')->reason, 'Documents uploaded', 'client\'s status changed');
