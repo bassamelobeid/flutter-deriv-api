@@ -193,6 +193,12 @@ sub site_limits {
     return $limits;
 }
 
+sub client_error() {
+    return create_error({
+            code              => 'InternalServerError',
+            message_to_client => localize('Sorry, an error occurred while processing your account.')});
+}
+
 sub website_name {
     my $server_name = shift;
 
@@ -211,12 +217,6 @@ sub check_authorization {
     return create_error({
             code              => 'DisabledClient',
             message_to_client => localize('This account is unavailable.')}) unless is_account_available($client);
-
-    if (my $lim = $client->get_self_exclusion_until_dt) {
-        return create_error({
-                code              => 'ClientSelfExclusion',
-                message_to_client => localize('Sorry, you have excluded yourself until [_1].', $lim)});
-    }
 
     return;
 }
@@ -614,12 +614,10 @@ sub set_professional_status {
     $client->set_status('professional_requested', 'SYSTEM', 'Professional account requested') if $set_prof_request;
 
     if (not $client->save) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InternalServerError',
-                message_to_client => localize('Sorry, an error occurred while processing your account.')});
+        return client_error();
     }
 
-    BOM::RPC::v3::Utility::send_professional_requested_email($client->loginid, $client->residence) if $set_prof_request;
+    send_professional_requested_email($client->loginid, $client->residence) if $set_prof_request;
 
     return undef;
 }
