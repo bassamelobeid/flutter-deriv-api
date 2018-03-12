@@ -3,22 +3,21 @@ package main;
 
 use strict;
 use warnings;
-no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix these warnings
 
 use POSIX ();
 use Date::Utility;
 use Path::Tiny;
-use Brands;
-use Client::Account;
 use HTML::Entities;
 use Format::Util::Numbers qw/roundcommon/;
 
+use open qw[ :encoding(UTF-8) ];
+
+use Client::Account;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
+
 use BOM::Database::DataMapper::Account;
 use BOM::Backoffice::Request qw(request);
 use BOM::Platform::Runtime;
-use BOM::Platform::Email qw(send_email);
-use open qw[ :encoding(UTF-8) ];
 use BOM::Backoffice::Config;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel);
 
@@ -114,7 +113,6 @@ my $results = get_client_by_status({
 });
 
 my $total = scalar keys %{$results};
-my $email_notification;
 
 CLIENT:
 foreach my $loginID (keys %{$results}) {
@@ -145,23 +143,6 @@ foreach my $loginID (keys %{$results}) {
         . "&nbsp;</td>" . "</tr>";
 
     $total_bal += $client->{balance_usd};
-}
-
-if ($email_notification) {
-    my $brand = Brands->new(name => request()->brand);
-    my $email_to = join(',', ($brand->emails('compliance'), $brand->emails('accounting')));
-
-    my $ret = send_email({
-        'from'    => $brand->emails('system'),
-        'to'      => $email_to,
-        'subject' => 'Funds withdrawn for disabled accounts',
-        'message' => ["To be informed that the funds have been withdrawn for the following disabled account(s):\n\n$email_notification"],
-    });
-
-    if (not $ret) {
-        print '<p style="font-weight:bold; color:red; text-align:center; padding:1em 0;"> Notification was not sent: Error '
-            . encode_entities($ret) . ' </p>';
-    }
 }
 
 # Page navigation
