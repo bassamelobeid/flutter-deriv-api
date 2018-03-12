@@ -21,12 +21,12 @@ rpc document_upload => sub {
     my $args   = $params->{args};
     my $status = $args->{status};
 
+    return successful_upload($params) if $status and $status eq 'success';
+
     my $error = validate_input($params);
     return create_upload_error($error) if $error;
 
     return start_document_upload($params) if $args->{document_type} and $args->{document_format};
-
-    return successful_upload($params) if $status and $status eq 'success';
 
     return create_upload_error();
 };
@@ -132,17 +132,17 @@ sub validate_input {
     my $invalid_date = validate_expiration_date($args->{expiration_date});
     return $invalid_date if $invalid_date;
 
-    return validate_id_and_exp_date($args);
+    return validate_doc_id_and_type($args);
 }
 
-sub validate_id_and_exp_date {
+sub validate_doc_id_and_type {
     my $args          = shift;
     my $document_type = $args->{document_type};
+    my $document_id   = $args->{document_id};
 
     return if not $document_type or $document_type !~ /^passport|proofid|driverslicense$/;
 
-    return 'missing_exp_date' if not $args->{expiration_date};
-    return 'missing_doc_id'   if not $args->{document_id};
+    return 'missing_doc_id' if not $document_id;
 
     return;
 }
@@ -150,7 +150,7 @@ sub validate_id_and_exp_date {
 sub validate_expiration_date {
     my $expiration_date = shift;
 
-    return if not $expiration_date;
+    return 'missing_exp_date' if not $expiration_date;
 
     my $current_date = Date::Utility->new;
     my $parsed_date  = Date::Utility->new($expiration_date);
