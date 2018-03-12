@@ -17,15 +17,6 @@ my $day_two = '2011-03-09 12:59:59';
 
 $client->payment_legacy_payment(
     currency         => 'USD',
-    amount           => 270,
-    remark           => 'here is money',
-    payment_type     => 'credit_debit_card',
-    transaction_time => $day_two,
-    payment_time     => $day_two,
-);
-
-$client->payment_legacy_payment(
-    currency         => 'USD',
     amount           => 9098,
     remark           => 'here is money',
     payment_type     => 'credit_debit_card',
@@ -40,6 +31,15 @@ $client->payment_legacy_payment(
     payment_type     => 'credit_debit_card',
     transaction_time => $day_one,
     payment_time     => $day_one,
+);
+
+$client->payment_legacy_payment(
+    currency         => 'USD',
+    amount           => 270,
+    remark           => 'here is money',
+    payment_type     => 'credit_debit_card',
+    transaction_time => $day_two,
+    payment_time     => $day_two,
 );
 
 BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
@@ -76,7 +76,11 @@ subtest 'Activity report for specific date' => sub {
     # The reported PNL in this test is wrong because there is no sell operation for those bets
     # Selling them (by __MUST_SELL__ => 1) uses the current date, which also doesn't appear on the report
     # I will call this "good enough" for now.
-    is($csv[0], '2011-03-08,' . $client->loginid . ',0.00,9098.00,0.00,456.00,789.00,2011-03-08,987.00', 'Check if values are correct in report');
+    is(
+        $csv[0],
+        '2011-03-08,' . $client->loginid . ',0.00,9098.00,0.00,456.00,789.00,2011-03-08,987.00,9098.00',
+        'Check if values are correct in report'
+    );
 };
 
 subtest 'Not funded account with transaction (bonus?)' => sub {
