@@ -35,6 +35,8 @@ sub _do_query {
                     return if $error_duplicate = _is_duplicate_upload_error($_);
                     # Just in case there is already a custom warning handler,
                     #   we don't disrupt the usual flow.
+                    # At the time of writing, the test environment applies a custom handler,
+                    #   the production environment does not.
                     return $STD_WARN_HANDLER->(@_) if $STD_WARN_HANDLER;
                     warn @_;
                 };
