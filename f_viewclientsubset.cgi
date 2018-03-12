@@ -77,12 +77,6 @@ if (request()->param('action') eq 'DOWNLOAD CSV') {
     code_exit_BO();
 }
 
-# Alert downloading csv with auto debit balance from disabled clients
-my $on_submit_event;
-if (request()->param('recoverfromfraudpassword') eq 'l') {
-    $on_submit_event = 'onsubmit="return confirmDownloadCSV(' . encode_entities(request()->param('recoverdays')) . ');"';
-}
-
 # Show the "DOWNLOAD CSV" button.
 print '<form method="post" id="download_csv_form" action="'
     . request()->url_for('backoffice/f_viewclientsubset.cgi') . '" '
@@ -127,19 +121,6 @@ foreach my $loginID (keys %{$results}) {
     my $client      = $results->{$loginID};
     my $last_access = $client->{last_access};
 
-    my $recover;
-    if ($last_access > request()->param('recoverdays') and request()->param('recoverfromfraudpassword') eq 'l') {
-        my $result = RecoverFromClientAccount({
-            'loginID' => $loginID,
-            'clerk'   => $clerk,
-        });
-
-        $recover = $result->{'msg'};
-        if (exists $result->{'notification'}) {
-            $email_notification .= $loginID . ' - ' . $result->{'notification'} . "\n\n";
-        }
-    }
-
     print "<tr>"
         . "<td>$loginID</td>" . "<td>"
         . encode_entities($client->{name})
@@ -159,7 +140,7 @@ foreach my $loginID (keys %{$results}) {
         . encode_entities($client->{equity})
         . "&nbsp;</td>" . "<td>"
         . encode_entities($client->{last_access})
-        . " days $recover &nbsp;</td>" . "<td>"
+        . " days &nbsp;</td>" . "<td>"
         . encode_entities($client->{reason})
         . "&nbsp;</td>" . "</tr>";
 
@@ -196,15 +177,13 @@ if ($total) {
     if ($prev_page >= 1) {
         my $link = $home_link->clone;
         $link->query(
-            broker                   => $broker,
-            show                     => $show,
-            limit                    => $limit,
-            page                     => $prev_page,
-            onlylarge                => request()->param('onlylarge'),
-            onlyfunded               => request()->param('onlyfunded'),
-            onlynonzerobalance       => request()->param('onlynonzerobalance'),
-            recoverfromfraudpassword => request()->param('recoverfromfraudpassword'),
-            recoverdays              => request()->param('recoverdays'),
+            broker             => $broker,
+            show               => $show,
+            limit              => $limit,
+            page               => $prev_page,
+            onlylarge          => request()->param('onlylarge'),
+            onlyfunded         => request()->param('onlyfunded'),
+            onlynonzerobalance => request()->param('onlynonzerobalance'),
         );
         $prev_page = '<a id="prev_page" href="' . $link . '">Previous ' . encode_entities($limit) . '</a>';
     } else {
@@ -214,15 +193,13 @@ if ($total) {
     if ($next_page <= $total_page) {
         my $link = $home_link->clone;
         $link->query(
-            broker                   => $broker,
-            show                     => $show,
-            limit                    => $limit,
-            page                     => $next_page,
-            onlylarge                => request()->param('onlylarge'),
-            onlyfunded               => request()->param('onlyfunded'),
-            onlynonzerobalance       => request()->param('onlynonzerobalance'),
-            recoverfromfraudpassword => request()->param('recoverfromfraudpassword'),
-            recoverdays              => request()->param('recoverdays'),
+            broker             => $broker,
+            show               => $show,
+            limit              => $limit,
+            page               => $next_page,
+            onlylarge          => request()->param('onlylarge'),
+            onlyfunded         => request()->param('onlyfunded'),
+            onlynonzerobalance => request()->param('onlynonzerobalance'),
         );
 
         $next_page = '<a id="next_page" href="' . $link . '">Next ' . encode_entities($next_total) . '</a>';
@@ -247,10 +224,6 @@ if ($total) {
             . encode_entities(request()->param('onlyfunded')) . '" />'
             . '<input type="hidden" name="onlynonzerobalance" value="'
             . encode_entities(request()->param('onlynonzerobalance')) . '" />'
-            . '<input type="hidden" name="recoverfromfraudpassword" value="'
-            . encode_entities(request()->param('recoverfromfraudpassword')) . '" />'
-            . '<input type="hidden" name="recoverdays" value="'
-            . encode_entities(request()->param('recoverdays')) . '" />'
             . $prev_page . ' <em>'
             . ' Page: <input size="3" maxlength="3" type="text" id="page_input" name="page" value="'
             . encode_entities($page_selected)
@@ -425,58 +398,4 @@ sub GetPagingParameter {
     my $prev_page  = $page - 1;
 
     return ($prev_page, $next_page, $offset, $total_page, $next_total);
-}
-
-##################################################################################################
-#
-# Purpose: Performing following action:
-#          1. Withdraw the balance from the disabled account
-#          2. write into log file
-#
-##################################################################################################
-sub RecoverFromClientAccount {
-    my $arg_ref = shift;
-
-    my $loginID = $arg_ref->{'loginID'};
-    my $clerk   = $arg_ref->{'clerk'};
-
-    my $result = {};
-
-    my $broker;
-    if ($loginID =~ /^(\D+)\d+$/) {
-        $broker = $1;
-    } else {
-        die "[$0] bad loginID $loginID";
-    }
-
-    my $client = Client::Account::get_instance({'loginid' => $loginID})
-        || die "[$0] RecoverFromClientAccount could not get client for $loginID";
-    if (not $client->get_status('disabled')) {
-        $result->{'msg'} = "span style='color:red;font-weight:bold;'>ERROR: $loginID ($broker) is not disabled</font>";
-    }
-
-    my $bal = BOM::Database::DataMapper::Account->new({
-            client_loginid => $loginID,
-            currency_code  => $client->currency
-        })->get_balance();
-
-    next CURRENCY if ($bal < 0.01);
-
-    $client->payment_legacy_payment(
-        currency     => $client->currency,
-        amount       => -$bal,
-        remark       => 'Inactive Account closed.',
-        payment_type => 'closed_account',
-        staff        => $clerk,
-    );
-
-    my $acc_balance = $client->currency . $bal;
-
-    my $log = BOM::Backoffice::Config::config->{log}->{withdraw_broker};
-    $log =~ s/%BROKERCODE%/$broker/g;
-    Path::Tiny::path($log)->append_utf8(Date::Utility->new->datetime . " $loginID balance $acc_balance withdrawn by $clerk");
-
-    $result->{'msg'}          = "<br><span style='color:green;font-weight:bold;'>RECOVERED $acc_balance</span>";
-    $result->{'notification'} = $acc_balance;
-    return $result;
 }
