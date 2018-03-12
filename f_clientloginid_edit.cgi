@@ -39,6 +39,8 @@ use BOM::Database::Model::AccessToken;
 use BOM::Backoffice::Script::DocumentUpload;
 use Finance::MIFIR::CONCAT qw(mifir_concat);
 
+use constant MAX_FILE_SIZE => 3 * 2**20;
+
 BOM::Backoffice::Sysinit::init();
 
 my %input = %{request()->params};
@@ -266,6 +268,12 @@ if ($input{whattodo} eq 'uploadID') {
         };
 
         die "Unable to set staff info, with error: $error_occured" if $error_occured;
+
+        my $file_size = (stat($filetoupload))[7];
+        if ($file_size > MAX_FILE_SIZE){
+            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Exceeds maximum file size (".MAX_FILE_SIZE." bytes).</p><br />";
+            next;
+        }
 
         my $file_contents = do { local $/; <$filetoupload> };
         my $file_checksum = md5_hex($file_contents);
