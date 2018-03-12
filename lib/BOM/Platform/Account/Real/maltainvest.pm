@@ -84,7 +84,8 @@ sub create_account {
 
 # Consider client as a professional trader if the trading score is from 8 to 16 or CFD is 4
 sub _is_professional_client {
-    return (shift->{trading_score} > 7 or shift->{cfd_score} > 3);
+    my $financial_assessment = shift;
+    return ($financial_assessment->{trading_score} > 7 or $financial_assessment->{cfd_score} > 3);
 }
 
 1;
