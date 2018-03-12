@@ -24,8 +24,7 @@ my @all_keys = qw/
     source_of_wealth/;
 
 my $input_mapping = BOM::Platform::Account::Real::default::get_financial_input_mapping();
-$input_mapping = map { $input_mapping->{$_} } keys %{$input_mapping};
-
+$input_mapping = {%{$input_mapping->{financial_information}}, %{$input_mapping->{trading_experience}}};
 subtest "check for all keys" => sub {
     is_deeply([sort keys %{$input_mapping}], [sort @all_keys], 'correct keys for financial input mapping');
 };
