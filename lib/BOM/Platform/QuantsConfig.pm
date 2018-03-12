@@ -92,8 +92,15 @@ sub _commission {
 
     for (qw(start_time end_time)) {
         $args{$_} =~ s/^\s+|\s+$//g;
-        $args{$_} = Date::Utility->new($args->{$_})->epoch;
+        $args{$_} = try {
+            Date::Utility->new($args{$_})->epoch;
+        }
+        catch {
+            die "Invalid $_ format";
+        };
     }
+
+    die "start time must be before end time" if $args{start_time} >= $args{end_time};
 
     foreach my $key (keys %args) {
         next if $key eq 'name';
