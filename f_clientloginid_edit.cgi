@@ -293,7 +293,7 @@ if ($input{whattodo} eq 'uploadID') {
         my $checksum = BOM::Backoffice::Script::DocumentUpload::upload($new_file_name, $filetoupload, $file_checksum)
             or die "Upload failed for $filetoupload";
 
-        query_result = BOM::Platform::Client::DocumentUpload::finish_document_upload($client, $file_id, $comments);
+        $query_result = BOM::Platform::Client::DocumentUpload::finish_document_upload($client, $file_id, $comments);
 
         if ($query_result->{error} or not $query_result->{result}) {
             $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: $error_occured</p><br />";
