@@ -31,7 +31,7 @@
     "affiliate_token": {
       "type": "string",
       "pattern": "^[\\w-]{0,32}$",
-      "description": "Affiliate token, within 32 characters."
+      "description": "Optional affiliate token, within 32 characters."
     },
     "utm_source": {
       "type": "string",
@@ -51,7 +51,7 @@
     "email_consent": {
       "type": "integer",
       "pattern": "^(0|1)$",
-      "description": "Boolean value 1 or 0, indicating permission to use email address for any contact which may include marketing"
+      "description": "Optional boolean value 1 or 0, indicating permission to use email address for any contact which may include marketing. Defaults to 1"
     },
     "gclid_url": {
       "type": "string",
