@@ -8,6 +8,7 @@ use BOM::Product::Static;
 use List::Util qw(min);
 use Scalar::Util qw(looks_like_number);
 use Format::Util::Numbers qw(formatnumber);
+use Scalar::Util::Numeric qw(isint);
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
@@ -103,6 +104,10 @@ sub _build_reset_time {
     my $self = shift;
 
     my $duration = 0.5 * ($self->date_expiry->epoch - $self->date_start->epoch);
+
+    if (not isint($duration)) {
+        $duration = 0.5 * (($self->date_expiry->epoch - $self->date_start->epoch) - 1);
+    }
 
     my $reset_time = Time::Duration::Concise->new(interval => $duration . 's');
     return $reset_time;
