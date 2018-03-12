@@ -17,12 +17,12 @@
       "pattern": "^1\\-2 years$",
       "required": "1"
     },
-    "binary_option_trading_frequency": {
+    "binary_options_trading_frequency": {
       "type": "string",
       "pattern": "^0\\-5 transactions in the past 12 months$",
       "required": "1"
     },
-    "binary_option_trading_experience": {
+    "binary_options_trading_experience": {
       "type": "string",
       "pattern": "^Over 3 years$",
       "required": "1"
