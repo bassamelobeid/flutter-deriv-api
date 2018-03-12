@@ -9,6 +9,21 @@ sub ticks_to_expiry {
     return shift->tick_count + 1;
 }
 
+sub _build_barrier {
+    my $self    = shift;
+    my $barrier = $self->make_barrier($self->supplied_barrier);
+
+    if ($self->date_pricing->epoch >= $self->date_start->epoch + $self->reset_time->amount) {
+        my $reset_spot = $self->underlying->tick_at($self->date_start->epoch + $self->reset_time->amount, {allow_inconsistent => 1});
+        if ($self->reset_spot->quote < $self->barrier->as_absolute) {
+            #If it is OTM, reset to a new barrier
+            $barrier = $self->make_barrier($reset_spot->quote);
+        }
+    }
+
+    return $barrier;
+}
+
 sub check_expiry_conditions {
     my $self = shift;
 
