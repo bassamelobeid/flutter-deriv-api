@@ -109,6 +109,11 @@ sub _build_reset_time {
         $duration = 0.5 * (($self->date_expiry->epoch - $self->date_start->epoch) - 1);
     }
 
+    #For volatility indices, after discussion with the team,
+    #it is safe to assume 1 tick is 2 secs.
+    # 0.5 * tick_count * 2secs = tick_count
+    $duration = $self->tick_count if $self->tick_expiry;
+
     my $reset_time = Time::Duration::Concise->new(interval => $duration . 's');
     return $reset_time;
 }
