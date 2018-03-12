@@ -100,6 +100,7 @@ sub get_fmb_by_id {
             $BOM::Database::Model::Constants::BET_CLASS_HIGHER_LOWER_BET, $BOM::Database::Model::Constants::BET_CLASS_RANGE_BET,
             $BOM::Database::Model::Constants::BET_CLASS_TOUCH_BET,        $BOM::Database::Model::Constants::BET_CLASS_LEGACY_BET,
             $BOM::Database::Model::Constants::BET_CLASS_DIGIT_BET,        $BOM::Database::Model::Constants::BET_CLASS_LOOKBACK_OPTION,
+            $BOM::Database::Model::Constants::BET_CLASS_RESET_BET,
         ],
         query => [id => $bet_ids],
         db    => $self->db,
@@ -283,6 +284,9 @@ sub _fmb_rose_to_fmb_model {
     } elsif ($rose_object->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_LOOKBACK_OPTION) {
         $param->{'lookback_option_record'} = $rose_object->lookback_option;
         $model_class = 'BOM::Database::Model::FinancialMarketBet::LookbackOption';
+    } elsif ($rose_object->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_RESET_BET) {
+        $param->{'reset_bet_record'} = $rose_object->reset_bet;
+        $model_class = 'BOM::Database::Model::FinancialMarketBet::ResetBet';
     } else {
         Carp::croak('UNSUPPORTED rose_object class [' . $rose_object->bet_class . ']');
     }
