@@ -273,6 +273,10 @@ if ($input{whattodo} eq 'uploadID') {
         my $_is_duplicate_upload_error = sub {
             my $dbh = shift;
 
+            # Duplicate uploads are detected using a unique index on the document table.
+            #   23505 is the PSQL error code for a unique_violation.
+            #   'duplicate_upload_error' is the specific name of the unique index.
+
             return $dbh->state eq '23505'
                 and $dbh->errstr =~ /duplicate_upload_error/;
         };
