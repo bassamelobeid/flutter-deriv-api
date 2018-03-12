@@ -25,6 +25,7 @@ use BOM::Database::Model::FinancialMarketBet::TouchBet;
 use BOM::Database::Model::FinancialMarketBet::RangeBet;
 use BOM::Database::Model::FinancialMarketBet::DigitBet;
 use BOM::Database::Model::FinancialMarketBet::LookbackOption;
+use BOM::Database::Model::FinancialMarketBet::ResetBet;
 use Date::Utility;
 use Try::Tiny;
 
