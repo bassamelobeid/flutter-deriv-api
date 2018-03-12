@@ -460,7 +460,7 @@ subtest 'buy a bet', sub {
             is $chld->{absolute_barrier}, undef, 'absolute_barrier';
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $chld->{prediction},       undef, 'prediction';
-            is $chld->{relative_barrier}, undef, 'relative_barrier';
+            is $chld->{relative_barrier}, 'S0P', 'relative_barrier';
         };
 
         # note explain $qv1;
@@ -569,7 +569,7 @@ subtest 'sell a bet', sub {
             is $chld->{absolute_barrier}, undef, 'absolute_barrier';
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $chld->{prediction},       undef, 'prediction';
-            is $chld->{relative_barrier}, undef, 'relative_barrier';
+            is $chld->{relative_barrier}, 'S0P', 'relative_barrier';
         };
 
         # note explain $qv1;
@@ -641,7 +641,7 @@ subtest 'sell_expired_contracts', sub {
         }
 
         $acc_usd->load;
-        is $acc_usd->balance + 0, 999.8, 'USD balance is down to 900 plus';
+        is $acc_usd->balance + 0, 900, 'USD balance is down to 900 plus';
 
         # First sell some particular ones by id.
         my $res = BOM::Transaction::sell_expired_contracts + {
