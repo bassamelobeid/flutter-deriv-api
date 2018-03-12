@@ -40,7 +40,10 @@ sub get_fulfilled_hash {
 sub _get_with_selector {
     my $func = shift;
     my $h    = BOM::Platform::Account::Real::default::get_financial_input_mapping();
-    my %r    = map { $_ => $func->($h->{$_}->{possible_answer}) } keys %$h;
+    my %r    = map {
+        my $k = $_;
+        map { $_ => $func->($h->{$k}->{$_}->{possible_answer}) } keys %{$h->{$k}}
+    } keys %$h;
     return \%r;
 }
 
