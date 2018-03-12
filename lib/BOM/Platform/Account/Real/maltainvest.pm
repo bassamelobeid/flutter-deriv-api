@@ -38,11 +38,8 @@ sub create_account {
 
     my $financial_assessment = BOM::Platform::Account::Real::default::get_financial_assessment_score($financial_data);
     # Based on the scoring result of the test: show the
-    # Risk Disclosure if the score is 7 or less, don't show
-    # if the score is from 8 to 16 or CFD is 4
-    if (not $accept_risk and ($financial_assessment->{trading_score} < 8 or $financial_assessment->{cfd_score} < 4)) {
-        return {error => 'show risk disclaimer'};
-    }
+    # Risk Disclosure if client is not professional
+    return {error => 'show risk disclaimer'} if not $accept_risk and not _is_professional_client($financial_assessment);
 
     my $register = BOM::Platform::Account::Real::default::register_client($details);
     return $register if ($register->{error});
@@ -66,17 +63,28 @@ sub create_account {
 
     BOM::Platform::Account::Real::default::add_details_to_desk($client, $details);
 
-    if ($financial_assessment->{total_score} > 59) {
+    if (_is_professional_client($financial_assessment)) {
         my $brand = Brands->new(name => request()->brand);
         send_email({
-            from    => $brand->emails('support'),
-            to      => $brand->emails('compliance'),
-            subject => $client->loginid . ' considered as professional trader',
-            message =>
-                [$client->loginid . ' scored ' . $financial_assessment->{total_score} . ' and is therefore considered a professional trader.'],
-        });
+                from    => $brand->emails('support'),
+                to      => $brand->emails('compliance'),
+                subject => $client->loginid . ' considered as professional trader',
+                message => [
+                          $client->loginid
+                        . ' scored '
+                        . $financial_assessment->{trading_score}
+                        . ' in trading experience and '
+                        . $financial_assessment->{cfd_score}
+                        . ' in cfd assessments, and is therefore considered a professional trader.'
+                ],
+            });
     }
     return $status;
+}
+
+# Consider client as a professional trader if the trading score is from 8 to 16 or CFD is 4
+sub _is_professional_client {
+    return (shift->{trading_score} > 7 or shift->{cfd_score} > 3);
 }
 
 1;
