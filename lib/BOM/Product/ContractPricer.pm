@@ -17,6 +17,7 @@ use Pricing::Engine::EuropeanDigitalSlope;
 use Pricing::Engine::TickExpiry;
 use Pricing::Engine::BlackScholes;
 use Pricing::Engine::Lookback;
+use Pricing::Engine::Reset;
 use LandingCompany::Commission qw(get_underlying_base_commission);
 
 use BOM::MarketData qw(create_underlying_db);
@@ -302,6 +303,7 @@ sub _create_new_interface_engine {
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::Reset') {
         %pricing_parameters = (
             %contract_config,
+            contract_type => $self->pricing_code,
             t             => $self->timeinyears->amount,
             reset_time    => $self->reset_time->days / 365,
             discount_rate => $self->discount_rate,
@@ -547,6 +549,7 @@ sub _build_new_interface_engine {
         'Pricing::Engine::TickExpiry'           => 1,
         'Pricing::Engine::EuropeanDigitalSlope' => 1,
         'Pricing::Engine::Lookback'             => 1,
+        'Pricing::Engine::Reset'                => 1,
     );
 
     return $engines{$self->pricing_engine_name} // 0;
