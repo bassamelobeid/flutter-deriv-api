@@ -407,7 +407,7 @@ subtest 'buy a bet', sub {
             like $report, qr/^\s*Purchase Date: \Q${\$txn->purchase_date->datetime_yyyymmdd_hhmmss}\E$/m, 'purchase date';
         };
 
-        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db reset_bet => $txn->transaction_id;
 
         # note explain $trx;
 
@@ -516,7 +516,7 @@ subtest 'sell a bet', sub {
         };
         is $error, undef, 'no error';
 
-        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db reset_bet => $txn->transaction_id;
 
         # note explain $trx;
 
