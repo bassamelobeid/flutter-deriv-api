@@ -12,6 +12,7 @@ use Data::Dumper;
 use HTML::Entities;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use Try::Tiny;
+use Digest::MD5 qw/md5_hex/;
 
 use Brands;
 use LandingCompany::Registry;
@@ -37,6 +38,8 @@ use BOM::Backoffice::FormAccounts;
 use BOM::Database::Model::AccessToken;
 use BOM::Backoffice::Script::DocumentUpload;
 use Finance::MIFIR::CONCAT qw(mifir_concat);
+
+use constant MAX_FILE_SIZE => 3 * 2**20;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -266,42 +269,83 @@ if ($input{whattodo} eq 'uploadID') {
 
         die "Unable to set staff info, with error: $error_occured" if $error_occured;
 
+        my $file_size = (stat($filetoupload))[7];
+        if ($file_size > MAX_FILE_SIZE) {
+            $result .=
+                "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Exceeds maximum file size (" . MAX_FILE_SIZE . " bytes).</p><br />";
+            next;
+        }
+
+        my $file_contents = do { local $/; <$filetoupload> };
+        my $file_checksum = md5_hex($file_contents);
+
+        my $_is_duplicate_upload_error = sub {
+            my $dbh = shift;
+
+            # Duplicate uploads are detected using a unique index on the document table.
+            #   23505 is the PSQL error code for a unique_violation.
+            #   'duplicate_upload_error' is the specific name of the unique index.
+
+            return $dbh->state eq '23505'
+                and $dbh->errstr =~ /duplicate_upload_error/;
+        };
+
         my $id;
         try {
             ($id) = $client->db->dbic->run(
                 ping => sub {
+                    my $STD_WARN_HANDLER = $SIG{__WARN__};
+                    local $SIG{__WARN__} = sub {
+                        return if $_is_duplicate_upload_error->($_);
+                        return $STD_WARN_HANDLER->(@_) if $STD_WARN_HANDLER;
+                        warn @_;
+                    };
                     $_->selectrow_array(
-                        'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?)',
+                        'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?)',
                         undef, $loginid, $doctype, $docformat,
                         $expiration_date || undef,
                         $document_id     || '',
+                        $file_checksum,
                     );
                 });
         }
         catch {
-            $error_occured = 1;
+            $error_occured = $_;
         };
 
-        die 'start_document_upload in the db was not successful' if ($error_occured or not $id);
+        if ($error_occured or not $id) {
+            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: $error_occured</p><br />";
+            next;
+        }
 
         my $new_file_name = "$loginid.$doctype.$id.$docformat";
 
-        my $checksum = BOM::Backoffice::Script::DocumentUpload::upload($new_file_name, $filetoupload) or die "Upload failed for $filetoupload";
+        my $checksum = BOM::Backoffice::Script::DocumentUpload::upload($new_file_name, $file_contents, $file_checksum)
+            or die "Upload failed for $filetoupload";
 
         my $query_result;
         try {
             ($query_result) = $client->db->dbic->run(
                 ping => sub {
-                    $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?, ?)', undef, $id, $checksum, $comments);
+                    my $STD_WARN_HANDLER = $SIG{__WARN__};
+                    local $SIG{__WARN__} = sub {
+                        return if $_is_duplicate_upload_error->($_);
+                        return $STD_WARN_HANDLER->(@_) if $STD_WARN_HANDLER;
+                        warn @_;
+                    };
+                    $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?)', undef, $id, $comments);
                 });
         }
         catch {
-            $error_occured = 1;
+            $error_occured = $_;
         };
 
-        die "Cannot record uploaded file $filetoupload in the db" if ($error_occured or not $query_result);
-
-        $result .= "<br /><p style=\"color:#eeee00; font-weight:bold;\">Ok! File $i: $new_file_name is uploaded.</p><br />";
+        if ($error_occured or not $query_result) {
+            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: $error_occured</p><br />";
+            next;
+        } else {
+            $result .= "<br /><p style=\"color:#eeee00; font-weight:bold;\">Ok! File $i: $new_file_name is uploaded.</p><br />";
+        }
     }
     print $result;
     code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
