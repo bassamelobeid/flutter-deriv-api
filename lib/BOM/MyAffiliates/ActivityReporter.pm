@@ -100,8 +100,7 @@ sub _generate_csv_output {
             push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{turnover_others});
             push @output_fields, $first_funded_date;
             push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{'withdrawals'});
-            push @output_fields,
-                formatnumber('amount', 'USD', $conversion_hash{$currency} * $currency, $activity->{$loginid}->{'first_funded_amount'});
+            push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{'first_funded_amount'});
         }
 
         $csv->combine(@output_fields);
