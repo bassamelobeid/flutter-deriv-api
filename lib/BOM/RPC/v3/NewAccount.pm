@@ -15,6 +15,8 @@ use BOM::RPC::Registry '-dsl';
 
 use Brands;
 
+use DataDog::DogStatsd::Helper qw(stats_inc);
+
 use Client::Account;
 
 use BOM::RPC::v3::Utility;
@@ -189,6 +191,8 @@ rpc "verify_email",
         $payment_sub->($type);
     } elsif ($type eq 'payment_withdraw') {
         $payment_sub->($type);
+    } elsif ($type eq 'mt5_password_reset') {
+        request_email($email, $verification->{mt5_password_reset}->());
     }
 
     # always return 1, so not to leak client's email
@@ -228,16 +232,12 @@ rpc new_account_real => sub {
 
     my ($client, $args) = @{$params}{qw/client args/};
 
-    $args->{account_type} //= 'default';
-    $args->{client_type}  //= 'retail';
-
-    my $ico_only = $args->{account_type} eq 'ico';
+    $args->{client_type} //= 'retail';
 
     # send error if maltainvest and japan client tried to make this call
     # as they have their own separate api call for account opening
     return BOM::RPC::v3::Utility::permission_error()
-        if ($client->landing_company->short =~ /^(?:maltainvest|japan)$/)
-        and not $ico_only;
+        if $client->landing_company->short =~ /^(?:maltainvest|japan)$/;
 
     $client->residence($args->{residence}) unless $client->residence;
 
@@ -249,9 +249,6 @@ rpc new_account_real => sub {
         // $countries_instance->financial_company_for_country($client->residence);
     my $broker = LandingCompany::Registry->new->get($company)->broker_codes->[0];
 
-    # EU clients signing up for ICO get a CR account with trading disabled
-    $broker = 'CR' if $ico_only;
-
     my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, $broker, $params->{source});
     my $error_map = BOM::RPC::v3::Utility::error_map();
     if (my $err = $details_ref->{error}) {
@@ -259,6 +256,7 @@ rpc new_account_real => sub {
                 code              => $err,
                 message_to_client => $error_map->{$err}});
     }
+
     # call was done with currency flag
     if ($args->{currency}) {
         $error = BOM::RPC::v3::Utility::validate_set_currency($client, $args->{currency});
@@ -294,7 +292,6 @@ rpc new_account_real => sub {
     # ideally should be handled in a single transaction
     # as account is already created so no need to die on status set
     # else it will give false impression to client
-    $new_client->set_status('ico_only', 'SYSTEM', 'ICO account requested') if $ico_only;
 
     $error = BOM::RPC::v3::Utility::set_professional_status($new_client, $professional_status, $professional_requested);
 
@@ -314,13 +311,11 @@ rpc new_account_real => sub {
     });
     $user->save;
 
-    if ($new_client->residence eq 'gb' and not $ico_only) {    # RTS 12 - Financial Limits - UK Clients
+    if ($new_client->residence eq 'gb') {    # RTS 12 - Financial Limits - UK Clients
         $new_client->set_status('ukrts_max_turnover_limit_not_set', 'system', 'new GB client - have to set turnover limit');
 
         if (not $new_client->save) {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => 'InternalServerError',
-                    message_to_client => localize('Sorry, an error occurred while processing your account.')});
+            return BOM::RPC::v3::Utility::client_error();
         }
     }
 
@@ -341,21 +336,6 @@ rpc new_account_real => sub {
         $args->{currency} ? (currency => $new_client->currency) : (),
     };
 };
-
-sub set_details {
-    my ($client, $args) = @_;
-
-    # don't update client's brokercode with wrong value
-    delete $args->{broker_code};
-    $client->$_($args->{$_}) for keys %$args;
-
-    # special cases.. force empty string if necessary in these not-nullable cols.  They oughta be nullable in the db!
-    for (qw(citizen address_2 state postcode salutation)) {
-        $client->$_('') unless defined $client->$_;
-    }
-
-    return $client;
-}
 
 rpc new_account_maltainvest => sub {
     my $params = shift;
@@ -385,6 +365,22 @@ rpc new_account_maltainvest => sub {
 
     my $user = BOM::Platform::User->new({email => $client->email});
 
+    # When a Binary (Europe) Ltd/Binary (IOM) Ltd account is created,
+    # the 'place of birth' field is not present.
+    # After creating Binary (Europe) Ltd/Binary (IOM) Ltd account, client can select
+    # their place of birth in their profile settings.
+    # However, when a Binary Investments (Europe) Ltd account account is created,
+    # the 'place of birth' field is mandatory.
+    # Hence, this check is added for backward compatibility (assuming no place of birth is selected)
+    if (!$client->place_of_birth && $args->{place_of_birth} && !$client->is_virtual) {
+        $client->place_of_birth($args->{place_of_birth});
+
+        if (not $client->save) {
+            stats_inc('bom_rpc.v_3.call_failure.count', {tags => ["rpc:new_account_maltainvest"]});
+            return BOM::RPC::v3::Utility::client_error();
+        }
+    }
+
     my ($clients, $professional_status, $professional_requested) = _get_professional_details_clients($user, $args);
 
     my $val = _update_professional_existing_clients($clients, $professional_status, $professional_requested);
@@ -409,6 +405,19 @@ rpc new_account_maltainvest => sub {
 
     my $new_client      = $acc->{client};
     my $landing_company = $new_client->landing_company;
+
+    # Client's citizenship can only be set from backoffice.
+    # However, when a Binary Investments (Europe) Ltd account is created, the citizenship
+    # is not updated in the new account.
+    # Hence, the following check is necessary
+    $new_client->citizen($client->citizen) if ($client->citizen && !$client->is_virtual);
+
+    # Save new account
+    if (not $new_client->save) {
+        stats_inc('bom_rpc.v_3.call_failure.count', {tags => ["rpc:new_account_maltainvest"]});
+        return BOM::RPC::v3::Utility::client_error();
+
+    }
 
     $error = BOM::RPC::v3::Utility::set_professional_status($new_client, $professional_status, $professional_requested);
 

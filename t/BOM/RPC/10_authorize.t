@@ -119,7 +119,6 @@ subtest $method => sub {
         'upgradeable_landing_companies' => ['costarica'],
         'account_list'                  => [{
                 'currency'             => '',
-                'is_ico_only'          => '0',
                 'is_disabled'          => '0',
                 'is_virtual'           => '0',
                 'landing_company_name' => 'costarica',
@@ -128,7 +127,6 @@ subtest $method => sub {
             {
                 'currency'             => '',
                 'excluded_until'       => $exclude_until,
-                'is_ico_only'          => '0',
                 'is_disabled'          => '0',
                 'is_virtual'           => '0',
                 'landing_company_name' => 'costarica',
@@ -136,7 +134,6 @@ subtest $method => sub {
             },
             {
                 'currency'             => '',
-                'is_ico_only'          => '0',
                 'is_disabled'          => '1',
                 'is_virtual'           => '0',
                 'landing_company_name' => 'costarica',
@@ -349,7 +346,7 @@ subtest 'logout' => sub {
 
 $token = $new_token;
 
-subtest 'self_exclusion timeout' => sub {
+subtest 'self_exclusion timeout can authorize' => sub {
     my $params = {
         language => 'en',
         token    => $token
@@ -358,9 +355,7 @@ subtest 'self_exclusion timeout' => sub {
     $test_client->set_exclusion->timeout_until($timeout_until->epoch);
     $test_client->save();
 
-    $c->call_ok($method, $params)
-        ->has_error->error_message_is('Sorry, you have excluded yourself until ' . $timeout_until->datetime_yyyymmdd_hhmmss_TZ . '.',
-        'check if authorize check self exclusion');
+    ok $c->call_ok($method, $params)->has_no_error->result->{loginid}, 'Self excluded client using timout_until can login';
 };
 
 subtest 'self_exclusion' => sub {
@@ -374,8 +369,7 @@ subtest 'self_exclusion' => sub {
     $test_client->set_exclusion->exclude_until('2020-01-01');
     $test_client->save();
 
-    $c->call_ok($method, $params)
-        ->has_error->error_message_is('Sorry, you have excluded yourself until 2020-01-01.', 'check if authorize check self exclusion');
+    ok $c->call_ok($method, $params)->has_no_error->result->{loginid}, 'Self excluded client using exclude_until can login';
 };
 
 subtest 'self_exclusion_mx - exclude_until date set in future' => sub {
@@ -386,8 +380,7 @@ subtest 'self_exclusion_mx - exclude_until date set in future' => sub {
     $test_client_mx->set_exclusion->exclude_until('2020-01-01');
     $test_client_mx->save();
 
-    $c->call_ok($method, $params)
-        ->has_error->error_message_is('Sorry, you have excluded yourself until 2020-01-01.', 'check if authorize fails for self exclusion for mx');
+    ok $c->call_ok($method, $params)->has_no_error->result->{loginid}, 'Self excluded client using exclude_until can login';
 };
 
 subtest 'self_exclusion_mx - exclude_until date set in past' => sub {
@@ -398,8 +391,7 @@ subtest 'self_exclusion_mx - exclude_until date set in past' => sub {
     $test_client_mx->set_exclusion->exclude_until('2017-01-01');
     $test_client_mx->save();
 
-    $c->call_ok($method, $params)->has_error->error_message_is('Sorry, you have excluded yourself until 2017-01-01.',
-        'check if authorize failure continues for self exclusion for mx');
+    ok $c->call_ok($method, $params)->has_no_error->result->{loginid}, 'Self excluded client using exclude_until can login';
 };
 
 $self_excluded_client->set_exclusion->timeout_until(Date::Utility->new->epoch - 2 * 86400);
