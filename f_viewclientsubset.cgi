@@ -10,6 +10,7 @@ use Date::Utility;
 use Path::Tiny;
 use HTML::Entities;
 use Format::Util::Numbers qw/roundcommon/;
+use Text::CSV;
 
 use open qw[ :encoding(UTF-8) ];
 
@@ -243,19 +244,17 @@ sub get_client_by_status {
         if ($curr ne 'USD') {
             $summaryfilename .= '.' . $curr;
         }
-        if (open(my $sf, '<', $summaryfilename)) {    ## no critic (RequireBriefOpen)
-            flock($sf, 1);
-            while (my $l = <$sf>) {
-                if ($l =~ /^(\D+\d+)\,(\w+)\,(\-?\d*\.?\d*)\,(\-?\d*\.?\d*)\,(\-?\d*\.?\d*)\,/) {
-                    my $loginid    = $1;
-                    my $liveordead = $2;
-                    my $acbal      = $3;
-                    my $openpl     = $4;
-                    my $equity     = $5;
-                    $SUMMARYFILE{"$loginid-TOTALEQUITY"} += roundcommon(0.01, in_USD($equity, $curr));
-                }
+        my $csv = Text::CSV->new({binary => 1})    # should set binary attribute.
+            or die "Cannot use CSV: " . Text::CSV->error_diag();
+
+        if (open my $fh, "<:encoding(utf8)", $summaryfilename) {    ## no critic (RequireBriefOpen)
+            flock($fh, 1);
+            while (my $row = $csv->getline($fh)) {
+                next if $row->[0] !~ /^([A-Z]+)\d+$/;
+                $SUMMARYFILE{$row->[0] . "-TOTALEQUITY"} += roundcommon(0.01, in_USD($row->[4], $curr));
             }
-            close $sf;
+            $csv->eof or $csv->error_diag();
+            close $fh;
         }
     }
 
