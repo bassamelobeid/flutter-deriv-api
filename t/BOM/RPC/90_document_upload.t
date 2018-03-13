@@ -24,20 +24,40 @@ my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
-my $method = 'document_upload';
-my $params = {
-    language => 'EN',
-    token    => 12345
+my $method          = 'document_upload';
+my $params          = { language => 'EN' };
+my $args            = {};
+my $result;
+my $doc;
+my $client_id;
+
+use constant {
+    DOC_TYPE        => 'passport',
+    DOC_FORMAT      => 'jpg',
+    CHECKSUM        => 'FileChecksum',
+    EXP_DATE_PAST   => '2017-08-09',
+    EXP_DATE_FUTURE => '2117-08-11',
+    DOC_ID_1        => 'ABCD1234',
+    DOC_ID_2        => 'ABCD1235'
 };
 
-# Invalid token shouldn't be allowed to upload.
-$c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'check invalid token');
+use constant MAX_FILE_SIZE => 3 * 2**20;
 
-$params->{token} = $token;
-# Valid token but virtual account.
-$c->call_ok($method, $params)
-    ->has_error->error_message_is("Virtual accounts don't require document uploads.", "don't allow virtual accounts to upload");
+my $invalid_token   = 12345;
+my $invalid_file_id = 1231531;
 
+subtest "Invalid token shouldn't be allowed to upload" => sub {
+    $params->{token}  = $invalid_token;
+    $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'check invalid token');
+};
+
+subtest 'Valid token but virtual account' => sub {
+    $params->{token} = $token;
+    $c->call_ok($method, $params)
+        ->has_error->error_message_is("Virtual accounts don't require document uploads.", "don't allow virtual accounts to upload");
+};
+
+# ------- START Create real currency account --------
 # Creating new real account.
 $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
@@ -48,61 +68,97 @@ $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $params->{token}  = $token;
 $params->{upload} = "some_id";
 
-my $args = {};
 $params->{args} = $args;
+# -------  END Create real currency account  --------
 
-$args->{expiration_date} = "2017-08-09";    # Expired documents.
-$c->call_ok($method, $params)
-    ->has_error->error_message_is('Expiration date cannot be less than or equal to current date.', 'check expiration_date is before current date');
+subtest 'Expired documents' => sub {
+    $args->{expiration_date} = EXP_DATE_PAST;    # Expired documents.
+    $c->call_ok($method, $params)
+        ->has_error->error_message_is('Expiration date cannot be less than or equal to current date.', 'check expiration_date is before current date');
+};
 
-# Unsuccessful finished upload
-$args->{expiration_date} = "2117-08-11";    # 100 years is all I give you, humanity!
-$c->call_ok($method, $params)
-    ->has_error->error_message_is('Sorry, an error occurred while processing your request.', 'upload finished unsuccessfully');
+subtest 'Error for over-size file' => sub {
+    $args->{file_size} = MAX_FILE_SIZE + 1;
+    $c->call_ok($method, $params)->has_error->error_message_is('Maximum file size reached. Maximum allowed is '.MAX_FILE_SIZE, 'over-size file is denied');
+    $args->{file_size} = 1;
+};
 
-$args->{document_type}   = "passport";
-$args->{document_format} = "jpg";
+subtest 'Unsuccessful finished upload' => sub {
+    $args->{expiration_date} = EXP_DATE_FUTURE;    # 100 years is all I give you, humanity!
+    $c->call_ok($method, $params)
+        ->has_error->error_message_is('Sorry, an error occurred while processing your request.', 'upload finished unsuccessfully');
+};
 
-# Error for no document_id
-$c->call_ok($method, $params)->has_error->error_message_is('Document ID is required.', 'document_id is required');
+subtest 'Error for no document_id' => sub {
+    $args->{document_type}   = DOC_TYPE;
+    $args->{document_format} = DOC_FORMAT;
+    $args->{expected_checksum} = CHECKSUM;
+    
+    $c->call_ok($method, $params)->has_error->error_message_is('Document ID is required.', 'document_id is required');
 
-$args->{document_id} = "ABCD1234";
-my $result = $c->call_ok($method, $params)->result;
-my ($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
-# Succesfully retrieved object from database.
-is($doc->document_id, $args->{document_id}, 'document is saved in db');
-is($doc->status,      'uploading',          'document status is set to uploading');
+    $args->{document_id} = DOC_ID_1;
+    $result = $c->call_ok($method, $params)->result;
+    ($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
+    # Succesfully retrieved object from database.
+    is($doc->document_id, $args->{document_id}, 'document is saved in db');
+    is($doc->status,      'uploading',          'document status is set to uploading');
+};
 
-# Document with no expiration_date
-$args->{expiration_date} = '';    # Document with no expiration_date
-$c->call_ok($method, $params)->result;
+subtest 'Document with no expiration_date' => sub {
+    $args->{expiration_date} = '';    # Document with no expiration_date
+    $c->call_ok($method, $params)->result;
+};
 
-my $checksum = 'FileChecksum';
+subtest 'Upload doc and send CS notification email' => sub {
+    $args = {
+        status   => 'success',
+        file_id  => $result->{file_id}};
+    $params->{args} = $args;
+    
+    $mailbox->clear;
+    $client_id = uc $test_client->loginid;
+    $result = $c->call_ok($method, $params)->result;
+    like(get_notification_email()->{body}, qr/New document was uploaded for the account: $client_id/, 'CS notification email was sent successfully');
+};
 
-$args = {
-    status   => 'success',
-    checksum => $checksum,
-    file_id  => $result->{file_id}};
-$params->{args} = $args;
+subtest 'Status and checksum of newly uploaded document' => sub {
+    ($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
+    is($doc->status,                                              'uploaded',           'document\'s status changed');
+    is($test_client->get_status('document_under_review')->reason, 'Documents uploaded', 'client\'s status changed');
+    ok(!$test_client->get_status('document_needs_action'), 'Document should not be in needs_action state');
+    ok $doc->file_name, 'Filename should not be empty';
+    is $doc->checksum, CHECKSUM, 'Checksum should be added correctly';
+};
 
-$mailbox->clear;
-my $client_id = uc $test_client->loginid;
-$result = $c->call_ok($method, $params)->result;
-like(get_notification_email()->{body}, qr/New document was uploaded for the account: $client_id/, 'CS notification email was sent successfully');
+subtest 'Call finish again to ensure CS team is only sent 1 email' => sub {
+    $mailbox->clear;
+    $result = $c->call_ok($method, $params)->result;
+    ok(!get_notification_email(), 'CS notification email should only be sent once');
+};
 
-($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
-is($doc->status,                                              'uploaded',           'document\'s status changed');
-is($test_client->get_status('document_under_review')->reason, 'Documents uploaded', 'client\'s status changed');
-ok(!$test_client->get_status('document_needs_action'), 'Document should not be in needs_action state');
-ok $doc->file_name, 'Filename should not be empty';
-is $doc->checksum, $checksum, 'Checksum should be added correctly';
+subtest 'Attempt with non-existent file ID' => sub {
+    $args->{file_id} = $invalid_file_id;
+    $c->call_ok($method, $params)->has_error->error_message_is('Document not found.', 'error if document is not present');
+};
 
-$mailbox->clear;
-$result = $c->call_ok($method, $params)->result;
-ok(!get_notification_email(), 'CS notification email should only be sent once');
+subtest 'Attempt to upload same document again (checksum collision) with different document ID' => sub {
+    $args = {
+        document_type     => DOC_TYPE,
+        document_format   => DOC_FORMAT,
+        expiration_date   => EXP_DATE_FUTURE,
+        document_id       => DOC_ID_2,
+        expected_checksum => CHECKSUM
+    };
+    $params->{args} = $args;
+    $result = $c->call_ok($method, $params)->result;
+    # Upload will commence and be blocked at finish
 
-$args->{file_id} = 1231531;
-$c->call_ok($method, $params)->has_error->error_message_is('Document not found.', 'error if document is not present');
+    $args = {
+        status   => 'success',
+        file_id  => $result->{file_id}};
+    $params->{args} = $args;
+    $c->call_ok($method, $params)->has_error->error_message_is('Document already uploaded.', 'error if same document is uploaded twice');
+};
 
 sub get_notification_email {
     my ($msg) = $mailbox->search(
