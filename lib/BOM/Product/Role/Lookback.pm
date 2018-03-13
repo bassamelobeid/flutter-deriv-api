@@ -89,6 +89,9 @@ sub _build_spot_min_max {
     # date_start + 1 because the first tick of the contract is the next tick.
     my $start_epoch = $self->date_start->epoch + 1;
     my $end_epoch = $self->date_pricing->is_after($self->date_expiry) ? $self->date_expiry->epoch : $self->date_pricing->epoch;
+    # During realtime pricing, date_pricing can be equal to date_start
+    # and since start_epoch is date_start + 1, we need to cap end_epoch
+    # as below.
     $end_epoch = max($start_epoch, $end_epoch);
 
     my ($high, $low) = ($self->pricing_spot, $self->pricing_spot);
