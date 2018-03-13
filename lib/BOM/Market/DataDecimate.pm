@@ -159,6 +159,8 @@ sub _build_data_cache_size {
     my $self   = shift;
     my $market = $self->market;
 
+# We added 1 sec here as a buffer, thus for forex
+# it is 31 secs and 301secs for volidx.
     my $cache_size = 31 * 60;
     $cache_size = 301 * 60 if ($market eq 'volidx');
 
