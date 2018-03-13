@@ -76,7 +76,7 @@ sub _is_duplicate_upload_error {
     #   23505 is the PSQL error code for a unique_violation.
 
     return $dbh->state eq '23505'
-        && $dbh->errstr =~ /\((client_loginid(, ?)?|checksum(, ?)?|document_type(, ?)?){3}\)/;
+        && $dbh->errstr =~ /\(((client_loginid|checksum|document_type)(, ?)?){3}\)/;
 
     # Sample errstr (where "duplicate_upload_error" is the name of the unique index):
     #   ERROR:  duplicate key value violates unique constraint "duplicate_upload_error"
