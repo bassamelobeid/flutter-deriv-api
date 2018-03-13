@@ -283,7 +283,7 @@ if ($input{whattodo} eq 'uploadID') {
             $document_id);
 
         if ($query_result->{error} or not $query_result->{result}) {
-            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: $error_occured</p><br />";
+            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: $query_result->{error}->{msg}</p><br />";
             next;
         }
 
@@ -296,7 +296,7 @@ if ($input{whattodo} eq 'uploadID') {
         $query_result = BOM::Platform::Client::DocumentUpload::finish_document_upload($client, $file_id, $comments);
 
         if ($query_result->{error} or not $query_result->{result}) {
-            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: $error_occured</p><br />";
+            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: $query_result->{error}->{msg}</p><br />";
             next;
         } else {
             $result .= "<br /><p style=\"color:#eeee00; font-weight:bold;\">Ok! File $i: $new_file_name is uploaded.</p><br />";
