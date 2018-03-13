@@ -58,8 +58,15 @@ sub get_sold_bets_of_account {
     my @binds = ($self->account->id);
     if ($before and $before = try { Date::Utility->new($before) }) {
         $sql .= ' AND purchase_time < ?';
-        # when it only pass date without time for before, plus 1d
-        $before = $before->plus_time_interval('1d') if $before->time_hhmmss eq '00:00:00';
+        ## If we were passed in a date (but not an epoch or full timestamp)
+        ## add in one day, so that 2018-04-07 grabs the entire day by doing
+        ## a "purchase_time < 2018-04-08 00:00:000'
+        if (    $args->{before} =~ /\-/
+            and $args->{before} !~ / /
+            and $before->time_hhmmss eq '00:00:00')
+        {
+            $before = $before->plus_time_interval('1d');
+        }
         push @binds, $before->datetime_yyyymmdd_hhmmss;
     }
     if ($after and $after = try { Date::Utility->new($after) }) {
