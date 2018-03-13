@@ -76,8 +76,8 @@ test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
     '100', 'CALL', 'frxUSDJPY', '3', 'm', 'Win payout if USD/JPY is strictly higher than entry spot at 3 minutes after contract start time.',
     '54.72', '54.72', '97.140';
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
-    '100', 'CALL', 'frxUSDJPY', '1', 'h', 'Win payout if USD/JPY is strictly higher than entry spot at 1 hour after contract start time.', '54.82',
-    '54.82', '97.140';
+    '100', 'CALL', 'frxUSDJPY', '1', 'h', 'Win payout if USD/JPY is strictly higher than entry spot at 1 hour after contract start time.', '54.90',
+    '54.90', '97.140';
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
     '100', 'CALL', 'frxUSDJPY', '1', 'd', 'Win payout if USD/JPY is strictly higher than entry spot at close on 2016-08-10.', '56.62', '56.62',
     '97.140';
@@ -147,7 +147,7 @@ test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
 
 # R_100 Lookbacks
 test_sendrecv_params 'proposal/test_send_lookback.json', 'proposal/test_receive_lookback.json',
-    'LBFLOATCALL', 'R_100', '15', 'm', '+0.1', 'Win USD 10 times Volatility 100 Index\'s close minus low over the next 15 minutes.', '2818.60',
+    'LBFLOATCALL', 'R_100', '15', 'm', '' ,'Win USD 10 times Volatility 100 Index\'s close minus low over the next 15 minutes.', '2818.60',
     '2818.60', '65258.19';
 
 # test for negative amount
