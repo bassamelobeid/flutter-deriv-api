@@ -80,3 +80,14 @@ Note about terminology:
     prove t/BOM/user.t
     # run one script with perl
     perl -MBOM::Test t/BOM/user.t
+
+#### DEPENDENCIES
+
+* cpan
+* bom-postgres
+* bom-postgres-clientdb
+* bom-postgres-collectordb
+* bom-postgres-userdb
+* bom-test
+* bom-platform -- will be dropped later.
+
