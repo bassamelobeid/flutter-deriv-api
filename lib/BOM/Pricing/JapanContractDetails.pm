@@ -76,8 +76,8 @@ sub verify_with_id {
     my $bid_price            = $details->{bid_price};
     my $traded_price         = $action_type eq 'buy' ? $ask_price : $bid_price;
     my $slippage             = $details->{price_slippage} // 0;
-    my $trading_period_start = $details->{trading_period_start}
-        or die 'trading_period_start not found for contract with transaction_id [' . $id . ']';
+    # The default to time is only for backward support as we did not pass in trading_period_start for the sell transaction before 13 Mar18.
+    my $trading_period_start = $details->{trading_period_start} // time;
     # apply slippage according to reflect the difference between traded price and recomputed price
     my $adjusted_traded_contract_price =
         ($traded_price == $requested_price) ? ($action_type eq 'buy' ? $traded_price - $slippage : $traded_price + $slippage) : $traded_price;
@@ -128,10 +128,7 @@ sub verify_with_shortcode {
     my $extra           = $args->{extra} // undef;
 
     my $bet_parameters = shortcode_to_parameters($short_code, $currency);
-    # trading_period_start is required but not used in price calculation. This is for backward compatibility where shortcode does not contain trading_period_start.
-    unless (exists $bet_parameters->{trading_period_start}) {
-        $bet_parameters->{trading_period_start} = $args->{trading_period_start} // time;
-    }
+    $bet_parameters->{trading_period_start} = $args->{trading_period_start};
     my $original_contract = produce_contract($bet_parameters);
     my $priced_at_start   = make_similar_contract(
         $original_contract,
