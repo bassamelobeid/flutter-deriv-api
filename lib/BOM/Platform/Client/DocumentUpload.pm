@@ -74,10 +74,24 @@ sub _is_duplicate_upload_error {
 
     # Duplicate uploads are detected using a unique index on the document table.
     #   23505 is the PSQL error code for a unique_violation.
-    #   'duplicate_upload_error' is the specific name of the unique index.
 
     return $dbh->state eq '23505'
-        and $dbh->errstr =~ /duplicate_upload_error/;
+        && $dbh->errstr =~ /\((client_loginid(, ?)?|checksum(, ?)?|document_type(, ?)?){3}\)/;
+
+    # Sample errstr (where "duplicate_upload_error" is the name of the unique index):
+    #   ERROR:  duplicate key value violates unique constraint "duplicate_upload_error"
+    #   DETAIL:  Key (client_loginid, checksum, document_type)=(CR10000, FileChecksum, passport) already exists.
+    #
+    # The regex here is matching on the set of columns that make up the key,
+    #   rather than the name itself. This is because in future db maintenance
+    #   the index could get rebuilt with a different name, but the columns are
+    #   unlikely to change.
+    #
+    # Regex:
+    # - Match literal parentheses at both ends
+    # - Inside match either 'client_loginid', 'checksum', or 'document_type'
+    #   - followed by either *nothing*, *comma*, or *comma space*
+    #   - match this 3 times
 }
 
 1;
