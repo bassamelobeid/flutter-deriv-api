@@ -695,7 +695,10 @@ sub longcode {    ## no critic(Subroutines::RequireArgUnpacking)
             $longcodes{$shortcode} = localize(shortcode_to_longcode($shortcode, $params->{currency}));
         }
         catch {
-            warn "exception is thrown when executing shortcode_to_longcode, parameters: " . $shortcode . ' error: ' . $_;
+            # we do not want to warn for known error like legacy underlying
+            if ($_ !~ /unknown underlying/) {
+                warn "exception is thrown when executing shortcode_to_longcode, parameters: " . $shortcode . ' error: ' . $_;
+            }
             $longcodes{$shortcode} = localize('No information is available for this contract.');
         }
     }
