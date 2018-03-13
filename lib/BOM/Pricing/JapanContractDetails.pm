@@ -128,7 +128,10 @@ sub verify_with_shortcode {
     my $extra           = $args->{extra} // undef;
 
     my $bet_parameters = shortcode_to_parameters($short_code, $currency);
-    $bet_parameters->{trading_period_start} = $args->{trading_period_start};
+    # trading_period_start is required but not used in price calculation. This is for backward compatibility where shortcode does not contain trading_period_start.    
+    unless (exists $bet_parameters->{trading_period_start}) {
+         $bet_parameters->{trading_period_start} = $args->{trading_period_start} // time;
+    }
     my $original_contract = produce_contract($bet_parameters);
     my $priced_at_start   = make_similar_contract(
         $original_contract,
