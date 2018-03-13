@@ -313,34 +313,32 @@ sub _build_risk_markup {
 sub event_markup {
     my $self = shift;
 
+    my $for_date = $self->bet->underlying->for_date;
+    my $qc       = BOM::Platform::QuantsConfig->new(
+        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($for_date),
+        for_date         => $for_date
+    );
+    my $event_markup = $qc->get_config(
+        'commission',
+        +{
+            contract_type     => $self->bet->code,
+            underlying_symbol => $self->bet->underlying->symbol
+        });
+
+    my $barrier_tier     = $self->bet->barrier_tier;
+    my $c_start          = $self->bet->effective_start->epoch;
+    my $c_end            = $self->bet->date_expiry->epoch;
+    my $base_probability = $self->base_probability->amount;
+
     my @markups = (0);
-    if ($self->bet->category_code eq 'callput' && !$self->bet->is_atm_bet) {
-        my $for_date = $self->bet->underlying->for_date;
-        my $qc       = BOM::Platform::QuantsConfig->new(
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($for_date),
-            for_date         => $for_date
-        );
-        my $event_markup = $qc->get_config(
-            'commission',
-            +{
-                contract_type     => $self->bet->code,
-                underlying_symbol => $self->bet->underlying->symbol
-            });
-
-        my $barrier_tier     = $self->bet->barrier_tier;
-        my $c_start          = $self->bet->effective_start->epoch;
-        my $c_end            = $self->bet->date_expiry->epoch;
-        my $base_probability = $self->base_probability->amount;
-
-        foreach my $c (@$event_markup) {
-            my $start_epoch     = Date::Utility->new($c->{start_time})->epoch;
-            my $end_epoch       = Date::Utility->new($c->{end_time})->epoch;
-            my $valid_timeframe = ($c_start >= $start_epoch && $c_start <= $end_epoch)
-                || ($c_end >= $start_epoch && $c_end <= $end_epoch || ($c_start < $start_epoch && $c_end > $end_epoch));
-            if ($valid_timeframe and exists $c->{$barrier_tier}) {
-                my $OTM_max = $c->{OTM_max} // 0;
-                push @markups, max($OTM_max - $base_probability, $c->{$barrier_tier});
-            }
+    foreach my $c (@$event_markup) {
+        my $start_epoch     = Date::Utility->new($c->{start_time})->epoch;
+        my $end_epoch       = Date::Utility->new($c->{end_time})->epoch;
+        my $valid_timeframe = ($c_start >= $start_epoch && $c_start <= $end_epoch)
+            || ($c_end >= $start_epoch && $c_end <= $end_epoch || ($c_start < $start_epoch && $c_end > $end_epoch));
+        if ($valid_timeframe and exists $c->{$barrier_tier}) {
+            my $OTM_max = $c->{OTM_max} // 0;
+            push @markups, max($OTM_max - $base_probability, $c->{$barrier_tier});
         }
     }
 
