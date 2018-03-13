@@ -147,7 +147,6 @@ sub startup {
                 ua_fingerprint       => md5_hex(($app_id // 0) . ($client_ip // '') . ($user_agent // '')),
                 ($app_id) ? (source => $app_id) : (),
                 brand => (($brand =~ /^\w{1,10}$/) ? $brand : 'binary'),
-                logged_requests => 0,
             );
         });
 
@@ -173,7 +172,12 @@ sub startup {
             },
         ],
         ['trading_times'],
-        ['asset_index'],
+        [
+            'asset_index',
+            {
+                stash_params => [qw/ token /],
+            }
+        ],
         [
             'contracts_for',
             {
@@ -191,7 +195,6 @@ sub startup {
         ['ping',           {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::ping}],
         ['time',           {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::server_time}],
         ['website_status', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::website_status}],
-        ['ico_status'],
         ['residence_list'],
         ['states_list'],
         ['payout_currencies', {stash_params => [qw/ token landing_company_name /]}],
@@ -238,6 +241,12 @@ sub startup {
         ],
         [
             'mt5_password_change',
+            {
+                require_auth => 'admin',
+                stash_params => [qw/ server_name client_ip user_agent /]}
+        ],
+        [
+            'mt5_password_reset',
             {
                 require_auth => 'admin',
                 stash_params => [qw/ server_name client_ip user_agent /]}
@@ -501,8 +510,8 @@ sub startup {
             binary_frame => \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::document_upload,
             # action hooks
             before_forward => [
-                \&Binary::WebSocketAPI::Hooks::before_forward,               \&Binary::WebSocketAPI::Hooks::assign_rpc_url,
-                \&Binary::WebSocketAPI::Hooks::introspection_before_forward, \&Binary::WebSocketAPI::Hooks::check_useragent,
+                \&Binary::WebSocketAPI::Hooks::before_forward, \&Binary::WebSocketAPI::Hooks::assign_rpc_url,
+                \&Binary::WebSocketAPI::Hooks::introspection_before_forward,
             ],
             before_call => [
                 \&Binary::WebSocketAPI::Hooks::add_app_id,   \&Binary::WebSocketAPI::Hooks::add_brand,
