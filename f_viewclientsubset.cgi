@@ -80,7 +80,7 @@ if (request()->param('action') eq 'DOWNLOAD CSV') {
 
 # Show the "DOWNLOAD CSV" button.
 print '<form method="post" id="download_csv_form" action="'
-    . request()->url_for('backoffice/f_viewclientsubset.cgi') . '>'
+    . request()->url_for('backoffice/f_viewclientsubset.cgi') . '">'
     . '<input type="hidden" name="show" value="'
     . $show . '">'
     . '<input type="hidden" name="onlylarge" value="'
@@ -244,7 +244,7 @@ sub get_client_by_status {
         if ($curr ne 'USD') {
             $summaryfilename .= '.' . $curr;
         }
-        my $csv = Text::CSV->new({binary => 1})    # should set binary attribute.
+        my $csv = Text::CSV->new({binary => 1})
             or die "Cannot use CSV: " . Text::CSV->error_diag();
 
         if (open my $fh, "<:encoding(utf8)", $summaryfilename) {    ## no critic (RequireBriefOpen)
