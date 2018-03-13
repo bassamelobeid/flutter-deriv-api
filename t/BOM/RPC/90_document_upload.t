@@ -72,7 +72,6 @@ my %default_args = (
 use constant {
     EXP_DATE_PAST   => '2017-08-09',
     INVALID_FILE_ID => 1231531,
-    DOC_ID_2        => 'ABCD1235',
     MAX_FILE_SIZE   => 3 * 2**20,
 };
 
@@ -127,7 +126,7 @@ subtest 'Generic upload fail test' => sub{
 };
 
 subtest 'Error for calling success with non-existent file ID' => sub {
-    my $custom_params = { args => { status          => 'success', 
+    my $custom_params = { args => { status          => 'success',
                                     file_id         => INVALID_FILE_ID,
                                     # These need to be blanked or RPC will try to start an upload
                                     document_type   => '',
@@ -162,16 +161,14 @@ subtest 'Basic upload test sequence' => sub {
 #########################################################
 
 subtest 'Attempt to upload file with same checksum as "Basic upload test sequence"' => sub {
-    # This is a new document upload, so change the ID
-    my $custom_params = { args => { document_id => DOC_ID_2 } };
-    my $file_id = start_successful_upload($real_client, $custom_params);
+    my $file_id = start_successful_upload($real_client);
     
     # Upload will commence and be blocked at finish
-    $custom_params = { args => { status          => 'success', 
-                                 file_id         => $file_id,
-                                 # These need to be blanked or RPC will try to start an upload
-                                 document_type   => '',
-                                 document_format => '' } };
+    my $custom_params = { args => { status          => 'success',
+                                    file_id         => $file_id,
+                                    # These need to be blanked or RPC will try to start an upload
+                                    document_type   => '',
+                                    document_format => '' } };
     call_and_check_error($custom_params, 'Document already uploaded.', 'error if same document is uploaded twice');
 };
 
