@@ -119,27 +119,25 @@ override _validate_barrier_type => sub {
 sub _subvalidate_single_barrier {
     my $self = shift;
 
-    if (%{$self->predefined_contracts} and my $info = $self->predefined_contracts->{$self->date_expiry->epoch}) {
-        my @available_barriers = @{$info->{available_barriers} // []};
-        my %expired_barriers = map { $_ => 1 } @{$info->{expired_barriers} // []};
-        # barriers are pipsized, make them numbers.
-        my $epsilon = 1e-10;
-        my $matched_barrier = first { abs($self->barrier->as_absolute - $_) < $epsilon } grep { not $expired_barriers{$_} } @available_barriers;
+    my $info               = $self->predefined_contracts;
+    my @available_barriers = @{$info->{available_barriers} // []};
+    my %expired_barriers   = map { $_ => 1 } @{$info->{expired_barriers} // []};
+    # barriers are pipsized, make them numbers.
+    my $epsilon = 1e-10;
+    my $matched_barrier = first { abs($self->barrier->as_absolute - $_) < $epsilon } grep { not $expired_barriers{$_} } @available_barriers;
 
-        unless ($matched_barrier) {
-
-            return {
-                message => 'Invalid barrier['
-                    . $self->barrier->as_absolute
-                    . '] for expiry ['
-                    . $self->date_expiry->datetime
-                    . '] and contract type['
-                    . $self->code
-                    . '] for multi-barrier at '
-                    . $self->date_pricing->datetime . '.',
-                message_to_client => [$ERROR_MAPPING->{InvalidBarrier}],
-            };
-        }
+    unless ($matched_barrier) {
+        return {
+            message => 'Invalid barrier['
+                . $self->barrier->as_absolute
+                . '] for expiry ['
+                . $self->date_expiry->datetime
+                . '] and contract type['
+                . $self->code
+                . '] for multi-barrier at '
+                . $self->date_pricing->datetime . '.',
+            message_to_client => [$ERROR_MAPPING->{InvalidBarrier}],
+        };
     }
 
     return;
@@ -148,37 +146,34 @@ sub _subvalidate_single_barrier {
 sub _subvalidate_double_barrier {
     my $self = shift;
 
-    if (%{$self->predefined_contracts} and my $info = $self->predefined_contracts->{$self->date_expiry->epoch}) {
-        my @available_barriers = @{$info->{available_barriers} // []};
-        my @expired_barriers   = @{$info->{expired_barriers}   // []};
+    my $info               = $self->predefined_contracts;
+    my @available_barriers = @{$info->{available_barriers} // []};
+    my @expired_barriers   = @{$info->{expired_barriers} // []};
 
-        my $epsilon = 1e-10;
-        my @filtered;
-        foreach my $pair (@available_barriers) {
-            # checks for expired barriers and exclude them from available barriers.
-            my $barrier_expired = first { abs($pair->[0] - $_->[0]) < $epsilon and abs($pair->[1] - $_->[1]) < $epsilon } @expired_barriers;
-            next if $barrier_expired;
-            push @filtered, $pair;
-        }
+    my $epsilon = 1e-10;
+    my @filtered;
+    foreach my $pair (@available_barriers) {
+        # checks for expired barriers and exclude them from available barriers.
+        my $barrier_expired = first { abs($pair->[0] - $_->[0]) < $epsilon and abs($pair->[1] - $_->[1]) < $epsilon } @expired_barriers;
+        next if $barrier_expired;
+        push @filtered, $pair;
+    }
 
-        my $matched_barrier =
-            first { abs($self->low_barrier->as_absolute - $_->[0]) < $epsilon and abs($self->high_barrier->as_absolute - $_->[1]) < $epsilon }
-        @filtered;
-        unless ($matched_barrier) {
-
-            return {
-                message => 'Invalid barriers['
-                    . $self->low_barrier->as_absolute . ','
-                    . $self->high_barrier->as_absolute
-                    . '] for expiry ['
-                    . $self->date_expiry->datetime
-                    . '] and contract type['
-                    . $self->code
-                    . '] for multi-barrier at '
-                    . $self->date_pricing->datetime . '.',
-                message_to_client => [$ERROR_MAPPING->{InvalidBarrier}],
-            };
-        }
+    my $matched_barrier =
+        first { abs($self->low_barrier->as_absolute - $_->[0]) < $epsilon and abs($self->high_barrier->as_absolute - $_->[1]) < $epsilon } @filtered;
+    unless ($matched_barrier) {
+        return {
+            message => 'Invalid barriers['
+                . $self->low_barrier->as_absolute . ','
+                . $self->high_barrier->as_absolute
+                . '] for expiry ['
+                . $self->date_expiry->datetime
+                . '] and contract type['
+                . $self->code
+                . '] for multi-barrier at '
+                . $self->date_pricing->datetime . '.',
+            message_to_client => [$ERROR_MAPPING->{InvalidBarrier}],
+        };
     }
 
     return;
