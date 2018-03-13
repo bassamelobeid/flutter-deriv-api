@@ -21,12 +21,12 @@ rpc document_upload => sub {
     my $args   = $params->{args};
     my $status = $args->{status};
 
-    return successful_upload($params) if $status and $status eq 'success';
-
     my $error = validate_input($params);
     return create_upload_error($error) if $error;
 
     return start_document_upload($params) if $args->{document_type} and $args->{document_format};
+
+    return successful_upload($params) if $status and $status eq 'success';
 
     return create_upload_error();
 };

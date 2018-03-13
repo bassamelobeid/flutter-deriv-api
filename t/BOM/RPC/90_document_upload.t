@@ -232,7 +232,7 @@ sub finish_successful_upload {
     # Check mailbox for CS notification
     my $client_id = uc $client->loginid;
     if ($mail_expected){
-        #(COMMENTED OUT)like(get_notification_email($client_id)->{body}, qr/New document was uploaded for the account: $client_id/, 'CS notification email was sent successfully');
+        like(get_notification_email($client_id)->{body}, qr/New document was uploaded for the account: $client_id/, 'CS notification email was sent successfully');
     }
     if (not $mail_expected){
         ok(!get_notification_email($client_id), 'CS notification email should only be sent once');
