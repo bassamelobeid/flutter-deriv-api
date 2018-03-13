@@ -3,6 +3,7 @@ use warnings;
 
 use Test::Most;
 use Test::Warn;
+use Test::MockTime qw(:all);
 
 no warnings qw/redefine/;
 
@@ -15,6 +16,7 @@ use JSON::MaybeXS qw/decode_json encode_json/;
 use BOM::Test::Helper qw/build_wsapi_test create_test_user/;
 use Digest::MD5 qw/md5_hex/;
 use Net::Async::Webservice::S3;
+use List::Util qw[min];
 
 use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
 use Binary::WebSocketAPI::Hooks;
@@ -53,11 +55,15 @@ my %generic_req = (
     expiration_date => '2020-01-01',
 );
 
+use constant {
+    FAIL_TEST_DATA => 'Some text'
+};
+
 subtest 'Fail during upload' => sub {
-    my $data   = 'Some text';
+    my $data   = FAIL_TEST_DATA;
     my $length = length $data;
 
-    my %upload_info = request_upload(file_size => $length);
+    my %upload_info = request_upload($data);
 
     my @frames = gen_frames($data, %upload_info);
     my $upload_id = $upload_info{upload_id};
@@ -82,7 +88,7 @@ subtest 'Invalid s3 config' => sub {
     # Valid bucket name to cause error
     $ENV{DOCUMENT_AUTH_S3_BUCKET} = 'ValidBucket';
 
-    my %upload_info = request_upload(file_size => $length);
+    my %upload_info = request_upload($data);
 
     # revert bucket name
     $ENV{DOCUMENT_AUTH_S3_BUCKET} = 'TestingS3Bucket';
@@ -109,7 +115,7 @@ subtest 'binary frame should be sent correctly' => sub {
     $res = send_warning((pack 'N3A*', 1, 1, 1, 'A'), qr/Unknown upload request/);
     ok $res->{error}, 'Should ask for document_upload first';
 
-    my %upload_info = request_upload(file_size => 1);
+    my %upload_info = request_upload('N');
 
     my ($call_type, $upload_id) = @upload_info{qw/call_type upload_id/};
 
@@ -125,15 +131,16 @@ subtest 'binary frame should be sent correctly' => sub {
 };
 
 subtest 'sending two files concurrently' => sub {
-    my $data   = 'Some text';
-    my $length = length $data;
+    my @data   = ('Some tex1', 'Some tex2');
+    # Note: this test is hardcoded to expect data of a certain length
+    #   so change the contents of these strings, but not the length
 
     my @requests;
     for my $i (0 .. 1) {
-        my $upload_info = {request_upload(file_size => $length)};
-        receive_ok($data, %$upload_info);
+        my $upload_info = {request_upload($data[$i])};
+        receive_ok($data[$i], %$upload_info);
         $requests[$i]->{upload_info} = $upload_info;
-        $requests[$i]->{frames} = [gen_frames($data, %$upload_info)];
+        $requests[$i]->{frames} = [gen_frames($data[$i], %$upload_info)];
     }
 
     $t->send_ok({binary => $_->{frames}->[0]}) for @requests;
@@ -171,7 +178,7 @@ subtest 'Maximum file size' => sub {
     my $previous_chunk_size = $chunk_size;
     $chunk_size = 16 * 1024;
 
-    my %upload_info = upload_error((pack "A$size", ' '), qr/Unknown upload request/, file_size => $size - 1);
+    my %upload_info = upload_error((pack "A$size", ' '), qr/Unknown upload request/);
 
     my $error = $upload_info{res}->{error};
     is $error->{code}, 'UploadDenied', 'Upload should be failed';
@@ -188,6 +195,7 @@ subtest 'Invalid document_format' => sub {
         req_id          => ++$req_id,
         file_size       => 1,
         document_format => 'INVALID',
+        expected_checksum => 'INVALID',
     };
 
     my $res = $t->await::document_upload($req);
@@ -209,10 +217,10 @@ subtest 'sending extra data after EOF chunk' => sub {
 };
 
 subtest 'Checksum not matching the etag' => sub {
-    my $data   = 'Some text is here';
+    my $data   = 'Some more text is here';
     my $length = length $data;
 
-    my %upload_info = request_upload(file_size => $length);
+    my %upload_info = request_upload($data);
 
     receive_ok($data, %upload_info);
     my @frames = gen_frames($data, %upload_info);
@@ -233,6 +241,70 @@ subtest 'Checksum not matching the etag' => sub {
     ok $error->{code}, 'Upload should be failed for incorrect checksum';
 };
 
+subtest 'Duplicate upload rejected' => sub {
+    # First upload
+    my $data   = 'File';
+    my $length = length $data;
+    my %upload_info = document_upload_ok($data, file_size => $length);
+
+    # Request to upload the same file again
+    %upload_info = request_upload($data);
+    my $res = send_chunks($data, %upload_info);
+
+    my $error = $res->{error};
+    is $error->{code}, 'DuplicateUpload', 'Error code for duplicate document';
+    is $error->{message}, 'Document already uploaded.', 'Error msg for duplicate document';
+};
+
+subtest 'Document with wrong checksum rejected' => sub {
+    my $data   = 'This is the expected text';
+    my $other_data   = 'This is not expected text';
+    my $length = length $data;
+    my $checksum = md5_hex($data);
+
+    my %upload_info = request_upload($data);
+
+    receive_ok($other_data, %upload_info);
+    my @frames = gen_frames($other_data, %upload_info);
+
+    my $res;
+    for my $i (0 .. $#frames) {
+        my $upload_id = $upload_info{upload_id};
+        $t->send_ok({binary => $frames[$i]});
+    }
+    $res = get_response($t);
+        
+    my $error = $res->{error};
+    is $error->{code}, 'ChecksumMismatch', 'Error code for checksum fail';
+    is $error->{message}, 'Checksum verification failed.', 'Error msg for checksum fail';
+};
+
+subtest 'Attempt to re-upload document after error uploading' => sub {
+    # Re-attempt the data that failed in the first subtest: 'Fail during upload'
+    my $data   = FAIL_TEST_DATA;
+    my $length = length $data;
+    document_upload_ok($data, file_size => $length);
+};
+
+subtest 'Attempt to restart a timed out upload' => sub {
+    my $data   = 'Timeout data';
+    my $length = length $data;
+
+    my $request = {};
+    my $upload_info = {request_upload($data)};
+    receive_ok($data, %$upload_info);
+    $request->{upload_info} = $upload_info;
+    $request->{frames} = [gen_frames($data, %$upload_info)];
+
+    $t->send_ok({binary => $request->{frames}->[0]});
+
+    # Send a frame, then stop, let server timeout, try again
+    set_relative_time(120);
+
+    document_upload_ok($data, file_size => $length);
+};
+
+
 sub gen_frames {
     my ($data,      %upload_info) = @_;
     my ($call_type, $upload_id)   = @upload_info{qw/call_type upload_id/};
@@ -245,7 +317,7 @@ sub gen_frames {
 sub upload_error {
     my ($data, $warning, %metadata) = @_;
 
-    my %upload_info = request_upload(%metadata);
+    my %upload_info = request_upload($data, %metadata);
 
     my $res;
     warning_like {
@@ -279,11 +351,16 @@ sub upload_ok {
 }
 
 sub request_upload {
-    my %metadata = @_;
+    my ($data, %metadata) = @_;
 
     my $req = {
         %generic_req, %metadata,
         req_id => ++$req_id,
+        expected_checksum => md5_hex($data),
+        file_size => min(length $data, MAX_FILE_SIZE),
+        # The min is necessary to handle the special case for test 'Maximum file size'
+        #   which sends frames in excess of the maximum allowed file size, but needs
+        #   to spoof the size so the upload isn't disallowed at the start.
     };
 
     my $res = $t->await::document_upload($req);
@@ -309,7 +386,7 @@ sub request_upload {
 sub upload {
     my ($data, %metadata) = @_;
 
-    my %upload_info = request_upload(%metadata);
+    my %upload_info = request_upload($data, %metadata);
 
     my $res = send_chunks($data, %upload_info);
     my $req = $upload_info{req};
