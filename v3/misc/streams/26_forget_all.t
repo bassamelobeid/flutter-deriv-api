@@ -46,11 +46,20 @@ initialize_realtime_ticks_db();
 
     my $t = build_wsapi_test();
 
-    sub _check_ticks {
-        my $type = shift;
-        my $msg  = shift;
+    my $req_tick   = {ticks => 'R_50'};
+    my $req_candle = {
+        ticks_history => 'R_50',
+        end           => "latest",
+        count         => 10,
+        style         => "candles",
+        subscribe     => 1
+    };
 
-        # both these subscribtion should work as req_id is different
+    sub _check_ticks {
+        my $types = shift;
+
+        $types = [$types] unless ref($types) eq 'ARRAY';
+
         my $pid = fork;
         die "Failed fork for testing 'ticks' WS API call: $@" unless defined $pid;
         unless ($pid) {
@@ -60,25 +69,30 @@ initialize_realtime_ticks_db();
                 for 0 .. 1;
             exit;
         }
-        $type eq 'ticks' ? $t->await::tick($msg) : $t->await::ohlc($msg);
-        $msg->{req_id} = 1;
-        $type eq 'ticks' ? $t->await::tick($msg) : $t->await::ohlc($msg);
 
-        my $res = $t->await::forget_all({forget_all => $type});
-        ok $res->{forget_all}, "Manage to forget_all: ticks" or diag explain $res;
-        is scalar(@{$res->{forget_all}}), 2, "Forget the relevant tick channel";
+        for my $type (@$types) {
+            my $msg = $type eq 'ticks' ? $req_tick : $req_candle;
+            # two subscriptions should work
+            if ($type eq 'ticks') {
+                note("ticks 1 json :: " . encode_json($t->await::tick($msg)));
+            } else {
+                note("ohlc 1 json :: " . encode_json($t->await::ohlc($msg)));
+            }
+        }
+        my $failed_res = $t->await::forget_all({forget_all => 'tick'});
+        is $failed_res->{error}->{code}, 'InputValidationFailed', "Correct error code for invalid string";
+
+        $failed_res = $t->await::forget_all({forget_all => ['ticks', 'candle']});
+        is $failed_res->{error}->{code}, 'InputValidationFailed', "Correct error code for invalid array";
+
+        my $res = $t->await::forget_all({forget_all => $types});
+        note("forget_all json :: " . encode_json($res->{forget_all}));
+        ok $res->{forget_all}, "Manage to forget_all: " . join(', ', @$types) or diag explain $res;
+        is scalar(@{$res->{forget_all}}), scalar(@$types), "Forget the relevant tick channel";
     }
 
-    _check_ticks('ticks', {ticks => 'R_50'});
-    _check_ticks(
-        'candles',
-        {
-            ticks_history => 'R_50',
-            end           => "latest",
-            count         => 10,
-            style         => "candles",
-            subscribe     => 1
-        });
+    _check_ticks('ticks');
+    _check_ticks(['ticks', 'candles']);
 
     $t->finish_ok;
 }
