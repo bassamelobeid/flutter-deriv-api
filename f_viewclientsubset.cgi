@@ -27,6 +27,10 @@ use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
+unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}})) {
+    code_exit_BO("WARNING! You are not on the Master Live Server. Suggest you use these tools on the Master Live Server instead.");
+}
+
 my $show = encode_entities(request()->param('show') // "");
 if (request()->param('action') ne 'DOWNLOAD CSV') {
     PrintContentType();
@@ -250,8 +254,12 @@ sub get_client_by_status {
         if (open my $fh, "<:encoding(utf8)", $summaryfilename) {    ## no critic (RequireBriefOpen)
             flock($fh, 1);
             while (my $row = $csv->getline($fh)) {
+                # consider only when line starts with loginid
+                # sample record entry
+                # loginid,account_balance,total_open_bets_value,total_open_bets_profit,
+                # total_equity,aggregate_deposit_withdrawals,portfolio
                 next if $row->[0] !~ /^([A-Z]+)\d+$/;
-                $SUMMARYFILE{$row->[0] . "-TOTALEQUITY"} += roundcommon(0.01, in_USD($row->[4], $curr));
+                $SUMMARYFILE{$row->[0] . "-TOTALEQUITY"} += roundcommon(0.01, in_USD($row->[4], $curr)) if $row->[4];
             }
             $csv->eof or $csv->error_diag();
             close $fh;
