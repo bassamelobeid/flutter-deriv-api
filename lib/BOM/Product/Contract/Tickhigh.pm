@@ -30,6 +30,14 @@ sub _build_greek_engine {
     return BOM::Product::Pricing::Greeks::ZeroGreek->new({bet => shift});
 }
 
+sub _build_selected_tick {
+    my $self = shift;
+
+    return BOM::Product::Exception->throw(
+        error_code => 'MissingRequiredSelectedTick',
+    );
+}
+
 sub check_expiry_conditions {
 
     my $self = shift;
