@@ -16,6 +16,7 @@ use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (request localize);
 use BOM::Platform::Runtime;
 use BOM::Transaction;
+use BOM::Pricing::v3::Contract;
 
 requires_auth();
 
@@ -139,7 +140,7 @@ rpc proposal_open_contract => sub {
         my $id = $fmb->{id};
         my $sell_time;
         $sell_time = Date::Utility->new($fmb->{sell_time})->epoch if $fmb->{sell_time};
-        my $bid = {
+        my $bid = BOM::Pricing::v3::Contract::get_bid({
             short_code            => $fmb->{short_code},
             contract_id           => $id,
             currency              => $currency,
@@ -151,15 +152,23 @@ rpc proposal_open_contract => sub {
             account_id            => $fmb->{account_id},
             purchase_time         => Date::Utility->new($fmb->{purchase_time})->epoch,
             country_code          => $client->residence,
-        };
-        my $transaction_ids = {buy => $fmb->{buy_transaction_id}};
-        $transaction_ids->{sell} = $fmb->{sell_transaction_id} if ($fmb->{sell_transaction_id});
+        });
 
-        $bid->{transaction_ids} = $transaction_ids;
-        $bid->{sell_time}       = $sell_time if $sell_time;
-        $bid->{sell_price}      = formatnumber('price', $currency, $fmb->{sell_price}) if defined $fmb->{sell_price};
+        if ($bid->{error}) {
+            $response->{$id} = $bid;
+        } else {
+            my $transaction_ids = {buy => $fmb->{buy_transaction_id}};
+            $transaction_ids->{sell} = $fmb->{sell_transaction_id} if ($fmb->{sell_transaction_id});
 
-        $response->{$id} = $bid;
+            $bid->{transaction_ids} = $transaction_ids;
+            $bid->{buy_price}       = $fmb->{buy_price};
+            $bid->{account_id}      = $fmb->{account_id};
+            $bid->{is_sold}         = $fmb->{is_sold};
+            $bid->{sell_time}       = $sell_time if $sell_time;
+            $bid->{sell_price}      = formatnumber('price', $currency, $fmb->{sell_price}) if defined $fmb->{sell_price};
+
+            $response->{$id} = $bid;
+        }
     }
     return $response;
 };
