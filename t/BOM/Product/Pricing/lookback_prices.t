@@ -96,6 +96,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                     };
 
                     my $c = produce_contract($args);
+
                     isa_ok $c->pricing_engine_name, 'Pricing::Engine::Lookback';
 
                     is roundnear(0.00001, $c->theo_price), roundnear(0.00001, $expectation->{$c->shortcode}),

@@ -20,6 +20,7 @@ But we are not there yet because there's a lot of refactoring needed to have the
 use Date::Utility;
 use Quant::Framework;
 use Finance::Contract::Category;
+use List::Util qw(all);
 
 use BOM::Platform::Chronicle;
 use BOM::MarketData qw(create_underlying);
@@ -35,26 +36,24 @@ has parameters => (
 sub BUILD {
     my $self = shift;
 
-    my $c_types  = $self->contract_types;
-    my $barriers = $self->barriers;
+    my $contract_types = $self->contract_types;
+    my $barriers       = $self->barriers;
 
-    my $barrier_type_count = grep { $_->{category}->two_barriers } @$c_types;
+    my $barrier_type_count = grep { $_->{category}->two_barriers } @$contract_types;
 
-    if ($barrier_type_count > 0 and $barrier_type_count < scalar(@$c_types)) {
+    my $system_defined_barrier = grep { $_->{category}->code eq 'lookback' } @$contract_types;
+
+    if ($barrier_type_count > 0 and $barrier_type_count < scalar(@$contract_types)) {
         BOM::Product::Exception->throw(error_code => 'InvalidBarrierMixedBarrier');
     }
 
     # $barrier_type_count == 0, single barrier contract
     # $barrier_type_count == @$c_types, double barrier contract
-    if ($barrier_type_count == 0 and grep { ref $_ } @$barriers) {
-        BOM::Product::Exception->throw(error_code => 'InvalidBarrierSingle');
-    } elsif (
-        $barrier_type_count == scalar(@$c_types) and grep {
-            !ref $_
-        } @$barriers
-        )
-    {
-        BOM::Product::Exception->throw(error_code => 'InvalidBarrierDouble');
+    unless ($system_defined_barrier) {
+        BOM::Product::Exception->throw(error_code => 'InvalidBarrierSingle') if ($barrier_type_count == 0 and grep { ref $_ } @$barriers);
+
+        BOM::Product::Exception->throw(error_code => 'InvalidBarrierDouble')
+            if ($barrier_type_count == scalar(@$contract_types) and grep { !ref $_ } @$barriers);
     }
 
     return;
