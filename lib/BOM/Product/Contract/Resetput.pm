@@ -4,6 +4,8 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
+use BOM::Product::Pricing::Greeks::ZeroGreek;
+
 sub ticks_to_expiry {
     # Add one since we want N ticks *after* the entry spot
     return shift->tick_count + 1;
@@ -37,6 +39,10 @@ sub check_expiry_conditions {
 
 sub _build_pricing_engine_name {
     return 'Pricing::Engine::Reset';
+}
+
+sub _build_greek_engine {
+    return BOM::Product::Pricing::Greeks::ZeroGreek->new({bet => shift});
 }
 
 no Moose;
