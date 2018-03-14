@@ -2,7 +2,7 @@ package BOM::Product::Contract::Tickhigh;
 
 use Moose;
 extends 'BOM::Product::Contract';
-with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::AmericanExpiry';
+with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::AmericanExpiry', 'BOM::Product::Role::HighLowTicks';
 
 use List::Util qw/max any/;
 
@@ -10,49 +10,13 @@ use Pricing::Engine::HighLowTicks;
 
 use BOM::Product::Pricing::Greeks::ZeroGreek;
 
-use constant DURATION_IN_TICKS => 5;
-
-has 'selected_tick' => (
-    is       => 'ro',
-    required => 1,
-);
-
-# Required to determine the exit tick
-sub ticks_to_expiry {
-    return DURATION_IN_TICKS;
-}
-
-sub _build_pricing_engine_name {
-    return 'Pricing::Engine::HighLowTicks';
-}
-
-sub _build_greek_engine {
-    return BOM::Product::Pricing::Greeks::ZeroGreek->new({bet => shift});
-}
-
-sub _build_selected_tick {
-    my $self = shift;
-
-    return BOM::Product::Exception->throw(
-        error_code => 'MissingRequiredSelectedTick',
-    );
-}
-
-override shortcode => sub {
-    
-    my $self = shift;
-    my @shortcode_elements = ($self->code, $self->underlying->symbol, $self->payout + 0, $self->date_start->epoch, $self->tick_count . 't', $self->selected_tick);
-
-    return join '_', @shortcode_elements
-};
-
 sub check_expiry_conditions {
 
     my $self = shift;
 
     my $ticks = $self->underlying->ticks_in_between_start_limit({
         start_time => $self->date_start->epoch + 1,
-        limit      => DURATION_IN_TICKS,
+        limit      => $self->ticks_to_expiry,
     });
 
     my $number_of_ticks = scalar(@$ticks);
@@ -69,7 +33,7 @@ sub check_expiry_conditions {
     }
 
     # we already have the full set of ticks, but no tick is higher than selected.
-    if ($number_of_ticks == DURATION_IN_TICKS) {
+    if ($number_of_ticks == $self->ticks_to_expiry) {
         $self->value($self->payout);
         return 1;
     }
