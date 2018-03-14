@@ -109,7 +109,8 @@ sub _build__report {
         end_date   => $self->end->datetime_yyyymmdd_hhmmss,
     };
 
-    $report->{open_bets} = $self->_open_bets_report;
+    $report->{open_bets}    = $self->_open_bets_report;
+    $report->{multibarrier} = $self->_multibarrier_report;
 
     my $pap_report = $self->_payment_and_profit_report;
     $report->{big_deposits}    = $pap_report->{big_deposits};
@@ -121,6 +122,27 @@ sub _build__report {
     $report->{top_turnover} = $self->_top_turnover;
 
     return $report;
+}
+
+sub _multibarrier_report {
+    my $self = shift;
+
+    my @open_bets = @{$self->_open_bets_at_end};
+    my $multibarrier;
+
+    foreach my $open_contract (@open_bets) {
+        my $contract = produce_contract($open_contract->{short_code}, $open_contract->{currency_code});
+
+        next if not $contract->can("trading_period_start");
+        next if not $contract->is_intraday;
+        $multibarrier->{$contract->date_expiry->epoch}->{$contract->bet_type}->{$contract->underlying->symbol} = {
+
+            barrier => {$contract->barrier_tier => += $self->amount_in_usd($open_contract->{buy_price}, $open_contract->{currency_code})},
+            spot    => $contract->current_spot,
+        };
+    }
+
+    return $multibarrier;
 }
 
 sub _open_bets_report {

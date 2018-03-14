@@ -4,6 +4,7 @@
   <ul>
     <li><a href="#rd-summary">Client Summary</a></li>
     <li><a href="#rd-pivot">Pivot</a></li>
+    <li><a href="#rd-multibarrier">Multibarrier Trading</a></li>
   </ul>
   <div id="rd-summary">
         <div class="sum_table">
@@ -56,6 +57,10 @@
 <div id="rd-pivot">
 [% INCLUDE 'backoffice/risk_dashboard_pivot.html.tt' pivot = open_bets.pivot %]
 </div>
+<div id="rd-mutlibarrier">
+[% INCLUDE 'backoffice/risk_dashboard_multibarrier.html.tt' data = open_bets.multibarrier %]
+</div>
+
 </div>
 
 <style type="text/css">
