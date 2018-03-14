@@ -40,7 +40,7 @@ contract barriers, start and expiry time. As of now, this is only applicable for
 =cut
 
 has predefined_contracts => (
-    is         => 'rw',
+    is         => 'ro',
     lazy_build => 1,
 );
 
