@@ -71,9 +71,10 @@ if (request()->param('action') eq 'DOWNLOAD CSV') {
     foreach my $loginid (keys %{$results}) {
         my $client = $results->{$loginid};
         my @row    = (
-            $loginid,                         $client->{name},              $client->{citizen},        $client->{email},
-            '$' . $client->{agg_payment_usd}, '$' . $client->{balance_usd}, $client->{cashier_locked}, '$' . $client->{equity},
-            $client->{last_access} . ' days', $client->{reason});
+            $loginid,                  $client->{name},                           $client->{residence},
+            $client->{email},          '$' . $client->{aggregate_payment_in_usd}, '$' . $client->{balance_in_usd},
+            $client->{cashier_locked}, '$' . $client->{equity},                   $client->{last_access} . ' days',
+            $client->{reason});
 
         $csv->combine(@row);
         print $csv->string;
@@ -128,15 +129,15 @@ foreach my $loginID (keys %{$results}) {
         . "<td>$loginID</td>" . "<td>"
         . encode_entities($client->{name})
         . "&nbsp;</td>" . "<td>"
-        . encode_entities($client->{citizen})
+        . encode_entities($client->{residence})
         . "&nbsp;</td>"
         . "<td><font size=1>"
         . encode_entities($client->{email})
         . "&nbsp;</font></td>"
         . "<td>\$"
-        . encode_entities($client->{agg_payment_usd}) . "</td>"
+        . encode_entities($client->{aggregate_payment_in_usd}) . "</td>"
         . "<td>\$"
-        . encode_entities($client->{balance_usd})
+        . encode_entities($client->{balance_in_usd})
         . "&nbsp;</td>" . "<td>"
         . encode_entities($client->{cashier_locked})
         . "&nbsp;</td>" . "<td>"
@@ -266,88 +267,16 @@ sub get_client_by_status {
         }
     }
 
-    my $sql = q{
-        WITH client as (
-            SELECT
-                loginid,
-                salutation || ' ' || first_name || ' ' || last_name as name,
-                email,
-                citizen,
-                t.status_code,
-                t.reason,
-                CASE WHEN s.status_code = 'cashier_locked' THEN 'LOCK' ELSE 'OPEN' END as cashier_locked
-            FROM
-                betonmarkets.client c
-                JOIN
-                (
-                    SELECT * FROM betonmarkets.client_status
-                    WHERE status_code = ?
-                ) t ON c.loginid = t.client_loginid AND c.broker_code = ?
-                LEFT JOIN
-                (
-                    SELECT * FROM betonmarkets.client_status
-                    WHERE status_code = 'cashier_locked'
-                ) s ON t.client_loginid = s.client_loginid
-    };
-
-    if ($limit and $offset) {
-        $sql .= " LIMIT $limit OFFSET $offset ";
-    }
-    $sql .= q{
-        ),
-
-        funded as (
-            SELECT
-                c.loginid,
-                count(*) as deposit_cnt
-            FROM
-                client c
-                JOIN transaction.account a
-                    ON c.loginid = a.client_loginid
-                JOIN payment.payment p
-                    ON a.id = p.account_id
-            WHERE
-                p.payment_gateway_code NOT IN ('free_gift', 'affiliate_reward')
-                AND p.amount > 0
-            GROUP BY 1
-        )
-
-        SELECT
-            c.loginid,
-            c.status_code,
-            c.reason,
-            c.cashier_locked,
-            c.name,
-            c.email,
-            c.citizen,
-            EXTRACT(DAY FROM (now() - a.last_modified)) as last_access,
-            CASE
-                WHEN f.deposit_cnt > 0 THEN 1
-                ELSE 0
-            END as funded,
-            ROUND(a.balance * exch.rate, 2) as balance_usd,
-            SUM(ROUND(p.amount * exch.rate, 2)) as agg_payment_usd
-        FROM
-            client c
-            LEFT JOIN transaction.account a
-                ON a.client_loginid = c.loginid AND a.is_default = TRUE
-            LEFT JOIN data_collection.exchangetousd_rate(a.currency_code) exch(rate)
-                ON true
-            LEFT JOIN payment.payment p
-                ON p.account_id = a.id
-            LEFT JOIN funded f
-                ON f.loginid = c.loginid
-        GROUP BY 1,2,3,4,5,6,7,8,9,10
-    };
-
     my $dbic = BOM::Database::ClientDB->new({
             broker_code => $broker,
         })->db->dbic;
     my $results = $dbic->run(
-        fixup => sub {
-            my $sth = $_->prepare($sql);
-            $sth->execute($show, $broker);
-            return $sth->fetchall_hashref('loginid');
+        ping => sub {
+            my $sth = $_->prepare(
+                'SELECT client_loginid, status_code, reason, cashier_locked, name, email, residence, last_access, funded, balance_in_usd, aggregate_payment_in_usd FROM get_client_list_by_status(?, ?, ?)'
+            );
+            $sth->execute($show, $limit // 100, $offset // 0);
+            return $sth->fetchall_hashref('client_loginid');
         });
 
     foreach my $loginID (keys %{$results}) {
