@@ -229,6 +229,24 @@ sub _set_price_calculator_params {
     return;
 }
 
+sub _build_reset_time {
+    my $self = shift;
+
+    my $duration = 0.5 * ($self->date_expiry->epoch - $self->date_start->epoch);
+
+    if (not isint($duration)) {
+        $duration = 0.5 * (($self->date_expiry->epoch - $self->date_start->epoch) - 1);
+    }
+
+    #For volatility indices, after discussion with the team,
+    #it is safe to assume 1 tick is 2 secs.
+    # 0.5 * tick_count * 2secs = tick_count
+    $duration = $self->tick_count if $self->tick_expiry;
+
+    my $reset_time = Time::Duration::Concise->new(interval => $duration . 's');
+    return $reset_time;
+}
+
 sub _create_new_interface_engine {
     my $self = shift;
     return if not $self->new_interface_engine;
@@ -308,7 +326,7 @@ sub _create_new_interface_engine {
             reset_time    => $self->reset_time->days / 365,
             discount_rate => $self->discount_rate,
             mu            => $self->mu,
-            vol           => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
+            vol           => $self->pricing_vol,
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::Lookback') {
         %pricing_parameters = (
