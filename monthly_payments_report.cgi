@@ -27,6 +27,7 @@ code_exit_BO("Invalid broker code") unless $broker =~ /^[A-Z]{1,6}$/;
 my $start_date;
 try {
     $yyyymm =~ /^(\d{4})-(\d{2})$/;
+    my ($year, $month) = ($1, $2);
     $start_date = Date::Utility->new("$year-$month-01");
 }
 catch {
