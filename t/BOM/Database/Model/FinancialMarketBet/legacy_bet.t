@@ -5,7 +5,7 @@ use warnings;
 use Test::More (tests => 27);
 use Test::Warnings;
 use Test::Exception;
-use DateTime::Format::HTTP;
+use Date::Utility;
 
 use Format::Util::Numbers qw/financialrounding/;
 
@@ -43,8 +43,8 @@ my $payout_price      = 200;
 my $buy_price         = 20;
 my $sell_price        = 0;
 my $remark            = 'Test Remark';
-my $start_time        = DateTime::Format::HTTP->parse_datetime('2010-12-02 12:00:00');
-my $expiry_time       = DateTime::Format::HTTP->parse_datetime('2010-12-02 14:00:00');
+my $start_time        = Date::Utility->new('2010-12-02 12:00:00');
+my $expiry_time       = Date::Utility->new('2010-12-02 14:00:00');
 my $is_expired        = 1;
 my $bet_class         = 'legacy_bet';
 my $bet_type          = 'DOUBLEDBL';
