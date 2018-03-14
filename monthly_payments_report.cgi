@@ -39,7 +39,7 @@ my ($payment_filter, $csv_name);
 my @binds = (
     $start_date->date_yyyymmdd,    # b0
     $until_date->date_yyyymmdd,    # b1
-    $broker,             # b2
+    $broker,                       # b2
 );
 
 if ($all_types) {
