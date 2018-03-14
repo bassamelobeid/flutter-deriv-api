@@ -24,7 +24,7 @@
     },
     "residence": {
       "type": "string",
-      "description": "2-letter country code (value received from residence_list call)",
+      "description": "2-letter country code (obtained from residence_list call)",
       "pattern": "^[a-z]{2}$",
       "required": "1"
     },
@@ -51,7 +51,8 @@
     "email_consent": {
       "type": "integer",
       "pattern": "^(0|1)$",
-      "description": "Optional boolean value 1 or 0, indicating permission to use email address for any contact which may include marketing. Defaults to 1"
+      "description": "Optional boolean value 1 or 0, indicating permission to use email address for any contact which may include marketing.",
+      "default": "1"
     },
     "gclid_url": {
       "type": "string",

@@ -5,8 +5,7 @@
   "description":"Binary.com has a number of licensed subsidiaries in various jurisidictions, which are called Landing Companies (and which are wholly owned subsidiaries of the Binary Group). This call provides information about each Landing Company.",
   "properties": {
     "landing_company_details": {
-      "type":"string",
-      "pattern": "^(\\w|-){3,20}$",
+      "enum":["iom","malta","maltainvest","costarica","virtual", "japan", "japan-virtual", "vanuatu", "champion", "champion-virtual"],
       "description": "Landing company shortcode (for example: costarica, malta, maltainvest, iom)",
       "required": "1"
     },

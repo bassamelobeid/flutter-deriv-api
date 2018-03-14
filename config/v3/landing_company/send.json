@@ -7,7 +7,7 @@
     "landing_company": {
       "type":"string",
       "title": "Landing Company",
-      "description":"Client 2-letter country code",
+      "description":"Client 2-letter country code (obtained from residence_list call)",
       "pattern": "^\\w\\w$",
       "required": "1"
     },

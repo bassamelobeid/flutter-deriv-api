@@ -12,17 +12,19 @@
     },
     "subscribe": {
         "type": "integer",
-        "description": "1 - to initiate a realtime stream of prices. Note that tick trades, digit trades and less than 24 hours at-the-money contracts for the following underlying symbols are not streamed: R_100 R_50 R_25 R_75 RDBULL RDBEAR (this is because their price is constant).",
+        "description": "Optional field, 1 - to initiate a realtime stream of prices. Note that tick trades, digit trades and less than 24 hours at-the-money contracts for the following underlying symbols are not streamed: R_100, R_50, R_25, R_75, RDBULL, RDBEAR (this is because their price is constant).",
         "pattern": "^1$"
     },
     "amount": {
       "type": "number",
       "minimum": 0,
-      "description":"Proposed contract payout or stake, or multiplier (for lookbacks)."
+      "description":"Proposed contract payout or stake, or multiplier (for lookbacks).",
+      "required": "1"
     },
     "basis": {
       "description":"Indicates whether amount is 'payout' or 'stake' for binary options, and 'multiplier' for lookbacks.",
-      "enum": ["payout", "stake", "multiplier"]
+      "enum": ["payout", "stake", "multiplier"],
+      "required": "1"
     },
     "contract_type": {
       "type": "string",
@@ -39,7 +41,7 @@
     "date_start": {
       "type":  "integer",
       "pattern": "^\\d{1,10}$",
-      "description":"For forward-starting contracts, epoch value of the starting time of the contract."
+      "description":"Optional field. Indicates epoch value of the starting time of the contract. If left empty, the start time of the contract is now."
     },
     "date_expiry": {
       "type":  "integer",
@@ -51,8 +53,9 @@
       "description":"Duration quantity"
     },
     "duration_unit": {
-      "description":"Duration unit is s(seconds), m(minutes), h(hours), d(days), t(ticks). If this parameter is not set then duration will be counted as seconds.",
-      "enum": ["d", "m", "s", "h", "t"]
+      "description":"Optional duration unit - s(seconds), m(minutes), h(hours), d(days), t(ticks).",
+      "enum": ["d", "m", "s", "h", "t"],
+      "default": "s"
     },
     "symbol": {
       "type": "string",
@@ -75,9 +78,8 @@
       "description":"An epoch value of a predefined trading period start time"
     },
     "product_type": {
-      "type": "string",
-      "description": "The product type, either basic or multi_barrier",
-      "pattern":"^(multi_barrier|basic)$",
+      "description": "The product type, either basic or multi_barrier"
+      "enum": ["multi_barrier", "basic"],
       "default": "basic"
     },
     "passthrough": {
