@@ -321,8 +321,8 @@ sub _create_new_interface_engine {
             payouttime_code => $payouttime_code,
             payout_type     => 'non-binary',
             contract_type   => $self->pricing_code,
-            spot_max        => $self->spot_max,
-            spot_min        => $self->spot_min,
+            spot_max        => $self->spot_min_max->{high},
+            spot_min        => $self->spot_min_max->{low},
         );
     } else {
         die "Unknown pricing engine: " . $self->pricing_engine_name;

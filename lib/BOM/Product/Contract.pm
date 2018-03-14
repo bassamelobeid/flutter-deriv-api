@@ -1164,6 +1164,13 @@ sub barrier_tier {
     return (join '_', ($highlow, $which_tier));
 }
 
+sub _build_priced_with_intraday_model {
+    my $self = shift;
+
+    # Intraday::Index is just a flat price + commission, so it is not considered as a model.
+    return ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex');
+}
+
 # Don't mind me, I just need to make sure my attibutes are available.
 with 'BOM::Product::Role::Reportable';
 

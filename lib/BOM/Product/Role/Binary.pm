@@ -118,8 +118,4 @@ sub _build_reset_time {
     return $reset_time;
 }
 
-sub is_binary {
-    return 1;
-}
-
 1;
