@@ -41,7 +41,6 @@ subtest 'Test that contract can be created correctly' => sub {
         is $c->code,            'TICKHIGH';
         is $c->pricing_code,    'TICKHIGH';
         is $c->sentiment,       'high';
-        is $c->other_side_code, 'TICKLOW';
         is $c->category->code, 'highlowticks';
         is_deeply $c->supported_expiries, ['tick'];
         isa_ok $c, 'BOM::Product::Contract::Tickhigh';
