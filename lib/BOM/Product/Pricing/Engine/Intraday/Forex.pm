@@ -325,9 +325,10 @@ sub event_markup {
             underlying_symbol => $self->bet->underlying->symbol
         });
 
-    my $barrier_tier = $self->bet->barrier_tier;
-    my $c_start      = $self->bet->effective_start->epoch;
-    my $c_end        = $self->bet->date_expiry->epoch;
+    my $barrier_tier     = $self->bet->barrier_tier;
+    my $c_start          = $self->bet->effective_start->epoch;
+    my $c_end            = $self->bet->date_expiry->epoch;
+    my $base_probability = $self->base_probability->amount;
 
     my @markups = (0);
     foreach my $c (@$event_markup) {
@@ -336,7 +337,9 @@ sub event_markup {
         my $valid_timeframe = ($c_start >= $start_epoch && $c_start <= $end_epoch)
             || ($c_end >= $start_epoch && $c_end <= $end_epoch || ($c_start < $start_epoch && $c_end > $end_epoch));
         if ($valid_timeframe and exists $c->{$barrier_tier}) {
-            push @markups, $c->{$barrier_tier};
+            #Note: flooring prices at $OTM_max does not guarantee an increasing ask price with moneyness on extreme settings (e.g. sharp drop in commission for near the money OTM barriers)
+            my $OTM_max = $c->{OTM_max} // 0;
+            push @markups, max($OTM_max - $base_probability, $c->{$barrier_tier});
         }
     }
 
