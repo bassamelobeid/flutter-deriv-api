@@ -75,7 +75,7 @@
     },
     "trading_period_start": {
       "type": "integer",
-      "description":"An epoch value of a predefined trading period start time"
+      "description":"Required only for multi-barrier trading. Defines the epoch value of the trading period start time"
     },
     "product_type": {
       "description": "The product type, either basic or multi_barrier"
