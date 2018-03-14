@@ -34,18 +34,29 @@ sub forget_all {
     my ($c, $req_storage) = @_;
 
     my %removed_ids;
-    if (my $type = $req_storage->{args}->{forget_all}) {
-        if ($type eq 'balance' or $type eq 'transaction' or $type eq 'proposal_open_contract') {
-            @removed_ids{@{_forget_transaction_subscription($c, $type)}} = ();
-        }
-        if ($type eq 'proposal' or $type eq 'proposal_open_contract') {
-            @removed_ids{@{_forget_all_pricing_subscriptions($c, $type)}} = ();
-        }
-        if ($type ne 'proposal_open_contract') {
-            @removed_ids{@{_forget_feed_subscription($c, $type)}} = ();
-        }
-        if ($type eq 'proposal_array') {
-            @removed_ids{@{_forget_all_proposal_array($c)}} = ();
+    if (my $types = $req_storage->{args}->{forget_all}) {
+        # if type is a string, turn it into an array
+        $types = [$types] unless ref($types) eq 'ARRAY';
+
+        # since we accept array, syntax check should be done here
+        # TODO: move this to anyOf in JSON schema after anyOf usage in schema is fixed
+        my $accepted_types = qr/^(ticks|candles|proposal|portfolio|proposal_open_contract|balance|transaction|proposal_array)$/;
+        my @failed_types = grep { !/$accepted_types/ } @$types;
+        return $c->new_error('forget_all', 'InputValidationFailed', $c->l('Input validation failed: ') . join(', ', @failed_types)) if @failed_types;
+
+        for my $type (@$types) {
+            if ($type eq 'balance' or $type eq 'transaction' or $type eq 'proposal_open_contract') {
+                @removed_ids{@{_forget_transaction_subscription($c, $type)}} = ();
+            }
+            if ($type eq 'proposal' or $type eq 'proposal_open_contract') {
+                @removed_ids{@{_forget_all_pricing_subscriptions($c, $type)}} = ();
+            }
+            if ($type ne 'proposal_open_contract') {
+                @removed_ids{@{_forget_feed_subscription($c, $type)}} = ();
+            }
+            if ($type eq 'proposal_array') {
+                @removed_ids{@{_forget_all_proposal_array($c)}} = ();
+            }
         }
     }
     return {
