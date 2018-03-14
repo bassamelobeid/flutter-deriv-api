@@ -35,6 +35,7 @@ my $config = {
         MissingRequiredBetType        => 'Missing required contract parameters (bet_type).',
         MissingRequiredCurrency       => 'Missing required contract parameters (currency).',
         MissingRequiredMultiplier     => 'Missing required contract parameters (multiplier).',
+        MissingRequiredSelectedTick   => 'Missing required contract parameters (selected tick).',
         MinimumMultiplier             => 'Minimum multiplier of',
         MultiplierDecimalPlace        => 'Only 3 decimal places are allowed.',
         AlreadyExpired                => 'This contract has already expired.',
