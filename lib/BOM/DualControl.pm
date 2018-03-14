@@ -18,7 +18,7 @@ Create new object with the given attributes' values
 
 use 5.010;
 use Moose;
-use DateTime;
+use Date::Utility;
 use Error::Base;
 use Cache::RedisDB;
 use Crypt::NamedKeys;
@@ -244,7 +244,7 @@ sub _validate_code_expiry {
     my $code = shift;
 
     my @arry = split("_##_", $code);
-    if (DateTime->from_epoch(epoch => time)->ymd ne DateTime->from_epoch(epoch => $arry[0])->ymd) {
+    if (Date::Utility->new->date_yyyymmdd ne Date::Utility->new($arry[0])->date_yyyymmdd) {
         return Error::Base->cuss(
             -type => 'CodeExpired',
             -mesg => 'The code provided has expired. Please generate new one.',

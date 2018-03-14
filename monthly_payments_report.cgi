@@ -4,9 +4,8 @@ package main;
 use strict;
 use warnings;
 
+use Date::Utility;
 use Text::CSV;
-use DateTime;
-
 use BOM::Platform::Runtime;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType_excel );
 use BOM::Database::ClientDB;
@@ -28,21 +27,18 @@ code_exit_BO("Invalid broker code") unless $broker =~ /^[A-Z]{1,6}$/;
 my $start_date;
 try {
     $yyyymm =~ /^(\d{4})-(\d{2})$/;
-    $start_date = DateTime->new(
-        year  => $1,
-        month => $2
-    );
+    $start_date = Date::Utility->new("$year-$month-01");
 }
 catch {
     code_exit_BO("Date $yyyymm was not parsed as YYYY-MM, check it");
 };
-my $until_date = $start_date->clone->add(months => $months);
+my $until_date = $start_date->plus_months($months);
 
 my ($payment_filter, $csv_name);
 
 my @binds = (
-    $start_date->ymd,    # b0
-    $until_date->ymd,    # b1
+    $start_date->date_yyyymmdd,    # b0
+    $until_date->date_yyyymmdd,    # b1
     $broker,             # b2
 );
 
