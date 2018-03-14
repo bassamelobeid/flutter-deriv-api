@@ -64,7 +64,8 @@ sub verify_with_id {
         $original_contract,
         {
             priced_at       => 'start',
-            landing_company => $landing_company
+            landing_company => $landing_company,
+            product_type    => 'multi_barrier',
         });
     my $pricing_engine_name = $priced_at_start->pricing_engine_name;
     return {error => "Can not obtain pricing parameter for this contract as we are not supporting this pricing engine " . $pricing_engine_name}
@@ -76,8 +77,7 @@ sub verify_with_id {
     my $bid_price            = $details->{bid_price};
     my $traded_price         = $action_type eq 'buy' ? $ask_price : $bid_price;
     my $slippage             = $details->{price_slippage} // 0;
-    my $trading_period_start = $details->{trading_period_start}
-        or die 'trading_period_start not found for contract with transaction_id [' . $id . ']';
+    my $trading_period_start = $details->{trading_period_start} // $priced_at_start->{trading_period_start};
     # apply slippage according to reflect the difference between traded price and recomputed price
     my $adjusted_traded_contract_price =
         ($traded_price == $requested_price) ? ($action_type eq 'buy' ? $traded_price - $slippage : $traded_price + $slippage) : $traded_price;
