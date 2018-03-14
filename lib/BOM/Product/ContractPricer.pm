@@ -543,6 +543,7 @@ sub _build_new_interface_engine {
         'Pricing::Engine::TickExpiry'           => 1,
         'Pricing::Engine::EuropeanDigitalSlope' => 1,
         'Pricing::Engine::Lookback'             => 1,
+        'Pricing::Engine::HighLowTicks'         => 1,
     );
 
     return $engines{$self->pricing_engine_name} // 0;
