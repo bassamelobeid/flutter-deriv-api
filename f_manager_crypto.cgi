@@ -168,7 +168,7 @@ if ($view_action eq 'withdrawals') {
         code_exit_BO("Please enter a reason for rejection") if ($action eq 'Reject' && $rejection_reason eq '');
 
         my $found;
-        ($found) = $dbic->run(ping => sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?)', undef, $address, $currency) })
+        ($found) = $dbic->run(ping => sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?, ?)', undef, $address, $currency, $staff) })
             if $action eq 'Verify';
         ($found) = $dbic->run(
             ping => sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?, ?)', undef, $address, $currency, $rejection_reason) })
