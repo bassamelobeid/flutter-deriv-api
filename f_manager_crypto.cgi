@@ -160,8 +160,8 @@ if ($view_action eq 'withdrawals') {
         if not $view_type or $view_type !~ /^(?:pending|verified|rejected|processing|performing_blockchain_txn|sent|error)$/;
 
     if ($action and $action =~ /^(?:Verify|Reject)$/) {
-        my $amount  = request()->param('amount');
-        my $loginid = request()->param('loginid');
+        my $amount           = request()->param('amount');
+        my $loginid          = request()->param('loginid');
         my $rejection_reason = request()->param('rejection_reason');
 
         # Error for rejection with no reason
