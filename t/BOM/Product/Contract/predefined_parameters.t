@@ -238,7 +238,6 @@ subtest 'predefined barriers' => sub {
         }
         @$offerings;
         my $testname = join '_', map { $m->{$_} } qw(contract_category expiry_type duration);
-        $DB::single = 1;
         cmp_bag($offering->{available_barriers}, $test->{available_barriers}, 'available barriers for ' . $testname);
         cmp_bag($offering->{expired_barriers},   $test->{expired_barriers},   'expired barriers for ' . $testname);
     }
