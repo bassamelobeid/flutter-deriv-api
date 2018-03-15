@@ -165,7 +165,7 @@ if ($view_action eq 'withdrawals') {
         my $rejection_reason = request()->param('rejection_reason');
 
         # Error for rejection with no reason
-        code_exit_BO("Please enter a reason for rejection") if $action == 'Reject' && $rejection_reason == '';
+        code_exit_BO("Please enter a reason for rejection") if ($action eq 'Reject' && $rejection_reason eq '');
 
         my $found;
         ($found) = $dbic->run(ping => sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?)', undef, $address, $currency) })
