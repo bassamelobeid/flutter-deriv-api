@@ -165,7 +165,7 @@ is($legacy_bet->financial_market_bet_open_record->underlying_symbol, $underlying
 cmp_ok($legacy_bet->financial_market_bet_open_record->payout_price, '==', financialrounding('amount', 'USD', $payout_price), 'payout_price');
 cmp_ok($legacy_bet->financial_market_bet_open_record->buy_price,    '==', financialrounding('amount', 'USD', $buy_price),    'buy_price');
 cmp_ok($legacy_bet->financial_market_bet_open_record->sell_price,   '==', financialrounding('amount', 'USD', $sell_price),   'sell_price');
-is($legacy_bet->financial_market_bet_open_record->expiry_time, $expiry_time, 'expiry_time');
+is($legacy_bet->financial_market_bet_open_record->expiry_time->epoch, $expiry_time->epoch, 'expiry_time');
 is($legacy_bet->financial_market_bet_open_record->is_expired,  $is_expired,  'is_expired');
 is($legacy_bet->financial_market_bet_open_record->is_sold,     1,            'is_sold');
 is($legacy_bet->financial_market_bet_open_record->bet_class,   $bet_class,   'bet_class');
