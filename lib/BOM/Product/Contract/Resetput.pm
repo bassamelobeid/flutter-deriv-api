@@ -4,6 +4,12 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
+use BOM::Product::Pricing::Greeks::Digits;
+
+sub _build_greek_engine {
+    return BOM::Product::Pricing::Greeks::Digits->new({bet => shift});
+}
+
 sub ticks_to_expiry {
     # Add one since we want N ticks *after* the entry spot
     return shift->tick_count + 1;

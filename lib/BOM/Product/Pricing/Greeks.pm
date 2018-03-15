@@ -168,9 +168,6 @@ sub get_greek {
 
     return 0.0 if not $self->bet->is_binary;
 
-    #just testing
-    return 0.0 if $self->bet->pricing_code =~ /^(RESETCALL|RESETPUT)/;
-
     return $self->formulae->{$greek}
         ->($args->{spot}, @barrier_args, $args->{t}, $bet->discount_rate, $bet->mu, $vol_to_use, $args->{payouttime_code});
 }
