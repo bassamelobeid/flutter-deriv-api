@@ -141,11 +141,16 @@
                             <input type="hidden" name="amount" value="[% trx.amount %]"/>
                             <input type="hidden" name="loginid" value="[% trx.client_loginid %]"/>
                             <input type="hidden" name="view_action" value="withdrawals"/>
-                            <label for="dual_control_code">Dual Code:</label>
-                            <input type="text"   name="dual_control_code"/>
+                            <label for="approvers">Approvers:</label>
                             <br/>
-                            <input type="submit" name="action" value="verify"/>
-                            <input type="submit" name="action" value="reject"/>
+                            <input type="textarea" name="approvers" readonly="readonly" placeholder="(None)"/>
+                            <br/>
+                            <label for="rejection_reason">Reason:</label>
+                            <br/>
+                            <input type="text"   name="rejection_reason" placeholder="Reason for rejecton..."/>
+                            <br/>
+                            <input type="submit" name="action" value="Verify"/>
+                            <input type="submit" name="action" value="Reject"/>
                         </form>
                     </tbody></table></td>
                 [% END %]
