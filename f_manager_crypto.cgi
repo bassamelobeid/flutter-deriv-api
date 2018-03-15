@@ -169,9 +169,9 @@ if ($view_action eq 'withdrawals') {
 
         my $found;
         ($found) = $dbic->run(ping => sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?)', undef, $address, $currency) })
-            if $action eq 'verify';
+            if $action eq 'Verify';
         ($found) = $dbic->run(ping => sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?)', undef, $address, $currency) })
-            if $action eq 'reject';
+            if $action eq 'Reject';
 
         code_exit_BO("ERROR: No record found. Please check with someone from IT team before proceeding.")
             unless ($found);

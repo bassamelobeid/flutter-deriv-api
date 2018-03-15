@@ -147,7 +147,7 @@
                             <br/>
                             <label for="rejection_reason">Reason:</label>
                             <br/>
-                            <input type="text"   name="rejection_reason" placeholder="Reason for rejecton..."/>
+                            <input type="text"   name="rejection_reason" placeholder="Reason for rejection..."/>
                             <br/>
                             <input type="submit" name="action" value="Verify"/>
                             <input type="submit" name="action" value="Reject"/>
