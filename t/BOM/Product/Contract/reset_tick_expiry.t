@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 2;
+use Test::More tests => 3;
 use Test::Warnings;
 use Test::Exception;
 use Test::MockModule;
@@ -70,3 +70,36 @@ subtest 'tick expiry reset' => sub {
     is $c2->exit_tick->quote, 111, 'exit tick is the 6th tick after contract start time';
 };
 
+subtest 'barrier reset is correct' => sub {
+    my $args = {
+        underlying   => 'R_100',
+        bet_type     => 'RESETPUT',
+        date_start   => $one_day,
+        date_pricing => $one_day->plus_time_interval('3s'),
+        duration     => '5t',
+        currency     => 'USD',
+        payout       => 100,
+        barrier      => 'S0P'
+    };
+
+    my $c = produce_contract($args);
+    is $c->barrier->as_absolute, '101.00', 'prior to barrier reset';
+
+    $args->{date_pricing} = $one_day->plus_time_interval('5s');
+    $c = produce_contract($args);
+    is $c->barrier->as_absolute, '101.00', 'prior to barrier reset';
+
+    $args->{date_pricing} = $one_day->plus_time_interval('6s');
+    $c = produce_contract($args);
+    is $c->barrier->as_absolute, '101.00', 'prior to barrier reset';
+
+    $args->{date_pricing} = $one_day->plus_time_interval('7s');
+    $c = produce_contract($args);
+    is $c->barrier->as_absolute, '101.00', 'prior to barrier reset';
+
+    $args->{date_pricing} = $one_day->plus_time_interval('8s');
+    $c = produce_contract($args);
+    is $c->barrier->as_absolute, '103.00', 'barrier resets as expected';
+
+    is $c->reset_time->seconds, 8, 'reset time is correct';
+};
