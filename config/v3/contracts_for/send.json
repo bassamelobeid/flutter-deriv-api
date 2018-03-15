@@ -17,15 +17,13 @@
           "default": "USD"
         },
         "product_type":{
-            "type":"string",
+            "enum":["basic" , "multi_barrier"],
             "description":"Set to 'multi_barrier' to get a list of contracts with predefined trading windows and barriers for a given symbol.",
-            "pattern":"^(multi_barrier|basic)$",
             "default": "basic"
         },
         "landing_company":{
             "enum":["iom","malta","maltainvest","costarica","virtual", "japan", "japan-virtual", "vanuatu", "champion", "champion-virtual"],
             "description":"Indicates which landing_company to get a list of contracts for",
-            "pattern":"^\\w{2,30}$",
             "default": "costarica"
         },
         "passthrough":{

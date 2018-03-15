@@ -6,7 +6,7 @@
   "properties": {
     "landing_company_details": {
       "enum":["iom","malta","maltainvest","costarica","virtual", "japan", "japan-virtual", "vanuatu", "champion", "champion-virtual"],
-      "description": "Landing company shortcode (for example: costarica, malta, maltainvest, iom)",
+      "description": "Landing company shortcode",
       "required": "1"
     },
     "passthrough": {
