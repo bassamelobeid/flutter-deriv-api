@@ -4,7 +4,7 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::AmericanExpiry', 'BOM::Product::Role::HighLowTicks';
 
-use List::Util qw/max any/;
+use List::Util qw/any/;
 
 use Pricing::Engine::HighLowTicks;
 
@@ -44,7 +44,7 @@ sub check_expiry_conditions {
 }
 
 sub _validate_barrier {
-    return;    # override barrier validation
+    return undef;    # override barrier validation
 }
 
 no Moose;

@@ -31,12 +31,8 @@ sub _build_selected_tick {
 }
 
 override shortcode => sub {
-
     my $self = shift;
-    my @shortcode_elements =
-        ($self->code, $self->underlying->symbol, $self->payout + 0, $self->date_start->epoch, $self->tick_count . 't', $self->selected_tick);
-
-    return join '_', @shortcode_elements;
+    return join '_', ($self->code, $self->underlying->symbol, $self->payout + 0, $self->date_start->epoch, $self->tick_count . 't', $self->selected_tick);
 };
 
 1;

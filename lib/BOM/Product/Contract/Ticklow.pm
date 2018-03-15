@@ -4,7 +4,7 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::AmericanExpiry', 'BOM::Product::Role::HighLowTicks';
 
-use List::Util qw/any min/;
+use List::Util qw/any/;
 
 use Pricing::Engine::HighLowTicks;
 
