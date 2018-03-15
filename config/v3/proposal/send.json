@@ -27,9 +27,8 @@
       "required": "1"
     },
     "contract_type": {
-      "type": "string",
-      "description":"A valid contract-type",
-      "pattern": "^\\w{2,30}$",
+      "description":"The proposed contract type",
+      "enum": ["UPORDOWN", "EXPIRYRANGE", "ONETOUCH", "CALLE", "LBHIGHLOW", "INVALID", "ASIAND", "EXPIRYRANGEE", "DIGITDIFF", "DIGITMATCH", "DIGITOVER", "PUTE", "DIGITUNDER", "VANILLA_CALL", "NOTOUCH", "CALL", "RANGE", "LBFLOATPUT", "DIGITODD", "PUT", "ASIANU", "LBFLOATCALL", "VANILLA_PUT", "EXPIRYMISSE", "EXPIRYMISS", "DIGITEVEN"],
       "required": "1"
     },
     "currency": {
@@ -78,7 +77,7 @@
       "description":"Required only for multi-barrier trading. Defines the epoch value of the trading period start time"
     },
     "product_type": {
-      "description": "The product type, either basic or multi_barrier"
+      "description": "The product type, either basic or multi_barrier",
       "enum": ["multi_barrier", "basic"],
       "default": "basic"
     },

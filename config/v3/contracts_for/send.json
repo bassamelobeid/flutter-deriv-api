@@ -23,8 +23,8 @@
             "default": "basic"
         },
         "landing_company":{
-            "type":"string",
-            "description":"Optional landing_company field. Set to a specific landing company if you want to get a list of contracts for a specific landing company.",
+            "enum":["iom","malta","maltainvest","costarica","virtual", "japan", "japan-virtual", "vanuatu", "champion", "champion-virtual"],
+            "description":"Indicates which landing_company to get a list of contracts for",
             "pattern":"^\\w{2,30}$",
             "default": "costarica"
         },
