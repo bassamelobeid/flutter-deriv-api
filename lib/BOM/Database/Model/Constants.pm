@@ -41,6 +41,7 @@ our $BET_CLASS_TO_TYPE_MAP = {
 
     'touch_bet' => ['ONETOUCH',   'NOTOUCH'],
     'digit_bet' => ['DIGITMATCH', 'DIGITDIFF', 'DIGITOVER', 'DIGITUNDER', 'DIGITODD', 'DIGITEVEN'],
+    'tick_bet'  => ['TICKHIGH',   'TICKLOW'],
     'lookback_option' => ['LBFIXEDCALL', 'LBFIXEDPUT', 'LBFLOATCALL', 'LBFLOATPUT', 'LBHIGHLOW'],
     'INVALID'         => ['INVALID'],
 };
