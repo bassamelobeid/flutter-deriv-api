@@ -232,16 +232,18 @@ sub _set_price_calculator_params {
 sub _build_reset_time {
     my $self = shift;
 
-    my $duration = 0.5 * ($self->date_expiry->epoch - $self->date_start->epoch);
+    my $duration = int(0.5 * ($self->date_expiry->epoch - $self->date_start->epoch)) + 1;
 
-    if (not isint($duration)) {
-        $duration = 0.5 * (($self->date_expiry->epoch - $self->date_start->epoch) - 1);
+    #Below code only takes into account the vol indices.
+    #In the future, if we want to do forex, we will have to change here.
+    #Here, we are also assuming that ticks are 2 seconds apart.
+    if ($self->tick_expiry) {
+        $duration = $self->tick_count + 1;
+        my $odd_sec   = $self->date_start->epoch % 2;
+        my $extra_sec = 2;
+        $extra_sec = 1 if $odd_sec;
+        $duration = $duration + $extra_sec;
     }
-
-    #For volatility indices, after discussion with the team,
-    #it is safe to assume 1 tick is 2 secs.
-    # 0.5 * tick_count * 2secs = tick_count
-    $duration = $self->tick_count if $self->tick_expiry;
 
     my $reset_time = Time::Duration::Concise->new(interval => $duration . 's');
     return $reset_time;
