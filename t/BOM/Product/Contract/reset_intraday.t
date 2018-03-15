@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 3;
+use Test::More tests => 4;
 use Test::Warnings;
 use Test::Exception;
 use Test::MockModule;
@@ -100,3 +100,20 @@ subtest 'intraday barrier reset is correct' => sub {
     is $c->barrier->as_absolute, '102.00', 'barrier reset works as expected.';
 };
 
+subtest 'validation' => sub {
+    my $args = {
+        underlying   => 'R_100',
+        bet_type     => 'RESETPUT',
+        date_start   => $one_day,
+        date_pricing => $one_day,
+        duration     => '5m',
+        currency     => 'USD',
+        payout       => 100,
+        barrier      => 'S20P',
+    };
+
+    my $c = produce_contract($args);
+
+    ok !$c->is_valid_to_buy, 'not valid to buy';
+    is $c->primary_validation_error->message, 'Non atm barrier for reset contract is not allowed.', 'error message checked';
+};

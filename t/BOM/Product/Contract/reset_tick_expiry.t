@@ -103,3 +103,4 @@ subtest 'barrier reset is correct' => sub {
 
     is $c->reset_time->seconds, 8, 'reset time is correct';
 };
+
