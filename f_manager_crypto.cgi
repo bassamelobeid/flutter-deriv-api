@@ -159,20 +159,13 @@ if ($view_action eq 'withdrawals') {
     code_exit_BO("Invalid selection to view type of transactions.")
         if not $view_type or $view_type !~ /^(?:pending|verified|rejected|processing|performing_blockchain_txn|sent|error)$/;
 
-    if ($action and $action =~ /^(?:verify|reject)$/) {
-        my $dcc_code = request()->param('dual_control_code');
-        code_exit_BO("ERROR: Please provide valid dual control code")
-            unless $dcc_code;
-
+    if ($action and $action =~ /^(?:Verify|Reject)$/) {
         my $amount  = request()->param('amount');
         my $loginid = request()->param('loginid');
+        my $rejection_reason = request()->param('rejection_reason');
 
-        my $error = BOM::DualControl->new({
-                staff           => $staff,
-                transactiontype => $address
-            })->validate_payment_control_code($dcc_code, $loginid, $currency, $amount);
-
-        code_exit_BO($error->get_mesg()) if $error;
+        # Error for rejection with no reason
+        code_exit_BO("Please enter a reason for rejection") if $action == 'Reject' && $rejection_reason == '';
 
         my $found;
         ($found) = $dbic->run(ping => sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?)', undef, $address, $currency) })
