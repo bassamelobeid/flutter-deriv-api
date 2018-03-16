@@ -46,9 +46,12 @@ sub start_document_upload {
     _set_staff($client);
 
     my $query_result = BOM::Platform::Client::DocumentUpload::start_document_upload(
-        client => $client, doctype => $document_type, docformat => $document_format, file_checksum => $expected_checksum,
+        client          => $client,
+        doctype         => $document_type,
+        docformat       => $document_format,
+        file_checksum   => $expected_checksum,
         expiration_date => $args->{expiration_date},
-        document_id => ($args->{document_id} || ''));
+        document_id     => ($args->{document_id} || ''));
 
     return create_upload_error('duplicate_document') if $query_result->{error} and $query_result->{error}->{dup};
 
@@ -75,7 +78,9 @@ sub successful_upload {
 
     _set_staff($client);
 
-    my $query_result = BOM::Platform::Client::DocumentUpload::finish_document_upload(client => $client, file_id => $args->{file_id});
+    my $query_result = BOM::Platform::Client::DocumentUpload::finish_document_upload(
+        client  => $client,
+        file_id => $args->{file_id});
 
     return create_upload_error('duplicate_document') if $query_result->{error} and $query_result->{error}->{dup};
 
