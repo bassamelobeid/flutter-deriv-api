@@ -803,11 +803,7 @@ subtest 'get_bid - expired contract' => sub {
 subtest 'send_ask - landing company japan' => sub {
     my $now = Date::Utility->new;
     BOM::Test::Data::Utility::FeedTestDatabase::create_historical_ticks();
-    BOM::Test::Data::Utility::FeedTestDatabase::create_realtime_tick({
-        underlying => 'frxUSDJPY',
-        epoch      => $now->epoch,
-        quote      => 100
-    });
+    my ($trading_period) = BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_parameters_for('frxUSDJPY', $now);
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
@@ -829,7 +825,7 @@ subtest 'send_ask - landing company japan' => sub {
             landing_company    => 'japan',
             barrier            => 100,
             "streaming_params" => {add_theo_probability => 1},
-            trading_period_start => time,
+            trading_period_start => $trading_period->[0]->{date_start}{epoch},
         }};
     my $result = $c->call_ok('send_ask', $params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError')->result;
     is $result->{error}->{message_to_client}, 'Trading is not offered for this asset.', 'error message is correct';
@@ -840,8 +836,9 @@ subtest 'send_ask - landing company japan' => sub {
     $result = $c->call_ok('send_ask', $params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError')->result;
     is $result->{error}->{message_to_client}, 'Trading is not offered for this duration.', 'error message is correct';
 
-    $params->{args}{duration}      = 2;
-    $params->{args}{duration_unit} = 'm';
+    delete $params->{args}{duration};
+    delete $params->{args}{duration_unit};
+    $params->{args}{date_expiry} = $trading_period->[0]->{date_expiry}{epoch};
     $c->call_ok('send_ask', $params)->has_no_system_error->has_no_error;
 };
 
