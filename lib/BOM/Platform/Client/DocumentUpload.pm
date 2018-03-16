@@ -6,15 +6,15 @@ use warnings;
 use Try::Tiny;
 
 sub start_document_upload {
-    my ($client, $loginid, $doctype, $docformat, $file_checksum, $expiration_date, $document_id) = @_;
+    my (%args) = @_;
     return _do_query(
-        $client,
+        $args{client},
         [
             'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?)',
-            undef, $loginid, $doctype, $docformat,
-            $expiration_date || undef,
-            $document_id     || '',
-            $file_checksum
+            undef, $args{client}->loginid, $args{doctype}, $args{docformat},
+            $args{expiration_date} || undef,
+            $args{document_id}     || '',
+            $args{file_checksum}
         ]);
 }
 
@@ -73,10 +73,7 @@ sub _is_duplicate_upload_error {
     my $dbh = shift;
 
     # Duplicate uploads are detected using a unique index on the document table.
-    #   23505 is the PSQL error code for a unique_violation.
-
-    return $dbh->state eq '23505'
-        && $dbh->errstr =~ /\(((client_loginid|checksum|document_type)(, ?)?){3}\)/;
+    #   23505 is the PostgreSQL error code for a unique_violation.
 
     # Sample errstr (where "duplicate_upload_error" is the name of the unique index):
     #   ERROR:  duplicate key value violates unique constraint "duplicate_upload_error"
@@ -92,6 +89,9 @@ sub _is_duplicate_upload_error {
     # - Inside match either 'client_loginid', 'checksum', or 'document_type'
     #   - followed by either *nothing*, *comma*, or *comma space*
     #   - match this 3 times
+
+    return $dbh->state eq '23505'
+        && $dbh->errstr =~ /\(((client_loginid|checksum|document_type)(, ?)?){3}\)/;
 }
 
 1;
