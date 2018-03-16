@@ -42,7 +42,6 @@ sub get_s3_url {
 sub upload {
     my ($original_filename, $upload_file_handle, $checksum) = @_;
 
-    # content can be 0 therefore check with defined
     die 'Unable to read the upload file handle' unless tell($upload_file_handle) != -1;
 
     my %config = %$document_auth_s3;
