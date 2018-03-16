@@ -191,13 +191,13 @@ override _build_theo_price => sub {
 
     # pricing_engine->theo_price gives the price per unit. It is then multiplied with $self->multiplier
     # to get the theo price of the option.
-    return $self->is_expired ? $self->value : $self->pricing_engine->theo_price * $self->multiplier;
+    return $self->is_expired ? $self->value : $self->adj_theo_price * $self->multiplier;
 };
 
 override _build_ask_price => sub {
     my $self = shift;
 
-    my $theo_price = $self->pricing_engine->theo_price;
+    my $theo_price = $self->adj_theo_price;
 
     my $commission = $theo_price * $self->base_commission;
     $commission = max(0.01, $commission);
