@@ -24,7 +24,7 @@ my %defaults = (
 );
 $redis->zadd($undec_key, $defaults{epoch}, $encoder->encode(\%defaults));
 
-my $cache = BOM::Market::DataDecimate->new();
+my $cache = BOM::Market::DataDecimate->new({market => 'forex'});
 
 my $rtick = $cache->_get_num_data_from_cache({
     symbol    => 'frxUSDJPY',
