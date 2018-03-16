@@ -374,8 +374,7 @@ subtest 'date start blackouts' => sub {
     my $mocked_hl = Test::MockModule->new('BOM::Product::Contract::PredefinedParameters');
     $mocked_hl->mock('_get_expired_barriers', sub { [] });
     $c = produce_contract($bet_params);
-    ok $c->is_valid_to_buy, 'valid for japan';
-    delete $bet_params->{landing_company};
+    ok !$c->is_valid_to_buy, 'invalid to buy contracts expiring after 18:15GMT';
 };
 
 subtest 'date_expiry blackouts' => sub {

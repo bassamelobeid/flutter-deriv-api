@@ -12,10 +12,13 @@ use Cache::RedisDB;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Platform::RedisReplicated;
+use BOM::MarketData qw(create_underlying);
 
 initialize_realtime_ticks_db();
 
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
+use BOM::Market::DataDecimate;
 
 my $now = Date::Utility->new;
 
@@ -57,7 +60,36 @@ my $bet_params = {
     amount_type  => 'multiplier'
 };
 
+
+#setup raw cache for R_100
+my $single_data = {
+                 'symbol' => 'R_100',
+                 'epoch' => $now->epoch - 1,
+                 'quote' => '100',
+               };
+my $decimate_cache = BOM::Market::DataDecimate->new({market=>'volidx'});
+
+my $key          = $decimate_cache->_make_key('R_100', 0);
+$decimate_cache->_update($decimate_cache->redis_write, $key, $now->epoch - 1, $decimate_cache->encoder->encode($single_data));
+
+$single_data = {
+                 'symbol' => 'R_100',
+                 'epoch' => $now->epoch,
+                 'quote' => '101',
+               };
+
+$decimate_cache->_update($decimate_cache->redis_write, $key, $now->epoch, $decimate_cache->encoder->encode($single_data));
+
+$single_data = {
+                 'symbol' => 'R_100',
+                 'epoch' => $now->epoch + 1,
+                 'quote' => '103',
+               };
+
+$decimate_cache->_update($decimate_cache->redis_write, $key, $now->epoch + 1, $decimate_cache->encoder->encode($single_data));
+
 subtest 'spot min max lbfloatcall' => sub {
+
     create_ticks(([100, $now->epoch - 1, 'R_100']));
     my $c = produce_contract($bet_params);
 
