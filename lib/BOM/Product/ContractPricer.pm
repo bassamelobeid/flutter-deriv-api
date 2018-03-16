@@ -265,7 +265,7 @@ sub _create_new_interface_engine {
             underlying_symbol         => $self->underlying->symbol,
             date_start                => $self->effective_start,
             date_pricing              => $self->date_pricing,
-            ticks                     => BOM::Market::DataDecimate->new()->tick_cache_get_num_ticks({
+            ticks                     => BOM::Market::DataDecimate->new({market => $self->market->name})->tick_cache_get_num_ticks({
                     underlying => $self->underlying,
                     end_epoch  => $self->date_start->epoch,
                     num        => 20,
