@@ -143,11 +143,29 @@ has sampling_frequency => (
     },
 );
 
+has market => (
+    is       => 'ro',
+    required => 1,
+);
+
 # size is the number of ticks
 has data_cache_size => (
     is      => 'ro',
-    default => 1860,
+    lazy    => 1,
+    builder => '_build_data_cache_size',
 );
+
+sub _build_data_cache_size {
+    my $self   = shift;
+    my $market = $self->market;
+
+# We added 1 sec here as a buffer, thus for forex
+# it is 31 secs and 301secs for volidx.
+    my $cache_size = 31 * 60;
+    $cache_size = 301 * 60 if ($market eq 'volidx');
+
+    return $cache_size;
+}
 
 has decimate_cache_size => (
     is      => 'ro',
