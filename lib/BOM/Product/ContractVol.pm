@@ -260,7 +260,7 @@ sub ticks_for_short_term_volatility_calculation {
 sub _get_ticks_for_volatility_calculation {
     my ($self, $period) = @_;
 
-    my $decimate = BOM::Market::DataDecimate->new;
+    my $decimate = BOM::Market::DataDecimate->new({market => $self->market->name});
     my @ticks =
         map {
         $decimate->get({

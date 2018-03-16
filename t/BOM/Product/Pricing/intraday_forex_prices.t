@@ -57,7 +57,7 @@ my $hist_ticks = $underlying->ticks_in_between_start_end({
 
 my @tmp_ticks = reverse @$hist_ticks;
 
-my $decimate_cache = BOM::Market::DataDecimate->new;
+my $decimate_cache = BOM::Market::DataDecimate->new({market=>'forex'});
 
 my $key          = $decimate_cache->_make_key('frxUSDJPY', 0);
 my $decimate_key = $decimate_cache->_make_key('frxUSDJPY', 1);
