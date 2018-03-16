@@ -535,10 +535,10 @@ subtest 'sell_expired_contracts', sub {
             amount_type  => 'multiplier',
             date_start   => ($now->epoch - 50) - (30 * 60),
             date_expiry  => $now->epoch - 50,
+            date_pricing => $now,
             current_tick => $tick,
             entry_tick   => $old_tick1,
             exit_tick    => $old_tick2,
-            barrier      => 'S20P',
         });
 
         my $txn = BOM::Transaction->new({
