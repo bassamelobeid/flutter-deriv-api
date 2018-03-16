@@ -89,7 +89,7 @@
                     "required": "1"
                 },
                 "place_of_birth": {
-                    "type": "null"
+                    "type": "string"
                 },
                 "tax_residence": {
                     "type": ""
