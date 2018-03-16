@@ -76,15 +76,44 @@ has adj_coefficient => (
     lazy_build => 1,
 );
 
+has adj_sign => (
+    is         => 'ro',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
+has adj_theo_price => (
+    is         => 'ro',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
 sub _build_adj_coefficient {
     my $self = shift;
 
-    my $beta               = 0.5826;
+    my $beta = 0.5826;
     my $one_second_in_year = 1 / (365 * 24 * 60 * 60);
-    my $adj_sign           = ($self->pricing_code eq 'LBFLOATCALL') ? 1 : -1;
 
-    my $adj_coeff = exp($adj_sign * $beta * $self->pricing_vol * sqrt(2 * $one_second_in_year));
+    my $adj_coeff = exp($self->adj_sign * $beta * $self->pricing_vol * sqrt(2 * $one_second_in_year));
     return $adj_coeff;
+}
+
+sub _build_adj_sign {
+    my $self = shift;
+    my $adj_sign = ($self->pricing_code eq 'LBFLOATCALL') ? 1 : -1;
+    return $adj_sign;
+}
+
+sub _build_adj_theo_price {
+    my $self = shift;
+
+    my $orig_theo_price = $self->pricing_engine->theo_price;
+
+    my $adj_theo_price = $self->adj_coefficient * $orig_theo_price - ($self->adj_sign * ($self->adj_coefficient - 1) * $self->pricing_spot);
+
+    # Markup based on calibration result.
+    $adj_theo_price = $adj_theo_price * 1.005;
+    return $adj_theo_price;
 }
 
 has [qw(spot_min_max)] => (
