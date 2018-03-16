@@ -143,7 +143,7 @@
                             <input type="hidden" name="view_action" value="withdrawals"/>
                             <label for="approvers">Approvers:</label>
                             <br/>
-                            <input type="textarea" name="approvers" readonly="readonly" placeholder="(None)" value="[% trx.approvers %]"/>
+                            <input type="textarea" name="approvers" readonly="readonly" placeholder="(None)" value="[% trx.approvers.0 %]"/>
                             <br/>
                             <label for="rejection_reason">Reason:</label>
                             <br/>
