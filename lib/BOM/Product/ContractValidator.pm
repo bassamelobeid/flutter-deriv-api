@@ -407,8 +407,8 @@ sub _validate_input_parameters {
         }
     }
 
-    if ($self->category_code eq 'reset') {
-        if (defined $self->supplied_barrier and $self->supplied_barrier ne 'S0P') {
+    if ($self->category_code eq 'reset' and not $self->for_sale) {
+        if ($self->supplied_barrier ne 'S0P') {
             return {
                 message           => 'Non atm barrier for reset contract is not allowed.',
                 message_to_client => [$ERROR_MAPPING->{ResetBarrierError}],
