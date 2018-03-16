@@ -279,8 +279,8 @@ subtest 'get_ask' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'       => '208.00',
-        'ask_price'           => '208.00',
+        'display_value'       => '202.00',
+        'ask_price'           => '202.00',
         'longcode'            => "Win USD 100 times Volatility 50 Index's close minus low over the next 15 minutes.",
         'multiplier'          => '100',
         'spot'                => '963.3054',
