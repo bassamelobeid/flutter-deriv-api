@@ -278,9 +278,14 @@ if ($input{whattodo} eq 'uploadID') {
         }
         my $file_checksum = Digest::MD5->new->addfile($filetoupload)->hexdigest;
 
-        my $query_result =
-            BOM::Platform::Client::DocumentUpload::start_document_upload(client => $client, doctype => $doctype, docformat => $docformat, file_checksum => $file_checksum, expiration_date => $expiration_date,
-            document_id => $document_id);
+        my $query_result = BOM::Platform::Client::DocumentUpload::start_document_upload(
+            client          => $client,
+            doctype         => $doctype,
+            docformat       => $docformat,
+            file_checksum   => $file_checksum,
+            expiration_date => $expiration_date,
+            document_id     => $document_id
+        );
 
         if ($query_result->{error} or not $query_result->{result}) {
             $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: $query_result->{error}->{msg}</p><br />";
@@ -293,7 +298,11 @@ if ($input{whattodo} eq 'uploadID') {
         my $checksum = BOM::Backoffice::Script::DocumentUpload::upload($new_file_name, $filetoupload, $file_checksum)
             or die "Upload failed for $filetoupload";
 
-        $query_result = BOM::Platform::Client::DocumentUpload::finish_document_upload(client => $client, file_id => $file_id, comments => $comments);
+        $query_result = BOM::Platform::Client::DocumentUpload::finish_document_upload(
+            client   => $client,
+            file_id  => $file_id,
+            comments => $comments
+        );
 
         if ($query_result->{error} or not $query_result->{result}) {
             $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: $query_result->{error}->{msg}</p><br />";
