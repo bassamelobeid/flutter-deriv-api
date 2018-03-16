@@ -11,11 +11,11 @@ sub start_document_upload {
         $args{client},
         [
             'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?)',
-            undef, $args{client}->loginid, $args{doctype}, $args{docformat},
+            undef, $args{client}->loginid,
+            $args{doctype}, $args{docformat},
             $args{expiration_date} || undef,
             $args{document_id}     || '',
-            $args{file_checksum}
-        ]);
+            $args{file_checksum}]);
 }
 
 sub finish_document_upload {
