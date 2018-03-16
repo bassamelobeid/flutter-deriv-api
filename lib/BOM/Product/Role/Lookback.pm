@@ -63,6 +63,30 @@ sub _build_minimum_multiplier {
     return $minimum_multiplier // 0;
 }
 
+=head2 adj_coefficient
+
+This is used to fix the overpricing issue.
+It is based on page 81 FX Options and Structured Products (Uwe Wystup).
+
+=cut
+
+has adj_coefficient => (
+    is         => 'ro',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
+sub _build_adj_coefficient {
+    my $self = shift;
+
+    my $beta               = 0.5826;
+    my $one_second_in_year = 1 / (365 * 24 * 60 * 60);
+    my $adj_sign           = ($self->pricing_code eq 'LBFLOATCALL') ? 1 : -1;
+
+    my $adj_coeff = exp($adj_sign * $beta * $self->pricing_vol * sqrt(2 * $one_second_in_year));
+    return $adj_coeff;
+}
+
 has [qw(spot_min_max)] => (
     is         => 'ro',
     lazy_build => 1,
