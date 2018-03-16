@@ -13,7 +13,7 @@ use JSON::MaybeXS;
 use Date::Utility;
 use ExpiryQueue qw( enqueue_new_transaction enqueue_multiple_new_transactions );
 use Try::Tiny;
-use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_count);
+use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_count stats_gauge);
 
 use Brands;
 use Client::Account;
@@ -40,6 +40,7 @@ use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Database::Helper::RejectedTrade;
 use BOM::Database::ClientDB;
 use BOM::Transaction::Validation;
+use BOM::Platform::RedisReplicated;
 
 =head1 NAME
 
@@ -621,6 +622,12 @@ sub buy {
 
     enqueue_new_transaction(_get_params_for_expiryqueue($self));    # For soft realtime expiration notification.
 
+    if ($self->client->broker_code eq 'JP') {
+        my $klfb_limit_cache = BOM::Platform::RedisReplicated::redis_read()->get('klfb_limit::JP');
+        my $new_klfb_limit = $klfb_limit_cache + ($fmb->{payout_price} - $fmb->{buy_price});
+        BOM::Platform::RedisReplicated::redis_write()->set('klfb_limit::JP', $new_klfb_limit);
+        stats_gauge('klfb_limit', $new_klfb_limit);
+    }
     return;
 }
 
@@ -878,7 +885,12 @@ sub sell {
     $self->balance_after($txn->{balance_after});
     $self->transaction_id($txn->{id});
     $self->reference_id($buy_txn_id);
-
+    if ($self->client->broker_code eq 'JP') {
+        my $klfb_limit_cache = BOM::Platform::RedisReplicated::redis_read()->get('klfb_limit::JP');
+        my $new_klfb_limit = $klfb_limit_cache + ($fmb->{sell_price} - $fmb->{buy_price}) - (($fmb->{payout_price} - $fmb->{buy_price}));
+        BOM::Platform::RedisReplicated::redis_write()->set('klfb_limit::JP', $new_klfb_limit);
+        stats_gauge('klfb_limit', $new_klfb_limit);
+    }
     return;
 }
 
