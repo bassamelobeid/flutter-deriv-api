@@ -213,6 +213,33 @@ subtest $method => sub {
         '... and had warning about failed produce_contract'
     );
 
+    #setup raw cache for R_100
+    my $single_data = {
+        'symbol' => 'R_50',
+        'epoch'  => 1127287461,
+        'quote'  => '76.8996',
+    };
+    my $decimate_cache = BOM::Market::DataDecimate->new({market => 'volidx'});
+
+    my $key = $decimate_cache->_make_key('R_50', 0);
+    $decimate_cache->_update($decimate_cache->redis_write, $key, 1127287461, $decimate_cache->encoder->encode($single_data));
+
+    $single_data = {
+        'symbol' => 'R_50',
+        'epoch'  => 1127287463,
+        'quote'  => '76.8996',
+    };
+
+    $decimate_cache->_update($decimate_cache->redis_write, $key, 1127287463, $decimate_cache->encoder->encode($single_data));
+
+    $single_data = {
+        'symbol' => 'R_50',
+        'epoch'  => 1127287510,
+        'quote'  => '76.8996',
+    };
+
+    $decimate_cache->_update($decimate_cache->redis_write, $key, 1127287510, $decimate_cache->encoder->encode($single_data));
+
     my $contract = _create_contract();
     $params->{short_code} = $contract->shortcode;
     $params->{currency}   = 'USD';
