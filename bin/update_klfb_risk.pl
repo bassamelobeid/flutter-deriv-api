@@ -5,6 +5,7 @@ use JSON::MaybeXS;
 use BOM::Database::ClientDB;
 use Date::Utility;
 use BOM::Platform::RedisReplicated;
+use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_count stats_gauge);
 
 my $klfb_risk_cache = BOM::Platform::RedisReplicated::redis_read()->get('klfb_risk::JP');
 if (undef $klfb_risk_cache) {
@@ -25,4 +26,8 @@ if (undef $klfb_risk_cache) {
     BOM::Platform::RedisReplicated::redis_write()->set('klfb_risk::JP', $risk, 'EX', 24 * 60 * 60);
 
     return;
+} else {
+
+    stats_gauge('klfb_risk_level', $klfb_risk_cache);
+
 }
