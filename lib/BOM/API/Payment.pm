@@ -17,7 +17,7 @@ use Log::Dispatch::Screen;
 use Data::Dumper;
 
 # BOM
-use Client::Account;
+use BOM::User::Client;
 use Digest::SHA ();
 use XML::Simple;
 
@@ -183,7 +183,7 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
                 unless ($client_loginid =~ /^[A-Z]{2,6}\d{3,}$/) {
                     return [401, [], ['Authorization required']];
                 }
-                my $client = Client::Account->new({
+                my $client = BOM::User::Client->new({
                         loginid      => $client_loginid,
                         db_operation => 'replica'
                     })
@@ -223,7 +223,7 @@ sub authen_cb {
     my ($username, $password, $env) = @_;
 
     my $client = try {
-        Client::Account->new({loginid => $username});
+        BOM::User::Client->new({loginid => $username});
     } || return;
     return unless Digest::SHA::sha256_hex($password) eq $client->client_password;
     $env->{BOM_USER} = $client;

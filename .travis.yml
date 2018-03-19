@@ -38,6 +38,7 @@ before_install:
       regentmarkets/bom
       regentmarkets/bom-platform
       regentmarkets/bom-postgres
+      regentmarkets/bom-user
     - /tmp/travis-scripts/redis.sh
 
 install:

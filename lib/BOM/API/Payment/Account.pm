@@ -5,7 +5,7 @@ package BOM::API::Payment::Account;
 use Moo;
 with 'BOM::API::Payment::Role::Plack';
 
-use Client::Account;
+use BOM::User::Client;
 use Format::Util::Numbers qw/formatnumber/;
 
 sub account_GET {
