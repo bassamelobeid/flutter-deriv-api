@@ -10,8 +10,8 @@ use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Platform::User;
-use Client::Account;
+use BOM::User;
+use BOM::User::Client;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::Password;
 
@@ -25,7 +25,7 @@ $test_client->email($email);
 $test_client->save;
 my $json = JSON::MaybeXS->new;
 
-my $user = BOM::Platform::User->create(
+my $user = BOM::User->create(
     email    => $email,
     password => $password,
 );
@@ -61,7 +61,7 @@ $t = $t->send_ok({json => {set_account_currency => 'USD'}})->message_ok;
 $res = $json->decode(Encode::decode_utf8($t->message->[1]));
 is $res->{set_account_currency}, 0, 'Can not set default currency again';
 
-$test_client = Client::Account->new({loginid => $test_client->loginid});
+$test_client = BOM::User::Client->new({loginid => $test_client->loginid});
 ok $test_client->default_account, 'Default account set correctly';
 is $test_client->currency, 'EUR', 'Got correct client currency after setting account';
 
