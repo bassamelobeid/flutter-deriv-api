@@ -16,7 +16,7 @@ use Try::Tiny;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_count stats_gauge);
 
 use Brands;
-use Client::Account;
+use BOM::User::Client;
 use Finance::Asset::Market::Types;
 use Finance::Contract::Category;
 use Format::Util::Numbers qw/formatnumber financialrounding/;
@@ -51,7 +51,7 @@ use BOM::Platform::RedisReplicated;
 my $json = JSON::MaybeXS->new;
 has client => (
     is  => 'ro',
-    isa => 'Client::Account',
+    isa => 'BOM::User::Client',
 );
 
 has multiple => (
@@ -534,7 +534,7 @@ sub prepare_buy {
     if ($self->multiple) {
         for my $m (@{$self->multiple}) {
             next if $m->{code};
-            my $c = try { Client::Account->new({loginid => $m->{loginid}}) };
+            my $c = try { BOM::User::Client->new({loginid => $m->{loginid}}) };
             unless ($c) {
                 $m->{code}  = 'InvalidLoginid';
                 $m->{error} = BOM::Platform::Context::localize('Invalid loginid');
@@ -637,7 +637,7 @@ sub buy {
 #   thought to be already erroneous. Otherwise the element should contain
 #   a "loginid" key.
 #   The following keys are added:
-#   * client: the Client::Account object corresponding to the loginid
+#   * client: the BOM::User::Client object corresponding to the loginid
 #   * limits: a hash representing the betting limits of this client
 #   * fmb and txn: the FMB and transaction records that have been written
 #     to the database in case of success
@@ -790,7 +790,7 @@ sub prepare_sell {
     if ($self->multiple) {
         for my $m (@{$self->multiple}) {
             next if $m->{code};
-            my $c = try { Client::Account->new({loginid => $m->{loginid}}) };
+            my $c = try { BOM::User::Client->new({loginid => $m->{loginid}}) };
             unless ($c) {
                 $m->{code}  = 'InvalidLoginid';
                 $m->{error} = BOM::Platform::Context::localize('Invalid loginid');

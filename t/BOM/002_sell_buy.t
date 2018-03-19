@@ -12,7 +12,7 @@ use Date::Utility;
 use Data::Hash::DotNotation;
 use BOM::Database::Model::Account;
 use BOM::Database::DataMapper::Account;
-use Client::Account;
+use BOM::User::Client;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -21,7 +21,7 @@ use BOM::Transaction;
 my $now = Date::Utility->new;
 initialize_realtime_ticks_db();
 
-my $client  = Client::Account->new({loginid => 'CR2002'});
+my $client  = BOM::User::Client->new({loginid => 'CR2002'});
 my $account = $client->set_default_account('USD');
 my $db      = $client->set_db('write');
 my $comment_str =
