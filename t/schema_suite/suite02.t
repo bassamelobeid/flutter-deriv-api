@@ -51,7 +51,7 @@ test_sendrecv_params 'cashier/test_send_deposit.json', 'cashier/test_receive_max
 # set_self_exclusion for max_30day_turnover should remove ukrts_max_turnover_limit_not_set status,
 # if we make call from here it will try to connect to doughflow, enable this when we can test doughflow
 # on qa and test
-# &BOM::RPC::v3::Accounts::set_self_exclusion({client=>Client::Account->new({loginid => _get_stashed('new_account_real/client_id')}), args=>{max_30day_turnover=>1000}})
+# &BOM::RPC::v3::Accounts::set_self_exclusion({client=>BOM::User::Client->new({loginid => _get_stashed('new_account_real/client_id')}), args=>{max_30day_turnover=>1000}})
 # test_sendrecv_params 'cashier/test_send_deposit.json', 'cashier/test_receive_currency_error.json',
 #     _get_stashed('new_account_real/oauth_token');
 
