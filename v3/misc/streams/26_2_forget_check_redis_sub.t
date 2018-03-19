@@ -126,7 +126,7 @@ $client->email($email);
 $client->set_status('tnc_approval', 'system', BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version);
 $client->save;
 my $loginid = $client->loginid;
-my $user    = BOM::Platform::User->create(
+my $user    = BOM::User->create(
     email    => $email,
     password => '1234',
 );
