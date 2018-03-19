@@ -53,12 +53,8 @@ sub start_document_upload {
         expiration_date => $args->{expiration_date},
         document_id     => ($args->{document_id} || ''));
 
-    return create_upload_error('duplicate_document') if $query_result->{error} and $query_result->{error}->{dup};
-
-    if ($query_result->{error} or not $query_result->{result}) {
-        warn 'start_document_upload in the db was not successful';
-        return create_upload_error();
-    }
+    my $err = check_for_query_error($query_result);
+    return $err if $err;
 
     return {
         file_name => join('.', $loginid, $document_type, $query_result->{result}, $document_format),
@@ -82,12 +78,8 @@ sub successful_upload {
         client  => $client,
         file_id => $args->{file_id});
 
-    return create_upload_error('duplicate_document') if $query_result->{error} and $query_result->{error}->{dup};
-
-    if ($query_result->{error} or not $query_result->{result}) {
-        warn 'Failed to update the uploaded document in the db';
-        return create_upload_error();
-    }
+    my $err = check_for_query_error($query_result);
+    return $err if $err;
 
     my $client_id = $client->loginid;
 
@@ -122,6 +114,17 @@ sub successful_upload {
     });
 
     return $args;
+}
+
+sub check_for_query_error {
+    my $query_result = shift;
+
+    return create_upload_error('duplicate_document') if $query_result->{error} and $query_result->{error}->{dup};
+
+    if ($query_result->{error} or not $query_result->{result}) {
+        warn 'Document upload db query failed';
+        return create_upload_error();
+    }
 }
 
 sub validate_input {

@@ -135,7 +135,7 @@ subtest 'Error for calling success with non-existent file ID' => sub {
     warning_like {
         call_and_check_error($custom_params, 'Sorry, an error occurred while processing your request.', 'error if document is not present');
     }
-    [qr/Failed to update the uploaded document in the db/], "Expected warning is thrown";
+    [qr/Document upload db query failed/], "Expected warning is thrown";
 };
 
 #########################################################
