@@ -287,7 +287,7 @@ if ($input{whattodo} eq 'uploadID') {
             document_id     => $document_id
         );
 
-        if ($query_result->{error} or not $query_result->{file_id}) {
+        unless ($query_result->{file_id}) {
             $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: $query_result->{error}->{msg}</p><br />";
             next;
         }
@@ -304,7 +304,7 @@ if ($input{whattodo} eq 'uploadID') {
             comments => $comments
         );
 
-        if ($query_result->{error} or not $query_result->{file_id}) {
+        unless ($query_result->{file_id}) {
             $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: $query_result->{error}->{msg}</p><br />";
             next;
         } else {
