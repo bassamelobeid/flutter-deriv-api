@@ -22,8 +22,8 @@ use Encode;
 use JSON::MaybeXS;
 use YAML::XS qw(LoadFile);
 use IO::Socket::IP;
-use Client::Account;
-use BOM::Platform::User;
+use BOM::User::Client;
+use BOM::User;
 
 use DataDog::DogStatsd::Helper qw(stats_timing stats_gauge stats_inc);
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
@@ -60,11 +60,11 @@ sub add {
     return if $args{loginid} =~ /^VR/ and ($args{type} eq 'deposit' or $args{type} eq 'withdrawal');
 
     try {
-        my $client = Client::Account->new({
+        my $client = BOM::User::Client->new({
                 loginid      => $args{loginid},
                 db_operation => 'replica'
             }) or die 'client not found';
-        my $user = BOM::Platform::User->new({email => $client->email}) or die 'user not found';
+        my $user = BOM::User->new({email => $client->email}) or die 'user not found';
         $args{$_} = $user->$_ for qw(utm_source utm_medium utm_campaign);
     }
     catch {
