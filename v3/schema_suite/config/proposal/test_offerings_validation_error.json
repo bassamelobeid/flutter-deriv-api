@@ -8,7 +8,7 @@
             "properties": {
                 "code": {
                     "type": "string",
-                    "pattern": "^InputValidationFailed$",
+                    "pattern": "^OfferingsValidationError$",
                     "required": "1"
                 },
                 "message": {
