@@ -21,7 +21,7 @@ rpc app_register => sub {
     my $params = shift;
 
     my $client  = $params->{client};
-    my $user    = BOM::Platform::User->new({email => $client->email});
+    my $user    = BOM::User->new({email => $client->email});
     my $user_id = $user->id;
 
     my $args                  = $params->{args};
@@ -71,7 +71,7 @@ rpc app_update => sub {
     my $params = shift;
 
     my $client  = $params->{client};
-    my $user    = BOM::Platform::User->new({email => $client->email});
+    my $user    = BOM::User->new({email => $client->email});
     my $user_id = $user->id;
 
     my $args                  = $params->{args};
@@ -143,7 +143,7 @@ rpc app_list => sub {
     my $params = shift;
 
     my $client  = $params->{client};
-    my $user    = BOM::Platform::User->new({email => $client->email});
+    my $user    = BOM::User->new({email => $client->email});
     my $user_id = $user->id;
 
     my $oauth = BOM::Database::Model::OAuth->new;
@@ -154,7 +154,7 @@ rpc app_get => sub {
     my $params = shift;
 
     my $client  = $params->{client};
-    my $user    = BOM::Platform::User->new({email => $client->email});
+    my $user    = BOM::User->new({email => $client->email});
     my $user_id = $user->id;
 
     my $oauth  = BOM::Database::Model::OAuth->new;
@@ -173,7 +173,7 @@ rpc app_delete => sub {
     my $params = shift;
 
     my $client  = $params->{client};
-    my $user    = BOM::Platform::User->new({email => $client->email});
+    my $user    = BOM::User->new({email => $client->email});
     my $user_id = $user->id;
 
     my $oauth  = BOM::Database::Model::OAuth->new;
@@ -198,7 +198,7 @@ rpc revoke_oauth_app => sub {
 
     my $client = $params->{client};
     my $oauth  = BOM::Database::Model::OAuth->new;
-    my $user   = BOM::Platform::User->new({email => $client->email});
+    my $user   = BOM::User->new({email => $client->email});
     my $status = 1;
     foreach my $c1 ($user->clients) {
         $status &&= $oauth->revoke_app($params->{args}{revoke_oauth_app}, $c1->loginid);
@@ -236,7 +236,7 @@ rpc app_markup_details => sub {
     my $args    = $params->{args};
     my $client  = $params->{client};
     my $oauth   = BOM::Database::Model::OAuth->new;
-    my $user    = BOM::Platform::User->new({email => $client->email});
+    my $user    = BOM::User->new({email => $client->email});
     my $app_ids = ();
 
     # If the app_id they have submitted is not in the list we have associated with them, then...
