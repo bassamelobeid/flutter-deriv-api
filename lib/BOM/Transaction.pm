@@ -13,7 +13,7 @@ use JSON::MaybeXS;
 use Date::Utility;
 use ExpiryQueue qw( enqueue_new_transaction enqueue_multiple_new_transactions );
 use Try::Tiny;
-use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_count stats_gauge);
+use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_count);
 
 use Brands;
 use BOM::User::Client;
@@ -624,13 +624,9 @@ sub buy {
 
     # Japan's regulator required us to keep monitor on our risk level and alert the team if the risk level is reaching the limit
     # Hence we have this piece of code which will calculate them and update datalog
-    if ($self->client->broker_code eq 'JP') {
-        my $klfb_risk_cache = BOM::Platform::RedisReplicated::redis_read()->get('klfb_risk::JP');
-        if ($klfb_risk_cache) {
-            my $new_klfb_risk = $klfb_risk_cache + ($fmb->{payout_price} - $fmb->{buy_price});
-            BOM::Platform::RedisReplicated::redis_write()->incrbyfloat('klfb_risk::JP', $new_klfb_risk);
-            stats_gauge('klfb_risk_level', $new_klfb_risk);
-        }
+    if ($self->client->broker_code eq 'JP' and my $klfb_risk_cache = BOM::Platform::RedisReplicated::redis_read()->exists('klfb_risk::JP')) {
+        my $new_klfb_risk = $klfb_risk_cache + ($fmb->{payout_price} - $fmb->{buy_price});
+        BOM::Platform::RedisReplicated::redis_write()->incrbyfloat('klfb_risk::JP', $new_klfb_risk);
     }
     return;
 }
@@ -889,13 +885,10 @@ sub sell {
     $self->balance_after($txn->{balance_after});
     $self->transaction_id($txn->{id});
     $self->reference_id($buy_txn_id);
-    if ($self->client->broker_code eq 'JP') {
-        my $klfb_risk_cache = BOM::Platform::RedisReplicated::redis_read()->get('klfb_risk::JP');
-        if ($klfb_risk_cache) {
-            my $new_klfb_risk = $klfb_risk_cache + ($fmb->{sell_price} - $fmb->{buy_price}) - (($fmb->{payout_price} - $fmb->{buy_price}));
-            BOM::Platform::RedisReplicated::redis_write()->incrbyfloat('klfb_risk::JP', $new_klfb_risk);
-            stats_gauge('klfb_risk', $new_klfb_risk);
-        }
+
+    if ($self->client->broker_code eq 'JP' and my $klfb_risk_cache = BOM::Platform::RedisReplicated::redis_read()->exists('klfb_risk::JP')) {
+        my $new_klfb_risk = $klfb_risk_cache + ($fmb->{sell_price} - $fmb->{buy_price}) - (($fmb->{payout_price} - $fmb->{buy_price}));
+        BOM::Platform::RedisReplicated::redis_write()->incrbyfloat('klfb_risk::JP', $new_klfb_risk);
     }
     return;
 }
