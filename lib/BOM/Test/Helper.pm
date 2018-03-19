@@ -24,7 +24,7 @@ use BOM::Test::Data::Utility::UnitTestMarketData;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Platform::Password;
-use BOM::Platform::User;
+use BOM::User;
 use Net::EmptyPort qw/empty_port/;
 
 use Mojo::Redis2::Server;
@@ -177,7 +177,7 @@ sub create_test_user {
     $client_cr->email($email);
     $client_cr->save;
     my $cr_1 = $client_cr->loginid;
-    my $user = BOM::Platform::User->create(
+    my $user = BOM::User->create(
         email    => $email,
         password => $hash_pwd
     );
