@@ -62,11 +62,8 @@ sub _create_error {
     return {
         error => {
             msg => $msg,
-            dup => $duplicate_error
+            type => $duplicate_error ? 'duplicate_document' : 'postgres_error';
         }};
-    # Include a flag for the case of duplicate error because this 'error' is
-    #   expected during normal operation, and the calling code will likely need
-    #   to handle it differently.
 }
 
 sub _is_duplicate_upload_error {
