@@ -12,7 +12,7 @@ use BOM::Platform::AuditLog;
 use BOM::DualControl;
 BOM::Backoffice::Sysinit::init();
 
-use Client::Account;
+use BOM::User::Client;
 
 PrintContentType();
 BrokerPresentation("MAKE DUAL CONTROL CODE");
@@ -39,7 +39,7 @@ unless ($input->{clientloginid}) {
     code_exit_BO();
 }
 
-my $client = Client::Account::get_instance({
+my $client = BOM::User::Client::get_instance({
     'loginid'    => uc($input->{'clientloginid'}),
     db_operation => 'replica'
 });

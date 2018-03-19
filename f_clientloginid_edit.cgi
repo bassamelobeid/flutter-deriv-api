@@ -19,11 +19,11 @@ use LandingCompany::Registry;
 
 use f_brokerincludeall;
 
-use Client::Account;
+use BOM::User::Client;
 
 use BOM::Platform::Runtime;
 use BOM::Backoffice::Request qw(request);
-use BOM::Platform::User;
+use BOM::User;
 use BOM::Platform::Client::IDAuthentication;
 use BOM::Platform::Client::Utility;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -58,7 +58,7 @@ my $self_href       = request()->url_for('backoffice/f_clientloginid_edit.cgi', 
 # let the client-check offer a chance to retry.
 eval { BrokerPresentation("$encoded_loginid CLIENT DETAILS") };    ## no critic (RequireCheckingReturnValueOfEval)
 
-my $client = eval { Client::Account->new({loginid => $loginid}) } || do {
+my $client = eval { BOM::User::Client->new({loginid => $loginid}) } || do {
     my $err = $@;
     print "<p>ERROR: Client [$encoded_loginid] not found.</p>";
     if ($err) {
@@ -428,7 +428,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     exists $input{$_} && $client->$_($input{$_}) for @simple_updates;
 
     # Handing the professional client status (For all existing clients)
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my $user = BOM::User->new({email => $client->email});
     my $result = "";
 
     # Only allow CR and MF
@@ -609,12 +609,12 @@ my $client_broker = $client->broker;
 my $len = length($number);
 for (1 .. $attempts) {
     $prev_loginid = sprintf "$client_broker%0*d", $len, $number - $_;
-    last if $prev_client = Client::Account->new({loginid => $prev_loginid});
+    last if $prev_client = BOM::User::Client->new({loginid => $prev_loginid});
 }
 
 for (1 .. $attempts) {
     $next_loginid = sprintf "$client_broker%0*d", $len, $number + $_;
-    last if $next_client = Client::Account->new({loginid => $next_loginid});
+    last if $next_client = BOM::User::Client->new({loginid => $next_loginid});
 }
 
 my $encoded_prev_loginid = encode_entities($prev_loginid);
@@ -769,7 +769,7 @@ if ($link_acc) {
     print $link_acc;
 }
 
-my $user = BOM::Platform::User->new({loginid => $client->loginid});
+my $user = BOM::User->new({loginid => $client->loginid});
 my $siblings;
 if ($user) {
     $siblings = $user->loginid_details;
