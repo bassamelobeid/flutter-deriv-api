@@ -287,12 +287,12 @@ if ($input{whattodo} eq 'uploadID') {
             document_id     => $document_id
         );
 
-        if ($query_result->{error} or not $query_result->{result}) {
+        if ($query_result->{error} or not $query_result->{file_id}) {
             $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: $query_result->{error}->{msg}</p><br />";
             next;
         }
 
-        my $file_id       = $query_result->{result};
+        my $file_id       = $query_result->{file_id};
         my $new_file_name = "$loginid.$doctype.$file_id.$docformat";
 
         my $checksum = BOM::Backoffice::Script::DocumentUpload::upload($new_file_name, $filetoupload, $file_checksum)
@@ -304,7 +304,7 @@ if ($input{whattodo} eq 'uploadID') {
             comments => $comments
         );
 
-        if ($query_result->{error} or not $query_result->{result}) {
+        if ($query_result->{error} or not $query_result->{file_id}) {
             $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: $query_result->{error}->{msg}</p><br />";
             next;
         } else {
