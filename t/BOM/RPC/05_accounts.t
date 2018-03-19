@@ -21,7 +21,7 @@ use BOM::Test::Helper::FinancialAssessment;
 use BOM::Database::Model::AccessToken;
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Password;
-use BOM::Platform::User;
+use BOM::User;
 
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
@@ -77,7 +77,7 @@ $test_client_vr->email($email);
 $test_client_vr->save;
 
 my $test_loginid = $test_client->loginid;
-my $user         = BOM::Platform::User->create(
+my $user         = BOM::User->create(
     email    => $email,
     password => $hash_pwd
 );
@@ -101,7 +101,7 @@ my $test_client_cr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client
 $test_client_cr_2->email('sample@binary.com');
 $test_client_cr_2->save;
 
-my $user_cr = BOM::Platform::User->create(
+my $user_cr = BOM::User->create(
     email    => 'sample@binary.com',
     password => $hash_pwd
 );
@@ -150,7 +150,7 @@ my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $test_client_mf->email($email_mlt_mf);
 $test_client_mf->save;
 
-my $user_mlt_mf = BOM::Platform::User->create(
+my $user_mlt_mf = BOM::User->create(
     email    => $email_mlt_mf,
     password => $hash_pwd
 );

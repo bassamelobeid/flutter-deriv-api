@@ -4,7 +4,7 @@ use Test::More;
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use Client::Account;
+use BOM::User::Client;
 use BOM::Platform::Runtime;
 use BOM::Database::Model::AccessToken;
 use BOM::RPC::v3::Accounts;
@@ -23,7 +23,7 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
 });
 my $test_loginid = $test_client->loginid;
-my $user         = BOM::Platform::User->create(
+my $user         = BOM::User->create(
     email    => $test_client->email,
     password => BOM::Platform::Password::hashpw('jskjd8292922'));
 $user->save;
