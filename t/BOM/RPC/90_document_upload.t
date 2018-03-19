@@ -131,7 +131,7 @@ subtest 'Error for calling success with non-existent file ID' => sub {
                                     # These need to be blanked or RPC will try to start an upload
                                     document_type   => '',
                                     document_format => '' } };
-    call_and_check_error($custom_params, 'Document not found.', 'error if document is not present');
+    call_and_check_error($custom_params, 'UploadDenied', 'Sorry, an error occurred while processing your request.');
 };
 
 #########################################################
