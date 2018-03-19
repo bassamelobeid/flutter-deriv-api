@@ -3,22 +3,22 @@ use warnings;
 
 use Test::More qw(no_plan);
 use Test::Exception;
-use Client::Account;
+use BOM::User::Client;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
-my $CR2002  = Client::Account->new({loginid => 'CR2002'});
-my $MX0012  = Client::Account->new({loginid => 'MX0012'});
-my $MLT0012 = Client::Account->new({loginid => 'MLT0012'});
+my $CR2002  = BOM::User::Client->new({loginid => 'CR2002'});
+my $MX0012  = BOM::User::Client->new({loginid => 'MX0012'});
+my $MLT0012 = BOM::User::Client->new({loginid => 'MLT0012'});
 my %client  = (
     CR  => $CR2002,
     MX  => $MX0012,
     MLT => $MLT0012,
 );
 
-my $CR3003  = Client::Account->new({loginid => 'CR3003'});
-my $MX0013  = Client::Account->new({loginid => 'MX0013'});
-my $MLT0013 = Client::Account->new({loginid => 'MLT0013'});
+my $CR3003  = BOM::User::Client->new({loginid => 'CR3003'});
+my $MX0013  = BOM::User::Client->new({loginid => 'MX0013'});
+my $MLT0013 = BOM::User::Client->new({loginid => 'MLT0013'});
 my %client_2 = (
     CR  => $CR3003,
     MX  => $MX0013,
