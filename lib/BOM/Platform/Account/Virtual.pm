@@ -6,12 +6,12 @@ use warnings;
 use Try::Tiny;
 
 use Brands;
-use Client::Account;
+use BOM::User::Client;
 use LandingCompany::Registry;
 
 use BOM::Platform::Password;
 use BOM::Platform::Runtime;
-use BOM::Platform::User;
+use BOM::User;
 use BOM::Platform::Token;
 use BOM::Platform::Context qw(localize request);
 
@@ -25,7 +25,7 @@ sub create_account {
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
         return {error => 'invalid'};
-    } elsif (BOM::Platform::User->new({email => $email})) {
+    } elsif (BOM::User->new({email => $email})) {
         return {error => 'duplicate email'};
     } elsif ($residence && Brands->new(name => request()->brand)->countries_instance->restricted_country($residence)) {
         return {error => 'invalid residence'};
@@ -43,7 +43,7 @@ sub create_account {
         my $company_name =
             $residence ? Brands->new(name => $brand_name)->countries_instance->virtual_company_for_country($residence) : $default_virtual;
 
-        $client = Client::Account->register_and_return_new_client({
+        $client = BOM::User::Client->register_and_return_new_client({
             broker_code                   => LandingCompany::Registry::get($company_name)->broker_codes->[0],
             client_password               => $password,
             salutation                    => '',
@@ -83,7 +83,7 @@ sub create_account {
     my $email_consent     = $details->{email_consent};
     my $has_social_signup = $details->{has_social_signup} // 0;
 
-    my $user = BOM::Platform::User->create(
+    my $user = BOM::User->create(
         email             => $email,
         password          => $password,
         email_verified    => 1,
