@@ -57,8 +57,8 @@ sub start_document_upload {
     return $err if $err;
 
     return {
-        file_name => join('.', $loginid, $document_type, $query_result->{result}, $document_format),
-        file_id   => $query_result->{result},
+        file_name => join('.', $loginid, $document_type, $query_result->{file_id}, $document_format),
+        file_id   => $query_result->{file_id},
         call_type => 1,
     };
 }
@@ -121,7 +121,7 @@ sub check_for_query_error {
 
     return create_upload_error('duplicate_document') if $query_result->{error} and $query_result->{error}->{dup};
 
-    if ($query_result->{error} or not $query_result->{result}) {
+    if ($query_result->{error} or not $query_result->{file_id}) {
         warn 'Document upload db query failed';
         return create_upload_error();
     }
