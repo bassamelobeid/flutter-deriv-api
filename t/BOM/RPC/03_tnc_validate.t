@@ -6,7 +6,7 @@ use Test::Mojo;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Platform::User;
+use BOM::User;
 use BOM::RPC::v3::Accounts;
 use BOM::Database::Model::OAuth;
 use utf8;
@@ -18,7 +18,7 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 $test_client->email($email);
 $test_client->save;
-my $user = BOM::Platform::User->create(
+my $user = BOM::User->create(
     email    => $email,
     password => '1234',
 );

@@ -17,7 +17,7 @@ use Brands;
 
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
-use Client::Account;
+use BOM::User::Client;
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::EmailVerification qw(email_verification);
@@ -28,7 +28,7 @@ use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::japan;
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::User;
+use BOM::User;
 use BOM::Platform::Config;
 use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
@@ -166,23 +166,23 @@ rpc "verify_email",
         # in next version need to remove else
         if ($loginid) {
             $skip_email = 1 unless (
-                Client::Account->new({
+                BOM::User::Client->new({
                         loginid      => $loginid,
                         db_operation => 'replica'
                     }
                 )->email eq $email
             );
         } else {
-            $skip_email = 1 unless BOM::Platform::User->new({email => $email});
+            $skip_email = 1 unless BOM::User->new({email => $email});
         }
 
         request_email($email, $verification->{payment_withdraw}->($type_call)) unless $skip_email;
     };
 
-    if (BOM::Platform::User->new({email => $email}) && $type eq 'reset_password') {
+    if (BOM::User->new({email => $email}) && $type eq 'reset_password') {
         request_email($email, $verification->{reset_password}->());
     } elsif ($type eq 'account_opening') {
-        unless (BOM::Platform::User->new({email => $email})) {
+        unless (BOM::User->new({email => $email})) {
             request_email($email, $verification->{account_opening_new}->());
         } else {
             request_email($email, $verification->{account_opening_existing}->());
@@ -263,7 +263,7 @@ rpc new_account_real => sub {
         return $error if $error;
     }
 
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my $user = BOM::User->new({email => $client->email});
 
     my ($clients, $professional_status, $professional_requested) = _get_professional_details_clients($user, $args);
 
@@ -363,7 +363,7 @@ rpc new_account_maltainvest => sub {
 
     my %financial_data = map { $_ => $args->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
 
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my $user = BOM::User->new({email => $client->email});
 
     # When a Binary (Europe) Ltd/Binary (IOM) Ltd account is created,
     # the 'place of birth' field is not present.
@@ -483,7 +483,7 @@ rpc new_account_japan => sub {
         ip => $params->{client_ip} // '',
         country => uc($params->{country_code} // ''),
         from_client    => $client,
-        user           => BOM::Platform::User->new({email => $client->email}),
+        user           => BOM::User->new({email => $client->email}),
         details        => $details,
         financial_data => \%financial_data,
         agreement      => \%agreement,

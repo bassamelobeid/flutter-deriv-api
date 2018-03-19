@@ -18,7 +18,7 @@ use Scalar::Util q(blessed);
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Context::Request;
 use BOM::RPC::Registry;
-use Client::Account;
+use BOM::User::Client;
 use BOM::Database::Rose::DB;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Accounts;

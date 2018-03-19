@@ -6,7 +6,7 @@ use Test::Mojo;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Platform::User;
+use BOM::User;
 use BOM::Database::Model::OAuth;
 use utf8;
 use Data::Dumper;
@@ -53,7 +53,7 @@ is($c->result->{status}, 1, 'set currency ok');
 
 # here I tried $test_client->load directly but failed
 # But recreating the client will work. weird
-my $client = Client::Account->new({loginid => $test_client->loginid});
+my $client = BOM::User::Client->new({loginid => $test_client->loginid});
 
 isnt($client->default_account, undef, 'default account set');
 is($client->default_account->currency_code, 'EUR', 'default account updated');

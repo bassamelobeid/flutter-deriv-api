@@ -23,7 +23,7 @@ use BOM::RPC::v3::Cashier;
 use BOM::Platform::Config;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::User;
+use BOM::User;
 use BOM::MT5::User;
 use BOM::Database::ClientDB;
 use BOM::Platform::Runtime;
@@ -50,7 +50,7 @@ Takes the following (named) parameters:
 
 =over 4
 
-=item * C<params> hashref that contains a Client::Account object under the key C<client>.
+=item * C<params> hashref that contains a BOM::User::Client object under the key C<client>.
 
 =back
 
@@ -91,7 +91,7 @@ rpc mt5_login_list => sub {
     my $setting;
 
     my @array;
-    foreach (BOM::Platform::User->new({email => $client->email})->mt5_logins) {
+    foreach (BOM::User->new({email => $client->email})->mt5_logins) {
         $_ =~ /^MT(\d+)$/;
         my $login = $1;
         my $acc = {login => $login};
@@ -225,7 +225,7 @@ rpc mt5_new_account => sub {
             message_to_client => localize('Request too frequent. Please try again later.')}) if _throttle($client->loginid);
 
     # client can have only 1 MT demo & 1 MT real a/c
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my $user = BOM::User->new({email => $client->email});
 
     foreach my $loginid ($user->mt5_logins) {
         $loginid =~ /^MT(\d+)$/;
@@ -290,7 +290,7 @@ rpc mt5_new_account => sub {
 
 sub _check_logins {
     my ($client, $logins) = @_;
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my $user = BOM::User->new({email => $client->email});
 
     foreach my $login (@{$logins}) {
         return unless (any { $login eq $_->loginid } ($user->loginid));
@@ -316,7 +316,7 @@ Takes the following (named) parameters as inputs:
 
 =over 4
 
-=item * A Client::Account object under the key C<client>.
+=item * A BOM::User::Client object under the key C<client>.
 
 =item * A hash reference under the key C<args> that contains the MT5 login id 
 under C<login> key.
@@ -418,7 +418,7 @@ Takes the following (named) parameters as inputs:
 
 =over 4
 
-=item * A Client::Account object under the key C<client>.
+=item * A BOM::User::Client object under the key C<client>.
 
 =item * A hash reference under the key C<args> that contains some of the following keys:
 
@@ -521,7 +521,7 @@ Takes the following (named) parameters as inputs:
 
 =over 4
 
-=item * A Client::Account object under the key C<client>.
+=item * A BOM::User::Client object under the key C<client>.
 
 =item * A hash reference under the key C<args> that contains the MT5 login id 
 under C<login> key.
@@ -611,7 +611,7 @@ Takes the following (named) parameters as inputs:
 
 =over 4
 
-=item * A Client::Account object under the key C<client>.
+=item * A BOM::User::Client object under the key C<client>.
 
 =item * A hash reference under the key C<args> that contains:
 
@@ -723,7 +723,7 @@ Takes the following (named) parameters as inputs:
 
 =over 3
 
-=item * A Client::Account object under the key C<client>.
+=item * A BOM::User::Client object under the key C<client>.
 
 =item * A hash reference under the key C<args> that contains:
 
@@ -791,7 +791,7 @@ rpc mt5_password_reset => sub {
                 message_to_client => $err->{message_to_client}});
     }
 
-    my $user = BOM::Platform::User->new({email => $email});
+    my $user = BOM::User->new({email => $email});
 
     # MT5 login not belongs to user
     return BOM::RPC::v3::Utility::permission_error()
@@ -873,7 +873,7 @@ rpc mt5_deposit => sub {
         $fm_client_db->unfreeze;
     };
 
-    my $fm_client = Client::Account->new({loginid => $fm_loginid});
+    my $fm_client = BOM::User::Client->new({loginid => $fm_loginid});
 
     # From the point of view of our system, we're withdrawing
     # money to deposit into MT5
@@ -990,7 +990,7 @@ rpc mt5_withdrawal => sub {
         return _mt5_error_sub($error_code, $status->{error});
     }
 
-    my $to_client = Client::Account->new({loginid => $to_loginid});
+    my $to_client = BOM::User::Client->new({loginid => $to_loginid});
 
     return try {
 
@@ -1091,7 +1091,7 @@ sub _mt5_validate_and_get_amount {
 
     my $client_obj;
     try {
-        $client_obj = Client::Account->new({
+        $client_obj = BOM::User::Client->new({
             loginid      => $loginid,
             db_operation => 'replica'
         });

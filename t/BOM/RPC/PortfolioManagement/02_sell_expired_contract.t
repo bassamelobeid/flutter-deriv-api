@@ -95,7 +95,7 @@ subtest 'Auth client' => sub {
     $params[1]->{token} = $client_token;
 
     {
-        my $module = Test::MockModule->new('Client::Account');
+        my $module = Test::MockModule->new('BOM::User::Client');
         $module->mock('new', sub { });
 
         $rpc_ct->call_ok(@params)->has_no_system_error->has_error->error_code_is('AuthorizationRequired', 'It should check auth');

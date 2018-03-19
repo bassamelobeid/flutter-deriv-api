@@ -84,8 +84,8 @@ sub import_dsl_into {
                         my $err = _auth($params);
                         return $err if $err;
                     } else {
-                        # If there is a $client object but is not a Valid Client::Account we return an error
-                        unless (blessed $client && $client->isa('Client::Account')) {
+                        # If there is a $client object but is not a Valid BOM::User::Client we return an error
+                        unless (blessed $client && $client->isa('BOM::User::Client')) {
                             return BOM::RPC::v3::Utility::create_error({
                                     code              => 'InvalidRequest',
                                     message_to_client => localize("Invalid request.")});
@@ -169,7 +169,7 @@ sub _auth {
     return BOM::RPC::v3::Utility::invalid_token_error()
         unless $token_details and exists $token_details->{loginid};
 
-    my $client = Client::Account->new({loginid => $token_details->{loginid}});
+    my $client = BOM::User::Client->new({loginid => $token_details->{loginid}});
 
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;

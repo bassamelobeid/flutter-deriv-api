@@ -13,7 +13,7 @@ use BOM::RPC::Registry '-dsl';
 use BOM::RPC::v3::Utility;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use Client::Account;
+use BOM::User::Client;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Runtime;
 use BOM::Platform::Chronicle;
@@ -32,7 +32,7 @@ rpc active_symbols => sub {
 
     my $offerings_obj;
     if ($token_details and exists $token_details->{loginid}) {
-        my $client = Client::Account->new({
+        my $client = BOM::User::Client->new({
             loginid      => $token_details->{loginid},
             db_operation => 'replica'
         });

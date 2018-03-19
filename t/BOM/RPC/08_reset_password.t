@@ -6,7 +6,7 @@ use Test::Mojo;
 use Email::Folder::Search;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Platform::User;
+use BOM::User;
 use utf8;
 use BOM::Platform::Token;
 
@@ -25,7 +25,7 @@ $test_client_vr->email($email_vr);
 $test_client_vr->save;
 my $test_loginid_vr = $test_client_vr->loginid;
 
-my $user_vr = BOM::Platform::User->create(
+my $user_vr = BOM::User->create(
     email    => $email_vr,
     password => $hash_pwd
 );
@@ -74,7 +74,7 @@ subtest 'reset_password_vrtc' => sub {
 
 # refetch vrtc user
 subtest 'check_password' => sub {
-    $user_vr = BOM::Platform::User->new({
+    $user_vr = BOM::User->new({
         email => $email_vr,
     });
     $status = $user_vr->login(password => $new_password);
@@ -89,7 +89,7 @@ $test_client_cr->email($email_cr);
 $test_client_cr->save;
 my $test_loginid_cr = $test_client_cr->loginid;
 
-my $user_cr = BOM::Platform::User->create(
+my $user_cr = BOM::User->create(
     email    => $email_cr,
     password => $hash_pwd
 );
@@ -158,7 +158,7 @@ subtest $method => sub {
 
 # refetch cr user
 subtest 'check_password' => sub {
-    $user_cr = BOM::Platform::User->new({
+    $user_cr = BOM::User->new({
         email => $email_cr,
     });
     $status = $user_cr->login(password => $new_password);
