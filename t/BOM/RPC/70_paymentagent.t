@@ -77,7 +77,7 @@ $crypto_pa_client->payment_agent($payment_agent_args);
 $crypto_pa_client->save;
 
 my $mock_utility           = Test::MockModule->new('BOM::RPC::v3::Utility');
-my $mock_clientaccount     = Test::MockModule->new('Client::Account');
+my $mock_clientaccount     = Test::MockModule->new('BOM::User::Client');
 my $mock_landingcompany    = Test::MockModule->new('LandingCompany');
 my $mock_clientdb          = Test::MockModule->new('BOM::Database::ClientDB');
 my $mock_cashier           = Test::MockModule->new('BOM::RPC::v3::Cashier');
@@ -100,7 +100,7 @@ my $res;
 
 ## paymentagent_transfer arguments:
 ## 'source': [string] appears unused, passed directly to payment_account_transfer
-## 'client': [Client::Account object] money FROM; the payment agent account
+## 'client': [BOM::User::Client object] money FROM; the payment agent account
 ## 'website_name': [string] only used in outgoing confirmation email
 ## 'args' : [hashref] everything else below
 ##   'payment_transfer': [boolean] action to perform. NOT NEEDED?
@@ -395,19 +395,19 @@ for my $transfer_currency ('USD', 'BTC') {
         like($res->{error}{message_to_client}, qr/you cannot withdraw.+balance is $test_currency 0.00/, $test);
 
         $test = 'Agent account starts with a zero balance';
-        my $agent_balance = Client::Account->new({loginid => $agent_id})->default_account->balance;
+        my $agent_balance = BOM::User::Client->new({loginid => $agent_id})->default_account->balance;
         is($agent_balance, 0, $test);
 
         $test = 'Payee account starts with a predetermined balance';
         my $test_seed = 'USD' eq $test_currency ? 500 : 1;
         top_up $payee, $test_currency, $test_seed;
-        my $payee_balance = Client::Account->new({loginid => $payee_id})->default_account->balance;
+        my $payee_balance = BOM::User::Client->new({loginid => $payee_id})->default_account->balance;
         is($payee_balance, formatnumber('amount', $test_currency, $test_seed), $test);
 
         $test = 'After top_up, agent account has correct balance';
         my $agent_funds = 400;
         top_up $agent, $test_currency => $agent_funds;
-        $agent_balance = Client::Account->new({loginid => $agent_id})->default_account->balance;
+        $agent_balance = BOM::User::Client->new({loginid => $agent_id})->default_account->balance;
         is($agent_balance, formatnumber('amount', $test_currency, $agent_funds), $test);
 
         $test = 'Transfer works and returns a status code of 1';
@@ -415,11 +415,11 @@ for my $transfer_currency ('USD', 'BTC') {
         is($res->{status}, 1, $test);
 
         $test = 'After transfer, agent account has correct balance';
-        $agent_balance = Client::Account->new({loginid => $agent_id})->default_account->balance;
+        $agent_balance = BOM::User::Client->new({loginid => $agent_id})->default_account->balance;
         is($agent_balance, formatnumber('amount', $test_currency, $agent_funds - $test_amount), $test);
 
         $test = 'After transfer, payee account has correct balance';
-        $payee_balance = Client::Account->new({loginid => $payee_id})->default_account->balance;
+        $payee_balance = BOM::User::Client->new({loginid => $payee_id})->default_account->balance;
         is($payee_balance, formatnumber('amount', $test_currency, $test_seed + $test_amount), $test);
 
         $test                     = 'Transfer fails when request is too frequent';
@@ -516,19 +516,19 @@ for my $withdraw_currency ('USD', 'BTC') {
 
         ## Cannot assume we start at zero because of the previous tests
         $test = 'Withdrawal works and returns a status code of 1';
-        my $old_payer_balance = Client::Account->new({loginid => $payer_id})->default_account->balance;
-        my $old_agent_balance = Client::Account->new({loginid => $agent_id})->default_account->balance;
+        my $old_payer_balance = BOM::User::Client->new({loginid => $payer_id})->default_account->balance;
+        my $old_agent_balance = BOM::User::Client->new({loginid => $agent_id})->default_account->balance;
         ## Ensure that all tokens are now 'valid'
         $mock_utility->mock('is_verification_token_valid', sub { return {status => 1} });
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         is($res->{status}, 1, $test);
 
         $test = 'After transfer, payer account has correct balance';
-        my $payer_balance = Client::Account->new({loginid => $payer_id})->default_account->balance;
+        my $payer_balance = BOM::User::Client->new({loginid => $payer_id})->default_account->balance;
         is($payer_balance, formatnumber('amount', $test_currency, $old_payer_balance - $test_amount), $test);
 
         $test = 'After transfer, agent account has correct balance';
-        my $agent_balance = Client::Account->new({loginid => $agent_id})->default_account->balance;
+        my $agent_balance = BOM::User::Client->new({loginid => $agent_id})->default_account->balance;
         is($agent_balance, formatnumber('amount', $test_currency, $old_agent_balance + $test_amount), $test);
 
         $test = 'After withdrawal, correct agent name is returned';

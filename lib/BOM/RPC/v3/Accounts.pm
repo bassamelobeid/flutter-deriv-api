@@ -20,7 +20,7 @@ use HTML::Entities qw(encode_entities);
 use List::Util qw(any sum0);
 
 use Brands;
-use Client::Account;
+use BOM::User::Client;
 use LandingCompany::Registry;
 use Format::Util::Numbers qw/formatnumber financialrounding/;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
@@ -34,7 +34,7 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Locale qw/get_state_by_id/;
-use BOM::Platform::User;
+use BOM::User;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Token;
@@ -100,7 +100,7 @@ rpc "payout_currencies",
     my $token_details = $params->{token_details};
     my $client;
     if ($token_details and exists $token_details->{loginid}) {
-        $client = Client::Account->new({
+        $client = BOM::User::Client->new({
             loginid      => $token_details->{loginid},
             db_operation => 'replica'
         });
@@ -433,7 +433,7 @@ Takes the following (named) parameters:
 
 =over 4
 
-=item * C<params> - A hashref with reference to Client::Account object under the key C<client>
+=item * C<params> - A hashref with reference to BOM::User::Client object under the key C<client>
 
 =back
 
@@ -488,7 +488,7 @@ rpc get_account_status => sub {
     $risk_classification =~ s/manual override - //;
 
     # differentiate between social and password based accounts
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my $user = BOM::User->new({email => $client->email});
     push @status, 'unwelcome' if not $already_unwelcomed and BOM::Transaction::Validation->new({clients => [$client]})->check_trade_status($client);
 
     push @status, 'social_signup' if $user->has_social_signup;
@@ -550,7 +550,7 @@ rpc change_password => sub {
 
     # Fetch user by loginid, if the user doesn't exist or
     # has no associated clients then throw exception
-    my $user = BOM::Platform::User->new({loginid => $client->loginid});
+    my $user = BOM::User->new({loginid => $client->loginid});
     my @clients;
     if (not $user or not @clients = $user->clients) {
         return BOM::RPC::v3::Utility::client_error();
@@ -636,7 +636,7 @@ rpc cashier_password => sub {
             return $error_sub->(localize('Your cashier was locked.'));
         }
 
-        my $user = BOM::Platform::User->new({email => $client->email});
+        my $user = BOM::User->new({email => $client->email});
         if (BOM::Platform::Password::checkpw($lock_password, $user->password)) {
             return $error_sub->(localize('Please use a different password than your login password.'));
         }
@@ -731,7 +731,7 @@ rpc "reset_password",
                 message_to_client => $err->{message_to_client}});
     }
 
-    my $user = BOM::Platform::User->new({email => $email});
+    my $user = BOM::User->new({email => $email});
     my @clients = ();
     if (not $user or not @clients = $user->clients) {
         return BOM::RPC::v3::Utility::client_error();
@@ -821,7 +821,7 @@ rpc get_settings => sub {
         email         => $client->email,
         country       => $country,
         country_code  => $country_code,
-        email_consent => do { my $user = BOM::Platform::User->new({email => $client->email}); ($user && $user->email_consent) ? 1 : 0 },
+        email_consent => do { my $user = BOM::User->new({email => $client->email}); ($user && $user->email_consent) ? 1 : 0 },
         (
             $client->is_virtual
             ? ()
@@ -949,7 +949,7 @@ rpc set_settings => sub {
     # email consent is per user whereas other settings are per client
     # so need to save it separately
     if (defined $args->{email_consent}) {
-        my $user = BOM::Platform::User->new({email => $client->email});
+        my $user = BOM::User->new({email => $client->email});
         $user->email_consent($args->{email_consent});
         $user->save;
     }
@@ -1007,7 +1007,7 @@ rpc set_settings => sub {
         return undef;
     };
 
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my $user = BOM::User->new({email => $client->email});
     foreach my $cli ($user->clients) {
         next if $cli->is_virtual;
 
@@ -1046,7 +1046,7 @@ rpc set_settings => sub {
         BOM::RPC::v3::Utility::send_professional_requested_email($cli->loginid, $cli->residence) if ($set_status);
     }
     # update client value after latest changes
-    $client = Client::Account->new({loginid => $client->loginid});
+    $client = BOM::User::Client->new({loginid => $client->loginid});
 
     # only allow current client to set allow_copiers
     if (defined $allow_copiers) {
@@ -1092,9 +1092,7 @@ rpc set_settings => sub {
         [localize('Tax identification number'), ($client->tax_identification_number || '')],
         );
     push @updated_fields,
-        [
-        localize('Receive news and special offers'),
-        BOM::Platform::User->new({email => $client->email})->email_consent ? localize("Yes") : localize("No")]
+        [localize('Receive news and special offers'), BOM::User->new({email => $client->email})->email_consent ? localize("Yes") : localize("No")]
         if exists $args->{email_consent};
     push @updated_fields, [localize('Allow copiers'), $client->allow_copiers ? localize("Yes") : localize("No")]
         if defined $allow_copiers;
@@ -1498,7 +1496,7 @@ rpc login_history => sub {
         }
     }
 
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my $user = BOM::User->new({email => $client->email});
     my $login_history = $user->find_login_history(
         sort_by => 'history_date desc',
         limit   => $limit
@@ -1569,7 +1567,7 @@ rpc set_financial_assessment => sub {
         my %financial_data = map { $_ => $params->{args}->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
         my $financial_evaluation = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
 
-        my $user = BOM::Platform::User->new({email => $client->email});
+        my $user = BOM::User->new({email => $client->email});
         foreach my $cli ($user->clients) {
             $cli->financial_assessment({
                 data => Encode::encode_utf8($json->encode($financial_evaluation->{user_data})),
