@@ -53,7 +53,7 @@ sub _do_query {
 sub _create_success {
     my ($result) = @_;
 
-    return {result => $result};
+    return {file_id => $result};
 }
 
 sub _create_error {
