@@ -120,9 +120,10 @@ sub check_for_query_error {
     my $query_result = shift;
 
     unless ($query_result->{file_id}) {
-        warn 'Document upload db query failed' unless $query_result->{error}->{type} eq 'duplicate_document';
+        warn 'Document upload db query failed' unless ($query_result->{error}->{type} && $query_result->{error}->{type} eq 'duplicate_document');
         return create_upload_error($query_result->{error}->{type});
     }
+    return;
 }
 
 sub validate_input {
