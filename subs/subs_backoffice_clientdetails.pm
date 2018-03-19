@@ -117,7 +117,7 @@ sub print_client_details {
     }
 
     my ($proveID, $show_uploaded_documents) = ('', '');
-    my $user = BOM::Platform::User->new({loginid => $client->loginid});
+    my $user = BOM::User->new({loginid => $client->loginid});
 
     # User should be accessable from client by loginid
     print "<p style='color:red;'>User doesn't exist. This client is unlinked. Please, investigate.<p>" and die unless $user;
@@ -129,7 +129,7 @@ sub print_client_details {
             search_option => 'ProveID_KYC'
         );
 
-        my $user = BOM::Platform::User->new({loginid => $client->loginid});
+        my $user = BOM::User->new({loginid => $client->loginid});
         my $siblings = $user->loginid;
 
         $show_uploaded_documents .= show_client_id_docs($_->loginid, show_delete => 1) for $client;
@@ -252,7 +252,7 @@ sub build_client_statement_form {
 ######################################################################
 sub build_client_warning_message {
     my $login_id = shift;
-    my $client   = Client::Account->new({'loginid' => $login_id}) || return "<p>The Client's details can not be found [$login_id]</p>";
+    my $client   = BOM::User::Client->new({'loginid' => $login_id}) || return "<p>The Client's details can not be found [$login_id]</p>";
     my $broker   = $client->broker;
     my @output;
 

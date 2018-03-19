@@ -8,7 +8,7 @@ use Path::Tiny;
 use Parallel::ForkManager;
 
 use Brands;
-use Client::Account;
+use BOM::User::Client;
 use BOM::Database::ClientDB;
 use BOM::Platform::Config;
 use BOM::Platform::Email qw(send_email);
@@ -114,7 +114,7 @@ sub get_matched_clients_info_by_broker {
                 undef, Date::Utility->new->datetime, $broker);
         });
     foreach my $c (@$clients) {
-        my $client = Client::Account->new({
+        my $client = BOM::User::Client->new({
             loginid      => $c,
             db_operation => 'replica'
         });

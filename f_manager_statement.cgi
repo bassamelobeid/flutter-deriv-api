@@ -5,7 +5,7 @@ use warnings;
 
 use f_brokerincludeall;
 
-use Client::Account;
+use BOM::User::Client;
 
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::DataMapper::Transaction;
@@ -41,7 +41,7 @@ if ($loginID !~ /^$broker/) {
     code_exit_BO();
 }
 
-my $client = Client::Account::get_instance({
+my $client = BOM::User::Client::get_instance({
     'loginid'    => $loginID,
     db_operation => 'replica'
 });
