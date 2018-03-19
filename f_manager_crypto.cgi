@@ -17,7 +17,7 @@ use Try::Tiny;
 use Bitcoin::RPC::Client;
 use Ethereum::RPC::Client;
 
-use Client::Account;
+use BOM::User::Client;
 
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::PlackHelpers qw/PrintContentType_excel PrintContentType/;
@@ -516,7 +516,7 @@ EOF
     code_exit_BO('Invalid loginid')                                  unless $loginid_dcc;
     code_exit_BO("ERROR in amount: " . encode_entities($amount_dcc)) unless $amount_dcc =~ /^\d+\.?\d*$/;
 
-    my $client_dcc = Client::Account::get_instance({
+    my $client_dcc = BOM::User::Client::get_instance({
         'loginid'    => uc($loginid_dcc),
         db_operation => 'replica'
     });

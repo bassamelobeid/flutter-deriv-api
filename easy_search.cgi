@@ -29,7 +29,7 @@ my $tt = BOM::Backoffice::Request::template();
 if (my $search = $params{search}) {
     my $clients;
     if (looks_like_number($search)) {
-        $clients = Client::Account->get_objects_from_sql(
+        $clients = BOM::User::Client->get_objects_from_sql(
             broker_code => $broker,
             args        => [$search],
             sql         => qq[select c.* from betonmarkets.client c
@@ -41,7 +41,7 @@ if (my $search = $params{search}) {
         );
     } else {
         my $like = {like => "$search%"};
-        $clients = Client::Account->by_args(
+        $clients = BOM::User::Client->by_args(
             limit       => $LIMIT,
             broker_code => $broker,
             or          => [
@@ -59,7 +59,7 @@ if (my $search = $params{search}) {
 
 } elsif (my $loginid = $params{loginid}) {
 
-    my $client = Client::Account->new({
+    my $client = BOM::User::Client->new({
             loginid      => $loginid,
             db_operation => 'replica'
         }) || die "client $loginid not found\n";
