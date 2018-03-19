@@ -624,9 +624,11 @@ sub buy {
 
     if ($self->client->broker_code eq 'JP') {
         my $klfb_limit_cache = BOM::Platform::RedisReplicated::redis_read()->get('klfb_limit::JP');
-        my $new_klfb_limit = $klfb_limit_cache + ($fmb->{payout_price} - $fmb->{buy_price});
-        BOM::Platform::RedisReplicated::redis_write()->set('klfb_limit::JP', $new_klfb_limit);
-        stats_gauge('klfb_limit', $new_klfb_limit);
+        if ($klfb_limit_cache) {
+            my $new_klfb_limit = $klfb_limit_cache + ($fmb->{payout_price} - $fmb->{buy_price});
+            BOM::Platform::RedisReplicated::redis_write()->incrbyfloat('klfb_limit::JP', $new_klfb_limit);
+            stats_gauge('klfb_limit', $new_klfb_limit);
+        }
     }
     return;
 }
@@ -887,9 +889,11 @@ sub sell {
     $self->reference_id($buy_txn_id);
     if ($self->client->broker_code eq 'JP') {
         my $klfb_limit_cache = BOM::Platform::RedisReplicated::redis_read()->get('klfb_limit::JP');
-        my $new_klfb_limit = $klfb_limit_cache + ($fmb->{sell_price} - $fmb->{buy_price}) - (($fmb->{payout_price} - $fmb->{buy_price}));
-        BOM::Platform::RedisReplicated::redis_write()->set('klfb_limit::JP', $new_klfb_limit);
-        stats_gauge('klfb_limit', $new_klfb_limit);
+        if ($klfb_limit_cache) {
+            my $new_klfb_limit = $klfb_limit_cache + ($fmb->{sell_price} - $fmb->{buy_price}) - (($fmb->{payout_price} - $fmb->{buy_price}));
+            BOM::Platform::RedisReplicated::redis_write()->incrbyfloat('klfb_limit::JP', $new_klfb_limit);
+            stats_gauge('klfb_limit', $new_klfb_limit);
+        }
     }
     return;
 }
