@@ -38,6 +38,7 @@ before_install:
       regentmarkets/bom-postgres
       regentmarkets/bom-market
       regentmarkets/bom
+      regentmarkets/bom-user
 
     - /tmp/travis-scripts/postgres_restart.sh
     - /tmp/travis-scripts/redis.sh
