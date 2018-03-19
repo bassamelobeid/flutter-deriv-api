@@ -7,7 +7,7 @@
     "paymentagent_list": {
       "type": "string",
       "title": "Payment Agent Target Country",
-      "description": "Client 2-letter country code (obtained from residence_list call)",
+      "description": "Client's 2-letter country code (obtained from residence_list call)",
       "pattern": "^\\w\\w$",
       "required": "1"
     },
