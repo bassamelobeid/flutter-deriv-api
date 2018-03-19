@@ -500,40 +500,5 @@ EOF
         print '<p>New ' . $currency . ' address for deposits: <strong>' . encode_entities($rslt) . '</strong></p>';
     }
 
-} elsif ($view_action eq 'make_dcc') {
-    my $amount_dcc  = request()->param('amount_dcc')  // 0;
-    my $loginid_dcc = request()->param('loginid_dcc') // '';
-    my $transtype   = request()->param('address_dcc') // '';
-
-    Bar('Dual control code');
-
-    code_exit_BO("No address provided")                              unless $transtype;
-    code_exit_BO('Invalid loginid')                                  unless $loginid_dcc;
-    code_exit_BO("ERROR in amount: " . encode_entities($amount_dcc)) unless $amount_dcc =~ /^\d+\.?\d*$/;
-
-    my $client_dcc = BOM::User::Client::get_instance({
-        'loginid'    => uc($loginid_dcc),
-        db_operation => 'replica'
-    });
-    code_exit_BO("ERROR: " . encode_entities($loginid_dcc) . " does not exist! Perhaps you made a typo?") unless $client_dcc;
-
-    my $code = BOM::DualControl->new({
-            staff           => $staff,
-            transactiontype => $transtype
-        })->payment_control_code($loginid_dcc, $currency, $amount_dcc);
-
-    my $message =
-          "The dual control code created by $staff for an amount of "
-        . $currency
-        . $amount_dcc
-        . " (for a "
-        . $transtype
-        . ") for "
-        . $loginid_dcc
-        . " is: <b> $code </b>This code is valid for 1 hour (from "
-        . $now->datetime_ddmmmyy_hhmmss
-        . ") only.";
-
-    print $message;
 }
 code_exit_BO();
