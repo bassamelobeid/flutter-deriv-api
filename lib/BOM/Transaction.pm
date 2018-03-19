@@ -622,12 +622,14 @@ sub buy {
 
     enqueue_new_transaction(_get_params_for_expiryqueue($self));    # For soft realtime expiration notification.
 
+    # Japan's regulator required us to keep monitor on our risk level and alert the team if the risk level is reaching the limit
+    # Hence we have this piece of code which will calculate them and update datalog
     if ($self->client->broker_code eq 'JP') {
-        my $klfb_limit_cache = BOM::Platform::RedisReplicated::redis_read()->get('klfb_limit::JP');
-        if ($klfb_limit_cache) {
-            my $new_klfb_limit = $klfb_limit_cache + ($fmb->{payout_price} - $fmb->{buy_price});
-            BOM::Platform::RedisReplicated::redis_write()->incrbyfloat('klfb_limit::JP', $new_klfb_limit);
-            stats_gauge('klfb_limit', $new_klfb_limit);
+        my $klfb_risk_cache = BOM::Platform::RedisReplicated::redis_read()->get('klfb_risk::JP');
+        if ($klfb_risk_cache) {
+            my $new_klfb_risk = $klfb_risk_cache + ($fmb->{payout_price} - $fmb->{buy_price});
+            BOM::Platform::RedisReplicated::redis_write()->incrbyfloat('klfb_risk::JP', $new_klfb_risk);
+            stats_gauge('klfb_risk_level', $new_klfb_risk);
         }
     }
     return;
@@ -888,11 +890,11 @@ sub sell {
     $self->transaction_id($txn->{id});
     $self->reference_id($buy_txn_id);
     if ($self->client->broker_code eq 'JP') {
-        my $klfb_limit_cache = BOM::Platform::RedisReplicated::redis_read()->get('klfb_limit::JP');
-        if ($klfb_limit_cache) {
-            my $new_klfb_limit = $klfb_limit_cache + ($fmb->{sell_price} - $fmb->{buy_price}) - (($fmb->{payout_price} - $fmb->{buy_price}));
-            BOM::Platform::RedisReplicated::redis_write()->incrbyfloat('klfb_limit::JP', $new_klfb_limit);
-            stats_gauge('klfb_limit', $new_klfb_limit);
+        my $klfb_risk_cache = BOM::Platform::RedisReplicated::redis_read()->get('klfb_risk::JP');
+        if ($klfb_risk_cache) {
+            my $new_klfb_risk = $klfb_risk_cache + ($fmb->{sell_price} - $fmb->{buy_price}) - (($fmb->{payout_price} - $fmb->{buy_price}));
+            BOM::Platform::RedisReplicated::redis_write()->incrbyfloat('klfb_risk::JP', $new_klfb_risk);
+            stats_gauge('klfb_risk', $new_klfb_risk);
         }
     }
     return;
