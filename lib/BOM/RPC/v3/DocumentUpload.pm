@@ -119,11 +119,9 @@ sub successful_upload {
 sub check_for_query_error {
     my $query_result = shift;
 
-    return create_upload_error('duplicate_document') if $query_result->{error} and $query_result->{error}->{dup};
-
-    if ($query_result->{error} or not $query_result->{file_id}) {
-        warn 'Document upload db query failed';
-        return create_upload_error();
+    unless($query_result->{file_id}) {
+        warn 'Document upload db query failed' unless $query_result->{error}->{type} eq 'duplicate_document';
+        return create_upload_error($query_result->{error}->{type});
     }
 }
 
