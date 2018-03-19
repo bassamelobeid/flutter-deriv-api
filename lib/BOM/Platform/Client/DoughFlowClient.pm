@@ -23,7 +23,7 @@ It is now a Rose::DB::Object derived class so all Client table columns are avail
 use strict;
 use warnings;
 
-use base qw(Client::Account);
+use base qw(BOM::User::Client);
 
 use Locale::Country;
 use Lingua::EN::AddressParse;

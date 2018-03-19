@@ -4,12 +4,12 @@ use Moose;
 
 use BOM::Platform::Config;
 use BOM::Platform::Email qw(send_email);
-use Client::Account;
+use BOM::User::Client;
 use Data::Validate::Sanctions;
 
 has client => (
     is       => 'ro',
-    isa      => 'Client::Account',
+    isa      => 'BOM::User::Client',
     required => 1,
 );
 has type => (

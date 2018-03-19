@@ -7,8 +7,8 @@ use warnings;
 use Test::More;
 use Test::Exception;
 
-use Client::Account;
-use Client::Account::Payments;
+use BOM::User::Client;
+use BOM::User::Client::Payments;
 use BOM::Platform::Client::IDAuthentication;
 
 my $client_details = {
@@ -33,7 +33,7 @@ my %deposit = (
     payment_type => 'free_gift'
 );
 
-my $mlt_client = Client::Account->register_and_return_new_client({
+my $mlt_client = BOM::User::Client->register_and_return_new_client({
     %$client_details,
     broker_code => 'MLT',
     residence   => 'it'
@@ -46,7 +46,7 @@ BOM::Platform::Client::IDAuthentication->new(client => $mlt_client)->run_authent
 ok(!$mlt_client->get_status('unwelcome'),     'MLT client not unwelcome after first-deposit');
 ok($mlt_client->get_status('cashier_locked'), 'MLT client cashier_locked after first-deposit');
 
-my $mx_client = Client::Account->register_and_return_new_client({
+my $mx_client = BOM::User::Client->register_and_return_new_client({
     %$client_details,
     broker_code => 'MX',
     residence   => 'gb'

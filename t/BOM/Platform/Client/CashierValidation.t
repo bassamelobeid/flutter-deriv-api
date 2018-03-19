@@ -7,7 +7,7 @@ use Test::Exception;
 use Test::MockModule;
 use Test::Warnings;
 
-use Client::Account;
+use BOM::User::Client;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Client::CashierValidation;
@@ -204,7 +204,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
         is $res->{error}->{code}, 'ASK_AUTHENTICATE', 'Correct error code for not authenticated';
         is $res->{error}->{message_to_client}, 'Please authenticate your account.', 'Correct error message for not authenticated';
 
-        my $mock_client = Test::MockModule->new('Client::Account');
+        my $mock_client = Test::MockModule->new('BOM::User::Client');
         $mock_client->mock(client_fully_authenticated => sub { note "mocked Client->client_fully_authenticated returning true"; 1 });
 
         $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
@@ -369,7 +369,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
         is BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($cr_client->loginid, 10000), undef,
             'Not applicable for CR hence validation passed';
 
-        my $mock_client = Test::MockModule->new('Client::Account');
+        my $mock_client = Test::MockModule->new('BOM::User::Client');
         $mock_client->mock(client_fully_authenticated => sub { note "mocked Client->client_fully_authenticated returning true"; 1 });
 
         is BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($mlt_client->loginid, 10000), undef,
