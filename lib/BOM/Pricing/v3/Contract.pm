@@ -12,7 +12,7 @@ use Date::Utility;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Time::HiRes;
 use Time::Duration::Concise::Localize;
-use Client::Account;
+use BOM::User::Client;
 
 use Format::Util::Numbers qw/formatnumber/;
 use Scalar::Util::Numeric qw(isint);
@@ -605,7 +605,7 @@ sub contracts_for {
     my $token_details = $params->{token_details};
 
     if ($token_details and exists $token_details->{loginid}) {
-        my $client = Client::Account->new({
+        my $client = BOM::User::Client->new({
             loginid      => $token_details->{loginid},
             db_operation => 'replica',
         });
