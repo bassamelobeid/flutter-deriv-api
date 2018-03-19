@@ -6,7 +6,7 @@ use WWW::OneAll;
 use BOM::Platform::Config;
 use BOM::Platform::Context qw(localize);
 use BOM::Database::Model::UserConnect;
-use BOM::Platform::User;
+use BOM::User;
 use BOM::Platform::Account::Virtual;
 use Try::Tiny;
 use URI::QueryParam;
@@ -57,7 +57,7 @@ sub callback {
 
     my $email = _get_email($provider_data);
     my $user  = try {
-        BOM::Platform::User->new({email => $email})
+        BOM::User->new({email => $email})
     };
     # Registered users who have email/password based account are forbidden
     # from social signin. As only one login method
