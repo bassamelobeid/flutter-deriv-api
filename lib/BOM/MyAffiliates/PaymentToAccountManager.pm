@@ -23,7 +23,7 @@ use Format::Util::Numbers qw(roundcommon);
 use List::MoreUtils qw(any);
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
 use BOM::Platform::Runtime;
-use Client::Account;
+use BOM::User::Client;
 use BOM::MyAffiliates;
 use LandingCompany::Registry;
 
@@ -158,7 +158,7 @@ sub _get_csv_line_from_txn {
     # loginid
     my $loginid = _get_loginid_from_txn($transaction);
     die 'Could not extract BOM loginid from transaction. Full transaction details: ' . Dumper($transaction) unless $loginid;
-    my $client = Client::Account::get_instance({
+    my $client = BOM::User::Client::get_instance({
         loginid      => $loginid,
         db_operation => 'replica'
     });
