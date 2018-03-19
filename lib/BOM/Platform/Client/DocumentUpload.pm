@@ -61,7 +61,7 @@ sub _create_error {
 
     return {
         error => {
-            msg => $msg,
+            msg  => $msg,
             type => $duplicate_error ? 'duplicate_document' : 'postgres_error'
         }};
 }
