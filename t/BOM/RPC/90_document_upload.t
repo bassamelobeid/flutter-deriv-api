@@ -4,6 +4,7 @@ use warnings;
 use BOM::Test::RPC::Client;
 use Test::More;
 use Test::Mojo;
+use Test::Warn;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
@@ -131,7 +132,10 @@ subtest 'Error for calling success with non-existent file ID' => sub {
                                     # These need to be blanked or RPC will try to start an upload
                                     document_type   => '',
                                     document_format => '' } };
-    call_and_check_error($custom_params, 'Sorry, an error occurred while processing your request.', 'error if document is not present');
+    warning_like {
+        call_and_check_error($custom_params, 'Sorry, an error occurred while processing your request.', 'error if document is not present');
+    }
+    [qr/Failed to update the uploaded document in the db/], "Expected warning is thrown";
 };
 
 #########################################################
