@@ -51,6 +51,7 @@ before_install:
       regentmarkets/bom-websocket-tests
       regentmarkets/bom
       regentmarkets/bom-platform
+      regentmarkets/bom-user
       regentmarkets/bom-feed
       regentmarkets/bom-populator
       regentmarkets/bom-rpc
