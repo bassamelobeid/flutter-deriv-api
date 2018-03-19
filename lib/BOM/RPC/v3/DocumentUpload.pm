@@ -84,7 +84,7 @@ sub successful_upload {
 
     return create_upload_error('duplicate_document') if $query_result->{error} and $query_result->{error}->{dup};
 
-    if ($query_result->{error}) {
+    if ($query_result->{error} or not $query_result->{result}) {
         warn 'Failed to update the uploaded document in the db';
         return create_upload_error();
     }
