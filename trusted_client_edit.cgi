@@ -3,7 +3,7 @@ package main;
 use strict;
 use warnings;
 
-use Client::Account;
+use BOM::User::Client;
 
 use Text::Trim;
 use HTML::Entities;
@@ -49,7 +49,7 @@ if ($action_type =~ /SELECT A DATABASE TO VIEW/) {
 my $encoded_clientID = encode_entities($clientID);
 if ($action_type !~ /(oklogins)/) {
     $clientID = rtrim($clientID);
-    $client = Client::Account::get_instance({'loginid' => $clientID});
+    $client = BOM::User::Client::get_instance({'loginid' => $clientID});
 
     if (not $client) {
         print "<br /><font color=red><b>ERROR : Bad loginID ' $encoded_clientID '</b></font><br /><br />";
@@ -87,7 +87,7 @@ if ($action_type eq 'oklogins') {
     LOGIN:
     foreach my $login_id (split(/\s+/, $clientID)) {
         my $encoded_login_id = encode_entities($login_id);
-        my $client = Client::Account::get_instance({'loginid' => $login_id});
+        my $client = BOM::User::Client::get_instance({'loginid' => $login_id});
         if (not $client) {
             push @invalid_logins, $login_id;
             next LOGIN;

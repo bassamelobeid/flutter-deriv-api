@@ -2,7 +2,7 @@ package BOM::Backoffice::Script::CopyTradingStatistics;
 use strict;
 use warnings;
 
-use Client::Account;
+use BOM::User::Client;
 use BOM::Platform::RedisReplicated;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
@@ -35,7 +35,7 @@ sub run {
         my $last_processed_id = BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_LAST_PROCESSED_ID:$trader_id") || 0;
         my $max_processed_id = $last_processed_id;
 
-        my $trader = Client::Account->new({loginid => $trader_id});
+        my $trader = BOM::User::Client->new({loginid => $trader_id});
         my $txn_dm = BOM::Database::DataMapper::Transaction->new({
             client_loginid => $trader->loginid,
             currency_code  => $trader->default_account->currency_code,

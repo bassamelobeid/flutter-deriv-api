@@ -33,7 +33,7 @@ my $json = JSON::MaybeXS->new;
 CLIENT:
 foreach my $loginid (@approved, @rejected) {
 
-    my $client      = Client::Account->new({loginid => $loginid}) || die "bad loginid $loginid";
+    my $client      = BOM::User::Client->new({loginid => $loginid}) || die "bad loginid $loginid";
     my $approved    = $input{"${loginid}_promo"} eq 'A';
     my $client_name = ucfirst join(' ', (BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name));
     my $email_subject = localize("Your bonus request - [_1]", $loginid);
