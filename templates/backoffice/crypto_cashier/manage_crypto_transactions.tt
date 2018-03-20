@@ -153,6 +153,9 @@
                             <input type="submit" name="action" value="Reject"/>
                         </form>
                     </tbody></table></td>
+                [% ELSIF view_action == 'withdrawals' || view_action == 'search' %]
+                    [% #Empty cell for when the table has an Action column no actions can be taken %]
+                    <td></td>
                 [% END %]
                 <td><table><tbody>
                     <tr><td>Remark: [% trx.remark %]</td></tr>
