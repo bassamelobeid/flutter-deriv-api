@@ -484,7 +484,7 @@ sub _process_proposal_open_contract_response {
             $c->send({
                     json => {
                         msg_type               => 'proposal_open_contract',
-                        proposal_open_contract => {%$result}
+                        proposal_open_contract => %$result
                     },
                 },
                 $req_storage
