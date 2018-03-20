@@ -189,5 +189,6 @@ sub create_proposals {
 }
 
 sub pricer_sub_count {
+    diag("keys when pricer_sub_count " . explain($keys_hash));
     return scalar keys %$keys_hash;
 }
