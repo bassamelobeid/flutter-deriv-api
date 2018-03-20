@@ -21,7 +21,7 @@ if (not $klfb_risk_cache) {
     my $json               = JSON::MaybeXS->new;
     my $limit              = $json->encode({'klfb_risk_limit' => {'tstmp' => $beginning_of_month->db_timestamp}});
     my $risk =
-        $clientdb->getall_arrayref('select * from bet_v1.klfb_risk_limit(?,?,?,?)', [undef, undef, undef, $limit])->[0]->{klfb_risk_limit}->{current};
+        $clientdb->getall_arrayref('select * from bet_v1.klfb_risk_limit(?,?,?,?)', [undef, undef, undef, $limit])->[0]->{klfb_risk_limit}->{current} // 0;
 
     BOM::Platform::RedisReplicated::redis_write()->set('klfb_risk::JP', $risk, 'EX', 24 * 60 * 60);
 
