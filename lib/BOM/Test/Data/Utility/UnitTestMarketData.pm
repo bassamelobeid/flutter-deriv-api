@@ -217,9 +217,9 @@ sub create_predefined_parameters_for {
         epoch  => $date->epoch,
         quote  => 100
     });
-    create_predefined_barriers_by_contract_category($symbol, $date);
+    my $barrier_by_category = create_predefined_barriers_by_contract_category($symbol, $date);
 
-    return;
+    return ($tp, $barrier_by_category);
 }
 
 sub create_predefined_barriers_by_contract_category {
