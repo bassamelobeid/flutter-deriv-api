@@ -26,7 +26,7 @@ our $BET_CLASS_LOOKBACK_OPTION  = 'lookback_option';
 # Constant reference to volatile hash
 our $BET_CLASS_TO_TYPE_MAP = {
     'spread_bet'       => ['SPREADU', 'SPREADD'],
-    'higher_lower_bet' => ['CALL',    'PUT', 'CALLE', 'PUTE', 'ASIANU', 'ASIAND'],
+    'higher_lower_bet' => ['CALL',    'PUT', 'CALLE', 'PUTE', 'ASIANU', 'ASIAND', 'TICKHIGH', 'TICKLOW'],
 
     'legacy_bet' => [
         'CLUB',              'SPREADUP',          'SPREADDOWN',     'DOUBLEDBL',       'BEARSTOP',      'DOUBLECONTRA',
@@ -41,7 +41,6 @@ our $BET_CLASS_TO_TYPE_MAP = {
 
     'touch_bet' => ['ONETOUCH',   'NOTOUCH'],
     'digit_bet' => ['DIGITMATCH', 'DIGITDIFF', 'DIGITOVER', 'DIGITUNDER', 'DIGITODD', 'DIGITEVEN'],
-    'tick_bet'  => ['TICKHIGH',   'TICKLOW'],
     'lookback_option' => ['LBFIXEDCALL', 'LBFIXEDPUT', 'LBFLOATCALL', 'LBFLOATPUT', 'LBHIGHLOW'],
     'INVALID'         => ['INVALID'],
 };
