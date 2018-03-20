@@ -61,7 +61,7 @@ sub upload {
         ($etag) = $s3->put_object(
             key   => $original_filename,
             value => path($upload_file_handle)->slurp,
-            meta => {checksum => $checksum},
+            meta  => {checksum => $checksum},
         )->get;
     }
     catch {
