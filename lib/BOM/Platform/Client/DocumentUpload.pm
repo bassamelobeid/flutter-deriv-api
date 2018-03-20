@@ -5,6 +5,8 @@ use warnings;
 
 use Try::Tiny;
 
+use constant POSTGRES_ERRNO_UNIQUE_VIOLATION => 23505;
+
 sub start_document_upload {
     my (%args) = @_;
     return _do_query(
@@ -87,7 +89,7 @@ sub _is_duplicate_upload_error {
     #   - followed by either *nothing*, *comma*, or *comma space*
     #   - match this 3 times
 
-    return $dbh->state eq '23505'
+    return $dbh->state eq POSTGRES_ERRNO_UNIQUE_VIOLATION
         && $dbh->errstr =~ /\(((client_loginid|checksum|document_type)(, ?)?){3}\)/;
 }
 
