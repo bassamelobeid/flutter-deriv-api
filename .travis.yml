@@ -48,6 +48,7 @@ install:
 
     - /tmp/travis-scripts/setup_logs.sh
     - . /tmp/travis-scripts/setup_perl5lib.sh
+    - /tmp/travis-scripts/setup_postfix.sh
 script:
     - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
     - make $TEST_SUITE
