@@ -7,10 +7,11 @@ use strict;
 use warnings;
 
 use Test::MockTime;
-use Test::More tests => 12;
+use Test::More tests => 13;
 use Test::Exception;
 use Test::Deep qw(cmp_deeply);
 use Test::Warnings;
+use Test::MockModule;
 
 use Cache::RedisDB;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -225,7 +226,7 @@ subtest 'User Login' => sub {
         }
         'create user with cr accounts only';
 
-        subtest 'cannot login if he has all self excluded account' => sub {
+        subtest 'can login if he has all self excluded account' => sub {
             my $exclude_until_3  = Date::Utility->new()->plus_time_interval('365d')->date;
             my $exclude_until_31 = Date::Utility->new()->plus_time_interval('300d')->date;
 
@@ -239,7 +240,7 @@ subtest 'User Login' => sub {
             ok $status->{success}, 'Excluded client can login';
         };
 
-        subtest 'cannot login if he has all self timeouted account' => sub {
+        subtest 'can login if he has all self timeouted account' => sub {
             my $timeout_until_3  = Date::Utility->new()->plus_time_interval('2d');
             my $timeout_until_31 = Date::Utility->new()->plus_time_interval('1d');
 
@@ -368,6 +369,112 @@ subtest 'Champion fx users' => sub {
     };
 };
 
+subtest 'GAMSTOP' => sub {
+    my ($email_gamstop, $client_vrgamstop, $client_gamstop, $client_gamstop_mx, $vrgamstop_loginid, $gamstop_loginid, $user_gamstop) =
+        ('gamstop@binary.com');
+    lives_ok {
+        $client_vrgamstop = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+        });
+        $client_gamstop = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'MLT',
+        });
+        $client_gamstop_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'MX',
+        });
+
+        $client_vrgamstop->email($email_gamstop);
+        $client_vrgamstop->residence('gb');
+        $client_vrgamstop->save;
+
+        $client_gamstop->email($email_gamstop);
+        $client_gamstop->residence('gb');
+        $client_gamstop->save;
+
+        $client_gamstop_mx->email($email_gamstop);
+        $client_gamstop_mx->residence('gb');
+        $client_gamstop_mx->save;
+
+        $vrgamstop_loginid = $client_vrgamstop->loginid;
+        $gamstop_loginid   = $client_gamstop->loginid;
+    }
+    'creating clients';
+
+    lives_ok {
+        $user_gamstop = BOM::User->create(
+            email    => $email_gamstop,
+            password => $hash_pwd
+        );
+        $user_gamstop->save;
+
+        $user_gamstop->add_loginid({loginid => $vrgamstop_loginid});
+        $user_gamstop->add_loginid({loginid => $gamstop_loginid});
+        $user_gamstop->add_loginid({loginid => $client_gamstop_mx->loginid});
+        $user_gamstop->save;
+    }
+    'create user with loginid';
+
+    my $gamstop_module = Test::MockModule->new('Webservice::GAMSTOP');
+    my %params         = (
+        exclusion => 'Y',
+        date      => Date::Utility->new()->datetime_ddmmmyy_hhmmss_TZ,
+        unique_id => '111-222-333'
+    );
+    my $default_client;
+    my $date_plus_one_day = Date::Utility->new->plus_time_interval('1d')->date_yyyymmdd;
+
+    subtest 'GAMSTOP - Y - excluded' => sub {
+        $gamstop_module->mock('get_exclusion_for', sub { return Webservice::GAMSTOP::Response->new(%params); });
+        ok $user_gamstop->login(%pass)->{success}, 'can login';
+
+        $default_client = $user_gamstop->get_default_client();
+        $default_client->set_exclusion->exclude_until($date_plus_one_day);
+        $default_client->save;
+
+        is $default_client->get_self_exclusion_until_date, $date_plus_one_day, 'Y response does not update existing self exclusion';
+        $default_client->set_exclusion->exclude_until(undef);
+        $default_client->save;
+
+        ok $user_gamstop->login(%pass)->{success}, 'can login';
+        is $default_client->get_self_exclusion_until_date, Date::Utility->new(DateTime->now()->add(months => 6)->ymd)->date_yyyymmdd,
+            'Based on Y response from GAMSTOP client was self excluded';
+    };
+
+    subtest 'GAMSTOP - N - not excluded' => sub {
+        $params{exclusion} = 'N';
+        $gamstop_module->mock('get_exclusion_for', sub { return Webservice::GAMSTOP::Response->new(%params); });
+        ok $user_gamstop->login(%pass)->{success}, 'can login';
+
+        is $default_client->get_self_exclusion_until_date, Date::Utility->new(DateTime->now()->add(months => 6)->ymd)->date_yyyymmdd,
+            'Based on N response from GAMSTOP client previous self exclusion were not updated';
+
+        $default_client->set_exclusion->exclude_until(undef);
+        $default_client->save;
+
+        ok $user_gamstop->login(%pass)->{success}, 'can login';
+        is $default_client->get_self_exclusion_until_date, undef, 'Based on N response from GAMSTOP client was not self excluded';
+    };
+
+    subtest 'GAMSTOP - P - previously excluded but not anymore' => sub {
+        $params{exclusion} = 'P';
+
+        $default_client->set_exclusion->exclude_until($date_plus_one_day);
+        $default_client->save;
+
+        $gamstop_module->mock('get_exclusion_for', sub { return Webservice::GAMSTOP::Response->new(%params); });
+        ok $user_gamstop->login(%pass)->{success}, 'can login';
+
+        is $default_client->get_self_exclusion_until_date, $date_plus_one_day,
+            'Based on N response from GAMSTOP client previous self exclusion were not updated';
+
+        $default_client->set_exclusion->exclude_until(undef);
+        $default_client->save;
+
+        ok $user_gamstop->login(%pass)->{success}, 'can login';
+        is $default_client->get_self_exclusion_until_date, undef, 'Based on N response from GAMSTOP client was not self excluded';
+    };
+};
+
 sub write_file {
     my ($name, $content) = @_;
 
@@ -378,7 +485,7 @@ sub write_file {
 }
 
 subtest 'MirrorBinaryUserId' => sub {
-    plan tests => 12;
+    plan tests => 15;
     use YAML::XS qw/LoadFile/;
     use BOM::Platform::Script::MirrorBinaryUserId;
     use BOM::User::Client;
@@ -411,7 +518,7 @@ CONF
     # at this point we have 9 rows in the queue: 2x VRTC, 4x CR, 2x MT and 1x VRCH
     my $queue = $dbh->selectall_arrayref('SELECT binary_user_id, loginid FROM q.add_loginid');
 
-    is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 9, 'got expected number of queue entries';
+    is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 12, 'got expected number of queue entries';
 
     BOM::Platform::Script::MirrorBinaryUserId::run_once $dbh;
     is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 0, 'all queue entries processed';
