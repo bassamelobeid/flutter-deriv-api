@@ -624,8 +624,8 @@ sub buy {
 
     # Japan's regulator required us to keep monitor on our risk level and alert the team if the risk level is reaching the limit
     # Hence we have this piece of code which will calculate them and update datalog
-    if ($self->client->broker_code eq 'JP' and my $klfb_risk_cache = BOM::Platform::RedisReplicated::redis_read()->exists('klfb_risk::JP')) {
-        my $new_klfb_risk = $klfb_risk_cache + ($fmb->{payout_price} - $fmb->{buy_price});
+    if ($self->client->landing_company->short eq 'japan' and BOM::Platform::RedisReplicated::redis_read()->exists('klfb_risk::JP')) {
+        my $new_klfb_risk = $fmb->{payout_price} - $fmb->{buy_price};
         BOM::Platform::RedisReplicated::redis_write()->incrbyfloat('klfb_risk::JP', $new_klfb_risk);
     }
     return;
@@ -886,8 +886,8 @@ sub sell {
     $self->transaction_id($txn->{id});
     $self->reference_id($buy_txn_id);
 
-    if ($self->client->broker_code eq 'JP' and my $klfb_risk_cache = BOM::Platform::RedisReplicated::redis_read()->exists('klfb_risk::JP')) {
-        my $new_klfb_risk = $klfb_risk_cache + ($fmb->{sell_price} - $fmb->{buy_price}) - (($fmb->{payout_price} - $fmb->{buy_price}));
+    if ($self->client->landing_company->short eq 'japan' and BOM::Platform::RedisReplicated::redis_read()->exists('klfb_risk::JP')) {
+        my $new_klfb_risk = ($fmb->{sell_price} - $fmb->{buy_price}) - ($fmb->{payout_price} - $fmb->{buy_price});
         BOM::Platform::RedisReplicated::redis_write()->incrbyfloat('klfb_risk::JP', $new_klfb_risk);
     }
     return;
