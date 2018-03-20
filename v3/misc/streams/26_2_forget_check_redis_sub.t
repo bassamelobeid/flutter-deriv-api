@@ -31,7 +31,7 @@ $redis2_module->mock(
     sub {
         my $redis = shift;
         my $keys  = shift;
-
+        diag("subscribe keys is" . explain($keys));
         $keys_hash->{$_} = 1 for @$keys;
     });
 
@@ -40,7 +40,7 @@ $redis2_module->mock(
     sub {
         my $redis = shift;
         my $keys  = shift;
-
+        diag("unsubscribe keys is" . explain($keys));
         delete($keys_hash->{$_}) for @$keys;
     });
 
