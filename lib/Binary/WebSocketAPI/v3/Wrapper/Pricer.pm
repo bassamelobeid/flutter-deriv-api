@@ -890,8 +890,9 @@ sub send_proposal_open_contract_last_time {
             rpc_response_cb => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
                 return {
+                    proposal_open_contract => $rpc_response->{$contract_id} || {},
                     msg_type => 'proposal_open_contract',
-                    proposal_open_contract => $rpc_response->{$contract_id} || {}};
+                };
             }
         });
     return;
