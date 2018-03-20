@@ -127,11 +127,16 @@ sub send_notification {
         }
 
         $message = eval { $json->decode(Encode::decode_utf8($message)) } unless ref $message eq 'HASH';
-        $message->{message} = get_status_msg($client_shared->{c}, $message->{message}) // '' if $message->{message};
+
+        # Make a local (shallow) copy of the status here so that its
+        # message can be correctly localized depending on the connection
+        my $website_status = {%{$client_shared->{website_status}}};
+        $website_status->{site_status} = $message->{site_status};
+        $website_status->{message} = get_status_msg($client_shared->{c}, $message->{message}) if $message->{message};
 
         $client_shared->{c}->send({
                 json => {
-                    website_status => {%{$client_shared->{website_status}}, %$message},
+                    website_status => $website_status,
                     echo_req       => $client_shared->{echo},
                     msg_type       => 'website_status'
                 }});
