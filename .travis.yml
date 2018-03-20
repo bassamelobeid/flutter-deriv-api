@@ -38,6 +38,7 @@ before_install:
       regentmarkets/bom-test
       regentmarkets/bom
       regentmarkets/bom-platform
+      regentmarkets/bom-user
       regentmarkets/bom-market
       binary-com/translations-websockets-api
 
