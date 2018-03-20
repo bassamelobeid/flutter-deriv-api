@@ -4,6 +4,7 @@ use warnings;
 use strict;
 
 use Try::Tiny;
+use Path::Tiny;
 use IO::Async::Loop;
 use Net::Async::Webservice::S3;
 use Amazon::S3::SignedURLGenerator;
@@ -59,7 +60,7 @@ sub upload {
     try {
         ($etag) = $s3->put_object(
             key   => $original_filename,
-            value => do { local $/; <$upload_file_handle> },
+            value => path($upload_file_handle)->slurp,
             meta => {checksum => $checksum},
         )->get;
     }
