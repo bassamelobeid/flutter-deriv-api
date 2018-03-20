@@ -68,7 +68,7 @@ unless ($curr =~ /^[A-Z]{3}$/ && LandingCompany::Registry::get_currency_type($cu
     print "Invalid currency, please check: " . encode_entities($curr);
     code_exit_BO();
 }
-my $client = eval { Client::Account->new({loginid => $loginID}) } || do {
+my $client = eval { BOM::User::Client->new({loginid => $loginID}) } || do {
     print "Error: no such client $encoded_loginID";
     code_exit_BO();
 };
@@ -80,7 +80,7 @@ if ($ttype eq 'TRANSFER') {
         print "ERROR: transfer-to LoginID missing";
         code_exit_BO();
     }
-    $toClient = eval { Client::Account->new({loginid => $toLoginID}) } || do {
+    $toClient = eval { BOM::User::Client->new({loginid => $toLoginID}) } || do {
         print "Error: no such transfer-to client $encoded_toLoginID";
         code_exit_BO();
     };

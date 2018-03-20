@@ -9,7 +9,7 @@ use Machine::Epsilon;
 use HTML::Entities;
 
 use Brands;
-use Client::Account;
+use BOM::User::Client;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Backoffice::Sysinit ();
@@ -34,7 +34,7 @@ if ($loginID !~ /^(\D+)(\d+)$/) {
     code_exit_BO();
 }
 
-my $client = Client::Account::get_instance({
+my $client = BOM::User::Client::get_instance({
     'loginid'    => $loginID,
     db_operation => 'replica'
 });

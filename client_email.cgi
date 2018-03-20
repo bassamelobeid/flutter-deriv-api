@@ -12,8 +12,8 @@ use f_brokerincludeall;
 use Format::Util::Strings qw( defang );
 use Text::Trim;
 use Date::Utility;
-use Client::Account;
-use BOM::Platform::User;
+use BOM::User::Client;
+use BOM::User;
 use BOM::Platform::Runtime;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -47,7 +47,7 @@ if ($input{new_email}) {
     }
 }
 
-my $user = BOM::Platform::User->new({email => $email});
+my $user = BOM::User->new({email => $email});
 if (not $user) {
     print "<p>ERROR: Clients with email <b>$encoded_email</b> not found.</p>";
     code_exit_BO();
@@ -85,7 +85,7 @@ if ($user->has_social_signup) {
 }
 
 if ($email ne $new_email) {
-    if (BOM::Platform::User->new({email => $new_email})) {
+    if (BOM::User->new({email => $new_email})) {
         print "Email update not allowed, as same email [$encoded_new_email] already exists in system";
         code_exit_BO();
     }
@@ -96,7 +96,7 @@ if ($email ne $new_email) {
 
         foreach my $lid ($user->loginid) {
             next unless $lid->loginid !~ /^MT\d+$/;
-            my $client_obj = Client::Account->new({loginid => $lid->loginid});
+            my $client_obj = BOM::User::Client->new({loginid => $lid->loginid});
             $client_obj->email($new_email);
             $client_obj->save;
         }

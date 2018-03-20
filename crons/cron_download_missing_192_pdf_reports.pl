@@ -8,7 +8,7 @@ use Path::Tiny;
 
 use BOM::Platform::ProveID;
 use BOM::Platform::Runtime;
-use Client::Account;
+use BOM::User::Client;
 use LandingCompany;
 
 my $accounts_dir = BOM::Platform::Runtime->instance->app_config->system->directory->db . "/f_accounts";
@@ -22,7 +22,7 @@ for my $broker (LandingCompany::Registry::all_broker_codes) {
         sub {
             my ($loginid, $search_option) = $_ =~ /^([^.]+)[.]([^.]+)$/;
             my $result_as_xml = path($_)->slurp_utf8;
-            my $client = eval { Client::Account->new({loginid => $loginid, db_operation => 'replica'}) } || do {
+            my $client = eval { BOM::User::Client->new({loginid => $loginid, db_operation => 'replica'}) } || do {
                 my $err = $@;
                 warn("Error: can't identify client $loginid: $err");
                 return;
