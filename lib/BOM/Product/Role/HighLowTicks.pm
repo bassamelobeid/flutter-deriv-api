@@ -5,8 +5,8 @@ use Moose::Role;
 use constant DURATION_IN_TICKS => 5;
 
 has 'selected_tick' => (
-    is       => 'ro',
-    required => 1,
+    is         => 'ro',
+    lazy_build => 1,
 );
 
 # Required to determine the exit tick
