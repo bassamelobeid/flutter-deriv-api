@@ -132,6 +132,14 @@ my $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     ask        => 76.3030,
 });
 
+my $old_tick3 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch - 51,
+    underlying => 'R_50',
+    quote      => 963.4054,
+    bid        => 963.4054,
+    ask        => 963.4054,
+});
+
 my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch,
     underlying => 'R_50',
@@ -538,7 +546,7 @@ subtest 'sell_expired_contracts', sub {
             date_pricing => $now,
             current_tick => $tick,
             entry_tick   => $old_tick1,
-            exit_tick    => $old_tick2,
+            exit_tick    => $old_tick3,
         });
 
         my $txn = BOM::Transaction->new({
