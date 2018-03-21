@@ -92,6 +92,8 @@ has adj_theo_price => (
 sub _build_adj_coefficient {
     my $self = shift;
 
+    #An approximation of -f(1/2)/sqrt(2*pi) ~= 0.5826, where f is the zeta function.
+    #See "Connecting discrete and continuous path-dependent options", Broadie et al. (1998)
     my $beta = 0.5826;
     my $one_second_in_year = 1 / (365 * 24 * 60 * 60);
 
