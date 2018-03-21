@@ -24,18 +24,14 @@ use Mojo::Redis2;
 use Binary::WebSocketAPI::v3::Instance::Redis qw| redis_pricer |;
 
 my $t = build_wsapi_test();
-use Data::Dumper;
 my $redis_pricer = Test::MockObject::Extends->new(redis_pricer);
 
 my $keys_hash     = {};
-use Carp qw(cluck);
 $redis_pricer->mock(
     'subscribe',
     sub {
         my $redis = shift;
         my $keys  = shift;
-        cluck "how to get here: " if $keys->[0] eq 'introspection';
-        diag("subscribe keys is " . Dumper($keys));
         $keys_hash->{$_} = 1 for @$keys;
     });
 
@@ -44,7 +40,6 @@ $redis_pricer->mock(
     sub {
         my $redis = shift;
         my $keys  = shift;
-        diag("unsubscribe keys is" . Dumper($keys));
         delete($keys_hash->{$_}) for @$keys;
     });
 
@@ -193,6 +188,5 @@ sub create_proposals {
 }
 
 sub pricer_sub_count {
-    diag("keys when pricer_sub_count " . Dumper($keys_hash));
     return scalar keys %$keys_hash;
 }
