@@ -19,12 +19,14 @@ use BOM::Platform::Chronicle;
 
 use await;
 
-use Test::MockModule;
+use Test::MockObject::Extends;
 use Mojo::Redis2;
+use Binary::WebSocketAPI::v3::Instance::Redis qw| redis_pricer |;
 
 my $t = build_wsapi_test();
 use Data::Dumper;
-my $redis2_module = Test::MockModule->new('Mojo::Redis2');
+my $redis_pricer = Test::MockObject::Extends->new(redis_pricer);
+
 my $keys_hash     = {};
 use Carp qw(cluck);
 $redis2_module->mock(
