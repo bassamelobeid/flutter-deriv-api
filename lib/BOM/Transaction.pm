@@ -40,6 +40,7 @@ use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Database::Helper::RejectedTrade;
 use BOM::Database::ClientDB;
 use BOM::Transaction::Validation;
+use BOM::Platform::RedisReplicated;
 
 =head1 NAME
 
@@ -621,6 +622,12 @@ sub buy {
 
     enqueue_new_transaction(_get_params_for_expiryqueue($self));    # For soft realtime expiration notification.
 
+    # Japan's regulator required us to keep monitor on our risk level and alert the team if the risk level is reaching the limit
+    # Hence we have this piece of code which will calculate them and update datalog
+    if ($self->client->landing_company->short eq 'japan' and BOM::Platform::RedisReplicated::redis_read()->exists('klfb_risk::JP')) {
+        my $new_klfb_risk = $fmb->{payout_price} - $fmb->{buy_price};
+        BOM::Platform::RedisReplicated::redis_write()->incrbyfloat('klfb_risk::JP', $new_klfb_risk);
+    }
     return;
 }
 
@@ -879,6 +886,10 @@ sub sell {
     $self->transaction_id($txn->{id});
     $self->reference_id($buy_txn_id);
 
+    if ($self->client->landing_company->short eq 'japan' and BOM::Platform::RedisReplicated::redis_read()->exists('klfb_risk::JP')) {
+        my $new_klfb_risk = ($fmb->{sell_price} - $fmb->{buy_price}) - ($fmb->{payout_price} - $fmb->{buy_price});
+        BOM::Platform::RedisReplicated::redis_write()->incrbyfloat('klfb_risk::JP', $new_klfb_risk);
+    }
     return;
 }
 
