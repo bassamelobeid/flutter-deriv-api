@@ -42,7 +42,7 @@ use constant CURRENCY_CONVERSION_MAX_AGE => 3600;
 
     $mt5_logins = mt5_login_list({ client => $client })
 
-Takes a client object and returns all possible MT5 login IDs 
+Takes a client object and returns all possible MT5 login IDs
 associated with that client. Otherwise, returns an error message indicating
 that MT5 is suspended.
 
@@ -305,11 +305,11 @@ sub _check_logins {
         args    => $args
     })
 
-Takes a client object and a hash reference as inputs and returns the details of 
+Takes a client object and a hash reference as inputs and returns the details of
 the MT5 user, based on the MT5 login id passed.
 
 Takes the following (named) parameters as inputs:
-    
+
 =over 4
 
 =item * C<params> hashref that contains:
@@ -318,7 +318,7 @@ Takes the following (named) parameters as inputs:
 
 =item * A BOM::User::Client object under the key C<client>.
 
-=item * A hash reference under the key C<args> that contains the MT5 login id 
+=item * A hash reference under the key C<args> that contains the MT5 login id
 under C<login> key.
 
 =back
@@ -406,9 +406,9 @@ $user_mt5_settings = mt5_set_settings({
         client  => $client,
         args    => $args
     })
-    
-Takes a client object and a hash reference as inputs and returns the updated details of 
-the MT5 user, based on the MT5 login id passed, upon success.
+
+Takes a client object and a hash reference as inputs and returns the updated
+details of the MT5 user, based on the MT5 login id passed, upon success.
 
 Takes the following (named) parameters as inputs:
 
@@ -509,12 +509,12 @@ rpc mt5_set_settings => sub {
         client  => $client,
         args    => $args
     })
-    
-Takes a client object and a hash reference as inputs and returns 1 upon successful
-validation of the user's password.
-    
+
+Takes a client object and a hash reference as inputs and returns 1 upon
+successful validation of the user's password.
+
 Takes the following (named) parameters as inputs:
-    
+
 =over 4
 
 =item * C<params> hashref that contains:
@@ -523,7 +523,7 @@ Takes the following (named) parameters as inputs:
 
 =item * A BOM::User::Client object under the key C<client>.
 
-=item * A hash reference under the key C<args> that contains the MT5 login id 
+=item * A hash reference under the key C<args> that contains the MT5 login id
 under C<login> key.
 
 =back
@@ -599,12 +599,12 @@ rpc mt5_password_check => sub {
         client  => $client,
         args    => $args
     })
-    
-Takes a client object and a hash reference as inputs and returns 1 upon successful
-change of the user's MT5 account password.
-    
+
+Takes a client object and a hash reference as inputs and returns 1 upon
+successful change of the user's MT5 account password.
+
 Takes the following (named) parameters as inputs:
-    
+
 =over 4
 
 =item * C<params> hashref that contains:
@@ -711,12 +711,12 @@ rpc mt5_password_change => sub {
         client  => $client,
         args    => $args
     })
-    
-Takes a client object and a hash reference as inputs and returns 1 upon successful
-reset the user's MT5 account password.
-    
+
+Takes a client object and a hash reference as inputs and returns 1 upon
+successful reset the user's MT5 account password.
+
 Takes the following (named) parameters as inputs:
-    
+
 =over 3
 
 =item * C<params> hashref that contains:
@@ -1173,12 +1173,12 @@ sub _mt5_validate_and_get_amount {
         };
     }
 
-    return _mt5_error_sub(localize("Conversion rate not available for this currency."))
+    return _mt5_error_sub($error_code, localize("Conversion rate not available for this currency."))
         unless defined $mt5_amount;
 
-    return _mt5_error_sub(localize("Amount must be greater than 1 [_1].", $mt5_currency))
+    return _mt5_error_sub($error_code, localize("Amount must be greater than 1 [_1].", $mt5_currency))
         if $mt5_amount < 1;
-    return _mt5_error_sub(localize("Amount must be less than 20000 [_1].", $mt5_currency))
+    return _mt5_error_sub($error_code, localize("Amount must be less than 20000 [_1].", $mt5_currency))
         if $mt5_amount > 20000;
 
     return $mt5_amount;
@@ -1189,12 +1189,21 @@ sub _mt5_error_sub {
 
     my $generic_message = localize('There was an error processing the request.');
     return BOM::RPC::v3::Utility::create_error({
-        code              => $error_code,
+        code => $error_code // 'MT5Error',
         message_to_client => $msg_client
         ? $generic_message . ' ' . $msg_client
         : $generic_message,
         ($msg) ? (message => $msg) : (),
     });
+}
+
+sub _mt5_has_open_positions {
+    my $login = shift;
+
+    my $response = BOM::MT5::User::get_open_positions_count({login => $login});
+    return _mtf_error_sub() if $response->{error};
+
+    return $response->{total} ? 1 : 0;
 }
 
 1;
