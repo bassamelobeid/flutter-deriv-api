@@ -1,5 +1,4 @@
 {
-    "api_token": 1,
-    "new_token": "Token example",
-    "new_token_scopes": ["read", "trade", "admin"]
+    "account_authentication": 1,
+    "totp" : "status"
 }
