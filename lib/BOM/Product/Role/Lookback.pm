@@ -89,22 +89,45 @@ has adj_theo_price => (
     lazy_build => 1,
 );
 
+has volidx_feed_interval => (
+    is         => 'ro',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
+=head2 adj_markup_factor
+
+The approximated discrete-monitoring prices underestimate the true prices under some conditions (i.e. longer time to expiry).
+The markup factor is applied to push prices up just above the true prices.
+Only tested for lookback floating calls and puts on driftless volatility indices under 5 hours.
+
+=cut
+
+has adj_markup_factor => (
+    is      => 'ro',
+    isa     => 'Num',
+    default => 0.005,
+);
+
 sub _build_adj_coefficient {
     my $self = shift;
 
     #An approximation of -f(1/2)/sqrt(2*pi) ~= 0.5826, where f is the zeta function.
     #See "Connecting discrete and continuous path-dependent options", Broadie et al. (1998)
     my $beta = 0.5826;
-    my $one_second_in_year = 1 / (365 * 24 * 60 * 60);
 
-    my $adj_coeff = exp($self->adj_sign * $beta * $self->pricing_vol * sqrt(2 * $one_second_in_year));
+    my $adj_coeff = exp($self->adj_sign * $beta * $self->pricing_vol * sqrt($self->volidx_feed_interval));
     return $adj_coeff;
 }
 
 sub _build_adj_sign {
     my $self = shift;
-    my $adj_sign = ($self->pricing_code eq 'LBFLOATCALL') ? 1 : -1;
-    return $adj_sign;
+    return ($self->pricing_code eq 'LBFLOATCALL') ? 1 : -1;
+}
+
+sub _build_volidx_feed_interval {
+    my $one_second_in_year = 1 / (365 * 24 * 60 * 60);
+    return 2 * $one_second_in_year;
 }
 
 sub _build_adj_theo_price {
@@ -114,12 +137,7 @@ sub _build_adj_theo_price {
 
     my $adj_theo_price = $self->adj_coefficient * $orig_theo_price - ($self->adj_sign * ($self->adj_coefficient - 1) * $self->pricing_spot);
 
-    #The approximated discrete-monitoring prices underestimate the true prices under some conditions (i.e. longer time to expiry).
-    #The markup factor is applied to push prices up just above the true prices.
-    #Only tested for lookback floating calls and puts on driftless volatility indices under 5 hours.
-    my $adj_markup_factor = 0.005;
-
-    $adj_theo_price = $adj_theo_price * (1 + $adj_markup_factor);
+    $adj_theo_price = $adj_theo_price * (1 + $self->adj_markup_factor);
     return $adj_theo_price;
 }
 
