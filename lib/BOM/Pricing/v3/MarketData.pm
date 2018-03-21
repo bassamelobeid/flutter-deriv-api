@@ -21,6 +21,7 @@ use Try::Tiny;
 use List::MoreUtils qw(uniq);
 use Locale::Country::Extra;
 
+use BOM::User::Client;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
 use BOM::Platform::Chronicle;
@@ -163,7 +164,7 @@ sub asset_index {
     my $token_details = $params->{token_details};
 
     if ($token_details and exists $token_details->{loginid}) {
-        my $client = Client::Account->new({
+        my $client = BOM::User::Client->new({
             loginid      => $token_details->{loginid},
             db_operation => 'replica',
         });
