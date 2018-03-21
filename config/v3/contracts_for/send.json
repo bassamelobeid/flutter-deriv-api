@@ -12,27 +12,27 @@
         },
         "currency": {
           "type": "string",
-          "description":"Optional field for the currency of the contract's stake and payout.",
+          "description":"[Optional] Currency of the contract's stake and payout.",
           "pattern": "^[A-Z]{3}$",
           "default": "USD"
         },
         "product_type":{
             "enum":["basic" , "multi_barrier"],
-            "description":"Set to 'multi_barrier' to get a list of contracts with predefined trading windows and barriers for a given symbol.",
+            "description":"[Optional] Set to 'multi_barrier' to get a list of contracts with predefined trading windows and barriers for a given symbol.",
             "default": "basic"
         },
         "landing_company":{
             "enum":["iom","malta","maltainvest","costarica","virtual", "japan", "japan-virtual", "vanuatu", "champion", "champion-virtual"],
-            "description":"Indicates which landing_company to get a list of contracts for",
+            "description":"[Optional] Indicates which landing_company to get a list of contracts for",
             "default": "costarica"
         },
         "passthrough":{
             "type":"object",
-            "description":"Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."
+            "description":"[Optional] Used to pass data through the websocket, which may be retrieved via the echo_req output field."
         },
         "req_id": {
           "type": "integer",
-          "description": "Optional field to map request to response"
+          "description": "[Optional] Used to map request to response"
         }
     },
     "additionalProperties":false
