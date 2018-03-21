@@ -65,7 +65,8 @@ sub _build_minimum_multiplier {
 
 =head2 adj_coefficient
 
-This is used to fix the overpricing issue.
+A coefficient applied as part of the discrete monitoring lookback price approximation via the continuous formula.
+Similar to the barrier shift adjustments applied to Touch and No-Touch options..
 It is based on page 81 FX Options and Structured Products (Uwe Wystup).
 
 =cut
