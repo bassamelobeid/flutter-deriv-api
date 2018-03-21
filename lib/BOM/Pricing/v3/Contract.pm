@@ -63,7 +63,7 @@ sub prepare_ask {
         $p2{high_barrier} = delete $p2{barrier};
     } elsif (
         !grep {
-            /^(ASIAN|DIGITEVEN|DIGITODD)/
+            /^(ASIAN|DIGITEVEN|DIGITODD|TICKHIGH|TICKLOW)/
         } @contract_types
         )
     {
