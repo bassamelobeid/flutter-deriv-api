@@ -26,11 +26,13 @@ my $t = build_wsapi_test();
 use Data::Dumper;
 my $redis2_module = Test::MockModule->new('Mojo::Redis2');
 my $keys_hash     = {};
+use Carp qw(cluck);
 $redis2_module->mock(
     'subscribe',
     sub {
         my $redis = shift;
         my $keys  = shift;
+        cluck "how to get here: " if $keys->[0] eq 'introspection';
         diag("subscribe keys is " . Dumper($keys));
         $keys_hash->{$_} = 1 for @$keys;
     });
