@@ -29,7 +29,7 @@ my $redis_pricer = Test::MockObject::Extends->new(redis_pricer);
 
 my $keys_hash     = {};
 use Carp qw(cluck);
-$redis2_module->mock(
+$redis_pricer->mock(
     'subscribe',
     sub {
         my $redis = shift;
@@ -39,7 +39,7 @@ $redis2_module->mock(
         $keys_hash->{$_} = 1 for @$keys;
     });
 
-$redis2_module->mock(
+$redis_pricer->mock(
     'unsubscribe',
     sub {
         my $redis = shift;
