@@ -23,7 +23,7 @@ use Test::MockModule;
 use Mojo::Redis2;
 
 my $t = build_wsapi_test();
-
+use Data::Dumper;
 my $redis2_module = Test::MockModule->new('Mojo::Redis2');
 my $keys_hash     = {};
 $redis2_module->mock(
@@ -31,7 +31,7 @@ $redis2_module->mock(
     sub {
         my $redis = shift;
         my $keys  = shift;
-        diag("subscribe keys is" . explain($keys));
+        diag("subscribe keys is " . Dumper($keys));
         $keys_hash->{$_} = 1 for @$keys;
     });
 
@@ -40,7 +40,7 @@ $redis2_module->mock(
     sub {
         my $redis = shift;
         my $keys  = shift;
-        diag("unsubscribe keys is" . explain($keys));
+        diag("unsubscribe keys is" . Dumper($keys));
         delete($keys_hash->{$_}) for @$keys;
     });
 
@@ -189,6 +189,6 @@ sub create_proposals {
 }
 
 sub pricer_sub_count {
-    diag("keys when pricer_sub_count " . explain($keys_hash));
+    diag("keys when pricer_sub_count " . Dumper($keys_hash));
     return scalar keys %$keys_hash;
 }
