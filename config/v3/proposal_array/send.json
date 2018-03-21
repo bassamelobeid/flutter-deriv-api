@@ -27,12 +27,10 @@
         "contract_type": {
             "type": "array",
             "items": [
-                {
-                    "type": "string",
-                    "pattern": "^\\w{2,30}$"
+                {"enum": ["UPORDOWN", "EXPIRYRANGE", "ONETOUCH", "CALLE", "LBHIGHLOW", "ASIAND", "EXPIRYRANGEE", "DIGITDIFF", "DIGITMATCH", "DIGITOVER", "PUTE", "DIGITUNDER", "NOTOUCH", "CALL", "RANGE", "LBFLOATPUT", "DIGITODD", "PUT", "ASIANU", "LBFLOATCALL", "EXPIRYMISSE", "EXPIRYMISS", "DIGITEVEN"]
                 }
             ],
-            "description": "One or more valid contract-types",
+            "description": "One or two valid contract-types",
             "required": "1",
             "uniqueItems": true,
             "minItems": 1,
