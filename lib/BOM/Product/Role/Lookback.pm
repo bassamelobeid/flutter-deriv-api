@@ -114,8 +114,12 @@ sub _build_adj_theo_price {
 
     my $adj_theo_price = $self->adj_coefficient * $orig_theo_price - ($self->adj_sign * ($self->adj_coefficient - 1) * $self->pricing_spot);
 
-    # Markup based on calibration result.
-    $adj_theo_price = $adj_theo_price * 1.005;
+    #The approximated discrete-monitoring prices underestimate the true prices under some conditions (i.e. longer time to expiry).
+    #The markup factor is applied to push prices up just above the true prices.
+    #Only tested for lookback floating calls and puts on driftless volatility indices under 5 hours.
+    my $adj_markup_factor = 0.005;
+
+    $adj_theo_price = $adj_theo_price * (1 + $adj_markup_factor);
     return $adj_theo_price;
 }
 
