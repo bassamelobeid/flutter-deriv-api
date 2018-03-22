@@ -243,7 +243,7 @@ sub _set_price_calculator_params {
 
 sub _build_reset_time {
     my $self = shift;
-    # reset time is the mid time from entry tick to date expiry.
+    # reset time is the mid time from date start to date expiry.
     return $self->date_start->epoch + int(($self->date_expiry->epoch - $self->date_start->epoch) * 0.5);
 }
 
