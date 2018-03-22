@@ -106,6 +106,8 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                     next if $contract_type !~ /^(EXPIRY|RANGE|UPORDOWN)/ and exists $barrier->{high_barrier};
 
                     next if $contract_type =~ /^(LBFIXEDCALL|LBFIXEDPUT|LBFLOATCALL|LBFLOATPUT|LBHIGHLOW)/;
+                    
+                    next if $contract_type =~ /^(TICKHIGH|TICKLOW)/;
 
                     lives_ok {
                         my $c = produce_contract($args);
