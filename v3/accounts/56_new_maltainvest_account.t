@@ -17,7 +17,7 @@ use await;
 
 ## do not send email
 use Test::MockModule;
-my $client_mocked = Test::MockModule->new('Client::Account');
+my $client_mocked = Test::MockModule->new('BOM::User::Client');
 $client_mocked->mock('add_note',                   sub { return 1 });
 $client_mocked->mock('client_fully_authenticated', sub { return 1 });
 
@@ -74,7 +74,7 @@ subtest 'MLT upgrade to MF account' => sub {
         ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mlt_loginid);
         $t->await::authorize({authorize => $token});
 
-        my $mlt_client = Client::Account->new({loginid => $mlt_loginid});
+        my $mlt_client = BOM::User::Client->new({loginid => $mlt_loginid});
         is($mlt_client->financial_assessment, undef, 'doesn\'t have financial assessment');
 
         $res = $t->await::get_settings({get_settings => 1});
@@ -92,7 +92,7 @@ subtest 'MLT upgrade to MF account' => sub {
         my $loginid = $res->{new_account_maltainvest}->{client_id};
         like($loginid, qr/^MF\d+$/, "got MF client $loginid");
 
-        my $client = Client::Account->new({loginid => $loginid});
+        my $client = BOM::User::Client->new({loginid => $loginid});
         isnt($client->financial_assessment->data, undef, 'has financial assessment');
     };
 };
@@ -120,7 +120,7 @@ subtest 'VR upgrade to MF - Germany' => sub {
         my $loginid = $res->{new_account_maltainvest}->{client_id};
         like($loginid, qr/^MF\d+$/, "got MF client $loginid");
 
-        my $client = Client::Account->new({loginid => $loginid});
+        my $client = BOM::User::Client->new({loginid => $loginid});
         isnt($client->financial_assessment->data, undef, 'has financial assessment');
 
         is($client->place_of_birth, 'de',    'correct place of birth');
