@@ -16,7 +16,7 @@ use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::Token;
-use Client::Account;
+use BOM::User::Client;
 
 use utf8;
 
@@ -84,7 +84,7 @@ subtest $method => sub {
 
     my $new_loginid = $rpc_ct->result->{client_id};
     ok $new_loginid =~ /^VRTC\d+/, 'new VR loginid';
-    my $user = BOM::Platform::User->new({email => $email});
+    my $user = BOM::User->new({email => $email});
     ok $user->utm_source =~ '^google\.com$',               'utm registered as expected';
     ok $user->gclid_url =~ '^FQdb3wodOkkGBgCMrlnPq42q8C$', 'gclid value returned as expected';
     is $user->email_consent, undef, 'email consent not passed during account creation so its undef';
@@ -104,7 +104,7 @@ subtest $method => sub {
         ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
         ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
 
-    $user = BOM::Platform::User->new({email => $vr_email});
+    $user = BOM::User->new({email => $vr_email});
     is $user->email_consent, 1, 'email consent is correct';
 };
 
@@ -132,7 +132,7 @@ subtest $method => sub {
             my $password = 'jskjd8292922';
             my $hash_pwd = BOM::Platform::Password::hashpw($password);
             $email = 'new_email' . rand(999) . '@binary.com';
-            $user  = BOM::Platform::User->create(
+            $user  = BOM::User->create(
                 email    => $email,
                 password => $hash_pwd
             );
@@ -161,7 +161,7 @@ subtest $method => sub {
         $params->{token} = $auth_token;
 
         {
-            my $module = Test::MockModule->new('Client::Account');
+            my $module = Test::MockModule->new('BOM::User::Client');
             $module->mock('new', sub { });
 
             $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('AuthorizationRequired', 'It should check auth');
@@ -220,7 +220,7 @@ subtest $method => sub {
             my $password = 'jskjd8292922';
             my $hash_pwd = BOM::Platform::Password::hashpw($password);
             $email = 'new_email' . rand(999) . '@binary.com';
-            $user  = BOM::Platform::User->create(
+            $user  = BOM::User->create(
                 email    => $email,
                 password => $hash_pwd
             );
@@ -249,7 +249,7 @@ subtest $method => sub {
         $params->{token} = $auth_token;
 
         {
-            my $module = Test::MockModule->new('Client::Account');
+            my $module = Test::MockModule->new('BOM::User::Client');
             $module->mock('new', sub { });
 
             $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('AuthorizationRequired', 'It should check auth');
@@ -320,7 +320,7 @@ subtest $method => sub {
         my $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^MF\d+/, 'new MF loginid';
 
-        my $cl = Client::Account->new({loginid => $new_loginid});
+        my $cl = BOM::User::Client->new({loginid => $new_loginid});
         ok($cl->get_status('financial_risk_approval'), 'For mf accounts we will set financial risk approval status');
 
         is $cl->get_status('crs_tin_information')->reason, 'Client confirmed tax information', "CRS status is set";
@@ -336,7 +336,7 @@ subtest $method => sub {
             my $password = 'jskjd8292922';
             my $hash_pwd = BOM::Platform::Password::hashpw($password);
             $email = 'new_email' . rand(999) . '@binary.com';
-            $user  = BOM::Platform::User->create(
+            $user  = BOM::User->create(
                 email    => $email,
                 password => $hash_pwd
             );
@@ -376,7 +376,7 @@ subtest $method => sub {
         my $auth_token_mf = BOM::Database::Model::AccessToken->new->create_token($new_loginid, 'test token');
 
         # make sure data is same, as in first account, regardless of what we have provided
-        my $cl = Client::Account->new({loginid => $new_loginid});
+        my $cl = BOM::User::Client->new({loginid => $new_loginid});
         is $client_mlt->$_, $cl->$_, "$_ is correct on created account" for qw/first_name last_name residence address_city phone date_of_birth/;
 
         $result = $rpc_ct->call_ok('get_settings', {token => $auth_token_mf})->result;
@@ -391,7 +391,7 @@ subtest $method => sub {
             my $password = 'jskjd8292922';
             my $hash_pwd = BOM::Platform::Password::hashpw($password);
             $email = 'mx_email' . rand(999) . '@binary.com';
-            $user  = BOM::Platform::User->create(
+            $user  = BOM::User->create(
                 email    => $email,
                 password => $hash_pwd
             );
@@ -438,7 +438,7 @@ subtest $method => sub {
         $result = $rpc_ct->call_ok($method, $params)->result;
         is $result->{error}->{code}, 'KYCRequired', 'Client KYC is pending';
 
-        my $mock_client = Test::MockModule->new('Client::Account');
+        my $mock_client = Test::MockModule->new('BOM::User::Client');
         $mock_client->mock(client_fully_authenticated => sub { note "mocked Client->client_fully_authenticated returning true"; 1 });
 
         $result = $rpc_ct->call_ok($method, $params)->result;
@@ -449,7 +449,7 @@ subtest $method => sub {
         my $auth_token_mf = BOM::Database::Model::AccessToken->new->create_token($new_loginid, 'test token');
 
         # make sure data is same, as in first account, regardless of what we have provided
-        my $cl = Client::Account->new({loginid => $new_loginid});
+        my $cl = BOM::User::Client->new({loginid => $new_loginid});
         is $client_mx->$_, $cl->$_, "$_ is correct on created account" for qw/first_name last_name residence address_city phone date_of_birth/;
 
         $result = $rpc_ct->call_ok('get_settings', {token => $auth_token_mf})->result;
@@ -475,7 +475,7 @@ subtest $method => sub {
             my $password = 'jskjd8292922';
             my $hash_pwd = BOM::Platform::Password::hashpw($password);
             $email = 'new_email' . rand(999) . '@binary.com';
-            $user  = BOM::Platform::User->create(
+            $user  = BOM::User->create(
                 email    => $email,
                 password => $hash_pwd
             );
@@ -490,7 +490,7 @@ subtest $method => sub {
             $user->save;
 
             $email       = 'new_email' . rand(999) . '@binary.com';
-            $normal_user = BOM::Platform::User->create(
+            $normal_user = BOM::User->create(
                 email    => $email,
                 password => $hash_pwd
             );
@@ -519,7 +519,7 @@ subtest $method => sub {
         $params->{token} = $auth_token;
 
         {
-            my $module = Test::MockModule->new('Client::Account');
+            my $module = Test::MockModule->new('BOM::User::Client');
             $module->mock('new', sub { });
 
             $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('AuthorizationRequired', 'It should check auth');

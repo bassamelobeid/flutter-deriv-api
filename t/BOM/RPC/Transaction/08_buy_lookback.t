@@ -49,7 +49,7 @@ subtest 'buy' => sub {
     $params->{token} = $token;
 
     #So I mock client module to simulate this scenario.
-    my $mocked_client = Test::MockModule->new('Client::Account');
+    my $mocked_client = Test::MockModule->new('BOM::User::Client');
     $mocked_client->mock('new', sub { return undef });
     undef $mocked_client;
 

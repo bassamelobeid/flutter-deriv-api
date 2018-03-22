@@ -20,15 +20,15 @@ use DataDog::DogStatsd::Helper qw(stats_inc);
 use Format::Util::Numbers qw/formatnumber financialrounding/;
 
 use Brands;
-use Client::Account;
+use BOM::User::Client;
 use LandingCompany::Registry;
-use Client::Account::PaymentAgent;
+use BOM::User::Client::PaymentAgent;
 use Postgres::FeedDB::CurrencyConverter qw/amount_from_to_currency/;
 
 use BOM::RPC::Registry '-dsl';
 
 use BOM::MarketData qw(create_underlying);
-use BOM::Platform::User;
+use BOM::User;
 use BOM::Platform::Client::DoughFlowClient;
 use BOM::Platform::Doughflow qw( get_sportsbook get_doughflow_language_code_for );
 use BOM::Platform::Runtime;
@@ -50,7 +50,7 @@ use Quant::Framework;
 
 requires_auth();
 
-my $payment_limits = LoadFile(File::ShareDir::dist_file('Client-Account', 'payment_limits.yml'));
+my $payment_limits = LoadFile('/home/git/regentmarkets/bom-user/config/payment_limits.yml');
 
 rpc "cashier", sub {
     my $params = shift;
@@ -374,7 +374,7 @@ rpc "paymentagent_list",
 
     my $client;
     if ($token_details and exists $token_details->{loginid}) {
-        $client = Client::Account->new({
+        $client = BOM::User::Client->new({
             loginid      => $token_details->{loginid},
             db_operation => 'replica'
         });
@@ -478,7 +478,7 @@ rpc paymentagent_transfer => sub {
         localize('You cannot perform this action, as [_1] is not the default account currency for payment agent [_2].', $currency, $loginid_fm))
         if ($client_fm->currency ne $currency or not $client_fm->default_account);
 
-    my $client_to = try { Client::Account->new({loginid => $loginid_to, db_operation => 'replica'}) }
+    my $client_to = try { BOM::User::Client->new({loginid => $loginid_to, db_operation => 'replica'}) }
         or return $error_sub->(localize('Login ID ([_1]) does not exist.', $loginid_to));
 
     return $error_sub->(
@@ -743,7 +743,7 @@ rpc paymentagent_withdraw => sub {
 
     return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.')) if $client->get_status('disabled');
 
-    my $paymentagent = Client::Account::PaymentAgent->new({
+    my $paymentagent = BOM::User::Client::PaymentAgent->new({
             'loginid'    => $paymentagent_loginid,
             db_operation => 'replica'
         }) or return $error_sub->(localize('The payment agent account does not exist.'));
@@ -1056,8 +1056,8 @@ rpc transfer_between_accounts => sub {
     # provided are for same user
     my ($client_from, $client_to, $res);
     try {
-        $client_from = Client::Account->new({loginid => $siblings->{$loginid_from}->{loginid}});
-        $client_to   = Client::Account->new({loginid => $siblings->{$loginid_to}->{loginid}});
+        $client_from = BOM::User::Client->new({loginid => $siblings->{$loginid_from}->{loginid}});
+        $client_to   = BOM::User::Client->new({loginid => $siblings->{$loginid_to}->{loginid}});
     }
     catch {
         $res = _transfer_between_accounts_error();
@@ -1216,12 +1216,16 @@ rpc topup_virtual => sub {
 
     my $currency = $client->default_account->currency_code;
     my $minimum_topup_balance = $currency eq 'JPY' ? 100000 : 1000;
+
     if ($client->default_account->balance > $minimum_topup_balance) {
-        return $error_sub->(localize('Your balance is higher than the permitted amount.'));
+        return $error_sub->(
+            localize(
+                'You can only request additional funds if your virtual account balance falls below [_1] [_2].',
+                $currency, formatnumber('amount', $currency, $minimum_topup_balance)));
     }
 
     if (scalar($client->open_bets)) {
-        return $error_sub->(localize('Sorry, you have open positions. Please close out all open positions before requesting additional funds.'));
+        return $error_sub->(localize('Please close out all open positions before requesting additional funds.'));
     }
 
     # CREDIT HIM WITH THE MONEY

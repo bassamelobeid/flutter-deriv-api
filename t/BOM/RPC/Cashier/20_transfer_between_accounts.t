@@ -13,7 +13,7 @@ use MojoX::JSON::RPC::Client;
 use POSIX qw/ ceil /;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD amount_from_to_currency);
 
-use Client::Account;
+use BOM::User::Client;
 
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
@@ -94,7 +94,7 @@ subtest 'call params validation' => sub {
         email       => $email
     });
 
-    $user = BOM::Platform::User->create(
+    $user = BOM::User->create(
         email    => $email,
         password => BOM::Platform::Password::hashpw('jskjd8292922'));
     $user->email_verified(1);
@@ -265,7 +265,7 @@ subtest 'validation' => sub {
         email       => $email
     });
 
-    $user = BOM::Platform::User->create(
+    $user = BOM::User->create(
         email    => $email,
         password => BOM::Platform::Password::hashpw('jskjd8292922'));
     $user->email_verified(1);
@@ -319,7 +319,7 @@ subtest $method => sub {
                 email       => $email
             });
 
-            $user = BOM::Platform::User->create(
+            $user = BOM::User->create(
                 email    => $email,
                 password => BOM::Platform::Password::hashpw('jskjd8292922'));
             $user->email_verified(1);
@@ -413,8 +413,8 @@ subtest $method => sub {
         is $result->{client_to_full_name}, $client_mf->full_name, 'transfer_between_accounts to client name is ok';
 
         ## after withdraw, check both balance
-        $client_mlt = Client::Account->new({loginid => $client_mlt->loginid});
-        $client_mf  = Client::Account->new({loginid => $client_mf->loginid});
+        $client_mlt = BOM::User::Client->new({loginid => $client_mlt->loginid});
+        $client_mf  = BOM::User::Client->new({loginid => $client_mf->loginid});
         ok $client_mlt->default_account->balance == 4990, '-10';
         ok $client_mf->default_account->balance == 10,    '+10';
     };
@@ -454,7 +454,7 @@ subtest 'transfer with fees' => sub {
     $client_cr->set_default_account('USD');
     $client_cr1->set_default_account('BTC');
 
-    $user = BOM::Platform::User->create(
+    $user = BOM::User->create(
         email    => $email,
         password => BOM::Platform::Password::hashpw('jskjd8292922'));
     $user->email_verified(1);
@@ -542,7 +542,7 @@ subtest 'paymentagent transfer' => sub {
 
     $client_cr1->set_default_account('USD');
 
-    $user = BOM::Platform::User->create(
+    $user = BOM::User->create(
         email    => $email,
         password => BOM::Platform::Password::hashpw('jskjd8292922'));
     $user->email_verified(1);

@@ -14,7 +14,7 @@ use BOM::RPC::v3::Japan::NewAccount;
 use BOM::RPC::v3::Accounts;
 
 ## do not send email
-my $client_mocked = Test::MockModule->new('Client::Account');
+my $client_mocked = Test::MockModule->new('BOM::User::Client');
 $client_mocked->mock('add_note', sub { return 1 });
 my $json              = JSON::MaybeXS->new;
 my %jp_client_details = (
@@ -125,7 +125,7 @@ subtest 'First Test taken: fail test' => sub {
     };
 
     subtest 'Test result exists in financial assessment' => sub {
-        $jp_client = Client::Account->new({loginid => $jp_loginid});
+        $jp_client = BOM::User::Client->new({loginid => $jp_loginid});
         my $financial_data = $json->decode($jp_client->financial_assessment->data);
 
         my $tests = $financial_data->{jp_knowledge_test};
@@ -183,7 +183,7 @@ subtest 'Test is allowed after 1 day' => sub {
     };
 
     subtest '2 Tests result in financial assessment' => sub {
-        $jp_client = Client::Account->new({loginid => $jp_loginid});
+        $jp_client = BOM::User::Client->new({loginid => $jp_loginid});
         my $financial_data = $json->decode($jp_client->financial_assessment->data);
 
         my $tests = $financial_data->{jp_knowledge_test};
