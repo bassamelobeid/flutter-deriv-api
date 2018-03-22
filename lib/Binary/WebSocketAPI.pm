@@ -98,6 +98,7 @@ sub startup {
     $app->plugin('Introspection' => {port => 0});
     $app->plugin('RateLimits');
     $app->plugin('Longcode');
+    $app->plugin('EVMonitor' => {interval => 1});
 
     $app->hook(
         before_dispatch => sub {
