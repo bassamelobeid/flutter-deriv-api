@@ -11,10 +11,6 @@
         "score": {
           "type": "integer",
           "required": "1"
-        }
-        "score": {
-          "type": "integer",
-          "required": "1"
         },
         "cfd_score": {
           "type": "integer",
