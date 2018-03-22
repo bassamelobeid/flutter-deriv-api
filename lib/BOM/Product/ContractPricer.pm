@@ -172,6 +172,18 @@ has [qw(risk_markup commission_markup base_commission commission_from_stake min_
     lazy_build => 1,
 );
 
+has reset_time => (
+    is         => 'ro',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
+has reset_time_in_years => (
+    is         => 'ro',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
 ## METHODS  #######################
 my $pc_params_setters = {
     timeinyears            => sub { my $self = shift; $self->price_calculator->timeinyears($self->timeinyears) },
@@ -231,22 +243,16 @@ sub _set_price_calculator_params {
 
 sub _build_reset_time {
     my $self = shift;
+    # reset time is the mid time from entry tick to date expiry.
+    return $self->date_start->epoch + int(($self->date_expiry->epoch - $self->date_start->epoch) * 0.5);
+}
 
-    my $duration = int(0.5 * ($self->date_expiry->epoch - $self->date_start->epoch)) + 1;
+sub _build_reset_time_in_years {
+    my $self = shift;
 
-    #Below code only takes into account the vol indices.
-    #In the future, if we want to do forex, we will have to change here.
-    #Here, we are also assuming that ticks are 2 seconds apart.
-    if ($self->tick_expiry) {
-        $duration = $self->tick_count + 1;
-        my $odd_sec   = $self->date_start->epoch % 2;
-        my $extra_sec = 2;
-        $extra_sec = 1 if $odd_sec;
-        $duration = $duration + $extra_sec;
-    }
-
-    my $reset_time = Time::Duration::Concise->new(interval => $duration . 's');
-    return $reset_time;
+    my $reset_time_in_years = $self->reset_time - $self->date_start->epoch;
+    $reset_time_in_years = $reset_time_in_years / (365 * 24 * 60 * 60);
+    return $reset_time_in_years;
 }
 
 sub _create_new_interface_engine {
@@ -325,7 +331,7 @@ sub _create_new_interface_engine {
             %contract_config,
             contract_type => $self->pricing_code,
             t             => $self->timeinyears->amount,
-            reset_time    => $self->reset_time->days / 365,
+            reset_time    => $self->reset_time_in_years,
             discount_rate => $self->discount_rate,
             mu            => $self->mu,
             vol           => $self->pricing_vol,
