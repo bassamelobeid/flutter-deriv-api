@@ -126,7 +126,7 @@ my $balance = $account->balance + 0;
 is($old_balance + $amount, $balance, 'balance is right');
 $old_balance = $balance;
 $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')
-    ->error_message_is('Your balance is higher than the permitted amount.', 'blance is higher');
+    ->error_message_is('You can only request additional funds if your virtual account balance falls below USD 1000.00.', 'balance is higher');
 #withdraw some money to test critical limit value
 my $limit            = 1000;
 my $withdrawal_money = $balance - $limit - 1;
@@ -140,7 +140,7 @@ $account->load;
 $balance = $account->balance + 0;
 is($balance, $limit + 1, 'balance is a little less than the value of limit');
 $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')
-    ->error_message_is('Your balance is higher than the permitted amount.', 'blance is higher');
+    ->error_message_is('You can only request additional funds if your virtual account balance falls below USD 1000.00.', 'balance is higher');
 
 $test_client_vr->payment_legacy_payment(
     currency     => 'USD',
@@ -197,6 +197,6 @@ $account->load;
 $balance = $account->balance + 0;
 is($balance, $limit - $price, 'balance is reduced for buying contract');
 $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')
-    ->error_message_is('Sorry, you have open positions. Please close out all open positions before requesting additional funds.', 'have opened bets');
+    ->error_message_is('Please close out all open positions before requesting additional funds.', 'have opened bets');
 
 done_testing();

@@ -24,9 +24,9 @@ my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
-my $method          = 'document_upload';
-my $params          = { language => 'EN' };
-my $args            = {};
+my $method = 'document_upload';
+my $params = {language => 'EN'};
+my $args   = {};
 my $result;
 my $doc;
 my $client_id;
@@ -47,7 +47,7 @@ my $invalid_token   = 12345;
 my $invalid_file_id = 1231531;
 
 subtest "Invalid token shouldn't be allowed to upload" => sub {
-    $params->{token}  = $invalid_token;
+    $params->{token} = $invalid_token;
     $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'check invalid token');
 };
 
@@ -74,12 +74,14 @@ $params->{args} = $args;
 subtest 'Expired documents' => sub {
     $args->{expiration_date} = EXP_DATE_PAST;    # Expired documents.
     $c->call_ok($method, $params)
-        ->has_error->error_message_is('Expiration date cannot be less than or equal to current date.', 'check expiration_date is before current date');
+        ->has_error->error_message_is('Expiration date cannot be less than or equal to current date.',
+        'check expiration_date is before current date');
 };
 
 subtest 'Error for over-size file' => sub {
     $args->{file_size} = MAX_FILE_SIZE + 1;
-    $c->call_ok($method, $params)->has_error->error_message_is('Maximum file size reached. Maximum allowed is '.MAX_FILE_SIZE, 'over-size file is denied');
+    $c->call_ok($method, $params)
+        ->has_error->error_message_is('Maximum file size reached. Maximum allowed is ' . MAX_FILE_SIZE, 'over-size file is denied');
     $args->{file_size} = 1;
 };
 
@@ -90,10 +92,10 @@ subtest 'Unsuccessful finished upload' => sub {
 };
 
 subtest 'Error for no document_id' => sub {
-    $args->{document_type}   = DOC_TYPE;
-    $args->{document_format} = DOC_FORMAT;
+    $args->{document_type}     = DOC_TYPE;
+    $args->{document_format}   = DOC_FORMAT;
     $args->{expected_checksum} = CHECKSUM;
-    
+
     $c->call_ok($method, $params)->has_error->error_message_is('Document ID is required.', 'document_id is required');
 
     $args->{document_id} = DOC_ID_1;
@@ -111,10 +113,10 @@ subtest 'Document with no expiration_date' => sub {
 
 subtest 'Upload doc and send CS notification email' => sub {
     $args = {
-        status   => 'success',
-        file_id  => $result->{file_id}};
+        status  => 'success',
+        file_id => $result->{file_id}};
     $params->{args} = $args;
-    
+
     $mailbox->clear;
     $client_id = uc $test_client->loginid;
     $result = $c->call_ok($method, $params)->result;
@@ -154,8 +156,8 @@ subtest 'Attempt to upload same document again (checksum collision) with differe
     # Upload will commence and be blocked at finish
 
     $args = {
-        status   => 'success',
-        file_id  => $result->{file_id}};
+        status  => 'success',
+        file_id => $result->{file_id}};
     $params->{args} = $args;
     $c->call_ok($method, $params)->has_error->error_message_is('Document already uploaded.', 'error if same document is uploaded twice');
 };
