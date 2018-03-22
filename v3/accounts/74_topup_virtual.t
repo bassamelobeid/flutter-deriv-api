@@ -79,7 +79,8 @@ $client_vr = BOM::User::Client->new({loginid => $client_vr->loginid});
 ok $old_balance + $topup_amount == $client_vr->default_account->balance, 'balance is right';
 
 $res = $t->await::topup_virtual({topup_virtual => 1});
-ok $res->{error}->{message} =~ /Your balance is higher than the permitted amount/, 'Your balance is higher than the permitted amount';
+ok $res->{error}->{message} =~ /You can only request additional funds if your virtual account balance falls below USD 1000.00./,
+    'Your balance is higher than the permitted amount';
 
 $client_vr = BOM::User::Client->new({loginid => $client_vr->loginid});
 ok $old_balance + $topup_amount == $client_vr->default_account->balance, 'balance stays same';
