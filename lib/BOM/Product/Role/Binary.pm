@@ -8,7 +8,6 @@ use BOM::Product::Static;
 use List::Util qw(min);
 use Scalar::Util qw(looks_like_number);
 use Format::Util::Numbers qw(formatnumber);
-use Scalar::Util::Numeric qw(isint);
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 

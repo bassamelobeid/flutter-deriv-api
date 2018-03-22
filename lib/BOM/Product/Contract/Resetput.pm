@@ -38,7 +38,7 @@ sub check_expiry_conditions {
         $self->value($value);
     }
 
-    return;
+    return undef;
 }
 
 sub _build_pricing_engine_name {
