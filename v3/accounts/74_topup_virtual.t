@@ -12,8 +12,8 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::Password;
-use BOM::Platform::User;
-use Client::Account;
+use BOM::User;
+use BOM::User::Client;
 
 use await;
 
@@ -38,7 +38,7 @@ $client_cr->save;
 my $vr_1 = $client_vr->loginid;
 my $cr_1 = $client_cr->loginid;
 
-my $user = BOM::Platform::User->create(
+my $user = BOM::User->create(
     email    => $email,
     password => $hash_pwd
 );
@@ -62,7 +62,7 @@ is $res->{msg_type}, 'topup_virtual';
 ok $res->{error}->{message} =~ /virtual accounts only/, 'virtual accounts only';
 
 # virtual is ok
-$client_vr = Client::Account->new({loginid => $client_vr->loginid});
+$client_vr = BOM::User::Client->new({loginid => $client_vr->loginid});
 my $old_balance = $client_vr->default_account->balance;
 
 ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_1);
@@ -75,13 +75,14 @@ $res = $t->await::topup_virtual({topup_virtual => 1});
 my $topup_amount = $res->{topup_virtual}->{amount};
 ok $topup_amount, 'topup ok';
 
-$client_vr = Client::Account->new({loginid => $client_vr->loginid});
+$client_vr = BOM::User::Client->new({loginid => $client_vr->loginid});
 ok $old_balance + $topup_amount == $client_vr->default_account->balance, 'balance is right';
 
 $res = $t->await::topup_virtual({topup_virtual => 1});
-ok $res->{error}->{message} =~ /Your balance is higher than the permitted amount/, 'Your balance is higher than the permitted amount';
+ok $res->{error}->{message} =~ /You can only request additional funds if your virtual account balance falls below USD 1000.00./,
+    'Your balance is higher than the permitted amount';
 
-$client_vr = Client::Account->new({loginid => $client_vr->loginid});
+$client_vr = BOM::User::Client->new({loginid => $client_vr->loginid});
 ok $old_balance + $topup_amount == $client_vr->default_account->balance, 'balance stays same';
 
 $t->finish_ok;

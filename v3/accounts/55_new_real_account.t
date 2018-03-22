@@ -15,7 +15,7 @@ use await;
 
 ## do not send email
 use Test::MockModule;
-my $client_mocked = Test::MockModule->new('Client::Account');
+my $client_mocked = Test::MockModule->new('BOM::User::Client');
 $client_mocked->mock('add_note', sub { return 1 });
 
 my $t = build_wsapi_test();
@@ -27,6 +27,7 @@ my %client_details = (
     first_name             => 'first\'name',
     date_of_birth          => '1990-12-30',
     residence              => 'au',
+    place_of_birth         => 'de',
     address_line_1         => 'Jalan Usahawan',
     address_line_2         => 'Enterpreneur Center',
     address_city           => 'Cyberjaya',
