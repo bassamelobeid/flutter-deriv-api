@@ -414,6 +414,13 @@ sub _validate_input_parameters {
                 message_to_client => [$ERROR_MAPPING->{ResetBarrierError}],
             };
         }
+
+        if ($self->fixed_expiry) {
+            return {
+                message           => 'Fixed expiry for reset contract is not allowed.',
+                message_to_client => [$ERROR_MAPPING->{ResetFixedExpiryError}],
+            };
+        }
     }
 
     return;

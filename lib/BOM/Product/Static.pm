@@ -83,6 +83,7 @@ my $config = {
         ResaleNotOffered              => 'Resale of this contract is not offered.',
         ResaleNotOfferedHolidays      => 'Resale of this contract is not offered due to market holidays during contract period.',
         ResetBarrierError             => 'Non atm barrier is not allowed for reset contract.',
+        ResetFixedExpiryError         => 'Fixed expiry for reset contract is not allowed.',
         SameBarriersNotAllowed        => 'High and low barriers must be different.',
         SameExpiryStartTime           => 'Expiry time cannot be equal to start time.',
         SameTradingDayExpiry          => 'Contracts on this market with a duration of under 24 hours must expire on the same trading day.',
