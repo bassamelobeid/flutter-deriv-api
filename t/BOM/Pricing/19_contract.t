@@ -217,7 +217,7 @@ subtest $method => sub {
     $params->{currency}   = 'USD';
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({
             'symbol'       => 'R_50',
-            'longcode'     => "Win payout if Volatility 50 Index is higher than or equal to entry spot at 50 seconds after contract start time.",
+            'longcode'     => "Win payout if Volatility 50 Index after contract start time is strictly higher than it was at either entry or 25 seconds.",
             'display_name' => 'Volatility 50 Index',
             'date_expiry'  => $now->epoch - 50,
             'barrier'      => 'S0P',
@@ -253,7 +253,7 @@ subtest 'get_ask' => sub {
     my $expected = {
         'display_value'       => '6.41',
         'ask_price'           => '6.41',
-        'longcode'            => "Win payout if Volatility 50 Index is higher than or equal to entry spot at 15 minutes after contract start time.",
+        'longcode'            => "Win payout if Volatility 50 Index after contract start time is strictly higher than it was at either entry or 7 minutes 30 seconds.",
 
         'spot'                => '963.3054',
         'payout'              => '10',
@@ -301,7 +301,7 @@ subtest 'send_ask' => sub {
     cmp_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is(
         $result->{longcode},
-        'Win payout if Volatility 50 Index is higher than or equal to entry spot at 15 minutes after contract start time.',
+        'Win payout if Volatility 50 Index after contract start time is strictly higher than it was at either entry or 7 minutes 30 seconds.',
         'long code  is correct'
     );
 };
