@@ -1222,12 +1222,16 @@ rpc topup_virtual => sub {
 
     my $currency = $client->default_account->currency_code;
     my $minimum_topup_balance = $currency eq 'JPY' ? 100000 : 1000;
+
     if ($client->default_account->balance > $minimum_topup_balance) {
-        return $error_sub->(localize('Your balance is higher than the permitted amount.'));
+        return $error_sub->(
+            localize(
+                'You can only request additional funds if your virtual account balance falls below [_1] [_2].',
+                $currency, formatnumber('amount', $currency, $minimum_topup_balance)));
     }
 
     if (scalar($client->open_bets)) {
-        return $error_sub->(localize('Sorry, you have open positions. Please close out all open positions before requesting additional funds.'));
+        return $error_sub->(localize('Please close out all open positions before requesting additional funds.'));
     }
 
     # CREDIT HIM WITH THE MONEY
