@@ -24,9 +24,26 @@ use constant {
 
 sub new { return bless {@_[1 .. $#_]}, $_[0] }
 
-sub is_running { shift->{is_running} }
+=head2 is_running
 
-sub stop { shift->{is_running} = 0 }
+Returns true if running, false if not.
+
+=cut
+
+sub is_running {
+    return shift->{is_running};
+}
+
+=head2 stop
+
+Stops the loop after the current price.
+
+=cut
+
+sub stop {
+    shift->{is_running} = 0;
+    return;
+}
 
 my $commands = {
     price => {
