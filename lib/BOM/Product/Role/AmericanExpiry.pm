@@ -4,8 +4,9 @@ use Moose::Role;
 use BOM::Product::Static;
 
 override is_expired => sub {
-    my $self = shift;
-    my $is_expired;
+    my $self       = shift;
+    my $is_expired = $self->check_expiry_conditions;
+
     if ($self->has_user_defined_barrier) {
         my ($barrier, $barrier2) =
             $self->two_barriers ? ($self->high_barrier->as_absolute, $self->low_barrier->as_absolute) : ($self->barrier->as_absolute);
@@ -22,8 +23,6 @@ override is_expired => sub {
             $is_expired = 1;
         }
     }
-
-    $is_expired = $self->check_expiry_conditions;
 
     return $is_expired;
 };
