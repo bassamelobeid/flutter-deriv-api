@@ -134,9 +134,9 @@
                 </tbody></table></td>
                 [% IF trx.transaction_type == 'withdrawal' %]
                     <td><table><tbody>
-                        <label for="approvers">Approvers:</label>
+                        <label for="authorisers">Authorisers:</label>
                         <br/>
-                        <input type="textarea" name="approvers" readonly="readonly" placeholder="(None)" value="[% trx.approvers.join(', ') %]"/>
+                        <input type="textarea" name="authorisers" readonly="readonly" placeholder="(None)" value="[% trx.authorisers.join(', ') %]"/>
                         <br/>
                         [% IF trx.status == 'LOCKED' %]
                         <form action="[% controller_url %]" onsubmit="return confirm('Do you really want to continue?');" method="POST">
