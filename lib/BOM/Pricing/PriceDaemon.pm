@@ -6,7 +6,7 @@ use warnings;
 use DataDog::DogStatsd::Helper qw/stats_histogram stats_inc stats_count stats_timing/;
 use Encode;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
-use JSON::MaybeXS;
+use JSON::MaybeUTF8 qw(:v1);
 use List::Util qw(first);
 use Time::HiRes ();
 use Try::Tiny;
@@ -49,12 +49,16 @@ sub process_job {
 
     my $underlying           = $self->_get_underlying_or_log($next, $params) or return undef;
     my $current_spot_ts      = $underlying->spot_tick->epoch;
-    my $last_priced_contract = try { $json->decode(Encode::decode_utf8($redis->get($next) || return {time => 0})) } catch { {time => 0} };
+    my $last_priced_contract = eval {
+        json_decode_utf8($redis->get($next))
+    } || {
+        time => 0
+    };
     my $last_price_ts        = $last_priced_contract->{time};
 
     # For plain queue, if we have request for a price, and tick has not changed since last one, and it was not more
     # than 10 seconds ago - just ignore it.
-    # For priority, we're sending rnevious request at this case
+    # For priority, we're sending previous request at this case
     if ($current_spot_ts == $last_price_ts) {
         if ($current_time - $last_price_ts <= DURATION_DONT_PRICE_SAME_SPOT
             and not $self->_is_in_priority_queue())
