@@ -51,7 +51,11 @@ subtest 'flexi expiries flashs' => sub {
                 class => 'Time::Duration::Concise::Localize',
                 value => 3 * 3600
             },
-            ['entry spot']]);
+            ['entry spot'],
+            {
+                class => 'Time::Duration::Concise::Localize',
+                value => (3 * 3600) * 0.5
+            }]);
 
     $params{date_expiry} = $now->truncate_to_day->plus_time_interval('23h59m59s');
     $contract = produce_contract(\%params);
@@ -67,7 +71,11 @@ subtest 'flexi expiries flashs' => sub {
                 class => 'Time::Duration::Concise::Localize',
                 value => 11 * 3600 + 59 * 60 + 59
             },
-            ['entry spot']]);
+            ['entry spot'],
+            {
+                class => 'Time::Duration::Concise::Localize',
+                value => (11 * 3600 + 59 * 60 + 59) * 0.5
+            }]);
 
     $params{date_expiry}  = $now->truncate_to_day->plus_time_interval('12h30m');
     $params{fixed_expiry} = 1;
@@ -75,7 +83,7 @@ subtest 'flexi expiries flashs' => sub {
     ok($contract->is_intraday,   'is an intraday bet');
     ok(!$contract->expiry_daily, 'not an expiry daily bet');
     is_deeply($contract->longcode,
-        ['Win payout if [_1] is strictly higher than [_4] at [_3].', 'USD/JPY', [], ['2014-03-04 12:30:00 GMT'], ['entry spot']]);
+        ['Win payout if [_1] is strictly higher than [_4] at [_3].', 'USD/JPY', [], ['2014-03-04 12:30:00 GMT'], ['entry spot'],[]]);
 };
 
 subtest 'flexi expiries forward starting' => sub {
@@ -104,7 +112,11 @@ subtest 'flexi expiries forward starting' => sub {
                 class => 'Time::Duration::Concise::Localize',
                 value => 1 * 3600
             },
-            ['entry spot']]);
+            ['entry spot'],
+            {
+                class => 'Time::Duration::Concise::Localize',
+                value => (1 * 3600) * 0.5
+            }]);
 
     $params{fixed_expiry} = 1;
     $contract = produce_contract(\%params);
@@ -120,7 +132,11 @@ subtest 'flexi expiries forward starting' => sub {
                 class => 'Time::Duration::Concise::Localize',
                 value => 1 * 3600
             },
-            ['entry spot']]);
+            ['entry spot'],
+            {
+                class => 'Time::Duration::Concise::Localize',
+                value => (1 * 3600) * 0.5
+            }]);
 };
 
 subtest 'flexi expiries mutliday contracts' => sub {
@@ -138,7 +154,7 @@ subtest 'flexi expiries mutliday contracts' => sub {
     ok(!$contract->is_intraday, 'not an intraday bet');
     ok($contract->expiry_daily, 'is an expiry daily bet');
     is_deeply($contract->longcode,
-        ['Win payout if [_1] is strictly higher than [_4] at [_3].', 'USD/JPY', [], ['close on [_1]', '2014-03-05'], ['entry spot']]);
+        ['Win payout if [_1] is strictly higher than [_4] at [_3].', 'USD/JPY', [], ['close on [_1]', '2014-03-05'], ['entry spot'],[]]);
 };
 
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -168,7 +184,7 @@ subtest 'correct expiry on holiday' => sub {
         ok($contract->expiry_daily, 'is an expiry daily contract');
         ok(!$contract->is_intraday, 'it is not an intraday contract');
         is_deeply($contract->longcode,
-            ['Win payout if [_1] is strictly higher than [_4] at [_3].', 'USD/JPY', [], ['close on [_1]', '2014-03-28'], ['entry spot']]);
+            ['Win payout if [_1] is strictly higher than [_4] at [_3].', 'USD/JPY', [], ['close on [_1]', '2014-03-28'], ['entry spot'],[]]);
     }
     'does not die when expiry is on non-trading day';
 
@@ -179,7 +195,7 @@ subtest 'correct expiry on holiday' => sub {
         ok($contract->expiry_daily, 'is an expiry_daily contract');
         ok(!$contract->is_intraday, 'is not an intraday contract');
         is_deeply($contract->longcode,
-            ['Win payout if [_1] is strictly lower than [_4] at [_3].', 'USD/JPY', [], ['close on [_1]', '2014-07-09'], ['entry spot']]);
+            ['Win payout if [_1] is strictly lower than [_4] at [_3].', 'USD/JPY', [], ['close on [_1]', '2014-07-09'], ['entry spot'],[]]);
     }
 };
 
