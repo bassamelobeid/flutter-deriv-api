@@ -21,9 +21,9 @@ override is_expired => sub {
             $self->value(0);
             $is_expired = 1;
         }
-    } else {
-        $is_expired = $self->check_expiry_conditions;
     }
+
+    $is_expired = $self->check_expiry_conditions;
 
     return $is_expired;
 };
