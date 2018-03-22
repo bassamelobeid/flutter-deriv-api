@@ -50,7 +50,7 @@ sub process_job {
     my $underlying           = $self->_get_underlying_or_log($next, $params) or return undef;
     my $current_spot_ts      = $underlying->spot_tick->epoch;
     my $last_priced_contract = eval {
-        json_decode_utf8($redis->get($next))
+        decode_json_utf8($redis->get($next))
     } || {
         time => 0
     };
@@ -84,12 +84,10 @@ sub process_job {
 
     # when it reaches here, contract is considered priced.
     $redis->set(
-        $next => Encode::encode_utf8(
-            $json->encode({
-                    time     => $current_time,
-                    contract => $response,
-                })
-        ),
+        $next => encode_json_utf8({
+            time     => $current_time,
+            contract => $response,
+        }),
         'EX' => DURATION_DONT_PRICE_SAME_SPOT
     );
     my $log_price_daemon_cmd = $params->{log_price_daemon_cmd} // $cmd;
@@ -129,7 +127,7 @@ sub run {
 
         my $next = $key->[1];
         next unless $next =~ s/^PRICER_KEYS:://;
-        my $payload       = $json->decode(Encode::decode_utf8($next));
+        my $payload       = decode_json_utf8($next);
         my $params        = {@{$payload}};
         my $contract_type = $params->{contract_type};
 
@@ -152,7 +150,7 @@ sub run {
                 {tags => $self->tags('contract_type:' . $contract_type_string, 'currency:' . $params->{currency})});
         }
 
-        my $subscribers_count = $redis->publish($key->[1], Encode::encode_utf8($json->encode($response)));
+        my $subscribers_count = $redis->publish($key->[1], encode_json_utf8($response));
         # if None was subscribed, so delete the job
         if ($subscribers_count == 0) {
             $redis->del($key->[1], $next);
@@ -176,7 +174,7 @@ sub run {
             process_end_time => 1000 * ($end_time - int($end_time)),
             time             => time,
             fork_index       => $args{fork_index});
-        $redis->set("PRICER_STATUS::$args{ip}-$args{fork_index}", Encode::encode_utf8($json->encode(\@stat_redis)));
+        $redis->set("PRICER_STATUS::$args{ip}-$args{fork_index}", encode_json_utf8(\@stat_redis));
 
         if ($current_pricing_epoch != time) {
 
@@ -198,7 +196,7 @@ sub _get_underlying_or_log {
     my $underlying = $commands->{$cmd}->{get_underlying}->($self, $params);
 
     if (not $underlying or not ref($underlying)) {
-        warn "Have legacy underlying - $underlying with params " . $json->encode($params) . "\n" if not ref($underlying);
+        warn "Have legacy underlying - $underlying with params " . encode_json_text($params) . "\n" if not ref($underlying);
         stats_inc("pricer_daemon.$cmd.invalid", {tags => $self->tags});
         return undef;
     }
