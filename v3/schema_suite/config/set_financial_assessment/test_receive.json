@@ -12,6 +12,22 @@
           "type": "integer",
           "required": "1"
         }
+        "score": {
+          "type": "integer",
+          "required": "1"
+        },
+        "cfd_score": {
+          "type": "integer",
+          "required": "1"
+        },
+        "financial_information_score": {
+          "type": "integer",
+          "required": "1"
+        },
+        "trading_score": {
+          "type": "integer",
+          "required": "1"
+        }
       },
       "required": "1"
     },
