@@ -292,10 +292,11 @@ if ($input{whattodo} eq 'uploadID') {
             next;
         }
 
-        my $file_id       = $query_result->{file_id};
-        my $new_file_name = "$loginid.$doctype.$file_id.$docformat";
+        my $file_id               = $query_result->{file_id};
+        my $new_file_name         = "$loginid.$doctype.$file_id.$docformat";
+        my $abs_path_to_temp_file = $cgi->tmpFileName($filetoupload);
 
-        my $checksum = BOM::Backoffice::Script::DocumentUpload::upload($new_file_name, $filetoupload, $file_checksum)
+        my $checksum = BOM::Backoffice::Script::DocumentUpload::upload($new_file_name, $abs_path_to_temp_file, $file_checksum)
             or die "Upload failed for $filetoupload";
 
         $query_result = BOM::Platform::Client::DocumentUpload::finish_document_upload(
