@@ -39,6 +39,10 @@ my @workers = (0) x $workers;
 my $index;
 
 sub signal_handler {
+    # Give everything a chance to shut down gracefully
+    kill TERM => @running_forks;
+    sleep 2;
+    # ... but don't wait all day.
     kill KILL => @running_forks;
     exit 0;
 }
@@ -85,6 +89,10 @@ while (1) {
     my $pid = $$;
     ($index) = grep { $workers[$_] == 0 } 0 .. $#workers;
     my $daemon = BOM::Pricing::PriceDaemon->new(tags => ['tag:' . $internal_ip]);
+    # Allow graceful shutdown
+    $SIG{TERM} = sub {
+        $daemon->stop
+    };
     $daemon->run(
         queues     => [split /,/, $queues],
         ip         => $internal_ip,

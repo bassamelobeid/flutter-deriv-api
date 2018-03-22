@@ -24,7 +24,10 @@ use constant {
 
 sub new { return bless {@_[1 .. $#_]}, $_[0] }
 
-my $json     = JSON::MaybeXS->new();
+sub is_running { shift->{is_running} }
+
+sub stop { shift->{is_running} = 0 }
+
 my $commands = {
     price => {
         required_params => [qw(contract_type currency symbol)],
@@ -99,7 +102,10 @@ sub run {
     my $tv                    = [Time::HiRes::gettimeofday];
     my $stat_count            = {};
     my $current_pricing_epoch = time;
-    while (my $key = $redis->brpop(@{$args{queues}}, 0)) {
+
+    # Allow ->stop and restart
+    local $self->{is_running} = 1;
+    while ($self->is_running and (my $key = $redis->brpop(@{$args{queues}}, 0))) {
         # Remember that we had some jobs
         my $tv_now = [Time::HiRes::gettimeofday];
         my $queue  = $key->[0];
