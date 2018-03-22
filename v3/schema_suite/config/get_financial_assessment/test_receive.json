@@ -15,17 +15,14 @@
         },
         "cfd_score": {
           "type": "integer",
-          "pattern": "^[_1]$",
           "required": "1"
         },
         "financial_information_score": {
           "type": "integer",
-          "pattern": "^[_1]$",
           "required": "1"
         },
         "trading_score": {
           "type": "integer",
-          "pattern": "^[_1]$",
           "required": "1"
         },
         "account_turnover": {
