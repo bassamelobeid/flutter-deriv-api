@@ -22,11 +22,9 @@ use DateTime;
 use Error::Base;
 use Cache::RedisDB;
 use Crypt::NamedKeys;
-use Scalar::Util qw(looks_like_number);
 
-use BOM::Platform::Runtime;
 use BOM::Platform::Config;
-use JSON::MaybeXS;
+use BOM::Backoffice::Script::ValidateStaffPaymentLimit;
 
 has staff => (
     is       => 'ro',
@@ -149,7 +147,7 @@ sub validate_payment_control_code {
     return $error_status if $error_status;
     $error_status = $self->_validate_payment_amount($code, $amount);
     return $error_status if $error_status;
-    $error_status = $self->_validate_staff_payment_limit($amount);
+    $error_status = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($self->staff, $amount);
     return $error_status if $error_status;
     $error_status = $self->_validate_payment_code_already_used($incode);
     return $error_status if $error_status;
@@ -366,27 +364,6 @@ sub _validate_payment_amount {
         return Error::Base->cuss(
             -type => 'DifferentAmount',
             -mesg => 'Amount provided does not match with the amount provided during code generation',
-        );
-    }
-    return;
-}
-
-sub _validate_staff_payment_limit {
-    my $self   = shift;
-    my $amount = shift;
-
-    my $payment_limits = JSON::MaybeXS->new->decode(BOM::Platform::Runtime->instance->app_config->payments->payment_limits);
-    if ($payment_limits->{$self->staff} and looks_like_number($payment_limits->{$self->staff})) {
-        if ($amount > $payment_limits->{$self->staff}) {
-            return Error::Base->cuss(
-                -type => 'AmountGreaterThanLimit',
-                -mesg => 'The amount is larger than authorization limit for staff',
-            );
-        }
-    } else {
-        return Error::Base->cuss(
-            -type => 'NoPaymentLimitForUser',
-            -mesg => 'There is no payment limit configured in the backoffice payment_limits for this user',
         );
     }
     return;

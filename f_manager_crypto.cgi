@@ -23,6 +23,7 @@ use BOM::Backoffice::Auth0;
 use BOM::Backoffice::PlackHelpers qw/PrintContentType_excel PrintContentType/;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Script::ValidateStaffPaymentLimit;
 use BOM::CTC::Reconciliation;
 use BOM::Database::ClientDB;
 use BOM::DualControl;
@@ -166,6 +167,10 @@ if ($view_action eq 'withdrawals') {
 
         # Error for rejection with no reason
         code_exit_BO("Please enter a reason for rejection") if ($action eq 'Reject' && $rejection_reason eq '');
+
+        # Check payment limit
+        my $over_limit = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($staff, $amount);
+        code_exit_BO($over_limit->get_mesg()) if ($action eq 'Verify' && $over_limit);
 
         my $found;
         ($found) =
