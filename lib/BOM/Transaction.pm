@@ -16,7 +16,7 @@ use Try::Tiny;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_count);
 
 use Brands;
-use Client::Account;
+use BOM::User::Client;
 use Finance::Asset::Market::Types;
 use Finance::Contract::Category;
 use Format::Util::Numbers qw/formatnumber financialrounding/;
@@ -40,6 +40,7 @@ use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Database::Helper::RejectedTrade;
 use BOM::Database::ClientDB;
 use BOM::Transaction::Validation;
+use BOM::Platform::RedisReplicated;
 
 =head1 NAME
 
@@ -50,7 +51,7 @@ use BOM::Transaction::Validation;
 my $json = JSON::MaybeXS->new;
 has client => (
     is  => 'ro',
-    isa => 'Client::Account',
+    isa => 'BOM::User::Client',
 );
 
 has multiple => (
@@ -537,7 +538,7 @@ sub prepare_buy {
     if ($self->multiple) {
         for my $m (@{$self->multiple}) {
             next if $m->{code};
-            my $c = try { Client::Account->new({loginid => $m->{loginid}}) };
+            my $c = try { BOM::User::Client->new({loginid => $m->{loginid}}) };
             unless ($c) {
                 $m->{code}  = 'InvalidLoginid';
                 $m->{error} = BOM::Platform::Context::localize('Invalid loginid');
@@ -625,6 +626,12 @@ sub buy {
 
     enqueue_new_transaction(_get_params_for_expiryqueue($self));    # For soft realtime expiration notification.
 
+    # Japan's regulator required us to keep monitor on our risk level and alert the team if the risk level is reaching the limit
+    # Hence we have this piece of code which will calculate them and update datalog
+    if ($self->client->landing_company->short eq 'japan' and BOM::Platform::RedisReplicated::redis_read()->exists('klfb_risk::JP')) {
+        my $new_klfb_risk = $fmb->{payout_price} - $fmb->{buy_price};
+        BOM::Platform::RedisReplicated::redis_write()->incrbyfloat('klfb_risk::JP', $new_klfb_risk);
+    }
     return;
 }
 
@@ -634,7 +641,7 @@ sub buy {
 #   thought to be already erroneous. Otherwise the element should contain
 #   a "loginid" key.
 #   The following keys are added:
-#   * client: the Client::Account object corresponding to the loginid
+#   * client: the BOM::User::Client object corresponding to the loginid
 #   * limits: a hash representing the betting limits of this client
 #   * fmb and txn: the FMB and transaction records that have been written
 #     to the database in case of success
@@ -787,7 +794,7 @@ sub prepare_sell {
     if ($self->multiple) {
         for my $m (@{$self->multiple}) {
             next if $m->{code};
-            my $c = try { Client::Account->new({loginid => $m->{loginid}}) };
+            my $c = try { BOM::User::Client->new({loginid => $m->{loginid}}) };
             unless ($c) {
                 $m->{code}  = 'InvalidLoginid';
                 $m->{error} = BOM::Platform::Context::localize('Invalid loginid');
@@ -883,6 +890,10 @@ sub sell {
     $self->transaction_id($txn->{id});
     $self->reference_id($buy_txn_id);
 
+    if ($self->client->landing_company->short eq 'japan' and BOM::Platform::RedisReplicated::redis_read()->exists('klfb_risk::JP')) {
+        my $new_klfb_risk = ($fmb->{sell_price} - $fmb->{buy_price}) - ($fmb->{payout_price} - $fmb->{buy_price});
+        BOM::Platform::RedisReplicated::redis_write()->incrbyfloat('klfb_risk::JP', $new_klfb_risk);
+    }
     return;
 }
 
