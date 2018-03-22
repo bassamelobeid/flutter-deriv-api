@@ -7,7 +7,7 @@ use Test::More;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::ClientDB;
-use Client::Account;
+use BOM::User::Client;
 
 # In COMPATIBLE_MODE we assume the old behavior of calling
 # set_staff right before saving a Rose object.
@@ -66,7 +66,7 @@ is_deeply get_audit($loginid), [
 undef $client;
 @ENV{qw/AUDIT_STAFF_NAME AUDIT_STAFF_IP/} = qw/xx 192.168.12.25/;
 BOM::Database::Rose::DB->db_cache->finish_request_cycle;
-$client = Client::Account->new({loginid => $loginid});
+$client = BOM::User::Client->new({loginid => $loginid});
 
 $client->comment('comment');
 $client->save;
