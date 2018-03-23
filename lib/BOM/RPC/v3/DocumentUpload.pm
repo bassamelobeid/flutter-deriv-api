@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (localize);
+use BOM::Platform::Client::DocumentUpload;
 use Date::Utility;
 use BOM::Platform::Email qw(send_email);
 use Try::Tiny;
@@ -44,41 +45,20 @@ sub start_document_upload {
 
     _set_staff($client);
 
-    my $id;
-    my $error_occured;
-    my $error_duplicate;
-    try {
-        ($id) = $client->db->dbic->run(
-            ping => sub {
-                my $STD_WARN_HANDLER = $SIG{__WARN__};
-                local $SIG{__WARN__} = sub {
-                    return if $error_duplicate = _is_duplicate_upload_error($_);
-                    return $STD_WARN_HANDLER->(@_) if $STD_WARN_HANDLER;
-                    warn @_;
-                };
-                $_->selectrow_array(
-                    'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?)',
-                    undef, $loginid, $document_type, $document_format,
-                    $args->{expiration_date},
-                    ($args->{document_id} || ''),
-                    $expected_checksum
-                );
-            });
-    }
-    catch {
-        $error_occured = 1;
-    };
+    my $query_result = BOM::Platform::Client::DocumentUpload::start_document_upload(
+        client          => $client,
+        doctype         => $document_type,
+        docformat       => $document_format,
+        file_checksum   => $expected_checksum,
+        expiration_date => $args->{expiration_date},
+        document_id     => ($args->{document_id} || ''));
 
-    return create_upload_error('duplicate_document') if $error_occured and $error_duplicate;
-
-    if ($error_occured or not $id) {
-        warn 'start_document_upload in the db was not successful';
-        return create_upload_error();
-    }
+    my $err = check_for_query_error($query_result);
+    return $err if $err;
 
     return {
-        file_name => join('.', $loginid, $document_type, $id, $document_format),
-        file_id   => $id,
+        file_name => join('.', $loginid, $document_type, $query_result->{file_id}, $document_format),
+        file_id   => $query_result->{file_id},
         call_type => 1,
     };
 }
@@ -94,37 +74,17 @@ sub successful_upload {
 
     _set_staff($client);
 
-    my $result;
-    my $error_occured;
-    my $error_duplicate;
-    try {
-        ($result) = $client->db->dbic->run(
-            ping => sub {
-                my $STD_WARN_HANDLER = $SIG{__WARN__};
-                local $SIG{__WARN__} = sub {
-                    return if $error_duplicate = _is_duplicate_upload_error($_);
-                    return $STD_WARN_HANDLER->(@_) if $STD_WARN_HANDLER;
-                    warn @_;
-                };
-                $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?)', undef, $args->{file_id}, undef);
-            });
-    }
-    catch {
-        $error_occured = 1;
-    };
+    my $query_result = BOM::Platform::Client::DocumentUpload::finish_document_upload(
+        client  => $client,
+        file_id => $args->{file_id});
 
-    return create_upload_error('duplicate_document') if $error_occured and $error_duplicate;
-
-    return create_upload_error('doc_not_found') if not $result;
-
-    if ($error_occured) {
-        warn 'Failed to update the uploaded document in the db';
-        return create_upload_error();
-    }
+    my $err = check_for_query_error($query_result);
+    return $err if $err;
 
     my $client_id = $client->loginid;
 
     my $status_changed;
+    my $error_occured;
     try {
         ($status_changed) = $client->db->dbic->run(
             ping => sub {
@@ -156,6 +116,16 @@ sub successful_upload {
     return $args;
 }
 
+sub check_for_query_error {
+    my $query_result = shift;
+
+    unless ($query_result->{file_id}) {
+        warn 'Document upload db query failed' unless ($query_result->{error}->{type} && $query_result->{error}->{type} eq 'duplicate_document');
+        return create_upload_error($query_result->{error}->{type});
+    }
+    return;
+}
+
 sub validate_input {
     my $params    = shift;
     my $args      = $params->{args};
@@ -176,6 +146,9 @@ sub validate_input {
 sub validate_id_and_exp_date {
     my $args          = shift;
     my $document_type = $args->{document_type};
+
+    # The fields expiration_date and document_id are only required for certain
+    #   document types, so only do this check in these cases.
 
     return if not $document_type or $document_type !~ /^passport|proofid|driverslicense$/;
 
@@ -209,7 +182,6 @@ sub create_upload_error {
         already_expired  => {message => localize('Expiration date cannot be less than or equal to current date.')},
         missing_exp_date => {message => localize('Expiration date is required.')},
         missing_doc_id   => {message => localize('Document ID is required.')},
-        doc_not_found    => {message => localize('Document not found.')},
         max_size         => {message => localize("Maximum file size reached. Maximum allowed is [_1]", MAX_FILE_SIZE)},
         duplicate_document => {
             message    => localize('Document already uploaded.'),
@@ -228,17 +200,6 @@ sub create_upload_error {
         code              => $error_code || $default_error_code,
         message_to_client => $message    || $default_error_msg
     });
-}
-
-sub _is_duplicate_upload_error {
-    my $dbh = shift;
-
-    # Duplicate uploads are detected using a unique index on the document table.
-    #   23505 is the PSQL error code for a unique_violation.
-    #   'duplicate_upload_error' is the specific name of the unique index.
-
-    return $dbh->state eq '23505'
-        and $dbh->errstr =~ /duplicate_upload_error/;
 }
 
 sub _set_staff {
