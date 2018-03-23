@@ -63,84 +63,6 @@ sub _build_minimum_multiplier {
     return $minimum_multiplier // 0;
 }
 
-=head2 adj_coefficient
-
-A coefficient applied as part of the discrete monitoring lookback price approximation via the continuous formula.
-Similar to the barrier shift adjustments applied to Touch and No-Touch options..
-It is based on page 81 FX Options and Structured Products (Uwe Wystup).
-
-=cut
-
-has adj_coefficient => (
-    is         => 'ro',
-    isa        => 'Num',
-    lazy_build => 1,
-);
-
-has adj_sign => (
-    is         => 'ro',
-    isa        => 'Num',
-    lazy_build => 1,
-);
-
-has adj_theo_price => (
-    is         => 'ro',
-    isa        => 'Num',
-    lazy_build => 1,
-);
-
-has volidx_feed_interval => (
-    is         => 'ro',
-    isa        => 'Num',
-    lazy_build => 1,
-);
-
-=head2 adj_markup_factor
-
-The approximated discrete-monitoring prices underestimate the true prices under some conditions (i.e. longer time to expiry).
-The markup factor is applied to push prices up just above the true prices.
-Only tested for lookback floating calls and puts on driftless volatility indices under 5 hours.
-
-=cut
-
-has adj_markup_factor => (
-    is      => 'ro',
-    isa     => 'Num',
-    default => 0.005,
-);
-
-sub _build_adj_coefficient {
-    my $self = shift;
-
-    #An approximation of -f(1/2)/sqrt(2*pi) ~= 0.5826, where f is the zeta function.
-    #See "Connecting discrete and continuous path-dependent options", Broadie et al. (1998)
-    my $beta = 0.5826;
-
-    my $adj_coeff = exp($self->adj_sign * $beta * $self->pricing_vol * sqrt($self->volidx_feed_interval));
-    return $adj_coeff;
-}
-
-sub _build_adj_sign {
-    my $self = shift;
-    return ($self->pricing_code eq 'LBFLOATCALL') ? 1 : -1;
-}
-
-sub _build_volidx_feed_interval {
-    my $one_second_in_year = 1 / (365 * 24 * 60 * 60);
-    return 2 * $one_second_in_year;
-}
-
-sub _build_adj_theo_price {
-    my $self = shift;
-
-    my $orig_theo_price = $self->pricing_engine->theo_price;
-
-    my $adj_theo_price = $self->adj_coefficient * $orig_theo_price - ($self->adj_sign * ($self->adj_coefficient - 1) * $self->pricing_spot);
-
-    $adj_theo_price = $adj_theo_price * (1 + $self->adj_markup_factor);
-    return $adj_theo_price;
-}
-
 has [qw(spot_min_max)] => (
     is         => 'ro',
     lazy_build => 1,
@@ -216,13 +138,13 @@ override _build_theo_price => sub {
 
     # pricing_engine->theo_price gives the price per unit. It is then multiplied with $self->multiplier
     # to get the theo price of the option.
-    return $self->is_expired ? $self->value : $self->adj_theo_price * $self->multiplier;
+    return $self->is_expired ? $self->value : $self->pricing_engine->theo_price * $self->multiplier;
 };
 
 override _build_ask_price => sub {
     my $self = shift;
 
-    my $theo_price = $self->adj_theo_price;
+    my $theo_price = $self->pricing_engine->theo_price;
 
     my $commission = $theo_price * $self->base_commission;
     $commission = max(0.01, $commission);
