@@ -1,4 +1,4 @@
-package BOM::Platform::AuditLog;
+package BOM::User::AuditLog;
 
 use strict;
 use warnings;
