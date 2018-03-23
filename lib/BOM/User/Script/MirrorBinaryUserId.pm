@@ -45,8 +45,6 @@ use POSIX qw/strftime/;
 our $DEBUG;    ## no critic
 use constant TMOUT => 10;
 
-STDERR->autoflush(1);
-
 sub log_msg {
     my ($level, $msg) = @_;
     print STDERR strftime('%F %T', localtime), ": (PID $$) ", $msg, "\n"

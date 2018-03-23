@@ -1,18 +1,19 @@
+package BOM::User::Password;
+use strict;
+use warnings;
+
+use Crypt::ScryptKDF;
+use Crypt::Salt;
+use Digest::SHA;
+
+use Mojo::Util;
+
 
 =head1 NAME
 
 BOM::User::Password - Password hashing module for BOM
 
 =cut
-
-package BOM::User::Password;
-use Crypt::ScryptKDF;
-use Crypt::Salt;
-use Digest::SHA;
-use strict;
-use warnings;
-
-use Mojo::Util;
 
 # TODO:  Move to String::Compare::ConstantTime since Crypt::NamedKeys already
 # requires this.
@@ -22,7 +23,7 @@ use Mojo::Util;
 # update every time the algorithm changes
 sub ALGO_VERSION { return 1; }
 
-=head1 SYNPOSIS
+=head1 SYNOPSIS
 
  To create a password hash for db storage:
 
