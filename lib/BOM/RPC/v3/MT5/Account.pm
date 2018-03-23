@@ -781,6 +781,10 @@ Returns any of the following:
 
 rpc mt5_password_reset => sub {
     my $params = shift;
+
+    my $mt5_suspended = _is_mt5_suspended();
+    return $mt5_suspended if $mt5_suspended;
+
     my $client = $params->{client};
     my $args   = $params->{args};
     my $login  = $args->{login};
@@ -791,9 +795,7 @@ rpc mt5_password_reset => sub {
                 message_to_client => $err->{message_to_client}});
     }
 
-    my $user = BOM::User->new({email => $email});
-
-    # MT5 login not belongs to user
+    # MT5 login not belongs to client
     return BOM::RPC::v3::Utility::permission_error()
         unless _check_logins($client, ['MT' . $login]);
 
@@ -1032,6 +1034,55 @@ rpc mt5_withdrawal => sub {
         );
         return _mt5_error_sub($error_code, $error->{-message_to_client});
     };
+};
+
+rpc mt5_mamm => sub {
+    my $params = shift;
+
+    my $mt5_suspended = _is_mt5_suspended();
+    return $mt5_suspended if $mt5_suspended;
+
+    my $client = $params->{client};
+    my $args   = $params->{args};
+    my $login  = $args->{login};
+
+    # MT5 login not belongs to client
+    return BOM::RPC::v3::Utility::permission_error()
+        unless _check_logins($client, ['MT' . $login]);
+
+    my $settings = BOM::MT5::User::get_user($login);
+    if (ref $settings eq 'HASH' and $settings->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'MT5GetUserError',
+                message_to_client => $settings->{error}});
+    }
+
+    # to revoke manager we just disable trading for mt5 account
+    # we cannot change group else accounting team will have problem during
+    # reconciliation.
+    # we cannot remove agent fields as thats used for auditing else
+    # it would have been a simple check
+    #
+    # MT5 way to disable trading is not very intuitive, its based on
+    # https://support.metaquotes.net/en/docs/mt5/api/reference_user/imtuser/imtuser_enum#enusersrights
+    # and rights column from user setting return numbers based on combination
+    # of these enumerations,
+    #
+    # 483  - All options except OTP and change password (default)
+    # 1507 - All options except OTP
+    # 2531 - All options except change password
+    # 3555 - All options enabled
+    # 4 is score for disabled trading
+    #
+    # these numbers are when trading is disabled and above selections
+    # are possible
+    if (grep { $_ == $settings->{rights} } qw/487 1511 2535 3559/) {
+        $settings->{manager_id} = '';
+    } else {
+        $settings->{manager_id} = $settings->{agent};
+    }
+
+    return 1;
 };
 
 sub _is_mt5_suspended {
