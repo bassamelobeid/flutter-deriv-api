@@ -4,179 +4,307 @@ use warnings;
 use BOM::Test::RPC::Client;
 use Test::More;
 use Test::Mojo;
+use Test::Warn;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use Email::Folder::Search;
 use List::Util qw( all );
 
-my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
-$mailbox->init;
-
-my $email       = 'dummy@binary.com';
-my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'VRTC',
-});
-$test_client->email($email);
-$test_client->save;
-
-my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
+#########################################################
+## Setup test RPC
+#########################################################
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
-my $method = 'document_upload';
-my $params = {language => 'EN'};
-my $args   = {};
-my $result;
-my $doc;
-my $client_id;
+#########################################################
+## Setup mailbox
+#########################################################
 
-use constant {
-    DOC_TYPE        => 'passport',
-    DOC_FORMAT      => 'jpg',
-    CHECKSUM        => 'FileChecksum',
-    EXP_DATE_PAST   => '2017-08-09',
-    EXP_DATE_FUTURE => '2117-08-11',
-    DOC_ID_1        => 'ABCD1234',
-    DOC_ID_2        => 'ABCD1235'
-};
+my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
+$mailbox->init;
 
-use constant MAX_FILE_SIZE => 3 * 2**20;
+#########################################################
+## Setup clients
+#########################################################
 
-my $invalid_token   = 12345;
-my $invalid_file_id = 1231531;
+my $email = 'dummy@binary.com';
 
-subtest "Invalid token shouldn't be allowed to upload" => sub {
-    $params->{token} = $invalid_token;
-    $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'check invalid token');
-};
+my $virtual_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'VRTC',
+});
+$virtual_client->email($email);
+$virtual_client->save;
 
-subtest 'Valid token but virtual account' => sub {
-    $params->{token} = $token;
-    $c->call_ok($method, $params)
-        ->has_error->error_message_is("Virtual accounts don't require document uploads.", "don't allow virtual accounts to upload");
-};
-
-# ------- START Create real currency account --------
-# Creating new real account.
-$test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+my $real_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
-($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
 
-# For CR accounts.
-$params->{token}  = $token;
-$params->{upload} = "some_id";
+#########################################################
+## Setup tokens
+#########################################################
 
-$params->{args} = $args;
-# -------  END Create real currency account  --------
+my ($virtual_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $virtual_client->loginid);
+my ($real_token)    = BOM::Database::Model::OAuth->new->store_access_token_only(1, $real_client->loginid);
+my $invalid_token   = 12345;
 
-subtest 'Expired documents' => sub {
-    $args->{expiration_date} = EXP_DATE_PAST;    # Expired documents.
-    $c->call_ok($method, $params)
-        ->has_error->error_message_is('Expiration date cannot be less than or equal to current date.',
-        'check expiration_date is before current date');
+#########################################################
+## Setup test paramaters
+#########################################################
+
+my $method = 'document_upload';
+
+my %default_params = (
+    language => 'EN',
+    token    => $real_token,
+    upload   => 'some_id',
+    args     => {});
+
+my %default_args = (
+    document_id       => 'ABCD1234',
+    document_type     => 'passport',
+    document_format   => 'jpg',
+    expected_checksum => 'FileChecksum',
+    expiration_date   => '2117-08-11',
+    file_size         => 1,
+);
+
+use constant {
+    EXP_DATE_PAST   => '2017-08-09',
+    INVALID_FILE_ID => 1231531,
+    MAX_FILE_SIZE   => 3 * 2**20,
+};
+
+#########################################################
+## Tests for initial argument error handling
+#########################################################
+
+subtest 'Error for invalid client token' => sub {
+    my $custom_params = {token => $invalid_token};
+    call_and_check_error($custom_params, 'The token is invalid.', 'check invalid token');
+};
+
+subtest 'Error for attempting uploads on virtual account' => sub {
+    my $custom_params = {token => $virtual_token};
+    call_and_check_error($custom_params, "Virtual accounts don't require document uploads.", "don't allow virtual accounts to upload");
+};
+
+subtest 'Error for doc expiration date in the past' => sub {
+    my $custom_params = {args => {expiration_date => EXP_DATE_PAST}};
+    call_and_check_error(
+        $custom_params,
+        'Expiration date cannot be less than or equal to current date.',
+        'check expiration_date is before current date'
+    );
 };
 
 subtest 'Error for over-size file' => sub {
-    $args->{file_size} = MAX_FILE_SIZE + 1;
-    $c->call_ok($method, $params)
-        ->has_error->error_message_is('Maximum file size reached. Maximum allowed is ' . MAX_FILE_SIZE, 'over-size file is denied');
-    $args->{file_size} = 1;
+    my $custom_params = {args => {file_size => MAX_FILE_SIZE + 1}};
+    call_and_check_error($custom_params, 'Maximum file size reached. Maximum allowed is ' . MAX_FILE_SIZE, 'over-size file is denied');
 };
 
-subtest 'Unsuccessful finished upload' => sub {
-    $args->{expiration_date} = EXP_DATE_FUTURE;    # 100 years is all I give you, humanity!
-    $c->call_ok($method, $params)
-        ->has_error->error_message_is('Sorry, an error occurred while processing your request.', 'upload finished unsuccessfully');
-};
-
+# Only applies if document_type is passport, proofid, or driverslicense
 subtest 'Error for no document_id' => sub {
-    $args->{document_type}     = DOC_TYPE;
-    $args->{document_format}   = DOC_FORMAT;
-    $args->{expected_checksum} = CHECKSUM;
-
-    $c->call_ok($method, $params)->has_error->error_message_is('Document ID is required.', 'document_id is required');
-
-    $args->{document_id} = DOC_ID_1;
-    $result = $c->call_ok($method, $params)->result;
-    ($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
-    # Succesfully retrieved object from database.
-    is($doc->document_id, $args->{document_id}, 'document is saved in db');
-    is($doc->status,      'uploading',          'document status is set to uploading');
+    my $custom_params = {args => {document_id => ''}};
+    call_and_check_error($custom_params, 'Document ID is required.', 'document_id is required');
 };
 
-subtest 'Document with no expiration_date' => sub {
-    $args->{expiration_date} = '';    # Document with no expiration_date
-    $c->call_ok($method, $params)->result;
+# Only applies if document_type is passport, proofid, or driverslicense
+subtest 'Error for no expiration_date' => sub {
+    my $custom_params = {args => {expiration_date => ''}};
+    call_and_check_error($custom_params, 'Expiration date is required.', 'expiration_date is required');
 };
 
-subtest 'Upload doc and send CS notification email' => sub {
-    $args = {
-        status  => 'success',
-        file_id => $result->{file_id}};
-    $params->{args} = $args;
-
-    $mailbox->clear;
-    $client_id = uc $test_client->loginid;
-    $result = $c->call_ok($method, $params)->result;
-    like(get_notification_email()->{body}, qr/New document was uploaded for the account: $client_id/, 'CS notification email was sent successfully');
+# Applies for any type not of passport, proofid, or driverslicense
+subtest 'No error for no document_id and expiration_date' => sub {
+    my $custom_params = {
+        args => {
+            document_id     => '',
+            expiration_date => '',
+            document_type   => 'proofaddress'
+        }};
+    start_successful_upload($real_client, $custom_params);
 };
 
-subtest 'Status and checksum of newly uploaded document' => sub {
-    ($doc) = $test_client->find_client_authentication_document(query => [id => $result->{file_id}]);
-    is($doc->status,                                              'uploaded',           'document\'s status changed');
-    is($test_client->get_status('document_under_review')->reason, 'Documents uploaded', 'client\'s status changed');
-    ok(!$test_client->get_status('document_needs_action'), 'Document should not be in needs_action state');
-    ok $doc->file_name, 'Filename should not be empty';
-    is $doc->checksum, CHECKSUM, 'Checksum should be added correctly';
+subtest 'Generic upload fail test' => sub {
+    my $custom_params = {
+        args => {
+            document_type   => '',
+            document_format => ''
+        }};
+    call_and_check_error($custom_params, 'Sorry, an error occurred while processing your request.', 'upload finished unsuccessfully');
 };
 
-subtest 'Call finish again to ensure CS team is only sent 1 email' => sub {
-    $mailbox->clear;
-    $result = $c->call_ok($method, $params)->result;
-    ok(!get_notification_email(), 'CS notification email should only be sent once');
+subtest 'Error for calling success with non-existent file ID' => sub {
+    my $custom_params = {
+        args => {
+            status  => 'success',
+            file_id => INVALID_FILE_ID,
+            # These need to be blanked or RPC will try to start an upload
+            document_type   => '',
+            document_format => ''
+        }};
+    warning_like {
+        call_and_check_error($custom_params, 'Sorry, an error occurred while processing your request.', 'error if document is not present');
+    }
+    [qr/Document upload db query failed/], "Expected warning is thrown";
 };
 
-subtest 'Attempt with non-existent file ID' => sub {
-    $args->{file_id} = $invalid_file_id;
-    $c->call_ok($method, $params)->has_error->error_message_is('Document not found.', 'error if document is not present');
-};
+#########################################################
+## Tests for successful upload
+#########################################################
 
-subtest 'Attempt to upload same document again (checksum collision) with different document ID' => sub {
-    $args = {
-        document_type     => DOC_TYPE,
-        document_format   => DOC_FORMAT,
-        expiration_date   => EXP_DATE_FUTURE,
-        document_id       => DOC_ID_2,
-        expected_checksum => CHECKSUM
+subtest 'Basic upload test sequence' => sub {
+
+    my $file_id;
+    my $checksum = $default_args{expected_checksum};
+
+    subtest 'Start upload with all defaults' => sub {
+        $file_id = start_successful_upload($real_client);
     };
-    $params->{args} = $args;
-    $result = $c->call_ok($method, $params)->result;
-    # Upload will commence and be blocked at finish
 
-    $args = {
-        status  => 'success',
-        file_id => $result->{file_id}};
-    $params->{args} = $args;
-    $c->call_ok($method, $params)->has_error->error_message_is('Document already uploaded.', 'error if same document is uploaded twice');
+    subtest 'Finish upload and verify CS notification email is receieved' => sub {
+        finish_successful_upload($real_client, $file_id, $checksum, 1);
+    };
+
+    subtest 'Call finish again to ensure CS team is only sent 1 email' => sub {
+        finish_successful_upload($real_client, $file_id, $checksum, 0);
+    };
 };
 
-sub get_notification_email {
-    my ($msg) = $mailbox->search(
-        email   => 'authentications@binary.com',
-        subject => qr/New uploaded document for: $client_id/
-    );
-    return $msg;
-}
+#########################################################
+## Tests for upload fails
+#########################################################
+
+subtest 'Attempt to upload file with same checksum as "Basic upload test sequence"' => sub {
+    my $file_id = start_successful_upload($real_client);
+
+    # Upload will commence and be blocked at finish
+    my $custom_params = {
+        args => {
+            status  => 'success',
+            file_id => $file_id,
+            # These need to be blanked or RPC will try to start an upload
+            document_type   => '',
+            document_format => ''
+        }};
+    call_and_check_error($custom_params, 'Document already uploaded.', 'error if same document is uploaded twice');
+};
+
+#########################################################
+## Audit test (keep this last)
+#########################################################
 
 subtest 'Check audit information after all above upload requests' => sub {
-    my $result = $test_client->db->dbic->run(
+    my $result = $real_client->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref('SELECT pg_userid, remote_addr FROM audit.client_authentication_document');
         });
 
     ok(all { $_->[0] eq 'system' and $_->[1] eq '127.0.0.1/32' } @$result), 'Check staff and staff IP for all audit info';
 };
+
+#########################################################
+## Helper methods
+#########################################################
+
+sub start_successful_upload {
+    my ($client, $custom_params) = @_;
+
+    # Initialise default params
+    my $params = {%default_params};
+    $params->{args} = {%default_args};
+
+    # Customise params
+    customise_params($params, $custom_params) if $custom_params;
+
+    # Call to start upload
+    my $result = $c->call_ok($method, $params)->has_no_error->result;
+
+    # Check doc is entered into database
+    my ($doc) = $client->find_client_authentication_document(query => [id => $result->{file_id}]);
+    is($doc->document_id, $params->{args}->{document_id}, 'document is saved in db');
+    is($doc->status, 'uploading', 'document status is set to uploading');
+
+    return $result->{file_id};
+}
+
+sub finish_successful_upload {
+    my ($client, $file_id, $checksum, $mail_expected) = @_;
+
+    # Setup call paramaters
+    my $params = {%default_params};
+    $params->{args} = {
+        status  => 'success',
+        file_id => $file_id
+    };
+
+    # Clear mailbox
+    $mailbox->clear;
+
+    # Call successful upload
+    my $result = $c->call_ok($method, $params)->has_no_error->result;
+
+    # Check mailbox for CS notification
+    my $client_id = uc $client->loginid;
+    if ($mail_expected) {
+        like(
+            get_notification_email($client_id)->{body},
+            qr/New document was uploaded for the account: $client_id/,
+            'CS notification email was sent successfully'
+        );
+    }
+    if (not $mail_expected) {
+        ok(!get_notification_email($client_id), 'CS notification email should only be sent once');
+    }
+
+    # Check doc is updated in database properly
+    my ($doc) = $client->find_client_authentication_document(query => [id => $result->{file_id}]);
+    is($doc->status, 'uploaded', 'document\'s status changed');
+    ok $doc->file_name, 'Filename should not be empty';
+    is $doc->checksum, $checksum, 'Checksum should be added correctly';
+
+    # Check client status is correct
+    is($client->get_status('document_under_review')->reason, 'Documents uploaded', 'client\'s status changed');
+    ok(!$client->get_status('document_needs_action'), 'Document should not be in needs_action state');
+
+}
+
+sub call_and_check_error {
+    my ($custom_params, $expected_err_message, $test_print_message) = @_;
+
+    # Initialise default params
+    my $params = {%default_params};
+    $params->{args} = {%default_args};
+
+    # Customise params
+    customise_params($params, $custom_params);
+
+    # Call and check error
+    $c->call_ok($method, $params)->has_error->error_message_is($expected_err_message, $test_print_message);
+}
+
+sub customise_params {
+    my ($params, $custom_params) = @_;
+
+    for my $key (keys $custom_params) {
+        $params->{$key} = $custom_params->{$key} unless $key eq 'args';
+    }
+    if ($custom_params->{args}) {
+        for my $key (keys $custom_params->{args}) {
+            $params->{args}->{$key} = $custom_params->{args}->{$key};
+        }
+    }
+}
+
+sub get_notification_email {
+    my $client_id = shift;
+
+    my ($msg) = $mailbox->search(
+        email   => 'authentications@binary.com',
+        subject => qr/New uploaded document for: $client_id/
+    );
+    return $msg;
+}
 
 done_testing();
