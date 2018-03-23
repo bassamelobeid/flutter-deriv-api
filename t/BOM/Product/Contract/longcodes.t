@@ -264,7 +264,7 @@ subtest 'intraday duration longcode variation' => sub {
             '0.00',
             {
                 class => 'Time::Duration::Concise::Localize',
-                value => (10 * 60 + 1) * 0.5
+                value => (10 * 60 + 1) * 0.5 + 0.5
             }
         ]);
 
@@ -282,7 +282,7 @@ subtest 'intraday duration longcode variation' => sub {
             '0.00',
             {
                 class => 'Time::Duration::Concise::Localize',
-                value => (10 * 3600 + 1) * 0.5
+                value => (10 * 3600 + 1) * 0.5 + 0.5
             }
         ]);
 };
