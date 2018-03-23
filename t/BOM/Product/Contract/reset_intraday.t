@@ -116,4 +116,20 @@ subtest 'validation' => sub {
 
     ok !$c->is_valid_to_buy, 'not valid to buy';
     is $c->primary_validation_error->message, 'Non atm barrier for reset contract is not allowed.', 'error message checked';
+
+    my $args_fixed_expiry = {
+        underlying   => 'R_100',
+        bet_type     => 'RESETPUT',
+        date_start   => $one_day,
+        date_pricing => $one_day,
+        fixed_expiry => 1,
+        date_expiry  => $one_day->plus_time_interval('5m'),
+        currency     => 'USD',
+        payout       => 100,
+        barrier      => 'S0P',
+    };
+
+    $c = produce_contract($args_fixed_expiry);
+    ok !$c->is_valid_to_buy, 'not valid to buy';
+    is $c->primary_validation_error->message, 'Fixed expiry for reset contract is not allowed.', 'error message checked';
 };
