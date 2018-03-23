@@ -8,7 +8,6 @@ use Digest::SHA;
 
 use Mojo::Util;
 
-
 =head1 NAME
 
 BOM::User::Password - Password hashing module for BOM
