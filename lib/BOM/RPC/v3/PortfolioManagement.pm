@@ -146,11 +146,12 @@ rpc proposal_open_contract => sub {
             currency              => $currency,
             is_expired            => $fmb->{is_expired},
             is_sold               => $fmb->{is_sold},
+            sell_time             => $fmb->{sell_time},
+            sell_price            => $fmb->{sell_price},
             buy_price             => $fmb->{buy_price},
             app_markup_percentage => $params->{app_markup_percentage},
             landing_company       => $lc_name,
             account_id            => $fmb->{account_id},
-            purchase_time         => Date::Utility->new($fmb->{purchase_time})->epoch,
             country_code          => $client->residence,
         });
 
@@ -160,6 +161,7 @@ rpc proposal_open_contract => sub {
             my $transaction_ids = {buy => $fmb->{buy_transaction_id}};
             $transaction_ids->{sell} = $fmb->{sell_transaction_id} if ($fmb->{sell_transaction_id});
 
+            $bid->{purchase_time}   = Date::Utility->new($fmb->{purchase_time})->epoch;
             $bid->{transaction_ids} = $transaction_ids;
             $bid->{buy_price}       = $fmb->{buy_price};
             $bid->{account_id}      = $fmb->{account_id};
