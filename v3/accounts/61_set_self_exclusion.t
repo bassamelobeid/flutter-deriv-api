@@ -2,7 +2,6 @@ use strict;
 use warnings;
 use Test::More;
 use Date::Utility;
-use DateTime;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
@@ -180,7 +179,7 @@ $res = $t->await::set_self_exclusion({
     max_turnover           => 1000,
     max_open_bets          => 50,
     session_duration_limit => 1440,
-    exclude_until          => DateTime->now()->add(months => 3)->ymd
+    exclude_until          => Date::Utility->new->plus_months(3)->date_yyyymmdd,
 });
 is $res->{error}->{code},  'SetSelfExclusionError';
 is $res->{error}->{field}, 'exclude_until';
@@ -192,7 +191,7 @@ $res = $t->await::set_self_exclusion({
     max_turnover           => 1000,
     max_open_bets          => 50,
     session_duration_limit => 1440,
-    exclude_until          => DateTime->now()->add(years => 6)->ymd
+    exclude_until          => Date::Utility->new->plus_years(6)->date_yyyymmdd,
 });
 is $res->{error}->{code},  'SetSelfExclusionError';
 is $res->{error}->{field}, 'exclude_until';
@@ -212,8 +211,8 @@ is $res->{error}->{field}, 'timeout_until';
 ok $res->{error}->{message} =~ /greater than current time/;
 
 # good one
-my $exclude_until = DateTime->now()->add(months => 7)->ymd;
-my $timeout_until = DateTime->now()->add(days   => 2);
+my $exclude_until = Date::Utility->new->plus_time_interval("7mo")->date_yyyymmdd;
+my $timeout_until = Date::Utility->new->plus_time_interval("2d");
 $res = $t->await::set_self_exclusion({
     set_self_exclusion     => 1,
     max_balance            => 9998,
