@@ -85,7 +85,7 @@ subtest 'intraday barrier reset is correct' => sub {
     };
     my $c = produce_contract($args);
 
-    is $c->reset_time, 1404986550, 'reset time is correct';
+    is $c->reset_time, 1404986580, 'reset time is correct';
 
     $args->{date_pricing} = $one_day->plus_time_interval('149s');
     $c = produce_contract($args);
@@ -95,9 +95,9 @@ subtest 'intraday barrier reset is correct' => sub {
     $c = produce_contract($args);
     is $c->barrier->as_absolute, '101.00', 'prior to barrier reset.';
 
-    $args->{date_pricing} = $one_day->plus_time_interval('151s');
+    $args->{date_pricing} = $one_day->plus_time_interval('200s');
     $c = produce_contract($args);
-    is $c->barrier->as_absolute, '102.00', 'barrier reset works as expected.';
+    is $c->barrier->as_absolute, '103.00', 'barrier reset works as expected.';
 };
 
 subtest 'validation' => sub {
