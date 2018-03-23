@@ -4,6 +4,7 @@ use warnings;
 use strict;
 
 use Try::Tiny;
+use Path::Tiny;
 use IO::Async::Loop;
 use Net::Async::Webservice::S3;
 use Amazon::S3::SignedURLGenerator;
@@ -40,10 +41,11 @@ sub get_s3_url {
 }
 
 sub upload {
-    my ($original_filename, $content, $checksum) = @_;
+    my ($original_filename, $file_path, $checksum) = @_;
 
-    # content can be 0 therefore check with defined
-    die 'Unable to read the upload file handle' unless defined $content;
+    my $file = path($file_path);
+
+    die 'Unable to read the upload file handle' unless $file->exists;
 
     my %config = %$document_auth_s3;
     delete $config{region};
@@ -60,7 +62,7 @@ sub upload {
     try {
         ($etag) = $s3->put_object(
             key   => $original_filename,
-            value => $content,
+            value => $file->slurp,
             meta  => {checksum => $checksum},
         )->get;
     }
