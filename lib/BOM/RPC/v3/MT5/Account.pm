@@ -1042,9 +1042,8 @@ rpc mt5_mamm => sub {
     my $mt5_suspended = _is_mt5_suspended();
     return $mt5_suspended if $mt5_suspended;
 
-    my $client = $params->{client};
-    my $args   = $params->{args};
-    my $login  = $args->{login};
+    my ($client, $args)   = @{$params}{qw/client args/};
+    my ($login,  $action) = @{$args}{qw/login action/};
 
     # MT5 login not belongs to client
     return BOM::RPC::v3::Utility::permission_error()
@@ -1072,17 +1071,39 @@ rpc mt5_mamm => sub {
     # 1507 - All options except OTP
     # 2531 - All options except change password
     # 3555 - All options enabled
+    #
     # 4 is score for disabled trading
     #
     # these numbers are when trading is disabled and above selections
     # are possible
-    if (grep { $_ == $settings->{rights} } qw/487 1511 2535 3559/) {
-        $settings->{manager_id} = '';
+    my $current_rights = $settings->{rights};
+    my $has_manager = grep { $_ == $current_rights } qw/483 1503 2527 3555/ ? 1 : 0;
+
+    if ($action) {
+        if ($action eq 'revoke' and $has_manager) {
+            my $response = _mt5_has_open_positions($login);
+            return {status => 0} if ($response->{error});
+
+            $settings->{rights} += 4;
+            BOM::MT5::User::update_user($settings);
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'MT5UpdateUserError',
+                    message_to_client => $settings->{error}}) if (ref $settings eq 'HASH' and $settings->{error});
+
+            return {status => 1};
+        }
     } else {
-        $settings->{manager_id} = $settings->{agent};
+        return $has_manager
+            ? {
+            status     => 1,
+            manager_id => $settings->{agent}}
+            : {
+            status     => 1,
+            manager_id => ''
+            };
     }
 
-    return 1;
+    return {status => 0};
 };
 
 sub _is_mt5_suspended {
