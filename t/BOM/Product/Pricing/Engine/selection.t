@@ -43,9 +43,11 @@ subtest 'test everything' => sub {
     my $expected = YAML::XS::LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/Engine/selection_config.yml');
     foreach my $symbol (LandingCompany::Registry::get('costarica')->basic_offerings($offerings_cfg)->values_for_key('underlying_symbol')) {
         foreach my $ref (@{BOM::Product::ContractFinder->new->basic_contracts_for({symbol => $symbol})->{available}}) {
-            my %barriers;
+            my (%barriers, %selected_tick);
             if ($ref->{contract_category} eq 'digits') {
                 %barriers = (barrier => 1);
+            } elsif ($ref->{contract_category} eq 'highlowticks') {
+                %selected_tick = (selected_tick => 1);
             } else {
                 %barriers =
                     $ref->{barriers} == 2
@@ -54,6 +56,7 @@ subtest 'test everything' => sub {
                     low_barrier  => $ref->{low_barrier})
                     : (barrier => $ref->{barrier});
             }
+            
             my $c = produce_contract({
                 bet_type     => $ref->{contract_type},
                 underlying   => $symbol,
@@ -64,8 +67,10 @@ subtest 'test everything' => sub {
                 payout       => 100,
                 multiplier   => 1,
                 amount_type  => 'multiplier',
-                %barriers
+                %selected_tick,
+                %barriers,
             });
+            
             next unless exists $expected->{$c->shortcode};
             is $c->pricing_engine_name, $expected->{$c->shortcode}, "correct pricing engine select for " . $c->shortcode;
         }
