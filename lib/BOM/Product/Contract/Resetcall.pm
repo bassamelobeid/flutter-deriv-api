@@ -19,7 +19,7 @@ sub _build_barrier {
     my $self    = shift;
     my $barrier = $self->make_barrier($self->supplied_barrier);
 
-    if ($self->date_pricing->epoch > $self->reset_time) {
+    if ($self->reset_time and $self->date_pricing->epoch > $self->reset_time) {
         my $reset_spot = $self->underlying->tick_at($self->reset_time);
         if ($reset_spot and $reset_spot->quote < $barrier->as_absolute) {
             #If it is OTM, reset to a new barrier

@@ -241,16 +241,20 @@ sub _set_price_calculator_params {
     return;
 }
 
+# reset_time is used for actually resetting the barrier.
 sub _build_reset_time {
     my $self = shift;
-    # reset time is the mid time from date start to date expiry.
-    return $self->date_start->epoch + int(($self->date_expiry->epoch - $self->date_start->epoch) * 0.5);
+
+    return 0 unless $self->entry_tick;
+    # reset time is the mid time from entry tick epoch to date expiry.
+    return $self->entry_tick->epoch + int(($self->date_expiry->epoch - $self->entry_tick->epoch) * 0.5);
 }
 
+# reset_time_in_years is used in BS formula.
 sub _build_reset_time_in_years {
     my $self = shift;
 
-    my $reset_time_in_years = $self->reset_time - $self->date_start->epoch;
+    my $reset_time_in_years = ($self->date_expiry->epoch - $self->date_start->epoch) * 0.5;
     $reset_time_in_years = $reset_time_in_years / (365 * 24 * 60 * 60);
     return $reset_time_in_years;
 }
