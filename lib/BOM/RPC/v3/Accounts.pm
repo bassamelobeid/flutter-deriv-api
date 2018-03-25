@@ -495,8 +495,7 @@ rpc get_account_status => sub {
     # check whether the user need to perform financial assessment
     my $financial_assessment = $client->financial_assessment();
     $financial_assessment = ref($financial_assessment) ? $json->decode($financial_assessment->data || '{}') : {};
-    push @status,
-        'financial_assessment_not_complete'
+    push @status, 'financial_assessment_not_complete'
         if (
         any { !length $financial_assessment->{$_}->{answer} }
         keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
@@ -1283,9 +1282,8 @@ rpc set_self_exclusion => sub {
 
     my $exclude_until = $args{exclude_until};
     if (defined $exclude_until && $exclude_until =~ /^\d{4}\-\d{2}\-\d{2}$/) {
-        my $now = Date::Utility->new;
-        my $six_month =
-            Date::Utility->new->plus_time_interval('6mo');
+        my $now       = Date::Utility->new;
+        my $six_month = Date::Utility->new->plus_time_interval('6mo');
         my ($exclusion_end, $exclusion_end_error);
         try {
             $exclusion_end = Date::Utility->new($exclude_until);

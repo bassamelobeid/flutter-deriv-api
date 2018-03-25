@@ -81,7 +81,7 @@ my $mock_clientaccount     = Test::MockModule->new('BOM::User::Client');
 my $mock_landingcompany    = Test::MockModule->new('LandingCompany');
 my $mock_clientdb          = Test::MockModule->new('BOM::Database::ClientDB');
 my $mock_cashier           = Test::MockModule->new('BOM::RPC::v3::Cashier');
-my $mock_date          = Test::MockModule->new('Date::Utility');
+my $mock_date              = Test::MockModule->new('Date::Utility');
 my $mock_currencyconverter = Test::MockModule->new('Postgres::FeedDB::CurrencyConverter');
 $mock_currencyconverter->mock('in_USD', sub { return $_[1] eq 'USD' ? $_[0] : 5000 * $_[0]; });
 
@@ -782,7 +782,7 @@ for my $withdraw_currency ('USD', 'BTC') {
 
         ## Complication 2: hard-coded daily limits in Cashier.pm, which depend on weekday vs weekend
         ## Solution: force DateTime to think it is January 1, 2018, a Monday - or 20180106, a Saturday
-        $mock_date->mock('is_a_weekend', sub {return 1});
+        $mock_date->mock('is_a_weekend', sub { return 1 });
 
         ## Complication 3: withdrawals happening too often trigger a frequency error
         ## Solution: add a sleep and warn the tester via diag
