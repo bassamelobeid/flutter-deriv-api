@@ -23,12 +23,11 @@ use BOM::Platform::AuditLog;
 use BOM::Database::Helper::QuestionsAnswered;
 
 my $json = JSON::MaybeXS->new;
-
+my $timezone  = 'Asia/Tokyo';
 requires_auth();
 
 sub get_jp_account_status {
     my $client    = shift;
-    my $timezone  = 'Asia/Tokyo';
     my $user      = BOM::User->new({email => $client->email});
     my @siblings  = $user->clients(disabled_ok => 1);
     my $jp_client = $user->get_default_client();
