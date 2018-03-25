@@ -115,7 +115,7 @@ sub validate_payment {
             }
         } else {
             my $for_days = $lc_limits->{for_days};
-            my $since    = Date::Utility->new->minus_time_interval("${for_days}d");
+            my $since    = Date::Utility->new->minus_time_interval("${for_days}d")->datetime_yyyymmdd_hhmmss;
 
             # Obtains limit in EUR
             my $wd_eur_since_limit = $lc_limits->{limit_for_days};
