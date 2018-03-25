@@ -331,7 +331,7 @@ subtest 'batch-buy success 2', sub {
             payout        => $contract->payout,
             amount_type   => 'payout',
             multiple      => [{code => 'ignore'}, {}, {code => 'ignore'},],
-            purchase_date => Date::Utility->new,
+            purchase_date => $contract->date_start,
         });
 
         my $error = do {
@@ -457,7 +457,7 @@ subtest 'single contract fails in database', sub {
             payout        => $contract->payout,
             amount_type   => 'payout',
             multiple      => [{loginid => $cl2->loginid}, {code => 'ignore'}, {loginid => $cl1->loginid}, {loginid => $cl2->loginid},],
-            purchase_date => Date::Utility->new,
+            purchase_date => $contract->date_start,
         });
 
         my $error = do {
@@ -537,7 +537,7 @@ subtest 'batch-buy multiple databases and datadog', sub {
             payout        => $contract->payout,
             amount_type   => 'payout',
             multiple      => [(map { +{loginid => $_->loginid} } @cl), {code => 'ignore'}, {loginid => 'NONE000'},],
-            purchase_date => Date::Utility->new,
+            purchase_date => $contract->date_start,
         });
 
         my $error = do {
