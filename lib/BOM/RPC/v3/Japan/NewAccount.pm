@@ -22,8 +22,8 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Platform::AuditLog;
 use BOM::Database::Helper::QuestionsAnswered;
 
-my $json = JSON::MaybeXS->new;
-my $timezone  = 'Asia/Tokyo';
+my $json     = JSON::MaybeXS->new;
+my $timezone = 'Asia/Tokyo';
 requires_auth();
 
 sub get_jp_account_status {
