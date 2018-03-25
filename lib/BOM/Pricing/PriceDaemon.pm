@@ -51,19 +51,15 @@ sub process_job {
 
     # For plain queue, if we have request for a price, and tick has not changed since last one, and it was not more
     # than 10 seconds ago - just ignore it.
-    # For priority, we're sending rnevious request at this case
-    if ($current_spot_ts == $last_price_ts) {
-        if ($current_time - $last_price_ts <= DURATION_DONT_PRICE_SAME_SPOT
-            and not $self->_is_in_priority_queue())
-        {
-            stats_inc("pricer_daemon.skipped_duplicate_spot", {tags => $self->tags});
-            return undef;
-        } elsif ($current_time - $last_price_ts <= DURATION_RETURN_SAME_PRICE_ON_SAME_SPOT_FOR_PRIORITY
-            and $self->_is_in_priority_queue())
-        {
-            stats_inc("pricer_daemon.existing_price_used", {tags => $self->tags});
-            return $last_priced_contract->{contract};
-        }
+    # However, if it was not more than 2 sec, return the existing price back (for priority pricer transition/removal)
+    if (    $current_spot_ts == $last_price_ts
+        and $current_time - $last_price_ts <= DURATION_DONT_PRICE_SAME_SPOT)
+    {
+        stats_inc("pricer_daemon.skipped_duplicate_spot", {tags => $self->tags});
+        return undef;
+    } elsif ($current_time - $last_price_ts <= DURATION_RETURN_SAME_PRICE_ON_SAME_SPOT_FOR_PRIORITY) {
+        stats_inc("pricer_daemon.existing_price_used", {tags => $self->tags});
+        return $last_priced_contract->{contract};
     }
 
     my $r = BOM::Platform::Context::Request->new({language => $params->{language} // 'EN'});
@@ -73,7 +69,7 @@ sub process_job {
 
     $response->{price_daemon_cmd} = $cmd;
     # contract parameters are stored after first call, no need to send them with every stream message
-    delete $response->{contract_parameters} if not $self->_is_in_priority_queue;
+    delete $response->{contract_parameters};
 
     # when it reaches here, contract is considered priced.
     $redis->set(
@@ -254,11 +250,6 @@ sub _validate_params {
         return 0;
     }
     return 1;
-}
-
-sub _is_in_priority_queue {
-    my $self = shift;
-    return $self->{current_queue} eq 'pricer_jobs_priority';
 }
 
 =head2 current_queue
