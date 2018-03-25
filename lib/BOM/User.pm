@@ -79,7 +79,7 @@ sub login {
         my $fail_count = $cfl ? $cfl->fail_count : 0;
         $self->failed_login({
             fail_count   => ++$fail_count,
-            last_attempt => DateTime->now(),
+            last_attempt => Date::Utility->new->datetime_yyyymmdd_hhmmss,
         });
         $self->save;
 

@@ -7,7 +7,6 @@ use warnings;
 our $VERSION = '0.145';
 
 use Email::Stuffer;
-use DateTime;
 use Date::Utility;
 use List::Util;
 use Format::Util::Numbers qw(roundcommon);
@@ -109,14 +108,14 @@ my $date_inflator_ymdhms = sub {
     my $self = shift;
     my $val = shift // return undef;
     return $val unless ref($val);
-    return $val->isa('DateTime') ? ($val->ymd . ' ' . $val->hms) : $val;
+    return $val->isa('Date::Utility') ? ($val->datetime_yyyymmdd_hhmmss) : $val;
 };
 
 my $date_inflator_ymd = sub {
     my $self = shift;
     my $val = shift // return undef;
     return $val unless ref($val);
-    return $val->isa('DateTime') ? $val->ymd : $val;
+    return $val->isa('Date::Utility') ? $val->date_yyyymmdd : $val;
 };
 
 for (qw/date_of_birth payment_agent_withdrawal_expiration_date/) {
