@@ -25,7 +25,6 @@ use Variable::Disposition ();
 use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Binary::WebSocketAPI::v3::PricingSubscription;
-use Binary::ContractFuture;
 
 # Number of RPC requests a single active websocket call
 # can issue in parallel. Used for proposal_array.
@@ -429,105 +428,70 @@ sub proposal_open_contract {
 sub _process_proposal_open_contract_response {
     my ($c, $response, $req_storage) = @_;
 
+    my $args = $req_storage->{args};
+
     foreach my $contract (values %$response) {
         my $pricer_request = {%$contract};
 
-        $pricer_request->{price_daemon_cmd} = 'bid';
-        $pricer_request->{short_code}       = $pricer_request->{shortcode}
+        $pricer_request->{short_code} = $pricer_request->{shortcode}
             if $pricer_request->{shortcode};    # XXX on contract end this is shortcode, other times it's shortcode
         $pricer_request->{landing_company} = $c->landing_company_name;
         $pricer_request->{language}        = $c->stash('language');
 
-        my $f = Binary::ContractFuture::pricing_future($pricer_request);
-        $c->on(
-            finish => $f->$curry::weak(
-                sub {
-                    my ($f) = @_;
-                    $f->cancel unless $f->is_ready;
-                }));
+        if (exists $contract->{error}) {
+            my $error =
+                $c->new_error('proposal_open_contract', 'ContractValidationError', $c->l($contract->{error}->{message_to_client}));
+            $c->send({json => $error}, $req_storage);
+        } elsif (not exists $contract->{shortcode}) {
+            my %copy_req = %$req_storage;
+            delete @copy_req{qw(in_validator out_validator)};
+            $copy_req{loginid} = $c->stash('loginid') if $c->stash('loginid');
+            warn "undef shortcode. req_storage is: " . $json->encode(\%copy_req);
+            warn "undef shortcode. response is: " . $json->encode($contract);
+            my $error =
+                $c->new_error('proposal_open_contract', 'GetProposalFailure', $c->l('Sorry, an error occurred while processing your request.'));
+            $c->send({json => $error}, $req_storage);
+        } else {
+            my $uuid;
 
-        $f->on_done(
-            $c->$curry::weak(
-                sub {
-                    my ($c, $r) = @_;
-                    # Client may have disconnected by now
-                    return unless $c and $c->tx;
-                    delete @{$r}{qw/price_daemon_cmd ask_price/};
-                    for (qw/account_id buy_price sell_price sell_time purchase_time is_sold transaction_ids/) {
-                        $r->{$_} = $contract->{$_} if defined $contract->{$_};
-                    }
-                    return _proposal_open_contract_cb($c, $req_storage, $r);
-                }));
-        $f->on_fail(
-            $c->$curry::weak(
-                sub {
-                    my ($c) = @_;
-                    stats_inc('bom_websocket_api.v_3.pricing_first.fails', {tags => ['bid']});
-                    # Client may have disconnected by now
-                    return unless $c and $c->tx;
+            if (    exists $args->{subscribe}
+                and $args->{subscribe} eq '1'
+                and not $contract->{is_expired}
+                and not $contract->{is_sold}
+                and not delete $contract->{dont_stream})
+            {
+                # short_code contract_id currency is_sold sell_time are passed to pricer daemon and
+                # are used to to identify redis channel and as arguments to get_bid rpc call
+                # transaction_ids purchase_time buy_price should be stored and will be added to
+                # every get_bid results and sent to client while streaming
+                my $cache = {map { $_ => $contract->{$_} }
+                        qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode)};
+
+                if (not $uuid = _pricing_channel_for_bid($c, $args, $cache)) {
                     my $error =
-                        $c->new_error('proposal_open_contract', 'GetProposalFailure',
-                        $c->l('Sorry, an error occurred while processing your request.'));
+                        $c->new_error('proposal_open_contract', 'AlreadySubscribed', $c->l('You are already subscribed to proposal_open_contract.'));
                     $c->send({json => $error}, $req_storage);
-                }));
-    }
-    return;
-}
-
-sub _proposal_open_contract_cb {
-    my ($c, $req_storage, $contract) = @_;
-    my $args = $req_storage->{args};
-    if (exists $contract->{error}) {
-        my $error =
-            $c->new_error('proposal_open_contract', 'ContractValidationError', $c->l($contract->{error}->{message_to_client}));
-        $c->send({json => $error}, $req_storage);
-    } elsif (not exists $contract->{shortcode}) {
-        my %copy_req = %$req_storage;
-        delete @copy_req{qw(in_validator out_validator)};
-        $copy_req{loginid} = $c->stash('loginid') if $c->stash('loginid');
-        warn "undef shortcode. req_storage is: " . $json->encode(\%copy_req);
-        warn "undef shortcode. response is: " . $json->encode($contract);
-        my $error = $c->new_error('proposal_open_contract', 'GetProposalFailure', $c->l('Sorry, an error occurred while processing your request.'));
-        $c->send({json => $error}, $req_storage);
-    } else {
-        my $uuid;
-
-        if (    exists $args->{subscribe}
-            and $args->{subscribe} eq '1'
-            and not $contract->{is_expired}
-            and not $contract->{is_sold}
-            and not delete $contract->{dont_stream})
-        {
-            # short_code contract_id currency is_sold sell_time are passed to pricer daemon and
-            # are used to to identify redis channel and as arguments to get_bid rpc call
-            # transaction_ids purchase_time buy_price should be stored and will be added to
-            # every get_bid results and sent to client while streaming
-            my $cache = {map { $_ => $contract->{$_} }
-                    qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode)};
-
-            if (not $uuid = _pricing_channel_for_bid($c, $args, $cache)) {
-                my $error =
-                    $c->new_error('proposal_open_contract', 'AlreadySubscribed', $c->l('You are already subscribed to proposal_open_contract.'));
-                $c->send({json => $error}, $req_storage);
-                return;
-            } else {
-                # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-                Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel(
-                    $c, 'subscribe', delete $contract->{account_id},    # should not go to client
-                    $uuid, $args, $contract->{contract_id});
+                    return;
+                } else {
+                    # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
+                    Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel(
+                        $c, 'subscribe', delete $contract->{account_id},    # should not go to client
+                        $uuid, $args, $contract->{contract_id});
+                }
             }
-        }
-        my $result = {$uuid ? (id => $uuid) : (), %{$contract}};
-        delete $result->{rpc_time};
-        $c->send({
-                json => {
-                    msg_type               => 'proposal_open_contract',
-                    proposal_open_contract => {%$result}
+            my $result = {$uuid ? (id => $uuid) : (), %{$contract}};
+            delete $result->{rpc_time};
+            $c->send({
+                    json => {
+                        msg_type               => 'proposal_open_contract',
+                        proposal_open_contract => $result,
+                    },
                 },
-            },
-            $req_storage
-        );
+                $req_storage
+            );
+        }
     }
+
     return;
 }
 
@@ -923,7 +887,13 @@ sub send_proposal_open_contract_last_time {
                 token       => $c->stash('token'),
                 contract_id => $contract_id
             },
-            rpc_response_cb => \&proposal_open_contract,
+            rpc_response_cb => sub {
+                my ($c, $rpc_response, $req_storage) = @_;
+                return {
+                    proposal_open_contract => $rpc_response->{$contract_id} || {},
+                    msg_type => 'proposal_open_contract',
+                };
+            }
         });
     return;
 }
