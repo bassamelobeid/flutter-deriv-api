@@ -1285,7 +1285,7 @@ rpc set_self_exclusion => sub {
     if (defined $exclude_until && $exclude_until =~ /^\d{4}\-\d{2}\-\d{2}$/) {
         my $now = Date::Utility->new;
         my $six_month =
-            Date::Utility->new(DateTime->now()->add(months => 6)->ymd);
+            Date::Utility->new->plus_time_interval('6mo');
         my ($exclusion_end, $exclusion_end_error);
         try {
             $exclusion_end = Date::Utility->new($exclude_until);
