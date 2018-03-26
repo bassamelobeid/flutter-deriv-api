@@ -130,6 +130,7 @@ sub _multibarrier_report {
         my $contract = produce_contract($open_contract->{short_code}, $open_contract->{currency_code});
         next if not $contract->can("trading_period_start");
         next if not $contract->is_intraday;
+        next if $open_contract->{currency_code} ne 'JPY';
 
         my @available_barrier = @{$contract->predefined_contracts->{available_barriers}};
 
@@ -137,8 +138,20 @@ sub _multibarrier_report {
         my %reindex_barrier_list = map { $available_barrier[$_] => $_ - (int @available_barrier / 2) } (0 .. $#available_barrier);
         my $barrier_index = $reindex_barrier_list{$contract->barrier->as_absolute};
 
-        $multibarrier->{$contract->date_expiry->epoch}->{$contract->bet_type}->{barrier}->{$barrier_index}->{$contract->underlying->symbol} +=
-            $self->amount_in_usd($open_contract->{buy_price}, $open_contract->{currency_code});
+        if ($contract->bet_type eq 'CALLE') {
+            $multibarrier->{$contract->date_expiry->epoch}->{'CALLE'}->{barrier}->{$barrier_index}->{$contract->underlying->symbol} +=
+                $open_contract->{buy_price};
+
+            $multibarrier->{$contract->date_expiry->epoch}->{'PUT'}->{barrier}->{$barrier_index}->{$contract->underlying->symbol} += 0;
+        } else {
+
+            $multibarrier->{$contract->date_expiry->epoch}->{'PUT'}->{barrier}->{$barrier_index}->{$contract->underlying->symbol} +=
+                $open_contract->{buy_price};
+
+            $multibarrier->{$contract->date_expiry->epoch}->{'CALLE'}->{barrier}->{$barrier_index}->{$contract->underlying->symbol} += 0;
+
+        }
+
         $multibarrier->{$contract->date_expiry->epoch}->{$contract->bet_type}->{spot}->{$contract->underlying->symbol} = $contract->current_spot;
     }
 
@@ -417,7 +430,7 @@ Generates the report, ignoring any caching. Returns the report, which is a HashR
 sub generate {
     my $self = shift;
 
-    _write_cache($self->_report, 7200);    # Good for 2 hours.
+#    _write_cache($self->_report, 7200);    # Good for 2 hours.
 
     return $self->_report;
 }
@@ -438,7 +451,8 @@ Same behavior as generate, but will take the report from cache if present.
 
 sub fetch {
     my $self = shift;
-    return (_read_cache || $self->generate);
+    return $self->generate;
+#    return (_read_cache || $self->generate);
 }
 
 no Moose;
