@@ -50,7 +50,7 @@ use BOM::Database::Model::UserConnect;
 use BOM::Platform::Runtime;
 
 my $allowed_fields_for_virtual = qr/passthrough|set_settings|email_consent|residence|allow_copiers/;
-my $email_field_labels               = {
+my $email_field_labels         = {
     exclude_until          => 'Exclude from website until',
     max_balance            => 'Maximum account cash balance',
     max_turnover           => 'Daily turnover limit',
@@ -1390,9 +1390,9 @@ rpc set_self_exclusion => sub {
     my @fields_to_include_in_email;
     my @mt_logins = BOM::User->new({loginid => $client->loginid})->mt5_logins;
     if ($client->landing_company->short =~ /malta$/ && @mt_logins) {
-        @fields_to_include_in_email = qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit exclude_until timeout_until/;
-    }
-    elsif ($args{exclude_until}) {
+        @fields_to_include_in_email =
+            qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit exclude_until timeout_until/;
+    } elsif ($args{exclude_until}) {
         @fields_to_include_in_email = qw/exclude_until/;
     }
 
