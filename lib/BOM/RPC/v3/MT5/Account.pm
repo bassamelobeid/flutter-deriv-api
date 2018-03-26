@@ -1082,13 +1082,15 @@ rpc mt5_mamm => sub {
     if ($action) {
         if ($action eq 'revoke' and $has_manager) {
             my $response = _mt5_has_open_positions($login);
-            return {status => 0} if ($response->{error});
+            return _mt5_error_sub() if (ref $response eq 'HASH' and $response->{error});
+
+            return _mt5_error_sub('MT5MAMRevokeError',
+                localize('Please close out all open positions before revoking manager associated with your account.'))
+                if $response;
 
             $settings->{rights} += 4;
             BOM::MT5::User::update_user($settings);
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => 'MT5UpdateUserError',
-                    message_to_client => $settings->{error}}) if (ref $settings eq 'HASH' and $settings->{error});
+            return _mt5_error_sub() if (ref $settings eq 'HASH' and $settings->{error});
 
             return {status => 1};
         }
@@ -1273,7 +1275,7 @@ sub _mt5_has_open_positions {
     my $login = shift;
 
     my $response = BOM::MT5::User::get_open_positions_count({login => $login});
-    return _mtf_error_sub() if $response->{error};
+    return _mt5_error_sub() if $response->{error};
 
     return $response->{total} ? 1 : 0;
 }
