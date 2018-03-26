@@ -1,0 +1,6 @@
+<table>
+[% FOREACH expiry IN data.keys %]
+    <tr class="[% data.expiry %]">
+    </tr>
+    [% END %]
+</table>

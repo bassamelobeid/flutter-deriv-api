@@ -57,10 +57,8 @@
 <div id="rd-pivot">
 [% INCLUDE 'backoffice/risk_dashboard_pivot.html.tt' pivot = open_bets.pivot %]
 </div>
-<div id="rd-mutlibarrier">
-[% INCLUDE 'backoffice/risk_dashboard_multibarrier.html.tt' data = multibarrier %]
-</div>
-
+<div id="rd-multibarrier">
+[% INCLUDE 'backoffice/multibarrier.html.tt' data = multibarrier %]
 </div>
 
 <style type="text/css">

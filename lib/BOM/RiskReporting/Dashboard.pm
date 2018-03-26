@@ -111,39 +111,35 @@ sub _build__report {
 
     $report->{open_bets}    = $self->_open_bets_report;
     $report->{multibarrier} = $self->_multibarrier_report;
-
     my $pap_report = $self->_payment_and_profit_report;
     $report->{big_deposits}    = $pap_report->{big_deposits};
     $report->{big_withdrawals} = $pap_report->{big_withdrawals};
     $report->{big_winners}     = $pap_report->{big_winners};
     $report->{big_losers}      = $pap_report->{big_losers};
     $report->{watched}         = $pap_report->{watched};
-
-    $report->{top_turnover} = $self->_top_turnover;
-
+    $report->{top_turnover}    = $self->_top_turnover;
     return $report;
 }
 
 sub _multibarrier_report {
-    my $self = shift;
-
+    my $self      = shift;
     my @open_bets = @{$self->_open_bets_at_end};
     my $multibarrier;
-
     my $barrier;
     foreach my $open_contract (@open_bets) {
         my $contract = produce_contract($open_contract->{short_code}, $open_contract->{currency_code});
         next if not $contract->can("trading_period_start");
         next if not $contract->is_intraday;
-        my $barrier_count = BOM::Product::Contract::PredefinedParameters::barrier_count_for_underlying($contract->underlying->symbol);
-        my $pip_size_at = $contract->underlying->symbol =~ /JPY/ ? 0.01 : 0.0001;
-        my $barrier_tier =
-            ($contract->barrier->as_absolute - $contract->underlying->tick_at($contract->trading_period_start, {allow_inconsistent => 1})->quote) /
-            ($pip_size_at * 5);
 
-        $multibarrier->{$contract->date_expiry->epoch}->{$contract->bet_type}->{$contract->underlying->symbol}->{$barrier_tier} +=
+        my @available_barrier = @{$contract->predefined_contracts->{available_barriers}};
+
+        # Rearrange the index of the barrier from  the median of the barrier list (ie the ATM barrier)
+        my %reindex_barrier_list = map { $available_barrier[$_] => $_ - (int @available_barrier / 2) } (0 .. $#available_barrier);
+        my $barrier_index = $reindex_barrier_list{$contract->barrier->as_absolute};
+
+        $multibarrier->{$contract->date_expiry->epoch}->{$contract->bet_type}->{barrier}->{$barrier_index}->{$contract->underlying->symbol} +=
             $self->amount_in_usd($open_contract->{buy_price}, $open_contract->{currency_code});
-        $multibarrier->{$contract->date_expiry->epoch}->{$contract->bet_type}->{$contract->underlying->symbol}->{spot} = $contract->current_spot;
+        $multibarrier->{$contract->date_expiry->epoch}->{$contract->bet_type}->{spot}->{$contract->underlying->symbol} = $contract->current_spot;
     }
 
     return $multibarrier;
@@ -442,7 +438,6 @@ Same behavior as generate, but will take the report from cache if present.
 
 sub fetch {
     my $self = shift;
-
     return (_read_cache || $self->generate);
 }
 
