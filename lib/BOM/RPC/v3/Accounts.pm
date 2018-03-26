@@ -50,6 +50,19 @@ use BOM::Database::Model::UserConnect;
 use BOM::Platform::Runtime;
 
 my $allowed_fields_for_virtual = qr/passthrough|set_settings|email_consent|residence|allow_copiers/;
+my $field_labels               = {
+    exclude_until          => 'Exclude from website until',
+    max_balance            => 'Maximum account cash balance',
+    max_turnover           => 'Daily turnover limit',
+    max_losses             => 'Daily limit on losses',
+    max_7day_turnover      => '7-day turnover limit',
+    max_7day_losses        => '7-day limit on losses',
+    max_30day_turnover     => '30-day turnover limit',
+    max_30day_losses       => '30-day limit on losses',
+    max_open_bets          => 'Maximum number of open positions',
+    session_duration_limit => 'Session duration limit, in minutes',
+    timeout_until          => 'Time out until'
+};
 
 my $json = JSON::MaybeXS->new;
 
@@ -1378,25 +1391,23 @@ rpc set_self_exclusion => sub {
     if ($args{exclude_until}) {
         @fields_to_include_in_email = qw(exclude_until);
     }
-    
+
     if (@fields_to_include_in_email) {
-        my $name         = ($client->first_name ? $client->first_name . ' ' : '') . $client->last_name;
-        my $statuses     = join '/', map { uc $_->status_code } $client->client_status;
+        my $name = ($client->first_name ? $client->first_name . ' ' : '') . $client->last_name;
+        my $statuses = join '/', map { uc $_->status_code } $client->client_status;
         my $client_title = join ', ', $client->loginid, $client->email, ($name || '?'), ($statuses ? "current status: [$statuses]" : '');
         #my @mt_logins    = BOM::User->new({loginid => $client->loginid})->mt5_logins;
-        
-        my $field_labels = {exclude_until => 'Exclude from website until'};
 
         my $brand = Brands->new(name => request()->brand);
-        
+
         my $message = "Client $client_title set the following self-exclusion limits:\n\n";
-        
+
         foreach (@fields_to_include_in_email) {
             my $label = $field_labels->{$_};
             my $val   = $args{$_};
-            $message .= "$label: $val\n"
+            $message .= "$label: $val\n";
         }
-        
+
         #if (@mt_logins) {
         #    $message .= "\n\nClient $client_title also has the following MT5 accounts:\n";
         #    $message .= "$_\n" for @mt_logins;
