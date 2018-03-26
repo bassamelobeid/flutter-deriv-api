@@ -1387,16 +1387,16 @@ rpc set_self_exclusion => sub {
 # Need to send email in 2 circumstances:
 #   - Any client sets a self exclusion period
 #   - A 'malta' client with MT5 account(s) sets any of these settings
-    my @fields_to_include_in_email;
+    my @fields_to_email;
     my @mt_logins = BOM::User->new({loginid => $client->loginid})->mt5_logins;
     if ($client->landing_company->short =~ /malta$/ && @mt_logins) {
-        @fields_to_include_in_email =
+        @fields_to_email =
             qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit exclude_until timeout_until/;
     } elsif ($args{exclude_until}) {
-        @fields_to_include_in_email = qw/exclude_until/;
+        @fields_to_email = qw/exclude_until/;
     }
 
-    if (@fields_to_include_in_email) {
+    if (@fields_to_email) {
         my $name = ($client->first_name ? $client->first_name . ' ' : '') . $client->last_name;
         my $statuses = join '/', map { uc $_->status_code } $client->client_status;
         my $client_title = join ', ', $client->loginid, $client->email, ($name || '?'), ($statuses ? "current status: [$statuses]" : '');
@@ -1405,7 +1405,7 @@ rpc set_self_exclusion => sub {
 
         my $message = "Client $client_title set the following self-exclusion limits:\n\n";
 
-        foreach (@fields_to_include_in_email) {
+        foreach (@fields_to_email) {
             my $label = $email_field_labels->{$_};
             my $val   = $args{$_};
             $message .= "$label: $val\n" if $val;
