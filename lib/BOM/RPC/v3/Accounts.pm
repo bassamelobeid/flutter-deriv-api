@@ -1384,19 +1384,22 @@ rpc set_self_exclusion => sub {
     if ($args{exclude_until}) {
         $client->set_exclusion->exclude_until($args{exclude_until});
     }
-# Need to email in 2 circumstances:
+# Need to send email in 2 circumstances:
 #   - Any client sets a self exclusion period
 #   - A 'malta' client with MT5 account(s) sets any of these settings
     my @fields_to_include_in_email;
-    if ($args{exclude_until}) {
-        @fields_to_include_in_email = qw(exclude_until);
+    my @mt_logins = BOM::User->new({loginid => $client->loginid})->mt5_logins;
+    if ($client->landing_company->short =~ /malta$/ && @mt_logins) {
+        @fields_to_include_in_email = qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit exclude_until timeout_until/;
+    }
+    elsif ($args{exclude_until}) {
+        @fields_to_include_in_email = qw/exclude_until/;
     }
 
     if (@fields_to_include_in_email) {
         my $name = ($client->first_name ? $client->first_name . ' ' : '') . $client->last_name;
         my $statuses = join '/', map { uc $_->status_code } $client->client_status;
         my $client_title = join ', ', $client->loginid, $client->email, ($name || '?'), ($statuses ? "current status: [$statuses]" : '');
-        #my @mt_logins    = BOM::User->new({loginid => $client->loginid})->mt5_logins;
 
         my $brand = Brands->new(name => request()->brand);
 
