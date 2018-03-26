@@ -250,7 +250,13 @@ sub _build_reset_time {
     return $self->entry_tick->epoch + int(($self->date_expiry->epoch - $self->entry_tick->epoch) * 0.5);
 }
 
-# reset_time_in_years is used in BS formula.
+# reset_time_in_years is used in BS formula. For reset_time_in_years, it cannot be dependent
+# on entry_tick otherwise we will not be able to price proposal.
+# Based on analysis done, the small difference between date_start and entry_tick epoch is
+# negligible.
+# On the other hand, the reset_time which is used for actually resetting the barrier,
+# we need to be precise, thus using entry_tick epoch made things much simpler because
+# basically it is the mid between entry_tick and expiry.
 sub _build_reset_time_in_years {
     my $self = shift;
 
