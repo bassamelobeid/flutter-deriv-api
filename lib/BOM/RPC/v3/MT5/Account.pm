@@ -1050,11 +1050,7 @@ rpc mt5_mamm => sub {
         unless _check_logins($client, ['MT' . $login]);
 
     my $settings = BOM::MT5::User::get_user($login);
-    if (ref $settings eq 'HASH' and $settings->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'MT5GetUserError',
-                message_to_client => $settings->{error}});
-    }
+    return _mt5_error_sub() if (ref $settings eq 'HASH' and $settings->{error});
 
     # to revoke manager we just disable trading for mt5 account
     # we cannot change group else accounting team will have problem during
@@ -1073,9 +1069,6 @@ rpc mt5_mamm => sub {
     # 3555 - All options enabled
     #
     # 4 is score for disabled trading
-    #
-    # these numbers are when trading is disabled and above selections
-    # are possible
     my $current_rights = $settings->{rights};
     my $has_manager = grep { $_ == $current_rights } qw/483 1503 2527 3555/ ? 1 : 0;
 
@@ -1084,7 +1077,7 @@ rpc mt5_mamm => sub {
             my $response = _mt5_has_open_positions($login);
             return _mt5_error_sub() if (ref $response eq 'HASH' and $response->{error});
 
-            return _mt5_error_sub('MT5MAMRevokeError',
+            return _mt5_error_sub('PermissionDenied',
                 localize('Please close out all open positions before revoking manager associated with your account.'))
                 if $response;
 
@@ -1092,7 +1085,10 @@ rpc mt5_mamm => sub {
             BOM::MT5::User::update_user($settings);
             return _mt5_error_sub() if (ref $settings eq 'HASH' and $settings->{error});
 
-            return {status => 1};
+            return {
+                status     => 1,
+                manager_id => ''
+            };
         }
     } else {
         return $has_manager
@@ -1105,7 +1101,10 @@ rpc mt5_mamm => sub {
             };
     }
 
-    return {status => 0};
+    return {
+        status     => 0,
+        manager_id => ''
+    };
 };
 
 sub _is_mt5_suspended {
