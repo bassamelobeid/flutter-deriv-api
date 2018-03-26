@@ -50,7 +50,7 @@ use BOM::Database::Model::UserConnect;
 use BOM::Platform::Runtime;
 
 my $allowed_fields_for_virtual = qr/passthrough|set_settings|email_consent|residence|allow_copiers/;
-my $field_labels               = {
+my $email_field_labels               = {
     exclude_until          => 'Exclude from website until',
     max_balance            => 'Maximum account cash balance',
     max_turnover           => 'Daily turnover limit',
@@ -1403,7 +1403,7 @@ rpc set_self_exclusion => sub {
         my $message = "Client $client_title set the following self-exclusion limits:\n\n";
 
         foreach (@fields_to_include_in_email) {
-            my $label = $field_labels->{$_};
+            my $label = $email_field_labels->{$_};
             my $val   = $args{$_};
             $message .= "$label: $val\n";
         }
