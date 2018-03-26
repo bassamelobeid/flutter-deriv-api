@@ -235,9 +235,7 @@ sub get_client_by_status {
     my $broker = $args->{'broker'};
     my $show   = $args->{'show'};
 
-    my ($limit, $offset);
-    $limit  = $args->{limit}  if $args->{limit};
-    $offset = $args->{offset} if $args->{offset};
+    my ($limit, $offset) = ($args->{limit} // undef, $args->{offset} // undef);
 
     my %SUMMARYFILE;
 
@@ -273,9 +271,11 @@ sub get_client_by_status {
     my $results = $dbic->run(
         ping => sub {
             my $sth = $_->prepare(
-                'SELECT client_loginid, status_code, reason, cashier_locked, name, email, residence, last_access, funded, balance_in_usd, aggregate_payment_in_usd FROM get_client_list_by_status(?, ?, ?)'
+                'SELECT client_loginid, status_code, reason, cashier_locked,
+                name, email, residence, last_access, funded, balance_in_usd,
+                aggregate_payment_in_usd FROM get_client_list_by_status(?, ?, ?)'
             );
-            $sth->execute($show, $limit // 100, $offset // 0);
+            $sth->execute($show, $limit, $offset);
             return $sth->fetchall_hashref('client_loginid');
         });
 
