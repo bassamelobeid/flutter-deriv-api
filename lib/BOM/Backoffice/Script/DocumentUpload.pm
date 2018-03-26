@@ -4,10 +4,10 @@ use warnings;
 use strict;
 
 use Try::Tiny;
+use Path::Tiny;
 use IO::Async::Loop;
 use Net::Async::Webservice::S3;
 use Amazon::S3::SignedURLGenerator;
-use Digest::MD5 qw(md5_hex);
 
 use BOM::Backoffice::Config;
 
@@ -41,12 +41,11 @@ sub get_s3_url {
 }
 
 sub upload {
-    my ($original_filename, $upload_file_handle) = @_;
+    my ($original_filename, $file_path, $checksum) = @_;
 
-    # slurp the content
-    my $content = do { local $/; <$upload_file_handle> };
-    # content can be 0 therefore check with defined
-    die 'Unable to read the upload file handle' unless defined $content;
+    my $file = path($file_path);
+
+    die 'Unable to read the upload file handle' unless $file->exists;
 
     my %config = %$document_auth_s3;
     delete $config{region};
@@ -59,13 +58,11 @@ sub upload {
     my $loop = IO::Async::Loop->new;
     $loop->add($s3);
 
-    my $checksum = md5_hex($content);
-
     my $etag;
     try {
         ($etag) = $s3->put_object(
             key   => $original_filename,
-            value => $content,
+            value => $file->slurp,
             meta  => {checksum => $checksum},
         )->get;
     }

@@ -27,6 +27,7 @@ my $args = {
     OTM_1             => request()->param('OTM_1'),
     OTM_2             => request()->param('OTM_2'),
     OTM_3             => request()->param('OTM_3'),
+    ATM               => request()->param('ATM'),
 };
 
 if (request()->param('save_config')) {

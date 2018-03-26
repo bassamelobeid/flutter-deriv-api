@@ -27,6 +27,60 @@ sub get_currency_options {
     return $currency_options;
 }
 
+=head2 allow_uplift_self_exclusion
+
+Takes a client object, client's current exclude_until date, and new exclude_until date from the form. 
+Validation is then performed to either allow or restrict the staff to amend the exclude_until date
+by returning 1 or 0, respectively. [Section 3.5.4 (5a,5f)
+of the United Kingdom Gambling Commission licence conditions and codes of practice 
+(effective 6 April 2017)].
+
+- Only Compliance team is allowed to uplift exclude_until date before expiry.
+- exclude_until period must not be less than SIX months [Section 3.5.4 (5a)
+of the United Kingdom Gambling Commission licence conditions and codes of practice 
+(effective 6 April 2017)].
+
+- After the exclude_until date expires, clients' exclusion still remains in place.
+
+At this point, client must email Customer Support/Compliance team for their exclusion 
+to be uplifted (exclude_until date removed).
+
+United Kingdom Gambling Commission licence conditions and codes of practice is
+applicable to clients under Binary (Europe) Ltd & Binary (IOM) Ltd only. Change is also
+applicable to clients under Binary Investments (Europe) Ltd for standardisation.
+(http://www.gamblingcommission.gov.uk/PDF/LCCP/Licence-conditions-and-codes-of-practice.pdf)
+
+=cut
+
+sub allow_uplift_self_exclusion {
+
+    my ($client, $exclude_until_date, $form_exclude_until_date) = @_;
+
+    my $after_exclusion_date;
+
+    # Check if client has exclude_until date, and if it has expired
+    if ($exclude_until_date) {
+        $after_exclusion_date = Date::Utility::today->is_after($exclude_until_date);
+    }
+
+    # If exclude_until date is unset, Customer Support and Compliance team can insert the exclude_until date
+    return 1 unless $exclude_until_date;
+
+    # If exclude_until date has expired, Customer Support and Compliance team can remove the exclude_until date
+    return 1 if ($after_exclusion_date and not $form_exclude_until_date);
+
+    # If exclude_until date has not expired and client is under Binary (CR) S.A. or Binary K.K.,
+    # then Customer Support and Compliance team can amend or remove the exclude_until date
+    return 1 if ($client->landing_company->short =~ /^(?:costarica|japan)$/);
+
+    # If exclude_until date has not expired and client is under Binary (Europe) Ltd, Binary (IOM) Ltd,
+    # or Binary Investments (Europe) Ltd, then only Compliance team can amend or remove the exclude_until date
+    return 1 if (BOM::Backoffice::Auth0::has_authorisation(['Compliance']));
+
+    # Default value (no uplifting allowed)
+    return 0;
+}
+
 sub print_client_details {
 
     my $client = shift;
@@ -63,7 +117,7 @@ sub print_client_details {
     }
 
     my ($proveID, $show_uploaded_documents) = ('', '');
-    my $user = BOM::Platform::User->new({loginid => $client->loginid});
+    my $user = BOM::User->new({loginid => $client->loginid});
 
     # User should be accessable from client by loginid
     print "<p style='color:red;'>User doesn't exist. This client is unlinked. Please, investigate.<p>" and die unless $user;
@@ -75,7 +129,7 @@ sub print_client_details {
             search_option => 'ProveID_KYC'
         );
 
-        my $user = BOM::Platform::User->new({loginid => $client->loginid});
+        my $user = BOM::User->new({loginid => $client->loginid});
         my $siblings = $user->loginid;
 
         $show_uploaded_documents .= show_client_id_docs($_->loginid, show_delete => 1) for $client;
@@ -198,7 +252,7 @@ sub build_client_statement_form {
 ######################################################################
 sub build_client_warning_message {
     my $login_id = shift;
-    my $client   = Client::Account->new({'loginid' => $login_id}) || return "<p>The Client's details can not be found [$login_id]</p>";
+    my $client   = BOM::User::Client->new({'loginid' => $login_id}) || return "<p>The Client's details can not be found [$login_id]</p>";
     my $broker   = $client->broker;
     my @output;
 
@@ -375,7 +429,7 @@ SELECT id,
        comments,
        document_id,
        upload_date,
-       date_trunc('day', age(now(), upload_date)) AS age
+       age(date_trunc('day', now()), date_trunc('day', upload_date)) AS age
   FROM betonmarkets.client_authentication_document
  WHERE client_loginid = ? AND status != 'uploading'
 SQL

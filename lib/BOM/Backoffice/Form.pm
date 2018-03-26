@@ -12,7 +12,7 @@ use Locale::SubCountry;
 
 use BOM::Backoffice::Request qw(request localize template);
 use BOM::Platform::Locale;
-use Client::Account;
+use BOM::User::Client;
 
 sub get_self_exclusion_form {
     my $arg_ref = shift;
@@ -42,8 +42,15 @@ sub get_self_exclusion_form {
 
         if ($limit_exclude_until) {
             $limit_exclude_until = Date::Utility->new($limit_exclude_until);
-            # Don't show date if it is expired. Exception for clients from IOM / Malta
-            if (Date::Utility::today->days_between($limit_exclude_until) >= 0 && $client->landing_company->short !~ /^(?:iom|malta)$/) {
+            # Don't uplift exclude_until date for clients under Binary (Europe) Ltd,
+            # Binary (IOM) Ltd, or Binary Investments (Europe) Ltd upon expiry.
+            # This is in compliance with Section 3.5.4 (5e) of the United Kingdom Gambling
+            # Commission licence conditions and codes of practice
+            # United Kingdom Gambling Commission licence conditions and codes of practice is
+            # applicable to clients under Binary (Europe) Ltd & Binary (IOM) Ltd only. Change is also
+            # applicable to clients under Binary Investments (Europe) Ltd for standardisation.
+            # (http://www.gamblingcommission.gov.uk/PDF/LCCP/Licence-conditions-and-codes-of-practice.pdf)
+            if (Date::Utility::today->days_between($limit_exclude_until) >= 0 && $client->landing_company->short !~ /^(?:iom|malta|maltainvest)$/) {
                 undef $limit_exclude_until;
             } else {
                 $limit_exclude_until = $limit_exclude_until->date;
@@ -52,12 +59,12 @@ sub get_self_exclusion_form {
 
         if ($limit_timeout_until) {
             $limit_timeout_until = Date::Utility->new($limit_timeout_until);
-            # Don't show date if it is expired. Exception for clients from IOM / Malta
-            if ($limit_timeout_until->is_before(Date::Utility->new) && $client->landing_company->short !~ /^(?:iom|malta)$/) {
+            if ($limit_timeout_until->is_before(Date::Utility->new)) {
                 undef $limit_timeout_until;
             } else {
                 $limit_timeout_until = $limit_timeout_until->datetime_yyyymmdd_hhmmss;
             }
+
         }
 
         $se_map = {

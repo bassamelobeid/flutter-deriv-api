@@ -26,7 +26,7 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
-use Client::Account;
+use BOM::User::Client;
 use LandingCompany::Registry;
 
 PrintContentType();

@@ -5,7 +5,7 @@ use warnings;
 use HTML::Entities;
 
 use Date::Utility;
-use Client::Account;
+use BOM::User::Client;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -25,7 +25,7 @@ if ($loginID !~ /^(\D+)(\d+)$/) {
     code_exit_BO();
 }
 
-my $client = Client::Account::get_instance({
+my $client = BOM::User::Client::get_instance({
     'loginid'    => $loginID,
     db_operation => 'replica'
 });

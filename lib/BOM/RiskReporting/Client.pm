@@ -14,12 +14,13 @@ use strict;
 use warnings;
 use Moose;
 extends 'BOM::RiskReporting::Base';
-use BOM::Platform::User;
+use BOM::User;
 use Date::Utility;
 use Encode;
 use JSON::MaybeXS;
 use Excel::Writer::XLSX;
 use File::Temp;
+use Format::Util::Numbers qw(formatnumber);
 
 my $json = JSON::MaybeXS->new;
 has client => (
@@ -29,7 +30,7 @@ has client => (
 
 sub _build_client {
     my $self = shift;
-    return Client::Account::get_instance({'loginid' => $self->loginid});
+    return BOM::User::Client::get_instance({'loginid' => $self->loginid});
 }
 
 has loginid => (
@@ -73,7 +74,7 @@ sub _documents_on_file {
 sub _change_of_country {
     my $self = shift;
 
-    my $user = BOM::Platform::User->new({email => $self->client->email});
+    my $user = BOM::User->new({email => $self->client->email});
     my $login_history = $user->find_login_history(
         sort_by => 'history_date',
     );
@@ -108,13 +109,15 @@ sub _total_deposits_withdrawals {
     my $self = shift;
 
     my $total;
+    my $currency = $self->client->currency;
+
     my $payment_mapper = BOM::Database::DataMapper::Payment->new({
         'client_loginid' => $self->client->loginid,
         'currency_code'  => $self->client->currency,
     });
 
-    $total->{deposit}    = $payment_mapper->get_total_deposit_of_account;
-    $total->{withdrawal} = $payment_mapper->get_total_withdrawal;
+    $total->{deposit}    = formatnumber('amount', $currency, $payment_mapper->get_total_deposit);
+    $total->{withdrawal} = formatnumber('amount', $currency, $payment_mapper->get_total_withdrawal);
     $total->{balance}    = $self->client->default_account->balance;
     return $total;
 }
