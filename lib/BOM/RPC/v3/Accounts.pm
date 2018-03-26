@@ -1368,9 +1368,12 @@ rpc set_self_exclusion => sub {
     if ($args{timeout_until}) {
         $client->set_exclusion->timeout_until($args{timeout_until});
     }
+    if ($args{exclude_until}) {
+        $client->set_exclusion->exclude_until($args{exclude_until});
+    }
 # send to support only when client has self excluded
     if ($args{exclude_until}) {
-        my $ret          = $client->set_exclusion->exclude_until($args{exclude_until});
+        my $ret          = $args{exclude_until};
         my $statuses     = join '/', map { uc $_->status_code } $client->client_status;
         my $name         = ($client->first_name ? $client->first_name . ' ' : '') . $client->last_name;
         my $client_title = join ', ', $client->loginid, $client->email, ($name || '?'), ($statuses ? "current status: [$statuses]" : '');
