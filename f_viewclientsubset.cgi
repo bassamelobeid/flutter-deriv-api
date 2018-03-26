@@ -12,10 +12,10 @@ use HTML::Entities;
 use Format::Util::Numbers qw/roundcommon/;
 use Text::CSV;
 
-use open qw[ :encoding(UTF-8) ];
-
-use Client::Account;
+use Brands;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
+
+use open qw[ :encoding(UTF-8) ];
 
 use BOM::Database::DataMapper::Account;
 use BOM::Backoffice::Request qw(request);

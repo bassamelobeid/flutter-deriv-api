@@ -5,7 +5,7 @@ use warnings;
 
 use Date::Utility;
 
-use Client::Account;
+use BOM::User::Client;
 use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -25,7 +25,7 @@ if ($loginID !~ /^(\D+)(\d+)$/) {
     code_exit_BO();
 }
 
-my $client = Client::Account::get_instance({'loginid' => $loginID});
+my $client = BOM::User::Client::get_instance({'loginid' => $loginID});
 if (not $client) {
     print "Error : wrong loginID ($encoded_loginID) could not get client instance";
     code_exit_BO();

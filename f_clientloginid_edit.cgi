@@ -12,18 +12,18 @@ use Data::Dumper;
 use HTML::Entities;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use Try::Tiny;
-use Digest::MD5 qw/md5_hex/;
+use Digest::MD5;
 
 use Brands;
 use LandingCompany::Registry;
 
 use f_brokerincludeall;
 
-use Client::Account;
+use BOM::User::Client;
 
 use BOM::Platform::Runtime;
 use BOM::Backoffice::Request qw(request);
-use BOM::Platform::User;
+use BOM::User;
 use BOM::Platform::Client::IDAuthentication;
 use BOM::Platform::Client::Utility;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -38,6 +38,7 @@ use BOM::Backoffice::FormAccounts;
 use BOM::Database::Model::AccessToken;
 use BOM::Backoffice::Script::DocumentUpload;
 use Finance::MIFIR::CONCAT qw(mifir_concat);
+use BOM::Platform::Client::DocumentUpload;
 
 use constant MAX_FILE_SIZE => 3 * 2**20;
 
@@ -58,7 +59,7 @@ my $self_href       = request()->url_for('backoffice/f_clientloginid_edit.cgi', 
 # let the client-check offer a chance to retry.
 eval { BrokerPresentation("$encoded_loginid CLIENT DETAILS") };    ## no critic (RequireCheckingReturnValueOfEval)
 
-my $client = eval { Client::Account->new({loginid => $loginid}) } || do {
+my $client = eval { BOM::User::Client->new({loginid => $loginid}) } || do {
     my $err = $@;
     print "<p>ERROR: Client [$encoded_loginid] not found.</p>";
     if ($err) {
@@ -275,73 +276,37 @@ if ($input{whattodo} eq 'uploadID') {
                 "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Exceeds maximum file size (" . MAX_FILE_SIZE . " bytes).</p><br />";
             next;
         }
+        my $file_checksum = Digest::MD5->new->addfile($filetoupload)->hexdigest;
 
-        my $file_contents = do { local $/; <$filetoupload> };
-        my $file_checksum = md5_hex($file_contents);
+        my $query_result = BOM::Platform::Client::DocumentUpload::start_document_upload(
+            client          => $client,
+            doctype         => $doctype,
+            docformat       => $docformat,
+            file_checksum   => $file_checksum,
+            expiration_date => $expiration_date,
+            document_id     => $document_id
+        );
 
-        my $_is_duplicate_upload_error = sub {
-            my $dbh = shift;
-
-            # Duplicate uploads are detected using a unique index on the document table.
-            #   23505 is the PSQL error code for a unique_violation.
-            #   'duplicate_upload_error' is the specific name of the unique index.
-
-            return $dbh->state eq '23505'
-                and $dbh->errstr =~ /duplicate_upload_error/;
-        };
-
-        my $id;
-        try {
-            ($id) = $client->db->dbic->run(
-                ping => sub {
-                    my $STD_WARN_HANDLER = $SIG{__WARN__};
-                    local $SIG{__WARN__} = sub {
-                        return if $_is_duplicate_upload_error->($_);
-                        return $STD_WARN_HANDLER->(@_) if $STD_WARN_HANDLER;
-                        warn @_;
-                    };
-                    $_->selectrow_array(
-                        'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?)',
-                        undef, $loginid, $doctype, $docformat,
-                        $expiration_date || undef,
-                        $document_id     || '',
-                        $file_checksum,
-                    );
-                });
-        }
-        catch {
-            $error_occured = $_;
-        };
-
-        if ($error_occured or not $id) {
-            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: $error_occured</p><br />";
+        unless ($query_result->{file_id}) {
+            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: $query_result->{error}->{msg}</p><br />";
             next;
         }
 
-        my $new_file_name = "$loginid.$doctype.$id.$docformat";
+        my $file_id               = $query_result->{file_id};
+        my $new_file_name         = "$loginid.$doctype.$file_id.$docformat";
+        my $abs_path_to_temp_file = $cgi->tmpFileName($filetoupload);
 
-        my $checksum = BOM::Backoffice::Script::DocumentUpload::upload($new_file_name, $file_contents, $file_checksum)
+        my $checksum = BOM::Backoffice::Script::DocumentUpload::upload($new_file_name, $abs_path_to_temp_file, $file_checksum)
             or die "Upload failed for $filetoupload";
 
-        my $query_result;
-        try {
-            ($query_result) = $client->db->dbic->run(
-                ping => sub {
-                    my $STD_WARN_HANDLER = $SIG{__WARN__};
-                    local $SIG{__WARN__} = sub {
-                        return if $_is_duplicate_upload_error->($_);
-                        return $STD_WARN_HANDLER->(@_) if $STD_WARN_HANDLER;
-                        warn @_;
-                    };
-                    $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?)', undef, $id, $comments);
-                });
-        }
-        catch {
-            $error_occured = $_;
-        };
+        $query_result = BOM::Platform::Client::DocumentUpload::finish_document_upload(
+            client   => $client,
+            file_id  => $file_id,
+            comments => $comments
+        );
 
-        if ($error_occured or not $query_result) {
-            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: $error_occured</p><br />";
+        unless ($query_result->{file_id}) {
+            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: $query_result->{error}->{msg}</p><br />";
             next;
         } else {
             $result .= "<br /><p style=\"color:#eeee00; font-weight:bold;\">Ok! File $i: $new_file_name is uploaded.</p><br />";
@@ -428,7 +393,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     exists $input{$_} && $client->$_($input{$_}) for @simple_updates;
 
     # Handing the professional client status (For all existing clients)
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my $user = BOM::User->new({email => $client->email});
     my $result = "";
 
     # Only allow CR and MF
@@ -609,12 +574,12 @@ my $client_broker = $client->broker;
 my $len = length($number);
 for (1 .. $attempts) {
     $prev_loginid = sprintf "$client_broker%0*d", $len, $number - $_;
-    last if $prev_client = Client::Account->new({loginid => $prev_loginid});
+    last if $prev_client = BOM::User::Client->new({loginid => $prev_loginid});
 }
 
 for (1 .. $attempts) {
     $next_loginid = sprintf "$client_broker%0*d", $len, $number + $_;
-    last if $next_client = Client::Account->new({loginid => $next_loginid});
+    last if $next_client = BOM::User::Client->new({loginid => $next_loginid});
 }
 
 my $encoded_prev_loginid = encode_entities($prev_loginid);
@@ -769,7 +734,7 @@ if ($link_acc) {
     print $link_acc;
 }
 
-my $user = BOM::Platform::User->new({loginid => $client->loginid});
+my $user = BOM::User->new({loginid => $client->loginid});
 my $siblings;
 if ($user) {
     $siblings = $user->loginid_details;
@@ -843,16 +808,18 @@ print '<br/>';
 print 'Email consent for marketing: ' . ($user->email_consent ? 'Yes' : 'No');
 print '<br/><br/>';
 
-#upload new ID doc
-Bar("Upload new ID document");
-BOM::Backoffice::Request::template->process(
-    'backoffice/client_edit_upload_doc.html.tt',
-    {
-        self_post => $self_post,
-        broker    => $encoded_broker,
-        loginid   => $encoded_loginid,
-        countries => Brands->new(name => request()->brand)->countries_instance->countries,
-    });
+if (not $client->is_virtual) {
+    #upload new ID doc
+    Bar("Upload new ID document");
+    BOM::Backoffice::Request::template->process(
+        'backoffice/client_edit_upload_doc.html.tt',
+        {
+            self_post => $self_post,
+            broker    => $encoded_broker,
+            loginid   => $encoded_loginid,
+            countries => Brands->new(name => request()->brand)->countries_instance->countries,
+        });
+}
 
 if (my $financial_assessment = $client->financial_assessment()) {
     Bar("Financial Assessment");
