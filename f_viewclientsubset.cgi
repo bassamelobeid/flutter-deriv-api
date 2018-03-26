@@ -231,14 +231,11 @@ print '<p>Total a/c balances of clients in the list: USD ' . encode_entities($to
 code_exit_BO();
 
 sub get_client_by_status {
-    my $args   = shift;
-    my $broker = $args->{'broker'};
-    my $show   = $args->{'show'};
+    my $args = shift;
 
-    my ($limit, $offset) = ($args->{limit}, $args->{offset});
+    my ($broker, $show, $limit, $offset) = @{$args}{qw/broker show limit offset/};
 
     my %SUMMARYFILE;
-
     ## Read dailysummary file into memory
     my $yesterday = Date::Utility->new(time - 86400)->date_ddmmmyy;
     foreach my $curr (@{request()->available_currencies}) {
