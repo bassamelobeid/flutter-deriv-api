@@ -1408,7 +1408,7 @@ rpc set_self_exclusion => sub {
         foreach (@fields_to_include_in_email) {
             my $label = $email_field_labels->{$_};
             my $val   = $args{$_};
-            $message .= "$label: $val\n";
+            $message .= "$label: $val\n" if $val;
         }
 
         #if (@mt_logins) {
