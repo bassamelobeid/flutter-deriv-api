@@ -235,7 +235,7 @@ sub get_client_by_status {
     my $broker = $args->{'broker'};
     my $show   = $args->{'show'};
 
-    my ($limit, $offset) = ($args->{limit} // undef, $args->{offset} // undef);
+    my ($limit, $offset) = ($args->{limit}, $args->{offset});
 
     my %SUMMARYFILE;
 
