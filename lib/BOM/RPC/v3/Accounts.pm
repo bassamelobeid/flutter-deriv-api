@@ -1371,21 +1371,36 @@ rpc set_self_exclusion => sub {
     if ($args{exclude_until}) {
         $client->set_exclusion->exclude_until($args{exclude_until});
     }
-# send to support only when client has self excluded
+# Need to email in 2 circumstances:
+#   - Any client sets a self exclusion period
+#   - A 'malta' client with MT5 account(s) sets any of these settings
+    my @fields_to_include_in_email;
     if ($args{exclude_until}) {
-        my $ret          = $args{exclude_until};
-        my $statuses     = join '/', map { uc $_->status_code } $client->client_status;
+        @fields_to_include_in_email = qw(exclude_until);
+    }
+    
+    if (@fields_to_include_in_email) {
         my $name         = ($client->first_name ? $client->first_name . ' ' : '') . $client->last_name;
+        my $statuses     = join '/', map { uc $_->status_code } $client->client_status;
         my $client_title = join ', ', $client->loginid, $client->email, ($name || '?'), ($statuses ? "current status: [$statuses]" : '');
-        my @mt_logins    = BOM::User->new({loginid => $client->loginid})->mt5_logins;
+        #my @mt_logins    = BOM::User->new({loginid => $client->loginid})->mt5_logins;
+        
+        my $field_labels = {exclude_until => 'Exclude from website until'};
 
         my $brand = Brands->new(name => request()->brand);
-
-        my $message = "Client $client_title set the following self-exclusion limits:\n\n- Exclude from website until: $ret\n";
-        if (@mt_logins) {
-            $message .= "\nClient $client_title also has the following MT5 accounts:\n";
-            $message .= "$_\n" for @mt_logins;
+        
+        my $message = "Client $client_title set the following self-exclusion limits:\n\n";
+        
+        foreach (@fields_to_include_in_email) {
+            my $label = $field_labels->{$_};
+            my $val   = $args{$_};
+            $message .= "$label: $val\n"
         }
+        
+        #if (@mt_logins) {
+        #    $message .= "\n\nClient $client_title also has the following MT5 accounts:\n";
+        #    $message .= "$_\n" for @mt_logins;
+        #}
 
         my $to_email = $brand->emails('compliance') . ',' . $brand->emails('marketing');
 
