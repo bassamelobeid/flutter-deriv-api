@@ -1374,10 +1374,15 @@ rpc set_self_exclusion => sub {
         my $statuses     = join '/', map { uc $_->status_code } $client->client_status;
         my $name         = ($client->first_name ? $client->first_name . ' ' : '') . $client->last_name;
         my $client_title = join ', ', $client->loginid, $client->email, ($name || '?'), ($statuses ? "current status: [$statuses]" : '');
+        my @mt_logins    = BOM::User->new({loginid => $client->loginid})->mt5_logins;
 
         my $brand = Brands->new(name => request()->brand);
 
         my $message = "Client $client_title set the following self-exclusion limits:\n\n- Exclude from website until: $ret\n";
+        if (@mt_logins){
+            $message .= "\nClient $client_title also has the following MT5 accounts:\n";
+            $message .= "$_\n" for @mt_logins
+        }
 
         my $to_email = $brand->emails('compliance') . ',' . $brand->emails('marketing');
 
