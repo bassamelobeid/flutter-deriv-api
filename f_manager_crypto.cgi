@@ -170,7 +170,7 @@ if ($view_action eq 'withdrawals') {
 
         # Check payment limit
         my $over_limit = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($staff, $amount);
-        code_exit_BO($over_limit->get_mesg()) if ($action eq 'Verify' && $over_limit);
+        code_exit_BO($over_limit->get_mesg()) if $over_limit;
 
         my $found;
         ($found) =
