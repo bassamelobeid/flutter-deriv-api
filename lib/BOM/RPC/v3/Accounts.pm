@@ -1382,9 +1382,9 @@ rpc set_self_exclusion => sub {
         my $brand = Brands->new(name => request()->brand);
 
         my $message = "Client $client_title set the following self-exclusion limits:\n\n- Exclude from website until: $ret\n";
-        if (@mt_logins){
+        if (@mt_logins) {
             $message .= "\nClient $client_title also has the following MT5 accounts:\n";
-            $message .= "$_\n" for @mt_logins
+            $message .= "$_\n" for @mt_logins;
         }
 
         my $to_email = $brand->emails('compliance') . ',' . $brand->emails('marketing');
