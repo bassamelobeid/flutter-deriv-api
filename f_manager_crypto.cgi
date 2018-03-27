@@ -154,7 +154,7 @@ if ($view_action eq 'withdrawals') {
     Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
 
     code_exit_BO("Invalid address.")
-        if $address and $address !~ /^\w+$/;
+        if $address and $address !~ /^[a-zA-Z0-9:?]+$/;
     code_exit_BO("Invalid action.")
         if $action and $action !~ /^[a-zA-Z]{4,15}$/;
     code_exit_BO("Invalid selection to view type of transactions.")
