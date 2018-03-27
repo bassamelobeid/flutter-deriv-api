@@ -55,7 +55,7 @@
             font-size: 12px;
         }
         .contract-type .barrier-tier .row.spot-line {
-					border-bottom: 1px dotted black;
+					border-bottom: 1px dotted red;
 				  box-sizing: border-box;
 				  opacity: 1 !important;
 				}
@@ -101,10 +101,10 @@
 [% FOREACH expiry IN data.keys %]
 	<div class='contract-table'>
 		 <p> <div class='expiry'>Trading Window:  [% expiry %] </div></p>
-			[% FOREACH contract IN data.$expiry.keys %]
-						<p><div class='contract-type [% contract == 'CALLE' ? 'reverse' : '' %]'></p>
+			[% FOREACH contract IN data.$expiry.keys.reverse %]
+						<p><div class='contract-type [% contract == 'PUT' ? 'reverse' : '' %]'></p>
 									<div class='title'> [% contract %] </div>
-									[% FOREACH barrier IN data.$expiry.$contract.barrier.keys.nsort %]
+									[% FOREACH barrier IN data.$expiry.$contract.barrier.keys.nsort.reverse %]
 										<div class='barrier-tier' title= [% barrier %]>
 												[% FOREACH underlying IN data.$expiry.$contract.barrier.$barrier.keys %]
 							<div class='row [% data.$expiry.$contract.barrier.$barrier.$underlying.isSpot ? 'spot-line' : '' %] [% data.$expiry.$contract.barrier.$barrier.$underlying.value ? '' : 'hide' %]'>
