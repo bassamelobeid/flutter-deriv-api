@@ -1672,6 +1672,32 @@ subtest 'get and set self_exclusion' => sub {
     is $self_excl->exclude_until, $exclude_until . 'T00:00:00', 'exclude_until in db is right';
     is $self_excl->timeout_until, $timeout_until->epoch, 'timeout_until is right';
     is $self_excl->session_duration_limit, 1440, 'all good';
+
+    #Check email is sent for limitations on MLT client with MT5 accounts
+    ## Set limits, check no mail is sent
+    $params->{token} = $token_mlt;
+    $params->{args} = {
+        set_self_exclusion     => 1,
+        max_balance            => 9998,
+        max_turnover           => 1000,
+        max_open_bets          => 50,
+        session_duration_limit => 1440,
+        exclude_until          => $exclude_until,
+        timeout_until          => $timeout_until->epoch,
+    };
+
+    is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
+    @msgs = $mailbox->search(
+        email   => 'compliance@binary.com,marketing@binary.com',
+        subject => qr/Client $test_client_mlt->loginid set self-exclusion limits/
+    );
+    ok(!@msgs, 'No email for MLT client limits without MT5 accounts');
+
+    ## Create MT5 accounts
+
+    ## Set limits again, and check mail is receieved
+
+    ## Set limits, then create MT5 accounts???
 };
 
 done_testing();
