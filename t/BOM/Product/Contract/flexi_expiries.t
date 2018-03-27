@@ -74,7 +74,7 @@ subtest 'flexi expiries flashs' => sub {
             ['entry spot'],
             {
                 class => 'Time::Duration::Concise::Localize',
-                value => (11 * 3600 + 59 * 60 + 59) * 0.5 + 0.5
+                value => (11 * 3600 + 59 * 60 + 59) * 0.5
             }]);
 
     $params{date_expiry}  = $now->truncate_to_day->plus_time_interval('12h30m');
