@@ -1387,13 +1387,28 @@ rpc set_self_exclusion => sub {
 # Need to send email in 2 circumstances:
 #   - Any client sets a self exclusion period
 #   - A 'malta' client with MT5 account(s) sets any of these settings
-    my @fields_to_email;
     my @mt_logins = BOM::User->new({loginid => $client->loginid})->mt5_logins;
     # TODO: exclude demo MT5 accounts?
+
     if ($client->landing_company->short =~ /malta$/ && @mt_logins) {
+        send_self_exclusion_nofitication($client, 'mlt_with_mt5', \%args);
+    } elsif ($args{exclude_until}) {
+        send_self_exclusion_nofitication($client, 'self_exclusion', \%args);
+    }
+
+    $client->save();
+
+    return {status => 1};
+};
+
+sub send_self_exclusion_nofitication {
+    my ($client, $type, $args) = @_;
+
+    my @fields_to_email;
+    if ($type eq 'mlt_with_mt5') {
         @fields_to_email =
             qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit exclude_until timeout_until/;
-    } elsif ($args{exclude_until}) {
+    } elsif ($type eq 'self_exclusion') {
         @fields_to_email = qw/exclude_until/;
     }
 
@@ -1408,12 +1423,13 @@ rpc set_self_exclusion => sub {
 
         foreach (@fields_to_email) {
             my $label = $email_field_labels->{$_};
-            my $val   = $args{$_};
+            my $val   = $args->{$_};
             $message .= "$label: $val\n" if $val;
         }
 
+        my @mt_logins = BOM::User->new({loginid => $client->loginid})->mt5_logins;
         if (@mt_logins) {
-            $message .= "\n\nClient $client_title also has the following MT5 accounts:\n";
+            $message .= "\n\nClient $client_title has the following MT5 accounts:\n";
             $message .= "$_\n" for @mt_logins;
         }
 
@@ -1430,11 +1446,7 @@ rpc set_self_exclusion => sub {
             message => [$message],
         });
     }
-
-    $client->save();
-
-    return {status => 1};
-};
+}
 
 rpc api_token => sub {
     my $params = shift;

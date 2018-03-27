@@ -1676,7 +1676,8 @@ subtest 'get and set self_exclusion' => sub {
     is $self_excl->session_duration_limit, 1440, 'all good';
 
     ###Check email is sent for limitations on MLT client with MT5 accounts
-    ## Set limits, check no mail is sent
+    $mailbox->clear;
+    ## Set limits, check no mail is sent (no MT5 account is created yet)
     $params->{token} = $token_mlt;
     $params->{args}  = {
         set_self_exclusion     => 1,
@@ -1726,10 +1727,17 @@ subtest 'get and set self_exclusion' => sub {
     my $mt5_loginid = $c->tcall('mt5_new_account', $mt5_params)->{login};
     is($mt5_loginid, $DETAILS{login}, $mt5_loginid);
 
-    ## Set limits again, and check mail is receieved
+    ## Check email was sent after creation of MT5 since limits already in place
+    @msgs = $mailbox->search(
+        email   => 'compliance@binary.com,marketing@binary.com,x-acc@binary.com',
+        subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
+    );
+    ok(@msgs, 'Email for MLT client limits with MT5 accounts');
+    like($msgs[0]{body}, qr/MT$mt5_loginid/, 'email content is ok');
+
+    ## Set limits again, and check mail another mail is receieved
     $mailbox->clear;
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
-    my $mlt_client_loginid = $test_client_mlt->loginid;
     @msgs = $mailbox->search(
         email   => 'compliance@binary.com,marketing@binary.com,x-acc@binary.com',
         subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/

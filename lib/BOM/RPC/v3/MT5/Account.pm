@@ -20,6 +20,7 @@ use BOM::RPC::Registry '-dsl';
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Cashier;
+use BOM::RPC::v3::Accounts;
 use BOM::Platform::Config;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Email qw(send_email);
@@ -278,6 +279,13 @@ rpc mt5_new_account => sub {
             warn "MT5: deposit failed for virtual account with error " . $status->{error};
             $balance = 0;
         }
+    }
+
+    # Compliance must be notified if a Malta client opens an MT5 account while
+    #   they have limitations on their account.
+    if ($client->landing_company->short =~ /^malta$/){
+        my $self_exclusion = BOM::RPC::v3::Accounts::get_self_exclusion({client => $client});
+        BOM::RPC::v3::Accounts::send_self_exclusion_nofitication($client, 'mlt_with_mt5', $self_exclusion) if scalar(keys $self_exclusion) > 0;
     }
 
     return {
