@@ -16,13 +16,6 @@
     <br>
     <br>
     <input type="hidden" name="broker" value="[% broker %]">
-<!-- Make Dual Control Code -->
-    Loginid of the client: <input type="text" size="12" name="loginid_dcc" />
-    Blockchain address: <input type="text" size="50" name="address_dcc" placeholder="Will be considered as transaction type"/>
-    Amount: <input type="text" name="amount_dcc" size=15/>
-    <button type="submit" name="view_action" value="make_dcc">Make Dual Control Code</button>
-    ([% staff %])
-    <br>
 <!-- Recon -->
         <button type="submit" name="view_action" value="reconcil">Reconciliation</button>
         <input type="text" name="start_date" class="datepick" value="[% start_date %]">

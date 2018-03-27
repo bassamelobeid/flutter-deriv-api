@@ -23,6 +23,7 @@ use BOM::Backoffice::Auth0;
 use BOM::Backoffice::PlackHelpers qw/PrintContentType_excel PrintContentType/;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Script::ValidateStaffPaymentLimit;
 use BOM::CTC::Reconciliation;
 use BOM::Database::ClientDB;
 use BOM::DualControl;
@@ -159,26 +160,25 @@ if ($view_action eq 'withdrawals') {
     code_exit_BO("Invalid selection to view type of transactions.")
         if not $view_type or $view_type !~ /^(?:pending|verified|rejected|processing|performing_blockchain_txn|sent|error)$/;
 
-    if ($action and $action =~ /^(?:verify|reject)$/) {
-        my $dcc_code = request()->param('dual_control_code');
-        code_exit_BO("ERROR: Please provide valid dual control code")
-            unless $dcc_code;
+    if ($action and $action =~ /^(?:Verify|Reject)$/) {
+        my $amount           = request()->param('amount');
+        my $loginid          = request()->param('loginid');
+        my $rejection_reason = request()->param('rejection_reason');
 
-        my $amount  = request()->param('amount');
-        my $loginid = request()->param('loginid');
+        # Error for rejection with no reason
+        code_exit_BO("Please enter a reason for rejection") if ($action eq 'Reject' && $rejection_reason eq '');
 
-        my $error = BOM::DualControl->new({
-                staff           => $staff,
-                transactiontype => $address
-            })->validate_payment_control_code($dcc_code, $loginid, $currency, $amount);
-
-        code_exit_BO($error->get_mesg()) if $error;
+        # Check payment limit
+        my $over_limit = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($staff, $amount);
+        code_exit_BO($over_limit->get_mesg()) if $over_limit;
 
         my $found;
-        ($found) = $dbic->run(ping => sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?)', undef, $address, $currency) })
-            if $action eq 'verify';
-        ($found) = $dbic->run(ping => sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?)', undef, $address, $currency) })
-            if $action eq 'reject';
+        ($found) =
+            $dbic->run(ping => sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?, ?)', undef, $address, $currency, $staff) })
+            if $action eq 'Verify';
+        ($found) = $dbic->run(
+            ping => sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?, ?)', undef, $address, $currency, $rejection_reason) })
+            if $action eq 'Reject';
 
         code_exit_BO("ERROR: No record found. Please check with someone from IT team before proceeding.")
             unless ($found);
@@ -505,40 +505,5 @@ EOF
         print '<p>New ' . $currency . ' address for deposits: <strong>' . encode_entities($rslt) . '</strong></p>';
     }
 
-} elsif ($view_action eq 'make_dcc') {
-    my $amount_dcc  = request()->param('amount_dcc')  // 0;
-    my $loginid_dcc = request()->param('loginid_dcc') // '';
-    my $transtype   = request()->param('address_dcc') // '';
-
-    Bar('Dual control code');
-
-    code_exit_BO("No address provided")                              unless $transtype;
-    code_exit_BO('Invalid loginid')                                  unless $loginid_dcc;
-    code_exit_BO("ERROR in amount: " . encode_entities($amount_dcc)) unless $amount_dcc =~ /^\d+\.?\d*$/;
-
-    my $client_dcc = BOM::User::Client::get_instance({
-        'loginid'    => uc($loginid_dcc),
-        db_operation => 'replica'
-    });
-    code_exit_BO("ERROR: " . encode_entities($loginid_dcc) . " does not exist! Perhaps you made a typo?") unless $client_dcc;
-
-    my $code = BOM::DualControl->new({
-            staff           => $staff,
-            transactiontype => $transtype
-        })->payment_control_code($loginid_dcc, $currency, $amount_dcc);
-
-    my $message =
-          "The dual control code created by $staff for an amount of "
-        . $currency
-        . $amount_dcc
-        . " (for a "
-        . $transtype
-        . ") for "
-        . $loginid_dcc
-        . " is: <b> $code </b>This code is valid for 1 hour (from "
-        . $now->datetime_ddmmmyy_hhmmss
-        . ") only.";
-
-    print $message;
 }
 code_exit_BO();
