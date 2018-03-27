@@ -20,10 +20,10 @@ use Moose;
 use Try::Tiny;
 use Cache::RedisDB;
 use Date::Utility;
-use Format::Util::Numbers qw(roundcommon);
+use Format::Util::Numbers qw(roundcommon financialrounding);
 use Time::Duration::Concise::Localize;
 extends 'BOM::RiskReporting::Base';
-
+use List::MoreUtils qw(uniq);
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Database::Model::Account;
 use BOM::Database::ClientDB;
@@ -125,37 +125,57 @@ sub _multibarrier_report {
     my $self      = shift;
     my @open_bets = @{$self->_open_bets_at_end};
     my $multibarrier;
-    my $barrier;
+    my $symbol;
     foreach my $open_contract (@open_bets) {
         my $contract = produce_contract($open_contract->{short_code}, $open_contract->{currency_code});
         next if not $contract->can("trading_period_start");
         next if not $contract->is_intraday;
-        next if $open_contract->{currency_code} ne 'JPY';
 
         my @available_barrier = @{$contract->predefined_contracts->{available_barriers}};
 
         # Rearrange the index of the barrier from  the median of the barrier list (ie the ATM barrier)
-        my %reindex_barrier_list = map { $available_barrier[$_] => $_ - (int @available_barrier / 2) } (0 .. $#available_barrier);
-        my $barrier_index = $reindex_barrier_list{$contract->barrier->as_absolute};
+        my %reindex_barrier_list   = map { $available_barrier[$_] => $_ - (int @available_barrier / 2) } (0 .. $#available_barrier);
+        my $barrier_index          = $reindex_barrier_list{$contract->barrier->as_absolute};
+        my $spot                   = $contract->current_spot;
+        my $closet_barrier_to_spot = (grep $_ <= $spot, sort @available_barrier)[-1];
+        my $spot_index             = $reindex_barrier_list{$closet_barrier_to_spot};
+        my $trading_period_start   = Date::Utility->new($contract->trading_period_start)->datetime;
 
-        if ($contract->bet_type eq 'CALLE') {
-            $multibarrier->{$contract->date_expiry->epoch}->{'CALLE'}->{barrier}->{$barrier_index}->{$contract->underlying->symbol} +=
-                $open_contract->{buy_price};
+        $multibarrier->{$trading_period_start . '_' . $contract->date_expiry->datetime}->{$contract->bet_type}->{barrier}->{$barrier_index}
+            ->{$contract->underlying->symbol} +=
+            financialrounding('price', 'USD', $self->amount_in_usd($open_contract->{buy_price}, $open_contract->{currency_code}));
+        push @{$symbol->{$trading_period_start . '_' . $contract->date_expiry->datetime}}, $contract->underlying->symbol;
 
-            $multibarrier->{$contract->date_expiry->epoch}->{'PUT'}->{barrier}->{$barrier_index}->{$contract->underlying->symbol} += 0;
-        } else {
-
-            $multibarrier->{$contract->date_expiry->epoch}->{'PUT'}->{barrier}->{$barrier_index}->{$contract->underlying->symbol} +=
-                $open_contract->{buy_price};
-
-            $multibarrier->{$contract->date_expiry->epoch}->{'CALLE'}->{barrier}->{$barrier_index}->{$contract->underlying->symbol} += 0;
-
-        }
-
-        $multibarrier->{$contract->date_expiry->epoch}->{$contract->bet_type}->{spot}->{$contract->underlying->symbol} = $contract->current_spot;
+        $multibarrier->{$trading_period_start . '_' . $contract->date_expiry->datetime}->{spot}->{$contract->underlying->symbol} = $spot_index;
     }
+    my $final;
+    foreach my $expiry (sort keys %{$multibarrier}) {
+        my $max = 0;
 
-    return $multibarrier;
+        for (-3 ... 3) {
+            $final->{$expiry}->{PUT}->{barrier}->{$_}   = {};
+            $final->{$expiry}->{CALLE}->{barrier}->{$_} = {};
+            foreach my $symbol (uniq @{$symbol->{$expiry}}) {
+                my $CALL = $multibarrier->{$expiry}->{CALLE}->{barrier}->{$_}->{$symbol} // 0;
+                my $PUT  = $multibarrier->{$expiry}->{PUT}->{barrier}->{$_}->{$symbol}   // 0;
+                $final->{$expiry}->{CALLE}->{barrier}->{$_}->{$symbol}->{'isSpot'} = 1 if $multibarrier->{$expiry}->{spot}->{$symbol} == $_;
+                $final->{$expiry}->{PUT}->{barrier}->{$_}->{$symbol}->{'isSpot'}   = 1 if $multibarrier->{$expiry}->{spot}->{$symbol} == $_;
+                if ($CALL > 0 or $PUT > 0) {
+                    if ($CALL > $PUT) {
+                        $final->{$expiry}->{CALLE}->{barrier}->{$_}->{$symbol}->{value} = $CALL - $PUT;
+                        $final->{$expiry}->{PUT}->{barrier}->{$_}->{$symbol}->{value}   = 0;
+                        $max = ($CALL - $PUT) > $max ? $CALL - $PUT : $max;
+                    } else {
+                        $final->{$expiry}->{PUT}->{barrier}->{$_}->{$symbol}->{value}   = $PUT - $CALL;
+                        $final->{$expiry}->{CALLE}->{barrier}->{$_}->{$symbol}->{value} = 0;
+                        $max = ($PUT - $CALL) > $max ? $PUT - $CALL : $max;
+                    }
+                }
+            }
+        }
+        $final->{$expiry}->{CALLE}->{max} = $max;
+    }
+    return $final;
 }
 
 sub _open_bets_report {
