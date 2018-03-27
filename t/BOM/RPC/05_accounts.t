@@ -1677,7 +1677,7 @@ subtest 'get and set self_exclusion' => sub {
     #Check email is sent for limitations on MLT client with MT5 accounts
     ## Set limits, check no mail is sent
     $params->{token} = $token_mlt;
-    $params->{args} = {
+    $params->{args}  = {
         set_self_exclusion     => 1,
         max_balance            => 9998,
         max_turnover           => 1000,
