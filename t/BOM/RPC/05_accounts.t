@@ -1674,7 +1674,7 @@ subtest 'get and set self_exclusion' => sub {
     is $self_excl->timeout_until, $timeout_until->epoch, 'timeout_until is right';
     is $self_excl->session_duration_limit, 1440, 'all good';
 
-    #Check email is sent for limitations on MLT client with MT5 accounts
+    ###Check email is sent for limitations on MLT client with MT5 accounts
     ## Set limits, check no mail is sent
     $params->{token} = $token_mlt;
     $params->{args}  = {
@@ -1693,21 +1693,37 @@ subtest 'get and set self_exclusion' => sub {
     ok(!@msgs, 'No email for MLT client limits without MT5 accounts');
 
     ## Create MT5 account
+    # Mocked account details
+    # This hash shared between three files, and should be kept in-sync to avoid test failures
+    #   t/BOM/RPC/30_mt5.t
+    #   t/BOM/RPC/05_accounts.t
+    #   t/lib/mock_binary_mt5.pl
+    my %DETAILS = (
+        login    => '0000',
+        password => 'Efgh4567',
+        email    => 'test.account@binary.com',
+        name     => 'Test',
+        group    => 'real\something',
+        country  => 'Malta',
+        balance  => '1234.56',
+    );
+    @BOM::MT5::User::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
+
     my $mt5_params = {
         language => 'EN',
         token    => $token_mlt,
         args     => {
             account_type   => 'demo',
             country        => 'mt',
-            email          => 'test@binary.com',
-            name           => 'Test Test',
+            email          => $DETAILS{email},
+            name           => $DETAILS{name},
             investPassword => 'Abcd1234',
-            mainPassword   => 'Binary12345',
+            mainPassword   => $DETAILS{password},
             leverage       => 100,
         },
     };
     my $mt5_loginid = $c->tcall('mt5_new_account', $mt5_params)->{login};
-    like($mt5_loginid, qr/^[0-9]{4}$/, 'MT5 account successfully created');
+    is($mt5_loginid, $DETAILS{login}, $mt5_loginid);
 
     ## Set limits again, and check mail is receieved
     $mailbox->clear;

@@ -20,11 +20,12 @@ use BOM::MT5::User;
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
 # Mocked account details
-# This hash shared between two files, and should be kept in-sync to avoid test failures
+# This hash shared between three files, and should be kept in-sync to avoid test failures
 #   t/BOM/RPC/30_mt5.t
+#   t/BOM/RPC/05_accounts.t
 #   t/lib/mock_binary_mt5.pl
 my %DETAILS = (
-    login    => '__MOCK__',
+    login    => '0000',
     password => 'Efgh4567',
     email    => 'test.account@binary.com',
     name     => 'Test',
@@ -244,7 +245,7 @@ subtest 'deposit' => sub {
         token    => $token,
         args     => {
             from_binary => $test_client->loginid,
-            to_mt5      => "__MOCK__",
+            to_mt5      => "0000",
             amount      => 180,
         },
     };
@@ -263,7 +264,7 @@ subtest 'withdrawal' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            from_mt5  => "__MOCK__",
+            from_mt5  => "0000",
             to_binary => $test_client->loginid,
             amount    => 150,
         },
