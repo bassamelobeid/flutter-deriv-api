@@ -22,6 +22,7 @@ use BOM::Database::Model::AccessToken;
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Password;
 use BOM::User;
+use BOM::MT5::User;
 
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
