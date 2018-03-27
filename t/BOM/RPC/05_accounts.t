@@ -1736,8 +1736,6 @@ subtest 'get and set self_exclusion' => sub {
     );
     ok(@msgs, 'Email for MLT client limits with MT5 accounts');
     like($msgs[0]{body}, qr/MT$mt5_loginid/, 'email content is ok');
-
-    ## Set limits, then create MT5 accounts???
 };
 
 done_testing();

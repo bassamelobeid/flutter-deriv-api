@@ -1389,6 +1389,7 @@ rpc set_self_exclusion => sub {
 #   - A 'malta' client with MT5 account(s) sets any of these settings
     my @fields_to_email;
     my @mt_logins = BOM::User->new({loginid => $client->loginid})->mt5_logins;
+    # TODO: exclude demo MT5 accounts?
     if ($client->landing_company->short =~ /malta$/ && @mt_logins) {
         @fields_to_email =
             qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit exclude_until timeout_until/;
