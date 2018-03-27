@@ -1446,6 +1446,7 @@ sub send_self_exclusion_nofitication {
             message => [$message],
         });
     }
+    return;
 }
 
 rpc api_token => sub {
