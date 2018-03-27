@@ -395,6 +395,9 @@ rpc mt5_get_settings => sub {
         }
     }
 
+    # we don't want to send this field back
+    delete $settings->{rights};
+
     $settings->{currency} = $settings->{group} =~ /vanuatu|costarica|demo/ ? 'USD' : 'EUR';
 
     return $settings;
@@ -1082,7 +1085,7 @@ rpc mt5_mamm => sub {
                 if $response;
 
             $settings->{rights} += 4;
-            BOM::MT5::User::update_user($settings);
+            BOM::MT5::User::update_mamm_user($settings);
             return _mt5_error_sub() if (ref $settings eq 'HASH' and $settings->{error});
 
             return {
