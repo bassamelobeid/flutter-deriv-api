@@ -1411,10 +1411,10 @@ rpc set_self_exclusion => sub {
             $message .= "$label: $val\n" if $val;
         }
 
-        #if (@mt_logins) {
-        #    $message .= "\n\nClient $client_title also has the following MT5 accounts:\n";
-        #    $message .= "$_\n" for @mt_logins;
-        #}
+        if (@mt_logins) {
+            $message .= "\n\nClient $client_title also has the following MT5 accounts:\n";
+            $message .= "$_\n" for @mt_logins;
+        }
 
         my $to_email = $brand->emails('compliance') . ',' . $brand->emails('marketing');
 

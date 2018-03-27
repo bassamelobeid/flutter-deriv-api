@@ -143,6 +143,7 @@ my $test_client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client(
 });
 $test_client_mlt->email($email_mlt_mf);
 $test_client_mlt->save;
+my $test_client_mlt_loginid = $test_client_mlt->loginid;
 
 my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
@@ -1682,20 +1683,42 @@ subtest 'get and set self_exclusion' => sub {
         max_turnover           => 1000,
         max_open_bets          => 50,
         session_duration_limit => 1440,
-        exclude_until          => $exclude_until,
-        timeout_until          => $timeout_until->epoch,
     };
 
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
     @msgs = $mailbox->search(
-        email   => 'compliance@binary.com,marketing@binary.com',
-        subject => qr/Client $test_client_mlt->loginid set self-exclusion limits/
+        email   => 'compliance@binary.com,marketing@binary.com,x-acc@binary.com',
+        subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
     );
     ok(!@msgs, 'No email for MLT client limits without MT5 accounts');
 
-    ## Create MT5 accounts
+    ## Create MT5 account
+    my $mt5_params = {
+        language => 'EN',
+        token    => $token_mlt,
+        args     => {
+            account_type   => 'demo',
+            country        => 'mt',
+            email          => 'test@binary.com',
+            name           => 'Test Test',
+            investPassword => 'Abcd1234',
+            mainPassword   => 'Binary12345',
+            leverage       => 100,
+        },
+    };
+    my $mt5_loginid = $c->tcall('mt5_new_account', $mt5_params)->{login};
+    like($mt5_loginid, qr/^[0-9]{4}$/, 'MT5 account successfully created');
 
     ## Set limits again, and check mail is receieved
+    $mailbox->clear;
+    is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
+    my $mlt_client_loginid = $test_client_mlt->loginid;
+    @msgs = $mailbox->search(
+        email   => 'compliance@binary.com,marketing@binary.com,x-acc@binary.com',
+        subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
+    );
+    ok(@msgs, 'Email for MLT client limits with MT5 accounts');
+    like($msgs[0]{body}, qr/MT$mt5_loginid/, 'email content is ok');
 
     ## Set limits, then create MT5 accounts???
 };
