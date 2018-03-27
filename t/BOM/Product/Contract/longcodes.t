@@ -54,11 +54,7 @@ subtest 'Proper form' => sub {
                 class => 'Time::Duration::Concise::Localize',
                 value => 3 * 3600
             },
-            ['entry spot'],
-            {
-                class => 'Time::Duration::Concise::Localize',
-                value => (3 * 3600) * 0.5
-            }]);
+            ['entry spot']]);
 
     $c = produce_contract($shortcodes[10], 'EUR');
     is_deeply(
@@ -71,11 +67,7 @@ subtest 'Proper form' => sub {
                 class => 'Time::Duration::Concise::Localize',
                 value => 10 * 3600
             },
-            ['entry spot plus [plural,_1,%d pip, %d pips]', 300],
-            {
-                class => 'Time::Duration::Concise::Localize',
-                value => (10 * 3600) * 0.5
-            }]);
+            ['entry spot plus [plural,_1,%d pip, %d pips]', 300]]);
 
     $c = produce_contract($shortcodes[-1], 'RUR');
     is_deeply(
@@ -88,11 +80,7 @@ subtest 'Proper form' => sub {
                 class => 'Time::Duration::Concise::Localize',
                 value => 12 * 60
             },
-            ['entry spot'],
-            {
-                class => 'Time::Duration::Concise::Localize',
-                value => (12 * 60) * 0.5
-            }]);
+            ['entry spot']]);
 };
 
 subtest 'longcode from params for forward starting' => sub {
@@ -127,11 +115,7 @@ subtest 'longcode from params for forward starting' => sub {
                 class => 'Time::Duration::Concise::Localize',
                 value => 10 * 60
             },
-            ['entry spot'],
-            {
-                class => 'Time::Duration::Concise::Localize',
-                value => (10 * 60) * 0.5
-            }]);
+            ['entry spot']]);
 };
 
 subtest 'longcode with \'difference\' as barrier' => sub {
@@ -163,11 +147,7 @@ subtest 'longcode with \'difference\' as barrier' => sub {
                 class => 'Time::Duration::Concise::Localize',
                 value => 10 * 60
             },
-            ['entry spot plus [_1]', 0.32],
-            {
-                class => 'Time::Duration::Concise::Localize',
-                value => (10 * 60) * 0.5
-            }]);
+            ['entry spot plus [_1]', 0.32]]);
     $c = produce_contract({
         bet_type     => 'EXPIRYMISS',
         underlying   => 'R_100',
@@ -190,7 +170,6 @@ subtest 'longcode with \'difference\' as barrier' => sub {
             ['2016-10-19 10:20:00 GMT'],
             ['entry spot plus [_1]',  0.32],
             ['entry spot minus [_1]', 0.42],
-            []
         ]);
 };
 
@@ -223,11 +202,7 @@ subtest 'zero barrier' => sub {
                 class => 'Time::Duration::Concise::Localize',
                 value => 10 * 60
             },
-            '0.00',
-            {
-                class => 'Time::Duration::Concise::Localize',
-                value => (10 * 60) * 0.5
-            }
+            '0.00'
         ]);
 };
 
@@ -261,11 +236,7 @@ subtest 'intraday duration longcode variation' => sub {
                 class => 'Time::Duration::Concise::Localize',
                 value => 10 * 60 + 1
             },
-            '0.00',
-            {
-                class => 'Time::Duration::Concise::Localize',
-                value => (10 * 60 + 1) * 0.5
-            }
+            '0.00'
         ]);
 
     $c = produce_contract({%$args, duration => '10h1s'});
@@ -279,11 +250,7 @@ subtest 'intraday duration longcode variation' => sub {
                 class => 'Time::Duration::Concise::Localize',
                 value => 10 * 3600 + 1
             },
-            '0.00',
-            {
-                class => 'Time::Duration::Concise::Localize',
-                value => (10 * 3600 + 1) * 0.5
-            }
+            '0.00'
         ]);
 };
 
