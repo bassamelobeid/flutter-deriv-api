@@ -182,12 +182,6 @@ print '<hr><b>To view all disabled accounts and their a/c details</b><br />'
     . "<input type=\"hidden\" name=\"show\" value=\"disabled\">"
     . '<br /><input type="checkbox" value="1" checked name="onlylarge"> Only those with more than $5 equity';
 
-if (BOM::Backoffice::Auth0::has_authorisation(['Payments'])) {
-    print '<br />Password if you want to debit cash balances of accounts with over
-			<input size="6" name="recoverdays" value="180"> days inactivity:
-			<input size="5" type="password" name="recoverfromfraudpassword">';
-}
-
 print '<br /><input type="submit" value="Monitor Disabled Accounts">' . '</form>';
 
 # Monitor client lists
