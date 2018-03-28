@@ -5,7 +5,7 @@ use warnings;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Password;
-use BOM::Platform::User;
+use BOM::User;
 
 use base 'Exporter';
 use vars qw/@EXPORT_OK/;
@@ -22,7 +22,7 @@ sub create_test_user {
     $client_cr->email($email);
     $client_cr->save;
     my $cr_1 = $client_cr->loginid;
-    my $user = BOM::Platform::User->create(
+    my $user = BOM::User->create(
         email    => $email,
         password => $hash_pwd
     );

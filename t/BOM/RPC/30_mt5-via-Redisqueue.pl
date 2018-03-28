@@ -38,15 +38,12 @@ use Job::Async;
 my $json = JSON::MaybeXS->new;
 
 my $loop = IO::Async::Loop->new;
-$loop->add(
-    my $jobman = Job::Async->new
-);
+$loop->add(my $jobman = Job::Async->new);
 
 my $client = $jobman->client(
     redis => {
         uri => 'redis://127.0.0.1',
-    }
-);
+    });
 $client->start->get;
 
 my $c = BOM::Test::RedisQueue::Client->new(client => $client);
@@ -258,15 +255,13 @@ subtest 'withdrawal' => sub {
 
 done_testing();
 
-
 package BOM::Test::RedisQueue::Client;
 # TODO: make B:T:R:C an abstraction
 use base qw( BOM::Test::RPC::Client );
 
-sub new
-{
+sub new {
     my $class = shift;
-    my %args = @_;
+    my %args  = @_;
 
     my $client = delete $args{client};
 
@@ -278,8 +273,7 @@ sub new
     return $self;
 }
 
-sub _tcall
-{
+sub _tcall {
     my $self = shift;
     my ($method, $req_params) = @_;
 
@@ -293,7 +287,7 @@ sub _tcall
 
     my $response = $json->decode($raw_response);
 
-    $self->response($response); # ???
+    $self->response($response);    # ???
     $self->result($response->{result} // {});
 
     return $response;

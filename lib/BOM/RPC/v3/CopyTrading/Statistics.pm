@@ -6,7 +6,7 @@ use warnings;
 use Try::Tiny;
 use Performance::Probability qw(get_performance_probability);
 
-use Client::Account;
+use BOM::User::Client;
 
 use BOM::RPC::Registry '-dsl';
 
@@ -22,7 +22,7 @@ rpc copytrading_statistics => sub {
     my $params = shift->{args};
 
     my $trader_id = uc $params->{trader_id};
-    my $trader = try { Client::Account->new({loginid => $trader_id, db_operation => 'replica'}) };
+    my $trader = try { BOM::User::Client->new({loginid => $trader_id, db_operation => 'replica'}) };
     unless ($trader) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'WrongLoginID',

@@ -23,7 +23,9 @@ use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Cashier;
 use BOM::Platform::Config;
 use BOM::Platform::Context qw (localize request);
-use BOM::Platform::User;
+use BOM::Platform::Email qw(send_email);
+use BOM::User;
+use BOM::User::Client;
 use BOM::MT5::User::Async;
 use BOM::Database::ClientDB;
 use BOM::Platform::Runtime;
@@ -65,7 +67,7 @@ Takes the following (named) parameters:
 
 =over 4
 
-=item * C<params> hashref that contains a Client::Account object under the key C<client>.
+=item * C<params> hashref that contains a BOM::User::Client object under the key C<client>.
 
 =back
 
@@ -98,7 +100,7 @@ Returns any of the following:
 sub get_mt5_logins {
     my ($client, $user) = @_;
 
-    $user ||= BOM::Platform::User->new({email => $client->email});
+    $user ||= BOM::User->new({email => $client->email});
 
     my $f = fmap1 {
         shift =~ /^MT(\d+)$/;
@@ -201,6 +203,7 @@ async_rpc mt5_new_account => sub {
 
         $type = 'mt_' . $type . '_company';
         if (defined $countries_list->{$residence}->{$type}) {
+
             # get MT company from countries.yml
             return $countries_list->{$residence}->{$type};
         }
@@ -210,6 +213,7 @@ async_rpc mt5_new_account => sub {
 
     my ($mt_company, $group);
     if ($account_type eq 'demo') {
+
         # demo will have demo for financial and demo for gaming
         if ($mt5_account_type) {
             return permission_error_future() if (($mt_company = $get_company_name->('financial')) eq 'none');
@@ -238,7 +242,8 @@ async_rpc mt5_new_account => sub {
 
         $group = 'real\\' . $mt_company;
         $group .= "_$mt5_account_type" if $account_type eq 'financial';
-        $group .= "_$residence" if (first { $residence eq $_ } @{$brand->countries_with_own_mt5_group});
+        $group .= "_$residence"
+            if (first { $residence eq $_ } @{$brand->countries_with_own_mt5_group});
     }
 
     return create_error_future({
@@ -246,7 +251,7 @@ async_rpc mt5_new_account => sub {
             message_to_client => localize('Request too frequent. Please try again later.')}) if _throttle($client->loginid);
 
     # client can have only 1 MT demo & 1 MT real a/c
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my $user = BOM::User->new({email => $client->email});
 
     return get_mt5_logins($client, $user)->then(
         sub {
@@ -333,7 +338,7 @@ async_rpc mt5_new_account => sub {
 
 sub _check_logins {
     my ($client, $logins) = @_;
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my $user = BOM::User->new({email => $client->email});
 
     foreach my $login (@{$logins}) {
         return unless (any { $login eq $_->loginid } ($user->loginid));
@@ -359,7 +364,7 @@ Takes the following (named) parameters as inputs:
 
 =over 4
 
-=item * A Client::Account object under the key C<client>.
+=item * A BOM::User::Client object under the key C<client>.
 
 =item * A hash reference under the key C<args> that contains the MT5 login id 
 under C<login> key.
@@ -464,7 +469,7 @@ Takes the following (named) parameters as inputs:
 
 =over 4
 
-=item * A Client::Account object under the key C<client>.
+=item * A BOM::User::Client object under the key C<client>.
 
 =item * A hash reference under the key C<args> that contains some of the following keys:
 
@@ -570,7 +575,7 @@ Takes the following (named) parameters as inputs:
 
 =over 4
 
-=item * A Client::Account object under the key C<client>.
+=item * A BOM::User::Client object under the key C<client>.
 
 =item * A hash reference under the key C<args> that contains the MT5 login id 
 under C<login> key.
@@ -663,7 +668,7 @@ Takes the following (named) parameters as inputs:
 
 =over 4
 
-=item * A Client::Account object under the key C<client>.
+=item * A BOM::User::Client object under the key C<client>.
 
 =item * A hash reference under the key C<args> that contains:
 
@@ -764,6 +769,127 @@ async_rpc mt5_password_change => sub {
         });
 };
 
+=head2 mt5_password_reset
+
+    $mt5_pass_reset = mt5_password_reset({
+        client  => $client,
+        args    => $args
+    })
+    
+Takes a client object and a hash reference as inputs and returns 1 upon successful
+reset the user's MT5 account password.
+    
+Takes the following (named) parameters as inputs:
+    
+=over 3
+
+=item * C<params> hashref that contains:
+
+=over 3
+
+=item * A BOM::User::Client object under the key C<client>.
+
+=item * A hash reference under the key C<args> that contains:
+
+=over 3
+
+=item * C<login> that contains the MT5 login id.
+
+=item * C<new_password> that contains the user's new password. 
+
+=back
+
+=back
+
+=back
+
+Returns any of the following:
+
+=over 3
+
+=item * A hashref error message that contains the following keys, based on the given error:
+
+=over 3
+
+=item * MT5 suspended
+
+=over 4
+
+=item * C<code> stating C<MT5APISuspendedError>.
+
+=back
+
+=item * Permission denied
+
+=over 3
+
+=item * C<code> stating C<PermissionDenied>.
+
+=back
+
+=item * Retrieval Error
+
+=over 3
+
+=item * C<code> stating C<MT5PasswordChangeError>.
+
+=back
+
+=back
+
+=item * Returns 1, indicating successful reset.
+
+=back
+
+=cut
+
+rpc mt5_password_reset => sub {
+    my $params = shift;
+    my $client = $params->{client};
+    my $args   = $params->{args};
+    my $login  = $args->{login};
+    my $email  = BOM::Platform::Token->new({token => $args->{verification_code}})->email;
+    if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email, 'mt5_password_reset')->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $err->{code},
+                message_to_client => $err->{message_to_client}});
+    }
+
+    my $user = BOM::User->new({email => $email});
+
+    # MT5 login not belongs to user
+    return BOM::RPC::v3::Utility::permission_error()
+        unless _check_logins($client, ['MT' . $login]);
+
+    my $status = BOM::MT5::User::password_change({
+        login         => $login,
+        new_password  => $args->{new_password},
+        password_type => $args->{password_type} // 'main'
+    });
+    if ($status->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'MT5PasswordChangeError',
+                message_to_client => $status->{error}});
+    }
+
+    send_email({
+            from    => Brands->new(name => request()->brand)->emails('support'),
+            to      => $email,
+            subject => localize('Your MT5 password has been reset.'),
+            message => [
+                localize(
+                    'The password for your MT5 account [_1] has been reset. If this request was not performed by you, please immediately contact Customer Support.',
+                    $email
+                )
+            ],
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            template_loginid      => $login,
+        });
+
+    return 1;
+};
+
 sub _send_email {
     my %args = @_;
     my ($loginid, $mt5_id, $amount, $action, $error) = @args{qw(loginid mt5_id amount action error)};
@@ -786,13 +912,9 @@ sub _send_email {
 async_rpc mt5_deposit => sub {
     my $params = shift;
 
-    my $client = $params->{client};
-    my $args   = $params->{args};
-    my $source = $params->{source};
-
-    my $fm_loginid = $args->{from_binary};
-    my $to_mt5     = $args->{to_mt5};
-    my $amount     = $args->{amount};
+    my ($client, $args, $source) = @{$params}{qw/client args source/};
+    my ($fm_loginid, $to_mt5, $amount) =
+        @{$args}{qw/from_binary to_mt5 amount/};
 
     my $error_code = 'MT5DepositError';
 
@@ -815,7 +937,7 @@ async_rpc mt5_deposit => sub {
                 $fm_client_db->unfreeze;
             };
 
-            my $fm_client = Client::Account->new({loginid => $fm_loginid});
+            my $fm_client = BOM::User::Client->new({loginid => $fm_loginid});
 
             # From the point of view of our system, we're withdrawing
             # money to deposit into MT5
@@ -894,13 +1016,9 @@ async_rpc mt5_deposit => sub {
 async_rpc mt5_withdrawal => sub {
     my $params = shift;
 
-    my $client = $params->{client};
-    my $args   = $params->{args};
-    my $source = $params->{source};
-
-    my $fm_mt5     = $args->{from_mt5};
-    my $to_loginid = $args->{to_binary};
-    my $amount     = $args->{amount};
+    my ($client, $args, $source) = @{$params}{qw/client args source/};
+    my ($fm_mt5, $to_loginid, $amount) =
+        @{$args}{qw/from_mt5 to_binary amount/};
 
     my $error_code = 'MT5WithdrawalError';
     return _mt5_validate_and_get_amount($client, $to_loginid, $fm_mt5, $amount, $error_code)->then(
@@ -936,7 +1054,7 @@ async_rpc mt5_withdrawal => sub {
                         return _make_error($error_code, $status->{error});
                     }
 
-                    my $to_client = Client::Account->new({loginid => $to_loginid});
+                    my $to_client = BOM::User::Client->new({loginid => $to_loginid});
 
                     # TODO(leonerd): This Try::Tiny try block returns a Future in either case.
                     #   We might want to consider using Future->try somehow instead.
@@ -1009,9 +1127,11 @@ sub _get_mt5_account_from_affiliate_token {
         my $user = $aff->get_user($user_id) or return;
 
         my $affiliate_variables = $user->{USER_VARIABLES}->{VARIABLE} or return;
-        $affiliate_variables = [$affiliate_variables] unless ref($affiliate_variables) eq 'ARRAY';
+        $affiliate_variables = [$affiliate_variables]
+            unless ref($affiliate_variables) eq 'ARRAY';
 
-        my ($mt5_account) = grep { $_->{NAME} eq 'mt5_account' } @$affiliate_variables;
+        my ($mt5_account) =
+            grep { $_->{NAME} eq 'mt5_account' } @$affiliate_variables;
         return $mt5_account->{VALUE} if $mt5_account;
     }
 
@@ -1035,7 +1155,7 @@ sub _mt5_validate_and_get_amount {
 
     my $client_obj;
     try {
-        $client_obj = Client::Account->new({
+        $client_obj = BOM::User::Client->new({
             loginid      => $loginid,
             db_operation => 'replica'
         });
@@ -1131,7 +1251,9 @@ sub _make_error {
     my $generic_message = localize('There was an error processing the request.');
     return BOM::RPC::v3::Utility::create_error({
         code              => $error_code,
-        message_to_client => $msg_client ? $generic_message . ' ' . $msg_client : $generic_message,
+        message_to_client => $msg_client
+        ? $generic_message . ' ' . $msg_client
+        : $generic_message,
         ($msg) ? (message => $msg) : (),
     });
 }

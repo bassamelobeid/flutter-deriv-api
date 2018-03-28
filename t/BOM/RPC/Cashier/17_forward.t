@@ -15,11 +15,11 @@ use BOM::RPC::v3::Cashier;
 use BOM::RPC::v3::Accounts;
 use BOM::Platform::Password;
 use BOM::Platform::Token;
-use BOM::Platform::User;
-use Client::Account;
+use BOM::User;
+use BOM::User::Client;
 
 my ($t, $rpc_ct);
-my $client_mocked = Test::MockModule->new('Client::Account');
+my $client_mocked = Test::MockModule->new('BOM::User::Client');
 my %seen;
 $client_mocked->mock(
     'get_status',
@@ -80,8 +80,8 @@ subtest 'common' => sub {
         ->error_message_is('This is a virtual-money account. Please switch to a real-money account to access cashier.',
         'Correct error message for virtual account');
 
-    my $user_mocked = Test::MockModule->new('BOM::Platform::User');
-    $user_mocked->mock('new', sub { bless {}, 'BOM::Platform::User' });
+    my $user_mocked = Test::MockModule->new('BOM::User');
+    $user_mocked->mock('new', sub { bless {}, 'BOM::User' });
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr1->loginid, 'test token');
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_TNC_APPROVAL', 'Client needs to approve tnc before')
@@ -270,7 +270,7 @@ subtest 'landing_companies_specific' => sub {
 };
 
 subtest 'all status are covered' => sub {
-    my $all_status = Client::Account::client_status_types;
+    my $all_status = BOM::User::Client::client_status_types;
     # Flags to represent state, rather than status for preventing cashier access:
     # * social signup, jp_transaction_detail, duplicate_account, migrated_single_email
     # * document_under_review, document_needs_action - for document_upload state

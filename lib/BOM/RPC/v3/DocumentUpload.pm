@@ -4,9 +4,11 @@ use strict;
 use warnings;
 use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (localize);
+use BOM::Platform::Client::DocumentUpload;
 use Date::Utility;
 use BOM::Platform::Email qw(send_email);
 use Try::Tiny;
+use feature 'state';
 
 use BOM::RPC::Registry '-dsl';
 
@@ -30,12 +32,12 @@ rpc document_upload => sub {
 };
 
 sub start_document_upload {
-    my $params          = shift;
-    my $client          = $params->{client};
-    my $args            = $params->{args};
-    my $document_type   = $args->{document_type};
-    my $document_format = $args->{document_format};
-    my $loginid         = $client->loginid;
+    my $params  = shift;
+    my $client  = $params->{client};
+    my $args    = $params->{args};
+    my $loginid = $client->loginid;
+    my ($document_type, $document_format, $expected_checksum) =
+        @{$args}{qw/document_type document_format expected_checksum/};
 
     unless ($client->get_db eq 'write') {
         $client->set_db('write');
@@ -43,30 +45,20 @@ sub start_document_upload {
 
     _set_staff($client);
 
-    my $id;
-    my $error_occured;
-    try {
-        ($id) = $client->db->dbic->run(
-            ping => sub {
-                $_->selectrow_array(
-                    'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?)',
-                    undef, $loginid, $document_type, $document_format,
-                    $args->{expiration_date},
-                    ($args->{document_id} || ''));
-            });
-    }
-    catch {
-        $error_occured = 1;
-    };
+    my $query_result = BOM::Platform::Client::DocumentUpload::start_document_upload(
+        client          => $client,
+        doctype         => $document_type,
+        docformat       => $document_format,
+        file_checksum   => $expected_checksum,
+        expiration_date => $args->{expiration_date},
+        document_id     => ($args->{document_id} || ''));
 
-    if ($error_occured or not $id) {
-        warn 'start_document_upload in the db was not successful';
-        return create_upload_error();
-    }
+    my $err = check_for_query_error($query_result);
+    return $err if $err;
 
     return {
-        file_name => join('.', $loginid, $document_type, $id, $document_format),
-        file_id   => $id,
+        file_name => join('.', $loginid, $document_type, $query_result->{file_id}, $document_format),
+        file_id   => $query_result->{file_id},
         call_type => 1,
     };
 }
@@ -82,28 +74,17 @@ sub successful_upload {
 
     _set_staff($client);
 
-    my $result;
-    my $error_occured;
-    try {
-        ($result) = $client->db->dbic->run(
-            ping => sub {
-                $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?, ?)', undef, $args->{file_id}, $args->{checksum}, undef);
-            });
-    }
-    catch {
-        $error_occured = 1;
-    };
+    my $query_result = BOM::Platform::Client::DocumentUpload::finish_document_upload(
+        client  => $client,
+        file_id => $args->{file_id});
 
-    return create_upload_error('doc_not_found') if not $result;
-
-    if ($error_occured) {
-        warn 'Failed to update the uploaded document in the db';
-        return create_upload_error();
-    }
+    my $err = check_for_query_error($query_result);
+    return $err if $err;
 
     my $client_id = $client->loginid;
 
     my $status_changed;
+    my $error_occured;
     try {
         ($status_changed) = $client->db->dbic->run(
             ping => sub {
@@ -135,6 +116,16 @@ sub successful_upload {
     return $args;
 }
 
+sub check_for_query_error {
+    my $query_result = shift;
+
+    unless ($query_result->{file_id}) {
+        warn 'Document upload db query failed' unless ($query_result->{error}->{type} && $query_result->{error}->{type} eq 'duplicate_document');
+        return create_upload_error($query_result->{error}->{type});
+    }
+    return;
+}
+
 sub validate_input {
     my $params    = shift;
     my $args      = $params->{args};
@@ -155,6 +146,9 @@ sub validate_input {
 sub validate_id_and_exp_date {
     my $args          = shift;
     my $document_type = $args->{document_type};
+
+    # The fields expiration_date and document_id are only required for certain
+    #   document types, so only do this check in these cases.
 
     return if not $document_type or $document_type !~ /^passport|proofid|driverslicense$/;
 
@@ -178,28 +172,33 @@ sub validate_expiration_date {
 }
 
 sub create_upload_error {
-    my $reason = shift || 'unkown';
+    my $reason = shift;
 
-    my $message;
-    if ($reason eq 'virtual') {
-        $message = localize("Virtual accounts don't require document uploads.");
-    } elsif ($reason eq 'already_expired') {
-        $message = localize('Expiration date cannot be less than or equal to current date.');
-    } elsif ($reason eq 'missing_exp_date') {
-        $message = localize('Expiration date is required.');
-    } elsif ($reason eq 'missing_doc_id') {
-        $message = localize('Document ID is required.');
-    } elsif ($reason eq 'doc_not_found') {
-        $message = localize('Document not found.');
-    } elsif ($reason eq 'max_size') {
-        $message = localize('Maximum file size reached. Maximum allowed is [_1]', MAX_FILE_SIZE);
-    } else {    # Default
-        $message = localize('Sorry, an error occurred while processing your request.');
-    }
+    # This data is all static, so a state declaration stops reinitialization on every call to this function.
+    state $default_error_code = 'UploadDenied';
+    state $default_error_msg  = localize('Sorry, an error occurred while processing your request.');
+    state $errors             = {
+        virtual          => {message => localize("Virtual accounts don't require document uploads.")},
+        already_expired  => {message => localize('Expiration date cannot be less than or equal to current date.')},
+        missing_exp_date => {message => localize('Expiration date is required.')},
+        missing_doc_id   => {message => localize('Document ID is required.')},
+        max_size         => {message => localize("Maximum file size reached. Maximum allowed is [_1]", MAX_FILE_SIZE)},
+        duplicate_document => {
+            message    => localize('Document already uploaded.'),
+            error_code => 'DuplicateUpload'
+        },
+        checksum_mismatch => {
+            message    => localize('Checksum verification failed.'),
+            error_code => 'ChecksumMismatch'
+        },
+    };
+
+    my ($error_code, $message);
+    ($error_code, $message) = ($errors->{$reason}->{error_code}, $errors->{$reason}->{message}) if $reason;
 
     return BOM::RPC::v3::Utility::create_error({
-        code              => 'UploadDenied',
-        message_to_client => $message
+        code              => $error_code || $default_error_code,
+        message_to_client => $message    || $default_error_msg
     });
 }
 

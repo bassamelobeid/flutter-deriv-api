@@ -6,7 +6,7 @@ use warnings;
 use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Copier;
-use Client::Account;
+use BOM::User::Client;
 use Try::Tiny;
 
 use BOM::RPC::Registry '-dsl';
@@ -34,7 +34,7 @@ rpc copy_start => sub {
 
     my $trader_token  = $args->{copy_start};
     my $token_details = BOM::RPC::v3::Utility::get_token_details($trader_token);
-    my $trader        = try { Client::Account->new({loginid => $token_details->{loginid}, db_operation => 'replica'}) };
+    my $trader        = try { BOM::User::Client->new({loginid => $token_details->{loginid}, db_operation => 'replica'}) };
     unless ($token_details && $trader) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidToken',
@@ -57,6 +57,12 @@ rpc copy_start => sub {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'CopyTradingNotAllowed',
                 message_to_client => localize('Traders are not allowed to copy trades.')});
+    }
+    if ($client->landing_company->short ne $trader->landing_company->short) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'CopyTradingNotAllowed',
+                message_to_client => localize('Trader and copier must have the same landing company.')});
+        # This is a business decision, not a technical limitation.
     }
 
     unless ($client->default_account
@@ -103,7 +109,7 @@ rpc copy_stop => sub {
 
     my $trader_token  = $args->{copy_stop};
     my $token_details = BOM::RPC::v3::Utility::get_token_details($trader_token);
-    my $trader        = try { Client::Account->new({loginid => $token_details->{loginid}, db_operation => 'replica'}) };
+    my $trader        = try { BOM::User::Client->new({loginid => $token_details->{loginid}, db_operation => 'replica'}) };
     unless ($token_details && $trader) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidToken',

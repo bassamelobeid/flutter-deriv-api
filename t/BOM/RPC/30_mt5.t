@@ -7,13 +7,15 @@ use Test::MockModule;
 
 use Postgres::FeedDB::CurrencyConverter qw(in_USD amount_from_to_currency);
 
+use Email::Folder::Search;
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Helper::Client qw(create_client top_up);
-use BOM::Platform::User;
 use BOM::MT5::User::Async;
+use BOM::Platform::Token;
+use BOM::User;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
@@ -37,7 +39,7 @@ $test_client->email($DETAILS{email});
 $test_client->set_authentication('ID_DOCUMENT')->status('pass');
 $test_client->save;
 
-my $user = BOM::Platform::User->create(
+my $user = BOM::User->create(
     email    => $DETAILS{email},
     password => 's3kr1t',
 );
@@ -163,9 +165,10 @@ subtest 'password change' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login        => $DETAILS{login},
-            old_password => $DETAILS{password},
-            new_password => 'Ijkl6789',
+            login         => $DETAILS{login},
+            old_password  => $DETAILS{password},
+            new_password  => 'Ijkl6789',
+            password_type => 'main'
         },
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_password_change');
@@ -175,6 +178,89 @@ subtest 'password change' => sub {
     $params->{args}{login} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_password_change wrong login')
         ->error_code_is('PermissionDenied', 'error code for mt5_password_change wrong login');
+};
+
+my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
+$mailbox->init;
+
+subtest 'password reset' => sub {
+    my $method = 'mt5_password_reset';
+    $mailbox->clear;
+
+    my $code = BOM::Platform::Token->new({
+            email       => $DETAILS{email},
+            expires_in  => 3600,
+            created_for => 'mt5_password_reset'
+        })->token;
+
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            login             => $DETAILS{login},
+            new_password      => 'Ijkl6789',
+            password_type     => 'main',
+            verification_code => $code
+        }};
+
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_password_change');
+    # This call yields a truth integer directly, not a hash
+    is($c->result, 1, 'result');
+
+    my $subject = 'Your MT5 password has been reset.';
+    my @msgs    = $mailbox->search(
+        email   => $DETAILS{email},
+        subject => qr/\Q$subject\E/
+    );
+    ok(@msgs, "email received");
+
+};
+
+subtest 'investor password reset' => sub {
+    my $method = 'mt5_password_reset';
+    $mailbox->clear;
+
+    my $code = BOM::Platform::Token->new({
+            email       => $DETAILS{email},
+            expires_in  => 3600,
+            created_for => 'mt5_password_reset'
+        })->token;
+
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            login             => $DETAILS{login},
+            new_password      => 'Abcd1234',
+            password_type     => 'investor',
+            verification_code => $code
+        }};
+
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_password_change');
+    # This call yields a truth integer directly, not a hash
+    is($c->result, 1, 'result');
+
+    my $subject = 'Your MT5 password has been reset.';
+    my @msgs    = $mailbox->search(
+        email   => $DETAILS{email},
+        subject => qr/\Q$subject\E/
+    );
+    ok(@msgs, "email received");
+
+};
+
+subtest 'password check investor' => sub {
+    my $method = 'mt5_password_check';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            login         => $DETAILS{login},
+            password      => 'Abcd1234',
+            password_type => 'investor'
+        },
+    };
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_password_check');
 };
 
 subtest 'deposit' => sub {
@@ -218,8 +304,7 @@ subtest 'withdrawal' => sub {
     $c->call_ok($method, $params)->has_no_error('no error for mt5_withdrawal');
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
 
-    cmp_ok $test_client->default_account->load->balance, '==', 820 + 150,
-        "Correct balance after withdrawal";
+    cmp_ok $test_client->default_account->load->balance, '==', 820 + 150, "Correct balance after withdrawal";
 
     $params->{args}{from_mt5} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_withdrawal wrong login')

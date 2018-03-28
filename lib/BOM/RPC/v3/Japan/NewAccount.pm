@@ -17,7 +17,7 @@ use BOM::RPC::v3::Utility;
 use BOM::Platform::Locale;
 use BOM::Platform::Account::Real::japan;
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::User;
+use BOM::User;
 use BOM::Platform::Config;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::AuditLog;
@@ -30,7 +30,7 @@ requires_auth();
 sub get_jp_account_status {
     my $client = shift;
 
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my $user = BOM::User->new({email => $client->email});
     my @siblings = $user->clients(disabled_ok => 1);
     my $jp_client = $user->get_default_client();
 
@@ -119,7 +119,7 @@ rpc jp_knowledge_test => sub {
 
     my $client = $params->{client};
 
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my $user = BOM::User->new({email => $client->email});
     my @siblings = $user->clients(disabled_ok => 1);
     my $jp_client = $user->get_default_client();
 
@@ -195,9 +195,7 @@ rpc jp_knowledge_test => sub {
     }
 
     if (not $jp_client->save()) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InternalServerError',
-                message_to_client => localize('Sorry, an error occurred while processing your request.')});
+        return BOM::RPC::v3::Utility::client_error();
     }
 
     if ($status eq 'pass') {
@@ -286,7 +284,7 @@ sub set_jp_settings {
     push @updated,
         [
         localize('Receive news and special offers'),
-        BOM::Platform::User->new({email => $client->email})->email_consent ? localize("Yes") : localize("No"),
+        BOM::User->new({email => $client->email})->email_consent ? localize("Yes") : localize("No"),
         $args->{email_consent} ? localize("Yes") : localize("No")]
         if exists $args->{email_consent};
 
@@ -370,9 +368,7 @@ sub set_jp_settings {
 
     $client->latest_environment(Date::Utility->new->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
     if (not $client->save()) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InternalServerError',
-                message_to_client => localize('Sorry, an error occurred while processing your account.')});
+        return BOM::RPC::v3::Utility::client_error();
     }
 
     my $message = localize(

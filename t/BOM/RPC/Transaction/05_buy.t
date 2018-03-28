@@ -53,7 +53,7 @@ subtest 'buy' => sub {
 
     #I don't know how to set such a scenario that a valid token id has no valid client,
     #So I mock client module to simulate this scenario.
-    my $mocked_client = Test::MockModule->new('Client::Account');
+    my $mocked_client = Test::MockModule->new('BOM::User::Client');
     $mocked_client->mock('new', sub { return undef });
     $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('AuthorizationRequired', 'AuthorizationRequired')
         ->error_message_is('Please log in.', 'please login');

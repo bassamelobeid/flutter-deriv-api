@@ -20,7 +20,7 @@ use HTML::Entities qw(encode_entities);
 use List::Util qw(any sum0);
 
 use Brands;
-use Client::Account;
+use BOM::User::Client;
 use LandingCompany::Registry;
 use Format::Util::Numbers qw/formatnumber financialrounding/;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
@@ -34,7 +34,7 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Locale qw/get_state_by_id/;
-use BOM::Platform::User;
+use BOM::User;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Token;
@@ -48,6 +48,8 @@ use BOM::Database::DataMapper::Transaction;
 use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
 use BOM::Platform::Runtime;
+
+my $allowed_fields_for_virtual = qr/passthrough|set_settings|email_consent|residence|allow_copiers/;
 
 my $json = JSON::MaybeXS->new;
 
@@ -98,7 +100,7 @@ rpc "payout_currencies",
     my $token_details = $params->{token_details};
     my $client;
     if ($token_details and exists $token_details->{loginid}) {
-        $client = Client::Account->new({
+        $client = BOM::User::Client->new({
             loginid      => $token_details->{loginid},
             db_operation => 'replica'
         });
@@ -431,7 +433,7 @@ Takes the following (named) parameters:
 
 =over 4
 
-=item * C<params> - A hashref with reference to Client::Account object under the key C<client>
+=item * C<params> - A hashref with reference to BOM::User::Client object under the key C<client>
 
 =back
 
@@ -486,7 +488,7 @@ rpc get_account_status => sub {
     $risk_classification =~ s/manual override - //;
 
     # differentiate between social and password based accounts
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my $user = BOM::User->new({email => $client->email});
     push @status, 'unwelcome' if not $already_unwelcomed and BOM::Transaction::Validation->new({clients => [$client]})->check_trade_status($client);
 
     push @status, 'social_signup' if $user->has_social_signup;
@@ -548,12 +550,10 @@ rpc change_password => sub {
 
     # Fetch user by loginid, if the user doesn't exist or
     # has no associated clients then throw exception
-    my $user = BOM::Platform::User->new({loginid => $client->loginid});
+    my $user = BOM::User->new({loginid => $client->loginid});
     my @clients;
     if (not $user or not @clients = $user->clients) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => "InternalServerError",
-                message_to_client => localize("Sorry, an error occurred while processing your account.")});
+        return BOM::RPC::v3::Utility::client_error();
     }
 
     # do not allow social based clients to reset password
@@ -636,7 +636,7 @@ rpc cashier_password => sub {
             return $error_sub->(localize('Your cashier was locked.'));
         }
 
-        my $user = BOM::Platform::User->new({email => $client->email});
+        my $user = BOM::User->new({email => $client->email});
         if (BOM::Platform::Password::checkpw($lock_password, $user->password)) {
             return $error_sub->(localize('Please use a different password than your login password.'));
         }
@@ -731,12 +731,10 @@ rpc "reset_password",
                 message_to_client => $err->{message_to_client}});
     }
 
-    my $user = BOM::Platform::User->new({email => $email});
+    my $user = BOM::User->new({email => $email});
     my @clients = ();
     if (not $user or not @clients = $user->clients) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => "InternalServerError",
-                message_to_client => localize("Sorry, an error occurred while processing your account.")});
+        return BOM::RPC::v3::Utility::client_error();
     }
 
     # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
@@ -823,7 +821,7 @@ rpc get_settings => sub {
         email         => $client->email,
         country       => $country,
         country_code  => $country_code,
-        email_consent => do { my $user = BOM::Platform::User->new({email => $client->email}); ($user && $user->email_consent) ? 1 : 0 },
+        email_consent => do { my $user = BOM::User->new({email => $client->email}); ($user && $user->email_consent) ? 1 : 0 },
         (
             $client->is_virtual
             ? ()
@@ -861,53 +859,52 @@ rpc set_settings => sub {
     my ($website_name, $client_ip, $user_agent, $language, $args) =
         @{$params}{qw/website_name client_ip user_agent language args/};
 
-    my ($residence, $allow_copiers, $err) = ($args->{residence}, $args->{allow_copiers});
+    my ($residence, $allow_copiers, $jp_status) = ($args->{residence}, $args->{allow_copiers});
     if ($client->is_virtual) {
         # Virtual client can update
         # - residence, if residence not set. But not for Japan
         # - email_consent (common to real account as well)
         if (not $client->residence and $residence and $residence ne 'jp') {
             if (Brands->new(name => request()->brand)->countries_instance->restricted_country($residence)) {
-                $err = BOM::RPC::v3::Utility::create_error({
-                        code              => 'invalid residence',
+                return BOM::RPC::v3::Utility::create_error({
+                        code              => 'InvalidResidence',
                         message_to_client => localize('Sorry, our service is not available for your country of residence.')});
             } else {
                 $client->residence($residence);
                 if (not $client->save()) {
-                    $err = BOM::RPC::v3::Utility::create_error({
-                            code              => 'InternalServerError',
-                            message_to_client => localize('Sorry, an error occurred while processing your account.')});
+                    return BOM::RPC::v3::Utility::client_error();
                 }
             }
         } elsif (
             grep {
-                $_ !~ /passthrough|set_settings|email_consent|residence/
+                !/$allowed_fields_for_virtual/
             } keys %$args
             )
         {
             # we only allow these keys in virtual set settings any other key will result in permission error
-            $err = BOM::RPC::v3::Utility::permission_error();
+            return BOM::RPC::v3::Utility::permission_error();
         }
     } else {
         # real client is not allowed to update residence
-        $err = BOM::RPC::v3::Utility::permission_error() if $residence;
+        return BOM::RPC::v3::Utility::permission_error() if $residence;
 
         # handle Japan settings update separately
         if ($client->residence eq 'jp') {
             # this may return error or {status => 1}
-            $err = BOM::RPC::v3::Japan::NewAccount::set_jp_settings($params);
+            $jp_status = BOM::RPC::v3::Japan::NewAccount::set_jp_settings($params);
+            return $jp_status if $jp_status->{error};
         } elsif ($client->account_opening_reason
             and $args->{account_opening_reason}
             and $args->{account_opening_reason} ne $client->account_opening_reason)
         {
             # cannot set account_opening_reason with a different value
-            $err = BOM::RPC::v3::Utility::create_error({
+            return BOM::RPC::v3::Utility::create_error({
                 code              => 'PermissionDenied',
                 message_to_client => localize("Value of account_opening_reason cannot be changed."),
             });
         } elsif (not $client->account_opening_reason and not $args->{account_opening_reason}) {
             # required to set account_opening_reason if empty
-            $err = BOM::RPC::v3::Utility::create_error({
+            return BOM::RPC::v3::Utility::create_error({
                     code              => 'InputValidationFailed',
                     message_to_client => localize("Input validation failed: account_opening_reason"),
                     details           => {
@@ -916,15 +913,13 @@ rpc set_settings => sub {
                 });
         }
 
-        $err = BOM::RPC::v3::Utility::create_error({
+        return BOM::RPC::v3::Utility::create_error({
                 code              => 'PermissionDenied',
                 message_to_client => localize("Value of place_of_birth cannot be changed.")}
         ) if ($client->place_of_birth and $args->{place_of_birth} and $args->{place_of_birth} ne $client->place_of_birth);
 
-        $err = BOM::RPC::v3::Utility::permission_error() if $allow_copiers && ($client->broker_code ne 'CR');
-
         if ($client->residence eq 'gb' and defined $args->{address_postcode} and $args->{address_postcode} eq '') {
-            $err = BOM::RPC::v3::Utility::create_error({
+            return BOM::RPC::v3::Utility::create_error({
                     code              => 'InputValidationFailed',
                     message_to_client => localize("Input validation failed: address_postcode"),
                     details           => {
@@ -934,7 +929,9 @@ rpc set_settings => sub {
         }
     }
 
-    return $err if $err->{error};
+    return BOM::RPC::v3::Utility::permission_error()
+        if $allow_copiers
+        and ($client->landing_company->short ne 'costarica' and not $client->is_virtual);
 
     if (
         $allow_copiers
@@ -952,13 +949,13 @@ rpc set_settings => sub {
     # email consent is per user whereas other settings are per client
     # so need to save it separately
     if (defined $args->{email_consent}) {
-        my $user = BOM::Platform::User->new({email => $client->email});
+        my $user = BOM::User->new({email => $client->email});
         $user->email_consent($args->{email_consent});
         $user->save;
     }
 
-    # need to handle for $err->{status} as that come from japan settings
-    return {status => 1} if ($client->is_virtual || $err->{status});
+    # need to handle for $jp_status->{status} as that come from japan settings
+    return {status => 1} if $jp_status->{status};
 
     my $tax_residence             = $args->{'tax_residence'}             // '';
     my $tax_identification_number = $args->{'tax_identification_number'} // '';
@@ -1010,7 +1007,7 @@ rpc set_settings => sub {
         return undef;
     };
 
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my $user = BOM::User->new({email => $client->email});
     foreach my $cli ($user->clients) {
         next if $cli->is_virtual;
 
@@ -1043,24 +1040,20 @@ rpc set_settings => sub {
         my $set_status = $update_professional_status->($cli);
 
         if (not $cli->save()) {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => 'InternalServerError',
-                    message_to_client => localize('Sorry, an error occurred while processing your account.')});
+            return BOM::RPC::v3::Utility::client_error();
         }
 
         BOM::RPC::v3::Utility::send_professional_requested_email($cli->loginid, $cli->residence) if ($set_status);
     }
     # update client value after latest changes
-    $client = Client::Account->new({loginid => $client->loginid});
+    $client = BOM::User::Client->new({loginid => $client->loginid});
 
     # only allow current client to set allow_copiers
     if (defined $allow_copiers) {
         $client->allow_copiers($allow_copiers);
     }
     if (not $client->save()) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InternalServerError',
-                message_to_client => localize('Sorry, an error occurred while processing your account.')});
+        return BOM::RPC::v3::Utility::client_error();
     }
 
     if ($cil_message) {
@@ -1099,9 +1092,7 @@ rpc set_settings => sub {
         [localize('Tax identification number'), ($client->tax_identification_number || '')],
         );
     push @updated_fields,
-        [
-        localize('Receive news and special offers'),
-        BOM::Platform::User->new({email => $client->email})->email_consent ? localize("Yes") : localize("No")]
+        [localize('Receive news and special offers'), BOM::User->new({email => $client->email})->email_consent ? localize("Yes") : localize("No")]
         if exists $args->{email_consent};
     push @updated_fields, [localize('Allow copiers'), $client->allow_copiers ? localize("Yes") : localize("No")]
         if defined $allow_copiers;
@@ -1196,6 +1187,15 @@ rpc set_self_exclusion => sub {
 
     my $client = $params->{client};
     return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
+
+    my $lim = $client->get_self_exclusion_until_date;
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'SelfExclusion',
+            message_to_client => localize(
+                'Sorry, but you have self-excluded yourself from the website until [_1]. If you are unable to place a trade or deposit after your self-exclusion period, please contact the Customer Support team for assistance.',
+                $lim
+            ),
+        }) if $lim;
 
     # get old from above sub _get_self_exclusion_details
     my $self_exclusion = _get_self_exclusion_details($client);
@@ -1463,9 +1463,7 @@ rpc tnc_approval => sub {
     if ($params->{args}->{ukgc_funds_protection}) {
         $client->set_status('ukgc_funds_protection', 'system', 'Client acknowledges the protection level of funds');
         if (not $client->save()) {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => 'InternalServerError',
-                    message_to_client => localize('Sorry, an error occurred while processing your request.')});
+            return BOM::RPC::v3::Utility::client_error();
         }
     } else {
         my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
@@ -1476,9 +1474,7 @@ rpc tnc_approval => sub {
         {
             $client->set_status('tnc_approval', 'system', $current_tnc_version);
             if (not $client->save()) {
-                return BOM::RPC::v3::Utility::create_error({
-                        code              => 'InternalServerError',
-                        message_to_client => localize('Sorry, an error occurred while processing your request.')});
+                return BOM::RPC::v3::Utility::client_error();
             }
         }
     }
@@ -1500,7 +1496,7 @@ rpc login_history => sub {
         }
     }
 
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my $user = BOM::User->new({email => $client->email});
     my $login_history = $user->find_login_history(
         sort_by => 'history_date desc',
         limit   => $limit
@@ -1571,7 +1567,7 @@ rpc set_financial_assessment => sub {
         my %financial_data = map { $_ => $params->{args}->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
         my $financial_evaluation = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
 
-        my $user = BOM::Platform::User->new({email => $client->email});
+        my $user = BOM::User->new({email => $client->email});
         foreach my $cli ($user->clients) {
             $cli->financial_assessment({
                 data => Encode::encode_utf8($json->encode($financial_evaluation->{user_data})),

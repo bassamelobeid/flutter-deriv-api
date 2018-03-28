@@ -8,7 +8,7 @@ use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Platform::User;
+use BOM::User;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::Password;
 
@@ -88,7 +88,7 @@ subtest 'new account' => sub {
         });
         $test_client->email('test.account@binary.com');
         $test_client->save;
-        my $user = BOM::Platform::User->create(
+        my $user = BOM::User->create(
             email    => 'test.account@binary.com',
             password => 'jskjd8292922',
         );

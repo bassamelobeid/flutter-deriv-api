@@ -13,7 +13,7 @@ use BOM::RPC::Registry '-dsl';
 use BOM::RPC::v3::Utility;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use Client::Account;
+use BOM::User::Client;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Runtime;
 use BOM::Platform::Chronicle;
@@ -28,10 +28,11 @@ rpc active_symbols => sub {
     my $product_type         = $params->{args}->{product_type};
     my $language             = $params->{language} || 'EN';
     my $token_details        = $params->{token_details};
+    my $country_code         = $params->{country_code} // '';
 
     my $offerings_obj;
     if ($token_details and exists $token_details->{loginid}) {
-        my $client = Client::Account->new({
+        my $client = BOM::User::Client->new({
             loginid      => $token_details->{loginid},
             db_operation => 'replica'
         });
@@ -43,8 +44,8 @@ rpc active_symbols => sub {
     unless ($offerings_obj) {
         my $landing_company = LandingCompany::Registry::get($landing_company_name);
         $product_type //= $landing_company->default_offerings;
-        my $method = $product_type eq 'basic' ? 'basic_offerings' : 'multi_barrier_offerings';
-        $offerings_obj = $landing_company->$method(BOM::Platform::Runtime->instance->get_offerings_config);
+        my $method = $product_type eq 'basic' ? 'basic_offerings_for_country' : 'multi_barrier_offerings_for_country';
+        $offerings_obj = $landing_company->$method($country_code, BOM::Platform::Runtime->instance->get_offerings_config);
     }
 
     die 'Could not retrieve offerings for landing_company[' . $landing_company_name . '] product_type[' . $product_type . ']' unless ($offerings_obj);
@@ -54,7 +55,7 @@ rpc active_symbols => sub {
         'legal_allowed_markets', join('::', ($params->{args}->{active_symbols}, $language, $offerings_obj->name, $product_type, $appconfig_revision))
     );
 
-    my $active_symbols;
+    my $active_symbols = [];    # API response expects an array eventhough it is empty
     if (my $cached_symbols = Cache::RedisDB->get($namespace, $key)) {
         $active_symbols = $cached_symbols;
     } else {
