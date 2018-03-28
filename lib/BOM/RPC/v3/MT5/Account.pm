@@ -843,14 +843,16 @@ Returns any of the following:
 
 =cut
 
-rpc mt5_password_reset => sub {
+async_rpc mt5_password_reset => sub {
     my $params = shift;
     my $client = $params->{client};
     my $args   = $params->{args};
     my $login  = $args->{login};
+
     my $email  = BOM::Platform::Token->new({token => $args->{verification_code}})->email;
+
     if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email, 'mt5_password_reset')->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
+        return create_error_future({
                 code              => $err->{code},
                 message_to_client => $err->{message_to_client}});
     }
@@ -858,36 +860,41 @@ rpc mt5_password_reset => sub {
     my $user = BOM::User->new({email => $email});
 
     # MT5 login not belongs to user
-    return BOM::RPC::v3::Utility::permission_error()
+    return permission_error_future()
         unless _check_logins($client, ['MT' . $login]);
 
-    my $status = BOM::MT5::User::password_change({
+    return BOM::MT5::User::Async::password_change({
         login         => $login,
         new_password  => $args->{new_password},
         password_type => $args->{password_type} // 'main'
+    })
+    ->then(
+    sub {
+        my ($status) = @_;
+
+        if ($status->{error}) {
+            return create_error_future({
+                    code              => 'MT5PasswordChangeError',
+                    message_to_client => $status->{error}});
+        }
+
+        send_email({
+                from    => Brands->new(name => request()->brand)->emails('support'),
+                to      => $email,
+                subject => localize('Your MT5 password has been reset.'),
+                message => [
+                    localize(
+                        'The password for your MT5 account [_1] has been reset. If this request was not performed by you, please immediately contact Customer Support.',
+                        $email
+                    )
+                ],
+                use_email_template    => 1,
+                email_content_is_html => 1,
+                template_loginid      => $login,
+            });
+
+        return Future->done(1);
     });
-    if ($status->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'MT5PasswordChangeError',
-                message_to_client => $status->{error}});
-    }
-
-    send_email({
-            from    => Brands->new(name => request()->brand)->emails('support'),
-            to      => $email,
-            subject => localize('Your MT5 password has been reset.'),
-            message => [
-                localize(
-                    'The password for your MT5 account [_1] has been reset. If this request was not performed by you, please immediately contact Customer Support.',
-                    $email
-                )
-            ],
-            use_email_template    => 1,
-            email_content_is_html => 1,
-            template_loginid      => $login,
-        });
-
-    return 1;
 };
 
 sub _send_email {
