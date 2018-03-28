@@ -153,7 +153,9 @@ sub password_check {
     my $args  = shift;
     my $param = {
         login    => $args->{login},
-        password => $args->{password}};
+        password => $args->{password},
+        type     => $args->{type},
+    };
 
     return _invoke_mt5('UserPasswordCheck', $param)->then(
         sub {
@@ -170,7 +172,9 @@ sub password_change {
     my $args  = shift;
     my $param = {
         login        => $args->{login},
-        new_password => $args->{new_password}};
+        new_password => $args->{new_password},
+        type         => $args->{type},
+    };
 
     return _invoke_mt5('UserPasswordChange', $param)->then(
         sub {
