@@ -28,7 +28,7 @@
         "contract_type": {
             "type": "array",
             "items": [
-                {"enum": ["UPORDOWN", "EXPIRYRANGE", "ONETOUCH", "CALLE", "LBHIGHLOW", "ASIAND", "EXPIRYRANGEE", "DIGITDIFF", "DIGITMATCH", "DIGITOVER", "PUTE", "DIGITUNDER", "NOTOUCH", "CALL", "RANGE", "LBFLOATPUT", "DIGITODD", "PUT", "ASIANU", "LBFLOATCALL", "EXPIRYMISSE", "EXPIRYMISS", "DIGITEVEN"]
+                {"enum": ["UPORDOWN", "EXPIRYRANGE", "ONETOUCH", "CALLE", "LBHIGHLOW", "ASIAND", "EXPIRYRANGEE", "DIGITDIFF", "DIGITMATCH", "DIGITOVER", "PUTE", "DIGITUNDER", "NOTOUCH", "CALL", "RANGE", "LBFLOATPUT", "DIGITODD", "PUT", "ASIANU", "LBFLOATCALL", "EXPIRYMISSE", "EXPIRYMISS", "DIGITEVEN", "TICKHIGH", "TICKLOW"]
                 }
             ],
             "description": "One or two valid contract-types",
@@ -95,9 +95,8 @@
             "description":"Required only for multi-barrier trading. Defines the epoch value of the trading period start time"
         },
         "product_type": {
-          "description": "The product type, either basic or multi_barrier",
-          "enum": ["multi_barrier", "basic"],
-          "default": "basic"
+            "description":"[Optional] If you specify this field, only contracts tradable through that contract type will be returned."
+            "enum": ["multi_barrier", "basic"]
         },
         "passthrough": {
             "type": "object",
