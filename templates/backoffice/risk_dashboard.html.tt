@@ -1,10 +1,10 @@
 <p>See, also: <a href="[% dtr_link | none %]">this month's daily turnover report</a>.</p>
+<p>See, also: <a href="[% mutlibarrier_link | none %]"> multibarrier's exposures report</a>.</p>
 <p>Summary of period starting at [% start_date %] and ending [% end_date %].</p>
 <div id="rd-tabs">
   <ul>
     <li><a href="#rd-summary">Client Summary</a></li>
     <li><a href="#rd-pivot">Pivot</a></li>
-    <li><a href="#rd-multibarrier">Multibarrier Trading</a></li>
   </ul>
   <div id="rd-summary">
         <div class="sum_table">
@@ -56,9 +56,6 @@
 </div>
 <div id="rd-pivot">
 [% INCLUDE 'backoffice/risk_dashboard_pivot.html.tt' pivot = open_bets.pivot %]
-</div>
-<div id="rd-multibarrier">
-[% INCLUDE 'backoffice/multibarrier.html.tt' data = multibarrier %]
 </div>
 
 <style type="text/css">

@@ -6,6 +6,7 @@
 				  display: flex;
 				  flex-direction: row;
 				  align-items: flex-start;
+                                  background-color: #cfd;
 
 				}
 				.contract-table .expiry {
@@ -94,14 +95,24 @@
         .contract-table .contract-type {
             display: inline-block;
         }
+
 </style>
 
-    
+
+<p>See, also: <a href="[% risk_report_url %]" >the lastest daily turnover report</a></p>
+
+<p> Few notes: </p>
+<p> 1. For each barrier tier, the exposure on an underlying is the net exposure from both Call and Put. Example: If we have exposure of USD50k on Call and USD20K on Put, the net of USD30k on Call will be shown. </p>
+<p> 2. The red dotted line is the indication of where is the current spot relative to the barrier tier </p>
+<p> 3. All the exposures are in USD </p>
+<p> 4. This is only for intraday Calle/Put window </p>
+
 
 [% FOREACH expiry IN data.keys %]
 	<div class='contract-table'>
-		 <p> <div class='expiry'>Trading Window:  [% expiry %] </div></p>
+		 <p> <b><div class='expiry'>Trading Window:  [% expiry %] </div></b></p>
 			[% FOREACH contract IN data.$expiry.keys.reverse %]
+                                                [% IF contract !='max' %]
 						<p><div class='contract-type [% contract == 'PUT' ? 'reverse' : '' %]'></p>
 									<div class='title'> [% contract %] </div>
 									[% FOREACH barrier IN data.$expiry.$contract.barrier.keys.nsort.reverse %]
@@ -109,14 +120,15 @@
 												[% FOREACH underlying IN data.$expiry.$contract.barrier.$barrier.keys %]
 							<div class='row [% data.$expiry.$contract.barrier.$barrier.$underlying.isSpot ? 'spot-line' : '' %] [% data.$expiry.$contract.barrier.$barrier.$underlying.value ? '' : 'hide' %]'>
 															<div style='flex-grow: [% data.$expiry.$contract.barrier.$barrier.$underlying.value %]'></div>
-															<div style='flex-grow: calc([% data.$expiry.CALLE.max %] - [% data.$expiry.$contract.barrier.$barrier.$underlying.value %])'></div>
-															<div> [%underlying %]([% data.$expiry.$contract.barrier.$barrier.$underlying.value || '' %]) </div>
+															<div style='flex-grow: calc([% data.$expiry.max %] - [% data.$expiry.$contract.barrier.$barrier.$underlying.value %])'></div>
+															<div> [%underlying %](USD[% data.$expiry.$contract.barrier.$barrier.$underlying.value || '' %]) </div>
 										
 			</div>
 											 [% END %]
 									 </div>
 									[% END %]
 						</div>
+                                                [% END %]
 	     [% END %]
 	</div>
 [% END %]
