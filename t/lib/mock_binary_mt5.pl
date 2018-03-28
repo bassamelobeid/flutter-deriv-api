@@ -1,4 +1,4 @@
-# This script contains a mocked MT5 wrapper command used by the tests in t/BOM/RPC/30_mt5.t
+# This script contains a mocked MT5 wrapper command used by the tests in t/BOM/RPC/30_mt5.t and t/BOM/RPC/05_accounts.t
 
 use strict;
 use warnings;
