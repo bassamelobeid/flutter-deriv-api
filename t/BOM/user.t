@@ -17,6 +17,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::User;
+use BOM::MT5::User;
 use BOM::Platform::Password;
 
 my $email    = 'abc@binary.com';
