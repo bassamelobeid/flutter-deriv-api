@@ -6,7 +6,7 @@
     "properties":{
         "contracts_for":{
             "type":"string",
-            "description":"The short symbol name",
+            "description":"The short symbol name (obtained from active_symbols call)",
             "pattern":"^\\w{2,30}$",
             "required": "1"
         },
