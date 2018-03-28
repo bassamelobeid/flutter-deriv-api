@@ -95,7 +95,7 @@
             "description":"Required only for multi-barrier trading. Defines the epoch value of the trading period start time"
         },
         "product_type": {
-            "description":"[Optional] If you specify this field, only contracts tradable through that contract type will be returned."
+            "description":"[Optional] If you specify this field, only contracts tradable through that contract type will be returned.",
             "enum": ["multi_barrier", "basic"]
         },
         "passthrough": {
