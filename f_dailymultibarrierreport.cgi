@@ -10,20 +10,24 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 use Format::Util::Numbers qw(commas);
 BOM::Backoffice::Sysinit::init();
-
+use BOM::Database::DataMapper::CollectorReporting;
 PrintContentType();
 BrokerPresentation('MULTIBARRIER TRADING');
 Bar("EXPOSURE REPORT for MULTIBARRIER TRADING");
 
 my $args = request()->params;
-$args->{broker}   ||= 'FOG';
+$args->{broker} ||= 'FOG';
+
+my $last_generated_time =
+    BOM::Database::DataMapper::CollectorReporting->new({broker_code => 'CR'})->get_last_generated_historical_marked_to_market_time;
 
 my $multibarrier_report = MultiBarrierReport($args);
 BOM::Backoffice::Request::template->process(
     'backoffice/multibarrier.html.tt',
     {
-        data       => $multibarrier_report,
-        risk_report_url =>  request()->url_for('backoffice/f_dailyturnoverreport.cgi'), 
+        data            => $multibarrier_report,
+        generated_time  => $last_generated_time,
+        risk_report_url => request()->url_for('backoffice/f_dailyturnoverreport.cgi'),
     });
 
 code_exit_BO();
