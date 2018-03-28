@@ -27,7 +27,9 @@ use Quant::Framework;
 use BOM::Platform::Chronicle;
 use BOM::Platform::Runtime;
 
-BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles('{"yyy": {"market": "forex", "barrier_category": "euro_atm", "commission": "0.05", "name": "test commission", "updated_on": "xxx date", "updated_by": "xxyy"}}');
+BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+    '{"yyy": {"market": "forex", "barrier_category": "euro_atm", "commission": "0.05", "name": "test commission", "updated_on": "xxx date", "updated_by": "xxyy"}}'
+);
 
 initialize_realtime_ticks_db();
 my $now   = Date::Utility->new('2005-09-21 06:46:00');
@@ -813,24 +815,24 @@ subtest 'send_ask - landing company japan' => sub {
     my $params = {
         client_ip => '127.0.0.1',
         args      => {
-            "proposal"         => 1,
-            "amount"           => "100",
-            "basis"            => "payout",
-            "contract_type"    => "CALL",
-            "currency"         => "USD",
-            "duration"         => "60",
-            "duration_unit"    => "s",
-            "symbol"           => "R_50",
-            product_type       => 'multi_barrier',
-            landing_company    => 'japan',
-            barrier            => 100,
-            "streaming_params" => {add_theo_probability => 1},
+            "proposal"           => 1,
+            "amount"             => "100",
+            "basis"              => "payout",
+            "contract_type"      => "CALL",
+            "currency"           => "USD",
+            "duration"           => "60",
+            "duration_unit"      => "s",
+            "symbol"             => "R_50",
+            product_type         => 'multi_barrier',
+            landing_company      => 'japan',
+            barrier              => 100,
+            "streaming_params"   => {add_theo_probability => 1},
             trading_period_start => $trading_period->[0]->{date_start}{epoch},
         }};
     my $result = $c->call_ok('send_ask', $params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError')->result;
     is $result->{error}->{message_to_client}, 'Trading is not offered for this asset.', 'error message is correct';
 
-    sleep(1); #needed to sleep prevent race condition
+    sleep(1);    #needed to sleep prevent race condition
     $params->{args}{contract_type} = 'CALLE';
     $params->{args}{symbol}        = 'frxUSDJPY';
     $result = $c->call_ok('send_ask', $params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError')->result;
