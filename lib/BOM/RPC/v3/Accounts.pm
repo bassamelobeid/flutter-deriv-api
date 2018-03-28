@@ -1387,9 +1387,9 @@ rpc set_self_exclusion => sub {
 # Need to send email in 2 circumstances:
 #   - Any client sets a self exclusion period
 #   - A 'malta' client with MT5 account(s) sets any of these settings
-    my @mt_logins = get_non_demo_mt5_accounts($client);
+    my @mt5_logins = BOM::User->new({loginid => $client->loginid})->mt5_logins('real');
 
-    if ($client->landing_company->short eq 'malta' && @mt_logins) {
+    if ($client->landing_company->short eq 'malta' && @mt5_logins) {
         send_self_exclusion_nofitication($client, 'malta_with_mt5', \%args);
     } elsif ($args{exclude_until}) {
         send_self_exclusion_nofitication($client, 'self_exclusion', \%args);
@@ -1399,19 +1399,6 @@ rpc set_self_exclusion => sub {
 
     return {status => 1};
 };
-
-sub get_non_demo_mt5_accounts {
-    my $client = shift;
-
-    my @mt_logins;
-    for my $login (BOM::User->new({loginid => $client->loginid})->mt5_logins) {
-        push(@mt_logins, $login) if BOM::MT5::User::get_user(
-            do { $login =~ /(\d+)/; $1 }
-        )->{group} =~ /^(?!demo).*$/;
-    }
-
-    return @mt_logins;
-}
 
 sub send_self_exclusion_nofitication {
     my ($client, $type, $args) = @_;
@@ -1442,10 +1429,10 @@ sub send_self_exclusion_nofitication {
             $message .= "$label: $val\n" if $val;
         }
 
-        my @mt_logins = get_non_demo_mt5_accounts($client);
-        if ($type eq 'malta_with_mt5' && @mt_logins) {
+        my @mt5_logins = BOM::User->new({loginid => $client->loginid})->mt5_logins('real');
+        if ($type eq 'malta_with_mt5' && @mt5_logins) {
             $message .= "\n\nClient $client_title has the following MT5 accounts:\n";
-            $message .= "$_\n" for @mt_logins;
+            $message .= "$_\n" for @mt5_logins;
         }
 
         my $to_email = $brand->emails('compliance') . ',' . $brand->emails('marketing');
