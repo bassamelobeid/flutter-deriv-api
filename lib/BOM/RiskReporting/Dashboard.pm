@@ -411,8 +411,7 @@ Same behavior as generate, but will take the report from cache if present.
 
 sub fetch {
     my $self = shift;
-    return $self->generate;
-#    return (_read_cache || $self->generate);
+    return (_read_cache || $self->generate);
 }
 
 no Moose;
