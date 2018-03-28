@@ -162,8 +162,16 @@ sub loginid_details {
 }
 
 sub mt5_logins {
-    my $self = shift;
-    my @mt5_logins = sort map { $_->loginid } grep { $_->loginid =~ /^MT\d+$/ } $self->loginid;
+    my $self   = shift;
+    my $filter = shift || 'real|demo';
+    my @mt5_logins;
+
+    for my $login (sort map { $_->loginid } grep { $_->loginid =~ /^MT\d+$/ } $self->loginid) {
+        push(@mt5_logins, $login) if BOM::MT5::User::get_user(
+            do { $login =~ /(\d+)/; $1 }
+        )->{group} =~ /^$filter/;
+    }
+
     return @mt5_logins;
 }
 
