@@ -81,6 +81,7 @@ $t->post_ok(
                                                    });
 
 $t = $t->content_like(qr/Login to this account has been temporarily disabled due to system maintenance/);
+$t = $t->content_like(qr/confirm_scopes/);
 
 BOM::Platform::Runtime->instance->app_config->system->suspend->all_logins(0);
 
