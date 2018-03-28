@@ -1405,10 +1405,13 @@ sub send_self_exclusion_nofitication {
     my ($client, $type, $args) = @_;
 
     my @fields_to_email;
+    my $message;
     if ($type eq 'malta_with_mt5') {
+        $message = "An MT5 account holder assigned to the Malta landing company has set account limits.\n";
         @fields_to_email =
             qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit exclude_until timeout_until/;
     } elsif ($type eq 'self_exclusion') {
+        $message = "A user has excluded themselves from the website.\n";
         @fields_to_email = qw/exclude_until/;
     }
 
@@ -1419,7 +1422,7 @@ sub send_self_exclusion_nofitication {
 
         my $brand = Brands->new(name => request()->brand);
 
-        my $message = "Client $client_title set the following self-exclusion limits:\n\n";
+        $message .= "Client $client_title set the following self-exclusion limits:\n\n";
 
         foreach (@fields_to_email) {
             my $label = $email_field_labels->{$_};
