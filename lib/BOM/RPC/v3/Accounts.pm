@@ -1391,7 +1391,7 @@ rpc set_self_exclusion => sub {
     # TODO: exclude demo MT5 accounts?
 
     if ($client->landing_company->short =~ /malta$/ && @mt_logins) {
-        send_self_exclusion_nofitication($client, 'mlt_with_mt5', \%args);
+        send_self_exclusion_nofitication($client, 'malta_with_mt5', \%args);
     } elsif ($args{exclude_until}) {
         send_self_exclusion_nofitication($client, 'self_exclusion', \%args);
     }
@@ -1405,7 +1405,7 @@ sub send_self_exclusion_nofitication {
     my ($client, $type, $args) = @_;
 
     my @fields_to_email;
-    if ($type eq 'mlt_with_mt5') {
+    if ($type eq 'malta_with_mt5') {
         @fields_to_email =
             qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit exclude_until timeout_until/;
     } elsif ($type eq 'self_exclusion') {
