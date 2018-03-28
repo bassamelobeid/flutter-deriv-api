@@ -1390,7 +1390,7 @@ rpc set_self_exclusion => sub {
     my @mt_logins = BOM::User->new({loginid => $client->loginid})->mt5_logins;
     # TODO: exclude demo MT5 accounts?
 
-    if ($client->landing_company->short =~ /malta$/ && @mt_logins) {
+    if ($client->landing_company->short eq 'malta' && @mt_logins) {
         send_self_exclusion_nofitication($client, 'malta_with_mt5', \%args);
     } elsif ($args{exclude_until}) {
         send_self_exclusion_nofitication($client, 'self_exclusion', \%args);
