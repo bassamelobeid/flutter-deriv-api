@@ -204,9 +204,14 @@ sub MultiBarrierReport {
         my $spot                 = $contract->current_spot;
         my ($closest_barrier_to_spot) =
             map { $_->{barrier} } sort { $a->{diff} <=> $b->{diff} } map { {barrier => $_, diff => abs($spot - $_)} } @available_barrier;
-        my $spot_index = $reindex_barrier_list{$closest_barrier_to_spot};
+        my $spot_index           = $reindex_barrier_list{$closest_barrier_to_spot};
         my $trading_period_start = Date::Utility->new($contract->trading_period_start)->datetime;
-
+        warn "tradinhg windlow"
+            . $trading_period_start . '_'
+            . $contract->date_expiry->datetime
+            . " underlying "
+            . $contract->underlying->symbol
+            . " spot $spot spot index [$spot_index]\n";
         $multibarrier->{$trading_period_start . '_' . $contract->date_expiry->datetime}->{$contract->bet_type}->{barrier}->{$barrier_index}
             ->{$contract->underlying->symbol} +=
             financialrounding('price', 'USD', in_USD($open_contract->{buy_price}, $open_contract->{currency_code}));
@@ -225,9 +230,9 @@ sub MultiBarrierReport {
                 my $CALL = $multibarrier->{$expiry}->{CALLE}->{barrier}->{$_}->{$symbol} // 0;
                 my $PUT  = $multibarrier->{$expiry}->{PUT}->{barrier}->{$_}->{$symbol}   // 0;
                 $final->{$expiry}->{CALLE}->{barrier}->{$_}->{$symbol}->{'isSpot'} = 1
-                    if $multibarrier->{$expiry}->{spot}->{$symbol} && $multibarrier->{$expiry}->{spot}->{$symbol} == $_;
+                    if defined $multibarrier->{$expiry}->{spot}->{$symbol} && $multibarrier->{$expiry}->{spot}->{$symbol} == $_;
                 $final->{$expiry}->{PUT}->{barrier}->{$_}->{$symbol}->{'isSpot'} = 1
-                    if $multibarrier->{$expiry}->{spot}->{$symbol} && $multibarrier->{$expiry}->{spot}->{$symbol} == $_;
+                    if defined $multibarrier->{$expiry}->{spot}->{$symbol} && $multibarrier->{$expiry}->{spot}->{$symbol} == $_;
                 if ($CALL > 0 or $PUT > 0) {
                     if ($CALL > $PUT) {
                         $final->{$expiry}->{CALLE}->{barrier}->{$_}->{$symbol}->{value} = $CALL - $PUT;
