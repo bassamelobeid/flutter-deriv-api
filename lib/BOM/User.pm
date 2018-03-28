@@ -162,7 +162,7 @@ sub loginid_details {
 }
 
 sub mt5_logins {
-    my $self   = shift;
+    my $self = shift;
     my $filter = shift || 'real|demo';
     my @mt5_logins;
 
