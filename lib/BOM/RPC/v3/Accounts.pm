@@ -1428,7 +1428,7 @@ sub send_self_exclusion_nofitication {
         }
 
         my @mt_logins = BOM::User->new({loginid => $client->loginid})->mt5_logins;
-        if (@mt_logins) {
+        if ($type eq 'malta_with_mt5' && @mt_logins) {
             $message .= "\n\nClient $client_title has the following MT5 accounts:\n";
             $message .= "$_\n" for @mt_logins;
         }
