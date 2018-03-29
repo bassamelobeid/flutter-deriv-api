@@ -485,43 +485,125 @@ subtest 'buy a bet', sub {
     'survived';
 };
 
+
 subtest 'sell a bet', sub {
-    plan tests => 1;
-    set_relative_time 1;
-    my $reset_time = guard { restore_time };
+    plan tests => 10;
+    lives_ok {
+        set_relative_time 1;
+        my $reset_time = guard { restore_time };
 
-    my $contract = produce_contract({
-        underlying   => $underlying_R50,
-        bet_type     => 'LBFLOATCALL',
-        currency     => 'USD',
-        multiplier   => 5,
-        amount_type  => 'multiplier',
-        duration     => '30m',
-        current_tick => $tick,
-        entry_tick   => $tick,
-        exit_tick    => $tick,
-        barrier      => 'S20P',
-    });
-    my $txn;
-
-    my $error = do {
-        my $mocked           = Test::MockModule->new('BOM::Transaction');
-        my $mocked_validator = Test::MockModule->new('BOM::Transaction::Validation');
-        $mocked_validator->mock('_validate_trade_pricing_adjustment', sub { });
-        $mocked->mock('price', sub { $contract->bid_price });
-        $txn = BOM::Transaction->new({
-            purchase_date => $contract->date_start,
-            client        => $cl,
-            contract      => $contract,
-            contract_id   => $fmb->{id},
-            price         => $contract->bid_price,
-            source        => 23,
+        my $contract = produce_contract({
+                underlying => $underlying_R50,
+                bet_type   => 'LBFLOATCALL',
+                currency   => 'USD',
+                multiplier   => 5,
+                amount_type  => 'multiplier',
+                duration   => '30m',
+                current_tick => $tick,
+                entry_tick   => $tick,
+                exit_tick    => $tick,
+                barrier      => 'S0P',
         });
-        $txn->sell;
-    };
-    isa_ok $error, 'Error::Base', 'sellback not allowed error';
+        my $txn;
+        #note 'bid price: ' . $contract->bid_price;
+        my $error = do {
+            my $mocked           = Test::MockModule->new('BOM::Transaction');
+            my $mocked_validator = Test::MockModule->new('BOM::Transaction::Validation');
+            $mocked_validator->mock('_validate_trade_pricing_adjustment', sub { });
+            $mocked->mock('price', sub { $contract->bid_price });
+            $txn = BOM::Transaction->new({
+                purchase_date => $contract->date_start,
+                client        => $cl,
+                contract      => $contract,
+                contract_id   => $fmb->{id},
+                price         => $contract->bid_price,
+                source        => 23,
+            });
+            $txn->sell;
+        };
+        is $error, undef, 'no error';
 
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
+
+        # note explain $trx;
+
+        subtest 'transaction row', sub {
+            plan tests => 13;
+            cmp_ok $trx->{id}, '>', 0, 'id';
+            is $trx->{account_id}, $acc_usd->id, 'account_id';
+            is $trx->{action_type}, 'sell', 'action_type';
+            is $trx->{amount} + 0, $contract->bid_price, 'amount';
+            is $trx->{balance_after} + 0, 5000 - 2.5  + $contract->bid_price, 'balance_after';
+            is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
+            is $trx->{payment_id},    undef,                  'payment_id';
+            is $trx->{quantity},      1,                      'quantity';
+            is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
+            is $trx->{remark},        undef,                  'remark';
+            is $trx->{staff_loginid}, $cl->loginid, 'staff_loginid';
+            is $trx->{source}, 23, 'source';
+            cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
+        };
+
+        # note explain $fmb;
+
+        subtest 'fmb row', sub {
+            plan tests => 19;
+            cmp_ok $fmb->{id}, '>', 0, 'id';
+            is $fmb->{account_id}, $acc_usd->id, 'account_id';
+            is $fmb->{bet_class}, 'lookback_option', 'bet_class';
+            is $fmb->{bet_type},  'LBFLOATCALL',             'bet_type';
+            is $fmb->{buy_price} + 0, 2.5, 'buy_price';
+            is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
+            cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
+            is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
+            is $fmb->{is_expired}, 0, 'is_expired';
+            is !$fmb->{is_sold},    !1, 'is_sold';
+            cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
+            like $fmb->{remark}, qr/\btrade\[2\.50000\]/, 'remark';
+            is $fmb->{sell_price} + 0, $contract->bid_price, 'sell_price';
+            cmp_ok +Date::Utility->new($fmb->{sell_time})->epoch,       '<=', time, 'sell_time';
+            cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>',  time, 'settlement_time';
+            like $fmb->{short_code}, qr/CALL/, 'short_code';
+            cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
+            is $fmb->{tick_count},        undef,  'tick_count';
+            is $fmb->{underlying_symbol}, 'R_50', 'underlying_symbol';
+        };
+
+        # note explain $chld;
+
+        subtest 'chld row', sub {
+            plan tests => 4;
+            is $chld->{absolute_barrier}, undef, 'absolute_barrier';
+            is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
+            is $chld->{prediction},       undef, 'prediction';
+            is $chld->{relative_barrier}, undef, 'relative_barrier';
+        };
+
+        # note explain $qv1;
+
+        subtest 'qv row', sub {
+            plan tests => 3;
+            is $qv1->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
+            is $qv1->{transaction_id},          $trx->{id}, 'transaction_id';
+            is $qv1->{trade} + 0, $contract->bid_price, 'trade';
+        };
+
+        # note explain $qv2;
+
+        subtest 'qv row (buy transaction)', sub {
+            plan tests => 3;
+            is $qv2->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
+            isnt $qv2->{transaction_id},        $trx->{id}, 'transaction_id';
+            is $qv2->{trade} + 0, 2.5, 'trade';
+        };
+
+        is $txn->contract_id,    $fmb->{id},            'txn->contract_id';
+        is $txn->transaction_id, $trx->{id},            'txn->transaction_id';
+        is $txn->balance_after,  $trx->{balance_after}, 'txn->balance_after';
+    }
+    'survived';
 };
+
 
 subtest 'sell_expired_contracts', sub {
     plan tests => 7;
