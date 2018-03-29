@@ -155,9 +155,9 @@ Returns an arrayref containing values returned by the generate_asset_index($coun
 
 sub asset_index {
     my $params               = shift;
-    my $landing_company_name = $params->{landing_company} || 'costarica';
-    my $language             = $params->{language} // 'en';
-    my $country_code         = $params->{country_code} // '';
+    my $landing_company_name = $params->{args}->{landing_company} || 'costarica';
+    my $language             = $params->{args}->{language} // 'en';
+    my $country_code         = $params->{args}->{country_code} // '';
 
     my $country_name = $country_code ? Locale::Country::Extra->new->country_from_code($country_code) : '';
 
