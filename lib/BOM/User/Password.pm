@@ -70,7 +70,6 @@ sub _salt {
 
 sub hashpw {
     my $password = shift;
-    $password = shift if $password eq __PACKAGE__;
     utf8::encode($password);
     die 'password too long, possible DOS attack' if length($password) > 200;
     my $salt = _salt;
