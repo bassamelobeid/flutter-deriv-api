@@ -7,6 +7,7 @@ use Try::Tiny;
 use Date::Utility;
 
 use BOM::User::Client;
+use BOM::MT5::User;
 
 use BOM::Database::UserDB;
 use BOM::Platform::Password;
