@@ -118,7 +118,7 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
                 # pre-processing: log this request
                 my $req = Plack::Request->new($env);
                 if ($log->is_debug) {
-                  my $now = Date::Utility->new;
+                    my $now = Date::Utility->new;
                     my $msg = sprintf "\n%s\n%s Request is %s %s\n", '=' x 80, $now->datetime_yyyymmdd_hhmmss, $req->method, $req->path;
                     $msg .= sprintf "Query %s", Dumper($req->query_parameters) if $req->query_parameters->keys;
                     $msg .= sprintf "Body  %s", ($req->content || 'empty') if $req->method eq 'POST';
