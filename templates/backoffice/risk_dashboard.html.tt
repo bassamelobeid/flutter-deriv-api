@@ -7,6 +7,7 @@
     <li><a href="[% mutlibarrier_link | none %]"> Multibarrier's Exposures Report</a></li>
   </ul>
   <div id="rd-summary">
+        <p> Latest report generated at [% generated_time %] </p>
         <div class="sum_table">
             <h3>Deposits</h3>
             [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = big_deposits, key = 'payments' %]
@@ -55,6 +56,7 @@
     </div>
 </div>
 <div id="rd-pivot">
+<p> Latest report generated at [% generated_time %] </p>
 [% INCLUDE 'backoffice/risk_dashboard_pivot.html.tt' pivot = open_bets.pivot %]
 </div>
 

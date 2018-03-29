@@ -110,7 +110,7 @@ sub _build__report {
         start_date => $self->start->datetime_yyyymmdd_hhmmss,
         end_date   => $self->end->datetime_yyyymmdd_hhmmss,
     };
-
+    my $ttl = Cache::RedisDB->ttl('RISK_DASHBOARD', 'report');
     $report->{open_bets} = $self->_open_bets_report;
     my $pap_report = $self->_payment_and_profit_report;
     $report->{big_deposits}    = $pap_report->{big_deposits};
@@ -119,6 +119,7 @@ sub _build__report {
     $report->{big_losers}      = $pap_report->{big_losers};
     $report->{watched}         = $pap_report->{watched};
     $report->{top_turnover}    = $self->_top_turnover;
+    $report->{generated_time}  = Date::Utility->new->plus_time_interval(($ttl - 1800).'s')->datetime;
     return $report;
 }
 
