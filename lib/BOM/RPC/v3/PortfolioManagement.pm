@@ -140,21 +140,22 @@ rpc proposal_open_contract => sub {
         my $id = $fmb->{id};
         my $sell_time;
         $sell_time = Date::Utility->new($fmb->{sell_time})->epoch if $fmb->{sell_time};
-        my $bid = BOM::Pricing::v3::Contract::get_bid({
+        my $bid = {
             short_code            => $fmb->{short_code},
             contract_id           => $id,
             currency              => $currency,
             is_expired            => $fmb->{is_expired},
             is_sold               => $fmb->{is_sold},
-            sell_time             => $fmb->{sell_time},
             sell_price            => $fmb->{sell_price},
             buy_price             => $fmb->{buy_price},
             app_markup_percentage => $params->{app_markup_percentage},
             landing_company       => $lc_name,
             account_id            => $fmb->{account_id},
             country_code          => $client->residence,
-        });
+        };
+        $bid->{sell_time} //= $sell_time;
 
+        $bid = BOM::Pricing::v3::Contract::get_bid($bid);
         if ($bid->{error}) {
             $response->{$id} = $bid;
         } else {
