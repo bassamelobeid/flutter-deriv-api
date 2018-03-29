@@ -169,7 +169,7 @@ if ($view_action eq 'withdrawals') {
         code_exit_BO("Please enter a reason for rejection") if ($action eq 'Reject' && $rejection_reason eq '');
 
         # Check payment limit
-        my $over_limit = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($staff, $amount);
+        my $over_limit = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($staff, in_USD($amount, $currency));
         code_exit_BO($over_limit->get_mesg()) if $over_limit;
 
         my $found;
