@@ -83,7 +83,7 @@ subtest 'prepare_ask' => sub {
         "symbol"        => "R_50",
         "duration"      => "15",
         "duration_unit" => "m",
-        'barrier'     => 'S0P',
+        'barrier'       => 'S0P',
     };
     my $expected = {
         'barrier'     => 'S0P',
@@ -257,15 +257,15 @@ subtest $method => sub {
 
 subtest 'get_ask' => sub {
     my $params = {
-        "proposal"         => 1,
-        "multiplier"       => "100",
-        "basis"            => "multiplier",
-        "contract_type"    => "LBFLOATCALL",
-        "currency"         => "USD",
-        "duration"         => "15",
-        "duration_unit"    => "m",
-        "symbol"           => "R_50",
-        "landing_company"  =>"virtual",
+        "proposal"        => 1,
+        "multiplier"      => "100",
+        "basis"           => "multiplier",
+        "contract_type"   => "LBFLOATCALL",
+        "currency"        => "USD",
+        "duration"        => "15",
+        "duration_unit"   => "m",
+        "symbol"          => "R_50",
+        "landing_company" => "virtual",
     };
 
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -286,22 +286,21 @@ subtest 'get_ask' => sub {
         'spot'                => '963.3054',
         'payout'              => '0',
         'contract_parameters' => {
-            'deep_otm_threshold'    => '0.025',
-            'barrier'               => 'S0P',
-            'duration'              => '15m',
-            'bet_type'              => 'LBFLOATCALL',
-            'underlying'            => 'R_50',
-            'currency'              => 'USD',
-            base_commission         => '0.015',
-            'multiplier'            => '100',
-            'amount_type'           => 'multiplier',
-            'app_markup_percentage' => 0,
-            'proposal'              => 1,
-            'date_start'            => ignore(),
+            'deep_otm_threshold'             => '0.025',
+            'barrier'                        => 'S0P',
+            'duration'                       => '15m',
+            'bet_type'                       => 'LBFLOATCALL',
+            'underlying'                     => 'R_50',
+            'currency'                       => 'USD',
+            base_commission                  => '0.015',
+            'multiplier'                     => '100',
+            'amount_type'                    => 'multiplier',
+            'app_markup_percentage'          => 0,
+            'proposal'                       => 1,
+            'date_start'                     => ignore(),
             'skip_stream_results_adjustment' => 1,
-            'landing_company'       => 'virtual'
-        }
-    };
+            'landing_company'                => 'virtual'
+        }};
 
     cmp_deeply($result, $expected, 'the left values are all right');
 };
@@ -310,26 +309,22 @@ subtest 'send_ask' => sub {
     my $params = {
         client_ip => '127.0.0.1',
         args      => {
-            "proposal"         => 1,
-            "multiplier"       => "100",
-            "basis"            => "multiplier",
-            "contract_type"    => "LBFLOATCALL",
-            "currency"         => "USD",
-            "duration"         => "15",
-            "duration_unit"    => "m",
-            "symbol"           => "R_50",
-            "landing_company"  => "virtual",
+            "proposal"        => 1,
+            "multiplier"      => "100",
+            "basis"           => "multiplier",
+            "contract_type"   => "LBFLOATCALL",
+            "currency"        => "USD",
+            "duration"        => "15",
+            "duration_unit"   => "m",
+            "symbol"          => "R_50",
+            "landing_company" => "virtual",
         }};
 
     my $result = $c->call_ok('send_ask', $params)->has_no_error->result;
     my $expected_keys =
         [sort { $a cmp $b } (qw(longcode spot display_value multiplier ask_price spot_time date_start rpc_time payout contract_parameters))];
     cmp_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
-    is(
-        $result->{longcode},
-        'Win USD 100 times Volatility 50 Index\'s close minus low over the next 15 minutes.',
-        'long code  is correct'
-    );
+    is($result->{longcode}, 'Win USD 100 times Volatility 50 Index\'s close minus low over the next 15 minutes.', 'long code  is correct');
 };
 
 done_testing();
@@ -378,7 +373,7 @@ sub _create_contract {
         bet_type              => $args{bet_type} // 'LBFLOATCALL',
         currency              => 'USD',
         current_tick          => $args{current_tick} // $tick,
-        multiplier                  => 100,
+        multiplier            => 100,
         amount_type           => 'multiplier',
         date_start            => $args{date_start} // $date_start,
         date_expiry           => $args{date_expiry} // $date_expiry,

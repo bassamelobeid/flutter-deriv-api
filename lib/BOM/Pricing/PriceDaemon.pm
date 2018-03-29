@@ -6,7 +6,7 @@ use warnings;
 use DataDog::DogStatsd::Helper qw/stats_histogram stats_inc stats_count stats_timing/;
 use Encode;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
-use JSON::MaybeXS;
+use JSON::MaybeUTF8 qw(:v1);
 use List::Util qw(first);
 use Time::HiRes ();
 use Try::Tiny;
@@ -24,7 +24,27 @@ use constant {
 
 sub new { return bless {@_[1 .. $#_]}, $_[0] }
 
-my $json     = JSON::MaybeXS->new();
+=head2 is_running
+
+Returns true if running, false if not.
+
+=cut
+
+sub is_running {
+    return shift->{is_running};
+}
+
+=head2 stop
+
+Stops the loop after the current price.
+
+=cut
+
+sub stop {
+    shift->{is_running} = 0;
+    return;
+}
+
 my $commands = {
     price => {
         required_params => [qw(contract_type currency symbol)],
@@ -46,24 +66,20 @@ sub process_job {
 
     my $underlying           = $self->_get_underlying_or_log($next, $params) or return undef;
     my $current_spot_ts      = $underlying->spot_tick->epoch;
-    my $last_priced_contract = try { $json->decode(Encode::decode_utf8($redis->get($next) || return {time => 0})) } catch { {time => 0} };
+    my $last_priced_contract = eval { decode_json_utf8($redis->get($next) // die 'default') } || {time => 0};
     my $last_price_ts        = $last_priced_contract->{time};
 
     # For plain queue, if we have request for a price, and tick has not changed since last one, and it was not more
     # than 10 seconds ago - just ignore it.
-    # For priority, we're sending rnevious request at this case
-    if ($current_spot_ts == $last_price_ts) {
-        if ($current_time - $last_price_ts <= DURATION_DONT_PRICE_SAME_SPOT
-            and not $self->_is_in_priority_queue())
-        {
-            stats_inc("pricer_daemon.skipped_duplicate_spot", {tags => $self->tags});
-            return undef;
-        } elsif ($current_time - $last_price_ts <= DURATION_RETURN_SAME_PRICE_ON_SAME_SPOT_FOR_PRIORITY
-            and $self->_is_in_priority_queue())
-        {
-            stats_inc("pricer_daemon.existing_price_used", {tags => $self->tags});
-            return $last_priced_contract->{contract};
-        }
+    # However, if it was not more than 2 sec, return the existing price back (for priority pricer transition/removal)
+    if (    $current_spot_ts == $last_price_ts
+        and $current_time - $last_price_ts <= DURATION_DONT_PRICE_SAME_SPOT)
+    {
+        stats_inc("pricer_daemon.skipped_duplicate_spot", {tags => $self->tags});
+        return undef;
+    } elsif ($current_time - $last_price_ts <= DURATION_RETURN_SAME_PRICE_ON_SAME_SPOT_FOR_PRIORITY) {
+        stats_inc("pricer_daemon.existing_price_used", {tags => $self->tags});
+        return $last_priced_contract->{contract};
     }
 
     my $r = BOM::Platform::Context::Request->new({language => $params->{language} // 'EN'});
@@ -73,15 +89,14 @@ sub process_job {
 
     $response->{price_daemon_cmd} = $cmd;
     # contract parameters are stored after first call, no need to send them with every stream message
-    delete $response->{contract_parameters} if not $self->_is_in_priority_queue;
+    delete $response->{contract_parameters};
 
     # when it reaches here, contract is considered priced.
     $redis->set(
-        $next => Encode::encode_utf8(
-            $json->encode({
-                    time     => $current_time,
-                    contract => $response,
-                })
+        $next => encode_json_utf8({
+                time     => $current_time,
+                contract => $response,
+            }
         ),
         'EX' => DURATION_DONT_PRICE_SAME_SPOT
     );
@@ -99,7 +114,10 @@ sub run {
     my $tv                    = [Time::HiRes::gettimeofday];
     my $stat_count            = {};
     my $current_pricing_epoch = time;
-    while (my $key = $redis->brpop(@{$args{queues}}, 0)) {
+
+    # Allow ->stop and restart
+    local $self->{is_running} = 1;
+    while ($self->is_running and (my $key = $redis->brpop(@{$args{queues}}, 0))) {
         # Remember that we had some jobs
         my $tv_now = [Time::HiRes::gettimeofday];
         my $queue  = $key->[0];
@@ -119,7 +137,7 @@ sub run {
 
         my $next = $key->[1];
         next unless $next =~ s/^PRICER_KEYS:://;
-        my $payload       = $json->decode(Encode::decode_utf8($next));
+        my $payload       = decode_json_utf8($next);
         my $params        = {@{$payload}};
         my $contract_type = $params->{contract_type};
 
@@ -142,7 +160,7 @@ sub run {
                 {tags => $self->tags('contract_type:' . $contract_type_string, 'currency:' . $params->{currency})});
         }
 
-        my $subscribers_count = $redis->publish($key->[1], Encode::encode_utf8($json->encode($response)));
+        my $subscribers_count = $redis->publish($key->[1], encode_json_utf8($response));
         # if None was subscribed, so delete the job
         if ($subscribers_count == 0) {
             $redis->del($key->[1], $next);
@@ -166,7 +184,7 @@ sub run {
             process_end_time => 1000 * ($end_time - int($end_time)),
             time             => time,
             fork_index       => $args{fork_index});
-        $redis->set("PRICER_STATUS::$args{ip}-$args{fork_index}", Encode::encode_utf8($json->encode(\@stat_redis)));
+        $redis->set("PRICER_STATUS::$args{ip}-$args{fork_index}", encode_json_utf8(\@stat_redis));
 
         if ($current_pricing_epoch != time) {
 
@@ -188,7 +206,7 @@ sub _get_underlying_or_log {
     my $underlying = $commands->{$cmd}->{get_underlying}->($self, $params);
 
     if (not $underlying or not ref($underlying)) {
-        warn "Have legacy underlying - $underlying with params " . $json->encode($params) . "\n" if not ref($underlying);
+        warn "Have legacy underlying - $underlying with params " . encode_json_text($params) . "\n" if not ref($underlying);
         stats_inc("pricer_daemon.$cmd.invalid", {tags => $self->tags});
         return undef;
     }
@@ -254,11 +272,6 @@ sub _validate_params {
         return 0;
     }
     return 1;
-}
-
-sub _is_in_priority_queue {
-    my $self = shift;
-    return $self->{current_queue} eq 'pricer_jobs_priority';
 }
 
 =head2 current_queue
