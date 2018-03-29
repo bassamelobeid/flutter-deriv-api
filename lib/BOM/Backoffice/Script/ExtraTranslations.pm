@@ -313,10 +313,8 @@ sub add_generic_texts {
 sub add_error_messages {
     my $self = shift;
 
-    my $fh             = $self->pot_append_fh;
-    my @error_mappings = (
-        BOM::Product::Static::get_error_mapping();
-        BOM::User::Static::get_error_mapping());
+    my $fh = $self->pot_append_fh;
+    my @error_mappings = (BOM::Product::Static::get_error_mapping(), BOM::User::Static::get_error_mapping());
 
     foreach my $error_mapping (@error_mappings) {
         foreach my $err (keys %$error_mapping) {
