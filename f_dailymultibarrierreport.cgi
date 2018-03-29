@@ -12,7 +12,7 @@ use Format::Util::Numbers qw(commas);
 BOM::Backoffice::Sysinit::init();
 use BOM::Database::DataMapper::CollectorReporting;
 PrintContentType();
-BrokerPresentation('MULTIBARRIER TRADING');
+#BrokerPresentation('MULTIBARRIER TRADING');
 Bar("EXPOSURE REPORT for MULTIBARRIER TRADING");
 
 my $args = request()->params;
@@ -27,7 +27,6 @@ BOM::Backoffice::Request::template->process(
     {
         data            => $multibarrier_report,
         generated_time  => $last_generated_time,
-        risk_report_url => request()->url_for('backoffice/f_dailyturnoverreport.cgi'),
     });
 
 code_exit_BO();
