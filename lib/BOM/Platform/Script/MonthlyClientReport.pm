@@ -5,6 +5,7 @@ use warnings;
 use Text::CSV;
 use BOM::Platform::Runtime;
 use BOM::Database::ClientDB;
+use Date::Utility;
 
 sub go {
     my %params = @_;
