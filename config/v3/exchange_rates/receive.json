@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "Exchange Rates",
+  "properties": {
+    "echo_req": {
+      "title":"Echo request",
+      "description":"Echo of the request made",
+      "required": 1
+    },
+    "msg_type":{
+        "type":"string",
+        "description":"exchange_rates",
+        "required": 1
+   },
+    "exchange_rates": {
+      "type": "array",
+      "title":"List of all exchange rates",
+      "description":"The list of exchange rates for all supported currenies.",
+      "required": 1,
+      "items": {
+        "type": "object",
+        "description": "Exchange rate data pertaining to a specific currency",
+        "required": 1,
+        "properties":{
+          "base":{
+            "type":"string",
+            "description":"Currency code",
+            "required": 1
+          }
+          "date":{
+            "type":"date",
+            "description":"Data retrieval date",
+            "required": 1
+          }
+          "rates":{
+            "type":"array",
+            "description":"Exchange rates",
+            "required": 1,
+            "items":{
+              // to be filled...
+            }
+          }
+          
+        }
+      }
+    },
+    "req_id": {
+      "type": "integer",
+      "description": "Optional field send in request to map to response, present only when request contains req_id"
+    }
+  }
+}
