@@ -37,7 +37,7 @@ around supplied_barrier => sub {
     # barrier is undef on asians before the contract starts.
     return if $self->pricing_new;
 
-    my $hmt = $self->selected_tick;
+    my $hmt               = $self->selected_tick;
     my @ticks_since_start = @{
         $self->underlying->ticks_in_between_start_limit({
                 start_time => $self->date_start->epoch + 1,
