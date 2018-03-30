@@ -30,6 +30,33 @@ sub _build_selected_tick {
     );
 }
 
+around supplied_barrier => sub {
+    my $orig = shift;
+    my $self = shift;
+
+    # barrier is undef on asians before the contract starts.
+    return if $self->pricing_new;
+
+    my $hmt = $self->selected_tick;
+    my @ticks_since_start = @{
+        $self->underlying->ticks_in_between_start_limit({
+                start_time => $self->date_start->epoch + 1,
+                limit      => $hmt,
+            })};
+
+    return unless @ticks_since_start;
+    return if $hmt != @ticks_since_start;
+    return $ticks_since_start[-1]->{quote};
+};
+
+around '_build_barrier' => sub {
+    my $orig = shift;
+    my $self = shift;
+
+    return unless $self->supplied_barrier;
+    return $self->$orig;
+};
+
 override shortcode => sub {
     my $self = shift;
     return join '_',

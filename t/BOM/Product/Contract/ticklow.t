@@ -56,27 +56,26 @@ subtest 'Test that contract can be created correctly' => sub {
 
 subtest 'Test for condition where last tick is the highest' => sub {
 
-    my $quote = 100.000;
+    my $quote = 100.00;
     for my $i (0 .. 4) {
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
             quote      => $quote,
             epoch      => $now->epoch + $i,
         });
-        $quote += 0.002;
+        $quote += 0.02;
     }
 
     lives_ok {
         $args->{date_pricing} = $now->plus_time_interval('4s');
-        my $c = produce_contract($args);
         ok !$c->exit_tick, 'first tick is next tick';
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
             epoch      => $now->epoch + 5,
-            quote      => 100.01,
+            quote      => 100.1,
         });
-        $c = produce_contract($args);
-        is $c->exit_tick->quote, 100.01, 'correct exit tick';
+        my $c = produce_contract($args);
+        is $c->exit_tick->quote, 100.1, 'correct exit tick';
         ok $c->is_expired, 'expired';
         cmp_ok $c->value, '==', $c->payout, 'full payout';
     }
@@ -85,7 +84,7 @@ subtest 'Test for condition where last tick is the highest' => sub {
     lives_ok {
         $args->{date_pricing} = $now->plus_time_interval('4s');
         $c = produce_contract({%$args, selected_tick => 2});
-        is $c->exit_tick->quote, 100.01, 'correct exit tick';
+        is $c->exit_tick->quote, 100.1, 'correct exit tick';
         ok $c->is_expired, 'expired';
         cmp_ok $c->value, '==', 0, 'payout is 0 as contract is lost';
     }
@@ -94,7 +93,7 @@ subtest 'Test for condition where last tick is the highest' => sub {
     lives_ok {
         $args->{date_pricing} = $now->plus_time_interval('4s');
         $c = produce_contract({%$args, selected_tick => 3});
-        is $c->exit_tick->quote, 100.01, 'correct exit tick';
+        is $c->exit_tick->quote, 100.1, 'correct exit tick';
         ok $c->is_expired, 'expired';
         cmp_ok $c->value, '==', 0, 'payout is 0 as contract is lost';
     }
@@ -103,7 +102,7 @@ subtest 'Test for condition where last tick is the highest' => sub {
     lives_ok {
         $args->{date_pricing} = $now->plus_time_interval('4s');
         $c = produce_contract({%$args, selected_tick => 4});
-        is $c->exit_tick->quote, 100.01, 'correct exit tick';
+        is $c->exit_tick->quote, 100.1, 'correct exit tick';
         ok $c->is_expired, 'expired';
         cmp_ok $c->value, '==', 0, 'payout is 0 as contract is lost';
     }
@@ -112,7 +111,7 @@ subtest 'Test for condition where last tick is the highest' => sub {
     lives_ok {
         $args->{date_pricing} = $now->plus_time_interval('4s');
         $c = produce_contract({%$args, selected_tick => 5});
-        is $c->exit_tick->quote, 100.01, 'correct exit tick';
+        is $c->exit_tick->quote, 100.1, 'correct exit tick';
         ok $c->is_expired, 'expired';
         cmp_ok $c->value, '==', 0, 'payout is 0 as contract is lost';
     }
@@ -125,14 +124,14 @@ subtest 'Test for condition where first tick is the highest' => sub {
     $args->{date_start}   = $now;
     $args->{date_pricing} = $now;
 
-    my $quote = 100.01;
+    my $quote = 100.1;
     for my $i (0 .. 4) {
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
             quote      => $quote,
             epoch      => $now->epoch + $i,
         });
-        $quote -= 0.002;
+        $quote -= 0.02;
     }
 
     lives_ok {

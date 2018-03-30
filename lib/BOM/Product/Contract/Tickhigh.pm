@@ -22,9 +22,9 @@ sub check_expiry_conditions {
     my $number_of_ticks = scalar(@$ticks);
 
     # If there's no tick yet, the contract is not expired.
-    return 0 if $number_of_ticks < $self->selected_tick;
+    return 0 unless $self->barrier;
 
-    my $selected_quote = $ticks->[$self->selected_tick - 1]->{quote};
+    my $selected_quote = $self->barrier->as_absolute;
 
     # selected quote is not the highest.
     if (any { $_->{quote} > $selected_quote } @$ticks) {
