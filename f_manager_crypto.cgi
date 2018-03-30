@@ -154,7 +154,7 @@ if ($view_action eq 'withdrawals') {
     Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
 
     code_exit_BO("Invalid address.")
-        if $address and $address !~ /^\w+$/;
+        if $address and $address !~ /^[a-zA-Z0-9:?]+$/;
     code_exit_BO("Invalid action.")
         if $action and $action !~ /^[a-zA-Z]{4,15}$/;
     code_exit_BO("Invalid selection to view type of transactions.")
@@ -169,7 +169,7 @@ if ($view_action eq 'withdrawals') {
         code_exit_BO("Please enter a reason for rejection") if ($action eq 'Reject' && $rejection_reason eq '');
 
         # Check payment limit
-        my $over_limit = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($staff, $amount);
+        my $over_limit = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($staff, in_USD($amount, $currency));
         code_exit_BO($over_limit->get_mesg()) if $over_limit;
 
         my $found;
