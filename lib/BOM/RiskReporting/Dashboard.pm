@@ -440,6 +440,8 @@ sub multibarrierreport {
         }
         $final->{$expiry}->{max} = $max;
     }
+
+    $final->{generated_time} =  BOM::Database::DataMapper::CollectorReporting->new({broker_code => 'CR'})->get_last_generated_historical_marked_to_market_time;
     return $final;
 }
 

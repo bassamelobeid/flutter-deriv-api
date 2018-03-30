@@ -40,7 +40,6 @@ my $permissions = {
     'f_clientloginid_edit.cgi'        => ['CS'],
     'f_clientloginid_newpassword.cgi' => ['CS'],
     'f_dailyturnoverreport.cgi'       => ['Accounts', 'Quants', 'IT'],
-    'f_dailymultibarrierreport.cgi'   => ['Accounts', 'Quants', 'IT'],
     'f_dynamic_settings.cgi'                                   => ['Quants',   'IT'],       # it has extra internal logic inside
     'f_formatdailysummary.cgi'                                 => ['Quants'],
     'f_investigative.cgi'                                      => ['CS'],

@@ -99,7 +99,7 @@
 </style>
 
 
-<p> Latest report generated at [% generated_time %] </p>
+<p> Latest report generated at [% data.generated_time %] </p>
 <p> Few notes: </p>
 <p> 1. For each barrier tier, the exposure on an underlying is the net exposure from both Call and Put. Example: If we have exposure of USD50k on Call and USD20K on Put, the net of USD30k on Call will be shown. </p>
 <p> 2. The red dotted line is the indication of where is the current spot relative to the barrier tier </p>
@@ -108,6 +108,7 @@
 
 
 [% FOREACH expiry IN data.keys %]
+        [% IF expiry !='generated_time' %]
 	<div class='contract-table'>
 		 <p> <b><div class='expiry'>Trading Window:  [% expiry %] </div></b></p>
 			[% FOREACH contract IN data.$expiry.keys.reverse %]
@@ -130,6 +131,7 @@
                                                 [% END %]
 	     [% END %]
 	</div>
+        [% END %]
 [% END %]
 
 
