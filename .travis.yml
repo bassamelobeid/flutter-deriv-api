@@ -7,6 +7,7 @@ perl:
 matrix:
     fast_finish: true
 env:
+    - TEST_SUITE=unit_test_initial
     - TEST_SUITE=unit_test_product_contract
     - TEST_SUITE=unit_test_product_contract_extended
     - TEST_SUITE=unit_test_product_all
