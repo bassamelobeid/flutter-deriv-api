@@ -179,7 +179,7 @@ $res = $t->await::set_self_exclusion({
     max_turnover           => 1000,
     max_open_bets          => 50,
     session_duration_limit => 1440,
-    exclude_until          => Date::Utility->new->plus_months(3)->date_yyyymmdd,
+    exclude_until          => Date::Utility->new->plus_time_interval('3mo')->date_yyyymmdd,
 });
 is $res->{error}->{code},  'SetSelfExclusionError';
 is $res->{error}->{field}, 'exclude_until';
