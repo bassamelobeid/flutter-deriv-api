@@ -244,8 +244,7 @@ async_rpc mt5_new_account => sub {
 
         $group = 'real\\';
         if ($manager_id) {
-            # $group .= "${manager_id}_mamm_$account_type";
-            $group .= "_${manager_id}_clients";
+            $group .= "${manager_id}_mamm_$account_type";
         } else {
             $group .= $mt_company;
             $group .= "_$mt5_account_type" if $account_type eq 'financial';
