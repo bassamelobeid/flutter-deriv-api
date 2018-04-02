@@ -55,6 +55,22 @@ sub create_error_future {
     return Future->done(BOM::RPC::v3::Utility::create_error($details));
 }
 
+# TODO(leonerd):
+#   Try to neaten up the dual use of this + create_error_future(); having two
+#   different functions for minor different calling styles seems silly.
+sub _make_error {
+    my ($error_code, $msg_client, $msg) = @_;
+
+    my $generic_message = localize('There was an error processing the request.');
+    return create_error_future({
+        code              => $error_code,
+        message_to_client => $msg_client
+        ? $generic_message . ' ' . $msg_client
+        : $generic_message,
+        ($msg) ? (message => $msg) : (),
+    });
+}
+
 =head2 mt5_login_list
 
     $mt5_logins = mt5_login_list({ client => $client })
@@ -1262,19 +1278,6 @@ sub _mt5_validate_and_get_amount {
 
             return Future->done($mt5_amount);
         });
-}
-
-sub _make_error {
-    my ($error_code, $msg_client, $msg) = @_;
-
-    my $generic_message = localize('There was an error processing the request.');
-    return BOM::RPC::v3::Utility::create_error({
-        code              => $error_code,
-        message_to_client => $msg_client
-        ? $generic_message . ' ' . $msg_client
-        : $generic_message,
-        ($msg) ? (message => $msg) : (),
-    });
 }
 
 1;
