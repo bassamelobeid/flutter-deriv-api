@@ -22,7 +22,7 @@
         },
         "msg_type": {
             "type": "string",
-            "pattern": "^landing_company_details$",
+            "pattern": "^proposal$",
             "required": "1"
         }
     }
