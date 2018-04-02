@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Asset Index Send",
+  "title": "Asset Index Request",
   "description":"Retrieve the Asset Index: a list of all available markets and a summary of the contracts available thereupon.",
   "properties": {
     "asset_index": {

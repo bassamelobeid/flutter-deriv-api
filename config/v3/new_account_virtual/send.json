@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title":"Create virtual account Send",
+  "title":"New Virtual Account Request",
   "description": "Create a new virtual-money account.",
   "properties": {
     "new_account_virtual": {

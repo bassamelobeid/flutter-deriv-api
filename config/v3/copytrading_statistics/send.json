@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Request statistics of trader",
+  "title": "Copy Trading Statistics Request",
   "description": "Retrieve performance, trading, risk and copiers statistics of trader.",
   "properties": {
     "copytrading_statistics": {

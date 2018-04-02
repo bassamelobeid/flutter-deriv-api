@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Cancel Incoming Streams Based on Type",
+  "title": "Forget All Request",
   "description": "Immediately cancel the real-time streams of messages of given type.",
   "properties": {
     "forget_all": {
