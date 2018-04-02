@@ -308,7 +308,7 @@ subtest 'User Login' => sub {
         ok $status->{error} =~ 'Sorry, you have already had too many unsuccessful', "Correct error for too many wrong attempts";
 
         $failed_login = $user->failed_login;
-        $failed_login->last_attempt(Date::Utility->new->minus_time_interval('1d')->epoch);
+        $failed_login->last_attempt(Date::Utility->new->minus_time_interval('1d')->datetime_yyyymmdd_hhmmss);
         ok $user->login(%pass)->{success}, 'clear failed login attempts; can now login';
     };
 };
