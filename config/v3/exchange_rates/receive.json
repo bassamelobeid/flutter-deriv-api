@@ -26,7 +26,7 @@
         },
         "date": {
           "type": "string",
-          "pattern": "^[0-9]{1-10}$",
+          "pattern": "^[0-9]{1,10}$",
           "description": "Date retrieval epoch time represented as an integer number."
         },
         "rates": {
