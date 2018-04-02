@@ -84,7 +84,7 @@
     },
     "selected_tick": {
       "type": "integer",
-      "description": "The product type, either basic or multi_barrier"
+      "description": "The tick that is predicted to have the highest/lowest value - for tickhigh and ticklow contracts."
     },
     "passthrough":{
       "type":"object",
