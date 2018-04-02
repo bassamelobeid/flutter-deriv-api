@@ -1,12 +1,13 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "App List Send",
-  "description":"List all my OAuth application",
+  "title": "Get Exchange Rates",
+  "description": "Retrieves the exchange rates for all currencies supported by system, taking each one as base.",
   "properties": {
-    "app_list": {
-      "type":"integer",
+    "exchange_rates": {
+      "type": "integer",
       "pattern": "^1$",
+      "description": "Must be 1",
       "required": "1"
     },
     "passthrough": {
