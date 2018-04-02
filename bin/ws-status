@@ -1,11 +1,53 @@
 #!/etc/rmg/bin/perl
+
+=encoding utf-8
+
+=head1 NAME
+
+ws-status - set C<website_status>
+
+=head1 SYNOPSIS
+
+    ws-status [--no-send-notifications] STATUS MESSAGE
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--no-send-notifications>
+
+Set a notification, but do not broadcast it immediately to listeners.
+
+=item B<--help>
+
+Show this help message.
+
+=back
+
+=head1 DESCRIPTION
+
+This script allows setting of the Binary.com WebSocket API's
+L<website_status|https://developers.binary.com/api/#website_status>.
+Setting the status will by default also send updates to any listening
+clients.
+
+I<STATUS> is either C<up> or C<down>.
+
+I<MESSAGE> to set can be a keyword from the following: C<release_due>,
+C<suspended>, C<unstable>, C<feed_issues>, C<mt5_issues>, or
+C<cashier_issues>.  This will use a preset localized message for the
+chosen keyword to use for the site status message.
+
+=cut
+
 use feature ':5.10';
 use strict;
 use warnings;
 no indirect;
 
-use JSON::MaybeUTF8 'encode_json_utf8';
 use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
+use Pod::Usage;
+use JSON::MaybeUTF8 'encode_json_utf8';
 use Try::Tiny;
 
 use Binary::WebSocketAPI::v3::Instance::Redis 'ws_redis_master';
@@ -17,19 +59,7 @@ GetOptions(
 );
 my ($status, $message) = @ARGV;
 
-die <<"EOF" if (!($status || $message) || $status !~ /up|down/i || $help);
-usage: $0 [--no-send-notifications] STATUS MESSAGE
-These options are available:
-      --no-send-notifications    Do not send notifications
-  -h, --help                     Show this message.
-
-STATUS is either "up" or "down".
-
-MESSAGE to set can be a keyword from the following: "release_due",
-"suspended", "unstable", "feed_issues", "mt5_issues", "cashier_issues".
-This will use a preset localized message for the chosen keyword to use
-for the site status message.
-EOF
+pod2usage(1) if (!($status || $message) || $status !~ /up|down/i || $help);
 
 my $channel_name = "NOTIFY::broadcast::channel";
 my $state_key    = "NOTIFY::broadcast::state";
