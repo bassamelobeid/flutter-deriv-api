@@ -1,3 +1,4 @@
+
 =head1 NAME
 
 BOM::RPC::v3::Feeds
@@ -43,21 +44,19 @@ rpc exchange_rates => sub {
 
     my %rates_map;
     foreach my $currency (@$supported_currencies) {
-            next if $currency eq $base;
-            try{
-                my $ex_rate = in_USD(1, $currency);
-                $rates_map{$currency} = 1/$ex_rate if looks_like_number($ex_rate) && $ex_rate != 0;
-            };
+        next if $currency eq $base;
+        try {
+            my $ex_rate = in_USD(1, $currency);
+            $rates_map{$currency} = 1 / $ex_rate if looks_like_number($ex_rate) && $ex_rate != 0;
+        };
     }
-    
+
     return {
-        date => time,
-        base => $base,
+        date  => time,
+        base  => $base,
         rates => \%rates_map,
     };
 };
 
 1;
-
-
 
