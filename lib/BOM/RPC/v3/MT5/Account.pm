@@ -637,10 +637,12 @@ async_rpc mt5_password_check => sub {
     # MT5 login not belongs to user
     return permission_error_future() unless _check_logins($client, ['MT' . $login]);
 
-    # TODO: mutate $args??
-    $args->{type} = $args->{password_type} // 'MAIN';
-
-    return BOM::MT5::User::Async::password_check($args)->then(
+    return BOM::MT5::User::Async::password_check({
+            login    => $args->{login},
+            password => $args->{password},
+            type     => $args->{password_type} // 'main'
+        }
+        )->then(
         sub {
             my ($status) = @_;
 
@@ -745,7 +747,7 @@ async_rpc mt5_password_change => sub {
     return BOM::MT5::User::Async::password_check({
             login    => $login,
             password => $args->{old_password},
-            type     => $args->{password_type} // 'MAIN',
+            type     => $args->{password_type} // 'main',
         }
         )->then(
         sub {
@@ -760,7 +762,7 @@ async_rpc mt5_password_change => sub {
             return BOM::MT5::User::Async::password_change({
                 login        => $login,
                 new_password => $args->{new_password},
-                type         => $args->{password_type} // 'MAIN',
+                type         => $args->{password_type} // 'main',
             });
         }
         )->then(
@@ -873,7 +875,7 @@ async_rpc mt5_password_reset => sub {
     return BOM::MT5::User::Async::password_change({
             login        => $login,
             new_password => $args->{new_password},
-            type         => $args->{password_type} // 'MAIN',
+            type         => $args->{password_type} // 'main',
         }
         )->then(
         sub {
