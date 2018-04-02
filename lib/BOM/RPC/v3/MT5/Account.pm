@@ -962,8 +962,7 @@ async_rpc mt5_deposit => sub {
                 client_loginid => $fm_loginid,
             });
 
-            return Future->done(
-                _make_error($error_code, localize('Please try again after one minute.'), "Account stuck in previous transaction $fm_loginid"))
+            return _make_error($error_code, localize('Please try again after one minute.'), "Account stuck in previous transaction $fm_loginid")
                 if (not $fm_client_db->freeze);
 
             scope_guard {
@@ -986,14 +985,13 @@ async_rpc mt5_deposit => sub {
             };
 
             if ($withdraw_error) {
-                return Future->done(
-                    _make_error(
-                        $error_code,
-                        BOM::RPC::v3::Cashier::__client_withdrawal_notes({
-                                client => $fm_client,
-                                amount => $amount,
-                                error  => $withdraw_error
-                            })));
+                return _make_error(
+                    $error_code,
+                    BOM::RPC::v3::Cashier::__client_withdrawal_notes({
+                            client => $fm_client,
+                            amount => $amount,
+                            error  => $withdraw_error
+                        }));
             }
 
             my $comment   = "Transfer from $fm_loginid to MT5 account $to_mt5.";
@@ -1036,7 +1034,7 @@ async_rpc mt5_deposit => sub {
                             action  => 'deposit',
                             error   => $status->{error},
                         );
-                        return Future->done(_make_error($status->{error}));
+                        return _make_error($status->{error});
                     }
 
                     return Future->done({
@@ -1066,8 +1064,7 @@ async_rpc mt5_withdrawal => sub {
                 client_loginid => $to_loginid,
             });
 
-            return Future->done(
-                _make_error($error_code, localize('Please try again after one minute.'), "Account stuck in previous transaction $to_loginid"))
+            return _make_error($error_code, localize('Please try again after one minute.'), "Account stuck in previous transaction $to_loginid")
                 if (not $to_client_db->freeze);
 
             scope_guard {
@@ -1086,7 +1083,7 @@ async_rpc mt5_withdrawal => sub {
                     my ($status) = @_;
 
                     if ($status->{error}) {
-                        return Future->done(_make_error($error_code, $status->{error}));
+                        return _make_error($error_code, $status->{error});
                     }
 
                     my $to_client = BOM::User::Client->new({loginid => $to_loginid});
@@ -1130,7 +1127,7 @@ async_rpc mt5_withdrawal => sub {
                             action  => 'withdraw',
                             error   => $error->get_mesg,
                         );
-                        return Future->done(_make_error($error_code, $error->{-message_to_client}));
+                        return _make_error($error_code, $error->{-message_to_client});
                     };
                 });
         });
