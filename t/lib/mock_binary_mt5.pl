@@ -10,9 +10,6 @@ use JSON::MaybeXS;
 use constant {
     MT_RET_OK                   => 0,
     MT_RET_USR_INVALID_PASSWORD => 3006,
-
-    WEB_VAL_USER_PASS_MAIN     => "MAIN",
-    WEB_VAL_USER_PASS_INVESTOR => "INVESTOR",
 };
 
 # Mocked account details
@@ -127,7 +124,7 @@ sub cmd_UserPasswordChange {
     $input->{login} eq $DETAILS{login}
         or die "TODO: mock UserUpdate on unknown login\n";
 
-    $input->{type} eq WEB_VAL_USER_PASS_MAIN || $input->{type} eq WEB_VAL_USER_PASS_INVESTOR
+    $input->{type} eq 'main' || $input->{type} eq 'investor'
         or die "UserPasswordChange with unexpected password_type\n";
 
     $input->{new_password} eq "Ijkl6789" || $input->{new_password} eq "Abcd1234"
@@ -143,8 +140,6 @@ sub cmd_UserPasswordCheck {
 
     $input->{login} eq $DETAILS{login}
         or die "TODO: mock UserUpdate on unknown login\n";
-
-    my $type = $input->{type} eq WEB_VAL_USER_PASS_INVESTOR ? 'investor' : 'main';
 
     $input->{password} eq $DETAILS{password}->{$type} or return {
         ret_code => MT_RET_USR_INVALID_PASSWORD,
