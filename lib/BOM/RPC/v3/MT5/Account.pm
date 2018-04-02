@@ -1034,7 +1034,7 @@ async_rpc mt5_deposit => sub {
                             action  => 'deposit',
                             error   => $status->{error},
                         );
-                        return _make_error($status->{error});
+                        return _make_error($error_code, $status->{error});
                     }
 
                     return Future->done({
@@ -1265,12 +1265,12 @@ sub _mt5_validate_and_get_amount {
                 };
             }
 
-            return _make_error(localize("Conversion rate not available for this currency."))
+            return _make_error($error_code, localize("Conversion rate not available for this currency."))
                 unless defined $mt5_amount;
 
-            return _make_error(localize("Amount must be greater than 1 [_1].", $mt5_currency))
+            return _make_error($error_code, localize("Amount must be greater than 1 [_1].", $mt5_currency))
                 if $mt5_amount < 1;
-            return _make_error(localize("Amount must be less than 20000 [_1].", $mt5_currency))
+            return _make_error($error_code, localize("Amount must be less than 20000 [_1].", $mt5_currency))
                 if $mt5_amount > 20000;
 
             return Future->done($mt5_amount);
