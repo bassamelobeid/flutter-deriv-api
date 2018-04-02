@@ -114,7 +114,8 @@ sub send_notification {
             next;
         }
         my $client_shared = $shared->{broadcast_notifications}{$c_addr};
-        unless (defined $client_shared->{c}->tx) {
+        my $c = $client_shared->{c} or return;
+        unless (defined $c->tx) {
             delete $shared->{broadcast_notifications}{$c_addr};
             ws_redis_master->unsubscribe([$channel])
                 if (scalar keys %{$shared->{broadcast_notifications}}) == 0 && $channel;
@@ -132,9 +133,9 @@ sub send_notification {
         # message can be correctly localized depending on the connection
         my $website_status = {%{$client_shared->{website_status}}};
         $website_status->{site_status} = $message->{site_status};
-        $website_status->{message} = get_status_msg($client_shared->{c}, $message->{message}) if $message->{message};
+        $website_status->{message} = get_status_msg($c, $message->{message}) if $message->{message};
 
-        $client_shared->{c}->send({
+        $c->send({
                 json => {
                     website_status => $website_status,
                     echo_req       => $client_shared->{echo},
