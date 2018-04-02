@@ -1,0 +1,13 @@
+<p> Latest report generated at [% data.generated_time %] </p>
+<p> The following report shows the current closed PL </p>
+
+<table>
+<tr><th>Underlying </th><th> Closed PL (USD)</th></tr>
+[% FOREACH underlying IN data.keys %]
+	[% IF underlying != 'generated_time' %]
+		<tr><td>[% underlying %]</td><td> [% data.$underlying.usd_closed_pl %]</td></tr>
+        [% END %]
+[% END %]
+</table>
+
+

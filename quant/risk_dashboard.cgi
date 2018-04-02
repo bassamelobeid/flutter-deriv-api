@@ -23,6 +23,7 @@ my $today = Date::Utility->today;
 
 $report->{dtr_link} = request()->url_for('backoffice/f_dailyturnoverreport.cgi');
 $report->{multibarrier} = BOM::RiskReporting::Dashboard->new->multibarrierreport();
+$report->{closedpl} = BOM::RiskReporting::Dashboard->new->closedplreport();
 
 $report->{link_to_pnl} = sub {
     my $loginid = shift;

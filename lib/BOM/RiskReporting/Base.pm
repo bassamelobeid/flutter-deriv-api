@@ -127,7 +127,7 @@ sub closed_PL_by_underlying {
     return $self->_db->dbic->run(
         fixup => sub {
             $_->selectall_hashref(
-                qq{ SELECT * FROM accounting.get_closed_pl_by_underlying(?::TIMESTAMP)}, 'underlying_symbol', {}, $date
+                qq{ SELECT * FROM accounting.get_closed_pl_by_underlying(?)}, 'underlying_symbol', {}, $date
             );
         });
 }
