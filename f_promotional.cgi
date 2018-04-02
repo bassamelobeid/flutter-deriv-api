@@ -128,7 +128,7 @@ if (@$pcs) {
         next POROMOCODES_TABLE if $input{currency_only} && $input{currency_only} ne $pc_currency;
 
         my $expiry_date;
-        if ($pc->expiry_date && $pc->expiry_date->epoch < Date::Utility->new->epoch) {
+        if ($pc->expiry_date && $pc->expiry_date->epoch < time()) {
             next POROMOCODES_TABLE if $input{expiry_select} == 2;
             $expiry_date = '<font color="red">' . $pc->expiry_date->ymd . '</font>';
         } elsif ($pc->expiry_date) {
