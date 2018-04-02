@@ -1675,9 +1675,12 @@ subtest 'get and set self_exclusion' => sub {
     is $self_excl->timeout_until, $timeout_until->epoch, 'timeout_until is right';
     is $self_excl->session_duration_limit, 1440, 'all good';
 
-    ###Check email is sent for limitations on MLT client with MT5 accounts
+    ## Section: Check self-exclusion notification emails for compliance, related to
+    ##  clients under Binary (Europe) Limited, are sent under correct circumstances.
     $mailbox->clear;
-    ## Set limits, check no mail is sent (no MT5 account is created yet)
+
+    ## Set some limits, and no email should be sent, because no MT5 account has
+    ##   been opened yet.
     $params->{token} = $token_mlt;
     $params->{args}  = {
         set_self_exclusion     => 1,
@@ -1694,7 +1697,7 @@ subtest 'get and set self_exclusion' => sub {
     );
     ok(!@msgs, 'No email for MLT client limits without MT5 accounts');
 
-    ## Create MT5 account
+    ## Open an MT5 account
     # Mocked account details
     # This hash shared between three files, and should be kept in-sync to avoid test failures
     #   t/BOM/RPC/30_mt5.t
@@ -1727,7 +1730,8 @@ subtest 'get and set self_exclusion' => sub {
     my $mt5_loginid = $c->tcall('mt5_new_account', $mt5_params)->{login};
     is($mt5_loginid, $DETAILS{login}, $mt5_loginid);
 
-    ## Check email was sent after creation of MT5 since limits already in place
+    ## Verify an email was sent after opening an MT5 account, since user has
+    ##  limits currently in place.
     @msgs = $mailbox->search(
         email   => 'compliance@binary.com,marketing@binary.com,x-acc@binary.com',
         subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
@@ -1735,7 +1739,8 @@ subtest 'get and set self_exclusion' => sub {
     ok(@msgs, 'Email for MLT client limits with MT5 accounts');
     like($msgs[0]{body}, qr/MT$mt5_loginid/, 'email content is ok');
 
-    ## Set limits again, and check mail another mail is receieved
+    ## Set some limits again, and another email should be sent to compliance listing
+    ##  the new limitations since an MT5 account is open.
     $mailbox->clear;
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
     @msgs = $mailbox->search(
