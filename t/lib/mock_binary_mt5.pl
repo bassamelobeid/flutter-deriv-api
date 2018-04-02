@@ -141,10 +141,11 @@ sub cmd_UserPasswordCheck {
     $input->{login} eq $DETAILS{login}
         or die "TODO: mock UserUpdate on unknown login\n";
 
-    $input->{password} eq $DETAILS{password}->{$type} or return {
+    $input->{password} eq $DETAILS{password}->{$input->{type}}
+        or return {
         ret_code => MT_RET_USR_INVALID_PASSWORD,
         error    => 'Invalid account password',
-    };
+        };
 
     return {
         ret_code => MT_RET_OK,

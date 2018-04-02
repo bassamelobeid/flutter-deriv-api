@@ -233,7 +233,7 @@ subtest 'investor password reset' => sub {
         args     => {
             login             => $DETAILS{login},
             new_password      => 'Abcd1234',
-            password_type     => 'INVESTOR',
+            password_type     => 'investor',
             verification_code => $code
         }};
 
@@ -258,7 +258,7 @@ subtest 'password check investor' => sub {
         args     => {
             login         => $DETAILS{login},
             password      => 'Abcd1234',
-            password_type => 'INVESTOR'
+            password_type => 'investor'
         },
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_password_check');
