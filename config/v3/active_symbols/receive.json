@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Get list of active symbols Receive",
+  "title": "Active Symbols Response",
   "description": "A message list of active symbols",
   "properties": {
     "echo_req": {

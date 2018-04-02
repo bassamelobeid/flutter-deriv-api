@@ -6,13 +6,13 @@
     "properties":{
         "contracts_for":{
             "type":"string",
-            "description":"The short symbol name (obtained from active_symbols call)",
+            "description":"The short symbol name (obtained from active_symbols call).",
             "pattern":"^\\w{2,30}$",
             "required": "1"
         },
         "currency": {
           "type": "string",
-          "description":"[Optional] Currency of the contract's stake and payout.",
+          "description":"[Optional] Currency of the contract's stake and payout (obtained from payout_currencies call).",
           "pattern": "^[A-Z]{3}$",
           "default": "USD"
         },
@@ -31,7 +31,7 @@
         },
         "req_id": {
           "type": "integer",
-          "description": "[Optional] Used to map request to response"
+          "description": "[Optional] Used to map request to response."
         }
     },
     "additionalProperties":false

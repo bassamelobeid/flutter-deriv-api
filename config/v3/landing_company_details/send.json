@@ -6,7 +6,7 @@
   "properties": {
     "landing_company_details": {
       "enum":["iom","malta","maltainvest","costarica","virtual", "japan", "japan-virtual", "vanuatu", "champion", "champion-virtual"],
-      "description": "Landing company shortcode",
+      "description": "Landing company shortcode.",
       "required": "1"
     },
     "passthrough":{
@@ -15,7 +15,7 @@
     },
     "req_id": {
       "type": "integer",
-      "description": "[Optional] Used to map request to response"
+      "description": "[Optional] Used to map request to response."
     }
   },
   "additionalProperties": false

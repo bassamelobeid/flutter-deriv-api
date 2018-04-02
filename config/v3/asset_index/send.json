@@ -7,7 +7,7 @@
     "asset_index": {
       "type":"integer",
       "pattern": "^1$",
-      "description": "Must be 1",
+      "description": "Must be 1.",
       "required": "1"
     },
     "landing_company": {
@@ -20,7 +20,7 @@
     },
     "req_id": {
       "type": "integer",
-      "description": "[Optional] Used to map request to response"
+      "description": "[Optional] Used to map request to response."
     }
   },
   "additionalProperties": false

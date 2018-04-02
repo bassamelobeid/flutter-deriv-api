@@ -7,13 +7,14 @@
     "copytrading_statistics": {
       "type": "integer",
       "pattern": "^1$",
-      "description": "Must be 1",
+      "description": "Must be 1.",
       "required": "1"
     },
     "trader_id": {
       "type": "string",
       "pattern": "^[A-Za-z]+\\d+$",
-      "required": "1"
+      "required": "1",
+      "description":"The id of the target trader."
     },
     "passthrough":{
         "type":"object",
@@ -21,7 +22,7 @@
     },
     "req_id": {
       "type": "integer",
-      "description": "[Optional] Used to map request to response"
+      "description": "[Optional] Used to map request to response."
     }
   },
   "additionalProperties": false
