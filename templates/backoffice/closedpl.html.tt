@@ -1,8 +1,8 @@
 <p> Latest report generated at [% data.generated_time %] </p>
-<p> The following report shows the current closed PL </p>
+<p> The following report shows the current closed PL of different underlying. We are taking into account the contract that bought and sold on the same date in this report</p>
 
-<table>
-<tr><th>Underlying </th><th> Closed PL (USD)</th></tr>
+<table border="1" cellpadding="1" cellspacing="0">
+<tr><td><b>Underlying </td><td><b> Closed PL (USD)</td></th></tr>
 [% FOREACH underlying IN data.keys %]
 	[% IF underlying != 'generated_time' %]
 		<tr><td>[% underlying %]</td><td> [% data.$underlying.usd_closed_pl %]</td></tr>

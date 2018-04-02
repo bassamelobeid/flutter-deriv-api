@@ -451,11 +451,9 @@ sub closedplreport {
     my $closed = $self->closed_PL_by_underlying($today->truncate_to_day->db_timestamp);
     my $final;
     foreach my $underlying (keys %$closed) {
-        $final->{$underlying}->{usd_closed_pl} = $closed->{$underlying}->{usd_closed_pl};
+        $final->{$underlying}->{usd_closed_pl} =  financialrounding('price', 'USD', $closed->{$underlying}->{usd_closed_pl});
     }
     $final->{generated_time} = $today->datetime;
-use Data::Dumper;
-warn Dumper($closed);
     return $final;
 }
 =head1 METHODS
