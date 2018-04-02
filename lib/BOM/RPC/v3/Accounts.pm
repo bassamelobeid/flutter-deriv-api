@@ -1390,9 +1390,9 @@ rpc set_self_exclusion => sub {
     my @mt5_logins = BOM::User->new({loginid => $client->loginid})->mt5_logins('real');
 
     if ($client->landing_company->short eq 'malta' && @mt5_logins) {
-        send_self_exclusion_nofitication($client, 'malta_with_mt5', \%args);
+        send_self_exclusion_notification($client, 'malta_with_mt5', \%args);
     } elsif ($args{exclude_until}) {
-        send_self_exclusion_nofitication($client, 'self_exclusion', \%args);
+        send_self_exclusion_notification($client, 'self_exclusion', \%args);
     }
 
     $client->save();
@@ -1400,7 +1400,7 @@ rpc set_self_exclusion => sub {
     return {status => 1};
 };
 
-sub send_self_exclusion_nofitication {
+sub send_self_exclusion_notification {
     my ($client, $type, $args) = @_;
 
     my @fields_to_email;
