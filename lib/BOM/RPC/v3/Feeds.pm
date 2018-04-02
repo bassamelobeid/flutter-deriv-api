@@ -10,7 +10,8 @@ This package is a collection of utility functions that implement websocket API c
 =cut
 
 package BOM::RPC::v3::Feeds;
-
+use strict;
+use warnings;
 use BOM::RPC::Registry '-dsl';
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use Scalar::Util qw(looks_like_number);
