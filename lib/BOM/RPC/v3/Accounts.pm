@@ -1386,7 +1386,7 @@ rpc set_self_exclusion => sub {
     }
 # Need to send email in 2 circumstances:
 #   - Any client sets a self exclusion period
-#   - A 'malta' client with MT5 account(s) sets any of these settings
+#   - Client under Binary (Europe) Limited with MT5 account(s) sets any of these settings
     my @mt5_logins = BOM::User->new({loginid => $client->loginid})->mt5_logins('real');
 
     if ($client->landing_company->short eq 'malta' && @mt5_logins) {
