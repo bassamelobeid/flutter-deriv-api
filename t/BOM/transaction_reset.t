@@ -179,7 +179,6 @@ sub create_client {
     });
 }
 
-
 sub top_up {
     my ($c, $cur, $amount) = @_;
 
@@ -367,13 +366,13 @@ subtest 'buy a bet', sub {
     plan tests => 11;
     lives_ok {
         my $contract = produce_contract({
-                underlying => $underlying_R50,
-                bet_type   => 'RESETCALL',
-                currency   => 'USD',
-                payout     => 50,
-                duration   => '30m',
-                current_tick => $tick,
-                barrier    => 'S0P',
+            underlying   => $underlying_R50,
+            bet_type     => 'RESETCALL',
+            currency     => 'USD',
+            payout       => 50,
+            duration     => '30m',
+            current_tick => $tick,
+            barrier      => 'S0P',
         });
 
         my $txn = BOM::Transaction->new({
@@ -385,7 +384,6 @@ subtest 'buy a bet', sub {
             source        => 19,
             purchase_date => $contract->date_start,
         });
-
 
         my $error = $txn->buy;
         is $error, undef, 'no error';
@@ -419,10 +417,10 @@ subtest 'buy a bet', sub {
             is $trx->{amount} + 0, -32.05, 'amount';
             is $trx->{balance_after} + 0, 5000 - 32.05, 'balance_after';
             is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $trx->{payment_id},    undef,                  'payment_id';
-            
+            is $trx->{payment_id}, undef, 'payment_id';
+
             is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
-            is $trx->{remark},        undef,                  'remark';
+            is $trx->{remark}, undef, 'remark';
             is $trx->{staff_loginid}, $cl->loginid, 'staff_loginid';
             is $trx->{source}, 19, 'source';
             cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
@@ -435,7 +433,7 @@ subtest 'buy a bet', sub {
             cmp_ok $fmb->{id}, '>', 0, 'id';
             is $fmb->{account_id}, $acc_usd->id, 'account_id';
             is $fmb->{bet_class}, 'reset_bet', 'bet_class';
-            is $fmb->{bet_type},  'RESETCALL',             'bet_type';
+            is $fmb->{bet_type},  'RESETCALL', 'bet_type';
             is $fmb->{buy_price} + 0, 32.05, 'buy_price';
             is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
             cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
@@ -444,8 +442,8 @@ subtest 'buy a bet', sub {
             is !$fmb->{is_sold},    !0, 'is_sold';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
             like $fmb->{remark},   qr/\btrade\[32\.05000\]/, 'remark';
-            is $fmb->{sell_price}, undef,                     'sell_price';
-            is $fmb->{sell_time},  undef,                     'sell_time';
+            is $fmb->{sell_price}, undef,                    'sell_price';
+            is $fmb->{sell_time},  undef,                    'sell_time';
             cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
             like $fmb->{short_code}, qr/CALL/, 'short_code';
             cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
@@ -481,121 +479,43 @@ subtest 'buy a bet', sub {
 };
 
 subtest 'sell a bet', sub {
-    plan tests => 10;
-    lives_ok {
-        set_relative_time 1;
-        my $reset_time = guard { restore_time };
+    plan tests => 1;
 
-        my $contract = produce_contract({
-                underlying => $underlying_R50,
-                bet_type   => 'RESETCALL',
-                currency   => 'USD',
-                payout     => 50,
-                duration   => '30m',
-                current_tick => $tick,
-                entry_tick   => $tick,
-                exit_tick    => $tick,
-                barrier      => 'S0P',
+    set_relative_time 1;
+    my $reset_time = guard { restore_time };
+
+    my $contract = produce_contract({
+        underlying   => $underlying_R50,
+        bet_type     => 'RESETCALL',
+        currency     => 'USD',
+        payout       => 50,
+        duration     => '30m',
+        current_tick => $tick,
+        entry_tick   => $tick,
+        exit_tick    => $tick,
+        barrier      => 'S0P',
+    });
+
+    my $txn;
+    #note 'bid price: ' . $contract->bid_price;
+    my $error = do {
+        my $mocked           = Test::MockModule->new('BOM::Transaction');
+        my $mocked_validator = Test::MockModule->new('BOM::Transaction::Validation');
+        $mocked_validator->mock('_validate_trade_pricing_adjustment', sub { });
+        $mocked->mock('price', sub { $contract->bid_price });
+        $txn = BOM::Transaction->new({
+            purchase_date => $contract->date_start,
+            client        => $cl,
+            contract      => $contract,
+            contract_id   => $fmb->{id},
+            price         => $contract->bid_price,
+            source        => 23,
         });
+        $txn->sell;
+    };
 
-        my $txn;
-        #note 'bid price: ' . $contract->bid_price;
-        my $error = do {
-            my $mocked           = Test::MockModule->new('BOM::Transaction');
-            my $mocked_validator = Test::MockModule->new('BOM::Transaction::Validation');
-            $mocked_validator->mock('_validate_trade_pricing_adjustment', sub { });
-            $mocked->mock('price', sub { $contract->bid_price });
-            $txn = BOM::Transaction->new({
-                purchase_date => $contract->date_start,
-                client        => $cl,
-                contract      => $contract,
-                contract_id   => $fmb->{id},
-                price         => $contract->bid_price,
-                source        => 23,
-            });
-            $txn->sell;
-        };
-        is $error, undef, 'no error';
+    isa_ok $error, 'Error::Base', 'sellback not allowed error';
 
-        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db reset_bet => $txn->transaction_id;
-
-        # note explain $trx;
-
-        subtest 'transaction row', sub {
-            plan tests => 12;
-            cmp_ok $trx->{id}, '>', 0, 'id';
-            is $trx->{account_id}, $acc_usd->id, 'account_id';
-            is $trx->{action_type}, 'sell', 'action_type';
-            is $trx->{amount} + 0, $contract->bid_price, 'amount';
-            is $trx->{balance_after} + 0, 5000 - 32.05 + $contract->bid_price, 'balance_after';
-            is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $trx->{payment_id},    undef,                  'payment_id';
-            
-            is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
-            is $trx->{remark},        undef,                  'remark';
-            is $trx->{staff_loginid}, $cl->loginid, 'staff_loginid';
-            is $trx->{source}, 23, 'source';
-            cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
-        };
-
-        # note explain $fmb;
-
-        subtest 'fmb row', sub {
-            plan tests => 19;
-            cmp_ok $fmb->{id}, '>', 0, 'id';
-            is $fmb->{account_id}, $acc_usd->id, 'account_id';
-            is $fmb->{bet_class}, 'reset_bet', 'bet_class';
-            is $fmb->{bet_type},  'RESETCALL',             'bet_type';
-            is $fmb->{buy_price} + 0, 32.05, 'buy_price';
-            is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
-            cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
-            is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
-            is $fmb->{is_expired}, 0, 'is_expired';
-            is !$fmb->{is_sold},    !1, 'is_sold';
-            cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
-            like $fmb->{remark}, qr/\btrade\[32\.05000\]/, 'remark';
-            is $fmb->{sell_price} + 0, $contract->bid_price, 'sell_price';
-            cmp_ok +Date::Utility->new($fmb->{sell_time})->epoch,       '<=', time, 'sell_time';
-            cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>',  time, 'settlement_time';
-            like $fmb->{short_code}, qr/CALL/, 'short_code';
-            cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
-            is $fmb->{tick_count},        undef,  'tick_count';
-            is $fmb->{underlying_symbol}, 'R_50', 'underlying_symbol';
-        };
-
-        # note explain $chld;
-
-        subtest 'chld row', sub {
-            plan tests => 4;
-            is $chld->{absolute_barrier}, undef, 'absolute_barrier';
-            is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{prediction},       undef, 'prediction';
-            is $chld->{relative_barrier}, 'S0P', 'relative_barrier';
-        };
-
-        # note explain $qv1;
-
-        subtest 'qv row', sub {
-            plan tests => 3;
-            is $qv1->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $qv1->{transaction_id},          $trx->{id}, 'transaction_id';
-            is $qv1->{trade} + 0, $contract->bid_price, 'trade';
-        };
-
-        # note explain $qv2;
-
-        subtest 'qv row (buy transaction)', sub {
-            plan tests => 3;
-            is $qv2->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            isnt $qv2->{transaction_id},        $trx->{id}, 'transaction_id';
-            is $qv2->{trade} + 0, 32.05, 'trade';
-        };
-
-        is $txn->contract_id,    $fmb->{id},            'txn->contract_id';
-        is $txn->transaction_id, $trx->{id},            'txn->transaction_id';
-        is $txn->balance_after,  $trx->{balance_after}, 'txn->balance_after';
-    }
-    'survived';
 };
 
 subtest 'sell_expired_contracts', sub {
@@ -615,7 +535,7 @@ subtest 'sell_expired_contracts', sub {
             bet_type     => 'RESETCALL',
             currency     => 'USD',
             payout       => 50,
-            date_start   => ($now->epoch - 50) - (30*60),
+            date_start   => ($now->epoch - 50) - (30 * 60),
             date_expiry  => $now->epoch - 50,
             current_tick => $tick,
             entry_tick   => $old_tick1,
@@ -628,8 +548,8 @@ subtest 'sell_expired_contracts', sub {
             contract      => $contract_expired,
             price         => $contract_expired->ask_price,
             amount_type   => 'payout',
-            payout          => 50,
-            purchase_date => $now->epoch - (30*60+51),
+            payout        => 50,
+            purchase_date => $now->epoch - (30 * 60 + 51),
         });
 
         my (@expired_txnids, @expired_fmbids, @unexpired_fmbids);
