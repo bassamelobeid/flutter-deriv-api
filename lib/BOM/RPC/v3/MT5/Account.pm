@@ -1297,7 +1297,7 @@ sub _mt5_validate_and_get_amount {
 
             return _make_error($error_code,
                 localize('Permission error. MAMM manager accounts are not allowed to withdraw as payments are processed manually.'))
-                if ($action eq 'withdrawal' and and ($setting->{group} // '') =~ /^real\\mamm_/);
+                if ($action eq 'withdrawal' and ($setting->{group} // '') =~ /^real\\mamm_/);
 
             # check for fully authenticated only if it's not gaming account
             # as of now we only support gaming for binary brand, in future if we

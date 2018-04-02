@@ -125,7 +125,7 @@ sub get_user {
 
 sub update_user {
     my $args   = shift;
-    my @fields = __get_update_user_fields();
+    my @fields = _get_update_user_fields();
 
     my $param = {};
     $param->{$_} = $args->{$_} for (@fields);
@@ -138,7 +138,7 @@ sub update_user {
             }
 
             my $ret = $hash->{user};
-            @fields = __get_user_fields();
+            @fields = _get_user_fields();
 
             my $mt_user;
             $mt_user->{$_} = $ret->{$_} for (@fields);
@@ -148,7 +148,7 @@ sub update_user {
 
 sub update_mamm_user {
     my $args   = shift;
-    my @fields = __get_mamm_update_user_fields();
+    my @fields = _get_mamm_update_user_fields();
 
     my $param = {};
     $param->{$_} = $args->{$_} for (@fields);
@@ -161,7 +161,7 @@ sub update_mamm_user {
             }
 
             my $ret = $hash->{user};
-            @fields = __get_user_fields();
+            @fields = _get_user_fields();
 
             my $mt_user;
             $mt_user->{$_} = $ret->{$_} for (@fields);
