@@ -18,6 +18,7 @@ sub go {
         sprintf '%s-%02s', $now->year, $now->month;
     };
 
+    # The start date is the first day of that month
     my $start_date = Date::Utility->new("${yyyymm}-01");
 
     my $month_end = sprintf("%s-%2d", $yyyymm, $start_date->days_in_month);
