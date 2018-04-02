@@ -1406,7 +1406,7 @@ sub send_self_exclusion_notification {
     my @fields_to_email;
     my $message;
     if ($type eq 'malta_with_mt5') {
-        $message = "An MT5 account holder assigned to the Malta landing company has set account limits.\n";
+        $message = "An MT5 account holder under the Binary (Europe) Limited landing company has set account limits.\n";
         @fields_to_email =
             qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit exclude_until timeout_until/;
     } elsif ($type eq 'self_exclusion') {
