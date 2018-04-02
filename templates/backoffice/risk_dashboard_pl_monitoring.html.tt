@@ -6,7 +6,7 @@
 <tr><td><b>Underlying </td><td><b> Closed PL (USD)</td></th></tr>
 [% FOREACH underlying IN data.keys %]
 	[% IF underlying != 'generated_time' %]
-		<tr><td>[% underlying %]</td>[IF %data.$underlying.usd_closed_pl % > 0]<td bgcolor = "green"> [% ELSE %] <td bgcolor = "red"> [% data.$underlying.usd_closed_pl %]</td> [ %END %]</tr>
+            <tr><td>[% underlying %]</td><td style="background-color: [% data.$underlying.usd_closed_pl  < 0 ? 'red' : 'green' %]"> [% data.$underlying.usd_closed_pl %]</td></tr>
         [% END %]
 [% END %]
 </table>
