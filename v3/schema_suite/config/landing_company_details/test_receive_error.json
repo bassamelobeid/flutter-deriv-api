@@ -25,5 +25,5 @@
             "pattern": "^landing_company_details$",
             "required": "1"
         }
-    }
+    } 
 }
