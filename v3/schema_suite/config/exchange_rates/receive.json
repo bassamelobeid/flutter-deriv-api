@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "Get Exchange Rates",
+  "properties": {
+    "echo_req": {
+      "type": "object",
+      "title": "Echo request",
+      "description": "Echo of the request json message."
+    },
+    "msg_type": {
+      "type": "string",
+      "pattern": "^exchange_rates$",
+      "title": "Message Type",
+      "description": "exchange_rates"
+    },
+    "exchange_rates": {
+      "type": "object",
+      "title": "Exchange rates",
+      "description": "Exchange rate values from base (USD) to all other currencies.",
+      "properties": {
+        "base": {
+          "type": "string",
+          "description": "Base currency (USD)",
+          "pattern": "^USD$"
+        },
+        "date": {
+          "type": "string",
+          "pattern": "^[0-9]{1,10}$",
+          "description": "Date retrieval epoch time represented as an integer number."
+        },
+        "rates": {
+          "type": "object",
+          "description": "Rates of exchanging a unit of base currency into the target currencies",
+          "properties": {
+            "^[A-Z]{3}$": {
+              "type": "number",
+              "description": "The rate of exchanging a unit of the base currency (USD) into a target currency (represented by the key)."
+            }
+          }
+        }
+      },
+      "required": [
+        "base",
+        "date",
+        "rates"
+      ]
+    },
+    "req_id": {
+      "type": "integer",
+      "description": "Optional field sent only when request contains req_id"
+    }
+  },
+  "required": [
+    "echo_req",
+    "msg_type",
+    "exchange_rates"
+  ]
+}
