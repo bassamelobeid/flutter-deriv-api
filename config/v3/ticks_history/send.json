@@ -28,7 +28,7 @@
     },
     "style": {
       "enum": ["candles", "ticks"],
-      "description": "The tick-output style.,
+      "description": "The tick-output style.",
       "default": "ticks"
     },
     "granularity": {
