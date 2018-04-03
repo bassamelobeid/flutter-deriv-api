@@ -57,6 +57,14 @@ around '_build_barrier' => sub {
     return $self->$orig;
 };
 
+around '_build_bid_price' => sub {
+    my $orig = shift;
+    my $self = shift;
+
+    return 0 unless $self->is_expired;
+    return $self->$orig;
+};
+
 override shortcode => sub {
     my $self = shift;
     return join '_',
