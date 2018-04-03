@@ -25,7 +25,7 @@ test_schema('landing_company_details', $res);
 
 $res = $t->await::landing_company_details({landing_company_details => 'unknown_blabla'});
 ok $res->{error};
-is $res->{error}->{code}, 'UnknownLandingCompany';
+is $res->{error}->{code}, 'InputValidationFailed';
 
 # landing_company
 $res = $t->await::landing_company({landing_company => 'de'});
