@@ -782,7 +782,7 @@ for my $withdraw_currency ('USD', 'BTC') {
         top_up $client, $test_currency => 8675;    ## Ok for USD, crazy for BTC!
 
         ## Complication 2: hard-coded daily limits in Cashier.pm, which depend on weekday vs weekend
-        ## Solution: force DateTime to think it is January 1, 2018, a Monday - or 20180106, a Saturday
+        ## Solution: force Date::Utility to think it is January 1, 2018, a Monday - or 20180106, a Saturday
         $mock_date->mock('is_a_weekend', sub { return 1 });
 
         ## Complication 3: withdrawals happening too often trigger a frequency error
