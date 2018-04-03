@@ -1347,24 +1347,59 @@ subtest $method => sub {
 
     is($c->tcall($method, $params)->{status}, 1, 'can send place_of_birth with same value');
 
-    $full_args{place_of_birth} = 'at';
-    $params->{args} = {%full_args};
+    {
+        local $full_args{place_of_birth} = 'at';
+        $params->{args} = {%full_args};
 
-    is(
-        $c->tcall($method, $params)->{error}{message_to_client},
-        'Value of place_of_birth cannot be changed.',
-        'cannot send place_of_birth with a different value'
-    );
-    delete $full_args{place_of_birth};
+        is(
+            $c->tcall($method, $params)->{error}{message_to_client},
+            'Value of place_of_birth cannot be changed.',
+            'cannot send place_of_birth with a different value'
+        );
+    }
+    for my $restricted_country (qw(us ir hk my)) {
+        local $params->{args} = {
+            tax_residence             => $restricted_country,
+            tax_identification_number => '111-222-543',
+        };
 
-    $full_args{account_opening_reason} = 'Hedging';
-    $params->{args} = {%full_args};
-    is(
-        $c->tcall($method, $params)->{error}{message_to_client},
-        'Value of account_opening_reason cannot be changed.',
-        'cannot send account_opening_reason with a different value'
-    );
-    delete $full_args{account_opening_reason};
+        my $res = $c->tcall($method, $params);
+        is($res->{error}{code}, 'RestrictedCountry', 'restricted country ' . $restricted_country . ' for tax residence is blocked as expected')
+            or note explain $res;
+    }
+    # Testing the comma-separated list form of input separately
+    for my $restricted_country (qw(us ir hk)) {
+        local $params->{args} = {
+            tax_residence             => "id,$restricted_country,my",
+            tax_identification_number => '111-222-543',
+        };
+
+        my $res = $c->tcall($method, $params);
+        is($res->{error}{code},
+            'RestrictedCountry', 'one restricted country (' . $restricted_country . ') in list of tax residences is also blocked as expected')
+            or note explain $res;
+        like($res->{error}{message_to_client}, qr/"\Q\U$restricted_country"/, 'error message mentioned the country')
+            or note explain $res->{error};
+    }
+    for my $unrestricted_country (qw(id ru)) {
+        local $params->{args} = {
+            tax_residence             => $unrestricted_country,
+            tax_identification_number => '111-222-543',
+        };
+
+        my $res = $c->tcall($method, $params);
+        is($res->{status}, 1, 'unrestricted country ' . $unrestricted_country . ' for tax residence is allowed') or note explain $res;
+    }
+
+    {
+        local $full_args{account_opening_reason} = 'Hedging';
+        $params->{args} = {%full_args};
+        is(
+            $c->tcall($method, $params)->{error}{message_to_client},
+            'Value of account_opening_reason cannot be changed.',
+            'cannot send account_opening_reason with a different value'
+        );
+    }
 
     $params->{args} = {%full_args};
     $mocked_client->mock('save', sub { return undef });
