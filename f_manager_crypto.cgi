@@ -133,6 +133,7 @@ my $display_transactions = sub {
             view_type       => $view_type,
             controller_url  => request()->url_for('backoffice/f_manager_crypto.cgi'),
             testnet         => BOM::Platform::Config::on_qa() ? 1 : 0,
+            staff           => $staff,
         }) || die $tt->error();
 };
 
@@ -160,24 +161,28 @@ if ($view_action eq 'withdrawals') {
     code_exit_BO("Invalid selection to view type of transactions.")
         if not $view_type or $view_type !~ /^(?:pending|verified|rejected|processing|performing_blockchain_txn|sent|error)$/;
 
-    if ($action and $action =~ /^(?:Verify|Reject)$/) {
-        my $amount           = request()->param('amount');
-        my $loginid          = request()->param('loginid');
-        my $rejection_reason = request()->param('rejection_reason');
+    if ($action and $action =~ /^(?:Save|Verify|Reject)$/) {
+        my $amount     = request()->param('amount');
+        my $loginid    = request()->param('loginid');
+        my $set_remark = request()->param('set_remark');
 
         # Error for rejection with no reason
-        code_exit_BO("Please enter a reason for rejection") if ($action eq 'Reject' && $rejection_reason eq '');
+        code_exit_BO("Please enter a remark explaining reason for rejection") if ($action eq 'Reject' && $set_remark eq '');
 
         # Check payment limit
         my $over_limit = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($staff, in_USD($amount, $currency));
         code_exit_BO($over_limit->get_mesg()) if $over_limit;
 
         my $found;
-        ($found) =
-            $dbic->run(ping => sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?, ?)', undef, $address, $currency, $staff) })
-            if $action eq 'Verify';
+        ($found) = $dbic->run(ping => sub { $_->selectrow_array('SELECT payment.ctc_set_remark(?, ?, ?)', undef, $address, $currency, $set_remark) })
+            if $action eq 'Save';
         ($found) = $dbic->run(
-            ping => sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?, ?)', undef, $address, $currency, $rejection_reason) })
+            ping => sub {
+                $_->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?, ?, ?)',
+                    undef, $address, $currency, $staff, ($set_remark ne '' ? $set_remark : undef));
+            }) if $action eq 'Verify';
+        ($found) = $dbic->run(
+            ping => sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?, ?)', undef, $address, $currency, $set_remark) })
             if $action eq 'Reject';
 
         code_exit_BO("ERROR: No record found. Please check with someone from IT team before proceeding.")
