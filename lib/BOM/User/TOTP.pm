@@ -12,8 +12,8 @@ Time Based OTP Handler
 
 =head1 SYNOPSIS
 
- my $token = BOM::Platform::TOTP->generate_key();
- my $token = BOM::Platform::TOTP->verify_totp('secret_key', 'totp');
+ my $secret_key  = BOM::Platform::TOTP->generate_key();
+ my $is_verified = BOM::Platform::TOTP->verify_totp('secret_key', 'totp');
 
 =cut
 
