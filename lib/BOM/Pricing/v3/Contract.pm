@@ -520,7 +520,7 @@ sub send_ask {
 
     #Tactical solution, we will sort out api barrier entry validation
     #for all other contract types in a separate card and clean up this part.
-    if ($params->{args}->{contract_type} =~ /RESET/ and defined $params->{args}->{barrier2}) {
+    if (defined $params->{args}->{contract_type} and $params->{args}->{contract_type} =~ /RESET/ and defined $params->{args}->{barrier2}) {
         return BOM::Pricing::v3::Utility::create_error({
             code              => 'BarrierValidationError',
             message_to_client => localize("barrier2 is not allowed for reset contract."),
