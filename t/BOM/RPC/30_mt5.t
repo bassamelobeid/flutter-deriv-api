@@ -146,7 +146,7 @@ subtest 'password check' => sub {
         args     => {
             login    => $DETAILS{login},
             password => $DETAILS{password},
-            type     => 'MAIN',
+            type     => 'main',
         },
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_password_check');
@@ -169,7 +169,7 @@ subtest 'password change' => sub {
             login         => $DETAILS{login},
             old_password  => $DETAILS{password},
             new_password  => 'Ijkl6789',
-            password_type => 'MAIN'
+            password_type => 'main'
         },
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_password_change');
@@ -200,7 +200,7 @@ subtest 'password reset' => sub {
         args     => {
             login             => $DETAILS{login},
             new_password      => 'Ijkl6789',
-            password_type     => 'MAIN',
+            password_type     => 'main',
             verification_code => $code
         }};
 
@@ -233,7 +233,7 @@ subtest 'investor password reset' => sub {
         args     => {
             login             => $DETAILS{login},
             new_password      => 'Abcd1234',
-            password_type     => 'INVESTOR',
+            password_type     => 'investor',
             verification_code => $code
         }};
 
@@ -258,7 +258,7 @@ subtest 'password check investor' => sub {
         args     => {
             login         => $DETAILS{login},
             password      => 'Abcd1234',
-            password_type => 'INVESTOR'
+            password_type => 'investor'
         },
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_password_check');
