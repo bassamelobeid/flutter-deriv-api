@@ -155,7 +155,7 @@ Returns an arrayref containing values returned by the generate_asset_index($coun
 
 sub asset_index {
     my $params               = shift;
-    my $landing_company_name = $params->{args}->{landing_company};
+    my $landing_company_name = $params->{args}->{landing_company} || 'costarica';
     my $language             = $params->{language} // 'en';
     my $country_code         = $params->{country_code} // '';
 
@@ -164,7 +164,7 @@ sub asset_index {
     my $token_details = $params->{token_details};
 
     # Set landing company with logged in client details if no arg passed
-    if ($token_details and exists $token_details->{loginid} and not $landing_company_name) {
+    if ($token_details and exists $token_details->{loginid} and not $params->{args}->{landing_company}) {
         my $client = BOM::User::Client->new({
             loginid      => $token_details->{loginid},
             db_operation => 'replica',
@@ -173,9 +173,6 @@ sub asset_index {
         $landing_company_name = $client->landing_company->short;
         $country_code         = $client->residence;
     }
-
-    # If no arg, and user logged out, default to costarica (everything)
-    $landing_company_name = $landing_company_name || 'costarica';
 
     for my $cache_key (map { $_ . '_asset_index_' . $language } ($country_name, $landing_company_name)) {
         if (my $cache = _get_cache($cache_key)) {
