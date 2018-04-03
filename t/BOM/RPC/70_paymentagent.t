@@ -395,6 +395,7 @@ for my $transfer_currency ('USD', 'BTC') {
         like($res->{error}{message_to_client}, qr/you cannot withdraw.+balance is $test_currency 0.00/, $test);
 
         $test = 'Agent account starts with a zero balance';
+
         my $agent_balance = BOM::User::Client->new({loginid => $agent_id})->default_account->balance;
         is($agent_balance, 0, $test);
 
