@@ -10,9 +10,11 @@ This package is a collection of utility functions that implement websocket API c
 =cut
 
 package BOM::RPC::v3::Feeds;
+
 use strict;
 use warnings;
 use BOM::RPC::Registry '-dsl';
+use LandingCompany::Registry;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use Scalar::Util qw(looks_like_number);
 use Try::Tiny;
@@ -41,10 +43,10 @@ The return value is an anonymous hash contains the following items:
 rpc exchange_rates => sub {
     my $base = "USD";
     # Get available currencies
-    my $supported_currencies = BOM::RPC::v3::Utility::filter_out_suspended_cryptocurrencies('costarica');
+    my @all_currencies = LandingCompany::Registry->new()->all_currencies;
 
     my %rates_map;
-    foreach my $currency (@$supported_currencies) {
+    foreach my $currency (@all_currencies) {
         next if $currency eq $base;
         try {
             my $ex_rate = in_USD(1, $currency);
