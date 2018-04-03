@@ -190,7 +190,7 @@ subtest 'CR-EUR' => sub {
     $params->{token} = $token;
 
     # Load limits for CR, which is in USD, then convert to EUR
-    my $limits = LoadFile('/home/git/regentmarkets/bom-user/config/payment_limits.yml')->{withdrawal_limits}->{costarica};
+    my $limits         = LoadFile('/home/git/regentmarkets/bom-user/config/payment_limits.yml')->{withdrawal_limits}->{costarica};
     my $limit_for_days = formatnumber('price', 'EUR', amount_from_to_currency($limits->{limit_for_days}, 'USD', 'EUR'));
     my $lifetime_limit = formatnumber('price', 'EUR', amount_from_to_currency($limits->{lifetime_limit}, 'USD', 'EUR'));
 
@@ -284,7 +284,7 @@ subtest 'CR-BTC' => sub {
     $params->{token} = $token;
 
     # Load limits for CR, which is in USD, then convert to BTC
-    my $limits = LoadFile('/home/git/regentmarkets/bom-user/config/payment_limits.yml')->{withdrawal_limits}->{costarica};
+    my $limits         = LoadFile('/home/git/regentmarkets/bom-user/config/payment_limits.yml')->{withdrawal_limits}->{costarica};
     my $limit_for_days = formatnumber('price', 'BTC', amount_from_to_currency($limits->{limit_for_days}, 'USD', 'BTC'));
     my $lifetime_limit = formatnumber('price', 'BTC', amount_from_to_currency($limits->{lifetime_limit}, 'USD', 'BTC'));
 
