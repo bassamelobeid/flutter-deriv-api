@@ -212,7 +212,7 @@ rpc mt5_new_account => sub {
         }
 
         return BOM::RPC::v3::Utility::permission_error()
-                unless ($client->landing_company->short =~ $eligible_lcs);
+            unless ($client->landing_company->short =~ $eligible_lcs);
 
         return BOM::RPC::v3::Utility::permission_error()
             if (($mt_company = $get_company_name->($account_type)) eq 'none');
