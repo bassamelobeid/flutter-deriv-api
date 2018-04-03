@@ -1,13 +1,13 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Residence List Send",
+  "title": "Residence List Request",
   "description":"This call returns a list of countries and 2-letter country codes, suitable for populating the account opening form.",
   "properties": {
     "residence_list": {
       "type":"integer",
       "pattern": "^1$",
-      "description": "Must be 1",
+      "description": "Must be 1.",
       "required": "1"
     },
     "passthrough": {

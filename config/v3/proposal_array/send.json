@@ -1,12 +1,12 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
-    "title": "Get latest prices for a specific contract with different barriers",
-    "description": "Get latest prices for a specific contract with different barriers",
+    "title": "Price Proposal for Multiple Contracts Request",
+    "description": "Get latest prices for a specific contract with different barriers.",
     "properties": {
         "proposal_array": {
             "type": "integer",
-            "description":"Must be 1",
+            "description":"Must be 1.",
             "pattern": "^1$",
             "required": "1"
         },
@@ -18,10 +18,10 @@
         "amount": {
             "type": "number",
             "minimum": 0,
-            "description":"Proposed contract payout or stake value"
+            "description":"Proposed contract payout or stake value."
         },
         "basis": {
-            "description":"Indicate whether amount is 'payout' or 'stake'",
+            "description":"Indicate whether amount is 'payout' or 'stake'.",
             "enum": ["payout", "stake", "multiplier"],
             "required": "1"
         },
@@ -31,7 +31,7 @@
                 {"enum": ["UPORDOWN", "EXPIRYRANGE", "ONETOUCH", "CALLE", "LBHIGHLOW", "ASIAND", "EXPIRYRANGEE", "DIGITDIFF", "DIGITMATCH", "DIGITOVER", "PUTE", "DIGITUNDER", "NOTOUCH", "CALL", "RANGE", "LBFLOATPUT", "DIGITODD", "PUT", "ASIANU", "LBFLOATCALL", "EXPIRYMISSE", "EXPIRYMISS", "DIGITEVEN", "TICKHIGH", "TICKLOW"]
                 }
             ],
-            "description": "One or two valid contract-types",
+            "description": "One or two valid contract-types.",
             "required": "1",
             "uniqueItems": true,
             "minItems": 1,
@@ -39,7 +39,7 @@
         },
         "currency": {
             "type": "string",
-            "description":"This can only be the account-holder's currency",
+            "description":"This can only be the account-holder's currency.",
             "pattern": "^[A-Z]{3}$",
             "required": "1"
         },
@@ -56,7 +56,7 @@
         "duration": {
             "minimum" : 0,
             "type": "integer",
-            "description":"Duration quantity"
+            "description":"Duration quantity."
         },
         "duration_unit": {
             "description":"[Optional] Duration unit - s(seconds), m(minutes), h(hours), d(days), t(ticks).",
@@ -65,17 +65,17 @@
         },
         "symbol": {
             "type": "string",
-            "description":"Symbol code",
+            "description":"Symbol code.",
             "pattern": "^\\w{2,30}$",
             "required": "1"
         },
         "barriers": {
             "type": "array",
-            "description":"Array of barrier(s) for the contract",
+            "description":"Array of barrier(s) for the contract.",
             "required": "1",
             "items": {
                 "type": "object",
-                "description": "barrier(s) for the contracts to price",
+                "description": "barrier(s) for the contracts to price.",
                 "properties": {
                     "barrier": {
                         "type": "string",
@@ -92,7 +92,7 @@
         },
         "trading_period_start": {
             "type": "integer",
-            "description":"Required only for multi-barrier trading. Defines the epoch value of the trading period start time"
+            "description":"Required only for multi-barrier trading. Defines the epoch value of the trading period start time."
         },
         "product_type": {
             "description":"[Optional] If you specify this field, only contracts tradable through that contract type will be returned.",

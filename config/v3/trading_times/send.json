@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Trading Times Send",
-  "description":"Receive a list of marketing opening times for a given date",
+  "title": "Trading Times Request",
+  "description":"Receive a list of marketing opening times for a given date.",
   "properties": {
     "trading_times": {
       "type":"string",
@@ -11,12 +11,12 @@
       "required": "1"
     },
     "passthrough": {
-      "type": "object",
-      "description": "Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."
+        "type": "object",
+        "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the echo_req output field."
     },
     "req_id": {
-      "type": "integer",
-      "description": "Optional field to map request to response"
+        "type": "integer",
+        "description": "[Optional] Used to map request to response."
     }
   },
   "additionalProperties": false

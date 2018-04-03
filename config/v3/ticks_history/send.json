@@ -2,24 +2,24 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "title": "Tick History Request",
-  "description": "Get historic tick data for a given symbol name",
+  "description": "Get historic tick data for a given symbol name.",
   "properties": {
     "ticks_history": {
       "type": "string",
       "pattern": "^\\w{2,30}$",
-      "description": "Short symbol name",
+      "description": "Short symbol name.",
       "required": "1"
     },
     "end": {
       "type": "string",
       "pattern": "^(latest|\\d{1,10})$",
-      "description": "Epoch value representing the end-datetime of the ticks. If non-numeric value (e.g. \"latest\", the end-datetime will be the latest available timestamp.",
+      "description": "Epoch value representing the end-datetime of the ticks. If \"latest\" is specified, the end-datetime will be the latest available timestamp.",
       "required": "1"
     },
     "start": {
       "type": "integer",
       "pattern": "^\\d{1,10}$",
-      "description": "Epoch value representing the start-datetime of the ticks (For styles: 'ticks', it will default to 1 day ago. For styles: 'candle', it will default to 1 day ago if count or granularity is undef )"
+      "description": "Epoch value representing the start-datetime of the ticks (For styles: 'ticks', it will default to 1 day ago. For styles: 'candle', it will default to 1 day ago if count or granularity is undef )."
     },
     "count": {
       "type": "integer",
@@ -33,26 +33,26 @@
     },
     "granularity": {
       "enum" : [60, 120, 180, 300, 600, 900, 1800, 3600, 7200, 14400, 28800, 86400],
-      "description": "Only applicable for style : \"candles\". Candle time-dimension width setting.",
+      "description": "Only applicable for style : \."candles\". Candle time-dimension width setting.",
       "default": "60"
     },
     "adjust_start_time": {
       "type": "integer",
-      "pattern": "^1?$",
-      "description": "If market is closed at the end time, or license limit is before end time, then move interval backwards."
-    },
-    "passthrough": {
-      "type": "object",
-      "description": "Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."
+      "pattern": "^1$",
+      "description": "[Optional] 1 - if the market is closed at the end time, or license limit is before end time, adjust interval backwards to compensate."
     },
     "subscribe": {
       "type": "integer",
-      "description": "If set to 1, will send updates whenever the price changes",
+      "description": "[Optional] 1 - to send updates whenever the price changes.",
       "pattern": "^1$"
     },
+    "passthrough": {
+        "type": "object",
+        "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the echo_req output field."
+    },
     "req_id": {
-      "type": "integer",
-      "description": "Optional field to map request to response"
+        "type": "integer",
+        "description": "[Optional] Used to map request to response."
     }
   },
   "additionalProperties": false
