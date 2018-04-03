@@ -44,7 +44,7 @@ rpc exchange_rates => sub {
     my $base = "USD";
     # Get available currencies
     my @all_currencies = LandingCompany::Registry->new()->all_currencies;
-
+    #Fill a hash of exchange rates
     my %rates_map;
     foreach my $currency (@all_currencies) {
         next if $currency eq $base;
