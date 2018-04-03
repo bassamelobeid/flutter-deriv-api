@@ -131,15 +131,6 @@ sub prepare_ask {
         $p2{fixed_expiry} //= 1;
     }
 
-    #Tactical solution, we will sort out api barrier entry validation
-    #for all other contract types in a separate card and clean up this part.
-    if ($p1->{contract_type} =~ /RESET/ and defined $p2{barrier2}) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'BarrierValidationError',
-            message_to_client => localize("barrier2 is not allowed for reset contract."),
-        });
-    }
-
     if (defined $p2{barrier} && defined $p2{barrier2}) {
         $p2{high_barrier} = delete $p2{barrier};
         $p2{low_barrier}  = delete $p2{barrier2};
