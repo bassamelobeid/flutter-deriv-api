@@ -285,7 +285,7 @@ rpc mt5_new_account => sub {
     #   opens an MT5 account while having limitations on their account.
     if ($client->landing_company->short eq 'malta' && $account_type ne 'demo') {
         my $self_exclusion = BOM::RPC::v3::Accounts::get_self_exclusion({client => $client});
-        BOM::RPC::v3::Accounts::send_self_exclusion_notification($client, 'malta_with_mt5', $self_exclusion) if $self_exclusion;
+        BOM::RPC::v3::Accounts::send_self_exclusion_notification($client, 'malta_with_mt5', $self_exclusion) if (keys %$self_exclusion);
     }
 
     return {
