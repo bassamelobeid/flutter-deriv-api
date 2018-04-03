@@ -16,12 +16,12 @@
     },
     "exchange_rates": {
       "type": "object",
-      "title": "Excahnge rates",
-      "description": "Exchange rate values as compared to a certain base currency.",
+      "title": "Exchange rates",
+      "description": "Exchange rate values from base (USD) to other currencies.",
       "properties": {
         "base": {
           "type": "string",
-          "description": "Base currency (currently is fixed to USD)",
+          "description": "Base currency (fixed to USD)",
           "pattern": "^[A-Z]{3}$"
         },
         "date": {
