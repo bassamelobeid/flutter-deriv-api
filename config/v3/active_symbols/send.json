@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "title": "Active Symbols Request",
-"description": "Retrieve a list of all active symbols (underlying markets upon which contracts are available for trading).",
+  "description": "Retrieve a list of all active symbols (underlying markets upon which contracts are available for trading).",
   "properties": {
     "active_symbols": {
       "description": "If you use 'brief', only a subset of fields will be returned.",
