@@ -199,7 +199,7 @@ rpc mt5_new_account => sub {
 
         # 4 Jan 2018: only CR, MLT, and Champion can open MT real a/c
         my $eligible_lcs = qr/^costarica|champion|malta$/;
-        if ($client->landing_company->short !~ $eligible_lcs) {
+        if ($client->landing_company->short !~ $eligible_lcs && $user) {
             # Binary.com front-end will pass whichever client is currently selected
             #   in the top-right corner, so check if this user has a qualifying
             #   account and switch if they do.
@@ -209,9 +209,10 @@ rpc mt5_new_account => sub {
                     last;
                 }
             }
-            return BOM::RPC::v3::Utility::permission_error()
-                unless ($client->landing_company->short =~ $eligible_lcs);
         }
+
+        return BOM::RPC::v3::Utility::permission_error()
+                unless ($client->landing_company->short =~ $eligible_lcs);
 
         return BOM::RPC::v3::Utility::permission_error()
             if (($mt_company = $get_company_name->($account_type)) eq 'none');
