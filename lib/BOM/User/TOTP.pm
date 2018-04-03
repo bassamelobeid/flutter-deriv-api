@@ -1,4 +1,4 @@
-package BOM::Platform::TOTP;
+package BOM::User::TOTP;
 
 use strict;
 use warnings;
