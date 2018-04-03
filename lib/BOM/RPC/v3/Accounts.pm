@@ -17,7 +17,7 @@ use Try::Tiny;
 use WWW::OneAll;
 use Date::Utility;
 use HTML::Entities qw(encode_entities);
-use List::Util qw(any sum0);
+use List::Util qw(any sum0 first);
 
 use Brands;
 use BOM::User::Client;
@@ -867,13 +867,15 @@ rpc set_settings => sub {
     my ($website_name, $client_ip, $user_agent, $language, $args) =
         @{$params}{qw/website_name client_ip user_agent language args/};
 
+    my $brand = Brands->new(name => request()->brand);
     my ($residence, $allow_copiers, $jp_status) = ($args->{residence}, $args->{allow_copiers});
     if ($client->is_virtual) {
         # Virtual client can update
         # - residence, if residence not set. But not for Japan
         # - email_consent (common to real account as well)
         if (not $client->residence and $residence and $residence ne 'jp') {
-            if (Brands->new(name => request()->brand)->countries_instance->restricted_country($residence)) {
+
+            if ($brand->countries_instance->restricted_country($residence)) {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'InvalidResidence',
                         message_to_client => localize('Sorry, our service is not available for your country of residence.')});
@@ -967,6 +969,14 @@ rpc set_settings => sub {
 
     my $tax_residence             = $args->{'tax_residence'}             // '';
     my $tax_identification_number = $args->{'tax_identification_number'} // '';
+
+    # This can be a comma-separated list - if that's the case, we'll just use the first failing residence in
+    # the error message.
+    if (my $bad_residence = first { $brand->countries_instance->restricted_country($_) } split /,/, $tax_residence || '') {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'RestrictedCountry',
+                message_to_client => localize('The supplied tax residence "[_1]" is in a restricted country.', uc $bad_residence)});
+    }
 
     return BOM::RPC::v3::Utility::create_error({
             code => 'TINDetailsMandatory',
@@ -1125,7 +1135,7 @@ rpc set_settings => sub {
     $message .= "\n" . localize('The [_1] team.', $website_name);
 
     send_email({
-        from                  => Brands->new(name => request()->brand)->emails('support'),
+        from                  => $brand->emails('support'),
         to                    => $client->email,
         subject               => $client->loginid . ' ' . localize('Change in account settings'),
         message               => [$message],
