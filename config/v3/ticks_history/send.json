@@ -7,7 +7,7 @@
     "ticks_history": {
       "type": "string",
       "pattern": "^\\w{2,30}$",
-      "description": "Short symbol name.",
+      "description": "Short symbol name (obtained from the active_symbols call).",
       "required": "1"
     },
     "end": {
@@ -33,7 +33,7 @@
     },
     "granularity": {
       "enum" : [60, 120, 180, 300, 600, 900, 1800, 3600, 7200, 14400, 28800, 86400],
-      "description": "Only applicable for style : \."candles\". Candle time-dimension width setting.",
+      "description": "Only applicable for style : \"candles\". Candle time-dimension width setting.",
       "default": "60"
     },
     "adjust_start_time": {
