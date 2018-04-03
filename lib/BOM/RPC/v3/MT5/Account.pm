@@ -140,6 +140,7 @@ rpc mt5_new_account => sub {
     my $account_type     = delete $args->{account_type};
     my $mt5_account_type = delete $args->{mt5_account_type} // '';
     my $brand            = Brands->new(name => request()->brand);
+    my $user             = BOM::User->new({email => $client->email});
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidAccountType',
@@ -197,8 +198,20 @@ rpc mt5_new_account => sub {
     } elsif ($account_type eq 'gaming' or $account_type eq 'financial') {
 
         # 4 Jan 2018: only CR, MLT, and Champion can open MT real a/c
-        return BOM::RPC::v3::Utility::permission_error()
-            unless ($client->landing_company->short =~ /^costarica|champion|malta$/);
+        my $eligible_lcs = qr/^costarica|champion|malta$/;
+        if ($client->landing_company->short !~ $eligible_lcs) {
+            # Binary.com front-end will pass whichever client is currently selected
+            #   in the top-right corner, so check if this user has a qualifying
+            #   account and switch if they do.
+            foreach ($user->clients) {
+                if ($_->landing_company->short =~ $eligible_lcs) {
+                    $client = $_;
+                    last;
+                }
+            }
+            return BOM::RPC::v3::Utility::permission_error()
+                unless ($client->landing_company->short =~ $eligible_lcs);
+        }
 
         return BOM::RPC::v3::Utility::permission_error()
             if (($mt_company = $get_company_name->($account_type)) eq 'none');
@@ -226,8 +239,6 @@ rpc mt5_new_account => sub {
             message_to_client => localize('Request too frequent. Please try again later.')}) if _throttle($client->loginid);
 
     # client can have only 1 MT demo & 1 MT real a/c
-    my $user = BOM::User->new({email => $client->email});
-
     foreach my $loginid ($user->mt5_logins) {
         $loginid =~ /^MT(\d+)$/;
         my $login = $1;
