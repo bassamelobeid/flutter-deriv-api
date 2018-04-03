@@ -96,7 +96,7 @@
         mth2 = "find_$child_class";
         count = client.$mth1;
         NEXT UNLESS count;
-        hits = client.$mth2('limit',limit); $]
+        hits = client.$mth2('limit',limit); %]
         <h4>$child_class</h4>
         [% IF count >= limit %]
         <em>.. showing only [% limit %] of [% count %] entries</em>
