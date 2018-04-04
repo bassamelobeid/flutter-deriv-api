@@ -191,7 +191,7 @@ async_rpc mt5_new_account => sub {
     my $mt5_account_type = delete $args->{mt5_account_type} // '';
     my $brand            = Brands->new(name => request()->brand);
     # client can have only 1 MT demo & 1 MT real a/c
-    my $user             = BOM::User->new({email => $client->email});
+    my $user = BOM::User->new({email => $client->email});
 
     return create_error_future({
             code              => 'InvalidAccountType',
@@ -257,8 +257,7 @@ async_rpc mt5_new_account => sub {
             }
         }
 
-        return BOM::RPC::v3::Utility::permission_error()
-            unless ($client->landing_company->short =~ $eligible_lcs);
+        return permission_error_future() unless ($client->landing_company->short =~ $eligible_lcs);
 
         return permission_error_future() if (($mt_company = $get_company_name->($account_type)) eq 'none');
 
