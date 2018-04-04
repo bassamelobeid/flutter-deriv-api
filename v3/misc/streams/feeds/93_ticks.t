@@ -84,7 +84,6 @@ subtest 'ticks_forget_one_sub' => sub {
     };
     my $req2 = {
         "ticks_history" => "R_50",
-        "granularity"   => 0,
         "style"         => "ticks",
         "count"         => 1,
         "end"           => "latest",
@@ -99,7 +98,7 @@ subtest 'ticks_forget_one_sub' => sub {
     ok $id1, "Subscription id ok";
 
     $res = $t->await::history($req2);
-    cmp_ok $res->{msg_type}, 'eq', 'ticks_history', "Recived tick history response ok";
+    cmp_ok $res->{msg_type}, 'eq', 'history', "Recived tick history response ok";
 
     $res = $t->await::forget({forget => $id1});
     cmp_ok $res->{forget}, '==', 1, "One subscription deleted ok";
