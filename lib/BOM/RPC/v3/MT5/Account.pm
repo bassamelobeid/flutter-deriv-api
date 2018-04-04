@@ -55,6 +55,22 @@ sub create_error_future {
     return Future->done(BOM::RPC::v3::Utility::create_error($details));
 }
 
+# TODO(leonerd):
+#   Try to neaten up the dual use of this + create_error_future(); having two
+#   different functions for minor different calling styles seems silly.
+sub _make_error {
+    my ($error_code, $msg_client, $msg) = @_;
+
+    my $generic_message = localize('There was an error processing the request.');
+    return create_error_future({
+        code              => $error_code,
+        message_to_client => $msg_client
+        ? $generic_message . ' ' . $msg_client
+        : $generic_message,
+        ($msg) ? (message => $msg) : (),
+    });
+}
+
 =head2 mt5_login_list
 
     $mt5_logins = mt5_login_list({ client => $client })
@@ -959,8 +975,7 @@ async_rpc mt5_deposit => sub {
                 client_loginid => $fm_loginid,
             });
 
-            return Future->done(
-                _make_error($error_code, localize('Please try again after one minute.'), "Account stuck in previous transaction $fm_loginid"))
+            return _make_error($error_code, localize('Please try again after one minute.'), "Account stuck in previous transaction $fm_loginid")
                 if (not $fm_client_db->freeze);
 
             scope_guard {
@@ -983,14 +998,13 @@ async_rpc mt5_deposit => sub {
             };
 
             if ($withdraw_error) {
-                return Future->done(
-                    _make_error(
-                        $error_code,
-                        BOM::RPC::v3::Cashier::__client_withdrawal_notes({
-                                client => $fm_client,
-                                amount => $amount,
-                                error  => $withdraw_error
-                            })));
+                return _make_error(
+                    $error_code,
+                    BOM::RPC::v3::Cashier::__client_withdrawal_notes({
+                            client => $fm_client,
+                            amount => $amount,
+                            error  => $withdraw_error
+                        }));
             }
 
             my $comment   = "Transfer from $fm_loginid to MT5 account $to_mt5.";
@@ -1033,7 +1047,7 @@ async_rpc mt5_deposit => sub {
                             action  => 'deposit',
                             error   => $status->{error},
                         );
-                        return Future->done(_make_error($status->{error}));
+                        return _make_error($error_code, $status->{error});
                     }
 
                     return Future->done({
@@ -1063,8 +1077,7 @@ async_rpc mt5_withdrawal => sub {
                 client_loginid => $to_loginid,
             });
 
-            return Future->done(
-                _make_error($error_code, localize('Please try again after one minute.'), "Account stuck in previous transaction $to_loginid"))
+            return _make_error($error_code, localize('Please try again after one minute.'), "Account stuck in previous transaction $to_loginid")
                 if (not $to_client_db->freeze);
 
             scope_guard {
@@ -1083,7 +1096,7 @@ async_rpc mt5_withdrawal => sub {
                     my ($status) = @_;
 
                     if ($status->{error}) {
-                        return Future->done(_make_error($error_code, $status->{error}));
+                        return _make_error($error_code, $status->{error});
                     }
 
                     my $to_client = BOM::User::Client->new({loginid => $to_loginid});
@@ -1127,7 +1140,7 @@ async_rpc mt5_withdrawal => sub {
                             action  => 'withdraw',
                             error   => $error->get_mesg,
                         );
-                        return Future->done(_make_error($error_code, $error->{-message_to_client}));
+                        return _make_error($error_code, $error->{-message_to_client});
                     };
                 });
         });
@@ -1342,29 +1355,16 @@ sub _mt5_validate_and_get_amount {
                 };
             }
 
-            return _make_error(localize("Conversion rate not available for this currency."))
+            return _make_error($error_code, localize("Conversion rate not available for this currency."))
                 unless defined $mt5_amount;
 
-            return _make_error(localize("Amount must be greater than 1 [_1].", $mt5_currency))
+            return _make_error($error_code, localize("Amount must be greater than 1 [_1].", $mt5_currency))
                 if $mt5_amount < 1;
-            return _make_error(localize("Amount must be less than 20000 [_1].", $mt5_currency))
+            return _make_error($error_code, localize("Amount must be less than 20000 [_1].", $mt5_currency))
                 if $mt5_amount > 20000;
 
             return Future->done($mt5_amount);
         });
-}
-
-sub _make_error {
-    my ($error_code, $msg_client, $msg) = @_;
-
-    my $generic_message = localize('There was an error processing the request.');
-    return BOM::RPC::v3::Utility::create_error({
-        code => $error_code // 'MT5Error',
-        message_to_client => $msg_client
-        ? $generic_message . ' ' . $msg_client
-        : $generic_message,
-        ($msg) ? (message => $msg) : (),
-    });
 }
 
 sub _mt5_has_open_positions {
@@ -1375,5 +1375,4 @@ sub _mt5_has_open_positions {
 
     return $response->{total} ? 1 : 0;
 }
-
 1;

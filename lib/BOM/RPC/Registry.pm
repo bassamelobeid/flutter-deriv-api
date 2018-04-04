@@ -89,6 +89,7 @@ sub import_dsl_into {
 
         register($name, set_subname("RPC[$name]" => $code), %opts);
 
+        # Install the new RPC function into the caller's symbol table
         no strict 'refs';
         *{"${caller}::$name"} = $code;
 
@@ -112,6 +113,7 @@ sub import_dsl_into {
         },
     );
 
+    # Install the new keywords as functions into the caller's symbol table
     no strict 'refs';
     *{"${caller}::$_"} = $subs{$_} for keys %subs;
 
