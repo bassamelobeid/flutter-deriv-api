@@ -1080,7 +1080,12 @@ sub metadata {
 
     $action //= 'buy';
 
-    my $contract = $action eq 'buy' ? $self : $self->opposite_contract_for_sale;
+    my $contract;
+    if ($action eq 'buy') {
+        $contract = $self;
+    } else {
+        $contract = $self->other_side_code ? $self->opposite_contract_for_sale : $self;
+    }
 
     my $contract_duration = do {
         if ($contract->tick_expiry) {
