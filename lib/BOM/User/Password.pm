@@ -2,7 +2,7 @@ package BOM::User::Password;
 use strict;
 use warnings;
 
-use Crypt::ScryptKDF;
+use Crypt::ScryptKDF qw(scrypt_hash scrypt_hash_verify);
 use Crypt::Salt;
 use Digest::SHA;
 
@@ -53,7 +53,7 @@ Returns the current algorithm version.
 Returns a password hash string in a format with algorithm version control, salt
 and a hash.
 
-The current format is
+The version 1 format is
 
 $algo_version*$salt*password
 
@@ -70,6 +70,7 @@ sub _salt {
 
 sub hashpw {
     my $password = shift;
+    # we need encode password, otherwise it is possible to report the warning "Wide character in subroutine entry";
     utf8::encode($password);
     die 'password too long, possible DOS attack' if length($password) > 200;
     my $salt = _salt;
@@ -110,12 +111,27 @@ sub checkpw {
 
 sub _pwstring_to_hashref {
     my $string = shift;
-    my ($ver, $salt, $hash) = split /\*/, $string;
-    return {
-        version => $ver,
-        salt    => $salt,
-        hash    => $hash
+    # default version 0
+    my $result = {
+        version => 0,
+        hash    => $string,
+        salt    => undef
     };
+
+    return $result unless $string =~ s/^(\d+)\*//;
+
+    $result->{version} = $1;
+    if ($result->{version} == 1) {
+        ($result->{salt}, $result->{hash}) = split /\*/, $string;
+        return $result;
+    }
+    if ($result->{version} == 2) {
+        $result->{hash} = $string;
+        return $result;
+    }
+
+    #Shouldn't get to here.
+    die "Don't support the format of password $string.";
 }
 
 sub _legacy_pwcheck {
