@@ -91,7 +91,7 @@ print "<form action=\""
 
 Bar("Monthly Client Reports");
 {
-    my $yyyymm = Date::Utility->new->minus_months(1)->date_yyyymmdd;
+    my $yyyymm = Date::Utility->new->plus_time_interval('1mo')->date_yyyymmdd;
     $yyyymm =~ s/-..$//;
 
     BOM::Backoffice::Request::template->process('backoffice/account/monthly_client_report.tt', {yyyymm => $yyyymm})
