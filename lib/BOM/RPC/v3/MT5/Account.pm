@@ -453,11 +453,9 @@ async_rpc mt5_get_settings => sub {
         sub {
             my ($settings) = @_;
 
-            if (ref $settings eq 'HASH' and $settings->{error}) {
-                return create_error_future({
-                        code              => 'MT5GetUserError',
-                        message_to_client => $settings->{error}});
-            }
+            return create_error_future({
+                    code              => 'MT5GetUserError',
+                    message_to_client => $settings->{error}}) if (ref $settings eq 'HASH' and $settings->{error});
 
             if (my $country = $settings->{country}) {
                 my $country_code = Locale::Country::Extra->new()->code_from_country($country);
@@ -883,7 +881,7 @@ async_rpc mt5_password_reset => sub {
     my $params = shift;
 
     my $mt5_suspended = _is_mt5_suspended();
-    return $mt5_suspended if $mt5_suspended;
+    return Future->done($mt5_suspended) if $mt5_suspended;
 
     my $client = $params->{client};
     my $args   = $params->{args};
@@ -1146,76 +1144,87 @@ async_rpc mt5_withdrawal => sub {
         });
 };
 
-rpc mt5_mamm => sub {
+async_rpc mt5_mamm => sub {
     my $params = shift;
 
     my $mt5_suspended = _is_mt5_suspended();
-    return $mt5_suspended if $mt5_suspended;
+    return Future->done($mt5_suspended) if $mt5_suspended;
 
     my ($client, $args)   = @{$params}{qw/client args/};
     my ($login,  $action) = @{$args}{qw/login action/};
 
     # MT5 login not belongs to client
-    return BOM::RPC::v3::Utility::permission_error()
+    return permission_error_future()
         unless _check_logins($client, ['MT' . $login]);
 
-    my $settings = BOM::MT5::User::get_user($login);
-    return _mt5_error_sub() if (ref $settings eq 'HASH' and $settings->{error});
+    return BOM::MT5::User::Async::get_user($login)->then(
+        sub {
+            my ($settings) = @_;
 
-    # to revoke manager we just disable trading for mt5 account
-    # we cannot change group else accounting team will have problem during
-    # reconciliation.
-    # we cannot remove agent fields as thats used for auditing else
-    # it would have been a simple check
-    #
-    # MT5 way to disable trading is not very intuitive, its based on
-    # https://support.metaquotes.net/en/docs/mt5/api/reference_user/imtuser/imtuser_enum#enusersrights
-    # and rights column from user setting return numbers based on combination
-    # of these enumerations,
-    #
-    # 483  - All options except OTP and change password (default)
-    # 1507 - All options except OTP
-    # 2531 - All options except change password
-    # 3555 - All options enabled
-    #
-    # 4 is score for disabled trading
-    my $current_rights = $settings->{rights};
-    my $has_manager = (grep { $_ == $current_rights } qw/483 1503 2527 3555/) ? 1 : 0;
+            return Future->fail($settings->{error}) if (ref $settings eq 'HASH' and $settings->{error});
 
-    if ($action) {
-        if ($action eq 'revoke' and $has_manager) {
-            my $response = _mt5_has_open_positions($login);
-            return _mt5_error_sub() if (ref $response eq 'HASH' and $response->{error});
+            # to revoke manager we just disable trading for mt5 account
+            # we cannot change group else accounting team will have problem during
+            # reconciliation.
+            # we cannot remove agent fields as thats used for auditing else
+            # it would have been a simple check
+            #
+            # MT5 way to disable trading is not very intuitive, its based on
+            # https://support.metaquotes.net/en/docs/mt5/api/reference_user/imtuser/imtuser_enum#enusersrights
+            # and rights column from user setting return numbers based on combination
+            # of these enumerations,
+            #
+            # 483  - All options except OTP and change password (default)
+            # 1507 - All options except OTP
+            # 2531 - All options except change password
+            # 3555 - All options enabled
+            #
+            # 4 is score for disabled trading
+            my $current_rights = $settings->{rights};
+            my $has_manager = (grep { $_ == $current_rights } qw/483 1503 2527 3555/) ? 1 : 0;
 
-            return _mt5_error_sub('PermissionDenied',
-                localize('Please close out all open positions before revoking manager associated with your account.'))
-                if $response;
+            if ($action) {
+                if ($action eq 'revoke' and $has_manager) {
+                    return _mt5_has_open_positions($login)->then(
+                        sub {
+                            my ($open_positions) = @_;
+                            return Future->fail('MT5_error', $open_positions->{error})
+                                if (ref $open_positions eq 'HASH' and $open_positions->{error});
+                            return Future->fail('PermissionDenied',
+                                localize('Please close out all open positions before revoking manager associated with your account.'))
+                                if $open_positions;
 
-            $settings->{rights} += 4;
-            BOM::MT5::User::update_mamm_user($settings);
-            return _mt5_error_sub() if (ref $settings eq 'HASH' and $settings->{error});
+                            $settings->{rights} += 4;
+                            return BOM::MT5::User::Async::update_mamm_user($settings)->then(
+                                sub {
+                                    my ($user_updated) = @_;
+                                    return Future->fail('MT5_error', $user_updated->{error})
+                                        if (ref $user_updated eq 'HASH' and $user_updated->{error});
 
-            return {
-                status     => 1,
-                manager_id => ''
-            };
-        }
-    } else {
-        return $has_manager
-            ? {
-            status     => 1,
-            manager_id => $settings->{agent} || ''
+                                    return Future->done({
+                                        status     => 1,
+                                        manager_id => ''
+                                    });
+                                });
+                        });
+                }
+            } else {
+                return Future->done({
+                    status     => 1,
+                    manager_id => $settings->{agent} || ''
+                });
             }
-            : {
-            status     => 1,
-            manager_id => ''
-            };
-    }
 
-    return {
-        status     => 0,
-        manager_id => ''
-    };
+            return Future->done({
+                status     => 0,
+                manager_id => ''
+            });
+        }
+        )->else(
+        sub {
+            my ($code, $error) = @_;
+            return _make_error($code, $error);
+        });
 };
 
 sub _is_mt5_suspended {
@@ -1370,9 +1379,14 @@ sub _mt5_validate_and_get_amount {
 sub _mt5_has_open_positions {
     my $login = shift;
 
-    my $response = BOM::MT5::User::get_open_positions_count({login => $login});
-    return _mt5_error_sub() if $response->{error};
+    return BOM::MT5::User::Async::get_open_positions_count({login => $login})->then(
+        sub {
+            my ($response) = @_;
 
-    return $response->{total} ? 1 : 0;
+            return _make_error('MT5_error', $response->{error}) if (ref $response eq 'HASH' and $response->{error});
+
+            return Future->done($response->{total} ? 1 : 0);
+        });
 }
+
 1;
