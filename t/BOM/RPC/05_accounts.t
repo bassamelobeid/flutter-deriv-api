@@ -22,7 +22,7 @@ use BOM::Database::Model::AccessToken;
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Password;
 use BOM::User;
-use BOM::MT5::User;
+use BOM::MT5::User::Async;
 
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
@@ -1739,15 +1739,15 @@ subtest 'get and set self_exclusion' => sub {
     #   t/BOM/RPC/05_accounts.t
     #   t/lib/mock_binary_mt5.pl
     my %DETAILS = (
-        login    => '0000',
+        login    => '123454321',
         password => 'Efgh4567',
         email    => 'test.account@binary.com',
         name     => 'Test',
-        group    => 'real\something',
+        group    => 'real\costarica',
         country  => 'Malta',
         balance  => '1234.56',
     );
-    @BOM::MT5::User::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
+    @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
 
     my $mt5_params = {
         language => 'EN',
@@ -1763,7 +1763,7 @@ subtest 'get and set self_exclusion' => sub {
         },
     };
     my $mt5_loginid = $c->tcall('mt5_new_account', $mt5_params)->{login};
-    is($mt5_loginid, $DETAILS{login}, $mt5_loginid);
+    is($mt5_loginid, $DETAILS{login}, 'MT5 loginid is correct: '.$mt5_loginid);
 
     ## Verify an email was sent after opening an MT5 account, since user has
     ##  limits currently in place.
