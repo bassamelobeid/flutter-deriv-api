@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "title": "Asset Index Request",
-  "description":"Retrieve the Asset Index: a list of all available markets and a summary of the contracts available thereupon.",
+  "description":"Retrieve a list of all available underlyings and the corresponding contract types and duration boundaries.",
   "properties": {
     "asset_index": {
       "type":"integer",
@@ -11,7 +11,7 @@
       "required": "1"
     },
     "landing_company": {
-      "description": "[Optional] If specified, will return only the markets and contracts that this landing company can trade.",
+      "description": "[Optional] If specified, will return only the underlyings that this landing company can trade.",
       "enum":["iom","malta","maltainvest","costarica","virtual", "japan", "japan-virtual", "vanuatu", "champion", "champion-virtual"]
     },
     "passthrough":{
