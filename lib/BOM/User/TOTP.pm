@@ -45,7 +45,7 @@ sub verify_totp {
 
     my $oath      = Authen::OATH->new();
     my $oath_totp = $oath->totp($secret_key);
-    return ($oath_totp eq $totp) ? 1 : 0;
+    return int($oath_totp eq $totp);
 }
 
 1;
