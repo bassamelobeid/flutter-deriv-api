@@ -18,7 +18,7 @@ use BOM::User;
 use BOM::Platform::Context qw (localize request);
 use BOM::RPC::v3::Utility;
 use BOM::User;
-use BOM::Platform::TOTP;
+use BOM::User::TOTP;
 
 use LandingCompany::Registry;
 
@@ -251,7 +251,7 @@ rpc account_authentication => sub {
                 message_to_client => BOM::Platform::Context::localize("TOTP based 2FA is already enabled.")}) if $status;
         # generate new secret key if it doesn't exits
         unless ($user->secret_key) {
-            $user->{secret_key} = BOM::Platform::TOTP->generate_key();
+            $user->{secret_key} = BOM::User::TOTP->generate_key();
             $user->save();
         }
         # convert the key into base32
@@ -274,7 +274,7 @@ rpc account_authentication => sub {
 
         # verify the provided OTP with secret key from user
         my $otp = $params->{args}->{otp};
-        my $verify = BOM::Platform::TOTP->verify_totp($user->secret_key, $otp);
+        my $verify = BOM::User::TOTP->verify_totp($user->secret_key, $otp);
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidOTP',
                 message_to_client => BOM::Platform::Context::localize("OTP verification failed")}) unless ($otp and $verify);
