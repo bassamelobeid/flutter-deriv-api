@@ -53,10 +53,12 @@ subtest 'Initialization' => sub {
 };
 
 subtest 'Generate Secret Key' => sub {
-}
+    is 1, 1, 'Dummy Test';
+};
 
 subtest 'Enable / Disable' => sub {
-}
+    is 1, 1, 'Dummy Test';
+};
 
 sub _call_status {
 }
