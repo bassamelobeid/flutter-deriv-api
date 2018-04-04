@@ -4,14 +4,7 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::Bullspread';
 
-override '_build_bid_price' => sub {
-    my $self = shift;
-
-    return $self->_calculate_price_for({
-        spot    => $self->current_spot,
-        strikes => [$self->current_spot, $self->low_barrier->as_absolute],
-    });
-};
+use List::Util qw(min max);
 
 sub check_expiry_conditions {
     my $self = shift;
@@ -19,7 +12,7 @@ sub check_expiry_conditions {
     my $contract_value = 0;
     if ($self->exit_tick) {
         my $value = ($self->exit_tick->quote - $self->low_barrier->as_absolute) * $self->multiplier;
-        $self->value($value);
+        $self->value(min($self->payout, max(0, $value)));
     }
 
     return;
