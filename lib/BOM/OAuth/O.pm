@@ -21,6 +21,7 @@ use Brands;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(localize);
 use BOM::User;
+use BOM::User::TOTP;
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
 use BOM::OAuth::Helper;
@@ -100,6 +101,32 @@ sub authorize {
     }
 
     my $user = BOM::User->new({email => $client->email}) or die "no user for email " . $client->email;
+
+    my $is_verified = 0;
+    my $otp_error   = '';
+    # If the User has provided OTP, verify it
+    if (    $c->req->method eq 'POST'
+        and ($c->csrf_token eq (defang($c->param('csrf_token')) // ''))
+        and defang($c->param('otp_proceed')))
+    {
+        my $otp = defang($c->param('otp'));
+        $is_verified = BOM::User::TOTP->verify_totp($user->secret_key, $otp);
+        $otp_error = 'Verification failed';
+    }
+
+    # Check if user has enabled 2FA authentication and this is not a scope request
+    if ($user->totp_activated && !$is_verified && !(defang($c->param('cancel_scopes')) || defang($c->param('confirm_scopes')))) {
+        return $c->render(
+            template   => $brand_name . '/totp',
+            layout     => $brand_name,
+            app        => $app,
+            client     => $client,
+            error      => $otp_error,
+            scopes     => \@{$app->{scopes}},
+            r          => $c->stash('request'),
+            csrf_token => $c->csrf_token,
+        );
+    }
 
     my $redirect_uri = $app->{redirect_uri};
 
