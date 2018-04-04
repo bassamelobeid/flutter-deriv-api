@@ -17,7 +17,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::User;
-use BOM::MT5::User;
+use BOM::MT5::User::Async;
 use BOM::Platform::Password;
 
 my $email    = 'abc@binary.com';
@@ -328,7 +328,7 @@ subtest 'MT5 logins' => sub {
         login    => '2000',
         group   => 'demo\something',
     );
-    @BOM::MT5::User::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
+    @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
 
     my $loginid_real = 'MT'.$DETAILS_REAL{login};
     my $loginid_demo = 'MT'.$DETAILS_DEMO{login};

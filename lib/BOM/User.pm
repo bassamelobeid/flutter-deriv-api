@@ -7,7 +7,7 @@ use Try::Tiny;
 use Date::Utility;
 
 use BOM::User::Client;
-use BOM::MT5::User;
+use BOM::MT5::User::Async;
 
 use BOM::Database::UserDB;
 use BOM::Platform::Password;
@@ -168,9 +168,9 @@ sub mt5_logins {
     my @mt5_logins;
 
     for my $login (sort map { $_->loginid } grep { $_->loginid =~ /^MT\d+$/ } $self->loginid) {
-        push(@mt5_logins, $login) if BOM::MT5::User::get_user(
+        push(@mt5_logins, $login) if BOM::MT5::User::Async::get_user(
             do { $login =~ /(\d+)/; $1 }
-        )->{group} =~ /^$filter/;
+        )->get->{group} =~ /^$filter/;
     }
 
     return @mt5_logins;
