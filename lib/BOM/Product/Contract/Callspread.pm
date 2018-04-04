@@ -2,7 +2,7 @@ package BOM::Product::Contract::Callspread;
 
 use Moose;
 extends 'BOM::Product::Contract';
-with 'BOM::Product::Role::Bullspread';
+with 'BOM::Product::Role::Spreads';
 
 use List::Util qw(min max);
 

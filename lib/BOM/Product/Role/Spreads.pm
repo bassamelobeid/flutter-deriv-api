@@ -1,10 +1,10 @@
-package BOM::Product::Role::Bullspread;
+package BOM::Product::Role::Spreads;
 
 use Moose::Role;
-# Bullspread is a double barrier contract that expires at contract expiration time.
+# Spreads is a double barrier contract that expires at contract expiration time.
 with 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
-use BOM::Product::Pricing::Engine::BullSpread;
+use Pricing::Engine::Spreads;
 use BOM::Product::Static;
 use List::Util qw(max min);
 
@@ -91,7 +91,7 @@ sub _theo_price {
 
     my @vols = map { $self->volsurface->get_volatility(+{%$vol_args, strike => $_}) } @strikes;
 
-    my $theo_price = BOM::Product::Pricing::Engine::BullSpread->new(
+    my $theo_price = Pricing::Engine::Spreads->new(
         spot          => $self->current_spot,
         strikes       => \@strikes,
         discount_rate => $self->discount_rate,
