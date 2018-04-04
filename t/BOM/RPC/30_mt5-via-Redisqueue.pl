@@ -49,7 +49,7 @@ $client->start->get;
 my $c = BOM::Test::RedisQueue::Client->new(client => $client);
 
 # Mocked account details
-# This hash shared between two files, and should be kept in-sync to avoid test failures
+# This hash shared between three files, and should be kept in-sync to avoid test failures
 #   t/BOM/RPC/30_mt5.t
 #   t/BOM/RPC/05_accounts.t
 #   t/lib/mock_binary_mt5.pl

@@ -190,8 +190,7 @@ async_rpc mt5_new_account => sub {
     my $account_type     = delete $args->{account_type};
     my $mt5_account_type = delete $args->{mt5_account_type} // '';
     my $brand            = Brands->new(name => request()->brand);
-    # client can have only 1 MT demo & 1 MT real a/c
-    my $user = BOM::User->new({email => $client->email});
+    my $user             = BOM::User->new({email => $client->email});
 
     return create_error_future({
             code              => 'InvalidAccountType',
