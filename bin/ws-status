@@ -40,7 +40,6 @@ chosen keyword to use for the site status message.
 
 =cut
 
-use feature ':5.10';
 use strict;
 use warnings;
 no indirect;
@@ -77,10 +76,10 @@ try {
 
     my $count = $redis->publish($channel_name, $mess_obj);
     my $sent = $send_notification ? 'sent' : 'not sent';
-    say "Status: $status; notifications $sent to $count subscribers";
+    print "Status: $status; notifications $sent to $count subscribers\n";
     exit;
 }
 catch {
-    say STDERR "Failed setting status and/or notification: $_";
+    warn "Failed setting status and/or notification: $_\n";
     exit 255;
 };
