@@ -57,6 +57,11 @@ The version 1 format is
 
 $algo_version*$salt*password
 
+
+The version 2 format is
+$algo_version*password
+The salt will be handled directly by Crypt::ScryptKDF::scrypt_hash
+
 Currently a maximum length of 200 is enforced and an exception thrown if 
 too long.
 
@@ -90,19 +95,27 @@ Returns true if the password matches when hashed.  False otherwise.
 # false means fails.
 
 my $passwd_check = {
+    0 => sub {
+        my ($pwhash, $password) = @_;
+        _legacy_pwcheck($password, $pwhash->{hash});
+    },
     1 => sub {
         my ($pwhash, $password) = @_;
+        utf8::encode($password);
         return Mojo::Util::secure_compare($pwhash->{hash}, Crypt::ScryptKDF::scrypt_b64($password, $pwhash->{salt}));
     },
+    2 => sub {
+        my ($pwhash, $password) = @_;
+        utf8::encode($password);
+        return scrypt_hash_verify($password, $pwhash->{hash});
+    }
 };
 
 sub checkpw {
     my ($password, $hashstring) = @_;
     return if length($password) > 200;    # fail if too long
     return unless defined $password;      # always fail when no password
-    return _legacy_pwcheck($password, $hashstring)
-        unless $hashstring =~ /^\d+\*/;
-    utf8::encode($password);
+
     my $pwhash = _pwstring_to_hashref($hashstring);
     return $passwd_check->{$pwhash->{version}}($pwhash, $password);
 }
