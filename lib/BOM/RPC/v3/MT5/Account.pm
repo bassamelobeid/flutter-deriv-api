@@ -282,13 +282,6 @@ async_rpc mt5_new_account => sub {
             code              => 'MT5CreateUserError',
             message_to_client => localize('Request too frequent. Please try again later.')}) if _throttle($client->loginid);
 
-    # Compliance team must be notified if a client under Binary (Europe) Limited
-    #   opens an MT5 account while having limitations on their account.
-    if ($client->landing_company->short eq 'malta' && $account_type ne 'demo') {
-        my $self_exclusion = BOM::RPC::v3::Accounts::get_self_exclusion({client => $client});
-        BOM::RPC::v3::Accounts::send_self_exclusion_notification($client, 'malta_with_mt5', $self_exclusion) if (keys %$self_exclusion);
-    }
-
     return get_mt5_logins($client, $user)->then(
         sub {
             my (@logins) = @_;
@@ -327,6 +320,13 @@ async_rpc mt5_new_account => sub {
                     # eg: MT5 login: 1000, we store MT1000
                     $user->add_loginid({loginid => 'MT' . $mt5_login});
                     $user->save;
+
+                    # Compliance team must be notified if a client under Binary (Europe) Limited
+                    #   opens an MT5 account while having limitations on their account.
+                    if ($client->landing_company->short eq 'malta' && $account_type ne 'demo') {
+                        my $self_exclusion = BOM::RPC::v3::Accounts::get_self_exclusion({client => $client});
+                        BOM::RPC::v3::Accounts::send_self_exclusion_notification($client, 'malta_with_mt5', $self_exclusion) if (keys %$self_exclusion);
+                    }
 
                     my $balance = 0;
                     # TODO(leonerd): This other somewhat-ugly structure implements
