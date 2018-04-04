@@ -45,6 +45,14 @@ sub is_valid_to_sell {
     my $self = shift;
     my $args = shift;
 
+    if ($self->category_code eq 'highlowticks') {
+        $self->_add_error({
+            message           => 'Resale not offered',
+            message_to_client => [$ERROR_MAPPING->{ResaleNotOffered}],
+        });
+        return 0;
+    }
+
     if ($self->is_sold) {
         $self->_add_error({
             message           => 'Contract already sold',
