@@ -571,11 +571,9 @@ async_rpc mt5_set_settings => sub {
         sub {
             my ($settings) = @_;
 
-            if (ref $settings eq 'HASH' and $settings->{error}) {
-                return BOM::RPC::v3::Utility::create_error({
-                        code              => 'MT5UpdateUserError',
-                        message_to_client => $settings->{error}});
-            }
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'MT5UpdateUserError',
+                    message_to_client => $settings->{error}}) if (ref $settings eq 'HASH' and $settings->{error});
 
             $settings->{country} = $country_code;
             return Future->done($settings);
