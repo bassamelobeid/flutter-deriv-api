@@ -8,7 +8,8 @@ use List::Util qw(pairgrep);
 use JSON::MaybeXS;
 
 use constant {
-    MT_RET_OK => 0,
+    MT_RET_OK                   => 0,
+    MT_RET_USR_INVALID_PASSWORD => 3006,
 };
 
 # Mocked account details
@@ -17,14 +18,14 @@ use constant {
 #   t/BOM/RPC/05_accounts.t
 #   t/lib/mock_binary_mt5.pl
 my %DETAILS = (
-    login    => '0000',
+    login    => '123454321',
     password => {
         main     => 'Efgh4567',
         investor => 'Abcd1234',
     },
     email   => 'test.account@binary.com',
     name    => 'Test',
-    group   => 'real\something',
+    group   => 'real\costarica',
     country => 'Malta',
     balance => '1234.56',
 );
@@ -56,6 +57,8 @@ sub cmd_UserAdd {
 
     $input->{mainPassword} eq $DETAILS{password}->{main}
         or die "UserAdd with unexpected mainPassword=$input->{mainPassword}\n";
+    $input->{group} eq $DETAILS{group}
+        or die "UserAdd with unexpected group=$input->{group}\n";
 
     $input->{investPassword} eq $DETAILS{password}->{investor}
         or die "UserAdd with unexpected investorPassword=$input->{investPassword}\n";
@@ -74,10 +77,9 @@ sub cmd_UserDepositChange {
 
     # This command is invoked for both deposits and withdrawals, the sign of
     # the amount indicating which
-    # Additionally as this is a demo account it is precharged with 10000 on setup
-           $input->{new_deposit} == 10000
-        or $input->{new_deposit} == 148.5
-        or $input->{new_deposit} == -150
+    $input->{new_deposit} == 10000          # initial balance
+        or $input->{new_deposit} == 180     # deposit
+        or $input->{new_deposit} == -150    # withdrawal
         or die "TODO: mock UserDepositChange on unknown new_deposit amount\n";
 
     return {
@@ -123,7 +125,7 @@ sub cmd_UserPasswordChange {
     $input->{login} eq $DETAILS{login}
         or die "TODO: mock UserUpdate on unknown login\n";
 
-    $input->{type} eq "MTProtocolConsts::WEB_VAL_USER_PASS_MAIN" || $input->{type} eq "MTProtocolConsts::WEB_VAL_USER_PASS_INVESTOR"
+    $input->{type} eq 'main' || $input->{type} eq 'investor'
         or die "UserPasswordChange with unexpected password_type\n";
 
     $input->{new_password} eq "Ijkl6789" || $input->{new_password} eq "Abcd1234"
@@ -140,10 +142,11 @@ sub cmd_UserPasswordCheck {
     $input->{login} eq $DETAILS{login}
         or die "TODO: mock UserUpdate on unknown login\n";
 
-    my $type = $input->{type} eq 'MTProtocolConsts::WEB_VAL_USER_PASS_INVESTOR' ? 'investor' : 'main';
-
-    $input->{password} eq $DETAILS{password}->{$type}
-        or die "UserPasswordCheck with unexpected password=$input->{password}\n";
+    $input->{password} eq $DETAILS{password}->{$input->{type}}
+        or return {
+        ret_code => MT_RET_USR_INVALID_PASSWORD,
+        error    => 'Invalid account password',
+        };
 
     return {
         ret_code => MT_RET_OK,
