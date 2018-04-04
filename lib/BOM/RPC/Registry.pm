@@ -9,6 +9,12 @@ use Carp;
 use Sub::Util qw(set_subname);
 use Scalar::Util qw(blessed);
 
+use Struct::Dumb qw(readonly_struct);
+
+readonly_struct
+    ServiceDef        => [qw(name code is_auth is_async)],
+    named_constructor => 1;
+
 =head1 DOMAIN-SPECIFIC-LANGUAGE
 
 This module optionally provides some new keyword-like functions into its
@@ -34,6 +40,15 @@ The code reference will also be installed as a function of the same name in
 the calling package. This is provided in order to support the prevailing style
 of using named functions to implement RPC options, as code exists in various
 places (such as unit tests) that expects to be able to invoke these directly.
+
+=head2 async_rpc
+
+    async_rpc $name => %opts..., sub {
+        CODE... returning Future
+    }
+
+A shortcut for defining an RPC with the C<async> option set; i.e. one whose
+results are returned asynchronously via a L<Future>.
 
 =head2 requires_auth
 
@@ -65,43 +80,32 @@ sub import_dsl_into {
 
     my $auth_all;
 
+    my $rpc_keyword = sub {
+        my $code = pop;
+        my $name = shift;
+        my %opts = @_;
+
+        $opts{auth} //= $auth_all if $auth_all;
+
+        register($name, set_subname("RPC[$name]" => $code), %opts);
+
+        # Install the new RPC function into the caller's symbol table
+        no strict 'refs';
+        *{"${caller}::$name"} = $code;
+
+        return;
+    };
+
     my %subs = (
-        rpc => sub {
+        rpc => $rpc_keyword,
+
+        async_rpc => sub {
             my $code = pop;
-            my $name = shift;
-            my %opts = @_;
-
-            $opts{auth} //= $auth_all if $auth_all;
-
-            $code = do {
-                my $original_code = $code;
-                sub {
-                    my $params = $_[0] // {};
-                    my $client = $params->{client};
-
-                    if (!$client) {
-                        # If there is no $client, we continue with our auth check
-                        my $err = _auth($params);
-                        return $err if $err;
-                    } else {
-                        # If there is a $client object but is not a Valid BOM::User::Client we return an error
-                        unless (blessed $client && $client->isa('BOM::User::Client')) {
-                            return BOM::RPC::v3::Utility::create_error({
-                                    code              => 'InvalidRequest',
-                                    message_to_client => localize("Invalid request.")});
-                        }
-                    }
-
-                    return $original_code->($params);
-                    }
-            } if $opts{auth};
-
-            register($name, set_subname("RPC[$name]" => $code));
-
-            no strict 'refs';
-            *{"${caller}::$name"} = $code;
-
-            return;
+            $rpc_keyword->(
+                @_,
+                async => 1,
+                $code
+            );
         },
 
         requires_auth => sub {
@@ -109,6 +113,7 @@ sub import_dsl_into {
         },
     );
 
+    # Install the new keywords as functions into the caller's symbol table
     no strict 'refs';
     *{"${caller}::$_"} = $subs{$_} for keys %subs;
 
@@ -130,6 +135,14 @@ application.
 
 TODO(leonerd): discover this interface more and document it better
 
+=item async => BOOL
+
+Optional boolean. If true, the code is expected to return a L<Future>
+instance, which will possibly-asynchronously resolve to the eventual result of
+the RPC. If not, the code should return its result directly.
+
+=back
+
 =cut
 
 my @service_defs;
@@ -137,11 +150,17 @@ my @service_defs;
 my $done_startup = 0;
 
 sub register {
-    my ($name, $code) = @_;
+    my ($name, $code, %args) = @_;
 
     Carp::croak "Too late to BOM::RPC::Registry::register" if $done_startup;
 
-    push @service_defs, [$name => $code];
+    push @service_defs,
+        ServiceDef(
+        name     => $name,
+        code     => $code,
+        is_auth  => !!$args{auth},
+        is_async => !!$args{async},
+        );
     return;
 }
 
@@ -160,23 +179,6 @@ sub get_service_defs {
     $done_startup = 1;
 
     return @service_defs;
-}
-
-sub _auth {
-    my $params = shift;
-
-    my $token_details = $params->{token_details};
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        unless $token_details and exists $token_details->{loginid};
-
-    my $client = BOM::User::Client->new({loginid => $token_details->{loginid}});
-
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
-    $params->{client} = $client;
-    $params->{app_id} = $token_details->{app_id};
-    return;
 }
 
 1;
