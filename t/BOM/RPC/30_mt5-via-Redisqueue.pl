@@ -1,23 +1,52 @@
+#!/usr/bin/perl
+
+# To run this test and observe the Redis queue-based RPC mechanism at work,
+# you will have to start another shell to your QA box and run the RPC worker.
+#
+#  $ cd .../bom-rpc
+#  $ perl bin/binary_jobqueue_worker.pl --test
+#
+# the worker will run as a foreground process, printing details of incoming RPC
+# requests and results of them to STDERR.
+#
+# Once started, you can run this test by simply
+#
+# prove t/BOM/RPC/30_mt5-via-Redisqueue.pl
+
 use strict;
 use warnings;
 
 use Test::Most;
 use Test::Mojo;
-use Test::MockModule;
 
-use Postgres::FeedDB::CurrencyConverter qw(in_USD amount_from_to_currency);
-
-use Email::Folder::Search;
-use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Helper::Client qw(create_client top_up);
+use BOM::Platform::User;
 use BOM::MT5::User::Async;
-use BOM::Platform::Token;
-use BOM::User;
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+# TODO(leonerd): should have been present
+use BOM::Database::Model::AccessToken;
+use BOM::RPC::v3::MT5::Account;
+# END TODO
+
+use JSON::MaybeXS;
+use IO::Async::Loop;
+use Job::Async;
+
+my $json = JSON::MaybeXS->new;
+
+my $loop = IO::Async::Loop->new;
+$loop->add(my $jobman = Job::Async->new);
+
+my $client = $jobman->client(
+    redis => {
+        uri => 'redis://127.0.0.1',
+    });
+$client->start->get;
+
+my $c = BOM::Test::RedisQueue::Client->new(client => $client);
 
 # Mocked account details
 # This hash shared between two files, and should be kept in-sync to avoid test failures
@@ -39,7 +68,7 @@ $test_client->email($DETAILS{email});
 $test_client->set_authentication('ID_DOCUMENT')->status('pass');
 $test_client->save;
 
-my $user = BOM::User->create(
+my $user = BOM::Platform::User->create(
     email    => $DETAILS{email},
     password => 's3kr1t',
 );
@@ -146,7 +175,6 @@ subtest 'password check' => sub {
         args     => {
             login    => $DETAILS{login},
             password => $DETAILS{password},
-            type     => 'main',
         },
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_password_check');
@@ -166,10 +194,9 @@ subtest 'password change' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login         => $DETAILS{login},
-            old_password  => $DETAILS{password},
-            new_password  => 'Ijkl6789',
-            password_type => 'main'
+            login        => $DETAILS{login},
+            old_password => $DETAILS{password},
+            new_password => 'Ijkl6789',
         },
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_password_change');
@@ -179,89 +206,6 @@ subtest 'password change' => sub {
     $params->{args}{login} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_password_change wrong login')
         ->error_code_is('PermissionDenied', 'error code for mt5_password_change wrong login');
-};
-
-my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
-$mailbox->init;
-
-subtest 'password reset' => sub {
-    my $method = 'mt5_password_reset';
-    $mailbox->clear;
-
-    my $code = BOM::Platform::Token->new({
-            email       => $DETAILS{email},
-            expires_in  => 3600,
-            created_for => 'mt5_password_reset'
-        })->token;
-
-    my $params = {
-        language => 'EN',
-        token    => $token,
-        args     => {
-            login             => $DETAILS{login},
-            new_password      => 'Ijkl6789',
-            password_type     => 'main',
-            verification_code => $code
-        }};
-
-    $c->call_ok($method, $params)->has_no_error('no error for mt5_password_change');
-    # This call yields a truth integer directly, not a hash
-    is($c->result, 1, 'result');
-
-    my $subject = 'Your MT5 password has been reset.';
-    my @msgs    = $mailbox->search(
-        email   => $DETAILS{email},
-        subject => qr/\Q$subject\E/
-    );
-    ok(@msgs, "email received");
-
-};
-
-subtest 'investor password reset' => sub {
-    my $method = 'mt5_password_reset';
-    $mailbox->clear;
-
-    my $code = BOM::Platform::Token->new({
-            email       => $DETAILS{email},
-            expires_in  => 3600,
-            created_for => 'mt5_password_reset'
-        })->token;
-
-    my $params = {
-        language => 'EN',
-        token    => $token,
-        args     => {
-            login             => $DETAILS{login},
-            new_password      => 'Abcd1234',
-            password_type     => 'investor',
-            verification_code => $code
-        }};
-
-    $c->call_ok($method, $params)->has_no_error('no error for mt5_password_change');
-    # This call yields a truth integer directly, not a hash
-    is($c->result, 1, 'result');
-
-    my $subject = 'Your MT5 password has been reset.';
-    my @msgs    = $mailbox->search(
-        email   => $DETAILS{email},
-        subject => qr/\Q$subject\E/
-    );
-    ok(@msgs, "email received");
-
-};
-
-subtest 'password check investor' => sub {
-    my $method = 'mt5_password_check';
-    my $params = {
-        language => 'EN',
-        token    => $token,
-        args     => {
-            login         => $DETAILS{login},
-            password      => 'Abcd1234',
-            password_type => 'investor'
-        },
-    };
-    $c->call_ok($method, $params)->has_no_error('no error for mt5_password_check');
 };
 
 subtest 'deposit' => sub {
@@ -275,14 +219,13 @@ subtest 'deposit' => sub {
         args     => {
             from_binary => $test_client->loginid,
             to_mt5      => $DETAILS{login},
-            amount      => 180,
+            amount      => 150,
         },
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_deposit');
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
 
-    # assert that account balance is now 1000-180 = 820
-    cmp_ok $test_client->default_account->load->balance, '==', 820, "Correct balance after deposited to mt5 account";
+    # TODO(leonerd): assert that account balance is now 1000-150 = 850
 
     $params->{args}{to_mt5} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_deposit wrong login')
@@ -305,11 +248,47 @@ subtest 'withdrawal' => sub {
     $c->call_ok($method, $params)->has_no_error('no error for mt5_withdrawal');
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
 
-    cmp_ok $test_client->default_account->load->balance, '==', 820 + 150, "Correct balance after withdrawal";
-
     $params->{args}{from_mt5} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_withdrawal wrong login')
         ->error_code_is('PermissionDenied', 'error code for mt5_withdrawal wrong login');
 };
 
 done_testing();
+
+package BOM::Test::RedisQueue::Client;
+# TODO: make B:T:R:C an abstraction
+use base qw( BOM::Test::RPC::Client );
+
+sub new {
+    my $class = shift;
+    my %args  = @_;
+
+    my $client = delete $args{client};
+
+    # We don't use UA but can't be bothered right now to abstract this out properly
+    my $self = $class->SUPER::new(%args, ua => undef);
+
+    $self->{client} = $client;
+
+    return $self;
+}
+
+sub _tcall {
+    my $self = shift;
+    my ($method, $req_params) = @_;
+
+    $self->params([$method, $req_params]);
+
+    my $raw_response = $self->{client}->submit(
+        name   => $method,
+        id     => Data::UUID->new()->create_str(),
+        params => $json->encode($req_params),
+    )->get;
+
+    my $response = $json->decode($raw_response);
+
+    $self->response($response);    # ???
+    $self->result($response->{result} // {});
+
+    return $response;
+}
