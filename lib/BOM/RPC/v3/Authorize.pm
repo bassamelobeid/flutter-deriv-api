@@ -282,13 +282,12 @@ rpc account_authentication => sub {
         if ($totp_action eq 'enable') {
             # enable 2FA
             $user->totp_activated(1);
-            $user->save();
         } elsif ($totp_action eq 'disable') {
             # disable 2FA and reset secret key. Next time a new secret key should be generated
             $user->totp_activated(0);
             $user->secret_key('');
-            $user->save();
         }
+        $user->save();
 
         return {totp => {status => $user->totp_activated}};
     }
