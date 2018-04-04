@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "title":"Verify Email Request",
-  "description": "Verify an email address before new account signup. The system will send an email to the address containing a security code to verify the address.",
+  "description": "Verify an email address for varying purposes. The system will send an email to the address containing a security code for verification.",
   "properties": {
     "verify_email": {
       "type": "string",

@@ -2,11 +2,11 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "title": "Trading Times Request",
-  "description":"Receive a list of marketing opening times for a given date.",
+  "description":"Receive a list of market opening times for a given date.",
   "properties": {
     "trading_times": {
       "type":"string",
-      "description": "Trading date in yyyy-mm-dd format (or use 'today' for trading times for today's date).",
+      "description": "Date to receive market opening times for. (yyyy-mm-dd format. 'today' can also be specified).",
       "pattern": "^(\\d{4}-\\d{1,2}-\\d{1,2}|today)$",
       "required": "1"
     },
