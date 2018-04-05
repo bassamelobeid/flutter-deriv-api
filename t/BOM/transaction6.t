@@ -535,7 +535,7 @@ subtest 'sell_expired_contracts', sub {
         my $res = BOM::Transaction::sell_expired_contracts + {
             client       => $cl,
             source       => 29,
-            contract_ids => [@expired_fmbids[0]],
+            contract_ids => [$expired_fmbids[0]],
         };
 
         is_deeply $res,
