@@ -18,7 +18,7 @@ extends 'BOM::Product::Pricing::Engine';
 
 use Moose;
 use Math::Business::BlackScholes::Binaries;
-use Math::Business::BlackScholes::Vanillas;
+use Math::Business::BlackScholes::NonBinaries;
 use Math::Util::CalculatedValue::Validatable;
 use YAML::XS qw(LoadFile);
 
@@ -76,9 +76,9 @@ sub _build_formula {
     my $self = shift;
 
     my $module =
-          $self->bet->payout_type eq 'binary'    ? 'Math::Business::BlackScholes::Binaries'
-        : $self->bet->category_code eq 'vanilla' ? 'Math::Business::BlackScholes::Vanillas'
-        :                                          undef;
+          $self->bet->payout_type eq 'binary'     ? 'Math::Business::BlackScholes::Binaries'
+        : $self->bet->payout_type eq 'non-binary' ? 'Math::Business::BlackScholes::NonBinaries'
+        :                                           undef;
 
     die 'could not find formula to price ' . $self->bet->pricing_code unless $module;
 
