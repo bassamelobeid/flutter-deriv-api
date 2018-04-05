@@ -816,4 +816,25 @@ sub get_withdrawal_limits {
     return $withdrawal_limits;
 }
 
+=head2 user
+    my $user = $client->user;
+returns the user associated with the client : C<BOM::Platform::User>
+=cut
+
+sub user {
+    my $self = shift;
+
+    my $id = $self->binary_user_id;
+    my $user;
+
+    # Use binary_user_id to get the user
+    $user = BOM::User->new({id => $id}) if $id;
+    # Fall back to loginid if binary_user_id does not work
+    $user = BOM::User->new({loginid => $self->loginid}) unless $user;
+    # Fall back to email if loginid does not work
+    $user = BOM::User->new({email => $self->email}) unless $user;
+
+    return $user;
+}
+
 1;
