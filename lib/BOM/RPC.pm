@@ -39,7 +39,7 @@ use BOM::RPC::v3::CopyTrading;
 use BOM::Transaction::Validation;
 use BOM::RPC::v3::DocumentUpload;
 use BOM::RPC::v3::Pricing;
-use BOM::RPC::v3::Feeds;
+use BOM::RPC::v3::MarketData;
 
 # TODO(leonerd): this one RPC is unusual, coming from Utility.pm which doesn't
 # contain any other RPCs
