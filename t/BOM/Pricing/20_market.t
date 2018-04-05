@@ -62,6 +62,8 @@ my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 my ($token_mf) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_mf->loginid);
 
 my $entry_count_mlt = 7;
+my $entry_count_mf  = 106;
+my $entry_count_cr  = 113;
 my @first_entry_mlt = [
               "R_10",
               "Volatility 10 Index",
@@ -110,6 +112,42 @@ my @first_entry_mlt = [
                 ]
               ]
             ];
+my @first_entry_cr_mf = [
+      "frxAUDJPY",
+      "AUD/JPY",
+      [
+        [
+          "callput",
+          "Higher/Lower",
+          "1d",
+          "365d"
+        ],
+        [
+          "callput",
+          "Rise/Fall",
+          "5t",
+          "365d"
+        ],
+        [
+          "touchnotouch",
+          "Touch/No Touch",
+          "1d",
+          "365d"
+        ],
+        [
+          "endsinout",
+          "Ends Between/Ends Outside",
+          "1d",
+          "365d"
+        ],
+        [
+          "staysinout",
+          "Stays Between/Goes Outside",
+          "1d",
+          "365d"
+        ]
+      ]
+    ];
 
 subtest $method.' logged in - no arg' => sub {
     my $params = {
@@ -117,8 +155,11 @@ subtest $method.' logged in - no arg' => sub {
         token    => $token_mf,
     };
     my $result = $c->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    # Result should be for Maltainvest (MF)
-
+    # Result should be for Binary Investments (Europe) Ltd
+    # Trades everything except volatilities, so should be 106 entries and first entry should
+    #   be frxAUDJPY with 5 contract types.
+    is(scalar(@$result), $entry_count_mf, 'correct number of entries');
+    is_deeply($result->[0], @first_entry_cr_mf, 'First entry matches expected');
 };
 
 subtest $method.' logged in - with arg' => sub {
@@ -140,7 +181,11 @@ subtest $method.' logged out - no arg' => sub {
         language => 'EN',
     };
     my $result = $c->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    # Result should be CR
+    # Result should be Binary (C.R.) S.A.
+    # Trades everything except, so should be 113 entries and first entry should
+    #   be frxAUDJPY with 5 contract types.
+    is(scalar(@$result), $entry_count_cr, 'correct number of entries');
+    is_deeply($result->[0], @first_entry_cr_mf, 'First entry matches expected');
 };
 
 subtest $method.' logged out - with arg' => sub {
