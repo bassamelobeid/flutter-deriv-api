@@ -56,7 +56,7 @@ sub cmd_UserAdd {
 
     $input->{mainPassword} eq $DETAILS{password}->{main}
         or die "UserAdd with unexpected mainPassword=$input->{mainPassword}\n";
-    $input->{group} eq $DETAILS{group}
+    $input->{group} eq $DETAILS{group} || $input->{group} eq 'real\vanuatu_standard'
         or die "UserAdd with unexpected group=$input->{group}\n";
 
     $input->{investPassword} eq $DETAILS{password}->{investor}
