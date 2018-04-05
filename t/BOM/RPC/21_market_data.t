@@ -8,16 +8,17 @@ use Test::Exception;
 use BOM::Test::RPC::Client;
 use Test::MockModule;
 use LandingCompany::Registry;
+use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 
-use BOM::RPC::v3::MarketData qw(exchange_rates convert_to_USD);
+use BOM::RPC::v3::MarketData qw/to_USD _exchange_rates/;
 
 sub checkResultStructure {
     my $result = shift;
     ok $result->{date}, "Date tag";
-    ok ("USD" eq $result->{base}), "Base currency";
+    ok $result->{base} && "USD" eq $result->{base}, "Base currency";
     ok $result->{rates}, 'Rates tag';
-    if ($result->{rates}){
-         not ok $result->{rates}->{'USD'}, 'Base currency should not be included in rates';
+    if ($result->{rates}) {
+        not ok $result->{rates}->{'USD'}, 'Base currency should not be included in rates';
     }
 }
 
@@ -35,12 +36,15 @@ if ($firstCall->has_error) {
 
 diag("Testing exchange_rates function call.");
 
+my @all_currencies = LandingCompany::Registry->new()->all_currencies;
+cmp_ok($#all_currencies, ">", 1, "At least two currencies available");
+
 # Mocked currency converter to imitate currency conversion
-my $mocked_CurrencyConverter = Test::MockModule->new('BOM::RPC::v3::MarketData', no_auto => 1);
+my $mocked_CurrencyConverter = Test::MockModule->new('BOM::RPC::v3::MarketData');
 $mocked_CurrencyConverter->mock(
-    'convert_to_USD',
-    sub {
+    'to_USD' => sub {
         diag("FFFFFFFFFFFFFF");
+        my $value         = shift;
         my $from_currency = shift;
 
         #excluding EUR just for test
@@ -51,19 +55,17 @@ $mocked_CurrencyConverter->mock(
         $from_currency eq 'USD' and return 1;
         return 0;
     });
-    
-my $result = BOM::RPC::v3::MarketData::exchange_rates();
 
-my @all_currencies = LandingCompany::Registry->new()->all_currencies;
-cmp_ok($#all_currencies, ">", 1, "At least two currencies available");
+# _excnage_rates still calls original to_USD
+my $result = _exchange_rates();
 
-diag("Convert to GBP to USD: ". BOM::RPC::v3::MarketData::convert_to_USD('GBP'));
+#
+diag("Convert GBP to USD: " . to_USD(1, 'GBP'));
 
 checkResultStructure($result);
-if ($result->{rates}){
-    is $result->{rates}->{"GBP"}, 0.5, 'Correct exchange rate for GBP'; 
-    not ok $result->{rates}->{"EUR"}, 'EUR is excluded in this test .';
+if ($result->{rates}) {
+    is $result->{rates}->{"GBP"}, 0.5, 'Correct exchange rate for GBP';
+    #not ok $result->{rates}->{"EUR"}, 'EUR is excluded in this test .';
 }
-
 
 done_testing();

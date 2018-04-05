@@ -19,6 +19,10 @@ use BOM::RPC::Registry '-dsl';
 use LandingCompany::Registry;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use BOM::Platform::Context qw (localize);
+use BOM::RPC::v3::Utility;
+
+use Exporter qw/import/;
+our @EXPORT_OK = qw(to_USD, _exchange_rates);
 
 =head2 exchange_rates
 
@@ -41,30 +45,31 @@ The return value is an anonymous hash contains the following items:
 
 =cut
 
-# auxiliary function for enabling mock in test
-sub convert_to_USD{
+# auxiliary function just in order to be able to mock currency conversion
+sub to_USD {
+    my $val      = shift;
     my $currency = shift;
-    in_USD(1, $currency);
+    return Postgres::FeedDB::CurrencyConverter::in_USD(1, $currency);
 }
 
-rpc exchange_rates => sub {
+sub _exchange_rates {
     my $base = "USD";
     my %rates_hash;
-    try{
+    try {
         # Get available currencies
-    my @all_currencies = LandingCompany::Registry->new()->all_currencies;
-    #Fill the hash of exchange rates
-    foreach my $currency (@all_currencies) {
-        next if $currency eq $base;
-        try {
-            my $ex_rate = convert_to_USD($currency);
-            $rates_hash{$currency} = 1.0 / $ex_rate if looks_like_number($ex_rate) && $ex_rate != 0;
-        };
+        my @all_currencies = LandingCompany::Registry->new()->all_currencies;
+        #Fill a hash of exchange rates
+        foreach my $currency (@all_currencies) {
+            next if $currency eq $base;
+            try {
+                my $ex_rate = to_USD(1, $currency);
+                $rates_hash{$currency} = 1 / $ex_rate if looks_like_number($ex_rate) && $ex_rate != 0;
+            };
+        }
     }
-}
-catch{
-    %rates_hash = ();
-}
+    catch {
+        %rates_hash = ();
+    }
     return BOM::RPC::v3::Utility::create_error({
             code              => 'NoExRates',
             message_to_client => localize('Not Found'),
@@ -75,7 +80,9 @@ catch{
         base  => $base,
         rates => \%rates_hash,
     };
-};
+}
+
+rpc exchange_rates => \&_exchange_rates;
 
 1;
 
