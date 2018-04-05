@@ -32,7 +32,7 @@ try {
 catch {
     code_exit_BO("Date $yyyymm was not parsed as YYYY-MM, check it");
 };
-my $until_date = $start_date->plus_months($months);
+my $until_date = $start_date->plus_time_interval("${months}mo");
 
 my ($payment_filter, $csv_name);
 
