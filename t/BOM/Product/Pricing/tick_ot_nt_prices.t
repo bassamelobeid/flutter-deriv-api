@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 3;
+use Test::More tests => 2;
 use Test::Warnings;
 use Format::Util::Numbers qw/roundcommon/;
 
