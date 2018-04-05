@@ -80,7 +80,7 @@ is $res->{website_status}->{terms_conditions_version}, BOM::Platform::Runtime->i
 
 ## exchage_rates
 $res = $t->await::exchange_rates({exchange_rates => 1});
-is $res->{msg_type}, 'exchange_rates';
+is $res->{msg_type}, 'exchange_rates', 'Exchange rates received';
 test_schema('exchange_rates', $res);
 
 $t->finish_ok;
