@@ -146,11 +146,17 @@
                             <input type="hidden" name="amount" value="[% trx.amount %]"/>
                             <input type="hidden" name="loginid" value="[% trx.client_loginid %]"/>
                             <input type="hidden" name="view_action" value="withdrawals"/>
-                            <label for="rejection_reason">Reason:</label>
                             <br/>
-                            <input type="text"   name="rejection_reason" placeholder="Reason for rejection..."/>
+                            <label for="set_remark">Set Remark:</label>
                             <br/>
-                            <input type="submit" name="action" value="Verify"/>
+                            <input type="text"   name="set_remark" placeholder="Replaces current remark"/>
+                            <br/>
+                            <input type="submit" name="action" value="Save"/>
+                            [% IF trx.authorisers.grep("^$staff\$").size > 0 %]
+                                <input type="submit" name="action" value="Verify" disabled="disabled"/>
+                            [% ELSE %]
+                                <input type="submit" name="action" value="Verify"/>
+                            [% END %]
                             <input type="submit" name="action" value="Reject"/>
                         </form>
                         [% END %]
