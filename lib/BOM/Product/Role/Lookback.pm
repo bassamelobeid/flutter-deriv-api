@@ -128,7 +128,7 @@ override _build_base_commission => sub {
         $args->{landing_company} = $self->landing_company;
     }
     my $underlying_base = get_underlying_base_commission($args);
-    #We are adding extra commission for sellback.
+    #This extra commission wil be applied to both bid and ask
     return $underlying_base + 0.005;
 };
 
