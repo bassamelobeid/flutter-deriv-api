@@ -82,7 +82,7 @@ sub _build_formula {
 
     die 'could not find formula to price ' . $self->bet->pricing_code unless $module;
 
-    my $formula = $module->can(lc $self->pricing_code) or die 'could not price ' . $self->bet->pricing_code . ' with ' . $module;
+    my $formula = $module->can(lc $self->bet->pricing_code) or die 'could not price ' . $self->bet->pricing_code . ' with ' . $module;
 
     return $formula;
 }
