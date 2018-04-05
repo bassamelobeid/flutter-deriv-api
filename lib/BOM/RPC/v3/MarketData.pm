@@ -23,7 +23,7 @@ use BOM::RPC::v3::Utility;
 
 #use Exporter qw/import/;
 #our @EXPORT_OK = qw(to_USD, _exchange_rates);
-#our $VERSION = '0.10';  
+#our $VERSION = '0.10';
 
 =head2 exchange_rates
 
