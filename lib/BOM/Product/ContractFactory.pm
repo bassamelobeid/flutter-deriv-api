@@ -60,6 +60,8 @@ use BOM::Product::Contract::Vanilla_put;
 use BOM::Product::Contract::Lbfloatcall;
 use BOM::Product::Contract::Lbfloatput;
 use BOM::Product::Contract::Lbhighlow;
+use BOM::Product::Contract::Callspread;
+use BOM::Product::Contract::Putspread;
 
 =head2 produce_contract
 

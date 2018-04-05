@@ -4,11 +4,9 @@ use Moose::Role;
 # Spreads is a double barrier contract that expires at contract expiration time.
 with 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
+use LandingCompany::Commission qw(get_underlying_base_commission);
 use Pricing::Engine::Spreads;
-use BOM::Product::Static;
 use List::Util qw(max min);
-
-my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
 use constant {
     MINIMUM_ASK_PRICE => 0.50,
@@ -18,7 +16,7 @@ use constant {
 override '_build_ask_price' => sub {
     my $self = shift;
 
-    return max(MINIMUM_ASK_PRICE, min($self->payout, ($self->_theo_price + $self->commission_per_unit) * $self->multiplier));
+    return max(MINIMUM_ASK_PRICE, min($self->payout, ($self->pricing_engine->theo_price + $self->commission_per_unit) * $self->multiplier));
 };
 
 override '_build_bid_price' => sub {
@@ -38,6 +36,29 @@ override _build_base_commission => sub {
     return $underlying_base;
 };
 
+override '_build_pricing_engine' => sub {
+    my $self = shift;
+
+    my @strikes = ($self->high_barrier->as_absolute, $self->low_barrier->as_absolute);
+    my $vol_args = {
+        from => $self->effective_start->epoch,
+        to   => $self->date_expiry->epoch,
+        spot => $self->current_spot,
+    };
+
+    my @vols = map { $self->volsurface->get_volatility(+{%$vol_args, strike => $_}) } @strikes;
+
+    return Pricing::Engine::Spreads->new(
+        spot          => $self->current_spot,
+        strikes       => \@strikes,
+        discount_rate => $self->discount_rate,
+        t             => $self->timeinyears->amount,
+        mu            => $self->mu,
+        vols          => \@vols,
+        contract_type => $self->pricing_code,
+    );
+};
+
 =head2 commission_per_unit
 
 Return commission of the contract in dollar amount for one unit, not percentage.
@@ -51,7 +72,7 @@ sub commission_per_unit {
     # base_commission is in percentage
     my $base = $self->base_commission;
 
-    return max(0.01, $self->_theo_price * $base);
+    return max(0.01, $self->pricing_engine->theo_price * $base);
 }
 
 =head2 multiplier
@@ -78,27 +99,4 @@ sub ticks_to_expiry {
     return shift->tick_count + 1;
 }
 
-## PRIVATE ##
-sub _theo_price {
-    my $self = shift;
-
-    my @strikes = ($self->high_barrier->as_absolute, $self->low_barrier->as_absolute);
-    my $vol_args = {
-        from => $self->effective_start->epoch,
-        to   => $self->date_expiry->epoch,
-        spot => $self->current_spot,
-    };
-
-    my @vols = map { $self->volsurface->get_volatility(+{%$vol_args, strike => $_}) } @strikes;
-
-    my $theo_price = Pricing::Engine::Spreads->new(
-        spot          => $self->current_spot,
-        strikes       => \@strikes,
-        discount_rate => $self->discount_rate,
-        t             => $self->timeinyears->amount,
-        mu            => $self->mu,
-        vols          => \@vols,
-        contract_type => $self->pricing_code,
-    )->theo_price;
-}
 1;
