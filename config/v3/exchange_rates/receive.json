@@ -6,7 +6,7 @@
     "echo_req": {
       "type": "object",
       "title": "Echo request",
-      "description": "Echo of the request json message."
+      "description": "Echo of the request json message"
     },
     "msg_type": {
       "type": "string",
@@ -17,7 +17,7 @@
     "exchange_rates": {
       "type": "object",
       "title": "Exchange rates",
-      "description": "Exchange rate values from base (USD) to all other currencies.",
+      "description": "Exchange rate values from base (USD) to all other currencies",
       "properties": {
         "base": {
           "type": "string",
@@ -27,7 +27,7 @@
         "date": {
           "type": "string",
           "pattern": "^[0-9]{1,10}$",
-          "description": "Date retrieval epoch time represented as an integer number."
+          "description": "Date retrieval epoch time represented as an integer number"
         },
         "rates": {
           "type": "object",
@@ -35,16 +35,11 @@
           "properties": {
             "^[A-Z]{3}$": {
               "type": "number",
-              "description": "The rate of exchanging a unit of the base currency (USD) into a target currency (represented by the key)."
+              "description": "The rate of exchanging a unit of the base currency (USD) into a target currency (represented by the key)"
             }
           }
         }
-      },
-      "required": [
-        "base",
-        "date",
-        "rates"
-      ]
+      }
     },
     "req_id": {
       "type": "integer",
