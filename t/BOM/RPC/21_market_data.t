@@ -8,9 +8,8 @@ use Test::Exception;
 use BOM::Test::RPC::Client;
 use Test::MockModule;
 use LandingCompany::Registry;
-use Postgres::FeedDB::CurrencyConverter qw(in_USD);
-
-use BOM::RPC::v3::MarketData qw/to_USD _exchange_rates/;
+#use Postgres::FeedDB::CurrencyConverter qw(in_USD);
+use BOM::RPC::v3::MarketData;
 
 sub checkResultStructure {
     my $result = shift;
@@ -39,7 +38,8 @@ diag("Testing exchange_rates function call.");
 my @all_currencies = LandingCompany::Registry->new()->all_currencies;
 cmp_ok($#all_currencies, ">", 1, "At least two currencies available");
 
-# Mocked currency converter to imitate currency conversion
+=head regular mock (failed)
+# First mocking method currency conversion (Fails)
 my $mocked_CurrencyConverter = Test::MockModule->new('BOM::RPC::v3::MarketData');
 $mocked_CurrencyConverter->mock(
     'to_USD' => sub {
@@ -55,12 +55,27 @@ $mocked_CurrencyConverter->mock(
         $from_currency eq 'USD' and return 1;
         return 0;
     });
+=cut
+
+# Second mocking method currency conversion (Fails)
+local *BOM::RPC::v3::MarketData::to_USD = sub { 
+     my $value         = shift;
+     my $from_currency = shift;
+
+        #excluding EUR just for test
+        # $from_currency eq 'EUR' and return 1.1888;
+        $from_currency eq 'GBP' and return 2;
+        $from_currency eq 'JPY' and return 0.0089;
+        $from_currency eq 'BTC' and return 5500;
+        $from_currency eq 'USD' and return 1;
+        return 0;
+};
 
 # _excnage_rates still calls original to_USD
-my $result = _exchange_rates();
+my $result = BOM::RPC::v3::MarketData::_exchange_rates();
 
 #
-diag("Convert GBP to USD: " . to_USD(1, 'GBP'));
+diag("Convert GBP to USD: " . BOM::RPC::v3::MarketData::to_USD(1, 'GBP'));
 
 checkResultStructure($result);
 if ($result->{rates}) {

@@ -21,8 +21,9 @@ use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use BOM::Platform::Context qw (localize);
 use BOM::RPC::v3::Utility;
 
-use Exporter qw/import/;
-our @EXPORT_OK = qw(to_USD, _exchange_rates);
+#use Exporter qw/import/;
+#our @EXPORT_OK = qw(to_USD, _exchange_rates);
+#our $VERSION = '0.10';  
 
 =head2 exchange_rates
 
@@ -62,7 +63,7 @@ sub _exchange_rates {
         foreach my $currency (@all_currencies) {
             next if $currency eq $base;
             try {
-                my $ex_rate = to_USD(1, $currency);
+                my $ex_rate = BOM::RPC::v3::MarketData::to_USD(1, $currency);
                 $rates_hash{$currency} = 1 / $ex_rate if looks_like_number($ex_rate) && $ex_rate != 0;
             };
         }
