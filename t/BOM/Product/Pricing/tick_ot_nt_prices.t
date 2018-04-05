@@ -53,16 +53,16 @@ subtest 'prices' => sub {
         tick_expiry => 1,
         tick_count  => 5,
         amount_type => 'payout',
-        barrier     => '+1.5',
+        barrier     => '-0.3054',
     };
 
     my %expectations = (
         ONETOUCH => {
-            bs_prob => 0.10,
+            bs_prob => 0.1656,
             markup  => 0.023,
         },
         NOTOUCH => {
-            bs_prob => 0.90,
+            bs_prob => 0.8344,
             markup  => 0.023,
         },
     );
@@ -73,9 +73,10 @@ subtest 'prices' => sub {
             my $c = produce_contract({%$params, bet_type => $bt_code});
 
             my $expect = $expectations{$bt_code};
-
             is $c->pricing_code, $bt_code, 'contract type';
-
+            $c->shortcode;
+            $c->pricing_spot;
+            is $c->pricing_spot, '963.3054', 'pricing spot';
             is $c->pricing_engine_name, 'Pricing::Engine::BlackScholes', 'pricing engine';
             _check_amount($c->theo_probability,  $expect->{bs_prob}, 'bs_prob');
             _check_amount($c->commission_markup, $expect->{markup},  'markup');

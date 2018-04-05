@@ -16,7 +16,7 @@ my %file_details = (
     },
     touchnotouch => {
         filename => module_path('BOM::Product::Contract::Onetouch'),
-        hash     => '25c870ac1d6fc097f743a4159fa0f129765f1760'
+        hash     => 'f628998eed1f254d217916abb70bef2b83f3f17d'
     },
     staysbetweengoesout => {
         filename => module_path('BOM::Product::Contract::Range'),
