@@ -43,6 +43,8 @@ Verifies if the provided TOTP is correct in accordance with secret key provided.
 sub verify_totp {
     my ($self, $secret_key, $totp) = @_;
 
+    return 0 unless ($secret_key && $totp);
+
     my $oath      = Authen::OATH->new();
     my $oath_totp = $oath->totp($secret_key);
     return int($oath_totp eq $totp);
