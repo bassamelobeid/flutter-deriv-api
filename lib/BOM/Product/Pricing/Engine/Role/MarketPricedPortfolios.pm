@@ -16,6 +16,7 @@ requires 'bet';
 
 use Math::Cephes::Matrix qw(mat);
 use Math::Business::BlackScholes::Binaries;
+use Math::Business::BlackScholes::Vanillas;
 
 use BOM::Product::Pricing::Engine::BlackScholes;
 use BOM::Product::Pricing::Greeks::BlackScholes;
@@ -27,8 +28,8 @@ has [qw(priced_portfolios hedge_cost_matrix on_equities vol_spread vvv_matrix gr
 );
 
 my %analytic_functions = (
-    VANILLA_CALL => \&Math::Business::BlackScholes::Binaries::vanilla_call,
-    VANILLA_PUT  => \&Math::Business::BlackScholes::Binaries::vanilla_put,
+    VANILLA_CALL => \&Math::Business::BlackScholes::Vanillas::vanilla_call,
+    VANILLA_PUT  => \&Math::Business::BlackScholes::Vanillas::vanilla_put,
 );
 
 my %greek_functions = (
