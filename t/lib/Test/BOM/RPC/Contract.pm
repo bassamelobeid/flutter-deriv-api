@@ -54,7 +54,7 @@ sub prepare_contract {
 
     my $contract_data = {
         underlying            => $underlying,
-        bet_type              => 'CALL',
+        bet_type              => $args{bet_type} // 'CALL',
         currency              => 'USD',
         amount_type           => $args{basis} // 'payout',
         amount                => 100,
