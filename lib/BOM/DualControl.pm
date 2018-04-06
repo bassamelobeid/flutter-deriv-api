@@ -52,11 +52,14 @@ sub _build__environment {
 }
 
 sub client_control_code {
-    my $self  = shift;
-    my $email = shift;
+    my $self    = shift;
+    my $email   = shift;
+    my $user_id = shift;
 
-    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')
-        ->encrypt_payload(data => time . '_##_' . $self->staff . '_##_' . $self->transactiontype . '_##_' . $email . '_##_' . $self->_environment);
+    my $code =
+        Crypt::NamedKeys->new(keyname => 'password_counter')
+        ->encrypt_payload(
+        data => time . '_##_' . $self->staff . '_##_' . $self->transactiontype . '_##_' . $email . '_##_' . $user_id . '_##_' . $self->_environment);
 
     Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
 
@@ -97,9 +100,10 @@ sub batch_payment_control_code {
 }
 
 sub validate_client_control_code {
-    my $self   = shift;
-    my $incode = shift;
-    my $email  = shift;
+    my $self    = shift;
+    my $incode  = shift;
+    my $email   = shift;
+    my $user_id = shift;
 
     my $code = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
 
@@ -116,6 +120,8 @@ sub validate_client_control_code {
     $error_status = $self->_validate_transaction_type($code);
     return $error_status if $error_status;
     $error_status = $self->_validate_client_email($code, $email);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_client_userid($code, $user_id);
     return $error_status if $error_status;
     $error_status = $self->_validate_client_code_already_used($incode);
     return $error_status if $error_status;
@@ -321,6 +327,21 @@ sub _validate_client_email {
         return Error::Base->cuss(
             -type => 'DifferentEmail',
             -mesg => 'Email provided does not match with the email provided during code generation',
+        );
+    }
+    return;
+}
+
+sub _validate_client_userid {
+    my $self    = shift;
+    my $code    = shift;
+    my $user_id = shift;
+
+    my @arry = split("_##_", $code);
+    if (not $user_id or $user_id ne $arry[4]) {
+        return Error::Base->cuss(
+            -type => 'DifferentUserId',
+            -mesg => 'UserId provided does not match with the UserId provided during code generation',
         );
     }
     return;
