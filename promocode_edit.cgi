@@ -7,6 +7,7 @@ use warnings;
 use Scalar::Util 'looks_like_number';
 use JSON::MaybeXS;
 use Brands;
+use Date::Utility;
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
@@ -38,6 +39,10 @@ my $countries_instance = Brands->new(name => request()->brand)->countries_instan
 
 if ($input{save}) {
     @messages = _validation_errors(%input);
+
+    my $start_date = Date::Utility->new($input{start_date})  if $input{start_date};
+    my $end_date   = Date::Utility->new($input{expiry_date}) if $input{expiry_date};
+
     if (@messages == 0) {
         eval {    ## no critic (RequireCheckingReturnValueOfEval)
             $pc->start_date($input{start_date})   if $input{start_date};
