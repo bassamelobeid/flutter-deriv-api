@@ -1178,7 +1178,7 @@ async_rpc mt5_mamm => sub {
             # 3555 - All options enabled
             #
             # 4 is score for disabled trading
-            my $current_rights = $settings->{rights};
+            my $current_rights = $settings->{rights} // 0;
             my $has_manager = (grep { $_ == $current_rights } qw/483 1503 2527 3555/) ? 1 : 0;
 
             if ($action) {

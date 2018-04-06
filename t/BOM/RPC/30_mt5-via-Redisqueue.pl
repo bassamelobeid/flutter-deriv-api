@@ -23,7 +23,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Helper::Client qw(create_client top_up);
-use BOM::Platform::User;
+use BOM::User;
 use BOM::MT5::User::Async;
 
 # TODO(leonerd): should have been present
@@ -68,7 +68,7 @@ $test_client->email($DETAILS{email});
 $test_client->set_authentication('ID_DOCUMENT')->status('pass');
 $test_client->save;
 
-my $user = BOM::Platform::User->create(
+my $user = BOM::User->create(
     email    => $DETAILS{email},
     password => 's3kr1t',
 );
@@ -100,6 +100,7 @@ subtest 'new account' => sub {
             leverage       => 100,
         },
     };
+
     $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account');
     is($c->result->{login}, $DETAILS{login}, 'result->{login}');
 
@@ -251,6 +252,21 @@ subtest 'withdrawal' => sub {
     $params->{args}{from_mt5} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_withdrawal wrong login')
         ->error_code_is('PermissionDenied', 'error code for mt5_withdrawal wrong login');
+};
+
+subtest 'mt5 mamm' => sub {
+    my $method = "mt5_mamm";
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            login => $DETAILS{login},
+        },
+    };
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_mamm');
+    my $result = $c->result;
+    is $result->{status},     1,  'Request was successful';
+    is $result->{manager_id}, '', 'No manager assigned';
 };
 
 done_testing();
