@@ -11,12 +11,88 @@ use Format::Util::Numbers qw(formatnumber);
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
+has [qw(
+        ask_probability
+        theo_probability
+        bid_probability
+        discounted_probability
+        )
+    ] => (
+    is         => 'ro',
+    isa        => 'Math::Util::CalculatedValue::Validatable',
+    lazy_build => 1,
+    );
+
+sub _build_ask_probability {
+    my $self = shift;
+
+    $self->_set_price_calculator_params('ask_probability');
+    return $self->price_calculator->ask_probability;
+}
+
+sub _build_theo_probability {
+    my $self = shift;
+
+    $self->_set_price_calculator_params('theo_probability');
+    return $self->price_calculator->theo_probability;
+}
+
+sub _build_bid_probability {
+    my $self = shift;
+
+    $self->_set_price_calculator_params('bid_probability');
+    return $self->price_calculator->bid_probability;
+}
+
+sub _build_discounted_probability {
+    my $self = shift;
+
+    $self->_set_price_calculator_params('discounted_probability');
+    return $self->price_calculator->discounted_probability;
+}
+
+# the attribute definition is in Finance::Contract
 sub _build_payout {
     my ($self) = @_;
 
     $self->_set_price_calculator_params('payout');
     return $self->price_calculator->payout;
 }
+
+override _build_bid_price => sub {
+    my $self = shift;
+
+    return $self->_price_from_prob('bid_probability');
+};
+
+override _build_ask_price => sub {
+    my $self = shift;
+
+    return $self->_price_from_prob('ask_probability');
+};
+
+override _build_theo_price => sub {
+    my $self = shift;
+
+    return $self->_price_from_prob('theo_probability');
+};
+
+sub _price_from_prob {
+    my ($self, $prob) = @_;
+    if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {
+        $self->price_calculator->value($self->value);
+    } else {
+
+        $self->_set_price_calculator_params($prob);
+    }
+    return $self->price_calculator->price_from_prob($prob);
+}
+
+has 'staking_limits' => (
+    is         => 'ro',
+    isa        => 'HashRef',
+    lazy_build => 1,
+);
 
 sub _build_staking_limits {
     my $self = shift;
@@ -51,45 +127,6 @@ sub _build_staking_limits {
         max               => $payout_max,
         message_to_client => $message_to_client,
     };
-}
-
-sub _build_theo_probability {
-    my $self = shift;
-
-    $self->_set_price_calculator_params('theo_probability');
-    return $self->price_calculator->theo_probability;
-}
-
-sub _build_bid_probability {
-    my $self = shift;
-
-    $self->_set_price_calculator_params('bid_probability');
-    return $self->price_calculator->bid_probability;
-}
-
-sub _build_ask_probability {
-    my $self = shift;
-
-    $self->_set_price_calculator_params('ask_probability');
-    return $self->price_calculator->ask_probability;
-}
-
-sub _price_from_prob {
-    my ($self, $prob) = @_;
-    if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {
-        $self->price_calculator->value($self->value);
-    } else {
-
-        $self->_set_price_calculator_params($prob);
-    }
-    return $self->price_calculator->price_from_prob($prob);
-}
-
-sub _build_discounted_probability {
-    my $self = shift;
-
-    $self->_set_price_calculator_params('discounted_probability');
-    return $self->price_calculator->discounted_probability;
 }
 
 1;
