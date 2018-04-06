@@ -35,18 +35,16 @@ if (my $code = $input{promocode}) {
 Bar($pc ? "EDIT PROMOTIONAL CODE" : "ADD PROMOTIONAL CODE");
 
 my @messages;
+my $error;
 my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
 
 if ($input{save}) {
     @messages = _validation_errors(%input);
 
-    my $start_date = Date::Utility->new($input{start_date})  if $input{start_date};
-    my $end_date   = Date::Utility->new($input{expiry_date}) if $input{expiry_date};
-
     if (@messages == 0) {
         eval {    ## no critic (RequireCheckingReturnValueOfEval)
-            $pc->start_date($input{start_date})   if $input{start_date};
-            $pc->expiry_date($input{expiry_date}) if $input{expiry_date};
+            $pc->start_date($input{start_date}) if $input{start_date};
+            $pc->expiry_date($end_date) if $end_date;
             $pc->status($input{status});
             $pc->promo_code_type($input{promo_code_type});
             $pc->description($input{description});
@@ -92,17 +90,34 @@ BOM::Backoffice::Request::template->process('backoffice/promocode_edit.html.tt',
 code_exit_BO();
 
 sub _validation_errors {
+
     my %input = @_;
     my @errors;
+
     for (qw/country description amount/) {
         $input{$_} || push @errors, "Field '$_' must be supplied";
     }
+
     # some of these are stored as json thus aren't checked by the orm or the database..
     for (qw/amount min_turnover min_deposit/) {
         my $val = $input{$_} || next;
         next if looks_like_number($val);
         push @errors, "Field '$_' value '$val' is not numeric";
     }
+
+    # Date validation for start and expiry date
+    my $start_date = Date::Utility->new($input{start_date}) if $input{start_date};
+    my $end_date;
+    try {
+        my $end_date = Date::Utility->new($input{expiry_date}) if $input{expiry_date};
+    }
+    catch {
+        $error = (split "\n", $_)[0];
+    };
+
+    push @errors, "Expiry date must be in the following format: YYYY-MM-DD" if ($error);
+    push @errors, "Expiry date must be set after Start date." if ($end_date && $start_date->is_after($end_date));
+
     # any more complex validation should go here..
     push @errors, "MINUMUM TURNOVER is only for FREE_BET promotions"
         if $input{min_turnover} && $input{promo_code_type} ne 'FREE_BET';
