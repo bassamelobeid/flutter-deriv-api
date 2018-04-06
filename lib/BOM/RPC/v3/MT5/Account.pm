@@ -336,7 +336,6 @@ async_rpc mt5_new_account => sub {
                                         }
                                     });
                             } elsif ($account_type eq 'financial' && $client->landing_company->short eq 'costarica') {
-                                # 30 Mar 2018 CR financial accounts should be verified within 5 working days
                                 _send_notification_email($client, $mt5_login, $brand);
                                 Future->done;
                             } else {
@@ -368,8 +367,6 @@ sub _check_logins {
 
 sub _send_notification_email {
     my ($client, $mt5_login, $brand) = @_;
-    # notify both client and cs team about new CR Financial account creation
-    # send_mails calls isolated here to keep mt5_new_account readable
     my $client_email_template = localize(
         "\
 Dear [_1],
@@ -387,29 +384,34 @@ Regard,
 
 Binary.com", $client->full_name
     );
-    # currently we should send email to cs team and the client
-    my $cs_email_status = send_email({
-            from    => $brand->emails('system'),
-            to      => $brand->emails('support'),
-            subject => 'Asked for authentication documents',
-            message => [
-                "MT5 Financial Account Created for MT$mt5_login\nIf client has not submitted document within five days please disable account and inform compliance"
-            ],
-            use_email_template    => 0,
-            email_content_is_html => 0,
+    try {
+        send_email({
+                from    => $brand->emails('system'),
+                to      => $brand->emails('support'),
+                subject => 'Asked for authentication documents',
+                message => [
+                    "MT5 Financial Account Created for MT$mt5_login\nIf client has not submitted document within five days please disable account and inform compliance"
+                ],
+                use_email_template    => 0,
+                email_content_is_html => 0,
+            });
+    }
+    catch {
+        warn "Failed to notify cs team about new CR Financial account MT$mt5_login";
+    };
+    try {
+        send_email({
+            from                  => $brand->emails('support'),
+            to                    => $client->email,
+            subject               => localize('Authenticate your account to continue trading on MT5'),
+            message               => [$client_email_template],
+            use_email_template    => 1,
+            email_content_is_html => 1
         });
-
-    my $client_email_status = send_email({
-        from                  => $brand->emails('support'),
-        to                    => $client->email,
-        subject               => localize('Authenticate your account to continue trading on MT5'),
-        message               => [$client_email_template],
-        use_email_template    => 1,
-        email_content_is_html => 1
-    });
-
-    warn "Failed to notify cs team about new CR Financial account MT$mt5_login" unless $cs_email_status;
-    warn "Failed to notify customer about verification process"                 unless $client_email_status;
+    }
+    catch {
+        warn "Failed to notify customer about verification process";
+    };
     return 1;
 }
 
