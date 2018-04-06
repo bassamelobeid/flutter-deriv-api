@@ -2,28 +2,29 @@ package BOM::Product::Role::Spreads;
 
 use Moose::Role;
 # Spreads is a double barrier contract that expires at contract expiration time.
-with 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::ExpireAtEnd';
+with 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::ExpireAtEnd', 'BOM::Product::Role::NonBinary';
 
 use LandingCompany::Commission qw(get_underlying_base_commission);
 use Pricing::Engine::Spreads;
-use List::Util qw(max min);
 
 use constant {
-    MINIMUM_ASK_PRICE => 0.50,
-    MINIMUM_BID_PRICE => 0,
+    MINIMUM_ASK_PRICE_PER_UNIT => 0.50,
+    MINIMUM_BID_PRICE          => 0,
 };
 
-override '_build_ask_price' => sub {
+=head2 theo_price
+price per unit.
+=cut
+
+override '_build_theo_price' => sub {
     my $self = shift;
 
-    return max(MINIMUM_ASK_PRICE, min($self->payout, ($self->pricing_engine->theo_price + $self->commission_per_unit) * $self->multiplier));
+    return $self->pricing_engine->theo_price;
 };
 
-override '_build_bid_price' => sub {
-    my $self = shift;
-
-    return max(MINIMUM_BID_PRICE, min($self->payout, $self->ask_price - 2 * $self->commission_per_unit * $self->multiplier));
-};
+=head2 base_commission
+base commission for this contract. Usually derived from the underlying instrument that we are pricing.
+=cut
 
 override _build_base_commission => sub {
     my $self = shift;
@@ -48,7 +49,7 @@ override '_build_pricing_engine' => sub {
 
     my @vols = map { $self->volsurface->get_volatility(+{%$vol_args, strike => $_}) } @strikes;
 
-    return Pricing::Engine::Spreads->new(
+    return $self->pricing_engine_name->new(
         spot          => $self->current_spot,
         strikes       => \@strikes,
         discount_rate => $self->discount_rate,
@@ -59,33 +60,33 @@ override '_build_pricing_engine' => sub {
     );
 };
 
-=head2 commission_per_unit
-
-Return commission of the contract in dollar amount for one unit, not percentage.
-A minimum commission of 1 cent is charged for each unit.
-
-=cut
-
-sub commission_per_unit {
-    my $self = shift;
-
-    # base_commission is in percentage
-    my $base = $self->base_commission;
-
-    return max(0.01, $self->pricing_engine->theo_price * $base);
-}
-
 =head2 multiplier
-
 Multiplier for non-binary contract.
-
 =cut
 
-# keep this as a method to prevent user input
 sub multiplier {
     my $self = shift;
 
     return $self->payout / ($self->high_barrier->as_absolute - $self->low_barrier->as_absolute);
+}
+
+sub minimum_ask_price_per_unit {
+## Please see file perltidy.ERR
+    return MINIMUM_ASK_PRICE_PER_UNIT;
+}
+
+sub minimum_bid_price {
+    return MINIMUM_BID_PRICE;
+}
+
+sub maximum_ask_price {
+    my $self = shift;
+    return $self->payout;
+}
+
+sub maximum_bid_price {
+    my $self = shift;
+    return $self->payout;
 }
 
 =head2 ticks_to_expiry
@@ -98,5 +99,9 @@ sub ticks_to_expiry {
     # Add one since we want N ticks *after* the entry spot
     return shift->tick_count + 1;
 }
+
+override '_build_pricing_engine_name' => sub {
+    return 'Pricing::Engine::Spreads';
+};
 
 1;
