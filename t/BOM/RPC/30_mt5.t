@@ -83,7 +83,7 @@ my $token = $m->create_token($test_client->loginid, 'test token');
 
 @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
 
-my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox', 'timeout' => 10);
+my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
 $mailbox->init;
 
 # Throttle function limits requests to 1 per minute which may cause
@@ -134,21 +134,13 @@ subtest 'new CR financial accounts should receive identity verification request'
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account');
     #check inbox for emails
-    my $cli_subject     = 'Authenticate your account to continue trading on MT5';
-    my $support_subject = 'Asked for authentication documents';
-
-    my @support_email = $mailbox->search(
-        email   => Brands->new(name => 'binary')->emails('support'),
-        subject => qr/\Q$support_subject\E/
-    );
-    sleep 1;
+    my $cli_subject  = 'Authenticate your account to continue trading on MT5';
     my @client_email = $mailbox->search(
         email   => $DETAILS{email},
         subject => qr/\Q$cli_subject\E/
     );
 
-    ok(@support_email, "identity verification notification email received");
-    ok(@client_email,  "identity verification request email received");
+    ok(@client_email, "identity verification request email received");
 };
 
 subtest 'get settings' => sub {

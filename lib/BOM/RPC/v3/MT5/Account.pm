@@ -373,10 +373,10 @@ Dear [_1],
 
 Thank you for registering your MetaTrader 5 account.
 
-We are legally required to verify each client’s identity and address. Therefore, we kindly request that you authenticate your account by submitting the following documents:
+We are legally required to verify each client's identity and address. Therefore, we kindly request that you authenticate your account by submitting the following documents:
 Valid driving licence, identity card, or passport
 Utility bill or bank statement issued within the past six months
-Please upload scanned copies of the above documents to your CR account, or email them to support\@binary.com within five days of receipt of this email to keep your account active.
+Please upload scanned copies of the above documents to your CR account, or email them to support\@binary.com within five days of receiving this email to keep your account active.
 
 We look forward to hearing from you soon.
 
@@ -384,6 +384,21 @@ Regard,
 
 Binary.com", $client->full_name
     );
+
+    try {
+        send_email({
+            from                  => $brand->emails('support'),
+            to                    => $client->email,
+            subject               => localize('Authenticate your account to continue trading on MT5'),
+            message               => [$client_email_template],
+            use_email_template    => 1,
+            email_content_is_html => 1
+        });
+    }
+    catch {
+        warn "Failed to notify customer about verification process";
+    };
+
     try {
         send_email({
                 from    => $brand->emails('system'),
@@ -398,19 +413,6 @@ Binary.com", $client->full_name
     }
     catch {
         warn "Failed to notify cs team about new CR Financial account MT$mt5_login";
-    };
-    try {
-        send_email({
-            from                  => $brand->emails('support'),
-            to                    => $client->email,
-            subject               => localize('Authenticate your account to continue trading on MT5'),
-            message               => [$client_email_template],
-            use_email_template    => 1,
-            email_content_is_html => 1
-        });
-    }
-    catch {
-        warn "Failed to notify customer about verification process";
     };
     return 1;
 }
