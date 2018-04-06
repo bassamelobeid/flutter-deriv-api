@@ -43,8 +43,8 @@ if ($input{save}) {
 
     if (@messages == 0) {
         eval {    ## no critic (RequireCheckingReturnValueOfEval)
-            $pc->start_date($input{start_date}) if $input{start_date};
-            $pc->expiry_date($end_date) if $end_date;
+            $pc->start_date($input{start_date})   if $input{start_date};
+            $pc->expiry_date($input{expiry_date}) if $input{expiry_date};
             $pc->status($input{status});
             $pc->promo_code_type($input{promo_code_type});
             $pc->description($input{description});
@@ -105,18 +105,20 @@ sub _validation_errors {
         push @errors, "Field '$_' value '$val' is not numeric";
     }
 
-    # Date validation for start and expiry date
-    my $start_date = Date::Utility->new($input{start_date}) if $input{start_date};
+    my $start_date;
     my $end_date;
+
+    # Date validation for start and expiry date
     try {
-        my $end_date = Date::Utility->new($input{expiry_date}) if $input{expiry_date};
+
+        $start_date = Date::Utility->new($input{start_date})  if $input{start_date};
+        $end_date   = Date::Utility->new($input{expiry_date}) if $input{expiry_date};
+
+        push @errors, "Expiry date must be set after Start date." if ($end_date && $start_date->is_after($end_date));
     }
     catch {
-        $error = (split "\n", $_)[0];
+        push @errors, "Start/Expiry date must be in the following format: YYYY-MM-DD";
     };
-
-    push @errors, "Expiry date must be in the following format: YYYY-MM-DD" if ($error);
-    push @errors, "Expiry date must be set after Start date." if ($end_date && $start_date->is_after($end_date));
 
     # any more complex validation should go here..
     push @errors, "MINUMUM TURNOVER is only for FREE_BET promotions"
