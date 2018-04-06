@@ -17,6 +17,7 @@ use Pricing::Engine::EuropeanDigitalSlope;
 use Pricing::Engine::TickExpiry;
 use Pricing::Engine::BlackScholes;
 use Pricing::Engine::Lookback;
+use Pricing::Engine::Reset;
 use LandingCompany::Commission qw(get_underlying_base_commission);
 
 use BOM::MarketData qw(create_underlying_db);
@@ -181,6 +182,18 @@ has [qw(risk_markup commission_markup base_commission commission_from_stake min_
     lazy_build => 1,
 );
 
+has reset_time => (
+    is         => 'ro',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
+has reset_time_in_years => (
+    is         => 'ro',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
 ## METHODS  #######################
 my $pc_params_setters = {
     timeinyears            => sub { my $self = shift; $self->price_calculator->timeinyears($self->timeinyears) },
@@ -236,6 +249,30 @@ sub _set_price_calculator_params {
         $pc_params_setters->{$key}->($self);
     }
     return;
+}
+
+# reset_time is used for actually resetting the barrier.
+sub _build_reset_time {
+    my $self = shift;
+
+    return 0 unless $self->entry_tick;
+    # reset time is the mid time from entry tick epoch to date expiry.
+    return $self->entry_tick->epoch + int(($self->date_expiry->epoch - $self->entry_tick->epoch) * 0.5);
+}
+
+# reset_time_in_years is used in BS formula. For reset_time_in_years, it cannot be dependent
+# on entry_tick otherwise we will not be able to price proposal.
+# Based on analysis done, the small difference between date_start and entry_tick epoch is
+# negligible.
+# On the other hand, the reset_time which is used for actually resetting the barrier,
+# we need to be precise, thus using entry_tick epoch made things much simpler because
+# basically it is the mid between entry_tick and expiry.
+sub _build_reset_time_in_years {
+    my $self = shift;
+
+    my $reset_time_in_years = ($self->date_expiry->epoch - $self->date_start->epoch) * 0.5;
+    $reset_time_in_years = $reset_time_in_years / (365 * 24 * 60 * 60);
+    return $reset_time_in_years;
 }
 
 sub _create_new_interface_engine {
@@ -308,6 +345,16 @@ sub _create_new_interface_engine {
             discount_rate => $self->discount_rate,
             mu            => $self->mu,
             vol           => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
+        );
+    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::Reset') {
+        %pricing_parameters = (
+            %contract_config,
+            contract_type => $self->pricing_code,
+            t             => $self->timeinyears->amount,
+            reset_time    => $self->reset_time_in_years,
+            discount_rate => $self->discount_rate,
+            mu            => $self->mu,
+            vol           => $self->pricing_vol,
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::Lookback') {
         %pricing_parameters = (
@@ -542,6 +589,7 @@ sub _build_new_interface_engine {
         'Pricing::Engine::TickExpiry'           => 1,
         'Pricing::Engine::EuropeanDigitalSlope' => 1,
         'Pricing::Engine::Lookback'             => 1,
+        'Pricing::Engine::Reset'                => 1,
     );
 
     return $engines{$self->pricing_engine_name} // 0;

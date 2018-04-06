@@ -62,6 +62,8 @@ use BOM::Product::Contract::Lbfloatput;
 use BOM::Product::Contract::Lbhighlow;
 use BOM::Product::Contract::Callspread;
 use BOM::Product::Contract::Putspread;
+use BOM::Product::Contract::Resetcall;
+use BOM::Product::Contract::Resetput;
 
 =head2 produce_contract
 

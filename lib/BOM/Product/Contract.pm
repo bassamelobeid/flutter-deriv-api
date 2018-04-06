@@ -651,6 +651,8 @@ sub _build_opposite_contract_for_sale {
         $opp_parameters{$vol_param} = $self->$vol_param;
     }
 
+    $opp_parameters{'reset_time_in_years'} = $self->reset_time_in_years;
+
     my $opp_contract = $self->_produce_contract_ref->(\%opp_parameters);
 
     return $opp_contract;
