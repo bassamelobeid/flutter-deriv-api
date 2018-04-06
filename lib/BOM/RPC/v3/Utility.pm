@@ -632,7 +632,7 @@ sub send_professional_requested_email {
 
     my $to_email = $brand->emails('compliance');
 
-    # 5th April, 2018: Notify customer support for non-CR clients who requested for professional status
+    # Notify customer support for non-CR clients who requested for professional status
     $to_email .= ',' . $brand->emails('support') if ($landing_company_short ne 'costarica');
 
     return send_email({
