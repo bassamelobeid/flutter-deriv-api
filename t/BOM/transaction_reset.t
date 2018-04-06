@@ -161,7 +161,7 @@ sub db {
 sub create_client {
     return BOM::User::Client->register_and_return_new_client({
         broker_code      => 'VRTC',
-        client_password  => BOM::User::hashpw('12345678'),
+        client_password  => BOM::User::Password::hashpw('12345678'),
         salutation       => 'Ms',
         last_name        => 'Doe',
         first_name       => 'Jane' . time . '.' . int(rand 1000000000),
