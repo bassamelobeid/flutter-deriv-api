@@ -99,7 +99,7 @@ sub authorize {
         return $c->render(%template_params);
     }
 
-    my $user = BOM::User->new({email => $client->email}) or die "no user for email " . $client->email;
+    my $user = $client->user or die "no user for email " . $client->email;
 
     my $redirect_uri = $app->{redirect_uri};
 
