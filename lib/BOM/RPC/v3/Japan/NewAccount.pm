@@ -30,7 +30,7 @@ requires_auth();
 sub get_jp_account_status {
     my $client = shift;
 
-    my $user = BOM::User->new({email => $client->email});
+    my $user = $user->client;
     my @siblings = $user->clients(disabled_ok => 1);
     my $jp_client = $user->get_default_client();
 
@@ -119,7 +119,7 @@ rpc jp_knowledge_test => sub {
 
     my $client = $params->{client};
 
-    my $user = BOM::User->new({email => $client->email});
+    my $user = $client->user;
     my @siblings = $user->clients(disabled_ok => 1);
     my $jp_client = $user->get_default_client();
 
@@ -284,7 +284,7 @@ sub set_jp_settings {
     push @updated,
         [
         localize('Receive news and special offers'),
-        BOM::User->new({email => $client->email})->email_consent ? localize("Yes") : localize("No"),
+        $client->user->email_consent ? localize("Yes") : localize("No"),
         $args->{email_consent} ? localize("Yes") : localize("No")]
         if exists $args->{email_consent};
 

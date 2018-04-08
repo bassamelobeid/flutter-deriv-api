@@ -116,7 +116,7 @@ Returns any of the following:
 sub get_mt5_logins {
     my ($client, $user) = @_;
 
-    $user ||= BOM::User->new({email => $client->email});
+    $user ||= $client->user;
 
     my $f = fmap1 {
         shift =~ /^MT(\d+)$/;
@@ -267,7 +267,7 @@ async_rpc mt5_new_account => sub {
             message_to_client => localize('Request too frequent. Please try again later.')}) if _throttle($client->loginid);
 
     # client can have only 1 MT demo & 1 MT real a/c
-    my $user = BOM::User->new({email => $client->email});
+    my $user = $client->user;
 
     return get_mt5_logins($client, $user)->then(
         sub {
@@ -354,7 +354,7 @@ async_rpc mt5_new_account => sub {
 
 sub _check_logins {
     my ($client, $logins) = @_;
-    my $user = BOM::User->new({email => $client->email});
+    my $user = $client->user;
 
     foreach my $login (@{$logins}) {
         return unless (any { $login eq $_->loginid } ($user->loginid));
