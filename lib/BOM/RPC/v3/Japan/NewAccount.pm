@@ -30,7 +30,7 @@ requires_auth();
 sub get_jp_account_status {
     my $client = shift;
 
-    my $user = $user->client;
+    my $user = $client->user;
     my @siblings = $user->clients(disabled_ok => 1);
     my $jp_client = $user->get_default_client();
 
