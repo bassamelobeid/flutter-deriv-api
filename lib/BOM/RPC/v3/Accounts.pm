@@ -495,8 +495,7 @@ rpc get_account_status => sub {
     # check whether the user need to perform financial assessment
     my $financial_assessment = $client->financial_assessment();
     $financial_assessment = ref($financial_assessment) ? $json->decode($financial_assessment->data || '{}') : {};
-    push @status,
-        'financial_assessment_not_complete'
+    push @status, 'financial_assessment_not_complete'
         if (
         any { !length $financial_assessment->{$_}->{answer} }
         keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
@@ -1101,8 +1100,7 @@ rpc set_settings => sub {
         [localize("Tax residence"), $tr_tax_residence],
         [localize('Tax identification number'), ($client->tax_identification_number || '')],
         );
-    push @updated_fields,
-        [localize('Receive news and special offers'), $client->user->email_consent ? localize("Yes") : localize("No")]
+    push @updated_fields, [localize('Receive news and special offers'), $client->user->email_consent ? localize("Yes") : localize("No")]
         if exists $args->{email_consent};
     push @updated_fields, [localize('Allow copiers'), $client->allow_copiers ? localize("Yes") : localize("No")]
         if defined $allow_copiers;
@@ -1506,7 +1504,7 @@ rpc login_history => sub {
         }
     }
 
-    my $user = $client->user;
+    my $user          = $client->user;
     my $login_history = $user->find_login_history(
         sort_by => 'history_date desc',
         limit   => $limit
