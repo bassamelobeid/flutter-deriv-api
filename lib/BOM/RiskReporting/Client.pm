@@ -74,7 +74,7 @@ sub _documents_on_file {
 sub _change_of_country {
     my $self = shift;
 
-    my $user = $self->client->user;
+    my $user          = $self->client->user;
     my $login_history = $user->find_login_history(
         sort_by => 'history_date',
     );
