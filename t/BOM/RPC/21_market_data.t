@@ -10,13 +10,15 @@ use Test::MockModule;
 use LandingCompany::Registry;
 use BOM::RPC::v3::MarketData;
 
+my $base = 'USD';
+
 sub checkResultStructure {
     my $result = shift;
     ok $result->{date}, "Date tag";
-    ok $result->{base} && "USD" eq $result->{base}, "Base currency";
+    ok $result->{base} && $base eq $result->{base}, "Base currency";
     ok $result->{rates}, 'Rates tag';
     if (exists $result->{rates}) {
-        ok(!exists $result->{rates}->{"USD"}, "Base currency not included in rates");
+        ok(!exists $result->{rates}->{$base}, "Base currency not included in rates");
     }
 }
 
@@ -33,7 +35,8 @@ if ($result->has_error) {
 diag("exchange_rates RPC call call with a custom data set.");
 my @all_currencies = LandingCompany::Registry->new()->all_currencies;
 cmp_ok($#all_currencies, ">", 1, "At least two currencies available");
-if ($all_currencies[0] eq 'USD') {
+ok grep ($_ eq $base, @all_currencies), 'USD is included in currencies'; 
+if ($all_currencies[0] eq $base) {
     @all_currencies[0, 1] = @all_currencies[1, 0];
 }
 
