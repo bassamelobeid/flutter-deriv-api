@@ -17,13 +17,18 @@ use Scalar::Util qw(looks_like_number);
 use Try::Tiny;
 use BOM::RPC::Registry '-dsl';
 use LandingCompany::Registry;
-use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use BOM::Platform::Context qw (localize);
 use BOM::RPC::v3::Utility;
+use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 
-#use Exporter qw/import/;
-#our @EXPORT_OK = qw(to_USD, _exchange_rates);
-#our $VERSION = '0.10';
+#use base 'Exporter';
+#our @EXPORT_OK = qw(_exchange_rates);
+
+# an auxiliary function created just in order to enable mocking in unit test
+sub to_USD {
+    my $currency = shift;
+    return Postgres::FeedDB::CurrencyConverter::in_USD(1, $currency);
+}
 
 =head2 exchange_rates
 
@@ -46,14 +51,7 @@ The return value is an anonymous hash contains the following items:
 
 =cut
 
-# auxiliary function just in order to be able to mock currency conversion
-sub to_USD {
-    my $val      = shift;
-    my $currency = shift;
-    return Postgres::FeedDB::CurrencyConverter::in_USD(1, $currency);
-}
-
-sub _exchange_rates {
+rpc exchange_rates => sub {
     my $base = "USD";
     my %rates_hash;
     try {
@@ -63,27 +61,28 @@ sub _exchange_rates {
         foreach my $currency (@all_currencies) {
             next if $currency eq $base;
             try {
-                my $ex_rate = BOM::RPC::v3::MarketData::to_USD(1, $currency);
-                $rates_hash{$currency} = 1 / $ex_rate if looks_like_number($ex_rate) && $ex_rate != 0;
+                my $ex_rate = to_USD($currency);
+                $rates_hash{$currency} = 1 / $ex_rate if looks_like_number($ex_rate) && $ex_rate > 0;
             };
         }
     }
     catch {
         %rates_hash = ();
-    }
-    return BOM::RPC::v3::Utility::create_error({
+    };
+
+    if (scalar(keys %rates_hash) == 0) {
+        return BOM::RPC::v3::Utility::create_error({
             code              => 'NoExRates',
             message_to_client => localize('Not Found'),
-        }) unless scalar(keys %rates_hash);
+        });
+    }
 
     return {
         date  => time,
         base  => $base,
         rates => \%rates_hash,
     };
-}
-
-rpc exchange_rates => \&_exchange_rates;
+};
 
 1;
 
