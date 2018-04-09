@@ -66,12 +66,7 @@ subtest 'new account' => sub {
     my $method = 'mt5_new_account';
     my $params = {
         language => 'EN',
-        token    => $token_vr,
-            # Pass this virtual account token to test switching functionality.
-            #   If the user has multiple client accounts the Binary.com front-end
-            #   will pass to this function whichever one is currently selected.
-            #   In this case we can automatically detect that the user has
-            #   another account which qualifies them to open MT5 and switch.
+        token    => $token,
         args     => {
             account_type   => 'gaming',
             country        => 'mt',
@@ -89,6 +84,35 @@ subtest 'new account' => sub {
 
     $c->call_ok($method, $params)->has_error('error from duplicate mt5_new_account')
         ->error_code_is('MT5CreateUserError', 'error code for duplicate mt5_new_account');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+};
+
+subtest 'new account with switching' => sub {
+    my $method = 'mt5_new_account';
+    my $params = {
+        language => 'EN',
+        token    => $token_vr,
+            # Pass this virtual account token to test switching functionality.
+            #   If the user has multiple client accounts the Binary.com front-end
+            #   will pass to this function whichever one is currently selected.
+            #   In this case we can automatically detect that the user has
+            #   another account which qualifies them to open MT5 and switch.
+        args     => {
+            account_type   => 'gaming',
+            country        => 'mt',
+            email          => $DETAILS{email},
+            name           => $DETAILS{name},
+            investPassword => 'Abcd1234',
+            mainPassword   => $DETAILS{password},
+            leverage       => 100,
+        },
+    };
+    # Expect error because we opened an account in the previous test.
+    $c->call_ok($method, $params)->has_error('error from duplicate mt5_new_account')
+        ->error_code_is('MT5CreateUserError', 'error code for duplicate mt5_new_account');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 };
 
 subtest 'get settings' => sub {
