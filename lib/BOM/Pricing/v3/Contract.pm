@@ -518,6 +518,15 @@ sub send_ask {
     # copy country_code when it is available.
     $params->{args}->{country_code} = $params->{country_code} if $params->{country_code};
 
+    #Tactical solution, we will sort out api barrier entry validation
+    #for all other contract types in a separate card and clean up this part.
+    if (defined $params->{args}->{contract_type} and $params->{args}->{contract_type} =~ /RESET/ and defined $params->{args}->{barrier2}) {
+        return BOM::Pricing::v3::Utility::create_error({
+            code              => 'BarrierValidationError',
+            message_to_client => localize("barrier2 is not allowed for reset contract."),
+        });
+    }
+
     my $response = try {
         _get_ask(prepare_ask($params->{args}), $params->{app_markup_percentage});
     }
