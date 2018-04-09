@@ -1440,6 +1440,7 @@ subtest $method => sub {
     $mailbox->clear;
 
     $params->{args}->{request_professional_status} = 1;
+
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
     $subject = $test_loginid . ' requested for professional status';
     @msgs    = $mailbox->search(
