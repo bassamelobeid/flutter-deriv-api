@@ -1452,14 +1452,14 @@ sub send_self_exclusion_notification {
         # As per UKGC LCCP Audit Regulations
         $to_email .= ',' . $brand->emails('accounting') if ($client->landing_company->short =~ /iom|malta$/);
 
-        send_email({
+        return send_email({
             from    => $brand->emails('compliance'),
             to      => $to_email,
             subject => "Client " . $client->loginid . " set self-exclusion limits",
             message => [$message],
         });
     }
-    return;
+    return 0;
 }
 
 rpc api_token => sub {
