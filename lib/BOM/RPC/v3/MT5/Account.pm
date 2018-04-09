@@ -321,7 +321,7 @@ async_rpc mt5_new_account => sub {
                         my $self_exclusion = BOM::RPC::v3::Accounts::get_self_exclusion({client => $client});
                         if (keys %$self_exclusion) {
                             warn 'Compliance email regarding Binary (Europe) Limited user with MT5 account(s) failed to send.'
-                                unless BOM::RPC::v3::Accounts::send_self_exclusion_notification($client, 'malta_with_mt5', $self_exclusion)
+                                unless BOM::RPC::v3::Accounts::send_self_exclusion_notification($client, 'malta_with_mt5', $self_exclusion);
                         }
                     }
 
