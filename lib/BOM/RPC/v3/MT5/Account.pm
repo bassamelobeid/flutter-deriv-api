@@ -786,9 +786,7 @@ async_rpc mt5_password_change => sub {
             my ($status) = @_;
 
             if ($status->{error}) {
-                return create_error_future({
-                        code              => 'MT5PasswordChangeError',
-                        message_to_client => $status->{error}});
+                return create_error_future($status->{error});
             }
             return Future->done(1);
         });
