@@ -1066,7 +1066,8 @@ rpc set_settings => sub {
             return BOM::RPC::v3::Utility::client_error();
         }
 
-        BOM::RPC::v3::Utility::send_professional_requested_email($cli->loginid, $cli->residence) if ($set_status);
+        BOM::RPC::v3::Utility::send_professional_requested_email($cli->loginid, $cli->residence, $cli->landing_company->short)
+            if ($set_status);
     }
     # update client value after latest changes
     $client = BOM::User::Client->new({loginid => $client->loginid});
