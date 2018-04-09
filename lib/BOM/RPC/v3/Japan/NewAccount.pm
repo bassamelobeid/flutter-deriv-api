@@ -5,6 +5,7 @@ use warnings;
 
 use Encode;
 use JSON::MaybeXS;
+use DateTime;
 use Date::Utility;
 use HTML::Entities qw(encode_entities);
 
@@ -22,14 +23,15 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Platform::AuditLog;
 use BOM::Database::Helper::QuestionsAnswered;
 
-my $json     = JSON::MaybeXS->new;
-my $timezone = 'Asia/Tokyo';
+my $json = JSON::MaybeXS->new;
+
 requires_auth();
 
 sub get_jp_account_status {
-    my $client    = shift;
-    my $user      = BOM::User->new({email => $client->email});
-    my @siblings  = $user->clients(disabled_ok => 1);
+    my $client = shift;
+
+    my $user = BOM::User->new({email => $client->email});
+    my @siblings = $user->clients(disabled_ok => 1);
     my $jp_client = $user->get_default_client();
 
     my $jp_account_status;
@@ -69,7 +71,8 @@ sub get_jp_account_status {
 sub _knowledge_test_available_date {
     my $last_test_epoch = shift;
 
-    my $now = Date::Utility->new;
+    my $now = DateTime->now;
+    $now->set_time_zone('Asia/Tokyo');
 
     my ($dt, $skip_to_monday);
     if (not $last_test_epoch) {
@@ -83,24 +86,29 @@ sub _knowledge_test_available_date {
         #   c) if test taken on Tues 3pm, but today is weekends, next test available in on Mon 12am
         # By right no test should already been taken on Sat & Sun, but is handled here just in case.
 
-        $dt = Date::Utility->new($last_test_epoch);
-        $dt = $dt->plus_time_interval('1d');
+        $dt = DateTime->from_epoch(epoch => $last_test_epoch);
+        $dt->set_time_zone('Asia/Tokyo');
+        $dt->add(days => 1);
 
         # if today is weekends, next test will be avilable on Monday 12am
-        if ($now->is_a_weekend_in_timezone($timezone) and $dt->epoch < $now->epoch) {
+        if ($now->day_of_week >= 6 and $dt->epoch < $now->epoch) {
             $dt             = $now;
             $skip_to_monday = 1;
         }
     }
 
-    if ($dt->is_a_weekend_in_timezone($timezone)) {
-        my $dow = $dt->day_of_week_in_timezone($timezone);
-
-        $dt = $dt->plus_time_interval((7 - $dow) . 'd');
+    my $dow = $dt->day_of_week;
+    if ($dow >= 6) {
+        $dt->add(days => (8 - $dow));
 
         if ($skip_to_monday) {
             # is weekend now, allow test starting from coming Mon 12am JST
-            $dt = $dt->truncate_to_day;
+            $dt = DateTime->new(
+                year      => $dt->year,
+                month     => $dt->month,
+                day       => $dt->day,
+                time_zone => 'Asia/Tokyo',
+            );
         }
     }
     return $dt;
@@ -142,7 +150,7 @@ rpc jp_knowledge_test => sub {
         });
     }
 
-    my $now = Date::Utility->new;
+    my $now = DateTime->now(time_zone => 'Asia/Tokyo');
     if ($now->epoch < $next_dt->epoch) {
         return BOM::RPC::v3::Utility::create_error({
             code => 'TestUnavailableNow',
