@@ -121,15 +121,9 @@ sub get_ohlc_for_period {
 }
 
 override _build_base_commission => sub {
-    my $self = shift;
-
-    my $args = {underlying_symbol => $self->underlying->symbol};
-    if ($self->can('landing_company')) {
-        $args->{landing_company} = $self->landing_company;
-    }
-    my $underlying_base = get_underlying_base_commission($args);
-    #This extra commission wil be applied to both bid and ask
-    return $underlying_base + 0.005;
+    #We need this much commission for the sellback to be safe for us.
+    #This is based on Ren's analysis
+    return 0.02;
 };
 
 # There's no financial rounding here because we should never be exposing this to client.
