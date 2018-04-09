@@ -114,7 +114,7 @@ sub _validation_errors {
         $start_date = Date::Utility->new($input{start_date})  if $input{start_date};
         $end_date   = Date::Utility->new($input{expiry_date}) if $input{expiry_date};
 
-        push @errors, "Expiry date must be set after Start date." if ($end_date && $start_date->is_after($end_date));
+        push @errors, "Expiry date must be set after Start date." if ($start_date && $end_date && $start_date->is_after($end_date));
     }
     catch {
         push @errors, "Start/Expiry date must be in the following format: YYYY-MM-DD";
