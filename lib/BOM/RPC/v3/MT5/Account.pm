@@ -248,12 +248,7 @@ async_rpc mt5_new_account => sub {
             # Binary.com front-end will pass whichever client is currently selected
             #   in the top-right corner, so check if this user has a qualifying
             #   account and switch if they do.
-            foreach ($user->clients) {
-                if ($_->landing_company->short =~ $eligible_lcs) {
-                    $client = $_;
-                    last;
-                }
-            }
+            $client = (first { $_->landing_company->short =~ $eligible_lcs } $user->clients) // $client;
         }
 
         return permission_error_future() unless ($client->landing_company->short =~ $eligible_lcs);
