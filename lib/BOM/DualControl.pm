@@ -208,7 +208,7 @@ sub _validate_client_code_is_valid {
     my $code = shift;
 
     my @arry = split("_##_", $code);
-    if (scalar @arry != 5) {
+    if (scalar @arry != 6) {
         return Error::Base->cuss(
             -type => 'InvalidClientCode',
             -mesg => 'Dual control code is not valid',
