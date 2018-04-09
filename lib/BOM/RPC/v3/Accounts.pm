@@ -1401,9 +1401,11 @@ rpc set_self_exclusion => sub {
     my @mt5_logins = BOM::User->new({loginid => $client->loginid})->mt5_logins('real');
 
     if ($client->landing_company->short eq 'malta' && @mt5_logins) {
-        send_self_exclusion_notification($client, 'malta_with_mt5', \%args);
+        warn 'Compliance email regarding Binary (Europe) Limited user with MT5 account(s) failed to send.'
+            unless send_self_exclusion_notification($client, 'malta_with_mt5', \%args);
     } elsif ($args{exclude_until}) {
-        send_self_exclusion_notification($client, 'self_exclusion', \%args);
+        warn 'Compliance email regarding self exclusion from the website failed to send.'
+            unless send_self_exclusion_notification($client, 'self_exclusion', \%args);
     }
 
     $client->save();
