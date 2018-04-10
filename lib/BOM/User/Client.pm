@@ -817,8 +817,10 @@ sub get_withdrawal_limits {
 }
 
 =head2 user
+
     my $user = $client->user;
 returns the user associated with the client : C<BOM::User>
+
 =cut
 
 sub user {
