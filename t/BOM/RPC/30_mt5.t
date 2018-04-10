@@ -20,8 +20,9 @@ use BOM::User;
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
 # Mocked account details
-# This hash shared between two files, and should be kept in-sync to avoid test failures
+# This hash shared between three files, and should be kept in-sync to avoid test failures
 #   t/BOM/RPC/30_mt5.t
+#   t/BOM/RPC/05_accounts.t
 #   t/lib/mock_binary_mt5.pl
 my %DETAILS = (
     login    => '123454321',
@@ -35,9 +36,12 @@ my %DETAILS = (
 
 # Setup a test user
 my $test_client = create_client('CR');
+my $test_client_vr = create_client('VRTC');
 $test_client->email($DETAILS{email});
+$test_client_vr->email($DETAILS{email});
 $test_client->set_authentication('ID_DOCUMENT')->status('pass');
 $test_client->save;
+$test_client_vr->save;
 
 my $user = BOM::User->create(
     email    => $DETAILS{email},
@@ -45,10 +49,12 @@ my $user = BOM::User->create(
 );
 $user->save;
 $user->add_loginid({loginid => $test_client->loginid});
+$user->add_loginid({loginid => $test_client_vr->loginid});
 $user->save;
 
 my $m = BOM::Database::Model::AccessToken->new;
 my $token = $m->create_token($test_client->loginid, 'test token');
+my $token_vr = $m->create_token($test_client_vr->loginid, 'test token');
 
 @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
 
@@ -78,6 +84,35 @@ subtest 'new account' => sub {
 
     $c->call_ok($method, $params)->has_error('error from duplicate mt5_new_account')
         ->error_code_is('MT5CreateUserError', 'error code for duplicate mt5_new_account');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+};
+
+subtest 'new account with switching' => sub {
+    my $method = 'mt5_new_account';
+    my $params = {
+        language => 'EN',
+        token    => $token_vr,
+            # Pass this virtual account token to test switching functionality.
+            #   If the user has multiple client accounts the Binary.com front-end
+            #   will pass to this function whichever one is currently selected.
+            #   In this case we can automatically detect that the user has
+            #   another account which qualifies them to open MT5 and switch.
+        args     => {
+            account_type   => 'gaming',
+            country        => 'mt',
+            email          => $DETAILS{email},
+            name           => $DETAILS{name},
+            investPassword => 'Abcd1234',
+            mainPassword   => $DETAILS{password},
+            leverage       => 100,
+        },
+    };
+    # Expect error because we opened an account in the previous test.
+    $c->call_ok($method, $params)->has_error('error from duplicate mt5_new_account')
+        ->error_code_is('MT5CreateUserError', 'error code for duplicate mt5_new_account');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 };
 
 subtest 'get settings' => sub {
