@@ -159,9 +159,9 @@ sub _validate_contract_specific_parameters {
 
     # Get allowed params from asset
 
-    my $product_name = $params->{bet_type}    # TICKHIGH or TICKLOW
+    my $product_name = $params->{bet_type};    # TICKHIGH or TICKLOW
 
-        my $product_class = "BOM::Product::Contract::" . ucfirst lc $product_name;
+    my $product_class = "BOM::Product::Contract::" . ucfirst lc $product_name;
 
     my $allowed_inputs = $product_class->get_permissible_inputs();
 
