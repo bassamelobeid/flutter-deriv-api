@@ -14,6 +14,7 @@ use BOM::Database::Model::Account;
 use BOM::Database::Model::FinancialMarketBet::LegacyBet;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use Date::Utility;
 
 my $connection_builder = BOM::Database::ClientDB->new({
     broker_code => 'CR',
@@ -155,6 +156,7 @@ lives_ok {
         db       => $connection_builder->db,
     });
     $financial_market_bet_helper->bet_data->{quantity} = 1;
+    $financial_market_bet_helper->bet_data->{sell_time} = Date::Utility::today->db_timestamp;
     $financial_market_bet_helper->sell_bet // die "Bet not sold";
     $sell_price = 40;
 }
