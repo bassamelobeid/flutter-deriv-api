@@ -148,7 +148,26 @@ sub _validate_input_parameters {
         BOM::Product::Exception->throw(error_code => 'InvalidInputAsset');
     }
 
+    _validate_contract_specific_parameters($params) if $params->{bet_type} =~ /^(TICKHIGH|TICKLOW)/;
+
     return;
+}
+
+# Sub to validate parameters that are specific to contracts.
+sub _validate_contract_specific_parameters {
+    my $params = shift;
+
+    # Get allowed params from asset
+
+    my $product_name = $params->{bet_type}    # TICKHIGH or TICKLOW
+
+        my $product_class = "BOM::Product::Contract::" . ucfirst lc $product_name;
+
+    my $allowed_inputs = $product_class->get_permissible_inputs();
+
+    BOM::Product::Contract::validate_inputs($params, $allowed_inputs);
+
+    return undef;
 }
 
 sub _args_to_ref {

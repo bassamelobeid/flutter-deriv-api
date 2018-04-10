@@ -58,6 +58,7 @@ my $config = {
         InvalidExpiryTime             => 'Invalid expiry time.',
         InvalidHighBarrier            => 'High barrier must be higher than low barrier.',
         InvalidHighLowBarrrierRange   => 'High barrier is out of acceptable range. Please adjust the high barrier.',
+        InvalidInput                  => '[_1] is not a valid input.',
         InvalidLowBarrrierRange       => 'Low barrier is out of acceptable range. Please adjust the low barrier.',
         InvalidLookbacksPrice         => 'Lookbacks price cannot be zero.',
         InvalidStake                  => 'Invalid stake/payout.',

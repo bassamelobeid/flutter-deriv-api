@@ -43,6 +43,28 @@ sub check_expiry_conditions {
 
 }
 
+# Returns a hash of permitted inputs
+sub get_permissible_inputs {
+    return {
+        # Contract-relevant inputs
+        'bet_type'      => 1,
+        'underlying'    => 1,
+        'amount_type'   => 1,
+        'amount'        => 1,
+        'date_start'    => 1,
+        'selected_tick' => 1,
+        'date_expiry'   => 1,
+        'currency'      => 1,
+
+        # Metadata inputs
+        'shortcode'    => 1,
+        'fixed_expiry' => 1,
+        'tick_expiry'  => 1,
+        'tick_count'   => 1,
+        'is_sold'      => 1,
+    };
+}
+
 sub _validate_barrier {
     return;    # override barrier validation
 }

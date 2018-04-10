@@ -42,7 +42,7 @@ sub _build_selected_tick {
     );
 }
 
-sub validate_contract_parameters {
+sub _validate_contract_parameters {
     my $params = shift;
 
     foreach my $param (keys %$params) {

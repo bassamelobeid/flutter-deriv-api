@@ -1170,6 +1170,18 @@ sub _build_priced_with_intraday_model {
     return ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex');
 }
 
+# Subroutine to validate that keys are valid
+sub validate_inputs {
+    my ($self, $inputs, $valid_inputs) = @_;
+
+    foreach (keys %$inputs) {
+        return BOM::Product::Exception->throw(
+            error_code => 'InvalidInput',
+            error_args => error_args => [$param]) unless exists $valid_inputs->{$_};
+    }
+
+}
+
 # Don't mind me, I just need to make sure my attibutes are available.
 with 'BOM::Product::Role::Reportable';
 
