@@ -501,6 +501,10 @@ sub prepare_bet_data_for_buy {
         $bet_params->{$contract->barrier->barrier_type . '_barrier'} = $contract->barrier->supplied_barrier;
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_LOOKBACK_OPTION) {
         $bet_params->{multiplier} = $contract->multiplier;
+    } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_RESET_BET) {
+        if ($contract->barrier) {
+            $bet_params->{$contract->barrier->barrier_type . '_barrier'} = $contract->barrier->supplied_barrier;
+        }
     } else {
         return Error::Base->cuss(
             -type              => 'UnsupportedBetClass',
