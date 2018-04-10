@@ -1,3 +1,4 @@
+package BOM::RPC::v3::MarketData;
 
 =head1 NAME
 
@@ -9,8 +10,6 @@ This package is a collection of utility functions that implement remote procedur
 
 =cut
 
-package BOM::RPC::v3::MarketData;
-
 use strict;
 use warnings;
 use Scalar::Util qw(looks_like_number);
@@ -20,15 +19,7 @@ use LandingCompany::Registry;
 use BOM::Platform::Context qw (localize);
 use BOM::RPC::v3::Utility;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
-
-#use base 'Exporter';
-#our @EXPORT_OK = qw(_exchange_rates);
-
-# an auxiliary function created just in order to enable mocking in unit test
-sub to_USD {
-    my $currency = shift;
-    return Postgres::FeedDB::CurrencyConverter::in_USD(1, $currency);
-}
+use Format::Util::Numbers qw(formatnumber);
 
 =head2 exchange_rates
 
@@ -57,20 +48,18 @@ rpc exchange_rates => sub {
     try {
         # Get available currencies
         my @all_currencies = LandingCompany::Registry->new()->all_currencies;
-        #Fill a hash of exchange rates
+        #Fill the hash of exchange rates
         foreach my $currency (@all_currencies) {
             next if $currency eq $base;
-            try {
-                my $ex_rate = to_USD($currency);
-                $rates_hash{$currency} = 1 / $ex_rate if looks_like_number($ex_rate) && $ex_rate > 0;
-            };
+            my $ex_rate = in_USD(1, $currency);
+            $rates_hash{$currency} = formatnumber('price', $currency, 1.0 / $ex_rate) if looks_like_number($ex_rate) && $ex_rate > 0;
         }
     }
     catch {
         %rates_hash = ();
     };
 
-    if (scalar(keys %rates_hash) == 0) {
+    if (not keys %rates_hash) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'NoExRates',
             message_to_client => localize('Not Found'),
