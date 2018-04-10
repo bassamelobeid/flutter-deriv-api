@@ -832,9 +832,9 @@ sub user {
     # Use binary_user_id to get the user
     $user = BOM::User->new({id => $id}) if $id;
     # Fall back to loginid if binary_user_id does not work
-    $user = BOM::User->new({loginid => $self->loginid}) unless $user;
+    $user ||= BOM::User->new({loginid => $self->loginid});
     # Fall back to email if loginid does not work
-    $user = BOM::User->new({email => $self->email}) unless $user;
+    $user ||= BOM::User->new({email => $self->email});
 
     return $user;
 }
