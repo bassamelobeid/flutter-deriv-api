@@ -14,6 +14,7 @@ use BOM::Database::Model::Account;
 use BOM::Database::Model::FinancialMarketBet::TouchBet;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use Date::Utility;
 
 my $connection_builder;
 my $account;
@@ -147,7 +148,10 @@ lives_ok {
     my $financial_market_bet_helper = BOM::Database::Helper::FinancialMarketBet->new({
         %account_data,
         bet      => $touch_bet,
-        bet_data => {is_expired => $is_expired},
+        bet_data => {
+            is_expired => $is_expired,
+            sell_time  => Date::Utility::today->db_timestamp,
+        },
         db       => $connection_builder->db,
     });
     $financial_market_bet_helper->bet_data->{quantity} = 1;
