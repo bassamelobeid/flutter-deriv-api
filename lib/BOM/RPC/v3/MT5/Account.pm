@@ -793,21 +793,10 @@ async_rpc mt5_password_change => sub {
             }
 
             return BOM::MT5::User::Async::password_change({
-                login        => $login,
-                new_password => $args->{new_password},
-                type         => $args->{password_type} // 'main',
-            });
-        }
-        )->then(
-        sub {
-            my ($status) = @_;
-
-            if ($status->{error}) {
-                return create_error_future({
-                        code              => 'MT5PasswordChangeError',
-                        message_to_client => $status->{error}});
-            }
-            return Future->done(1);
+                    login        => $login,
+                    new_password => $args->{new_password},
+                    type         => $args->{password_type} // 'main',
+                })->then_done(1);
         });
 };
 
