@@ -1174,10 +1174,10 @@ sub _build_priced_with_intraday_model {
 sub validate_inputs {
     my ($self, $inputs, $valid_inputs) = @_;
 
-    foreach (keys %$inputs) {
+    foreach my $param (keys %$inputs) {
         return BOM::Product::Exception->throw(
             error_code => 'InvalidInput',
-            error_args => error_args => [$param]) unless exists $valid_inputs->{$_};
+            error_args => error_args => [$param]) unless exists $valid_inputs->{$param};
     }
 
 }
