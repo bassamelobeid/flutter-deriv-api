@@ -258,11 +258,10 @@ async_rpc mt5_new_account => sub {
         # else get one associated with affiliate token
         $args->{agent} = $manager_id // _get_mt5_account_from_affiliate_token($client->myaffiliates_token);
 
-        $group = 'real\\';
+        $group = 'real\\' . $mt_company;
         if ($manager_id) {
-            $group .= "${manager_id}_mamm_$account_type";
+            $group .= "_mamm_$account_type_${manager_id}";
         } else {
-            $group .= $mt_company;
             $group .= "_$mt5_account_type" if $account_type eq 'financial';
             $group .= "_$residence"
                 if (first { $residence eq $_ } @{$brand->countries_with_own_mt5_group});
