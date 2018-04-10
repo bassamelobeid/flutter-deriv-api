@@ -36,7 +36,11 @@ my $limits = {
         '1m' => 1000000,
         '1h' => 2000000,
     },
-    websocket_call_restricted => {
+    websocket_call_email => {
+        '1m' => 1000000,
+        '1h' => 2000000,
+    },
+    websocket_call_password => {
         '1m' => 1000000,
         '1h' => 2000000,
     },
