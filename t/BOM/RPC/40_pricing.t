@@ -23,90 +23,90 @@ my ($token_mf) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $c
 my $entry_count_mlt = 7;
 my $entry_count_mf  = 106;
 my $entry_count_cr  = 113;
-my @first_entry_mlt = [
-              "R_10",
-              "Volatility 10 Index",
-              [
-                [
-                  "callput",
-                  "Higher/Lower",
-                  "5t",
-                  "365d"
-                ],
-                [
-                  "callput",
-                  "Rise/Fall",
-                  "5t",
-                  "365d"
-                ],
-                [
-                  "touchnotouch",
-                  "Touch/No Touch",
-                  "2m",
-                  "365d"
-                ],
-                [
-                  "endsinout",
-                  "Ends Between/Ends Outside",
-                  "2m",
-                  "365d"
-                ],
-                [
-                  "staysinout",
-                  "Stays Between/Goes Outside",
-                  "2m",
-                  "365d"
-                ],
-                [
-                  "digits",
-                  "Digits",
-                  "5t",
-                  "10t"
-                ],
-                [
-                  "asian",
-                  "Asians",
-                  "5t",
-                  "10t"
-                ]
-              ]
-            ];
-my @first_entry_cr_mf = [
-      "frxAUDJPY",
-      "AUD/JPY",
-      [
-        [
-          "callput",
-          "Higher/Lower",
-          "1d",
-          "365d"
-        ],
-        [
-          "callput",
-          "Rise/Fall",
-          "5t",
-          "365d"
-        ],
-        [
-          "touchnotouch",
-          "Touch/No Touch",
-          "1d",
-          "365d"
-        ],
-        [
-          "endsinout",
-          "Ends Between/Ends Outside",
-          "1d",
-          "365d"
-        ],
-        [
-          "staysinout",
-          "Stays Between/Goes Outside",
-          "1d",
-          "365d"
-        ]
-      ]
-    ];
+my $first_entry_mlt = [
+  "R_10",
+  "Volatility 10 Index",
+  [
+    [
+      "callput",
+      "Higher/Lower",
+      "5t",
+      "365d"
+    ],
+    [
+      "callput",
+      "Rise/Fall",
+      "5t",
+      "365d"
+    ],
+    [
+      "touchnotouch",
+      "Touch/No Touch",
+      "2m",
+      "365d"
+    ],
+    [
+      "endsinout",
+      "Ends Between/Ends Outside",
+      "2m",
+      "365d"
+    ],
+    [
+      "staysinout",
+      "Stays Between/Goes Outside",
+      "2m",
+      "365d"
+    ],
+    [
+      "digits",
+      "Digits",
+      "5t",
+      "10t"
+    ],
+    [
+      "asian",
+      "Asians",
+      "5t",
+      "10t"
+    ]
+  ]
+];
+my $first_entry_cr_mf = [
+  "frxAUDJPY",
+  "AUD/JPY",
+  [
+    [
+      "callput",
+      "Higher/Lower",
+      "1d",
+      "365d"
+    ],
+    [
+      "callput",
+      "Rise/Fall",
+      "5t",
+      "365d"
+    ],
+    [
+      "touchnotouch",
+      "Touch/No Touch",
+      "1d",
+      "365d"
+    ],
+    [
+      "endsinout",
+      "Ends Between/Ends Outside",
+      "1d",
+      "365d"
+    ],
+    [
+      "staysinout",
+      "Stays Between/Goes Outside",
+      "1d",
+      "365d"
+    ]
+  ]
+];
 
 subtest $method.' logged in - no arg' => sub {
     my $params = {
@@ -118,7 +118,7 @@ subtest $method.' logged in - no arg' => sub {
     # Trades everything except volatilities, so should be 106 entries and first entry should
     #   be frxAUDJPY with 5 contract types.
     is(scalar(@$result), $entry_count_mf, 'correct number of entries');
-    is_deeply($result->[0], @first_entry_cr_mf, 'First entry matches expected');
+    is_deeply($result->[0], $first_entry_cr_mf, 'First entry matches expected');
 };
 
 subtest $method.' logged in - with arg' => sub {
@@ -132,7 +132,7 @@ subtest $method.' logged in - with arg' => sub {
     # Only trades volatilities, so should be 7 entries and first entry should
     #   be R_10 with all contract categories except lookbacks.
     is(scalar(@$result), $entry_count_mlt, 'correct number of entries');
-    is_deeply($result->[0], @first_entry_mlt, 'First entry matches expected');
+    is_deeply($result->[0], $first_entry_mlt, 'First entry matches expected');
 };
 
 subtest $method.' logged out - no arg' => sub {
@@ -144,7 +144,7 @@ subtest $method.' logged out - no arg' => sub {
     # Trades everything except, so should be 113 entries and first entry should
     #   be frxAUDJPY with 5 contract types.
     is(scalar(@$result), $entry_count_cr, 'correct number of entries');
-    is_deeply($result->[0], @first_entry_cr_mf, 'First entry matches expected');
+    is_deeply($result->[0], $first_entry_cr_mf, 'First entry matches expected');
 };
 
 subtest $method.' logged out - with arg' => sub {
@@ -157,7 +157,7 @@ subtest $method.' logged out - with arg' => sub {
     # Only trades volatilities, so should be 7 entries and first entry should
     #   be R_10 with all contract categories except lookbacks.
     is(scalar(@$result), $entry_count_mlt, 'correct number of entries');
-    is_deeply($result->[0], @first_entry_mlt, 'First entry matches expected');
+    is_deeply($result->[0], $first_entry_mlt, 'First entry matches expected');
 };
 
 done_testing();
