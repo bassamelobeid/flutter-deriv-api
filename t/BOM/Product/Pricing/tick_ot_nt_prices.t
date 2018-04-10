@@ -59,11 +59,11 @@ subtest 'prices' => sub {
     my %expectations = (
         ONETOUCH => {
             bs_prob => 0.1656,
-            markup  => 0.023,
+            markup  => 0.023 + 0.02,
         },
         NOTOUCH => {
             bs_prob => 0.8344,
-            markup  => 0.023,
+            markup  => 0.023 + 0.02,
         },
     );
 
