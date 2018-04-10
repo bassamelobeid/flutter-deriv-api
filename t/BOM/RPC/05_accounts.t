@@ -22,6 +22,7 @@ use BOM::Database::Model::AccessToken;
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Password;
 use BOM::User;
+use BOM::MT5::User::Async;
 
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
@@ -143,6 +144,7 @@ my $test_client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client(
 });
 $test_client_mlt->email($email_mlt_mf);
 $test_client_mlt->save;
+my $test_client_mlt_loginid = $test_client_mlt->loginid;
 
 my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
@@ -1438,6 +1440,7 @@ subtest $method => sub {
     $mailbox->clear;
 
     $params->{args}->{request_professional_status} = 1;
+
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
     $subject = $test_loginid . ' requested for professional status';
     @msgs    = $mailbox->search(
@@ -1707,6 +1710,81 @@ subtest 'get and set self_exclusion' => sub {
     is $self_excl->exclude_until, $exclude_until . 'T00:00:00', 'exclude_until in db is right';
     is $self_excl->timeout_until, $timeout_until->epoch, 'timeout_until is right';
     is $self_excl->session_duration_limit, 1440, 'all good';
+
+    ## Section: Check self-exclusion notification emails for compliance, related to
+    ##  clients under Binary (Europe) Limited, are sent under correct circumstances.
+    $mailbox->clear;
+
+    ## Set some limits, and no email should be sent, because no MT5 account has
+    ##   been opened yet.
+    $params->{token} = $token_mlt;
+    $params->{args}  = {
+        set_self_exclusion     => 1,
+        max_balance            => 9998,
+        max_turnover           => 1000,
+        max_open_bets          => 50,
+        session_duration_limit => 1440,
+    };
+
+    is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
+    @msgs = $mailbox->search(
+        email   => 'compliance@binary.com,marketing@binary.com,x-acc@binary.com',
+        subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
+    );
+    ok(!@msgs, 'No email for MLT client limits without MT5 accounts');
+
+    ## Open an MT5 account
+    # Mocked account details
+    # This hash shared between three files, and should be kept in-sync to avoid test failures
+    #   t/BOM/RPC/30_mt5.t
+    #   t/BOM/RPC/05_accounts.t
+    #   t/lib/mock_binary_mt5.pl
+    my %DETAILS = (
+        login    => '123454321',
+        password => 'Efgh4567',
+        email    => 'test.account@binary.com',
+        name     => 'Test',
+        group    => 'real\costarica',
+        country  => 'Malta',
+        balance  => '1234.56',
+    );
+    @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
+
+    my $mt5_params = {
+        language => 'EN',
+        token    => $token_mlt,
+        args     => {
+            account_type   => 'gaming',
+            country        => 'mt',
+            email          => $DETAILS{email},
+            name           => $DETAILS{name},
+            investPassword => 'Abcd1234',
+            mainPassword   => $DETAILS{password},
+            leverage       => 100,
+        },
+    };
+    my $mt5_loginid = $c->tcall('mt5_new_account', $mt5_params)->{login};
+    is($mt5_loginid, $DETAILS{login}, 'MT5 loginid is correct: '.$mt5_loginid);
+
+    ## Verify an email was sent after opening an MT5 account, since user has
+    ##  limits currently in place.
+    @msgs = $mailbox->search(
+        email   => 'compliance@binary.com,marketing@binary.com,x-acc@binary.com',
+        subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
+    );
+    ok(@msgs, 'Email for MLT client limits with MT5 accounts');
+    like($msgs[0]{body}, qr/MT$mt5_loginid/, 'email content is ok');
+
+    ## Set some limits again, and another email should be sent to compliance listing
+    ##  the new limitations since an MT5 account is open.
+    $mailbox->clear;
+    is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
+    @msgs = $mailbox->search(
+        email   => 'compliance@binary.com,marketing@binary.com,x-acc@binary.com',
+        subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
+    );
+    ok(@msgs, 'Email for MLT client limits with MT5 accounts');
+    like($msgs[0]{body}, qr/MT$mt5_loginid/, 'email content is ok');
 };
 
 done_testing();
