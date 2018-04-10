@@ -52,9 +52,7 @@ sub _build__environment {
 }
 
 sub client_control_code {
-    my $self    = shift;
-    my $email   = shift;
-    my $user_id = shift;
+    my ($self, $email, $user_id) = @_;
 
     my $code =
         Crypt::NamedKeys->new(keyname => 'password_counter')
@@ -67,10 +65,7 @@ sub client_control_code {
 }
 
 sub payment_control_code {
-    my $self     = shift;
-    my $loginid  = shift;
-    my $currency = shift;
-    my $amount   = shift;
+    my ($self, $loginid, $currency, $amount) = @_;
 
     my $code =
         Crypt::NamedKeys->new(keyname => 'password_counter')
@@ -88,8 +83,7 @@ sub payment_control_code {
 }
 
 sub batch_payment_control_code {
-    my $self  = shift;
-    my $lines = shift;
+    my ($self, $lines) = @_;
 
     my $code = Crypt::NamedKeys->new(keyname => 'password_counter')
         ->encrypt_payload(data => time . '_##_' . $self->staff . '_##_' . $self->transactiontype . '_##_' . $lines . '_##_' . $self->_environment);
@@ -100,10 +94,7 @@ sub batch_payment_control_code {
 }
 
 sub validate_client_control_code {
-    my $self    = shift;
-    my $incode  = shift;
-    my $email   = shift;
-    my $user_id = shift;
+    my ($self, $incode, $email, $user_id) = @_;
 
     my $code = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
 
@@ -129,11 +120,7 @@ sub validate_client_control_code {
 }
 
 sub validate_payment_control_code {
-    my $self     = shift;
-    my $incode   = shift;
-    my $loginid  = shift;
-    my $currency = shift;
-    my $amount   = shift;
+    my ($self, $incode, $loginid, $currency, $amount) = @_;
 
     my $code = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
 
@@ -164,9 +151,7 @@ sub validate_payment_control_code {
 }
 
 sub validate_batch_payment_control_code {
-    my $self   = shift;
-    my $incode = shift;
-    my $lines  = shift;
+    my ($self, $incode, $lines) = @_;
 
     my $code = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
 
@@ -191,8 +176,7 @@ sub validate_batch_payment_control_code {
 }
 
 sub _validate_empty_code {
-    my $self = shift;
-    my $code = shift;
+    my ($self, $code) = @_;
 
     if (not $code) {
         return Error::Base->cuss(
@@ -204,11 +188,10 @@ sub _validate_empty_code {
 }
 
 sub _validate_client_code_is_valid {
-    my $self = shift;
-    my $code = shift;
+    my ($self, $code) = @_;
 
     my @arry = split("_##_", $code);
-    if (scalar @arry != 6) {
+    if (@arry != 6) {
         return Error::Base->cuss(
             -type => 'InvalidClientCode',
             -mesg => 'Dual control code is not valid',
@@ -218,11 +201,10 @@ sub _validate_client_code_is_valid {
 }
 
 sub _validate_payment_code_is_valid {
-    my $self = shift;
-    my $code = shift;
+    my ($self, $code) = @_;
 
     my @arry = split("_##_", $code);
-    if (scalar @arry != 7) {
+    if (@arry != 7) {
         return Error::Base->cuss(
             -type => 'InvalidPaymentCode',
             -mesg => 'Dual control code is not valid',
@@ -232,11 +214,10 @@ sub _validate_payment_code_is_valid {
 }
 
 sub _validate_batch_payment_code_is_valid {
-    my $self = shift;
-    my $code = shift;
+    my ($self, $code) = @_;
 
     my @arry = split("_##_", $code);
-    if (scalar @arry != 5) {
+    if (@arry != 5) {
         return Error::Base->cuss(
             -type => 'InvalidBatchPaymentCode',
             -mesg => 'Dual control code is not valid',
@@ -246,8 +227,7 @@ sub _validate_batch_payment_code_is_valid {
 }
 
 sub _validate_code_expiry {
-    my $self = shift;
-    my $code = shift;
+    my ($self, $code) = @_;
 
     my @arry = split("_##_", $code);
     if (DateTime->from_epoch(epoch => time)->ymd ne DateTime->from_epoch(epoch => $arry[0])->ymd) {
@@ -260,8 +240,7 @@ sub _validate_code_expiry {
 }
 
 sub _validate_fellow_staff {
-    my $self = shift;
-    my $code = shift;
+    my ($self, $code) = @_;
 
     my @arry = split("_##_", $code);
     if ($self->staff eq $arry[1]) {
@@ -274,8 +253,7 @@ sub _validate_fellow_staff {
 }
 
 sub _validate_transaction_type {
-    my $self = shift;
-    my $code = shift;
+    my ($self, $code) = @_;
 
     my @arry = split("_##_", $code);
     if ($self->transactiontype ne $arry[2]) {
@@ -288,8 +266,7 @@ sub _validate_transaction_type {
 }
 
 sub _validate_payment_code_already_used {
-    my $self = shift;
-    my $code = shift;
+    my ($self, $code) = @_;
 
     if (Cache::RedisDB->get('DUAL_CONTROL_CODE', $code)) {
         Cache::RedisDB->del('DUAL_CONTROL_CODE', $code);
@@ -303,8 +280,7 @@ sub _validate_payment_code_already_used {
 }
 
 sub _validate_client_code_already_used {
-    my $self = shift;
-    my $code = shift;
+    my ($self, $code) = @_;
 
     if (Cache::RedisDB->get('DUAL_CONTROL_CODE', $code)) {
         Cache::RedisDB->del('DUAL_CONTROL_CODE', $code);
@@ -318,9 +294,7 @@ sub _validate_client_code_already_used {
 }
 
 sub _validate_client_email {
-    my $self  = shift;
-    my $code  = shift;
-    my $email = shift;
+    my ($self, $code, $email) = @_;
 
     my @arry = split("_##_", $code);
     if (not $email or $email ne $arry[3]) {
@@ -333,9 +307,7 @@ sub _validate_client_email {
 }
 
 sub _validate_client_userid {
-    my $self    = shift;
-    my $code    = shift;
-    my $user_id = shift;
+    my ($self, $code, $user_id) = @_;
 
     my @arry = split("_##_", $code);
     if (not $user_id or $user_id ne $arry[4]) {
@@ -348,9 +320,7 @@ sub _validate_client_userid {
 }
 
 sub _validate_payment_loginid {
-    my $self    = shift;
-    my $code    = shift;
-    my $loginid = shift;
+    my ($self, $code, $loginid) = @_;
 
     my @arry = split("_##_", $code);
     if ($loginid ne $arry[3]) {
@@ -363,9 +333,7 @@ sub _validate_payment_loginid {
 }
 
 sub _validate_payment_currency {
-    my $self     = shift;
-    my $code     = shift;
-    my $currency = shift;
+    my ($self, $code, $currency) = @_;
 
     my @arry = split("_##_", $code);
     if ($currency ne $arry[4]) {
@@ -378,9 +346,7 @@ sub _validate_payment_currency {
 }
 
 sub _validate_payment_amount {
-    my $self   = shift;
-    my $code   = shift;
-    my $amount = shift;
+    my ($self, $code, $amount) = @_;
 
     my @arry = split("_##_", $code);
     if ($amount ne $arry[5]) {
@@ -393,9 +359,7 @@ sub _validate_payment_amount {
 }
 
 sub _validate_filelinescount {
-    my $self  = shift;
-    my $code  = shift;
-    my $lines = shift;
+    my ($self, $code, $lines) = @_;
 
     my @arry = split("_##_", $code);
     if ($lines ne $arry[3]) {
@@ -408,8 +372,7 @@ sub _validate_filelinescount {
 }
 
 sub _validate_environment {
-    my $self = shift;
-    my $code = shift;
+    my ($self, $code) = @_;
 
     my @arry = split("_##_", $code);
     if ($self->_environment ne $arry[-1]) {
