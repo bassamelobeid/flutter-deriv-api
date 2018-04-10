@@ -1,3 +1,5 @@
+#!perl
+
 use strict;
 use warnings;
 use Test::More tests => 16;
@@ -10,6 +12,7 @@ use BOM::Database::Model::FinancialMarketBet::Factory;
 use BOM::Database::Model::Constants;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use Date::Utility;
 
 my $connection_builder;
 my $account;
@@ -97,6 +100,7 @@ lives_ok {
         db  => $connection_builder->db,
     });
     $financial_market_bet_helper->bet_data->{quantity} = 1;
+    $financial_market_bet_helper->bet_data->{sell_time} = Date::Utility::today->db_timestamp;
     $financial_market_bet_helper->sell_bet // die "Bet not sold";
 
     $financial_market_bet = BOM::Database::Model::FinancialMarketBet->new({
@@ -175,6 +179,7 @@ lives_ok {
     $financial_market_bet_helper->clear_bet_data;
     $financial_market_bet_helper->bet($financial_market_bet);
     $financial_market_bet_helper->bet_data->{quantity} = 1;
+    $financial_market_bet_helper->bet_data->{sell_time} = Date::Utility::today->db_timestamp;
     $financial_market_bet_helper->sell_bet // die "Bet not sold";
 
 }
@@ -222,6 +227,7 @@ lives_ok {
     $financial_market_bet_helper->clear_bet_data;
     $financial_market_bet_helper->bet($financial_market_bet);
     $financial_market_bet_helper->bet_data->{quantity} = 1;
+    $financial_market_bet_helper->bet_data->{sell_time} = Date::Utility::today->db_timestamp;
     $financial_market_bet_helper->sell_bet // die "Bet not sold";
 }
 'Buy a non legacy bet and sell it (not expired).';
@@ -293,12 +299,14 @@ lives_ok {
     $financial_market_bet->sell_price(20);
     $financial_market_bet_helper->clear_bet_data;
     $financial_market_bet_helper->bet_data->{quantity} = 1;
+    $financial_market_bet_helper->bet_data->{sell_time} = Date::Utility::today->db_timestamp;
     push @fmbs, ($financial_market_bet_helper->sell_bet)[0];    # sell 1st bet
 
     $financial_market_bet->id($fmbs[1]->{id});
     $financial_market_bet->sell_price(20);
     $financial_market_bet_helper->clear_bet_data;
     $financial_market_bet_helper->bet_data->{quantity} = 1;
+    $financial_market_bet_helper->bet_data->{sell_time} = Date::Utility::today->db_timestamp;
     push @fmbs, ($financial_market_bet_helper->sell_bet)[0];    # sell 1st bet
 
     is $fmbs[0]->{id}, $fmbs[2]->{id}, 'sold 1st bet';

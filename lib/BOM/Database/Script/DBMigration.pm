@@ -78,6 +78,13 @@ sub options {
             documentation => 'Script will ask for password if this option is present.',
         },
         {
+            name          => 'service',
+            display       => 'service=<pg_service>',
+            documentation => 'Specifying a PG service superseeds hostname, port, database, username and password specifications.',
+            option_type   => 'string',
+            default       => '',
+        },
+        {
             name          => 'yes',
             documentation => 'Don\'t ask again.',
         },
@@ -92,6 +99,7 @@ sub script_run {
     my $username = $self->getOption('username');
     my $password = 'mRX1E3Mi00oS8LG';
     my $tablename_extension;
+    my $service;
 
     my $database = 'regentmarkets';
     my $port     = 5432;
@@ -142,19 +150,27 @@ sub script_run {
         $port = $self->getOption('port');
     }
 
-    $self->print_info("hostname:" . $hostname);
-
-    $self->print_info("port:" . $port);
-    $self->print_info("database:" . $database);
-    $self->print_info("username:" . $username);
-    $self->print_info("dir:" . $dir);
+    $service = $self->getOption('service');
 
     my $param = {
-        'dsn'      => 'dbi:Pg:dbname=' . $database . ';host=' . $hostname . ';port=' . $port,
-        'dir'      => $dir,
-        'username' => $username,
-        'password' => $password,
+        'dir' => $dir,
     };
+
+    if ($service) {
+        $self->print_info("service:" . $service);
+        $self->print_info("dir:" . $dir);
+
+        $param->{dsn} = 'dbi:Pg:service=' . $service;
+    } else {
+        $self->print_info("hostname:" . $hostname);
+        $self->print_info("port:" . $port);
+        $self->print_info("database:" . $database);
+        $self->print_info("username:" . $username);
+        $self->print_info("dir:" . $dir);
+
+        @{$param}{qw/dsn username password/} = ('dbi:Pg:dbname=' . $database . ';host=' . $hostname . ';port=' . $port, $username, $password,);
+    }
+
     $param->{tablename_extension} = $tablename_extension if $tablename_extension;
 
     my $migration = DBIx::Migration->new($param);

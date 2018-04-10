@@ -1,3 +1,5 @@
+#!perl
+
 use strict;
 use warnings;
 use Test::Most (tests => 37);
@@ -19,14 +21,14 @@ my $txn_data_mapper;
 
 lives_ok {
     $txn_data_mapper = BOM::Database::DataMapper::Transaction->new({
-        client_loginid => 'CR0005',
+        client_loginid => 'CR0021',
         currency_code  => 'USD',
     });
 
 }
 'Expect to initialize the object';
 
-cmp_ok($txn_data_mapper->get_turnover_of_account, '==', 267.2, 'turnover of account');
+cmp_ok($txn_data_mapper->get_turnover_of_account, '==', 650, 'turnover of account');
 
 my ($client, $account, $connection_builder);
 lives_ok {
@@ -100,6 +102,7 @@ foreach my $bet_info (@bet_infos) {
                     is_sold           => 0,
                     bet_class         => $bet_info->{bet_class},
                     bet_type          => $bet_info->{bet_type},
+                    short_code        => '0_0_S0P_0', # ATM/non-ATM is required
                     quantity          => 1,
                 },
                 db => $connection_builder->db,
@@ -137,17 +140,17 @@ foreach my $bet_info (@bet_infos) {
 
 my $bets;
 lives_ok {
-    $txn_data_mapper = BOM::Database::DataMapper::Transaction->new({broker_code => 'CR'});
+    $txn_data_mapper = BOM::Database::DataMapper::Transaction->new({broker_code => 'MX'});
 
     $bets = $txn_data_mapper->get_bet_transactions_for_broker({
-        broker_code => 'CR',
+        broker_code => 'MX',
         action_type => 'buy',
-        start       => '2009-04-01',
-        end         => '2009-04-30',
+        start       => '2017-03-09',
+        end         => '2017-03-09',
     });
 }
-'create mapper & get bets for CR';
-cmp_ok(scalar(keys %{$bets}), '==', 5, 'check all buy bets count for CR');
+'create mapper & get bets for MX';
+cmp_ok(scalar(keys %{$bets}), '==', 3, 'check all buy bets count for MX');
 
 lives_ok {
     $txn_data_mapper = BOM::Database::DataMapper::Transaction->new({broker_code => 'CR'});
@@ -204,7 +207,40 @@ subtest get_daily_summary_report => sub {
 };
 
 subtest get_open_bets_at_end_of => sub {
-    plan tests => 3;
+    plan tests => 2;
+
+    my @expect;
+    lives_ok {
+        foreach my $bet_info (@bet_infos) {
+            my $financial_market_bet_helper = BOM::Database::Helper::FinancialMarketBet->new({
+
+                    account_data => {
+                        client_loginid => $account->client_loginid,
+                        currency_code  => $account->currency_code,
+                    },
+                    bet_data => {
+                        underlying_symbol => $bet_info->{underlying_symbol},
+                        payout_price      => 200,
+                        buy_price         => $bet_info->{buy_price},
+                        remark            => 'Test Remark',
+                        purchase_time     => '2010-12-31 20:00:00',
+                        start_time        => '2010-12-31 20:00:00',
+                        expiry_time       => '2011-01-01 10:00:00',
+                        settlement_time   => '2011-01-01 10:00:00',
+                        is_expired        => 0,
+                        is_sold           => 0,
+                        bet_class         => $bet_info->{bet_class},
+                        bet_type          => $bet_info->{bet_type},
+                        short_code        => '0_0_S0P_0', # ATM/non-ATM is required
+                        quantity          => 1,
+                    },
+                    db => $connection_builder->db,
+                });
+
+            my ($fmb, $txn) = $financial_market_bet_helper->buy_bet;
+            push @expect, $fmb->{id};
+        }
+    } 'buy a few bets';
 
     my $client_ref = BOM::Database::DataMapper::Transaction->new({
             broker_code => 'CR',
@@ -215,14 +251,7 @@ subtest get_open_bets_at_end_of => sub {
             start_of_next_day => '2011-1-1',
         });
 
-    my $account_id = 200499;
-    is_deeply([sort { $a <=> $b } keys %{$client_ref->{$account_id}}], [201319, 201359]);
-
-    $account_id = 200459;
-    is_deeply([sort { $a <=> $b } keys %{$client_ref->{$account_id}}], [201159, 201179, 201219, 201239, 201279]);
-
-    $account_id = 200359;
-    is_deeply([sort { $a <=> $b } keys %{$client_ref->{$account_id}}], [201679, 201699, 201719, 201739, 201759, 201779, 201799, 201819]);
+    is_deeply([sort { $a <=> $b } keys %{$client_ref->{$account->id}}], [sort { $a <=> $b} @expect]);
 };
 
 subtest 'get_transactions' => sub {
@@ -231,6 +260,7 @@ subtest 'get_transactions' => sub {
         currency_code  => 'USD'
     });
 
+    # there are 65 transactions in the database but ->get_transactions has an implied limit of 50
     subtest 'no params' => sub {
         my $transactions = $txn_data_mapper->get_transactions();
         is scalar @$transactions, 50, 'Got 50 transactions';
@@ -245,13 +275,13 @@ subtest 'get_transactions' => sub {
 
     subtest 'before - 2005-09-21 06:21:00' => sub {
         my $transactions = $txn_data_mapper->get_transactions({before => '2005-09-21 06:21:00'});
-        is scalar @$transactions, 16, 'Got 16 transactions';
+        is scalar @$transactions, 11, 'Got 11 transactions';
         is $transactions->[0]->{transaction_time}, '2005-09-21 06:20:00', 'Last transaction first, Excludes 2005-09-21 06:21:00';
     };
 
     subtest 'after - 2005-09-21 06:40:00' => sub {
         my $transactions = $txn_data_mapper->get_transactions({after => '2005-09-21 06:40:00'});
-        is scalar @$transactions, 24, 'Got 30 transactions';
+        is scalar @$transactions, 13, 'Got 13 transactions';
         is $transactions->[0]->{transaction_time},  '2005-09-21 06:46:00', 'Last transaction first';
         is $transactions->[-1]->{transaction_time}, '2005-09-21 06:41:00', 'Excludes transaction at 2005-09-21 06:40:00';
     };
@@ -262,7 +292,7 @@ subtest 'get_transactions' => sub {
             limit => 10
         });
         is scalar @$transactions, 10, 'Got 10 transactions';
-        is $transactions->[0]->{transaction_time},  '2005-09-21 06:42:00', 'Last transaction first';
+        is $transactions->[0]->{transaction_time},  '2005-09-21 06:44:00', 'Last transaction first';
         is $transactions->[-1]->{transaction_time}, '2005-09-21 06:41:00', 'Excludes transaction at 2005-09-21 06:40:00';
     };
 
@@ -271,9 +301,9 @@ subtest 'get_transactions' => sub {
             before => '2005-09-21 06:40:00',
             after  => '2005-09-21 06:30:00'
         });
-        is scalar @$transactions, 18, 'Got 18 transactions';
+        is scalar @$transactions, 10, 'Got 10 transactions';
         is $transactions->[0]->{transaction_time},  '2005-09-21 06:39:00', 'Last transaction first';
-        is $transactions->[-1]->{transaction_time}, '2005-09-21 06:32:00', 'Excludes transaction at 2005-09-21 06:30:00';
+        is $transactions->[-1]->{transaction_time}, '2005-09-21 06:37:00', 'Excludes transaction at 2005-09-21 06:30:00';
     };
 
     subtest 'before 2005-09-21 06:40:00, after 2005-09-21 06:30:00 and limit 10' => sub {
@@ -344,14 +374,14 @@ subtest 'get_profit_for_days' => sub {
         currency_code  => 'USD'
     });
 
-    is($txn_data_mapper->get_profit_for_days(), '-95.0000', 'Lifetime Profit of CR0021 for all days');
+    is($txn_data_mapper->get_profit_for_days(), '585.00', 'Lifetime Profit of CR0021 for all days');
     is(
         $txn_data_mapper->get_profit_for_days({
                 before => '2005-09-21 06:40:00',
                 after  => '2005-09-21 06:30:00'
             }
         ),
-        '-133.0000',
+        '62.00',
         'Profit for CR0021 between 2005-09-21 06:30:00 and 2005-09-21 06:40:00'
     );
 };
