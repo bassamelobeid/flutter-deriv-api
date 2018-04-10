@@ -140,9 +140,9 @@ subtest $method => sub {
     $params->{currency}   = 'USD';
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({
             'symbol'       => 'R_50',
-            'longcode'     => "Win payout if Volatility 50 Index after 50 seconds is strictly higher than it was at either entry or 25 seconds.",
+            'longcode'     => "Win payout if Volatility 50 Index touches entry spot plus 2.9054 through 5 ticks after first tick.",
             'display_name' => 'Volatility 50 Index',
-            'date_expiry'  => $now->epoch - 50,
+            'date_expiry'  => '1127285672', 
             'barrier'      => 'S29054P',
         },
         'result is ok'
@@ -175,21 +175,21 @@ subtest 'get_ask' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'       => '14.41',
-        'ask_price'           => '14.41',
-        'longcode'            => "Win payout if Volatility 50 Index after 15 minutes is strictly higher than it was at either entry or 7 minutes 30 seconds.",
+        'display_value'       => '16.41',
+        'ask_price'           => '16.41',
+        'longcode'            => "Win payout if Volatility 50 Index touches entry spot plus 0.3054 through 5 ticks after first tick.",
 
         'spot'                => '963.3054',
-        'payout'              => '10',
+        'payout'              => '100',
         'contract_parameters' => {
             'deep_otm_threshold'    => '0.025',
-            'barrier'               => 'S0P',
-            'duration'              => '15m',
+            'barrier'               => '+0.3054',
+            'duration'              => '5t',
             'bet_type'              => 'ONETOUCH',
             'underlying'            => 'R_50',
             'currency'              => 'USD',
-            base_commission         => '0.015',
-            'amount'            => '10',
+            base_commission         => '0.043',
+            'amount'                => '100',
             'amount_type'           => 'payout',
             'app_markup_percentage' => 0,
             'proposal'              => 1,
@@ -226,7 +226,7 @@ subtest 'send_ask' => sub {
     cmp_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is(
         $result->{longcode},
-        'Win payout if Volatility 50 Index after 15 minutes is strictly higher than it was at either entry or 7 minutes 30 seconds.',
+        'Win payout if Volatility 50 Index touches entry spot plus 0.3054 through 5 ticks after first tick.',
         'long code  is correct'
     );
 };
