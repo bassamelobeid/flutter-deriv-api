@@ -105,14 +105,13 @@ sub _validation_errors {
         push @errors, "Field '$_' value '$val' is not numeric";
     }
 
-    my $start_date;
-    my $end_date;
+    my ($start_date, $end_date) = @input{qw/start_date expiry_date/};
 
     # Date validation for start and expiry date
     try {
 
-        $start_date = Date::Utility->new($input{start_date})  if $input{start_date};
-        $end_date   = Date::Utility->new($input{expiry_date}) if $input{expiry_date};
+        $start_date = Date::Utility->new($start_date);
+        $end_date   = Date::Utility->new($end_date);
 
         push @errors, "Expiry date must be set after Start date." if ($end_date && $start_date->is_after($end_date));
     }
