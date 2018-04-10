@@ -48,6 +48,7 @@ subtest "basic_contracts_for" => sub {
             endsinout    => 4,
             digits       => 6,
             asian        => 2,
+            reset        => 4,
         },
         RDBEAR => {
             callput      => 10,
