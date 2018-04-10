@@ -50,6 +50,19 @@ use BOM::Database::Model::UserConnect;
 use BOM::Platform::Runtime;
 
 my $allowed_fields_for_virtual = qr/passthrough|set_settings|email_consent|residence|allow_copiers/;
+my $email_field_labels         = {
+    exclude_until          => 'Exclude from website until',
+    max_balance            => 'Maximum account cash balance',
+    max_turnover           => 'Daily turnover limit',
+    max_losses             => 'Daily limit on losses',
+    max_7day_turnover      => '7-day turnover limit',
+    max_7day_losses        => '7-day limit on losses',
+    max_30day_turnover     => '30-day turnover limit',
+    max_30day_losses       => '30-day limit on losses',
+    max_open_bets          => 'Maximum number of open positions',
+    session_duration_limit => 'Session duration limit, in minutes',
+    timeout_until          => 'Time out until'
+};
 
 my $json = JSON::MaybeXS->new;
 
@@ -1379,16 +1392,61 @@ rpc set_self_exclusion => sub {
     if ($args{timeout_until}) {
         $client->set_exclusion->timeout_until($args{timeout_until});
     }
-# send to support only when client has self excluded
     if ($args{exclude_until}) {
-        my $ret          = $client->set_exclusion->exclude_until($args{exclude_until});
-        my $statuses     = join '/', map { uc $_->status_code } $client->client_status;
-        my $name         = ($client->first_name ? $client->first_name . ' ' : '') . $client->last_name;
+        $client->set_exclusion->exclude_until($args{exclude_until});
+    }
+# Need to send email in 2 circumstances:
+#   - Any client sets a self exclusion period
+#   - Client under Binary (Europe) Limited with MT5 account(s) sets any of these settings
+    my @mt5_logins = BOM::User->new({loginid => $client->loginid})->mt5_logins('real');
+
+    if ($client->landing_company->short eq 'malta' && @mt5_logins) {
+        warn 'Compliance email regarding Binary (Europe) Limited user with MT5 account(s) failed to send.'
+            unless send_self_exclusion_notification($client, 'malta_with_mt5', \%args);
+    } elsif ($args{exclude_until}) {
+        warn 'Compliance email regarding self exclusion from the website failed to send.'
+            unless send_self_exclusion_notification($client, 'self_exclusion', \%args);
+    }
+
+    $client->save();
+
+    return {status => 1};
+};
+
+sub send_self_exclusion_notification {
+    my ($client, $type, $args) = @_;
+
+    my @fields_to_email;
+    my $message;
+    if ($type eq 'malta_with_mt5') {
+        $message = "An MT5 account holder under the Binary (Europe) Limited landing company has set account limits.\n";
+        @fields_to_email =
+            qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit exclude_until timeout_until/;
+    } elsif ($type eq 'self_exclusion') {
+        $message         = "A user has excluded themselves from the website.\n";
+        @fields_to_email = qw/exclude_until/;
+    }
+
+    if (@fields_to_email) {
+        my $name = ($client->first_name ? $client->first_name . ' ' : '') . $client->last_name;
+        my $statuses = join '/', map { uc $_->status_code } $client->client_status;
         my $client_title = join ', ', $client->loginid, $client->email, ($name || '?'), ($statuses ? "current status: [$statuses]" : '');
 
         my $brand = Brands->new(name => request()->brand);
 
-        my $message = "Client $client_title set the following self-exclusion limits:\n\n- Exclude from website until: $ret\n";
+        $message .= "Client $client_title set the following self-exclusion limits:\n\n";
+
+        foreach (@fields_to_email) {
+            my $label = $email_field_labels->{$_};
+            my $val   = $args->{$_};
+            $message .= "$label: $val\n" if $val;
+        }
+
+        my @mt5_logins = BOM::User->new({loginid => $client->loginid})->mt5_logins('real');
+        if ($type eq 'malta_with_mt5' && @mt5_logins) {
+            $message .= "\n\nClient $client_title has the following MT5 accounts:\n";
+            $message .= "$_\n" for @mt5_logins;
+        }
 
         my $to_email = $brand->emails('compliance') . ',' . $brand->emails('marketing');
 
@@ -1396,18 +1454,15 @@ rpc set_self_exclusion => sub {
         # As per UKGC LCCP Audit Regulations
         $to_email .= ',' . $brand->emails('accounting') if ($client->landing_company->short =~ /iom|malta$/);
 
-        send_email({
+        return send_email({
             from    => $brand->emails('compliance'),
             to      => $to_email,
             subject => "Client " . $client->loginid . " set self-exclusion limits",
             message => [$message],
         });
     }
-
-    $client->save();
-
-    return {status => 1};
-};
+    return 0;
+}
 
 rpc api_token => sub {
     my $params = shift;
