@@ -35,7 +35,6 @@ if (my $code = $input{promocode}) {
 Bar($pc ? "EDIT PROMOTIONAL CODE" : "ADD PROMOTIONAL CODE");
 
 my @messages;
-my $error;
 my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
 
 if ($input{save}) {
