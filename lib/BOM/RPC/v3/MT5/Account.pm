@@ -1178,10 +1178,10 @@ async_rpc mt5_mamm => sub {
             #
             # 4 is score for disabled trading
             my $current_rights = $settings->{rights} // 0;
-            my $has_manager = (grep { $_ == $current_rights } qw/483 1503 2527 3555/) ? 1 : 0;
+            my $has_manager = ($settings->{group} =~ /mamm/ and grep { $_ == $current_rights } qw/483 1503 2527 3555/) ? 1 : 0;
 
-            if ($action) {
-                if ($action eq 'revoke' and $has_manager) {
+            if ($has_manager) {
+                if ($action and $action eq 'revoke') {
                     return _mt5_has_open_positions($login)->then(
                         sub {
                             my ($open_positions) = @_;
@@ -1204,12 +1204,13 @@ async_rpc mt5_mamm => sub {
                                     });
                                 });
                         });
+                } else {
+                    # if agent is not set then mt5 returns 0 hence || not //
+                    return Future->done({
+                        status     => 1,
+                        manager_id => $settings->{agent} || ''
+                    });
                 }
-            } else {
-                return Future->done({
-                    status     => 1,
-                    manager_id => $settings->{agent} || ''
-                });
             }
 
             return Future->done({
