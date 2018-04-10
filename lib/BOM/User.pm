@@ -6,9 +6,7 @@ use warnings;
 use Try::Tiny;
 use Date::Utility;
 
-use Webservice::GAMSTOP;
 use BOM::User::Client;
-
 use BOM::Database::UserDB;
 use BOM::Platform::Password;
 use BOM::Platform::AuditLog;
