@@ -253,9 +253,9 @@ sub withdrawal {
 }
 
 sub get_open_positions_count {
-    my $args = shift;
+    my $login = shift;
 
-    return _invoke_mt5('PositionGetTotal', {login => $args->{login}})->then(
+    return _invoke_mt5('PositionGetTotal', {login => $login})->then(
         sub {
             my ($hash) = @_;
             if ($hash->{error}) {

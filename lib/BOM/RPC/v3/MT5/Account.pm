@@ -217,7 +217,7 @@ async_rpc mt5_new_account => sub {
 
     my $manager_id = delete $args->{manager_id} // '';
     # demo account is not allowed for mamm account
-    return Future->done($invalid_account_type_error) if $account_type eq 'demo';
+    return Future->done($invalid_account_type_error) if $manager_id and $account_type eq 'demo';
 
     my $get_company_name = sub {
         my $type = shift;
@@ -260,7 +260,7 @@ async_rpc mt5_new_account => sub {
 
         $group = 'real\\' . $mt_company;
         if ($manager_id) {
-            $group .= "_mamm_$account_type_${manager_id}";
+            $group .= "_mamm_${account_type}_${manager_id}";
         } else {
             $group .= "_$mt5_account_type" if $account_type eq 'financial';
             $group .= "_$residence"
@@ -1158,7 +1158,7 @@ async_rpc mt5_mamm => sub {
         sub {
             my ($settings) = @_;
 
-            return Future->fail($settings->{error}) if (ref $settings eq 'HASH' and $settings->{error});
+            return Future->fail('MT5Error', $settings->{error}) if (ref $settings eq 'HASH' and $settings->{error});
 
             # to revoke manager we just disable trading for mt5 account
             # we cannot change group else accounting team will have problem during
@@ -1185,8 +1185,9 @@ async_rpc mt5_mamm => sub {
                     return _mt5_has_open_positions($login)->then(
                         sub {
                             my ($open_positions) = @_;
-                            return Future->fail('MT5_error', $open_positions->{error})
+                            return Future->fail('MT5Error', $open_positions->{error})
                                 if (ref $open_positions eq 'HASH' and $open_positions->{error});
+
                             return Future->fail('PermissionDenied',
                                 localize('Please close out all open positions before revoking manager associated with your account.'))
                                 if $open_positions;
@@ -1195,7 +1196,7 @@ async_rpc mt5_mamm => sub {
                             return BOM::MT5::User::Async::update_mamm_user($settings)->then(
                                 sub {
                                     my ($user_updated) = @_;
-                                    return Future->fail('MT5_error', $user_updated->{error})
+                                    return Future->fail('MT5Error', $user_updated->{error})
                                         if (ref $user_updated eq 'HASH' and $user_updated->{error});
 
                                     return Future->done({
@@ -1377,11 +1378,12 @@ sub _mt5_validate_and_get_amount {
 sub _mt5_has_open_positions {
     my $login = shift;
 
-    return BOM::MT5::User::Async::get_open_positions_count({login => $login})->then(
+    return BOM::MT5::User::Async::get_open_positions_count($login)->then(
         sub {
             my ($response) = @_;
 
-            return _make_error('MT5_error', $response->{error}) if (ref $response eq 'HASH' and $response->{error});
+            return Future->done({error => localize('We cannot get open positions for this account.')})
+                if (ref $response eq 'HASH' and $response->{error});
 
             return Future->done($response->{total} ? 1 : 0);
         });
