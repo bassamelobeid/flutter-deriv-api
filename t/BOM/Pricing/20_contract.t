@@ -175,8 +175,8 @@ subtest 'get_ask' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'       => '16.41',
-        'ask_price'           => '16.41',
+        'display_value'       => '20.86',
+        'ask_price'           => '20.86',
         'longcode'            => "Win payout if Volatility 50 Index touches entry spot plus 0.3054 through 5 ticks after first tick.",
 
         'spot'                => '963.3054',
