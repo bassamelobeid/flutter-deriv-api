@@ -16,7 +16,7 @@ __PACKAGE__->meta->setup(
         client_port    => { type => 'integer' },
         id             => { type => 'bigint', not_null => 1 },
         client_loginid => { type => 'varchar', length => 12, not_null => 1 },
-        currency_code  => { type => 'varchar', length => 3, not_null => 1 },
+        currency_code  => { type => 'varchar', not_null => 1 },
         balance        => { type => 'numeric', default => '0', not_null => 1 },
         is_default     => { type => 'boolean', default => 'true', not_null => 1 },
         last_modified  => { type => 'timestamp' },

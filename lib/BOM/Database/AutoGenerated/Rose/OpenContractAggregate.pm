@@ -9,7 +9,7 @@ __PACKAGE__->meta->setup(
     schema   => 'bet',
 
     columns => [
-        currency_code => { type => 'varchar', length => 3, not_null => 1 },
+        currency_code => { type => 'varchar', not_null => 1 },
         payout        => { type => 'numeric', not_null => 1 },
         cnt           => { type => 'bigint', not_null => 1 },
         is_aggregate  => { type => 'boolean', default => 'false' },
