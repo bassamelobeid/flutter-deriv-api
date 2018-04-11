@@ -42,6 +42,7 @@ my $secret_key = BOM::User::TOTP->generate_key();
         email    => $email,
         password => $hash_pwd
     );
+    $user->save;
     $user->add_loginid({loginid => $cr_loginid});
     $user->secret_key($secret_key);
     $user->totp_activated(1);
