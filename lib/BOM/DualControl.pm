@@ -54,10 +54,12 @@ sub _build__environment {
 sub client_control_code {
     my ($self, $email, $user_id) = @_;
 
-    my $code =
-        Crypt::NamedKeys->new(keyname => 'password_counter')
-        ->encrypt_payload(
-        data => time . '_##_' . $self->staff . '_##_' . $self->transactiontype . '_##_' . $email . '_##_' . $user_id . '_##_' . $self->_environment);
+    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')->encrypt_payload(
+        join(
+            '_##_',
+            data => time,
+            $self->staff, $self->transactiontype, $email, $user_id, $self->_environment
+        ));
 
     Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
 
@@ -67,15 +69,12 @@ sub client_control_code {
 sub payment_control_code {
     my ($self, $loginid, $currency, $amount) = @_;
 
-    my $code =
-        Crypt::NamedKeys->new(keyname => 'password_counter')
-        ->encrypt_payload(data => time . '_##_'
-            . $self->staff . '_##_'
-            . $self->transactiontype . '_##_'
-            . $loginid . '_##_'
-            . $currency . '_##_'
-            . $amount . '_##_'
-            . $self->_environment);
+    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')->encrypt_payload(
+        join(
+            '_##_',
+            data => time,
+            $self->staff, $self->transactiontype, $loginid, $currency, $amount, $self->_environment
+        ));
 
     Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
 
@@ -85,8 +84,12 @@ sub payment_control_code {
 sub batch_payment_control_code {
     my ($self, $lines) = @_;
 
-    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')
-        ->encrypt_payload(data => time . '_##_' . $self->staff . '_##_' . $self->transactiontype . '_##_' . $lines . '_##_' . $self->_environment);
+    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')->encrypt_payload(
+        join(
+            '_##_',
+            data => time,
+            $self->staff, $self->transactiontype, $lines, $self->_environment
+        ));
 
     Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
 
