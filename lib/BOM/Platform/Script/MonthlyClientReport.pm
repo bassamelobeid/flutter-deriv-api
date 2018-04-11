@@ -21,7 +21,7 @@ sub go {
     # The start date is the first day of that month
     my $start_date = Date::Utility->new("${yyyymm}-01");
 
-    my $month_end = sprintf("%s-%2d", $yyyymm, $start_date->days_in_month);
+    my $month_end = sprintf("%s-%02d", $yyyymm, $start_date->days_in_month);
 
     my $until_date = $start_date->plus_time_interval("1mo");
 
