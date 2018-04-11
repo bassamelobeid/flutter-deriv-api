@@ -181,7 +181,7 @@ sub reset_throttler {
 }
 
 async_rpc mt5_new_account => sub {
-    my $params = shift;
+    my $params        = shift;
     my $mt5_suspended = _is_mt5_suspended();
     return Future->done($mt5_suspended) if $mt5_suspended;
 
@@ -397,7 +397,7 @@ We are legally required to verify each client's identity and address. Therefore,
 Valid driving licence, identity card, or passport
 Utility bill or bank statement issued within the past six months
 
-Please <a href='/[_2]/user/authenticate.html'>upload scanned copies</a> of the above documents, or email them to support\@binary.com within five days of receipt of this email to keep your account active.
+Please <a href='//www.binary.com/[_2]/user/authenticate.html'>upload scanned copies</a> of the above documents, or email them to support\@binary.com within five days of receipt of this email to keep your account active.
 
 We look forward to hearing from you soon.
 

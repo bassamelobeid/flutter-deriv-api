@@ -36,7 +36,7 @@ my %DETAILS = (
 );
 
 # Setup a test user
-my $test_client = create_client('CR');
+my $test_client    = create_client('CR');
 my $test_client_vr = create_client('VRTC');
 $test_client->email($DETAILS{email});
 $test_client_vr->email($DETAILS{email});
@@ -83,8 +83,8 @@ $test_client->financial_assessment({
 });
 $test_client->save;
 
-my $m = BOM::Database::Model::AccessToken->new;
-my $token = $m->create_token($test_client->loginid, 'test token');
+my $m        = BOM::Database::Model::AccessToken->new;
+my $token    = $m->create_token($test_client->loginid, 'test token');
 my $token_vr = $m->create_token($test_client_vr->loginid, 'test token');
 
 @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
@@ -127,12 +127,12 @@ subtest 'new account with switching' => sub {
     my $params = {
         language => 'EN',
         token    => $token_vr,
-            # Pass this virtual account token to test switching functionality.
-            #   If the user has multiple client accounts the Binary.com front-end
-            #   will pass to this function whichever one is currently selected.
-            #   In this case we can automatically detect that the user has
-            #   another account which qualifies them to open MT5 and switch.
-        args     => {
+        # Pass this virtual account token to test switching functionality.
+        #   If the user has multiple client accounts the Binary.com front-end
+        #   will pass to this function whichever one is currently selected.
+        #   In this case we can automatically detect that the user has
+        #   another account which qualifies them to open MT5 and switch.
+        args => {
             account_type   => 'gaming',
             country        => 'mt',
             email          => $DETAILS{email},
