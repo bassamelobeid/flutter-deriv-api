@@ -25,6 +25,7 @@ __PACKAGE__->meta->setup(
         blockchain_txn   => { type => 'text' },
         txn_fee          => { type => 'numeric' },
         estimated_fee    => { type => 'numeric' },
+        authorisers      => { type => 'array' },
     ],
 
     primary_key_columns => [ 'address', 'currency_code' ],
