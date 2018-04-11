@@ -20,9 +20,17 @@ my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 my ($token_mf) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_mf->loginid);
 
-my $entry_count_mlt = 7;
-my $entry_count_mf  = 106;
-my $entry_count_cr  = 113;
+# Total number of symbols listed in underlyings.yml
+my $num_total_symbols = 113;
+# Total number of volatility symbols listed in underlyings.yml
+my $num_volatility_symbols = 7;
+
+# These numbers may differ from actual production output due to symbols being
+#   suspended in the live platform config, which won't be included in the return.
+
+my $entry_count_mlt = $num_volatility_symbols;
+my $entry_count_mf  = $num_total_symbols - $num_volatility_symbols;
+my $entry_count_cr  = $num_total_symbols;
 my $first_entry_mlt = [
   "R_10",
   "Volatility 10 Index",
