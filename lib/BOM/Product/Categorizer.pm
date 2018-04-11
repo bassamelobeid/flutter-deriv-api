@@ -1,6 +1,7 @@
 package BOM::Product::Categorizer;
 
 use Moose;
+use Try::Tiny;
 
 =head1 NAME
 
@@ -235,33 +236,38 @@ sub _initialize_contract_parameters {
     }
 
     if (defined $pp->{duration}) {
-        if (my ($number_of_ticks) = $pp->{duration} =~ /(\d+)t$/) {
-            $pp->{tick_expiry} = 1;
-            $pp->{tick_count}  = $number_of_ticks;
-            $pp->{date_expiry} = $pp->{date_start}->plus_time_interval(2 * $pp->{tick_count});
-        } else {
-            # The thinking here is that duration is only added on purpose, but
-            # date_expiry might be hanging around from a poorly reused hashref.
-            my $duration    = $pp->{duration};
-            my $underlying  = $pp->{underlying};
-            my $start_epoch = $pp->{date_start}->epoch;
-            my $expiry;
-            if ($duration =~ /d$/) {
-                # Since we return the day AFTER, we pass one day ahead of expiry.
-                my $expiry_date = Date::Utility->new($start_epoch)->plus_time_interval($duration);
-                # Daily bet expires at the end of day, so here you go
-                if (my $closing = $self->_trading_calendar->closing_on($underlying->exchange, $expiry_date)) {
-                    $expiry = $closing->epoch;
-                } else {
-                    $expiry = $expiry_date->epoch;
-                    my $regular_day = $self->_trading_calendar->regular_trading_day_after($underlying->exchange, $expiry_date);
-                    my $regular_close = $self->_trading_calendar->closing_on($underlying->exchange, $regular_day);
-                    $expiry = Date::Utility->new($expiry_date->date_yyyymmdd . ' ' . $regular_close->time_hhmmss)->epoch;
-                }
+        try {
+            if (my ($number_of_ticks) = $pp->{duration} =~ /(\d+)t$/) {
+                $pp->{tick_expiry} = 1;
+                $pp->{tick_count}  = $number_of_ticks;
+                $pp->{date_expiry} = $pp->{date_start}->plus_time_interval(2 * $pp->{tick_count});
             } else {
-                $expiry = $start_epoch + Time::Duration::Concise->new(interval => $duration)->seconds;
+                # The thinking here is that duration is only added on purpose, but
+                # date_expiry might be hanging around from a poorly reused hashref.
+                my $duration    = $pp->{duration};
+                my $underlying  = $pp->{underlying};
+                my $start_epoch = $pp->{date_start}->epoch;
+                my $expiry;
+                if ($duration =~ /d$/) {
+                    # Since we return the day AFTER, we pass one day ahead of expiry.
+                    my $expiry_date = Date::Utility->new($start_epoch)->plus_time_interval($duration);
+                    # Daily bet expires at the end of day, so here you go
+                    if (my $closing = $self->_trading_calendar->closing_on($underlying->exchange, $expiry_date)) {
+                        $expiry = $closing->epoch;
+                    } else {
+                        $expiry = $expiry_date->epoch;
+                        my $regular_day = $self->_trading_calendar->regular_trading_day_after($underlying->exchange, $expiry_date);
+                        my $regular_close = $self->_trading_calendar->closing_on($underlying->exchange, $regular_day);
+                        $expiry = Date::Utility->new($expiry_date->date_yyyymmdd . ' ' . $regular_close->time_hhmmss)->epoch;
+                    }
+                } else {
+                    $expiry = $start_epoch + Time::Duration::Concise->new(interval => $duration)->seconds;
+                }
+                $pp->{date_expiry} = Date::Utility->new($expiry);
             }
-            $pp->{date_expiry} = Date::Utility->new($expiry);
+        }
+        catch {
+            BOM::Product::Exception->throw(error_code => 'TradingDurationNotAllowed');
         }
     }
 
