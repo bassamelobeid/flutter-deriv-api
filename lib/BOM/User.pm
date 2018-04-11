@@ -107,7 +107,9 @@ sub login {
         $cfl->delete if $cfl;    # delete client failed login
         BOM::Platform::AuditLog::log('successful login', $self->email);
 
-        BOM::Platform::Client::Utility::set_gamstop_self_exclusion($self->get_default_client());
+        # gamstop is applicable for UK residence only
+        my ($gamstop_client) = grep { $_->residence eq 'gb' and $_->landing_company->short =~ /^(?:malta|iom)$/ } @clients;
+        BOM::Platform::Client::Utility::set_gamstop_self_exclusion($gamstop_client) if $gamstop_client;
     }
 
     return {success => 1};
