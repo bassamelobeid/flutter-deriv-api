@@ -310,7 +310,7 @@ sub _validate_client_userid {
     my ($self, $code, $user_id) = @_;
 
     my @arry = split("_##_", $code);
-    if (not $user_id or $user_id ne $arry[4]) {
+    if (not $user_id or not $arry[4] or $user_id ne $arry[4]) {
         return Error::Base->cuss(
             -type => 'DifferentUserId',
             -mesg => 'UserId provided does not match with the UserId provided during code generation',
