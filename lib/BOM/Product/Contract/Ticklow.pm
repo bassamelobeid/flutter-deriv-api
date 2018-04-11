@@ -55,9 +55,12 @@ sub get_permissible_inputs {
         'selected_tick' => 1,
         'date_expiry'   => 1,
         'currency'      => 1,
+        'payout'        => 1,
 
         # Metadata inputs
         'shortcode'    => 1,
+        'duration'     => 1,
+        'date_pricing' => 1,
         'fixed_expiry' => 1,
         'tick_expiry'  => 1,
         'tick_count'   => 1,

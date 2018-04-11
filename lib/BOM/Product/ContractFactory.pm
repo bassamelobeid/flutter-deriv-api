@@ -76,6 +76,8 @@ sub produce_contract {
 
     my $params_ref = {%{_args_to_ref($build_arg, $maybe_currency, $maybe_sold)}};
 
+    _validate_contract_specific_parameters($params_ref) if $params_ref->{bet_type} =~ /^(TICKHIGH|TICKLOW)/;
+
     unless ($params_ref->{processed}) {
         # Categorizer's process always returns ARRAYREF, and here we will have and need only one element in this array
         $params_ref = BOM::Product::Categorizer->new(parameters => $params_ref)->process()->[0];
@@ -150,8 +152,6 @@ sub _validate_input_parameters {
         BOM::Product::Exception->throw(error_code => 'InvalidInputAsset');
     }
 
-    _validate_contract_specific_parameters($params) if $params->{bet_type} =~ /^(TICKHIGH|TICKLOW)/;
-
     return;
 }
 
@@ -167,7 +167,7 @@ sub _validate_contract_specific_parameters {
 
     my $allowed_inputs = $product_class->get_permissible_inputs();
 
-    BOM::Product::Contract::validate_inputs($params, $allowed_inputs);
+    BOM::Product::Contract->validate_inputs($params, $allowed_inputs);
 
     return undef;
 }

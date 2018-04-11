@@ -1179,9 +1179,8 @@ sub validate_inputs {
     foreach my $param (keys %$inputs) {
         return BOM::Product::Exception->throw(
             error_code => 'InvalidInput',
-            error_args => error_args => [$param]) unless exists $valid_inputs->{$param};
+            error_args => [$param]) unless exists $valid_inputs->{$param};
     }
-
 }
 
 # Don't mind me, I just need to make sure my attibutes are available.

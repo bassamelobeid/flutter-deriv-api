@@ -32,15 +32,15 @@ my $args = {
     currency      => 'USD',
     payout        => 10,
 };
-
+$DB::single = 1;
 my $c = produce_contract($args);
 
 subtest 'Test that contract can be created correctly' => sub {
     lives_ok {
         my $c = produce_contract($args);
-        is $c->code,            'TICKHIGH';
-        is $c->pricing_code,    'TICKHIGH';
-        is $c->sentiment,       'high';
+        is $c->code,         'TICKHIGH';
+        is $c->pricing_code, 'TICKHIGH';
+        is $c->sentiment,    'high';
         is $c->category->code, 'highlowticks';
         is_deeply $c->supported_expiries, ['tick'];
         isa_ok $c, 'BOM::Product::Contract::Tickhigh';
@@ -86,7 +86,7 @@ subtest 'Test for condition where last tick is the highest' => sub {
         });
 
         $c = produce_contract({%$args, selected_tick => 5});
-        is $c->exit_tick->quote, 100.1, 'correct exit tick';
+        is $c->exit_tick->quote,     100.1,    'correct exit tick';
         is $c->barrier->as_absolute, '100.10', 'correct barrier';
         ok $c->is_expired, 'expired';
         cmp_ok $c->value, '==', $c->payout, 'full payout';
