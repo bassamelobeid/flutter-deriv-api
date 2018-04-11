@@ -60,7 +60,7 @@ rpc exchange_rates => sub {
     if (not keys %rates_hash) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'ExchangeRatesNotAvailable',
-            message_to_client => localize('Exchanges rates are not currently available.'),
+            message_to_client => localize('Exchange rates are not currently available.'),
         });
     }
 
