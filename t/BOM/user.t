@@ -18,6 +18,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::User;
+use BOM::MT5::User::Async;
 use BOM::Platform::Password;
 
 my $email    = 'abc@binary.com';
@@ -315,15 +316,39 @@ subtest 'User Login' => sub {
 };
 
 subtest 'MT5 logins' => sub {
-    $user->add_loginid({loginid => 'MT1000'});
+    # Mocked account details
+    # This hash shared between two files, and should be kept in-sync to avoid test failures
+    #   t/BOM/user.t
+    #   t/lib/mock_binary_mt5.pl
+    my %DETAILS_REAL = (
+        login    => '1000',
+        group   => 'real\something',
+    );
+
+    my %DETAILS_DEMO = (
+        login    => '2000',
+        group   => 'demo\something',
+    );
+    @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
+
+    my $loginid_real = 'MT'.$DETAILS_REAL{login};
+    my $loginid_demo = 'MT'.$DETAILS_DEMO{login};
+
+    $user->add_loginid({loginid => $loginid_real});
     $user->save;
     my @mt5_logins = $user->mt5_logins;
-    cmp_deeply(\@mt5_logins, ['MT1000'], 'MT5 logins match');
+    cmp_deeply(\@mt5_logins, [$loginid_real], 'MT5 logins match');
 
-    $user->add_loginid({loginid => 'MT2000'});
+    $user->add_loginid({loginid => $loginid_demo});
     $user->save;
     @mt5_logins = $user->mt5_logins;
-    cmp_deeply(\@mt5_logins, ['MT1000', 'MT2000'], 'MT5 logins match');
+    cmp_deeply(\@mt5_logins, [$loginid_real, $loginid_demo], 'MT5 logins match');
+
+    @mt5_logins = $user->mt5_logins('real');
+    cmp_deeply(\@mt5_logins, [$loginid_real], 'MT5 logins match');
+
+    @mt5_logins = $user->mt5_logins('demo');
+    cmp_deeply(\@mt5_logins, [$loginid_demo], 'MT5 logins match');
 
     ok $_->loginid !~ /^MT\d+$/, 'should not include MT logins-' . $_->loginid for ($user->clients);
 };
