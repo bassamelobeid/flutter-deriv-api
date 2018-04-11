@@ -46,9 +46,7 @@ rpc exchange_rates => sub {
     my $base = "USD";
     my %rates_hash;
     try {
-        # Get available currencies
         my @all_currencies = LandingCompany::Registry->new()->all_currencies;
-        #Fill the hash of exchange rates
         foreach my $currency (@all_currencies) {
             next if $currency eq $base;
             my $ex_rate = in_USD(1, $currency);
@@ -61,8 +59,8 @@ rpc exchange_rates => sub {
 
     if (not keys %rates_hash) {
         return BOM::RPC::v3::Utility::create_error({
-            code              => 'NoExRates',
-            message_to_client => localize('Not Found'),
+            code              => 'ExchangeRatesNotAvailable',
+            message_to_client => localize('Exchanges rates are not currently available.'),
         });
     }
 
