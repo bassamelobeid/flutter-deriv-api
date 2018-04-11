@@ -155,7 +155,7 @@ Returns an arrayref containing values returned by the generate_asset_index($coun
 
 sub asset_index {
     my $params               = shift;
-    my $landing_company_name = $params->{args}->{landing_company};
+    my $landing_company_name = $params->{args}{landing_company};
     my $language             = $params->{language} // 'en';
     my $country_code         = $params->{country_code} // '';
 
