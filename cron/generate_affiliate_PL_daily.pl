@@ -28,22 +28,6 @@ my $from_date = Date::Utility->new('01-' . $to_date->month_as_string . '-' . $to
 my $reporter        = BOM::MyAffiliates::ActivityReporter->new();
 my $processing_date = Date::Utility->new($from_date->epoch);
 
-my $config = LoadFile('/etc/rmg/third_party.yml')->{affiliates};
-my $loop = IO::Async::Loop->new;
-my $s3 = Net::Async::Webservice::S3->new(
-   access_key => $config->{aws_access_key_id},
-   secret_key => $config->{aws_secret_access_key},
-   bucket     => $config->{aws_bucket},
-);
-$loop->add($s3);
-
-my $url_generator = Amazon::S3::SignedURLGenerator->new(
-    aws_access_key_id     => $config->{aws_access_key_id},
-    aws_secret_access_key => $config->{aws_secret_access_key},
-    prefix                => "https://$config->{aws_bucket}.s3.amazonaws.com/",
-    expires               => BOM::Platform::Runtime->instance->app_config->system->mail->download_duration,
-);
-
 my $output_dir = BOM::Platform::Runtime->instance->app_config->system->directory->db . '/myaffiliates/';
 path($output_dir)->mkpath if (not -d $output_dir);
 
@@ -77,6 +61,22 @@ while ($to_date->days_between($processing_date) >= 0) {
 die "unable to create zip file" unless ( $zip->writeToFileNamed($output_zip_path->stringify) == AZ_OK );
 
 try {
+    my $config = LoadFile('/etc/rmg/third_party.yml')->{affiliates};
+    my $loop = IO::Async::Loop->new;
+    my $s3 = Net::Async::Webservice::S3->new(
+        access_key => $config->{aws_access_key_id},
+        secret_key => $config->{aws_secret_access_key},
+        bucket     => $config->{aws_bucket},
+    );
+    $loop->add($s3);
+
+my $url_generator = Amazon::S3::SignedURLGenerator->new(
+    aws_access_key_id     => $config->{aws_access_key_id},
+    aws_secret_access_key => $config->{aws_secret_access_key},
+    prefix                => "https://$config->{aws_bucket}.s3.amazonaws.com/",
+    expires               => BOM::Platform::Runtime->instance->app_config->system->mail->download_duration,
+);
+    
     my $upload_future = $s3->put_object(
         key   => $output_zip,
         value => $output_zip_path->slurp
@@ -95,5 +95,5 @@ try {
     });
 }
 catch {
-    warn "Failed to upload reports to s3: " . shift . "Email won't be sent also";
+    warn "Failed to upload reports to s3. Error is $_. No email was sent.";
 }
