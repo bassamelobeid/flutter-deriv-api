@@ -5,6 +5,7 @@ use warnings;
 
 use Try::Tiny;
 use Date::Utility;
+use List::Util qw(first);
 
 use BOM::User::Client;
 use BOM::MT5::User::Async;
@@ -108,7 +109,7 @@ sub login {
         BOM::Platform::AuditLog::log('successful login', $self->email);
 
         # gamstop is applicable for UK residence only
-        my ($gamstop_client) = grep { $_->residence eq 'gb' and $_->landing_company->short =~ /^(?:malta|iom)$/ } @clients;
+        my $gamstop_client = first { $_->residence eq 'gb' and $_->landing_company->short =~ /^(?:malta|iom)$/ } @clients;
         BOM::Platform::Client::Utility::set_gamstop_self_exclusion($gamstop_client) if $gamstop_client;
     }
 
