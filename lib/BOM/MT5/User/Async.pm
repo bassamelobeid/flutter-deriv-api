@@ -12,38 +12,36 @@ use IO::Async::Loop::Mojo;
 # Overrideable in unit tests
 our @MT5_WRAPPER_COMMAND = ('php', '/home/git/regentmarkets/php-mt5-webapi/lib/binary_mt5.php');
 
-my $loop = IO::Async::Loop::Mojo->new;
+my $loop          = IO::Async::Loop::Mojo->new;
+my @common_fields = qw(
+    email
+    name
+    leverage
+    address
+    state
+    city
+    zipCode
+    country
+    company
+    phone
+    phonePassword
+);
 
-sub __user_fields {
-    my $action = shift;
-    my @fields = qw(
-        email
-        name
-        leverage
-        address
-        state
-        city
-        zipCode
-        country
-        company
-        phone
-        phonePassword
-    );
+sub _get_create_user_fields {
+    return (@common_fields, qw/mainPassword investPassword agent group/);
+}
 
-    if ($action eq 'create_user') {
-        push @fields, 'mainPassword', 'investPassword', 'agent';
-    } else {
-        push @fields, 'login';
-    }
+sub _get_user_fields {
+    # last array is fields we don't send back to api as of now
+    return (@common_fields, qw/login balance group/, qw/agent rights/);
+}
 
-    if ($action eq 'get_user') {
-        push @fields, 'balance';
-    }
-    if ($action ne 'update_user') {
-        push @fields, 'group';
-    }
+sub _get_update_user_fields {
+    return (@common_fields, qw/login/);
+}
 
-    return @fields;
+sub _get_mamm_update_user_fields {
+    return (_get_update_user_fields(), qw/rights/);
 }
 
 sub _invoke_mt5 {
@@ -88,7 +86,7 @@ sub _invoke_mt5 {
 sub create_user {
     my $args = shift;
 
-    my @fields = __user_fields('create_user');
+    my @fields = _get_create_user_fields();
     my $param  = {};
     $param->{$_} = $args->{$_} for (@fields);
 
@@ -117,7 +115,7 @@ sub get_user {
             }
 
             my $ret    = $hash->{user};
-            my @fields = __user_fields('get_user');
+            my @fields = _get_user_fields();
 
             my $mt_user;
             $mt_user->{$_} = $ret->{$_} for (@fields);
@@ -127,7 +125,7 @@ sub get_user {
 
 sub update_user {
     my $args   = shift;
-    my @fields = __user_fields('update_user');
+    my @fields = _get_update_user_fields();
 
     my $param = {};
     $param->{$_} = $args->{$_} for (@fields);
@@ -135,13 +133,35 @@ sub update_user {
     return _invoke_mt5('UserUpdate', $param)->then(
         sub {
             my ($hash) = @_;
-
             if ($hash->{error}) {
                 return Future->done({error => $hash->{error}});
             }
 
             my $ret = $hash->{user};
-            @fields = __user_fields('get_user');
+            @fields = _get_user_fields();
+
+            my $mt_user;
+            $mt_user->{$_} = $ret->{$_} for (@fields);
+            return Future->done($mt_user);
+        });
+}
+
+sub update_mamm_user {
+    my $args   = shift;
+    my @fields = _get_mamm_update_user_fields();
+
+    my $param = {};
+    $param->{$_} = $args->{$_} for (@fields);
+
+    return _invoke_mt5('UserUpdate', $param)->then(
+        sub {
+            my ($hash) = @_;
+            if ($hash->{error}) {
+                return Future->done({error => $hash->{error}});
+            }
+
+            my $ret = $hash->{user};
+            @fields = _get_user_fields();
 
             my $mt_user;
             $mt_user->{$_} = $ret->{$_} for (@fields);
@@ -229,6 +249,20 @@ sub withdrawal {
             }
 
             return Future->done({status => 1});
+        });
+}
+
+sub get_open_positions_count {
+    my $login = shift;
+
+    return _invoke_mt5('PositionGetTotal', {login => $login})->then(
+        sub {
+            my ($hash) = @_;
+            if ($hash->{error}) {
+                return Future->done({error => $hash->{error}});
+            }
+
+            return Future->done({total => $hash->{total}});
         });
 }
 
