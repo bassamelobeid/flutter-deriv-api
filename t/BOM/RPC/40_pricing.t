@@ -20,17 +20,18 @@ my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 my ($token_mf) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_mf->loginid);
 
-# Total number of symbols listed in underlyings.yml
-my $num_total_symbols = 113;
-# Total number of volatility symbols listed in underlyings.yml
-my $num_volatility_symbols = 7;
-
+use constant {
+  # Total number of symbols listed in underlyings.yml
+  NUM_TOTAL_SYMBOLS      => 113,
+  # Total number of volatility symbols listed in underlyings.yml
+  NUM_VOLATILITY_SYMBOLS => 7,
+};
 # These numbers may differ from actual production output due to symbols being
 #   suspended in the live platform config, which won't be included in the return.
 
-my $entry_count_mlt = $num_volatility_symbols;
-my $entry_count_mf  = $num_total_symbols - $num_volatility_symbols;
-my $entry_count_cr  = $num_total_symbols;
+my $entry_count_mlt = NUM_VOLATILITY_SYMBOLS;
+my $entry_count_mf  = NUM_TOTAL_SYMBOLS - NUM_VOLATILITY_SYMBOLS;
+my $entry_count_cr  = NUM_TOTAL_SYMBOLS;
 my $first_entry_mlt = [
   "R_10",
   "Volatility 10 Index",
@@ -116,7 +117,7 @@ my $first_entry_cr_mf = [
   ]
 ];
 
-subtest $method.' logged in - no arg' => sub {
+subtest "$method logged in - no arg" => sub {
     my $params = {
         language => 'EN',
         token    => $token_mf,
@@ -125,11 +126,11 @@ subtest $method.' logged in - no arg' => sub {
     # Result should be for Binary Investments (Europe) Ltd
     # Trades everything except volatilities, so should be 106 entries and first entry should
     #   be frxAUDJPY with 5 contract types.
-    is(scalar(@$result), $entry_count_mf, 'correct number of entries');
-    is_deeply($result->[0], $first_entry_cr_mf, 'First entry matches expected');
+    is($entry_count_mf, @$result, 'correct number of entries');
+    is_deeply($first_entry_cr_mf, $result->[0], 'First entry matches expected');
 };
 
-subtest $method.' logged in - with arg' => sub {
+subtest "$method logged in - with arg" => sub {
     my $params = {
         language => 'EN',
         token    => $token_mf,
@@ -139,11 +140,11 @@ subtest $method.' logged in - with arg' => sub {
     # Result should be for Binary (Europe) Ltd
     # Only trades volatilities, so should be 7 entries and first entry should
     #   be R_10 with all contract categories except lookbacks.
-    is(scalar(@$result), $entry_count_mlt, 'correct number of entries');
-    is_deeply($result->[0], $first_entry_mlt, 'First entry matches expected');
+    is($entry_count_mlt, @$result, 'correct number of entries');
+    is_deeply($first_entry_mlt, $result->[0], 'First entry matches expected');
 };
 
-subtest $method.' logged out - no arg' => sub {
+subtest "$method logged out - no arg" => sub {
     my $params = {
         language => 'EN',
     };
@@ -151,11 +152,11 @@ subtest $method.' logged out - no arg' => sub {
     # Result should be Binary (C.R.) S.A.
     # Trades everything except, so should be 113 entries and first entry should
     #   be frxAUDJPY with 5 contract types.
-    is(scalar(@$result), $entry_count_cr, 'correct number of entries');
-    is_deeply($result->[0], $first_entry_cr_mf, 'First entry matches expected');
+    is($entry_count_cr, @$result, 'correct number of entries');
+    is_deeply($first_entry_cr_mf, $result->[0], 'First entry matches expected');
 };
 
-subtest $method.' logged out - with arg' => sub {
+subtest "$method logged out - with arg" => sub {
     my $params = {
         language => 'EN',
         args     => {landing_company => 'malta'}
@@ -164,8 +165,8 @@ subtest $method.' logged out - with arg' => sub {
     # Result should be for Binary (Europe) Ltd
     # Only trades volatilities, so should be 7 entries and first entry should
     #   be R_10 with all contract categories except lookbacks.
-    is(scalar(@$result), $entry_count_mlt, 'correct number of entries');
-    is_deeply($result->[0], $first_entry_mlt, 'First entry matches expected');
+    is($entry_count_mlt, @$result, 'correct number of entries');
+    is_deeply($first_entry_mlt, $result->[0], 'First entry matches expected');
 };
 
 done_testing();
