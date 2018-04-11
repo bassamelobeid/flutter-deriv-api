@@ -21,6 +21,7 @@ use BOM::RPC::Registry '-dsl';
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Cashier;
+use BOM::RPC::v3::Accounts;
 use BOM::Platform::Config;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Email qw(send_email);
@@ -186,7 +187,10 @@ async_rpc mt5_new_account => sub {
     return Future->done($mt5_suspended) if $mt5_suspended;
 
     my ($client, $args) = @{$params}{qw/client args/};
-    my $account_type = delete $args->{account_type};
+    my $account_type     = delete $args->{account_type};
+    my $mt5_account_type = delete $args->{mt5_account_type} // '';
+    my $brand            = Brands->new(name => request()->brand);
+    my $user             = BOM::User->new({email => $client->email});
 
     my $invalid_account_type_error = BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidAccountType',
@@ -242,7 +246,15 @@ async_rpc mt5_new_account => sub {
         }
     } elsif ($account_type eq 'gaming' or $account_type eq 'financial') {
         # 4 Jan 2018: only CR, MLT, and Champion can open MT real a/c
-        return permission_error_future() unless ($client->landing_company->short =~ /^costarica|champion|malta$/);
+        my $eligible_lcs = qr/^costarica|champion|malta$/;
+        if ($client->landing_company->short !~ $eligible_lcs && $user) {
+            # Binary.com front-end will pass whichever client is currently selected
+            #   in the top-right corner, so check if this user has a qualifying
+            #   account and switch if they do.
+            $client = (first { $_->landing_company->short =~ $eligible_lcs } $user->clients) // $client;
+        }
+
+        return permission_error_future() unless ($client->landing_company->short =~ $eligible_lcs);
 
         return permission_error_future() if (($mt_company = $get_company_name->($account_type)) eq 'none');
 
@@ -271,9 +283,6 @@ async_rpc mt5_new_account => sub {
     return create_error_future({
             code              => 'MT5CreateUserError',
             message_to_client => localize('Request too frequent. Please try again later.')}) if _throttle($client->loginid);
-
-    # client can have only 1 MT demo & 1 MT real a/c
-    my $user = BOM::User->new({email => $client->email});
 
     return get_mt5_logins($client, $user)->then(
         sub {
@@ -313,6 +322,16 @@ async_rpc mt5_new_account => sub {
                     # eg: MT5 login: 1000, we store MT1000
                     $user->add_loginid({loginid => 'MT' . $mt5_login});
                     $user->save;
+
+                    # Compliance team must be notified if a client under Binary (Europe) Limited
+                    #   opens an MT5 account while having limitations on their account.
+                    if ($client->landing_company->short eq 'malta' && $account_type ne 'demo') {
+                        my $self_exclusion = BOM::RPC::v3::Accounts::get_self_exclusion({client => $client});
+                        if (keys %$self_exclusion) {
+                            warn 'Compliance email regarding Binary (Europe) Limited user with MT5 account(s) failed to send.'
+                                unless BOM::RPC::v3::Accounts::send_self_exclusion_notification($client, 'malta_with_mt5', $self_exclusion);
+                        }
+                    }
 
                     my $balance = 0;
                     # TODO(leonerd): This other somewhat-ugly structure implements
@@ -782,21 +801,10 @@ async_rpc mt5_password_change => sub {
             }
 
             return BOM::MT5::User::Async::password_change({
-                login        => $login,
-                new_password => $args->{new_password},
-                type         => $args->{password_type} // 'main',
-            });
-        }
-        )->then(
-        sub {
-            my ($status) = @_;
-
-            if ($status->{error}) {
-                return create_error_future({
-                        code              => 'MT5PasswordChangeError',
-                        message_to_client => $status->{error}});
-            }
-            return Future->done(1);
+                    login        => $login,
+                    new_password => $args->{new_password},
+                    type         => $args->{password_type} // 'main',
+                })->then_done(1);
         });
 };
 
