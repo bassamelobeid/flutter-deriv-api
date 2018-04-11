@@ -42,8 +42,8 @@ if (open(my $fh, '<', $filename)) {    ## no critic (RequireBriefOpen)
             @fields = split(/\,/, $l);
             my $thislineout = "\r<TR>";
 
-            my $i = 0;
-            foreach my $f (@fields) {
+            foreach my $i (0..$#fields) {
+                my $f = $fields[$i];
                 if ($i == 6) {
                     #calculate aggregate payout of outstanding bets
                     my @hisportfolio = split /\+/, $f;
@@ -64,8 +64,6 @@ if (open(my $fh, '<', $filename)) {    ## no critic (RequireBriefOpen)
                         $thislineout .= "<TD><font size=2 face=verdana>" . encode_entities($fields[4] - $fields[5]) . "</TD>";
                     }    #marked-to-market profit/loss
                 }
-
-                $i++;
             }
 
             if   (request()->param('sortby') == 6) { $thislineout .= "<!-- " . encode_entities($fields[4] - $fields[5]) . " -->"; }
@@ -94,11 +92,9 @@ splice @s_to_out, $outputlargest if $#s_to_out > $outputlargest;
 print @s_to_out;
 
 print "<TR>";
-my $i = 0;
-foreach my $f (@fields) {
+for my $i (0..$#fields) {
     if   (abs($sums[$i]) > 0) { print "<TD><B><font size=2 face=verdana> " . encode_entities($sums[$i]) . "</TD>"; }
     else                      { print "<TD></TD>"; }
-    $i++;
 }
 print "</TR>";
 print "</table>";
