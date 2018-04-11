@@ -102,8 +102,8 @@ sub authorize {
 
     my $user = BOM::User->new({email => $client->email}) or die "no user for email " . $client->email;
 
-    my $is_verified = 0;
-    my $otp_error   = '';
+    my $is_verified = $c->session('_otp_verified') // 0;
+    my $otp_error = '';
     # If the User has provided OTP, verify it
     if (    $c->req->method eq 'POST'
         and ($c->csrf_token eq (defang($c->param('csrf_token')) // ''))
@@ -111,11 +111,12 @@ sub authorize {
     {
         my $otp = defang($c->param('otp'));
         $is_verified = BOM::User::TOTP->verify_totp($user->secret_key, $otp);
+        $c->session('_otp_verified', $is_verified);
         $otp_error = 'Verification failed';
     }
 
     # Check if user has enabled 2FA authentication and this is not a scope request
-    if ($user->totp_activated && !$is_verified && !(defang($c->param('cancel_scopes')) || defang($c->param('confirm_scopes')))) {
+    if ($user->totp_activated && !$is_verified) {
         return $c->render(
             template   => $brand_name . '/totp',
             layout     => $brand_name,
@@ -197,6 +198,7 @@ sub authorize {
     delete $c->session->{_is_logined};
     delete $c->session->{_loginid};
     delete $c->session->{_oneall_user_id};
+    delete $c->session->{_otp_verified};
 
     $c->redirect_to($uri);
 }
