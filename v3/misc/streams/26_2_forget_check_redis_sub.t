@@ -182,7 +182,7 @@ done_testing();
 
 sub create_proposals {
     for my $s (@symbols) {
-        $res = $t->await::proposal({%$req, symbol => $s});
+        $res = $t->await::proposal({%$req, symbol => $s}, {timeout => 10});
         ok $res->{proposal}{id}, 'Should return id';
         $sub_ids->{$s} = $res->{proposal}->{id};
     }
