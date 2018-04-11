@@ -37,7 +37,7 @@ if (open(my $fh, '<', $filename)) {    ## no critic (RequireBriefOpen)
     flock($fh, 1);
 
     while (my $l = <$fh>) {
-        if ($l =~ /^\#/) { print "<TR><TD colspan=8><font size=2 face=verdana><b>$l</td></tr>"; }
+        if ($l =~ /^#/) { print "<TR><TD colspan=8><font size=2 face=verdana><b>$l</td></tr>"; }
         else {
             @fields = split(/\,/, $l);
             my $thislineout = "\r<TR>";
@@ -57,6 +57,7 @@ if (open(my $fh, '<', $filename)) {    ## no critic (RequireBriefOpen)
                 }
                 if (($displayport) || ($i < 6)) {
                     $thislineout .= "<TD><font size=2 face=verdana>" . encode_entities($f) . "</TD>";
+		    warn "f is $f\n";
                     if (abs($f) > 0) { $sums[$i] += $f; }
 
                     if ($i == 5) {

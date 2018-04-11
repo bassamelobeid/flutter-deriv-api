@@ -144,7 +144,7 @@ sub _generate_report {
                 my $tempsummary = $summary . '.temp';
                 my $sm_fh       = IO::File->new('> ' . $tempsummary) || die '[' . $0 . '] Can\'t write to ' . $tempsummary . ' ' . $!;
                 my $generation_msg =
-                      '\#File generated for '
+                      '#File generated for '
                     . $run_for->date . ' on '
                     . $now->datetime
                     . ' from entire database since inception by f_consolidated.cgi ('
