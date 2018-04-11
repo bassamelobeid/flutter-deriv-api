@@ -122,7 +122,6 @@ sub get_ohlc_for_period {
 
 override _build_base_commission => sub {
     #We need this much commission for the sellback to be safe for us.
-    #This is based on Ren's analysis
     return 0.02;
 };
 
