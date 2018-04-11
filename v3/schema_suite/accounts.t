@@ -264,4 +264,7 @@ test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/
 test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test2@binary.com', 'reset_password';
 test_sendrecv_params 'reset_password/test_send_vrt.json', 'reset_password/test_receive.json', $suite->get_token('test2@binary.com'), 'Abc123';
 
+# TWO Factor Authentication (Admin Scope)
+test_sendrecv_params 'account_authentication/test_send_status.json', 'account_authentication/test_receive_status.json';
+
 finish;

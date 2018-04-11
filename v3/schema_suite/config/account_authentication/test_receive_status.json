@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "account_authentication": {
+      "type": "object",
+      "properties": {
+        "totp": {
+          "type": "object",
+          "properties": {
+              "status": {
+                "type": "integer",
+                "pattern": "^(0|1)$",
+                "required": "1"
+            }
+          }
+        }
+      },
+      "required": "1"
+    },
+    "echo_req": {
+        "required": "1"
+    },
+    "msg_type": {
+      "type": "string",
+      "pattern": "account_authentication",
+      "required": "1"
+    }
+  }
+}
