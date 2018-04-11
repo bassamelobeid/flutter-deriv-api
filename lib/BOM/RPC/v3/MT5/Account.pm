@@ -1180,44 +1180,40 @@ async_rpc mt5_mamm => sub {
             my $current_rights = $settings->{rights} // 0;
             my $has_manager = ($settings->{group} =~ /mamm/ and grep { $_ == $current_rights } qw/483 1503 2527 3555/) ? 1 : 0;
 
-            if ($has_manager) {
-                if ($action and $action eq 'revoke') {
-                    return _mt5_has_open_positions($login)->then(
-                        sub {
-                            my ($open_positions) = @_;
-                            return Future->fail('MT5Error', $open_positions->{error})
-                                if (ref $open_positions eq 'HASH' and $open_positions->{error});
-
-                            return Future->fail('PermissionDenied',
-                                localize('Please close out all open positions before revoking manager associated with your account.'))
-                                if $open_positions;
-
-                            $settings->{rights} += 4;
-                            return BOM::MT5::User::Async::update_mamm_user($settings)->then(
-                                sub {
-                                    my ($user_updated) = @_;
-                                    return Future->fail('MT5Error', $user_updated->{error})
-                                        if (ref $user_updated eq 'HASH' and $user_updated->{error});
-
-                                    return Future->done({
-                                        status     => 1,
-                                        manager_id => ''
-                                    });
-                                });
-                        });
-                } else {
-                    # if agent is not set then mt5 returns 0 hence || not //
-                    return Future->done({
-                        status     => 1,
-                        manager_id => $settings->{agent} || ''
-                    });
-                }
-            }
-
             return Future->done({
-                status     => 0,
-                manager_id => ''
-            });
+                    status     => 0,
+                    manager_id => ''
+                }) unless $has_manager;
+
+            # if agent is not set then mt5 returns 0 hence || not //
+            return Future->done({
+                    status     => 1,
+                    manager_id => $settings->{agent} || ''
+                }) if (not $action or $action ne 'revoke');
+
+            return _mt5_has_open_positions($login)->then(
+                sub {
+                    my ($open_positions) = @_;
+                    return Future->fail('MT5Error', $open_positions->{error})
+                        if (ref $open_positions eq 'HASH' and $open_positions->{error});
+
+                    return Future->fail('PermissionDenied',
+                        localize('Please close out all open positions before revoking manager associated with your account.'))
+                        if $open_positions;
+
+                    $settings->{rights} += 4;
+                    return BOM::MT5::User::Async::update_mamm_user($settings)->then(
+                        sub {
+                            my ($user_updated) = @_;
+                            return Future->fail('MT5Error', $user_updated->{error})
+                                if (ref $user_updated eq 'HASH' and $user_updated->{error});
+
+                            return Future->done({
+                                status     => 1,
+                                manager_id => ''
+                            });
+                        });
+                });
         }
         )->else(
         sub {
