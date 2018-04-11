@@ -187,10 +187,7 @@ async_rpc mt5_new_account => sub {
     return Future->done($mt5_suspended) if $mt5_suspended;
 
     my ($client, $args) = @{$params}{qw/client args/};
-    my $account_type     = delete $args->{account_type};
-    my $mt5_account_type = delete $args->{mt5_account_type} // '';
-    my $brand            = Brands->new(name => request()->brand);
-    my $user             = BOM::User->new({email => $client->email});
+    my $account_type = delete $args->{account_type};
 
     my $invalid_account_type_error = BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidAccountType',
@@ -234,6 +231,7 @@ async_rpc mt5_new_account => sub {
     };
 
     my ($mt_company, $group);
+    my $user = BOM::User->new({email => $client->email});
     if ($account_type eq 'demo') {
         # demo will have demo for financial and demo for gaming
         if ($mt5_account_type) {
