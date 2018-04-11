@@ -153,7 +153,7 @@ test_sendrecv_params 'proposal/test_send_lookback.json', 'proposal/test_receive_
 # R_100 touch tick trade
 test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
     'ONETOUCH', 'R_100', '5', 't', '+20.5',
-    'Win payout if Volatility 100 Index touches entry spot plus 20.50 through 5 after first tick.', '38.32', '38.32', '65258.19';
+    'Win payout if Volatility 100 Index touches entry spot plus 20.50 through 5 ticks after first tick.', '45.61', '45.61', '65258.19';
 
 # test for negative amount
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive_negative.json', '-1', 'ASIANU', 'R_100', '5', 't';
