@@ -182,7 +182,6 @@ sub reset_throttler {
 
 async_rpc mt5_new_account => sub {
     my $params = shift;
-
     my $mt5_suspended = _is_mt5_suspended();
     return Future->done($mt5_suspended) if $mt5_suspended;
 
@@ -353,7 +352,7 @@ async_rpc mt5_new_account => sub {
                                         }
                                     });
                             } elsif ($account_type eq 'financial' && $client->landing_company->short eq 'costarica') {
-                                _send_notification_email($client, $mt5_login, $brand);
+                                _send_notification_email($client, $mt5_login, $brand, $params->{language});
                                 Future->done;
                             } else {
                                 Future->done;
@@ -383,7 +382,10 @@ sub _check_logins {
 }
 
 sub _send_notification_email {
-    my ($client, $mt5_login, $brand) = @_;
+    my ($client, $mt5_login, $brand, $language) = @_;
+    $language = 'en' unless defined $language;
+    #language in params is in upper form.
+    $language = lc $language;
     my $client_email_template = localize(
         "\
 Dear [_1],
@@ -391,15 +393,18 @@ Dear [_1],
 Thank you for registering your MetaTrader 5 account.
 
 We are legally required to verify each client's identity and address. Therefore, we kindly request that you authenticate your account by submitting the following documents:
+
 Valid driving licence, identity card, or passport
 Utility bill or bank statement issued within the past six months
-Please upload scanned copies of the above documents to your CR account, or email them to support\@binary.com within five days of receiving this email to keep your account active.
+
+Please <a href='/[_2]/user/authenticate.html'>upload scanned copies</a> of the above documents, or email them to support\@binary.com within five days of receipt of this email to keep your account active.
 
 We look forward to hearing from you soon.
 
 Regard,
 
-Binary.com", $client->full_name
+Binary.com
+", $client->full_name, $language
     );
 
     try {
