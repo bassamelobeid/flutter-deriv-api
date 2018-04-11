@@ -1,13 +1,14 @@
 use strict;
 use warnings;
 
-use Future;
 use Getopt::Long;
 use Path::Tiny;
 use Try::Tiny;
 use Date::Utility;
 use File::stat;
+use YAML qw(LoadFile);
 use IO::Async::Loop;
+use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
 use Net::Async::Webservice::S3;
 use Amazon::S3::SignedURLGenerator;
 
@@ -26,26 +27,29 @@ my $from_date = Date::Utility->new('01-' . $to_date->month_as_string . '-' . $to
 
 my $reporter        = BOM::MyAffiliates::ActivityReporter->new();
 my $processing_date = Date::Utility->new($from_date->epoch);
-my @csv_filenames;
 
+my $config = LoadFile('/etc/rmg/third_party.yml')->{affiliates};
 my $loop = IO::Async::Loop->new;
 my $s3 = Net::Async::Webservice::S3->new(
-   access_key => $ENV{AFFILIATES_AUTH_S3_ACCESS},
-   secret_key => $ENV{AFFILIATES_AUTH_S3_SECRET},
-   bucket     => $ENV{AFFILIATES_AUTH_S3_BUCKET},
+   access_key => $config->{aws_access_key_id},
+   secret_key => $config->{aws_secret_access_key},
+   bucket     => $config->{aws_bucket},
 );
 $loop->add($s3);
 
-
 my $url_generator = Amazon::S3::SignedURLGenerator->new(
-    aws_access_key_id     => $ENV{AFFILIATES_AUTH_S3_ACCESS},
-    aws_secret_access_key => $ENV{AFFILIATES_AUTH_S3_SECRET},
-    prefix                => "https://$ENV{AFFILIATES_AUTH_S3_BUCKET}.s3.amazonaws.com/",
+    aws_access_key_id     => $config->{aws_access_key_id},
+    aws_secret_access_key => $config->{aws_secret_access_key},
+    prefix                => "https://$config->{aws_bucket}.s3.amazonaws.com/",
     expires               => BOM::Platform::Runtime->instance->app_config->system->mail->download_duration,
 );
 
 my $output_dir = BOM::Platform::Runtime->instance->app_config->system->directory->db . '/myaffiliates/';
 path($output_dir)->mkpath if (not -d $output_dir);
+
+my $output_zip = "myaffiliates_" . $from_date->date_yyyymmdd . "-" . $to_date->date_yyyymmdd. ".zip";
+my $output_zip_path = path("/tmp/$output_zip");
+my $zip = Archive::Zip->new();
 
 while ($to_date->days_between($processing_date) >= 0) {
     my $output_filename = $output_dir . 'pl_' . $processing_date->date_yyyymmdd . '.csv';
@@ -65,36 +69,29 @@ while ($to_date->days_between($processing_date) >= 0) {
         push @lines, $line . "\n" if $line;
     }
     path($output_filename)->spew_utf8(@lines);
-
-    push @csv_filenames, $output_filename;
+    $zip->addFile($output_filename, path($output_filename)->basename);
 
     $processing_date = Date::Utility->new($processing_date->epoch + 86400);
 }
 
-# upload generated files to s3
-my @upload_futures;
-my @download_urls;
-foreach my $file_path (@csv_filenames) {
-    my $csv_file_path = path($file_path);
-    my $put_future = $s3->put_object(
-        key   => $csv_file_path->basename,
-        value => $csv_file_path->slurp_utf8
-    );
-    push @upload_futures, $put_future;
-    push @download_urls, $url_generator->generate_url('GET', path($file_path)->basename);
-}
+die "unable to create zip file" unless ( $zip->writeToFileNamed($output_zip_path->stringify) == AZ_OK );
 
 try {
-    Future->needs_all(@upload_futures)->get;
-    
+    my $upload_future = $s3->put_object(
+        key   => $output_zip,
+        value => $output_zip_path->slurp
+    );
+    $loop->await($upload_future);
+    $upload_future->get;
+    my $download_url = $url_generator->generate_url('GET', $output_zip);
+
     my $brand = Brands->new();
-    my $urls_email_body = join "\n", @download_urls;
     # email CSV out for reporting purposes
     send_email({
         from       => $brand->emails('system'),
         to         => $brand->emails('affiliates'),
         subject    => 'CRON generate_affiliate_PL_daily: ' . ' for date range ' . $from_date->date_yyyymmdd . ' - ' . $to_date->date_yyyymmdd,
-        message    => ["Find links to download CSV that was generated:\n" . $urls_email_body],
+        message    => ["Find links to download CSV that was generated:\n" . $download_url],
     });
 }
 catch {
