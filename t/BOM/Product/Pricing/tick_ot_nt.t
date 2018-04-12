@@ -35,11 +35,11 @@ my %skip_category = (
     lookback   => 1,
 );
 
-my $expectation        = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/tick_ot_nt.yml');
-my @underlying_symbols = ('R_100');
-my $payout_currency    = 'USD';
-my $spot               = 1000;
-my $offerings_obj      = LandingCompany::Registry::get('costarica')->basic_offerings($offerings_cfg);
+my $expected_theo_price = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/tick_ot_nt.yml');
+my @underlying_symbols  = ('R_100');
+my $payout_currency     = 'USD';
+my $spot                = 1000;
+my $offerings_obj       = LandingCompany::Registry::get('costarica')->basic_offerings($offerings_cfg);
 
 foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
     Test::BOM::UnitTestPrice::create_pricing_data($ul->symbol, $payout_currency, $now);
@@ -53,7 +53,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
 
     foreach my $contract_category (qw(touchnotouch)) {
         my $category_obj = Finance::Contract::Category->new($contract_category);
-        
+
         my @duration = map { $_ } (5, 6, 7, 8, 9, 10);
         foreach my $duration (@duration) {
             my %equal = (
@@ -79,7 +79,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
 
                 isa_ok $c->pricing_engine_name, 'Pricing::Engine::BlackScholes';
 
-                is roundnear(0.00001, $c->theo_price), roundnear(0.00001, $expectation->{$c->shortcode}),
+                is roundnear(0.00001, $c->theo_price), roundnear(0.00001, $expected_theo_price->{$c->shortcode}),
                     'theo price matches [' . $c->shortcode . ']';
 
             }
