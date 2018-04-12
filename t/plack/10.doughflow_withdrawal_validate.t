@@ -4,8 +4,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/lib";
 use Test::More;
 use APIHelper qw(balance deposit withdraw);
-use JSON::MaybeXS;
-use Encode;
+use JSON::MaybeUTF8 qw(:v1);
 
 my $loginid = 'CR0011';
 
@@ -18,10 +17,9 @@ $r = withdraw(
     loginid     => $loginid,
     is_validate => 1
 );
-is($r->code,                            200,                   'correct status code');
-my $json = JSON::MaybeXS->new;
-is($json->decode(Encode::decode_utf8($r->content))->{allowed}, 1,                     'validate pass');
-is(0 + balance($loginid),               $starting_balance + 0, 'Correct final balance');
+is($r->code, 200, 'correct status code');
+is(decode_json_utf8($r->content)->{allowed}, 1, 'validate pass');
+is(0 + balance($loginid), $starting_balance + 0, 'Correct final balance');
 
 $r = withdraw(
     loginid     => $loginid,
