@@ -1181,6 +1181,8 @@ sub validate_inputs {
             error_code => 'InvalidInput',
             error_args => [$param]) unless exists $valid_inputs->{$param};
     }
+
+    return undef;
 }
 
 # Don't mind me, I just need to make sure my attibutes are available.
