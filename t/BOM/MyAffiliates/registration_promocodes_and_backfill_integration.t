@@ -6,9 +6,9 @@ use Test::More skip_all => 'this functionality deprecated';
 use Test::MockModule;
 use Sub::Override;
 use Test::Exception;
-use DateTime;
 
 use BOM::User::Client;
+use Date::Utility;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::MyAffiliates::GenerateRegistrationDaily;
@@ -473,8 +473,7 @@ subtest 'backfill pending' => sub {
     "create client with promocode";
 
     is(BOM::MyAffiliates::BackfillManager->new->is_backfill_pending, 1, "Promocodes pending to be backfilled");
-    use DateTime;
-    is(BOM::MyAffiliates::BackfillManager->new->is_backfill_pending(DateTime->today->subtract(days => 1)->ymd),
+    is(BOM::MyAffiliates::BackfillManager->new->is_backfill_pending(Date::Utility->new->truncate_to_day->minus_time_interval('1d')->date_yyyymmdd),
         0, "No promocodes pending to be backfilled if we consider only up to yesterday");
 
     ok(BOM::MyAffiliates::BackfillManager->new->backfill_promo_codes, "Promocodes backfilled.");
