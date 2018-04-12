@@ -8,12 +8,12 @@ use Authen::OATH;
 
 =head1 NAME
 
-Time Based OTP Handler
+BOM::User::TOTP - Time Based OTP Handler
 
 =head1 SYNOPSIS
 
- my $secret_key  = BOM::Platform::TOTP->generate_key();
- my $is_verified = BOM::Platform::TOTP->verify_totp('secret_key', 'totp');
+ my $secret_key  = BOM::User::TOTP->generate_key();
+ my $is_verified = BOM::User::TOTP->verify_totp('secret_key', 'totp');
 
 =cut
 
