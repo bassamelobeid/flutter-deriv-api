@@ -7,7 +7,6 @@ use Test::MockTime qw/:all/;
 use Test::Most qw(-Test::Deep);
 use Test::Warnings;
 use Test::Warnings qw/warning/;
-use DateTime;
 use Test::MockModule;
 use File::Spec;
 use Date::Utility;
