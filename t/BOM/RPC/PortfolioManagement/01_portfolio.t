@@ -7,7 +7,6 @@ use Test::MockModule;
 
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
-use DateTime;
 
 use BOM::Test::RPC::Client;
 
