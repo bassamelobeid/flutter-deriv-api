@@ -35,7 +35,10 @@ use BOM::Transaction;
 
 requires_auth();
 
-use constant MT5_ACCOUNT_THROTTLE_KEY_PREFIX => 'MT5ACCOUNT::THROTTLE::';
+use constant MT5_ACCOUNT_THROTTLE_KEY_PREFIX         => 'MT5ACCOUNT::THROTTLE::';
+use constant MT5_ACCOUNT_TRADING_ENABLED_RIGHTS_ENUM => qw(
+    483 1503 2527 3555
+);
 
 # Defines the oldest data we'll allow for conversion rates, anything past this
 # (including when markets are closed) will be rejected.
@@ -189,10 +192,10 @@ async_rpc mt5_new_account => sub {
     my ($client, $args) = @{$params}{qw/client args/};
     my $account_type = delete $args->{account_type};
 
-    my $invalid_account_type_error = BOM::RPC::v3::Utility::create_error({
+    my $invalid_account_type_error = create_error_future({
             code              => 'InvalidAccountType',
             message_to_client => localize('Invalid account type.')});
-    return Future->done($invalid_account_type_error) if (not $account_type or $account_type !~ /^demo|gaming|financial$/);
+    return $invalid_account_type_error if (not $account_type or $account_type !~ /^demo|gaming|financial$/);
 
     my $residence = $client->residence;
     return create_error_future({
@@ -218,7 +221,7 @@ async_rpc mt5_new_account => sub {
 
     my $manager_id = delete $args->{manager_id} // '';
     # demo account is not allowed for mamm account
-    return Future->done($invalid_account_type_error) if $manager_id and $account_type eq 'demo';
+    return $invalid_account_type_error if $manager_id and $account_type eq 'demo';
 
     my $get_company_name = sub {
         my $type = shift;
@@ -273,8 +276,7 @@ async_rpc mt5_new_account => sub {
             $group .= "_mamm_${account_type}_${manager_id}";
         } else {
             $group .= "_$mt5_account_type" if $account_type eq 'financial';
-            $group .= "_$residence"
-                if (first { $residence eq $_ } @{$brand->countries_with_own_mt5_group});
+            $group .= "_$residence" if $brand->country_has_own_mt5_group($residence);
         }
     }
 
@@ -1184,7 +1186,7 @@ async_rpc mt5_mamm => sub {
             #
             # 4 is score for disabled trading
             my $current_rights = $settings->{rights} // 0;
-            my $has_manager = ($settings->{group} =~ /mamm/ and grep { $_ == $current_rights } qw/483 1503 2527 3555/) ? 1 : 0;
+            my $has_manager = ($settings->{group} =~ /mamm/ and any { $_ == $current_rights } MT5_ACCOUNT_TRADING_ENABLED_RIGHTS_ENUM) ? 1 : 0;
 
             return Future->done({
                     status     => 0,
