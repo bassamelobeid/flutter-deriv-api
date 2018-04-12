@@ -9,25 +9,15 @@ use constant MAX_SELECTED_TICK => 5;
 
 sub BUILD {
     my $self = shift;
-    
+
     if ($self->selected_tick < MIN_SELECTED_TICK or $self->selected_tick > MAX_SELECTED_TICK) {
         BOM::Product::Exception->throw(
-                error_code => 'SelectedTickNumberLimits',
-                error_args => [MIN_SELECTED_TICK, MAX_SELECTED_TICK],
-            );
+            error_code => 'SelectedTickNumberLimits',
+            error_args => [MIN_SELECTED_TICK, MAX_SELECTED_TICK],
+        );
     }
+    return undef;
 }
-
-my $permitted_parameters = {
-    bet_type      => 1,
-    underlying    => 1,
-    selected_tick => 1,
-    date_start    => 1,
-    date_pricing  => 1,
-    duration      => 1,
-    currency      => 1,
-    payout        => 1,
-};
 
 has 'selected_tick' => (
     is         => 'ro',
@@ -53,20 +43,6 @@ sub _build_selected_tick {
     return BOM::Product::Exception->throw(
         error_code => 'MissingRequiredSelectedTick',
     );
-}
-
-sub _validate_contract_parameters {
-    my $params = shift;
-
-    foreach my $param (keys %$params) {
-        if (!exists $permitted_parameters->{$param}) {
-            BOM::Product::Exception->throw(
-                error_code => 'InvalidInput',
-                error_args => [$param],
-            );
-        }
-    }
-    return undef;
 }
 
 around supplied_barrier => sub {

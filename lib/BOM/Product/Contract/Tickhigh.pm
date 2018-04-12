@@ -58,13 +58,13 @@ sub get_permissible_inputs {
         'payout'        => 1,
 
         # Metadata inputs
-        'shortcode'    => 1,
-        'duration'     => 1,
-        'date_pricing' => 1,
-        'fixed_expiry' => 1,
-        'tick_expiry'  => 1,
-        'tick_count'   => 1,
-        'is_sold'      => 1,
+        'shortcode'     => 1,
+        'duration'      => 1,
+        'date_pricing'  => 1,
+        'fixed_expiry'  => 1,
+        'tick_expiry'   => 1,
+        'tick_count'    => 1,
+        'is_sold'       => 1,
         'contract_type' => 1,
     };
 }
