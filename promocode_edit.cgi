@@ -7,6 +7,7 @@ use warnings;
 use Scalar::Util 'looks_like_number';
 use JSON::MaybeXS;
 use Brands;
+use Date::Utility;
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
@@ -38,6 +39,7 @@ my $countries_instance = Brands->new(name => request()->brand)->countries_instan
 
 if ($input{save}) {
     @messages = _validation_errors(%input);
+
     if (@messages == 0) {
         eval {    ## no critic (RequireCheckingReturnValueOfEval)
             $pc->start_date($input{start_date})   if $input{start_date};
@@ -87,17 +89,35 @@ BOM::Backoffice::Request::template->process('backoffice/promocode_edit.html.tt',
 code_exit_BO();
 
 sub _validation_errors {
+
     my %input = @_;
     my @errors;
+
     for (qw/country description amount/) {
         $input{$_} || push @errors, "Field '$_' must be supplied";
     }
+
     # some of these are stored as json thus aren't checked by the orm or the database..
     for (qw/amount min_turnover min_deposit/) {
         my $val = $input{$_} || next;
         next if looks_like_number($val);
         push @errors, "Field '$_' value '$val' is not numeric";
     }
+
+    my ($start_date, $end_date) = @input{qw/start_date expiry_date/};
+
+    # Date validation for start and expiry date
+    try {
+
+        $start_date = Date::Utility->new($start_date);
+        $end_date   = Date::Utility->new($end_date);
+
+        push @errors, "Expiry date must be set after Start date." if ($start_date && $end_date && $start_date->is_after($end_date));
+    }
+    catch {
+        push @errors, "Start/Expiry date must be in the following format: YYYY-MM-DD";
+    };
+
     # any more complex validation should go here..
     push @errors, "MINUMUM TURNOVER is only for FREE_BET promotions"
         if $input{min_turnover} && $input{promo_code_type} ne 'FREE_BET';

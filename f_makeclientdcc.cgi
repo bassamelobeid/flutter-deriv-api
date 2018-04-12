@@ -51,7 +51,7 @@ if (not $client) {
 if ($input->{'transtype'} =~ /^UPDATECLIENT/) {
     my $code = BOM::DualControl->new({
             staff           => $clerk,
-            transactiontype => $input->{'transtype'}})->client_control_code($input->{'clientemail'});
+            transactiontype => $input->{'transtype'}})->client_control_code($input->{'clientemail'}, $client->binary_user_id);
 
     my $message =
           "The dual control code created by $clerk  (for a "

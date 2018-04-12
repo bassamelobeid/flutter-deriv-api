@@ -73,7 +73,7 @@ unless ($input{transtype}) {
 }
 my $error = BOM::DualControl->new({
         staff           => $clerk,
-        transactiontype => $input{transtype}})->validate_client_control_code($input{DCcode}, $new_email);
+        transactiontype => $input{transtype}})->validate_client_control_code($input{DCcode}, $new_email, $user->id);
 if ($error) {
     print $error->get_mesg();
     code_exit_BO();
