@@ -121,9 +121,7 @@ sub authorize {
             template   => $brand_name . '/totp',
             layout     => $brand_name,
             app        => $app,
-            client     => $client,
             error      => $otp_error,
-            scopes     => \@{$app->{scopes}},
             r          => $c->stash('request'),
             csrf_token => $c->csrf_token,
         );
