@@ -122,7 +122,8 @@ rpc authorize => sub {
             message_to_client => BOM::Platform::Context::localize("Account is disabled.")}
     ) unless BOM::RPC::v3::Utility::is_account_available($client);
 
-    my ($user, $token_type) = ($client->user);
+    my $user = $client->user;
+    my $token_type;
     if (length $token == 15) {
         $token_type = 'api_token';
         # add to login history for api token only as oauth login already creates an entry
