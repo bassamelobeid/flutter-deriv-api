@@ -4,6 +4,19 @@ use Moose::Role;
 use BOM::Product::Exception;
 
 use constant DURATION_IN_TICKS => 5;
+use constant MIN_SELECTED_TICK => 1;
+use constant MAX_SELECTED_TICK => 5;
+
+sub BUILD {
+    my $self = shift;
+    
+    if ($self->selected_tick < MIN_SELECTED_TICK or $self->selected_tick > MAX_SELECTED_TICK) {
+        BOM::Product::Exception->throw(
+                error_code => 'SelectedTickNumberLimits',
+                error_args => [MIN_SELECTED_TICK, MAX_SELECTED_TICK],
+            );
+    }
+}
 
 my $permitted_parameters = {
     bet_type      => 1,

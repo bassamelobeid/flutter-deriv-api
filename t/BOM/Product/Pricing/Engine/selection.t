@@ -56,8 +56,7 @@ subtest 'test everything' => sub {
                     low_barrier  => $ref->{low_barrier})
                     : (barrier => $ref->{barrier});
             }
-            
-            my $c = produce_contract({
+            my $contract_args = {
                 bet_type     => $ref->{contract_type},
                 underlying   => $symbol,
                 date_start   => $now,
@@ -65,11 +64,16 @@ subtest 'test everything' => sub {
                 duration     => $ref->{min_contract_duration},
                 currency     => 'USD',
                 payout       => 100,
-                multiplier   => 1,
-                amount_type  => 'multiplier',
-                %selected_tick,
-                %barriers,
-            });
+            };
+            if (grep {$ref->{contract_type} eq $_ } qw(LBFLOATCALL LBFLOATPUT LBHIGHLOW)) {
+                $contract_args->{multiplier} = 1;
+                $contract_args->{amount_type} = 'multiplier';
+            } elsif (grep {$ref->{contract_type} eq $_} qw(TICKHIGH TICKLOW)) {
+                $contract_args->{selected_tick} =1;    
+            } else {
+                $contract_args = {%$contract_args, %barriers};    
+            }
+            my $c = produce_contract($contract_args);
             
             next unless exists $expected->{$c->shortcode};
             is $c->pricing_engine_name, $expected->{$c->shortcode}, "correct pricing engine select for " . $c->shortcode;
