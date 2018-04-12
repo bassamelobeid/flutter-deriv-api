@@ -22,7 +22,7 @@ my %params = %{request()->params};
 my $broker = $params{broker} || request()->broker_code;
 BrokerPresentation("EASY SEARCH: $broker");
 
-my $stash = {now => DateTime->now};
+my $stash = {};
 
 my $tt = BOM::Backoffice::Request::template();
 
