@@ -158,6 +158,8 @@ sub after_register_client {
         $client->add_note("MX Client [$client_loginid] - first name or last name less than 3 characters", "$notemsg\n");
     }
 
+    BOM::Platform::Client::Utility::set_gamstop_self_exclusion($client);
+
     return {
         client => $client,
         user   => $user,
