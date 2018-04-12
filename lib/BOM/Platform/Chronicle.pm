@@ -72,7 +72,6 @@ use strict;
 use warnings;
 
 use DBIx::Connector::Pg;
-use DateTime;
 use Date::Utility;
 use BOM::Platform::RedisReplicated;
 
