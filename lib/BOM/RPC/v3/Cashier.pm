@@ -1152,10 +1152,14 @@ rpc transfer_between_accounts => sub {
         ) || die "validate_payment [$loginid_to]";
     }
     catch {
-        $err = "$err_msg validate_payment failed for $loginid_to [$_]";
+        $err = $_;
     };
     if ($err) {
-        return $error_audit_sub->($err);
+        my $msg = localize("Transfer validation failed on [_1].", $loginid_to);
+        if ($err =~ /Balance would exceed ([\S]+) limit/) {
+            $msg = localize("Your account balance will exceed set limits. Please specify a lower amount.");
+        }
+        return $error_audit_sub->("$err_msg validate_payment failed for $loginid_to [$err]", $msg);
     }
 
     my $response;
