@@ -13,7 +13,6 @@ use warnings;
 use CGI;
 use CGI::Util;
 use CGI::Cookie;
-use DateTime::Format::Mail;
 use Try::Tiny;
 
 use BOM::Platform::Runtime;

@@ -9,7 +9,6 @@ use HTML::Entities;
 
 use List::MoreUtils qw(any);
 use Try::Tiny;
-use DateTime;
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
@@ -92,7 +91,7 @@ print "<form action=\""
 
 Bar("Monthly Client Reports");
 {
-    my $yyyymm = DateTime->now->subtract(months => 1)->ymd('-');
+    my $yyyymm = Date::Utility->new->plus_time_interval('1mo')->date_yyyymmdd;
     $yyyymm =~ s/-..$//;
 
     BOM::Backoffice::Request::template->process('backoffice/account/monthly_client_report.tt', {yyyymm => $yyyymm})
