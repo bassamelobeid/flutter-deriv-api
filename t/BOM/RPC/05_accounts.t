@@ -1616,7 +1616,7 @@ subtest 'get and set self_exclusion' => sub {
         max_turnover           => 1000,
         max_open_bets          => 50,
         session_duration_limit => 1440,
-        exclude_until          => DateTime->now()->add(months => 3)->ymd
+        exclude_until          => Date::Utility->new->plus_time_interval('3mo')->date_yyyymmdd
     };
     is_deeply(
         $c->tcall($method, $params)->{error},
@@ -1632,7 +1632,7 @@ subtest 'get and set self_exclusion' => sub {
         max_turnover           => 1000,
         max_open_bets          => 50,
         session_duration_limit => 1440,
-        exclude_until          => DateTime->now()->add(years => 6)->ymd
+        exclude_until          => Date::Utility->new->plus_time_interval('6y')->date_yyyymmdd
     };
     is_deeply(
         $c->tcall($method, $params)->{error},
@@ -1676,8 +1676,8 @@ subtest 'get and set self_exclusion' => sub {
         });
 
     $mailbox->clear;
-    my $exclude_until = DateTime->now()->add(months => 7)->ymd;
-    my $timeout_until = DateTime->now()->add(days   => 1);
+    my $exclude_until = Date::Utility->new->plus_time_interval('7mo')->date_yyyymmdd;
+    my $timeout_until = Date::Utility->new->plus_time_interval('1d');
     $params->{args} = {
         set_self_exclusion     => 1,
         max_balance            => 9998,
