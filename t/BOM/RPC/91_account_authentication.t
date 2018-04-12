@@ -10,7 +10,7 @@ use BOM::User;
 use BOM::Platform::Password;
 use BOM::Database::Model::AccessToken;
 use BOM::Test::RPC::Client;
-use BOM::Test::Data::Utility::UnitTestDatabase;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my ($t, $rpc_ct);
 my $params = {
@@ -26,7 +26,7 @@ subtest 'Initialization' => sub {
         $t = Test::Mojo->new('BOM::RPC');
         $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
 
-        $email = 'dummy' . rand(999) . '@binary.com';
+        $email = 'dummy@binary.com';
 
         $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'CR',
