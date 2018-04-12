@@ -8,7 +8,6 @@ use List::Util qw( min first );
 use Scalar::Util qw( looks_like_number );
 use Data::UUID;
 use Path::Tiny;
-use DateTime;
 use Date::Utility;
 use Try::Tiny;
 use String::UTF8::MD5;
@@ -845,7 +844,7 @@ rpc paymentagent_withdraw => sub {
     my ($amount_transferred, $count) = _get_amount_and_count($client_loginid);
 
     # max withdrawal daily limit: weekday = $5000, weekend = $1500
-    my $daily_limit = (DateTime->now->day_of_week() > 5) ? 1500 : 5000;
+    my $daily_limit = (Date::Utility->new->is_a_weekend) ? 1500 : 5000;
 
     if (($amount_transferred + $amount) > $daily_limit) {
         return $error_sub->(localize('Sorry, you have exceeded the maximum allowable transfer amount [_1] for today.', $currency . $daily_limit));
