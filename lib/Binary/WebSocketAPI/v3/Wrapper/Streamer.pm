@@ -20,6 +20,27 @@ use Try::Tiny;
 
 my $json = JSON::MaybeXS->new;
 
+sub get_status_msg {
+    my ($c, $status_code) = @_;
+
+    my %status_msg = (
+        release_due => $c->l('We are updating our site in a short while. Some services may be temporarily unavailable.'),
+        suspended   => $c->l('Sorry, but trading is unavailable until further notice due to an unexpected error. Please try again later.'),
+        feed_issues => $c->l(
+            'We are having an issue with one or more of our data feeds. We are working to resolve the issue but some markets may be unavailable for the time being.'
+        ),
+        mt5_issues     => $c->l('Sorry, but we are having a technical issue with our MT5 platform. Trading is unavailable for the time being.'),
+        cashier_issues => $c->l(
+            'Sorry, but we are experiencing a technical issue with our Cashier. Your funds are safe but deposits and withdrawals are unavailable for the time being.'
+        ),
+        unstable => $c->l(
+            'We are experiencing an unusually high load on our system. Some features and services may be unstable or temporarily unavailable. We hope to resolve this issue as soon as we can.'
+        ),
+    );
+
+    return $status_msg{$status_code};
+}
+
 sub website_status {
     my ($c, $req_storage) = @_;
 
@@ -57,8 +78,7 @@ sub website_status {
                     $current_state = eval { $json->decode(Encode::decode_utf8($current_state)) }
                         if $current_state && !ref $current_state;
                     $website_status->{site_status} = $current_state->{site_status} // 'up';
-                    $website_status->{message}     = $current_state->{message}     // ''
-                        if $website_status->{site_status} eq 'down';
+                    $website_status->{message} = get_status_msg($c, $current_state->{message}) // '' if $current_state->{message};
 
                     return {
                         website_status => $website_status,
@@ -94,7 +114,8 @@ sub send_notification {
             next;
         }
         my $client_shared = $shared->{broadcast_notifications}{$c_addr};
-        unless (defined $client_shared->{c}->tx) {
+        my $c = $client_shared->{c} or return;
+        unless (defined $c->tx) {
             delete $shared->{broadcast_notifications}{$c_addr};
             ws_redis_master->unsubscribe([$channel])
                 if (scalar keys %{$shared->{broadcast_notifications}}) == 0 && $channel;
@@ -107,11 +128,16 @@ sub send_notification {
         }
 
         $message = eval { $json->decode(Encode::decode_utf8($message)) } unless ref $message eq 'HASH';
-        delete $message->{message} if $message->{site_status} ne 'down';
 
-        $client_shared->{c}->send({
+        # Make a local (shallow) copy of the status here so that its
+        # message can be correctly localized depending on the connection
+        my $website_status = {%{$client_shared->{website_status}}};
+        $website_status->{site_status} = $message->{site_status};
+        $website_status->{message} = get_status_msg($c, $message->{message}) if $message->{message};
+
+        $c->send({
                 json => {
-                    website_status => {%{$client_shared->{website_status}}, %$message},
+                    website_status => $website_status,
                     echo_req       => $client_shared->{echo},
                     msg_type       => 'website_status'
                 }});
