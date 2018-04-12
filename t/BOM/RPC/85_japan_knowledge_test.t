@@ -61,7 +61,7 @@ my %jp_client_details = (
 
 my ($vr_client, $user, $jp_loginid, $jp_client, $res);
 
-my $dt_mocked = Test::MockModule->new('DateTime');
+my $dt_mocked = Test::MockModule->new('Date::Utility');
 $dt_mocked->mock('day_of_week', sub { return 1 });
 
 subtest 'create VRTJ & JP client' => sub {
