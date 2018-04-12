@@ -8,7 +8,6 @@ use Test::Warn;
 
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
-use DateTime;
 
 use BOM::Test::RPC::Client;
 
