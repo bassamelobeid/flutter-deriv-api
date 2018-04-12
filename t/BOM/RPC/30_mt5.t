@@ -7,6 +7,7 @@ use Test::MockModule;
 
 use Postgres::FeedDB::CurrencyConverter qw(in_USD amount_from_to_currency);
 
+use JSON::MaybeXS;
 use Email::Folder::Search;
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -18,7 +19,7 @@ use BOM::Platform::Token;
 use BOM::User;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
-
+my $json = JSON::MaybeXS->new;
 # Mocked account details
 # This hash shared between three files, and should be kept in-sync to avoid test failures
 #   t/BOM/RPC/30_mt5.t
@@ -35,7 +36,7 @@ my %DETAILS = (
 );
 
 # Setup a test user
-my $test_client = create_client('CR');
+my $test_client    = create_client('CR');
 my $test_client_vr = create_client('VRTC');
 $test_client->email($DETAILS{email});
 $test_client_vr->email($DETAILS{email});
@@ -52,11 +53,44 @@ $user->add_loginid({loginid => $test_client->loginid});
 $user->add_loginid({loginid => $test_client_vr->loginid});
 $user->save;
 
-my $m = BOM::Database::Model::AccessToken->new;
-my $token = $m->create_token($test_client->loginid, 'test token');
+#since we are trying to open a new financial mt5 account we should do the financial assessment first
+my %financial_data = (
+    "forex_trading_experience"             => "Over 3 years",
+    "forex_trading_frequency"              => "0-5 transactions in the past 12 months",
+    "indices_trading_experience"           => "1-2 years",
+    "indices_trading_frequency"            => "40 transactions or more in the past 12 months",
+    "commodities_trading_experience"       => "1-2 years",
+    "commodities_trading_frequency"        => "0-5 transactions in the past 12 months",
+    "stocks_trading_experience"            => "1-2 years",
+    "stocks_trading_frequency"             => "0-5 transactions in the past 12 months",
+    "other_derivatives_trading_experience" => "Over 3 years",
+    "other_derivatives_trading_frequency"  => "0-5 transactions in the past 12 months",
+    "other_instruments_trading_experience" => "Over 3 years",
+    "other_instruments_trading_frequency"  => "6-10 transactions in the past 12 months",
+    "employment_industry"                  => "Finance",
+    "education_level"                      => "Secondary",
+    "income_source"                        => "Self-Employed",
+    "net_income"                           => '$25,000 - $50,000',
+    "estimated_worth"                      => '$100,000 - $250,000',
+    "occupation"                           => 'Managers',
+    "employment_status"                    => "Self-Employed",
+    "source_of_wealth"                     => "Company Ownership",
+);
+
+my $financial_evaluation = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
+$test_client->financial_assessment({
+    data => Encode::encode_utf8($json->encode($financial_evaluation->{user_data})),
+});
+$test_client->save;
+
+my $m        = BOM::Database::Model::AccessToken->new;
+my $token    = $m->create_token($test_client->loginid, 'test token');
 my $token_vr = $m->create_token($test_client_vr->loginid, 'test token');
 
 @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
+
+my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
+$mailbox->init;
 
 # Throttle function limits requests to 1 per minute which may cause
 # consecutive tests to fail without a reset.
@@ -93,12 +127,12 @@ subtest 'new account with switching' => sub {
     my $params = {
         language => 'EN',
         token    => $token_vr,
-            # Pass this virtual account token to test switching functionality.
-            #   If the user has multiple client accounts the Binary.com front-end
-            #   will pass to this function whichever one is currently selected.
-            #   In this case we can automatically detect that the user has
-            #   another account which qualifies them to open MT5 and switch.
-        args     => {
+        # Pass this virtual account token to test switching functionality.
+        #   If the user has multiple client accounts the Binary.com front-end
+        #   will pass to this function whichever one is currently selected.
+        #   In this case we can automatically detect that the user has
+        #   another account which qualifies them to open MT5 and switch.
+        args => {
             account_type   => 'gaming',
             country        => 'mt',
             email          => $DETAILS{email},
@@ -113,6 +147,35 @@ subtest 'new account with switching' => sub {
         ->error_code_is('MT5CreateUserError', 'error code for duplicate mt5_new_account');
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+};
+
+subtest 'new CR financial accounts should receive identity verification request' => sub {
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    my $method = 'mt5_new_account';
+    $mailbox->clear;
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type     => 'financial',
+            mt5_account_type => 'standard',
+            country          => 'mt',
+            email            => $DETAILS{email},
+            name             => $DETAILS{name},
+            investPassword   => 'Abcd1234',
+            mainPassword     => $DETAILS{password},
+            leverage         => 500,
+        },
+    };
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account');
+    #check inbox for emails
+    my $cli_subject  = 'Authenticate your account to continue trading on MT5';
+    my @client_email = $mailbox->search(
+        email   => $DETAILS{email},
+        subject => qr/\Q$cli_subject\E/
+    );
+
+    ok(@client_email, "identity verification request email received");
 };
 
 subtest 'get settings' => sub {
@@ -215,9 +278,6 @@ subtest 'password change' => sub {
     $c->call_ok($method, $params)->has_error('error for mt5_password_change wrong login')
         ->error_code_is('PermissionDenied', 'error code for mt5_password_change wrong login');
 };
-
-my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
-$mailbox->init;
 
 subtest 'password reset' => sub {
     my $method = 'mt5_password_reset';
