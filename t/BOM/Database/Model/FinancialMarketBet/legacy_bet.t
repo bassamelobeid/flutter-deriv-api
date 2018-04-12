@@ -5,7 +5,7 @@ use warnings;
 use Test::More (tests => 27);
 use Test::Warnings;
 use Test::Exception;
-use DateTime::Format::HTTP;
+use Date::Utility;
 
 use Format::Util::Numbers qw/financialrounding/;
 
@@ -44,8 +44,8 @@ my $payout_price      = 200;
 my $buy_price         = 20;
 my $sell_price        = 0;
 my $remark            = 'Test Remark';
-my $start_time        = DateTime::Format::HTTP->parse_datetime('2010-12-02 12:00:00');
-my $expiry_time       = DateTime::Format::HTTP->parse_datetime('2010-12-02 14:00:00');
+my $start_time        = Date::Utility->new('2010-12-02 12:00:00');
+my $expiry_time       = Date::Utility->new('2010-12-02 14:00:00');
 my $is_expired        = 1;
 my $bet_class         = 'legacy_bet';
 my $bet_type          = 'DOUBLEDBL';
@@ -71,9 +71,9 @@ lives_ok {
                 'payout_price'      => $payout_price,
                 'buy_price'         => $buy_price,
                 'remark'            => $remark,
-                'purchase_time'     => $start_time,
-                'start_time'        => $start_time,
-                'expiry_time'       => $expiry_time,
+                'purchase_time'     => $start_time->datetime_yyyymmdd_hhmmss,
+                'start_time'        => $start_time->datetime_yyyymmdd_hhmmss,
+                'expiry_time'       => $expiry_time->datetime_yyyymmdd_hhmmss,
                 'is_expired'        => $is_expired,
                 'bet_class'         => $bet_class,
                 'bet_type'          => $bet_type,
@@ -167,7 +167,7 @@ is($legacy_bet->financial_market_bet_open_record->underlying_symbol, $underlying
 cmp_ok($legacy_bet->financial_market_bet_open_record->payout_price, '==', financialrounding('amount', 'USD', $payout_price), 'payout_price');
 cmp_ok($legacy_bet->financial_market_bet_open_record->buy_price,    '==', financialrounding('amount', 'USD', $buy_price),    'buy_price');
 cmp_ok($legacy_bet->financial_market_bet_open_record->sell_price,   '==', financialrounding('amount', 'USD', $sell_price),   'sell_price');
-is($legacy_bet->financial_market_bet_open_record->expiry_time, $expiry_time, 'expiry_time');
+is($legacy_bet->financial_market_bet_open_record->expiry_time->epoch, $expiry_time->epoch, 'expiry_time');
 is($legacy_bet->financial_market_bet_open_record->is_expired,  $is_expired,  'is_expired');
 is($legacy_bet->financial_market_bet_open_record->is_sold,     1,            'is_sold');
 is($legacy_bet->financial_market_bet_open_record->bet_class,   $bet_class,   'bet_class');
