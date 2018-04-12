@@ -4,7 +4,6 @@ use warnings;
 use Test::More qw(no_plan);
 use Test::MockObject::Extends;
 use Date::Utility;
-use DateTime;
 
 use BOM::Platform::Client::DoughFlowClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -118,7 +117,7 @@ subtest 'Profile mapped correctly to DF levels' => sub {
     $mock_client->set_true(-client_fully_authenticated);
     is $mock_client->Profile, 3, '... and authenticated identity => 3';
 
-    $mock_client->set_always(-date_joined, DateTime->now->subtract(months => 6)->ymd);
+    $mock_client->set_always(-date_joined, Date::Utility->new->minus_time_interval("6mo")->date_yyyymmdd);
     is $mock_client->Profile, 4, '.... and user for more than 6 months => 4';
 };
 

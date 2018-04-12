@@ -3,9 +3,9 @@ use strict;
 use warnings;
 
 use Text::CSV;
-use DateTime;
 use BOM::Platform::Runtime;
 use BOM::Database::ClientDB;
+use Date::Utility;
 
 sub go {
     my %params = @_;
@@ -14,20 +14,16 @@ sub go {
     my $broker = $params{broker} || die;
 
     my $yyyymm = $params{yyyymm} || do {
-        my $now = DateTime->now->subtract(months => 1);
+        my $now = Date::Utility->new->minus_time_interval('1mo');
         sprintf '%s-%02s', $now->year, $now->month;
     };
 
-    my ($yyyy, $mm) = $yyyymm =~ /^(\d{4})-(\d{2})$/;
-    my $start_date = DateTime->new(
-        year  => $yyyy,
-        month => $mm
-    );
-    my $month_end = DateTime->last_day_of_month(
-        year  => $yyyy,
-        month => $mm
-    )->ymd;
-    my $until_date = $start_date->clone->add(months => 1);
+    # The start date is the first day of that month
+    my $start_date = Date::Utility->new("${yyyymm}-01");
+
+    my $month_end = sprintf("%s-%02d", $yyyymm, $start_date->days_in_month);
+
+    my $until_date = $start_date->plus_time_interval("1mo");
 
     my $buy_sell = {
         credit => 'sell',
