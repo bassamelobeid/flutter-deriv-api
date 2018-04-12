@@ -184,8 +184,7 @@ sub reset_throttler {
 }
 
 async_rpc mt5_new_account => sub {
-    my $params = shift;
-
+    my $params        = shift;
     my $mt5_suspended = _is_mt5_suspended();
     return Future->done($mt5_suspended) if $mt5_suspended;
 
@@ -360,6 +359,9 @@ async_rpc mt5_new_account => sub {
                                             $balance = 0;
                                         }
                                     });
+                            } elsif ($account_type eq 'financial' && $client->landing_company->short eq 'costarica') {
+                                _send_notification_email($client, $mt5_login, $brand, $params->{language});
+                                Future->done;
                             } else {
                                 Future->done;
                             }
@@ -384,6 +386,64 @@ sub _check_logins {
     foreach my $login (@{$logins}) {
         return unless (any { $login eq $_->loginid } ($user->loginid));
     }
+    return 1;
+}
+
+sub _send_notification_email {
+    my ($client, $mt5_login, $brand, $language) = @_;
+    $language = 'en' unless defined $language;
+    #language in params is in upper form.
+    $language = lc $language;
+    my $client_email_template = localize(
+        "\
+Dear [_1],
+
+Thank you for registering your MetaTrader 5 account.
+
+We are legally required to verify each client's identity and address. Therefore, we kindly request that you authenticate your account by submitting the following documents:
+
+Valid driving licence, identity card, or passport
+Utility bill or bank statement issued within the past six months
+
+Please <a href='//www.binary.com/[_2]/user/authenticate.html'>upload scanned copies</a> of the above documents, or email them to support\@binary.com within five days of receipt of this email to keep your account active.
+
+We look forward to hearing from you soon.
+
+Regard,
+
+Binary.com
+", $client->full_name, $language
+    );
+
+    try {
+        send_email({
+            from                  => $brand->emails('support'),
+            to                    => $client->email,
+            subject               => localize('Authenticate your account to continue trading on MT5'),
+            message               => [$client_email_template],
+            use_email_template    => 1,
+            email_content_is_html => 1
+        });
+    }
+    catch {
+        warn "Failed to notify customer about verification process";
+    };
+
+    try {
+        send_email({
+                from    => $brand->emails('system'),
+                to      => $brand->emails('support'),
+                subject => 'Asked for authentication documents',
+                message => [
+                    "MT5 Financial Account Created for MT$mt5_login\nIf client has not submitted document within five days please disable account and inform compliance"
+                ],
+                use_email_template    => 0,
+                email_content_is_html => 0,
+            });
+    }
+    catch {
+        warn "Failed to notify cs team about new CR Financial account MT$mt5_login";
+    };
     return 1;
 }
 
