@@ -108,7 +108,8 @@ subtest 'sell open expired bet' => sub {
         bet          => $expired_fmb,
         db           => $account->db,
     });
-    $fmb_helper->bet_data->{quantity} = 1;
+    $fmb_helper->bet_data->{quantity}  = 1;
+    $fmb_helper->bet_data->{sell_time} = $fmb_helper->bet_data->{expiry_time};
     isnt($fmb_helper->sell_bet, undef, 'Sell expired fmb successfully');
 };
 
