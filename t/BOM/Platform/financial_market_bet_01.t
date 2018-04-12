@@ -68,8 +68,9 @@ subtest 'buy and sell without setting transaction time' => sub {
             bet          => $fmb,
             db           => $account->db,
         });
-        $fmb_helper->bet_data->{quantity} = 1;
-        $txn_id = $fmb_helper->buy_bet;
+        $fmb_helper->bet_data->{quantity}  = 1;
+        $fmb_helper->bet_data->{sell_time} = $fmb_helper->bet_data->{expiry_time};
+        $txn_id                            = $fmb_helper->buy_bet;
     }
     'Buy fmb successfully';
 
