@@ -3,7 +3,6 @@ package BOM::RPC::v3::NewAccount;
 use strict;
 use warnings;
 
-use DateTime;
 use Try::Tiny;
 use List::MoreUtils qw(any);
 use Format::Util::Numbers qw/formatnumber/;
