@@ -446,7 +446,7 @@ subtest 'GAMSTOP' => sub {
     subtest 'GAMSTOP - Y - excluded' => sub {
         $gamstop_module->mock('get_exclusion_for', sub { return Webservice::GAMSTOP::Response->new(%params); });
 
-        ok $user_gamstop->login(%pass)->{success}, 'can login';
+        ok $user_gamstop->login(%args)->{success}, 'can login';
         is $client_gamstop->get_self_exclusion_until_date, Date::Utility->new(DateTime->now()->add(months => 6)->ymd)->date_yyyymmdd,
             'Based on Y response from GAMSTOP client was self excluded';
 
@@ -458,7 +458,7 @@ subtest 'GAMSTOP' => sub {
         $params{exclusion} = 'N';
         $gamstop_module->mock('get_exclusion_for', sub { return Webservice::GAMSTOP::Response->new(%params); });
 
-        ok $user_gamstop->login(%pass)->{success}, 'can login';
+        ok $user_gamstop->login(%args)->{success}, 'can login';
         is $client_gamstop->get_self_exclusion_until_date, undef, 'Based on N response from GAMSTOP client was not self excluded';
     };
 
@@ -467,7 +467,7 @@ subtest 'GAMSTOP' => sub {
 
         $gamstop_module->mock('get_exclusion_for', sub { return Webservice::GAMSTOP::Response->new(%params); });
 
-        ok $user_gamstop->login(%pass)->{success}, 'can login';
+        ok $user_gamstop->login(%args)->{success}, 'can login';
         is $client_gamstop->get_self_exclusion_until_date, undef, 'Based on N response from GAMSTOP client was not self excluded';
     };
 };
