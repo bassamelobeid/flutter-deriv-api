@@ -65,6 +65,7 @@ sub get_permissible_inputs {
         'tick_expiry'  => 1,
         'tick_count'   => 1,
         'is_sold'      => 1,
+        'contract_type' => 1,
     };
 }
 

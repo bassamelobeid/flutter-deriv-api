@@ -54,7 +54,7 @@ subtest 'prices' => sub {
         tick_expiry   => 1,
         tick_count    => 10,
         amount_type   => 'payout',
-        barrier       => 5,
+        selected_tick => 5,
         selected_tick => 3,
     };
 
@@ -72,9 +72,7 @@ subtest 'prices' => sub {
     # Test each code
     foreach my $bt_code (sort keys %expectations) {
         subtest $bt_code => sub {
-
             my $c = produce_contract({%$params, bet_type => $bt_code});
-
             my $expect = $expectations{$bt_code};
 
             is $c->pricing_code, $bt_code, 'contract type';
