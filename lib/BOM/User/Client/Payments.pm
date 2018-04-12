@@ -6,11 +6,10 @@ use strict;
 use warnings;
 
 use Try::Tiny;
-use DateTime;
 use List::Util;
 use YAML::XS qw(LoadFile);
 use Format::Util::Numbers qw/financialrounding formatnumber/;
-
+use Date::Utility;
 use Postgres::FeedDB::CurrencyConverter qw/amount_from_to_currency/;
 
 use BOM::User::Client::PaymentNotificationQueue;
@@ -116,7 +115,7 @@ sub validate_payment {
             }
         } else {
             my $for_days = $lc_limits->{for_days};
-            my $since = DateTime->now->subtract(days => $for_days);
+            my $since    = Date::Utility->new->minus_time_interval("${for_days}d")->datetime_yyyymmdd_hhmmss;
 
             # Obtains limit in EUR
             my $wd_eur_since_limit = $lc_limits->{limit_for_days};
