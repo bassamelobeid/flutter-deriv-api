@@ -61,7 +61,7 @@ while ($to_date->days_between($processing_date) >= 0) {
 die "unable to create zip file" unless ( $zip->writeToFileNamed($output_zip_path->stringify) == AZ_OK );
 
 try {
-    my $config = LoadFile('/etc/rmg/third_party.yml')->{affiliates};
+    my $config = LoadFile('/etc/rmg/third_party.yml')->{myaffiliates};
     my $loop = IO::Async::Loop->new;
     my $s3 = Net::Async::Webservice::S3->new(
         access_key => $config->{aws_access_key_id},
