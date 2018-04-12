@@ -102,7 +102,7 @@ sub login {
         return {error => $error};
     } else {
         $cfl->delete if $cfl;    # delete client failed login
-        BOM::Platform::AuditLog::log('successful login', $self->email);
+        BOM::User::AuditLog::log('successful login', $self->email);
 
         # gamstop is applicable for UK residence only
         my $gamstop_client = first { $_->residence eq 'gb' and $_->landing_company->short =~ /^(?:malta|iom)$/ } @clients;
