@@ -1,4 +1,4 @@
-# This script contains a mocked MT5 wrapper command used by the tests in t/BOM/RPC/30_mt5.t
+# This script contains a mocked MT5 wrapper command used by the tests in t/BOM/RPC/30_mt5.t and t/BOM/RPC/05_accounts.t
 
 use strict;
 use warnings;
@@ -13,8 +13,9 @@ use constant {
 };
 
 # Mocked account details
-# This hash shared between two files, and should be kept in-sync to avoid test failures
+# This hash shared between three files, and should be kept in-sync to avoid test failures
 #   t/BOM/RPC/30_mt5.t
+#   t/BOM/RPC/05_accounts.t
 #   t/lib/mock_binary_mt5.pl
 my %DETAILS = (
     login    => '123454321',
@@ -56,7 +57,8 @@ sub cmd_UserAdd {
 
     $input->{mainPassword} eq $DETAILS{password}->{main}
         or die "UserAdd with unexpected mainPassword=$input->{mainPassword}\n";
-    $input->{group} eq $DETAILS{group}
+    # allow another group to pass in order to create new real MT5 financial account
+    $input->{group} eq $DETAILS{group} || $input->{group} eq 'real\vanuatu_standard'
         or die "UserAdd with unexpected group=$input->{group}\n";
 
     $input->{investPassword} eq $DETAILS{password}->{investor}

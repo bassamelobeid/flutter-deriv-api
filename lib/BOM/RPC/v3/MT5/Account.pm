@@ -21,6 +21,7 @@ use BOM::RPC::Registry '-dsl';
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Cashier;
+use BOM::RPC::v3::Accounts;
 use BOM::Platform::Config;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Email qw(send_email);
@@ -180,8 +181,7 @@ sub reset_throttler {
 }
 
 async_rpc mt5_new_account => sub {
-    my $params = shift;
-
+    my $params        = shift;
     my $mt5_suspended = _is_mt5_suspended();
     return Future->done($mt5_suspended) if $mt5_suspended;
 
@@ -189,6 +189,7 @@ async_rpc mt5_new_account => sub {
     my $account_type     = delete $args->{account_type};
     my $mt5_account_type = delete $args->{mt5_account_type} // '';
     my $brand            = Brands->new(name => request()->brand);
+    my $user             = $client->user;
 
     return create_error_future({
             code              => 'InvalidAccountType',
@@ -241,7 +242,15 @@ async_rpc mt5_new_account => sub {
         }
     } elsif ($account_type eq 'gaming' or $account_type eq 'financial') {
         # 4 Jan 2018: only CR, MLT, and Champion can open MT real a/c
-        return permission_error_future() unless ($client->landing_company->short =~ /^costarica|champion|malta$/);
+        my $eligible_lcs = qr/^costarica|champion|malta$/;
+        if ($client->landing_company->short !~ $eligible_lcs && $user) {
+            # Binary.com front-end will pass whichever client is currently selected
+            #   in the top-right corner, so check if this user has a qualifying
+            #   account and switch if they do.
+            $client = (first { $_->landing_company->short =~ $eligible_lcs } $user->clients) // $client;
+        }
+
+        return permission_error_future() unless ($client->landing_company->short =~ $eligible_lcs);
 
         return permission_error_future() if (($mt_company = $get_company_name->($account_type)) eq 'none');
 
@@ -265,9 +274,6 @@ async_rpc mt5_new_account => sub {
     return create_error_future({
             code              => 'MT5CreateUserError',
             message_to_client => localize('Request too frequent. Please try again later.')}) if _throttle($client->loginid);
-
-    # client can have only 1 MT demo & 1 MT real a/c
-    my $user = $client->user;
 
     return get_mt5_logins($client, $user)->then(
         sub {
@@ -308,6 +314,16 @@ async_rpc mt5_new_account => sub {
                     $user->add_loginid({loginid => 'MT' . $mt5_login});
                     $user->save;
 
+                    # Compliance team must be notified if a client under Binary (Europe) Limited
+                    #   opens an MT5 account while having limitations on their account.
+                    if ($client->landing_company->short eq 'malta' && $account_type ne 'demo') {
+                        my $self_exclusion = BOM::RPC::v3::Accounts::get_self_exclusion({client => $client});
+                        if (keys %$self_exclusion) {
+                            warn 'Compliance email regarding Binary (Europe) Limited user with MT5 account(s) failed to send.'
+                                unless BOM::RPC::v3::Accounts::send_self_exclusion_notification($client, 'malta_with_mt5', $self_exclusion);
+                        }
+                    }
+
                     my $balance = 0;
                     # TODO(leonerd): This other somewhat-ugly structure implements
                     #   conditional execution of a Future-returning block. It's a bit
@@ -335,6 +351,9 @@ async_rpc mt5_new_account => sub {
                                             $balance = 0;
                                         }
                                     });
+                            } elsif ($account_type eq 'financial' && $client->landing_company->short eq 'costarica') {
+                                _send_notification_email($client, $mt5_login, $brand, $params->{language});
+                                Future->done;
                             } else {
                                 Future->done;
                             }
@@ -359,6 +378,64 @@ sub _check_logins {
     foreach my $login (@{$logins}) {
         return unless (any { $login eq $_->loginid } ($user->loginid));
     }
+    return 1;
+}
+
+sub _send_notification_email {
+    my ($client, $mt5_login, $brand, $language) = @_;
+    $language = 'en' unless defined $language;
+    #language in params is in upper form.
+    $language = lc $language;
+    my $client_email_template = localize(
+        "\
+Dear [_1],
+
+Thank you for registering your MetaTrader 5 account.
+
+We are legally required to verify each client's identity and address. Therefore, we kindly request that you authenticate your account by submitting the following documents:
+
+Valid driving licence, identity card, or passport
+Utility bill or bank statement issued within the past six months
+
+Please <a href='//www.binary.com/[_2]/user/authenticate.html'>upload scanned copies</a> of the above documents, or email them to support\@binary.com within five days of receipt of this email to keep your account active.
+
+We look forward to hearing from you soon.
+
+Regard,
+
+Binary.com
+", $client->full_name, $language
+    );
+
+    try {
+        send_email({
+            from                  => $brand->emails('support'),
+            to                    => $client->email,
+            subject               => localize('Authenticate your account to continue trading on MT5'),
+            message               => [$client_email_template],
+            use_email_template    => 1,
+            email_content_is_html => 1
+        });
+    }
+    catch {
+        warn "Failed to notify customer about verification process";
+    };
+
+    try {
+        send_email({
+                from    => $brand->emails('system'),
+                to      => $brand->emails('support'),
+                subject => 'Asked for authentication documents',
+                message => [
+                    "MT5 Financial Account Created for MT$mt5_login\nIf client has not submitted document within five days please disable account and inform compliance"
+                ],
+                use_email_template    => 0,
+                email_content_is_html => 0,
+            });
+    }
+    catch {
+        warn "Failed to notify cs team about new CR Financial account MT$mt5_login";
+    };
     return 1;
 }
 
@@ -776,21 +853,10 @@ async_rpc mt5_password_change => sub {
             }
 
             return BOM::MT5::User::Async::password_change({
-                login        => $login,
-                new_password => $args->{new_password},
-                type         => $args->{password_type} // 'main',
-            });
-        }
-        )->then(
-        sub {
-            my ($status) = @_;
-
-            if ($status->{error}) {
-                return create_error_future({
-                        code              => 'MT5PasswordChangeError',
-                        message_to_client => $status->{error}});
-            }
-            return Future->done(1);
+                    login        => $login,
+                    new_password => $args->{new_password},
+                    type         => $args->{password_type} // 'main',
+                })->then_done(1);
         });
 };
 
