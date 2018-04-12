@@ -104,7 +104,8 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                     #Go to the next contract, if current setting has one barrier and contract type needs two or vice versa
                     next if $contract_type =~ /^(EXPIRY|RANGE|UPORDOWN)/ and not exists $barrier->{high_barrier};
                     next if $contract_type !~ /^(EXPIRY|RANGE|UPORDOWN)/ and exists $barrier->{high_barrier};
-                    next if $contract_type =~ /^(TICKHIGH|TICKLOW)/;
+
+                    next if $contract_type =~ /^(RESETCALL|RESETPUT|LBFLOATCALL|LBFLOATPUT|LBHIGHLOW|TICKHIGH|TICKLOW)/;
 
                     lives_ok {
                         my $c = produce_contract($args);
