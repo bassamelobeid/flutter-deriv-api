@@ -180,7 +180,7 @@ subtest 'turnover limit parameters' => sub {
     ok $param->[0]->{daily}, 'daily set to 1';
     is scalar(@{$param->[0]->{symbols}}), 2, '2 symbols selected';
     is $param->[0]->{symbols}->[0], 'R_100', 'first symbol is R_100';
-    is $param->[0]->{symbols}->[1], 'R_10', 'first symbol is R_10';
+    is $param->[0]->{symbols}->[1], 'R_10',  'first symbol is R_10';
 
 };
 
