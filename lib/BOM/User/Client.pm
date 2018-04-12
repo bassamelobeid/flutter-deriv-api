@@ -7,7 +7,6 @@ use warnings;
 our $VERSION = '0.145';
 
 use Email::Stuffer;
-use DateTime;
 use Date::Utility;
 use List::Util;
 use Format::Util::Numbers qw(roundcommon);
