@@ -96,7 +96,7 @@ for my $c ($client, $toClient) {
         print build_client_warning_message($loginID);
     }
     if (!$c->is_first_deposit_pending && $c->currency && $c->currency ne $curr) {
-        printf "ERROR: Invalid currency [%s], default for [$c] is [%s]", encode_entities($curr), $c->currency;
+        printf "ERROR: Invalid currency [%s], default for [$c->loginid] is [%s]", encode_entities($curr), $c->currency;
         code_exit_BO();
     }
 }
