@@ -69,20 +69,18 @@ try {
         bucket     => $config->{aws_bucket},
     );
     $loop->add($s3);
-
-my $url_generator = Amazon::S3::SignedURLGenerator->new(
-    aws_access_key_id     => $config->{aws_access_key_id},
-    aws_secret_access_key => $config->{aws_secret_access_key},
-    prefix                => "https://$config->{aws_bucket}.s3.amazonaws.com/",
-    expires               => BOM::Platform::Runtime->instance->app_config->system->mail->download_duration,
-);
     
-    my $upload_future = $s3->put_object(
+    my $url_generator = Amazon::S3::SignedURLGenerator->new(
+        aws_access_key_id     => $config->{aws_access_key_id},
+        aws_secret_access_key => $config->{aws_secret_access_key},
+        prefix                => "https://$config->{aws_bucket}.s3.amazonaws.com/",
+        expires               => BOM::Platform::Runtime->instance->app_config->system->mail->download_duration,
+    );
+    
+    $s3->put_object(
         key   => $output_zip,
         value => $output_zip_path->slurp
-    );
-    $loop->await($upload_future);
-    $upload_future->get;
+    )->get;
     my $download_url = $url_generator->generate_url('GET', $output_zip);
 
     my $brand = Brands->new();
@@ -96,4 +94,4 @@ my $url_generator = Amazon::S3::SignedURLGenerator->new(
 }
 catch {
     warn "Failed to upload reports to s3. Error is $_. No email was sent.";
-}
+};
