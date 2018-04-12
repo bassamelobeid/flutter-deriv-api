@@ -321,18 +321,18 @@ subtest 'MT5 logins' => sub {
     #   t/BOM/user.t
     #   t/lib/mock_binary_mt5.pl
     my %DETAILS_REAL = (
-        login    => '1000',
-        group   => 'real\something',
+        login => '1000',
+        group => 'real\something',
     );
 
     my %DETAILS_DEMO = (
-        login    => '2000',
-        group   => 'demo\something',
+        login => '2000',
+        group => 'demo\something',
     );
     @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
 
-    my $loginid_real = 'MT'.$DETAILS_REAL{login};
-    my $loginid_demo = 'MT'.$DETAILS_DEMO{login};
+    my $loginid_real = 'MT' . $DETAILS_REAL{login};
+    my $loginid_demo = 'MT' . $DETAILS_DEMO{login};
 
     $user->add_loginid({loginid => $loginid_real});
     $user->save;
@@ -450,53 +450,30 @@ subtest 'GAMSTOP' => sub {
 
     subtest 'GAMSTOP - Y - excluded' => sub {
         $gamstop_module->mock('get_exclusion_for', sub { return Webservice::GAMSTOP::Response->new(%params); });
-        ok $user_gamstop->login(%pass)->{success}, 'can login';
-
-        $default_client = $user_gamstop->get_default_client();
-        $default_client->set_exclusion->exclude_until($date_plus_one_day);
-        $default_client->save;
-
-        is $default_client->get_self_exclusion_until_date, $date_plus_one_day, 'Y response does not update existing self exclusion';
-        $default_client->set_exclusion->exclude_until(undef);
-        $default_client->save;
 
         ok $user_gamstop->login(%pass)->{success}, 'can login';
-        is $default_client->get_self_exclusion_until_date, Date::Utility->new(DateTime->now()->add(months => 6)->ymd)->date_yyyymmdd,
+        is $client_gamstop->get_self_exclusion_until_date, Date::Utility->new(DateTime->now()->add(months => 6)->ymd)->date_yyyymmdd,
             'Based on Y response from GAMSTOP client was self excluded';
+
+        $client_gamstop->set_exclusion->exclude_until(undef);
+        $client_gamstop->save;
     };
 
     subtest 'GAMSTOP - N - not excluded' => sub {
         $params{exclusion} = 'N';
         $gamstop_module->mock('get_exclusion_for', sub { return Webservice::GAMSTOP::Response->new(%params); });
-        ok $user_gamstop->login(%pass)->{success}, 'can login';
-
-        is $default_client->get_self_exclusion_until_date, Date::Utility->new(DateTime->now()->add(months => 6)->ymd)->date_yyyymmdd,
-            'Based on N response from GAMSTOP client previous self exclusion were not updated';
-
-        $default_client->set_exclusion->exclude_until(undef);
-        $default_client->save;
 
         ok $user_gamstop->login(%pass)->{success}, 'can login';
-        is $default_client->get_self_exclusion_until_date, undef, 'Based on N response from GAMSTOP client was not self excluded';
+        is $client_gamstop->get_self_exclusion_until_date, undef, 'Based on N response from GAMSTOP client was not self excluded';
     };
 
     subtest 'GAMSTOP - P - previously excluded but not anymore' => sub {
         $params{exclusion} = 'P';
 
-        $default_client->set_exclusion->exclude_until($date_plus_one_day);
-        $default_client->save;
-
         $gamstop_module->mock('get_exclusion_for', sub { return Webservice::GAMSTOP::Response->new(%params); });
-        ok $user_gamstop->login(%pass)->{success}, 'can login';
-
-        is $default_client->get_self_exclusion_until_date, $date_plus_one_day,
-            'Based on N response from GAMSTOP client previous self exclusion were not updated';
-
-        $default_client->set_exclusion->exclude_until(undef);
-        $default_client->save;
 
         ok $user_gamstop->login(%pass)->{success}, 'can login';
-        is $default_client->get_self_exclusion_until_date, undef, 'Based on N response from GAMSTOP client was not self excluded';
+        is $client_gamstop->get_self_exclusion_until_date, undef, 'Based on N response from GAMSTOP client was not self excluded';
     };
 };
 
