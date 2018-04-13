@@ -35,7 +35,9 @@ use BOM::Transaction;
 
 requires_auth();
 
-use constant MT5_ACCOUNT_THROTTLE_KEY_PREFIX         => 'MT5ACCOUNT::THROTTLE::';
+use constant MT5_ACCOUNT_THROTTLE_KEY_PREFIX => 'MT5ACCOUNT::THROTTLE::';
+
+# Defines mt5 account rights combination when trading is enabled
 use constant MT5_ACCOUNT_TRADING_ENABLED_RIGHTS_ENUM => qw(
     483 1503 2527 3555
 );
@@ -271,12 +273,12 @@ async_rpc mt5_new_account => sub {
         $args->{agent} = $manager_id // _get_mt5_account_from_affiliate_token($client->myaffiliates_token);
 
         $group = 'real\\' . $mt_company;
-        if ($manager_id) {
-            $group .= "_mamm_${account_type}_${manager_id}";
-        } else {
-            $group .= "_$mt5_account_type" if $account_type eq 'financial';
-            $group .= "_$residence" if $brand->country_has_own_mt5_group($residence);
-        }
+        $group .= '_mamm' if $manager_id;
+
+        $group .= "_$mt5_account_type" if $account_type eq 'financial';
+        $group .= "_$residence" if $brand->country_has_own_mt5_group($residence);
+
+        $group .= "_$manager_id" if $manager_id;
     }
 
     return create_error_future({
