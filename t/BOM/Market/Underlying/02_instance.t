@@ -15,7 +15,6 @@ use File::Spec;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use DateTime;
 use Cache::RedisDB;
 use Date::Utility;
 use Format::Util::Numbers qw(roundcommon);
@@ -432,11 +431,7 @@ subtest 'all methods on a selection of underlyings' => sub {
     'Preparing ticks';
 
     lives_ok {
-        my $date = DateTime->new(
-            year  => 2012,
-            month => 1,
-            day   => 19
-        );
+        my $date = Date::Utility->new('2012-01-19');
         BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily({
             epoch      => ($date->epoch - 86400),
             open       => 1.2746,
