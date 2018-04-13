@@ -122,7 +122,7 @@ rpc buy => sub {
     #no of contracts. Internally for non-binary we will use multiplier.
     #If we use amount, this will create confusion with the amount use for
     #binary contract.
-    $contract_parameters->{multiplier} //= $contract_parameters->{amount};
+    $contract_parameters->{multiplier} = $contract_parameters->{amount} if $contract_parameters->{amount_type} eq 'multiplier';
 
     my $error = BOM::RPC::v3::Contract::validate_barrier($contract_parameters);
     return $error if $error->{error};
