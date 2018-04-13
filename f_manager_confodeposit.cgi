@@ -232,6 +232,7 @@ if ($ttype eq 'TRANSFER') {
 
 my ($leave, $client_pa_exp);
 try {
+    BOM::Platform::Client::IDAuthentication->new(client => $client)->run_authentication if $client->is_first_deposit_pending;
     if ($ttype eq 'CREDIT' || $ttype eq 'DEBIT') {
         $client->smart_payment(
             %params,    # these are payment-type-specific params from the html form.
