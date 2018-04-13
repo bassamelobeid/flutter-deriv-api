@@ -536,12 +536,11 @@ subtest combined_realtime => sub {
 };
 
 subtest 'daily close crossing intradays' => sub {
-    plan tests => 6;
+    plan tests => 5;
     my %expectations = (
         'frxEURUSD' => 0,
         'frxBROUSD' => 1,
         'AS51'      => 1,
-        'USAAPL'    => 1,
         'R_100'     => 0,
         'RDBULL'    => 1,
     );
@@ -552,13 +551,12 @@ subtest 'daily close crossing intradays' => sub {
 };
 
 subtest 'max_suspend_trading_feed_delay' => sub {
-    plan tests => 6;
+    plan tests => 5;
 
     my %expectations = (
         'frxEURUSD' => 30,
         'frxBROUSD' => 300,
         'AS51'      => 300,
-        'USAAPL'    => 300,
         'R_100'     => 300,
         'RDBULL'    => 300,
     );
