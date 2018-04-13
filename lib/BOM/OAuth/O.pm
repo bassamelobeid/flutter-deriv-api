@@ -251,6 +251,7 @@ sub _login {
             csrf_token       => $c->csrf_token,
             use_social_login => $c->_is_social_login_available(),
             login_providers  => $c->stash('login_providers'),
+            login_method     => undef,
         );
         return;
     }
