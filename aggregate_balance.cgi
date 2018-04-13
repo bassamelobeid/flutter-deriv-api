@@ -24,15 +24,17 @@ my $report_mapper = BOM::Database::DataMapper::CollectorReporting->new({
 });
 my $results = $report_mapper->get_aggregate_balance_per_currency();
 
-my $records;
+my ($records, $aggregate);
 foreach my $entry (@$results) {
     $records->{$entry->{currency_code}}->{$entry->{broker_code}} += $entry->{balance};
+    $aggregate->{$entry->{currency_code}}->{total_across_broker_codes} += $entry->{balance};
 }
 
 BOM::Backoffice::Request::template->process(
     'backoffice/aggregate_balance.html.tt',
     {
-        records => $records,
+        records         => $records,
+        aggregate_total => $aggregate,
     }) || die BOM::Backoffice::Request::template->error(), "\n";
 
 code_exit_BO();
