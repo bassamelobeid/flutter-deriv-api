@@ -427,7 +427,7 @@ Binary.com
                 to      => $brand->emails('support'),
                 subject => 'Asked for authentication documents',
                 message => [
-                    "MT5 Financial Account Created for MT$mt5_login\nIf client has not submitted document within five days please disable account and inform compliance"
+                    "MT5 Financial Account MT$mt5_login created for ${\$client->loginid}\n If client has not submitted document within five days please disable account and inform compliance"
                 ],
                 use_email_template    => 0,
                 email_content_is_html => 0,
