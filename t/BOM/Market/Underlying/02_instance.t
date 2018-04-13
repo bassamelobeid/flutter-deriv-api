@@ -125,27 +125,6 @@ subtest 'display_decimals' => sub {
         }
     };
 
-    subtest 'stocks' => sub {
-        my $symbols_decimals = {
-            USAAPL => 2,
-            UKBAY  => 4,
-        };
-        my $underlying;
-        foreach my $symbol (qw(USAAPL UKBAY)) {
-            $underlying = create_underlying({symbol => $symbol});
-            my $decimals = $symbols_decimals->{$symbol};
-            is $underlying->display_decimals, $decimals, $symbol . ' display_decimals';
-        }
-
-        my $stock = create_underlying({symbol => 'USAAPL'});
-        $stock->set_combined_realtime({
-            epoch => time,
-            quote => 8
-        });
-        is roundcommon(0.0001, $stock->dividend_rate_for(0.5)), 0, 'correct dividend rate for stocks';
-        is $stock->dividend_rate_for(1.0), 0, 'correct dividend rate for stocks';
-        Cache::RedisDB->del('QUOTE', $stock->symbol);
-    };
 };
 
 subtest 'all attributes on a variety of underlyings' => sub {
