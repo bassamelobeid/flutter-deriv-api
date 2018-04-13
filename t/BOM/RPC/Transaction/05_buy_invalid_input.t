@@ -55,7 +55,7 @@ my $params = {
         "basis"         => "payout",
         "contract_type" => "CALL",
         "currency"      => "USD",
-        "duration"      => "500",
+        "duration"      => "5000000000000000",
         "duration_unit" => "d",
         "symbol"        => "R_50",
     },
@@ -66,23 +66,20 @@ subtest 'get proposal with invalid duration' => sub {
         client_ip => '127.0.0.1',
         args      => $params->{contract_parameters}};
 
-    $c->call_ok('send_ask', $ask_params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError');
+    $c->call_ok('send_ask', $ask_params)->has_no_system_error->has_error->error_code_is('ContractCreationFailure');
 };
 
 subtest 'buy with invalid duration' => sub {
     my (undef, $txn_con) = Test::BOM::RPC::Contract::prepare_contract(client => $client);
     $params->{args}{price} = $txn_con->contract->ask_price;
-    $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('InvalidtoBuy')
-        ->error_message_is('Contract expiry date should not exceed one year');
+    $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('ContractCreationFailure');
 };
 
 subtest 'buy with invalid expiry date' => sub {
     delete $params->{contract_parameters}{duration};
     delete $params->{contract_parameters}{duration_unit};
-    my $interval = Time::Duration::Concise->new(interval => '30000d');
-    $params->{contract_parameters}{date_expiry} = Date::Utility->new->plus_time_interval($interval)->epoch;
-    $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('InvalidtoBuy')
-        ->error_message_is('Contract expiry date should not exceed one year');
+    $params->{contract_parameters}{date_expiry} = Date::Utility->new->epoch + 9999999999;
+    $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('InvalidtoBuy');
 };
 
 subtest 'get proposal with invalid expiry date' => sub {
