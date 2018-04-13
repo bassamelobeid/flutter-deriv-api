@@ -76,7 +76,8 @@ sub produce_contract {
 
     my $params_ref = {%{_args_to_ref($build_arg, $maybe_currency, $maybe_sold)}};
 
-    _validate_contract_specific_parameters($params_ref) if ($params_ref->{bet_type} and $params_ref->{bet_type} =~ /^(TICKHIGH|TICKLOW)/);
+    _validate_contract_specific_parameters($params_ref)
+        if (not $params_ref->{for_sale} and $params_ref->{bet_type} and $params_ref->{bet_type} =~ /^(TICKHIGH|TICKLOW)/);
 
     unless ($params_ref->{processed}) {
         # Categorizer's process always returns ARRAYREF, and here we will have and need only one element in this array
