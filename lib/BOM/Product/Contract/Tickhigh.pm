@@ -68,6 +68,7 @@ sub get_permissible_inputs {
         'contract_type'         => 1,
         'landing_company'       => 1,
         'app_markup_percentage' => 1,
+        'prediction'            => 1,
     };
 }
 
