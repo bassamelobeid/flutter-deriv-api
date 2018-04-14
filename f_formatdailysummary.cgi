@@ -38,10 +38,13 @@ if (open(my $fh, '<', $filename)) {    ## no critic (RequireBriefOpen)
 
     while (my $l = <$fh>) {
         if ($l =~ /^#/) { print "<TR><TD colspan=8><font size=2 face=verdana><b>$l</td></tr>"; }
+	elsif($l =~ /^loginid/){
+		print "\r<TR>" . join("", map {"<TD><font size=2 face-verdana>" . encode_entities($_) . "</TD>"} split /\,/, $l) . "</TR>";
+	}
         else {
             @fields = split(/\,/, $l);
             my $thislineout = "\r<TR>";
-
+ 
             foreach my $i (0..$#fields) {
                 my $f = $fields[$i];
                 if ($i == 6) {
@@ -57,8 +60,7 @@ if (open(my $fh, '<', $filename)) {    ## no critic (RequireBriefOpen)
                 }
                 if (($displayport) || ($i < 6)) {
                     $thislineout .= "<TD><font size=2 face=verdana>" . encode_entities($f) . "</TD>";
-		    warn "f is $f\n";
-                    if (abs($f) > 0) { $sums[$i] += $f; }
+                    if ($i > 0 && abs($f) > 0) { $sums[$i] += $f; }
 
                     if ($i == 5) {
                         $thislineout .= "<TD><font size=2 face=verdana>" . encode_entities($fields[4] - $fields[5]) . "</TD>";
