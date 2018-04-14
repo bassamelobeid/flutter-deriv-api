@@ -41,11 +41,11 @@ if (open(my $fh, '<', $filename)) {    ## no critic (RequireBriefOpen)
       next if ($l =~ /^$);
       if ($l =~ /^#/) { print "<TR><TD colspan=8><font size=2 face=verdana><b>$l</td></tr>"; next; }
 	if($l =~ /^loginid/){
-		print "\r<TR>" . join("", map {"<TD><font size=2 face-verdana>" . encode_entities($_) . "</TD>"} split /\,/, $l) . "</TR>";
+		print "<TR>" . join("", map {"<TD><font size=2 face-verdana>" . encode_entities($_) . "</TD>"} split /\,/, $l) . "</TR>";
     next;
 	}
             @fields = split(/\,/, $l);
-            my $thislineout = "\r<TR>";
+            my $thislineout = "<TR>";
  
             foreach my $i (0..$#fields) {
                 my $f = $fields[$i];
