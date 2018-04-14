@@ -81,13 +81,9 @@ if (open(my $fh, '<', $filename)) {    ## no critic (RequireBriefOpen)
     print "Can not open " . encode_entities($filename);
 }
 
-my @s_to_out;
+my @s_to_out = sort { my ($a1, $b1); $a =~ /\<\!\-\-\s(\-?\d*\.?\d*)\s/; $a1 = $1; $b =~ /\<\!\-\-\s(\-?\d*\.?\d*)\s/; $b1 = $1; $a1 <=> $b1; } @to_out;
 if (request()->param('sortorder') =~ /reverse/) {
-    @s_to_out =
-        sort { my ($a1, $b1); $a =~ /\<\!\-\-\s(\-?\d*\.?\d*)\s/; $a1 = $1; $b =~ /\<\!\-\-\s(\-?\d*\.?\d*)\s/; $b1 = $1; $a1 <=> $b1; } @to_out;
-} else {
-    @s_to_out =
-        sort { my ($a1, $b1); $a =~ /\<\!\-\-\s(\-?\d*\.?\d*)\s/; $a1 = $1; $b =~ /\<\!\-\-\s(\-?\d*\.?\d*)\s/; $b1 = $1; $b1 <=> $a1; } @to_out;
+    @s_to_out = reverse @s_to_out;
 }
 
 splice @s_to_out, $outputlargest if $#s_to_out > $outputlargest;
