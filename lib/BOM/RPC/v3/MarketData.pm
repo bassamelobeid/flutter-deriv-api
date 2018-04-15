@@ -17,6 +17,7 @@ use Try::Tiny;
 use BOM::RPC::Registry '-dsl';
 use LandingCompany::Registry;
 use BOM::Platform::Context qw (localize);
+use BOM::Platform::AuditLog;
 use BOM::RPC::v3::Utility;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use Format::Util::Numbers qw(formatnumber);
@@ -55,9 +56,10 @@ rpc exchange_rates => sub {
     }
     catch {
         %rates_hash = ();
+        BOM::Platform::AuditLog::log("Exchange rates terminated by error: $_");
     };
 
-    if (not keys %rates_hash) {
+    if (not %rates_hash) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'ExchangeRatesNotAvailable',
             message_to_client => localize('Exchange rates are not currently available.'),
