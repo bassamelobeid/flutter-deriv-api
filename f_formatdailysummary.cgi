@@ -37,7 +37,7 @@ if (open(my $fh, '<', $filename)) {    ## no critic (RequireBriefOpen)
     flock($fh, 1);
 
     while (my $l = <$fh>) {
-        chomp;
+        chomp($l);
         next if ($l =~ /^$/);
         if ($l =~ m/^\#/) { print "<TR><TD colspan=8><font size=2 face=verdana><b>$l</td></tr>"; next; }
         if ($l =~ /^loginid/) {
