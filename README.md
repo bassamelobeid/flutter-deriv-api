@@ -98,23 +98,22 @@ Output: 'interest_rates' at Chronicle
 
 (6) bin/updatevol.pl
 
-A script runs BOM::MarketDataAutoUpdater::Indices to update vol of indices and stocks and BOM::MarketDataAutoUpdater::Forex to update vol of forex and commodities
+A script runs BOM::MarketDataAutoUpdater::Indices to update vol of indices and BOM::MarketDataAutoUpdater::Forex to update vol of forex and commodities
 
 ```
 To update vol of indicies: bin/updatevol.pl --market=indices
-To update vol of stocks: bin/updatevol.pl --market=stocks
 To udpate vol of forex and commodities: bin/updatevol.pl
 ```
 
-Source: Bloomberg Data License (Forex and Commodities), Superderivaties (Stocks and Indices)
+Source: Bloomberg Data License (Forex and Commodities), Superderivaties (Indices)
 
-Frequency of this script being called: Hourly basic (Indices and stocks), 10min basic (Forex and commodities)
+Frequency of this script being called: Hourly basic (Indices), 10min basic (Forex and commodities)
 
 Input:
 - volatility file type from Bloomberg::FileDownloaderBloomberg e.g. 
 weekday vols : fxvol%02d45_points.csv, quantovol.csv
 weekend vols : fxvol_wknd.csv, quantovol_wknd.csv
-- volatility file type from SuperDerivatives e.g. auto_upload.xls, auto_upload_stocks.xls
+- volatility file type from SuperDerivatives e.g. auto_upload.xls
 
 Output: category='volatility_surfaces' 
 
