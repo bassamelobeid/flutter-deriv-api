@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "MT5 MAMM Receive",
+  "title": "MT5 Multiple Accounts Manager Response",
   "description": "MT5 MAMM Receive",
   "properties": {
     "echo_req": {

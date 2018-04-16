@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "MT5 Multi-Asset Management Module Request",
+  "title": "MT5 Multiple Accounts Manager Request",
   "description": "This call allows to manage manager for MT5 account",
   "properties": {
     "mt5_mamm": {
