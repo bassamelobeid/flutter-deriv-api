@@ -40,7 +40,7 @@ use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Token;
 use BOM::Transaction;
 use BOM::Platform::Config;
-use BOM::Platform::Password;
+use BOM::User::Password;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::Model::AccessToken;
@@ -593,7 +593,7 @@ rpc change_password => sub {
         return $pass_error;
     }
 
-    my $new_password = BOM::Platform::Password::hashpw($args->{new_password});
+    my $new_password = BOM::User::Password::hashpw($args->{new_password});
     $user->password($new_password);
     $user->save;
 
@@ -604,7 +604,7 @@ rpc change_password => sub {
         $oauth->revoke_tokens_by_loginid($obj->loginid);
     }
 
-    BOM::Platform::AuditLog::log('password has been changed', $client->email);
+    BOM::User::AuditLog::log('password has been changed', $client->email);
     send_email({
             from    => Brands->new(name => request()->brand)->emails('support'),
             to      => $client->email,
@@ -658,7 +658,7 @@ rpc cashier_password => sub {
         }
 
         my $user = BOM::User->new({email => $client->email});
-        if (BOM::Platform::Password::checkpw($lock_password, $user->password)) {
+        if (BOM::User::Password::checkpw($lock_password, $user->password)) {
             return $error_sub->(localize('Please use a different password than your login password.'));
         }
 
@@ -666,7 +666,7 @@ rpc cashier_password => sub {
             return $pass_error;
         }
 
-        $client->cashier_setting_password(BOM::Platform::Password::hashpw($lock_password));
+        $client->cashier_setting_password(BOM::User::Password::hashpw($lock_password));
         if (not $client->save()) {
             return $error_sub->(localize('Sorry, an error occurred while processing your account.'));
         } else {
@@ -694,8 +694,8 @@ rpc cashier_password => sub {
         }
 
         my $cashier_password = $client->cashier_setting_password;
-        if (!BOM::Platform::Password::checkpw($unlock_password, $cashier_password)) {
-            BOM::Platform::AuditLog::log('Failed attempt to unlock cashier', $client->loginid);
+        if (!BOM::User::Password::checkpw($unlock_password, $cashier_password)) {
+            BOM::User::AuditLog::log('Failed attempt to unlock cashier', $client->loginid);
             send_email({
                     'from'    => Brands->new(name => request()->brand)->emails('support'),
                     'to'      => $client->email,
@@ -734,7 +734,7 @@ rpc cashier_password => sub {
                     'email_content_is_html' => 1,
                     template_loginid        => $client->loginid,
                 });
-            BOM::Platform::AuditLog::log('cashier unlocked', $client->loginid);
+            BOM::User::AuditLog::log('cashier unlocked', $client->loginid);
             return {status => 0};
         }
     }
@@ -785,7 +785,7 @@ rpc "reset_password",
         return $pass_error;
     }
 
-    my $new_password = BOM::Platform::Password::hashpw($args->{new_password});
+    my $new_password = BOM::User::Password::hashpw($args->{new_password});
     $user->password($new_password);
     $user->save;
 
@@ -796,7 +796,7 @@ rpc "reset_password",
         $oauth->revoke_tokens_by_loginid($obj->loginid);
     }
 
-    BOM::Platform::AuditLog::log('password has been reset', $email, $args->{verification_code});
+    BOM::User::AuditLog::log('password has been reset', $email, $args->{verification_code});
     send_email({
             from    => Brands->new(name => request()->brand)->emails('support'),
             to      => $email,
@@ -1157,7 +1157,7 @@ rpc set_settings => sub {
         email_content_is_html => 1,
         template_loginid      => $client->loginid,
     });
-    BOM::Platform::AuditLog::log('Your settings have been updated successfully', $client->loginid);
+    BOM::User::AuditLog::log('Your settings have been updated successfully', $client->loginid);
 
     return {status => 1};
 };

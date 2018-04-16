@@ -33,7 +33,7 @@ use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Context qw (request);
 use BOM::Database::Model::OAuth;
-use BOM::Platform::PaymentNotificationQueue;
+use BOM::User::Client::PaymentNotificationQueue;
 
 requires_auth();
 
@@ -93,8 +93,8 @@ rpc "new_account_virtual",
     });
     $user->save;
 
-    BOM::Platform::AuditLog::log("successful login", "$email");
-    BOM::Platform::PaymentNotificationQueue->add(
+    BOM::User::AuditLog::log("successful login", "$email");
+    BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'virtual',
         currency      => 'USD',
         loginid       => $client->loginid,
@@ -318,8 +318,8 @@ rpc new_account_real => sub {
         }
     }
 
-    BOM::Platform::AuditLog::log("successful login", "$client->email");
-    BOM::Platform::PaymentNotificationQueue->add(
+    BOM::User::AuditLog::log("successful login", "$client->email");
+    BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'real',
         currency      => 'USD',
         loginid       => $new_client->loginid,
@@ -433,8 +433,8 @@ rpc new_account_maltainvest => sub {
     });
     $user->save;
 
-    BOM::Platform::AuditLog::log("successful login", "$client->email");
-    BOM::Platform::PaymentNotificationQueue->add(
+    BOM::User::AuditLog::log("successful login", "$client->email");
+    BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'real',
         currency      => 'USD',
         loginid       => $new_client->loginid,
@@ -509,8 +509,8 @@ rpc new_account_japan => sub {
     });
     $user->save;
 
-    BOM::Platform::AuditLog::log("successful login", "$client->email");
-    BOM::Platform::PaymentNotificationQueue->add(
+    BOM::User::AuditLog::log("successful login", "$client->email");
+    BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'real',
         currency      => 'USD',
         loginid       => $new_client->loginid,
