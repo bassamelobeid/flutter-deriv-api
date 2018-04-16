@@ -176,7 +176,7 @@ if ($input{whattodo} eq 'sync_to_DF') {
         . $df_client->CustName
         . ', Profile: '
         . $df_client->Profile;
-    BOM::Platform::AuditLog::log($msg, $loginid, $clerk);
+    BOM::User::AuditLog::log($msg, $loginid, $clerk);
 
     BOM::Backoffice::Request::template->process(
         'backoffice/client_edit_msg.tt',

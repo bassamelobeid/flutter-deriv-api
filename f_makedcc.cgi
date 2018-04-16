@@ -13,7 +13,7 @@ use BOM::User::Client;
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
-use BOM::Platform::AuditLog;
+use BOM::User::AuditLog;
 use BOM::DualControl;
 use BOM::Backoffice::Config;
 use BOM::Backoffice::Cookie;
@@ -93,7 +93,7 @@ if ($input->{'dcctype'} eq 'file_content') {
 
     print encode_entities($message);
 
-    BOM::Platform::AuditLog::log($message);
+    BOM::User::AuditLog::log($message);
 
     # Logging
     Path::Tiny::path(BOM::Backoffice::Config::config->{log}->{deposit})
@@ -122,7 +122,7 @@ if ($input->{'dcctype'} eq 'file_content') {
         . $input->{'clientloginid'}
         . " is: $code This code is valid for 1 hour (from $current_timestamp) only.";
 
-    BOM::Platform::AuditLog::log($message, '', $staff);
+    BOM::User::AuditLog::log($message, '', $staff);
 
     print encode_entities($message);
     print "<p>Note: "
