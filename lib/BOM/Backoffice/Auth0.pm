@@ -6,7 +6,7 @@ use Mojo::UserAgent;
 use JSON::MaybeXS;
 use BOM::Platform::Runtime;
 use BOM::Platform::Config;
-use BOM::Platform::AuditLog;
+use BOM::User::AuditLog;
 use BOM::Platform::RedisReplicated;
 
 my $json = JSON::MaybeXS->new;
@@ -77,12 +77,12 @@ sub has_authorisation {
         }
         foreach my $g (@{$user->{groups}}) {
             if (grep { /^$g$/ } @{$groups}) {
-                BOM::Platform::AuditLog::log('successful request for ' . join(',', @{$groups}), '', $staff);
+                BOM::User::AuditLog::log('successful request for ' . join(',', @{$groups}), '', $staff);
                 return 1;
             }
         }
     }
-    BOM::Platform::AuditLog::log('failed request for ' . join(',', @{$groups}), '', $staff);
+    BOM::User::AuditLog::log('failed request for ' . join(',', @{$groups}), '', $staff);
     return;
 }
 
