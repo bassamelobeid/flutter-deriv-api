@@ -17,7 +17,6 @@ use Try::Tiny;
 use BOM::RPC::Registry '-dsl';
 use LandingCompany::Registry;
 use BOM::Platform::Context qw (localize);
-use BOM::Platform::AuditLog;
 use BOM::RPC::v3::Utility;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use Format::Util::Numbers qw(formatnumber);
