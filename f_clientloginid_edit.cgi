@@ -73,6 +73,8 @@ my $client = eval { BOM::User::Client->new({loginid => $loginid}) } || do {
     );
 };
 
+my $user = $client->user;
+
 my $broker         = $client->broker;
 my $encoded_broker = encode_entities($broker);
 my $clerk          = BOM::Backoffice::Auth0::from_cookie()->{nickname};
@@ -393,7 +395,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     exists $input{$_} && $client->$_($input{$_}) for @simple_updates;
 
     # Handing the professional client status (For all existing clients)
-    my $user = BOM::User->new({email => $client->email});
     my $result = "";
 
     # Only allow CR and MF
@@ -734,7 +735,6 @@ if ($link_acc) {
     print $link_acc;
 }
 
-my $user = BOM::User->new({loginid => $client->loginid});
 my $siblings;
 if ($user) {
     $siblings = $user->loginid_details;
