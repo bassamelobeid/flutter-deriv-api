@@ -75,26 +75,6 @@
                 [% SET self_params = "?loginid=$client.loginid" %]
                 [% "id$auth_user.id: $auth_user.login" %] has [%auth_user.grants_count%] tokens.  
                 <a href="[%"$self_params&revoke_all=1"%]">Expire all of them.</a>
-                Most recent:
-                <table class="grants">
-                <tr>
-                    <th>Token</th><th>From</th><th>Expires</th>
-                </tr>
-                [% FOR grant IN grants_limited %]
-                    <tr>
-                        <td class="token" title="[%grant.scopes|html%]">[%grant.token%]</td>
-                        <td>[%grant.client.description%]</td>
-                        <td>[%grant.expires%]</td>
-                        <td>
-                            [% IF grant.expires > now %]
-                            <a href="[%"$self_params&revoke=$grant.token"%]">Expire</a>
-                            [% ELSE %]
-                            &nbsp;
-                            [% END %]
-                        </td>
-                    </tr>
-                [% END %]
-                </table>
             [% ELSE %]
                 (has no auth-db entry)
             [% END %]
@@ -116,7 +96,7 @@
         mth2 = "find_$child_class";
         count = client.$mth1;
         NEXT UNLESS count;
-        hits = client.$mth2('limit',limit); $]
+        hits = client.$mth2('limit',limit); %]
         <h4>$child_class</h4>
         [% IF count >= limit %]
         <em>.. showing only [% limit %] of [% count %] entries</em>
