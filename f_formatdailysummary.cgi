@@ -18,7 +18,7 @@ my $filename      = request()->param('show');
 my $displayport   = request()->param('displayport');
 my $outputlargest = request()->param('outputlargest');
 my $viewonlylist  = request()->param('viewonlylist');
-my $sortby = request()->param('sortby') // 0;
+my $sortby        = request()->param('sortby') // 0;
 
 print "<TABLE border=1>";
 
@@ -72,7 +72,7 @@ if (open(my $fh, '<', $filename)) {    ## no critic (RequireBriefOpen)
         }
 
         if   ($sortby == 6) { $thislineout .= "<!-- " . encode_entities($fields[4] - $fields[5]) . " -->"; }
-        else                                   { $thislineout .= "<!-- " . encode_entities($fields[$sortby]) . " -->"; }
+        else                { $thislineout .= "<!-- " . encode_entities($fields[$sortby]) . " -->"; }
         $thislineout .= "</TR>";
 
         if (not $viewonlylist or $viewonlylist =~ /$fields[0]/) { push @to_out, $thislineout; }
