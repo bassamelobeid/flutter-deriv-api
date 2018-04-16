@@ -19,7 +19,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::FinancialAssessment;
 
-use BOM::Platform::Password;
+use BOM::User::Password;
 use BOM::User;
 
 use await;
@@ -49,7 +49,7 @@ my $rates = {
 
 Cache::RedisDB->set('QUOTE', "frx${_}USD", {quote => $rates->{$_}}) for keys %$rates;
 
-my $hash_pwd = BOM::Platform::Password::hashpw('jskjd8292922');
+my $hash_pwd = BOM::User::Password::hashpw('jskjd8292922');
 my $user     = BOM::User->create(
     email    => $test_client->email,
     password => $hash_pwd
