@@ -39,7 +39,7 @@ if (open(my $fh, '<', $filename)) {    ## no critic (RequireBriefOpen)
     while (my $l = <$fh>) {
       chomp;
       next if ($l =~ /^$);
-      if ($l =~ /^#/) { print "<TR><TD colspan=8><font size=2 face=verdana><b>$l</td></tr>"; next; }
+      if ($l =~ /^\#/) { print "<TR><TD colspan=8><font size=2 face=verdana><b>$l</td></tr>"; next; }
 	if($l =~ /^loginid/){
 		print "<TR>" . join("", map {"<TD><font size=2 face-verdana>" . encode_entities($_) . "</TD>"} split /\,/, $l) . "</TR>";
     next;
