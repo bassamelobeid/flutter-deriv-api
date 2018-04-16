@@ -119,7 +119,7 @@ sub _build__report {
     $report->{big_losers}      = $pap_report->{big_losers};
     $report->{watched}         = $pap_report->{watched};
     $report->{top_turnover}    = $self->_top_turnover;
-    $report->{generated_time}  = Date::Utility->new->plus_time_interval(($ttl - 1800).'s')->datetime;
+    $report->{generated_time}  = Date::Utility->new->plus_time_interval(($ttl - 1800) . 's')->datetime;
     return $report;
 }
 
@@ -441,21 +441,62 @@ sub multibarrierreport {
         $final->{$expiry}->{max} = $max;
     }
 
-    $final->{generated_time} =  BOM::Database::DataMapper::CollectorReporting->new({broker_code => 'CR'})->get_last_generated_historical_marked_to_market_time;
+    $final->{generated_time} =
+        BOM::Database::DataMapper::CollectorReporting->new({broker_code => 'CR'})->get_last_generated_historical_marked_to_market_time;
+    return $final;
+}
+
+sub open_bet_summary {
+    my $self      = shift;
+    my @open_bets = @{$self->_open_bets_at_end};
+    my $summary;
+    my $final;
+    my $symbol;
+    foreach my $open_contract (@open_bets) {
+        my $contract = produce_contract($open_contract->{short_code}, $open_contract->{currency_code});
+        my $purchase_price = financialrounding('price', 'USD', in_USD($open_contract->{buy_price}, $open_contract->{currency_code}));
+        my $payout_price   = financialrounding('price', 'USD', in_USD($open_contract->{payout_price}, $open_contract->{currency_code}));
+
+        if ($contract->is_intraday) {
+
+            my $contract_duration_in_hour = $contract->timeinyears->amount * 365 * 24;
+            my $intraday_category = ($contract_duration_in_hour <= 5) ? 'less_than_5_hour' : 'more_than_5_hour';
+            $summary->{$contract->underlying->symbol}->{intraday}->{$intraday_category}->{turnover} += $purchase_price;
+            $summary->{$contract->underlying->symbol}->{intraday}->{$intraday_category}->{payout}   += $payout_price;
+            $summary->{$contract->underlying->symbol}->{intraday}->{total_turnover}  += $purchase_price;
+            $summary->{$contract->underlying->symbol}->{intraday}->{total_payout}  += $payout_price; 
+        } else {
+
+            $summary->{$contract->underlying->symbol}->{daily}->{total_payout}    += $payout_price;
+            $summary->{$contract->underlying->symbol}->{daily}->{total_turnover} += $purchase_price;
+        }
+
+    }
+    my @intraday_turnover = sort { $summary->{$b}->{intraday}->{total_turnover} <=> $summary->{$a}->{intraday}->{total_turnover}} grep { $summary->{$_}->{intraday} && $summary->{$_}->{intraday}->{total_turnover} > 0}  keys %{$summary};
+
+    my @daily_turnover = sort { $summary->{$b}->{daily}->{total_turnover} <=> $summary->{$a}->{daily}->{total_turnover}} grep { $summary->{$_}->{daily} && $summary->{$_}->{daily}->{total_turnover} > 0}  keys %{$summary};
+
+    $final->{intraday} = { map { $_ => $summary->{$_}->{intraday}} @a[0..9]];
+    $final->{daily} = { map { $_ => $summary->{$_}->{daily}} @a[0..9]];
+
+    $final->{generated_time} =
+        BOM::Database::DataMapper::CollectorReporting->new({broker_code => 'CR'})->get_last_generated_historical_marked_to_market_time;
+
     return $final;
 }
 
 sub closedplreport {
-    my $self      = shift;
-    my $today = Date::Utility->new;
+    my $self   = shift;
+    my $today  = Date::Utility->new;
     my $closed = $self->closed_PL_by_underlying($today->truncate_to_day->db_timestamp);
     my $final;
     foreach my $underlying (keys %$closed) {
-        $final->{$underlying}->{usd_closed_pl} =  financialrounding('price', 'USD', $closed->{$underlying}->{usd_closed_pl});
+        $final->{$underlying}->{usd_closed_pl} = financialrounding('price', 'USD', $closed->{$underlying}->{usd_closed_pl});
     }
     $final->{generated_time} = $today->datetime;
     return $final;
 }
+
 =head1 METHODS
 
 =head2 generate

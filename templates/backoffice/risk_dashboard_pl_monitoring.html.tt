@@ -11,4 +11,16 @@
 [% END %]
 </table>
 
+<p><b> Table 2: Current open position of different underlying. </b></p>
+<p> Note:We are taking into account the contract that bought and sold on the same date in this report. </p>
+
+<table border>
+<tr><td><b>Underlying </td><td><b> Closed PL (USD)</td></th></tr>
+[% FOREACH underlying IN data.keys %]
+	[% IF underlying != 'generated_time' %]
+            <tr style="background-color: [% data.$underlying.usd_closed_pl  < 0 ? 'red' : 'green' %]"><td>[% underlying %]</td><td> [% data.$underlying.usd_closed_pl %]</td></tr>
+        [% END %]
+[% END %]
+</table>
+
 
