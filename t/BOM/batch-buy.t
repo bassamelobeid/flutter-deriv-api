@@ -19,7 +19,7 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData::Types;
 use BOM::Platform::Client::Utility;
-use BOM::Platform::Password;
+use BOM::User::Password;
 use BOM::Product::ContractFactory qw( produce_contract );
 use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::Transaction::Validation;
