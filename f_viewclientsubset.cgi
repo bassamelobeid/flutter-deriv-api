@@ -28,7 +28,9 @@ use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
 unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}})) {
-    code_exit_BO("WARNING! You are not on the Master Live Server. Suggest you use these tools on the Master Live Server instead.");
+    code_exit_BO(
+        "WARNING! You are not on the Master Live Server. Please go to the following link: https://collector01.binary.com/d/backoffice/f_broker_login.cgi."
+    );
 }
 
 my $show = encode_entities(request()->param('show') // "");
