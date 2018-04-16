@@ -70,7 +70,7 @@ if (open(my $fh, '<', $filename)) {    ## no critic (RequireBriefOpen)
             }
         }
 
-        my $sortby = request()->param('sortby') // 0
+        my $sortby = request()->param('sortby') // 0;
         if   ($sortby == 6) { $thislineout .= "<!-- " . encode_entities($fields[4] - $fields[5]) . " -->"; }
         else                                   { $thislineout .= "<!-- " . encode_entities($fields[$sortby]) . " -->"; }
         $thislineout .= "</TR>";
