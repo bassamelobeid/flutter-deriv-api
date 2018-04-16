@@ -17,9 +17,14 @@ This class provides static configurations like error mapping and generic message
 
 my $config = {
     errors => {
-        # kept camel case because RPC/WS/Pricing follow this convention
+        # kept camel case because RPC follow this convention
         # it will be consistent in case in future we want to send
-        # these as error codes to RPC/Pricing
+        # these as error codes to RPC
+        LoginTooManyAttempts   => 'Sorry, you have already had too many unsuccessful attempts. Please try again in 5 minutes.',
+        IncorrectEmailPassword => 'Incorrect email or password.',
+        AccountUnavailable     => 'This account is unavailable.',
+        LoginDisabledDuoToSystemMaintenance =>
+            'Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.',
     },
 };
 
