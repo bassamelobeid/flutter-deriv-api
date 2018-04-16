@@ -12,7 +12,7 @@ use Brands;
 
 use BOM::RPC::Registry '-dsl';
 
-use BOM::Platform::AuditLog;
+use BOM::User::AuditLog;
 use BOM::RPC::v3::Utility;
 use BOM::User;
 use BOM::Platform::Context qw (localize request);
@@ -219,7 +219,7 @@ rpc logout => sub {
                         action      => 'logout',
                     });
                     $user->save;
-                    BOM::Platform::AuditLog::log("user logout", join(',', $email, $loginid // ''));
+                    BOM::User::AuditLog::log("user logout", join(',', $email, $loginid // ''));
                 }
             }
         }
