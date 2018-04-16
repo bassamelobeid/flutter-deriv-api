@@ -313,18 +313,19 @@ sub add_generic_texts {
 sub add_error_messages {
     my $self = shift;
 
-    my $fh            = $self->pot_append_fh;
-    my $error_mapping = BOM::Product::Static::get_error_mapping();
+    my $fh = $self->pot_append_fh;
+    my @error_mappings = (BOM::Product::Static::get_error_mapping(), BOM::User::Static::get_error_mapping());
 
-    foreach my $err (keys %$error_mapping) {
-        my $msgid = $self->msg_id($error_mapping->{$err});
-        if ($self->is_id_unique($msgid)) {
-            print $fh "\n";
-            print $fh $msgid . "\n";
-            print $fh "msgstr \"\"\n";
+    foreach my $error_mapping (@error_mappings) {
+        foreach my $err (keys %$error_mapping) {
+            my $msgid = $self->msg_id($error_mapping->{$err});
+            if ($self->is_id_unique($msgid)) {
+                print $fh "\n";
+                print $fh $msgid . "\n";
+                print $fh "msgstr \"\"\n";
+            }
         }
     }
-
     return;
 }
 
