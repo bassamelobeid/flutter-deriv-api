@@ -18,6 +18,7 @@ my $filename      = request()->param('show');
 my $displayport   = request()->param('displayport');
 my $outputlargest = request()->param('outputlargest');
 my $viewonlylist  = request()->param('viewonlylist');
+my $sortby = request()->param('sortby') // 0;
 
 print "<TABLE border=1>";
 
@@ -70,7 +71,6 @@ if (open(my $fh, '<', $filename)) {    ## no critic (RequireBriefOpen)
             }
         }
 
-        my $sortby = request()->param('sortby') // 0;
         if   ($sortby == 6) { $thislineout .= "<!-- " . encode_entities($fields[4] - $fields[5]) . " -->"; }
         else                                   { $thislineout .= "<!-- " . encode_entities($fields[$sortby]) . " -->"; }
         $thislineout .= "</TR>";
@@ -84,7 +84,7 @@ if (open(my $fh, '<', $filename)) {    ## no critic (RequireBriefOpen)
 }
 
 my @s_to_out =
-    sort { my ($a1, $b1); $a =~ /<!--\s+(\S+)\s/; $a1 = $1; $b =~ /<!--\s+(\S+)\s/; $b1 = $1; $sort_by == 0 ? $a1 cmp $b1 : $a1 <=> $b1; } @to_out;
+    sort { my ($a1, $b1); $a =~ /<!--\s+(\S+)\s/; $a1 = $1; $b =~ /<!--\s+(\S+)\s/; $b1 = $1; $sortby == 0 ? $a1 cmp $b1 : $a1 <=> $b1; } @to_out;
 if (request()->param('sortorder') =~ /reverse/) {
     @s_to_out = reverse @s_to_out;
 }
