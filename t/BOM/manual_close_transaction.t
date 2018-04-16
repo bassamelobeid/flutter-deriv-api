@@ -107,6 +107,7 @@ cmp_ok(scalar @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_a
 isnt scalar batch_sell({
         id         => shift(@fmb_id),
         sell_price => 20,
+        sell_time  => '2011-07-25 23:59:59',
         quantity   => 1,
     }
     ),
