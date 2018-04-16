@@ -16,7 +16,7 @@ use Date::Utility;
 use BOM::DailySummaryReport;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Platform::Client::Utility;
-use BOM::Platform::Password;
+use BOM::User::Password;
 use BOM::Platform::Runtime;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);

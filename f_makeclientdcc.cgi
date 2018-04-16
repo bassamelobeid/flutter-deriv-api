@@ -8,7 +8,7 @@ use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::Cookie;
-use BOM::Platform::AuditLog;
+use BOM::User::AuditLog;
 use BOM::DualControl;
 BOM::Backoffice::Sysinit::init();
 
@@ -62,7 +62,7 @@ if ($input->{'transtype'} =~ /^UPDATECLIENT/) {
         . $now->datetime_ddmmmyy_hhmmss
         . ") only.";
 
-    BOM::Platform::AuditLog::log($message, '', $clerk);
+    BOM::User::AuditLog::log($message, '', $clerk);
 
     print encode_entities($message);
     print "<p>Note: "
