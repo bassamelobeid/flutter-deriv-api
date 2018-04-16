@@ -70,8 +70,9 @@ if (open(my $fh, '<', $filename)) {    ## no critic (RequireBriefOpen)
             }
         }
 
-        if   (request()->param('sortby') == 6) { $thislineout .= "<!-- " . encode_entities($fields[4] - $fields[5]) . " -->"; }
-        else                                   { $thislineout .= "<!-- " . encode_entities($fields[request()->param('sortby')]) . " -->"; }
+        my $sortby = request()->param('sortby') // 0
+        if   ($sortby == 6) { $thislineout .= "<!-- " . encode_entities($fields[4] - $fields[5]) . " -->"; }
+        else                                   { $thislineout .= "<!-- " . encode_entities($fields[$sortby]) . " -->"; }
         $thislineout .= "</TR>";
 
         if (not $viewonlylist or $viewonlylist =~ /$fields[0]/) { push @to_out, $thislineout; }
