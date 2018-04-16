@@ -352,7 +352,9 @@ async_rpc mt5_new_account => sub {
                                         }
                                     });
                             } elsif ($account_type eq 'financial' && $client->landing_company->short eq 'costarica') {
-                                _send_notification_email($client, $mt5_login, $brand, $params->{language});
+                                if (!$client->client_fully_authenticated) {
+                                    _send_notification_email($client, $mt5_login, $brand, $params->{language});
+                                }
                                 Future->done;
                             } else {
                                 Future->done;
