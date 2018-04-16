@@ -10,7 +10,7 @@ use Test::More;    # tests => 4;
 use Test::Exception;
 use Guard;
 use BOM::User::Client;
-use BOM::Platform::Password;
+use BOM::User::Password;
 use BOM::Platform::Client::Utility;
 
 use BOM::Platform::Client::IDAuthentication;
