@@ -84,7 +84,7 @@ if (open(my $fh, '<', $filename)) {    ## no critic (RequireBriefOpen)
 }
 
 my @s_to_out =
-    sort { my ($a1, $b1); $a =~ /\<\!\-\-\s(\-?\d*\.?\d*)\s/; $a1 = $1; $b =~ /\<\!\-\-\s(\-?\d*\.?\d*)\s/; $b1 = $1; $a1 <=> $b1; } @to_out;
+    sort { my ($a1, $b1); $a =~ /<!--\s+(\S+)\s/; $a1 = $1; $b =~ /<!--\s+(\S+)\s/; $b1 = $1; $sort_by == 0 ? $a1 cmp $b1 : $a1 <=> $b1; } @to_out;
 if (request()->param('sortorder') =~ /reverse/) {
     @s_to_out = reverse @s_to_out;
 }
