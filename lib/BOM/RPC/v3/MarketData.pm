@@ -56,7 +56,7 @@ rpc exchange_rates => sub {
     }
     catch {
         %rates_hash = ();
-        BOM::Platform::AuditLog::log("Exchange rates terminated by error: $_");
+        warnings::warn("Exchange rates aborted by an exception: $_");
     };
 
     if (not %rates_hash) {
