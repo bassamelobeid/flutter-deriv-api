@@ -89,7 +89,7 @@
     },
     "manager_id": {
       "type": "integer",
-      "description": "[Optional] Login id of manager whom you want to assign to manage your assets, applicable for MT5 Multi-Asset Management only."
+      "description": "[Optional] Login id of manager whom you want to assign to manage your assets, applicable for MT5 Multiple Accounts Manager only."
     },
     "passthrough": {
       "type": "object",
