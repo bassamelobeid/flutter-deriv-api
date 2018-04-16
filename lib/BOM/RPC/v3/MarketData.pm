@@ -44,20 +44,17 @@ The return value is an anonymous hash contains the following items:
 =cut
 
 rpc exchange_rates => sub {
-    my $base = "USD";
+    my $base = 'USD';
     my %rates_hash;
-    try {
-        my @all_currencies = LandingCompany::Registry->new()->all_currencies;
-        foreach my $currency (@all_currencies) {
-            next if $currency eq $base;
+    my @all_currencies = LandingCompany::Registry->new()->all_currencies;
+    foreach my $currency (@all_currencies) {
+        next if $currency eq $base;
+        try {
             my $ex_rate = in_USD(1, $currency);
             $rates_hash{$currency} = formatnumber('price', $currency, 1.0 / $ex_rate) if looks_like_number($ex_rate) && $ex_rate > 0;
         }
+        catch {};
     }
-    catch {
-        %rates_hash = ();
-        warnings::warn("Exchange rates aborted by an exception: $_");
-    };
 
     if (not %rates_hash) {
         return BOM::RPC::v3::Utility::create_error({
