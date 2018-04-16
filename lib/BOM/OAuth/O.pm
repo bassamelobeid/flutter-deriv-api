@@ -24,6 +24,7 @@ use BOM::User;
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
 use BOM::OAuth::Helper;
+use BOM::User::AuditLog;
 
 sub authorize {
     my $c = shift;
@@ -218,6 +219,12 @@ sub _login {
                 $err = localize('Invalid login attempt. Please log in with a social network instead.');
                 last;
             }
+        }
+
+        if (BOM::Platform::Runtime->instance->app_config->system->suspend->all_logins) {
+            $err = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
+            BOM::User::AuditLog::log('system suspend all login', $user->email);
+            last;
         }
 
         # get last login before current login to get last record
