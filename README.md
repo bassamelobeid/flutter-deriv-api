@@ -63,9 +63,8 @@ This repo contains objects to abstract company's business logic related to clien
 * BOM::User::Client - main class, containing methods to manage clients and various client related statuses, promotions, limits, payments etc. 
 * BOM::User::Client::PaymentAgent - class to represent any client as a separate payment agent.
 * BOM::User::Client::Desk, which is a wrapper around WWW::Desk - Desk.com API.
-
-This module contains dependencies to be removed in upcoming versions
-* bom-platform
+* BOM::User::Client::PaymentAgent, which include client payment agent system.
+* BOM::User::Client::Payments, which include staff about payment
 
 Note about terminology:
 
@@ -89,5 +88,4 @@ Note about terminology:
 * bom-postgres-collectordb
 * bom-postgres-userdb
 * bom-test
-* bom-platform -- will be dropped later.
 
