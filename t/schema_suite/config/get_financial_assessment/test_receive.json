@@ -37,6 +37,16 @@
       "pattern": "^Over 3 years$",
       "required": "1"
     },
+    "stocks_trading_experience": {
+      "type": "string",
+      "pattern": "^Over 3 years$",
+      "required": "1"
+    },
+    "stocks_trading_frequency": {
+      "type": "string",
+      "pattern": "^40 transactions or more in the past 12 months$",
+      "required": "1"
+    },
     "other_derivatives_trading_frequency": {
       "type": "string",
       "pattern": "^40 transactions or more in the past 12 months$",
