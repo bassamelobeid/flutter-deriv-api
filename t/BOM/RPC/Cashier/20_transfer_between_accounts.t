@@ -96,7 +96,7 @@ subtest 'call params validation' => sub {
 
     $user = BOM::User->create(
         email    => $email,
-        password => BOM::Platform::Password::hashpw('jskjd8292922'));
+        password => BOM::User::Password::hashpw('jskjd8292922'));
     $user->email_verified(1);
     $user->save;
 
@@ -267,7 +267,7 @@ subtest 'validation' => sub {
 
     $user = BOM::User->create(
         email    => $email,
-        password => BOM::Platform::Password::hashpw('jskjd8292922'));
+        password => BOM::User::Password::hashpw('jskjd8292922'));
     $user->email_verified(1);
     $user->save;
 
@@ -321,7 +321,7 @@ subtest $method => sub {
 
             $user = BOM::User->create(
                 email    => $email,
-                password => BOM::Platform::Password::hashpw('jskjd8292922'));
+                password => BOM::User::Password::hashpw('jskjd8292922'));
             $user->email_verified(1);
             $user->save;
 
@@ -456,7 +456,7 @@ subtest 'transfer with fees' => sub {
 
     $user = BOM::User->create(
         email    => $email,
-        password => BOM::Platform::Password::hashpw('jskjd8292922'));
+        password => BOM::User::Password::hashpw('jskjd8292922'));
     $user->email_verified(1);
 
     $user->add_loginid({loginid => $client_cr->loginid});
@@ -544,7 +544,7 @@ subtest 'paymentagent transfer' => sub {
 
     $user = BOM::User->create(
         email    => $email,
-        password => BOM::Platform::Password::hashpw('jskjd8292922'));
+        password => BOM::User::Password::hashpw('jskjd8292922'));
     $user->email_verified(1);
 
     $user->add_loginid({loginid => $client_cr->loginid});
