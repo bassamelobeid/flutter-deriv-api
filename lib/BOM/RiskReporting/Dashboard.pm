@@ -14,7 +14,7 @@ use strict;
 use warnings;
 
 use IO::File;
-use List::Util qw(max first sum);
+use List::Util qw(max first sum reduce);
 use JSON::MaybeXS;
 use Moose;
 use Try::Tiny;
@@ -236,32 +236,48 @@ sub open_bet_summary {
 
         if ($contract->is_intraday) {
 
-            my $contract_duration_in_hour = $contract->timeinyears->amount * 365 * 24;
-            my $intraday_category = ($contract_duration_in_hour <= 5) ? 'less_than_5_hour' : 'more_than_5_hour';
+            my $intraday_category = ($contract->is_atm_bet) ? 'atm' : 'none_atm';
             $final->{$contract->underlying->market->name}->{intraday}->{$intraday_category}->{$contract->underlying->symbol}->{turnover} +=
                 $purchase_price;
             $final->{$contract->underlying->market->name}->{intraday}->{$intraday_category}->{$contract->underlying->symbol}->{payout} +=
                 $payout_price;
-            $final->{$contract->underlying->market->name}->{intraday}->{$intraday_category}->{total_turnover} += $purchase_price;
-            $final->{$contract->underlying->market->name}->{intraday}->{$intraday_category}->{total_payout}   += $payout_price;
-            $final->{$contract->underlying->market->name}->{intraday}->{total_turnover}                       += $purchase_price;
-            $final->{$contract->underlying->market->name}->{intraday}->{total_payout}                         += $payout_price;
-            $final->{$contract->underlying->market->name}->{total_turnover}                                   += $purchase_price;
-            $final->{$contract->underlying->market->name}->{total_payout}                                     += $payout_price;
         } else {
 
-            $final->{$contract->underlying->market->name}->{daily}->{$contract->underlying->symbol}->{payout}   += $payout_price;
-            $final->{$contract->underlying->market->name}->{daily}->{$contract->underlying->symbol}->{turnover} += $purchase_price;
-            $final->{$contract->underlying->market->name}->{daily}->{total_payout}                              += $payout_price;
-            $final->{$contract->underlying->market->name}->{daily}->{total_turnover}                            += $purchase_price;
-            $final->{$contract->underlying->market->name}->{total_turnover}                                     += $purchase_price;
-            $final->{$contract->underlying->market->name}->{total_payout}                                       += $payout_price;
+            my $daily_category = ($contract->is_atm_bet) ? 'atm' : 'none_atm';
+            $final->{$contract->underlying->market->name}->{daily}->{$daily_category}->{$contract->underlying->symbol}->{payout}   += $payout_price;
+            $final->{$contract->underlying->market->name}->{daily}->{$daily_category}->{$contract->underlying->symbol}->{turnover} += $purchase_price;
         }
     }
+    my $new_final;
+    foreach my $market (keys %$final) {
+        my ($total_turnover, $total_payout);
+        foreach my $expiry (keys %{$final->{$market}}) {
+            foreach my $atm (keys %{$final->{$market}->{$expiry}}) {
+                my @sorted_by_underlying =
+                    map { [$_, $final->{$market}->{$expiry}->{$atm}->{$_}->{payout}, $final->{$market}->{$expiry}->{$atm}->{$_}->{turnover}] }
+                    sort { $final->{$market}->{$expiry}->{$atm}->{$a}->{payout} <=> $final->{$market}->{$expiry}->{$atm}->{$b}->{payout} }
+                    keys %{$final->{$market}->{$expiry}->{$atm}};
+                map { $total_turnover += $final->{$market}->{$expiry}->{$atm}->{$_}->{turnover} } keys %{$final->{$market}->{$expiry}->{$atm}};
+                map { $total_payout   += $final->{$market}->{$expiry}->{$atm}->{$_}->{payout} } keys %{$final->{$market}->{$expiry}->{$atm}};
+                $new_final->{$market}->{total_turnover} = $total_turnover;
+                $new_final->{$market}->{total_payout}   = $total_payout;
+                for (my $i = 0; $i < scalar @sorted_by_underlying; $i++) {
+                    $new_final->{$market}->{$expiry}->{$atm}->{$i}->{$sorted_by_underlying[$i][0]} = {
+                        payout   => $sorted_by_underlying[$i][1],
+                        turnover => $sorted_by_underlying[$i][2]};
+                }
+            }
+        }
+    }
+    my @sorted =
+        map { [$_, $new_final->{$_}] }
+        sort { $new_final->{$b}->{total_payout} <=> $new_final->{$a}->{total_payout} } grep { $_ !~ /total/ } keys %{$new_final};
+    my $report;
+    for (my $i = 0; $i < scalar @sorted; $i++) { $report->{pl}->{$i} = {$sorted[$i][0] => $sorted[$i][1]}; }
 
-    $final->{generated_time} =
+    $report->{generated_time} =
         BOM::Database::DataMapper::CollectorReporting->new({broker_code => 'CR'})->get_last_generated_historical_marked_to_market_time;
-    return $final;
+    return $report;
 }
 
 sub closedplreport {
