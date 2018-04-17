@@ -16,7 +16,7 @@ use BOM::Database::DataMapper::Copier;
 use BOM::Platform::Client::IDAuthentication;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Copier;
-use BOM::Platform::Password;
+use BOM::User::Password;
 use BOM::Product::ContractFactory qw( produce_contract );
 
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
