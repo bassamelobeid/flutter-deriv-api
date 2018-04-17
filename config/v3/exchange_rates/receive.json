@@ -25,8 +25,7 @@
           "pattern": "^USD$"
         },
         "date": {
-          "type": "string",
-          "pattern": "^[0-9]{1,10}$",
+          "type": "integer",
           "description": "Date retrieval epoch time represented as an integer number"
         },
         "rates": {
