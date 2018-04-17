@@ -64,7 +64,7 @@ sub add {
                 loginid      => $args{loginid},
                 db_operation => 'replica'
             }) or die 'client not found';
-        my $user = BOM::User->new({email => $client->email}) or die 'user not found';
+        my $user = $client->user or die 'user not found';
         $args{$_} = $user->$_ for qw(utm_source utm_medium utm_campaign);
     }
     catch {
