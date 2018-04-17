@@ -44,33 +44,34 @@ The return value is an anonymous hash contains the following items:
 
 rpc exchange_rates => sub {
     my $params = shift;
-    my $base = $params->{base_currency};
+    my $base   = $params->{base_currency};
     $base = 'USD' if (not $base);
-    
+
     my @all_currencies = LandingCompany::Registry->new()->all_currencies;
-    if (not grep {lc $_ eq $base}, @all_currencies){
+    if (not grep { $_ eq $base } @all_currencies) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'BaseCurrencyUnavailable',
             message_to_client => localize('Base currency is unavailable.'),
         });
     }
     my $base_to_usd = 0;
-    try{
+    try {
         $base_to_usd = in_USD(1, $base);
     }
-    catch{};
-    
+    catch {};
+
     my %rates_hash;
-    if (looks_like_number($base_to_usd) && $base_to_usd > 0){
-    foreach my $target (@all_currencies) {
-        next if $target eq $base;
-        try {
-            my $target_to_usd = in_USD(1, $target);
-            $rates_hash{$currency} = formatnumber('price', $target, $base_to_usd / $target_to_usd) if looks_like_number($target_to_usd) && $target_to_usd > 0;
+    if (looks_like_number($base_to_usd) && $base_to_usd > 0) {
+        foreach my $target (@all_currencies) {
+            next if $target eq $base;
+            try {
+                my $target_to_usd = in_USD(1, $target);
+                $rates_hash{$target} = formatnumber('price', $target, $base_to_usd / $target_to_usd)
+                    if looks_like_number($target_to_usd) && $target_to_usd > 0;
+            }
+            catch {};
         }
-        catch {};
     }
-}
     if (not %rates_hash) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'ExchangeRatesNotAvailable',
@@ -79,9 +80,9 @@ rpc exchange_rates => sub {
     }
 
     return {
-        date  => time,
-        base_currency  => $base,
-        rates => \%rates_hash,
+        date          => time,
+        base_currency => $base,
+        rates         => \%rates_hash,
     };
 };
 

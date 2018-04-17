@@ -11,6 +11,8 @@ use LandingCompany::Registry;
 use BOM::RPC::v3::MarketData;
 use Format::Util::Numbers qw(formatnumber);
 
+my $base = 'XXX';
+
 sub checkResultStructure {
     my $result = shift;
     ok $result->{date}, "Date tag";
@@ -22,13 +24,12 @@ sub checkResultStructure {
 }
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
-note("exchange_rates PRC call with an invalid exchange rate.");
-my $base = 'XXX';
+note("exchange_rates PRC call with an invalid base currency: XXX.");
 my $result = $c->call_ok('exchange_rates', {base_currency => $base});
 ok $result->has_no_system_error, 'RPC called without system errors';
 ok $result->has_error && $result->error_code_is('BaseCurrencyUnavailable'), 'Base currency not available';
 
-note("exchange_rates PRC call with a valid exchange rate (but probably with still empty results while testing).");
+note("exchange_rates PRC call with a valid base currency USD (but probably with still empty results while testing).");
 $base = 'USD';
 $result = $c->call_ok('exchange_rates', {base_currency => $base});
 ok $result->has_no_system_error, 'RPC called without system errors';
@@ -63,9 +64,9 @@ $mocked_in_USD->mock(
 
 $result = BOM::RPC::v3::MarketData::exchange_rates();
 checkResultStructure($result);
-my $base_to_usd = in_USD(1, $base);
+my $base_to_usd = BOM::RPC::v3::MarketData::in_USD(1, $base);
 foreach my $cur (keys %{$result->{rates}}) {
-    ok(formatnumber('price', $cur, 1.0 / $rates{$cur}) == $result->{rates}->{$cur}, "$cur exchange rate calculation.");
+    is(formatnumber('price', $cur, $base_to_usd / $rates{$cur}), $result->{rates}->{$cur}, "$cur exchange rate calculation.");
 }
 
 note('The first currency should have been excluded by _exchange_rates function because its rate (index) is 0');
