@@ -1,16 +1,42 @@
 <p> Latest report generated at [% data.generated_time %] </p>
-<p><b> Table 1: Current closed PL of different underlying. </b></p>
+<p><b> Table 1: Current realized company's PL of different underlying. </b></p>
 <p> Note:We are taking into account the contract that bought and sold on the same date in this report. </p>
 
-<table border>
-<tr><td><b>Market</td><td><b>Underlying </td><td><b> Closed PL (USD)</td></th></tr>
-[% FOREACH market IN data.keys %]
-	[% IF market != 'generated_time' %]
-            [% FOREACH underlying IN data.$market.keys %]
-            <tr style="background-color: [% data.$market.$underlying.usd_closed_pl  < 0 ? 'red' : 'green' %]"><td>[% market %]</td><td>[% underlying %]</td><td> [% data.$market.$underlying.usd_closed_pl %]</td></tr>
-            [% END %]
+
+
+<div id="accordion_close_pl" style="width: 300px">
+[% FOREACH index IN data.pl.keys.nsort %]
+[% FOREACH market  IN data.pl.$index.keys %]
+  <h3 style="outline: none">
+		<strong>[% market %] :</strong>
+		<span style="color: [% data.pl.$index.$market.total_closed_pl > 0 ? 'green' : 'red' %]">
+				USD [% data.pl.$index.$market.total_closed_pl %]
+		<span>
+  </h3>
+  <div>
+       [% FOREACH uindex IN data.pl.$index.$market.keys.sort %]
+          [% IF uindex != 'total_closed_pl' %]
+             [% FOREACH underlying IN data.pl.$index.$market.$uindex.keys %]
+                <div style="line-height: 24px;">
+						[% underlying %] : 
+						<span style="color: [% data.pl.$index.$market.$uindex.$underlying > 0 ? 'green' : 'red' %]">
+								USD [% data.pl.$index.$market.$uindex.$underlying %]
+						</span>
+				</div>
+             [% END %]
+           [% END %]
         [% END %]
+  </div>
 [% END %]
-</table>
+[% END %]
+</div>
 
 
+<script type="text/javascript">
+\$(function() {
+		\$("#accordion_close_pl" ).accordion({
+				collapsible: true,
+				heightStyle: "content"
+		});
+});
+</script>

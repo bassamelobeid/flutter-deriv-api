@@ -231,29 +231,31 @@ sub open_bet_summary {
     my $symbol;
     foreach my $open_contract (@open_bets) {
         my $contract = produce_contract($open_contract->{short_code}, $open_contract->{currency_code});
-        my $purchase_price = financialrounding('price', 'USD', in_USD($open_contract->{buy_price}, $open_contract->{currency_code}));
+        my $purchase_price = financialrounding('price', 'USD', in_USD($open_contract->{buy_price},    $open_contract->{currency_code}));
         my $payout_price   = financialrounding('price', 'USD', in_USD($open_contract->{payout_price}, $open_contract->{currency_code}));
 
         if ($contract->is_intraday) {
 
-		    my $contract_duration_in_hour = $contract->timeinyears->amount * 365 * 24;
-		    my $intraday_category = ($contract_duration_in_hour <= 5) ? 'less_than_5_hour' : 'more_than_5_hour';
-		    $final->{$contract->underlying->market->name}->{intraday}->{$intraday_category}->{$contract->underlying->symbol}->{turnover} += $purchase_price;
-		    $final->{$contract->underlying->market->name}->{intraday}->{$intraday_category}->{$contract->underlying->symbol}->{payout}   += $payout_price;
-		    $final->{$contract->underlying->market->name}->{intraday}->{$intraday_category}->{total_turnover}  += $purchase_price;
-		    $final->{$contract->underlying->market->name}->{intraday}->{$intraday_category}->{total_payout}  += $payout_price;
-                    $final->{$contract->underlying->market->name}->{intraday}->{total_turnover}  += $purchase_price;
-                    $final->{$contract->underlying->market->name}->{intraday}->{total_payout}  += $payout_price;
-                    $final->{$contract->underlying->market->name}->{total_turnover} += $purchase_price;
-                    $final->{$contract->underlying->market->name}->{total_payout} += $payout_price;
-		} else {
+            my $contract_duration_in_hour = $contract->timeinyears->amount * 365 * 24;
+            my $intraday_category = ($contract_duration_in_hour <= 5) ? 'less_than_5_hour' : 'more_than_5_hour';
+            $final->{$contract->underlying->market->name}->{intraday}->{$intraday_category}->{$contract->underlying->symbol}->{turnover} +=
+                $purchase_price;
+            $final->{$contract->underlying->market->name}->{intraday}->{$intraday_category}->{$contract->underlying->symbol}->{payout} +=
+                $payout_price;
+            $final->{$contract->underlying->market->name}->{intraday}->{$intraday_category}->{total_turnover} += $purchase_price;
+            $final->{$contract->underlying->market->name}->{intraday}->{$intraday_category}->{total_payout}   += $payout_price;
+            $final->{$contract->underlying->market->name}->{intraday}->{total_turnover}                       += $purchase_price;
+            $final->{$contract->underlying->market->name}->{intraday}->{total_payout}                         += $payout_price;
+            $final->{$contract->underlying->market->name}->{total_turnover}                                   += $purchase_price;
+            $final->{$contract->underlying->market->name}->{total_payout}                                     += $payout_price;
+        } else {
 
-            $final->{$contract->underlying->market->name}->{daily}->{$contract->underlying->symbol}->{payout}    += $payout_price;
+            $final->{$contract->underlying->market->name}->{daily}->{$contract->underlying->symbol}->{payout}   += $payout_price;
             $final->{$contract->underlying->market->name}->{daily}->{$contract->underlying->symbol}->{turnover} += $purchase_price;
-            $final->{$contract->underlying->market->name}->{daily}->{total_payout}    += $payout_price;
-            $final->{$contract->underlying->market->name}->{daily}->{total_turnover} += $purchase_price;
-            $final->{$contract->underlying->market->name}->{total_turnover} += $purchase_price;
-            $final->{$contract->underlying->market->name}->{total_payout} += $payout_price;
+            $final->{$contract->underlying->market->name}->{daily}->{total_payout}                              += $payout_price;
+            $final->{$contract->underlying->market->name}->{daily}->{total_turnover}                            += $purchase_price;
+            $final->{$contract->underlying->market->name}->{total_turnover}                                     += $purchase_price;
+            $final->{$contract->underlying->market->name}->{total_payout}                                       += $payout_price;
         }
     }
 
@@ -266,12 +268,29 @@ sub closedplreport {
     my $self   = shift;
     my $today  = Date::Utility->new;
     my $closed = $self->closed_PL_by_underlying($today->truncate_to_day->db_timestamp);
-    my $final;
+    my $summary;
     foreach my $underlying (keys %$closed) {
-         my $market = create_underlying($underlying)->market->name;
-        $final->{$market}->{$underlying}->{usd_closed_pl} = financialrounding('price', 'USD', $closed->{$underlying}->{usd_closed_pl});
-        $final->{$market}->{total_closed_pl} += financialrounding('price', 'USD', $closed->{$underlying}->{usd_closed_pl});
+        my $market = create_underlying($underlying)->market->name;
+        $summary->{$market}->{$underlying} = financialrounding('price', 'USD', $closed->{$underlying}->{usd_closed_pl});
+        $summary->{$market}->{total_closed_pl} += financialrounding('price', 'USD', $closed->{$underlying}->{usd_closed_pl});
     }
+
+    foreach my $market (keys %$summary) {
+        my @sorted_by_underlying =
+            map { [$_, $summary->{$market}->{$_}] }
+            sort { $summary->{$market}->{$a} <=> $summary->{$market}->{$b} } grep { $_ ne 'total_closed_pl' } keys %{$summary->{$market}};
+        my $total = $summary->{$market}->{total_closed_pl};
+        delete $summary->{$market};
+        $summary->{$market}->{total_closed_pl} = $total;
+        for (my $i = 0; $i < scalar @sorted_by_underlying; $i++) {
+            $summary->{$market}->{$i} = {$sorted_by_underlying[$i][0] => $sorted_by_underlying[$i][1]};
+        }
+    }
+
+    my @sorted = map { [$_, $summary->{$_}] } sort { $summary->{$a}->{total_closed_pl} <=> $summary->{$b}->{total_closed_pl} } keys %{$summary};
+    my $final;
+    for (my $i = 0; $i < scalar @sorted; $i++) { $final->{pl}->{$i} = {$sorted[$i][0] => $sorted[$i][1]}; }
+
     $final->{generated_time} = $today->datetime;
     return $final;
 }
