@@ -16,9 +16,9 @@ PrintContentType();
 
 my $filename      = request()->param('show');
 my $displayport   = request()->param('displayport');
-my $outputlargest = request()->param('outputlargest');
+my $outputlargest = request()->param('outputlargest') || 100;
 my $viewonlylist  = request()->param('viewonlylist');
-my $sortby        = request()->param('sortby') // 0;
+my $sortby        = request()->param('sortby') || 0;
 
 print "<TABLE border=1>";
 
