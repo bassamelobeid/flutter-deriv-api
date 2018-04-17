@@ -54,7 +54,7 @@
             "description":"Epoch value of the expiry time of the contract. You must either specify date_expiry or duration."
         },
         "duration": {
-            "minimum" : 0,
+            "minimum" : 1,
             "type": "integer",
             "description":"Duration quantity."
         },
