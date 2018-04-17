@@ -32,7 +32,7 @@ for (0 .. 1) {
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'R_100',
         epoch      => $epoch,
-        quote      => 100 + $_ 
+        quote      => 100 + $_
     });
 }
 
@@ -50,95 +50,77 @@ subtest 'tick expiry one touch no touch' => sub {
     my $c = produce_contract($args);
     ok $c->tick_expiry, 'is tick expiry contract';
     is $c->tick_count, 5, 'number of ticks is 5';
-    
+
     ok !$c->is_expired, 'We are at the same second as the entry tick';
 
     $args->{barrier} = '+1.0';
     $c = produce_contract($args);
     ok !$c->is_expired, 'We are at the same second as the entry tick';
 
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'R_100',
-        epoch      => $one_day->epoch + 2 * 2,
-        quote      => 103
-    });
+    for (2 .. 5) {
 
-    $args->{date_pricing} = $one_day->plus_time_interval('4s');
-    $c = produce_contract($args);
-    ok $c->is_expired, 'contract is expired once it touch the barrier';
+        my $index = $_;
 
+        $args->{barrier} = '+' . $index . '.0';
+        $args->{date_pricing} = $one_day->plus_time_interval(($index * 2) . 's');
 
+        # Before next tick is available
+        $c = produce_contract($args);
+        ok !$c->is_expired, 'contract did not touch barrier';
+        ok !$c->hit_tick,   'no hit tick';
+        is $c->current_tick->quote, 101 + ($index - 2) + 1, 'correct current tick' if $index > 2;
+        is $c->current_tick->quote, 101 , 'correct current tick' if $index == 2;
 
-    $args->{barrier} = '-1.0';
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'R_100',
+            epoch      => $one_day->epoch + $index * 2,
+            quote      => 101 + $index
+        });
 
-    $c = produce_contract($args);
-    ok !$c->is_expired, 'contract did not touch barrier';
+        # After tick become available, hit the barrier test.
+        $c = produce_contract($args);
+        ok $c->is_expired, 'contract is expired once it touch the barrier';
+        ok $c->hit_tick,   'hit tick';
+        cmp_ok $c->hit_tick->quote, '==', 101 + $index;
+        is $c->current_tick->quote, 101 + $index, 'correct current tick';    
+        # Check hit tick against barrier    
+        ok $c->hit_tick->quote == $c->barrier->as_absolute;
 
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'R_100',
-        epoch      => $one_day->epoch + 3 * 2,
-        quote      => 104
-    });
+        # No barrier hit test case
+        $args->{barrier} = '-1.0';
+        $c = produce_contract($args);
+        ok !$c->is_expired, 'contract did not touch barrier';
+        ok !$c->hit_tick,   'no hit tick';
+        is $c->current_tick->quote, 101 + $index, 'correct current tick';
+        ok $c->current_tick->quote > $c->barrier->as_absolute;
+    }
 
-    $args->{barrier} = '+3.0';
-    $args->{date_pricing} = $one_day->plus_time_interval('6s');
-    $c = produce_contract($args);
-    ok $c->is_expired, 'contract is expired once it touch the barrier';
-
-    $args->{barrier} = '-1.0';
-
-    $c = produce_contract($args);
-    ok !$c->is_expired, 'contract did not touch barrier';
-
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'R_100',
-        epoch      => $one_day->epoch + 4 * 2,
-        quote      => 105
-    });
-
-    $args->{barrier} = '+4.0';
-    $args->{date_pricing} = $one_day->plus_time_interval('8s');
-    $c = produce_contract($args);
-    ok $c->is_expired, 'contract is expired once it touch the barrier';
-
-    $args->{barrier} = '-1.0';
+    #Here we are at right before the last tick
+    $args->{barrier}      = '+7.0';
+    $args->{date_pricing} = $one_day->plus_time_interval('12s');
 
     $c = produce_contract($args);
-    ok !$c->is_expired, 'contract did not touch barrier';
+    ok !$c->is_expired, 'contract did not touch barrier and not expired, this is right before our last tick';
+    ok !$c->hit_tick,   'no hit tick';
+    is $c->current_tick->quote, 106, 'correct current tick';
 
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'R_100',
-        epoch      => $one_day->epoch + 5 * 2,
-        quote      => 106
-    });
-
-    $args->{barrier} = '+4.0';
-    $args->{date_pricing} = $one_day->plus_time_interval('10s');
-    $c = produce_contract($args);
-    ok $c->is_expired, 'contract is expired once it touch the barrier';
-
-    $args->{barrier} = '-1.0';
-
-    $c = produce_contract($args);
-    ok !$c->is_expired, 'contract did not touch barrier';
-
+    # And here is the last tick
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'R_100',
         epoch      => $one_day->epoch + 6 * 2,
-        quote      => 107
+        quote      => 108
     });
 
-    $args->{barrier} = '+5.0';
-    $args->{date_pricing} = $one_day->plus_time_interval('12s');
-    $c = produce_contract($args);
+    $c                    = produce_contract($args);
     ok $c->is_expired, 'Here is the last one, 5th tick after entry tick';
+    ok $c->hit_tick,   'hit tick';
+    cmp_ok $c->hit_tick->quote, '==', 108;    
+    is $c->current_tick->quote, 108, 'correct current tick';
 
     $args->{barrier} = '-1.0';
-
     $c = produce_contract($args);
-    ok $c->is_expired, 'Here is the last one, 5th tick after entry tick';    
+    ok $c->is_expired, 'Here is the last one, 5th tick after entry tick';
+    ok !$c->hit_tick,   'no hit tick';
+    is $c->current_tick->quote, 108, 'correct current tick';
 };
-
-
-
 
