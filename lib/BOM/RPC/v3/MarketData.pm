@@ -43,18 +43,34 @@ The return value is an anonymous hash contains the following items:
 =cut
 
 rpc exchange_rates => sub {
-    my $base = 'USD';
-    my %rates_hash;
+    my $params = shift;
+    my $base = $params->{base_currency};
+    $base = 'USD' if (not $base);
+    
     my @all_currencies = LandingCompany::Registry->new()->all_currencies;
-    foreach my $currency (@all_currencies) {
-        next if $currency eq $base;
+    if (not grep {lc $_ eq $base}, @all_currencies){
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'BaseCurrencyUnavailable',
+            message_to_client => localize('Base currency is unavailable.'),
+        });
+    }
+    my $base_to_usd = 0;
+    try{
+        $base_to_usd = in_USD(1, $base);
+    }
+    catch{};
+    
+    my %rates_hash;
+    if (looks_like_number($base_to_usd) && $base_to_usd > 0){
+    foreach my $target (@all_currencies) {
+        next if $target eq $base;
         try {
-            my $ex_rate = in_USD(1, $currency);
-            $rates_hash{$currency} = formatnumber('price', $currency, 1.0 / $ex_rate) if looks_like_number($ex_rate) && $ex_rate > 0;
+            my $target_to_usd = in_USD(1, $target);
+            $rates_hash{$currency} = formatnumber('price', $target, $base_to_usd / $target_to_usd) if looks_like_number($target_to_usd) && $target_to_usd > 0;
         }
         catch {};
     }
-
+}
     if (not %rates_hash) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'ExchangeRatesNotAvailable',
@@ -64,7 +80,7 @@ rpc exchange_rates => sub {
 
     return {
         date  => time,
-        base  => $base,
+        base_currency  => $base,
         rates => \%rates_hash,
     };
 };

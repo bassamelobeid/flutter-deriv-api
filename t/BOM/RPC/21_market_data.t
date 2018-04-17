@@ -11,24 +11,29 @@ use LandingCompany::Registry;
 use BOM::RPC::v3::MarketData;
 use Format::Util::Numbers qw(formatnumber);
 
-my $base = 'USD';
-
 sub checkResultStructure {
     my $result = shift;
     ok $result->{date}, "Date tag";
-    ok $result->{base} && $base eq $result->{base}, "Base currency";
+    ok $result->{base_currency} && $base eq $result->{base_currency}, "Base currency";
     ok $result->{rates}, 'Rates tag';
     if (exists $result->{rates}) {
         ok(!exists $result->{rates}->{$base}, "Base currency not included in rates");
     }
 }
 
-note("exchange_rates PRC call normally (expectedly with an empty data set).");
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
-my $result = $c->call_ok('exchange_rates');
+note("exchange_rates PRC call with an invalid exchange rate.");
+my $base = 'XXX';
+my $result = $c->call_ok('exchange_rates', {base_currency => $base});
+ok $result->has_no_system_error, 'RPC called without system errors';
+ok $result->has_error && $result->error_code_is('BaseCurrencyUnavailable'), 'Base currency not available';
+
+note("exchange_rates PRC call with a valid exchange rate (but probably with still empty results while testing).");
+$base = 'USD';
+$result = $c->call_ok('exchange_rates', {base_currency => $base});
 ok $result->has_no_system_error, 'RPC called without system errors';
 if ($result->has_error) {
-    ok $result->error_code_is('ExchangeRatesNotAvailable'), 'Proper error code';
+    ok $result->has_error && $result->error_code_is('ExchangeRatesNotAvailable'), 'Exchange rates not available';
 } else {
     checkResultStructure($result->result);
 }
@@ -58,6 +63,7 @@ $mocked_in_USD->mock(
 
 $result = BOM::RPC::v3::MarketData::exchange_rates();
 checkResultStructure($result);
+my $base_to_usd = in_USD(1, $base);
 foreach my $cur (keys %{$result->{rates}}) {
     ok(formatnumber('price', $cur, 1.0 / $rates{$cur}) == $result->{rates}->{$cur}, "$cur exchange rate calculation.");
 }
