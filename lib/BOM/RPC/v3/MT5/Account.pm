@@ -127,19 +127,14 @@ sub get_mt5_logins {
     my $f = fmap1 {
         shift =~ /^MT(\d+)$/;
         my $login = $1;
-
-        return mt5_get_settings({
-                client => $client,
-                args   => {login => $login}}
-            )->then(
+        return BOM::MT5::User::Async::get_user($login)->then(
             sub {
                 my ($setting) = @_;
-
                 my $acc = {login => $login};
                 if (ref $setting eq 'HASH' && $setting->{group}) {
-                    $acc->{group} = $setting->{group};
+                    $acc->{group}            = $setting->{group};
+                    $acc->{mt5_get_settings} = _extract_settings($setting);
                 }
-
                 return Future->done($acc);
             });
     }
@@ -530,29 +525,30 @@ async_rpc mt5_get_settings => sub {
     return BOM::MT5::User::Async::get_user($login)->then(
         sub {
             my ($settings) = @_;
-
             return create_error_future({
                     code              => 'MT5GetUserError',
                     message_to_client => $settings->{error}}) if (ref $settings eq 'HASH' and $settings->{error});
-
-            if (my $country = $settings->{country}) {
-                my $country_code = Locale::Country::Extra->new()->code_from_country($country);
-                if ($country_code) {
-                    $settings->{country} = $country_code;
-                } else {
-                    warn "Invalid country name $country for mt5 settings, can't extract code from Locale::Country::Extra";
-                }
-            }
-
-            $settings->{currency} = $settings->{group} =~ /vanuatu|costarica|demo/ ? 'USD' : 'EUR';
-
-            # we don't want to send this field back
-            delete $settings->{rights};
-            delete $settings->{agent};
-
+            $settings = _extract_settings($settings);
             return Future->done($settings);
         });
 };
+
+sub _extract_settings {
+    my ($settings) = @_;
+    
+    if (my $country = $settings->{country}) {
+        my $country_code = Locale::Country::Extra->new()->code_from_country($country);
+        if ($country_code) {
+            $settings->{country} = $country_code;
+        } else {
+            warn "Invalid country name $country for mt5 settings, can't extract code from Locale::Country::Extra";
+        }
+    }
+
+    $settings->{currency} = $settings->{group} =~ /vanuatu|costarica|demo/ ? 'USD' : 'EUR';
+    return $settings;
+};
+
 
 =head2 mt5_set_settings
 
