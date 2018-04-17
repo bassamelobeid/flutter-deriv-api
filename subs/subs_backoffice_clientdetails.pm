@@ -117,7 +117,7 @@ sub print_client_details {
     }
 
     my ($proveID, $show_uploaded_documents) = ('', '');
-    my $user = BOM::User->new({loginid => $client->loginid});
+    my $user = $client->user;
 
     # User should be accessable from client by loginid
     print "<p style='color:red;'>User doesn't exist. This client is unlinked. Please, investigate.<p>" and die unless $user;
@@ -129,7 +129,6 @@ sub print_client_details {
             search_option => 'ProveID_KYC'
         );
 
-        my $user = BOM::User->new({loginid => $client->loginid});
         my $siblings = $user->loginid;
 
         $show_uploaded_documents .= show_client_id_docs($_->loginid, show_delete => 1) for $client;
