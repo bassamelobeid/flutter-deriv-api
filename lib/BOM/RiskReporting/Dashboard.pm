@@ -450,7 +450,6 @@ sub multibarrierreport {
 sub open_bet_summary {
     my $self      = shift;
     my @open_bets = @{$self->_open_bets_at_end};
-    my $summary;
     my $final;
     my $symbol;
     foreach my $open_contract (@open_bets) {
@@ -460,26 +459,29 @@ sub open_bet_summary {
 
         if ($contract->is_intraday) {
 
-            my $contract_duration_in_hour = $contract->timeinyears->amount * 365 * 24;
-            my $intraday_category = ($contract_duration_in_hour <= 5) ? 'less_than_5_hour' : 'more_than_5_hour';
-            $summary->{$contract->underlying->symbol}->{intraday}->{$intraday_category}->{turnover} += $purchase_price;
-            $summary->{$contract->underlying->symbol}->{intraday}->{$intraday_category}->{payout}   += $payout_price;
-            $summary->{$contract->underlying->symbol}->{intraday}->{total_turnover}  += $purchase_price;
-            $summary->{$contract->underlying->symbol}->{intraday}->{total_payout}  += $payout_price; 
-        } else {
+		    my $contract_duration_in_hour = $contract->timeinyears->amount * 365 * 24;
+		    my $intraday_category = ($contract_duration_in_hour <= 5) ? 'less_than_5_hour' : 'more_than_5_hour';
+		    $final->{$contract->underlying->market->name}->{intraday}->{$intraday_category}->{$contract->underlying->symbol}->{turnover} += $purchase_price;
+		    $final->{$contract->underlying->market->name}->{intraday}->{$intraday_category}->{$contract->underlying->symbol}->{payout}   += $payout_price;
+		    $final->{$contract->underlying->market->name}->{intraday}->{$intraday_category}->{total_turnover}  += $purchase_price;
+		    $final->{$contract->underlying->market->name}->{intraday}->{$intraday_category}->{total_payout}  += $payout_price;
+                    $final->{$contract->underlying->market->name}->{intraday}->{total_turnover}  += $purchase_price;
+                    $final->{$contract->underlying->market->name}->{intraday}->{total_payout}  += $payout_price;
+                    $final->{$contract->underlying->market->name}->{total_turnover} += $purchase_price;
+                    $final->{$contract->underlying->market->name}->{total_payout} += $payout_price;
+		} else {
 
-            $summary->{$contract->underlying->symbol}->{daily}->{total_payout}    += $payout_price;
-            $summary->{$contract->underlying->symbol}->{daily}->{total_turnover} += $purchase_price;
+            $final->{$contract->underlying->market->name}->{daily}->{$contract->underlying->symbol}->{payout}    += $payout_price;
+            $final->{$contract->underlying->market->name}->{daily}->{$contract->underlying->symbol}->{turnover} += $purchase_price;
+            $final->{$contract->underlying->market->name}->{daily}->{total_payout}    += $payout_price;
+            $final->{$contract->underlying->market->name}->{daily}->{total_turnover} += $purchase_price;
+            $final->{$contract->underlying->market->name}->{total_turnover} += $purchase_price;
+            $final->{$contract->underlying->market->name}->{total_payout} += $payout_price;
         }
-
     }
-    my @intraday_turnover = sort { $summary->{$b}->{intraday}->{total_turnover} <=> $summary->{$a}->{intraday}->{total_turnover}} grep { $summary->{$_}->{intraday} && $summary->{$_}->{intraday}->{total_turnover} > 0}  keys %{$summary};
-
-    my @daily_turnover = sort { $summary->{$b}->{daily}->{total_turnover} <=> $summary->{$a}->{daily}->{total_turnover}} grep { $summary->{$_}->{daily} && $summary->{$_}->{daily}->{total_turnover} > 0}  keys %{$summary};
 
     $final->{generated_time} =
         BOM::Database::DataMapper::CollectorReporting->new({broker_code => 'CR'})->get_last_generated_historical_marked_to_market_time;
-
     return $final;
 }
 
@@ -491,6 +493,7 @@ sub closedplreport {
     foreach my $underlying (keys %$closed) {
          my $market = create_underlying($underlying)->market->name;
         $final->{$market}->{$underlying}->{usd_closed_pl} = financialrounding('price', 'USD', $closed->{$underlying}->{usd_closed_pl});
+        $final->{$market}->{total_closed_pl} += financialrounding('price', 'USD', $closed->{$underlying}->{usd_closed_pl});
     }
     $final->{generated_time} = $today->datetime;
     return $final;
