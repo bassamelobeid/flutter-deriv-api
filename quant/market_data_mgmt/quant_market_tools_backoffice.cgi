@@ -20,6 +20,7 @@ BrokerPresentation("QUANT BACKOFFICE");
 
 use BOM::Platform::Config;
 use BOM::Platform::Runtime;
+use BOM::Backoffice::Utility;
 use Date::Utility;
 use BOM::Backoffice::Request qw(request);
 use Quant::Framework::CorrelationMatrix;
@@ -28,9 +29,7 @@ my $broker = request()->broker_code;
 
 if ($broker !~ /^\w+$/) { die "Bad broker code $broker in $0"; }
 
-unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}})) {
-    code_exit_BO();
-}
+master_live_server_error() unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}}));
 
 # Upload Dividend
 # Currently we can get a list of forecast dividend from Bloomberg but in excel format
