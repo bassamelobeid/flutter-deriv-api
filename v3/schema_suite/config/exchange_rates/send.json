@@ -2,12 +2,12 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "title": "Get Exchange Rates",
-  "description": "Retrieves the exchange rates for all currencies supported by system, taking each one as base.",
+  "description": "Retrieves the exchange rates from a base currency to all currencies supported by the system.",
   "properties": {
     "exchange_rates": {
       "type": "integer",
       "pattern": "^1$",
-      "description": "Must be 1",
+      "description": "Command code, always set to fixed value 1",
       "required": "1"
     },
     "passthrough": {
