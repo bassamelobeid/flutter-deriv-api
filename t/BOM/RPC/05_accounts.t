@@ -20,7 +20,7 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Helper::FinancialAssessment;
 use BOM::Database::Model::AccessToken;
 use BOM::RPC::v3::Utility;
-use BOM::Platform::Password;
+use BOM::User::Password;
 use BOM::User;
 use BOM::MT5::User::Async;
 
@@ -64,7 +64,7 @@ package main;
 # init db
 my $email       = 'abc@binary.com';
 my $password    = 'jskjd8292922';
-my $hash_pwd    = BOM::Platform::Password::hashpw($password);
+my $hash_pwd    = BOM::User::Password::hashpw($password);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
 });
@@ -1020,7 +1020,7 @@ subtest $method => sub {
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Your cashier was not locked.', 'return error if not locked');
 
     $mailbox->clear;
-    $test_client->cashier_setting_password(BOM::Platform::Password::hashpw($tmp_password));
+    $test_client->cashier_setting_password(BOM::User::Password::hashpw($tmp_password));
     $test_client->save;
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
