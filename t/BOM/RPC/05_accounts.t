@@ -1243,7 +1243,7 @@ subtest $method => sub {
             args  => $args,
             token => $token1
         });
-    cmp_ok($res->{score}, "==", 30, "Got correct score");
+    cmp_ok($res->{score}, "==", 29, "Got correct score");
     is $res->{education_level}, 'Secondary', 'Got correct answer for assessment key';
 };
 
