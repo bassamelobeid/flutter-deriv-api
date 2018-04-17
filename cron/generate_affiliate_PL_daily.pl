@@ -16,7 +16,6 @@ use Brands;
 
 use BOM::Platform::Email qw(send_email);
 use BOM::MyAffiliates::ActivityReporter;
-use BOM::Platform::Runtime;
 
 local $SIG{ALRM} = sub { die "alarm\n" };
 alarm 1800;
@@ -74,7 +73,7 @@ try {
         aws_access_key_id     => $config->{aws_access_key_id},
         aws_secret_access_key => $config->{aws_secret_access_key},
         prefix                => "https://$config->{aws_bucket}.s3.amazonaws.com/",
-        expires               => BOM::Platform::Runtime->instance->app_config->system->mail->download_duration,
+        expires               => 86400 # 24 hours
     );
     
     $s3->put_object(
