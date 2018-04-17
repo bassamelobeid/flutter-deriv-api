@@ -19,7 +19,7 @@
       "title": "Exchange rates",
       "description": "Exchange rate values from base (USD) to all other currencies",
       "properties": {
-        "base": {
+        "base_currency": {
           "type": "string",
           "description": "Base currency (USD)",
           "pattern": "^USD$"

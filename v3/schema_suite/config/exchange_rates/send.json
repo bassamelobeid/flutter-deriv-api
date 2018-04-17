@@ -10,6 +10,11 @@
       "description": "Command code, always set to fixed value 1",
       "required": "1"
     },
+    "base_currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$",
+      "description": "Base currency (three capital letter format)",
+    },
     "passthrough": {
       "type": "object",
       "description": "Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."
@@ -17,7 +22,10 @@
     "req_id": {
       "type": "integer",
       "description": "Optional field to map request to response"
-    }
+    },
+    "required": [
+    "exchange_rates"
+  ]
   },
   "additionalProperties": false
 }
