@@ -3,7 +3,6 @@
 <div id="rd-tabs">
   <ul>
     <li><a href="#rd-summary">Client Summary</a></li>
-    <li><a href="#rd-pivot">Pivot</a></li>
      <li><a href="#rd-closedPL">Profit and Lose Report</a></li>
   </ul>
   <div id="rd-summary">
@@ -54,10 +53,6 @@
             [% INCLUDE 'backoffice/risk_dashboard_bet_table.html.tt' bets = open_bets.big_mtms %]
         </div>
     </div>
-</div>
-<div id="rd-pivot">
-<p> Latest report generated at [% generated_time %] </p>
-[% INCLUDE 'backoffice/risk_dashboard_pivot.html.tt' pivot = open_bets.pivot %]
 </div>
 <div id="rd-closedPL">
 [% INCLUDE 'backoffice/risk_dashboard_pl_monitoring.html.tt' data = closedpl %]
