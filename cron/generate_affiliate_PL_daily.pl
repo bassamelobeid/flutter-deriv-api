@@ -73,7 +73,7 @@ try {
         aws_access_key_id     => $config->{aws_access_key_id},
         aws_secret_access_key => $config->{aws_secret_access_key},
         prefix                => "https://$config->{aws_bucket}.s3.amazonaws.com/",
-        expires               => 86400 # 24 hours
+        expires               => 24 * 3600
     );
     
     $s3->put_object(
