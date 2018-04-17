@@ -13,7 +13,7 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::User;
 use BOM::User::Client;
 use BOM::Database::Model::OAuth;
-use BOM::Platform::Password;
+use BOM::User::Password;
 
 my $email    = 'dummy@binary.com';
 my $password = 'jskjd8292922';
