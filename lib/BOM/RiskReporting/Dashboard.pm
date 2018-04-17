@@ -37,6 +37,7 @@ use List::MoreUtils qw(uniq);
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::Contract::PredefinedParameters;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
+use BOM::MarketData qw(create_underlying);
 my $json = JSON::MaybeXS->new;
 
 =head1 ATTRIBUTES
@@ -476,9 +477,6 @@ sub open_bet_summary {
 
     my @daily_turnover = sort { $summary->{$b}->{daily}->{total_turnover} <=> $summary->{$a}->{daily}->{total_turnover}} grep { $summary->{$_}->{daily} && $summary->{$_}->{daily}->{total_turnover} > 0}  keys %{$summary};
 
-    $final->{intraday} = { map { $_ => $summary->{$_}->{intraday}} @a[0..9]];
-    $final->{daily} = { map { $_ => $summary->{$_}->{daily}} @a[0..9]];
-
     $final->{generated_time} =
         BOM::Database::DataMapper::CollectorReporting->new({broker_code => 'CR'})->get_last_generated_historical_marked_to_market_time;
 
@@ -491,7 +489,8 @@ sub closedplreport {
     my $closed = $self->closed_PL_by_underlying($today->truncate_to_day->db_timestamp);
     my $final;
     foreach my $underlying (keys %$closed) {
-        $final->{$underlying}->{usd_closed_pl} = financialrounding('price', 'USD', $closed->{$underlying}->{usd_closed_pl});
+         my $market = create_underlying($underlying)->market->name;
+        $final->{$market}->{$underlying}->{usd_closed_pl} = financialrounding('price', 'USD', $closed->{$underlying}->{usd_closed_pl});
     }
     $final->{generated_time} = $today->datetime;
     return $final;
