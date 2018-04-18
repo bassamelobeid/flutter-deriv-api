@@ -1,26 +1,26 @@
-<p> Latest report generated at [% data.generated_time %] </p>
+<p> Latest report generated at [% data.closed_pl.generated_time %] </p>
 <p><b> Table 1: Current realized company's PL of different underlying. </b></p>
 <p> Note:We are taking into account the contract that bought and sold on the same date in this report. </p>
 
 
 
 <div id="accordion_close_pl" style="width: 300px">
-[% FOREACH index IN data.pl.keys.nsort %]
-[% FOREACH market  IN data.pl.$index.keys %]
+[% FOREACH index IN data.closed_pl.pl.keys.nsort %]
+[% FOREACH market  IN data.closed_pl.pl.$index.keys %]
   <h3 style="outline: none">
 		<strong>[% market %] :</strong>
-		<span style="color: [% data.pl.$index.$market.total_closed_pl > 0 ? 'green' : 'red' %]">
-				USD [% data.pl.$index.$market.total_closed_pl %]
+		<span style="color: [% data.closed_pl.pl.$index.$market.total_closed_pl > 0 ? 'green' : 'red' %]">
+				USD [% data.closed_pl.pl.$index.$market.total_closed_pl %]
 		<span>
   </h3>
   <div>
-       [% FOREACH uindex IN data.pl.$index.$market.keys.sort %]
+       [% FOREACH uindex IN data.closed_pl.pl.$index.$market.keys.sort %]
           [% IF uindex != 'total_closed_pl' %]
-             [% FOREACH underlying IN data.pl.$index.$market.$uindex.keys %]
+             [% FOREACH underlying IN data.closed_pl.pl.$index.$market.$uindex.keys %]
                 <div style="line-height: 24px;">
 						[% underlying %] : 
-						<span style="color: [% data.pl.$index.$market.$uindex.$underlying > 0 ? 'green' : 'red' %]">
-								USD [% data.pl.$index.$market.$uindex.$underlying %]
+						<span style="color: [% data.closed_pl.pl.$index.$market.$uindex.$underlying > 0 ? 'green' : 'red' %]">
+								USD [% data.closed_pl.pl.$index.$market.$uindex.$underlying %]
 						</span>
 				</div>
              [% END %]
