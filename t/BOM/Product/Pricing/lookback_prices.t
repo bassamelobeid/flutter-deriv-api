@@ -35,7 +35,7 @@ my %skip_category = (
 );
 
 my $expectation        = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/lookback_config.yml');
-my @underlying_symbols = ('R_100');
+my @underlying_symbols = ('R_100','R_75','R_50','R_25','R_10');
 my $payout_currency    = 'USD';
 my $spot               = 100;
 my $offerings_obj      = LandingCompany::Registry::get('costarica')->basic_offerings($offerings_cfg);
@@ -54,6 +54,16 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
         my $category_obj = Finance::Contract::Category->new($contract_category);
         next if $category_obj->is_path_dependent;
         my @duration = map { $_ * 86400 } (7, 14);
+
+        push @duration, 60;
+        push @duration, 120;
+        push @duration, 300;
+        push @duration, 600;
+        push @duration, 1200;
+        push @duration, 3600;
+        push @duration, 7200;
+        push @duration, 18000;
+
         foreach my $duration (@duration) {
             my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({
                 underlying => $ul,
