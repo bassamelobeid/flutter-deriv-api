@@ -16,6 +16,7 @@ use Data::Compare;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
+use BOM::Backoffice::Utility qw( master_live_server_error);
 
 PrintContentType();
 
@@ -56,7 +57,7 @@ if (scalar @{$settings_list;} == 0) {
 my $submitted = request()->param('submitted');
 
 if (not(grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}})) {
-    print "<div id=\"message\"><div id=\"error\">This server is not Dynamic Settings Master and your changes won't be saved.</div></div><br />";
+    print '<div id="message"><div id="error">' . master_live_server_error() . '</div></div><br />';
 } else {
     BOM::DynamicSettings::save_settings({
         'settings'          => request()->params,
