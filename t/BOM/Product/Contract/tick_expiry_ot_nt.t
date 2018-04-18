@@ -122,6 +122,8 @@ subtest 'tick expiry one touch no touch' => sub {
         is $c->date_expiry->epoch, 1404986412, 'checking date expiry';
         is $c->bid_price, 100, 'checking bid price, and should be equal to payout';
 
+        is $c->is_valid_to_sell, 1, 'is_valid_to_sell';
+
         # No barrier hit test case
         $args->{barrier} = '+' . ($index+0.02);
         $c = produce_contract($args);
@@ -132,6 +134,8 @@ subtest 'tick expiry one touch no touch' => sub {
 
         is $c->date_expiry->epoch, 1404986412, 'checking date expiry';
         is $c->bid_price, $expected_bid_price{$index}, 'checking bid price';
+
+        is $c->is_valid_to_sell, 0, 'is_valid_to_sell';
     }
 
     #Here we are at right before the last tick
@@ -142,6 +146,8 @@ subtest 'tick expiry one touch no touch' => sub {
     ok !$c->is_expired, 'contract did not touch barrier and not expired, this is right before our last tick';
     ok !$c->hit_tick,   'no hit tick';
     is $c->current_tick->quote, 106, 'correct current tick';
+
+    is $c->is_valid_to_sell, 0, 'is_valid_to_sell';
 
     # And here is the last tick
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -162,6 +168,8 @@ subtest 'tick expiry one touch no touch' => sub {
 
     is $c->bid_price, 100, 'Correct bid price at expiry';
 
+    is $c->is_valid_to_sell, 1, 'is_valid_to_sell';
+
     $args->{barrier} = '-1.0';
     $c = produce_contract($args);
     ok $c->is_expired, 'Here is the last one, 5th tick after entry tick';
@@ -169,5 +177,7 @@ subtest 'tick expiry one touch no touch' => sub {
     is $c->current_tick->quote, 108, 'correct current tick';
 
     is $c->bid_price, 0, 'Correct bid price at expiry in case of no hit';
+
+    is $c->is_valid_to_sell, 1, 'is_valid_to_sell';
 };
 
