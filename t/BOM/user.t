@@ -18,12 +18,12 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::User;
+use BOM::User::Password;
 use BOM::MT5::User::Async;
-use BOM::Platform::Password;
 
 my $email    = 'abc@binary.com';
 my $password = 'jskjd8292922';
-my $hash_pwd = BOM::Platform::Password::hashpw($password);
+my $hash_pwd = BOM::User::Password::hashpw($password);
 
 my ($vr_1, $cr_1);
 my ($client_vr, $client_cr, $client_cr_new);
@@ -46,7 +46,9 @@ lives_ok {
 }
 'creating clients';
 
-my %pass = (password => $password);
+my %args = (
+    password => $password,
+);
 my $status;
 my $user;
 
@@ -192,10 +194,13 @@ subtest 'create user by loginid' => sub {
 };
 
 subtest 'User Login' => sub {
+    subtest 'cannot login if missing argument' => sub {
+        throws_ok { $status = $user->login(); } qr/requires password argument/;
+    };
     subtest 'cannot login if disabled' => sub {
         $client_vr->set_status('disabled', 'system', 'testing');
         $client_vr->save;
-        $status = $user->login(%pass);
+        $status = $user->login(%args);
         ok !$status->{success}, 'All account disabled, user cannot login';
         ok $status->{error} =~ /account is unavailable/;
     };
@@ -236,7 +241,7 @@ subtest 'User Login' => sub {
             $cr_31->set_exclusion->exclude_until($exclude_until_31);
             $cr_31->save;
 
-            $status = $user3->login(%pass);
+            $status = $user3->login(%args);
 
             ok $status->{success}, 'Excluded client can login';
         };
@@ -250,7 +255,7 @@ subtest 'User Login' => sub {
             $cr_31->set_exclusion->timeout_until($timeout_until_31->epoch);
             $cr_31->save;
 
-            $status = $user3->login(%pass);
+            $status = $user3->login(%args);
 
             my $timeout_until_31_date = $timeout_until_31->date;
             ok $status->{success}, 'Timeout until client can login';
@@ -260,7 +265,7 @@ subtest 'User Login' => sub {
             $user3->add_loginid({loginid => $vr_3->loginid});
             $user3->save;
 
-            $status = $user3->login(%pass);
+            $status = $user3->login(%args);
             is $status->{success}, 1, 'it should use vr account to login';
         };
     };
@@ -268,27 +273,17 @@ subtest 'User Login' => sub {
     subtest 'can login' => sub {
         $client_vr->clr_status('disabled');
         $client_vr->save;
-        $status = $user->login(%pass);
+        $status = $user->login(%args);
         is $status->{success}, 1, 'login successfully';
         my $login_history = $user->get_last_successful_login_history();
         is $login_history->{action}, 'login', 'correct login history action';
         is $login_history->{status}, 1,       'correct login history status';
     };
 
-    subtest 'Suspend All logins' => sub {
-        BOM::Platform::Runtime->instance->app_config->system->suspend->all_logins(1);
-
-        $status = $user->login(%pass);
-        ok !$status->{success}, 'All logins suspended, user cannot login';
-        ok $status->{error} =~ /Login to this account has been temporarily disabled/;
-
-        BOM::Platform::Runtime->instance->app_config->system->suspend->all_logins(0);
-    };
-
     subtest 'Invalid Password' => sub {
-        $status = $user->login(password => 'mRX1E3Mi00oS8LG');
+        $status = $user->login(%args, password => 'mRX1E3Mi00oS8LG');
         ok !$status->{success}, 'Bad password; cannot login';
-        ok $status->{error} =~ /Incorrect email or password/;
+        like $status->{error}, qr/Incorrect email or password/, 'correct error message';
         my $login_history = $user->get_last_successful_login_history();
         is $login_history->{action}, 'login', 'correct last successful login history action';
         is $login_history->{status}, 1,       'correct last successful login history status';
@@ -298,20 +293,20 @@ subtest 'User Login' => sub {
         my $failed_login = $user->failed_login;
         is $failed_login->fail_count, 1, '1 bad attempt';
 
-        $status = $user->login(%pass);
+        $status = $user->login(%args);
         ok $status->{success}, 'logged in succesfully, it deletes the failed login count';
 
-        $user->login(password => 'wednesday') for 1 .. 6;
+        $user->login(%args, password => 'wednesday') for 1 .. 6;
         $failed_login = $user->failed_login;
         is $failed_login->fail_count, 6, 'failed login attempts';
 
-        $status = $user->login(%pass);
+        $status = $user->login(%args);
         ok !$status->{success}, 'Too many bad login attempts, cannot login';
         ok $status->{error} =~ 'Sorry, you have already had too many unsuccessful', "Correct error for too many wrong attempts";
 
         $failed_login = $user->failed_login;
         $failed_login->last_attempt(Date::Utility->new->minus_time_interval('1d')->datetime_yyyymmdd_hhmmss);
-        ok $user->login(%pass)->{success}, 'clear failed login attempts; can now login';
+        ok $user->login(%args)->{success}, 'clear failed login attempts; can now login';
     };
 };
 
@@ -451,7 +446,7 @@ subtest 'GAMSTOP' => sub {
     subtest 'GAMSTOP - Y - excluded' => sub {
         $gamstop_module->mock('get_exclusion_for', sub { return Webservice::GAMSTOP::Response->new(%params); });
 
-        ok $user_gamstop->login(%pass)->{success}, 'can login';
+        ok $user_gamstop->login(%args)->{success}, 'can login';
         is $client_gamstop->get_self_exclusion_until_date, Date::Utility->new(DateTime->now()->add(months => 6)->ymd)->date_yyyymmdd,
             'Based on Y response from GAMSTOP client was self excluded';
 
@@ -463,7 +458,7 @@ subtest 'GAMSTOP' => sub {
         $params{exclusion} = 'N';
         $gamstop_module->mock('get_exclusion_for', sub { return Webservice::GAMSTOP::Response->new(%params); });
 
-        ok $user_gamstop->login(%pass)->{success}, 'can login';
+        ok $user_gamstop->login(%args)->{success}, 'can login';
         is $client_gamstop->get_self_exclusion_until_date, undef, 'Based on N response from GAMSTOP client was not self excluded';
     };
 
@@ -472,7 +467,7 @@ subtest 'GAMSTOP' => sub {
 
         $gamstop_module->mock('get_exclusion_for', sub { return Webservice::GAMSTOP::Response->new(%params); });
 
-        ok $user_gamstop->login(%pass)->{success}, 'can login';
+        ok $user_gamstop->login(%args)->{success}, 'can login';
         is $client_gamstop->get_self_exclusion_until_date, undef, 'Based on N response from GAMSTOP client was not self excluded';
     };
 };
@@ -489,7 +484,7 @@ sub write_file {
 subtest 'MirrorBinaryUserId' => sub {
     plan tests => 15;
     use YAML::XS qw/LoadFile/;
-    use BOM::Platform::Script::MirrorBinaryUserId;
+    use BOM::User::Script::MirrorBinaryUserId;
     use BOM::User::Client;
 
     my $cfg            = LoadFile '/etc/rmg/userdb.yml';
@@ -513,7 +508,7 @@ CONF
 
         @ENV{qw/PGSERVICEFILE PGPASSFILE/} = ($pgservice_conf, $pgpass_conf);
 
-        $dbh = BOM::Platform::Script::MirrorBinaryUserId::userdb;
+        $dbh = BOM::User::Script::MirrorBinaryUserId::userdb;
     }
     'setup';
 
@@ -522,7 +517,7 @@ CONF
 
     is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 12, 'got expected number of queue entries';
 
-    BOM::Platform::Script::MirrorBinaryUserId::run_once $dbh;
+    BOM::User::Script::MirrorBinaryUserId::run_once $dbh;
     is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 0, 'all queue entries processed';
 
     for my $el (@$queue) {
