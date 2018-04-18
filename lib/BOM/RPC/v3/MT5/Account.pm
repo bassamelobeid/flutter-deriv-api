@@ -529,13 +529,22 @@ async_rpc mt5_get_settings => sub {
                     code              => 'MT5GetUserError',
                     message_to_client => $settings->{error}}) if (ref $settings eq 'HASH' and $settings->{error});
             $settings = _extract_settings($settings);
+            # we don't want to send this field back
+            delete $settings->{rights};
+            delete $settings->{agent};
             return Future->done($settings);
         });
 };
 
 sub _extract_settings {
     my ($settings) = @_;
-    
+
+    if (ref $settings eq 'HASH' and $settings->{error}) {
+        return create_error_future({
+            code              => 'MT5GetUserError',
+            message_to_client => $settings->{error}}) if (ref $settings eq 'HASH' and $settings->{error});
+    }
+
     if (my $country = $settings->{country}) {
         my $country_code = Locale::Country::Extra->new()->code_from_country($country);
         if ($country_code) {
