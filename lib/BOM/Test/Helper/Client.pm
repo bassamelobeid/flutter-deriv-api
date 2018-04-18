@@ -8,7 +8,7 @@ use Exporter qw( import );
 use BOM::User::Client;
 use BOM::Platform::Client::IDAuthentication;
 use BOM::Platform::Client::Utility;
-use BOM::Platform::Password;
+use BOM::User::Password;
 use Test::More;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 
