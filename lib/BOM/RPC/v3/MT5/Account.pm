@@ -130,32 +130,33 @@ sub get_mt5_logins {
         return BOM::MT5::User::Async::get_user($login)->then(
             sub {
                 my ($setting) = @_;
+                return Future->fail('MT5GetUserError', $setting->{error}) if (ref $setting eq 'HASH' and $setting->{error});
                 my $acc = {login => $login};
                 if (ref $setting eq 'HASH' && $setting->{group}) {
                     $acc->{group} = $setting->{group};
-                    return _extract_settings($setting)->then(
-                        sub {
-                            my ($settings) = @_;
-                            delete $setting->{address};
-                            delete $setting->{city};
-                            delete $setting->{zipCode};
-                            $acc = {%$acc, %$settings};
-                            return Future->done($acc);
-                        }
-                        )->then(
-                        sub {
-                            my ($acc) = @_;
-                            return mt5_mamm({
-                                    client => $client,
-                                    args   => {login => $login}}
-                                )->then(
-                                sub {
-                                    my ($mamm) = @_;
-                                    $acc = {%$acc, %$mamm};
-                                    return Future->done($acc);
-                                });
-                        });
                 }
+                $setting = _extract_settings($setting);
+                delete $setting->{address};
+                delete $setting->{city};
+                delete $setting->{zipCode};
+                $acc = {%$acc, %$setting};
+                return Future->done($acc);
+            }
+            )->then(
+            sub {
+                my ($acc) = @_;
+                return Future->needs_all(
+                    mt5_mamm({
+                            client => $client,
+                            args   => {login => $login}}
+                    ),
+                    Future->done($acc)
+                );
+            }
+            )->then(
+            sub {
+                my ($mamm, $acc) = @_;
+                $acc = {%$acc, %$mamm};
                 return Future->done($acc);
             });
     }
@@ -546,29 +547,17 @@ async_rpc mt5_get_settings => sub {
     return BOM::MT5::User::Async::get_user($login)->then(
         sub {
             my ($settings) = @_;
-            return create_error_future({
-                    code              => 'MT5GetUserError',
-                    message_to_client => $settings->{error}}) if (ref $settings eq 'HASH' and $settings->{error});
-            _extract_settings($settings)->then(
-                sub {
-                    my ($settings) = @_;
-                    # we don't want to send this field back
-                    delete $settings->{rights};
-                    delete $settings->{agent};
-                    return Future->done($settings);
-                }
-                )->else(
-                sub {
-                    my ($code, $error) = @_;
-                    return _make_error($code, $error);
-                });
+            return Future->fail('MT5GetUserError', $settings->{error}) if (ref $settings eq 'HASH' and $settings->{error});
+            $settings = _extract_settings($settings);
+            # we don't want to send this field back
+            delete $settings->{rights};
+            delete $settings->{agent};
+            return Future->done($settings);
         });
 };
 
 sub _extract_settings {
     my ($settings) = @_;
-    return Future->fail('MT5GetUserError', $settings->{error}) if (ref $settings eq 'HASH' and $settings->{error});
-
     if (my $country = $settings->{country}) {
         my $country_code = Locale::Country::Extra->new()->code_from_country($country);
         if ($country_code) {
@@ -579,7 +568,7 @@ sub _extract_settings {
     }
 
     $settings->{currency} = $settings->{group} =~ /vanuatu|costarica|demo/ ? 'USD' : 'EUR';
-    return Future->done($settings);
+    return $settings;
 }
 
 =head2 mt5_set_settings
