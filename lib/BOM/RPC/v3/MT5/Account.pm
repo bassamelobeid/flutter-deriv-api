@@ -117,7 +117,7 @@ Returns any of the following:
 sub get_mt5_logins {
     my ($client, $user) = @_;
 
-    $user ||= BOM::User->new({email => $client->email});
+    $user ||= $client->user;
 
     my $f = fmap1 {
         shift =~ /^MT(\d+)$/;
@@ -189,7 +189,7 @@ async_rpc mt5_new_account => sub {
     my $account_type     = delete $args->{account_type};
     my $mt5_account_type = delete $args->{mt5_account_type} // '';
     my $brand            = Brands->new(name => request()->brand);
-    my $user             = BOM::User->new({email => $client->email});
+    my $user             = $client->user;
 
     return create_error_future({
             code              => 'InvalidAccountType',
@@ -373,7 +373,7 @@ async_rpc mt5_new_account => sub {
 
 sub _check_logins {
     my ($client, $logins) = @_;
-    my $user = BOM::User->new({email => $client->email});
+    my $user = $client->user;
 
     foreach my $login (@{$logins}) {
         return unless (any { $login eq $_->loginid } ($user->loginid));
