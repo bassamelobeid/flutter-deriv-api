@@ -16,8 +16,9 @@ PrintContentType();
 
 my $filename      = request()->param('show');
 my $displayport   = request()->param('displayport');
-my $outputlargest = request()->param('outputlargest');
+my $outputlargest = request()->param('outputlargest') || 100;
 my $viewonlylist  = request()->param('viewonlylist');
+my $sortby        = request()->param('sortby') || 0;
 
 print "<TABLE border=1>";
 
@@ -37,42 +38,44 @@ if (open(my $fh, '<', $filename)) {    ## no critic (RequireBriefOpen)
     flock($fh, 1);
 
     while (my $l = <$fh>) {
-        if ($l =~ /^\#/) { print "<TR><TD colspan=8><font size=2 face=verdana><b>$l</td></tr>"; }
-        else {
-            @fields = split(/\,/, $l);
-            my $thislineout = "\r<TR>";
-
-            my $i = 0;
-            foreach my $f (@fields) {
-                if ($i == 6) {
-                    #calculate aggregate payout of outstanding bets
-                    my @hisportfolio = split /\+/, $f;
-                    my $aggpayouts = 0;
-                    foreach my $h (@hisportfolio) {
-                        if ($h =~ /^(\d+)L\s(\d*\.?\d*)\s([^_]+)\_([^_]+)\_(\d+)/) { $aggpayouts += $5; }
-                    }
-                    $thislineout .= "<TD><font size=2 face=verdana>" . encode_entities($aggpayouts) . "</TD>";
-
-                    $f =~ s/\+/<br>/g;
-                }
-                if (($displayport) || ($i < 6)) {
-                    $thislineout .= "<TD><font size=2 face=verdana>" . encode_entities($f) . "</TD>";
-                    if (abs($f) > 0) { $sums[$i] += $f; }
-
-                    if ($i == 5) {
-                        $thislineout .= "<TD><font size=2 face=verdana>" . encode_entities($fields[4] - $fields[5]) . "</TD>";
-                    }    #marked-to-market profit/loss
-                }
-
-                $i++;
-            }
-
-            if   (request()->param('sortby') == 6) { $thislineout .= "<!-- " . encode_entities($fields[4] - $fields[5]) . " -->"; }
-            else                                   { $thislineout .= "<!-- " . encode_entities($fields[request()->param('sortby')]) . " -->"; }
-            $thislineout .= "</TR>";
-
-            if (not $viewonlylist or $viewonlylist =~ /$fields[0]/) { push @to_out, $thislineout; }
+        chomp($l);
+        next if ($l =~ /^$/);
+        if ($l =~ m/^\#/) { print "<TR><TD colspan=8><font size=2 face=verdana><b>$l</td></tr>"; next; }
+        if ($l =~ /^loginid/) {
+            print "<TR>" . join("", map { "<TD><font size=2 face-verdana>" . encode_entities($_) . "</TD>" } split /\,/, $l) . "</TR>";
+            next;
         }
+        @fields = split(/\,/, $l);
+        my $thislineout = "<TR>";
+
+        foreach my $i (0 .. $#fields) {
+            my $f = $fields[$i];
+            if ($i == 6) {
+                #calculate aggregate payout of outstanding bets
+                my @hisportfolio = split /\+/, $f;
+                my $aggpayouts = 0;
+                foreach my $h (@hisportfolio) {
+                    if ($h =~ /^(\d+)L\s(\d*\.?\d*)\s([^_]+)\_([^_]+)\_(\d+)/) { $aggpayouts += $5; }
+                }
+                $thislineout .= "<TD><font size=2 face=verdana>" . encode_entities($aggpayouts) . "</TD>";
+
+                $f =~ s/\+/<br>/g;
+            }
+            if (($displayport) || ($i < 6)) {
+                $thislineout .= "<TD><font size=2 face=verdana>" . encode_entities($f) . "</TD>";
+                if ($i > 0 && abs($f) > 0) { $sums[$i] += $f; }
+
+                if ($i == 5) {
+                    $thislineout .= "<TD><font size=2 face=verdana>" . encode_entities($fields[4] - $fields[5]) . "</TD>";
+                }    #marked-to-market profit/loss
+            }
+        }
+
+        if   ($sortby == 6) { $thislineout .= "<!-- " . encode_entities($fields[4] - $fields[5]) . " -->"; }
+        else                { $thislineout .= "<!-- " . encode_entities($fields[$sortby]) . " -->"; }
+        $thislineout .= "</TR>";
+
+        if (not $viewonlylist or $viewonlylist =~ /$fields[0]/) { push @to_out, $thislineout; }
     }
 
     close($fh);
@@ -80,24 +83,19 @@ if (open(my $fh, '<', $filename)) {    ## no critic (RequireBriefOpen)
     print "Can not open " . encode_entities($filename);
 }
 
-my @s_to_out;
+my @s_to_out =
+    sort { my ($a1, $b1); $a =~ /<!--\s+(\S+)\s/; $a1 = $1; $b =~ /<!--\s+(\S+)\s/; $b1 = $1; $sortby == 0 ? $a1 cmp $b1 : $a1 <=> $b1; } @to_out;
 if (request()->param('sortorder') =~ /reverse/) {
-    @s_to_out =
-        sort { my ($a1, $b1); $a =~ /\<\!\-\-\s(\-?\d*\.?\d*)\s/; $a1 = $1; $b =~ /\<\!\-\-\s(\-?\d*\.?\d*)\s/; $b1 = $1; $a1 <=> $b1; } @to_out;
-} else {
-    @s_to_out =
-        sort { my ($a1, $b1); $a =~ /\<\!\-\-\s(\-?\d*\.?\d*)\s/; $a1 = $1; $b =~ /\<\!\-\-\s(\-?\d*\.?\d*)\s/; $b1 = $1; $b1 <=> $a1; } @to_out;
+    @s_to_out = reverse @s_to_out;
 }
 
 splice @s_to_out, $outputlargest if $#s_to_out > $outputlargest;
 print @s_to_out;
 
 print "<TR>";
-my $i = 0;
-foreach my $f (@fields) {
+for my $i (0 .. $#fields) {
     if   (abs($sums[$i]) > 0) { print "<TD><B><font size=2 face=verdana> " . encode_entities($sums[$i]) . "</TD>"; }
     else                      { print "<TD></TD>"; }
-    $i++;
 }
 print "</TR>";
 print "</table>";
