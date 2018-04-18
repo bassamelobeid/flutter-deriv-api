@@ -20,7 +20,7 @@ use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 use Future;
 
 # Mocked currency converter to imitate currency conversions
-my $mocked_payment_notification = Test::MockModule->new('BOM::Platform::PaymentNotificationQueue');
+my $mocked_payment_notification = Test::MockModule->new('BOM::User::Client::PaymentNotificationQueue');
 $mocked_payment_notification->mock(
     add => sub {
         return Future->done;
