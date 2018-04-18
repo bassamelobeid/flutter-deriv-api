@@ -225,8 +225,7 @@ sub _payment_and_profit_report {
         watched         => \@watched,
     };
 }
-
-sub exposures_report {
+sub open_contract_exposures {
     my $self      = shift;
     my @open_bets = @{$self->_open_bets_at_end};
     my $final;
@@ -289,14 +288,19 @@ sub exposures_report {
         map { [$_, $new_final->{$_}] }
         sort { $new_final->{$b}->{total_payout} <=> $new_final->{$a}->{total_payout} } grep { $_ !~ /total/ } keys %{$new_final};
     my $report;
-    for (my $i = 0; $i < scalar @sorted; $i++) { $report->{open_bet}->{pl}->{$i} = {$sorted[$i][0] => $sorted[$i][1]}; }
+    for (my $i = 0; $i < scalar @sorted; $i++) { $report->{pl}->{$i} = {$sorted[$i][0] => $sorted[$i][1]}; }
 
-    $report->{open_bet}->{generated_time} =
+    $report->{generated_time} =
         BOM::Database::DataMapper::CollectorReporting->new({broker_code => 'CR'})->get_last_generated_historical_marked_to_market_time;
-    
-    my $today  = Date::Utility->new;
-    my $closed = $self->closed_PL_by_underlying($today->truncate_to_day->db_timestamp);
-    my $summary;
+ 
+    return $report;
+}
+
+sub closed_contract_exposure {
+   my $self = shift;
+   my $today  = Date::Utility->new;
+   my $closed = $self->closed_PL_by_underlying($today->truncate_to_day->db_timestamp);
+   my $summary;
     foreach my $underlying (keys %$closed) {
         my $market = create_underlying($underlying)->market->name;
         $summary->{$market}->{$underlying} = financialrounding('price', 'USD', $closed->{$underlying}->{usd_closed_pl});
@@ -314,12 +318,23 @@ sub exposures_report {
             $summary->{$market}->{$i} = {$sorted_by_underlying[$i][0] => $sorted_by_underlying[$i][1]};
         }
     }
+    my $report;
+    m @sorted_closed_pl = map { [$_, $summary->{$_}] } sort { $summary->{$a}->{total_closed_pl} <=> $summary->{$b}->{total_closed_pl} } keys %{$summary};
+    for (my $i = 0; $i < scalar @sorted_closed_pl; $i++) { $report->{pl}->{$i} = {$sorted_closed_pl[$i][0] => $sorted_closed_pl[$i][1]}; }
 
-    my @sorted_closed_pl = map { [$_, $summary->{$_}] } sort { $summary->{$a}->{total_closed_pl} <=> $summary->{$b}->{total_closed_pl} } keys %{$summary};
-    for (my $i = 0; $i < scalar @sorted_closed_pl; $i++) { $report->{closed_pl}->{pl}->{$i} = {$sorted_closed_pl[$i][0] => $sorted_closed_pl[$i][1]}; }
-
-    $report->{closed_pl}->{generated_time} = $today->datetime;
+    $report->{generated_time} = $today->datetime;
     return $report;
+
+}
+
+sub exposures_report {
+    my $self = shift;
+    my $report;
+
+   $report->{open_bet}= $self->open_contract_exposures();
+   $report->{closed_pl}= $self->closed_contract_exposure();
+
+   return $report;
 }
 
 =head1 METHODS
