@@ -381,7 +381,7 @@ sub closed_contract_exposure {
         }
     }
     my $report;
-    m @sorted_closed_pl = map { [$_, $summary->{$_}] } sort { $summary->{$a}->{total_closed_pl} <=> $summary->{$b}->{total_closed_pl} } keys %{$summary};
+    my @sorted_closed_pl = map { [$_, $summary->{$_}] } sort { $summary->{$a}->{total_closed_pl} <=> $summary->{$b}->{total_closed_pl} } keys %{$summary};
     for (my $i = 0; $i < scalar @sorted_closed_pl; $i++) { $report->{pl}->{$i} = {$sorted_closed_pl[$i][0] => $sorted_closed_pl[$i][1]}; }
 
     $report->{generated_time} = $today->datetime;
