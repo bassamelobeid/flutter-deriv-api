@@ -12,7 +12,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Platform::Password;
+use BOM::User::Password;
 use BOM::User;
 use BOM::User::Client;
 use BOM::Database::Model::OAuth;
@@ -31,7 +31,7 @@ $dbh->do("DELETE FROM oauth.apps WHERE id <> 1");
 
 my $email     = 'abc@binary.com';
 my $password  = 'jskjd8292922';
-my $hash_pwd  = BOM::Platform::Password::hashpw($password);
+my $hash_pwd  = BOM::User::Password::hashpw($password);
 my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
