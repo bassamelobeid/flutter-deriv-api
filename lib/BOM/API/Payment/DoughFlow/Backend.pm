@@ -163,14 +163,15 @@ sub write_transaction_line {
 
     # Lock the customer's account
     my $client_db = BOM::Database::ClientDB->new({client_loginid => $client->loginid});
-    if (not $client_db->freeze) {
-        return $c->throw(403, "Unable to lock the account. Please try again after one minute.");
-    }
-    ## unfreeze on exit no matter it's succeed or not
+    my $freeze_status = $client_db->freeze;
+
+    # unfreeze on exit no matter it's succeed or not
     scope_guard {
         # Unlock the customer's account
         $client_db->unfreeze;
     };
+
+    return $c->throw(403, "Unable to lock the account. Please try again after one minute.") unless $freeze_status;
 
     my $currency_code  = $c->request_parameters->{currency_code};
     my $transaction_id = $c->request_parameters->{transaction_id};
