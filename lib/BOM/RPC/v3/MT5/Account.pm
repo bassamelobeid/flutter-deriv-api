@@ -140,18 +140,12 @@ sub get_mt5_logins {
                 delete $setting->{city};
                 delete $setting->{zipCode};
                 $acc = {%$acc, %$setting};
-                return Future->done($acc);
-            }
-            )->then(
-            sub {
-                my ($acc) = @_;
                 return Future->needs_all(
                     mt5_mamm({
                             client => $client,
                             args   => {login => $login}}
                     ),
-                    Future->done($acc)
-                );
+                    Future->done($acc));
             }
             )->then(
             sub {
