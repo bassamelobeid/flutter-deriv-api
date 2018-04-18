@@ -3,12 +3,13 @@ use warnings;
 use Test::More;
 use Test::Mojo;
 use Test::MockModule;
-use BOM::Platform::Password;
+use BOM::User::Password;
 use BOM::User;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Database::Model::OAuth;
+use BOM::Platform::Runtime;
 
 ## init
 my $app_id = do {
@@ -29,7 +30,7 @@ my $app_id = do {
 my $email    = 'abc@binary.com';
 my $password = 'jskjd8292922';
 {
-    my $hash_pwd  = BOM::Platform::Password::hashpw($password);
+    my $hash_pwd  = BOM::User::Password::hashpw($password);
     my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
     });
@@ -68,6 +69,26 @@ $t = $t->get_ok("/authorize?app_id=$app_id")->content_like(qr/login/);
 
 my $csrf_token = $t->tx->res->dom->at('input[name=csrf_token]')->val;
 ok $csrf_token, 'csrf_token is there';
+
+BOM::Platform::Runtime->instance->app_config->system->suspend->all_logins(1);
+
+$t->post_ok(
+            "/authorize?app_id=$app_id" => form => {
+                                                    login      => 1,
+                                                    email      => $email,
+                                                    password   => $password,
+                                                    csrf_token => $csrf_token
+                                                   });
+
+$t = $t->content_like(qr/Login to this account has been temporarily disabled due to system maintenance/);
+
+BOM::Platform::Runtime->instance->app_config->system->suspend->all_logins(0);
+
+$t = $t->get_ok("/authorize?app_id=$app_id")->content_like(qr/login/);
+
+$csrf_token = $t->tx->res->dom->at('input[name=csrf_token]')->val;
+ok $csrf_token, 'csrf_token is there';
+
 $t->post_ok(
     "/authorize?app_id=$app_id" => form => {
         login      => 1,

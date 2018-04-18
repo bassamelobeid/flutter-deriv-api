@@ -25,6 +25,7 @@ use BOM::User::TOTP;
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
 use BOM::OAuth::Helper;
+use BOM::User::AuditLog;
 
 sub authorize {
     my $c = shift;
@@ -100,7 +101,7 @@ sub authorize {
         return $c->render(%template_params);
     }
 
-    my $user = BOM::User->new({email => $client->email}) or die "no user for email " . $client->email;
+    my $user = $client->user or die "no user for email " . $client->email;
 
     my $is_verified = $c->session('_otp_verified') // 0;
     my $otp_error = '';
@@ -247,6 +248,12 @@ sub _login {
             }
         }
 
+        if (BOM::Platform::Runtime->instance->app_config->system->suspend->all_logins) {
+            $err = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
+            BOM::User::AuditLog::log('system suspend all login', $user->email);
+            last;
+        }
+
         # get last login before current login to get last record
         $last_login = $user->get_last_successful_login_history();
         my $result = $user->login(
@@ -278,6 +285,7 @@ sub _login {
             csrf_token       => $c->csrf_token,
             use_social_login => $c->_is_social_login_available(),
             login_providers  => $c->stash('login_providers'),
+            login_method     => undef,
         );
         return;
     }
