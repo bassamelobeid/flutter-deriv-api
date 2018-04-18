@@ -250,17 +250,21 @@ sub open_bet_summary {
     }
     my $new_final;
     foreach my $market (keys %$final) {
-        my ($total_turnover, $total_payout);
+        my ($total_turnover_by_market, $total_payout_by_market);
         foreach my $expiry (keys %{$final->{$market}}) {
+            my ($total_turnover_by_expiry, $total_payout_by_expiry);
             foreach my $atm (keys %{$final->{$market}->{$expiry}}) {
+                my ($total_turnover_by_atm, $total_payout_by_atm);
                 my @sorted_by_underlying =
                     map { [$_, $final->{$market}->{$expiry}->{$atm}->{$_}->{payout}, $final->{$market}->{$expiry}->{$atm}->{$_}->{turnover}] }
                     sort { $final->{$market}->{$expiry}->{$atm}->{$a}->{payout} <=> $final->{$market}->{$expiry}->{$atm}->{$b}->{payout} }
                     keys %{$final->{$market}->{$expiry}->{$atm}};
-                map { $total_turnover += $final->{$market}->{$expiry}->{$atm}->{$_}->{turnover} } keys %{$final->{$market}->{$expiry}->{$atm}};
-                map { $total_payout   += $final->{$market}->{$expiry}->{$atm}->{$_}->{payout} } keys %{$final->{$market}->{$expiry}->{$atm}};
-                $new_final->{$market}->{total_turnover} = $total_turnover;
-                $new_final->{$market}->{total_payout}   = $total_payout;
+                map { $total_turnover_by_market += $final->{$market}->{$expiry}->{$atm}->{$_}->{turnover} } keys %{$final->{$market}->{$expiry}->{$atm}};
+                map { $total_payout_by_market   += $final->{$market}->{$expiry}->{$atm}->{$_}->{payout} } keys %{$final->{$market}->{$expiry}->{$atm}};
+
+                $new_final->{$market}->{total_turnover} = $total_turnover_by_market;
+                $new_final->{$market}->{total_payout}   = $total_payout_by_market;
+
                 for (my $i = 0; $i < scalar @sorted_by_underlying; $i++) {
                     $new_final->{$market}->{$expiry}->{$atm}->{$i}->{$sorted_by_underlying[$i][0]} = {
                         payout   => $sorted_by_underlying[$i][1],
