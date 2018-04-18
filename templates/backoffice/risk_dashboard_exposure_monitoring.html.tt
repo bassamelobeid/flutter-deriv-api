@@ -1,10 +1,8 @@
+<p><b> Table 1: Current Realized Company's Profit and Loss. </b></p>
 <p> Latest report generated at [% data.closed_pl.generated_time %] </p>
-<p><b> Table 1: Current realized company's PL of different underlying. </b></p>
 <p> Note:We are taking into account the contract that bought and sold on the same date in this report. </p>
 
-
-
-<div id="accordion_close_pl" style="width: 300px">
+<div id="accordion_close_pl" style="width: 400px">
 [% FOREACH index IN data.closed_pl.pl.keys.nsort %]
 [% FOREACH market  IN data.closed_pl.pl.$index.keys %]
   <h3 style="outline: none">
@@ -31,6 +29,65 @@
 [% END %]
 </div>
 
+<p><b> Table 2: Current Exposures on Open Positions. </b></p>
+<p> Latest report generated at [% data.open_bet.generated_time %] </p>
+
+<div id="accordion_open_market" style="width: 400px">
+[% FOREACH index IN data.open_bet.pl.keys.nsort %]
+[% FOREACH market  IN data.open_bet.pl.$index.keys %]
+    <h3 style="outline: none">
+        <strong>[% market %] :</strong>
+        <span>
+            Payout: <font color=blue><b>USD [% data.open_bet.pl.$index.$market.total_payout %]</b></font>,
+            Turnover : <font color=brown><b>USD [% data.open_bet.pl.$index.$market.total_turnover %]</b></font>
+        </span>
+    </h3>
+    <div class="_accordion_open_expiry" style="width: 350px">
+       [% FOREACH expiry IN data.open_bet.pl.$index.$market.keys.sort %]
+           [% IF expiry != 'total_payout'  AND expiry != 'total_turnover' %]
+                <h3 style="outline: none">
+                    <strong>[% expiry %] :</strong>
+                    <span>
+                        Payout: <font color=blue><b>USD [% data.open_bet.pl.$index.$market.$expiry.total_payout %]</b></font>, 
+                        Turnover : <font color=brown><b>USD [% data.open_bet.pl.$index.$market.$expiry.total_turnover %]</b></font>
+                    </span>
+                </h3>
+            [% END %]
+			[% IF data.open_bet.pl.$index.$market.$expiry.size > 2 %]
+			  <div class="_accordion_open_atm" style="width: 300px">
+       				[% FOREACH atm IN data.open_bet.pl.$index.$market.$expiry.keys.sort %]
+          				[% IF atm != 'total_payout'  AND atm != 'total_turnover' %]
+                             <h3 style="outline: none">
+                                <strong>[% atm %] :</strong>
+                                <span>
+                                        Payout: <font color=blue><b>USD [% data.open_bet.pl.$index.$market.$expiry.$atm.total_payout %]</b></font>,
+                                        Turnover : <font color=brown><b>USD [% data.open_bet.pl.$index.$market.$expiry.$atm.total_turnover %]</b></font>
+                                <span>
+                             </h3>
+                             <div>
+                                [% FOREACH uindex IN data.open_bet.pl.$index.$market.$expiry.$atm.keys.sort %]
+                                    [% IF unindex != 'total_payout'  AND unidex != 'total_turnover' %]
+                                        [% FOREACH underlying IN data.open_bet.pl.$index.$market.$expiry.$atm.$uindex.keys %]
+                                            <div style="line-height: 24px;">
+                                                <b>[% underlying %]</b> : 
+                                                <span>
+                                                    Payout: <font color=blue><b>USD [% data.open_bet.pl.$index.$market.$expiry.$atm.$uindex.$underlying.payout %]</b></font>,
+                                                    Turnover : <font color=brown><b>USD [% data.open_bet.pl.$index.$market.$expiry.$atm.$uindex.$underlying.turnover %]</b></font>
+                                                </span>
+                                             </div>
+                                        [% END %]
+                                     [% END %]
+                                [% END %]
+                              </div>
+           				[% END %]
+        			[% END %]
+                </div> <!-- _accordion_open_atm -->
+			[% END %]
+        [% END %]
+  </div>
+[% END %]
+[% END %]
+</div>
 
 <script type="text/javascript">
 \$(function() {
@@ -38,5 +95,31 @@
 				collapsible: true,
 				heightStyle: "content"
 		});
+
+
+		\$("._accordion_open_atm" ).accordion({
+				collapsible: true,
+				heightStyle: "content"
+		});
+
+		\$("._accordion_open_expiry" ).accordion({
+				collapsible: true,
+				heightStyle: "content"
+		});
+
+		\$("#accordion_open_market" ).accordion({
+				collapsible: true,
+				heightStyle: "content"
+		});
+
+
+
+
+
+
+
+
+
+
 });
 </script>
