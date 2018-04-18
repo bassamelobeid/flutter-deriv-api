@@ -17,12 +17,12 @@
     "exchange_rates": {
       "type": "object",
       "title": "Exchange rates",
-      "description": "Exchange rate values from base (USD) to all other currencies",
+      "description": "Exchange rate values from base to all other currencies",
       "properties": {
         "base_currency": {
           "type": "string",
-          "description": "Base currency (USD)",
-          "pattern": "^USD$"
+          "description": "Base currency",
+          "pattern": "^[A-Z]{3}$"
         },
         "date": {
           "type": "integer",
@@ -34,7 +34,7 @@
           "properties": {
             "^[A-Z]{3}$": {
               "type": "number",
-              "description": "The rate of exchanging a unit of the base currency (USD) into a target currency (represented by the key)"
+              "description": "The rate of exchanging a unit of the base currency into a target currency (represented by the key)"
             }
           }
         }

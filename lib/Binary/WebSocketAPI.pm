@@ -453,7 +453,12 @@ sub startup {
         ['copy_start',         {require_auth => 'trade'}],
         ['copy_stop',          {require_auth => 'trade'}],
         ['app_markup_details', {require_auth => 'admin'}],
-        ['exchange_rates'],
+        [
+            'exchange_rates',
+            {
+                stash_params => [qw/ exchange_rates /],
+            }
+        ],
     ];
 
     for my $action (@$actions) {

@@ -7,13 +7,12 @@
     "exchange_rates": {
       "type": "integer",
       "pattern": "^1$",
-      "description": "Command code, always set to fixed value 1",
-      "required": "1"
+      "description": "Command code - always set to fixed value 1"
     },
     "base_currency": {
       "type": "string",
       "pattern": "^[A-Z]{3}$",
-      "description": "Base currency (three capital letter format)",
+      "description": "Base currency (three capital letter format)"
     },
     "passthrough": {
       "type": "object",
@@ -22,10 +21,10 @@
     "req_id": {
       "type": "integer",
       "description": "Optional field to map request to response"
-    },
-    "required": [
-    "exchange_rates"
-  ]
+    }
   },
+  "required": [
+    "exchange_rates"
+  ],
   "additionalProperties": false
 }
