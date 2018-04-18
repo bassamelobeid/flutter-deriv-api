@@ -262,7 +262,7 @@ rpc new_account_real => sub {
         return $error if $error;
     }
 
-    my $user = BOM::User->new({email => $client->email});
+    my $user = $client->user;
 
     my ($clients, $professional_status, $professional_requested) = _get_professional_details_clients($user, $args);
 
@@ -366,7 +366,7 @@ rpc new_account_maltainvest => sub {
         map { $_ => $params->{args}->{$_} } keys %{$input_mappings->{$k}}
     } keys %{$input_mappings};
 
-    my $user = BOM::User->new({email => $client->email});
+    my $user = $client->user;
 
     # When a Binary (Europe) Ltd/Binary (IOM) Ltd account is created,
     # the 'place of birth' field is not present.
@@ -486,7 +486,7 @@ rpc new_account_japan => sub {
         ip => $params->{client_ip} // '',
         country => uc($params->{country_code} // ''),
         from_client    => $client,
-        user           => BOM::User->new({email => $client->email}),
+        user           => $client->user,
         details        => $details,
         financial_data => \%financial_data,
         agreement      => \%agreement,
