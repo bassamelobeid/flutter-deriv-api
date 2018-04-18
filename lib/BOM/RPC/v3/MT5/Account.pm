@@ -132,8 +132,29 @@ sub get_mt5_logins {
                 my ($setting) = @_;
                 my $acc = {login => $login};
                 if (ref $setting eq 'HASH' && $setting->{group}) {
-                    $acc->{group}            = $setting->{group};
-                    $acc->{mt5_get_settings} = _extract_settings($setting);
+                    $acc->{group} = $setting->{group};
+                    return _extract_settings($setting)->then(
+                        sub {
+                            my ($settings) = @_;
+                            delete $setting->{address};
+                            delete $setting->{city};
+                            delete $setting->{zipCode};
+                            $acc = {%$acc, %$settings};
+                            return Future->done($acc);
+                        }
+                        )->then(
+                        sub {
+                            my ($acc) = @_;
+                            return mt5_mamm({
+                                    client => $client,
+                                    args   => {login => $login}}
+                                )->then(
+                                sub {
+                                    my ($mamm) = @_;
+                                    $acc = {%$acc, %$mamm};
+                                    return Future->done($acc);
+                                });
+                        });
                 }
                 return Future->done($acc);
             });
@@ -528,22 +549,25 @@ async_rpc mt5_get_settings => sub {
             return create_error_future({
                     code              => 'MT5GetUserError',
                     message_to_client => $settings->{error}}) if (ref $settings eq 'HASH' and $settings->{error});
-            $settings = _extract_settings($settings);
-            # we don't want to send this field back
-            delete $settings->{rights};
-            delete $settings->{agent};
-            return Future->done($settings);
+            _extract_settings($settings)->then(
+                sub {
+                    my ($settings) = @_;
+                    # we don't want to send this field back
+                    delete $settings->{rights};
+                    delete $settings->{agent};
+                    return Future->done($settings);
+                }
+                )->else(
+                sub {
+                    my ($code, $error) = @_;
+                    return _make_error($code, $error);
+                });
         });
 };
 
 sub _extract_settings {
     my ($settings) = @_;
-
-    if (ref $settings eq 'HASH' and $settings->{error}) {
-        return create_error_future({
-            code              => 'MT5GetUserError',
-            message_to_client => $settings->{error}}) if (ref $settings eq 'HASH' and $settings->{error});
-    }
+    return Future->fail('MT5GetUserError', $settings->{error}) if (ref $settings eq 'HASH' and $settings->{error});
 
     if (my $country = $settings->{country}) {
         my $country_code = Locale::Country::Extra->new()->code_from_country($country);
@@ -555,9 +579,8 @@ sub _extract_settings {
     }
 
     $settings->{currency} = $settings->{group} =~ /vanuatu|costarica|demo/ ? 'USD' : 'EUR';
-    return $settings;
-};
-
+    return Future->done($settings);
+}
 
 =head2 mt5_set_settings
 

@@ -239,8 +239,26 @@ subtest 'login list' => sub {
     is_deeply(
         $c->result,
         [{
-                login => $DETAILS{login},
-                group => $DETAILS{group}}
+                login            => $DETAILS{login},
+                group            => $DETAILS{group},
+                mt5_get_settings => {
+                    login         => $DETAILS{login},
+                    email         => $DETAILS{email},
+                    group         => $DETAILS{group},
+                    balance       => $DETAILS{balance},
+                    name          => 'Test',
+                    country       => 'mt',
+                    currency      => 'USD',
+                    company       => undef,
+                    address       => undef,
+                    leverage      => undef,
+                    city          => undef,
+                    phone         => undef,
+                    phonePassword => undef,
+                    state         => undef,
+                    zipCode       => undef,
+                },
+            }
         ],
         'mt5_login_list result'
     );
