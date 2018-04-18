@@ -56,8 +56,7 @@ if (scalar @{$settings_list;} == 0) {
 my $submitted = request()->param('submitted');
 
 if (not(grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}})) {
-    print
-        "<div id=\"message\"><div id=\"error\">You are not on the Master Live Server. Please go to the following link: https://collector01.binary.com/d/backoffice/f_broker_login.cgi</div></div><br />";
+    print '<div id="message"><div id="error">' . master_live_server_error() . '</div></div><br />';
 } else {
     BOM::DynamicSettings::save_settings({
         'settings'          => request()->params,
