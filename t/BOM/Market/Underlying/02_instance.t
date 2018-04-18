@@ -31,13 +31,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         date   => Date::Utility->new,
     }) for (qw/AUD EUR GBP HKD IDR JPY NZD SGD USD XAU ZAR/);
 
-Quant::Framework::Utils::Test::create_doc(
-    'stock',
-    {
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-    });
-
 initialize_realtime_ticks_db();
 
 # INCORRECT DATA in support of in_quiet_period testing, only.
@@ -259,11 +252,7 @@ subtest 'is_OTC' => sub {
         market    => 'indices',
         submarket => ['otc_index', 'smart_index'],
         );
-    my @OTC_stocks = create_underlying_db->get_symbols_for(
-        market    => 'stocks',
-        submarket => ['au_otc_stock', 'ge_otc_stock', 'uk_otc_stock', 'us_otc_stock'],
-    );
-    push @OTC_symbols, @OTC_stocks;
+    ;
     foreach my $symbol (@OTC_symbols) {
         my $underlying = create_underlying($symbol);
 

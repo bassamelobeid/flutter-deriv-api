@@ -69,11 +69,6 @@ sub _collect_vol_ages {
     );
 
     my @offer_underlyings = (@offered_forex, @offered_others, @smart_fx, @smart_indices);
-    push @offer_underlyings,
-        create_underlying_db->get_symbols_for(
-        market            => 'stocks',
-        contract_category => 'ANY',
-        submarket         => ['france', 'belgium', 'amsterdam']);
 
     my @symbols = grep { !$skip_list{$_} } (@offer_underlyings, @quanto_currencies);
     foreach my $symbol (@symbols) {
@@ -89,9 +84,6 @@ sub _collect_vol_ages {
             } elsif ($underlying->submarket->name eq 'smart_fx') {
                 $market = 'smart_fx';
             }
-        }
-        if ($market eq 'stocks') {
-            $market = 'euronext';
         }
 
         if ($market eq 'indices' and $underlying->submarket->name eq 'smart_index') {
