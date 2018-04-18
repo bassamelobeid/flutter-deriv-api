@@ -20,7 +20,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
-use BOM::Platform::AuditLog;
+use BOM::User::AuditLog;
 use BOM::ContractInfo;
 use BOM::Backoffice::Config;
 use BOM::Backoffice::Sysinit ();
@@ -96,7 +96,7 @@ for my $c ($client, $toClient) {
         print build_client_warning_message($loginID);
     }
     if (!$c->is_first_deposit_pending && $c->currency && $c->currency ne $curr) {
-        printf "ERROR: Invalid currency [%s], default for [$c] is [%s]", encode_entities($curr), $c->currency;
+        printf "ERROR: Invalid currency [%s], default for [%s] is [%s]", encode_entities($curr), $c->loginid, $c->currency;
         code_exit_BO();
     }
 }
@@ -232,6 +232,7 @@ if ($ttype eq 'TRANSFER') {
 
 my ($leave, $client_pa_exp);
 try {
+    BOM::Platform::Client::IDAuthentication->new(client => $client)->run_authentication if $client->is_first_deposit_pending;
     if ($ttype eq 'CREDIT' || $ttype eq 'DEBIT') {
         $client->smart_payment(
             %params,    # these are payment-type-specific params from the html form.
@@ -275,7 +276,7 @@ if ($ttype eq 'CREDIT' and $params{payment_type} !~ /^affiliate_reward|arbitrary
 my $now = Date::Utility->new;
 # Logging
 my $msg = $now->datetime . " $ttype $curr$amount $loginID clerk=$clerk (DCcode=$DCcode) $ENV{REMOTE_ADDR}";
-BOM::Platform::AuditLog::log($msg, $loginID, $clerk);
+BOM::User::AuditLog::log($msg, $loginID, $clerk);
 Path::Tiny::path(BOM::Backoffice::Config::config->{log}->{deposit})->append_utf8($msg);
 
 # Print confirmation

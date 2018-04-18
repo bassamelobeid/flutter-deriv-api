@@ -8,7 +8,7 @@ use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::Cookie;
-use BOM::Platform::AuditLog;
+use BOM::User::AuditLog;
 use BOM::DualControl;
 BOM::Backoffice::Sysinit::init();
 
@@ -51,7 +51,7 @@ if (not $client) {
 if ($input->{'transtype'} =~ /^UPDATECLIENT/) {
     my $code = BOM::DualControl->new({
             staff           => $clerk,
-            transactiontype => $input->{'transtype'}})->client_control_code($input->{'clientemail'});
+            transactiontype => $input->{'transtype'}})->client_control_code($input->{'clientemail'}, $client->binary_user_id);
 
     my $message =
           "The dual control code created by $clerk  (for a "
@@ -62,7 +62,7 @@ if ($input->{'transtype'} =~ /^UPDATECLIENT/) {
         . $now->datetime_ddmmmyy_hhmmss
         . ") only.";
 
-    BOM::Platform::AuditLog::log($message, '', $clerk);
+    BOM::User::AuditLog::log($message, '', $clerk);
 
     print encode_entities($message);
     print "<p>Note: "

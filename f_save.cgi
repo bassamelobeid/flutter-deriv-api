@@ -25,7 +25,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::MarketData qw(create_underlying);
 use BOM::Backoffice::Sysinit ();
-use BOM::Platform::AuditLog;
+use BOM::User::AuditLog;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -290,7 +290,7 @@ save_log_save_complete_log({
     'diff'             => $diff,
 });
 
-BOM::Platform::AuditLog::log("$broker $clerk $ENV{'REMOTE_ADDR'} $overridefilename newsize=" . (-s $overridefilename), '', $clerk);
+BOM::User::AuditLog::log("$broker $clerk $ENV{'REMOTE_ADDR'} $overridefilename newsize=" . (-s $overridefilename), '', $clerk);
 
 # DISPLAY SAVED FILE
 print "<b><p>FILE was saved as follows :</p></b><br>";

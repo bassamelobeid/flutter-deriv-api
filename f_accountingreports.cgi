@@ -9,7 +9,6 @@ use HTML::Entities;
 
 use List::MoreUtils qw(any);
 use Try::Tiny;
-use DateTime;
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
@@ -92,7 +91,7 @@ print "<form action=\""
 
 Bar("Monthly Client Reports");
 {
-    my $yyyymm = DateTime->now->subtract(months => 1)->ymd('-');
+    my $yyyymm = Date::Utility->new->plus_time_interval('1mo')->date_yyyymmdd;
     $yyyymm =~ s/-..$//;
 
     BOM::Backoffice::Request::template->process('backoffice/account/monthly_client_report.tt', {yyyymm => $yyyymm})
@@ -133,7 +132,7 @@ Bar("USEFUL EXCHANGE RATES");
 
 print "The following exchange rates are from our live data feed. They are live rates as of right now (" . Date::Utility->new->datetime . ")" . "<ul>";
 
-foreach my $curr (qw(GBPUSD EURUSD USDHKD USDCNY AUDUSD GBPHKD AUDHKD EURHKD BTCUSD)) {
+foreach my $curr (qw(GBPUSD EURUSD USDHKD AUDUSD GBPHKD AUDHKD EURHKD BTCUSD)) {
     try {
         my $underlying = create_underlying('frx' . $curr);
         print "<li>$curr: " . $underlying->spot . "</li>";

@@ -18,6 +18,7 @@ use List::Util qw(max first sum reduce);
 use JSON::MaybeXS;
 use Moose;
 use Try::Tiny;
+use Math::BigFloat;
 use Cache::RedisDB;
 use Date::Utility;
 use Format::Util::Numbers qw(roundcommon financialrounding);
@@ -120,6 +121,7 @@ sub _build__report {
     $report->{watched}         = $pap_report->{watched};
     $report->{top_turnover}    = $self->_top_turnover;
     $report->{generated_time}  = Date::Utility->new->plus_time_interval(($ttl - 1800) . 's')->datetime;
+
     return $report;
 }
 

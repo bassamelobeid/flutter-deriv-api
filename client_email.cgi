@@ -21,7 +21,7 @@ use BOM::Backoffice::Sysinit ();
 use BOM::Database::ClientDB;
 use BOM::Database::UserDB;
 use BOM::DualControl;
-use BOM::Platform::AuditLog;
+use BOM::User::AuditLog;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -73,7 +73,7 @@ unless ($input{transtype}) {
 }
 my $error = BOM::DualControl->new({
         staff           => $clerk,
-        transactiontype => $input{transtype}})->validate_client_control_code($input{DCcode}, $new_email);
+        transactiontype => $input{transtype}})->validate_client_control_code($input{DCcode}, $new_email, $user->id);
 if ($error) {
     print $error->get_mesg();
     code_exit_BO();
@@ -112,7 +112,7 @@ if ($email ne $new_email) {
         . " updated user $email to $new_email by clerk=$clerk (DCcode="
         . $input{DCcode}
         . ") $ENV{REMOTE_ADDR}";
-    BOM::Platform::AuditLog::log($msg, $new_email, $clerk);
+    BOM::User::AuditLog::log($msg, $new_email, $clerk);
 
     BOM::Backoffice::Request::template->process(
         'backoffice/client_email.html.tt',
