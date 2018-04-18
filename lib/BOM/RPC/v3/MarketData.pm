@@ -25,7 +25,9 @@ use Format::Util::Numbers qw(formatnumber);
 
     $exchg_rages = exchange_rates()
 
-This function returns the rates of exchanging from all supported currencies into a base currency (USD). It Doesn't have any arguments.
+This function returns the rates of exchanging from all supported currencies into a base currency. 
+The argument is optional and consists of a hash with a single key that represents base currency (default value is USD):
+    =item * base_currency (Base currency)
 
 The return value is an anonymous hash contains the following items:
 
@@ -44,9 +46,8 @@ The return value is an anonymous hash contains the following items:
 
 rpc exchange_rates => sub {
     my $params = shift;
-    my $base   = $params->{base_currency};
-    $base = 'USD' if (not $base);
-
+    my $base   = 'USD';
+    $base = $params->{args}->{base_currency} if ($params->{args}->{base_currency});
     my @all_currencies = LandingCompany::Registry->new()->all_currencies;
     if (not grep { $_ eq $base } @all_currencies) {
         return BOM::RPC::v3::Utility::create_error({

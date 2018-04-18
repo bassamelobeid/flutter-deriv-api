@@ -10,11 +10,11 @@ use Test::MockModule;
 use LandingCompany::Registry;
 use BOM::RPC::v3::MarketData;
 use Format::Util::Numbers qw(formatnumber);
-
-my $base = 'XXX';
+use Data::Dumper;
 
 sub checkResultStructure {
     my $result = shift;
+    my $base   = shift;
     ok $result->{date}, "Date tag";
     ok $result->{base_currency} && $base eq $result->{base_currency}, "Base currency";
     ok $result->{rates}, 'Rates tag';
@@ -24,19 +24,21 @@ sub checkResultStructure {
 }
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+
 note("exchange_rates PRC call with an invalid base currency: XXX.");
-my $result = $c->call_ok('exchange_rates', {base_currency => $base});
+my $base = 'XXX';
+my $result = $c->call_ok('exchange_rates', {args => {base_currency => $base}});
 ok $result->has_no_system_error, 'RPC called without system errors';
 ok $result->has_error && $result->error_code_is('BaseCurrencyUnavailable'), 'Base currency not available';
 
 note("exchange_rates PRC call with a valid base currency USD (but probably with still empty results while testing).");
 $base = 'USD';
-$result = $c->call_ok('exchange_rates', {base_currency => $base});
+$result = $c->call_ok('exchange_rates', {args => {base_currency => $base}});
 ok $result->has_no_system_error, 'RPC called without system errors';
 if ($result->has_error) {
     ok $result->has_error && $result->error_code_is('ExchangeRatesNotAvailable'), 'Exchange rates not available';
 } else {
-    checkResultStructure($result->result);
+    checkResultStructure($result->result, $base);
 }
 
 note("exchange_rates RPC call with a custom data set.");
@@ -62,13 +64,13 @@ $mocked_in_USD->mock(
         return ($amount * $rates{$currency}) // 0;
     });
 
-$result = BOM::RPC::v3::MarketData::exchange_rates();
-checkResultStructure($result);
+$result = BOM::RPC::v3::MarketData::exchange_rates({args => {base_currency => $base}});
+checkResultStructure($result, $base);
 my $base_to_usd = BOM::RPC::v3::MarketData::in_USD(1, $base);
 foreach my $cur (keys %{$result->{rates}}) {
     is(formatnumber('price', $cur, $base_to_usd / $rates{$cur}), $result->{rates}->{$cur}, "$cur exchange rate calculation.");
 }
-
+diag Dumper($result->{rates});
 note('The first currency should have been excluded by _exchange_rates function because its rate (index) is 0');
 my $excluded = $all_currencies[0];
 ok(!exists $result->{rates}->{$excluded}, 'First currency is excluded from this test.');
