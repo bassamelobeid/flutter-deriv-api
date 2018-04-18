@@ -34,7 +34,7 @@
     "granularity": {
       "enum" : [0, 60, 120, 180, 300, 600, 900, 1800, 3600, 7200, 14400, 28800, 86400],
       "description": "Only applicable for style : \"candles\". Candle time-dimension width setting.",
-      "default": "60"
+      "default": 60
     },
     "adjust_start_time": {
       "type": "integer",
