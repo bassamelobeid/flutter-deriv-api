@@ -265,6 +265,22 @@ sub get_unregistered_client_token_pairs_before_datetime {
         });
 }
 
+sub get_aggregate_balance_per_currency {
+    my $self = shift;
+
+    my $sql = q{ SELECT * FROM get_aggregate_balance_per_currency() };
+
+    my $dbic = $self->db->dbic;
+    return $dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute();
+
+            my $result = $sth->fetchall_arrayref({});
+            return $result;
+        });
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
