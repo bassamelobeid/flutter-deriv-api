@@ -181,4 +181,13 @@ print "<form action=\""
     . "<br/><input type=submit value='Generate report'>"
     . "</form>";
 
+Bar("Aggregate Balance Per Currency");
+
+print '<form action="'
+    . request()->url_for('backoffice/aggregate_balance.cgi')
+    . '" method=get>'
+    . '<br/>Run this only on master server.'
+    . ' <input type=submit value="Generate">'
+    . '</form>';
+
 code_exit_BO();
