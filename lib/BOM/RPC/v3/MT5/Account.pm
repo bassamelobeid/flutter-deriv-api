@@ -1230,6 +1230,10 @@ async_rpc mt5_mamm => sub {
 
             return Future->fail('MT5Error', $settings->{error}) if (ref $settings eq 'HASH' and $settings->{error});
 
+            return Future->fail('PermissionDenied',
+                localize('Please withdraw your balance amount before revoking manager associated with your account.'))
+                if ($action and $action eq 'revoke' and ($settings->{balance} // 0) > 0);
+
             # to revoke manager we just disable trading for mt5 account
             # we cannot change group else accounting team will have problem during
             # reconciliation.
