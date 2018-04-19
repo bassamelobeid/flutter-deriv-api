@@ -1,4 +1,4 @@
 {
     "exchange_rates": 1,
-    "exchange_rates": "USD"
+    "base_currency": "USD"
 }
