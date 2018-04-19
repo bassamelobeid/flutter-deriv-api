@@ -32,6 +32,9 @@ websocket_call_pricing:
 websocket_call_email:
     1m: 3
     1h: 5
+websocket_call_password:
+    1m: 3
+    1h: 5
 websocket_real_pricing:
     1m: 40
     1h: 80
@@ -190,6 +193,18 @@ subtest "get error code (verify_email)" => sub {
                 json => {
                     verify_email => '12asd',
                     type         => 'account_opening'
+                }})->message_ok;
+    }
+    my $res = JSON::MaybeXS->new->decode(Encode::decode_utf8($t->message->[1]));
+    is $res->{error}->{code}, 'RateLimit';
+};
+
+subtest "check limits for cashier_password" => sub {
+    # as we are using 3 as testing limit, the API should fail 4th time
+    for (1 .. 4) {
+        $t->send_ok({
+                json => {
+                    cashier_password => 1,
                 }})->message_ok;
     }
     my $res = JSON::MaybeXS->new->decode(Encode::decode_utf8($t->message->[1]));
