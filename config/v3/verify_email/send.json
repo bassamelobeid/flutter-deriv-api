@@ -11,7 +11,6 @@
       "required": "1"
     },
     "type": {
-      "type": "string",
       "description": "Purpose of the email verification call.",
       "enum": ["account_opening","reset_password","paymentagent_withdraw","payment_withdraw", "mt5_password_reset"],
       "required": "1"
