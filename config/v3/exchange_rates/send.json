@@ -12,7 +12,8 @@
     "base_currency": {
       "type": "string",
       "pattern": "^[A-Z]{3}$",
-      "description": "Base currency (three capital letter format)"
+      "description": "Base currency (can be obtained from payout_currencies call)",
+      "default": "USD"
     },
     "passthrough": {
       "type": "object",
