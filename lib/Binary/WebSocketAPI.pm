@@ -456,7 +456,7 @@ sub startup {
         [
             'exchange_rates',
             {
-                stash_params => [qw/ exchange_rates /],
+                stash_params => [qw/ exchange_rates base_currency /],
             }
         ],
     ];
