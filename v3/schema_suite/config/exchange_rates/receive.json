@@ -6,18 +6,21 @@
     "echo_req": {
       "type": "object",
       "title": "Echo request",
-      "description": "Echo of the request json message"
+      "description": "Echo of the request json message",
+      "required" : "1"
     },
     "msg_type": {
       "type": "string",
       "pattern": "^exchange_rates$",
       "title": "Message Type",
-      "description": "exchange_rates"
+      "description": "exchange_rates",
+      "required" : "1"
     },
     "exchange_rates": {
       "type": "object",
       "title": "Exchange rates",
       "description": "Exchange rate values from base to all other currencies",
+      "required" : "1",
       "properties": {
         "base_currency": {
           "type": "string",
