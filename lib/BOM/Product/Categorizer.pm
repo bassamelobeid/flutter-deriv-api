@@ -2,6 +2,7 @@ package BOM::Product::Categorizer;
 
 use Moose;
 use Try::Tiny;
+no indirect;
 
 =head1 NAME
 
