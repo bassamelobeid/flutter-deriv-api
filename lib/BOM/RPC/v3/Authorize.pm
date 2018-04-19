@@ -76,7 +76,7 @@ sub _get_upgradeable_landing_companies {
     if ($client->landing_company->short eq 'costarica') {
 
         # Get siblings of the current client
-        my $siblings = BOM::RPC::v3::Utility::get_real_account_siblings_information($client->loginid);
+        my $siblings = BOM::RPC::v3::Utility::get_real_account_siblings_information($client);
 
         my ($fiat_check, $lc_num_crypto, $client_num_crypto) =
             BOM::RPC::v3::Utility::get_client_currency_information($siblings, $client->landing_company->short);
@@ -122,7 +122,8 @@ rpc authorize => sub {
             message_to_client => BOM::Platform::Context::localize("Account is disabled.")}
     ) unless BOM::RPC::v3::Utility::is_account_available($client);
 
-    my ($user, $token_type) = (BOM::User->new({email => $client->email}));
+    my $user = $client->user;
+    my $token_type;
     if (length $token == 15) {
         $token_type = 'api_token';
         # add to login history for api token only as oauth login already creates an entry
