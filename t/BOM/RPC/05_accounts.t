@@ -716,10 +716,13 @@ subtest $method => sub {
         {
             status                        => bag(qw(financial_assessment_not_complete)),
             risk_classification           => 'low',
-            prompt_client_to_authenticate => '1',
+            prompt_client_to_authenticate => '0',
         },
         'duplicate_account is not in the status'
     );
+
+    $test_client->clr_status('duplicate_account');
+    $test_client->save;
 
     # $test_client->set_status('tnc_approval', 'test staff', 1);
 
