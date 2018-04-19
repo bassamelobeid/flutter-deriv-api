@@ -560,7 +560,6 @@ sub _extract_settings {
             warn "Invalid country name $country for mt5 settings, can't extract code from Locale::Country::Extra";
         }
     }
-
     $settings->{currency} = $settings->{group} =~ /vanuatu|costarica|demo/ ? 'USD' : 'EUR';
     return $settings;
 }
