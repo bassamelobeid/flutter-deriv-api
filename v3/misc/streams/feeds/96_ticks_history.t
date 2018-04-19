@@ -33,7 +33,7 @@ subtest 'validations' => sub {
     $t->send_ok({json => $req_storage});
     $t   = $t->message_ok;
     $res = $json->decode(Encode::decode_utf8($t->message->[1]));
-    is $res->{error}->{code}, 'InvalidGranularity', "Correct error code for granularity";
+    is $res->{error}->{code}, 'InputValidationFailed', "Correct error code for granularity";
     delete $req_storage->{granularity};
 
     $t->send_ok({json => $req_storage});
