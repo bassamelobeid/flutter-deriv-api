@@ -237,7 +237,7 @@ sub _initialize_contract_parameters {
 
     if (defined $pp->{duration}) {
         try {
-            if (my ($number_of_ticks) = $pp->{duration} =~ /(\d+)t$/) {
+            if (my ($number_of_ticks) = $pp->{duration} =~ /([0-9]+)t$/) {
                 $pp->{tick_expiry} = 1;
                 $pp->{tick_count}  = $number_of_ticks;
                 $pp->{date_expiry} = $pp->{date_start}->plus_time_interval(2 * $pp->{tick_count});

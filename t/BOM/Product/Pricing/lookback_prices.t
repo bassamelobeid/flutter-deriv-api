@@ -35,7 +35,7 @@ my %skip_category = (
 );
 
 my $expectation        = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/lookback_config.yml');
-my @underlying_symbols = ('R_100','R_75','R_50','R_25','R_10');
+my @underlying_symbols = ('R_100', 'R_75', 'R_50', 'R_25', 'R_10');
 my $payout_currency    = 'USD';
 my $spot               = 100;
 my $offerings_obj      = LandingCompany::Registry::get('costarica')->basic_offerings($offerings_cfg);
@@ -110,7 +110,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                     isa_ok $c->pricing_engine_name, 'Pricing::Engine::Lookback';
 
                     is roundnear(0.00001, $c->theo_price), roundnear(0.00001, $expectation->{$c->shortcode}),
-                        'theo price matches ['. $c->shortcode . ']';
+                        'theo price matches [' . $c->shortcode . ']';
                 }
             }
         }

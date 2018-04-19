@@ -179,7 +179,7 @@ subtest 'produce_batch_contract - error check' => sub {
         is $_->message_to_client->[0], 'Invalid barrier (Double barrier input is expected).';
     };
     $args->{barriers} = [
-        { barrier => 100.12},
+        {barrier => 100.12},
         {
             barrier  => 100.12,
             barrier2 => 99.20

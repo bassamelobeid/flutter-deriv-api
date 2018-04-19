@@ -60,31 +60,30 @@ my $bet_params = {
     amount_type  => 'multiplier'
 };
 
-
 #setup raw cache for R_100
 my $single_data = {
-                 'symbol' => 'R_100',
-                 'epoch' => $now->epoch - 1,
-                 'quote' => '100',
-               };
-my $decimate_cache = BOM::Market::DataDecimate->new({market=>'volidx'});
+    'symbol' => 'R_100',
+    'epoch'  => $now->epoch - 1,
+    'quote'  => '100',
+};
+my $decimate_cache = BOM::Market::DataDecimate->new({market => 'volidx'});
 
-my $key          = $decimate_cache->_make_key('R_100', 0);
+my $key = $decimate_cache->_make_key('R_100', 0);
 $decimate_cache->_update($decimate_cache->redis_write, $key, $now->epoch - 1, $decimate_cache->encoder->encode($single_data));
 
 $single_data = {
-                 'symbol' => 'R_100',
-                 'epoch' => $now->epoch,
-                 'quote' => '101',
-               };
+    'symbol' => 'R_100',
+    'epoch'  => $now->epoch,
+    'quote'  => '101',
+};
 
 $decimate_cache->_update($decimate_cache->redis_write, $key, $now->epoch, $decimate_cache->encoder->encode($single_data));
 
 $single_data = {
-                 'symbol' => 'R_100',
-                 'epoch' => $now->epoch + 1,
-                 'quote' => '103',
-               };
+    'symbol' => 'R_100',
+    'epoch'  => $now->epoch + 1,
+    'quote'  => '103',
+};
 
 $decimate_cache->_update($decimate_cache->redis_write, $key, $now->epoch + 1, $decimate_cache->encoder->encode($single_data));
 
@@ -94,9 +93,9 @@ subtest 'spot min max lbfloatcall' => sub {
     my $c = produce_contract($bet_params);
 
     is $c->pricing_spot, 100, 'pricing spot is available';
-    is $c->spot_min_max->{low},     100, 'spot min is available';
-    is $c->spot_min_max->{high},     100, 'spot max is available';
-    ok $c->ask_price,    'can price';
+    is $c->spot_min_max->{low},  100, 'spot min is available';
+    is $c->spot_min_max->{high}, 100, 'spot max is available';
+    ok $c->ask_price, 'can price';
 
     create_ticks(([101, $now->epoch, 'R_100'], [103, $now->epoch + 1, 'R_100']));
     $bet_params->{date_start}   = $now->epoch - 1;
@@ -104,14 +103,14 @@ subtest 'spot min max lbfloatcall' => sub {
     $c                          = produce_contract($bet_params);
 
     is $c->pricing_spot, 103, 'pricing spot is available';
-    is $c->spot_min_max->{low},     101, 'spot min is available';
+    is $c->spot_min_max->{low}, 101, 'spot min is available';
     is $c->barrier->as_absolute, '101.00', 'barrier is correct';
-    is $c->spot_min_max->{high},     103, 'spot max is available';
-    ok $c->bid_price,    'can price';
+    is $c->spot_min_max->{high}, 103, 'spot max is available';
+    ok $c->bid_price, 'can price';
 };
 
 subtest 'spot min max lbfloatput' => sub {
-    
+
     $bet_params->{bet_type} = 'LBFLOATPUT';
 
     my $c = produce_contract($bet_params);
@@ -126,7 +125,7 @@ subtest 'spot min max lbhighlow' => sub {
     my $c = produce_contract($bet_params);
 
     is $c->high_barrier->as_absolute, '103.00', 'high barrier is correct';
-    is $c->low_barrier->as_absolute, '101.00', 'low barrier is correct';
+    is $c->low_barrier->as_absolute,  '101.00', 'low barrier is correct';
 };
 
 done_testing;
