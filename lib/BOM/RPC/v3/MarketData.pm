@@ -12,14 +12,18 @@ This package is a collection of utility functions that implement remote procedur
 
 use strict;
 use warnings;
-use Scalar::Util qw(looks_like_number);
+
 use Try::Tiny;
-use BOM::RPC::Registry '-dsl';
+use Format::Util::Numbers qw(formatnumber);
+use Scalar::Util qw(looks_like_number);
+use List::Util qw(first);
+
 use LandingCompany::Registry;
+use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
+
+use BOM::RPC::Registry '-dsl';
 use BOM::Platform::Context qw (localize);
 use BOM::RPC::v3::Utility;
-use Postgres::FeedDB::CurrencyConverter qw(in_USD);
-use Format::Util::Numbers qw(formatnumber);
 
 =head2 exchange_rates
 
@@ -45,44 +49,34 @@ The return value is an anonymous hash contains the following items:
 =cut
 
 rpc exchange_rates => sub {
-    my $params = shift;
-    my $base   = 'USD';
-    $base = $params->{args}->{base_currency} if ($params->{args}->{base_currency});
+    my $params        = shift;
+    my $base_currency = $params->{args}->{base_currency};
+
     my @all_currencies = LandingCompany::Registry->new()->all_currencies;
-    if (not grep { $_ eq $base } @all_currencies) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'BaseCurrencyUnavailable',
-            message_to_client => localize('Base currency is unavailable.'),
-        });
-    }
-    my $base_to_usd = 0;
-    try {
-        $base_to_usd = in_USD(1, $base);
-    }
-    catch {};
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidCurrency',
+            message_to_client => localize('Invalid currency.'),
+        }) unless (first { $_ eq $base_currency } @all_currencies);
 
     my %rates_hash;
-    if (looks_like_number($base_to_usd) && $base_to_usd > 0) {
-        foreach my $target (@all_currencies) {
-            next if $target eq $base;
-            try {
-                my $target_to_usd = in_USD(1, $target);
-                $rates_hash{$target} = formatnumber('price', $target, $base_to_usd / $target_to_usd)
-                    if looks_like_number($target_to_usd) && $target_to_usd > 0;
-            }
-            catch {};
+    foreach my $target (@all_currencies) {
+        next if $target eq $base_currency;
+        try {
+            $rates_hash{$target} = formatnumber('amount', $base_currency, amount_from_to_currency(1, $target, $base_currency));
         }
+        catch {
+            warn "No rates available for $target";
+        };
     }
-    if (not %rates_hash) {
-        return BOM::RPC::v3::Utility::create_error({
+
+    return BOM::RPC::v3::Utility::create_error({
             code              => 'ExchangeRatesNotAvailable',
             message_to_client => localize('Exchange rates are not currently available.'),
-        });
-    }
+        }) unless (keys %rates_hash);
 
     return {
         date          => time,
-        base_currency => $base,
+        base_currency => $base_currency,
         rates         => \%rates_hash,
     };
 };
