@@ -159,7 +159,6 @@ sub _validate_input_parameters {
 # Sub to validate parameters that are specific to contracts.
 sub _validate_contract_specific_parameters {
     my $params = shift;
-
     # Get allowed params from asset
 
     my $product_name = $params->{bet_type};    # TICKHIGH or TICKLOW
@@ -227,7 +226,7 @@ sub make_similar_contract {
 
     # Sooner or later this should have some more knowledge of what can and
     # should be built, but for now we use this naive parameter switching.
-    foreach my $key (%$changes) {
+    foreach my $key (keys %$changes) {
         $build_parameters{$key} = $changes->{$key};
     }
 
