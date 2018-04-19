@@ -2,15 +2,18 @@
 
 use strict;
 use warnings;
+
 use Test::More;
 use Test::Mojo;
 use Test::Exception;
-use BOM::Test::RPC::Client;
 use Test::MockModule;
-use LandingCompany::Registry;
-use BOM::RPC::v3::MarketData;
+use Test::Warnings;
 use Format::Util::Numbers qw(formatnumber);
-use Data::Dumper;
+
+use LandingCompany::Registry;
+
+use BOM::Test::RPC::Client;
+use BOM::RPC::v3::MarketData;
 
 sub checkResultStructure {
     my $result = shift;
@@ -25,54 +28,48 @@ sub checkResultStructure {
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
-note("exchange_rates PRC call with an invalid base currency: XXX.");
-my $base = 'XXX';
-my $result = $c->call_ok('exchange_rates', {args => {base_currency => $base}});
-ok $result->has_no_system_error, 'RPC called without system errors';
-ok $result->has_error && $result->error_code_is('BaseCurrencyUnavailable'), 'Base currency not available';
+my ($base, $result);
+subtest 'invalid currency' => sub {
+    $base = 'XXX';
+    $result = $c->call_ok('exchange_rates', {args => {base_currency => $base}});
+    ok $result->has_no_system_error->has_error, 'RPC called without system errors';
+    ok $result->error_code_is('InvalidCurrency'), 'Base currency not available';
+};
 
-note("exchange_rates PRC call with a valid base currency USD (but probably with still empty results while testing).");
-$base = 'USD';
-$result = $c->call_ok('exchange_rates', {args => {base_currency => $base}});
-ok $result->has_no_system_error, 'RPC called without system errors';
-if ($result->has_error) {
-    ok $result->has_error && $result->error_code_is('ExchangeRatesNotAvailable'), 'Exchange rates not available';
-} else {
-    checkResultStructure($result->result, $base);
-}
+subtest 'empty exchange rates' => sub {
+    $base = 'USD';
+    $result = $c->call_ok('exchange_rates', {args => {base_currency => $base}});
+    ok $result->has_no_system_error, 'RPC called without system errors';
+    if ($result->has_error) {
+        ok $result->has_error && $result->error_code_is('ExchangeRatesNotAvailable'), 'Exchange rates not available';
+    } else {
+        checkResultStructure($result->result, $base);
+    }
+};
 
-note("exchange_rates RPC call with a custom data set.");
-my @all_currencies = LandingCompany::Registry->new()->all_currencies;
-cmp_ok($#all_currencies, ">", 1, "At least two currencies available");
-ok grep ($_ eq $base, @all_currencies), 'USD is included in currencies';
+subtest 'exchange rates' => sub {
+    my $mocked_CurrencyConverter = Test::MockModule->new('Postgres::FeedDB::CurrencyConverter');
+    $mocked_CurrencyConverter->mock(
+        'in_USD',
+        sub {
+            my $price         = shift;
+            my $from_currency = shift;
 
-note('Force the first currency in the list to be something other than the base');
-if ($all_currencies[0] eq $base) {
-    @all_currencies[0, 1] = @all_currencies[1, 0];
-}
+            $from_currency eq 'AUD' and return 0.90 * $price;
+            $from_currency eq 'BCH' and return 1200 * $price;
+            $from_currency eq 'ETH' and return 500 * $price;
+            $from_currency eq 'LTC' and return 120 * $price;
+            $from_currency eq 'EUR' and return 1.18 * $price;
+            $from_currency eq 'GBP' and return 1.3333 * $price;
+            $from_currency eq 'JPY' and return 0.0089 * $price;
+            $from_currency eq 'BTC' and return 5500 * $price;
+            $from_currency eq 'USD' and return 1 * $price;
+            return 0;
+        });
 
-note('Letting rates experimentally be equal to indices');
-my %rates;
-for my $i (0 .. $#all_currencies) {
-    $rates{$all_currencies[$i]} = $i;
-}
+    $result = $c->call_ok('exchange_rates', {args => {base_currency => $base}})->has_no_system_error->has_no_error->result;
+    checkResultStructure($result, $base);
 
-my $mocked_in_USD = Test::MockModule->new('BOM::RPC::v3::MarketData');
-$mocked_in_USD->mock(
-    'in_USD' => sub {
-        my ($amount, $currency) = @_;
-        return ($amount * $rates{$currency}) // 0;
-    });
-
-$result = BOM::RPC::v3::MarketData::exchange_rates({args => {base_currency => $base}});
-checkResultStructure($result, $base);
-my $base_to_usd = BOM::RPC::v3::MarketData::in_USD(1, $base);
-foreach my $cur (keys %{$result->{rates}}) {
-    is(formatnumber('price', $cur, $base_to_usd / $rates{$cur}), $result->{rates}->{$cur}, "$cur exchange rate calculation.");
-}
-diag Dumper($result->{rates});
-note('The first currency should have been excluded by _exchange_rates function because its rate (index) is 0');
-my $excluded = $all_currencies[0];
-ok(!exists $result->{rates}->{$excluded}, 'First currency is excluded from this test.');
-
+    cmp_ok($result->{rates}->{LTC}, '==', 120, 'correct rate for LTC');
+};
 done_testing();
