@@ -709,6 +709,19 @@ subtest $method => sub {
     $data->{account_turnover}->{answer} = 'Less than $25,000';
     test_financial_assessment($data, 0, 'financial_assessment_not_complete should not present when questions are answered properly');
 
+    # duplicate_account is not supposed to be shown to the users
+    $test_client->set_status('duplicate_account')->save;
+    cmp_deeply(
+        $c->tcall($method, {token => $token_21}),
+        {
+            status                        => bag(qw(financial_assessment_not_complete)),
+            risk_classification           => 'low',
+            prompt_client_to_authenticate => '1',
+        },
+        'duplicate_account is not in the status'
+    );
+
+
     # $test_client->set_status('tnc_approval', 'test staff', 1);
 
     # reset the risk classification for the following test
