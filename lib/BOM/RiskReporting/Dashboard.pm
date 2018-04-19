@@ -287,6 +287,7 @@ sub multibarrierreport {
         BOM::Database::DataMapper::CollectorReporting->new({broker_code => 'CR'})->get_last_generated_historical_marked_to_market_time;
     return $final;
 }
+
 sub open_contract_exposures {
     my $self      = shift;
     my @open_bets = @{$self->_open_bets_at_end};
@@ -300,75 +301,51 @@ sub open_contract_exposures {
         if ($contract->is_intraday) {
 
             my $intraday_category = ($contract->is_atm_bet) ? 'atm' : 'non_atm';
+            $final->{$contract->underlying->market->name}->{intraday}->{$intraday_category}->{total_turnover} += $purchase_price;
+            $final->{$contract->underlying->market->name}->{intraday}->{$intraday_category}->{total_payout}   += $payout_price;
+            $final->{$contract->underlying->market->name}->{intraday}->{total_turnover}                       += $purchase_price;
+            $final->{$contract->underlying->market->name}->{intraday}->{total_payout}                         += $payout_price;
             $final->{$contract->underlying->market->name}->{intraday}->{$intraday_category}->{$contract->underlying->symbol}->{turnover} +=
                 $purchase_price;
             $final->{$contract->underlying->market->name}->{intraday}->{$intraday_category}->{$contract->underlying->symbol}->{payout} +=
                 $payout_price;
+
         } else {
 
             my $daily_category = ($contract->is_atm_bet) ? 'atm' : 'non_atm';
+            $final->{$contract->underlying->market->name}->{daily}->{$daily_category}->{total_turnover}                            += $purchase_price;
+            $final->{$contract->underlying->market->name}->{daily}->{$daily_category}->{total_payout}                              += $payout_price;
+            $final->{$contract->underlying->market->name}->{daily}->{total_turnover}                                               += $purchase_price;
+            $final->{$contract->underlying->market->name}->{daily}->{total_payout}                                                 += $payout_price;
             $final->{$contract->underlying->market->name}->{daily}->{$daily_category}->{$contract->underlying->symbol}->{payout}   += $payout_price;
             $final->{$contract->underlying->market->name}->{daily}->{$daily_category}->{$contract->underlying->symbol}->{turnover} += $purchase_price;
         }
-    }
-    my $new_final;
-    foreach my $market (keys %$final) {
-             my ($total_turnover_by_market, $total_payout_by_market);
-            foreach my $expiry (keys %{$final->{$market}}) {
-	    my ($total_turnover_by_expiry, $total_payout_by_expiry);
-                my ($total_turnover_by_atm, $total_payout_by_atm);
-                foreach my $atm (keys %{$final->{$market}->{$expiry}}) {
-		my ($total_turnover_by_atm, $total_payout_by_atm);
-                    my @sorted_by_underlying =
-                      map { [$_, $final->{$market}->{$expiry}->{$atm}->{$_}->{payout}, $final->{$market}->{$expiry}->{$atm}->{$_}->{turnover}] }
-                      sort { $final->{$market}->{$expiry}->{$atm}->{$a}->{payout} <=> $final->{$market}->{$expiry}->{$atm}->{$b}->{payout} }
-                      keys %{$final->{$market}->{$expiry}->{$atm}};
-                      
-                      map { $total_turnover_by_market += $final->{$market}->{$expiry}->{$atm}->{$_}->{turnover} } keys %{$final->{$market}->{$expiry}->{$atm}};
-                      map { $total_payout_by_market   += $final->{$market}->{$expiry}->{$atm}->{$_}->{payout} } keys %{$final->{$market}->{$expiry}->{$atm}};
-                      map { $total_turnover_by_expiry += $final->{$market}->{$expiry}->{$atm}->{$_}->{turnover} } keys %{$final->{$market}->{$expiry}->{$atm}};
-                      map { $total_payout_by_expiry   += $final->{$market}->{$expiry}->{$atm}->{$_}->{payout} } keys %{$final->{$market}->{$expiry}->{$atm}};
-                      map { $total_turnover_by_atm += $final->{$market}->{$expiry}->{$atm}->{$_}->{turnover} } keys %{$final->{$market}->{$expiry}->{$atm}};
-                      map { $total_payout_by_atm   += $final->{$market}->{$expiry}->{$atm}->{$_}->{payout} } keys %{$final->{$market}->{$expiry}->{$atm}};
+        $final->{$contract->underlying->market->name}->{total_turnover} += $purchase_price;
+        $final->{$contract->underlying->market->name}->{total_payout}   += $payout_price;
 
-
-                      $new_final->{$market}->{total_turnover} = $total_turnover_by_market;
-                      $new_final->{$market}->{total_payout}   = $total_payout_by_market;
-                      $new_final->{$market}->{$expiry}->{total_turnover} = $total_turnover_by_expiry;
-		      $new_final->{$market}->{$expiry}->{total_payout} = $total_payout_by_expiry; 
-                      $new_final->{$market}->{$expiry}->{$atm}->{total_turnover} = $total_turnover_by_atm;
-                      $new_final->{$market}->{$expiry}->{$atm}->{total_payout} = $total_payout_by_atm;
-                      for (my $i = 0; $i < scalar @sorted_by_underlying; $i++) {
-                      $new_final->{$market}->{$expiry}->{$atm}->{$i}->{$sorted_by_underlying[$i][0]} = {
-                        payout   => $sorted_by_underlying[$i][1],
-                        turnover => $sorted_by_underlying[$i][2]};
-                }
-            }
-        }
     }
-    my @sorted =
-        map { [$_, $new_final->{$_}] }
-        sort { $new_final->{$b}->{total_payout} <=> $new_final->{$a}->{total_payout} } grep { $_ !~ /total/ } keys %{$new_final};
     my $report;
-    for (my $i = 0; $i < scalar @sorted; $i++) { $report->{pl}->{$i} = {$sorted[$i][0] => $sorted[$i][1]}; }
+    $report->{pl} = sorting_data($final, 'open_bet');
 
     $report->{generated_time} =
         BOM::Database::DataMapper::CollectorReporting->new({broker_code => 'CR'})->get_last_generated_historical_marked_to_market_time;
- 
+
     return $report;
 }
 
 sub closed_contract_exposure {
-   my $self = shift;
-   my $today  = Date::Utility->new;
-   my $closed = $self->closed_PL_by_underlying($today->truncate_to_day->db_timestamp);
-   my $summary;
+    my $self   = shift;
+    my $today  = Date::Utility->new;
+    my $closed = $self->closed_PL_by_underlying($today->truncate_to_day->db_timestamp);
+    my $summary;
     foreach my $underlying (keys %$closed) {
-        my $market = create_underlying($underlying)->market->name;
-        $summary->{$market}->{$underlying} = financialrounding('price', 'USD', $closed->{$underlying}->{usd_closed_pl});
-        $summary->{$market}->{total_closed_pl} += financialrounding('price', 'USD', $closed->{$underlying}->{usd_closed_pl});
+        my $market      = create_underlying($underlying)->market->name;
+        my $expiry_type = $closed->{$underlying}->{expiry_daily} ? 'daily' : 'intraday';
+        my $atm_type    = $closed->{$underlying}->{is_atm} ? 'atm' : 'non_atm';
+        $summary->{$market}->{$expiry_type}->{$atm_type}->{$underlying}->{closed_pl} =
+            financialrounding('price', 'USD', $closed->{$underlying}->{usd_closed_pl});
     }
-
+    $DB::single = 1;
     foreach my $market (keys %$summary) {
         my @sorted_by_underlying =
             map { [$_, $summary->{$market}->{$_}] }
@@ -381,10 +358,45 @@ sub closed_contract_exposure {
         }
     }
     my $report;
-    my @sorted_closed_pl = map { [$_, $summary->{$_}] } sort { $summary->{$a}->{total_closed_pl} <=> $summary->{$b}->{total_closed_pl} } keys %{$summary};
+    my @sorted_closed_pl =
+        map { [$_, $summary->{$_}] } sort { $summary->{$a}->{total_closed_pl} <=> $summary->{$b}->{total_closed_pl} } keys %{$summary};
     for (my $i = 0; $i < scalar @sorted_closed_pl; $i++) { $report->{pl}->{$i} = {$sorted_closed_pl[$i][0] => $sorted_closed_pl[$i][1]}; }
 
     $report->{generated_time} = $today->datetime;
+    return $report;
+
+}
+
+sub sorting_data {
+    my ($final, $for) = @_;
+    my $sorting_arg = $for eq 'open_bet' ? 'total_payout' : 'total_closed_pl';
+
+    foreach my $market (keys %$final) {
+        next if $market =~ /total/;
+        foreach my $expiry (keys %{$final->{$market}}) {
+            next if $expiry =~ /total/;
+            foreach my $atm (keys %{$final->{$market}->{$expiry}}) {
+                next if $atm =~ /total/;
+                my @sorted_by_underlying =
+                    map { [$_, $final->{$market}->{$expiry}->{$atm}->{$_}->{payout}, $final->{$market}->{$expiry}->{$atm}->{$_}->{turnover}] }
+                    sort { $final->{$market}->{$expiry}->{$atm}->{$b}->{payout} <=> $final->{$market}->{$expiry}->{$atm}->{$a}->{payout} }
+                    grep { $_ !~ /total/ } keys %{$final->{$market}->{$expiry}->{$atm}};
+
+                for (my $i = 0; $i < scalar @sorted_by_underlying; $i++) {
+                    delete $final->{$market}->{$expiry}->{$atm}->{$sorted_by_underlying[$i][0]};
+                    $final->{$market}->{$expiry}->{$atm}->{$i}->{$sorted_by_underlying[$i][0]} = {
+                        payout   => $sorted_by_underlying[$i][1],
+                        turnover => $sorted_by_underlying[$i][2]};
+                }
+            }
+        }
+    }
+    my @sorted =
+        map { [$_, $final->{$_}] }
+        sort { $final->{$b}->{$sorting_arg} <=> $final->{$a}->{$sorting_arg} } grep { $_ !~ /total/ } keys %{$final};
+    my $report;
+    for (my $i = 0; $i < scalar @sorted; $i++) { $report->{$i} = {$sorted[$i][0] => $sorted[$i][1]}; }
+
     return $report;
 
 }
@@ -393,10 +405,10 @@ sub exposures_report {
     my $self = shift;
     my $report;
 
-   $report->{open_bet}= $self->open_contract_exposures();
-   $report->{closed_pl}= $self->closed_contract_exposure();
+    $report->{open_bet}  = $self->open_contract_exposures();
+    $report->{closed_pl} = $self->closed_contract_exposure();
 
-   return $report;
+    return $report;
 }
 
 =head1 METHODS
