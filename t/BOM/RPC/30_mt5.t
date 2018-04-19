@@ -252,10 +252,6 @@ subtest 'login list' => sub {
                 status        => 0,
                 company       => undef,
                 leverage      => undef,
-                phone         => undef,
-                phonePassword => undef,
-                state         => undef,
-
             }
         ],
         'mt5_login_list result'

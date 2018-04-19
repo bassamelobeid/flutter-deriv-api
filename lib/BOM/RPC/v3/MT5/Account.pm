@@ -135,11 +135,8 @@ sub get_mt5_logins {
                 if (ref $setting eq 'HASH' && $setting->{group}) {
                     $acc->{group} = $setting->{group};
                 }
-                $setting = _extract_settings($setting);
-                delete $setting->{address};
-                delete $setting->{city};
-                delete $setting->{zipCode};
-                $acc = {%$acc, %$setting};
+                $setting  = _extract_settings($setting);
+                @{$acc}{keys %$setting} = values %$setting;
                 return Future->needs_all(
                     mt5_mamm({
                             client => $client,
@@ -542,16 +539,15 @@ async_rpc mt5_get_settings => sub {
         sub {
             my ($settings) = @_;
             return Future->fail('MT5GetUserError', $settings->{error}) if (ref $settings eq 'HASH' and $settings->{error});
-            $settings = _extract_settings($settings);
-            # we don't want to send this field back
-            delete $settings->{rights};
-            delete $settings->{agent};
+            $settings = _extract_settings($settings, ['address', 'city', 'state', 'zipCode', 'phone', 'phonePassword']);
             return Future->done($settings);
         });
 };
 
 sub _extract_settings {
-    my ($settings) = @_;
+    my ($settings, $additional_keys) = @_;
+    my @allowed_keys  = qw/login email group balance name country currency company leverage/;
+    @allowed_keys = (@allowed_keys, @$additional_keys) if defined $additional_keys;
     if (my $country = $settings->{country}) {
         my $country_code = Locale::Country::Extra->new()->code_from_country($country);
         if ($country_code) {
@@ -561,7 +557,9 @@ sub _extract_settings {
         }
     }
     $settings->{currency} = $settings->{group} =~ /vanuatu|costarica|demo/ ? 'USD' : 'EUR';
-    return $settings;
+    my $res;
+    @{$res}{@allowed_keys} = @{$settings}{@allowed_keys};
+    return $res;
 }
 
 =head2 mt5_set_settings
