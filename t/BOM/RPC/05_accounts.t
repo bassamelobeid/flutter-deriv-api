@@ -721,7 +721,6 @@ subtest $method => sub {
         'duplicate_account is not in the status'
     );
 
-
     # $test_client->set_status('tnc_approval', 'test staff', 1);
 
     # reset the risk classification for the following test

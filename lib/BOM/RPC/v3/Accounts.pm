@@ -487,8 +487,8 @@ rpc get_account_status => sub {
     my $already_unwelcomed;
     my @status;
     foreach my $s (sort keys %{$client->client_status_types}) {
-        next unless $client->client_status_types->{$s};
-        next if $s eq 'tnc_approval';    # the useful part for tnc_approval is reason
+        next unless $client->client_status_types->{$s};    # Skip status codes that are not supposed to be shown to users
+        next if $s eq 'tnc_approval';                      # the useful part for tnc_approval is reason
         if ($client->get_status($s)) {
             push @status, $s;
             $already_unwelcomed = 1 if $s eq 'unwelcome';
