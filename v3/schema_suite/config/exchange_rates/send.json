@@ -13,7 +13,8 @@
     "base_currency": {
       "type": "string",
       "pattern": "^[A-Z]{3}$",
-      "description": "Base currency (can be obtained from payout_currencies call)"
+      "description": "Base currency (can be obtained from payout_currencies call)",
+      "required" : "1"
     },
     "passthrough": {
       "type": "object",
@@ -24,8 +25,5 @@
       "description": "[Optional] Used to map request to response."
     }
   },
-  "required": [
-    "exchange_rates"
-  ],
   "additionalProperties": false
 }

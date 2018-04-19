@@ -20,7 +20,6 @@
       "type": "object",
       "title": "Exchange rates",
       "description": "Exchange rate values from base to all other currencies",
-      "required" : "1",
       "properties": {
         "base_currency": {
           "type": "string",
@@ -47,10 +46,5 @@
       "type": "integer",
       "description": "Optional field sent only when request contains req_id"
     }
-  },
-  "required": [
-    "echo_req",
-    "msg_type",
-    "exchange_rates"
-  ]
+  }
 }
