@@ -252,7 +252,7 @@ subtest 'is_OTC' => sub {
         market    => 'indices',
         submarket => ['otc_index', 'smart_index'],
         );
-    ;
+
     foreach my $symbol (@OTC_symbols) {
         my $underlying = create_underlying($symbol);
 
