@@ -84,7 +84,6 @@ subtest 'ticks_forget_one_sub' => sub {
     };
     my $req2 = {
         "ticks_history" => "R_50",
-        "granularity"   => 0,
         "style"         => "ticks",
         "count"         => 1,
         "end"           => "latest",
