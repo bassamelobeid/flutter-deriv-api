@@ -333,7 +333,7 @@ sub open_contract_exposures {
     return $report;
 }
 
-sub closed_contract_exposure {
+sub closed_contract_exposures {
     my $self   = shift;
     my $today  = Date::Utility->new;
     my $closed = $self->closed_PL_by_underlying($today->truncate_to_day->db_timestamp);
@@ -342,26 +342,16 @@ sub closed_contract_exposure {
         my $market      = create_underlying($underlying)->market->name;
         my $expiry_type = $closed->{$underlying}->{expiry_daily} ? 'daily' : 'intraday';
         my $atm_type    = $closed->{$underlying}->{is_atm} ? 'atm' : 'non_atm';
-        $summary->{$market}->{$expiry_type}->{$atm_type}->{$underlying}->{closed_pl} =
-            financialrounding('price', 'USD', $closed->{$underlying}->{usd_closed_pl});
-    }
-    $DB::single = 1;
-    foreach my $market (keys %$summary) {
-        my @sorted_by_underlying =
-            map { [$_, $summary->{$market}->{$_}] }
-            sort { $summary->{$market}->{$a} <=> $summary->{$market}->{$b} } grep { $_ ne 'total_closed_pl' } keys %{$summary->{$market}};
-        my $total = $summary->{$market}->{total_closed_pl};
-        delete $summary->{$market};
-        $summary->{$market}->{total_closed_pl} = $total;
-        for (my $i = 0; $i < scalar @sorted_by_underlying; $i++) {
-            $summary->{$market}->{$i} = {$sorted_by_underlying[$i][0] => $sorted_by_underlying[$i][1]};
-        }
+        my $closed_pl   = financialrounding('price', 'USD', $closed->{$underlying}->{usd_closed_pl});
+        $summary->{$market}->{total_closed_pl}                              += $closed_pl;
+        $summary->{$market}->{$expiry_type}->{total_closed_pl}              += $closed_pl;
+        $summary->{$market}->{$expiry_type}->{$atm_type}->{total_closed_pl} += $closed_pl;
+
+        $summary->{$market}->{$expiry_type}->{$atm_type}->{$underlying}->{pl} += $closed_pl;
+
     }
     my $report;
-    my @sorted_closed_pl =
-        map { [$_, $summary->{$_}] } sort { $summary->{$a}->{total_closed_pl} <=> $summary->{$b}->{total_closed_pl} } keys %{$summary};
-    for (my $i = 0; $i < scalar @sorted_closed_pl; $i++) { $report->{pl}->{$i} = {$sorted_closed_pl[$i][0] => $sorted_closed_pl[$i][1]}; }
-
+    $report->{pl} = sorting_data($summary, 'closed_pl');
     $report->{generated_time} = $today->datetime;
     return $report;
 
@@ -378,15 +368,23 @@ sub sorting_data {
             foreach my $atm (keys %{$final->{$market}->{$expiry}}) {
                 next if $atm =~ /total/;
                 my @sorted_by_underlying =
-                    map { [$_, $final->{$market}->{$expiry}->{$atm}->{$_}->{payout}, $final->{$market}->{$expiry}->{$atm}->{$_}->{turnover}] }
+                    $for eq 'open_bet'
+                    ? map { [$_, $final->{$market}->{$expiry}->{$atm}->{$_}->{payout}, $final->{$market}->{$expiry}->{$atm}->{$_}->{turnover}] }
                     sort { $final->{$market}->{$expiry}->{$atm}->{$b}->{payout} <=> $final->{$market}->{$expiry}->{$atm}->{$a}->{payout} }
-                    grep { $_ !~ /total/ } keys %{$final->{$market}->{$expiry}->{$atm}};
+                    grep { $_ !~ /total/ } keys %{$final->{$market}->{$expiry}->{$atm}}
+                    : map { [$_, $final->{$market}->{$expiry}->{$atm}->{$_}->{pl}] }
+                    sort { $final->{$market}->{$expiry}->{$atm}->{$a}->{pl} <=> $final->{$market}->{$expiry}->{$atm}->{$b}->{pl} }
+                    grep { $_ ne 'total_closed_pl' } keys %{$final->{$market}->{$expiry}->{$atm}};
 
                 for (my $i = 0; $i < scalar @sorted_by_underlying; $i++) {
                     delete $final->{$market}->{$expiry}->{$atm}->{$sorted_by_underlying[$i][0]};
-                    $final->{$market}->{$expiry}->{$atm}->{$i}->{$sorted_by_underlying[$i][0]} = {
-                        payout   => $sorted_by_underlying[$i][1],
-                        turnover => $sorted_by_underlying[$i][2]};
+                    if ($for eq 'open_bet') {
+                        $final->{$market}->{$expiry}->{$atm}->{$i}->{$sorted_by_underlying[$i][0]} = {
+                            payout   => $sorted_by_underlying[$i][1],
+                            turnover => $sorted_by_underlying[$i][2]};
+                    } else {
+                        $final->{$market}->{$expiry}->{$atm}->{$i}->{$sorted_by_underlying[$i][0]}->{pl} = $sorted_by_underlying[$i][1];
+                    }
                 }
             }
         }
@@ -406,7 +404,7 @@ sub exposures_report {
     my $report;
 
     $report->{open_bet}  = $self->open_contract_exposures();
-    $report->{closed_pl} = $self->closed_contract_exposure();
+    $report->{closed_pl} = $self->closed_contract_exposures();
 
     return $report;
 }

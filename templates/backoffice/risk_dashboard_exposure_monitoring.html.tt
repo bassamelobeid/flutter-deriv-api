@@ -2,29 +2,55 @@
 <p> Latest report generated at [% data.closed_pl.generated_time %] </p>
 <p> Note:We are taking into account the contract that bought and sold on the same date in this report. </p>
 
-<div id="accordion_close_pl" style="width: 450px">
+<div id="accordion_closed_market" style="width: 450px">
 [% FOREACH index IN data.closed_pl.pl.keys.nsort %]
 [% FOREACH market  IN data.closed_pl.pl.$index.keys %]
-  <h3 style="outline: none">
-		<strong>[% market %] :</strong>
-		<span style="color: [% data.closed_pl.pl.$index.$market.total_closed_pl > 0 ? 'green' : 'red' %]">
-				USD [% data.closed_pl.pl.$index.$market.total_closed_pl %]
-		<span>
-  </h3>
-  <div>
-       [% FOREACH uindex IN data.closed_pl.pl.$index.$market.keys.sort %]
-          [% IF uindex != 'total_closed_pl' %]
-             [% FOREACH underlying IN data.closed_pl.pl.$index.$market.$uindex.keys %]
-                <div style="line-height: 24px;">
-						[% underlying %] : 
-						<span style="color: [% data.closed_pl.pl.$index.$market.$uindex.$underlying > 0 ? 'green' : 'red' %]">
-								USD [% data.closed_pl.pl.$index.$market.$uindex.$underlying %]
-						</span>
-				</div>
-             [% END %]
+    <h3 style="outline: none">
+        <strong>[% market %] :</strong>
+        <span style="color: [% data.closed_pl.pl.$index.$market.total_closed_pl > 0 ? 'green' : 'red' %]">
+                Closed PL: USD [% data.closed_pl.pl.$index.$market.total_closed_pl %]
+        <span>
+    </h3>
+    <div class="_accordion_closed_expiry" style="width: 400px">
+       [% FOREACH expiry IN data.closed_pl.pl.$index.$market.keys.sort %]
+           [% IF expiry != 'total_closed_pl' %]
+                <h3 style="outline: none">
+                    <strong>[% expiry %] :</strong>
+                    <span style="color: [% data.closed_pl.pl.$index.$market.$expiry.total_closed_pl > 0 ? 'green' : 'red' %]">
+                           Closed_PL: USD [% data.closed_pl.pl.$index.$market.$expiry.total_closed_pl %]
+                    <span>
+                </h3>
            [% END %]
-        [% END %]
-  </div>
+		   [% IF data.closed_pl.pl.$index.$market.$expiry.size > 1 %]
+			  <div class="_accordion_closed_atm" style="width: 350px">
+       				[% FOREACH atm IN data.closed_pl.pl.$index.$market.$expiry.keys.sort %]
+          				[% IF atm != 'total_closed_pl' %]
+                             <h3 style="outline: none">
+                                <strong>[% atm %] :</strong>
+                                <span style="color: [% data.closed_pl.pl.$index.$market.$expiry.$atm.total_closed_pl > 0 ? 'green' : 'red' %]">
+                                      Closed_PL: USD [% data.closed_pl.pl.$index.$market.$expiry.$atm.total_closed_pl %]
+                                <span>
+                             </h3>
+                             <div>
+                                [% FOREACH uindex IN data.closed_pl.pl.$index.$market.$expiry.$atm.keys.sort %]
+                                    [% IF unindex != 'total_closed_pl' %]
+                                        [% FOREACH underlying IN data.closed_pl.pl.$index.$market.$expiry.$atm.$uindex.keys %]
+                                            <div style="line-height: 24px;">
+                                                <b>[% underlying %] </b> :
+                                                <span style="color: [% data.closed_pl.pl.$index.$market.$expiry.$atm.$uindex.$underlying.pl > 0 ? 'green' : 'red' %]">
+                                                      Closed_PL: USD [% data.closed_pl.pl.$index.$market.$expiry.$atm.$uindex.$underlying.pl %]
+                                                <span>
+                                             </div>
+                                        [% END %]
+                                     [% END %]
+                                [% END %]
+                              </div>
+           				[% END %]
+        			[% END %]
+                </div>
+			[% END %]
+       [% END %]
+    </div>
 [% END %]
 [% END %]
 </div>
@@ -81,7 +107,7 @@
                               </div>
            				[% END %]
         			[% END %]
-                </div> <!-- _accordion_open_atm -->
+                </div>
 			[% END %]
         [% END %]
   </div>
@@ -91,11 +117,18 @@
 
 <script type="text/javascript">
 \$(function() {
-		\$("#accordion_close_pl" ).accordion({
+		\$("._accordion_closed_atm" ).accordion({
 				collapsible: true,
 				heightStyle: "content"
 		});
-
+		\$("._accordion_closed_expiry" ).accordion({
+				collapsible: true,
+				heightStyle: "content"
+		});
+		\$("#accordion_closed_market" ).accordion({
+				collapsible: true,
+				heightStyle: "content"
+		});
 
 		\$("._accordion_open_atm" ).accordion({
 				collapsible: true,
@@ -110,16 +143,6 @@
 		\$("#accordion_open_market" ).accordion({
 				collapsible: true,
 				heightStyle: "content"
-		});
-
-
-
-
-
-
-
-
-
-
+        });
 });
 </script>
