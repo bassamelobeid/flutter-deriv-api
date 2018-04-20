@@ -3,7 +3,6 @@ use warnings;
 
 use Getopt::Long;
 use Path::Tiny;
-use Try::Tiny;
 use Date::Utility;
 use File::stat;
 use YAML qw(LoadFile);
@@ -59,39 +58,33 @@ while ($to_date->days_between($processing_date) >= 0) {
 
 die "unable to create zip file" unless ( $zip->writeToFileNamed($output_zip_path->stringify) == AZ_OK );
 
-try {
-    my $config = LoadFile('/etc/rmg/third_party.yml')->{myaffiliates};
-    my $loop = IO::Async::Loop->new;
-    my $s3 = Net::Async::Webservice::S3->new(
-        access_key => $config->{aws_access_key_id},
-        secret_key => $config->{aws_secret_access_key},
-        bucket     => $config->{aws_bucket},
-    );
-    $loop->add($s3);
-    
-    my $url_generator = Amazon::S3::SignedURLGenerator->new(
-        aws_access_key_id     => $config->{aws_access_key_id},
-        aws_secret_access_key => $config->{aws_secret_access_key},
-        prefix                => "https://$config->{aws_bucket}.s3.amazonaws.com/",
-        expires               => 24 * 3600
-    );
-    
-    $s3->put_object(
-        key   => $output_zip,
-        value => $output_zip_path->slurp
-    )->get;
-    my $download_url = $url_generator->generate_url('GET', $output_zip);
+my $config = LoadFile('/etc/rmg/third_party.yml')->{myaffiliates} or die "unable to load configuerations";
+my $loop = IO::Async::Loop->new;
+my $s3 = Net::Async::Webservice::S3->new(
+    access_key => $config->{aws_access_key_id},
+    secret_key => $config->{aws_secret_access_key},
+    bucket     => $config->{aws_bucket},
+);
+$loop->add($s3);
 
-    my $brand = Brands->new();
-    # email CSV out for reporting purposes
-    send_email({
-        from       => $brand->emails('system'),
-        to         => $brand->emails('affiliates'),
-        subject    => 'CRON generate_affiliate_PL_daily: ' . ' for date range ' . $from_date->date_yyyymmdd . ' - ' . $to_date->date_yyyymmdd,
-        message    => ["Find links to download CSV that was generated:\n" . $download_url],
-    });
-}
-catch {
-    warn "Failed to upload reports to s3. Error is $_. No email was sent.";
-};
+my $url_generator = Amazon::S3::SignedURLGenerator->new(
+    aws_access_key_id     => $config->{aws_access_key_id},
+    aws_secret_access_key => $config->{aws_secret_access_key},
+    prefix                => "https://$config->{aws_bucket}.s3.amazonaws.com/",
+    expires               => 24 * 3600
+);
 
+$s3->put_object(
+    key   => $output_zip,
+    value => $output_zip_path->slurp
+)->get;
+my $download_url = $url_generator->generate_url('GET', $output_zip);
+
+my $brand = Brands->new();
+# email CSV out for reporting purposes
+send_email({
+    from       => $brand->emails('system'),
+    to         => $brand->emails('affiliates'),
+    subject    => 'CRON generate_affiliate_PL_daily: ' . ' for date range ' . $from_date->date_yyyymmdd . ' - ' . $to_date->date_yyyymmdd,
+    message    => ["Find links to download CSV that was generated:\n" . $download_url],
+});
