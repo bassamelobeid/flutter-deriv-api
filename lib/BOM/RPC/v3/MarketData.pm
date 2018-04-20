@@ -62,7 +62,7 @@ rpc exchange_rates => sub {
     foreach my $target (@all_currencies) {
         next if $target eq $base_currency;
         try {
-            $rates_hash{$target} = formatnumber('amount', $base_currency, amount_from_to_currency(1, $target, $base_currency));
+            $rates_hash{$target} = formatnumber('amount', $target, amount_from_to_currency(1, $base_currency, $target));
         };
     }
 

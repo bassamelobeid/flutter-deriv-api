@@ -15,17 +15,6 @@ use LandingCompany::Registry;
 use BOM::Test::RPC::Client;
 use BOM::RPC::v3::MarketData;
 
-sub checkResultStructure {
-    my $result = shift;
-    my $base   = shift;
-    ok $result->{date}, "Date tag";
-    ok $result->{base_currency} && $base eq $result->{base_currency}, "Base currency";
-    ok $result->{rates}, 'Rates tag';
-    if (exists $result->{rates}) {
-        ok(!exists $result->{rates}->{$base}, "Base currency not included in rates");
-    }
-}
-
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
 my ($base, $result);
@@ -36,18 +25,8 @@ subtest 'invalid currency' => sub {
     ok $result->error_code_is('InvalidCurrency'), 'Base currency not available';
 };
 
-subtest 'empty exchange rates' => sub {
-    $base = 'USD';
-    $result = $c->call_ok('exchange_rates', {args => {base_currency => $base}});
-    ok $result->has_no_system_error, 'RPC called without system errors';
-    if ($result->has_error) {
-        ok $result->has_error && $result->error_code_is('ExchangeRatesNotAvailable'), 'Exchange rates not available';
-    } else {
-        checkResultStructure($result->result, $base);
-    }
-};
-
 subtest 'exchange rates' => sub {
+    $base = 'USD';
     my $mocked_CurrencyConverter = Test::MockModule->new('Postgres::FeedDB::CurrencyConverter');
     $mocked_CurrencyConverter->mock(
         'in_USD',
@@ -68,8 +47,13 @@ subtest 'exchange rates' => sub {
         });
 
     $result = $c->call_ok('exchange_rates', {args => {base_currency => $base}})->has_no_system_error->has_no_error->result;
-    checkResultStructure($result, $base);
 
-    cmp_ok($result->{rates}->{LTC}, '==', 120, 'correct rate for LTC');
+    ok $result->{date}, "Date tag";
+    ok $result->{base_currency} && $base eq $result->{base_currency}, "Base currency";
+    ok $result->{rates}, 'Rates tag';
+    if (exists $result->{rates}) {
+        ok(!exists $result->{rates}->{$base}, "Base currency not included in rates");
+    }
+    cmp_ok($result->{rates}->{LTC}, '==', 0.00833333, 'correct rate for LTC');
 };
 done_testing();
