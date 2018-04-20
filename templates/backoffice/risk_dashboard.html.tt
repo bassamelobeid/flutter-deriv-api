@@ -38,22 +38,6 @@
             [% INCLUDE 'backoffice/risk_dashboard_affiliate_table.html.tt' affiliates = top_turnover.affiliates, key = 'turnover' %]
         </div>
 <hr/>
-    <div>
-        <h2>Open Postions</h2>
-        <div>
-            <h3>Payouts:</h3>
-            [% INCLUDE 'backoffice/risk_dashboard_bet_table.html.tt' bets = open_bets.big_payouts %]
-        </div>
-        <div>
-            <h3>Gains (MtM >= [% open_bets.mover_limit %]):</h3>
-            [% INCLUDE 'backoffice/risk_dashboard_bet_table.html.tt' bets = open_bets.top_ten_movers %]
-        </div>
-<br>
-        <div>
-            <h3>MtM:</h3>
-            [% INCLUDE 'backoffice/risk_dashboard_bet_table.html.tt' bets = open_bets.big_mtms %]
-        </div>
-    </div>
 </div>
 <div id="rd-multibarrier"> 
 [% INCLUDE 'backoffice/risk_dashboard_multibarrier.html.tt' data = multibarrier %] 
