@@ -18,6 +18,7 @@ use Bloomberg::RequestFiles;
 use BOM::BloombergCalendar;
 use BOM::Backoffice::EconomicEventTool;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::Backoffice::Utility qw(master_live_server_error);
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::CustomCommissionTool;
@@ -40,10 +41,7 @@ print '<p>BLOOMBERG DATA LICENSE (BBDL) is an FTP service where we can make requ
  <br>Note1: to view currently scheduled batch files, upload the JYSscheduled.req request file.
  Then wait a minute and download scheduled.out . </p>';
 
-unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}})) {
-    print
-        "<font color=red><b>WARNING! You are not on the Master Live Server. Suggest you use these tools on the Master Live Server instead.</b></font><P>";
-}
+master_live_server_error() unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}}));
 
 my $bbdl                  = Bloomberg::FileDownloader->new();
 my $directory_listing_url = request()->url_for('backoffice/f_bbdl_list_directory.cgi');
