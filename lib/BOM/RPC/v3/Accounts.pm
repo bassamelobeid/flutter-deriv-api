@@ -40,7 +40,7 @@ use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Token;
 use BOM::Transaction;
 use BOM::Platform::Config;
-use BOM::Platform::Password;
+use BOM::User::Password;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::Model::AccessToken;
@@ -501,7 +501,7 @@ rpc get_account_status => sub {
     $risk_classification =~ s/manual override - //;
 
     # differentiate between social and password based accounts
-    my $user = BOM::User->new({email => $client->email});
+    my $user = $client->user;
     push @status, 'unwelcome' if not $already_unwelcomed and BOM::Transaction::Validation->new({clients => [$client]})->check_trade_status($client);
 
     push @status, 'social_signup' if $user->has_social_signup;
@@ -561,9 +561,9 @@ rpc change_password => sub {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
-    # Fetch user by loginid, if the user doesn't exist or
+    # if the user doesn't exist or
     # has no associated clients then throw exception
-    my $user = BOM::User->new({loginid => $client->loginid});
+    my $user = $client->user;
     my @clients;
     if (not $user or not @clients = $user->clients) {
         return BOM::RPC::v3::Utility::client_error();
@@ -585,7 +585,7 @@ rpc change_password => sub {
         return $pass_error;
     }
 
-    my $new_password = BOM::Platform::Password::hashpw($args->{new_password});
+    my $new_password = BOM::User::Password::hashpw($args->{new_password});
     $user->password($new_password);
     $user->save;
 
@@ -596,7 +596,7 @@ rpc change_password => sub {
         $oauth->revoke_tokens_by_loginid($obj->loginid);
     }
 
-    BOM::Platform::AuditLog::log('password has been changed', $client->email);
+    BOM::User::AuditLog::log('password has been changed', $client->email);
     send_email({
             from    => Brands->new(name => request()->brand)->emails('support'),
             to      => $client->email,
@@ -649,8 +649,8 @@ rpc cashier_password => sub {
             return $error_sub->(localize('Your cashier was locked.'));
         }
 
-        my $user = BOM::User->new({email => $client->email});
-        if (BOM::Platform::Password::checkpw($lock_password, $user->password)) {
+        my $user = $client->user;
+        if (BOM::User::Password::checkpw($lock_password, $user->password)) {
             return $error_sub->(localize('Please use a different password than your login password.'));
         }
 
@@ -658,7 +658,7 @@ rpc cashier_password => sub {
             return $pass_error;
         }
 
-        $client->cashier_setting_password(BOM::Platform::Password::hashpw($lock_password));
+        $client->cashier_setting_password(BOM::User::Password::hashpw($lock_password));
         if (not $client->save()) {
             return $error_sub->(localize('Sorry, an error occurred while processing your account.'));
         } else {
@@ -686,8 +686,8 @@ rpc cashier_password => sub {
         }
 
         my $cashier_password = $client->cashier_setting_password;
-        if (!BOM::Platform::Password::checkpw($unlock_password, $cashier_password)) {
-            BOM::Platform::AuditLog::log('Failed attempt to unlock cashier', $client->loginid);
+        if (!BOM::User::Password::checkpw($unlock_password, $cashier_password)) {
+            BOM::User::AuditLog::log('Failed attempt to unlock cashier', $client->loginid);
             send_email({
                     'from'    => Brands->new(name => request()->brand)->emails('support'),
                     'to'      => $client->email,
@@ -726,7 +726,7 @@ rpc cashier_password => sub {
                     'email_content_is_html' => 1,
                     template_loginid        => $client->loginid,
                 });
-            BOM::Platform::AuditLog::log('cashier unlocked', $client->loginid);
+            BOM::User::AuditLog::log('cashier unlocked', $client->loginid);
             return {status => 0};
         }
     }
@@ -777,7 +777,7 @@ rpc "reset_password",
         return $pass_error;
     }
 
-    my $new_password = BOM::Platform::Password::hashpw($args->{new_password});
+    my $new_password = BOM::User::Password::hashpw($args->{new_password});
     $user->password($new_password);
     $user->save;
 
@@ -788,7 +788,7 @@ rpc "reset_password",
         $oauth->revoke_tokens_by_loginid($obj->loginid);
     }
 
-    BOM::Platform::AuditLog::log('password has been reset', $email, $args->{verification_code});
+    BOM::User::AuditLog::log('password has been reset', $email, $args->{verification_code});
     send_email({
             from    => Brands->new(name => request()->brand)->emails('support'),
             to      => $email,
@@ -834,7 +834,7 @@ rpc get_settings => sub {
         email         => $client->email,
         country       => $country,
         country_code  => $country_code,
-        email_consent => do { my $user = BOM::User->new({email => $client->email}); ($user && $user->email_consent) ? 1 : 0 },
+        email_consent => do { my $user = $client->user; ($user && $user->email_consent) ? 1 : 0 },
         (
             $client->is_virtual
             ? ()
@@ -964,7 +964,7 @@ rpc set_settings => sub {
     # email consent is per user whereas other settings are per client
     # so need to save it separately
     if (defined $args->{email_consent}) {
-        my $user = BOM::User->new({email => $client->email});
+        my $user = $client->user;
         $user->email_consent($args->{email_consent});
         $user->save;
     }
@@ -1030,7 +1030,7 @@ rpc set_settings => sub {
         return undef;
     };
 
-    my $user = BOM::User->new({email => $client->email});
+    my $user = $client->user;
     foreach my $cli ($user->clients) {
         next if $cli->is_virtual;
 
@@ -1115,8 +1115,7 @@ rpc set_settings => sub {
         [localize("Tax residence"), $tr_tax_residence],
         [localize('Tax identification number'), ($client->tax_identification_number || '')],
         );
-    push @updated_fields,
-        [localize('Receive news and special offers'), BOM::User->new({email => $client->email})->email_consent ? localize("Yes") : localize("No")]
+    push @updated_fields, [localize('Receive news and special offers'), $client->user->email_consent ? localize("Yes") : localize("No")]
         if exists $args->{email_consent};
     push @updated_fields, [localize('Allow copiers'), $client->allow_copiers ? localize("Yes") : localize("No")]
         if defined $allow_copiers;
@@ -1149,7 +1148,7 @@ rpc set_settings => sub {
         email_content_is_html => 1,
         template_loginid      => $client->loginid,
     });
-    BOM::Platform::AuditLog::log('Your settings have been updated successfully', $client->loginid);
+    BOM::User::AuditLog::log('Your settings have been updated successfully', $client->loginid);
 
     return {status => 1};
 };
@@ -1561,7 +1560,7 @@ rpc login_history => sub {
         }
     }
 
-    my $user = BOM::User->new({email => $client->email});
+    my $user          = $client->user;
     my $login_history = $user->find_login_history(
         sort_by => 'history_date desc',
         limit   => $limit
@@ -1632,7 +1631,7 @@ rpc set_financial_assessment => sub {
         my %financial_data = map { $_ => $params->{args}->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
         my $financial_evaluation = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
 
-        my $user = BOM::User->new({email => $client->email});
+        my $user = $client->user;
         foreach my $cli ($user->clients) {
             $cli->financial_assessment({
                 data => Encode::encode_utf8($json->encode($financial_evaluation->{user_data})),

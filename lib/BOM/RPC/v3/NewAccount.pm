@@ -33,7 +33,7 @@ use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Context qw (request);
 use BOM::Database::Model::OAuth;
-use BOM::Platform::PaymentNotificationQueue;
+use BOM::User::Client::PaymentNotificationQueue;
 
 requires_auth();
 
@@ -93,8 +93,8 @@ rpc "new_account_virtual",
     });
     $user->save;
 
-    BOM::Platform::AuditLog::log("successful login", "$email");
-    BOM::Platform::PaymentNotificationQueue->add(
+    BOM::User::AuditLog::log("successful login", "$email");
+    BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'virtual',
         currency      => 'USD',
         loginid       => $client->loginid,
@@ -262,7 +262,7 @@ rpc new_account_real => sub {
         return $error if $error;
     }
 
-    my $user = BOM::User->new({email => $client->email});
+    my $user = $client->user;
 
     my ($clients, $professional_status, $professional_requested) = _get_professional_details_clients($user, $args);
 
@@ -318,8 +318,8 @@ rpc new_account_real => sub {
         }
     }
 
-    BOM::Platform::AuditLog::log("successful login", "$client->email");
-    BOM::Platform::PaymentNotificationQueue->add(
+    BOM::User::AuditLog::log("successful login", "$client->email");
+    BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'real',
         currency      => 'USD',
         loginid       => $new_client->loginid,
@@ -362,7 +362,7 @@ rpc new_account_maltainvest => sub {
 
     my %financial_data = map { $_ => $args->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
 
-    my $user = BOM::User->new({email => $client->email});
+    my $user = $client->user;
 
     # When a Binary (Europe) Ltd/Binary (IOM) Ltd account is created,
     # the 'place of birth' field is not present.
@@ -429,8 +429,8 @@ rpc new_account_maltainvest => sub {
     });
     $user->save;
 
-    BOM::Platform::AuditLog::log("successful login", "$client->email");
-    BOM::Platform::PaymentNotificationQueue->add(
+    BOM::User::AuditLog::log("successful login", "$client->email");
+    BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'real',
         currency      => 'USD',
         loginid       => $new_client->loginid,
@@ -482,7 +482,7 @@ rpc new_account_japan => sub {
         ip => $params->{client_ip} // '',
         country => uc($params->{country_code} // ''),
         from_client    => $client,
-        user           => BOM::User->new({email => $client->email}),
+        user           => $client->user,
         details        => $details,
         financial_data => \%financial_data,
         agreement      => \%agreement,
@@ -505,8 +505,8 @@ rpc new_account_japan => sub {
     });
     $user->save;
 
-    BOM::Platform::AuditLog::log("successful login", "$client->email");
-    BOM::Platform::PaymentNotificationQueue->add(
+    BOM::User::AuditLog::log("successful login", "$client->email");
+    BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'real',
         currency      => 'USD',
         loginid       => $new_client->loginid,

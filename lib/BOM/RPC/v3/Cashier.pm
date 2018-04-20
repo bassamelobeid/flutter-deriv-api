@@ -34,10 +34,10 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Config;
-use BOM::Platform::AuditLog;
+use BOM::User::AuditLog;
 use BOM::Platform::RiskProfile;
 use BOM::Platform::Client::CashierValidation;
-use BOM::Platform::PaymentNotificationQueue;
+use BOM::User::Client::PaymentNotificationQueue;
 use BOM::RPC::v3::Utility;
 use BOM::Transaction::Validation;
 use BOM::Database::Model::HandoffToken;
@@ -215,7 +215,7 @@ rpc "cashier", sub {
         . $secret
         . '&Action='
         . $action;
-    BOM::Platform::AuditLog::log('redirecting to doughflow', $df_client->loginid);
+    BOM::User::AuditLog::log('redirecting to doughflow', $df_client->loginid);
     return $url;
 };
 
@@ -258,7 +258,7 @@ sub _get_cashier_url {
 
     $prefix = lc($currency) if $prefix eq 'cryptocurrency';
 
-    BOM::Platform::AuditLog::log("redirecting to $prefix");
+    BOM::User::AuditLog::log("redirecting to $prefix");
 
     $language = uc($language // 'EN');
 
@@ -636,7 +636,7 @@ rpc paymentagent_transfer => sub {
         }
     }
 
-    BOM::Platform::PaymentNotificationQueue->add(
+    BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'payment_agent',
         currency      => $currency,
         loginid       => $loginid_to,
@@ -896,7 +896,7 @@ rpc paymentagent_withdraw => sub {
         }
     }
 
-    BOM::Platform::PaymentNotificationQueue->add(
+    BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'payment_agent',
         currency      => $currency,
         loginid       => $pa_client->loginid,
@@ -1021,7 +1021,7 @@ rpc transfer_between_accounts => sub {
     my $args = $params->{args};
     my ($currency, $amount) = @{$args}{qw/currency amount/};
 
-    my $siblings = BOM::RPC::v3::Utility::get_real_account_siblings_information($client->loginid, 1);
+    my $siblings = BOM::RPC::v3::Utility::get_real_account_siblings_information($client, 1);
     unless (keys %$siblings) {
         warn __PACKAGE__ . "::transfer_between_accounts Error:  Unable to get user data for " . $client->loginid . "\n";
         return _transfer_between_accounts_error(localize('Internal server error'));
@@ -1080,12 +1080,12 @@ rpc transfer_between_accounts => sub {
     my ($to_amount, $fees, $fees_percent) =
         BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($client_from->loginid, $amount, $from_currency, $to_currency);
 
-    BOM::Platform::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
+    BOM::User::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
 
     my $error_audit_sub = sub {
         my ($err, $client_message) = @_;
 
-        BOM::Platform::AuditLog::log("Account Transfer FAILED, $err");
+        BOM::User::AuditLog::log("Account Transfer FAILED, $err");
 
         $client_message ||= localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.');
         return _transfer_between_accounts_error($client_message);
@@ -1188,7 +1188,7 @@ rpc transfer_between_accounts => sub {
         return $error_audit_sub->($err);
     }
 
-    BOM::Platform::AuditLog::log("Account Transfer SUCCESS, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
+    BOM::User::AuditLog::log("Account Transfer SUCCESS, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
 
     return {
         status              => 1,
