@@ -16,6 +16,10 @@
       "items": {
         "type": "object",
         "properties": {
+          "allow_forward_starting": {
+            "type": "integer",
+            "description": "1 if the symbol is tradable in a forward starting contract, 0 if not."
+          },
           "display_name": {
             "type": "string",
             "description": "Display name.",
@@ -23,7 +27,7 @@
           },
           "exchange_is_open": {
             "type": "integer",
-            "description": "1 or 0 - whether the market is currently open or closed.",
+            "description": "1 if market is currently open, 0 if closed.",
             "required": "1"
           },
           "symbol": {
