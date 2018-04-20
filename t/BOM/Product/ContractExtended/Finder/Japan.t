@@ -88,12 +88,9 @@ subtest "predefined contracts for symbol" => sub {
         # costarica, no country
         'frxUSDJPY-costarica' => {
             contract_count => {
-                callput      => 12,
-                touchnotouch => 8,
-                staysinout   => 8,
-                endsinout    => 8,
+                callput      => 4,
             },
-            hit_count => 36,
+            hit_count => 4,
         },
         # malta, austria
         'frxUSDJPY-malta-at'     => {hit_count => 0},
