@@ -68,7 +68,8 @@ rpc active_symbols => sub {
         my %forward_starting = map { $_ => 1 } $offerings_obj->query({start_type => 'forward'}, ['underlying_symbol']);
         foreach my $symbol (@all_active) {
             my $desc = _description($symbol, $params->{args}->{active_symbols});
-            $desc->{allow_forward_starting} = 1 if $forward_starting{$symbol};
+            #$desc->{allow_forward_starting} = 1 if $forward_starting{$symbol};
+            $desc->{allow_forward_starting} = $forward_starting{$symbol} ? 1 : 0 ;
             push @{$active_symbols}, $desc;
         }
 
