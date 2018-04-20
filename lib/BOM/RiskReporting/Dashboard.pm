@@ -248,7 +248,7 @@ sub multibarrierreport {
         my $trading_period_start = Date::Utility->new($contract->trading_period_start)->datetime;
         $multibarrier->{$trading_period_start . '_' . $contract->date_expiry->datetime}->{$contract->bet_type}->{barrier}->{$barrier_index}
             ->{$contract->underlying->symbol} +=
-            financialrounding('price', 'USD', in_USD($open_contract->{buy_price}, $open_contract->{currency_code}));
+            financialrounding('price', 'USD', in_USD($open_contract->{payout_price}, $open_contract->{currency_code}));
         push @{$symbol->{$trading_period_start . '_' . $contract->date_expiry->datetime}}, $contract->underlying->symbol;
 
         $multibarrier->{$trading_period_start . '_' . $contract->date_expiry->datetime}->{spot}->{$contract->underlying->symbol} = $spot_index;
@@ -374,7 +374,7 @@ sub sorting_data {
                     sort { $final->{$market}->{$expiry}->{$atm}->{$b}->{payout} <=> $final->{$market}->{$expiry}->{$atm}->{$a}->{payout} }
                     grep { $_ !~ /total/ } keys %{$final->{$market}->{$expiry}->{$atm}}
                     : map { [$_, $final->{$market}->{$expiry}->{$atm}->{$_}->{pl}] }
-                    sort { $final->{$market}->{$expiry}->{$atm}->{$a}->{pl} <=> $final->{$market}->{$expiry}->{$atm}->{$b}->{pl} }
+                    sort { $final->{$market}->{$expiry}->{$atm}->{$b}->{pl} <=> $final->{$market}->{$expiry}->{$atm}->{$a}->{pl} }
                     grep { $_ ne 'total_closed_pl' } keys %{$final->{$market}->{$expiry}->{$atm}};
 
                 for (my $i = 0; $i < scalar @sorted_by_underlying; $i++) {
