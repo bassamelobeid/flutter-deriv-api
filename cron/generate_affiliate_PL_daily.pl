@@ -7,7 +7,7 @@ use Date::Utility;
 use File::stat;
 use YAML qw(LoadFile);
 use IO::Async::Loop;
-use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
+use Archive::Zip qw( :ERROR_CODES );
 use Net::Async::Webservice::S3;
 use Amazon::S3::SignedURLGenerator;
 
@@ -58,7 +58,7 @@ while ($to_date->days_between($processing_date) >= 0) {
 
 die "unable to create zip file" unless ( $zip->writeToFileNamed($output_zip_path->stringify) == AZ_OK );
 
-my $config = LoadFile('/etc/rmg/third_party.yml')->{myaffiliates} or die "unable to load configuerations";
+my $config = LoadFile('/etc/rmg/third_party.yml')->{myaffiliates};
 my $loop = IO::Async::Loop->new;
 my $s3 = Net::Async::Webservice::S3->new(
     access_key => $config->{aws_access_key_id},
