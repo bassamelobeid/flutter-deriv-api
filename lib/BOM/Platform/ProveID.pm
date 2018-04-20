@@ -43,6 +43,14 @@ sub get_result {
     return $self->SUPER::get_result();
 }
 
+sub has_done_request {
+    my $self = shift;
+    my $client = $self->{client};
+
+    # TODO (Amin Marashi): Remove SUPER::has_done_request because we set the provid_requested status
+    return $client->get_status('proveid_requested') || $self->SUPER::has_done_request;
+}
+
 sub defaults {
     my $self = shift;
 
