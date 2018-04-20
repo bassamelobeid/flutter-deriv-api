@@ -57,19 +57,19 @@ sub get_permissible_inputs {
         'date_expiry'   => 1,
         'currency'      => 1,
         'payout'        => 1,
-        
+
         # Stake inputs
         'starts_as_forward_starting' => 1,
-        'payouttime' => 1,
-        'pricing_new' => 1,
-        'payout_type' => 1,
-        'base_commission' => 1,
-        'category' => 1,
-        'has_user_defined_barrier' => 1,
-        'pricing_code' => 1,
-        'id' => 1,
-        'sentiment' => 1,
-        'display_name' => 1,
+        'payouttime'                 => 1,
+        'pricing_new'                => 1,
+        'payout_type'                => 1,
+        'base_commission'            => 1,
+        'category'                   => 1,
+        'has_user_defined_barrier'   => 1,
+        'pricing_code'               => 1,
+        'id'                         => 1,
+        'sentiment'                  => 1,
+        'display_name'               => 1,
 
         # Metadata inputs
         'shortcode'             => 1,
