@@ -16,7 +16,7 @@ use warnings;
 use Try::Tiny;
 use Format::Util::Numbers qw(formatnumber);
 use Scalar::Util qw(looks_like_number);
-use List::Util qw(first);
+use List::Util qw(any);
 
 use LandingCompany::Registry;
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
@@ -56,7 +56,7 @@ rpc exchange_rates => sub {
     return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidCurrency',
             message_to_client => localize('Invalid currency.'),
-        }) unless (first { $_ eq $base_currency } @all_currencies);
+        }) unless (any { $_ eq $base_currency } @all_currencies);
 
     my %rates_hash;
     foreach my $target (@all_currencies) {
