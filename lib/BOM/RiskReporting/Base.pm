@@ -126,11 +126,11 @@ sub closed_PL_by_underlying {
 
     return $self->_db->dbic->run(
         fixup => sub {
-            $_->selectall_hashref(
-                qq{ SELECT * FROM accounting.get_closed_pl_by_underlying(?)}, 'underlying_symbol', {}, $date
-            );
+            $_->selectall_arrayref(qq{ SELECT * FROM accounting.get_closed_pl_by_underlying(?)}, {}, $date);
         });
+
 }
+
 sub generate {
     return 1;
 }

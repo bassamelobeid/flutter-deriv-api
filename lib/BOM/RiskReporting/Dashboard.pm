@@ -338,11 +338,12 @@ sub closed_contract_exposures {
     my $today  = Date::Utility->new;
     my $closed = $self->closed_PL_by_underlying($today->truncate_to_day->db_timestamp);
     my $summary;
-    foreach my $underlying (keys %$closed) {
+    foreach my $i (keys @{$closed}) {
+        my $underlying  = $closed->[$i][0];
         my $market      = create_underlying($underlying)->market->name;
-        my $expiry_type = $closed->{$underlying}->{expiry_daily} ? 'daily' : 'intraday';
-        my $atm_type    = $closed->{$underlying}->{is_atm} ? 'atm' : 'non_atm';
-        my $closed_pl   = financialrounding('price', 'USD', $closed->{$underlying}->{usd_closed_pl});
+        my $expiry_type = $closed->[$i][1] == 1 ? 'daily' : 'intraday';
+        my $atm_type    = $closed->[$i][2] == 1 ? 'atm' : 'non_atm';
+        my $closed_pl   = financialrounding('price', 'USD', $closed->[$i][3]);
         $summary->{$market}->{total_closed_pl}                              += $closed_pl;
         $summary->{$market}->{$expiry_type}->{total_closed_pl}              += $closed_pl;
         $summary->{$market}->{$expiry_type}->{$atm_type}->{total_closed_pl} += $closed_pl;
