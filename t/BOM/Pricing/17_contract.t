@@ -279,8 +279,8 @@ subtest 'get_ask' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'       => '208.00',
-        'ask_price'           => '208.00',
+        'display_value'       => '203.00',
+        'ask_price'           => '203.00',
         'longcode'            => "Win USD 100 times Volatility 50 Index's close minus low over the next 15 minutes.",
         'multiplier'          => '100',
         'spot'                => '963.3054',
@@ -292,7 +292,7 @@ subtest 'get_ask' => sub {
             'bet_type'                       => 'LBFLOATCALL',
             'underlying'                     => 'R_50',
             'currency'                       => 'USD',
-            base_commission                  => '0.015',
+            base_commission                  => '0.02',
             'multiplier'                     => '100',
             'amount_type'                    => 'multiplier',
             'app_markup_percentage'          => 0,
