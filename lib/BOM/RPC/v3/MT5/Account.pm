@@ -117,7 +117,7 @@ Returns any of the following:
 sub get_mt5_logins {
     my ($client, $user) = @_;
 
-    $user ||= BOM::User->new({email => $client->email});
+    $user ||= $client->user;
 
     my $f = fmap1 {
         shift =~ /^MT(\d+)$/;
@@ -189,7 +189,7 @@ async_rpc mt5_new_account => sub {
     my $account_type     = delete $args->{account_type};
     my $mt5_account_type = delete $args->{mt5_account_type} // '';
     my $brand            = Brands->new(name => request()->brand);
-    my $user             = BOM::User->new({email => $client->email});
+    my $user             = $client->user;
 
     return create_error_future({
             code              => 'InvalidAccountType',
@@ -352,7 +352,7 @@ async_rpc mt5_new_account => sub {
                                         }
                                     });
                             } elsif ($account_type eq 'financial' && $client->landing_company->short eq 'costarica') {
-                                _send_notification_email($client, $mt5_login, $brand, $params->{language});
+                                _send_notification_email($client, $mt5_login, $brand, $params->{language}) unless $client->client_fully_authenticated;
                                 Future->done;
                             } else {
                                 Future->done;
@@ -373,7 +373,7 @@ async_rpc mt5_new_account => sub {
 
 sub _check_logins {
     my ($client, $logins) = @_;
-    my $user = BOM::User->new({email => $client->email});
+    my $user = $client->user;
 
     foreach my $login (@{$logins}) {
         return unless (any { $login eq $_->loginid } ($user->loginid));
@@ -427,7 +427,7 @@ Binary.com
                 to      => $brand->emails('support'),
                 subject => 'Asked for authentication documents',
                 message => [
-                    "MT5 Financial Account Created for MT$mt5_login\nIf client has not submitted document within five days please disable account and inform compliance"
+                    "${\$client->loginid} created MT5 Financial Account MT$mt5_login.\nIf client has not submitted document within five days please disable account and inform compliance"
                 ],
                 use_email_template    => 0,
                 email_content_is_html => 0,
