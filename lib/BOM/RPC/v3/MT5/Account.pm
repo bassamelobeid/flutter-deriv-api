@@ -1391,9 +1391,11 @@ sub _mt5_validate_and_get_amount {
 
             my $action = ($error_code =~ /Withdrawal/) ? 'withdrawal' : 'deposit';
 
+            # master groups are real\costarica_mamm_master and
+            # real\vanuatu_mamm_advanced_master
             return _make_error($error_code,
-                localize('Permission error. MAMM manager accounts are not allowed to withdraw as payments are processed manually.'))
-                if ($action eq 'withdrawal' and ($setting->{group} // '') =~ /^real\\mamm_/);
+                localize('Permission error. MT5 manager accounts are not allowed to withdraw as payments are processed manually.'))
+                if ($action eq 'withdrawal' and ($setting->{group} // '') =~ /^real\\[a-z]*_mamm(?:_[a-z]*)?_master$/);
 
             # check for fully authenticated only if it's not gaming account
             # as of now we only support gaming for binary brand, in future if we
