@@ -78,6 +78,11 @@ $res = $t->await::website_status({website_status => 1});
 is $res->{msg_type}, 'website_status';
 is $res->{website_status}->{terms_conditions_version}, BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
 
+## exchage_rates
+$res = $t->await::exchange_rates({exchange_rates => 1, base_currency => "USD"});
+is $res->{msg_type}, 'exchange_rates', 'Exchange rates received';
+test_schema('exchange_rates', $res);
+
 $t->finish_ok;
 
 done_testing();
