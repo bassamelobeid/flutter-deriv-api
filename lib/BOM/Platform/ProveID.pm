@@ -44,7 +44,7 @@ sub get_result {
 }
 
 sub has_done_request {
-    my $self = shift;
+    my $self   = shift;
     my $client = $self->{client};
 
     # Experian request has been sent if either of proveid pending or received is set
