@@ -26,7 +26,7 @@
        				[% FOREACH atm IN data.closed_pl.pl.$index.$market.$expiry.keys.sort %]
           				[% IF atm != 'total_closed_pl' %]
                              <h3 style="outline: none">
-                                <strong>[% atm == 'atm' ? atm : 'non_atm (including digits)' %] :</strong>
+                                <strong>[% atm == 'atm' ? atm : 'non_atm (including digits and lookback)' %] :</strong>
                                 <span style="color: [% data.closed_pl.pl.$index.$market.$expiry.$atm.total_closed_pl > 0 ? 'green' : 'red' %]">
                                       Closed_PL: USD [% data.closed_pl.pl.$index.$market.$expiry.$atm.total_closed_pl %]
                                 <span>
@@ -84,7 +84,7 @@
        				[% FOREACH atm IN data.open_bet.pl.$index.$market.$expiry.keys.sort %]
           				[% IF atm != 'total_payout'  AND atm != 'total_turnover' %]
                              <h3 style="outline: none">
-                                <strong>[% atm == 'atm' ? atm : 'non_atm (including digits)' %] :</strong>
+                                <strong>[% atm == 'atm' ? atm : 'non_atm (including digits and lookback)' %] :</strong>
                                 <span>
                                         Payout: <font color=blue><b>USD [% data.open_bet.pl.$index.$market.$expiry.$atm.total_payout %]</b></font>,
                                         Turnover : <font color=brown><b>USD [% data.open_bet.pl.$index.$market.$expiry.$atm.total_turnover %]</b></font>
