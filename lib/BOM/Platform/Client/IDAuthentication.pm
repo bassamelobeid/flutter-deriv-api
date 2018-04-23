@@ -172,8 +172,7 @@ sub _fetch_proveid {
     }
     my $result = {};
     try {
-        $self->client->set_status('proveid_requested')->save or
-            die 'Failed to save the proveid_requested status in the DB, proveid not requested';
+        $self->client->set_status('proveid_pending');
         $result = BOM::Platform::ProveID->new(
             client        => $self->client,
             search_option => 'ProveID_KYC',
@@ -181,7 +180,8 @@ sub _fetch_proveid {
             force_recheck => $self->force_recheck
         )->get_result;
         # No need for dying here, worst case we have to do proveid again
-        $self->client->set_status('proveid_received')->save;
+        $self->client->clr_status('proveid_pending');
+        $self->client->set_status('proveid_received')
     }
     catch {
         my $brand    = Brands->new(name => request()->brand);
@@ -199,6 +199,7 @@ EOM
             message => [$message],
         });
     };
+    $self->client->save;
     return $result;
 }
 
