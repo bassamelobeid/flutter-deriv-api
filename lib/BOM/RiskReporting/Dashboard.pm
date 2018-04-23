@@ -292,7 +292,6 @@ sub open_contract_exposures {
     my $self      = shift;
     my @open_bets = @{$self->_open_bets_at_end};
     my $final;
-    my $symbol;
     foreach my $open_contract (@open_bets) {
         my $contract = produce_contract($open_contract->{short_code}, $open_contract->{currency_code});
         my $purchase_price = financialrounding('price', 'USD', in_USD($open_contract->{buy_price},    $open_contract->{currency_code}));

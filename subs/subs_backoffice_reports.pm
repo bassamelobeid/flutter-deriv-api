@@ -181,5 +181,4 @@ sub DailyTurnOverReport {
     return %template;
 }
 
-
 1;
