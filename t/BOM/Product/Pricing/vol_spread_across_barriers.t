@@ -21,7 +21,7 @@ use Test::MockModule;
 my $now        = Date::Utility->new('2017-08-07 08:03:27');
 my $underlying = create_underlying('frxEURJPY', $now);
 my $ticks      = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/vol_spread_across_barriers_ticks.yml');
-my $decimator  = BOM::Market::DataDecimate->new({market=>'forex'});
+my $decimator  = BOM::Market::DataDecimate->new({market => 'forex'});
 my $key        = $decimator->_make_key($underlying->symbol, 1);
 foreach my $single_data (@$ticks) {
     $decimator->_update($decimator->redis_write, $key, $single_data->{decimate_epoch}, $decimator->encoder->encode($single_data));
