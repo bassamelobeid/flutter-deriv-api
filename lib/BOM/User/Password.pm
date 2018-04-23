@@ -76,7 +76,7 @@ sub _salt {
 sub hashpw {
     my $password = shift;
     # we need encode password, otherwise it is possible to report the warning "Wide character in subroutine entry";
-    utf8::encode($password);
+    $password = Encode::encode_utf8($password);
     die 'password too long, possible DOS attack' if length($password) > 200;
     my $salt = _salt;
     my $hash = Crypt::ScryptKDF::scrypt_b64($password, $salt);
@@ -101,12 +101,12 @@ my $passwd_check = {
     },
     1 => sub {
         my ($pwhash, $password) = @_;
-        utf8::encode($password);
+        $password = Encode::encode_utf8($password);
         return Mojo::Util::secure_compare($pwhash->{hash}, Crypt::ScryptKDF::scrypt_b64($password, $pwhash->{salt}));
     },
     2 => sub {
         my ($pwhash, $password) = @_;
-        utf8::encode($password);
+        $password = Encode::encode_utf8($password);
         return scrypt_hash_verify($password, $pwhash->{hash});
     }
 };
