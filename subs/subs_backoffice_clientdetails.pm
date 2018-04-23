@@ -10,6 +10,7 @@ use Finance::MIFIR::CONCAT qw(mifir_concat);
 
 use Brands;
 
+use BOM::User::Client;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
@@ -122,12 +123,30 @@ sub print_client_details {
     # User should be accessable from client by loginid
     print "<p style='color:red;'>User doesn't exist. This client is unlinked. Please, investigate.<p>" and die unless $user;
 
+    my $client_for_prove = $client;
+
     unless ($client->is_virtual) {
         # KYC/IDENTITY VERIFICATION SECTION
         $proveID = BOM::Platform::ProveID->new(
             client        => $client,
             search_option => 'ProveID_KYC'
         );
+
+        # When user is from Malta Invest and KYC is not done
+        # check if we have sibling from IOM with KYC Done
+        if ($client->landing_company->short eq 'maltainvest' and !$proveID->has_done_request) {
+            for my $client_iom ($client->user->clients_for_landing_company('iom')) {
+                my $prove = BOM::Platform::ProveID->new(
+                    client        => $client_iom,
+                    search_option => 'ProveID_KYC'
+                );
+                if ($prove->has_done_request) {
+                    $client_for_prove = $client_iom;
+                    $proveID          = $prove;
+                    last;
+                }
+            }
+        }
 
         my $siblings = $user->loginid;
 
@@ -201,6 +220,7 @@ sub print_client_details {
         promo_code_access     => $promo_code_access,
         currency_type => (LandingCompany::Registry::get_currency_type($client->currency) // ''),
         proveID => $proveID,
+        loginid_for_prove              => $client_for_prove->loginid,
         salutation_options             => \@salutation_options,
         secret_answer                  => $secret_answer,
         self_exclusion_enabled         => $self_exclusion_enabled,

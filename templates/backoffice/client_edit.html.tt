@@ -312,13 +312,13 @@ table#client_edit td{
                 END
             %]
 [%
-IF client.landing_company.short == "iom"
+IF client.landing_company.short == "iom" or client.landing_company.short == "maltainvest"
 %]
             <br/>
             [%
                 raw_url  = 'backoffice/view_192_raw_response.cgi';
                 doc_url  = 'backoffice/download_document.cgi';
-                args     = { loginID => client.loginid };
+                args     = { loginID => loginid_for_prove };
                 pdf_args = { broker => client.broker, category => '192_result' };
                 FOREACH auth_request IN [ proveID ];
                     option = auth_request.search_option;
@@ -332,7 +332,7 @@ IF client.landing_company.short == "iom"
                         <a class="lspace" target="_blank" href="[% href_xml | none %]">[XML]</a>
                 [%
                         IF auth_request.has_downloaded_pdf;
-                            pdf_args.path = "pdf/${client.loginid}.${option}.pdf";
+                            pdf_args.path = "pdf/${loginid_for_prove}.${option}.pdf";
                 %]
                             <a class="lspace" target="_blank" href="[% request.url_for(doc_url, pdf_args) | none %]">[PDF]</a>
                         [% END %]
