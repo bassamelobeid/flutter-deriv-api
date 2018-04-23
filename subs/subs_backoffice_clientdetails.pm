@@ -10,7 +10,6 @@ use Finance::MIFIR::CONCAT qw(mifir_concat);
 
 use Brands;
 
-use BOM::User::Client;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
