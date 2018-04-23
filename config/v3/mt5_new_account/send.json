@@ -65,7 +65,7 @@
     "zipCode": {
       "type" : "string",
       "maxLength": 50,
-      "description": "[Optional] User's zip code."
+      "description": "[Optional] User's zip code. Max length 50."
     },
     "country": {
       "type" : "string",
@@ -80,12 +80,12 @@
     "phone": {
       "type" : "string",
       "pattern": "^\\+?\\d{0,50}$",
-      "description": "[Optional] User's phone number. Max length 50"
+      "description": "[Optional] User's phone number. Max length 50."
     },
     "phonePassword": {
       "type": "string",
       "maxLength": 50,
-      "description": "the user's phone password."
+      "description": "the user's phone password. Max length 50."
     },
     "manager_id": {
       "type": "integer",
