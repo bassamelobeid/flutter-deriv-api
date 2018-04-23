@@ -13,7 +13,7 @@ my $client;
 
 is_deeply [sort { $a cmp $b } keys %{BOM::User::Client::client_status_types()}], [
     sort { $a cmp $b }
-        qw/age_verification cashier_locked disabled unwelcome withdrawal_locked ukgc_funds_protection tnc_approval crs_tin_information financial_risk_approval ukrts_max_turnover_limit_not_set jp_knowledge_test_pending jp_knowledge_test_fail jp_activation_pending jp_transaction_detail migrated_single_email duplicate_account document_under_review document_needs_action
+        qw/age_verification cashier_locked disabled unwelcome withdrawal_locked ukgc_funds_protection proveid_pending proveid_received tnc_approval crs_tin_information financial_risk_approval ukrts_max_turnover_limit_not_set jp_knowledge_test_pending jp_knowledge_test_fail jp_activation_pending jp_transaction_detail migrated_single_email duplicate_account document_under_review document_needs_action
         professional_requested professional/
     ],
     "correct number of client status";
