@@ -45,7 +45,8 @@ sub find_loginids_with_pending_experian {
     my $broker = shift;
     my $dbic   = get_db_for_broker($broker)->dbic;
 
-    return $dbic->run(fixup => sub {
+    return $dbic->run(
+        fixup => sub {
             $_->selectall_arrayref(<<'SQL') });
 select client_loginid from betonmarkets.client_status
 where status_code = 'proveid_pending' and last_modified_date >= (current_date - '1 month'::interval);
