@@ -48,14 +48,12 @@ subtest 'validate client error message' => sub {
 
     my $now      = Date::Utility->new;
     my $contract = produce_contract({
-        underlying => $underlying,
-        bet_type   => 'CALL',
-        currency   => $currency,
-        payout     => 1000,
-        #    date_start   => $now,
-        duration     => '5d',
-        current_tick => $tick,
-        barrier      => 'S0P',
+        underlying    => $underlying,
+        bet_type      => 'TICKHIGH',
+        currency      => $currency,
+        payout        => 1000,
+        duration      => '5t',
+        selected_tick => 3,
     });
 
     my $cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
@@ -73,16 +71,15 @@ subtest 'validate client error message' => sub {
 
     like($error->{-message_to_client}, qr/Try out the Volatility Indices/, 'CR client got message about Volatility Indices');
 
-# same params, but new object - not to hold prev error
+    # same params, but new object - not to hold prev error
     $contract = produce_contract({
-        underlying   => $underlying,
-        bet_type     => 'CALL',
-        currency     => $currency,
-        payout       => 1000,
-        date_start   => $now,
-        duration     => '5d',
-        current_tick => $tick,
-        barrier      => 'S0P',
+        underlying    => $underlying,
+        bet_type      => 'TICKLOW',
+        currency      => $currency,
+        payout        => 1000,
+        date_start    => $now,
+        duration      => '5t',
+        selected_tick => 3,
     });
     my $mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MF'});
 
