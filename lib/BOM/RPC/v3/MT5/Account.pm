@@ -276,8 +276,6 @@ async_rpc mt5_new_account => sub {
         $group .= '_mamm' if $manager_id;
 
         $group .= "_$mt5_account_type" if $account_type eq 'financial';
-        $group .= "_$residence" if $brand->country_has_own_mt5_group($residence);
-
         $group .= "_$manager_id" if $manager_id;
     }
 
