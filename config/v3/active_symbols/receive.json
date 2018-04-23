@@ -20,6 +20,10 @@
             "type": "integer",
             "description": "1 if the symbol is tradable in a forward starting contract, 0 if not."
           },
+          "delay_amount": {
+            "type": "integer",
+            "description": "Amount the data feed is delayed (in minutes) due to Exchange licensing requirements. Only returned on `full` active symbols call."
+          },
           "display_name": {
             "type": "string",
             "description": "Display name.",
@@ -30,61 +34,52 @@
             "description": "1 if market is currently open, 0 if closed.",
             "required": "1"
           },
-          "symbol": {
+          "exchange_name": {
             "type": "string",
-            "description": "Binary.com symbol code for this underlying.",
-            "required": "1"
+            "description": "Exchange name (for underlyings listed on a Stock Exchange). Only returned on `full` active symbols call."
           },
           "intraday_interval_minutes": {
             "type": "integer",
-            "description": "Intraday interval minutes."
-          },
-          "symbol_type": {
-            "type": "string",
-            "description": "Symbol type (forex, commodities, etc).",
-            "required": "1"
-          },
-          "exchange_name": {
-            "type": "string",
-            "description": "Exchange name (for underlyings listed on a Stock Exchange)."
-          },
-          "delay_amount": {
-            "type": "integer",
-            "description": "Amount the data feed is delayed (in minutes) due to Exchange licensing requirements."
-          },
-          "spot": {
-            "type": [
-              "number",
-              "null"
-            ],
-            "description": "Latest spot price of the underlying."
-          },
-          "spot_time": {
-            "type": "string",
-            "description": "Latest spot epoch time."
+            "description": "Intraday interval minutes. Only returned on `full` active symbols call."
           },
           "is_trading_suspended": {
             "type": "integer",
-            "description": "1 indicates that trading is currently suspended.",
+            "description": "1 indicates that trading is currently suspended, 0 if not.",
             "required": "1"
-          },
-          "quoted_currency_symbol": {
-            "type": "string",
-            "description": "For stocks and stock indices, the underlying currency for that instrument."
-          },
-          "spot_age": {
-            "type": "string",
-            "description": "Number of seconds elapsed since the last spot price."
           },
           "market": {
             "type": "string",
-            "description": "Market category (forex, indices etc).",
+            "description": "Market category (forex, indices, etc).",
             "required": "1"
           },
           "market_display_name": {
             "type": "string",
             "description": "Translated market name.",
             "required": "1"
+          },
+          "pip": {
+            "type": "number",
+            "description": "Pip size (i.e. minimum fluctuation amount).",
+            "required": "1"
+          },
+          "quoted_currency_symbol": {
+            "type": "string",
+            "description": "For stocks and stock indices, the underlying currency for that instrument. Only returned on `full` active symbols call."
+          },
+          "spot": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Latest spot price of the underlying. Only returned on `full` active symbols call."
+          },
+          "spot_age": {
+            "type": "string",
+            "description": "Number of seconds elapsed since the last spot price. Only returned on `full` active symbols call."
+          },
+          "spot_time": {
+            "type": "string",
+            "description": "Latest spot epoch time. Only returned on `full` active symbols call."
           },
           "submarket": {
             "type": "string",
@@ -96,9 +91,14 @@
             "description": "Translated submarket name.",
             "required": "1"
           },
-          "pip": {
-            "type": "number",
-            "description": "Pip size (i.e. minimum fluctuation amount).",
+          "symbol": {
+            "type": "string",
+            "description": "Binary.com symbol code for this underlying.",
+            "required": "1"
+          },
+          "symbol_type": {
+            "type": "string",
+            "description": "Symbol type (forex, commodities, etc).",
             "required": "1"
           }
         }
