@@ -133,7 +133,7 @@ sub print_client_details {
 
         # When user is from Malta Invest and KYC is not done
         # check if we have sibling from IOM with KYC Done
-        if ($client->landing_company->short eq 'maltainvest' and !$proveID->has_done_request) {
+        if ($client->landing_company->short eq 'maltainvest' && !$proveID->has_done_request) {
             for my $client_iom ($client->user->clients_for_landing_company('iom')) {
                 my $prove = BOM::Platform::ProveID->new(
                     client        => $client_iom,
