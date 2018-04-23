@@ -1230,9 +1230,11 @@ async_rpc mt5_mamm => sub {
 
             return Future->fail('MT5Error', $settings->{error}) if (ref $settings eq 'HASH' and $settings->{error});
 
-            return Future->fail('PermissionDenied',
-                localize('Please withdraw your balance amount before revoking manager associated with your account.'))
-                if ($action and $action eq 'revoke' and ($settings->{balance} // 0) > 0);
+            return Future->fail(
+                'PermissionDenied',
+                localize(
+                    "You need to ensure that you don't have open positions and withdraw your MT5 account balance before revoking the manager associated with your account."
+                )) if ($action and $action eq 'revoke' and ($settings->{balance} // 0) > 0);
 
             # to revoke manager we just disable trading for mt5 account
             # we cannot change group else accounting team will have problem during
@@ -1271,9 +1273,11 @@ async_rpc mt5_mamm => sub {
                     return Future->fail('MT5Error', $open_positions->{error})
                         if (ref $open_positions eq 'HASH' and $open_positions->{error});
 
-                    return Future->fail('PermissionDenied',
-                        localize('Please close out all open positions before revoking manager associated with your account.'))
-                        if $open_positions;
+                    return Future->fail(
+                        'PermissionDenied',
+                        localize(
+                            "You need to ensure that you don't have open positions and withdraw your MT5 account balance before revoking the manager associated with your account."
+                        )) if $open_positions;
 
                     $settings->{rights} += 4;
                     return BOM::MT5::User::Async::update_mamm_user($settings)->then(
