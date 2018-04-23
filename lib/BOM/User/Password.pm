@@ -5,7 +5,7 @@ use warnings;
 use Crypt::ScryptKDF qw(scrypt_hash scrypt_hash_verify);
 use Crypt::Salt;
 use Digest::SHA;
-
+use Encode;
 use Mojo::Util;
 
 =head1 NAME
