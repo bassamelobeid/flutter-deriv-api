@@ -178,12 +178,12 @@ subtest 'touch/notouch' => sub {
         });
     my @test_cases = (
         # OTM ONETOUCH
-        [0.001, 'frxUSDJPY', 'ONETOUCH', 100, 99.951, 'OTM_1', 0.1],
-        [0.001, 'frxUSDJPY', 'ONETOUCH', 100, 99.949, 'OTM_2', 0.2],
-        [0.001, 'frxUSDJPY', 'ONETOUCH', 100, 99.899, 'OTM_3', 0.3],
-        [0.001, 'frxUSDJPY', 'ONETOUCH', 99.951, 100, 'OTM_1', 0.1],
-        [0.001, 'frxUSDJPY', 'ONETOUCH', 99.949, 100, 'OTM_2', 0.2],
-        [0.001, 'frxUSDJPY', 'ONETOUCH', 99.899, 100, 'OTM_3', 0.3],
+        [0.001, 'frxUSDJPY', 'ONETOUCH', 100,    99.951, 'OTM_1', 0.1],
+        [0.001, 'frxUSDJPY', 'ONETOUCH', 100,    99.949, 'OTM_2', 0.2],
+        [0.001, 'frxUSDJPY', 'ONETOUCH', 100,    99.899, 'OTM_3', 0.3],
+        [0.001, 'frxUSDJPY', 'ONETOUCH', 99.951, 100,    'OTM_1', 0.1],
+        [0.001, 'frxUSDJPY', 'ONETOUCH', 99.949, 100,    'OTM_2', 0.2],
+        [0.001, 'frxUSDJPY', 'ONETOUCH', 99.899, 100,    'OTM_3', 0.3],
     );
 
     foreach my $test (@test_cases) {
@@ -192,7 +192,11 @@ subtest 'touch/notouch' => sub {
         $args->{bet_type}   = $test->[2];
         $mock_contract->mock('current_spot', sub { $test->[3] });
         $mock_barrier->mock('as_absolute', sub { $test->[4] });
-        my $c = produce_contract({%$args, product_type => 'multi_barrier', trading_period_start => time});
+        my $c = produce_contract({
+            %$args,
+            product_type         => 'multi_barrier',
+            trading_period_start => time
+        });
         is $c->barrier_tier, $test->[5],
             'barrier tier is ' . $c->barrier_tier . ' for point difference ' . ($test->[3] - $test->[4]) . " on $args->{underlying}";
         is $c->pricing_engine->event_markup->amount, $test->[6], 'event markup is ' . $c->pricing_engine->event_markup->amount;
