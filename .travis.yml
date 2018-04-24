@@ -29,6 +29,7 @@ before_install:
       regentmarkets/bom-test
       regentmarkets/bom-postgres
       regentmarkets/bom-platform
+      regentmarkets/perl-postgres-feeddb
       binary-com/translations-websockets-api
 
     - /tmp/travis-scripts/postgres_restart.sh
