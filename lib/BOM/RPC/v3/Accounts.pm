@@ -1683,9 +1683,7 @@ rpc get_financial_assessment => sub {
         if ($data) {
             my %score_keys = map { $_ => 1 } qw(total_score financial_information_score trading_score cfd_score);
             foreach my $key (keys %$data) {
-                unless (exists $score_keys->{$key}) {
-                    $response->{$key} = $data->{$key}->{answer};
-                }
+                $response->{$key} = $data->{$key}->{answer} if not exists $score_keys{$key};
             }
 
             for (keys %score_keys) {
