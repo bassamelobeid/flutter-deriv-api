@@ -22,8 +22,6 @@ use Math::Business::BlackScholes::Binaries::Greeks::Vanna;
 use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 use Math::Business::BlackScholes::Binaries::Greeks::Volga;
 
-use Math::Business::Lookback::Greeks::Delta;
-
 has bet => (
     is       => 'ro',
     isa      => 'BOM::Product::Contract',
