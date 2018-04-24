@@ -2,7 +2,22 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
-    "score": {
+    "total_score": {
+      "type": "integer",
+      "pattern": "^[_2]$",
+      "required": "1"
+    },
+    "cfd_score": {
+      "type": "integer",
+      "pattern": "^[_2]$",
+      "required": "1"
+    },
+    "financial_information_score": {
+      "type": "integer",
+      "pattern": "^[_2]$",
+      "required": "1"
+    },
+    "trading_score": {
       "type": "integer",
       "pattern": "^[_2]$",
       "required": "1"
