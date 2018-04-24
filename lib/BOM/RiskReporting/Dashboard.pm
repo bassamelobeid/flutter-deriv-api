@@ -294,8 +294,8 @@ sub open_contract_exposures {
     my $final;
     foreach my $open_contract (@open_bets) {
         my $contract = produce_contract($open_contract->{short_code}, $open_contract->{currency_code});
-        my $purchase_price = financialrounding('price', 'USD', in_USD($open_contract->{buy_price},    $open_contract->{currency_code}));
-        my $payout_price   = financialrounding('price', 'USD', in_USD($open_contract->{payout_price}, $open_contract->{currency_code}));
+        my $purchase_price = in_USD($open_contract->{buy_price},    $open_contract->{currency_code});
+        my $payout_price   = in_USD($open_contract->{payout_price}, $open_contract->{currency_code});
 
         if ($contract->is_intraday) {
 
@@ -342,7 +342,7 @@ sub closed_contract_exposures {
         my $market      = create_underlying($underlying)->market->name;
         my $expiry_type = $closed->[$i][1] == 1 ? 'daily' : 'intraday';
         my $atm_type    = $closed->[$i][2] == 1 ? 'atm' : 'non_atm';
-        my $closed_pl   = financialrounding('price', 'USD', $closed->[$i][3]);
+        my $closed_pl   = $closed->[$i][3];
         $summary->{$market}->{total_closed_pl}                              += $closed_pl;
         $summary->{$market}->{$expiry_type}->{total_closed_pl}              += $closed_pl;
         $summary->{$market}->{$expiry_type}->{$atm_type}->{total_closed_pl} += $closed_pl;
@@ -362,11 +362,20 @@ sub sorting_data {
     my $sorting_arg = $for eq 'open_bet' ? 'total_payout' : 'total_closed_pl';
 
     foreach my $market (keys %$final) {
-        next if $market =~ /total/;
+        if ($market =~ /total/) {
+            $final->{$market} = financialrounding('price', 'USD', $final->{$market});
+            next;
+        }
         foreach my $expiry (keys %{$final->{$market}}) {
-            next if $expiry =~ /total/;
+            if ($expiry =~ /total/) {
+                $final->{$market}->{$expiry} = financialrounding('price', 'USD', $final->{$market}->{$expiry});
+                next;
+            }
             foreach my $atm (keys %{$final->{$market}->{$expiry}}) {
-                next if $atm =~ /total/;
+                if ($atm =~ /total/) {
+                    $final->{$market}->{$expiry}->{$atm} = financialrounding('price', 'USD', $final->{$market}->{$expiry}->{$atm});
+                    next;
+                }
                 my @sorted_by_underlying =
                     $for eq 'open_bet'
                     ? map { [$_, $final->{$market}->{$expiry}->{$atm}->{$_}->{payout}, $final->{$market}->{$expiry}->{$atm}->{$_}->{turnover}] }
@@ -380,10 +389,11 @@ sub sorting_data {
                     delete $final->{$market}->{$expiry}->{$atm}->{$sorted_by_underlying[$i][0]};
                     if ($for eq 'open_bet') {
                         $final->{$market}->{$expiry}->{$atm}->{$i}->{$sorted_by_underlying[$i][0]} = {
-                            payout   => $sorted_by_underlying[$i][1],
-                            turnover => $sorted_by_underlying[$i][2]};
+                            payout   => financialrounding('price', 'USD', $sorted_by_underlying[$i][1]),
+                            turnover => financialrounding('price', 'USD', $sorted_by_underlying[$i][2])};
                     } else {
-                        $final->{$market}->{$expiry}->{$atm}->{$i}->{$sorted_by_underlying[$i][0]}->{pl} = $sorted_by_underlying[$i][1];
+                        $final->{$market}->{$expiry}->{$atm}->{$i}->{$sorted_by_underlying[$i][0]}->{pl} =
+                            financialrounding('price', 'USD', $sorted_by_underlying[$i][1]);
                     }
                 }
             }
