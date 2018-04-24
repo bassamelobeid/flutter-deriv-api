@@ -468,9 +468,8 @@ sub validate_make_new_account {
 
         return create_error({
                 code              => 'UnwelcomeAccount',
-                message_to_client => localize('You cannot perform this action, as your account [_1] is marked as unwelcome.', $client->loginid)})
-            if $client->get_status('unwelcome')
-            and $landing_company_name eq 'iom';
+                message_to_client => localize('You cannot perform this action, as your account [_1] is marked as unwelcome.', $client->loginid)}
+        ) if $client->get_status('unwelcome');
 
         # if from malta and account type is maltainvest, assign
         # maltainvest to landing company as client is upgrading
@@ -515,17 +514,6 @@ sub validate_make_new_account {
     # send error if number of crypto account of client is same
     # as number of crypto account supported by landing company
     return $error if ($lc_num_crypto eq $client_num_crypto);
-
-    return undef;
-}
-
-sub _validate_iom_client {
-    my $client = shift;
-
-    return create_error({
-            code              => 'UnwelcomeAccount',
-            message_to_client => localize('You cannot perform this action, as your account [_1] is marked as unwelcome.', $client->loginid)}
-    ) if $client->get_status('unwelcome');
 
     return undef;
 }
