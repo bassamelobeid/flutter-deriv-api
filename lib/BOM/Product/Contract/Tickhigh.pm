@@ -71,6 +71,11 @@ sub get_permissible_inputs {
         'sentiment'                  => 1,
         'display_name'               => 1,
 
+        # Proposal inputs
+        'country_code' => 1,
+        'product_type' => 1,
+        'proposal'     => 1,
+
         # Metadata inputs
         'shortcode'             => 1,
         'duration'              => 1,
