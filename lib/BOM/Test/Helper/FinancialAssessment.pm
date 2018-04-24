@@ -41,9 +41,10 @@ sub _get_with_selector {
     my $func = shift;
     my $h    = BOM::Platform::Account::Real::default::get_financial_input_mapping();
     my %r    = map {
-        my $k = $_;
-        map { $_ => $func->($h->{$k}->{$_}->{possible_answer}) } keys %{$h->{$k}}
-    } keys %$h;
+        my $inner = $_;
+        map { $_ => $func->($inner->{$_}->{possible_answer}) } keys %$inner
+    } values %$h;
+
     return \%r;
 }
 
