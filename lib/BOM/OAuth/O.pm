@@ -32,10 +32,13 @@ sub authorize {
 
     # APP_ID verification logic
     my ($app_id, $state) = map { defang($c->param($_)) // undef } qw/ app_id state /;
+
     return $c->_bad_request('the request was missing app_id') unless $app_id;
     return $c->_bad_request('the request was missing valid app_id') if ($app_id !~ /^\d+$/);
+
     my $oauth_model = _oauth_model();
     my $app         = $oauth_model->verify_app($app_id);
+
     return $c->_bad_request('the request was missing valid app_id') unless $app;
 
     # setup oneall callback url
@@ -43,30 +46,41 @@ sub authorize {
     $c->stash('oneall_callback' => $oneall_callback);
 
     my $brand_name = BOM::OAuth::Helper->extract_brand_from_params($c->stash('request')->params) // $c->stash('brand')->name;
+
     # load available networks for brand
     $c->stash('login_providers' => Brands->new(name => $brand_name)->login_providers);
 
     my $client;
+
     # try to retrieve client from session
+
     if (    $c->req->method eq 'POST'
         and ($c->csrf_token eq (defang($c->param('csrf_token')) // ''))
         and defang($c->param('login')))
     {
+
         $client = $c->_login($app) or return;
         $c->session('_is_logined', 1);
         $c->session('_loginid',    $client->loginid);
+
     } elsif ($c->req->method eq 'POST' and $c->session('_is_logined')) {
+
         # Get loginid from Mojo Session
         $client = $c->_get_client;
+
     } elsif ($c->session('_oneall_user_id')) {
+
         # Prevent Japan IP access social login feature.
         if ($c->stash('request')->country_code ne 'jp') {
+
             # Get client from Oneall Social Login.
             my $oneall_user_id = $c->session('_oneall_user_id');
             $client = $c->_login($app, $oneall_user_id) or return;
             $c->session('_is_logined', 1);
             $c->session('_loginid',    $client->loginid);
+
         }
+
     }
 
     my %template_params = (
@@ -154,8 +168,10 @@ sub authorize {
     my $loginid = $client->loginid;
     $is_all_approved = 1 if $app_id eq '1';
     $is_all_approved ||= $oauth_model->is_scope_confirmed($app_id, $loginid);
+
     # show scope confirms if not yet approved
     # do not show the scope confirm screen if APP ID is 1
+
     return $c->render(
         template   => $brand_name . '/scope_confirms',
         layout     => $brand_name,
@@ -167,6 +183,7 @@ sub authorize {
     ) unless $is_all_approved;
 
     # setting up client ip
+
     my $client_ip = $c->client_ip;
     if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
         $client_ip = $c->tx->req->headers->header('REMOTE_ADDR');
@@ -198,6 +215,7 @@ sub authorize {
     delete $c->session->{_loginid};
     delete $c->session->{_oneall_user_id};
     delete $c->session->{_otp_verified};
+    $c->session(expires => 1);
 
     $c->redirect_to($uri);
 }
@@ -223,7 +241,9 @@ sub _login {
                 $err = localize('Invalid user.');
                 last;
             }
+
         } else {
+
             if (not $email or not Email::Valid->address($email)) {
                 $err = localize('Email not given.');
                 last;
@@ -235,10 +255,12 @@ sub _login {
             }
 
             $user = BOM::User->new({email => $email});
+
             unless ($user) {
                 $err = localize('Incorrect email or password.');
                 last;
             }
+
             # Prevent login if social signup flag is found.
             # As the main purpose of this controller is to serve
             # clients with email/password only.
@@ -246,6 +268,7 @@ sub _login {
                 $err = localize('Invalid login attempt. Please log in with a social network instead.');
                 last;
             }
+
         }
 
         if (BOM::Platform::Runtime->instance->app_config->system->suspend->all_logins) {
@@ -256,6 +279,7 @@ sub _login {
 
         # get last login before current login to get last record
         $last_login = $user->get_last_successful_login_history();
+
         my $result = $user->login(
             password        => $password,
             environment     => $c->_login_env(),
@@ -275,7 +299,7 @@ sub _login {
     }
 
     if ($err) {
-        $c->session(expires => 1);
+
         $c->render(
             template         => _get_login_template_name($brand_name),
             layout           => $brand_name,
@@ -287,7 +311,9 @@ sub _login {
             login_providers  => $c->stash('login_providers'),
             login_method     => undef,
         );
+
         return;
+
     }
 
     my $r       = $c->stash('request');

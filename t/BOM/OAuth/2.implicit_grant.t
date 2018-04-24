@@ -73,12 +73,12 @@ ok $csrf_token, 'csrf_token is there';
 BOM::Platform::Runtime->instance->app_config->system->suspend->all_logins(1);
 
 $t->post_ok(
-            "/authorize?app_id=$app_id" => form => {
-                                                    login      => 1,
-                                                    email      => $email,
-                                                    password   => $password,
-                                                    csrf_token => $csrf_token
-                                                   });
+    "/authorize?app_id=$app_id" => form => {
+        login      => 1,
+        email      => $email,
+        password   => $password,
+        csrf_token => $csrf_token
+    });
 
 $t = $t->content_like(qr/Login to this account has been temporarily disabled due to system maintenance/);
 
