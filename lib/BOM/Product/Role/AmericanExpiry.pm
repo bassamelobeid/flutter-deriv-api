@@ -63,7 +63,7 @@ sub _build_hit_tick {
         $hit_conditions{end_time}   = $self->date_expiry;
 
         if ($self->tick_expiry) {
-            $tick = $self->get_tick_expiry_hit_tick(%hit_condition);
+            $tick = $self->get_tick_expiry_hit_tick(%hit_conditions);
         } else {
             $tick = $self->underlying->breaching_tick(%hit_conditions);
         }
