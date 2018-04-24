@@ -319,7 +319,7 @@ IF client_for_prove
                 raw_url  = 'backoffice/view_192_raw_response.cgi';
                 doc_url  = 'backoffice/download_document.cgi';
                 args     = { loginID => client_for_prove.loginid };
-                pdf_args = { broker => client.broker, category => '192_result' };
+                pdf_args = { broker => client_for_prove.broker, category => '192_result' };
                 FOREACH auth_request IN [ proveID ];
                     option = auth_request.search_option;
                     IF auth_request.has_done_request;
