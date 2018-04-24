@@ -16,7 +16,7 @@ for my $broker (qw/MF MX/) {
     my $pending_loginids = find_loginids_with_pending_experian($broker);
 
     for my $loginid (@$pending_loginids) {
-        my ($pdf_exists, $xml_exists) = -e get_filename($broker, $loginid, 'pdf'), -e get_filename($broker, $loginid, 'xml');
+        my ($xml_exists, $pdf_exists) = -e get_filename($broker, $loginid), -e get_filename($broker, $loginid, '.pdf');
 
         if ($pdf_exists && $xml_exists) {
             # Files exists but status is not set, set the status and skip
@@ -55,15 +55,17 @@ SQL
 }
 
 sub get_filename {
-    my ($broker, $loginid, $type) = @_;
+    my ($broker, $loginid, $extension) = @_;
 
-    return "$accounts_dir/$broker/192com_authentication/pdf/$loginid.$so.$type";
+    $extension //= "";
+
+    return "$accounts_dir/$broker/192com_authentication/pdf/$loginid.$so$extension";
 }
 
 sub request_pdf {
     my ($broker, $loginid) = @_;
 
-    my $result_as_xml = path(get_filename($broker, $loginid, 'xml'))->slurp_utf8;
+    my $result_as_xml = path(get_filename($broker, $loginid))->slurp_utf8;
 
     my $client = get_client($loginid);
 
