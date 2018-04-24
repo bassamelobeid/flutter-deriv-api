@@ -135,7 +135,7 @@ sub get_mt5_logins {
                 if (ref $setting eq 'HASH' && $setting->{group}) {
                     $acc->{group} = $setting->{group};
                 }
-                $setting  = _extract_settings($setting);
+                $setting = _extract_settings($setting);
                 @{$acc}{keys %$setting} = values %$setting;
                 return Future->needs_all(
                     mt5_mamm({
@@ -147,7 +147,7 @@ sub get_mt5_logins {
             )->then(
             sub {
                 my ($mamm, $acc) = @_;
-                $acc = {%$acc, %$mamm};
+                @{$acc}{keys %$mamm} = values %$mamm;
                 return Future->done($acc);
             });
     }
@@ -546,20 +546,20 @@ async_rpc mt5_get_settings => sub {
 
 sub _extract_settings {
     my ($settings, $additional_keys) = @_;
-    my @allowed_keys  = qw/login email group balance name country currency company leverage/;
+    my @allowed_keys = qw/login email group balance name company leverage/;
+    my $filtered_settings;
     @allowed_keys = (@allowed_keys, @$additional_keys) if defined $additional_keys;
     if (my $country = $settings->{country}) {
         my $country_code = Locale::Country::Extra->new()->code_from_country($country);
         if ($country_code) {
-            $settings->{country} = $country_code;
+            $filtered_settings->{country} = $country_code;
         } else {
             warn "Invalid country name $country for mt5 settings, can't extract code from Locale::Country::Extra";
         }
     }
-    $settings->{currency} = $settings->{group} =~ /vanuatu|costarica|demo/ ? 'USD' : 'EUR';
-    my $res;
-    @{$res}{@allowed_keys} = @{$settings}{@allowed_keys};
-    return $res;
+    $filtered_settings->{currency} = $settings->{group} =~ /vanuatu|costarica|demo/ ? 'USD' : 'EUR';
+    @{$filtered_settings}{@allowed_keys} = @{$settings}{@allowed_keys};
+    return $filtered_settings;
 }
 
 =head2 mt5_set_settings
