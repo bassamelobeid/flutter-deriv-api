@@ -12,35 +12,43 @@
     },
     "forex_trading_experience": {
       "enum": [ "0-1 year", "1-2 years", "Over 3 years" ],
-      "description": "Forex trading experience"
+      "description": "Forex trading experience",
+      "required": "0"
     },
     "forex_trading_frequency": {
       "enum": [ "0-5 transactions in the past 12 months", "6-10 transactions in the past 12 months", "40 transactions or more in the past 12 months" ],
-      "description": "Forex trading frequency"
+      "description": "Forex trading frequency",
+      "required": "0"
     },
     "binary_options_trading_experience": {
       "enum": [ "0-1 year", "1-2 years", "Over 3 years" ],
-      "description": "Binary options trading experience"
+      "description": "Binary options trading experience",
+      "required": "0"
     },
     "binary_options_trading_frequency": {
       "enum": [ "0-5 transactions in the past 12 months", "6-10 transactions in the past 12 months", "40 transactions or more in the past 12 months" ],
-      "description": "Binary options trading frequency"
+      "description": "Binary options trading frequency",
+      "required": "0"
     },
     "cfd_trading_experience": {
       "enum": [ "0-1 year", "1-2 years", "Over 3 years" ],
-      "description": "CFDs trading experience"
+      "description": "CFDs trading experience",
+      "required": "0"
     },
     "cfd_trading_frequency": {
       "enum": [ "0-5 transactions in the past 12 months", "6-10 transactions in the past 12 months", "40 transactions or more in the past 12 months" ],
-      "description": "CFDs trading frequency"
+      "description": "CFDs trading frequency",
+      "required": "0"
     },
     "other_instruments_trading_experience": {
       "enum": [ "0-1 year", "1-2 years", "Over 3 years" ],
-      "description": "Trading experience in other financial instruments"
+      "description": "Trading experience in other financial instruments",
+      "required": "0"
     },
     "other_instruments_trading_frequency": {
       "enum": [ "0-5 transactions in the past 12 months", "6-10 transactions in the past 12 months", "40 transactions or more in the past 12 months" ],
-      "description": "Trading frequency in other financial instruments"
+      "description": "Trading frequency in other financial instruments",
+      "required": "0"
     },
     "employment_industry": {
       "enum": [ "Construction", "Education", "Finance", "Health", "Tourism", "Other" ],
