@@ -361,10 +361,7 @@ rpc new_account_maltainvest => sub {
     }
 
     my $input_mappings = BOM::Platform::Account::Real::default::get_financial_input_mapping();
-    my %financial_data = map {
-        my $k = $_;
-        map { $_ => $params->{args}->{$_} } keys %{$input_mappings->{$k}}
-    } keys %{$input_mappings};
+    my %financial_data = map { $_ => $params->{args}->{$_} } BOM::RPC::v3::Utility::keys_of_values $input_mappings;
 
     my $user = $client->user;
 

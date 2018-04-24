@@ -511,10 +511,7 @@ rpc get_account_status => sub {
     $financial_assessment = ref($financial_assessment) ? $json->decode($financial_assessment->data || '{}') : {};
 
     my $input_mappings = BOM::Platform::Account::Real::default::get_financial_input_mapping();
-    my %financial_data = map {
-        my $k = $_;
-        map { $_ => $params->{args}->{$_} } keys %{$input_mappings->{$k}}
-    } keys %{$input_mappings};
+    my %financial_data = map { $_ => $params->{args}->{$_} } BOM::RPC::v3::Utility::keys_of_values $input_mappings;
 
     push @status,
         'financial_assessment_not_complete'
@@ -1637,11 +1634,8 @@ rpc set_financial_assessment => sub {
 
     my ($response, $subject, $message);
     try {
-        my $input_mappings = BOM::Platform::Account::Real::default::get_financial_input_mapping();
-        my %financial_data = map {
-            my $k = $_;
-            map { $_ => $params->{args}->{$_} } keys %{$input_mappings->{$k}}
-        } keys %{$input_mappings};
+        my $input_mappings       = BOM::Platform::Account::Real::default::get_financial_input_mapping();
+        my %financial_data       = map { $_ => $params->{args}->{$_} } BOM::RPC::v3::Utility::keys_of_values $input_mappings;
         my $financial_evaluation = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
 
         my $user = $client->user;
@@ -1687,13 +1681,14 @@ rpc get_financial_assessment => sub {
     if ($financial_assessment) {
         my $data = $json->decode($financial_assessment->data);
         if ($data) {
+            my %score_keys = map { $_ => 1 } qw(total_score financial_information_score trading_score cfd_score);
             foreach my $key (keys %$data) {
-                unless ($key =~ /^total_score|financial_information_score|trading_score|cfd_score$/) {
+                unless (exists $score_keys->{$key}) {
                     $response->{$key} = $data->{$key}->{answer};
                 }
             }
 
-            for (qw(total_score cfd_score trading_score financial_information_score)) {
+            for (keys %score_keys) {
                 $response->{$_} = $data->{$_} // 0;
             }
         }

@@ -602,6 +602,11 @@ sub validate_uri {
     return undef;
 }
 
+sub keys_of_values {
+    my $href = shift;
+    return map { keys %$ } values %$href;
+}
+
 sub set_professional_status {
     my ($client, $professional, $professional_requested) = @_;
 
