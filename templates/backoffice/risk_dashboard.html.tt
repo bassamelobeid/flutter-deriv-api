@@ -3,9 +3,11 @@
 <div id="rd-tabs">
   <ul>
     <li><a href="#rd-summary">Client Summary</a></li>
-    <li><a href="#rd-pivot">Pivot</a></li>
+    <li><a href="#rd-multibarrier">Multibarrier's Exposures Report</a></li>
+    <li><a href="#rd-exposure">Company's Exposure</a></li>
   </ul>
   <div id="rd-summary">
+        <p> Latest report generated at [% generated_time %] </p>
         <div class="sum_table">
             <h3>Deposits</h3>
             [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = big_deposits, key = 'payments' %]
@@ -36,28 +38,13 @@
             [% INCLUDE 'backoffice/risk_dashboard_affiliate_table.html.tt' affiliates = top_turnover.affiliates, key = 'turnover' %]
         </div>
 <hr/>
-    <div>
-        <h2>Open Postions</h2>
-        <div>
-            <h3>Payouts:</h3>
-            [% INCLUDE 'backoffice/risk_dashboard_bet_table.html.tt' bets = open_bets.big_payouts %]
-        </div>
-        <div>
-            <h3>Gains (MtM >= [% open_bets.mover_limit %]):</h3>
-            [% INCLUDE 'backoffice/risk_dashboard_bet_table.html.tt' bets = open_bets.top_ten_movers %]
-        </div>
-<br>
-        <div>
-            <h3>MtM:</h3>
-            [% INCLUDE 'backoffice/risk_dashboard_bet_table.html.tt' bets = open_bets.big_mtms %]
-        </div>
-    </div>
 </div>
-<div id="rd-pivot">
-[% INCLUDE 'backoffice/risk_dashboard_pivot.html.tt' pivot = open_bets.pivot %]
+<div id="rd-multibarrier"> 
+[% INCLUDE 'backoffice/risk_dashboard_multibarrier.html.tt' data = multibarrier %] 
 </div>
+<div id="rd-exposure">
+[% INCLUDE 'backoffice/risk_dashboard_exposure_monitoring.html.tt' data = exposures_report %]
 </div>
-
 <style type="text/css">
     #rd-summary a:hover {
         color:#060;
