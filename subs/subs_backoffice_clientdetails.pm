@@ -122,16 +122,19 @@ sub print_client_details {
     # User should be accessable from client by loginid
     print "<p style='color:red;'>User doesn't exist. This client is unlinked. Please, investigate.<p>" and die unless $user;
 
-    my $client_for_prove = $client;
+    my $client_for_prove = undef;
 
-    unless ($client->is_virtual) {
+    # If Client is from UK, We check for Prove
+    if ($client->residence eq 'gb') {
+        $client_for_prove = $client;
+
         # KYC/IDENTITY VERIFICATION SECTION
         $proveID = BOM::Platform::ProveID->new(
-            client        => $client,
+            client        => $client_for_prove,
             search_option => 'ProveID_KYC'
         );
 
-        # When user is from Malta Invest and KYC is not done
+        # When Client belongs to Malta Invest and KYC is not done
         # check if we have sibling from IOM with KYC Done
         if ($client->landing_company->short eq 'maltainvest' && !$proveID->has_done_request) {
             for my $client_iom ($client->user->clients_for_landing_company('iom')) {
@@ -146,7 +149,9 @@ sub print_client_details {
                 }
             }
         }
+    }
 
+    unless ($client->is_virtual) {
         my $siblings = $user->loginid;
 
         $show_uploaded_documents .= show_client_id_docs($_->loginid, show_delete => 1) for $client;
@@ -219,7 +224,7 @@ sub print_client_details {
         promo_code_access     => $promo_code_access,
         currency_type => (LandingCompany::Registry::get_currency_type($client->currency) // ''),
         proveID => $proveID,
-        loginid_for_prove              => $client_for_prove->loginid,
+        client_for_prove               => $client_for_prove,
         salutation_options             => \@salutation_options,
         secret_answer                  => $secret_answer,
         self_exclusion_enabled         => $self_exclusion_enabled,
