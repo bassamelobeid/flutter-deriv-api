@@ -1693,7 +1693,7 @@ rpc get_financial_assessment => sub {
                 }
             }
 
-            for (qw(score cfd_score trading_score financial_information_score)) {
+            for (qw(total_score cfd_score trading_score financial_information_score)) {
                 $response->{$_} = $data->{$_} // 0;
             }
         }
