@@ -124,7 +124,7 @@ sub print_client_details {
 
     my $client_for_prove = undef;
 
-    # If Client is from UK, We check for Prove
+    # If client is from UK, check for ProveID
     if ($client->residence eq 'gb') {
         $client_for_prove = $client;
 
@@ -134,8 +134,8 @@ sub print_client_details {
             search_option => 'ProveID_KYC'
         );
 
-        # When Client belongs to Malta Invest and KYC is not done
-        # check if we have sibling from IOM with KYC Done
+        # If client is under Binary Investments (Europe) Ltd and there is no ProveID_KYC,
+        # check whether there is ProveID_KYC under Binary (IOM) Ltd.
         if ($client->landing_company->short eq 'maltainvest' && !$proveID->has_done_request) {
             for my $client_iom ($client->user->clients_for_landing_company('iom')) {
                 my $prove = BOM::Platform::ProveID->new(
