@@ -49,7 +49,7 @@ subtest 'intraday reset' => sub {
     };
     my $c = produce_contract($args);
     ok $c->is_intraday, 'is tick expiry contract';
-   
+
     ok !$c->exit_tick,  'exit tick is undef';
     ok !$c->is_expired, 'not expired yet';
 
@@ -68,7 +68,7 @@ subtest 'intraday reset' => sub {
     delete $args->{date_pricing};
     my $c2 = produce_contract($args);
     ok $c2->is_expired, 'contract is expired once exit tick is obtained';
-    is $c2->exit_tick->quote, 105, 'exit tick is correct';
+    is $c2->exit_tick->quote,     105,      'exit tick is correct';
     is $c2->barrier->as_absolute, '101.00', 'barrier is correct';
 };
 

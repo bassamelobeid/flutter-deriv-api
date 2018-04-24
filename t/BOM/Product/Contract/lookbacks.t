@@ -189,7 +189,7 @@ subtest 'spot_min and spot_max checks' => sub {
     });
     my $c = produce_contract($args);
     note 'high/low are undefined because first tick of the contract is the next tick. Hence using pricing spot as min and max values';
-    is $c->spot_min_max->{low}, 101, 'spot_min is 101';
+    is $c->spot_min_max->{low},  101, 'spot_min is 101';
     is $c->spot_min_max->{high}, 101, 'spot_max is 101';
 
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -201,13 +201,13 @@ subtest 'spot_min and spot_max checks' => sub {
     $args->{date_pricing} = $now->epoch + 1;
     $c = produce_contract($args);
     note 'high/low is 102, which is the next tick';
-    is $c->spot_min_max->{low}, 102, 'spot_min is 102';
+    is $c->spot_min_max->{low},  102, 'spot_min is 102';
     is $c->spot_min_max->{high}, 102, 'spot_max is 102';
 
     $args->{date_pricing} = $now->epoch + 2;
     $c = produce_contract($args);
     note 'high is 103 and low is 102';
-    is $c->spot_min_max->{low}, 102, 'spot_min is 102';
+    is $c->spot_min_max->{low},  102, 'spot_min is 102';
     is $c->spot_min_max->{high}, 103, 'spot_max is 103';
 };
 
