@@ -67,7 +67,7 @@ my $CLIENT_STATUS_TYPES = {
     professional_requested => 1,
     professional           => 1,
     proveid_pending        => 0,
-    proveid_received       => 0,
+    proveid_requested      => 0,
 };
 
 sub client_status_types { return $CLIENT_STATUS_TYPES }
