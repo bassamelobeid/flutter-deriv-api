@@ -20,6 +20,9 @@ use constant {
     MINIMUM_BID_PRICE          => 0,      # can't go negative
 };
 
+# forward declaration for 'requires' to work in BOM::Product::Role::NonBinary
+sub multiplier;
+
 override _build_theo_price => sub {
     my $self = shift;
 
