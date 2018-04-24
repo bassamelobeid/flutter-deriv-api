@@ -61,10 +61,38 @@ sub _build_hit_tick {
         # do not include current tick as the contract starts at next tick.
         $hit_conditions{start_time} = $self->date_start->epoch + 1;
         $hit_conditions{end_time}   = $self->date_expiry;
-        $tick                       = $self->underlying->breaching_tick(%hit_conditions);
+
+        if ($self->tick_expiry) {
+            $tick = $self->get_tick_expiry_hit_tick(%hit_condition);
+        } else {
+            $tick = $self->underlying->breaching_tick(%hit_conditions);
+        }
     }
 
     return $tick;
+}
+
+sub get_tick_expiry_hit_tick {
+    my ($self, %args) = @_;
+
+    my @ticks_since_start = @{$self->get_ticks_for_tick_expiry};
+
+    for (my $i = 0; $i < $#ticks_since_start; $i++) {
+
+        if (    defined $args{higher}
+            and defined $args{lower}
+            and ($ticks_since_start[$i]->quote > $args{higher} or $ticks_since_start[$i] < $args{lower}))
+        {
+            return $ticks_since_start[$i];
+        } elsif (defined $args{higher} and $ticks_since_start[$i]->quote > $args{higher}) {
+            return $ticks_since_start[$i];
+        } elsif (defined $args{lower} and $ticks_since_start[$i]->quote < $args{lower}) {
+            return $ticks_since_start[$i];
+        }
+
+    }
+
+    return undef;
 }
 
 sub get_high_low_for_contract_period {
@@ -92,6 +120,7 @@ sub get_high_low_for_contract_period {
                     start => $start_epoch,
                     end   => $end_epoch,
                 })}{'high', 'low', 'close'};
+
         # The two intraday queries run off different tables, so we have to make sure our consistent
         # exit tick was included. expiry_daily may have differences, but should be fine anyway.
         $ok_through_expiry = 1 if ($exit_tick and $close and ($self->expiry_daily or $exit_tick->quote == $close));
