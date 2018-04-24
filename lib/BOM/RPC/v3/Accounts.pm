@@ -1652,7 +1652,7 @@ rpc set_financial_assessment => sub {
             $cli->save;
         }
 
-        $response = {map { $_ => $financial_evaluation->{$_} } qw(score cfd_score trading_score financial_information_score)};
+        $response = {map { $_ => $financial_evaluation->{$_} } qw(total_score cfd_score trading_score financial_information_score)};
         $subject  = $client_loginid . ' assessment test details have been updated';
         $message  = ["$client_loginid score is " . $financial_evaluation->{total_score}];
     }
