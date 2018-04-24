@@ -49,9 +49,8 @@ sub has_done_request {
     my $self   = shift;
     my $client = $self->{client};
 
-    # Experian request has been sent if either of proveid pending or received is set
     # TODO (Amin Marashi): Remove has_done_request after SRP has been done
-    return $client->get_status('proveid_pending') || $client->get_status('proveid_received') || $self->SUPER::has_done_request;
+    return $client->get_status('proveid_requested') || $self->SUPER::has_done_request;
 }
 
 sub defaults {

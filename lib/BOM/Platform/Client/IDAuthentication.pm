@@ -172,6 +172,7 @@ sub _fetch_proveid {
     }
     my $result = {};
     try {
+        $self->client->set_status('proveid_requested');
         $self->client->set_status('proveid_pending');
         $result = BOM::Platform::ProveID->new(
             client        => $self->client,
@@ -181,7 +182,6 @@ sub _fetch_proveid {
         )->get_result;
         # No need for dying here, worst case we have to do proveid again
         $self->client->clr_status('proveid_pending');
-        $self->client->set_status('proveid_received')
     }
     catch {
         my $brand    = Brands->new(name => request()->brand);
