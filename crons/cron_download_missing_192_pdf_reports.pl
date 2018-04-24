@@ -75,7 +75,7 @@ sub request_pdf {
     eval { BOM::Platform::ProveID->new(client => $client, result_as_xml => $result_as_xml, search_option => $so,)->save_pdf_result }
         or die("Failed to save Experian pdf for " . $client->loginid . ": $@");
 
-    remove_pending_status($loginid);
+    return remove_pending_status($loginid);
 }
 
 sub request_proveid {
@@ -83,7 +83,7 @@ sub request_proveid {
 
     my $client = get_client($loginid);
 
-    my $id_auth = BOM::Platform::Client::IDAuthentication->new(
+    return BOM::Platform::Client::IDAuthentication->new(
         client        => $client,
         force_recheck => 1
     )->_do_proveid;
@@ -95,7 +95,7 @@ sub remove_pending_status {
     my $client = get_client($loginid);
 
     $client->clr_status('proveid_pending');
-    $client->save or die 'Unable to clear proveid_pending status';
+    return $client->save or die 'Unable to clear proveid_pending status';
 }
 
 sub get_client {
