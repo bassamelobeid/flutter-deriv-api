@@ -76,23 +76,14 @@ sub get_tick_expiry_hit_tick {
     my ($self, %args) = @_;
 
     my @ticks_since_start = @{$self->get_ticks_for_tick_expiry};
-
-    for (my $i = 0; $i < $#ticks_since_start; $i++) {
-
-        if (    defined $args{higher}
-            and defined $args{lower}
-            and ($ticks_since_start[$i]->quote > $args{higher} or $ticks_since_start[$i] < $args{lower}))
-        {
-            return $ticks_since_start[$i];
-        } elsif (defined $args{higher} and $ticks_since_start[$i]->quote > $args{higher}) {
-            return $ticks_since_start[$i];
-        } elsif (defined $args{lower} and $ticks_since_start[$i]->quote < $args{lower}) {
-            return $ticks_since_start[$i];
-        }
-
+    my $tick;
+    for (my $i = 0; $i <= $#ticks_since_start; $i++) {
+        $tick = $ticks_since_start[$i]
+            if ((defined $args{higher} and $ticks_since_start[$i]->quote >= $args{higher})
+            or (defined $args{lower} and $ticks_since_start[$i]->quote <= $args{lower}));
     }
 
-    return undef;
+    return $tick;
 }
 
 sub get_high_low_for_contract_period {

@@ -79,15 +79,15 @@ subtest 'tick expiry one touch no touch' => sub {
     ok !$c->is_expired, 'We are at the same second as the entry tick';
 
     #Let's check the date Expiry
-    is $c->date_expiry->epoch, 1404986412, 'expected date expiry';
+    is $c->date_expiry->epoch, 1404986410, 'expected date expiry';
     is $c->date_start->epoch, 1404986400, 'expected date start';
     is $c->entry_tick->quote, 101, 'correct entry tick';
 
     my %expected_bid_price = (
-	2 => 49.85,
-        3 => 43.7,
-        4 => 34.37,
-        5 => 18.29,
+	2 => 43.44,
+        3 => 34.11,
+        4 => 18.06,
+        5 => 53.64,
     );
 
     for (2 .. 5) {
@@ -113,13 +113,14 @@ subtest 'tick expiry one touch no touch' => sub {
         # After tick become available, hit the barrier test.
         $c = produce_contract($args);
         ok $c->is_expired, 'contract is expired once it touch the barrier';
+
         ok $c->hit_tick,   'hit tick';
         cmp_ok $c->hit_tick->quote, '==', 101 + $index;
         is $c->current_tick->quote, 101 + $index, 'correct current tick';    
         # Check hit tick against barrier    
         ok $c->hit_tick->quote == $c->barrier->as_absolute;
 
-        is $c->date_expiry->epoch, 1404986412, 'checking date expiry';
+        is $c->date_expiry->epoch, 1404986410, 'checking date expiry';
         is $c->bid_price, 100, 'checking bid price, and should be equal to payout';
 
         is $c->is_valid_to_sell, 1, 'is_valid_to_sell';
@@ -132,7 +133,7 @@ subtest 'tick expiry one touch no touch' => sub {
         is $c->current_tick->quote, 101 + $index, 'correct current tick';
         ok $c->current_tick->quote < $c->barrier->as_absolute;
 
-        is $c->date_expiry->epoch, 1404986412, 'checking date expiry';
+        is $c->date_expiry->epoch, 1404986410, 'checking date expiry';
         is $c->bid_price, $expected_bid_price{$index}, 'checking bid price';
 
         is $c->is_valid_to_sell, 0, 'is_valid_to_sell';
@@ -156,7 +157,7 @@ subtest 'tick expiry one touch no touch' => sub {
         quote      => 108
     });
 
-    is $c->date_expiry->epoch, 1404986412, 'checking date expiry';
+    is $c->date_expiry->epoch, 1404986410, 'checking date expiry';
 
     $c                    = produce_contract($args);
     ok $c->is_expired, 'Here is the last one, 5th tick after entry tick';
