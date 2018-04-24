@@ -7,6 +7,21 @@ use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 
+my (%stats, %tags);
+
+BEGIN {
+    require DataDog::DogStatsd::Helper;
+    no warnings 'redefine';
+    *DataDog::DogStatsd::Helper::stats_timing = sub {
+        my ($key, $val, $tag) = @_;
+        $stats{$key} = $val;
+        ++$tags{$tag->{tags}[0]};
+    };
+}
+
+is_deeply(\%stats, {}, 'start with no metrics');
+is_deeply(\%tags,  {}, 'start with no tags');
+
 use BOM::Platform::RedisReplicated;
 use Sereal::Encoder;
 use BOM::Test::Helper qw/build_wsapi_test build_test_R_50_data/;
@@ -165,14 +180,14 @@ SKIP: {
     subtest 'forget' => sub {
         $t->await::forget_all({forget_all => 'proposal'});
         create_proposals();
-        cmp_ok pricer_sub_count(), '==', 3, "3 pricer sub Ok";
+        cmp_ok pricer_sub_count(), '==', 6, "6 pricer sub Ok";
 
         $res = $t->await::forget({forget => [values(%$sub_ids)]->[0]});
         cmp_ok $res->{forget}, '==', 1, 'Correct number of subscription forget';
-        cmp_ok pricer_sub_count(), '==', 2, "price count checking";
+        cmp_ok pricer_sub_count(), '==', 5, "price count checking";
 
         $res = $t->await::forget_all({forget_all => 'proposal'});
-        is scalar @{$res->{forget_all}}, 2, 'Correct number of subscription forget';
+        is scalar @{$res->{forget_all}}, 5, 'Correct number of subscription forget';
         is pricer_sub_count(), 0, "price count checking";
     };
 }
@@ -181,9 +196,12 @@ done_testing();
 
 sub create_proposals {
     for my $s (@symbols) {
-        $res = $t->await::proposal({%$req, symbol => $s}, {timeout => 10});
-        ok $res->{proposal}{id}, 'Should return id';
-        $sub_ids->{$s} = $res->{proposal}->{id};
+        for my $ct (qw(CALL PUT)) {
+            $res = $t->await::proposal({%$req, symbol => $s, contract_type => $ct}, {timeout => 5});
+            note explain \%stats, \%tags;
+            ok $res->{proposal}{id}, 'Should return id';
+            $sub_ids->{$s} = $res->{proposal}->{id};
+        }
     }
 }
 
