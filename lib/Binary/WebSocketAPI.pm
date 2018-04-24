@@ -453,7 +453,14 @@ sub startup {
         ['copy_start',             {require_auth => 'trade'}],
         ['copy_stop',              {require_auth => 'trade'}],
         ['app_markup_details',     {require_auth => 'admin'}],
-        ['account_authentication', {require_auth => 'admin'}]];
+        ['account_authentication', {require_auth => 'admin'}],
+        [
+            'exchange_rates',
+            {
+                stash_params => [qw/ exchange_rates base_currency /],
+            }
+        ],
+    ];
 
     for my $action (@$actions) {
         my $f             = '/home/git/regentmarkets/binary-websocket-api/config/v3/' . $action->[0];
