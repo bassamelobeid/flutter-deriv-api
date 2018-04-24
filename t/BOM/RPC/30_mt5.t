@@ -149,7 +149,7 @@ subtest 'new account with switching' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 };
 
-subtest 'new CR financial accounts should receive identity verification request' => sub {
+subtest 'authenticated CR client should not receive authentication request when he opens new MT5 financial account' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     my $method = 'mt5_new_account';
     $mailbox->clear;
@@ -159,6 +159,37 @@ subtest 'new CR financial accounts should receive identity verification request'
         args     => {
             account_type     => 'financial',
             mt5_account_type => 'standard',
+            country          => 'mt',
+            email            => $DETAILS{email},
+            name             => $DETAILS{name},
+            investPassword   => 'Abcd1234',
+            mainPassword     => $DETAILS{password},
+            leverage         => 500,
+        },
+    };
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account');
+    #check inbox for emails
+    my $cli_subject  = 'Authenticate your account to continue trading on MT5';
+    my @client_email = $mailbox->search(
+        email   => $DETAILS{email},
+        subject => qr/\Q$cli_subject\E/
+    );
+
+    ok(!@client_email, "identity verification request email not sent");
+};
+
+subtest 'new CR financial accounts should receive identity verification request if account is not verified' => sub {
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $test_client->set_authentication('ID_DOCUMENT')->status('pending');
+    $test_client->save;
+    my $method = 'mt5_new_account';
+    $mailbox->clear;
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type     => 'financial',
+            mt5_account_type => 'advanced',
             country          => 'mt',
             email            => $DETAILS{email},
             name             => $DETAILS{name},

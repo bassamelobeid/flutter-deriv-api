@@ -40,6 +40,10 @@ my $limits = {
         '1m' => 1000000,
         '1h' => 2000000,
     },
+    websocket_call_password => {
+        '1m' => 1000000,
+        '1h' => 2000000,
+    },
     websocket_real_pricing => {
         '1m' => 1000000,
         '1h' => 2000000,
