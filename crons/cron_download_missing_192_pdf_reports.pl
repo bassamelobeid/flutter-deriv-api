@@ -19,15 +19,13 @@ for my $broker (qw/MF MX/) {
     for my $loginid (@$pending_loginids) {
         my ($xml_exists, $pdf_exists) = (-e get_filename($broker, $loginid), -e get_filename($broker, $loginid, 1));
 
-        if ($pdf_exists && $xml_exists) {
-            # Files exists but status is not set, set the status and skip
-            remove_pending_status($loginid);
-            next;
-        }
+        eval {
+            request_proveid($loginid) unless $xml_exists;
 
-        request_proveid($loginid) unless $xml_exists;
+            request_pdf($broker, $loginid) if $xml_exists and not $pdf_exists;
 
-        request_pdf($broker, $loginid) if $xml_exists and not $pdf_exists;
+            remove_pending_status($loginid) unless $xml_exists or $pdf_exists;
+        } or warn "$@";
     }
 }
 
@@ -83,10 +81,13 @@ sub request_proveid {
 
     my $client = get_client($loginid);
 
-    return BOM::Platform::Client::IDAuthentication->new(
+    BOM::Platform::Client::IDAuthentication->new(
         client        => $client,
         force_recheck => 1
     )->_do_proveid;
+
+    # Remove pending status to prevent ProveID search for the next cron schedule
+    remove_pending_status($loginid);
 }
 
 sub remove_pending_status {
