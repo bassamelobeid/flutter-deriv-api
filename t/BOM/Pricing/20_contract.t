@@ -142,7 +142,7 @@ subtest $method => sub {
             'symbol'       => 'R_50',
             'longcode'     => "Win payout if Volatility 50 Index touches entry spot plus 2.9054 through 5 ticks after first tick.",
             'display_name' => 'Volatility 50 Index',
-            'date_expiry'  => '1127285672', 
+            'date_expiry'  => '1127285670', 
             'barrier'      => 'S29054P',
         },
         'result is ok'
