@@ -7,6 +7,7 @@ use Date::Utility;
 use File::stat;
 use YAML qw(LoadFile);
 use IO::Async::Loop;
+use Try::Tiny;
 use Archive::Zip qw( :ERROR_CODES );
 use Net::Async::Webservice::S3;
 use Amazon::S3::SignedURLGenerator;
@@ -56,7 +57,7 @@ while ($to_date->days_between($processing_date) >= 0) {
     $processing_date = Date::Utility->new($processing_date->epoch + 86400);
 }
 
-die "unable to create zip file" unless ( $zip->writeToFileNamed($output_zip_path->stringify) == AZ_OK );
+die "unable to create zip file at: ${\$output_zip_path->stringify}" unless ( $zip->writeToFileNamed($output_zip_path->stringify) == AZ_OK );
 
 my $config = LoadFile('/etc/rmg/third_party.yml')->{myaffiliates};
 my $loop = IO::Async::Loop->new;
@@ -74,17 +75,22 @@ my $url_generator = Amazon::S3::SignedURLGenerator->new(
     expires               => 24 * 3600
 );
 
-$s3->put_object(
-    key   => $output_zip,
-    value => $output_zip_path->slurp
-)->get;
-my $download_url = $url_generator->generate_url('GET', $output_zip);
-
-my $brand = Brands->new();
-# email CSV out for reporting purposes
-send_email({
-    from       => $brand->emails('system'),
-    to         => $brand->emails('affiliates'),
-    subject    => 'CRON generate_affiliate_PL_daily: ' . ' for date range ' . $from_date->date_yyyymmdd . ' - ' . $to_date->date_yyyymmdd,
-    message    => ["Find links to download CSV that was generated:\n" . $download_url],
-});
+try {
+    $s3->put_object(
+        key   => $output_zip,
+        value => $output_zip_path->slurp
+    )->get;
+    my $download_url = $url_generator->generate_url('GET', $output_zip);
+    
+    my $brand = Brands->new();
+    # email CSV out for reporting purposes
+    send_email({
+        from       => $brand->emails('system'),
+        to         => $brand->emails('affiliates'),
+        subject    => 'CRON generate_affiliate_PL_daily: ' . ' for date range ' . $from_date->date_yyyymmdd . ' - ' . $to_date->date_yyyymmdd,
+        message    => ["Find links to download CSV that was generated:\n" . $download_url],
+    });
+}
+catch {
+    die "Failed to upload reports to s3. Error is $_. No email was sent.";
+};
