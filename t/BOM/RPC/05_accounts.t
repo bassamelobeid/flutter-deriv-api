@@ -1200,7 +1200,7 @@ subtest $method => sub {
             args  => $args,
             token => $token1
         });
-    cmp_ok($res->{score},                       "==", 27, "Got correct total score");
+    cmp_ok($res->{total_score},                       "==", 27, "Got correct total score");
     cmp_ok($res->{financial_information_score}, "==", 18, "Got correct financial information score");
     cmp_ok($res->{trading_score},               "==", 9,  "Got correct trading score");
     cmp_ok($res->{cfd_score},                   "==", 1,  "Got correct CFD score");
@@ -1259,7 +1259,7 @@ subtest $method => sub {
             args  => $args,
             token => $token1
         });
-    cmp_ok($res->{score},                       "==", 27, "Got correct total score");
+    cmp_ok($res->{total_score},                       "==", 27, "Got correct total score");
     cmp_ok($res->{financial_information_score}, "==", 18, "Got correct financial information score");
     cmp_ok($res->{trading_score},               "==", 9,  "Got correct trading score");
     cmp_ok($res->{cfd_score},                   "==", 1,  "Got correct CFD score");
