@@ -121,6 +121,16 @@ FROM accounting.get_historical_open_bets_overview(?::TIMESTAMP)}, 'id', {}, $dat
         });
 }
 
+sub closed_PL_by_underlying {
+    my ($self, $date) = @_;
+
+    return $self->_db->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref(qq{ SELECT * FROM accounting.get_closed_pl_by_underlying(?)}, {}, $date);
+        });
+
+}
+
 sub generate {
     return 1;
 }
