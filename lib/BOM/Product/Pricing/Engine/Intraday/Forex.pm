@@ -60,7 +60,8 @@ has apply_equal_tie_markup => (
 );
 
 sub _build_apply_equal_tie_markup {
-    return 1 if ($self->code eq 'CALLE' or $self->code eq 'PUTE');
+     my $self = shift;
+     return 1 if ($self->code eq 'CALLE' or $self->code eq 'PUTE');
 
 }
 has _supported_types => (
