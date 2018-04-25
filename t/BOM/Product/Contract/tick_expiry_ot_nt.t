@@ -180,5 +180,13 @@ subtest 'tick expiry one touch no touch' => sub {
     is $c->bid_price, 0, 'Correct bid price at expiry in case of no hit';
 
     is $c->is_valid_to_sell, 1, 'is_valid_to_sell';
+
+# Let check the hit tick is correct when backprice
+    $args->{barrier}      = '+2.0';
+
+    $c = produce_contract($args);
+
+    ok $c->hit_tick,   'hit tick';
+    cmp_ok $c->hit_tick->quote, '==', 103;
 };
 
