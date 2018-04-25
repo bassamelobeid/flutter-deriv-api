@@ -1089,7 +1089,12 @@ sub metadata {
 
     $action //= 'buy';
 
-    my $contract = $action eq 'buy' ? $self : $self->opposite_contract_for_sale;
+    my $contract;
+    if ($action eq 'buy') {
+        $contract = $self;
+    } else {
+        $contract = $self->other_side_code ? $self->opposite_contract_for_sale : $self;
+    }
 
     my $contract_duration = do {
         if ($contract->tick_expiry) {
@@ -1172,6 +1177,19 @@ sub _build_priced_with_intraday_model {
 
     # Intraday::Index is just a flat price + commission, so it is not considered as a model.
     return ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex');
+}
+
+# Subroutine to validate that keys are valid
+sub validate_inputs {
+    my ($self, $inputs, $valid_inputs) = @_;
+
+    foreach my $param (keys %$inputs) {
+        return BOM::Product::Exception->throw(
+            error_code => 'InvalidInput',
+            error_args => [$param, $inputs->{bet_type}]) unless exists $valid_inputs->{$param};
+    }
+
+    return undef;
 }
 
 # Don't mind me, I just need to make sure my attibutes are available.
