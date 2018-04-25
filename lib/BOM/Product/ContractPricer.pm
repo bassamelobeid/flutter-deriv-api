@@ -547,7 +547,7 @@ sub _build_base_commission {
     }
 
     # Added equal tie markup
-    if (not $self->for_sale and $self->market->name eq 'volidx' and $self->barrier_category eq 'euro_atm_equals') {
+    if (not $self->for_sale and $self->barrier_category eq 'euro_atm_equals') {
         $underlying_base = max(0.02, $underlying_base);
     }
 
