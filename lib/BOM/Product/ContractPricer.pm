@@ -82,7 +82,21 @@ has otm_threshold => (
     lazy_build => 1,
 );
 
+### the probabilities definition should ideally be in BOM::Product::Role::Binary but it makes mocking them harder
+### so they are kept here.
 # discounted_probability - The discounted total probability, given the time value of the money at stake.
+has [qw(
+        ask_probability
+        theo_probability
+        bid_probability
+        discounted_probability
+        )
+    ] => (
+    is         => 'ro',
+    isa        => 'Math::Util::CalculatedValue::Validatable',
+    lazy_build => 1,
+    );
+
 # timeindays/timeinyears - note that for FX contracts of >=1 duration, these values will follow the market convention of integer days
 has [
     qw(q_rate

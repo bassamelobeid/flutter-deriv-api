@@ -12,18 +12,6 @@ use Format::Util::Numbers qw/financialrounding/;
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
-has [qw(
-        ask_probability
-        theo_probability
-        bid_probability
-        discounted_probability
-        )
-    ] => (
-    is         => 'ro',
-    isa        => 'Math::Util::CalculatedValue::Validatable',
-    lazy_build => 1,
-    );
-
 sub _build_ask_probability {
     my $self = shift;
 
