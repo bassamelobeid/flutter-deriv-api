@@ -546,16 +546,11 @@ sub _build_base_commission {
         $underlying_base = $custom_commission;
     }
 
-    # we are adding extra commission on these contracts for volatility indices because we have clients taking advantage of our fixed feed generation
-    # frequency (every 2-second a tick on the even second). By buying a 15-second  deep ITM contract on the even second, the actual contract duration is 14-second because
-    # we will always use the previous tick to settle the contract. Shorter deep ITM contract is more expensive, so the client is paying cheaper for a 14-second contract.
-    if (not $self->for_sale and $self->market->name eq 'volidx' and not $self->is_atm_bet and $self->remaining_time->seconds < 60) {
-        $underlying_base = max(0.023, $underlying_base);
-
+    if (not $self->for_sale and $self->market->name eq 'volidx' and $self->tick_expiry and $self->category_code eq 'touchnotouch') {
         # We are adding another extra 2 percent to cover touch no touch tick trade.
         # The approximated discrete-monitoring prices (for one/double touch) underestimate the true prices for tick trades.
         # The discrete_monitoring_adj_markup is applied to push prices up just above the true prices.
-        $underlying_base = $underlying_base + 0.02 if $self->tick_expiry and $self->category_code eq 'touchnotouch';
+        $underlying_base = $underlying_base + 0.02;
     }
 
     return $underlying_base * $per_market_scaling / 100;
