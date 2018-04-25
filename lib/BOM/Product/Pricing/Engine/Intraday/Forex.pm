@@ -54,16 +54,6 @@ sub _build_long_term_prediction {
             base_amount => shift->bet->_pricing_args->{long_term_prediction}});
 }
 
-has apply_equal_tie_markup => (
-    is         => 'ro',
-    lazy_build => 0,
-);
-
-sub _build_apply_equal_tie_markup {
-     my $self = shift;
-     return 1 if ($self->code eq 'CALLE' or $self->code eq 'PUTE');
-
-}
 has _supported_types => (
     is      => 'ro',
     isa     => 'HashRef',
@@ -316,15 +306,6 @@ sub _build_risk_markup {
                     base_amount => $shortterm_risk_interpolator->linear($bet->remaining_time->minutes),
                 })) if $bet->remaining_time->minutes <= 15;
     }
-
-    $risk_markup->include_adjustment(
-        'add',
-        Math::Util::CalculatedValue::Validatable->new({
-                name        => 'equal_tier_markup',
-                description => '2% markup for equal tie condition',
-                set_by      => __PACKAGE__,
-                base_amount => 0.02,
-            })) if ($self->apply_equal_tie_markup);
 
     return $risk_markup;
 }
