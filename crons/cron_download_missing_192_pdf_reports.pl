@@ -128,16 +128,12 @@ sub remove_pending_status {
 sub get_client {
     my $loginid = shift;
 
-    my $client;
-    try {
-        $client = BOM::User::Client->new({
+    return try {
+        BOM::User::Client->new({
             loginid      => $loginid,
             db_operation => 'replica'
         });
-    }
-    catch {
+    } catch {
         die "Error: can't identify client $loginid: $_";
     };
-
-    return $client;
 }
