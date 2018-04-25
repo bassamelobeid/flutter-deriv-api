@@ -18,6 +18,7 @@ use Finance::Asset::SubMarket::Registry;
 use BOM::MarketData qw(create_underlying create_underlying_db);
 use BOM::MarketData::Types;
 use BOM::Product::Static;
+use BOM::User::Static;
 use Finance::Contract::Longcode;
 use BOM::Platform::Runtime;
 
