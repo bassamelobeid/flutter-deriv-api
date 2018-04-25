@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Path::Tiny;
+use Try::Tiny;
 
 use BOM::Platform::ProveID;
 use BOM::Platform::Runtime;
@@ -17,15 +18,27 @@ for my $broker (qw/MF MX/) {
     my $pending_loginids = find_loginids_with_pending_experian($broker);
 
     for my $loginid (@$pending_loginids) {
-        my ($xml_exists, $pdf_exists) = (-e get_filename($broker, $loginid), -e get_filename($broker, $loginid, 1));
+        my $xml_exists = -e get_filename(
+            broker  => $broker,
+            loginid => $loginid,
+            type    => 'xml'
+        );
+        my $pdf_exists = -e get_filename(
+            broker  => $broker,
+            loginid => $loginid,
+            type    => 'pdf'
+        );
 
-        eval {
-            request_proveid($loginid) unless $xml_exists;
+        try {
+            return request_proveid($loginid) unless $xml_exists;
 
-            request_pdf($broker, $loginid) if $xml_exists and not $pdf_exists;
+            return request_pdf($broker, $loginid) if $xml_exists and not $pdf_exists;
 
-            remove_pending_status($loginid) unless $xml_exists or $pdf_exists;
-        } or warn "$@";
+            remove_pending_status($loginid);
+        }
+        catch {
+            warn "ProveID failed, $_";
+        };
     }
 }
 
@@ -55,10 +68,10 @@ SQL
 }
 
 sub get_filename {
-    my ($broker, $loginid, $is_pdf) = @_;
+    my %args = @_;
+    my ($broker, $loginid, $type) = @args{qw/broker loginid type/};
 
-    my $extension = $is_pdf ? '.pdf' : '';
-    my $type      = $is_pdf ? 'pdf'  : 'xml';
+    my $extension = $type eq 'pdf' ? '.pdf' : '';
 
     return "$accounts_dir/$broker/192com_authentication/$type/$loginid.$so$extension";
 }
@@ -66,12 +79,25 @@ sub get_filename {
 sub request_pdf {
     my ($broker, $loginid) = @_;
 
-    my $result_as_xml = path(get_filename($broker, $loginid))->slurp_utf8;
+    my $result_as_xml = path(
+        get_filename(
+            broker  => $broker,
+            loginid => $loginid,
+            type    => 'xml'
+        ))->slurp_utf8;
 
     my $client = get_client($loginid);
 
-    eval { BOM::Platform::ProveID->new(client => $client, result_as_xml => $result_as_xml, search_option => $so,)->save_pdf_result }
-        or die("Failed to save Experian pdf for " . $client->loginid . ": $@");
+    try {
+        BOM::Platform::ProveID->new(
+            client        => $client,
+            result_as_xml => $result_as_xml,
+            search_option => $so
+            )->save_pdf_result
+    }
+    catch {
+        die "Failed to save Experian pdf for " . $client->loginid . ": $_";
+    };
 
     return remove_pending_status($loginid);
 }
@@ -102,6 +128,16 @@ sub remove_pending_status {
 sub get_client {
     my $loginid = shift;
 
-    return eval { BOM::User::Client->new({loginid => $loginid, db_operation => 'replica'}) }
-        or die "Error: can't identify client $loginid: $@";
+    my $client;
+    try {
+        $client = BOM::User::Client->new({
+            loginid      => $loginid,
+            db_operation => 'replica'
+        });
+    }
+    catch {
+        die "Error: can't identify client $loginid: $_";
+    };
+
+    return $client;
 }
