@@ -604,7 +604,7 @@ sub validate_uri {
 
 sub keys_of_values {
     my $href = shift;
-    return map { keys %$ } values %$href;
+    return map { keys %$_ } values %$href;
 }
 
 sub set_professional_status {
