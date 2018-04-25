@@ -8,6 +8,7 @@ use BOM::Product::Static;
 use List::Util qw(min);
 use Scalar::Util qw(looks_like_number);
 use Format::Util::Numbers qw(formatnumber);
+use Format::Util::Numbers qw/financialrounding/;
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
