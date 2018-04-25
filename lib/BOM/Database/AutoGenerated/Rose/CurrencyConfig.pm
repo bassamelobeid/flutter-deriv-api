@@ -11,6 +11,7 @@ __PACKAGE__->meta->setup(
     columns => [
         currency_code => { type => 'varchar', length => 3, not_null => 1 },
         precision     => { type => 'integer' },
+        crypto        => { type => 'boolean', default => 'false' },
     ],
 
     primary_key_columns => [ 'currency_code' ],
