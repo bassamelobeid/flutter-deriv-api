@@ -77,6 +77,12 @@ override _build_theo_price => sub {
     return $self->_price_from_prob('theo_probability');
 };
 
+override _build_app_markup_dollar_amount => sub {
+    my $self = shift;
+
+    return financialrounding('amount', $self->currency, $self->app_markup->amount * $self->payout);
+};
+
 sub _price_from_prob {
     my ($self, $prob) = @_;
     if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {

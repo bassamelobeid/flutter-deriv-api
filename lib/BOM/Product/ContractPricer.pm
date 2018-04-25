@@ -131,6 +131,10 @@ sub _build_theo_price {
     die '_build_theo_price should be over-written';
 }
 
+sub _build_app_markup_dollar_amount {
+    die '_build_app_markup_dollar_amount should be over-written';
+}
+
 has [qw( pricing_engine_name )] => (
     is         => 'rw',
     isa        => 'Str',
@@ -514,12 +518,6 @@ sub _build_otm_threshold {
 
 sub _build_app_markup {
     return shift->price_calculator->app_markup;
-}
-
-sub _build_app_markup_dollar_amount {
-    my $self = shift;
-
-    return financialrounding('amount', $self->currency, $self->app_markup->amount * $self->payout);
 }
 
 #this is supposed to be called for legacy pricing engines (not new interface)
