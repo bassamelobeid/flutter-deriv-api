@@ -27,7 +27,7 @@ our $BET_CLASS_RESET_BET        = 'reset_bet';
 # Constant reference to volatile hash
 our $BET_CLASS_TO_TYPE_MAP = {
     'spread_bet'       => ['SPREADU', 'SPREADD'],
-    'higher_lower_bet' => ['CALL',    'PUT', 'CALLE', 'PUTE', 'ASIANU', 'ASIAND'],
+    'higher_lower_bet' => ['CALL',    'PUT', 'CALLE', 'PUTE', 'ASIANU', 'ASIAND', 'TICKHIGH', 'TICKLOW'],
 
     'legacy_bet' => [
         'CLUB',              'SPREADUP',          'SPREADDOWN',     'DOUBLEDBL',       'BEARSTOP',      'DOUBLECONTRA',
