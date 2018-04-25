@@ -181,7 +181,6 @@ sub _fetch_proveid {
             premise       => $premise,
             force_recheck => $self->force_recheck
         )->get_result;
-        # No need for dying here, worst case we have to do proveid again
         $client->clr_status('proveid_pending');
     }
     catch {
