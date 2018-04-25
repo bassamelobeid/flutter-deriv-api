@@ -45,7 +45,6 @@ bet_limits:
       LTC: 0.02
       ETC: 0.02
       DAI: 1
-      TUSD: 1
     volidx:
       USD: 0.7
       EUR: 0.7
@@ -58,7 +57,6 @@ bet_limits:
       LTC: 0.02
       ETC: 0.02
       DAI: 1
-      TUSD: 1
   min_stake:
     maltainvest:
       USD: 5
