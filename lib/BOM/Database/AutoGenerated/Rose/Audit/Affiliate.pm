@@ -18,7 +18,7 @@ __PACKAGE__->meta->setup(
         affiliate_type                  => { type => 'varchar', length => 100, not_null => 1 },
         approved                        => { type => 'boolean', default => 'false', not_null => 1 },
         company_loss_since_last_payment => { type => 'numeric', default => '0', not_null => 1 },
-        currency_code                   => { type => 'varchar', default => 'USD', not_null => 1 },
+        currency_code                   => { type => 'varchar', default => 'USD', length => 3, not_null => 1 },
         apply_max_earning_restriction   => { type => 'boolean', default => 'true', not_null => 1 },
         apply_date                      => { type => 'timestamp', default => 'now()' },
         affiliate_name                  => { type => 'varchar', length => 100, not_null => 1 },
