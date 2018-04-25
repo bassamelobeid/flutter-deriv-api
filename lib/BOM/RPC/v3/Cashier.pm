@@ -731,6 +731,8 @@ rpc paymentagent_withdraw => sub {
         return $error_sub->(localize('Your cashier is locked as per your request.'));
     }
 
+    return $error_sub->(localize('You cannot withdraw funds to the same account.')) if $client_loginid eq $paymentagent_loginid;
+
     my $authenticated_pa;
     if ($client->residence) {
         my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => $client->broker});
@@ -747,7 +749,7 @@ rpc paymentagent_withdraw => sub {
             db_operation => 'replica'
         }) or return $error_sub->(localize('The payment agent account does not exist.'));
 
-    return $error_sub->(localize('Payment agent transfers are not allowed for specified accounts.')) if ($client->broker ne $paymentagent->broker);
+    return $error_sub->(localize('Payment agent withdrawals are not allowed for specified accounts.')) if ($client->broker ne $paymentagent->broker);
 
     my $pa_client = $paymentagent->client;
     return $error_sub->(
