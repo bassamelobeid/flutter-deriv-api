@@ -10,7 +10,7 @@
       "description": "Must be 1",
       "required": "1"
     },
-    "totp": {
+    "totp_action": {
       "enum":["status" , "enable", "disable", "generate"],
       "description": "Action to be taken for managing TOTP"
     },

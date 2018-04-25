@@ -10,7 +10,7 @@
         "totp": {
           "type": "object",
           "properties": {
-            "status": {
+            "is_enabled": {
               "type": "integer"
             },
             "secret_key": {
