@@ -131,7 +131,7 @@ sub authorize {
     }
 
     # Check if user has enabled 2FA authentication and this is not a scope request
-    if ($user->totp_activated && !$is_verified) {
+    if ($user->is_totp_enabled && !$is_verified) {
         return $c->render(
             template   => $brand_name . '/totp',
             layout     => $brand_name,

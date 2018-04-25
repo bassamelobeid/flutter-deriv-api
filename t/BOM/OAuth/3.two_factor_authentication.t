@@ -5,7 +5,7 @@ use Test::More;
 use Test::Mojo;
 use Test::MockModule;
 use Authen::OATH;
-use BOM::Platform::Password;
+use BOM::User::Password;
 use BOM::User;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
@@ -31,7 +31,7 @@ my $email      = 'abc@binary.com';
 my $password   = 'jskjd8292922';
 my $secret_key = BOM::User::TOTP->generate_key();
 {
-    my $hash_pwd  = BOM::Platform::Password::hashpw($password);
+    my $hash_pwd  = BOM::User::Password::hashpw($password);
     my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
     });
@@ -45,7 +45,7 @@ my $secret_key = BOM::User::TOTP->generate_key();
     $user->save;
     $user->add_loginid({loginid => $cr_loginid});
     $user->secret_key($secret_key);
-    $user->totp_activated(1);
+    $user->is_totp_enabled(1);
     $user->save;
 }
 
