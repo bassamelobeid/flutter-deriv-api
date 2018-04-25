@@ -7,7 +7,7 @@ use Test::Mojo;
 use Authen::OATH;
 use Convert::Base32;
 use BOM::User;
-use BOM::Platform::Password;
+use BOM::User::Password;
 use BOM::Database::Model::AccessToken;
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -35,7 +35,7 @@ subtest 'Initialization' => sub {
 
         $user = BOM::User->create(
             email    => $email,
-            password => BOM::Platform::Password::hashpw('a1b2c3D4'));
+            password => BOM::User::Password::hashpw('a1b2c3D4'));
         $user->email_verified(1);
         $user->add_loginid({loginid => $client_cr->loginid});
         $user->save();
@@ -46,7 +46,7 @@ subtest 'Initialization' => sub {
     'Initial RPC Client and other parameters';
 
     my $result = _call_status();
-    is_deeply($result->{totp}, {'status' => 0}, 'Status should be 0');
+    is_deeply($result->{totp}, {'is_enabled' => 0}, 'Status should be 0');
 };
 
 subtest 'Two Factor Authentication Functionality' => sub {
@@ -65,7 +65,7 @@ subtest 'Two Factor Authentication Functionality' => sub {
     # If OTP is correct, 2FA should be enabled
     $oath_totp = $oath->totp($secret_key);
     $result    = _call_enable($oath_totp);
-    is_deeply($result->{totp}, {'status' => 1}, 'Should be enabled with correct OTP');
+    is_deeply($result->{totp}, {'is_enabled' => 1}, 'Should be enabled with correct OTP');
 
     # If already enabled, request to enable should fail
     $result = _call_enable($oath_totp);
@@ -82,7 +82,7 @@ subtest 'Two Factor Authentication Functionality' => sub {
     # If OTP is correct and 2FA is enabled request to disable should succeed
     $oath_totp = $oath->totp($secret_key);
     $result    = _call_disable($oath_totp);
-    is_deeply($result->{totp}, {'status' => 0}, 'Should be disabled with correct OTP');
+    is_deeply($result->{totp}, {'is_enabled' => 0}, 'Should be disabled with correct OTP');
 
     # Disable should not work as it is already disabled
     $result = _call_disable('123456');
@@ -91,32 +91,32 @@ subtest 'Two Factor Authentication Functionality' => sub {
 
 sub _call_status {
     $params->{token} = $token;
-    $params->{args}->{totp} = 'status';
+    $params->{args}->{totp_action} = 'status';
 
     return $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
 }
 
 sub _call_generate {
     $params->{token} = $token;
-    $params->{args}->{totp} = 'generate';
+    $params->{args}->{totp_action} = 'generate';
 
     return $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
 }
 
 sub _call_enable {
     my $otp = shift;
-    $params->{token}        = $token;
-    $params->{args}->{totp} = 'enable';
-    $params->{args}->{otp}  = $otp;
+    $params->{token}               = $token;
+    $params->{args}->{totp_action} = 'enable';
+    $params->{args}->{otp}         = $otp;
 
     return $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
 }
 
 sub _call_disable {
     my $otp = shift;
-    $params->{token}        = $token;
-    $params->{args}->{totp} = 'disable';
-    $params->{args}->{otp}  = $otp;
+    $params->{token}               = $token;
+    $params->{args}->{totp_action} = 'disable';
+    $params->{args}->{otp}         = $otp;
 
     return $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
 }

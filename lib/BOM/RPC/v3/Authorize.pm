@@ -233,16 +233,16 @@ rpc account_authentication => sub {
     my $params        = shift;
     my $token_details = $params->{token_details};
     my $loginid       = $token_details->{loginid};
-    my $totp_action   = $params->{args}->{totp};
+    my $totp_action   = $params->{args}->{totp_action};
 
     my $client = BOM::User::Client->new({loginid => $loginid});
     my $user = BOM::User->new({email => $client->email});
 
-    my $status = $user->totp_activated;
+    my $status = $user->is_totp_enabled;
 
     # Get the Status of TOTP Activation
     if ($totp_action eq 'status') {
-        return {totp => {status => $status}};
+        return {totp => {is_enabled => $status}};
     }
     # Generate a new Secret Key if not already enabled
     elsif ($totp_action eq 'generate') {
@@ -282,15 +282,15 @@ rpc account_authentication => sub {
 
         if ($totp_action eq 'enable') {
             # enable 2FA
-            $user->totp_activated(1);
+            $user->is_totp_enabled(1);
         } elsif ($totp_action eq 'disable') {
             # disable 2FA and reset secret key. Next time a new secret key should be generated
-            $user->totp_activated(0);
+            $user->is_totp_enabled(0);
             $user->secret_key('');
         }
         $user->save();
 
-        return {totp => {status => $user->totp_activated}};
+        return {totp => {is_enabled => $user->is_totp_enabled}};
     }
 };
 
