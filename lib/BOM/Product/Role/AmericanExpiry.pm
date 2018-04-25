@@ -78,9 +78,12 @@ sub get_tick_expiry_hit_tick {
     my @ticks_since_start = @{$self->get_ticks_for_tick_expiry};
     my $tick;
     for (my $i = 1; $i <= $#ticks_since_start; $i++) {
-        $tick = $ticks_since_start[$i]
-            if ((defined $args{higher} and $ticks_since_start[$i]->quote >= $args{higher})
-            or (defined $args{lower} and $ticks_since_start[$i]->quote <= $args{lower}));
+        if (   (defined $args{higher} and $ticks_since_start[$i]->quote >= $args{higher})
+            or (defined $args{lower} and $ticks_since_start[$i]->quote <= $args{lower}))
+        {
+            $tick = $ticks_since_start[$i];
+            last;
+        }
     }
 
     return $tick;
