@@ -7,7 +7,7 @@ with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier', 'BOM::Pr
 use Pricing::Engine::Digits;
 
 use BOM::Product::Contract::Strike::Digit;
-use BOM::Product::Pricing::Greeks::Digits;
+use BOM::Product::Pricing::Greeks::ZeroGreek;
 
 sub ticks_to_expiry {
     return shift->tick_count;
@@ -18,7 +18,7 @@ sub _build_pricing_engine_name {
 }
 
 sub _build_greek_engine {
-    return BOM::Product::Pricing::Greeks::Digits->new({bet => shift});
+    return BOM::Product::Pricing::Greeks::ZeroGreek->new({bet => shift});
 }
 
 sub _build_barrier {
