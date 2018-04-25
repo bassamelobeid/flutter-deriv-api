@@ -387,7 +387,8 @@ sub get_client_currency_information {
     my $fiat_check = grep { ((LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency})) // '') eq 'fiat' } keys %$siblings;
 
     my $legal_allowed_currencies = LandingCompany::Registry::get($landing_company_name)->legal_allowed_currencies;
-    my $lc_num_crypto = grep { ($legal_allowed_currencies->{$_} // '') eq 'crypto' } keys %{$legal_allowed_currencies};
+    my $lc_num_crypto = grep { (LandingCompany::Registry::get_currency_type($_) // '') eq 'crypto'; }
+        keys %{$legal_allowed_currencies};
 
     my $client_num_crypto = (grep { (LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) // '') eq 'crypto' } keys %$siblings)
         // 0;
