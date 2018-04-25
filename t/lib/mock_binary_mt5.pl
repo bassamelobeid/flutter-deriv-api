@@ -16,13 +16,13 @@ use constant {
 #   t/BOM/user.t
 #   t/lib/mock_binary_mt5.pl
 my %DETAILS_REAL = (
-    login    => '1000',
-    group   => 'real\something',
+    login => '1000',
+    group => 'real\something',
 );
 
 my %DETAILS_DEMO = (
-    login    => '2000',
-    group   => 'demo\something',
+    login => '2000',
+    group => 'demo\something',
 );
 
 my $json = JSON::MaybeXS->new;
@@ -51,12 +51,12 @@ sub cmd_UserDepositChange {
 
 sub cmd_UserGet {
     my ($input) = @_;
-    
+
     return {
         ret_code => MT_RET_OK,
         user     => {pairgrep { $a ne "password" } %DETAILS_REAL},
     } if $input->{login} eq $DETAILS_REAL{login};
-    
+
     return {
         ret_code => MT_RET_OK,
         user     => {pairgrep { $a ne "password" } %DETAILS_DEMO},
