@@ -39,7 +39,7 @@ override '_build_bid_price' => sub {
     my $self = shift;
 
     my $bid_price;
-    if ($self->is_expired and $self->is_settleable) {
+    if ($self->is_expired) {
         # if contract can be settled, then return the evaluated contract value
         $bid_price = $self->value;
     } else {
