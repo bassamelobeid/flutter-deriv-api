@@ -113,7 +113,7 @@ sub request_proveid {
     )->_do_proveid;
 
     # Remove pending status to prevent ProveID search for the next cron schedule
-    remove_pending_status($loginid);
+    return remove_pending_status($loginid);
 }
 
 sub remove_pending_status {
