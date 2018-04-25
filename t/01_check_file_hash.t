@@ -32,15 +32,15 @@ my %file_details = (
     },
     digitsmatchdiffers => {
         filename => module_path('BOM::Product::Contract::Digitmatch'),
-        hash     => '961d3c9c1b1cf99148ec2346aca08e3a20ff77a2'
+        hash     => '042ad01b23b211c7271a27e9625a0b550d115265'
     },
     digitsevenodd => {
         filename => module_path('BOM::Product::Contract::Digiteven'),
-        hash     => 'f7c66183272937a5345a3b439e2c17b32c1cdbad'
+        hash     => 'e8d9cd5170b51cf079cdeda84f71191c477f5b7f'
     },
     digitsoverunder => {
         filename => module_path('BOM::Product::Contract::Digitover'),
-        hash     => '92b7045058e89b8bf85007e76fba2265ce4b5f8e'
+        hash     => 'efe9d26335cc4001c9f286ae152ebf8f51342bd8'
     },
 );
 

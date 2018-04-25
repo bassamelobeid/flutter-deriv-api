@@ -4,23 +4,24 @@ use Moose::Role;
 use BOM::Product::Static;
 
 override is_expired => sub {
-    my $self = shift;
-    my $is_expired;
-    my ($barrier, $barrier2) =
-        $self->two_barriers ? ($self->high_barrier->as_absolute, $self->low_barrier->as_absolute) : ($self->barrier->as_absolute);
-    my $spot = $self->entry_spot;
-    if ($spot and ($spot == $barrier or ($barrier2 and $spot == $barrier2))) {
-        $self->_add_error({
-            alert             => 1,
-            severity          => 100,
-            message           => 'Path-dependent barrier at spot at start',
-            message_to_client => [BOM::Product::Static::get_error_mapping()->{AlreadyExpired}],
-        });
-        # Was expired at start, making it an unfair bet, so value goes to 0 without regard to bet conditions.
-        $self->value(0);
-        $is_expired = 1;
-    } else {
-        $is_expired = $self->check_expiry_conditions;
+    my $self       = shift;
+    my $is_expired = $self->check_expiry_conditions;
+
+    if ($self->has_user_defined_barrier) {
+        my ($barrier, $barrier2) =
+            $self->two_barriers ? ($self->high_barrier->as_absolute, $self->low_barrier->as_absolute) : ($self->barrier->as_absolute);
+        my $spot = $self->entry_spot;
+        if ($spot and ($spot == $barrier or ($barrier2 and $spot == $barrier2))) {
+            $self->_add_error({
+                alert             => 1,
+                severity          => 100,
+                message           => 'Path-dependent barrier at spot at start',
+                message_to_client => [BOM::Product::Static::get_error_mapping()->{AlreadyExpired}],
+            });
+            # Was expired at start, making it an unfair bet, so value goes to 0 without regard to bet conditions.
+            $self->value(0);
+            $is_expired = 1;
+        }
     }
 
     return $is_expired;
