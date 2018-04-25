@@ -49,8 +49,7 @@ sub has_done_request {
     my $self   = shift;
     my $client = $self->{client};
 
-    # TODO (Amin Marashi): Remove has_done_request after SRP has been done
-    return $client->get_status('proveid_requested') || $self->SUPER::has_done_request;
+    return $client->get_status('proveid_requested') || $self->has_downloaded_xml;
 }
 
 sub defaults {

@@ -166,14 +166,15 @@ sub _fetch_proveid {
 
     return unless BOM::Platform::Config::on_production();
 
+    my $client  = $self->client;
     my $premise = $self->client->address_1;
     if ($premise =~ /^(\d+)/) {
         $premise = $1;
     }
     my $result = {};
     try {
-        $self->client->set_status('proveid_requested');
-        $self->client->set_status('proveid_pending');
+        $client->set_status('proveid_requested');
+        $client->set_status('proveid_pending');
         $result = BOM::Platform::ProveID->new(
             client        => $self->client,
             search_option => 'ProveID_KYC',
@@ -181,7 +182,7 @@ sub _fetch_proveid {
             force_recheck => $self->force_recheck
         )->get_result;
         # No need for dying here, worst case we have to do proveid again
-        $self->client->clr_status('proveid_pending');
+        $client->clr_status('proveid_pending');
     }
     catch {
         my $brand    = Brands->new(name => request()->brand);
@@ -199,7 +200,7 @@ EOM
             message => [$message],
         });
     };
-    $self->client->save;
+    $client->save;
     return $result;
 }
 
