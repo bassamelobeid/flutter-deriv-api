@@ -26,6 +26,7 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::MarketData qw(create_underlying);
 use BOM::Backoffice::Sysinit ();
 use BOM::User::AuditLog;
+use BOM::Backoffice::Utility qw( master_live_server_error);
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -52,10 +53,7 @@ if ($ok == 0) {
     code_exit_BO();
 }
 
-unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}})) {
-    print "Sorry, files cannot be saved on this server because it is not the Master Server.";
-    code_exit_BO();
-}
+master_live_server_error() unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}}));
 
 my $broker = request()->broker_code;
 my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
