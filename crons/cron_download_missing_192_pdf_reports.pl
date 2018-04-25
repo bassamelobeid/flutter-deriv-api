@@ -133,7 +133,8 @@ sub get_client {
             loginid      => $loginid,
             db_operation => 'replica'
         });
-    } catch {
+    }
+    catch {
         die "Error: can't identify client $loginid: $_";
     };
 }
