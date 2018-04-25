@@ -175,8 +175,8 @@ subtest 'get_ask' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'       => '20.86',
-        'ask_price'           => '20.86',
+        'display_value'       => '20.06',
+        'ask_price'           => '20.06',
         'longcode'            => "Win payout if Volatility 50 Index touches entry spot plus 0.3054 through 5 ticks after first tick.",
 
         'spot'                => '963.3054',
@@ -188,7 +188,7 @@ subtest 'get_ask' => sub {
             'bet_type'              => 'ONETOUCH',
             'underlying'            => 'R_50',
             'currency'              => 'USD',
-            base_commission         => '0.043',
+            base_commission         => '0.035',
             'amount'                => '100',
             'amount_type'           => 'payout',
             'app_markup_percentage' => 0,
