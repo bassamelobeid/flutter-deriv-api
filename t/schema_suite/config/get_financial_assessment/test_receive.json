@@ -9,17 +9,17 @@
     },
     "cfd_score": {
       "type": "integer",
-      "pattern": "^[_2]$",
+      "pattern": "^[_3]$",
       "required": "1"
     },
     "financial_information_score": {
       "type": "integer",
-      "pattern": "^[_2]$",
+      "pattern": "^[_4]$",
       "required": "1"
     },
     "trading_score": {
       "type": "integer",
-      "pattern": "^[_2]$",
+      "pattern": "^[_5]$",
       "required": "1"
     },
     "forex_trading_frequency": {
