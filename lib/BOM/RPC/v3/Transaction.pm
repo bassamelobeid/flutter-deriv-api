@@ -21,6 +21,7 @@ use BOM::Platform::Runtime;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Copier;
+use BOM::Pricing::v3::Contract;
 
 my $json = JSON::MaybeXS->new;
 
@@ -114,14 +115,14 @@ rpc buy => sub {
     my $trading_period_start = $contract_parameters->{trading_period_start};
     my $purchase_date        = time;                                           # Purchase is considered to have happened at the point of request.
 
-    $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
+    $contract_parameters = BOM::Pricing::v3::Contract::prepare_ask($contract_parameters);
     $contract_parameters->{landing_company} = $client->landing_company->short;
 
     #Here again, we are re using amount in the API for specifying
     #no of contracts. Internally for non-binary we will use multiplier.
     #If we use amount, this will create confusion with the amount use for
     #binary contract.
-    $contract_parameters->{multiplier} //= $contract_parameters->{amount};
+    $contract_parameters->{multiplier} = $contract_parameters->{amount} if $contract_parameters->{amount_type} eq 'multiplier';
 
     my $error = BOM::RPC::v3::Contract::validate_barrier($contract_parameters);
     return $error if $error->{error};
@@ -231,7 +232,7 @@ rpc buy_contract_for_multiple_accounts => sub {
     my ($source, $contract_parameters, $payout) = @{$params}{qw/source contract_parameters payout/};
 
     my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
-    $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
+    $contract_parameters = BOM::Pricing::v3::Contract::prepare_ask($contract_parameters);
     $contract_parameters->{landing_company} = $client->landing_company->short;
 
     my $error = BOM::RPC::v3::Contract::validate_barrier($contract_parameters);
