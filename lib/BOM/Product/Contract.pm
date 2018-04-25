@@ -1179,7 +1179,7 @@ sub validate_inputs {
     foreach my $param (keys %$inputs) {
         return BOM::Product::Exception->throw(
             error_code => 'InvalidInput',
-            error_args => [$param]) unless exists $valid_inputs->{$param};
+            error_args => [$param, $inputs->{bet_type}]) unless exists $valid_inputs->{$param};
     }
 
     return undef;
