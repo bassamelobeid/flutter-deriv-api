@@ -21,7 +21,7 @@ __PACKAGE__->meta->setup(
         gclid_url         => { type => 'text', remarks => '(Google Click Identifier) to track source' },
         has_social_signup => { type => 'boolean' },
         secret_key        => { type => 'text' },
-        totp_activated    => { type => 'boolean', default => 'false' },
+        is_totp_enabled   => { type => 'boolean', default => 'false' },
     ],
 
     primary_key_columns => [ 'id' ],
