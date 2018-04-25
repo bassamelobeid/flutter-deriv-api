@@ -199,7 +199,7 @@ subtest 'MX client can upgrade to MF' => sub {
         my $res = $t->await::new_account_maltainvest(\%details);
 
         is($res->{msg_type}, 'new_account_maltainvest');
-        is($res->{error}->{code}, 'KYCRequired', "MF upgrade for MX need KYC for unauthenticated client");
+        is($res->{error}->{code}, undef, "Allow MF upgrade for MX without KYC for unauthenticated client");
     };
 };
 
