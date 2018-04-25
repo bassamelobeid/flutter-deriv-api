@@ -30,7 +30,7 @@ override _build_theo_price => sub {
 };
 
 override _build_base_commission => sub {
-    return 0.02; # a static 2% commission across the board. This is done to enable sellback.
+    return 0.02;    # a static 2% commission across the board. This is done to enable sellback.
 };
 
 =head2 multiplier
