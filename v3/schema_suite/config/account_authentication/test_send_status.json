@@ -1,4 +1,4 @@
 {
   "account_authentication": 1,
-  "totp": "status"
+  "totp_action": "status"
 }

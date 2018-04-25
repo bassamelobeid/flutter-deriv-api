@@ -8,7 +8,7 @@
         "totp": {
           "type": "object",
           "properties": {
-              "status": {
+              "is_enabled": {
                 "type": "integer",
                 "pattern": "^(0|1)$",
                 "required": "1"
