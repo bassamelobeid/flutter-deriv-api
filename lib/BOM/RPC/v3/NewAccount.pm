@@ -348,7 +348,7 @@ rpc new_account_maltainvest => sub {
     return BOM::RPC::v3::Utility::permission_error()
         if ($client->landing_company->short !~ /^(?:virtual|malta|maltainvest|iom)$/);
 
-    my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'maltainvest', $args);
+    my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'financial', $args);
     return $error if $error;
 
     my $error_map = BOM::RPC::v3::Utility::error_map();

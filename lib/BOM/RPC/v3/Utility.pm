@@ -448,10 +448,8 @@ sub validate_make_new_account {
 
         # some countries don't have gaming company like Singapore
         # but we do allow them to open only financial account
-        return;
+        return undef;
     }
-
-    return permission_error() if $client->is_virtual;
 
     my $landing_company_name = $client->landing_company->short;
 
@@ -459,7 +457,7 @@ sub validate_make_new_account {
     # directly from virtual for Germany as residence, from iom
     # or from maltainvest itself as we support multiple account now
     # so upgrade is only allow once
-    if (($account_type and $account_type eq 'maltainvest') and $landing_company_name =~ /^(?:malta|iom)$/) {
+    if (($account_type and $account_type eq 'financial') and $landing_company_name =~ /^(?:malta|iom)$/) {
         # return error if client already has maltainvest account
         return create_error({
                 code              => 'FinancialAccountExists',
@@ -479,7 +477,9 @@ sub validate_make_new_account {
     # we have real account, and going to create another one
     # So, lets populate all sensitive data from current client, ignoring provided input
     # this logic should gone after we separate new_account with new_currency for account
-    $request_data->{$_} = $client->$_ for qw/first_name last_name residence address_city phone date_of_birth address_line_1/;
+    foreach (qw/first_name last_name residence address_city phone date_of_birth address_line_1/) {
+        $request_data->{$_} = $client->$_ if $client->$_;
+    }
 
     my $error = create_error({
             code              => 'NewAccountLimitReached',
@@ -514,6 +514,15 @@ sub validate_make_new_account {
     # send error if number of crypto account of client is same
     # as number of crypto account supported by landing company
     return $error if ($lc_num_crypto eq $client_num_crypto);
+
+    my @landing_company_clients;
+    if ($account_type eq 'real') {
+        @landing_company_clients = $client->user->clients_for_landing_company($gaming_company);
+    } elsif ($account_type eq 'financial') {
+        @landing_company_clients = $client->user->clients_for_landing_company($financial_company);
+    }
+
+    return permission_error() if (any { not $_->get_status('duplicate_account') } @landing_company_clients);
 
     return undef;
 }
