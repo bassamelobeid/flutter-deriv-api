@@ -52,6 +52,7 @@ my $config = {
         FutureStartTime               => 'Start time is in the future.',
         IncorrectPayoutDecimals       => 'Payout can not have more than [_1] decimal places.',
         IntegerBarrierRequired        => 'Barrier must be an integer.',
+        IntegerSelectedTickRequired   => 'Selected tick must be an integer.',
         InvalidBarrier                => 'Invalid barrier.',
         InvalidBarrierForSpot         => 'Barrier must be at least [plural,_1,%d pip,%d pips] away from the spot.',
         InvalidBarrierRange           => 'Barriers must be on either side of the spot.',

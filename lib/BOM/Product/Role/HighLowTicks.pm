@@ -2,6 +2,7 @@ package BOM::Product::Role::HighLowTicks;
 
 use Moose::Role;
 use BOM::Product::Exception;
+use Scalar::Util::Numeric qw/isint/;
 
 use constant DURATION_IN_TICKS => 5;
 use constant MIN_SELECTED_TICK => 1;
@@ -10,12 +11,19 @@ use constant MAX_SELECTED_TICK => 5;
 sub BUILD {
     my $self = shift;
 
+    if (!isint $self->selected_tick) {
+        BOM::Product::Exception->throw(
+            error_code => 'IntegerSelectedTickRequired',
+        );
+    }
+
     if ($self->selected_tick < MIN_SELECTED_TICK or $self->selected_tick > MAX_SELECTED_TICK) {
         BOM::Product::Exception->throw(
             error_code => 'SelectedTickNumberLimits',
             error_args => [MIN_SELECTED_TICK, MAX_SELECTED_TICK],
         );
     }
+
     return undef;
 }
 
