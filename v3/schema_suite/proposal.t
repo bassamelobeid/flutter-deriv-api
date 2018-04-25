@@ -32,7 +32,7 @@ test_sendrecv_params 'proposal/test_send.json', 'proposal/test_buy_exception.jso
 # R_100
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
     '100', 'ASIANU', 'R_100', '5', 't', 'Win payout if the last tick of Volatility 100 Index is strictly higher than the average of the 5 ticks.',
-    '52.29', '52.29', '65258.19';
+    '51.49', '51.49', '65258.19';
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
     '100', 'CALL', 'R_100', '30', 'd', 'Win payout if Volatility 100 Index is strictly higher than entry spot at close on 2016-09-08.', '45.74',
     '45.74', '65258.19';
@@ -153,7 +153,7 @@ test_sendrecv_params 'proposal/test_send_lookback.json', 'proposal/test_receive_
 # R_100 touch tick trade
 test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
     'ONETOUCH', 'R_100', '5', 't', '+20.5',
-    'Win payout if Volatility 100 Index touches entry spot plus 20.50 through 5 ticks after first tick.', '45.61', '45.61', '65258.19';
+    'Win payout if Volatility 100 Index touches entry spot plus 20.50 through 5 ticks after first tick.', '44.81', '44.81', '65258.19';
 
 # test for negative amount
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive_negative.json', '-1', 'ASIANU', 'R_100', '5', 't';
