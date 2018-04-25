@@ -10,8 +10,6 @@ use Cache::RedisDB;
 use Format::Util::Numbers qw/roundcommon financialrounding/;
 
 use LandingCompany::Registry;
-use Postgres::FeedDB::CurrencyConverter qw(in_USD);
-
 use BOM::Platform::Runtime;
 
 sub DailyTurnOverReport {

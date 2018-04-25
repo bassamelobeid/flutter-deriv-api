@@ -12,7 +12,6 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
-
 PrintContentType();
 BrokerPresentation('Risk Dashboard.');
 
@@ -22,7 +21,9 @@ my $report = BOM::RiskReporting::Dashboard->new->fetch;
 
 my $today = Date::Utility->today;
 
-$report->{dtr_link} = request()->url_for('backoffice/f_dailyturnoverreport.cgi');
+$report->{dtr_link}         = request()->url_for('backoffice/f_dailyturnoverreport.cgi');
+$report->{multibarrier}     = BOM::RiskReporting::Dashboard->new->multibarrierreport();
+$report->{exposures_report} = BOM::RiskReporting::Dashboard->new->exposures_report();
 
 $report->{link_to_pnl} = sub {
     my $loginid = shift;
