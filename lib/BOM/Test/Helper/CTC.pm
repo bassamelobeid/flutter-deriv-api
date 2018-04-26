@@ -13,3 +13,4 @@ sub currency_code {
     return $currency_code;
 }
 
+1;
