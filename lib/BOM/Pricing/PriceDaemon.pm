@@ -10,6 +10,7 @@ use JSON::MaybeUTF8 qw(:v1);
 use List::Util qw(first);
 use Time::HiRes ();
 use Try::Tiny;
+use Data::Dumper;
 
 use BOM::MarketData qw(create_underlying);
 use BOM::Platform::Context;
@@ -212,6 +213,7 @@ sub _get_underlying_or_log {
     }
 
     unless (defined $underlying->spot_tick and defined $underlying->spot_tick->epoch) {
+        warn "Underlying spot_tick " . Dumper($underlying->spot_tick) if defined $underlying->spot_tick;
         warn $underlying->system_symbol . " has invalid spot tick (request: $next)" if $underlying->calendar->is_open($underlying->exchange);
         stats_inc("pricer_daemon.$cmd.invalid", {tags => $self->tags});
         return undef;
