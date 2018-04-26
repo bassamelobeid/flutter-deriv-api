@@ -19,7 +19,8 @@ my $params = {
     country  => 'in',
     args     => {},
 };
-my ($method, $email, $client_cr, $user, $token) = ('account_authentication');
+my $method = ('account_authentication');
+my ($email, $client_cr, $user, $token);
 
 subtest 'Initialization' => sub {
     lives_ok {
