@@ -1306,38 +1306,45 @@ sub _mt5_validate_and_get_amount {
                 unless $mt5_currency =~ /^USD|EUR$/;
 
             my $mt5_amount = undef;
-            if ($client_currency eq $mt5_currency) {
-                $mt5_amount = $amount;
-                # Actual USD or EUR amount that will be deposited into the MT5 account. We have
-                # a fixed 1% fee on all conversions, but this is only ever applied when converting
-                # between currencies - we do not apply for USD -> USD transfers for example.
-            } elsif ($action eq 'deposit') {
-                $mt5_amount = try {
-                    financialrounding('amount', $client_currency,
-                        amount_from_to_currency($amount, $client_currency, $mt5_currency, CURRENCY_CONVERSION_MAX_AGE) * 0.99)
-                }
-                catch {
-                    warn "Conversion failed for mt5_$action: $_";
-                    return undef;
-                };
-            } elsif ($action eq 'withdrawal') {
-                $mt5_amount = try {
-                    financialrounding('amount', $client_currency,
+            my ($min, $max) = (1, 20000);
+            my ($transfer_amount, $transfer_currency) = ($amount, $client_currency);
+            try {
+
+                if ($client_currency eq $mt5_currency) {
+                    $mt5_amount = $amount;
+                    # Actual USD or EUR amount that will be deposited into the MT5 account. We have
+                    # a fixed 1% fee on all conversions, but this is only ever applied when converting
+                    # between currencies - we do not apply for USD -> USD transfers for example.
+                } elsif ($action eq 'deposit') {
+                    $min = amount_from_to_currency(1,     'USD', $client_currency);
+                    $max = amount_from_to_currency(20000, 'USD', $client_currency);
+                    $mt5_amount =
+                        financialrounding('amount', $mt5_currency,
+                        amount_from_to_currency($amount, $client_currency, $mt5_currency, CURRENCY_CONVERSION_MAX_AGE) * 0.99);
+
+                } elsif ($action eq 'withdrawal') {
+                    $min = amount_from_to_currency(1,     'USD', $mt5_currency);
+                    $max = amount_from_to_currency(20000, 'USD', $mt5_currency);
+                    $mt5_amount =
+                        financialrounding('amount', $client_currency,
                         amount_from_to_currency($amount, $mt5_currency, $client_currency, CURRENCY_CONVERSION_MAX_AGE) * 0.99);
+                    $transfer_amount   = $amount;
+                    $transfer_currency = $mt5_currency;
                 }
-                catch {
-                    warn "Conversion failed for mt5_$action: $_";
-                    return undef;
-                };
+
+                return _make_error($error_code, localize("Conversion rate not available for this currency."))
+                    unless defined $mt5_amount;
             }
-
-            return _make_error($error_code, localize("Conversion rate not available for this currency."))
-                unless defined $mt5_amount;
-
-            return _make_error($error_code, localize("Amount must be greater than 1 [_1].", $mt5_currency))
-                if $mt5_amount < 1;
-            return _make_error($error_code, localize("Amount must be less than 20000 [_1].", $mt5_currency))
-                if $mt5_amount > 20000;
+            catch {
+                warn "Conversion failed for mt5_$action: $_";
+                return undef;
+            };
+            return _make_error($error_code,
+                localize("Amount must be greater than [_1] [_2].", $transfer_amount, financialrounding('amount', $transfer_currency, $min)))
+                if $transfer_amount < financialrounding('amount', $transfer_currency, $min * 0.99);
+            return _make_error($error_code,
+                localize("Amount must be less than [_1] [_2].", $transfer_currency, financialrounding('amount', $transfer_currency, $max)))
+                if $transfer_amount > financialrounding('amount', $transfer_currency, $max * 0.99);
 
             return Future->done($mt5_amount);
         });
