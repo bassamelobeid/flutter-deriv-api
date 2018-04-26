@@ -1307,7 +1307,7 @@ sub _mt5_validate_and_get_amount {
 
             my $mt5_amount = undef;
             my ($min, $max) = (1, 20000);
-            my ($transfer_amount, $transfer_currency) = ($amount, $client_currency);
+            my $source_currency = $client_currency;
             try {
 
                 if ($client_currency eq $mt5_currency) {
@@ -1328,8 +1328,7 @@ sub _mt5_validate_and_get_amount {
                     $mt5_amount =
                         financialrounding('amount', $client_currency,
                         amount_from_to_currency($amount, $mt5_currency, $client_currency, CURRENCY_CONVERSION_MAX_AGE) * 0.99);
-                    $transfer_amount   = $amount;
-                    $transfer_currency = $mt5_currency;
+                    $source_currency = $mt5_currency;
                 }
 
                 return _make_error($error_code, localize("Conversion rate not available for this currency."))
@@ -1340,11 +1339,11 @@ sub _mt5_validate_and_get_amount {
                 return undef;
             };
             return _make_error($error_code,
-                localize("Amount must be greater than [_1] [_2].", $transfer_amount, financialrounding('amount', $transfer_currency, $min)))
-                if $transfer_amount < financialrounding('amount', $transfer_currency, $min * 0.99);
+                localize("Amount must be greater than [_1] [_2].", $amount, financialrounding('amount', $source_currency, $min)))
+                if $amount < financialrounding('amount', $source_currency, $min * 0.99);
             return _make_error($error_code,
-                localize("Amount must be less than [_1] [_2].", $transfer_currency, financialrounding('amount', $transfer_currency, $max)))
-                if $transfer_amount > financialrounding('amount', $transfer_currency, $max * 0.99);
+                localize("Amount must be less than [_1] [_2].", $source_currency, financialrounding('amount', $source_currency, $max)))
+                if $amount > financialrounding('amount', $source_currency, $max * 0.99);
 
             return Future->done($mt5_amount);
         });
