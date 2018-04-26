@@ -16,6 +16,7 @@ use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::Token;
+use BOM::Platform::Runtime;
 use BOM::User::Client;
 
 use utf8;
@@ -188,6 +189,7 @@ subtest $method => sub {
 
         $user->email_verified(1);
         $user->save;
+
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
             sub { shift->{landing_company} },
             'Binary (C.R.) S.A.',

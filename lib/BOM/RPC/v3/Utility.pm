@@ -545,8 +545,9 @@ sub validate_set_currency {
     # if currency is experimental and client is not allowed to use such currencies we don't allow
     $error->{error}->{message_to_client} = localize('Please note that the selected currency is allowed for limited accounts only');
     my @allowed_accounts = BOM::Platform::Runtime->instance->app_config->payments->experimental_currencies_allowed;
+
     return $error if (LandingCompany::Registry::is_currency_experimental($currency)
-        and scalar grep { $_ eq $client->email } @allowed_accounts == 0);
+        and defined grep { $_ eq $client->email } @allowed_accounts);
 
     return undef;
 }
