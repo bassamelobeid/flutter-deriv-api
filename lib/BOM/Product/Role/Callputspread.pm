@@ -1,11 +1,11 @@
-package BOM::Product::Role::Spreads;
+package BOM::Product::Role::Callputspread;
 
 use Moose::Role;
 # Spreads is a double barrier contract that expires at contract expiration time.
 with 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::ExpireAtEnd', 'BOM::Product::Role::NonBinary';
 
 use LandingCompany::Commission qw(get_underlying_base_commission);
-use Pricing::Engine::Spreads;
+use Pricing::Engine::Callputspread;
 
 use constant {
     MINIMUM_ASK_PRICE_PER_UNIT => 0.50,
@@ -101,7 +101,7 @@ sub ticks_to_expiry {
 }
 
 override '_build_pricing_engine_name' => sub {
-    return 'Pricing::Engine::Spreads';
+    return 'Pricing::Engine::Callputspread';
 };
 
 1;

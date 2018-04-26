@@ -38,7 +38,7 @@ subtest 'config' => sub {
     is $c->category_code,      'spreads', 'category code is spreads';
     is $c->payout_type,        'non-binary', 'payout type is non-binary';
     is $c->payouttime,         'end', 'payout time is end';
-    isa_ok $c->pricing_engine, 'Pricing::Engine::Spreads';
+    isa_ok $c->pricing_engine, 'Pricing::Engine::Callputspread';
     isa_ok $c->high_barrier,   'BOM::Product::Contract::Strike';
     isa_ok $c->low_barrier,    'BOM::Product::Contract::Strike';
 };
