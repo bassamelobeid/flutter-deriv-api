@@ -33,8 +33,8 @@ if (not BOM::Platform::Config::on_production()) {
 my $sftp = $bbdl->login;
 my $ls = $sftp->ls('/') or die "unable to change cwd: " . $sftp->error;
 
-my @request_files  = grep { $_->{'filename'} =~ /\.req$/ } @{$ls};
-my @response_files = grep { $_->{'filename'} =~ /\.csv\.enc$/ } @{$ls};
+my @request_files  = grep { $_->{'filename'} =~ /\.req/ } @{$ls};
+my @response_files = grep { $_->{'filename'} =~ /\.csv\.enc/ } @{$ls};
 
 my @request_list  = map { _retrieve_table_data($_, $broker) } @request_files;
 my @response_list = map { _retrieve_table_data($_, $broker) } @response_files;
