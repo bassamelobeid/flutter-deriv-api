@@ -20,6 +20,9 @@ use constant {
     MINIMUM_BID_PRICE          => 0,      # can't go negative
 };
 
+# forward declaration for 'requires' to work in BOM::Product::Role::NonBinary
+sub multiplier;
+
 override _build_theo_price => sub {
     my $self = shift;
 
@@ -27,7 +30,7 @@ override _build_theo_price => sub {
 };
 
 override _build_base_commission => sub {
-    return 0.02; # standard 2% commission across the board to enable sellback
+    return 0.02;    # a static 2% commission across the board. This is done to enable sellback.
 };
 
 =head2 multiplier

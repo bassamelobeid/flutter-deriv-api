@@ -82,7 +82,6 @@ has otm_threshold => (
     lazy_build => 1,
 );
 
-# discounted_probability - The discounted total probability, given the time value of the money at stake.
 # timeindays/timeinyears - note that for FX contracts of >=1 duration, these values will follow the market convention of integer days
 has [
     qw(q_rate
@@ -129,6 +128,10 @@ sub _build_bid_price {
 
 sub _build_theo_price {
     die '_build_theo_price should be over-written';
+}
+
+sub _build_app_markup_dollar_amount {
+    die '_build_app_markup_dollar_amount should be over-written';
 }
 
 has [qw( pricing_engine_name )] => (
@@ -523,12 +526,6 @@ sub _build_otm_threshold {
 
 sub _build_app_markup {
     return shift->price_calculator->app_markup;
-}
-
-sub _build_app_markup_dollar_amount {
-    my $self = shift;
-
-    return financialrounding('amount', $self->currency, $self->app_markup->amount * $self->payout);
 }
 
 #this is supposed to be called for legacy pricing engines (not new interface)

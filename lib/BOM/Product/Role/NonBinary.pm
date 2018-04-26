@@ -32,14 +32,14 @@ has _ask_price_per_unit => (
 sub _build__ask_price_per_unit {
     my $self = shift;
 
-    return max($self->minimum_ask_price_per_unit, $self->theo_price + $self->commission_per_unit);
+    return max($self->minimum_ask_price_per_unit, $self->theo_price + $self->commission_per_unit + $self->app_markup_per_unit);
 }
 
 override '_build_bid_price' => sub {
     my $self = shift;
 
     my $bid_price;
-    if ($self->is_expired and $self->is_settleable) {
+    if ($self->is_expired) {
         # if contract can be settled, then return the evaluated contract value
         $bid_price = $self->value;
     } else {
@@ -52,6 +52,12 @@ override '_build_bid_price' => sub {
     }
 
     return $bid_price;
+};
+
+override _build_app_markup_dollar_amount => sub {
+    my $self = shift;
+
+    financialrounding('price', $self->currency, $self->app_markup_per_unit) * $self->multiplier;
 };
 
 =head2 commission_per_unit
@@ -68,6 +74,12 @@ sub commission_per_unit {
     my $base = $self->base_commission;
 
     return max(MINIMUM_COMMISSION_PER_UNIT, $self->pricing_engine->theo_price * $base);
+}
+
+sub app_markup_per_unit {
+    my $self = shift;
+
+    return $self->pricing_engine->theo_price * $self->app_markup_percentage;
 }
 
 1;
