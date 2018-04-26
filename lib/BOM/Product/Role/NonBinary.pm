@@ -48,7 +48,7 @@ override '_build_bid_price' => sub {
     }
 
     if ($self->can('maximum_bid_price')) {
-        $bid_price = financialrounding('price', $self->currency, min($self->minimum_bid_price, $bid_price));
+        $bid_price = financialrounding('price', $self->currency, min($self->maximum_bid_price, $bid_price));
     }
 
     return $bid_price;
