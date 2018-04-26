@@ -17,7 +17,7 @@ use Try::Tiny;
 use WWW::OneAll;
 use Date::Utility;
 use HTML::Entities qw(encode_entities);
-use List::Util qw(any sum0 first);
+use List::Util qw(any none sum0 first);
 
 use Brands;
 use BOM::User::Client;
@@ -513,12 +513,15 @@ rpc get_account_status => sub {
     my $input_mappings = BOM::Platform::Account::Real::default::get_financial_input_mapping();
     my %financial_data = map { $_ => $params->{args}->{$_} } BOM::RPC::v3::Utility::keys_of_values $input_mappings;
 
-    push @status,
-        'financial_assessment_not_complete'
-        if (
-        any { !length $financial_assessment->{$_}->{answer} }
-        keys %financial_data
-        );
+    # Exclude the financial_assessment_not_complete status if MF professional client had completed Financial Information before
+    unless ($client->broker eq 'MF'
+        and $client->get_status('professional')
+        and none { !$financial_assessment->{$_} } keys $input_mappings->{financial_information})
+    {
+        push @status, 'financial_assessment_not_complete'
+            if any { !length $financial_assessment->{$_}->{answer} }
+        keys %financial_data;
+    }
 
     my $prompt_client_to_authenticate = 0;
     my $shortcode                     = $client->landing_company->short;
