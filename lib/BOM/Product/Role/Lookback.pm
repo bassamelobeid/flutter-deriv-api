@@ -27,14 +27,7 @@ override _build_theo_price => sub {
 };
 
 override _build_base_commission => sub {
-    my $self = shift;
-
-    my $args = {underlying_symbol => $self->underlying->symbol};
-    if ($self->can('landing_company')) {
-        $args->{landing_company} = $self->landing_company;
-    }
-    my $underlying_base = get_underlying_base_commission($args);
-    return $underlying_base;
+    return 0.02; # standard 2% commission across the board to enable sellback
 };
 
 =head2 multiplier

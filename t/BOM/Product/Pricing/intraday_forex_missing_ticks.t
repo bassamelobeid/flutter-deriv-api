@@ -44,7 +44,7 @@ foreach my $single_data (@$missing_ticks) {
     push @rev_ticks, $single_data;
 }
 
-my $decimate_cache = BOM::Market::DataDecimate->new({market=>'forex'});
+my $decimate_cache = BOM::Market::DataDecimate->new({market => 'forex'});
 my $decimate_data = Data::Decimate::decimate($decimate_cache->sampling_frequency->seconds, \@rev_ticks);
 
 my $decimate_key = $decimate_cache->_make_key('frxUSDJPY', 1);

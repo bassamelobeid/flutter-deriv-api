@@ -282,25 +282,16 @@ sub _create_new_interface_engine {
     my %pricing_parameters;
 
     my $payouttime_code = ($self->payouttime eq 'hit') ? 0 : 1;
-    my %contract_config = (
-        contract_type     => $self->pricing_code,
-        underlying_symbol => $self->underlying->symbol,
-        date_start        => $self->effective_start,
-        date_pricing      => $self->date_pricing,
-        date_expiry       => $self->date_expiry,
-        payouttime_code   => $payouttime_code,
-        for_date          => $self->underlying->for_date,
-        spot              => $self->pricing_spot,
-        strikes           => [grep { $_ } values %{$self->barriers_for_pricing}],
-        priced_with       => $self->priced_with,
-        payout_type       => $self->payout_type,
-        is_atm_contract   => $self->is_atm_bet,
-    );
 
     if ($self->pricing_engine_name eq 'Pricing::Engine::Digits') {
         %pricing_parameters = (
             strike => $self->barrier ? $self->barrier->as_absolute : undef,
             contract_type => $self->pricing_code,
+        );
+    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::HighLowTicks') {
+        %pricing_parameters = (
+            contract_type => $self->pricing_code,
+            selected_tick => $self->selected_tick,
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
         my $backprice = ($self->underlying->for_date) ? 1 : 0;
@@ -325,53 +316,71 @@ sub _create_new_interface_engine {
                 $self->date_start
             )->{economic_events},
         );
-    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope') {
-        #pricing_vol can be calculated using an empirical vol. So we have to sent the raw numbers
-        %pricing_parameters = (
-            %contract_config,
-            chronicle_reader         => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
-            discount_rate            => $self->discount_rate,
-            mu                       => $self->mu,
-            vol                      => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
-            q_rate                   => $self->q_rate,
-            r_rate                   => $self->r_rate,
-            volsurface               => $self->volsurface->surface,
-            volsurface_creation_date => $self->volsurface->creation_date,
-        );
-    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::BlackScholes') {
-        %pricing_parameters = (
-            %contract_config,
-            t             => $self->timeinyears->amount,
-            discount_rate => $self->discount_rate,
-            mu            => $self->mu,
-            vol           => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
-        );
-    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::Reset') {
-        %pricing_parameters = (
-            %contract_config,
-            contract_type => $self->pricing_code,
-            t             => $self->timeinyears->amount,
-            reset_time    => $self->reset_time_in_years,
-            discount_rate => $self->discount_rate,
-            mu            => $self->mu,
-            vol           => $self->pricing_vol,
-        );
-    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::Lookback') {
-        %pricing_parameters = (
-            strikes         => [grep { $_ } values %{$self->barriers_for_pricing}],
-            spot            => $self->pricing_spot,
-            discount_rate   => $self->discount_rate,
-            t               => $self->timeinyears->amount,
-            mu              => $self->mu,
-            vol             => $self->pricing_vol,
-            payouttime_code => $payouttime_code,
-            payout_type     => 'non-binary',
-            contract_type   => $self->pricing_code,
-            spot_max        => $self->spot_min_max->{high},
-            spot_min        => $self->spot_min_max->{low},
-        );
     } else {
-        die "Unknown pricing engine: " . $self->pricing_engine_name;
+
+        my %contract_config = (
+            contract_type     => $self->pricing_code,
+            underlying_symbol => $self->underlying->symbol,
+            date_start        => $self->effective_start,
+            date_pricing      => $self->date_pricing,
+            date_expiry       => $self->date_expiry,
+            payouttime_code   => $payouttime_code,
+            for_date          => $self->underlying->for_date,
+            spot              => $self->pricing_spot,
+            strikes           => [grep { $_ } values %{$self->barriers_for_pricing}],
+            priced_with       => $self->priced_with,
+            payout_type       => $self->payout_type,
+            is_atm_contract   => $self->is_atm_bet,
+        );
+        if ($self->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope') {
+            #pricing_vol can be calculated using an empirical vol. So we have to sent the raw numbers
+            %pricing_parameters = (
+                %contract_config,
+                chronicle_reader         => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
+                discount_rate            => $self->discount_rate,
+                mu                       => $self->mu,
+                vol                      => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
+                q_rate                   => $self->q_rate,
+                r_rate                   => $self->r_rate,
+                volsurface               => $self->volsurface->surface,
+                volsurface_creation_date => $self->volsurface->creation_date,
+            );
+        } elsif ($self->pricing_engine_name eq 'Pricing::Engine::BlackScholes') {
+            %pricing_parameters = (
+                %contract_config,
+                t             => $self->timeinyears->amount,
+                discount_rate => $self->discount_rate,
+                mu            => $self->mu,
+                vol           => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
+            );
+        } elsif ($self->pricing_engine_name eq 'Pricing::Engine::Reset') {
+            %pricing_parameters = (
+                %contract_config,
+                contract_type => $self->pricing_code,
+                t             => $self->timeinyears->amount,
+                reset_time    => $self->reset_time_in_years,
+                discount_rate => $self->discount_rate,
+                mu            => $self->mu,
+                vol           => $self->pricing_vol,
+            );
+        } elsif ($self->pricing_engine_name eq 'Pricing::Engine::Lookback') {
+            %pricing_parameters = (
+                strikes         => [grep { $_ } values %{$self->barriers_for_pricing}],
+                spot            => $self->pricing_spot,
+                discount_rate   => $self->discount_rate,
+                t               => $self->timeinyears->amount,
+                mu              => $self->mu,
+                vol             => $self->pricing_vol,
+                payouttime_code => $payouttime_code,
+                payout_type     => 'non-binary',
+                contract_type   => $self->pricing_code,
+                spot_max        => $self->spot_min_max->{high},
+                spot_min        => $self->spot_min_max->{low},
+            );
+
+        } else {
+            die "Unknown pricing engine: " . $self->pricing_engine_name;
+        }
     }
 
     if (my @missing_parameters = grep { !exists $pricing_parameters{$_} } @{$self->pricing_engine_name->required_args}) {
@@ -589,6 +598,7 @@ sub _build_new_interface_engine {
         'Pricing::Engine::TickExpiry'           => 1,
         'Pricing::Engine::EuropeanDigitalSlope' => 1,
         'Pricing::Engine::Lookback'             => 1,
+        'Pricing::Engine::HighLowTicks'         => 1,
         'Pricing::Engine::Reset'                => 1,
     );
 
