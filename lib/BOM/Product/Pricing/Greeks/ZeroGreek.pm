@@ -1,4 +1,4 @@
-package BOM::Product::Pricing::Greeks::Digits;
+package BOM::Product::Pricing::Greeks::ZeroGreek;
 
 use Moose;
 

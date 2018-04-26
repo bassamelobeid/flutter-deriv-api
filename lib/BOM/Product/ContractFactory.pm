@@ -60,6 +60,8 @@ use BOM::Product::Contract::Vanilla_put;
 use BOM::Product::Contract::Lbfloatcall;
 use BOM::Product::Contract::Lbfloatput;
 use BOM::Product::Contract::Lbhighlow;
+use BOM::Product::Contract::Tickhigh;
+use BOM::Product::Contract::Ticklow;
 use BOM::Product::Contract::Resetcall;
 use BOM::Product::Contract::Resetput;
 
@@ -73,6 +75,9 @@ sub produce_contract {
     my ($build_arg, $maybe_currency, $maybe_sold) = @_;
 
     my $params_ref = {%{_args_to_ref($build_arg, $maybe_currency, $maybe_sold)}};
+
+    _validate_contract_specific_parameters($params_ref)
+        if (not $params_ref->{for_sale} and $params_ref->{bet_type} and $params_ref->{bet_type} =~ /^(TICKHIGH|TICKLOW)/);
 
     unless ($params_ref->{processed}) {
         # Categorizer's process always returns ARRAYREF, and here we will have and need only one element in this array
@@ -151,6 +156,22 @@ sub _validate_input_parameters {
     return;
 }
 
+# Sub to validate parameters that are specific to contracts.
+sub _validate_contract_specific_parameters {
+    my $params = shift;
+    # Get allowed params from asset
+
+    my $product_name = $params->{bet_type};    # TICKHIGH or TICKLOW
+
+    my $product_class = "BOM::Product::Contract::" . ucfirst lc $product_name;
+
+    my $allowed_inputs = $product_class->get_permissible_inputs();
+
+    BOM::Product::Contract->validate_inputs($params, $allowed_inputs);
+
+    return undef;
+}
+
 sub _args_to_ref {
     my ($build_arg, $maybe_currency, $maybe_sold) = @_;
 
@@ -205,7 +226,7 @@ sub make_similar_contract {
 
     # Sooner or later this should have some more knowledge of what can and
     # should be built, but for now we use this naive parameter switching.
-    foreach my $key (%$changes) {
+    foreach my $key (keys %$changes) {
         $build_parameters{$key} = $changes->{$key};
     }
 
