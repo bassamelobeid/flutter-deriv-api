@@ -238,7 +238,7 @@ rpc account_authentication => sub {
     my $client = BOM::User::Client->new({loginid => $loginid});
     my $user = BOM::User->new({email => $client->email});
 
-    my $status = $user->is_totp_enabled;
+    my $status = $user->is_totp_enabled // 0;
 
     # Get the Status of TOTP Activation
     if ($totp_action eq 'status') {
