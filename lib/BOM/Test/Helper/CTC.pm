@@ -1,4 +1,4 @@
-package BOM::Test::Helper::CTC;   
+package BOM::Test::Helper::CTC;
 
 use strict;
 use warnings;
