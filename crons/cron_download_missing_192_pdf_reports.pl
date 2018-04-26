@@ -30,11 +30,13 @@ for my $broker (qw/MF MX/) {
         );
 
         try {
-            return request_proveid($loginid) unless $xml_exists;
-
-            return request_pdf($broker, $loginid) if $xml_exists and not $pdf_exists;
-
-            remove_pending_status($loginid);
+            if (not $xml_exists) {
+                request_proveid($loginid);
+            } elsif (not $pdf_exists) {
+                request_pdf($broker, $loginid);
+            } else {
+                remove_pending_status($loginid);
+            }
         }
         catch {
             warn "ProveID failed, $_";
