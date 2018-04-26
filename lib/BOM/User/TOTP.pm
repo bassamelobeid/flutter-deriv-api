@@ -8,7 +8,7 @@ use Authen::OATH;
 
 =head1 NAME
 
-BOM::User::TOTP - Time Based OTP Handler
+BOM::User::TOTP - Time-Based One Time Password (TOTP) which uses a secret key and current time.
 
 =head1 SYNOPSIS
 
