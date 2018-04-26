@@ -435,6 +435,12 @@ sub startup {
                 stash_params => [qw/ server_name client_ip user_agent /]}
         ],
         [
+            'mt5_mamm',
+            {
+                require_auth => 'admin',
+                stash_params => [qw/ server_name client_ip user_agent /]}
+        ],
+        [
             'jp_knowledge_test',
             {
                 require_auth => 'admin',
