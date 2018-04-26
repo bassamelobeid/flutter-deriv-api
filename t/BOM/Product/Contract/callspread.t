@@ -34,8 +34,8 @@ subtest 'config' => sub {
     });
     ok $c->two_barriers,       'two barriers';
     is $c->pricing_code,       'CALLSPREAD', 'pricing code is CALLSPREAD';
-    is $c->display_name,       'Higher', 'display name is Higher';
-    is $c->category_code,      'spreads', 'category code is spreads';
+    is $c->display_name,       'Call Spread', 'display name is Call Spread';
+    is $c->category_code,      'callputspread', 'category code is callputspread';
     is $c->payout_type,        'non-binary', 'payout type is non-binary';
     is $c->payouttime,         'end', 'payout time is end';
     isa_ok $c->pricing_engine, 'Pricing::Engine::Callputspread';
@@ -111,8 +111,8 @@ subtest 'ask/bid price' => sub {
     is $c->multiplier, 100, 'multiplier is 100';
     is $c->pricing_engine->theo_price, 0.479312425854497, 'theo price 0.479312425854497';
     is $c->commission_per_unit, 0.01,             'commission per unit is base commission * theo probability per unit, at least 1 cent commission';
-    is $c->ask_price,           48.9312425854497, 'correct ask price';
-    is $c->bid_price,           46.9312425854497, 'correct bid price';
+    is $c->ask_price,           50, 'correct ask price';
+    is $c->bid_price,           48, 'correct bid price';
 };
 
 sub _create_ticks {
