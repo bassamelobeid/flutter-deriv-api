@@ -488,7 +488,7 @@ sub prepare_bet_data_for_buy {
     if ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_HIGHER_LOWER_BET) {
         # only store barrier in the database if it is defined.
         # asian contracts have barriers at/after expiry.
-        if ($contract->barrier) {
+        if ($contract->has_user_defined_barrier) {
             $bet_params->{$contract->barrier->barrier_type . '_barrier'} = $contract->barrier->supplied_barrier;
         }
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_DIGIT_BET) {
