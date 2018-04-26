@@ -496,7 +496,7 @@ subtest 'non ATM volatility indices variable commission structure' => sub {
     is $c->base_commission, 10, 'base commission is 10% if custom commission is matched';
     BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles('{}');
     $c = produce_contract($args);
-    is $c->base_commission, 2.3, 'base commission is 0.023 for less than 1-minute non ATM contract on R_100';
+    is $c->base_commission, 1.5, 'base commission is 0.015 for less than 1-minute non ATM contract on R_100';
     $args->{duration} = '60s';
     $c = produce_contract($args);
     is $c->base_commission, 1.5, 'base commission is 0.015 for 1-minute non ATM contract on R_100';
