@@ -18,19 +18,6 @@ foreach my $symbol (@symbols) {
     Test::More::is($market, 'forex', "$symbol belongs to $market market");
 }
 
-@symbols = ('UKBARC', 'UKBP');
-foreach my $symbol (@symbols) {
-    my $underlying = create_underlying($symbol);
-    my $market     = $underlying->market->name;
-    Test::More::is($market, 'stocks', "$symbol belongs to $market market");
-}
-
-@symbols = ('USINTC', 'USAAPL');
-foreach my $symbol (@symbols) {
-    my $underlying = create_underlying($symbol);
-    my $market     = $underlying->market->name;
-    Test::More::is($market, 'stocks', "$symbol belongs to $market market");
-}
 
 @symbols = ('FCHI', 'FTSE');
 foreach my $symbol (@symbols) {
