@@ -113,6 +113,11 @@ payments:
                   isa: Num
                   default: 0.002
                   global: 1
+    experimental_currencies_allowed:
+      description: "List of emails that allowed to deposite using experimental currencies"
+      isa: ArrayRef
+      default: []
+      global: 1
 quants:
   description: "Various quants' parameters"
   isa: section
