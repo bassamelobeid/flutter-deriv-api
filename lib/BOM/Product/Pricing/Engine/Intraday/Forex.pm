@@ -78,6 +78,7 @@ has base_engine => (
     lazy_build => 1,
 );
 
+
 sub _build_base_engine {
     my $self = shift;
 
@@ -97,6 +98,16 @@ sub _build_base_engine {
         (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code)));
 
     return Pricing::Engine::Intraday::Forex::Base->new(%args,);
+}
+
+has apply_equal_tie_markup => (
+    is         => 'ro',
+    lazy_build => 0,
+);
+
+sub _build_apply_equal_tie_markup {
+    my $self = shift;
+    return 1 if ($self->code eq 'CALLE' or $self->code eq 'PUTE');
 }
 
 sub _build_base_probability {
@@ -308,7 +319,7 @@ sub _build_risk_markup {
                 })) if $bet->remaining_time->minutes <= 15;
     }
 
-    $risk_markup->include_adjustment('add', Pricing::Engine::Markup::EqualTie->new->markup) if $self->barrier_category eq 'euro_atm_equals';
+    $risk_markup->include_adjustment('add', Pricing::Engine::Markup::EqualTie->new->markup) if $self->apply_equal_tie_markup;
 
     return $risk_markup;
 }
