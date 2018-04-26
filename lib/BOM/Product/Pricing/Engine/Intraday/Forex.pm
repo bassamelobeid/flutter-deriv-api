@@ -18,6 +18,7 @@ use BOM::Platform::Chronicle;
 
 use Pricing::Engine::Intraday::Forex::Base;
 use Pricing::Engine::Markup::EconomicEventsSpotRisk;
+use Pricing::Engine::Markup::EqualTie;
 
 =head2 tick_source
 
@@ -306,6 +307,8 @@ sub _build_risk_markup {
                     base_amount => $shortterm_risk_interpolator->linear($bet->remaining_time->minutes),
                 })) if $bet->remaining_time->minutes <= 15;
     }
+
+    $risk_markup->include_adjustment('add', Pricing::Engine::Markup::EqualTie->new->markup) if $self->barrier_category eq 'euro_atm_equals';
 
     return $risk_markup;
 }
