@@ -15,7 +15,6 @@ use File::Spec;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use DateTime;
 use Cache::RedisDB;
 use Date::Utility;
 use Format::Util::Numbers qw(roundcommon);
@@ -31,13 +30,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol => $_,
         date   => Date::Utility->new,
     }) for (qw/AUD EUR GBP HKD IDR JPY NZD SGD USD XAU ZAR/);
-
-Quant::Framework::Utils::Test::create_doc(
-    'stock',
-    {
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-    });
 
 initialize_realtime_ticks_db();
 
@@ -126,27 +118,6 @@ subtest 'display_decimals' => sub {
         }
     };
 
-    subtest 'stocks' => sub {
-        my $symbols_decimals = {
-            USAAPL => 2,
-            UKBAY  => 4,
-        };
-        my $underlying;
-        foreach my $symbol (qw(USAAPL UKBAY)) {
-            $underlying = create_underlying({symbol => $symbol});
-            my $decimals = $symbols_decimals->{$symbol};
-            is $underlying->display_decimals, $decimals, $symbol . ' display_decimals';
-        }
-
-        my $stock = create_underlying({symbol => 'USAAPL'});
-        $stock->set_combined_realtime({
-            epoch => time,
-            quote => 8
-        });
-        is roundcommon(0.0001, $stock->dividend_rate_for(0.5)), 0, 'correct dividend rate for stocks';
-        is $stock->dividend_rate_for(1.0), 0, 'correct dividend rate for stocks';
-        Cache::RedisDB->del('QUOTE', $stock->symbol);
-    };
 };
 
 subtest 'all attributes on a variety of underlyings' => sub {
@@ -281,11 +252,7 @@ subtest 'is_OTC' => sub {
         market    => 'indices',
         submarket => ['otc_index', 'smart_index'],
         );
-    my @OTC_stocks = create_underlying_db->get_symbols_for(
-        market    => 'stocks',
-        submarket => ['au_otc_stock', 'ge_otc_stock', 'uk_otc_stock', 'us_otc_stock'],
-    );
-    push @OTC_symbols, @OTC_stocks;
+
     foreach my $symbol (@OTC_symbols) {
         my $underlying = create_underlying($symbol);
 
@@ -432,11 +399,7 @@ subtest 'all methods on a selection of underlyings' => sub {
     'Preparing ticks';
 
     lives_ok {
-        my $date = DateTime->new(
-            year  => 2012,
-            month => 1,
-            day   => 19
-        );
+        my $date = Date::Utility->new('2012-01-19');
         BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily({
             epoch      => ($date->epoch - 86400),
             open       => 1.2746,
@@ -562,12 +525,11 @@ subtest combined_realtime => sub {
 };
 
 subtest 'daily close crossing intradays' => sub {
-    plan tests => 6;
+    plan tests => 5;
     my %expectations = (
         'frxEURUSD' => 0,
         'frxBROUSD' => 1,
         'AS51'      => 1,
-        'USAAPL'    => 1,
         'R_100'     => 0,
         'RDBULL'    => 1,
     );
@@ -578,13 +540,12 @@ subtest 'daily close crossing intradays' => sub {
 };
 
 subtest 'max_suspend_trading_feed_delay' => sub {
-    plan tests => 6;
+    plan tests => 5;
 
     my %expectations = (
         'frxEURUSD' => 30,
         'frxBROUSD' => 300,
         'AS51'      => 300,
-        'USAAPL'    => 300,
         'R_100'     => 300,
         'RDBULL'    => 300,
     );
