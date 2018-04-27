@@ -1,0 +1,216 @@
+<p>Limit type definitions:</p>
+<ul>
+    <li><b>Landing company wide limits (per landing company (client database))</b>
+        <ul>
+        <li>Global Potential Loss: sum of payout price - buy price of open contracts for a single database.</li>
+        <li>Global Realized Loss: sum of sell price - buy price of closed contracts for a single database.</li>
+        </ul>
+    </li>
+</ul>
+
+<p>Risk Profile Guidelines (there's no strict enforcement on limit amount but please use the guidelines so that we don't end up with hundreds of different numbers):</p>
+
+<ul>
+    <li>no_business: 0 Max Payout Per Contract(PCP), 0 Daily Turnver Per Client(DT)</li>
+    <li>extreme_risk: 100 (PCP), 1000 (DT)</li>
+    <li>high_risk: 5000 (PCP), 50000 (DT)</li>
+    <li>medium_risk: 20000 (PCP), 100000 (DT)</li>
+    <li>low_risk: 50000 (PCP), 500000 (DT)</li>
+</ul>
+
+<p>Existing contract groups:</p>
+
+<ul>
+    [% FOREACH group IN existing_contract_groups %]
+        <li>[% group.key %]: [% group.list %]</li>
+    [% END %]
+</ul>
+
+<br/><br/>
+<table class="pretty">
+    <tr>
+        <th>Market</th>
+        <th>Underlying Symbol</th>
+        <th>Expiry Type</th>
+        <th>Barrier Type</th>
+        <th>Contract Group</th>
+        <th>Landing Company</th>
+        <th>Limit Type</th>
+        <th>Limit Amount (USD)</th>
+        <th></th>
+    </tr>
+    <tr style="vertical-align: top;">
+        <td><div id="market"></div></td>
+        <td>
+            <div id="underlying_symbol">
+                <input type='text' name='underlying_symbol'></input>
+            </div>
+        </td>
+        <td><div id="expiry_type"></div></td>
+        <td><div id="barrier_type"></div></td>
+        <td><div id="contract_group"></div></td>
+        <td><div id="landing_company"></div></td>
+        <td>
+            <select name="limit_type">
+                [% FOREACH limit_type IN data.limit_types %]
+                    <option value="[% limit_type.item(0) %]">[% limit_type.item(1) %]</option>
+                [% END %]
+            </select>
+        </td>
+        <td>
+            <input type="text" name="limit_amount"></input>
+        </td>
+        <td>
+            <button onClick="saveLimit()" type="button">save</button>
+        </td>
+        <td class="save_result"></td>
+    </tr>
+</table>
+
+</br></br>
+<p><b>Landing company wide limits</b></p>
+
+<div id="per_landing_company"></div>
+
+<script>
+
+    var upload_url = "[% upload_url %]";
+
+    function deleteLimit(table_id, target_name, row_id) {
+        var el = \$('table#'+table_id).find('tr#'+row_id);
+        var result = el.find('td.result');
+        result.text('processing ...');
+
+        \$.ajax({
+            url: upload_url,
+            data: {
+                delete_limit: "1",
+                market: el.find('td.market').attr('data_key'),
+                underlying_symbol: el.find('td.underlying_symbol').attr('data_key'),
+                expiry_type: el.find('td.expiry_type').attr('data_key'),
+                contract_group: el.find('td.contract_group').attr('data_key'),
+                landing_company: el.find('td.landing_company').attr('data_key'),
+                limit_type: target_name,
+                barrier_type: el.find('td.barrier_type').attr('data_key'),
+                type: el.find('td.type').attr('data_key'),
+            },
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'red');
+                } else {
+                    createDisplayTable(config.data.records, config.data.header, 'per_landing_company');
+                }
+            }
+        });
+    }
+
+    function createDisplayTable(data, header, id) {
+        var table = '<table class="pretty" id="'+id+'"><tr>';
+
+        for (var i=0; i < header.length; i++) {
+            table += '<th>'+header[i][1]+'</th>';
+        }
+
+        table += '</tr>';
+
+        for (var i=0; i < data.length; i++) {
+            table += '<tr id='+i+'>';
+            var d = data[i];
+            for (var idx in header) {
+                var key = header[idx][0];
+                var value = d[key] || {data_key: '', display_value: ''};
+                if (\$.isNumeric(value.display_value)) {
+                    table += '<td class="'+key+'" data_key="'+value.data_key+'"><button onClick="deleteLimit(\''+id+'\',\''+key+'\','+i+')" type="button">delete</button>  '+value.display_value+'</td>';
+                } else {
+                    table += '<td class="'+key+'" data_key="'+value.data_key+'">'+value.display_value+'</td>';
+                }
+            }
+            table += '<td class="type" data_key="'+d['type'].data_key+'"></td>';
+            table += '<td class="result"></td>';
+            table += '</tr>'
+        }
+
+        table += '</table>';
+        \$('div#'+id).html(table);
+    }
+
+    function createInputTable(data, id) {
+        var table = '<table id="'+id+'">';
+
+        for (var i=0; i<data.length; i++) {
+            var input = data[i];
+            table += '<tr><td><input type="checkbox" name="'+id+'" value="'+input+'">'+input+'</input></td></tr>';
+        }
+
+        table += '</table>';
+        \$('div#'+id).html(table);
+    }
+
+    function saveLimit() {
+        var el = \$("table.pretty");
+        if (el) {
+            var result = el.find("td.save_result");
+            result.text('processing ...');
+            var market = el.find('input[name="market"]:checked').serialize();
+            var underlying_symbol = el.find('input[name="underlying_symbol"]').val();
+            var expiry_type = el.find('input[name="expiry_type"]:checked').serialize();
+            var contract_group = el.find('input[name="contract_group"]:checked').serialize();
+            var barrier_type = el.find('input[name="barrier_type"]:checked').serialize();
+            var limit_type = el.find('select[name="limit_type"]').val();
+            var limit_amount = el.find('input[name="limit_amount"]').val();
+            var landing_company = el.find('input[name="landing_company"]:checked').serialize();
+
+            \$.ajax({
+                url: upload_url,
+                data: {
+                    save_limit: "1",
+                    market: market,
+                    underlying_symbol: underlying_symbol,
+                    expiry_type: expiry_type,
+                    contract_group: contract_group,
+                    limit_type: limit_type,
+                    limit_amount: limit_amount,
+                    landing_company: landing_company,
+                    barrier_type: barrier_type,
+                },
+                success: function(data) {
+                    var config = \$.parseJSON(data);
+                    if (config.error) {
+                        result.text(config.error).css('color', 'red');
+                    } else {
+                        result.text('saved').css('color', 'green');
+                        createDisplayTable(config.data.records, config.data.header, 'per_landing_company');
+                    }
+                }
+            });
+        }
+    }
+
+    createInputTable([% data.landing_companies | none %], 'landing_company');
+    createInputTable([% data.markets | none %], 'market');
+    createInputTable([% data.expiry_types | none %], 'expiry_type');
+    createInputTable([% data.barrier_types | none %], 'barrier_type');
+    createInputTable([% data.contract_groups | none %], 'contract_group');
+
+    createDisplayTable([% existing_landing_company.records | none %], [% existing_landing_company.header | none %], 'per_landing_company');
+
+</script>
+<style>
+    table {
+        border-collapse: collapse;
+    }
+    .pretty th {
+        font-weight: bold;
+        height: 30px;
+        padding-left: 10px;
+    }
+    .pretty td {
+        border: 1px solid #dddddd;
+        text-align: left;
+    }
+    .inlineTable {
+        display: inline-block;
+        vertical-align: top;
+    }
+</style>
