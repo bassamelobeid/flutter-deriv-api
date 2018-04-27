@@ -153,3 +153,15 @@ sub cmd_UserPasswordCheck {
         ret_code => MT_RET_OK,
     };
 }
+
+sub cmd_PositionGetTotal {
+    my ($input) = @_;
+
+    $input->{login} eq $DETAILS{login}
+        or die "TODO: mock PositionGetTotal on unknown login\n";
+
+    return {
+        ret_code => MT_RET_OK,
+        total    => 0,
+    };
+}
