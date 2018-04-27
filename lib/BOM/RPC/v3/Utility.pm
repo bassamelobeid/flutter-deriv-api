@@ -464,10 +464,10 @@ sub validate_make_new_account {
                 message_to_client => localize('You already have a financial money account. Please switch accounts to trade financial products.')}
         ) if (grep { $siblings->{$_}->{landing_company_name} eq 'maltainvest' } keys %$siblings);
 
-        my $iom_validation_error;
-        $iom_validation_error = _validate_iom_client($client) if $landing_company_name eq 'iom';
-
-        return $iom_validation_error if $iom_validation_error;
+        return create_error({
+                code              => 'UnwelcomeAccount',
+                message_to_client => localize('You cannot perform this action, as your account [_1] is marked as unwelcome.', $client->loginid)}
+        ) if $client->get_status('unwelcome');
 
         # if from malta and account type is maltainvest, assign
         # maltainvest to landing company as client is upgrading
@@ -523,29 +523,6 @@ sub validate_make_new_account {
     }
 
     return permission_error() if (any { not $_->get_status('duplicate_account') } @landing_company_clients);
-
-    return undef;
-}
-
-sub _validate_iom_client {
-    my $client = shift;
-
-    return create_error({
-            code              => 'UnwelcomeAccount',
-            message_to_client => localize('You cannot perform this action, as your account [_1] is marked as unwelcome.', $client->loginid)}
-    ) if $client->get_status('unwelcome');
-
-    # If MX account has not done 192, BUT is authenticated, we allow them to open MF
-    return undef if $client->client_fully_authenticated;
-
-    return create_error({
-            code => 'KYCRequired',
-            message_to_client =>
-                localize('Before proceeding, please complete the identity verification process (KYC) for your [_1] account.', $client->loginid)})
-        unless BOM::Platform::ProveID->new(
-        client        => $client,
-        search_option => "ProveID_KYC"
-        )->has_done_request;
 
     return undef;
 }

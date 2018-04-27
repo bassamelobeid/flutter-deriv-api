@@ -296,29 +296,10 @@ rpc get_limits => sub {
     my $landing_company = LandingCompany::Registry->get_by_broker($client->broker)->short;
     my ($wl_config, $currency) = ($payment_limits->{withdrawal_limits}->{$landing_company}, $client->currency);
 
-    my $op_limits = BOM::Platform::Config::quants->{bet_limits}{open_positions_payout_per_symbol_limit};
-    my $open_positions_payout_per_symbol_limit;
-
-    # For malta landing company, we only allowed volatility indices. But this limit only applied to financial instruments,
-    # so skipping it here.
-    if ($landing_company ne 'malta') {
-        $open_positions_payout_per_symbol_limit = {
-            non_atm => {
-                less_than_seven_days => formatnumber('price', $currency, $op_limits->{non_atm}{less_than_seven_days}{$currency}),
-                more_than_seven_days => formatnumber('price', $currency, $op_limits->{non_atm}{more_than_seven_days}{$currency}),
-            },
-            ($landing_company =~ /japan/) ? () : (atm => formatnumber('price', $currency, $op_limits->{atm}{$currency})),
-        };
-    }
-
     my $limit = +{
         account_balance => formatnumber('amount', $currency, $client->get_limit_for_account_balance),
         payout          => formatnumber('price',  $currency, $client->get_limit_for_payout),
-        $open_positions_payout_per_symbol_limit ? (payout_per_symbol => $open_positions_payout_per_symbol_limit) : (),
-        open_positions                      => $client->get_limit_for_open_positions,
-        payout_per_symbol_and_contract_type => formatnumber(
-            'price', $currency, BOM::Platform::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency}
-        ),
+        open_positions  => $client->get_limit_for_open_positions,
     };
 
     $limit->{market_specific} = BOM::Platform::RiskProfile::get_current_profile_definitions($client);
@@ -505,7 +486,8 @@ rpc paymentagent_transfer => sub {
     return $error_sub->(localize('You cannot perform this action, as your account is cashier locked.'))
         if $client_fm->get_status('cashier_locked');
 
-    return $error_sub->(localize('You cannot perform this action, as your verification documents have expired.')) if $client_fm->documents_expired;
+    return $error_sub->(localize('You cannot perform this action, as your verification documents have expired.'))
+        if $client_fm->documents_expired;
 
     return $error_sub->(localize('Payment agent transfers are not allowed for the specified accounts.'))
         unless ($client_fm->landing_company->short eq $client_to->landing_company->short);
@@ -731,6 +713,8 @@ rpc paymentagent_withdraw => sub {
         return $error_sub->(localize('Your cashier is locked as per your request.'));
     }
 
+    return $error_sub->(localize('You cannot withdraw funds to the same account.')) if $client_loginid eq $paymentagent_loginid;
+
     my $authenticated_pa;
     if ($client->residence) {
         my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => $client->broker});
@@ -747,7 +731,7 @@ rpc paymentagent_withdraw => sub {
             db_operation => 'replica'
         }) or return $error_sub->(localize('The payment agent account does not exist.'));
 
-    return $error_sub->(localize('Payment agent transfers are not allowed for specified accounts.')) if ($client->broker ne $paymentagent->broker);
+    return $error_sub->(localize('Payment agent withdrawals are not allowed for specified accounts.')) if ($client->broker ne $paymentagent->broker);
 
     my $pa_client = $paymentagent->client;
     return $error_sub->(
