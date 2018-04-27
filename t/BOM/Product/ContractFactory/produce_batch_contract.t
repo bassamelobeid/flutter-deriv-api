@@ -22,9 +22,6 @@ $mocked_decimate->mock(
     sub {
         [map { {epoch => $_, decimate_epoch => $_, quote => 100 + 0.001 * $_} } (0 .. 80)];
     });
-my %custom_otm =
-    map { rand(1234) => {conditions => {market => $_, expiry_type => 'daily', is_atm_bet => 0}, value => 0.2,} } qw(forex indices commodities stocks);
-BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(JSON::MaybeXS->new->encode(\%custom_otm));
 
 my $now = Date::Utility->new('2017-03-15');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $now});
@@ -139,7 +136,7 @@ subtest 'produce_batch_contract - error check' => sub {
     $args->{duration} = '1d';
     $batch            = produce_batch_contract($args);
     $ask_prices       = $batch->ask_prices;
-    cmp_ok $ask_prices->{RANGE}->{'100.200-99.800'}->{ask_price}, '==', 2, 'minimum ask price';
+    cmp_ok $ask_prices->{RANGE}->{'100.200-99.800'}->{ask_price}, '==', 0.5, 'minimum ask price';
     is_deeply($ask_prices->{UPORDOWN}->{'100.200-99.800'}->{error}{message_to_client}, ['This contract offers no return.'],);
     is $ask_prices->{RANGE}->{'100.250-98.750'}->{ask_price},    2.36, 'correct ask price';
     is $ask_prices->{UPORDOWN}->{'100.250-98.750'}->{ask_price}, 8.36, 'correct ask price';
