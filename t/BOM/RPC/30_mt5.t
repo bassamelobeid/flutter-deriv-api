@@ -240,8 +240,6 @@ subtest 'login list' => sub {
         $c->result,
         [{
                 login      => $DETAILS{login},
-                group      => $DETAILS{group},
-                login      => $DETAILS{login},
                 email      => $DETAILS{email},
                 group      => $DETAILS{group},
                 balance    => $DETAILS{balance},
