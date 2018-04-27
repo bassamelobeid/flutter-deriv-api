@@ -4,7 +4,7 @@
   "title": "API Token Response",
   "description": "",
   "properties": {
-    "account_authentication": {
+    "account_security": {
       "type": "object",
       "properties": {
         "totp": {

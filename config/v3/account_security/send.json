@@ -4,7 +4,7 @@
   "title": "Account Authentication Request",
   "description": "This call manages Account Authentication features such as 2FA",
   "properties": {
-    "account_authentication": {
+    "account_security": {
       "type":"integer",
       "pattern": "^1$",
       "description": "Must be 1",
