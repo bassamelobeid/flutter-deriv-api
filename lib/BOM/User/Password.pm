@@ -3,7 +3,6 @@ use strict;
 use warnings;
 
 use Crypt::ScryptKDF qw(scrypt_hash scrypt_hash_verify);
-use Crypt::Salt;
 use Digest::SHA;
 use Encode;
 use Mojo::Util;
@@ -20,7 +19,7 @@ BOM::User::Password - Password hashing module for BOM
 # "Constants"
 
 # update every time the algorithm changes
-sub ALGO_VERSION { return 1; }
+sub ALGO_VERSION { return 2; }
 
 =head1 SYNOPSIS
 
@@ -36,11 +35,11 @@ sub ALGO_VERSION { return 1; }
 
 This module provides the basic password vault for the web site and all 
 functions relating.  Password strings contain all information needed to
-validate them including salt and algorithm version.  The current usage is to use
-* to separate fields and ^ to separate subfields.  So a password string may
-look like:
+validate them including salt and algorithm version. In the current version
+both salt and encrypted password are handled by L<Crypt::ScryptKDF|scrypt_hash>.
+So the password is like this:
 
-  1*$5$bababa*g1fvvG0AVyYI23n4EmOdtYqtMrfV6FijVHqbQzZi7F4
+    2*SCRYPT:16384:8:1:lkUvbSyxJduZAvgseqZvyg==:pks9+s4GDdbsZklk5BNPuVbOlM+rzsXWh2WDCxhFeJc=
 
 =head1 FUNCTIONS
 
@@ -67,20 +66,13 @@ too long.
 
 =cut
 
-sub _salt {
-    my $string = '';
-    $string .= salt() for 1 .. 8;
-    return $string;
-}
-
 sub hashpw {
     my $password = shift;
     # we need encode password, otherwise it is possible to report the warning "Wide character in subroutine entry";
     $password = Encode::encode_utf8($password);
     die 'password too long, possible DOS attack' if length($password) > 200;
-    my $salt = _salt;
-    my $hash = Crypt::ScryptKDF::scrypt_b64($password, $salt);
-    return ALGO_VERSION . "*$salt*$hash";
+    my $hash = scrypt_hash($password, \16);
+    return ALGO_VERSION . "*$hash";
 }
 
 =head2 checkpw($string, $hashed) 
