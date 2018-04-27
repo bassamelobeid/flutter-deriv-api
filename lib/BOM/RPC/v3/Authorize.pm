@@ -247,38 +247,26 @@ rpc account_security => sub {
     # Generate a new Secret Key if not already enabled
     elsif ($totp_action eq 'generate') {
         # return error if already enabled
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidRequest',
-                message_to_client => BOM::Platform::Context::localize("TOTP based 2FA is already enabled.")}) if $status;
+        return _create_error('InvalidRequest', 'TOTP based 2FA is already enabled.') if $status;
         # generate new secret key if it doesn't exits
         unless ($user->secret_key) {
             $user->{secret_key} = BOM::User::TOTP->generate_key();
             $user->save();
         }
-        # convert the key into base32
-        my $secret_key_base32 = encode_base32($user->secret_key);
-        return {totp => {secret_key => $secret_key_base32}};
+        # convert the key into base32 before sending
+        return {totp => {secret_key => encode_base32($user->secret_key)}};
     }
     # Enable or Disable 2FA
     elsif ($totp_action eq 'enable' || $totp_action eq 'disable') {
         # return error if user wants to enable 2fa and it's already enabled
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidRequest',
-                message_to_client => BOM::Platform::Context::localize("TOTP based 2FA is already enabled.")}
-        ) if ($status == 1 && $totp_action eq 'enable');
-
+        return _create_error('InvalidRequest', 'TOTP based 2FA is already enabled.') if ($status == 1 && $totp_action eq 'enable');
         # return error if user wants to disbale 2fa and it's already disabled
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidRequest',
-                message_to_client => BOM::Platform::Context::localize("TOTP based 2FA is already disabled.")}
-        ) if ($status == 0 && $totp_action eq 'disable');
+        return _create_error('InvalidRequest', 'TOTP based 2FA is already disabled.') if ($status == 0 && $totp_action eq 'disable');
 
         # verify the provided OTP with secret key from user
         my $otp = $params->{args}->{otp};
         my $verify = BOM::User::TOTP->verify_totp($user->secret_key, $otp);
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidOTP',
-                message_to_client => BOM::Platform::Context::localize("OTP verification failed")}) unless ($otp and $verify);
+        return _create_error('InvalidOTP', 'OTP verification failed') unless ($otp and $verify);
 
         if ($totp_action eq 'enable') {
             # enable 2FA
@@ -293,5 +281,12 @@ rpc account_security => sub {
         return {totp => {is_enabled => $user->is_totp_enabled}};
     }
 };
+
+sub _create_error {
+    my ($code, $message) = @_;
+    return BOM::RPC::v3::Utility::create_error({
+            code              => $code,
+            message_to_client => BOM::Platform::Context::localize($message)});
+}
 
 1;
