@@ -216,16 +216,26 @@ quants:
       isa: json_string
       global: 1
       default: '{}'
-    custom_otm_threshold:
-      description: "min ask probability for contracts specified using 'Custom OTM Threshold' b/o tool"
-      isa: json_string
+    global_potential_loss_alert_threshold:
+      description: "Alert threshold for global potential loss (in decimal, e.g. 0.5 is equivalent to 50%)"
+      isa: Num
       global: 1
-      default: '{}'
-    general_open_position_payout_limit:
-      description: "Open position payout limit for landing company. Note that the dollar amount in the currency you specify is total exposure for the landing company. E.g. '{\"japan\": {\"JPY\": \"100\"}}'"
-      isa: json_string
+      default: 0.5
+    global_realized_loss_alert_threshold:
+      description: "Alert threshold for global realized loss (in decimal, e.g. 0.5 is equivalent to 50%)"
+      isa: Num
       global: 1
-      default: '{}'
+      default: 0.5
+    enable_global_potential_loss:
+      description: "A switch to turn off global potential loss check."
+      isa: Bool
+      global: 1
+      default: 0
+    enable_global_realized_loss:
+      description: "A switch to turn off global realized loss check."
+      isa: Bool
+      global: 1
+      default: 0
 system:
   description: "Various parameters determining core application functionality"
   isa: section
