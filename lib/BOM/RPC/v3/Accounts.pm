@@ -514,7 +514,7 @@ rpc get_account_status => sub {
     my %financial_data = map { $_ => $params->{args}->{$_} } BOM::RPC::v3::Utility::keys_of_values $input_mappings;
 
     # Exclude the financial_assessment_not_complete status if MLT/MX client's completed Financial Information before
-    unless ($client->broker ~= '/^MX|MLT$/'
+    unless ($client->broker ~= /^MX|MLT$/
         and none { !$financial_assessment->{$_} } keys $input_mappings->{financial_information})
     {
         push @status, 'financial_assessment_not_complete'
