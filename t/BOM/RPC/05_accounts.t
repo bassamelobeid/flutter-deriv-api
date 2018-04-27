@@ -20,7 +20,7 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Helper::FinancialAssessment;
 use BOM::Database::Model::AccessToken;
 use BOM::RPC::v3::Utility;
-use BOM::Platform::Password;
+use BOM::User::Password;
 use BOM::User;
 use BOM::MT5::User::Async;
 
@@ -64,7 +64,7 @@ package main;
 # init db
 my $email       = 'abc@binary.com';
 my $password    = 'jskjd8292922';
-my $hash_pwd    = BOM::Platform::Password::hashpw($password);
+my $hash_pwd    = BOM::User::Password::hashpw($password);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
 });
@@ -709,6 +709,21 @@ subtest $method => sub {
     $data->{account_turnover}->{answer} = 'Less than $25,000';
     test_financial_assessment($data, 0, 'financial_assessment_not_complete should not present when questions are answered properly');
 
+    # duplicate_account is not supposed to be shown to the users
+    $test_client->set_status('duplicate_account')->save;
+    cmp_deeply(
+        $c->tcall($method, {token => $token_21}),
+        {
+            status                        => bag(qw(financial_assessment_not_complete)),
+            risk_classification           => 'low',
+            prompt_client_to_authenticate => '0',
+        },
+        'duplicate_account is not in the status'
+    );
+
+    $test_client->clr_status('duplicate_account');
+    $test_client->save;
+
     # $test_client->set_status('tnc_approval', 'test staff', 1);
 
     # reset the risk classification for the following test
@@ -1020,7 +1035,7 @@ subtest $method => sub {
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Your cashier was not locked.', 'return error if not locked');
 
     $mailbox->clear;
-    $test_client->cashier_setting_password(BOM::Platform::Password::hashpw($tmp_password));
+    $test_client->cashier_setting_password(BOM::User::Password::hashpw($tmp_password));
     $test_client->save;
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
@@ -1151,8 +1166,6 @@ subtest $method => sub {
         "indices_trading_frequency"            => "40 transactions or more in the past 12 months",
         "commodities_trading_experience"       => "1-2 years",
         "commodities_trading_frequency"        => "0-5 transactions in the past 12 months",
-        "stocks_trading_experience"            => "1-2 years",
-        "stocks_trading_frequency"             => "0-5 transactions in the past 12 months",
         "other_derivatives_trading_experience" => "Over 3 years",
         "other_derivatives_trading_frequency"  => "0-5 transactions in the past 12 months",
         "other_instruments_trading_experience" => "Over 3 years",
@@ -1245,7 +1258,7 @@ subtest $method => sub {
             args  => $args,
             token => $token1
         });
-    cmp_ok($res->{score}, "==", 30, "Got correct score");
+    cmp_ok($res->{score}, "==", 29, "Got correct score");
     is $res->{education_level}, 'Secondary', 'Got correct answer for assessment key';
 };
 

@@ -266,7 +266,7 @@ sub _check_password {
 
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'PasswordError',
-                message_to_client => localize('Old password is wrong.')}) if (not BOM::Platform::Password::checkpw($old_password, $user_pass));
+                message_to_client => localize('Old password is wrong.')}) if (not BOM::User::Password::checkpw($old_password, $user_pass));
 
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'PasswordError',
@@ -339,10 +339,11 @@ sub filter_siblings_by_landing_company {
     return {map { $_ => $siblings->{$_} } grep { $siblings->{$_}->{landing_company_name} eq $landing_company_name } keys %$siblings};
 }
 
+# TODO port to BOM::User::Client ?
 sub get_real_account_siblings_information {
-    my ($loginid, $no_disabled) = @_;
+    my ($client, $no_disabled) = @_;
 
-    my $user = BOM::User->new({loginid => $loginid});
+    my $user = $client->user;
     # return empty if we are not able to find user, this should not
     # happen but added as additional check
     return {} unless $user;
@@ -425,7 +426,7 @@ sub validate_make_new_account {
             message_to_client => $error_map->{'invalid residence'}}) if ($countries_instance->restricted_country($residence));
 
     # get all real account siblings
-    my $siblings = get_real_account_siblings_information($client->loginid);
+    my $siblings = get_real_account_siblings_information($client);
 
     # if no real sibling is present then its virtual
     if (scalar(keys %$siblings) == 0) {
@@ -465,10 +466,10 @@ sub validate_make_new_account {
                 message_to_client => localize('You already have a financial money account. Please switch accounts to trade financial products.')}
         ) if (grep { $siblings->{$_}->{landing_company_name} eq 'maltainvest' } keys %$siblings);
 
-        my $iom_validation_error;
-        $iom_validation_error = _validate_iom_client($client) if $landing_company_name eq 'iom';
-
-        return $iom_validation_error if $iom_validation_error;
+        return create_error({
+                code              => 'UnwelcomeAccount',
+                message_to_client => localize('You cannot perform this action, as your account [_1] is marked as unwelcome.', $client->loginid)}
+        ) if $client->get_status('unwelcome');
 
         # if from malta and account type is maltainvest, assign
         # maltainvest to landing company as client is upgrading
@@ -517,33 +518,10 @@ sub validate_make_new_account {
     return undef;
 }
 
-sub _validate_iom_client {
-    my $client = shift;
-
-    return create_error({
-            code              => 'UnwelcomeAccount',
-            message_to_client => localize('You cannot perform this action, as your account [_1] is marked as unwelcome.', $client->loginid)}
-    ) if $client->get_status('unwelcome');
-
-    # If MX account has not done 192, BUT is authenticated, we allow them to open MF
-    return undef if $client->client_fully_authenticated;
-
-    return create_error({
-            code => 'KYCRequired',
-            message_to_client =>
-                localize('Before proceeding, please complete the identity verification process (KYC) for your [_1] account.', $client->loginid)})
-        unless BOM::Platform::ProveID->new(
-        client        => $client,
-        search_option => "ProveID_KYC"
-        )->has_done_request;
-
-    return undef;
-}
-
 sub validate_set_currency {
     my ($client, $currency) = @_;
 
-    my $siblings = get_real_account_siblings_information($client->loginid);
+    my $siblings = get_real_account_siblings_information($client);
 
     # is virtual check is already done in set account currency
     # but better to have it here as well so that this sub can

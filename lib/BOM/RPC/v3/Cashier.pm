@@ -34,10 +34,10 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Config;
-use BOM::Platform::AuditLog;
+use BOM::User::AuditLog;
 use BOM::Platform::RiskProfile;
 use BOM::Platform::Client::CashierValidation;
-use BOM::Platform::PaymentNotificationQueue;
+use BOM::User::Client::PaymentNotificationQueue;
 use BOM::RPC::v3::Utility;
 use BOM::Transaction::Validation;
 use BOM::Database::Model::HandoffToken;
@@ -215,7 +215,7 @@ rpc "cashier", sub {
         . $secret
         . '&Action='
         . $action;
-    BOM::Platform::AuditLog::log('redirecting to doughflow', $df_client->loginid);
+    BOM::User::AuditLog::log('redirecting to doughflow', $df_client->loginid);
     return $url;
 };
 
@@ -258,7 +258,7 @@ sub _get_cashier_url {
 
     $prefix = lc($currency) if $prefix eq 'cryptocurrency';
 
-    BOM::Platform::AuditLog::log("redirecting to $prefix");
+    BOM::User::AuditLog::log("redirecting to $prefix");
 
     $language = uc($language // 'EN');
 
@@ -296,29 +296,10 @@ rpc get_limits => sub {
     my $landing_company = LandingCompany::Registry->get_by_broker($client->broker)->short;
     my ($wl_config, $currency) = ($payment_limits->{withdrawal_limits}->{$landing_company}, $client->currency);
 
-    my $op_limits = BOM::Platform::Config::quants->{bet_limits}{open_positions_payout_per_symbol_limit};
-    my $open_positions_payout_per_symbol_limit;
-
-    # For malta landing company, we only allowed volatility indices. But this limit only applied to financial instruments,
-    # so skipping it here.
-    if ($landing_company ne 'malta') {
-        $open_positions_payout_per_symbol_limit = {
-            non_atm => {
-                less_than_seven_days => formatnumber('price', $currency, $op_limits->{non_atm}{less_than_seven_days}{$currency}),
-                more_than_seven_days => formatnumber('price', $currency, $op_limits->{non_atm}{more_than_seven_days}{$currency}),
-            },
-            ($landing_company =~ /japan/) ? () : (atm => formatnumber('price', $currency, $op_limits->{atm}{$currency})),
-        };
-    }
-
     my $limit = +{
         account_balance => formatnumber('amount', $currency, $client->get_limit_for_account_balance),
         payout          => formatnumber('price',  $currency, $client->get_limit_for_payout),
-        $open_positions_payout_per_symbol_limit ? (payout_per_symbol => $open_positions_payout_per_symbol_limit) : (),
-        open_positions                      => $client->get_limit_for_open_positions,
-        payout_per_symbol_and_contract_type => formatnumber(
-            'price', $currency, BOM::Platform::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency}
-        ),
+        open_positions  => $client->get_limit_for_open_positions,
     };
 
     $limit->{market_specific} = BOM::Platform::RiskProfile::get_current_profile_definitions($client);
@@ -505,7 +486,8 @@ rpc paymentagent_transfer => sub {
     return $error_sub->(localize('You cannot perform this action, as your account is cashier locked.'))
         if $client_fm->get_status('cashier_locked');
 
-    return $error_sub->(localize('You cannot perform this action, as your verification documents have expired.')) if $client_fm->documents_expired;
+    return $error_sub->(localize('You cannot perform this action, as your verification documents have expired.'))
+        if $client_fm->documents_expired;
 
     return $error_sub->(localize('Payment agent transfers are not allowed for the specified accounts.'))
         unless ($client_fm->landing_company->short eq $client_to->landing_company->short);
@@ -636,7 +618,7 @@ rpc paymentagent_transfer => sub {
         }
     }
 
-    BOM::Platform::PaymentNotificationQueue->add(
+    BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'payment_agent',
         currency      => $currency,
         loginid       => $loginid_to,
@@ -731,6 +713,8 @@ rpc paymentagent_withdraw => sub {
         return $error_sub->(localize('Your cashier is locked as per your request.'));
     }
 
+    return $error_sub->(localize('You cannot withdraw funds to the same account.')) if $client_loginid eq $paymentagent_loginid;
+
     my $authenticated_pa;
     if ($client->residence) {
         my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => $client->broker});
@@ -747,7 +731,7 @@ rpc paymentagent_withdraw => sub {
             db_operation => 'replica'
         }) or return $error_sub->(localize('The payment agent account does not exist.'));
 
-    return $error_sub->(localize('Payment agent transfers are not allowed for specified accounts.')) if ($client->broker ne $paymentagent->broker);
+    return $error_sub->(localize('Payment agent withdrawals are not allowed for specified accounts.')) if ($client->broker ne $paymentagent->broker);
 
     my $pa_client = $paymentagent->client;
     return $error_sub->(
@@ -896,7 +880,7 @@ rpc paymentagent_withdraw => sub {
         }
     }
 
-    BOM::Platform::PaymentNotificationQueue->add(
+    BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'payment_agent',
         currency      => $currency,
         loginid       => $pa_client->loginid,
@@ -1021,7 +1005,7 @@ rpc transfer_between_accounts => sub {
     my $args = $params->{args};
     my ($currency, $amount) = @{$args}{qw/currency amount/};
 
-    my $siblings = BOM::RPC::v3::Utility::get_real_account_siblings_information($client->loginid, 1);
+    my $siblings = BOM::RPC::v3::Utility::get_real_account_siblings_information($client, 1);
     unless (keys %$siblings) {
         warn __PACKAGE__ . "::transfer_between_accounts Error:  Unable to get user data for " . $client->loginid . "\n";
         return _transfer_between_accounts_error(localize('Internal server error'));
@@ -1080,12 +1064,12 @@ rpc transfer_between_accounts => sub {
     my ($to_amount, $fees, $fees_percent) =
         BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($client_from->loginid, $amount, $from_currency, $to_currency);
 
-    BOM::Platform::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
+    BOM::User::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
 
     my $error_audit_sub = sub {
         my ($err, $client_message) = @_;
 
-        BOM::Platform::AuditLog::log("Account Transfer FAILED, $err");
+        BOM::User::AuditLog::log("Account Transfer FAILED, $err");
 
         $client_message ||= localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.');
         return _transfer_between_accounts_error($client_message);
@@ -1188,7 +1172,7 @@ rpc transfer_between_accounts => sub {
         return $error_audit_sub->($err);
     }
 
-    BOM::Platform::AuditLog::log("Account Transfer SUCCESS, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
+    BOM::User::AuditLog::log("Account Transfer SUCCESS, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
 
     return {
         status              => 1,

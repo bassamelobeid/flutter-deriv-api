@@ -14,7 +14,7 @@ use BOM::Platform::Token;
 my $email_vr = 'abv@binary.com';
 my $email_cr = 'abc@binary.com';
 my $password = 'jskjd8292922';
-my $hash_pwd = BOM::Platform::Password::hashpw($password);
+my $hash_pwd = BOM::User::Password::hashpw($password);
 my $dob      = '1990-07-09';
 
 my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -74,9 +74,7 @@ subtest 'reset_password_vrtc' => sub {
 
 # refetch vrtc user
 subtest 'check_password' => sub {
-    $user_vr = BOM::User->new({
-        email => $email_vr,
-    });
+    $user_vr = $test_client_vr->user;
     $status = $user_vr->login(password => $new_password);
     is $status->{success}, 1, 'vrtc login with new password OK';
 };
@@ -158,9 +156,7 @@ subtest $method => sub {
 
 # refetch cr user
 subtest 'check_password' => sub {
-    $user_cr = BOM::User->new({
-        email => $email_cr,
-    });
+    $user_cr = $test_client_cr->user;
     $status = $user_cr->login(password => $new_password);
     is $status->{success}, 1, 'cr login with new password OK';
 };

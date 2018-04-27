@@ -63,7 +63,7 @@
                     "required": "1",
                     "items": {
                         "type": "string",
-                        "pattern": "^(commodities|forex|indices|stocks|volidx)$",
+                        "pattern": "^(commodities|forex|indices|volidx)$",
                         "required": "1"
                     }
                 },
@@ -73,7 +73,7 @@
                     "required": "1",
                     "items": {
                         "type": "string",
-                        "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset)$",
+                        "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|highlowticks|reset)$",
                         "required": "1"
                     }
                 },
@@ -130,7 +130,7 @@
                     "required": "1",
                     "items": {
                         "type": "string",
-                        "pattern": "^(commodities|forex|indices|stocks|volidx)$",
+                        "pattern": "^(commodities|forex|indices|volidx)$",
                         "required": "1"
                     }
                 },
@@ -140,7 +140,7 @@
                     "required": "1",
                     "items": {
                         "type": "string",
-                        "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset)$",
+                        "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|highlowticks|reset)$",
                         "required": "1"
                     }
                 },

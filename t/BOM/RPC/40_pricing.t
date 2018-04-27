@@ -13,7 +13,7 @@ my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
 my $method = 'asset_index';
 
-my $email  = 'test@binary.com';
+my $email     = 'test@binary.com';
 my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
     email       => $email,
@@ -22,9 +22,10 @@ my ($token_mf) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $c
 
 use constant {
   # Total number of symbols listed in underlyings.yml
-  NUM_TOTAL_SYMBOLS      => 113,
+  NUM_TOTAL_SYMBOLS      => 73,
   # Total number of volatility symbols listed in underlyings.yml
   NUM_VOLATILITY_SYMBOLS => 7,
+
 };
 # These numbers may differ from actual production output due to symbols being
 #   suspended in the live platform config, which won't be included in the return.
@@ -33,89 +34,25 @@ my $entry_count_mlt = NUM_VOLATILITY_SYMBOLS;
 my $entry_count_mf  = NUM_TOTAL_SYMBOLS - NUM_VOLATILITY_SYMBOLS;
 my $entry_count_cr  = NUM_TOTAL_SYMBOLS;
 my $first_entry_mlt = [
-  "R_10",
-  "Volatility 10 Index",
-  [
+    "R_10",
+    "Volatility 10 Index",
     [
-      "callput",
-      "Higher/Lower",
-      "5t",
-      "365d"
-    ],
-    [
-      "callput",
-      "Rise/Fall",
-      "5t",
-      "365d"
-    ],
-    [
-      "touchnotouch",
-      "Touch/No Touch",
-      "2m",
-      "365d"
-    ],
-    [
-      "endsinout",
-      "Ends Between/Ends Outside",
-      "2m",
-      "365d"
-    ],
-    [
-      "staysinout",
-      "Stays Between/Goes Outside",
-      "2m",
-      "365d"
-    ],
-    [
-      "digits",
-      "Digits",
-      "5t",
-      "10t"
-    ],
-    [
-      "asian",
-      "Asians",
-      "5t",
-      "10t"
-    ]
-  ]
-];
+        ["callput",      "Higher/Lower",               "5t", "365d"],
+        ["callput",      "Rise/Fall",                  "5t", "365d"],
+        ["touchnotouch", "Touch/No Touch",             "2m", "365d"],
+        ["endsinout",    "Ends Between/Ends Outside",  "2m", "365d"],
+        ["staysinout",   "Stays Between/Goes Outside", "2m", "365d"],
+        ["digits",       "Digits",                     "5t", "10t"],
+        ["asian",        "Asians",                     "5t", "10t"]]];
 my $first_entry_cr_mf = [
-  "frxAUDJPY",
-  "AUD/JPY",
-  [
+    "frxAUDJPY",
+    "AUD/JPY",
     [
-      "callput",
-      "Higher/Lower",
-      "1d",
-      "365d"
-    ],
-    [
-      "callput",
-      "Rise/Fall",
-      "5t",
-      "365d"
-    ],
-    [
-      "touchnotouch",
-      "Touch/No Touch",
-      "1d",
-      "365d"
-    ],
-    [
-      "endsinout",
-      "Ends Between/Ends Outside",
-      "1d",
-      "365d"
-    ],
-    [
-      "staysinout",
-      "Stays Between/Goes Outside",
-      "1d",
-      "365d"
-    ]
-  ]
-];
+        ["callput",      "Higher/Lower",               "1d", "365d"],
+        ["callput",      "Rise/Fall",                  "5t", "365d"],
+        ["touchnotouch", "Touch/No Touch",             "1d", "365d"],
+        ["endsinout",    "Ends Between/Ends Outside",  "1d", "365d"],
+        ["staysinout",   "Stays Between/Goes Outside", "1d", "365d"]]];
 
 subtest "$method logged in - no arg" => sub {
     my $params = {
@@ -134,8 +71,7 @@ subtest "$method logged in - with arg" => sub {
     my $params = {
         language => 'EN',
         token    => $token_mf,
-        args     => {landing_company => 'malta'}
-    };
+        args     => {landing_company => 'malta'}};
     my $result = $c->call_ok($method, $params)->has_no_system_error->has_no_error->result;
     # Result should be for Binary (Europe) Ltd
     # Only trades volatilities, so should be 7 entries and first entry should
@@ -159,8 +95,7 @@ subtest "$method logged out - no arg" => sub {
 subtest "$method logged out - with arg" => sub {
     my $params = {
         language => 'EN',
-        args     => {landing_company => 'malta'}
-    };
+        args     => {landing_company => 'malta'}};
     my $result = $c->call_ok($method, $params)->has_no_system_error->has_no_error->result;
     # Result should be for Binary (Europe) Ltd
     # Only trades volatilities, so should be 7 entries and first entry should

@@ -130,7 +130,7 @@ subtest $method => sub {
 
             # Make virtual client with user
             my $password = 'jskjd8292922';
-            my $hash_pwd = BOM::Platform::Password::hashpw($password);
+            my $hash_pwd = BOM::User::Password::hashpw($password);
             $email = 'new_email' . rand(999) . '@binary.com';
             $user  = BOM::User->create(
                 email    => $email,
@@ -218,7 +218,7 @@ subtest $method => sub {
     subtest 'Initialization' => sub {
         lives_ok {
             my $password = 'jskjd8292922';
-            my $hash_pwd = BOM::Platform::Password::hashpw($password);
+            my $hash_pwd = BOM::User::Password::hashpw($password);
             $email = 'new_email' . rand(999) . '@binary.com';
             $user  = BOM::User->create(
                 email    => $email,
@@ -334,7 +334,7 @@ subtest $method => sub {
     subtest 'Init MLT MF' => sub {
         lives_ok {
             my $password = 'jskjd8292922';
-            my $hash_pwd = BOM::Platform::Password::hashpw($password);
+            my $hash_pwd = BOM::User::Password::hashpw($password);
             $email = 'new_email' . rand(999) . '@binary.com';
             $user  = BOM::User->create(
                 email    => $email,
@@ -389,7 +389,7 @@ subtest $method => sub {
     subtest 'Init MX MF' => sub {
         lives_ok {
             my $password = 'jskjd8292922';
-            my $hash_pwd = BOM::Platform::Password::hashpw($password);
+            my $hash_pwd = BOM::User::Password::hashpw($password);
             $email = 'mx_email' . rand(999) . '@binary.com';
             $user  = BOM::User->create(
                 email    => $email,
@@ -436,14 +436,7 @@ subtest $method => sub {
         $client_mx->save;
 
         $result = $rpc_ct->call_ok($method, $params)->result;
-        is $result->{error}->{code}, 'KYCRequired', 'Client KYC is pending';
-
-        my $mock_client = Test::MockModule->new('BOM::User::Client');
-        $mock_client->mock(client_fully_authenticated => sub { note "mocked Client->client_fully_authenticated returning true"; 1 });
-
-        $result = $rpc_ct->call_ok($method, $params)->result;
-
-        $mock_client->unmock_all();
+        is $result->{error}->{code}, undef, 'Allow to open even if Client KYC is pending';
 
         my $new_loginid = $result->{client_id};
         my $auth_token_mf = BOM::Database::Model::AccessToken->new->create_token($new_loginid, 'test token');
@@ -473,7 +466,7 @@ subtest $method => sub {
     subtest 'Initialization' => sub {
         lives_ok {
             my $password = 'jskjd8292922';
-            my $hash_pwd = BOM::Platform::Password::hashpw($password);
+            my $hash_pwd = BOM::User::Password::hashpw($password);
             $email = 'new_email' . rand(999) . '@binary.com';
             $user  = BOM::User->create(
                 email    => $email,

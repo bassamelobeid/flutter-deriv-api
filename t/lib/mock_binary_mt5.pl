@@ -57,8 +57,8 @@ sub cmd_UserAdd {
 
     $input->{mainPassword} eq $DETAILS{password}->{main}
         or die "UserAdd with unexpected mainPassword=$input->{mainPassword}\n";
-    # allow another group to pass in order to create new real MT5 financial account
-    $input->{group} eq $DETAILS{group} || $input->{group} eq 'real\vanuatu_standard'
+    # allow another group to pass in order to create new real (standard & advanced) MT5 financial account
+    $input->{group} eq $DETAILS{group} || $input->{group} =~ /real\\vanuatu_.*/
         or die "UserAdd with unexpected group=$input->{group}\n";
 
     $input->{investPassword} eq $DETAILS{password}->{investor}
@@ -151,5 +151,17 @@ sub cmd_UserPasswordCheck {
 
     return {
         ret_code => MT_RET_OK,
+    };
+}
+
+sub cmd_PositionGetTotal {
+    my ($input) = @_;
+
+    $input->{login} eq $DETAILS{login}
+        or die "TODO: mock PositionGetTotal on unknown login\n";
+
+    return {
+        ret_code => MT_RET_OK,
+        total    => 0,
     };
 }

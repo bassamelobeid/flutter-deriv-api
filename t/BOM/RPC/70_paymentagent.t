@@ -505,6 +505,12 @@ for my $withdraw_currency ('USD', 'BTC') {
         is($res->{error}{code}, 'PermissionDenied', $test);
         reset_withdrawal_testargs();
 
+        $test                                   = 'Withdrawal fails if payer has same logind as payment agent one';
+        $testargs->{args}{paymentagent_loginid} = $payer->loginid;
+        $res                                    = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
+        is($res->{error}{code}, 'PaymentAgentWithdrawError', $test);
+        reset_withdrawal_testargs();
+
         $test = 'Withdrawal works if token is not valid and dry_run is enabled';
         $res  = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         ## The dry_run argument always gives a status of 2 (not 1) and returns early
@@ -631,7 +637,7 @@ for my $withdraw_currency ('USD', 'BTC') {
         $payer->broker('MLT');
         $mock_landingcompany->mock('allows_payment_agents', sub { return 1; });
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        like($res->{error}{message_to_client}, qr/transfers are not allowed for specified accounts/, $test);
+        like($res->{error}{message_to_client}, qr/withdrawals are not allowed for specified accounts/, $test);
         $mock_landingcompany->unmock('allows_payment_agents');
         $payer->broker('CR');
 
