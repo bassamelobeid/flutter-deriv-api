@@ -37,6 +37,11 @@ requires_auth();
 
 use constant MT5_ACCOUNT_THROTTLE_KEY_PREFIX => 'MT5ACCOUNT::THROTTLE::';
 
+# Defines mt5 account rights combination when trading is enabled
+use constant MT5_ACCOUNT_TRADING_ENABLED_RIGHTS_ENUM => qw(
+    483 1503 2527 3555
+);
+
 # Defines the oldest data we'll allow for conversion rates, anything past this
 # (including when markets are closed) will be rejected.
 use constant CURRENCY_CONVERSION_MAX_AGE => 3600;
@@ -76,7 +81,7 @@ sub _make_error {
 
     $mt5_logins = mt5_login_list({ client => $client })
 
-Takes a client object and returns all possible MT5 login IDs 
+Takes a client object and returns all possible MT5 login IDs
 associated with that client. Otherwise, returns an error message indicating
 that MT5 is suspended.
 
@@ -186,20 +191,19 @@ async_rpc mt5_new_account => sub {
     return Future->done($mt5_suspended) if $mt5_suspended;
 
     my ($client, $args) = @{$params}{qw/client args/};
-    my $account_type     = delete $args->{account_type};
-    my $mt5_account_type = delete $args->{mt5_account_type} // '';
-    my $brand            = Brands->new(name => request()->brand);
-    my $user             = $client->user;
+    my $account_type = delete $args->{account_type};
 
-    return create_error_future({
+    my $invalid_account_type_error = create_error_future({
             code              => 'InvalidAccountType',
-            message_to_client => localize('Invalid account type.')}) if (not $account_type or $account_type !~ /^demo|gaming|financial$/);
+            message_to_client => localize('Invalid account type.')});
+    return $invalid_account_type_error if (not $account_type or $account_type !~ /^demo|gaming|financial$/);
 
     my $residence = $client->residence;
     return create_error_future({
             code              => 'NoResidence',
             message_to_client => localize('Please set your country of residence.')}) unless $residence;
 
+    my $brand = Brands->new(name => request()->brand);
     my $countries_list = $brand->countries_instance->countries_list;
     return permission_error_future()
         unless $countries_list->{$residence};
@@ -213,24 +217,26 @@ async_rpc mt5_new_account => sub {
             code              => 'InvalidSubAccountType',
             message_to_client => localize('Invalid sub account type.')});
 
+    my $mt5_account_type = delete $args->{mt5_account_type} // '';
     return Future->done($invalid_sub_type_error) if ($mt5_account_type and $mt5_account_type !~ /^standard|advanced$/);
+
+    my $manager_id = delete $args->{manager_id} // '';
+    # demo account is not allowed for mamm account
+    return $invalid_account_type_error if $manager_id and $account_type eq 'demo';
 
     my $get_company_name = sub {
         my $type = shift;
 
         $type = 'mt_' . $type . '_company';
-        if (defined $countries_list->{$residence}->{$type}) {
-
-            # get MT company from countries.yml
-            return $countries_list->{$residence}->{$type};
-        }
+        # get MT company from countries.yml
+        return $countries_list->{$residence}->{$type} if (defined $countries_list->{$residence}->{$type});
 
         return 'none';
     };
 
     my ($mt_company, $group);
+    my $user = $client->user;
     if ($account_type eq 'demo') {
-
         # demo will have demo for financial and demo for gaming
         if ($mt5_account_type) {
             return permission_error_future() if (($mt_company = $get_company_name->('financial')) eq 'none');
@@ -262,13 +268,15 @@ async_rpc mt5_new_account => sub {
                     message_to_client => localize('Please complete financial assessment.')}) unless $client->financial_assessment();
         }
 
-        # populate mt5 agent account associated with affiliate token
-        $args->{agent} = _get_mt5_account_from_affiliate_token($client->myaffiliates_token);
+        # populate mt5 agent account from manager id if applicable
+        # else get one associated with affiliate token
+        $args->{agent} = $manager_id // _get_mt5_account_from_affiliate_token($client->myaffiliates_token);
 
         $group = 'real\\' . $mt_company;
+        $group .= '_mamm' if $manager_id;
+
         $group .= "_$mt5_account_type" if $account_type eq 'financial';
-        $group .= "_$residence"
-            if (first { $residence eq $_ } @{$brand->countries_with_own_mt5_group});
+        $group .= "_$manager_id" if $manager_id;
     }
 
     return create_error_future({
@@ -446,11 +454,11 @@ Binary.com
         args    => $args
     })
 
-Takes a client object and a hash reference as inputs and returns the details of 
+Takes a client object and a hash reference as inputs and returns the details of
 the MT5 user, based on the MT5 login id passed.
 
 Takes the following (named) parameters as inputs:
-    
+
 =over 4
 
 =item * C<params> hashref that contains:
@@ -459,7 +467,7 @@ Takes the following (named) parameters as inputs:
 
 =item * A BOM::User::Client object under the key C<client>.
 
-=item * A hash reference under the key C<args> that contains the MT5 login id 
+=item * A hash reference under the key C<args> that contains the MT5 login id
 under C<login> key.
 
 =back
@@ -523,11 +531,9 @@ async_rpc mt5_get_settings => sub {
         sub {
             my ($settings) = @_;
 
-            if (ref $settings eq 'HASH' and $settings->{error}) {
-                return create_error_future({
-                        code              => 'MT5GetUserError',
-                        message_to_client => $settings->{error}});
-            }
+            return create_error_future({
+                    code              => 'MT5GetUserError',
+                    message_to_client => $settings->{error}}) if (ref $settings eq 'HASH' and $settings->{error});
 
             if (my $country = $settings->{country}) {
                 my $country_code = Locale::Country::Extra->new()->code_from_country($country);
@@ -540,6 +546,10 @@ async_rpc mt5_get_settings => sub {
 
             $settings->{currency} = $settings->{group} =~ /vanuatu|costarica|demo/ ? 'USD' : 'EUR';
 
+            # we don't want to send this field back
+            delete $settings->{rights};
+            delete $settings->{agent};
+
             return Future->done($settings);
         });
 };
@@ -550,9 +560,9 @@ $user_mt5_settings = mt5_set_settings({
         client  => $client,
         args    => $args
     })
-    
-Takes a client object and a hash reference as inputs and returns the updated details of 
-the MT5 user, based on the MT5 login id passed, upon success.
+
+Takes a client object and a hash reference as inputs and returns the updated
+details of the MT5 user, based on the MT5 login id passed, upon success.
 
 Takes the following (named) parameters as inputs:
 
@@ -639,11 +649,9 @@ async_rpc mt5_set_settings => sub {
         sub {
             my ($settings) = @_;
 
-            if (ref $settings eq 'HASH' and $settings->{error}) {
-                return BOM::RPC::v3::Utility::create_error({
-                        code              => 'MT5UpdateUserError',
-                        message_to_client => $settings->{error}});
-            }
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'MT5UpdateUserError',
+                    message_to_client => $settings->{error}}) if (ref $settings eq 'HASH' and $settings->{error});
 
             $settings->{country} = $country_code;
             return Future->done($settings);
@@ -656,12 +664,12 @@ async_rpc mt5_set_settings => sub {
         client  => $client,
         args    => $args
     })
-    
-Takes a client object and a hash reference as inputs and returns 1 upon successful
-validation of the user's password.
-    
+
+Takes a client object and a hash reference as inputs and returns 1 upon
+successful validation of the user's password.
+
 Takes the following (named) parameters as inputs:
-    
+
 =over 4
 
 =item * C<params> hashref that contains:
@@ -670,7 +678,7 @@ Takes the following (named) parameters as inputs:
 
 =item * A BOM::User::Client object under the key C<client>.
 
-=item * A hash reference under the key C<args> that contains the MT5 login id 
+=item * A hash reference under the key C<args> that contains the MT5 login id
 under C<login> key.
 
 =back
@@ -754,12 +762,12 @@ async_rpc mt5_password_check => sub {
         client  => $client,
         args    => $args
     })
-    
-Takes a client object and a hash reference as inputs and returns 1 upon successful
-change of the user's MT5 account password.
-    
+
+Takes a client object and a hash reference as inputs and returns 1 upon
+successful change of the user's MT5 account password.
+
 Takes the following (named) parameters as inputs:
-    
+
 =over 4
 
 =item * C<params> hashref that contains:
@@ -866,12 +874,12 @@ async_rpc mt5_password_change => sub {
         client  => $client,
         args    => $args
     })
-    
-Takes a client object and a hash reference as inputs and returns 1 upon successful
-reset the user's MT5 account password.
-    
+
+Takes a client object and a hash reference as inputs and returns 1 upon
+successful reset the user's MT5 account password.
+
 Takes the following (named) parameters as inputs:
-    
+
 =over 3
 
 =item * C<params> hashref that contains:
@@ -936,6 +944,10 @@ Returns any of the following:
 
 async_rpc mt5_password_reset => sub {
     my $params = shift;
+
+    my $mt5_suspended = _is_mt5_suspended();
+    return Future->done($mt5_suspended) if $mt5_suspended;
+
     my $client = $params->{client};
     my $args   = $params->{args};
     my $login  = $args->{login};
@@ -947,8 +959,6 @@ async_rpc mt5_password_reset => sub {
                 code              => $err->{code},
                 message_to_client => $err->{message_to_client}});
     }
-
-    my $user = BOM::User->new({email => $email});
 
     # MT5 login not belongs to user
     return permission_error_future()
@@ -1199,6 +1209,95 @@ async_rpc mt5_withdrawal => sub {
         });
 };
 
+async_rpc mt5_mamm => sub {
+    my $params = shift;
+
+    my $mt5_suspended = _is_mt5_suspended();
+    return Future->done($mt5_suspended) if $mt5_suspended;
+
+    my ($client, $args)   = @{$params}{qw/client args/};
+    my ($login,  $action) = @{$args}{qw/login action/};
+
+    # MT5 login not belongs to client
+    return permission_error_future()
+        unless _check_logins($client, ['MT' . $login]);
+
+    return BOM::MT5::User::Async::get_user($login)->then(
+        sub {
+            my ($settings) = @_;
+
+            return Future->fail('MT5Error', $settings->{error}) if (ref $settings eq 'HASH' and $settings->{error});
+
+            return Future->fail(
+                'PermissionDenied',
+                localize(
+                    "You need to ensure that you don't have open positions and withdraw your MT5 account balance before revoking the manager associated with your account."
+                )) if ($action and $action eq 'revoke' and ($settings->{balance} // 0) > 0);
+
+            # to revoke manager we just disable trading for mt5 account
+            # we cannot change group else accounting team will have problem during
+            # reconciliation.
+            # we cannot remove agent fields as thats used for auditing else
+            # it would have been a simple check
+            #
+            # MT5 way to disable trading is not very intuitive, its based on
+            # https://support.metaquotes.net/en/docs/mt5/api/reference_user/imtuser/imtuser_enum#enusersrights
+            # and rights column from user setting return numbers based on combination
+            # of these enumerations,
+            #
+            # 483  - All options except OTP and change password (default)
+            # 1507 - All options except OTP
+            # 2531 - All options except change password
+            # 3555 - All options enabled
+            #
+            # 4 is score for disabled trading
+            my $current_rights = $settings->{rights} // 0;
+            my $has_manager = ($settings->{group} =~ /mamm/ and any { $_ == $current_rights } MT5_ACCOUNT_TRADING_ENABLED_RIGHTS_ENUM) ? 1 : 0;
+
+            return Future->done({
+                    status     => 0,
+                    manager_id => ''
+                }) unless $has_manager;
+
+            # if agent is not set then mt5 returns 0 hence || not //
+            return Future->done({
+                    status     => 1,
+                    manager_id => $settings->{agent} || ''
+                }) if (not $action or $action ne 'revoke');
+
+            return _mt5_has_open_positions($login)->then(
+                sub {
+                    my ($open_positions) = @_;
+                    return Future->fail('MT5Error', $open_positions->{error})
+                        if (ref $open_positions eq 'HASH' and $open_positions->{error});
+
+                    return Future->fail(
+                        'PermissionDenied',
+                        localize(
+                            "You need to ensure that you don't have open positions and withdraw your MT5 account balance before revoking the manager associated with your account."
+                        )) if $open_positions;
+
+                    $settings->{rights} += 4;
+                    return BOM::MT5::User::Async::update_mamm_user($settings)->then(
+                        sub {
+                            my ($user_updated) = @_;
+                            return Future->fail('MT5Error', $user_updated->{error})
+                                if (ref $user_updated eq 'HASH' and $user_updated->{error});
+
+                            return Future->done({
+                                status     => 1,
+                                manager_id => ''
+                            });
+                        });
+                });
+        }
+        )->else(
+        sub {
+            my ($code, $error) = @_;
+            return _make_error($code, $error);
+        });
+};
+
 sub _is_mt5_suspended {
     my $app_config = BOM::Platform::Runtime->instance->app_config;
 
@@ -1293,6 +1392,13 @@ sub _mt5_validate_and_get_amount {
             return permission_error_future() unless ($setting->{group} // '') =~ /^real\\/;
 
             my $action = ($error_code =~ /Withdrawal/) ? 'withdrawal' : 'deposit';
+
+            # master groups are real\costarica_mamm_master and
+            # real\vanuatu_mamm_advanced_master
+            return _make_error($error_code,
+                localize('Permission error. MT5 manager accounts are not allowed to withdraw as payments are processed manually.'))
+                if ($action eq 'withdrawal' and ($setting->{group} // '') =~ /^real\\[a-z]*_mamm(?:_[a-z]*)?_master$/);
+
             # check for fully authenticated only if it's not gaming account
             # as of now we only support gaming for binary brand, in future if we
             # support for champion please revisit this
@@ -1346,6 +1452,20 @@ sub _mt5_validate_and_get_amount {
                 if $amount > financialrounding('amount', $source_currency, $max * 0.99);
 
             return Future->done($mt5_amount);
+        });
+}
+
+sub _mt5_has_open_positions {
+    my $login = shift;
+
+    return BOM::MT5::User::Async::get_open_positions_count($login)->then(
+        sub {
+            my ($response) = @_;
+
+            return Future->done({error => localize('We cannot get open positions for this account.')})
+                if (ref $response eq 'HASH' and $response->{error});
+
+            return Future->done($response->{total} ? 1 : 0);
         });
 }
 
