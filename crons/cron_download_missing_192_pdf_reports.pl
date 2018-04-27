@@ -112,7 +112,7 @@ sub request_proveid {
     BOM::Platform::Client::IDAuthentication->new(
         client        => $client,
         force_recheck => 1
-    )->_do_proveid;
+    )->do_proveid;
 
     # Remove pending status to prevent ProveID search for the next cron schedule
     return remove_pending_status($loginid);
