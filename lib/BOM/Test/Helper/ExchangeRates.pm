@@ -16,6 +16,7 @@ sub populate_exchange_rates {
         BTC => 5500,
         BCH => 320,
         LTC => 50,
+        DAI => 1,
     };
 
     Cache::RedisDB->set('QUOTE', "frx${_}USD", {quote => $rates->{$_}}) for keys %$rates;
