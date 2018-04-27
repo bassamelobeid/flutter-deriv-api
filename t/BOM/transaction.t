@@ -260,7 +260,7 @@ subtest 'japan KLFB' => sub {
     my $jp_client = create_client('JP');
     top_up $jp_client, 'JPY', 1000000;
 
-    clean_fmbo('JP');
+    close_all_open_contracts('JP');
     my $now           = Date::Utility->new;
     my $quants_config = BOM::Platform::QuantsConfig->new(
         chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
@@ -1186,108 +1186,6 @@ subtest 'max_payout_open_bets validation', sub {
     }
     'survived';
     restore_time();
-};
-
-subtest 'max_payout_per_symbol_and_bet_type validation', sub {
-    plan tests => 11;
-    lives_ok {
-        my $cl = create_client;
-
-        top_up $cl, 'USD', 100;
-
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
-
-        my $bal;
-        is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
-
-        my $contract = produce_contract({
-            underlying   => $underlying,
-            bet_type     => 'CALL',
-            currency     => 'USD',
-            payout       => 10.00,
-            duration     => '15m',
-            current_tick => $tick,
-            barrier      => 'S0P',
-        });
-        my $now = Date::Utility->new();
-        my $txn = BOM::Transaction->new({
-            client        => $cl,
-            contract      => $contract,
-            price         => 5.20,
-            payout        => $contract->payout,
-            amount_type   => 'payout',
-            purchase_date => $now,
-        });
-
-        my $error = do {
-            # need to do this because these limits are not by landing company anymore
-            my $mock_client = Test::MockModule->new('BOM::User::Client');
-            $mock_client->mock(get_limit_for_payout => sub { note "mocked Client->get_limit_for_payout returning 1000.00"; 1000.00 });
-            note "change quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit->{USD}} to 29.99";
-            local BOM::Platform::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 29.99;
-
-            is +BOM::Transaction->new({
-                    client        => $cl,
-                    contract      => $contract,
-                    price         => 5.20,
-                    payout        => $contract->payout,
-                    amount_type   => 'payout',
-                    purchase_date => $now,
-                })->buy, undef, '1st bet bought';
-
-            is +BOM::Transaction->new({
-                    client        => $cl,
-                    contract      => $contract,
-                    price         => 5.20,
-                    payout        => $contract->payout,
-                    amount_type   => 'payout',
-                    purchase_date => $now,
-                })->buy, undef, '2nd bet bought';
-
-            $txn->buy;
-        };
-        SKIP: {
-            skip 'no error', 4
-                if not defined $error
-                or ref $error ne 'Error::Base';
-
-            is $error->get_type, 'PotentialPayoutLimitForSameContractExceeded', 'error is PotentialPayoutLimitForSameContractExceeded';
-
-            is $txn->contract_id,    undef, 'txn->contract_id';
-            is $txn->transaction_id, undef, 'txn->transaction_id';
-            is $txn->balance_after,  undef, 'txn->balance_after';
-        }
-
-        # retry with a slightly higher limit should succeed
-        $error = do {
-            note "change quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} to 30";
-            local BOM::Platform::Config::quants->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 30;
-
-            my $contract_r100 = produce_contract({
-                underlying   => $underlying_r100,
-                bet_type     => 'CALL',
-                currency     => 'USD',
-                payout       => 10.00,
-                duration     => '15m',
-                current_tick => $tick_r100,
-                barrier      => 'S0P',
-            });
-
-            is +BOM::Transaction->new({
-                    client        => $cl,
-                    contract      => $contract_r100,
-                    price         => 5.20,
-                    payout        => $contract_r100->payout,
-                    amount_type   => 'payout',
-                    purchase_date => Date::Utility->new(),
-                })->buy, undef, 'R_100 contract bought -- should not interfere R_50 trading';
-
-            $txn->buy;
-        };
-
-        is $error, undef, 'no error';
-    }
-    'survived';
 };
 
 subtest 'max_turnover validation', sub {
@@ -2643,9 +2541,10 @@ subtest 'buy on suspend_trading|suspend_trades|suspend_buy|disabled_market|suspe
     'survived';
 };
 
-sub clean_fmbo {
+sub close_all_open_contracts {
     my $broker_code = shift;
-    my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker_code});
+    my $fullpayout  = shift // 0;
+    my $clientdb    = BOM::Database::ClientDB->new({broker_code => $broker_code});
 
     my $dbh = $clientdb->db->dbh;
     my $sql = q{select client_loginid,currency_code from transaction.account};
@@ -2659,10 +2558,10 @@ sub clean_fmbo {
         {
             my $contract = produce_contract($fmbo->{short_code}, $client_data->[1]);
             my $txn = BOM::Transaction->new({
-                client        => BOM::User::Client->new({loginid => $client_data->[0]}),
-                contract      => $contract,
-                source        => 23,
-                price         => $fmbo->{buy_price},
+                client   => BOM::User::Client->new({loginid => $client_data->[0]}),
+                contract => $contract,
+                source   => 23,
+                price => ($fullpayout ? $fmbo->{payout_price} : $fmbo->{buy_price}),
                 contract_id   => $fmbo->{id},
                 purchase_date => $contract->date_start,
             });
