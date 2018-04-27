@@ -41,9 +41,6 @@ frxAUDCAD: &inactive_fx
         euro_atm:
           max: 5h
           min: 3m
-        euro_atm_equals:
-          max: 5h
-          min: 3m
 frxAUDCHF: *inactive_fx
 frxAUDNZD: *inactive_fx
 frxAUDPLN: *inactive_fx
@@ -62,9 +59,6 @@ frxAUDJPY: &active_fx
         euro_non_atm:
           max: 5h
           min: 15m
-        euro_atm_equals:
-          max: 5h
-          min: 3m
 frxAUDUSD: *active_fx
 frxEURAUD: *active_fx
 frxEURCAD: *active_fx
