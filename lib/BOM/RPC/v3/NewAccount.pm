@@ -363,15 +363,7 @@ rpc new_account_maltainvest => sub {
     my $input_mappings = BOM::Platform::Account::Real::default::get_financial_input_mapping();
     my %financial_data = map { $_ => $params->{args}->{$_} } BOM::RPC::v3::Utility::keys_of_values $input_mappings;
 
-    my $financial_evaluation = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
-
     my $user = $client->user;
-    foreach my $cli ($user->clients) {
-        if ($cli->broker eq 'MLT') {
-            $cli->financial_assessment({data => Encode::encode_utf8($json->encode($financial_evaluation->{user_data}))});
-            $cli->save;
-        }
-    }
 
     # When a Binary (Europe) Ltd/Binary (IOM) Ltd account is created,
     # the 'place of birth' field is not present.
