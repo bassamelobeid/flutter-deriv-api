@@ -138,44 +138,6 @@ if ($r->param('delete_client')) {
     $need_to_save = 1;
 }
 
-if ($r->param('update_otm')) {
-    code_exit_BO('Must specify either underlying symbol/market and otm value to set custom OTM threshold')
-        unless ($r->param('underlying_symbol') or $r->param('market'))
-        and $r->param('otm_value');
-
-    code_exit_BO('Maximum value of OTM threshold is 1.') if $r->param('otm_value') > 1;
-
-    my $current = $json->decode($quants_config->custom_otm_threshold);
-
-    # underlying symbol supercedes market
-    my $which = $r->param('underlying_symbol') ? 'underlying_symbol' : 'market';
-    my @common_inputs = qw(expiry_type is_atm_bet);
-    foreach my $key (map { my $input = $_; $input =~ s/\s+//; $input } split ',', $r->param($which)) {
-        my $string = join '', map { $r->param($_) } grep { $r->param($_) ne '' } @common_inputs;
-        my $uniq_key = substr(md5_hex($key . $string), 0, 16);
-        $current->{$uniq_key} = {
-            conditions => {
-                $which => $key,
-                map { $_ => $r->param($_) } grep { $r->param($_) ne '' } @common_inputs
-            },
-            value => $r->param('otm_value'),
-        };
-    }
-    $quants_config->custom_otm_threshold($json->encode($current));
-    $need_to_save = 1;
-}
-
-if ($r->param('delete_otm')) {
-    my $current = $json->decode($quants_config->custom_otm_threshold);
-    unless ($r->param('otm_id')) {
-        code_exit_BO('Please specify otm id to delete.');
-    }
-
-    delete $current->{$r->param('otm_id')};
-    $quants_config->custom_otm_threshold($json->encode($current));
-    $need_to_save = 1;
-}
-
 BOM::DynamicSettings::dynamic_save() if $need_to_save;
 
 Bar("Limit Definitions");
@@ -265,15 +227,6 @@ BOM::Backoffice::Request::template->process(
     'backoffice/update_limit.html.tt',
     {
         url => request()->url_for('backoffice/quant/product_management.cgi'),
-    }) || die BOM::Backoffice::Request::template->error;
-
-Bar("Custom OTM Threshold");
-
-BOM::Backoffice::Request::template->process(
-    'backoffice/update_otm_threshold.html.tt',
-    {
-        url             => request()->url_for('backoffice/quant/product_management.cgi'),
-        existing_custom => $json->decode($quants_config->custom_otm_threshold),
     }) || die BOM::Backoffice::Request::template->error;
 
 Bar("Japan KLFB");
