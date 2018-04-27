@@ -34,7 +34,7 @@ sub generate_key {
     return $key;
 }
 
-=head2 verify_totp('secret_key', 'totp')
+=head2 verify_totp
 
 Verifies if the provided TOTP is correct in accordance with secret key provided. Returns 1 or 0.
 
@@ -45,8 +45,7 @@ sub verify_totp {
 
     return 0 unless ($secret_key && $totp);
 
-    my $oath      = Authen::OATH->new();
-    my $oath_totp = $oath->totp($secret_key);
+    my $oath_totp = Authen::OATH->new()->totp($secret_key);
     return int($oath_totp eq $totp);
 }
 
