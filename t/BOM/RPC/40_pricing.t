@@ -22,7 +22,7 @@ my ($token_mf) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $c
 
 use constant {
     # Total number of symbols listed in underlyings.yml
-    NUM_TOTAL_SYMBOLS => 113,
+    NUM_TOTAL_SYMBOLS => 111,
     # Total number of volatility symbols listed in underlyings.yml
     NUM_VOLATILITY_SYMBOLS => 7,
 };
@@ -38,7 +38,7 @@ my $first_entry_mlt = [
     [
         ["callput",      "Higher/Lower",               "5t", "365d"],
         ["callput",      "Rise/Fall",                  "5t", "365d"],
-        ["touchnotouch", "Touch/No Touch",             "2m", "365d"],
+        ["touchnotouch", "Touch/No Touch",             "5t", "365d"],
         ["endsinout",    "Ends Between/Ends Outside",  "2m", "365d"],
         ["staysinout",   "Stays Between/Goes Outside", "2m", "365d"],
         ["digits",       "Digits",                     "5t", "10t"],
