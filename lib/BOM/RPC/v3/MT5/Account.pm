@@ -546,9 +546,9 @@ async_rpc mt5_get_settings => sub {
 
 sub _extract_settings {
     my ($settings, $additional_keys) = @_;
-    my @allowed_keys = qw/login email group balance name company leverage/;
-    my $filtered_settings;
-    @allowed_keys = (@allowed_keys, @$additional_keys) if defined $additional_keys;
+    my @allowed_keys      = qw/login email group balance name company leverage/;
+    my $filtered_settings = {};
+    push @allowed_keys, @$additional_keys if ref $additional_keys eq 'ARRAY';
     if (my $country = $settings->{country}) {
         my $country_code = Locale::Country::Extra->new()->code_from_country($country);
         if ($country_code) {
