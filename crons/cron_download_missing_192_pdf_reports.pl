@@ -124,7 +124,7 @@ sub remove_pending_status {
     my $client = get_client($loginid);
 
     $client->clr_status('proveid_pending');
-    return $client->save or die 'Unable to clear proveid_pending status';
+    return $client->save || die 'Unable to clear proveid_pending status';
 }
 
 sub get_client {
