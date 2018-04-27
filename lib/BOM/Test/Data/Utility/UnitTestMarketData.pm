@@ -115,7 +115,11 @@ sub _init {
                                 'commodities' => '100',
                                 'volidx'      => '100',
                                 'config'      => '100',
-                            }}}}
+                            }}
+                    },
+                    enable_global_potential_loss => 0,
+                    enable_global_realized_loss  => 0,
+                },
             },
             '_rev' => time
         },
