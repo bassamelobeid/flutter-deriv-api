@@ -188,7 +188,7 @@ subtest $method => sub {
 
         $user->email_verified(1);
         $user->save;
-        
+
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
             sub { shift->{landing_company} },
             'Binary (C.R.) S.A.',
