@@ -68,14 +68,14 @@ $t->post_ok(
     });
 
 # Check for OTP Page after login
-$t = $t->content_like(qr/otp_proceed/);
+$t = $t->content_like(qr/totp_proceed/);
 
 $csrf_token = $t->tx->res->dom->at('input[name=csrf_token]')->val;
 ok $csrf_token, 'csrf_token is there';
 
 $t->post_ok(
     "/authorize?app_id=$app_id" => form => {
-        otp_proceed => 1,
+        totp_proceed => 1,
         otp         => Authen::OATH->new()->totp($secret_key),
         csrf_token  => $csrf_token
     });

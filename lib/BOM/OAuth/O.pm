@@ -122,7 +122,7 @@ sub authorize {
     # If the User has provided OTP, verify it
     if (    $c->req->method eq 'POST'
         and ($c->csrf_token eq (defang($c->param('csrf_token')) // ''))
-        and defang($c->param('otp_proceed')))
+        and defang($c->param('totp_proceed')))
     {
         my $otp = defang($c->param('otp'));
         $is_verified = BOM::User::TOTP->verify_totp($user->secret_key, $otp);
