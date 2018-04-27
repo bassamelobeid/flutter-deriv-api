@@ -11,8 +11,9 @@ use BOM::Platform::Client::Utility;
 use BOM::User::Password;
 use Test::More;
 use BOM::Test::Data::Utility::UnitTestDatabase;
+use BOM::Database::ClientDB;
 
-our @EXPORT_OK = qw( create_client top_up );
+our @EXPORT_OK = qw( create_client top_up close_all_open_contracts);
 
 #
 # wrapper for BOM::Test::Data::Utility::UnitTestDatabase::create_client(
@@ -84,4 +85,5 @@ sub top_up {
     note $c->loginid . "'s balance is now $cur " . $trx->balance_after . "\n";
     return;
 }
+
 1;
