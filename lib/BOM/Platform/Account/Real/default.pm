@@ -231,14 +231,6 @@ sub get_financial_input_mapping {
             'label'           => 'Commodities trading frequency',
             'possible_answer' => $frequency_possible_answer
         },
-        stocks_trading_experience => {
-            'label'           => 'Stocks trading experience',
-            'possible_answer' => $experience_possible_answer
-        },
-        stocks_trading_frequency => {
-            'label'           => 'Stocks trading frequency',
-            'possible_answer' => $frequency_possible_answer
-        },
         other_derivatives_trading_experience => {
             'label'           => 'Binary options or other financial derivatives trading experience',
             'possible_answer' => $experience_possible_answer

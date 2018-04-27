@@ -6,9 +6,7 @@ use BOM::Platform::Account::Real::default;
 
 my @all_keys = qw/
     other_derivatives_trading_frequency
-    stocks_trading_experience
     other_instruments_trading_frequency
-    stocks_trading_frequency
     forex_trading_frequency
     education_level
     other_derivatives_trading_experience
