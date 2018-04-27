@@ -38,7 +38,7 @@ sub run_authentication {
     # will return a structure suitable for passing to a mailer.
     my $envelope;
     if ($landing_company eq 'iom') {
-        $envelope = $self->_do_proveid;
+        $envelope = $self->do_proveid;
     } elsif ($landing_company eq 'malta'
         && !$client->get_status('age_verification')
         && !$client->has_valid_documents)
@@ -51,9 +51,9 @@ sub run_authentication {
 }
 
 #
-# All logic in _do_proveid meet compliance requirements, which can be changed over time
+# All logic in do_proveid meet compliance requirements, which can be changed over time
 #
-sub _do_proveid {
+sub do_proveid {
     my $self   = shift;
     my $client = $self->client;
 
