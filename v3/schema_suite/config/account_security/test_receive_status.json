@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
-    "account_authentication": {
+    "account_security": {
       "type": "object",
       "properties": {
         "totp": {
@@ -23,7 +23,7 @@
     },
     "msg_type": {
       "type": "string",
-      "pattern": "account_authentication",
+      "pattern": "account_security",
       "required": "1"
     }
   }
