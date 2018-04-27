@@ -122,33 +122,6 @@ sub validate_barrier {
     return undef;
 }
 
-sub prepare_ask {
-    my $p1 = shift;
-    my %p2 = %$p1;
-
-    $p2{date_start} //= 0;
-    if ($p2{date_expiry}) {
-        $p2{fixed_expiry} //= 1;
-    }
-
-    if (defined $p2{barrier} && defined $p2{barrier2}) {
-        $p2{high_barrier} = delete $p2{barrier};
-        $p2{low_barrier}  = delete $p2{barrier2};
-    } elsif ($p1->{contract_type} !~ /^(ASIAN|DIGITEVEN|DIGITODD)/) {
-        $p2{barrier} //= 'S0P';
-        delete $p2{barrier2};
-    }
-
-    $p2{underlying}  = delete $p2{symbol};
-    $p2{bet_type}    = delete $p2{contract_type};
-    $p2{amount_type} = delete $p2{basis} if exists $p2{basis};
-    if ($p2{duration} and not exists $p2{date_expiry}) {
-        $p2{duration} .= (delete $p2{duration_unit} or "s");
-    }
-
-    return \%p2;
-}
-
 =head2 longcode
 
 Perform a longcode lookup - this is entirely handled by our
