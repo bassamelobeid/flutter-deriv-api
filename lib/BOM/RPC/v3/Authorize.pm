@@ -229,7 +229,7 @@ rpc logout => sub {
     return {status => 1};
 };
 
-rpc account_authentication => sub {
+rpc account_security => sub {
     my $params        = shift;
     my $token_details = $params->{token_details};
     my $loginid       = $token_details->{loginid};
