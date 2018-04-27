@@ -22,7 +22,7 @@ my ($token_mf) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $c
 
 use constant {
     # Total number of symbols listed in underlyings.yml
-    NUM_TOTAL_SYMBOLS => 111,
+    NUM_TOTAL_SYMBOLS => 113,
     # Total number of volatility symbols listed in underlyings.yml
     NUM_VOLATILITY_SYMBOLS => 7,
 };
