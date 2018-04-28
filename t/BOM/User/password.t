@@ -58,5 +58,6 @@ ok(BOM::User::Password::checkpw('São Paulo', '1*fUpmNZvYEKa8QkXu*H3qq0QnooATqGn
     'version 1 of password can be checked');
 ok(BOM::User::Password::checkpw('São Paulo', '2*SCRYPT:16384:8:1:lkUvbSyxJduZAvgseqZvyg==:pks9+s4GDdbsZklk5BNPuVbOlM+rzsXWh2WDCxhFeJc='),
     'version 2 of password can be checked');
-like(BOM::User::Password::hashpw('São Paulo'), qr/^1\*/, 'We are creating version 1 password now');
+like(BOM::User::Password::hashpw('São Paulo'), qr/^2\*/, 'We are creating version 2 password now');
 throws_ok { BOM::User::Password::checkpw("hello", "3*hello") } qr/Don't support the format of password/, 'We do not support version 3';
+
