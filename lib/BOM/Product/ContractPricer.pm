@@ -553,14 +553,18 @@ sub _build_base_commission {
 sub _build_commission_markup {
     my $self = shift;
 
-    $self->_set_price_calculator_params('commission_markup');
+    # $self->_set_price_calculator_params('commission_markup');
+    $self->price_calculator->theo_probability($self->theo_probability);
+    $self->price_calculator->min_commission_amount($self->min_commission_amount);
     return $self->price_calculator->commission_markup;
 }
 
 sub _build_commission_from_stake {
     my $self = shift;
 
-    $self->_set_price_calculator_params('commission_from_stake');
+    # $self->_set_price_calculator_params('commission_from_stake');
+    $self->price_calculator->theo_probability($self->theo_probability);
+    $self->price_calculator->commission_markup($self->commission_markup);
     return $self->price_calculator->commission_from_stake;
 }
 

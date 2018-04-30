@@ -29,28 +29,45 @@ has [qw(
 sub _build_ask_probability {
     my $self = shift;
 
-    $self->_set_price_calculator_params('ask_probability');
+    # $self->_set_price_calculator_params('ask_probability');
+    $self->price_calculator->theo_probability($self->theo_probability);
     return $self->price_calculator->ask_probability;
 }
 
 sub _build_theo_probability {
     my $self = shift;
 
-    $self->_set_price_calculator_params('theo_probability');
-    return $self->price_calculator->theo_probability;
+    # $self->_set_price_calculator_params('theo_probability');
+    my $probability =
+        $self->new_interface_engine
+        ? Math::Util::CalculatedValue::Validatable->new({
+            name        => 'theo_probability',
+            description => 'theoretical value of a contract',
+            set_by      => $self->pricing_engine_name,
+            base_amount => $self->pricing_engine->theo_probability,
+            minimum     => 0,
+            maximum     => 1,
+        })
+        : $self->pricing_engine->probability;
+    return $self->price_calculator->theo_probability($probability);
 }
 
 sub _build_bid_probability {
     my $self = shift;
 
-    $self->_set_price_calculator_params('bid_probability');
+    # $self->_set_price_calculator_params('bid_probability');
+    $self->price_calculator->theo_probability($self->theo_probability);
+    $self->price_calculator->discounted_probability($self->discounted_probability);
+    $self->price_calculator->opposite_ask_probability($self->opposite_contract_for_sale->ask_probability);
     return $self->price_calculator->bid_probability;
 }
 
 sub _build_discounted_probability {
     my $self = shift;
 
-    $self->_set_price_calculator_params('discounted_probability');
+    # $self->_set_price_calculator_params('discounted_probability');
+    $self->price_calculator->timeinyears($self->timeinyears);
+    $self->price_calculator->discount_rate($self->discount_rate);
     return $self->price_calculator->discounted_probability;
 }
 
@@ -58,7 +75,9 @@ sub _build_discounted_probability {
 sub _build_payout {
     my ($self) = @_;
 
-    $self->_set_price_calculator_params('payout');
+    # $self->_set_price_calculator_params('payout');
+    $self->price_calculator->theo_probability($self->theo_probability);
+    $self->price_calculator->commission_from_stake($self->commission_from_stake);
     return $self->price_calculator->payout;
 }
 
@@ -92,7 +111,8 @@ sub _price_from_prob {
         $self->price_calculator->value($self->value);
     } else {
 
-        $self->_set_price_calculator_params($prob);
+        # $self->_set_price_calculator_params($prob);
+        $self->$prob;
     }
     return $self->price_calculator->price_from_prob($prob);
 }

@@ -262,7 +262,11 @@ sub _validate_price {
 
     return if $self->for_sale;
 
-    $self->_set_price_calculator_params('validate_price');
+    # $self->_set_price_calculator_params('validate_price');
+    $self->price_calculator->theo_probability($self->theo_probability);
+    $self->price_calculator->commission_markup($self->commission_markup);
+    $self->price_calculator->commission_from_stake($self->commission_from_stake);
+    $self->price_calculator->staking_limits($self->staking_limits);
     my $res = $self->price_calculator->validate_price;
     if ($res && exists $res->{error_code}) {
         my $details = $res->{error_details} || [];
