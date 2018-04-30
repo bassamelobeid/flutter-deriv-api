@@ -23,6 +23,7 @@ our $BET_CLASS_DIGIT_BET        = 'digit_bet';
 our $BET_CLASS_SPREAD_BET       = 'spread_bet';
 our $BET_CLASS_LOOKBACK_OPTION  = 'lookback_option';
 our $BET_CLASS_RESET_BET        = 'reset_bet';
+our $BET_CLASS_CALLPUT_SPREAD   = 'callput_spread';
 
 # Constant reference to volatile hash
 our $BET_CLASS_TO_TYPE_MAP = {
@@ -44,7 +45,7 @@ our $BET_CLASS_TO_TYPE_MAP = {
     'digit_bet' => ['DIGITMATCH', 'DIGITDIFF', 'DIGITOVER', 'DIGITUNDER', 'DIGITODD', 'DIGITEVEN'],
     'lookback_option' => ['LBFIXEDCALL', 'LBFIXEDPUT', 'LBFLOATCALL', 'LBFLOATPUT', 'LBHIGHLOW'],
     'reset_bet'       => ['RESETCALL',   'RESETPUT'],
-    'callput_spread'  => ['CALLSPREAD', 'PUTSPREAD'],
+    'callput_spread'  => ['CALLSPREAD',  'PUTSPREAD'],
     'INVALID'         => ['INVALID'],
 };
 
