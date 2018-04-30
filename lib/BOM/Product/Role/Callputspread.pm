@@ -7,6 +7,8 @@ with 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::ExpireAtEnd', 'BO
 use LandingCompany::Commission qw(get_underlying_base_commission);
 use Pricing::Engine::Callputspread;
 
+use BOM::Product::Exception;
+
 use constant {
     MINIMUM_ASK_PRICE_PER_UNIT => 0.50,
     MINIMUM_BID_PRICE          => 0,
@@ -71,7 +73,6 @@ sub multiplier {
 }
 
 sub minimum_ask_price_per_unit {
-## Please see file perltidy.ERR
     return MINIMUM_ASK_PRICE_PER_UNIT;
 }
 
@@ -96,8 +97,10 @@ The number of ticks required from contract start time to expiry.
 =cut
 
 sub ticks_to_expiry {
-    # Add one since we want N ticks *after* the entry spot
-    return shift->tick_count + 1;
+    return BOM::Product::Exception->throw(
+        error_code => 'InvalidTickExpiry',
+        error_args => [$self->code],
+    );
 }
 
 override '_build_pricing_engine_name' => sub {
