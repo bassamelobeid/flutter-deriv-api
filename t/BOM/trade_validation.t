@@ -96,6 +96,7 @@ my $contract = produce_contract({
     barrier     => 'S0P',
 });
 
+my $mock_call = Test::MockModule->new('BOM::Product::Contract::Call');
 subtest 'IOM withdrawal limit' => sub {
     plan tests => 5;
 
@@ -451,7 +452,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
             set_by      => 'BOM::Product::Contract',
             base_amount => 1
         });
-        $mock_contract->mock('ask_probability', sub { $ask_cv });
+        $mock_call->mock('ask_probability', sub { $ask_cv });
         my $allowed_move = 0.01 * 0.50;
 
         BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -519,14 +520,14 @@ subtest 'BUY - trade pricing adjustment' => sub {
             set_by      => 'BOM::Product::Contract',
             base_amount => 0.1
         });
-        $mock_contract->mock('ask_probability', sub { $ask_cv });
+        $mock_call->mock('ask_probability', sub { $ask_cv });
         my $bid_cv = Math::Util::CalculatedValue::Validatable->new({
             name        => 'bid_probability',
             description => 'fake ask prov',
             set_by      => 'BOM::Product::Contract',
             base_amount => 0.1
         });
-        $mock_contract->mock('bid_probability', sub { $bid_cv });
+        $mock_call->mock('bid_probability', sub { $bid_cv });
 
         my $allowed_move = 0.01 * 0.50;
 
@@ -697,7 +698,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
             set_by      => 'BOM::Product::Contract',
             base_amount => 0.1 + $allowed_move + 0.001,
         });
-        $mock_contract->mock('ask_probability', sub { $ask_cv });
+        $mock_call->mock('ask_probability', sub { $ask_cv });
         $mock_contract->mock('payout',          sub { 10 / $ask_cv->amount });
 
         my $contract = produce_contract({
@@ -740,7 +741,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
             set_by      => 'BOM::Product::Contract',
             base_amount => 0.1 + $allowed_move - 0.001,
         });
-        $mock_contract->mock('ask_probability', sub { $ask_cv });
+        $mock_call->mock('ask_probability', sub { $ask_cv });
         $mock_contract->mock('payout',          sub { 10 / $ask_cv->amount });
         $mock_contract->mock('ask_price',       sub { $ask_cv->amount * 100 });
         # amount_type = stake, payout decrease within range of allowed move
@@ -768,7 +769,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
             set_by      => 'BOM::Product::Contract',
             base_amount => 0.1 - $allowed_move + 0.001,
         });
-        $mock_contract->mock('ask_probability', sub { $ask_cv });
+        $mock_call->mock('ask_probability', sub { $ask_cv });
         $mock_contract->mock('ask_price',       sub { $ask_cv->amount * 100 });
         $mock_contract->mock('payout',          sub { 10 / $ask_cv->amount });
 
@@ -796,7 +797,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
             set_by      => 'BOM::Product::Contract',
             base_amount => 0.1 - $allowed_move - 0.001,
         });
-        $mock_contract->mock('ask_probability', sub { $ask_cv });
+        $mock_call->mock('ask_probability', sub { $ask_cv });
         $mock_contract->mock('ask_price',       sub { $ask_cv->amount * 100 });
         $mock_contract->mock('payout',          sub { roundcommon(0.001, 10 / $ask_cv->amount) });
 
@@ -855,7 +856,7 @@ subtest 'SELL - sell pricing adjustment' => sub {
             set_by      => 'BOM::Product::Contract',
             base_amount => 1
         });
-        $mock_contract->mock('bid_probability', sub { $ask_cv });
+        $mock_call->mock('bid_probability', sub { $ask_cv });
         my $allowed_move = 0.01 * 0.80;
 
         my $contract = produce_contract({
@@ -914,7 +915,7 @@ subtest 'SELL - sell pricing adjustment' => sub {
             set_by      => 'BOM::Product::Contract',
             base_amount => 0.1
         });
-        $mock_contract->mock('bid_probability', sub { $bid_cv });
+        $mock_call->mock('bid_probability', sub { $bid_cv });
 
         my $allowed_move = 0.01 * 0.50;
 
