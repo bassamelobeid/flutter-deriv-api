@@ -24,6 +24,7 @@ use List::Util qw(min);
 
 use BOM::Platform::Config;
 use BOM::Platform::Runtime;
+use BOM::Platform::Chronicle;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::Platform::Context qw(localize request);
@@ -218,16 +219,6 @@ has transaction_parameters => (
     default => sub { {}; },
 );
 
-has general_open_position_payout_limit => (
-    is         => 'ro',
-    isa        => 'HashRef',
-    lazy_build => 1,
-);
-
-sub _build_general_open_position_payout_limit {
-    return $json->decode(BOM::Platform::Runtime->instance->app_config->quants->general_open_position_payout_limit || '{}');
-}
-
 sub BUILDARGS {
     my (undef, $args) = @_;
 
@@ -355,54 +346,25 @@ sub calculate_limits {
     my $contract = $self->contract;
     my $currency = $contract->currency;
 
+    # Client related limit set in client's management page in the backoffice.
+    # It is normally used to stop trading activities of a client.
     $limits{max_balance} = $client->get_limit_for_account_balance;
-
-    try {
-        if (my $limit = $self->general_open_position_payout_limit->{$client->landing_company->short}) {
-            my ($limit_currency, $limit_amount, @extra) = %$limit;
-            die "found multiple entries for landing company, extra: @extra" if @extra;
-            $limits{general_open_position_payout} = {
-                limit    => $limit_amount,
-                currency => $limit_currency,
-            };
-        }
-    }
-    catch {
-        warn "Failure while attempting to process open position limits - $_\n";
-        stats_inc('transaction.open_position_limit.failure');
-    };
-
     my $lim = $self->calculate_max_open_bets($client);
     $limits{max_open_bets} = $lim if defined $lim;
+    $limits{max_payout_open_bets} = $client->get_limit_for_payout unless $contract->tick_expiry;
 
-    if (not $contract->tick_expiry) {
-        $limits{max_payout_open_bets} = $client->get_limit_for_payout;
-        $limits{max_payout_per_symbol_and_bet_type} =
-            $static_config->{bet_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency};
-
-        if ($contract->market->name ne 'volidx') {
-            if ($contract->is_atm_bet) {
-                $limits{atm_specific_open_position_payout} = [{
-                        name     => 'ATM open position payout limit',
-                        symbols  => [$contract->underlying->symbol],
-                        bet_type => [@{$contract->category->available_types}],
-                        limit    => $static_config->{bet_limits}{open_positions_payout_per_symbol_limit}{atm}{$currency},
-                    }];
-            } else {
-                my $categories = Finance::Contract::Category::get_all_contract_categories();
-                my @bet_type_list = map { @{$_->{available_types}} } values %$categories;
-                my ($limit_name, $which_limit) =
-                    $contract->timeindays->amount <= 7
-                    ? ('max_7day_specific_open_position_payout', 'less_than_seven_days')
-                    : ('max_more_than_7day_specific_open_position_payout', 'more_than_seven_days');
-
-                $limits{$limit_name} = [{
-                        name     => $limit_name,
-                        symbols  => [$contract->underlying->symbol],
-                        bet_type => [@bet_type_list],
-                        limit    => $static_config->{bet_limits}{open_positions_payout_per_symbol_limit}->{non_atm}{$which_limit}{$currency},
-                    }];
-            }
+    # only pass true values if global limit checks are enabled.
+    # actual checks happens in the database
+    my $app_config = BOM::Platform::Runtime->instance->app_config;
+    foreach my $check_name (qw(global_potential_loss global_realized_loss)) {
+        my $method       = 'enable_' . $check_name;
+        my $alert_method = $check_name . '_alert_threshold';
+        if ($app_config->quants->$method) {
+            $limits{$check_name} = {
+                per_market => 1,
+                per_symbol => 1,
+                threshold  => $app_config->quants->$alert_method,
+            };
         }
     }
 
@@ -423,6 +385,7 @@ sub calculate_limits {
     my @cl_rp = $rp->get_client_profiles($client->loginid, $client->landing_company->short);
 
     if ($contract->is_binary) {
+        # TODO: comebine this with BOM::Product::QuantsConfig
         push @{$limits{specific_turnover_limits}}, @{$rp->get_turnover_limit_parameters(\@cl_rp)};
     } else {
         $limits{lookback_open_position_limit} = $static_config->{lookback_limits}{open_position_limits}{$currency};
@@ -1249,15 +1212,21 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $msg    = shift;
 
         Error::Base->cuss(
-            -type              => 'CompanyWideLimitExceeded',
-            -mesg              => 'company-wide risk limit reached',
-            -message_to_client => BOM::Platform::Context::localize('No further trading is allowed for the current trading session.'),
+            -type => 'CompanyWideLimitExceeded',
+            -mesg => 'company-wide risk limit reached',
+            -message_to_client =>
+                BOM::Platform::Context::localize('No further trading is allowed on this contract type for the current trading session.'),
         );
     },
     BI052 => Error::Base->cuss(
         -type              => 'KLFBLimitExceeded',
         -mesg              => 'KLFB risk limit exceeded',
         -message_to_client => BOM::Platform::Context::localize('No further trading is allowed at this moment.'),
+    ),
+    BI054 => Error::Base->cuss(
+        -type              => 'SymbolMissingInBetMarketTable',
+        -mesg              => 'Symbol missing in bet.market table',
+        -message_to_client => BOM::Platform::Context::localize('Trading is suspended for this instrument.'),
     ),
     BI103 => Error::Base->cuss(
         -type              => 'RoundingExceedPermittedEpsilon',
