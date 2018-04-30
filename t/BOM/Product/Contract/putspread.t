@@ -32,6 +32,7 @@ subtest 'config' => sub {
         currency     => 'USD',
         payout       => 100,
     });
+    ok $c->is_binary, 0, 'non-binary';
     ok $c->two_barriers,       'two barriers';
     is $c->pricing_code,       'PUTSPREAD', 'pricing code is PUTSPREAD';
     is $c->display_name,       'Put Spread', 'display name is Put Spread';
@@ -110,9 +111,9 @@ subtest 'ask/bid price' => sub {
     my $c = produce_contract($args);
     is $c->multiplier, 100, 'multiplier is 100';
     is $c->pricing_engine->theo_price, 0.520687472651396, 'theo price 0.479312425854497';
-    is $c->commission_per_unit, 0.01,             'commission per unit is base commission * theo probability per unit, at least 1 cent commission';
-    is $c->ask_price,           53, 'correct ask price';
-    is $c->bid_price,           51, 'correct bid price';
+    is $c->commission_per_unit, 0.01, 'commission per unit is base commission * theo probability per unit, at least 1 cent commission';
+    is $c->ask_price,           53,   'correct ask price';
+    is $c->bid_price,           51,   'correct bid price';
 };
 
 sub _create_ticks {
