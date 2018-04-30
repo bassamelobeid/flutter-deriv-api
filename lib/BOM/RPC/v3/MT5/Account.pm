@@ -1414,36 +1414,38 @@ sub _mt5_validate_and_get_amount {
             my $mt5_amount = undef;
             my ($min, $max) = (1, 20000);
             my $source_currency = $client_currency;
-            try {
-
-                if ($client_currency eq $mt5_currency) {
-                    $mt5_amount = $amount;
-                    # Actual USD or EUR amount that will be deposited into the MT5 account. We have
-                    # a fixed 1% fee on all conversions, but this is only ever applied when converting
-                    # between currencies - we do not apply for USD -> USD transfers for example.
-                } elsif ($action eq 'deposit') {
-                    $min = amount_from_to_currency(1,     'USD', $client_currency);
-                    $max = amount_from_to_currency(20000, 'USD', $client_currency);
+            if ($client_currency eq $mt5_currency) {
+                $mt5_amount = $amount;
+                # Actual USD or EUR amount that will be deposited into the MT5 account. We have
+                # a fixed 1% fee on all conversions, but this is only ever applied when converting
+                # between currencies - we do not apply for USD -> USD transfers for example.
+            } elsif ($action eq 'deposit') {
+                $min = amount_from_to_currency(1,     'USD', $client_currency);
+                $max = amount_from_to_currency(20000, 'USD', $client_currency);
+                try {
                     $mt5_amount =
                         financialrounding('amount', $mt5_currency,
                         amount_from_to_currency($amount, $client_currency, $mt5_currency, CURRENCY_CONVERSION_MAX_AGE) * 0.99);
-
-                } elsif ($action eq 'withdrawal') {
-                    $min = amount_from_to_currency(1,     'USD', $mt5_currency);
-                    $max = amount_from_to_currency(20000, 'USD', $mt5_currency);
-                    $mt5_amount =
-                        financialrounding('amount', $client_currency,
-                        amount_from_to_currency($amount, $mt5_currency, $client_currency, CURRENCY_CONVERSION_MAX_AGE) * 0.99);
+                } catch {
+                    warn "Conversion failed for mt5_$action: $_";
+                    return undef;
+                };
+            } elsif ($action eq 'withdrawal') {
+                $min = amount_from_to_currency(1,     'USD', $mt5_currency);
+                $max = amount_from_to_currency(20000, 'USD', $mt5_currency);
+                try {
+                $mt5_amount =
+                    financialrounding('amount', $client_currency,
+                    amount_from_to_currency($amount, $mt5_currency, $client_currency, CURRENCY_CONVERSION_MAX_AGE) * 0.99);
                     $source_currency = $mt5_currency;
-                }
-
-                return _make_error($error_code, localize("Conversion rate not available for this currency."))
-                    unless defined $mt5_amount;
+                } catch {
+                    warn "Conversion failed for mt5_$action: $_";
+                    return undef;
+                };
             }
-            catch {
-                warn "Conversion failed for mt5_$action: $_";
-                return undef;
-            };
+            return _make_error($error_code, localize("Conversion rate not available for this currency."))
+                unless defined $mt5_amount;
+
             return _make_error($error_code,
                 localize("Amount must be greater than [_1] [_2].", $amount, financialrounding('amount', $source_currency, $min)))
                 if $amount < financialrounding('amount', $source_currency, $min * 0.99);
