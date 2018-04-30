@@ -262,7 +262,7 @@ sub _validate_price {
 
     return if $self->for_sale;
 
-    # $self->_set_price_calculator_params('validate_price');
+    # Price validation needs updated P::C attributes
     $self->price_calculator->theo_probability($self->theo_probability);
     $self->price_calculator->commission_markup($self->commission_markup);
     $self->price_calculator->commission_from_stake($self->commission_from_stake);
