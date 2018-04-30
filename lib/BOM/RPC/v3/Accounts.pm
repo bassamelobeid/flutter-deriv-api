@@ -1639,22 +1639,7 @@ rpc set_financial_assessment => sub {
         my %financial_data       = map { $_ => $params->{args}->{$_} } BOM::RPC::v3::Utility::keys_of_values $input_mappings;
         my $financial_evaluation = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
 
-        my $user = $client->user;
-        foreach my $cli ($user->clients) {
-            my %data = ();
-            if (my $fa = $cli->financial_assessment) {
-                %data = %{$json->decode($fa->data)};
-            }
-            my %user_data = %{$financial_evaluation->{user_data}};
-            delete @user_data{grep { not defined $user_data{$_} } %user_data};
-            # Merge with previous answers
-            @data{keys %user_data} = values %user_data;
-
-            $cli->financial_assessment({
-                data => Encode::encode_utf8($json->encode(\%data)),
-            });
-            $cli->save;
-        }
+        BOM::RPC::v3::Utility::_update_existing_financial_assessment($client->user, %$financial_evaluation);
 
         $response = {map { $_ => $financial_evaluation->{$_} } qw(total_score cfd_score trading_score financial_information_score)};
         $subject  = $client_loginid . ' assessment test details have been updated';
@@ -1686,9 +1671,8 @@ rpc get_financial_assessment => sub {
     my $client = $params->{client};
     return BOM::RPC::v3::Utility::permission_error() if ($client->is_virtual or $client->landing_company->short eq 'japan');
 
-    my $response             = {};
-    my $financial_assessment = $client->financial_assessment();
-    if ($financial_assessment) {
+    my $response = {};
+    if (my $financial_assessment = $client->financial_assessment()) {
         my $data = $json->decode($financial_assessment->data);
         if ($data) {
             my %score_keys = map { $_ => 1 } qw(total_score financial_information_score trading_score cfd_score);
@@ -1696,9 +1680,7 @@ rpc get_financial_assessment => sub {
                 $response->{$key} = $data->{$key}->{answer} if not exists $score_keys{$key};
             }
 
-            for (keys %score_keys) {
-                $response->{$_} = $data->{$_} // 0;
-            }
+            $response->{$_} = $data->{$_} // 0 for keys %score_keys;
         }
     }
 

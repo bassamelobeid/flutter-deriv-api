@@ -365,6 +365,8 @@ rpc new_account_maltainvest => sub {
 
     my $user = $client->user;
 
+    BOM::RPC::v3::Utility::_update_existing_financial_assessments($user, %financial_data);
+
     # When a Binary (Europe) Ltd/Binary (IOM) Ltd account is created,
     # the 'place of birth' field is not present.
     # After creating Binary (Europe) Ltd/Binary (IOM) Ltd account, client can select
