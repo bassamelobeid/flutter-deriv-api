@@ -214,12 +214,6 @@ has primary_validation_error => (
     init_arg => undef,
 );
 
-has 'staking_limits' => (
-    is         => 'ro',
-    isa        => 'HashRef',
-    lazy_build => 1,
-);
-
 has apply_market_inefficient_limit => (
     is         => 'ro',
     lazy_build => 1,
