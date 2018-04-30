@@ -18,10 +18,6 @@ use BOM::Product::ContractFactory qw(produce_contract);
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('10-Mar-2015');
 
-my %custom_otm =
-    map { rand(1234) => {conditions => {market => $_, expiry_type => 'daily', is_atm_bet => 0}, value => 0.2,} } qw(forex indices commodities stocks);
-BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(JSON::MaybeXS->new->encode(\%custom_otm));
-
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
@@ -78,7 +74,7 @@ subtest 'range' => sub {
         isa_ok $c, 'BOM::Product::Contract::Range';
         is $c->code,          'RANGE';
         is $c->pricing_code,  'RANGE';
-        cmp_ok $c->ask_price, '==', 2;
+        cmp_ok $c->ask_price, '==', 0.5;
         is roundcommon(0.001, $c->pricing_vol), 0.184;
         is $c->sentiment, 'low_vol';
         ok $c->is_path_dependent;

@@ -75,9 +75,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     }) for qw(FCHI);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix');
-my %custom_otm =
-    map { rand(1234) => {conditions => {market => $_, expiry_type => 'daily', is_atm_bet => 0}, value => 0.2,} } qw(forex indices commodities stocks);
-BOM::Platform::Runtime->instance->app_config->quants->custom_otm_threshold(JSON::MaybeXS->new->encode(\%custom_otm));
 
 subtest 'payout' => sub {
     my $payout                = 10;
@@ -132,7 +129,7 @@ subtest 'payout' => sub {
             currency   => 'USD',
             payout     => $payout,
         });
-        cmp_ok $c->ask_price, '==', 0.2 * $payout, $underlying . ' daily non atm contract price is floor to 20%';
+        cmp_ok $c->ask_price, '==', $c->otm_threshold * $payout, $underlying . ' daily non atm contract price is floor to otm threshold';
     }
 
     $c = produce_contract({
@@ -318,7 +315,7 @@ subtest 'stake' => sub {
         amount_type => 'stake',
         amount      => $stake,
     });
-    is $c->payout, roundcommon(0.01, $stake / 0.20), 'Forex daily (< 7 days) non atm contract payout is floor to 20%';
+    is $c->payout, roundcommon(0.01, $stake / $c->otm_threshold), 'Forex daily (< 7 days) non atm contract payout is floor to otm threshold';
 
     $c = produce_contract({
         bet_type    => 'CALL',
@@ -483,7 +480,7 @@ subtest 'non ATM volatility indices variable commission structure' => sub {
     is $c->base_commission, 10, 'base commission is 10% if custom commission is matched';
     BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles('{}');
     $c = produce_contract($args);
-    is $c->base_commission, 2.3, 'base commission is 0.023 for less than 1-minute non ATM contract on R_100';
+    is $c->base_commission, 1.5, 'base commission is 0.015 for less than 1-minute non ATM contract on R_100';
     $args->{duration} = '60s';
     $c = produce_contract($args);
     is $c->base_commission, 1.5, 'base commission is 0.015 for 1-minute non ATM contract on R_100';
