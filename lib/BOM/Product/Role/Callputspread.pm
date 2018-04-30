@@ -97,6 +97,7 @@ The number of ticks required from contract start time to expiry.
 =cut
 
 sub ticks_to_expiry {
+    my $self = shift;
     return BOM::Product::Exception->throw(
         error_code => 'InvalidTickExpiry',
         error_args => [$self->code],
