@@ -44,7 +44,7 @@ our $BET_CLASS_TO_TYPE_MAP = {
     'digit_bet' => ['DIGITMATCH', 'DIGITDIFF', 'DIGITOVER', 'DIGITUNDER', 'DIGITODD', 'DIGITEVEN'],
     'lookback_option' => ['LBFIXEDCALL', 'LBFIXEDPUT', 'LBFLOATCALL', 'LBFLOATPUT', 'LBHIGHLOW'],
     'reset_bet'       => ['RESETCALL',   'RESETPUT'],
-    'callput_spread'  => ['CALLSPREAD', 'PUTSPREAD']
+    'callput_spread'  => ['CALLSPREAD', 'PUTSPREAD'],
     'INVALID'         => ['INVALID'],
 };
 
