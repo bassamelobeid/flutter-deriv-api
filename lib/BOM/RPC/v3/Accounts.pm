@@ -1641,8 +1641,17 @@ rpc set_financial_assessment => sub {
 
         my $user = $client->user;
         foreach my $cli ($user->clients) {
+            my %data = ();
+            if (my $fa = $cli->financial_assessment) {
+                %data = %{$json->decode($fa->data)};
+            }
+            my %user_data = %{$financial_evaluation->{user_data}};
+            delete @user_data{grep { not defined $user_data{$_} } %user_data};
+            # Merge with previous answers
+            @data{keys %user_data} = values %user_data;
+
             $cli->financial_assessment({
-                data => Encode::encode_utf8($json->encode($financial_evaluation->{user_data})),
+                data => Encode::encode_utf8($json->encode(\%data)),
             });
             $cli->save;
         }
