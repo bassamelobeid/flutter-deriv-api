@@ -38,7 +38,7 @@ sub run_authentication {
     # will return a structure suitable for passing to a mailer.
     my $envelope;
     if ($landing_company eq 'iom') {
-        $envelope = $self->_do_proveid;
+        $envelope = $self->do_proveid;
     } elsif ($landing_company eq 'malta'
         && !$client->get_status('age_verification')
         && !$client->has_valid_documents)
@@ -51,9 +51,9 @@ sub run_authentication {
 }
 
 #
-# All logic in _do_proveid meet compliance requirements, which can be changed over time
+# All logic in do_proveid meet compliance requirements, which can be changed over time
 #
-sub _do_proveid {
+sub do_proveid {
     my $self   = shift;
     my $client = $self->client;
 
@@ -166,18 +166,22 @@ sub _fetch_proveid {
 
     return unless BOM::Platform::Config::on_production();
 
+    my $client  = $self->client;
     my $premise = $self->client->address_1;
     if ($premise =~ /^(\d+)/) {
         $premise = $1;
     }
     my $result = {};
     try {
+        $client->set_status('proveid_requested');
+        $client->set_status('proveid_pending');
         $result = BOM::Platform::ProveID->new(
             client        => $self->client,
             search_option => 'ProveID_KYC',
             premise       => $premise,
             force_recheck => $self->force_recheck
         )->get_result;
+        $client->clr_status('proveid_pending');
     }
     catch {
         my $brand    = Brands->new(name => request()->brand);
@@ -195,6 +199,7 @@ EOM
             message => [$message],
         });
     };
+    $client->save;
     return $result;
 }
 
