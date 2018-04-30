@@ -547,7 +547,7 @@ sub validate_set_currency {
     my $allowed_accounts = BOM::Platform::Runtime->instance->app_config->payments->experimental_currencies_allowed;
     my $client_email     = $client->email;
     return $error if (LandingCompany::Registry::is_currency_experimental($currency)
-        and not any { /$client_email/i } @$allowed_accounts);
+        and not any { /\Q$client_email\E/i } @$allowed_accounts);
 
     return undef;
 }
