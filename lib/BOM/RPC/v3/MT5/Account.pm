@@ -1450,7 +1450,7 @@ sub _mt5_validate_and_get_amount {
                 unless defined $mt5_amount;
 
             return _make_error($error_code,
-                localize("Amount must be greater than [_1] [_2].", $amount, financialrounding('amount', $source_currency, $min)))
+                localize("Amount must be greater than [_1] [_2].", $source_currency, financialrounding('amount', $source_currency, $min)))
                 if $amount < financialrounding('amount', $source_currency, $min * 0.99);
             return _make_error($error_code,
                 localize("Amount must be less than [_1] [_2].", $source_currency, financialrounding('amount', $source_currency, $max)))
