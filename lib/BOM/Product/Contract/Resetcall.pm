@@ -4,10 +4,10 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
-use BOM::Product::Pricing::Greeks::Digits;
+use BOM::Product::Pricing::Greeks::ZeroGreek;
 
 sub _build_greek_engine {
-    return BOM::Product::Pricing::Greeks::Digits->new({bet => shift});
+    return BOM::Product::Pricing::Greeks::ZeroGreek->new({bet => shift});
 }
 
 sub ticks_to_expiry {
