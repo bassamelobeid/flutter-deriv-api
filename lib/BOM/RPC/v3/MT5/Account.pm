@@ -1420,9 +1420,9 @@ sub _mt5_validate_and_get_amount {
                 # a fixed 1% fee on all conversions, but this is only ever applied when converting
                 # between currencies - we do not apply for USD -> USD transfers for example.
             } elsif ($action eq 'deposit') {
-                $min = amount_from_to_currency(1,     'USD', $client_currency);
-                $max = amount_from_to_currency(20000, 'USD', $client_currency);
-                try {
+              try {
+                    $min = amount_from_to_currency(1,     'USD', $client_currency);
+                    $max = amount_from_to_currency(20000, 'USD', $client_currency);
                     $mt5_amount =
                         financialrounding('amount', $mt5_currency,
                         amount_from_to_currency($amount, $client_currency, $mt5_currency, CURRENCY_CONVERSION_MAX_AGE) * 0.99);
@@ -1431,18 +1431,19 @@ sub _mt5_validate_and_get_amount {
                     return undef;
                 };
             } elsif ($action eq 'withdrawal') {
-                $min = amount_from_to_currency(1,     'USD', $mt5_currency);
-                $max = amount_from_to_currency(20000, 'USD', $mt5_currency);
                 try {
-                $mt5_amount =
-                    financialrounding('amount', $client_currency,
-                    amount_from_to_currency($amount, $mt5_currency, $client_currency, CURRENCY_CONVERSION_MAX_AGE) * 0.99);
-                    $source_currency = $mt5_currency;
+                    $min = amount_from_to_currency(1,     'USD', $mt5_currency);
+                    $max = amount_from_to_currency(20000, 'USD', $mt5_currency);
+                    $mt5_amount =
+                        financialrounding('amount', $client_currency,
+                        amount_from_to_currency($amount, $mt5_currency, $client_currency, CURRENCY_CONVERSION_MAX_AGE) * 0.99);
+                        $source_currency = $mt5_currency;
                 } catch {
                     warn "Conversion failed for mt5_$action: $_";
                     return undef;
                 };
             }
+            
             return _make_error($error_code, localize("Conversion rate not available for this currency."))
                 unless defined $mt5_amount;
 
