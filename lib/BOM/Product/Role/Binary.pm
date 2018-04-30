@@ -12,8 +12,6 @@ use Format::Util::Numbers qw/financialrounding/;
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
-### the probabilities definition should ideally be in BOM::Product::Role::Binary but it makes mocking them harder
-### so they are kept here.
 # discounted_probability - The discounted total probability, given the time value of the money at stake.
 has [qw(
         ask_probability

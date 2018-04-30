@@ -41,7 +41,7 @@ override '_build_bid_price' => sub {
     my $bid_price;
     if ($self->is_expired) {
         # if contract can be settled, then return the evaluated contract value
-        $bid_price = $self->value;
+        $bid_price = financialrounding('price', $self->currency, $self->value);
     } else {
         my $bid_price_per_unit = max($self->minimum_bid_price, $self->_ask_price_per_unit - 2 * $self->commission_per_unit);
         $bid_price = financialrounding('price', $self->currency, $bid_price_per_unit) * $self->multiplier;
