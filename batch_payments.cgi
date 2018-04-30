@@ -99,11 +99,11 @@ read_csv_row_and_callback(
     \@payment_lines,
     sub {
         my $cols_found = @_;
-        my ($login_id, $action, $payment_type, $payment_processor, $trace_id, $currency, $amount, $statement_comment, $cols_expected);
+        my ($login_id, $action, $payment_type, $payment_processor, $trace_id, $currency, $amount, $statement_comment, $transaction_id, $cols_expected);
         if ($format eq 'doughflow') {
-            ($login_id, $action, $trace_id, $payment_processor, $currency, $amount, $statement_comment) = @_;
+            ($login_id, $action, $trace_id, $payment_processor, $currency, $amount, $statement_comment, $transaction_id) = @_;
             $payment_type  = 'external_cashier';
-            $cols_expected = 7;
+            $cols_expected = 8;
         } else {
             ($login_id, $action, $payment_type, $currency, $amount, $statement_comment) = @_;
             $cols_expected = 6;
@@ -114,6 +114,7 @@ read_csv_row_and_callback(
         my $client;
         my $error;
         {
+
             my $curr_regex = LandingCompany::Registry::get_currency_type($currency) eq 'fiat' ? '^\d*\.?\d{1,2}$' : '^\d*\.?\d{1,8}$';
             $amount = formatnumber('price', $currency, $amount) if looks_like_number($amount);
 
@@ -125,6 +126,8 @@ read_csv_row_and_callback(
             !$statement_comment and $error = 'Statement comment can not be empty', last;
             $client = eval { BOM::User::Client->new({loginid => $login_id}) } or $error = ($@ || 'No such client'), last;
             my $signed_amount = $action eq 'debit' ? $amount * -1 : $amount;
+
+            $error = "Transaction id is mandatory for doughflow credit" if $action eq 'credit' and (not $transaction_id or $transaction_id !~ '\w+');
 
             unless ($skip_validation) {
                 try { $client->validate_payment(currency => $currency, amount => $signed_amount) } catch { $error = $_ };

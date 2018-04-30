@@ -11,11 +11,15 @@
         <th>Currency</th>
         <th>Amount</th>
         <th>Comment</th>
+        <th>Transaction id</th>
     </tr>
     <tr><td colspan="7">Examples:</td></tr>
-    <tr><td>CR0001,</td><td>credit,</td><td>714859<td>DCash1</td><td>USD,</td><td>10.00,</td><td>"DoughFlow deposit"</td></tr>
-    <tr><td>CR0001,</td><td>debit,</td><td>714859<td>NETeller</td><td>USD,</td><td>10.00,</td><td>"reversal of DoughFlow deposit"</td></tr>
-
+    <tr>
+        <td>CR0001</td><td>credit</td><td>714859<td>DCash1</td><td>USD</td><td>10.00</td><td>"DoughFlow deposit"</td><td>143222</td>
+    </tr>
+    <tr>
+        <td>CR0001</td><td>debit</td><td>714859<td>NETeller</td><td>USD</td><td>10.00</td><td>"reversal of DoughFlow deposit"</td><td>233232</td>
+    </tr>
 </table>
 
 <br/>
@@ -28,4 +32,3 @@
 
 </form>
 <br/>
-

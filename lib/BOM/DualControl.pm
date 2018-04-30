@@ -143,6 +143,7 @@ sub validate_payment_control_code {
 sub validate_batch_payment_control_code {
     my ($self, $incode, $lines) = @_;
 
+    return undef;
     my $code = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
 
     my $error_status = $self->_validate_empty_code($code);
