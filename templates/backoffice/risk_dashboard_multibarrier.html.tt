@@ -68,7 +68,6 @@
             opacity: 0;
         }
         .contract-type .barrier-tier .row div:nth-child(1) {
-            background: #e98024;
             padding-left: 5px;
             overflow: hidden;
             flex-shrink: 1;
@@ -102,15 +101,21 @@
 <p> Latest report generated at [% data.generated_time %] </p>
 <p> Few notes: </p>
 <p> 1. For each barrier tier, the exposure on an underlying is the net exposure from both Call and Put. Example: If we have exposure of USD50k on Call and USD20K on Put, the net of USD30k on Call will be shown. </p>
-<p> 2. The red dotted line is the indication of where is the current spot relative to the barrier tier </p>
-<p> 3. All the exposures are in USD </p>
-<p> 4. This is only for intraday Calle/Put window </p>
-
+<p> 2. Barrier tier defination </p>
+<p>    Barrier 3: Entry_spot + 15 pips (for 7 barriers only) </p>
+<p>    Barrier 2: Entry_spot + 10 pips </p>
+<p>    Barrier 1: Entry_spot + 5 pips </p>
+<p>    Barrier 0: Entry_spot (The spot at the the trading period start) </p>
+<p>    Barrier -1: Entry_spot - 5 pips </p>
+<p>    Barrier -2: Entry_spot - 10 pips </p>
+<p>    Barrier -3: Entry_spot - 15 pips (for 7 barriers only) </p>
+<p> 3. The red dotted line is the indication of where is the current spot relative to the barrier tier </p>
+<p> 4. All the exposures (payout) are in USD </p>
 
 [% FOREACH expiry IN data.keys %]
         [% IF expiry !='generated_time' %]
 	<div class='contract-table'>
-		 <p> <b><div class='expiry'>Trading Window:  [% expiry %] </div></b></p>
+		 <p> <b><div class='expiry'>Trading Window's Expiry:  [% expiry %] </div></b></p>
 			[% FOREACH contract IN data.$expiry.keys.reverse %]
                                                 [% IF contract !='max' %]
 						<p><div class='contract-type [% contract == 'PUT' ? 'reverse' : '' %]'></p>
@@ -119,9 +124,13 @@
 										<div class='barrier-tier' title= [% barrier %]>
 												[% FOREACH underlying IN data.$expiry.$contract.barrier.$barrier.keys %]
 							<div class='row [% data.$expiry.$contract.barrier.$barrier.$underlying.isSpot ? 'spot-line' : '' %] [% data.$expiry.$contract.barrier.$barrier.$underlying.value ? '' : 'hide' %]'>
-															<div style='flex-grow: [% data.$expiry.$contract.barrier.$barrier.$underlying.value %]'></div>
+															<div style='flex-grow: [% data.$expiry.$contract.barrier.$barrier.$underlying.value %]; background-color: [% barrier > 0  ? "red" : "blue" %]'></div>
 															<div style='flex-grow: calc([% data.$expiry.max %] - [% data.$expiry.$contract.barrier.$barrier.$underlying.value %])'></div>
-															<div> [%underlying %](USD[% data.$expiry.$contract.barrier.$barrier.$underlying.value || '' %]) </div>
+                                                                                                                        [% IF data.$expiry.$contract.barrier.$barrier.$underlying.value %]
+															<div > [%underlying %](USD[% data.$expiry.$contract.barrier.$barrier.$underlying.value %]) </div>
+                                                                                                                        [% ELSE %]
+                                                                                                                         <div> [%underlying %] (spot) </div>
+                                                                                                                        [% END %] 
 										
 			</div>
 											 [% END %]
