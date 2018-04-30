@@ -381,15 +381,11 @@ sub get_financial_assessment_score {
             $total_score   += $score;
         }
     }
-    $json_data->{total_score}                      = $total_score;
-    $json_data->{trading_score}                    = $trading_score;
-    $json_data->{financial_information_score}      = $financial_information_score;
-    $json_data->{cfd_score}                        = $cfd_score;
     $evaluated_data->{total_score}                 = $total_score;
     $evaluated_data->{trading_score}               = $trading_score;
     $evaluated_data->{financial_information_score} = $financial_information_score;
     $evaluated_data->{cfd_score}                   = $cfd_score;
-    $evaluated_data->{user_data}                   = $json_data;
+    $evaluated_data = {%$evaluated_data, %$json_data};
 
     return $evaluated_data;
 }
