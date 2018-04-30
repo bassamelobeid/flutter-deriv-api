@@ -1,6 +1,8 @@
 package BOM::Product::Role::Lookback;
 
 use Moose::Role;
+with 'BOM::Product::Role::NonBinary';
+
 use Time::Duration::Concise;
 use List::Util qw(min max first);
 use Format::Util::Numbers qw/financialrounding/;
@@ -13,16 +15,41 @@ use BOM::Market::DataDecimate;
 
 my $minimum_multiplier_config = LoadFile('/home/git/regentmarkets/bom/config/files/lookback_minimum_multiplier.yml');
 
+use constant {
+    MINIMUM_ASK_PRICE_PER_UNIT => 0.50,
+    MINIMUM_BID_PRICE          => 0,      # can't go negative
+};
+
+# forward declaration for 'requires' to work in BOM::Product::Role::NonBinary
+sub multiplier;
+
+override _build_theo_price => sub {
+    my $self = shift;
+
+    return $self->pricing_engine->theo_price;
+};
+
+override _build_base_commission => sub {
+    return 0.02;    # a static 2% commission across the board. This is done to enable sellback.
+};
+
 =head2 multiplier
-
 The number of units.
-
 =cut
 
 has multiplier => (
-    is  => 'ro',
-    isa => 'Num',
+    is       => 'ro',
+    required => 1,
+    isa      => 'Num',
 );
+
+sub minimum_ask_price_per_unit {
+    return MINIMUM_ASK_PRICE_PER_UNIT;
+}
+
+sub minimum_bid_price {
+    return MINIMUM_BID_PRICE;
+}
 
 =head2 minimum_multiplier
 
@@ -119,44 +146,6 @@ sub get_ohlc_for_period {
         end   => $end_epoch
     });
 }
-
-override _build_base_commission => sub {
-    #We need this much commission for the sellback to be safe for us.
-    return 0.02;
-};
-
-# There's no financial rounding here because we should never be exposing this to client.
-# ->theo_price should only be used for internal purposes only.
-override _build_theo_price => sub {
-    my $self = shift;
-
-    # pricing_engine->theo_price gives the price per unit. It is then multiplied with $self->multiplier
-    # to get the theo price of the option.
-    return $self->is_expired ? $self->value : $self->pricing_engine->theo_price * $self->multiplier;
-};
-
-override _build_ask_price => sub {
-    my $self = shift;
-
-    my $theo_price = $self->pricing_engine->theo_price;
-
-    my $commission = $theo_price * $self->base_commission;
-    $commission = max(0.01, $commission);
-
-    my $final_price = max(0.50, ($theo_price + $commission));
-
-    #Here to avoid issue due to rounding strategy, we round the price of unit of min multiplier.
-    #Example, for fiat it is 0.1.
-    return financialrounding('price', $self->currency, $final_price) * $self->multiplier;
-};
-
-override _build_bid_price => sub {
-    my $self = shift;
-
-    my $commission_multiplier = $self->is_expired ? 1 : (1 - $self->base_commission);
-
-    return financialrounding('price', $self->currency, $self->theo_price * $commission_multiplier);
-};
 
 override _validate_price => sub {
     my $self = shift;

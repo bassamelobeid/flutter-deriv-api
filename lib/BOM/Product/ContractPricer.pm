@@ -82,20 +82,7 @@ has otm_threshold => (
     lazy_build => 1,
 );
 
-# discounted_probability - The discounted total probability, given the time value of the money at stake.
 # timeindays/timeinyears - note that for FX contracts of >=1 duration, these values will follow the market convention of integer days
-has [qw(
-        ask_probability
-        theo_probability
-        bid_probability
-        discounted_probability
-        )
-    ] => (
-    is         => 'ro',
-    isa        => 'Math::Util::CalculatedValue::Validatable',
-    lazy_build => 1,
-    );
-
 has [
     qw(q_rate
         r_rate
@@ -105,6 +92,16 @@ has [
     is         => 'rw',
     lazy_build => 1,
     );
+
+=head2 ask_price
+=head2 bid_price
+=head2 theo_price
+
+These prices should be implemented in the Roles.
+
+Currently, we have BOM::Product::Role::Binary and BOM::Product::Role::NonBinary to calculate these prices
+
+=cut
 
 has [
     qw( bid_price
@@ -120,6 +117,22 @@ has ask_price => (
     is         => 'ro',
     lazy_build => 1,
 );
+
+sub _build_ask_price {
+    die '_build_ask_price should be over-written';
+}
+
+sub _build_bid_price {
+    die '_build_bid_price should be over-written';
+}
+
+sub _build_theo_price {
+    die '_build_theo_price should be over-written';
+}
+
+sub _build_app_markup_dollar_amount {
+    die '_build_app_markup_dollar_amount should be over-written';
+}
 
 has [qw( pricing_engine_name )] => (
     is         => 'rw',
@@ -493,12 +506,6 @@ sub _build_app_markup {
     return shift->price_calculator->app_markup;
 }
 
-sub _build_app_markup_dollar_amount {
-    my $self = shift;
-
-    return financialrounding('amount', $self->currency, $self->app_markup->amount * $self->payout);
-}
-
 #this is supposed to be called for legacy pricing engines (not new interface)
 sub _build_risk_markup {
     my $self = shift;
@@ -548,12 +555,6 @@ sub _build_commission_from_stake {
 
     $self->_set_price_calculator_params('commission_from_stake');
     return $self->price_calculator->commission_from_stake;
-}
-
-sub _build_theo_price {
-    my $self = shift;
-
-    return $self->_price_from_prob('theo_probability');
 }
 
 sub _build_new_interface_engine {
@@ -690,18 +691,6 @@ sub _build_price_calculator {
         ($self->has_ask_probability)        ? (ask_probability        => $self->ask_probability)        : (),
         ($self->has_discounted_probability) ? (discounted_probability => $self->discounted_probability) : (),
     });
-}
-
-sub _build_bid_price {
-    my $self = shift;
-
-    return $self->_price_from_prob('bid_probability');
-}
-
-sub _build_ask_price {
-    my $self = shift;
-
-    return $self->_price_from_prob('ask_probability');
 }
 
 sub _build_greek_engine {
