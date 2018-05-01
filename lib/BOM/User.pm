@@ -170,9 +170,13 @@ sub mt5_logins {
     my @mt5_logins;
 
     for my $login (sort map { $_->loginid } grep { $_->loginid =~ /^MT\d+$/ } $self->loginid) {
-        push(@mt5_logins, $login) if ((BOM::MT5::User::Async::get_user(
-            do { $login =~ /(\d+)/; $1 }
-        )->get->{group} // '') =~ /^$filter/);
+        push(@mt5_logins, $login)
+            if ((
+                BOM::MT5::User::Async::get_user(
+                    do { $login =~ /(\d+)/; $1 }
+                )->get->{group} // ''
+            ) =~ /^$filter/
+            );
     }
 
     return @mt5_logins;
