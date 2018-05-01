@@ -130,7 +130,10 @@ read_csv_row_and_callback(
             $client = eval { BOM::User::Client->new({loginid => $login_id}) } or $error = ($@ || 'No such client'), last;
             my $signed_amount = $action eq 'debit' ? $amount * -1 : $amount;
 
-            $error = "Transaction id is mandatory for doughflow credit" if $action eq 'credit' and (not $transaction_id or $transaction_id !~ '\w+');
+            $error = "Transaction id is mandatory for doughflow credit"
+                if $payment_type eq 'external_cashier'
+                and $action eq 'credit'
+                and (not $transaction_id or $transaction_id !~ '\w+');
 
             unless ($skip_validation) {
                 try { $client->validate_payment(currency => $currency, amount => $signed_amount) } catch { $error = $_ };
