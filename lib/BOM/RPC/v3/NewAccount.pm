@@ -268,6 +268,9 @@ rpc new_account_real => sub {
 
     my $val = _update_professional_existing_clients($clients, $professional_status, $professional_requested);
 
+    my $default_account               = $client->default_account->load;
+    my $existing_financial_assessment = $default_account->financial_assessment->data;
+
     return $val if $val;
 
     my $acc = BOM::Platform::Account::Real::default::create_account({
@@ -277,6 +280,8 @@ rpc new_account_real => sub {
         user        => $user,
         details     => $details_ref->{details},
     });
+
+    $acc->financial_assessment({data => $existing_financial_assessment});
 
     if (my $err_code = $acc->{error}) {
         return BOM::RPC::v3::Utility::create_error({
