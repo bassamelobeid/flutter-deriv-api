@@ -244,14 +244,12 @@ sub multibarrierreport {
         my $spot                 = $contract->current_spot;
         my ($closest_barrier_to_spot) =
             map { $_->{barrier} } sort { $a->{diff} <=> $b->{diff} } map { {barrier => $_, diff => abs($spot - $_)} } @available_barrier;
-        my $spot_index           = $reindex_barrier_list{$closest_barrier_to_spot};
-        my $trading_period_start = Date::Utility->new($contract->trading_period_start)->datetime;
-        $multibarrier->{$trading_period_start . '_' . $contract->date_expiry->datetime}->{$contract->bet_type}->{barrier}->{$barrier_index}
-            ->{$contract->underlying->symbol} +=
+        my $spot_index = $reindex_barrier_list{$closest_barrier_to_spot};
+        $multibarrier->{$contract->date_expiry->datetime}->{$contract->bet_type}->{barrier}->{$barrier_index}->{$contract->underlying->symbol} +=
             financialrounding('price', 'USD', in_USD($open_contract->{payout_price}, $open_contract->{currency_code}));
-        push @{$symbol->{$trading_period_start . '_' . $contract->date_expiry->datetime}}, $contract->underlying->symbol;
+        push @{$symbol->{$contract->date_expiry->datetime}}, $contract->underlying->symbol;
 
-        $multibarrier->{$trading_period_start . '_' . $contract->date_expiry->datetime}->{spot}->{$contract->underlying->symbol} = $spot_index;
+        $multibarrier->{$contract->date_expiry->datetime}->{spot}->{$contract->underlying->symbol} = $spot_index;
     }
     my $final;
     foreach my $expiry (sort keys %{$multibarrier}) {
@@ -272,9 +270,13 @@ sub multibarrierreport {
                         $final->{$expiry}->{CALLE}->{barrier}->{$_}->{$symbol}->{value} = $CALL - $PUT;
                         $final->{$expiry}->{PUT}->{barrier}->{$_}->{$symbol}->{value}   = 0;
                         $max = ($CALL - $PUT) > $max ? $CALL - $PUT : $max;
+                        my $isOTM = $multibarrier->{$expiry}->{spot}->{$symbol} < $_ ? 1 : 0;
+                        $final->{$expiry}->{CALLE}->{barrier}->{$_}->{$symbol}->{isOTM} = $isOTM;
                     } else {
                         $final->{$expiry}->{PUT}->{barrier}->{$_}->{$symbol}->{value}   = $PUT - $CALL;
                         $final->{$expiry}->{CALLE}->{barrier}->{$_}->{$symbol}->{value} = 0;
+                        my $isOTM = $multibarrier->{$expiry}->{spot}->{$symbol} > $_ ? 1 : 0;
+                        $final->{$expiry}->{PUT}->{barrier}->{$_}->{$symbol}->{isOTM} = $isOTM;
                         $max = ($PUT - $CALL) > $max ? $PUT - $CALL : $max;
                     }
                 }
