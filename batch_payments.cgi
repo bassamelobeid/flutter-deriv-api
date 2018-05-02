@@ -114,7 +114,7 @@ read_csv_row_and_callback(
                 $cols_expected       = 8;
             } else {
                 $is_doughflow_credit = 0;
-                $cols_expected = 7;
+                $cols_expected       = 7;
             }
         } else {
             ($login_id, $action, $payment_type, $currency, $amount, $statement_comment) = @_;
