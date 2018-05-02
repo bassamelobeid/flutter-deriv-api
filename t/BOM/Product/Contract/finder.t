@@ -37,7 +37,6 @@ subtest "basic_contracts_for" => sub {
         random  => ['R_100',     'RDBEAR'],
         forex   => ['frxUSDJPY', 'frxAUDCAD', 'frxEURUSD', 'WLDUSD'],
         indices => ['AEX',       'SYNAEX'],
-        stocks      => ['USAAPL'],
         commodities => ['frxXAUUSD', 'frxXPDUSD'],
     );
     my %expected = (

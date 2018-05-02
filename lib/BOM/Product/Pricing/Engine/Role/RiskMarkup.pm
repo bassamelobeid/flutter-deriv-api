@@ -99,7 +99,7 @@ sub _build_risk_markup {
         $risk_markup->include_adjustment('add', $self->spot_spread_markup) if (not $self->bet->is_intraday);
         $risk_markup->include_adjustment('subtract', $self->forward_starting_markup);
 
-        if (not $self->bet->is_atm_bet and grep { $self->bet->market->name eq $_ } qw(indices stocks) and $self->bet->timeindays->amount < 7) {
+        if (not $self->bet->is_atm_bet and grep { $self->bet->market->name eq $_ } qw(indices) and $self->bet->timeindays->amount < 7) {
             $risk_markup->include_adjustment('add', $self->smile_uncertainty_markup);
         }
     }
