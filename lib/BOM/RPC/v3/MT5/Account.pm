@@ -46,6 +46,9 @@ use constant MT5_ACCOUNT_TRADING_ENABLED_RIGHTS_ENUM => qw(
 # (including when markets are closed) will be rejected.
 use constant CURRENCY_CONVERSION_MAX_AGE => 3600;
 
+# Fees percentage for deposit and withdrawal within in different currencies
+use constant CONVERSION_FEES_PERCENTAGE = 1;
+
 # TODO(leonerd):
 #   These helpers exist mostly to coördinate the idea of error management in
 #   Future-chained async RPC methods. This logic would probably be a lot neater
@@ -1036,10 +1039,8 @@ async_rpc mt5_deposit => sub {
 
     return _mt5_validate_and_get_amount($client, $fm_loginid, $to_mt5, $amount, $error_code)->then(
         sub {
-            my ($response) = @_;
+            my ($response, $mt5_amount, $fee, $fee_currency) = @_;
             return Future->done($response) if (ref $response eq 'HASH' and $response->{error});
-
-            my ($mt5_amount, $fee, $fee_percent, $fee_currency) = $response;
 
             # withdraw from Binary a/c
             my $fm_client_db = BOM::Database::ClientDB->new({
@@ -1079,8 +1080,8 @@ async_rpc mt5_deposit => sub {
             }
 
             my $comment = "Transfer from $fm_loginid to MT5 account $to_mt5.";
-            $comment .= " Includes $fee_currency " . formatnumber('amount', $fee_currency, $fee) . " ($fee_percent%) as fees."
-                if fee_percent;
+            $comment .= " Includes $fee_currency " . formatnumber('amount', $fee_currency, $fee) . " (${CONVERSION_FEES_PERCENTAGE}%) as fees."
+                if $fee;
             my $account = $fm_client->set_default_account($fm_client->currency);
             my ($payment) = $account->add_payment({
                 amount               => -$amount,
@@ -1141,10 +1142,8 @@ async_rpc mt5_withdrawal => sub {
     my $error_code = 'MT5WithdrawalError';
     return _mt5_validate_and_get_amount($client, $to_loginid, $fm_mt5, $amount, $error_code)->then(
         sub {
-            my ($response) = @_;
+            my ($response, $mt5_amount, $fee, $fee_currency) = @_;
             return Future->done($response) if (ref $response eq 'HASH' and $response->{error});
-
-            my my ($mt5_amount, $fee, $fee_percent, $fee_currency) = $response;
 
             my $to_client_db = BOM::Database::ClientDB->new({
                 client_loginid => $to_loginid,
@@ -1158,8 +1157,8 @@ async_rpc mt5_withdrawal => sub {
             };
 
             my $comment = "Transfer from MT5 account $fm_mt5 to $to_loginid.";
-            $comment .= " Includes $fee_currency " . formatnumber('amount', $fee_currency, $fee) . " ($fee_percent%) as fees."
-                if fee_percent;
+            $comment .= " Includes $fee_currency " . formatnumber('amount', $fee_currency, $fee) . " (${CONVERSION_FEES_PERCENTAGE}%) as fees."
+                if $fee;
             # withdraw from MT5 a/c
             return BOM::MT5::User::Async::withdrawal({
                     login   => $fm_mt5,
@@ -1426,7 +1425,7 @@ sub _mt5_validate_and_get_amount {
             my $mt5_amount = undef;
             my ($min, $max) = (1, 20000);
             my $source_currency = $client_currency;
-            my ($fee, $fee_percent) = (0, 0);
+            my $fee             = 0;
             if ($client_currency eq $mt5_currency) {
                 $mt5_amount = $amount;
                 # Actual USD or EUR amount that will be deposited into the MT5 account. We have
@@ -1436,13 +1435,12 @@ sub _mt5_validate_and_get_amount {
                 try {
                     $min = amount_from_to_currency(1,     'USD', $client_currency);
                     $max = amount_from_to_currency(20000, 'USD', $client_currency);
-                    $mt5_amount =
-                        financialrounding('amount', $mt5_currency,
-                        amount_from_to_currency($amount, $client_currency, $mt5_currency, CURRENCY_CONVERSION_MAX_AGE) * 0.99);
-                    $fee_percent = 1;
-                    $fee =
-                        financialrounding('amount', $mt5_currency,
-                        amount_from_to_currency($amount, $client_currency, $mt5_currency, CURRENCY_CONVERSION_MAX_AGE) * 0.01);
+                    $mt5_amount = financialrounding('amount', $mt5_currency,
+                        amount_from_to_currency($amount, $client_currency, $mt5_currency, CURRENCY_CONVERSION_MAX_AGE) *
+                            ((100 - CONVERSION_FEES_PERCENTAGE) / 100));
+                    $fee = financialrounding('amount', $mt5_currency,
+                        amount_from_to_currency($amount, $client_currency, $mt5_currency, CURRENCY_CONVERSION_MAX_AGE) *
+                            (CONVERSION_FEES_PERCENTAGE / 100));
                 }
                 catch {
                     warn "Conversion failed for mt5_$action: $_";
@@ -1452,13 +1450,12 @@ sub _mt5_validate_and_get_amount {
                 try {
                     $min = amount_from_to_currency(1,     'USD', $mt5_currency);
                     $max = amount_from_to_currency(20000, 'USD', $mt5_currency);
-                    $mt5_amount =
-                        financialrounding('amount', $client_currency,
-                        amount_from_to_currency($amount, $mt5_currency, $client_currency, CURRENCY_CONVERSION_MAX_AGE) * 0.99);
-                    $fee_percent = 1;
-                    $fee =
-                        financialrounding('amount', $client_currency,
-                        amount_from_to_currency($amount, $mt5_currency, $client_currency, CURRENCY_CONVERSION_MAX_AGE) * 0.01);
+                    $mt5_amount = financialrounding('amount', $client_currency,
+                        amount_from_to_currency($amount, $mt5_currency, $client_currency, CURRENCY_CONVERSION_MAX_AGE) *
+                            ((100 - CONVERSION_FEES_PERCENTAGE) / 100));
+                    $fee = financialrounding('amount', $client_currency,
+                        amount_from_to_currency($amount, $mt5_currency, $client_currency, CURRENCY_CONVERSION_MAX_AGE) *
+                            (CONVERSION_FEES_PERCENTAGE / 100));
 
                     $source_currency = $mt5_currency;
                 }
@@ -1473,12 +1470,12 @@ sub _mt5_validate_and_get_amount {
 
             return _make_error($error_code,
                 localize("Amount must be greater than [_1] [_2].", $source_currency, financialrounding('amount', $source_currency, $min)))
-                if $amount < financialrounding('amount', $source_currency, $min * 0.99);
+                if $amount < financialrounding('amount', $source_currency, $min * ((100 - CONVERSION_FEES_PERCENTAGE) / 100));
             return _make_error($error_code,
                 localize("Amount must be less than [_1] [_2].", $source_currency, financialrounding('amount', $source_currency, $max)))
-                if $amount > financialrounding('amount', $source_currency, $max * 0.99);
+                if $amount > financialrounding('amount', $source_currency, $max * ((100 - CONVERSION_FEES_PERCENTAGE) / 100));
 
-            return Future->done($mt5_amount, $fee, $fee_percent, $source_currency);
+            return Future->done($mt5_amount, $fee, $source_currency);
         });
 }
 
