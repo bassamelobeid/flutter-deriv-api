@@ -339,7 +339,7 @@ sub construct_row_line {
     my $color = $args{error} ? 'red' : 'green';
     $args{$_} ||= '&nbsp;' for keys %args;
 
-    my $row = qq[ <tr>
+    return qq[ <tr>
         <td><a name="ln$args{line_number}">$args{line_number}</td>
         <td>$args{login_id}</td>
         <td>$args{name}</td>
