@@ -284,8 +284,8 @@ sub multibarrierreport {
         }
         $final->{$expiry}->{max} = $max;
     }
-    $final->{generated_time} =
-        BOM::Database::DataMapper::CollectorReporting->new({broker_code => 'CR'})->get_last_generated_historical_marked_to_market_time;
+
+    $final->{generated_time} = $self->_report_mapper->get_last_generated_historical_marked_to_market_time;
     return $final;
 }
 
@@ -327,8 +327,7 @@ sub open_contract_exposures {
     my $report;
     $report->{pl} = sorting_data($final, 'open_bet');
 
-    $report->{generated_time} =
-        BOM::Database::DataMapper::CollectorReporting->new({broker_code => 'CR'})->get_last_generated_historical_marked_to_market_time;
+    $report->{generated_time} = $self->_report_mapper->get_last_generated_historical_marked_to_market_time;
 
     return $report;
 }
