@@ -46,7 +46,7 @@ sub create_account {
 
     my $client = $register->{client};
     $client->financial_assessment({
-        data => Encode::encode_utf8(JSON::MaybeXS->new->encode($financial_assessment->{user_data})),
+        data => Encode::encode_utf8(JSON::MaybeXS->new->encode($financial_assessment)),
     });
     # after_register_client sub save client so no need to call it here
     $client->set_status('unwelcome', 'SYSTEM', 'Trading disabled for investment Europe ltd');
