@@ -136,16 +136,6 @@
       "description": "Commodities trading frequency",
       "required": 1
     },
-    "stocks_trading_experience": {
-      "enum": [ "0-1 year", "1-2 years", "Over 3 years" ],
-      "description": "Stocks trading experience",
-      "required": 1
-    },
-    "stocks_trading_frequency": {
-      "enum": [ "0-5 transactions in the past 12 months", "6-10 transactions in the past 12 months", "40 transactions or more in the past 12 months" ],
-      "description": "Stocks trading frequency",
-      "required": 1
-    },
     "other_derivatives_trading_experience": {
       "enum": [ "0-1 year", "1-2 years", "Over 3 years" ],
       "description": "Binary options or other financial derivatives trading experience",

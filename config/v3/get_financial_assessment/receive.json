@@ -46,14 +46,6 @@
           "type": "string",
           "description": "Commodities trading experience"
         },
-        "stocks_trading_experience": {
-          "type": "string",
-          "description": "Stocks trading experience"
-        },
-        "stocks_trading_frequency": {
-          "type": "string",
-          "description": "Stocks trading frequency"
-        },
         "other_derivatives_trading_frequency": {
           "type": "string",
           "description": "Binary options or other financial derivatives trading frequency"
