@@ -142,7 +142,7 @@ read_csv_row_and_callback(
             if ($is_doughflow_credit) {
                 $error = "Transaction id is mandatory for doughflow credit"
                     if not $transaction_id or $transaction_id !~ '\w+';
-                $error = "Transaction id provided does not match with one provided in remark (it should be in format like: transaction_id=33232)."
+                $error = "Transaction id provided does not match with one provided in comment (it should be in format like: transaction_id=33232)."
                     if $statement_comment !~ /transaction_id=$transaction_id/;
             }
 
