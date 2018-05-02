@@ -13,6 +13,6 @@ BEGIN {
         my $currency_code = $self->client->default_account->currency_code;
         return $currency_code;
     };
-};
+}
 
 1;
