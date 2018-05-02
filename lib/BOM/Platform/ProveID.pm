@@ -43,6 +43,15 @@ sub get_result {
     return $self->SUPER::get_result();
 }
 
+sub has_downloaded_xml { return shift->SUPER::has_done_request }
+
+sub has_done_request {
+    my $self   = shift;
+    my $client = $self->{client};
+
+    return $client->get_status('proveid_requested') || $self->has_downloaded_xml;
+}
+
 sub defaults {
     my $self = shift;
 
