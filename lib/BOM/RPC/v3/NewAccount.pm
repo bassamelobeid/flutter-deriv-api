@@ -278,7 +278,7 @@ rpc new_account_real => sub {
         details     => $details_ref->{details},
     });
 
-    if (my $default_account = $client->default_account->load) {
+    if (my $default_account = $user->get_default_client()) {
         my $existing_fa = $default_account->financial_assessment->data;
         $acc->financial_assessment({data => $existing_fa});
     }
