@@ -112,13 +112,13 @@ HERE
         fixup => sub {
             my $sth   = $_->prepare($sql);
             my @binds = (
-                $start_date->date_yyyymmdd, # b0
-                $until_date->date_yyyymmdd, # b1
-                $buy_sell,                  # b2
-                $broker,                    # b3
-                $start_date->date_yyyymmdd, # b4
-                $until_date->date_yyyymmdd, # b5
-                $broker,                    # b6
+                $start_date->date_yyyymmdd,    # b0
+                $until_date->date_yyyymmdd,    # b1
+                $buy_sell,                     # b2
+                $broker,                       # b3
+                $start_date->date_yyyymmdd,    # b4
+                $until_date->date_yyyymmdd,    # b5
+                $broker,                       # b6
             );
 
             $sth->execute(@binds);
