@@ -268,7 +268,7 @@ sub get_client_by_status {
             my $sth = $_->prepare(
                 'SELECT client_loginid, status_code, reason, cashier_locked,
                 name, email, residence, last_access, funded, balance_in_usd,
-                aggregate_payment_in_usd FROM get_client_list_by_status(?, ?, ?)'
+                aggregate_payment_in_usd FROM reporting.get_client_list_by_status(?, ?, ?)'
             );
             $sth->execute($show, $limit, $offset);
             return $sth->fetchall_hashref('client_loginid');
