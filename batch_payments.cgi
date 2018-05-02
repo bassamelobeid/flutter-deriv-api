@@ -338,6 +338,7 @@ sub construct_row_line {
     my $notes = $args{error} || $args{remark};
     my $color = $args{error} ? 'red' : 'green';
     $args{$_} ||= '&nbsp;' for keys %args;
+    my $transaction_id = $args{transaction_id} // '';
 
     return qq[ <tr>
         <td><a name="ln$args{line_number}">$args{line_number}</td>
@@ -350,7 +351,7 @@ sub construct_row_line {
         <td>$args{currency}</td>
         <td>$args{amount}</td>
         <td>$args{comment}</td>
-        <td>$args{transaction_id}</td>
+        <td>$transaction_id</td>
         <td style="color:$color">$notes</td>
     </tr>];
 }
