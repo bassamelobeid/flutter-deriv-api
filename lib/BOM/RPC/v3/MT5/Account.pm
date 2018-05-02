@@ -127,19 +127,27 @@ sub get_mt5_logins {
     my $f = fmap1 {
         shift =~ /^MT(\d+)$/;
         my $login = $1;
-
-        return mt5_get_settings({
-                client => $client,
-                args   => {login => $login}}
-            )->then(
+        return BOM::MT5::User::Async::get_user($login)->then(
             sub {
                 my ($setting) = @_;
-
+                return Future->fail('MT5GetUserError', $setting->{error}) if (ref $setting eq 'HASH' and $setting->{error});
                 my $acc = {login => $login};
                 if (ref $setting eq 'HASH' && $setting->{group}) {
                     $acc->{group} = $setting->{group};
                 }
-
+                $setting = _extract_settings($setting);
+                @{$acc}{keys %$setting} = values %$setting;
+                return Future->needs_all(
+                    mt5_mamm({
+                            client => $client,
+                            args   => {login => $login}}
+                    ),
+                    Future->done($acc));
+            }
+            )->then(
+            sub {
+                my ($mamm, $acc) = @_;
+                @{$acc}{keys %$mamm} = values %$mamm;
                 return Future->done($acc);
             });
     }
@@ -530,29 +538,29 @@ async_rpc mt5_get_settings => sub {
     return BOM::MT5::User::Async::get_user($login)->then(
         sub {
             my ($settings) = @_;
-
-            return create_error_future({
-                    code              => 'MT5GetUserError',
-                    message_to_client => $settings->{error}}) if (ref $settings eq 'HASH' and $settings->{error});
-
-            if (my $country = $settings->{country}) {
-                my $country_code = Locale::Country::Extra->new()->code_from_country($country);
-                if ($country_code) {
-                    $settings->{country} = $country_code;
-                } else {
-                    warn "Invalid country name $country for mt5 settings, can't extract code from Locale::Country::Extra";
-                }
-            }
-
-            $settings->{currency} = $settings->{group} =~ /vanuatu|costarica|demo/ ? 'USD' : 'EUR';
-
-            # we don't want to send this field back
-            delete $settings->{rights};
-            delete $settings->{agent};
-
+            return Future->fail('MT5GetUserError', $settings->{error}) if (ref $settings eq 'HASH' and $settings->{error});
+            $settings = _extract_settings($settings, ['address', 'city', 'state', 'zipCode', 'phone', 'phonePassword']);
             return Future->done($settings);
         });
 };
+
+sub _extract_settings {
+    my ($settings, $additional_keys) = @_;
+    my @allowed_keys      = qw/login email group balance name company leverage/;
+    my $filtered_settings = {};
+    push @allowed_keys, @$additional_keys if ref $additional_keys eq 'ARRAY';
+    if (my $country = $settings->{country}) {
+        my $country_code = Locale::Country::Extra->new()->code_from_country($country);
+        if ($country_code) {
+            $filtered_settings->{country} = $country_code;
+        } else {
+            warn "Invalid country name $country for mt5 settings, can't extract code from Locale::Country::Extra";
+        }
+    }
+    $filtered_settings->{currency} = $settings->{group} =~ /vanuatu|costarica|demo/ ? 'USD' : 'EUR';
+    @{$filtered_settings}{@allowed_keys} = @{$settings}{@allowed_keys};
+    return $filtered_settings;
+}
 
 =head2 mt5_set_settings
 
