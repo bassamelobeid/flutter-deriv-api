@@ -47,7 +47,7 @@ use constant MT5_ACCOUNT_TRADING_ENABLED_RIGHTS_ENUM => qw(
 use constant CURRENCY_CONVERSION_MAX_AGE => 3600;
 
 # Fees percentage for deposit and withdrawal within in different currencies
-use constant CONVERSION_FEES_PERCENTAGE = 1;
+use constant CONVERSION_FEES_PERCENTAGE => 1;
 
 # TODO(leonerd):
 #   These helpers exist mostly to coördinate the idea of error management in
@@ -1083,7 +1083,8 @@ async_rpc mt5_deposit => sub {
             my $fees_currency = $response->{fees_currency};
 
             my $comment = "Transfer from $fm_loginid to MT5 account $to_mt5.";
-            $comment .= " Includes $fees_currency " . formatnumber('amount', $fees_currency, $fee) . " (${CONVERSION_FEES_PERCENTAGE}%) as fees."
+            $comment .=
+                " Includes $fees_currency " . formatnumber('amount', $fees_currency, $fees) . " (" . CONVERSION_FEES_PERCENTAGE . "%) as fees."
                 if $fees;
             my $account = $fm_client->set_default_account($fm_client->currency);
             my ($payment) = $account->add_payment({
@@ -1161,9 +1162,11 @@ async_rpc mt5_withdrawal => sub {
 
             my $fees          = $response->{fees};
             my $fees_currency = $response->{fees_currency};
+            my $mt5_amount    = $response->{mt5_amount};
 
             my $comment = "Transfer from MT5 account $fm_mt5 to $to_loginid.";
-            $comment .= " Includes $fees_currency " . formatnumber('amount', $fees_currency, $fees) . " (${CONVERSION_FEES_PERCENTAGE}%) as fees."
+            $comment .=
+                " Includes $fees_currency " . formatnumber('amount', $fees_currency, $fees) . " (" . CONVERSION_FEES_PERCENTAGE . "%) as fees."
                 if $fees;
             # withdraw from MT5 a/c
             return BOM::MT5::User::Async::withdrawal({
