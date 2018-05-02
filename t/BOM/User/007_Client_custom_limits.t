@@ -55,27 +55,28 @@ Test::Exception::lives_ok { $client = BOM::User::Client->new({'loginid' => 'CR00
         EUR => 1.2,
     );
     my $mock = Test::MockModule->new('Postgres::FeedDB::CurrencyConverter');
-    $mock->mock(in_USD => sub {
-        my $price         = shift;
-        my $from_currency = shift;
+    $mock->mock(
+        in_USD => sub {
+            my $price         = shift;
+            my $from_currency = shift;
 
-        die "mocked in_USD lacks exchange rate for $from_currency"
-            unless exists $rates{$from_currency};
+            die "mocked in_USD lacks exchange rate for $from_currency"
+                unless exists $rates{$from_currency};
 
-        my $res = $price * $rates{$from_currency};
+            my $res = $price * $rates{$from_currency};
 
-        note "mocked in_USD($price, $from_currency) returns $res";
-        return $res;
-    });
+            note "mocked in_USD($price, $from_currency) returns $res";
+            return $res;
+        });
 
     $account_balance_limit = $client->get_limit({'for' => 'account_balance'});
-    is($account_balance_limit, 111111/1.4, 'balance limit = 111111/1.4 (1.4 is the GBP exchange rate)');
+    is($account_balance_limit, 111111 / 1.4, 'balance limit = 111111/1.4 (1.4 is the GBP exchange rate)');
 
     $daily_turnover_limit = $client->get_limit({'for' => 'daily_turnover'});
-    is($daily_turnover_limit, 222222/1.4, 'turnover limit = 222222/1.4 (1.4 is the GBP exchange rate)');
+    is($daily_turnover_limit, 222222 / 1.4, 'turnover limit = 222222/1.4 (1.4 is the GBP exchange rate)');
 
     $payout_limit = $client->get_limit({'for' => 'payout'});
-    is($payout_limit, 333333/1.4, 'payout limit = 333333/1.4 (1.4 is the GBP exchange rate)');
+    is($payout_limit, 333333 / 1.4, 'payout limit = 333333/1.4 (1.4 is the GBP exchange rate)');
 }
 
 $self_exclusion_open_positions_limit = $client->get_limit({'for' => 'open_positions'});
