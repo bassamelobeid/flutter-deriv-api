@@ -136,15 +136,6 @@ sub process {
                     }
                 }
 
-                # if stake is defined, set it to ask_price.
-                if ($contract_params->{stake}) {
-                    $contract_params->{ask_price} = $contract_params->{stake};
-                }
-
-                unless (defined $contract_params->{payout} or defined $contract_params->{ask_price}) {
-                    $contract_params->{payout} = 0;        # last safety net
-                }
-
             } else {
                 my @allowed = keys %$allowed_amount_type;
                 my $error_code = scalar(@allowed) > 1 ? 'WrongAmountTypeTwo' : 'WrongAmountTypeOne';
@@ -153,6 +144,15 @@ sub process {
                     error_args => \@allowed,
                 );
             }
+        }
+
+        # if stake is defined, set it to ask_price.
+        if ($contract_params->{stake}) {
+            $contract_params->{ask_price} = $contract_params->{stake};
+        }
+
+        unless (defined $contract_params->{payout} or defined $contract_params->{ask_price}) {
+            $contract_params->{payout} = 0;    # last safety net
         }
 
         if (@$barriers) {
