@@ -468,6 +468,10 @@ sub prepare_bet_data_for_buy {
         if ($contract->barrier) {
             $bet_params->{$contract->barrier->barrier_type . '_barrier'} = $contract->barrier->supplied_barrier;
         }
+    } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_HIGH_LOW_TICK) {
+        if ($contract->selected_tick) {
+            $bet_params->{selected_tick} = $contract->selected_tick;
+        }
     } else {
         return Error::Base->cuss(
             -type              => 'UnsupportedBetClass',
