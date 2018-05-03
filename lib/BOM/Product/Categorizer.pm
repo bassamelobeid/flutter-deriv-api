@@ -119,8 +119,10 @@ sub process {
     my $contract_params = $self->_initialize_contract_parameters();
 
     foreach my $c_type (@$c_types) {
+        my $contract_class      = 'BOM::Product::Contract::' . ucfirst lc $c_type->{bet_type};
+        my $allowed_amount_type = $contract_class->allowed_amount_type;
 
-        if ($c_type->{category}->is_binary) {
+        if ($contract_params->{amount_type} and $allowed_amount_type->{$contract_params->{amount_type}}) {
             # if amount_type and amount are defined, give them priority.
             if ($contract_params->{amount} and $contract_params->{amount_type}) {
                 if ($contract_params->{amount_type} eq 'payout') {
@@ -142,9 +144,12 @@ sub process {
             }
 
         } else {
-            if ($contract_params->{amount_type} ne 'multiplier') {
-                BOM::Product::Exception->throw(error_code => 'WrongAmountTypeNonBinary');
-            }
+            my @allowed = keys %$allowed_amount_type;
+            my $error_code = scalar(@allowed) > 1 ? 'WrongAmountTypeTwo' : 'WrongAmountTypeOne';
+            BOM::Product::Exception->throw(
+                error_code => $error_code,
+                error_args => \@allowed,
+            );
         }
 
         if (@$barriers) {

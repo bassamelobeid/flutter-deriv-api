@@ -190,4 +190,10 @@ override shortcode => sub {
     return uc join '_', @shortcode_elements;
 };
 
+override allowed_amount_type => sub {
+    return {
+        multiplier => 1,
+    };
+};
+
 1;

@@ -108,4 +108,10 @@ override '_build_pricing_engine_name' => sub {
     return 'Pricing::Engine::Callputspread';
 };
 
+override allowed_amount_type => sub {
+    return {
+        payout => 1,
+    };
+};
+
 1;

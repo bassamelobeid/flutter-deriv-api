@@ -1179,6 +1179,13 @@ sub validate_inputs {
     return undef;
 }
 
+sub allowed_amount_type {
+    return {
+        stake  => 1,
+        payout => 1,
+    };
+}
+
 # Don't mind me, I just need to make sure my attibutes are available.
 with 'BOM::Product::Role::Reportable';
 
