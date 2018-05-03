@@ -69,12 +69,12 @@ subtest 'test everything' => sub {
                 $contract_args->{multiplier} = 1;
                 $contract_args->{amount_type} = 'multiplier';
             } elsif (grep {$ref->{contract_type} eq $_} qw(TICKHIGH TICKLOW)) {
-                $contract_args->{selected_tick} =1;    
+                $contract_args->{selected_tick} =1;
             } else {
-                $contract_args = {%$contract_args, %barriers};    
+                $contract_args = {%$contract_args, %barriers};
             }
             my $c = produce_contract($contract_args);
-            
+
             next unless exists $expected->{$c->shortcode};
             is $c->pricing_engine_name, $expected->{$c->shortcode}, "correct pricing engine select for " . $c->shortcode;
         }
