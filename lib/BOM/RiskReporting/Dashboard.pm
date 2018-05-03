@@ -113,6 +113,7 @@ sub _build__report {
         end_date   => $self->end->datetime_yyyymmdd_hhmmss,
     };
     my $ttl = Cache::RedisDB->ttl('RISK_DASHBOARD', 'report');
+    $report->{open_bets} = $self->_open_bets_report;
     my $pap_report = $self->_payment_and_profit_report;
     $report->{big_deposits}    = $pap_report->{big_deposits};
     $report->{big_withdrawals} = $pap_report->{big_withdrawals};
@@ -121,6 +122,166 @@ sub _build__report {
     $report->{watched}         = $pap_report->{watched};
     $report->{top_turnover}    = $self->_top_turnover;
     $report->{generated_time}  = Date::Utility->new->plus_time_interval(($ttl - 1800) . 's')->datetime;
+
+    return $report;
+}
+
+sub _open_bets_report {
+    my $self = shift;
+
+    my $report = {
+        mover_limit => 100,
+    };
+    my $spark_info = {};
+    my $pivot_info = {
+        fields => {
+            login_id => {
+                field => 'login_id',
+            },
+            currency_code => {
+                field => 'currency_code',
+            },
+            ref_no => {
+                field => 'ref_no',
+            },
+            underlying => {
+                field => 'underlying',
+            },
+            market => {
+                field => 'market',
+            },
+            bet_type => {
+                field => 'bet_type',
+            },
+            bet_category => {
+                field => 'bet_category',
+            },
+            expiry_date => {
+                field => 'expiry_date',
+            },
+            expiry_period => {
+                field => 'expiry_period',
+                sort  => 'desc'
+            },
+            buy_price_usd => {
+                field        => 'buy_price_usd',
+                sort         => 'desc',
+                agregateType => 'sum',
+            },
+            payout_usd => {
+                field        => 'payout_usd',
+                sort         => 'desc',
+                agregateType => 'sum',
+                sort         => 'desc'
+            },
+            mtm_usd => {
+                field        => 'mtm_usd',
+                agregateType => 'sum',
+                sort         => 'desc'
+            },
+            mtm_profit => {
+                field        => 'mtm_profit',
+                agregateType => 'sum',
+                sort         => 'desc'
+            },
+            Count => {
+                sort         => 'desc',
+                agregateType => 'count',
+                groupType    => 'none',
+            },
+            MtMAverage => {
+                field        => 'mtm_usd',
+                sort         => 'desc',
+                agregateType => 'average',
+                groupType    => 'none',
+            },
+        },
+        xfields   => ['market',  'underlying'],
+        yfields   => ['expiry_period'],
+        zfields   => ['mtm_usd', 'mtm_profit'],
+        copyright => $json->false,
+        summary   => $json->true,
+        data      => [],
+    };
+
+    my @open_bets = sort { $b->{percentage_change} <=> $a->{percentage_change} } @{$self->_open_bets_at_end};
+    my @movers = grep { $self->amount_in_usd($_->{market_price}, $_->{currency_code}) >= $report->{mover_limit} } @open_bets;
+
+# Top ten moved open positions (% change from purchase price to current MtM value)
+    $report->{top_ten_movers} =
+        [((scalar @movers <= 10) ? @movers : @movers[0 .. 9])];
+
+    # big marked to market value
+    @open_bets =
+        map  { $_->[1] }
+        sort { $b->[0] <=> $a->[0] }
+        map  { [$self->amount_in_usd($_->{market_price}, $_->{currency_code}), $_] } @open_bets;
+    $report->{big_mtms} =
+        [((scalar @open_bets <= 10) ? @open_bets : @open_bets[0 .. 9])];
+
+    my $today      = Date::Utility->today;
+    my $total_open = 0;
+
+    foreach my $bet_details (@open_bets) {
+        my $bet = produce_contract($bet_details->{short_code}, $bet_details->{currency_code});
+        my $normalized_mtm = $self->amount_in_usd($bet_details->{market_price}, $bet_details->{currency_code});
+
+        my $seconds_to_expiry = Date::Utility->new($bet_details->{expiry_time})->epoch - time;
+        $total_open += $normalized_mtm;
+        my $til_expiry = Time::Duration::Concise::Localize->new(
+            interval => max(0, $seconds_to_expiry),
+            locale   => BOM::Backoffice::Request::request()->language
+        );
+        $bet_details->{longcode} = try { BOM::Backoffice::Request::localize($bet->longcode) } catch { 'Description unavailable' };
+        $bet_details->{expires_in} =
+            ($til_expiry->seconds > 0) ? $til_expiry->as_string(1) : 'expired';
+        my $currency      = $bet_details->{currency_code};
+        my $how_long      = $bet->date_expiry->days_between($self->end);
+        my $expiry_period = ($how_long < 1) ? 'Today' : 'Longer';
+        my $buy_usd       = $self->amount_in_usd($bet_details->{buy_price}, $currency);
+        my $payout_usd    = $self->amount_in_usd($bet_details->{payout_price}, $currency);
+        my $mtm_profit    = $buy_usd - $normalized_mtm;
+        my $underlying    = $bet->underlying;
+        my $bet_cat       = $bet->category;
+        push @{$pivot_info->{data}},
+            {
+            login_id      => $bet_details->{loginid},
+            currency_code => $currency,
+            ref_no        => $bet_details->{ref},
+            underlying    => $underlying->symbol,
+            market        => $underlying->market->name,
+            bet_type      => $bet->code,
+            bet_category  => $bet_cat->code,
+            expiry_date   => $bet->date_expiry->date_yyyymmdd,
+            expiry_period => $expiry_period,
+            buy_price_usd => $buy_usd,
+            payout_usd    => $payout_usd,
+            mtm_usd       => $normalized_mtm,
+            mtm_profit    => $mtm_profit,
+            };
+        my $days_hence = $bet->date_expiry->days_between($today);
+        $spark_info->{$days_hence}->{mtm} += $normalized_mtm;
+    }
+
+    # big payout open positions
+    my @big_payouts =
+        map  { $_->[1] }
+        sort { $b->[0] <=> $a->[0] }
+        map  { [$self->amount_in_usd($_->{payout_price}, $_->{currency_code}), $_] } @open_bets;
+    $report->{big_payouts} =
+        [((scalar @big_payouts <= 10) ? @big_payouts : @big_payouts[0 .. 9])];
+
+    my $sparks = {
+        mtm  => [],
+        days => [],
+    };
+    for (my $days = 0; $days <= max(keys %$spark_info, 0); $days++) {
+        push @{$sparks->{mtm}}, roundcommon(1, $spark_info->{$days}->{mtm} // 0);
+        push @{$sparks->{days}}, $days;
+    }
+
+    $report->{pivot}  = $json->encode($pivot_info);
+    $report->{sparks} = $json->encode($sparks);
 
     return $report;
 }
