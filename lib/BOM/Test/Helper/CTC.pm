@@ -2,7 +2,6 @@ package BOM::Test::Helper::CTC;
 
 use strict;
 use warnings;
-no warnings qw/redefine/;
 
 use BOM::CTC::Helper;
 
