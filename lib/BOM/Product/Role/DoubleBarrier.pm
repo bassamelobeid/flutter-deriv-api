@@ -123,7 +123,7 @@ sub _validate_barrier {
                 severity          => 1,
                 message_to_client => [$ERROR_MAPPING->{InvalidBarrierRange}],
             };
-        } elsif (abs($high_pip_move) < $min_allowed or abs($low_pip_move) < $min_allowed) {
+        } elsif (not $self->for_sale and (abs($high_pip_move) < $min_allowed or abs($low_pip_move) < $min_allowed)) {
             return {
                 message => 'Relative barrier path dependent move below minimum '
                     . "[high move: "
