@@ -32,7 +32,7 @@ subtest 'config' => sub {
         currency     => 'USD',
         payout       => 100,
     });
-    ok $c->is_binary, 0, 'non-binary';
+    ok !$c->is_binary, 'non-binary';
     ok $c->two_barriers,       'two barriers';
     is $c->pricing_code,       'CALLSPREAD', 'pricing code is CALLSPREAD';
     is $c->display_name,       'Call Spread', 'display name is Call Spread';
