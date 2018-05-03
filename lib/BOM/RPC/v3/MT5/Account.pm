@@ -14,7 +14,7 @@ use Locale::Country::Extra;
 use Brands;
 use WebService::MyAffiliates;
 use Future::Utils qw(fmap1);
-use Format::Util::Numbers qw/ financialrounding roundcommon/;
+use Format::Util::Numbers qw/financialrounding formatnumber/;
 use Postgres::FeedDB::CurrencyConverter qw/amount_from_to_currency/;
 
 use BOM::RPC::Registry '-dsl';
@@ -1444,12 +1444,11 @@ sub _mt5_validate_and_get_amount {
                 try {
                     $min = amount_from_to_currency(1,     'USD', $client_currency);
                     $max = amount_from_to_currency(20000, 'USD', $client_currency);
-                    $mt5_amount = financialrounding('amount', $mt5_currency,
-                        amount_from_to_currency($amount, $client_currency, $mt5_currency, CURRENCY_CONVERSION_MAX_AGE) *
-                            ((100 - CONVERSION_FEES_PERCENTAGE) / 100));
-                    $fees = financialrounding('amount', $mt5_currency,
-                        amount_from_to_currency($amount, $client_currency, $mt5_currency, CURRENCY_CONVERSION_MAX_AGE) *
-                            (CONVERSION_FEES_PERCENTAGE / 100));
+
+                    $fees = $amount * (CONVERSION_FEES_PERCENTAGE / 100);
+                    $mt5_amount =
+                        financialrounding('amount', $mt5_currency,
+                        amount_from_to_currency(($amount - $fees), $client_currency, $mt5_currency, CURRENCY_CONVERSION_MAX_AGE));
                 }
                 catch {
                     warn "Conversion failed for mt5_$action: $_";
@@ -1459,12 +1458,11 @@ sub _mt5_validate_and_get_amount {
                 try {
                     $min = amount_from_to_currency(1,     'USD', $mt5_currency);
                     $max = amount_from_to_currency(20000, 'USD', $mt5_currency);
-                    $mt5_amount = financialrounding('amount', $client_currency,
-                        amount_from_to_currency($amount, $mt5_currency, $client_currency, CURRENCY_CONVERSION_MAX_AGE) *
-                            ((100 - CONVERSION_FEES_PERCENTAGE) / 100));
-                    $fees = financialrounding('amount', $client_currency,
-                        amount_from_to_currency($amount, $mt5_currency, $client_currency, CURRENCY_CONVERSION_MAX_AGE) *
-                            (CONVERSION_FEES_PERCENTAGE / 100));
+
+                    $fees = $amount * (CONVERSION_FEES_PERCENTAGE / 100);
+                    $mt5_amount =
+                        financialrounding('amount', $client_currency,
+                        amount_from_to_currency(($amount - $fees), $mt5_currency, $client_currency, CURRENCY_CONVERSION_MAX_AGE));
 
                     $source_currency = $mt5_currency;
                 }
@@ -1478,12 +1476,12 @@ sub _mt5_validate_and_get_amount {
                 unless defined $mt5_amount;
 
             return _make_error($error_code,
-                localize("Amount must be greater than [_1] [_2].", $source_currency, financialrounding('amount', $source_currency, $min)))
-                if $amount < financialrounding('amount', $source_currency, $min * ((100 - CONVERSION_FEES_PERCENTAGE) / 100));
+                localize("Amount must be greater than [_1] [_2].", $source_currency, formatnumber('amount', $source_currency, $min)))
+                if $amount < financialrounding('amount', $source_currency, $min);
 
             return _make_error($error_code,
-                localize("Amount must be less than [_1] [_2].", $source_currency, financialrounding('amount', $source_currency, $max)))
-                if $amount > financialrounding('amount', $source_currency, $max * ((100 - CONVERSION_FEES_PERCENTAGE) / 100));
+                localize("Amount must be less than [_1] [_2].", $source_currency, formatnumber('amount', $source_currency, $max)))
+                if $amount > financialrounding('amount', $source_currency, $max);
 
             return Future->done({
                 mt5_amount    => $mt5_amount,
