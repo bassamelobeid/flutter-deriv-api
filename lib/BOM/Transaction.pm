@@ -1484,7 +1484,7 @@ sub sell_expired_contracts {
     }
     catch {
         warn(ref eq 'ARRAY' ? "@$_" : "$_");
-        return 0;
+        return [];
     };
 
     if (not $sold or @bets_to_sell > @$sold) {
