@@ -34,6 +34,7 @@ my %class_mapper = (
     range_bet        => 'BOM::Database::Model::FinancialMarketBet::RangeBet',
     touch_bet        => 'BOM::Database::Model::FinancialMarketBet::TouchBet',
     digit_bet        => 'BOM::Database::Model::FinancialMarketBet::DigitBet',
+    highlowticks     => 'BOM::Database::Model::FinancialMarketBet::HighLowTick',
 );
 
 =head2 $class->get(%params)
