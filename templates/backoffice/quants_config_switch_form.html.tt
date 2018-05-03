@@ -1,4 +1,7 @@
 <table class='pretty' id='config_status_form'>
+    [% IF old_config %]
+        <p>Not the latest copy of app config. Please refresh this page!</p>
+    [% END %]
     <tr>
         <th>Config Name</th>
         <th>Status</th>
