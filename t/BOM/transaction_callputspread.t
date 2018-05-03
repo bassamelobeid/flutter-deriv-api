@@ -18,6 +18,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Helper::Client qw(create_client top_up);
+use JSON::MaybeXS;
 
 initialize_realtime_ticks_db();
 
@@ -29,7 +30,14 @@ my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol        => 'USD',
+        symbol        => $_,
+        recorded_date => $now
+    }) for qw(USD JPY-USD);
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => 'frxUSDJPY',
         recorded_date => $now
     });
 
@@ -144,30 +152,6 @@ subtest 'buy CALLSPREAD' => sub {
         is $chld->{relative_high_barrier}, 'S10P',  'relative_high_barrier';
         is $chld->{relative_low_barrier},  'S-10P', 'relative_low_barrier';
     };
-
-    $contract = produce_contract({
-        underlying   => 'R_100',
-        bet_type     => 'CALLSPREAD',
-        currency     => 'USD',
-        payout       => 100,
-        duration     => '14s',
-        current_tick => $tick_r100,
-        high_barrier => 'S10P',
-        low_barrier  => 'S-10P',
-    });
-
-    $txn = BOM::Transaction->new({
-        client        => $cl,
-        contract      => $contract,
-        price         => 50,
-        payout        => $contract->payout,
-        amount_type   => 'payout',
-        purchase_date => $contract->date_start,
-    });
-
-    $error = $txn->buy;
-    is $error->{'-type'}, 'InvalidOfferings', 'InvalidOfferings';
-    is $error->{'-mesg'}, 'Intraday duration not acceptable', 'duration not accepted';
 };
 
 subtest 'buy PUTSPREAD' => sub {
@@ -263,6 +247,51 @@ subtest 'buy PUTSPREAD' => sub {
 
 };
 
+subtest 'offerings' => sub {
+    my $args = {
+        bet_type     => 'PUTSPREAD',
+        currency     => 'USD',
+        payout       => 100,
+        high_barrier => 100,
+        low_barrier  => 99,
+    };
+    my $invalid_duration = 'Intraday duration not acceptable';
+    my $invalid_category = 'Invalid contract category';
+    foreach my $data ((
+            ['R_100', '15s', 1],
+            ['R_100',     '14s',   0, $invalid_duration],
+            ['frxUSDJPY', '2m',    1],
+            ['frxUSDJPY', '1m59s', 0, $invalid_duration],
+            ['AEX',       '1d',    0, $invalid_category],
+            ['frxXAGUSD', '1d',    0, $invalid_category]))
+    {
+        $args->{underlying}   = $data->[0];
+        $args->{duration}     = $data->[1];
+        $args->{current_tick} = $tick_r100;    # just a fake tick
+
+        my $contract = produce_contract($args);
+        my $txn      = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 50,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            purchase_date => $contract->date_start,
+        });
+        delete $args->{current_tick};
+        note('attempting to buy ' . JSON::MaybeXS->new->encode($args));
+        my $error = $txn->buy;
+
+        if ($data->[2]) {
+            ok !$error, 'no error';
+        } else {
+            ok $error, 'invalid buy';
+            is $error->{'-type'}, 'InvalidOfferings', 'InvalidOfferings';
+            is $error->{'-mesg'}, $data->[3], $data->[3];
+        }
+    }
+};
+
 done_testing();
 
 sub get_transaction_from_db {
@@ -317,3 +346,4 @@ SQL
 
     return \%txn, \%fmb, \%chld, \%qv1, \%qv2, \%t2;
 }
+
