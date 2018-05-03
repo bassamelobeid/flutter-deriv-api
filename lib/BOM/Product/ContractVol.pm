@@ -158,8 +158,8 @@ sub _build_pricing_vol {
 
     if ($vol <= 0) {
         $self->_add_error({
-            message           => 'Zero volatility. Invalidate price.',
-            message_to_client => [$ERROR_MAPPING->{CannotProcessContract}],
+            message           => 'Zero or negative volatility. Invalidate price.',
+            message_to_client => [$ERROR_MAPPING->{InvalidVolatility}],
         });
     }
 
