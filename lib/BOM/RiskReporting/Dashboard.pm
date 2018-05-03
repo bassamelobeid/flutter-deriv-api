@@ -324,10 +324,6 @@ sub _top_turnover {
             : @sorted_affils[0 .. 9]]};
 }
 
-
-
-
-
 sub _payment_and_profit_report {
     my $self = shift;
 
