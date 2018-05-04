@@ -278,7 +278,7 @@ subtest 'all status are covered' => sub {
     my @temp_status =
         grep {
         $_ !~
-            /^(?:social_signup|jp_transaction_detail|duplicate_account|migrated_single_email|document_under_review|document_needs_action|professional|professional_requested)$/
+            /^(?:social_signup|jp_transaction_detail|duplicate_account|migrated_single_email|document_under_review|document_needs_action|professional|professional_requested|proveid_requested|proveid_pending)$/
         }
         keys %$all_status;
     fail("missing status $_") for sort grep !exists $seen{$_}, @temp_status;
