@@ -70,6 +70,7 @@ sub get_permissible_inputs {
         'id'                         => 1,
         'sentiment'                  => 1,
         'display_name'               => 1,
+        'other_side_code'            => 1,
 
         # Proposal inputs
         'country_code' => 1,
