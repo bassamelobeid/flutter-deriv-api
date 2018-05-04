@@ -440,7 +440,7 @@ subtest 'get_bid_skip_barrier_validation' => sub {
     };
 
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
-    like $result->{validation_error}, qr/^Barrier must be at least/, "Barrier error expected";
+    ok(!exists $result->{validation_error}, "No barrier validation error");
 
     $params->{validation_params} = {skip_barrier_validation => 1};
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
