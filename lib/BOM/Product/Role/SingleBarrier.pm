@@ -68,7 +68,7 @@ sub _validate_barrier {
             severity          => 91,
             message_to_client => [$ERROR_MAPPING->{BarrierOutOfRange}],
         };
-    } elsif ($self->is_path_dependent and abs($pip_move) < $self->minimum_allowable_move) {
+    } elsif (not $self->for_sale and $self->is_path_dependent and abs($pip_move) < $self->minimum_allowable_move) {
         return {
             message => 'Relative barrier path dependent move below minimum '
                 . "[min: "
