@@ -161,6 +161,7 @@ sub authorize {
             $uri .= '&state=' . $state if defined $state;
             # clear session for oneall login when scope is canceled
             delete $c->session->{_oneall_user_id};
+            delete $c->session->{_otp_verified};
             return $c->redirect_to($uri);
         }
     }
