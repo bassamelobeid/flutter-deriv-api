@@ -31,6 +31,12 @@ WLDAUD: &smart_fx
         euro_atm:
           max: 10h
           min: 3m
+  callputequal:
+    intraday:
+      spot:
+        euro_atm:
+          max: 10h
+          min: 3m
 WLDEUR: *smart_fx
 WLDGBP: *smart_fx
 WLDUSD: *smart_fx

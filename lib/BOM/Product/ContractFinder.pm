@@ -103,7 +103,7 @@ sub _get_multi_barrier_offerings {
         {
             expiry_type       => ['daily', 'intraday'],
             barrier_category  => 'euro_non_atm',
-            contract_category => 'callput',
+            contract_category => 'callputequal',
             underlying_symbol => $symbol,
         },
         {

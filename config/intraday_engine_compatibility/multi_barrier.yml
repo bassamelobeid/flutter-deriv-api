@@ -3,7 +3,7 @@
 # The extended pricing capabilities is due to less flexibility in barrier and duration selection.
 # This should be an enhancement added to the pricing engine so that we could combined them.
 frxAUDJPY: &japan_fx
-  callput:
+  callputequal:
     intraday:
       spot:
         euro_non_atm:
