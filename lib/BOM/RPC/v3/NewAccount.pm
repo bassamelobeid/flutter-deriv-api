@@ -278,11 +278,6 @@ rpc new_account_real => sub {
         details     => $details_ref->{details},
     });
 
-    if (my $default = $user->get_default_client()) {
-        my $existing_fa = $default->financial_assessment->data;
-        $acc->financial_assessment({data => $existing_fa});
-    }
-
     if (my $err_code = $acc->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err_code,
