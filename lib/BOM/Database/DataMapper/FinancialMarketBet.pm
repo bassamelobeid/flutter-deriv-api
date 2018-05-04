@@ -297,7 +297,7 @@ sub _fmb_rose_to_fmb_model {
         $param->{'reset_bet_record'} = $rose_object->reset_bet;
         $model_class = 'BOM::Database::Model::FinancialMarketBet::ResetBet';
     } elsif ($rose_object->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_HIGH_LOW_TICK) {
-        $param->{'highlowticks_record'} = $rose_object->highlowtick;
+        $param->{'highlowticks_record'} = $rose_object->highlowticks;
         $model_class = 'BOM::Database::Model::FinancialMarketBet::HighLowTick';
     } else {
         Carp::croak('UNSUPPORTED rose_object class [' . $rose_object->bet_class . ']');
