@@ -26,6 +26,7 @@ use BOM::Database::Model::FinancialMarketBet::RangeBet;
 use BOM::Database::Model::FinancialMarketBet::DigitBet;
 use BOM::Database::Model::FinancialMarketBet::LookbackOption;
 use BOM::Database::Model::FinancialMarketBet::ResetBet;
+use BOM::Database::Model::FinancialMarketBet::HighLowTick;
 use Date::Utility;
 use Try::Tiny;
 
@@ -108,7 +109,7 @@ sub get_fmb_by_id {
             $BOM::Database::Model::Constants::BET_CLASS_HIGHER_LOWER_BET, $BOM::Database::Model::Constants::BET_CLASS_RANGE_BET,
             $BOM::Database::Model::Constants::BET_CLASS_TOUCH_BET,        $BOM::Database::Model::Constants::BET_CLASS_LEGACY_BET,
             $BOM::Database::Model::Constants::BET_CLASS_DIGIT_BET,        $BOM::Database::Model::Constants::BET_CLASS_LOOKBACK_OPTION,
-            $BOM::Database::Model::Constants::BET_CLASS_RESET_BET,
+            $BOM::Database::Model::Constants::BET_CLASS_RESET_BET,        $BOM::Database::Model::Constants::BET_CLASS_HIGH_LOW_TICK,
         ],
         query => [id => $bet_ids],
         db    => $self->db,
@@ -295,6 +296,9 @@ sub _fmb_rose_to_fmb_model {
     } elsif ($rose_object->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_RESET_BET) {
         $param->{'reset_bet_record'} = $rose_object->reset_bet;
         $model_class = 'BOM::Database::Model::FinancialMarketBet::ResetBet';
+    } elsif ($rose_object->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_HIGH_LOW_TICK) {
+        $param->{'highlowticks_record'} = $rose_object->highlowtick;
+        $model_class = 'BOM::Database::Model::FinancialMarketBet::HighLowTick';
     } else {
         Carp::croak('UNSUPPORTED rose_object class [' . $rose_object->bet_class . ']');
     }
