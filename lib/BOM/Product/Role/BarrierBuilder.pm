@@ -25,7 +25,7 @@ sub make_barrier {
         $self->_add_error({
             severity          => 100,
             message           => 'Undefined barrier',
-            message_to_client => [$ERROR_MAPPING->{CannotProcessContract}],
+            message_to_client => [$ERROR_MAPPING->{InvalidBarrierUndef}],
         });
     }
 
