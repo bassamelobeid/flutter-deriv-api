@@ -386,7 +386,8 @@ sub _get_overview {
         to    => $bet->date_expiry,
     });
     my ($delta_strike1, $delta_strike2) = (0, 0);
-    if (not($bet->category_code eq 'digits' or $bet->category_code eq 'asian')) {
+    # contracts that doesn't have a financial barrier or does not have barrier at start.
+    if (not($bet->category_code eq 'digits' or $bet->category_code eq 'asian' or $bet->category_code eq 'highlowticks')) {
         if ($bet->two_barriers) {
             $delta_strike1 = 100 * get_delta_for_strike({
                 strike           => $bet->high_barrier->as_absolute,
