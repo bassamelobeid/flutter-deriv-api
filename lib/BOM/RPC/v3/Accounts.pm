@@ -517,6 +517,9 @@ rpc get_account_status => sub {
     my $is_financial_info_incomplete = any { !$financial_assessment->{$_} } keys $input_mappings->{financial_information};
     my $is_trading_exp_incomplete    = any { !$financial_assessment->{$_} } keys $input_mappings->{trading_experience};
 
+    push(@status, 'financial_information_not_complete') if $is_financial_info_incomplete;
+    push(@status, 'trading_experience_not_complete')    if $is_trading_exp_incomplete;
+
     if ($client->broker =~ /^MF$/
         and ($is_financial_info_incomplete or $is_trading_exp_incomplete))
     {
