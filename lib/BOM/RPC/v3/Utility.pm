@@ -738,6 +738,8 @@ sub _update_existing_financial_assessment {
         $cli->save;
     }
 
+    return undef;
+
 }
 
 1;
