@@ -39,7 +39,7 @@ my $first_entry_mlt = [
     [
         ["callput",      "Higher/Lower",               "5t", "365d"],
         ["callput",      "Rise/Fall",                  "5t", "365d"],
-        ["touchnotouch", "Touch/No Touch",             "2m", "365d"],
+        ["touchnotouch", "Touch/No Touch",             "5t", "365d"],
         ["endsinout",    "Ends Between/Ends Outside",  "2m", "365d"],
         ["staysinout",   "Stays Between/Goes Outside", "2m", "365d"],
         ["digits",       "Digits",                     "5t", "10t"],
