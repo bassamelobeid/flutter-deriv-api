@@ -751,7 +751,9 @@ rpc "reset_password",
                 message_to_client => $err->{message_to_client}});
     }
 
-    my $user = BOM::User->new({email => $email});
+    my $user = BOM::User->new({
+        email => $email,
+    });
     my @clients = ();
     if (not $user or not @clients = $user->clients) {
         return BOM::RPC::v3::Utility::client_error();
@@ -1403,7 +1405,7 @@ rpc set_self_exclusion => sub {
 # Need to send email in 2 circumstances:
 #   - Any client sets a self exclusion period
 #   - Client under Binary (Europe) Limited with MT5 account(s) sets any of these settings
-    my @mt5_logins = BOM::User->new({loginid => $client->loginid})->mt5_logins('real');
+    my @mt5_logins = $client->user->mt5_logins('real');
 
     if ($client->landing_company->short eq 'malta' && @mt5_logins) {
         warn 'Compliance email regarding Binary (Europe) Limited user with MT5 account(s) failed to send.'
@@ -1447,7 +1449,7 @@ sub send_self_exclusion_notification {
             $message .= "$label: $val\n" if $val;
         }
 
-        my @mt5_logins = BOM::User->new({loginid => $client->loginid})->mt5_logins('real');
+        my @mt5_logins = $client->user->mt5_logins('real');
         if ($type eq 'malta_with_mt5' && @mt5_logins) {
             $message .= "\n\nClient $client_title has the following MT5 accounts:\n";
             $message .= "$_\n" for @mt5_logins;
