@@ -1,106 +1,171 @@
-#!perl
+#!/etc/rmg/bin/perl
 
 use strict;
 use warnings;
 
-use Test::Most;
-use Test::FailWarnings;
-use Test::MockModule;
+=head transaction6.t
 
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Test::Data::Utility::FeedTestDatabase;
+Tests touch no touch tick trade
+
+=cut
+
+use Test::MockTime qw/:all/;
+use Test::MockModule;
+use Test::More tests => 8;
+use Test::Exception;
+use Guard;
+use Crypt::NamedKeys;
+use BOM::User::Client;
+use BOM::User::Password;
+use BOM::Platform::Client::Utility;
+
+use Date::Utility;
 use BOM::Transaction;
 use BOM::Transaction::Validation;
-use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
+use Math::Util::CalculatedValue::Validatable;
+use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Platform::Client::IDAuthentication;
+
+use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
-initialize_realtime_ticks_db();
-
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
+
+my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+
+$mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
+
+my $now = Date::Utility->new;
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_})
+    for ('EUR', 'USD', 'JPY', 'JPY-EUR', 'EUR-JPY', 'EUR-USD', 'WLDUSD');
+# dies if no economic events is in place.
+# Not going to fix the problem in this branch.
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'economic_events',
+    {
+        recorded_date => $now,
+        events        => [{
+                symbol       => 'USD',
+                release_date => $now->minus_time_interval('3h')->epoch,
+                impact       => 5,
+                event_name   => 'Unemployment Rate',
+            }]});
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => $_,
+        recorded_date => $now
+    }) for ('frxEURUSD', 'frxEURJPY');
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'index',
+    {
+        symbol => 'WLDUSD',
+        date   => Date::Utility->new,
+    });
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'index',
+    {
+        symbol => 'R_100',
+        date   => Date::Utility->new,
+    });
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'index',
+    {
+        symbol => 'GDAXI',
+        date   => Date::Utility->new,
+    });
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
         date   => Date::Utility->new,
-    }) for (qw/USD JPY JPY-USD/);
+    }) for (qw/USD EUR JPY JPY-USD/);
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_moneyness',
+    {
+        symbol        => 'GDAXI',
+        recorded_date => Date::Utility->new,
+    });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'correlation_matrix',
+    {
+        recorded_date => Date::Utility->new,
+    });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => $_,
+        recorded_date => Date::Utility->new,
+    }) for qw/frxUSDJPY WLDUSD/;
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        symbol        => 'AS51',
+        symbol        => 'R_50',
         recorded_date => Date::Utility->new,
     });
 
-my $now = Date::Utility->new;
-BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    epoch      => $now->epoch,
-    underlying => 'AS51',
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'randomindex',
+    {
+        symbol => 'R_50',
+        date   => Date::Utility->new,
+    });
+
+initialize_realtime_ticks_db();
+
+my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch - 99,
+    underlying => 'R_50',
+    quote      => 76.5996,
+    bid        => 76.6010,
+    ask        => 76.2030,
 });
-my $currency   = 'USD';
-my $underlying = create_underlying('AS51');
 
-subtest 'validate client error message' => sub {
+my $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch - 52,
+    underlying => 'R_50',
+    quote      => 76.6996,
+    bid        => 76.7010,
+    ask        => 76.3030,
+});
 
-    my $mock_cal = Test::MockModule->new('Finance::Calendar');
-    $mock_cal->mock('is_open_at', sub { 0 });
+my $old_tick3 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch - 51,
+    underlying => 'R_50',
+    quote      => 963.4054,
+    bid        => 963.4054,
+    ask        => 963.4054,
+});
 
-    my $now      = Date::Utility->new;
-    my $contract = produce_contract({
-        underlying    => $underlying,
-        bet_type      => 'TICKHIGH',
-        currency      => $currency,
-        payout        => 1000,
-        duration      => '5t',
-        selected_tick => 3,
-    });
+my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch,
+    underlying => 'R_50',
+});
 
-    my $cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch + 60,
+    underlying => 'R_50',
+});
 
-    my $transaction = BOM::Transaction->new({
-        client        => $cr,
-        contract      => $contract,
-        purchase_date => $contract->date_start,
-    });
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch + 120,
+    underlying => 'R_50',
+});
 
-    my $error = BOM::Transaction::Validation->new({
-            clients     => [$cr],
-            transaction => $transaction
-        })->_is_valid_to_buy($cr);
-
-    like($error->{-message_to_client}, qr/Try out the Volatility Indices/, 'CR client got message about Volatility Indices');
-
-    # same params, but new object - not to hold prev error
-    $contract = produce_contract({
-        underlying    => $underlying,
-        bet_type      => 'TICKLOW',
-        currency      => $currency,
-        payout        => 1000,
-        date_start    => $now,
-        duration      => '5t',
-        selected_tick => 3,
-    });
-    my $mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MF'});
-
-    $transaction = BOM::Transaction->new({
-        client        => $mf,
-        contract      => $contract,
-        purchase_date => $contract->date_start,
-    });
-
-    $error = BOM::Transaction::Validation->new({
-            clients     => [$mf],
-            transaction => $transaction
-        })->_is_valid_to_buy($mf);
-
-    unlike($error->{-message_to_client}, qr/Try out the Volatility Indices/, 'MF client didnt got message about Volatility Indices');
-
-};
-
-my $underlying_R50 = create_underlying('R_50');
+my $underlying        = create_underlying('frxUSDJPY');
+my $underlying_GDAXI  = create_underlying('GDAXI');
+my $underlying_WLDUSD = create_underlying('WLDUSD');
+my $underlying_R50    = create_underlying('R_50');
 
 sub db {
     return BOM::Database::ClientDB->new({
@@ -162,6 +227,57 @@ sub top_up {
         remark               => __FILE__ . ':' . __LINE__,
     });
     $pm->legacy_payment({legacy_type => "ewallet"});
+    my ($trx) = $pm->add_transaction({
+        account_id    => $acc->id,
+        amount        => $amount,
+        staff_loginid => "test",
+        remark        => __FILE__ . ':' . __LINE__,
+        referrer_type => "payment",
+        action_type   => ($amount > 0 ? "deposit" : "withdrawal"),
+        quantity      => 1,
+    });
+    $acc->save(cascade => 1);
+    $trx->load;    # to re-read (get balance_after)
+
+    BOM::Platform::Client::IDAuthentication->new(client => $c)->run_authentication
+        if $fdp;
+
+    note $c->loginid . "'s balance is now $cur " . $trx->balance_after . "\n";
+}
+
+sub free_gift {
+    my ($c, $cur, $amount) = @_;
+
+    my $fdp = $c->is_first_deposit_pending;
+    my @acc = $c->account;
+    if (@acc) {
+        @acc = grep { $_->currency_code eq $cur } @acc;
+        @acc = $c->add_account({
+                currency_code => $cur,
+                is_default    => 0
+            }) unless @acc;
+    } else {
+        @acc = $c->add_account({
+            currency_code => $cur,
+            is_default    => 1
+        });
+    }
+
+    my $acc = $acc[0];
+    unless (defined $acc->id) {
+        $acc->save;
+        note 'Created account ' . $acc->id . ' for ' . $c->loginid . ' segment ' . $cur;
+    }
+
+    my ($pm) = $acc->add_payment({
+        amount               => $amount,
+        payment_gateway_code => "free_gift",
+        payment_type_code    => "free_gift",
+        status               => "OK",
+        staff_loginid        => "test",
+        remark               => __FILE__ . ':' . __LINE__,
+    });
+    $pm->free_gift({reason => "test"});
     my ($trx) = $pm->add_transaction({
         account_id    => $acc->id,
         amount        => $amount,
@@ -261,73 +377,30 @@ my $new_client = create_client;
 top_up $new_client, 'USD', 5000;
 my $new_acc_usd = $new_client->find_account(query => [currency_code => 'USD'])->[0];
 
-# Create ticks
-my $quote = 99.01;
-
-my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    epoch      => $now->epoch,
-    underlying => 'R_50',
-    quote      => $quote,
-});
-
-# Set up default arguments
-my $args = {
-    bet_type      => 'TICKHIGH',
-    underlying    => 'R_50',
-    selected_tick => 5,
-    date_start    => $now,
-    date_pricing  => $now,
-    duration      => '5t',
-    currency      => 'USD',
-    payout        => 100,
-};
-
 subtest 'buy a bet', sub {
-    #plan tests => 11;
+    plan tests => 11;
     lives_ok {
-        my $contract = produce_contract($args);
+        my $contract = produce_contract({
+            underlying   => $underlying_R50,
+            bet_type     => 'ONETOUCH',
+            currency     => 'USD',
+            payout       => 100,
+            duration     => '5t',
+            current_tick => $tick,
+            barrier      => '-0.3054'
+        });
 
         my $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
             price         => $contract->ask_price,
+            payout        => $contract->payout,
             amount_type   => 'payout',
             source        => 19,
             purchase_date => $contract->date_start,
         });
 
         my $error = $txn->buy;
-        is $error, undef, 'no error';
-
-        my $sell_txn;
-
-        my $sell_error = do {
-            my $mocked           = Test::MockModule->new('BOM::Transaction');
-            my $mocked_validator = Test::MockModule->new('BOM::Transaction::Validation');
-            $mocked_validator->mock('_validate_trade_pricing_adjustment', sub { });
-            $mocked->mock('price', sub { $contract->bid_price });
-            $sell_txn = BOM::Transaction->new({
-                client        => $cl,
-                contract      => $contract,
-                price         => $contract->ask_price,
-                amount_type   => 'payout',
-                source        => 23,
-                purchase_date => $contract->date_start,
-            });
-            $sell_txn->sell;
-        };
-
-        isa_ok $sell_error, 'Error::Base', 'sellback not allowed error';
-
-        for my $i (1 .. 5) {
-            BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                underlying => 'R_50',
-                quote      => $quote,
-                epoch      => $now->epoch + $i,
-            });
-            $quote += 0.01;
-        }
-
         is $error, undef, 'no error';
 
         subtest 'transaction report', sub {
@@ -347,15 +420,17 @@ subtest 'buy a bet', sub {
             like $report, qr/^\s*Purchase Date: \Q${\$txn->purchase_date->datetime_yyyymmdd_hhmmss}\E$/m, 'purchase date';
         };
 
-        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db highlowticks => $txn->transaction_id;
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db touch_bet => $txn->transaction_id;
+
+        # note explain $trx;
 
         subtest 'transaction row', sub {
             plan tests => 12;
             cmp_ok $trx->{id}, '>', 0, 'id';
             is $trx->{account_id}, $acc_usd->id, 'account_id';
             is $trx->{action_type}, 'buy', 'action_type';
-            is $trx->{amount} + 0, -28.8, 'amount';
-            is $trx->{balance_after} + 0, 5000 - 28.8, 'balance_after';
+            is $trx->{amount} + 0, -3.5, 'amount';
+            is $trx->{balance_after} + 0, 5000 - 3.5, 'balance_after';
             is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $trx->{payment_id},    undef,                  'payment_id';
             is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
@@ -365,25 +440,28 @@ subtest 'buy a bet', sub {
             cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
         };
 
+        # note explain $fmb;
+
         subtest 'fmb row', sub {
-            plan tests => 18;
+            plan tests => 19;
             cmp_ok $fmb->{id}, '>', 0, 'id';
             is $fmb->{account_id}, $acc_usd->id, 'account_id';
-            is $fmb->{bet_class}, 'highlowticks', 'bet_class';
-            is $fmb->{bet_type},  'TICKHIGH',     'bet_type';
-            is $fmb->{buy_price} + 0, 28.8, 'buy_price';
+            is $fmb->{bet_class}, 'touch_bet', 'bet_class';
+            is $fmb->{bet_type},  'ONETOUCH',     'bet_type';
+            is $fmb->{buy_price} + 0, 3.5, 'buy_price';
             is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
             cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
             is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
             is !$fmb->{is_expired}, !0, 'is_expired';
             is !$fmb->{is_sold},    !0, 'is_sold';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
-            is $fmb->{sell_price}, undef, 'sell_price';
-            is $fmb->{sell_time},  undef, 'sell_time';
+            like $fmb->{remark},   qr/\btrade\[3\.50000\]/, 'remark';
+            is $fmb->{sell_price}, undef,                   'sell_price';
+            is $fmb->{sell_time},  undef,                   'sell_time';
             cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
-            like $fmb->{short_code}, qr/TICKHIGH/, 'short_code';
+            like $fmb->{short_code}, qr/ONETOUCH_R_50_100_/, 'short_code';
             cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
-            is $fmb->{tick_count},        5,      'tick_count';
+            is $fmb->{tick_count},        5,  'tick_count';
             is $fmb->{underlying_symbol}, 'R_50', 'underlying_symbol';
         };
 
@@ -402,7 +480,7 @@ subtest 'buy a bet', sub {
             plan tests => 3;
             is $qv1->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $qv1->{transaction_id},          $trx->{id}, 'transaction_id';
-            is $qv1->{trade} + 0, 28.8, 'trade';
+            is $qv1->{trade} + 0, 3.5, 'trade';
         };
 
         is $txn->contract_id,    $fmb->{id},            'txn->contract_id';
@@ -411,7 +489,71 @@ subtest 'buy a bet', sub {
         is $txn->execute_at_better_price, 0, 'txn->execute_at_better_price';
     }
     'survived';
-
 };
 
-done_testing;
+subtest 'sell_expired_contracts', sub {
+    plan tests => 7;
+    lives_ok {
+        my $cl = create_client;
+
+        top_up $cl, 'USD', 1000;
+
+        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+
+        my $bal;
+        is + ($bal = $acc_usd->balance + 0), 1000, 'USD balance is 1000 got: ' . $bal;
+
+        my $contract_expired = produce_contract({
+            underlying   => $underlying_R50,
+            bet_type     => 'NOTOUCH',
+            currency     => 'USD',
+            payout       => 100,
+            date_start   => ($now->epoch - 50) - (30 * 60),
+            date_expiry  => $now->epoch - 50,
+            date_pricing => $now,
+            current_tick => $tick,
+            entry_tick   => $old_tick1,
+            exit_tick    => $old_tick3,
+            barrier      => '-0.3054'
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract_expired,
+            price         => $contract_expired->ask_price,
+            amount_type   => 'payout',
+            payout        => 100,
+            purchase_date => $now->epoch - (30 * 60 + 51),
+        });
+
+        my (@expired_txnids, @expired_fmbids, @unexpired_fmbids);
+        # buy 2 expired contracts
+        for (1 .. 2) {
+            my $error = $txn->buy(skip_validation => 1);
+            is $error, undef, 'no error: bought 1 expired contract for 100';
+            push @expired_txnids, $txn->transaction_id;
+            push @expired_fmbids, $txn->contract_id;
+        }
+
+        $acc_usd->load;
+        is $acc_usd->balance + 0, 800, 'USD balance is down to 900 plus';
+
+        # First sell some particular ones by id.
+        my $res = BOM::Transaction::sell_expired_contracts + {
+            client       => $cl,
+            source       => 29,
+            contract_ids => [$expired_fmbids[0]],
+        };
+
+        is_deeply $res,
+            +{
+            number_of_sold_bets => 1,
+            skip_contract       => 0,
+            total_credited      => 100,
+            failures            => [],
+            },
+            'sold the two requested contracts';
+
+    }
+    'survived';
+};
