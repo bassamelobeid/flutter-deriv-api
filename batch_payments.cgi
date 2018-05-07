@@ -226,7 +226,6 @@ read_csv_row_and_callback(
             } elsif ($action eq 'credit' and $payment_type !~ /^affiliate_reward|arbitrary_markup|free_gift$/) {
                 # need to set this for batch payment in case of credit only
                 try {
-                    warn "Expiration date: Batch processing - " . $client->loginid . ' for payment type ' . $payment_type . "\n";
                     $client->payment_agent_withdrawal_expiration_date(Date::Utility->today->date_yyyymmdd);
                     $client->save;
                 }
