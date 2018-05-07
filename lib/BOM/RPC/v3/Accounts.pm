@@ -514,11 +514,11 @@ rpc get_account_status => sub {
     my %financial_data = map { $_ => $params->{args}->{$_} } BOM::RPC::v3::Utility::keys_of_values $input_mappings;
 
     # Exclude the financial_assessment_not_complete status if MLT/MX client's completed Financial Information before
-    unless ($client->broker =~ /^MX|MLT|CR$/
-        and (none { !$financial_assessment->{$_} } keys $input_mappings->{financial_information} or $risk_classification ne 'high'))
+    if ($client->broker =~ /^MX|MLT|CR$/
+        and (any { !$financial_assessment->{$_} } keys $input_mappings->{financial_information} or $risk_classification ne 'high'))
     {
-        push(@status, 'financial_assessment_not_complete')
-            if (any { !length $financial_assessment->{$_}->{answer} } keys %financial_data);
+        push(@status, 'financial_assessment_not_complete');
+        #if (any { !length $financial_assessment->{$_}->{answer} } keys %financial_data);
     }
 
     my $prompt_client_to_authenticate = 0;
