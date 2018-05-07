@@ -691,23 +691,27 @@ subtest $method => sub {
         my $res = ((grep { $_ eq 'financial_assessment_not_complete' } @{$c->tcall($method, {token => $token1})->{status}}) == $is_present);
         ok($res, $msg);
     }
-    # test 1: when some answers are empty
-    $data->{account_turnover}->{answer} = "";
-    test_financial_assessment($data, 1, 'financial_assessment_not_complete should present when some answers are empty');
-    # test 2: when some questions are not answered
-    delete $data->{account_turnover};
-    test_financial_assessment($data, 1, 'financial_assessment_not_complete should present when questions are answered properly');
-    # test 3: when the client's risk classification is different
-    $test_client->aml_risk_classification('high');
-    $test_client->save();
-    test_financial_assessment($data, 1, "financial_assessment_not_complete should present regardless of the client's risk classification");
-    # test 4: when answer is '0', 'financial_assessment_not_complete' should not present
+    # When answer is '0', 'financial_assessment_not_complete' should not present
     #         as '0' may be one of the acceptable answers for options in the future
     $data->{account_turnover}->{answer} = '0';
     test_financial_assessment($data, 0, 'financial_assessment_not_complete should not present when questions are answered properly');
-    # test 5: 'financial_assessment_not_complete' should not present when everything is complete
+
+    # 'financial_assessment_not_complete' should not present when everything is complete
     $data->{account_turnover}->{answer} = 'Less than $25,000';
     test_financial_assessment($data, 0, 'financial_assessment_not_complete should not present when questions are answered properly');
+
+    # When some answers are empty
+    $data->{account_turnover}->{answer} = "";
+    test_financial_assessment($data, 1, 'financial_assessment_not_complete should present when some answers are empty');
+
+    # When some questions are not answered
+    delete $data->{account_turnover};
+    test_financial_assessment($data, 1, 'financial_assessment_not_complete should present when questions are not answered');
+
+    # When the client's risk classification is different
+    $test_client->aml_risk_classification('high');
+    $test_client->save();
+    test_financial_assessment($data, 1, "financial_assessment_not_complete should present regardless of the client's risk classification");
 
     # duplicate_account is not supposed to be shown to the users
     $test_client->set_status('duplicate_account')->save;
