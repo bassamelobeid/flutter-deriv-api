@@ -4,10 +4,12 @@ package BOM::User::Client;
 
 use strict;
 use warnings;
+use feature qw(state);
 
 use Try::Tiny;
 use List::Util;
 use YAML::XS qw(LoadFile);
+use Path::Tiny;
 use Format::Util::Numbers qw/financialrounding formatnumber/;
 use Date::Utility;
 use Postgres::FeedDB::CurrencyConverter qw/amount_from_to_currency/;
@@ -19,7 +21,9 @@ use BOM::Database::ClientDB;
 
 # NOTE.. this is a 'mix-in' of extra subs for BOM::User::Client.  It is not a distinct Class.
 
-my $payment_limits = LoadFile('/home/git/regentmarkets/bom-user/config/payment_limits.yml');
+sub payment_limits {
+    return state $payment_limits = LoadFile(path(__FILE__)->parent(5) . '/config/payment_limits.yml');
+}
 
 sub validate_payment {
     my ($self, %args) = @_;
@@ -47,7 +51,7 @@ sub validate_payment {
         die "Deposits blocked for this Client.\n"
             if $self->get_status('unwelcome');
 
-        if (    $self->broker_code eq 'MLT'
+        if (    $self->landing_company->short eq 'malta'
             and $self->is_first_deposit_pending
             and ($args{payment_type} // '') eq 'affiliate_reward')
         {
@@ -77,7 +81,7 @@ sub validate_payment {
 
         my $lc = $self->landing_company->short;
         my $lc_limits;
-        my $withdrawal_limits = $payment_limits->{withdrawal_limits};
+        my $withdrawal_limits = payment_limits()->{withdrawal_limits};
         $lc_limits = $withdrawal_limits->{$lc};
         die "Invalid landing company - $lc\n" unless $lc_limits;
 

@@ -315,7 +315,7 @@ sub is_vip {
 
 sub is_virtual { return shift->broker =~ /^VR/ }
 
-sub has_funded { return (shift->first_funded_date ? 1 : 0) }
+sub has_funded { return shift->first_funded_date ? 1 : 0 }
 
 sub get_status {
     my ($self, $status_code) = @_;
@@ -717,7 +717,6 @@ working going forward with any input, it should die.
 
 sub add_note {
     my ($self, $subject, $content) = @_;
-    return if -e '/etc/rmg/travis';
     my $to = 'helpdesk@binary.com';
     $to = 'support-newaccount-notifications@binary.com' if $subject =~ /New Sign-Up/ or $subject =~ /Update Address/;
     my $from = $to;
@@ -836,6 +835,7 @@ sub user {
     # Fall back to loginid if binary_user_id does not work
     $user ||= BOM::User->new({loginid => $self->loginid});
     # Fall back to email if loginid does not work
+    # in case that the user object is created but the client has not been registered into it.
     $user ||= BOM::User->new({email => $self->email});
 
     return $user;

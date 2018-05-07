@@ -10,7 +10,7 @@ use Test::MockTime;
 use Test::More tests => 13;
 use Test::Exception;
 use Test::Deep qw(cmp_deeply);
-use Test::Warnings;
+use Test::Warnings qw(warning);
 use Test::MockModule;
 
 use Cache::RedisDB;
@@ -66,6 +66,10 @@ lives_ok {
 
 subtest 'test attributes' => sub {
     throws_ok { BOM::User->new } qr/BOM::User->new called without args/, 'new without args';
+    throws_ok {
+        like(warning { BOM::User->new({badkey => 1234}) }, qr/deprecated/, ' a warning');
+    }
+    qr/no email/, 'new without valid args';
     throws_ok { BOM::User->new({badkey => 1234}) } qr/no email/, 'new without email';
 
     is $user->email,    $email,    'email ok';
@@ -531,7 +535,10 @@ CONF
 };
 
 subtest 'clients_for_landing_company' => sub {
-    $user = BOM::User->new({email => $email},);
+    $user = BOM::User->new({
+            email => $email,
+        },
+    );
     my @clients = $user->clients_for_landing_company('costarica');
     is(scalar @clients, 2, "one cr account");
     is_deeply([map { $_->landing_company->short } @clients], [('costarica') x 2], 'lc correct');
