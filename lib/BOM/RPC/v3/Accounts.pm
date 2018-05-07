@@ -515,7 +515,7 @@ rpc get_account_status => sub {
 
     # Exclude the financial_assessment_not_complete status if MLT/MX client's completed Financial Information before
     if ($client->broker =~ /^MX|MLT|CR$/
-        and (any { !$financial_assessment->{$_} } keys $input_mappings->{financial_information} or $risk_classificatioin eq 'high'))
+        and (any { !$financial_assessment->{$_} } keys $input_mappings->{financial_information} or $risk_classification eq 'high'))
     {
         push(@status, 'financial_assessment_not_complete');
         #if (any { !length $financial_assessment->{$_}->{answer} } keys %financial_data);
