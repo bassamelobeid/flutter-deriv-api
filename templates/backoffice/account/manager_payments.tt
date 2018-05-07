@@ -77,6 +77,7 @@
     </th>
     <th class="all_payment_types external_cashier"      >Trace ID</th>
     <th class="all_payment_types external_cashier"      >Payment Processor</th>
+    <th class="all_payment_types external_cashier"      >Transaction ID</th>
     <th class="all_payment_types bank_money_transfer"   >RMG Bank</th>
     <th class="all_payment_types cash_transfer"         >MTCN</th>
     <th class="all_payment_types bank_money_transfer cash_transfer">Payment reference id</th>
@@ -112,6 +113,9 @@
     </td>
     <td class="all_payment_types external_cashier">
         <input type="text" name="payment_processor" insist/>
+    </td>
+    <td class="all_payment_types external_cashier">
+        <input type="text" name="transaction_id"/>
     </td>
     <td class="all_payment_types bank_money_transfer">
         <select name="bom_bank_info">
