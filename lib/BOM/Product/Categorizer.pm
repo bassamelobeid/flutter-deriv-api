@@ -236,11 +236,6 @@ sub _initialize_contract_parameters {
 
     if (defined $pp->{tick_expiry}) {
         my $interval = 2 * $pp->{tick_count};
-        if ($pp->{underlying}->market->name eq 'volidx') {
-            my $start_epoch = $pp->{date_start}->epoch;
-            my $adjustment = $start_epoch % 2 ? 1 : 2;
-            $interval += $adjustment;
-        }
         $pp->{date_expiry} = $pp->{date_start}->plus_time_interval($interval);
     }
 

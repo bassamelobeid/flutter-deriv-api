@@ -540,6 +540,13 @@ sub _build_base_commission {
         $underlying_base = $custom_commission;
     }
 
+    if (not $self->for_sale and $self->market->name eq 'volidx' and $self->tick_expiry and $self->category_code eq 'touchnotouch') {
+        # We are adding another extra 2 percent to cover touch no touch tick trade.
+        # The approximated discrete-monitoring prices (for one/double touch) underestimate the true prices for tick trades.
+        # The discrete_monitoring_adj_markup is applied to push prices up just above the true prices.
+        $underlying_base = $underlying_base + 0.02;
+    }
+
     return $underlying_base * $per_market_scaling / 100;
 }
 

@@ -964,7 +964,7 @@ subtest 'zero vol' => sub {
         payout       => 1000,
     });
     is $c->pricing_vol, 0, 'pricing vol is zero';
-    like($c->primary_validation_error->message, qr/Zero volatility/, 'error');
+    like($c->primary_validation_error->message, qr/Zero or negative volatility/, 'error');
 };
 
 subtest 'tentative events' => sub {
