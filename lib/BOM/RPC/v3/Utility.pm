@@ -474,11 +474,13 @@ sub validate_make_new_account {
         $landing_company_name = 'maltainvest';
     }
 
-    # we have real account, and going to create another one
-    # So, lets populate all sensitive data from current client, ignoring provided input
-    # this logic should gone after we separate new_account with new_currency for account
-    foreach (qw/first_name last_name residence address_city phone date_of_birth address_line_1/) {
-        $request_data->{$_} = $client->$_ if $client->$_;
+    if (not $client->is_virtual) {
+        # we have real account, and going to create another one
+        # So, lets populate all sensitive data from current client, ignoring provided input
+        # this logic should gone after we separate new_account with new_currency for account
+        foreach (qw/first_name last_name residence address_city phone date_of_birth address_line_1/) {
+            $request_data->{$_} = $client->$_;
+        }
     }
 
     my $error = create_error({
