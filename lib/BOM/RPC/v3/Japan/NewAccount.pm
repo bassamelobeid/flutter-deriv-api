@@ -31,8 +31,8 @@ sub get_jp_account_status {
     my $client = shift;
 
     my $user      = $client->user;
-    my @siblings  = $user->clients(disabled_ok => 1);
-    my $jp_client = $user->get_default_client();
+    my @siblings  = $user->clients(include_disabled => 1);
+    my $jp_client = $user->get_default_client(include_disabled => 1);
 
     my $jp_account_status;
 
@@ -120,8 +120,8 @@ rpc jp_knowledge_test => sub {
     my $client = $params->{client};
 
     my $user      = $client->user;
-    my @siblings  = $user->clients(disabled_ok => 1);
-    my $jp_client = $user->get_default_client();
+    my @siblings  = $user->clients(include_disabled => 1);
+    my $jp_client = $user->get_default_client(include_disabled => 1);
 
     # only allowed for VRTJ client, upgrading to JP
     unless (@siblings > 1

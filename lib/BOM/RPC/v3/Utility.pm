@@ -352,7 +352,7 @@ sub get_real_account_siblings_information {
     if ($no_disabled) {
         @clients = $user->clients;
     } else {
-        @clients = $user->clients(disabled_ok => 1);
+        @clients = $user->clients(include_disabled => 1);
     }
 
     # filter out virtual clients
