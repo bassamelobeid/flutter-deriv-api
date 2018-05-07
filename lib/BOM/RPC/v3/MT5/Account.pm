@@ -25,6 +25,7 @@ use BOM::RPC::v3::Accounts;
 use BOM::Platform::Config;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Account::Real::default;
 use BOM::User;
 use BOM::User::Client;
 use BOM::MT5::User::Async;
@@ -273,10 +274,13 @@ async_rpc mt5_new_account => sub {
 
         if ($account_type eq 'financial') {
             return Future->done($invalid_sub_type_error) unless $mt5_account_type;
+            my $input_mappings = BOM::Platform::Account::Real::default::get_financial_input_mapping();
 
             return create_error_future({
                     code              => 'FinancialAssessmentMandatory',
-                    message_to_client => localize('Please complete financial assessment.')}) unless $client->financial_assessment();
+                    message_to_client => localize('Please complete financial assessment.')})
+                if any { !$client->financial_assessment->{$_} }
+            (keys $input_mappings->{financial_information}, keys $input_mappings->{trading_experience});
         }
 
         # populate mt5 agent account from manager id if applicable
