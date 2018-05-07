@@ -514,10 +514,18 @@ rpc get_account_status => sub {
     my %financial_data = map { $_ => $params->{args}->{$_} } BOM::RPC::v3::Utility::keys_of_values $input_mappings;
 
     # Exclude the financial_assessment_not_complete status if MLT/MX client's completed Financial Information before
-    if ($client->broker =~ /^MX|MLT|CR$/
-        and (any { !$financial_assessment->{$_} } keys $input_mappings->{financial_information} or $risk_classification eq 'high'))
+    my $is_financial_info_incomplete = any { !$financial_assessment->{$_} } keys $input_mappings->{financial_information};
+    my $is_trading_exp_incomplete    = any { !$financial_assessment->{$_} } keys $input_mappings->{trading_experience};
+
+    if ($client->broker =~ /^MF$/
+        and ($is_financial_info_incomplete or $is_trading_exp_incomplete))
     {
         push(@status, 'financial_assessment_not_complete');
+        #if (any { !length $financial_assessment->{$_}->{answer} } keys %financial_data);
+    } elsif ($client->broker =~ /^MX|MLT|CR$/
+        and $risk_classification eq 'high')
+    {
+        push(@status, 'financial_assessment_not_complete') if $is_financial_info_incomplete;
         #if (any { !length $financial_assessment->{$_}->{answer} } keys %financial_data);
     }
 
