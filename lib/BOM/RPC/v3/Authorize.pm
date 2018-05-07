@@ -154,7 +154,7 @@ rpc authorize => sub {
             $exclude_until ? (excluded_until => Date::Utility->new($exclude_until)->epoch) : ()};
     };
 
-    my $client_list = $user->get_clients_in_sorted_order([keys %{$user->loginid_details}]);
+    my $client_list = $user->get_clients_in_sorted_order([$user->bom_loginids]);
 
     my @account_list;
     my $currency;
