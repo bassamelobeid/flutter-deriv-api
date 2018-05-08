@@ -474,7 +474,16 @@ sub validate_make_new_account {
         $landing_company_name = 'maltainvest';
     }
 
-    if (not $client->is_virtual) {
+    if ($client->is_virtual) {
+        my @landing_company_clients;
+        if ($account_type eq 'real') {
+            @landing_company_clients = $client->user->clients_for_landing_company($gaming_company);
+        } elsif ($account_type eq 'financial') {
+            @landing_company_clients = $client->user->clients_for_landing_company($financial_company);
+        }
+
+        return permission_error() if (any { not $_->get_status('duplicate_account') } @landing_company_clients);
+    } else {
         # we have real account, and going to create another one
         # So, lets populate all sensitive data from current client, ignoring provided input
         # this logic should gone after we separate new_account with new_currency for account
@@ -516,15 +525,6 @@ sub validate_make_new_account {
     # send error if number of crypto account of client is same
     # as number of crypto account supported by landing company
     return $error if ($lc_num_crypto eq $client_num_crypto);
-
-    my @landing_company_clients;
-    if ($account_type eq 'real') {
-        @landing_company_clients = $client->user->clients_for_landing_company($gaming_company);
-    } elsif ($account_type eq 'financial') {
-        @landing_company_clients = $client->user->clients_for_landing_company($financial_company);
-    }
-
-    return permission_error() if (any { not $_->get_status('duplicate_account') } @landing_company_clients);
 
     return undef;
 }
