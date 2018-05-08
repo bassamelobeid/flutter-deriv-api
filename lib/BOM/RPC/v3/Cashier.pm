@@ -49,7 +49,7 @@ use Quant::Framework;
 
 requires_auth();
 
-my $payment_limits = LoadFile('/home/git/regentmarkets/bom-user/config/payment_limits.yml');
+my $payment_limits = BOM::User::Client::payment_limits;
 
 rpc "cashier", sub {
     my $params = shift;
