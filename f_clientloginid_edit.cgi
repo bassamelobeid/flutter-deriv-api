@@ -326,7 +326,7 @@ if (my $check_str = $input{do_id_check}) {
         force_recheck => 1
     );
     for ($check_str) {
-        $result = /ProveID/ ? $id_auth->_do_proveid() : die("unknown IDAuthentication method $_");
+        $result = /ProveID/ ? $id_auth->do_proveid() : die("unknown IDAuthentication method $_");
     }
     my $encoded_check_str = encode_entities($check_str);
     code_exit_BO(
@@ -737,10 +737,10 @@ if ($link_acc) {
 
 my $siblings;
 if ($user) {
-    $siblings = $user->loginid_details;
+    $siblings = $user->bom_loginid_details;
     my @mt_logins = $user->mt5_logins;
 
-    if ($siblings or @mt_logins > 0) {
+    if (%$siblings or @mt_logins > 0) {
         print "<p>Corresponding accounts: </p><ul>";
 
         # show all BOM loginids for user, include disabled acc

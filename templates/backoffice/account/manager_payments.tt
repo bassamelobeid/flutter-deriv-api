@@ -77,6 +77,7 @@
     </th>
     <th class="all_payment_types external_cashier"      >Trace ID</th>
     <th class="all_payment_types external_cashier"      >Payment Processor</th>
+    <th class="all_payment_types external_cashier"      >Transaction ID</th>
     <th class="all_payment_types bank_money_transfer"   >RMG Bank</th>
     <th class="all_payment_types cash_transfer"         >MTCN</th>
     <th class="all_payment_types bank_money_transfer cash_transfer">Payment reference id</th>
@@ -113,6 +114,9 @@
     <td class="all_payment_types external_cashier">
         <input type="text" name="payment_processor" insist/>
     </td>
+    <td class="all_payment_types external_cashier">
+        <input type="text" name="transaction_id"/>
+    </td>
     <td class="all_payment_types bank_money_transfer">
         <select name="bom_bank_info">
             <option value="RBSI BSL 5880-58511983">RBSI BSL 5880-58511983</option>
@@ -120,6 +124,7 @@
             <option value="NBG BSL USD 12901169">NBG BSL USD 12901169</option>
             <option value="NBG BSL GBP 12901170">NBG BSL GBP 12901170</option>
             <option value="NBG BSL AUD 12901171">NBG BSL AUD 12901171</option>
+            <option value="NBV CGL USD 0143184001">NBV CGL USD 0143184001</option>
             <option value="Sparkasse MLTEUR 10000030590000">Sparkasse MLTEUR 10000030590000</option>
             <option value="Sparkasse MLTGBP 10000030590080">Sparkasse MLTGBP 10000030590080</option>
             <option value="Sparkasse MFEUR 10000030593000">Sparkasse MFEUR 10000030593000</option>

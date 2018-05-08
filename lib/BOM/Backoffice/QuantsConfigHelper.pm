@@ -212,12 +212,14 @@ sub update_config_switch {
 
     my $method     = 'enable_' . $type;
     my $app_config = BOM::Platform::Runtime->instance->app_config;
-    my $output     = try {
+    $app_config->check_for_update();
+    my $output = try {
+        my $data_in_redis = $app_config->chronicle_reader->get($app_config->setting_namespace, $app_config->setting_name);
+        # due to app_config data_set cache, config might not be saved.
+        return {error => 'Config not saved. Please refresh the page and try again'} if $data_in_redis->{_rev} ne $app_config->data_set->{version};
         $app_config->quants->$method($switch);
         $app_config->save_dynamic();
-        +{
-            status => $switch,
-            }
+        return +{status => $switch};
     }
     catch {
         warn $_;
