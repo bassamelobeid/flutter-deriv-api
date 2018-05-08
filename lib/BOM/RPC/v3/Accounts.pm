@@ -525,7 +525,7 @@ rpc get_account_status => sub {
         and ($is_financial_info_incomplete or $is_trading_exp_incomplete))
     {
         push(@status, 'financial_assessment_not_complete');
-    } elsif ($shortcode =~ /^maltainvest|malta|costarica$/
+    } elsif ($shortcode =~ /^iom|malta|costarica$/
         and $risk_classification eq 'high')
     {
         push(@status, 'financial_assessment_not_complete') if $is_financial_info_incomplete;
