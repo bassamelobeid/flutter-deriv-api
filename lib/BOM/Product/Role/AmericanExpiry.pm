@@ -62,7 +62,29 @@ sub _build_hit_tick {
         # do not include current tick as the contract starts at next tick.
         $hit_conditions{start_time} = $self->date_start->epoch + 1;
         $hit_conditions{end_time}   = $self->date_expiry;
-        $tick                       = $self->underlying->breaching_tick(%hit_conditions);
+
+        if ($self->tick_expiry) {
+            $tick = $self->get_tick_expiry_hit_tick(%hit_conditions);
+        } else {
+            $tick = $self->underlying->breaching_tick(%hit_conditions);
+        }
+    }
+
+    return $tick;
+}
+
+sub get_tick_expiry_hit_tick {
+    my ($self, %args) = @_;
+
+    my @ticks_since_start = @{$self->get_ticks_for_tick_expiry};
+    my $tick;
+    for (my $i = 1; $i <= $#ticks_since_start; $i++) {
+        if (   (defined $args{higher} and $ticks_since_start[$i]->quote >= $args{higher})
+            or (defined $args{lower} and $ticks_since_start[$i]->quote <= $args{lower}))
+        {
+            $tick = $ticks_since_start[$i];
+            last;
+        }
     }
 
     return $tick;

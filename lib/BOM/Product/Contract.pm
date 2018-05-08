@@ -214,12 +214,6 @@ has primary_validation_error => (
     init_arg => undef,
 );
 
-has 'staking_limits' => (
-    is         => 'ro',
-    isa        => 'HashRef',
-    lazy_build => 1,
-);
-
 has apply_market_inefficient_limit => (
     is         => 'ro',
     lazy_build => 1,
@@ -762,6 +756,17 @@ sub _build_apply_market_inefficient_limit {
     return $self->market_is_inefficient && $self->priced_with_intraday_model;
 }
 
+sub get_ticks_for_tick_expiry {
+    my $self = shift;
+
+    my $ticks = $self->underlying->ticks_in_between_start_limit({
+        start_time => $self->date_start->epoch + 1,
+        limit      => $self->ticks_to_expiry
+    });
+
+    return $ticks;
+}
+
 sub _build_exit_tick {
     my $self = shift;
 
@@ -769,11 +774,7 @@ sub _build_exit_tick {
     my $exit_tick;
     if ($self->tick_expiry) {
         my $tick_number       = $self->ticks_to_expiry;
-        my @ticks_since_start = @{
-            $underlying->ticks_in_between_start_limit({
-                    start_time => $self->date_start->epoch + 1,
-                    limit      => $tick_number,
-                })};
+        my @ticks_since_start = @{$self->get_ticks_for_tick_expiry};
         # We wait for the n-th tick to settle tick expiry contract.
         # But the maximum waiting period is 5 minutes.
         if (@ticks_since_start == $tick_number) {
