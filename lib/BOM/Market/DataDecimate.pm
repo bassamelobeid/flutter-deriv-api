@@ -27,7 +27,7 @@ use Data::Decimate qw(decimate);
 use Date::Utility;
 use Sereal::Encoder;
 use Sereal::Decoder;
-
+use DataDog::DogStatsd::Helper qw(stats_gauge);
 use Time::Duration::Concise;
 
 sub get {
@@ -264,15 +264,34 @@ sub _update {
     return $redis->zadd($key, $score, $value);
 }
 
-=head2 clean_up
-=cut
+=head2 clean_up_raw
 
-sub clean_up {
-    my ($self, $symbol, $end_epoch) = @_;
+Clean up old feed-raw data up to end_epoch - retention interval. For raw feed, retention interval is 31m for forex and 5h for volidx.
+	
+=cut	
 
-    $self->redis_write->zremrangebyscore($self->_make_key($symbol, 0), 0, $end_epoch - $self->raw_retention_interval->seconds);
-    $self->redis_write->zremrangebyscore($self->_make_key($symbol, 1), 0, $end_epoch - $self->decimate_retention_interval->seconds);
-    return;
+sub clean_up_raw {
+    my ($self, $key, $end_epoch) = @_;
+
+    $self->redis_write->zremrangebyscore($key, 0, $end_epoch - $self->raw_retention_interval->seconds);
+
+    stats_gauge('feed_raw.count.' . $key, $self->redis_write->zcard($key));
+    return undef;
+}
+
+=head2 clean_up_decimate   
+
+Clean up old feed-decimate data up to end_epoch - retention interval. For decimate feed, retention interval is 12h.
+
+=cut    
+
+sub clean_up_decimate {
+    my ($self, $key, $end_epoch) = @_;
+
+    $self->redis_write->zremrangebyscore($key, 0, $end_epoch - $self->decimate_retention_interval->seconds);
+
+    stats_gauge('feed_decimate.count.' . $key, $self->redis_write->zcard($key));
+    return undef;
 }
 
 =head2 _get_decimate_from_cache
@@ -361,8 +380,9 @@ sub data_cache_insert_raw {
     my $key = $self->_make_key($to_store{symbol}, 0);
 
     $self->_update($self->redis_write, $key, $data->{epoch}, $self->encoder->encode(\%to_store));
+    $self->clean_up_raw($key, $to_store{epoch});
 
-    return;
+    return undef;
 }
 
 =head2 data_cache_insert_insert_decimate
@@ -398,7 +418,9 @@ sub data_cache_insert_decimate {
         $self->_update($self->redis_write, $decimate_key, $single_data->{decimate_epoch}, $self->encoder->encode($single_data)) if $update;
     }
 
-    return;
+    $self->clean_up_decimate($decimate_key, $boundary);
+
+    return undef;
 }
 
 =head2 get_latest_tick_epoch
