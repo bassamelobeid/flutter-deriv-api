@@ -39,7 +39,10 @@ sub create_account {
     my $financial_assessment = BOM::Platform::Account::Real::default::get_financial_assessment_score($financial_data);
     # Based on the scoring result of the test: show the
     # Risk Disclosure if client is not professional
-    return {error => 'show risk disclaimer'} if not $accept_risk and not _is_professional_client($financial_assessment);
+
+    my $is_professional = _is_professional_client($financial_assessment);
+
+    return {error => 'show risk disclaimer'} if not $accept_risk and not $is_professional;
 
     my $register = BOM::Platform::Account::Real::default::register_client($details);
     return $register if ($register->{error});
@@ -50,7 +53,11 @@ sub create_account {
     });
     # after_register_client sub save client so no need to call it here
     $client->set_status('unwelcome', 'SYSTEM', 'Trading disabled for investment Europe ltd');
-    $client->set_status('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure') if $accept_risk;
+    if ($accept_risk) {
+        $client->set_status('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
+    } elsif ($is_professional) {
+        $client->set_status('financial_risk_approval', 'SYSTEM', 'Financial risk approved based on financial assessment score');
+    }
 
     my $status = BOM::Platform::Account::Real::default::after_register_client({
         client      => $client,
@@ -63,7 +70,7 @@ sub create_account {
 
     BOM::Platform::Account::Real::default::add_details_to_desk($client, $details);
 
-    if (_is_professional_client($financial_assessment)) {
+    if ($is_professional) {
         my $brand = Brands->new(name => request()->brand);
         send_email({
                 from    => $brand->emails('support'),
