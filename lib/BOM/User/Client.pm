@@ -841,4 +841,17 @@ sub user {
     return $user;
 }
 
+=head2 is_available
+
+=cut
+
+sub is_available {
+    my $self = shift;
+    my @unavailable_status = ('disabled', 'duplicate_account');
+    foreach my $status (@unavailable_status) {
+        return 0 if $self->get_status($status);
+    }
+    return 1;
+}
+
 1;
