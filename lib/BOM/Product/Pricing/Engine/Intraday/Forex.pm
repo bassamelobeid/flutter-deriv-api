@@ -319,7 +319,7 @@ sub _build_risk_markup {
                 })) if $bet->remaining_time->minutes <= 15;
     }
 
-    $risk_markup->include_adjustment('add', Pricing::Engine::Markup::EqualTie->new->markup) if $self->apply_equal_tie_markup;
+    $risk_markup->include_adjustment('add', Pricing::Engine::Markup::EqualTie->new(underlying_symbol => $bet->underlying->symbol)->markup) if $self->apply_equal_tie_markup;
 
     return $risk_markup;
 }
