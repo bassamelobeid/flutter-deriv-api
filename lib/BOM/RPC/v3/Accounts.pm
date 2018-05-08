@@ -512,23 +512,27 @@ rpc get_account_status => sub {
     $financial_assessment = ref($financial_assessment) ? $json->decode($financial_assessment->data || '{}') : {};
     my $input_mappings = BOM::Platform::Account::Real::default::get_financial_input_mapping();
     my %financial_data = map { $_ => $params->{args}->{$_} } BOM::RPC::v3::Utility::keys_of_values $input_mappings;
+
     my $is_financial_info_incomplete = any { !$financial_assessment->{$_} } keys $input_mappings->{financial_information};
     my $is_trading_exp_incomplete    = any { !$financial_assessment->{$_} } keys $input_mappings->{trading_experience};
+
     push(@status, 'financial_information_not_complete') if $is_financial_info_incomplete;
     push(@status, 'trading_experience_not_complete')    if $is_trading_exp_incomplete;
-    if ($client->broker =~ /^MF$/
+
+    my $shortcode = $client->landing_company->short;
+
+    if ($shortcode eq 'maltainvest'
         and ($is_financial_info_incomplete or $is_trading_exp_incomplete))
     {
         push(@status, 'financial_assessment_not_complete');
-    } elsif ($client->broker =~ /^MX|MLT|CR$/
+    } elsif ($shortcode =~ /^maltainvest|malta|costarica$/
         and $risk_classification eq 'high')
     {
         push(@status, 'financial_assessment_not_complete') if $is_financial_info_incomplete;
     }
 
     my $prompt_client_to_authenticate = 0;
-    my $shortcode                     = $client->landing_company->short;
-    my $authentication_in_progress    = $client->get_status('document_needs_action') || $client->get_status('document_under_review');
+    my $authentication_in_progress = $client->get_status('document_needs_action') || $client->get_status('document_under_review');
     if ($client->client_fully_authenticated) {
         # Authenticated clients still need to go through age verification checks for IOM/MF/MLT
         if (any { $shortcode eq $_ } qw(iom malta maltainvest)) {
