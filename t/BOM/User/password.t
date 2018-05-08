@@ -3,8 +3,9 @@ use warnings;
 use utf8;
 binmode STDOUT, ':utf8';
 
-use Test::More tests => 21;
+use Test::More tests => 25;
 use Test::Warnings;
+use Test::Exception;
 use BOM::User::Password;
 use Digest::SHA;
 use Crypt::ScryptKDF;
@@ -51,4 +52,12 @@ ok(
 );
 ok(!BOM::User::Password::checkpw('ѦѧѨѩѪԱԲԳԴԵԶԷႤႥႦႧᚕᚖᚗᚘᚙᚚ', BOM::User::Password::hashpw('São Paulo')),
     'hash password round trip, unicode, incorrect');
+
+# test different version of password
+ok(BOM::User::Password::checkpw('São Paulo', '1*fUpmNZvYEKa8QkXu*H3qq0QnooATqGna6Px6q/3rqAZZAV6GYqx1ISivQ3t0='),
+    'version 1 of password can be checked');
+ok(BOM::User::Password::checkpw('São Paulo', '2*SCRYPT:16384:8:1:lkUvbSyxJduZAvgseqZvyg==:pks9+s4GDdbsZklk5BNPuVbOlM+rzsXWh2WDCxhFeJc='),
+    'version 2 of password can be checked');
+like(BOM::User::Password::hashpw('São Paulo'), qr/^2\*/, 'We are creating version 2 password now');
+throws_ok { BOM::User::Password::checkpw("hello", "3*hello") } qr/Don't support the format of password/, 'We do not support version 3';
 

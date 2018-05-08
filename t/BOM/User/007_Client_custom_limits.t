@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Test::MockTime;
+use Test::MockModule;
 use Test::More qw(no_plan);
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -47,14 +48,36 @@ $client = undef;
 
 Test::Exception::lives_ok { $client = BOM::User::Client->new({'loginid' => 'CR0030'}); } "Force re-pull of client";
 
-$account_balance_limit = $client->get_limit({'for' => 'account_balance'});
-is($account_balance_limit, 111111, 'balance limit = 111111');
+{
+    my %rates = (
+        USD => 1,
+        GBP => 1.4,
+        EUR => 1.2,
+    );
+    my $mock = Test::MockModule->new('Postgres::FeedDB::CurrencyConverter');
+    $mock->mock(
+        in_USD => sub {
+            my $price         = shift;
+            my $from_currency = shift;
 
-$daily_turnover_limit = $client->get_limit({'for' => 'daily_turnover'});
-is($daily_turnover_limit, 222222, 'turnover limit = 222222');
+            die "mocked in_USD lacks exchange rate for $from_currency"
+                unless exists $rates{$from_currency};
 
-$payout_limit = $client->get_limit({'for' => 'payout'});
-is($payout_limit, 333333, 'payout limit = 333333');
+            my $res = $price * $rates{$from_currency};
+
+            note "mocked in_USD($price, $from_currency) returns $res";
+            return $res;
+        });
+
+    $account_balance_limit = $client->get_limit({'for' => 'account_balance'});
+    is($account_balance_limit, 111111 / 1.4, 'balance limit = 111111/1.4 (1.4 is the GBP exchange rate)');
+
+    $daily_turnover_limit = $client->get_limit({'for' => 'daily_turnover'});
+    is($daily_turnover_limit, 222222 / 1.4, 'turnover limit = 222222/1.4 (1.4 is the GBP exchange rate)');
+
+    $payout_limit = $client->get_limit({'for' => 'payout'});
+    is($payout_limit, 333333 / 1.4, 'payout limit = 333333/1.4 (1.4 is the GBP exchange rate)');
+}
 
 $self_exclusion_open_positions_limit = $client->get_limit({'for' => 'open_positions'});
 is($self_exclusion_open_positions_limit, 50, 'self exclusion open positions limit = 50');

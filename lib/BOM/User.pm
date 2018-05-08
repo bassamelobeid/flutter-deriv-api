@@ -6,6 +6,7 @@ use warnings;
 use Try::Tiny;
 use Date::Utility;
 use List::Util qw(first);
+use Carp qw(croak carp);
 
 use BOM::User::Client;
 use BOM::MT5::User::Async;
@@ -27,11 +28,11 @@ sub create {
 }
 
 # support either email or id or loginid
+# if possible, please use $client->user method to create user. This method is only for the cases that we don't know the client.
 sub new {
     my ($class, $args) = @_;
-    die "$class->new called without args" unless $args;
-
-    die "no email nor id or loginid" unless $args->{email} || $args->{id} || $args->{loginid};
+    croak "$class->new called without args" unless $args;
+    croak "no email nor id or loginid" unless $args->{email} || $args->{id} || $args->{loginid};
 
     my $db = BOM::Database::UserDB::rose_db();
 
@@ -113,21 +114,19 @@ sub login {
 }
 
 # Get my enabled client objects, in loginid order but with reals up first.  Use the replica db for speed.
-# if called as $user->clients(disabled_ok=>1); will include disableds.
+# if called as $user->clients(include_disabled=>1); will include disableds.
 sub clients {
     my ($self, %args) = @_;
 
-    # filter out non binary's loginid, eg: MT5 login
-    my @bom_loginids = map { $_->loginid } grep { $_->loginid !~ /^MT\d+$/ } $self->loginid;
-
-    my @clients = @{$self->get_clients_in_sorted_order(\@bom_loginids, $args{disabled_ok})};
+    my @clients = @{$self->get_clients_in_sorted_order};
 
     my @parts;
     push @parts, _get_client_cookie_string($_) foreach (@clients);
 
     $self->{_cookie_val} = join('+', @parts);
 
-    @clients = grep { not $_->get_status('disabled') } @clients unless $args{disabled_ok};
+    # todo should be refactor
+    @clients = grep { not $_->get_status('disabled') } @clients unless $args{include_disabled};
 
     return @clients;
 }
@@ -150,18 +149,33 @@ get clients given special landing company short name.
 sub clients_for_landing_company {
     my $self      = shift;
     my $lc_short  = shift // die 'need landing_company';
-    my @login_ids = keys %{$self->loginid_details};
+    my @login_ids = keys %{$self->bom_loginid_details};
     return map { BOM::User::Client->new({loginid => $_, db_operation => 'replica'}) }
         grep { LandingCompany::Registry->get_by_loginid($_)->short eq $lc_short } @login_ids;
 }
 
-sub loginid_details {
+=head2 bom_loginid_details
+
+get client non-mt5 login id details 
+
+=cut
+
+sub bom_loginid_details {
     my $self = shift;
 
-    return {
-        map { $_->loginid => {loginid => $_->loginid, broker_code => ($_->loginid =~ /(^[a-zA-Z]+)/)} }
-        grep { $_->loginid !~ /^MT\d+$/ } $self->loginid
-    };
+    my %hash = map { $_ => {loginid => $_, broker_code => ($_ =~ /(^[a-zA-Z]+)/)} } $self->bom_loginids;
+    return \%hash;
+}
+
+=head2 bom_loginids
+
+get client non-mt5 login ids
+
+=cut
+
+sub bom_loginids {
+    my $self = shift;
+    return map { $_->loginid } grep { $_->loginid !~ /^MT\d+$/ } $self->loginid;
 }
 
 sub mt5_logins {
@@ -170,9 +184,13 @@ sub mt5_logins {
     my @mt5_logins;
 
     for my $login (sort map { $_->loginid } grep { $_->loginid =~ /^MT\d+$/ } $self->loginid) {
-        push(@mt5_logins, $login) if BOM::MT5::User::Async::get_user(
-            do { $login =~ /(\d+)/; $1 }
-        )->get->{group} =~ /^$filter/;
+        push(@mt5_logins, $login)
+            if ((
+                BOM::MT5::User::Async::get_user(
+                    do { $login =~ /(\d+)/; $1 }
+                )->get->{group} // ''
+            ) =~ /^$filter/
+            );
     }
 
     return @mt5_logins;
@@ -203,9 +221,9 @@ sub get_last_successful_login_history {
     return;
 }
 
-=head2
+=head2 get_clients_in_sorted_order
 
-Return list of client in following order
+Return an ARRAY reference that is a list of clients in following order
 
 - real enabled accounts
 - virtual accounts
@@ -215,7 +233,26 @@ Return list of client in following order
 =cut
 
 sub get_clients_in_sorted_order {
-    my ($self, $loginid_list, $include_disabled) = @_;
+    my ($self) = @_;
+    my $account_lists = $self->accounts_by_category([$self->bom_loginids]);
+
+    return [map { @$_ } @{$account_lists}{qw(enabled virtual self_excluded disabled)}];
+}
+
+=head2 accounts_by_category
+
+Given the loginid list, return the accounts grouped by the category in a HASH reference.
+The categories are:
+
+- real enabled accounts
+- virtual accounts
+- self excluded accounts
+- disabled accounts
+
+=cut
+
+sub accounts_by_category {
+    my ($self, $loginid_list) = @_;
 
     my (@enabled_accounts, @virtual_accounts, @self_excluded_accounts, @disabled_accounts);
     foreach my $loginid (sort @$loginid_list) {
@@ -238,29 +275,32 @@ sub get_clients_in_sorted_order {
         # don't include clients that we don't want to show
         next if grep { $cl->get_status($_) } @do_not_display_status;
 
+        # we store the first suitable client to _disabled_real_client/_self_excluded_client/_virtual_client/_first_enabled_real_client.
+        # which will be used in get_default_client
         if ($cl->get_status('disabled')) {
-            $self->{_real_client} = $cl if ($include_disabled and not $self->{_real_client});
             push @disabled_accounts, $cl;
             next;
         }
 
         if ($cl->get_self_exclusion_until_date) {
-            $self->{_self_excluded_client} = $cl unless $self->{_self_excluded_client};
             push @self_excluded_accounts, $cl;
             next;
         }
 
         if ($cl->is_virtual) {
-            $self->{_virtual_client} = $cl unless $self->{_virtual_client};
             push @virtual_accounts, $cl;
             next;
         }
 
-        $self->{_first_enabled_real_client} = $cl unless $self->{_first_enabled_real_client};
         push @enabled_accounts, $cl;
     }
 
-    return [(@enabled_accounts, @virtual_accounts, @self_excluded_accounts, @disabled_accounts)];
+    return {
+        enabled       => \@enabled_accounts,
+        virtual       => \@virtual_accounts,
+        self_excluded => \@self_excluded_accounts,
+        disabled      => \@disabled_accounts
+    };
 }
 
 =head2 get_default_client
@@ -271,9 +311,20 @@ Act as replacement for using "$siblings[0]" or "$clients[0]"
 =cut
 
 sub get_default_client {
-    my $self = shift;
+    my ($self, %args) = @_;
 
-    return $self->{_first_enabled_real_client} // $self->{_real_client} // $self->{_virtual_client} // $self->{_self_excluded_client};
+    return $self->{_default_client_include_disabled} if exists($self->{_default_client_include_disabled}) && $args{include_disabled};
+    return $self->{_default_client_without_disabled} if exists($self->{_default_client_without_disabled}) && !$args{include_disabled};
+
+    my $client_lists = $self->accounts_by_category([$self->bom_loginids]);
+    my %tmp;
+    foreach my $k (keys %$client_lists) {
+        $tmp{$k} = pop(@{$client_lists->{$k}});
+    }
+    $self->{_default_client_include_disabled} = $tmp{enabled} // $tmp{disabled} // $tmp{virtual} // $tmp{self_excluded};
+    $self->{_default_client_without_disabled} = $tmp{enabled} // $tmp{virtual} // $tmp{self_excluded};
+    return $self->{_default_client_include_disabled} if $args{include_disabled};
+    return $self->{_default_client_without_disabled};
 }
 
 1;

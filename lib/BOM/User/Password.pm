@@ -2,10 +2,9 @@ package BOM::User::Password;
 use strict;
 use warnings;
 
-use Crypt::ScryptKDF;
-use Crypt::Salt;
+use Crypt::ScryptKDF qw(scrypt_hash scrypt_hash_verify);
 use Digest::SHA;
-
+use Encode;
 use Mojo::Util;
 
 =head1 NAME
@@ -20,7 +19,7 @@ BOM::User::Password - Password hashing module for BOM
 # "Constants"
 
 # update every time the algorithm changes
-sub ALGO_VERSION { return 1; }
+sub ALGO_VERSION { return 2; }
 
 =head1 SYNOPSIS
 
@@ -36,11 +35,11 @@ sub ALGO_VERSION { return 1; }
 
 This module provides the basic password vault for the web site and all 
 functions relating.  Password strings contain all information needed to
-validate them including salt and algorithm version.  The current usage is to use
-* to separate fields and ^ to separate subfields.  So a password string may
-look like:
+validate them including salt and algorithm version. In the current version
+both salt and encrypted password are handled by L<Crypt::ScryptKDF|scrypt_hash>.
+So the password is like this:
 
-  1*$5$bababa*g1fvvG0AVyYI23n4EmOdtYqtMrfV6FijVHqbQzZi7F4
+    2*SCRYPT:16384:8:1:lkUvbSyxJduZAvgseqZvyg==:pks9+s4GDdbsZklk5BNPuVbOlM+rzsXWh2WDCxhFeJc=
 
 =head1 FUNCTIONS
 
@@ -53,28 +52,27 @@ Returns the current algorithm version.
 Returns a password hash string in a format with algorithm version control, salt
 and a hash.
 
-The current format is
+The version 1 format is
 
 $algo_version*$salt*password
+
+
+The version 2 format is
+$algo_version*password
+The salt will be handled directly by Crypt::ScryptKDF::scrypt_hash
 
 Currently a maximum length of 200 is enforced and an exception thrown if 
 too long.
 
 =cut
 
-sub _salt {
-    my $string = '';
-    $string .= salt() for 1 .. 8;
-    return $string;
-}
-
 sub hashpw {
     my $password = shift;
-    utf8::encode($password);
+    # we need encode password, otherwise it is possible to report the warning "Wide character in subroutine entry";
+    $password = Encode::encode_utf8($password);
     die 'password too long, possible DOS attack' if length($password) > 200;
-    my $salt = _salt;
-    my $hash = Crypt::ScryptKDF::scrypt_b64($password, $salt);
-    return ALGO_VERSION . "*$salt*$hash";
+    my $hash = scrypt_hash($password, \16);
+    return ALGO_VERSION . "*$hash";
 }
 
 =head2 checkpw($string, $hashed) 
@@ -89,19 +87,27 @@ Returns true if the password matches when hashed.  False otherwise.
 # false means fails.
 
 my $passwd_check = {
+    0 => sub {
+        my ($pwhash, $password) = @_;
+        _legacy_pwcheck($password, $pwhash->{hash});
+    },
     1 => sub {
         my ($pwhash, $password) = @_;
+        $password = Encode::encode_utf8($password);
         return Mojo::Util::secure_compare($pwhash->{hash}, Crypt::ScryptKDF::scrypt_b64($password, $pwhash->{salt}));
     },
+    2 => sub {
+        my ($pwhash, $password) = @_;
+        $password = Encode::encode_utf8($password);
+        return scrypt_hash_verify($password, $pwhash->{hash});
+    }
 };
 
 sub checkpw {
     my ($password, $hashstring) = @_;
     return if length($password) > 200;    # fail if too long
     return unless defined $password;      # always fail when no password
-    return _legacy_pwcheck($password, $hashstring)
-        unless $hashstring =~ /^\d+\*/;
-    utf8::encode($password);
+
     my $pwhash = _pwstring_to_hashref($hashstring);
     return $passwd_check->{$pwhash->{version}}($pwhash, $password);
 }
@@ -110,12 +116,27 @@ sub checkpw {
 
 sub _pwstring_to_hashref {
     my $string = shift;
-    my ($ver, $salt, $hash) = split /\*/, $string;
-    return {
-        version => $ver,
-        salt    => $salt,
-        hash    => $hash
+    # default version 0
+    my $result = {
+        version => 0,
+        hash    => $string,
+        salt    => undef
     };
+
+    return $result unless $string =~ s/^(\d+)\*//;
+
+    $result->{version} = $1;
+    if ($result->{version} == 1) {
+        ($result->{salt}, $result->{hash}) = split /\*/, $string;
+        return $result;
+    }
+    if ($result->{version} == 2) {
+        $result->{hash} = $string;
+        return $result;
+    }
+
+    #Shouldn't get to here.
+    die "Don't support the format of password $string.";
 }
 
 sub _legacy_pwcheck {
