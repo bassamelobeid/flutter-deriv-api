@@ -120,8 +120,7 @@ rpc authorize => sub {
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'AccountDisabled',
-            message_to_client => BOM::Platform::Context::localize("Account is disabled.")}
-    ) unless BOM::RPC::v3::Utility::is_account_available($client);
+            message_to_client => BOM::Platform::Context::localize("Account is disabled.")}) unless $client->is_available;
 
     my $user = $client->user;
     my $token_type;
