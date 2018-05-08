@@ -157,6 +157,9 @@ rpc "verify_email",
         language         => $params->{language},
     });
 
+    my $email_already_exist = BOM::User->new({
+        email => $email,
+    });
     my $payment_sub = sub {
         my $type_call = shift;
 
@@ -172,16 +175,16 @@ rpc "verify_email",
                 )->email eq $email
             );
         } else {
-            $skip_email = 1 unless BOM::User->new({email => $email});
+            $skip_email = 1 unless $email_already_exist;
         }
 
         request_email($email, $verification->{payment_withdraw}->($type_call)) unless $skip_email;
     };
 
-    if (BOM::User->new({email => $email}) && $type eq 'reset_password') {
+    if ($email_already_exist && $type eq 'reset_password') {
         request_email($email, $verification->{reset_password}->());
     } elsif ($type eq 'account_opening') {
-        unless (BOM::User->new({email => $email})) {
+        unless ($email_already_exist) {
             request_email($email, $verification->{account_opening_new}->());
         } else {
             request_email($email, $verification->{account_opening_existing}->());
