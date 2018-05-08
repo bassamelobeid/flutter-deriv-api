@@ -68,7 +68,6 @@ my @payment_lines = Path::Tiny::path($payments_csv_file)->lines_utf8;
 
 my ($transtype, $control_code);
 if ($confirm) {
-
     unlink $payments_csv_file;
 
     $control_code = $cgi->param('DCcode');
@@ -84,8 +83,11 @@ if ($confirm) {
     }
 }
 
-my @hdgs =
-    ('Line Number', 'Login Id', 'Name', 'debit/credit', 'Payment Type', 'Trace ID', 'Payment Processor', 'Currency', 'Amount', 'Comment', 'Notes');
+my @hdgs = (
+    'Line Number',       'Login Id', 'Name',   'debit/credit', 'Payment Type',   'Trace ID',
+    'Payment Processor', 'Currency', 'Amount', 'Comment',      'Transaction ID', 'Notes'
+);
+
 my $client_account_table =
     '<table border="1" width="100%" bgcolor="#ffffff" style="border-collapse:collapse;margin-bottom:20px"><caption>Batch Credit/Debit details</caption>'
     . '<tr>'
@@ -95,15 +97,25 @@ my %summary_amount_by_currency;
 my @invalid_lines;
 my $line_number;
 my %client_to_be_processed;
+my $is_doughflow_credit = 0;
 read_csv_row_and_callback(
     \@payment_lines,
     sub {
         my $cols_found = @_;
-        my ($login_id, $action, $payment_type, $payment_processor, $trace_id, $currency, $amount, $statement_comment, $cols_expected);
+        my (
+            $login_id, $action, $payment_type,      $payment_processor, $trace_id,
+            $currency, $amount, $statement_comment, $transaction_id,    $cols_expected
+        );
         if ($format eq 'doughflow') {
-            ($login_id, $action, $trace_id, $payment_processor, $currency, $amount, $statement_comment) = @_;
-            $payment_type  = 'external_cashier';
-            $cols_expected = 7;
+            ($login_id, $action, $trace_id, $payment_processor, $currency, $amount, $statement_comment, $transaction_id) = @_;
+            $payment_type = 'external_cashier';
+            if ($action eq 'credit') {
+                $is_doughflow_credit = 1;
+                $cols_expected       = 8;
+            } else {
+                $is_doughflow_credit = 0;
+                $cols_expected       = 7;
+            }
         } else {
             ($login_id, $action, $payment_type, $currency, $amount, $statement_comment) = @_;
             $cols_expected = 6;
@@ -114,6 +126,7 @@ read_csv_row_and_callback(
         my $client;
         my $error;
         {
+
             my $curr_regex = LandingCompany::Registry::get_currency_type($currency) eq 'fiat' ? '^\d*\.?\d{1,2}$' : '^\d*\.?\d{1,8}$';
             $amount = formatnumber('price', $currency, $amount) if looks_like_number($amount);
 
@@ -125,6 +138,13 @@ read_csv_row_and_callback(
             !$statement_comment and $error = 'Statement comment can not be empty', last;
             $client = eval { BOM::User::Client->new({loginid => $login_id}) } or $error = ($@ || 'No such client'), last;
             my $signed_amount = $action eq 'debit' ? $amount * -1 : $amount;
+
+            if ($is_doughflow_credit) {
+                $error = "Transaction id is mandatory for doughflow credit"
+                    if not $transaction_id or $transaction_id !~ '\w+';
+                $error = "Transaction id provided does not match with one provided in comment (it should be in format like: transaction_id=33232)."
+                    if $statement_comment !~ /transaction_id=$transaction_id/;
+            }
 
             unless ($skip_validation) {
                 try { $client->validate_payment(currency => $currency, amount => $signed_amount) } catch { $error = $_ };
@@ -161,6 +181,8 @@ read_csv_row_and_callback(
             payment_processor => $payment_processor,
             trace_id          => $trace_id,
         );
+
+        $row{transaction_id} = $transaction_id if $is_doughflow_credit;
 
         if ($error) {
             $client_account_table .= construct_row_line(%row, error => $error);
@@ -204,7 +226,6 @@ read_csv_row_and_callback(
             } elsif ($action eq 'credit' and $payment_type !~ /^affiliate_reward|arbitrary_markup|free_gift$/) {
                 # need to set this for batch payment in case of credit only
                 try {
-                    warn "Expiration date: Batch processing - " . $client->loginid . ' for payment type ' . $payment_type . "\n";
                     $client->payment_agent_withdrawal_expiration_date(Date::Utility->today->date_yyyymmdd);
                     $client->save;
                 }
@@ -316,6 +337,8 @@ sub construct_row_line {
     my $notes = $args{error} || $args{remark};
     my $color = $args{error} ? 'red' : 'green';
     $args{$_} ||= '&nbsp;' for keys %args;
+    my $transaction_id = $args{transaction_id} // '';
+
     return qq[ <tr>
         <td><a name="ln$args{line_number}">$args{line_number}</td>
         <td>$args{login_id}</td>
@@ -327,6 +350,7 @@ sub construct_row_line {
         <td>$args{currency}</td>
         <td>$args{amount}</td>
         <td>$args{comment}</td>
+        <td>$transaction_id</td>
         <td style="color:$color">$notes</td>
     </tr>];
 }
@@ -336,6 +360,7 @@ sub read_csv_row_and_callback {
     my $callback  = shift;
 
     foreach my $line (@{$csv_lines}) {
+        chomp $line;
         $line =~ s/"//g;
         my (@row_values) = split ',', $line;
 
