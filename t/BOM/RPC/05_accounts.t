@@ -714,7 +714,8 @@ subtest $method => sub {
     test_financial_assessment($data, 1, "financial_assessment_not_complete should present regardless of the client's risk classification");
 
     # duplicate_account is not supposed to be shown to the users
-    $test_client->set_status('duplicate_account')->save;
+    $test_client->set_status('duplicate_account');
+    $test_client->save();
     cmp_deeply(
         $c->tcall($method, {token => $token_21}),
         {

@@ -506,30 +506,24 @@ rpc get_account_status => sub {
     push @status, 'unwelcome' if not $already_unwelcomed and BOM::Transaction::Validation->new({clients => [$client]})->check_trade_status($client);
 
     push @status, 'social_signup' if $user->has_social_signup;
+
     # check whether the user need to perform financial assessment
     my $financial_assessment = $client->financial_assessment();
     $financial_assessment = ref($financial_assessment) ? $json->decode($financial_assessment->data || '{}') : {};
-
     my $input_mappings = BOM::Platform::Account::Real::default::get_financial_input_mapping();
     my %financial_data = map { $_ => $params->{args}->{$_} } BOM::RPC::v3::Utility::keys_of_values $input_mappings;
-
-    # Exclude the financial_assessment_not_complete status if MLT/MX client's completed Financial Information before
     my $is_financial_info_incomplete = any { !$financial_assessment->{$_} } keys $input_mappings->{financial_information};
     my $is_trading_exp_incomplete    = any { !$financial_assessment->{$_} } keys $input_mappings->{trading_experience};
-
     push(@status, 'financial_information_not_complete') if $is_financial_info_incomplete;
     push(@status, 'trading_experience_not_complete')    if $is_trading_exp_incomplete;
-
     if ($client->broker =~ /^MF$/
         and ($is_financial_info_incomplete or $is_trading_exp_incomplete))
     {
         push(@status, 'financial_assessment_not_complete');
-        #if (any { !length $financial_assessment->{$_}->{answer} } keys %financial_data);
     } elsif ($client->broker =~ /^MX|MLT|CR$/
         and $risk_classification eq 'high')
     {
         push(@status, 'financial_assessment_not_complete') if $is_financial_info_incomplete;
-        #if (any { !length $financial_assessment->{$_}->{answer} } keys %financial_data);
     }
 
     my $prompt_client_to_authenticate = 0;
