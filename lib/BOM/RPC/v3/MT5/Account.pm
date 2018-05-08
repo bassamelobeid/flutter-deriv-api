@@ -281,7 +281,7 @@ async_rpc mt5_new_account => sub {
 
         # populate mt5 agent account from manager id if applicable
         # else get one associated with affiliate token
-        $args->{agent} = $manager_id // _get_mt5_account_from_affiliate_token($client->myaffiliates_token);
+        $args->{agent} = $manager_id || _get_mt5_account_from_affiliate_token($client->myaffiliates_token);
 
         $group = 'real\\' . $mt_company;
         $group .= '_mamm' if $manager_id;
