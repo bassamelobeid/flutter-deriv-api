@@ -77,7 +77,7 @@ sub _get_upgradeable_landing_companies {
     if ($client->landing_company->short eq 'costarica') {
 
         # Get siblings of the current client
-        my $siblings = BOM::RPC::v3::Utility::get_real_account_siblings_information($client);
+        my $siblings = $client->real_account_siblings_information;
 
         my ($fiat_check, $lc_num_crypto, $client_num_crypto) =
             BOM::RPC::v3::Utility::get_client_currency_information($siblings, $client->landing_company->short);
