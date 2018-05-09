@@ -339,12 +339,7 @@ sub get_real_account_siblings_information {
     # happen but added as additional check
     return {} unless $user;
 
-    my @clients = ();
-    if ($no_disabled) {
-        @clients = $user->clients;
-    } else {
-        @clients = $user->clients(include_disabled => 1);
-    }
+    my @clients = $user->clients(include_disabled => !$no_disabled);
 
     # filter out virtual clients
     @clients = grep { not $_->is_virtual } @clients;
