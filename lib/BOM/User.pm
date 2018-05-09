@@ -121,7 +121,7 @@ sub clients {
     my @clients = @{$self->get_clients_in_sorted_order};
 
     my @parts;
-    push @parts, _get_client_cookie_string($_) foreach (@clients);
+    push @parts, $_->cookie_string foreach (@clients);
 
     $self->{_cookie_val} = join('+', @parts);
 
@@ -129,14 +129,6 @@ sub clients {
     @clients = grep { not $_->get_status('disabled') } @clients unless $args{include_disabled};
 
     return @clients;
-}
-
-sub _get_client_cookie_string {
-    my $client = shift;
-
-    my $str = join(':', $client->loginid, $client->is_virtual ? 'V' : 'R', $client->get_status('disabled') ? 'D' : 'E');
-
-    return $str;
 }
 
 =head2 clients_for_landing_company

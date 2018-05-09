@@ -854,4 +854,12 @@ sub is_available {
     return 1;
 }
 
+sub cookie_string {
+    my $self = shift;
+
+    my $str = join(':', $self->loginid, $self->is_virtual ? 'V' : 'R', $self->get_status('disabled') ? 'D' : 'E');
+
+    return $str;
+}
+
 1;
