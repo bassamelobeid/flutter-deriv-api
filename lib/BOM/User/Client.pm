@@ -862,4 +862,32 @@ sub cookie_string {
     return $str;
 }
 
+sub real_account_siblings_information {
+    my ($self, $no_disabled) = @_;
+
+    my $user = $self->user;
+    # return empty if we are not able to find user, this should not
+    # happen but added as additional check
+    return {} unless $user;
+
+    my @clients = $user->clients(include_disabled => !$no_disabled);
+
+    # filter out virtual clients
+    @clients = grep { not $_->is_virtual } @clients;
+
+    my $siblings;
+    foreach my $cl (@clients) {
+        my $acc = $cl->default_account;
+
+        $siblings->{$cl->loginid} = {
+            loginid              => $cl->loginid,
+            landing_company_name => $cl->landing_company->short,
+            currency => $acc ? $acc->currency_code : '',
+            balance => $acc ? formatnumber('amount', $acc->currency_code, $acc->balance) : "0.00",
+        };
+    }
+
+    return $siblings;
+}
+
 1;
