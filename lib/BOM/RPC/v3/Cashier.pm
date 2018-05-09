@@ -103,7 +103,7 @@ rpc "cashier", sub {
         return _get_epg_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language}, $brand->name);
     }
 
-    if (LandingCompany::Registry::get_currency_type { $currency } eq 'crypto') {
+    if (LandingCompany::Registry::get_currency_type($currency) eq 'crypto') {
         return _get_cryptocurrency_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language}, $brand->name);
     }
 
