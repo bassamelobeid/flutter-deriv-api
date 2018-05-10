@@ -88,10 +88,14 @@ sub is_duplicate_payment {
         require_objects => ['payment'],
         query           => [
             transaction_type => $args->{transaction_type},
-            or               => [
+            (defined($args->{transaction_id}) and length($args->{transaction_id}))
+            ? (or               => [
                 trace_id       => $args->{trace_id},
-                transaction_id => $args->{transaction_id} // ''
-            ]
+                transaction_id => $args->{transaction_id}
+            ]) : (
+                trace_id       => $args->{trace_id},
+            ),
+            $args->{payment_processor} ? (payment_processor => $args->{payment_processor}) : (),
         ],
         db => $self->db,
     );
