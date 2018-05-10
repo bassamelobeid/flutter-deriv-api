@@ -843,6 +843,8 @@ sub user {
 
 =head2 is_available
 
+return false if client is disabled or is duplicated account
+
 =cut
 
 sub is_available {
