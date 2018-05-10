@@ -64,7 +64,7 @@ foreach my $landing_company (keys %{$qc->broker_code_mapper}) {
                 (map { $_ => $config{$_}->[0] } qw(market underlying_symbol landing_company)),
             });
             my $default_amount = $config{limit_amount} * $multiplier{$limit_type};
-            next if $current_amount < $default_amount;
+            next if defined $current_amount and $current_amount < $default_amount;
             $config{limit_amount} = $default_amount;
             $qc->set_global_limit(\%config);
         }

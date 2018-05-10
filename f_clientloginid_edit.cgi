@@ -737,10 +737,10 @@ if ($link_acc) {
 
 my $siblings;
 if ($user) {
-    $siblings = $user->loginid_details;
+    $siblings = $user->bom_loginid_details;
     my @mt_logins = $user->mt5_logins;
 
-    if ($siblings or @mt_logins > 0) {
+    if (%$siblings or @mt_logins > 0) {
         print "<p>Corresponding accounts: </p><ul>";
 
         # show all BOM loginids for user, include disabled acc
