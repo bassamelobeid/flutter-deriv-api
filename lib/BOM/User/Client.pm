@@ -6,6 +6,7 @@ use warnings;
 
 our $VERSION = '0.145';
 
+use feature qw(state);
 use Email::Stuffer;
 use Date::Utility;
 use List::Util;
@@ -849,7 +850,7 @@ return false if client is disabled or is duplicated account
 
 sub is_available {
     my $self = shift;
-    my @unavailable_status = ('disabled', 'duplicate_account');
+    state @unavailable_status = ('disabled', 'duplicate_account');
     foreach my $status (@unavailable_status) {
         return 0 if $self->get_status($status);
     }
