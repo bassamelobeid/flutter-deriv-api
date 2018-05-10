@@ -8,7 +8,7 @@ use APIHelper qw(balance deposit request decode_json);
 my $loginid = 'CR0011';
 
 my $starting_balance = balance($loginid);
-my $trace_id = time();
+my $trace_id         = time();
 
 ## test freeze
 my $client_db = BOM::Database::ClientDB->new({client_loginid => $loginid});
@@ -22,7 +22,7 @@ is $r->code,              403;
 like $r->decoded_content, qr/Unable to lock the account. Please try again after one minute./i;
 
 ## next try, must be unfreezed
-$r        = deposit(
+$r = deposit(
     loginid  => $loginid,
     trace_id => $trace_id
 );
