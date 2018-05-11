@@ -76,6 +76,7 @@ sub run {
             );
             $rates->save;
             $report->{$currency_symbol}->{success} = 1;
+            $self->_update_related_currency($data, qw /DAI/) if $currency_symbol eq 'USD';
         }
     }
 
@@ -113,6 +114,24 @@ sub _get_currency_and_term_from_BB_ticker {
         }
     }
 
+    return;
+}
+
+# update related currency interest rates currently we have DAI/USD
+# we might have TUSD/USD in the future
+sub _update_related_currency {
+    my ($self, $data, @related_currency) = @_;
+    foreach (@related_currency) {
+        my $rates = Quant::Framework::InterestRate->new(
+            symbol           => $_,
+            rates            => $data,
+            recorded_date    => Date::Utility->new,
+            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+        );
+        $rates->save;
+        $self->report->{$_}->{success} = 1;
+    }
     return;
 }
 
