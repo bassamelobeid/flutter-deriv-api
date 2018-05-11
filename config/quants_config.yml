@@ -21,6 +21,7 @@ bet_limits:
     ETH: 0.5
     LTC: 2.5
     ETC: 2.5
+    DAI: 200
   maximum_payout:
     USD: 50000
     EUR: 50000
@@ -32,6 +33,7 @@ bet_limits:
     ETH: 10
     LTC: 50
     ETC: 50
+    DAI: 5000
   min_payout:
     default:
       USD: 1
@@ -68,6 +70,7 @@ bet_limits:
       ETH: 0.05
       LTC: 0.25
       ETC: 0.25
+      DAI: 5
   min_commission_amount:
     USD: 0.02 # 0.02 dollar
     EUR: 0.02
@@ -79,6 +82,7 @@ bet_limits:
     ETH: 0.00015
     LTC: 0.00075
     ETC: 0.0015
+    DAI: 0.02
 
 #Lookback option limits – the Value-at-risk approach
 #
@@ -116,6 +120,7 @@ lookback_limits:
     ETH: 3
     LTC: 3
     ETC: 3
+    DAI: 300
 
 risk_profile:
   no_business:
@@ -130,6 +135,7 @@ risk_profile:
           ETH: 0
           LTC: 0
           ETC: 0
+          DAI: 0
       payout:
           USD: 0
           EUR: 0
@@ -141,6 +147,7 @@ risk_profile:
           ETH: 0
           LTC: 0
           ETC: 0
+          DAI: 0
   extreme_risk:
       turnover:
           USD: 1000
@@ -153,6 +160,7 @@ risk_profile:
           ETH: 2
           LTC: 10
           ETC: 10
+          DAI: 1000
       payout:
           USD: 100
           EUR: 100
@@ -164,6 +172,7 @@ risk_profile:
           ETH: 0.2
           LTC: 1
           ETC: 1
+          DAI: 100
   high_risk:
       turnover:
           USD: 50000
@@ -176,6 +185,7 @@ risk_profile:
           ETH: 50
           LTC: 250
           ETC: 250
+          DAI: 50000
       payout:
           USD: 5000
           EUR: 5000
@@ -187,6 +197,7 @@ risk_profile:
           ETH: 5
           LTC: 50
           ETC: 50
+          DAI: 5000
   medium_risk:
       turnover:
           USD: 100000
@@ -199,6 +210,7 @@ risk_profile:
           ETH: 50
           LTC: 250
           ETC: 250
+          DAI: 100000
       payout:
           USD: 20000
           EUR: 20000
@@ -210,6 +222,7 @@ risk_profile:
           ETH: 5
           LTC: 50
           ETC: 50
+          DAI: 20000
   low_risk:
       turnover:
           USD: 500000
@@ -222,6 +235,7 @@ risk_profile:
           ETH: 100
           LTC: 500
           ETC: 500
+          DAI: 500000
       payout:
           USD: 50000
           EUR: 50000
@@ -233,3 +247,4 @@ risk_profile:
           ETH: 10
           LTC: 50
           ETC: 50
+          DAI: 50000
