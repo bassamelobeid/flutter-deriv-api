@@ -56,7 +56,7 @@
                     "required": "1",
                     "items": {
                         "type": "string",
-                        "pattern": "^(callput|endsinout|staysinout|touchnotouch)$",
+                        "pattern": "^(callput|endsinout|staysinout|touchnotouch|callputequal)$",
                         "required": "1"
                     }
                 },
