@@ -77,7 +77,7 @@
                             "required": "1",
                             "items": {
                                 "type": "string",
-                                "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callpitequal)$",
+                                "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputequal)$",
                                 "required": "1"
                             }
                         },
