@@ -9,6 +9,12 @@ frxAUDJPY: &japan_fx
         euro_non_atm:
           max: 24h
           min: 2m
+  callput:
+    intraday:
+      spot:
+        euro_non_atm:
+          max: 24h
+          min: 2m
   touchnotouch:
     intraday:
       spot:
