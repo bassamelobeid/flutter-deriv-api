@@ -20,6 +20,8 @@ __PACKAGE__->meta->setup(
         email_consent     => { type => 'boolean' },
         gclid_url         => { type => 'text', remarks => '(Google Click Identifier) to track source' },
         has_social_signup => { type => 'boolean' },
+        secret_key        => { type => 'text' },
+        is_totp_enabled   => { type => 'boolean' },
     ],
 
     primary_key_columns => [ 'id' ],

@@ -117,10 +117,10 @@ sub set_global_limit {
     my ($self, $args) = @_;
 
     $args->{$_} //= [undef] for qw(expiry_type barrier_type contract_group);
-    # accidentally setting underlying_symbol to empty array reference, correct it here
-    $args->{underlying_symbol} = undef if $args->{underlying_symbol} and not @{$args->{underlying_symbol}};
+    # default to empty array reference if not set
+    $args->{underlying_symbol} //= [];
     # only set default market if underlying symbol is not specified
-    $args->{market} //= [undef] unless $args->{underlying_symbol};
+    $args->{market} //= [undef] unless @{$args->{underlying_symbol}};
     # set it to default
     $args->{landing_company} //= ['default'];
 
@@ -136,21 +136,22 @@ sub set_global_limit {
 
     if (    $args->{market}
         and scalar(@{$args->{market}}) > 1
-        and $args->{underlying_symbol}
+        and @{$args->{underlying_symbol}}
         and (scalar(@{$args->{underlying_symbol}}) > 1 or grep { $_ ne 'default' } @{$args->{underlying_symbol}}))
     {
         die "If you select multiple markets, underlying symbol can only be default";
     }
 
-    if ($args->{underlying_symbol}) {
+    if (@{$args->{underlying_symbol}}) {
         # if underlying symbol is specified, then market is required
         die "Please specify the market of the underlying symbol input" unless $args->{market};
         # must be default or a valid underlying symbol
-        die "invalid underlying symbol" if grep { $_ ne 'default' and not Finance::Underlying->by_symbol($_) } @{$args->{underlying_symbol}};
+        die "invalid underlying symbol"
+            if grep { $_ ne 'default' and not Finance::Underlying->by_symbol($_) } @{$args->{underlying_symbol}};
     }
 
     my $statement;
-    if ($args->{underlying_symbol}) {
+    if (@{$args->{underlying_symbol}}) {
         my $table_name = 'update_symbol_' . $args->{limit_type};
         $statement = qq{SELECT betonmarkets.$table_name (?,?,?,?,?,?)};
     } else {
@@ -167,11 +168,12 @@ sub set_global_limit {
                             $barrier_type = $barrier_type eq 'atm' ? 1 : 0;
                         }
                         foreach my $contract_group (@{$args->{contract_group}}) {
-                            if ($args->{underlying_symbol}) {
+                            if (@{$args->{underlying_symbol}}) {
                                 foreach my $u_symbol (@{$args->{underlying_symbol}}) {
-                                    $u_symbol = undef if $u_symbol and $u_symbol eq 'default';
+                                    my $query_symbol = $u_symbol;
+                                    $query_symbol = undef if $u_symbol and $u_symbol eq 'default';
                                     $self->_update_db($db, $statement,
-                                        [$market, $u_symbol, $contract_group, $expiry_type, $barrier_type, $args->{limit_amount}]);
+                                        [$market, $query_symbol, $contract_group, $expiry_type, $barrier_type, $args->{limit_amount}]);
                                 }
                             } else {
                                 $self->_update_db($db, $statement, [$market, $contract_group, $expiry_type, $barrier_type, $args->{limit_amount}]);
