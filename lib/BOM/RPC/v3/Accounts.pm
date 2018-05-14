@@ -489,6 +489,9 @@ rpc get_account_status => sub {
     foreach my $s (sort keys %{$client->client_status_types}) {
         next if $s eq 'tnc_approval';    # the useful part for tnc_approval is reason
         next unless $client->client_status_types->{$s};    # Skip status codes that are not supposed to be shown to users
+                                                           # TODO (Amin): Remove the below code and find a better way of distinguishing
+                                                           # the clients to hide with a status and the status codes to hide
+        next if $s =~ /proveid_/;                          # Hide proveid_* status manually
         if ($client->get_status($s)) {
             push @status, $s;
             $already_unwelcomed = 1 if $s eq 'unwelcome';

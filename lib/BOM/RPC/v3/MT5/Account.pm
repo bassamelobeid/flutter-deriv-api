@@ -232,7 +232,7 @@ async_rpc mt5_new_account => sub {
     my $mt5_account_type = delete $args->{mt5_account_type} // '';
     return Future->done($invalid_sub_type_error) if ($mt5_account_type and $mt5_account_type !~ /^standard|advanced$/);
 
-    my $manager_id = delete $args->{manager_id} // '';
+    my $manager_id = delete $args->{manager_id};
     # demo account is not allowed for mamm account
     return $invalid_account_type_error if $manager_id and $account_type eq 'demo';
 
