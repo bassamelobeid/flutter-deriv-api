@@ -275,7 +275,7 @@ subtest 'call pricing engine equal tie markup' => sub {
             payout       => 10,
             current_tick => $ct,
         });
-        ok defined $c->pricing_engine->can('apply_equal_tie_markup'), 'can apply equal tie markup';
+        ok $c->pricing_engine->apply_equal_tie_markup, 'can apply_equal_tie_markup';
         cmp_ok $c->pricing_engine->risk_markup->peek_amount('equal_tie_markup'), '==', 0.02, 'correct equal tie markup';
     }
     'correct equal tie markup for USDJPY';
@@ -292,7 +292,7 @@ subtest 'call pricing engine equal tie markup' => sub {
             payout       => 10,
             current_tick => $ct,
         });
-        ok defined $c->pricing_engine->can('apply_equal_tie_markup'), 'can apply equal tie markup';
+        ok $c->pricing_engine->apply_equal_tie_markup, 'can apply_equal_tie_markup';
         cmp_ok $c->pricing_engine->risk_markup->peek_amount('equal_tie_markup'), '==', 0.05, 'correct equal tie markup';
     }
     'correct equal tie markup for AUDPLN';
@@ -311,7 +311,7 @@ subtest 'call pricing engine equal tie markup' => sub {
             trading_period_start => $now->epoch,
             current_tick         => $ct,
         });
-        ok defined $c->pricing_engine->can('apply_equal_tie_markup'), 'can apply equal tie markup';
+        ok $c->pricing_engine->apply_equal_tie_markup, 'can apply_equal_tie_markup';
         cmp_ok $c->pricing_engine->risk_markup->peek_amount('equal_tie_markup'), '==', 0.02, 'correct equal tie markup';
     }
     'correct equal tie markup for USDJPY';
@@ -328,7 +328,9 @@ subtest 'call pricing engine equal tie markup' => sub {
             payout       => 10,
             current_tick => $ct,
         });
-        ok !defined $c->pricing_engine->can('apply_equal_tie_markup'), 'no apply equal tie markup';
+
+        ok !$c->pricing_engine->apply_equal_tie_markup, 'cant apply_equal_tie_markup';
+        ok !defined $c->pricing_engine->risk_markup->peek_amount('equal_tie_markup'), 'no correct equal tie markup';
     }
     'no equal tie for call USDJPY';
 
@@ -344,7 +346,8 @@ subtest 'call pricing engine equal tie markup' => sub {
             payout       => 10,
             current_tick => $ct,
         });
-        ok !defined $c->pricing_engine->can('apply_equal_tie_markup'), 'no apply equal tie markup';
+        ok $c->pricing_engine->apply_equal_tie_markup, 'can apply_equal_tie_markup ';
+        cmp_ok $c->pricing_engine->risk_markup->peek_amount('equal_tie_markup'), '==', 0.00, 'correct equal tie markup';
     }
     'no equal tie for call WLDUSD';
 
@@ -360,7 +363,117 @@ subtest 'call pricing engine equal tie markup' => sub {
             payout       => 10,
             current_tick => $ct,
         });
-        ok !defined $c->pricing_engine->can('apply_equal_tie_markup'), 'no apply equal tie markup';
+        ok !defined $c->pricing_engine->can('apply_equal_tie_markup'), 'undefined apply_equal_tie_markup';
+    }
+    'no equal tie for R_100';
+    lives_ok {
+        my $c = produce_contract({
+            bet_type     => 'CALLE',
+            date_start   => $now,
+            date_pricing => $now,
+            duration     => '7d',
+            barrier      => 'S0P',
+            underlying   => 'frxUSDJPY',
+            currency     => 'USD',
+            payout       => 10,
+            current_tick => $ct,
+        });
+        ok $c->pricing_engine->apply_equal_tie_markup, 'can apply_equal_tie_markup';
+        ok $c->ask_price, 'can ask price';
+        cmp_ok $c->debug_information->{risk_markup}{parameters}{equal_tie_markup}, '==', 0.02, 'correct equal tie markup';
+    }
+    'correct equal tie markup for USDJPY';
+
+    lives_ok {
+        my $c = produce_contract({
+            bet_type     => 'CALLE',
+            date_start   => $now,
+            date_pricing => $now,
+            duration     => '7d',
+            barrier      => 'S0P',
+            underlying   => 'frxAUDPLN',
+            currency     => 'USD',
+            payout       => 10,
+            current_tick => $ct,
+        });
+        ok $c->pricing_engine->apply_equal_tie_markup, 'can apply_equal_tie_markup';
+        ok $c->ask_price, 'can ask price';
+        cmp_ok $c->debug_information->{risk_markup}{parameters}{equal_tie_markup}, '==', 0.05, 'correct equal tie markup';
+    }
+    'correct equal tie markup for AUDPLN';
+
+    lives_ok {
+        my $c = produce_contract({
+            bet_type             => 'CALLE',
+            date_start           => $now,
+            date_pricing         => $now,
+            duration             => '7d',
+            barrier              => 'S20P',
+            underlying           => 'frxUSDJPY',
+            currency             => 'USD',
+            payout               => 10,
+            product_type         => 'multi_barrier',
+            trading_period_start => $now->epoch,
+            current_tick         => $ct,
+        });
+        ok $c->pricing_engine->apply_equal_tie_markup, 'can apply_equal_tie_markup';
+        ok $c->ask_price, 'can ask price';
+        cmp_ok $c->debug_information->{risk_markup}{parameters}{equal_tie_markup}, '==', 0.02, 'correct equal tie markup';
+
+    }
+    'correct equal tie markup for USDJPY';
+
+    lives_ok {
+        my $c = produce_contract({
+            bet_type     => 'CALL',
+            date_start   => $now,
+            date_pricing => $now,
+            duration     => '7d',
+            barrier      => 'S0P',
+            underlying   => 'frxUSDJPY',
+            currency     => 'USD',
+            payout       => 10,
+            current_tick => $ct,
+        });
+
+        ok !$c->pricing_engine->apply_equal_tie_markup, 'cant apply_equal_tie_markup';
+        ok $c->ask_price, 'can ask price';
+        ok !defined $c->debug_information->{risk_markup}{parameters}{equal_tie_markup}, 'no correct equal tie markup';
+    }
+    'no equal tie for call USDJPY';
+
+    lives_ok {
+        my $c = produce_contract({
+            bet_type     => 'CALLE',
+            date_start   => $now,
+            date_pricing => $now,
+            duration     => '7d',
+            barrier      => 'S0P',
+            underlying   => 'WLDUSD',
+            currency     => 'USD',
+            payout       => 10,
+            current_tick => $ct,
+        });
+        ok $c->pricing_engine->apply_equal_tie_markup, 'can apply_equal_tie_markup ';
+        ok $c->ask_price, 'can ask price';
+        cmp_ok $c->debug_information->{risk_markup}{parameters}{equal_tie_markup}, '==', 0.00, 'correct equal tie markup';
+    }
+    'no equal tie for call WLDUSD';
+
+    lives_ok {
+        my $c = produce_contract({
+            bet_type     => 'CALLE',
+            date_start   => $now,
+            date_pricing => $now,
+            duration     => '7d',
+            barrier      => 'S0P',
+            underlying   => 'R_100',
+            currency     => 'USD',
+            payout       => 10,
+            current_tick => $ct,
+        });
+        ok $c->ask_price, 'can ask price';
+        ok !defined $c->debug_information->{risk_markup}{parameters}{equal_tie_markup}, 'undefined apply_equal_tie_markup';
     }
     'no equal tie for R_100';
 

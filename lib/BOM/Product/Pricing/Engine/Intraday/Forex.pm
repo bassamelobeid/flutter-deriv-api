@@ -106,8 +106,7 @@ has apply_equal_tie_markup => (
 
 sub _build_apply_equal_tie_markup {
     my $self = shift;
-    my $apply = ($self->bet->code eq 'CALLE' or $self->bet->code eq 'PUTE') ? 1 : 0;
-    return $apply;
+    return ($self->bet->code eq 'CALLE' or $self->bet->code eq 'PUTE') ? 1 : 0;
 }
 
 sub _build_base_probability {
