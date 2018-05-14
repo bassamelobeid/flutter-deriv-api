@@ -101,12 +101,12 @@ sub _build_base_engine {
 
 has apply_equal_tie_markup => (
     is         => 'ro',
-    lazy_build => 0,
+    lazy_build => 1,
 );
 
 sub _build_apply_equal_tie_markup {
     my $self = shift;
-    my $apply = ($self->code eq 'CALLE' or $self->code eq 'PUTE') ? 1 : 0;
+    my $apply = ($self->bet->code eq 'CALLE' or $self->bet->code eq 'PUTE') ? 1 : 0;
     return $apply;
 }
 
@@ -318,7 +318,6 @@ sub _build_risk_markup {
                     base_amount => $shortterm_risk_interpolator->linear($bet->remaining_time->minutes),
                 })) if $bet->remaining_time->minutes <= 15;
     }
-
     $risk_markup->include_adjustment('add', Pricing::Engine::Markup::EqualTie->new(underlying_symbol => $bet->underlying->symbol)->markup)
         if $self->apply_equal_tie_markup;
 
