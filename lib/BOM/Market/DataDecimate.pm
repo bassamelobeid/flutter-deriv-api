@@ -242,10 +242,9 @@ sub _build_redis_write {
 =cut
 
 sub _make_key {
-    my ($self, $symbol, $decimate, $use_distributor_ticks) = @_;
+    my ($self, $symbol, $decimate) = @_;
 
     my @bits = ("DECIMATE", $symbol);
-    unshift @bits, 'DISTRIBUTOR' if $use_distributor_ticks;
     if ($decimate) {
         push @bits, ($self->sampling_frequency->as_concise_string, 'DEC');
     } else {
@@ -309,27 +308,10 @@ sub _get_decimate_from_cache {
 
     my $redis = $self->redis_read;
 
-    my @parts        = ([$start, $end, 0]);
-    my $end_date     = Date::Utility->new($end);
-    my $start_of_day = $end_date->truncate_to_day;
-    # first 20-minute of each day, we will perform this check
-    if ($end - $start_of_day->epoch < 20 * 60
-        and not _trading_calendar()->trades_on(Quant::Framework::Underlying->new($which)->exchange, $end_date->minus_time_interval('1d')))
-    {
-        @parts = ([$start, $start_of_day->epoch - 1, 1], [$start_of_day->epoch, $end, 0]);
-    }
-
-    my @res;
-    foreach my $part (@parts) {
-        my $key = $self->_make_key($which, 1, $part->[2]);
-        push @res, (map { $self->decoder->decode($_) } @{$redis->zrangebyscore($key, $part->[0], $part->[1])});
-    }
+    my $key = $self->_make_key($which, 1);
+    my @res = map { $self->decoder->decode($_) } @{$redis->zrangebyscore($key, $start, $end)};
 
     return \@res;
-}
-
-sub _trading_calendar {
-    return Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
 }
 
 =head2 _get_raw_from_cache
