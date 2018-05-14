@@ -121,6 +121,8 @@ subtest 'barrier tier' => sub {
             ITM_max         => 0.35
         });
     $args->{date_start} = $args->{date_pricing} = $now;
+    $args->{trading_period_start} = $now->epoch;
+    
     my @test_cases = (
         # ITM CALL with 3 barriers on each side
         [0.001, 'frxUSDJPY', 'CALLE', 100, 99.951, 'ITM_1',   0.1],
@@ -148,15 +150,16 @@ subtest 'barrier tier' => sub {
         $mock_underlying->mock('pip_size', sub { $test->[0] });
         $args->{underlying} = $test->[1];
         $args->{bet_type}   = $test->[2];
+        $args->{product_type} = 'multi_barrier';
         $mock_contract->mock('current_spot', sub { $test->[3] });
         $mock_barrier->mock('as_absolute', sub { $test->[4] });
         my $c = produce_contract($args);
         is $c->barrier_tier, $test->[5],
-            'barrier tier is ' . $c->barrier_tier . ' for point difference ' . ($test->[3] - $test->[4]) . " on $args->{underlying}";
+            'barrier tier is ' .$c->barrier_tier . ' for point difference ' . ($test->[3] - $test->[4]) . " on $args->{underlying}";
         is $c->pricing_engine->event_markup->amount, $test->[6], 'event markup is ' . $c->pricing_engine->event_markup->amount;
     }
-
     # ATM
+    $args->{product_type} = 'basic';
     my $c = produce_contract(+{%$args, barrier => 'S0P'});
     ok $c->is_atm_bet, 'is atm';
     is $c->barrier_tier, 'ATM', 'barrier tier is ATM';
@@ -221,10 +224,12 @@ subtest 'bias long' => sub {
         });
     $args->{underlying} = 'frxAUDJPY';
     $args->{bet_type}   = 'CALLE';
+    $args->{product_type} = 'multi_barrier';
     note('bias is set to long on AUD');
     my $c = produce_contract($args);
     is $c->pricing_engine->event_markup->amount, 0.5, '0.5 event markup for CALLE-frxAUDJPY';
     $args->{bet_type} = 'PUT';
+    $args->{product_type} = 'basic';
     $c = produce_contract($args);
     is $c->pricing_engine->event_markup->amount, 0, '0 event markup for PUT-frxAUDJPY';
     $mock_underlying->mock('pip_size', sub { 0.00001 });
@@ -253,10 +258,12 @@ subtest 'bias long' => sub {
     $mock_barrier->mock('as_absolute', sub { 100.151 });
     $args->{underlying} = 'frxUSDJPY';
     $args->{bet_type}   = 'CALLE';
+    $args->{product_type} = 'multi_barrier';
     note('bias is set to short on USD');
     $c = produce_contract($args);
     is $c->pricing_engine->event_markup->amount, 0, '0 event markup for CALLE-frxUSDJPY';
     $args->{bet_type} = 'PUT';
+    $args->{product_type} = 'basic';
     $c = produce_contract($args);
     is $c->pricing_engine->event_markup->amount, 0.66, '0.66 event markup for PUT-frxUSDJPY';
     $mock_underlying->mock('pip_size', sub { 0.00001 });

@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 217;
+use Test::More tests => 313;
 use Test::Warnings;
 use Test::Exception;
 use Date::Utility;
