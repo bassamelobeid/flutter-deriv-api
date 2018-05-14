@@ -407,6 +407,8 @@ sub get_client_currency_information {
 sub validate_make_new_account {
     my ($client, $account_type, $request_data) = @_;
 
+    return permission_error() if (not $account_type and $account_type !~ /^(?:real|financial|japan)$/);
+
     my $residence = $client->residence;
     return create_error({
             code              => 'NoResidence',
@@ -478,7 +480,7 @@ sub validate_make_new_account {
         my @landing_company_clients;
         if ($account_type eq 'real') {
             @landing_company_clients = $client->user->clients_for_landing_company($gaming_company);
-        } elsif ($account_type eq 'financial') {
+        } else {
             @landing_company_clients = $client->user->clients_for_landing_company($financial_company);
         }
 
