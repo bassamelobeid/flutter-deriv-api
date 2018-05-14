@@ -177,13 +177,15 @@ sub write_transaction_line {
     my $transaction_id = $c->request_parameters->{transaction_id};
     my $trace_id       = $c->request_parameters->{trace_id};
     my $amount         = $c->request_parameters->{amount};
+    my $processor      = $c->request_parameters->{payment_processor};
 
     if (
         my $rejection = $c->check_predicates({
                 currency_code  => $currency_code,
                 transaction_id => $transaction_id,
                 trace_id       => $trace_id,
-                amount         => $amount
+                amount         => $amount,
+                processor      => $processor,
             }))
     {
         return $c->status_bad_request($rejection);
@@ -253,6 +255,7 @@ sub check_predicates {
     my $trace_id      = $args->{'trace_id'};
     my $amount        = $args->{'amount'};
     my $currency_code = $args->{'currency_code'};
+    my $processor     = $args->{'processor'};
 
     # Detecting duplicates for DoughFlow is simple; it'll be
     # any transaction with an identical type (deposit/withdrawal)
@@ -296,11 +299,14 @@ sub check_predicates {
             if ($amt != $trace_amt);
     }
 
+    my $transaction_id = $args->{transaction_id} // '';
     if (
         $doughflow_datamapper->is_duplicate_payment({
-                transaction_type => $c->type,
-                trace_id         => $trace_id,
-                transaction_id   => $args->{transaction_id}}))
+                payment_processor => $processor,
+                transaction_type  => $c->type,
+                trace_id          => $trace_id,
+                transaction_id    => $transaction_id,
+            }))
     {
         $rejection =
               "Detected duplicate transaction ["
@@ -310,7 +316,7 @@ sub check_predicates {
             . " with trace id "
             . $trace_id
             . " and transaction id "
-            . $args->{transaction_id};
+            . $transaction_id;
     }
 
     return $rejection;

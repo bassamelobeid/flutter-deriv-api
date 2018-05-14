@@ -17,9 +17,9 @@ $r = withdraw(
     loginid     => $loginid,
     is_validate => 1
 );
-is($r->code, 200, 'correct status code');
-is(decode_json_utf8($r->content)->{allowed}, 1, 'validate pass');
-is(0 + balance($loginid), $starting_balance + 0, 'Correct final balance');
+is($r->code,                                 200,                   'correct status code');
+is(decode_json_utf8($r->content)->{allowed}, 1,                     'validate pass');
+is(0 + balance($loginid),                    $starting_balance + 0, 'Correct final balance');
 
 $r = withdraw(
     loginid     => $loginid,
