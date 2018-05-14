@@ -531,9 +531,6 @@ sub client_statement_summary {
         my $k = $transaction->{action_type} eq 'deposit' ? 'deposits' : 'withdrawals';
         my $payment_system = '(unknown)';
 
-        # EPG
-        $payment_system = $1 if $transaction->{payment_remark} =~ /payment_solution=(\S+)/;
-
         # DoughFlow
         $payment_system = $1 if $transaction->{payment_remark} =~ /payment_processor=(\S+)/;
 
