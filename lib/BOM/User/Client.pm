@@ -66,8 +66,9 @@ my $CLIENT_STATUS_TYPES = {
     document_needs_action  => 1,
     professional_requested => 1,
     professional           => 1,
-    proveid_pending        => 0,
-    proveid_requested      => 0,
+    # TODO (Amin): Find a way to add a config for hidden status codes (prove_*)
+    proveid_pending   => 1,
+    proveid_requested => 1,
 };
 
 sub client_status_types { return $CLIENT_STATUS_TYPES }
