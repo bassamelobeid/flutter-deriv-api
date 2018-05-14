@@ -1005,7 +1005,7 @@ rpc transfer_between_accounts => sub {
     my $args = $params->{args};
     my ($currency, $amount) = @{$args}{qw/currency amount/};
 
-    my $siblings = $client->real_account_siblings_information(1);
+    my $siblings = $client->real_account_siblings_information(include_disabled => 0);
     unless (keys %$siblings) {
         warn __PACKAGE__ . "::transfer_between_accounts Error:  Unable to get user data for " . $client->loginid . "\n";
         return _transfer_between_accounts_error(localize('Internal server error'));
