@@ -850,8 +850,7 @@ return false if client is disabled or is duplicated account
 
 sub is_available {
     my $self = shift;
-    state $unavailable_status = ['disabled', 'duplicate_account'];
-    foreach my $status (@$unavailable_status) {
+    foreach my $status (qw(disabled duplicate_account)) {
         return 0 if $self->get_status($status);
     }
     return 1;
