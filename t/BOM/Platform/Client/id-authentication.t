@@ -266,7 +266,7 @@ subtest 'proveid' => sub {
         my $v = IDAuthentication->new(client => $c);
         Test::MockObject::Extends->new($v);
 
-        $v->mock(-_fetch_proveid, sub { return {} });
+        $v->mock(-_fetch_proveid, sub { return undef });
         do {
             local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
             $v->run_authentication;
