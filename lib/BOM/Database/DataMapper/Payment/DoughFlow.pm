@@ -88,7 +88,7 @@ sub is_duplicate_payment {
         require_objects => ['payment'],
         query           => [
             transaction_type => $args->{transaction_type},
-            (defined($args->{transaction_id}) and length($args->{transaction_id}))
+            length($args->{transaction_id} // '')
             ? (
                 or => [
                     trace_id       => $args->{trace_id},
