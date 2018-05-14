@@ -54,7 +54,6 @@ my $CLIENT_STATUS_TYPES = {
     jp_knowledge_test_pending        => 1,
     jp_knowledge_test_fail           => 1,
     jp_activation_pending            => 1,
-    # store merchant txn id passed to EPG, so that we can call EPG
     # status api call by passing this to get bank details provided
     jp_transaction_detail => 1,
     # we migrated client to single login and kept single login
@@ -67,8 +66,9 @@ my $CLIENT_STATUS_TYPES = {
     document_needs_action  => 1,
     professional_requested => 1,
     professional           => 1,
-    proveid_pending        => 0,
-    proveid_requested      => 0,
+    # TODO (Amin): Find a way to add a config for hidden status codes (prove_*)
+    proveid_pending   => 1,
+    proveid_requested => 1,
 };
 
 sub client_status_types { return $CLIENT_STATUS_TYPES }
