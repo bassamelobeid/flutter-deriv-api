@@ -99,9 +99,6 @@ rpc "cashier", sub {
             message_to_client => $validation->{error}->{message_to_client}}) if exists $validation->{error};
 
     my ($brand, $currency) = (Brands->new(name => request()->brand), $client->default_account->currency_code);
-    if ($provider eq 'epg') {
-        return _get_epg_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language}, $brand->name);
-    }
 
     if (LandingCompany::Registry::get_currency_type($currency) eq 'crypto') {
         return _get_cryptocurrency_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language}, $brand->name);
@@ -245,10 +242,6 @@ sub _get_handoff_token_key {
     return $handoff_token->key;
 }
 
-sub _get_epg_cashier_url {
-    return _get_cashier_url('epg', @_);
-}
-
 sub _get_cryptocurrency_cashier_url {
     return _get_cashier_url('cryptocurrency', @_);
 }
@@ -264,17 +257,9 @@ sub _get_cashier_url {
 
     my $url = 'https://';
     if (($website_name // '') =~ /qa/) {
-        if ($prefix eq 'epg') {
-            $url .= 'www.' . lc($website_name) . "/$prefix";
-        } else {
-            $url .= 'www.' . lc($website_name) . "/cryptocurrency/$prefix";
-        }
+        $url .= 'www.' . lc($website_name) . "/cryptocurrency/$prefix";
     } else {
-        if ($prefix eq 'epg') {
-            $url .= "$prefix.binary.com/$prefix";
-        } else {
-            $url .= "cryptocurrency.binary.com/cryptocurrency/$prefix";
-        }
+        $url .= "cryptocurrency.binary.com/cryptocurrency/$prefix";
     }
 
     $url .=
