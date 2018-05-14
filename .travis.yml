@@ -24,6 +24,7 @@ env:
     - TEST_SUITE=SDEQ_benchmark_SSECOMP
     - TEST_SUITE=SDEQ_benchmark_FTSE
     - TEST_SUITE=OVRA_benchmark
+    - TEST_SUITE=perl-Pricing-Engine-European-Digital-Slope
 
 notifications:
     slack:
@@ -52,6 +53,7 @@ before_install:
       regentmarkets/bom-market
       regentmarkets/bom-quant-benchmark
       binary-com/translations-websockets-api
+      regentmarkets/perl-Pricing-Engine-European-Digital-Slope
 
     - /tmp/travis-scripts/postgres_restart.sh
     - /tmp/travis-scripts/redis.sh
@@ -70,7 +72,7 @@ install:
 
 script:
     - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
-    - if [[ $TEST_SUITE == *"benchmark"* ]]; then ( cd /home/git/regentmarkets/bom-quant-benchmark && make $TEST_SUITE ); else make $TEST_SUITE; fi
+    - if [[ $TEST_SUITE == *"benchmark"* ]]; then ( cd /home/git/regentmarkets/bom-quant-benchmark && make $TEST_SUITE ); elif [[ $TEST_SUITE == *"Engine"* ]]; then (cd /home/git/regentmarkets/$TEST_SUITE && make test); else make $TEST_SUITE; fi
 
 after_script:
     - /tmp/travis-scripts/wait_for_ssh.sh
