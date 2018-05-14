@@ -299,12 +299,14 @@ sub check_predicates {
             if ($amt != $trace_amt);
     }
 
+    my $transaction_id = $args->{transaction_id} // '';
     if (
         $doughflow_datamapper->is_duplicate_payment({
                 payment_processor => $processor,
                 transaction_type  => $c->type,
                 trace_id          => $trace_id,
-                transaction_id    => $args->{transaction_id}}))
+                transaction_id    => $transaction_id,
+            }))
     {
         $rejection =
               "Detected duplicate transaction ["
@@ -314,7 +316,7 @@ sub check_predicates {
             . " with trace id "
             . $trace_id
             . " and transaction id "
-            . ($args->{transaction_id} // '');
+            . $transaction_id;
     }
 
     return $rejection;
