@@ -62,6 +62,14 @@ before_install:
       regentmarkets/bom-quant-benchmark
       binary-com/translations-websockets-api
       regentmarkets/perl-Pricing-Engine-European-Digital-Slope
+      regentmarkets/perl-Pricing-Engine-BlackScholes
+      regentmarkets/perl-Pricing-Engine-Digits
+      regentmarkets/perl-Pricing-Engine-HighLow-Ticks
+      regentmarkets/perl-Pricing-Engine-Intraday-Forex-Base
+      regentmarkets/perl-Pricing-Engine-Lookback
+      regentmarkets/perl-Pricing-Engine-Markup
+      regentmarkets/perl-Pricing-Engine-Reset
+      regentmarkets/perl-Pricing-Engine-TickExpiry
 
     - /tmp/travis-scripts/postgres_restart.sh
     - /tmp/travis-scripts/redis.sh
