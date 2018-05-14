@@ -353,18 +353,20 @@ sub calculate_limits {
     $limits{max_open_bets} = $lim if defined $lim;
     $limits{max_payout_open_bets} = $client->get_limit_for_payout unless $contract->tick_expiry;
 
-    # only pass true values if global limit checks are enabled.
-    # actual checks happens in the database
-    my $app_config = BOM::Platform::Runtime->instance->app_config;
-    foreach my $check_name (qw(global_potential_loss global_realized_loss)) {
-        my $method       = 'enable_' . $check_name;
-        my $alert_method = $check_name . '_alert_threshold';
-        if ($app_config->quants->$method) {
-            $limits{$check_name} = {
-                per_market => 1,
-                per_symbol => 1,
-                threshold  => $app_config->quants->$alert_method,
-            };
+    unless ($client->is_virtual) {
+        # only pass true values if global limit checks are enabled.
+        # actual checks happens in the database
+        my $app_config = BOM::Platform::Runtime->instance->app_config;
+        foreach my $check_name (qw(global_potential_loss global_realized_loss)) {
+            my $method       = 'enable_' . $check_name;
+            my $alert_method = $check_name . '_alert_threshold';
+            if ($app_config->quants->$method) {
+                $limits{$check_name} = {
+                    per_market => 1,
+                    per_symbol => 1,
+                    threshold  => $app_config->quants->$alert_method,
+                };
+            }
         }
     }
 
