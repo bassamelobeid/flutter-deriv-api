@@ -865,14 +865,15 @@ sub cookie_string {
 }
 
 sub real_account_siblings_information {
-    my ($self, $no_disabled) = @_;
+    my ($self, %args) = @_;
+    my $include_disabled = $args{include_disabled} // 1;
 
     my $user = $self->user;
     # return empty if we are not able to find user, this should not
     # happen but added as additional check
     return {} unless $user;
 
-    my @clients = $user->clients(include_disabled => !$no_disabled);
+    my @clients = $user->clients(include_disabled => $include_disabled);
 
     # filter out virtual clients
     @clients = grep { not $_->is_virtual } @clients;
