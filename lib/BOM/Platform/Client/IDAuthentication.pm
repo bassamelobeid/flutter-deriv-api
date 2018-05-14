@@ -57,15 +57,32 @@ sub do_proveid {
     my $self   = shift;
     my $client = $self->client;
 
-    my $prove_id_result = $self->_fetch_proveid || {};
-    my $skip_request_for_id;
-
     my $set_status = sub {
         my ($status, $reason, $description) = @_;
+        $description //= $reason;
         $self->_notify($reason, $description) if $status ne 'age_verification';
-        $client->set_status($status, 'system', $reason);
-        $client->save;
+        return $client->set_status($status, 'system', $reason);
     };
+
+    my $prove_id_result = $self->_fetch_proveid;
+    my $skip_request_for_id;
+
+    # Do not send ID Authentication email if Experian request has failed, setting the user to unwelcome status
+    unless ($prove_id_result) {
+        $set_status->(
+            'unwelcome',
+            'FailedExperian - Unable to fetch the Experian results',
+            'User put in unwelcome until Experian results are available'
+        )->save;
+        return undef;
+    }
+
+    my $unwelcome_status = $client->get_status('unwelcome');
+
+    if ($unwelcome_status and $unwelcome_status->reason =~ /FailedExperian/) {
+        $self->_notify('Unblock unwelcomed user', 'Experian result is now fetched correctly');
+        $client->clr_status('unwelcome', 'system', 'Experian result is now available');
+    }
 
     # deceased or fraud => disable the client
     if ($prove_id_result->{deceased} or $prove_id_result->{fraud}) {
@@ -80,14 +97,14 @@ sub do_proveid {
         my $type;
         # Office of Foreign Assets Control, HM Treasury => disable the client
         if (($type) = grep { /(OFAC|BOE)/ } @{$prove_id_result->{matches}}) {
-            $set_status->('disabled', "$type match", "$type match");
+            $set_status->('disabled', "$type match");
         }
         # Director is ok, no unwelcome, no documents request
         elsif (grep { /Directors/ } @{$prove_id_result->{matches}}) {
         }
         # Politically Exposed => unwelcome client
         elsif ((($type) = grep { /(PEP)/ } @{$prove_id_result->{matches}})) {
-            $set_status->('unwelcome', "$type match", "$type match");
+            $set_status->('unwelcome', "$type match");
         } else {
             $set_status->('unwelcome', 'EXPERIAN PROVE ID RETURNED MATCH', join(', ', @{$prove_id_result->{matches}}));
         }
@@ -103,10 +120,13 @@ sub do_proveid {
         $skip_request_for_id = 1;
     }
 
+    # Save the latest changes to client status to avoid multiple calls to the DB
+    $client->save;
+
     # unwelcome status will be set up there
     return $self->_request_id_authentication unless $skip_request_for_id;
 
-    return;
+    return undef;
 }
 
 sub _request_id_authentication {
@@ -171,7 +191,7 @@ sub _fetch_proveid {
     if ($premise =~ /^(\d+)/) {
         $premise = $1;
     }
-    my $result = {};
+    my $result;
     try {
         $client->set_status('proveid_requested');
         $client->set_status('proveid_pending');
@@ -181,6 +201,9 @@ sub _fetch_proveid {
             premise       => $premise,
             force_recheck => $self->force_recheck
         )->get_result;
+        # Workaround to distinguish failed search from failed request
+        # Failed search = user not found, failed request = error contacting Experian
+        $result //= {};
         $client->clr_status('proveid_pending');
     }
     catch {
