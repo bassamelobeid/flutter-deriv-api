@@ -25,6 +25,14 @@ env:
     - TEST_SUITE=SDEQ_benchmark_FTSE
     - TEST_SUITE=OVRA_benchmark
     - TEST_SUITE=perl-Pricing-Engine-European-Digital-Slope
+    - TEST_SUITE=perl-Pricing-Engine-BlackScholes
+    - TEST_SUITE=perl-Pricing-Engine-Digits
+    - TEST_SUITE=perl-Pricing-Engine-HighLow-Ticks
+    - TEST_SUITE=perl-Pricing-Engine-Intraday-Forex-Base
+    - TEST_SUITE=perl-Pricing-Engine-Lookback
+    - TEST_SUITE=perl-Pricing-Engine-Markup
+    - TEST_SUITE=perl-Pricing-Engine-Reset
+    - TEST_SUITE=perl-Pricing-Engine-TickExpiry
 
 notifications:
     slack:
