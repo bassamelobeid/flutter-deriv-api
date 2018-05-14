@@ -42,7 +42,8 @@ my $first_entry_mlt = [
         ["endsinout",    "Ends Between/Ends Outside",  "2m", "365d"],
         ["staysinout",   "Stays Between/Goes Outside", "2m", "365d"],
         ["digits",       "Digits",                     "5t", "10t"],
-        ["asian",        "Asians",                     "5t", "10t"]]];
+        ["asian",        "Asians",                     "5t", "10t"],
+        ["callputequal", "Rise/Fall Equal",            "5t", "365d"]]];
 my $first_entry_cr_mf = [
     "frxAUDJPY",
     "AUD/JPY",
@@ -51,7 +52,8 @@ my $first_entry_cr_mf = [
         ["callput",      "Rise/Fall",                  "5t", "365d"],
         ["touchnotouch", "Touch/No Touch",             "1d", "365d"],
         ["endsinout",    "Ends Between/Ends Outside",  "1d", "365d"],
-        ["staysinout",   "Stays Between/Goes Outside", "1d", "365d"]]];
+        ["staysinout",   "Stays Between/Goes Outside", "1d", "365d"],
+        ["callputequal", "Rise/Fall Equal",            "3m", "365d"]]];
 
 subtest "$method logged in - no arg" => sub {
     my $params = {
