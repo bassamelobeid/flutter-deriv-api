@@ -156,8 +156,7 @@ has data_cache_size => (
 );
 
 sub _build_data_cache_size {
-    my $self   = shift;
-    my $market = $self->market;
+    my $self = shift;
 
 # We added 1 min here as a buffer,
 # Now both forex and volidx is 31 mins.
