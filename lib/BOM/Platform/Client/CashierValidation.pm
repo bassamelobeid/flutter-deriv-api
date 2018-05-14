@@ -169,7 +169,7 @@ Used to validate withdrawal request before forwarding
 to external cashiers
 
 As of now doughflow have these checks in their code
-but EPG and crypto cashier need it explicitly
+but crypto cashier needs it explicitly
 
 =cut
 
