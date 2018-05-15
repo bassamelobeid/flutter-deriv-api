@@ -13,6 +13,7 @@ use BOM::Database::Model::OAuth;
 
 use BOM::Test::RPC::Client;
 use Test::BOM::RPC::Contract;
+use Email::Stuffer::TestLinks;
 
 my $email  = 'test@binary.com';
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({

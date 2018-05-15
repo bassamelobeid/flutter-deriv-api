@@ -16,6 +16,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Database::Model::AccessToken;
 use BOM::Database::ClientDB;
 use BOM::Database::Model::OAuth;
+use Email::Stuffer::TestLinks;
 
 use utf8;
 

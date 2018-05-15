@@ -12,6 +12,7 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::User;
 use BOM::Database::Model::OAuth;
 use BOM::User::Password;
+use Email::Stuffer::TestLinks;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 

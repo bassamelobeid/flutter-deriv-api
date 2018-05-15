@@ -9,6 +9,7 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::User;
 use BOM::RPC::v3::Accounts;
 use BOM::Database::Model::OAuth;
+use Email::Stuffer::TestLinks;
 use utf8;
 use Data::Dumper;
 
