@@ -3,6 +3,7 @@ use warnings;
 
 use BOM::RPC::v3::EmailVerification qw(email_verification);
 use Test::Most;
+use Email::Stuffer::TestLinks;
 
 my $code             = 'RANDOM_CODE';
 my $website_name     = 'My website name';

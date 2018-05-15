@@ -17,6 +17,7 @@ use BOM::User::Password;
 use BOM::Platform::Token;
 use BOM::User;
 use BOM::User::Client;
+use Email::Stuffer::TestLinks;
 
 my ($t, $rpc_ct);
 my $client_mocked = Test::MockModule->new('BOM::User::Client');

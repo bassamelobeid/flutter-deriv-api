@@ -11,6 +11,7 @@ use Encode;
 use JSON::MaybeXS;
 use Encode qw(encode);
 use Email::Folder::Search;
+use Email::Stuffer::TestLinks;
 
 use Format::Util::Numbers qw/formatnumber/;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);

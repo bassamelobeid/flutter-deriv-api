@@ -8,6 +8,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use BOM::User::Password;
+use Email::Stuffer::TestLinks;
 
 use utf8;
 
