@@ -364,6 +364,8 @@ sub get_client_currency_information {
 sub validate_make_new_account {
     my ($client, $account_type, $request_data) = @_;
 
+    return permission_error() if (not $account_type and $account_type !~ /^(?:real|financial|japan)$/);
+
     my $residence = $client->residence;
     return create_error({
             code              => 'NoResidence',
@@ -405,10 +407,8 @@ sub validate_make_new_account {
 
         # some countries don't have gaming company like Singapore
         # but we do allow them to open only financial account
-        return;
+        return undef;
     }
-
-    return permission_error() if $client->is_virtual;
 
     my $landing_company_name = $client->landing_company->short;
 
@@ -416,7 +416,7 @@ sub validate_make_new_account {
     # directly from virtual for Germany as residence, from iom
     # or from maltainvest itself as we support multiple account now
     # so upgrade is only allow once
-    if (($account_type and $account_type eq 'maltainvest') and $landing_company_name =~ /^(?:malta|iom)$/) {
+    if (($account_type and $account_type eq 'financial') and $landing_company_name =~ /^(?:malta|iom)$/) {
         # return error if client already has maltainvest account
         return create_error({
                 code              => 'FinancialAccountExists',
@@ -433,10 +433,23 @@ sub validate_make_new_account {
         $landing_company_name = 'maltainvest';
     }
 
-    # we have real account, and going to create another one
-    # So, lets populate all sensitive data from current client, ignoring provided input
-    # this logic should gone after we separate new_account with new_currency for account
-    $request_data->{$_} = $client->$_ for qw/first_name last_name residence address_city phone date_of_birth address_line_1/;
+    if ($client->is_virtual) {
+        my @landing_company_clients;
+        if ($account_type eq 'real') {
+            @landing_company_clients = $client->user->clients_for_landing_company($gaming_company);
+        } else {
+            @landing_company_clients = $client->user->clients_for_landing_company($financial_company);
+        }
+
+        return permission_error() if (any { not $_->get_status('duplicate_account') } @landing_company_clients);
+    } else {
+        # we have real account, and going to create another one
+        # So, lets populate all sensitive data from current client, ignoring provided input
+        # this logic should gone after we separate new_account with new_currency for account
+        foreach (qw/first_name last_name residence address_city phone date_of_birth address_line_1/) {
+            $request_data->{$_} = $client->$_;
+        }
+    }
 
     my $error = create_error({
             code              => 'NewAccountLimitReached',
@@ -454,6 +467,8 @@ sub validate_make_new_account {
                 message_to_client =>
                     localize('Please set the currency for your existing account [_1], in order to create more accounts.', $loginid_no_curr)});
     }
+
+    return _currency_type_error() if ($request_data->{currency} and not _is_currency_allowed($siblings, $request_data->{currency}));
 
     # check if all currencies are exhausted i.e.
     # - if client has one type of fiat currency don't allow them to open another
@@ -479,7 +494,6 @@ sub validate_set_currency {
     my ($client, $currency) = @_;
 
     my $siblings = $client->real_account_siblings_information;
-
     # is virtual check is already done in set account currency
     # but better to have it here as well so that this sub can
     # be pluggable
@@ -487,19 +501,32 @@ sub validate_set_currency {
 
     $siblings = filter_siblings_by_landing_company($client->landing_company->short, $siblings);
 
-    # check if currency is fiat or crypto
-    my $type  = LandingCompany::Registry::get_currency_type($currency);
-    my $error = create_error({
+    return _currency_type_error() unless _is_currency_allowed($siblings, $currency);
+
+    return undef;
+}
+
+sub _currency_type_error {
+    return create_error({
             code              => 'CurrencyTypeNotAllowed',
             message_to_client => localize('Please note that you are limited to one account per currency type.')});
+}
+
+sub _is_currency_allowed {
+    my $siblings = shift;
+    my $currency = shift;
+
+    # check if currency is fiat or crypto
+    my $type = LandingCompany::Registry::get_currency_type($currency);
+
     # if fiat then check if client has already any fiat, if yes then don't allow
-    return $error
+    return 0
         if ($type eq 'fiat'
         and grep { (LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) // '') eq 'fiat' } keys %$siblings);
     # if crypto check if client has same crypto, if yes then don't allow
-    return $error if ($type eq 'crypto' and grep { $currency eq ($siblings->{$_}->{currency} // '') } keys %$siblings);
+    return 0 if ($type eq 'crypto' and grep { $currency eq ($siblings->{$_}->{currency} // '') } keys %$siblings);
 
-    return undef;
+    return 1;
 }
 
 sub validate_uri {

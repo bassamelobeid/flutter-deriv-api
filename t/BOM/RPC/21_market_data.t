@@ -14,6 +14,7 @@ use LandingCompany::Registry;
 
 use BOM::Test::RPC::Client;
 use BOM::RPC::v3::MarketData;
+use Email::Stuffer::TestLinks;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 

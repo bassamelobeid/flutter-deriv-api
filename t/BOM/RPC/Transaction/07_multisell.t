@@ -12,6 +12,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use Test::BOM::RPC::Contract;
 use BOM::Transaction;
+use Email::Stuffer::TestLinks;
 
 {
     use BOM::Database::Model::AccessToken;
