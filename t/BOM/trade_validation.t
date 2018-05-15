@@ -100,7 +100,7 @@ my $mock_call = Test::MockModule->new('BOM::Product::Contract::Call');
 subtest 'IOM withdrawal limit' => sub {
     plan tests => 5;
 
-    my $withdraw_limit = LoadFile('/home/git/regentmarkets/bom-user/config/payment_limits.yml')->{withdrawal_limits}->{iom}->{limit_for_days};
+    my $withdraw_limit = BOM::User::Client::payment_limits()->{withdrawal_limits}->{iom}->{limit_for_days};
 
     $client->payment_free_gift(
         currency     => 'GBP',
