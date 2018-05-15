@@ -13,6 +13,7 @@ use BOM::RPC::v3::Accounts;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
+use Email::Stuffer::TestLinks;
 
 ## do not send email
 my $client_mocked = Test::MockModule->new('BOM::User::Client');

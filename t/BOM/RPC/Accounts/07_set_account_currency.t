@@ -8,6 +8,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::User;
 use BOM::Database::Model::OAuth;
+use Email::Stuffer::TestLinks;
 use utf8;
 use Data::Dumper;
 

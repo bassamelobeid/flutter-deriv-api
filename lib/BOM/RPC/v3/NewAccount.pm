@@ -259,12 +259,6 @@ rpc new_account_real => sub {
                 message_to_client => $error_map->{$err}});
     }
 
-    # call was done with currency flag
-    if ($args->{currency}) {
-        $error = BOM::RPC::v3::Utility::validate_set_currency($client, $args->{currency});
-        return $error if $error;
-    }
-
     my $user = $client->user;
 
     my ($clients, $professional_status, $professional_requested) = _get_professional_details_clients($user, $args);
@@ -351,7 +345,7 @@ rpc new_account_maltainvest => sub {
     return BOM::RPC::v3::Utility::permission_error()
         if ($client->landing_company->short !~ /^(?:virtual|malta|maltainvest|iom)$/);
 
-    my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'maltainvest', $args);
+    my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'financial', $args);
     return $error if $error;
 
     my $error_map = BOM::RPC::v3::Utility::error_map();

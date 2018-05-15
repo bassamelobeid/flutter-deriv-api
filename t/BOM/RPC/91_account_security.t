@@ -11,6 +11,7 @@ use BOM::User::Password;
 use BOM::Database::Model::AccessToken;
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use Email::Stuffer::TestLinks;
 
 my ($t, $rpc_ct);
 my $params = {

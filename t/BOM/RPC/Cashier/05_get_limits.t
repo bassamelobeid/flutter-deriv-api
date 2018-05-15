@@ -14,6 +14,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::RPC::Client;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::RiskProfile;
+use Email::Stuffer::TestLinks;
 
 use Postgres::FeedDB::CurrencyConverter qw/in_USD amount_from_to_currency/;
 

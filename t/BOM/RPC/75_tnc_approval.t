@@ -10,6 +10,7 @@ use BOM::Database::Model::AccessToken;
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Static;
+use Email::Stuffer::TestLinks;
 
 ## TRICKY but works
 my $version    = 1;

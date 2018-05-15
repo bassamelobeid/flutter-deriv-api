@@ -420,11 +420,11 @@ We are legally required to verify each client's identity and address. Therefore,
 Valid driving licence, identity card, or passport
 Utility bill or bank statement issued within the past six months
 
-Please <a href='//www.binary.com/[_2]/user/authenticate.html'>upload scanned copies</a> of the above documents, or email them to support\@binary.com within five days of receipt of this email to keep your account active.
+Please <a href=\"https://www.binary.com/[_2]/user/authenticate.html\">upload scanned copies</a> of the above documents, or email them to support\@binary.com within five days of receipt of this email to keep your account active.
 
 We look forward to hearing from you soon.
 
-Regard,
+Regards,
 
 Binary.com
 ", $client->full_name, $language
@@ -437,7 +437,8 @@ Binary.com
             subject               => localize('Authenticate your account to continue trading on MT5'),
             message               => [$client_email_template],
             use_email_template    => 1,
-            email_content_is_html => 1
+            email_content_is_html => 1,
+            skip_text2html        => 1
         });
     }
     catch {
