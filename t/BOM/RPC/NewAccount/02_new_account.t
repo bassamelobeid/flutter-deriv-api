@@ -204,6 +204,19 @@ subtest $method => sub {
         my ($resp_loginid, $t, $uaf) =
             @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
         is $resp_loginid, $new_loginid, 'correct oauth token';
+
+        my $new_client = BOM::User::Client->new({loginid => $new_loginid});
+        $new_client->set_status('duplicate_account', 'system', 'reason');
+        $new_client->save;
+
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
+            sub { shift->{landing_company} },
+            'Binary (C.R.) S.A.',
+            'It should return new account data'
+            )->result_value_is(sub { shift->{landing_company_shortcode} },
+            'costarica', 'It should return new account data if one of the account is marked as duplicate');
+        $new_loginid = $rpc_ct->result->{client_id};
+        ok $new_loginid =~ /^CR\d+$/, 'new CR loginid';
     };
 
 };
@@ -265,7 +278,7 @@ subtest $method => sub {
         $params->{token} = $auth_token;
 
         my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
-        is $result->{error}->{code}, 'InsufficientAccountDetails', 'It should return error if client residense does not fit for maltainvest';
+        is $result->{error}->{code}, 'InvalidAccount', 'It should return error if client residense does not fit for maltainvest';
 
         $client->residence('de');
         $client->save;
