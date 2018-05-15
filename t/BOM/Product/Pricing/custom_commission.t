@@ -135,15 +135,15 @@ subtest 'barrier tier' => sub {
         [0.00001, 'frxAUDUSD', 'CALLE', 100, 99.99899, 'ITM_max', 0.35],
         [0.00001, 'frxAUDUSD', 'CALLE', 100, 99.99849, 'ITM_max', 0.35],
         # ITM PUT. 0 commission because it is not defined
-        [0.001, 'frxUSDJPY', 'PUT', 99.950, 100,    'ITM_1', 0.1],
-        [0.001, 'frxUSDJPY', 'PUT', 100,    99.950, 'OTM_1', 0],
+        [0.001, 'frxUSDJPY', 'PUTE', 99.950, 100,    'ITM_1', 0.1],
+        [0.001, 'frxUSDJPY', 'PUTE', 100,    99.950, 'OTM_1', 0],
         # ITM PUT. max still applies
-        [0.001, 'frxUSDJPY', 'PUT', 99.849, 100,    'ITM_max', 0.35],
-        [0.001, 'frxUSDJPY', 'PUT', 100,    99.849, 'OTM_max', 0.45],
+        [0.001, 'frxUSDJPY', 'PUTE', 99.849, 100,    'ITM_max', 0.35],
+        [0.001, 'frxUSDJPY', 'PUTE', 100,    99.849, 'OTM_max', 0.45],
         # OTM PUT
-        [0.001, 'frxUSDJPY', 'PUT', 100, 99.951, 'OTM_1', 0],
-        [0.001, 'frxUSDJPY', 'PUT', 100, 99.949, 'OTM_2', 0],
-        [0.001, 'frxUSDJPY', 'PUT', 100, 99.899, 'OTM_3', 0],
+        [0.001, 'frxUSDJPY', 'PUTE', 100, 99.951, 'OTM_1', 0],
+        [0.001, 'frxUSDJPY', 'PUTE', 100, 99.949, 'OTM_2', 0],
+        [0.001, 'frxUSDJPY', 'PUTE', 100, 99.899, 'OTM_3', 0],
     );
 
     foreach my $test (@test_cases) {

@@ -34,7 +34,7 @@ subtest 'callputequal' => sub {
     ok !$cat->is_path_dependent;
     ok $cat->barrier_at_start, 'barrier determined at start';
     is_deeply $cat->supported_expiries, ['intraday', 'daily', 'tick'];
-    cmp_bag $cat->available_types, ['CALL', 'CALLE', 'PUT', 'PUTE'];
+    cmp_bag $cat->available_types, ['CALLE', 'PUTE'];
 };
 
 subtest 'asian' => sub {
