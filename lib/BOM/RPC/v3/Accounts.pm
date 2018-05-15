@@ -526,9 +526,10 @@ rpc get_account_status => sub {
     {
         push(@status, 'financial_assessment_not_complete');
     } elsif ($shortcode =~ /^iom|malta|costarica$/
-        and $risk_classification eq 'high')
+        and $risk_classification eq 'high'
+        and $is_financial_info_incomplete)
     {
-        push(@status, 'financial_assessment_not_complete') if $is_financial_info_incomplete;
+        push(@status, 'financial_assessment_not_complete');
     }
 
     my $prompt_client_to_authenticate = 0;
