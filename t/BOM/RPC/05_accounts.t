@@ -713,7 +713,7 @@ subtest $method => sub {
     $test_client->set_status('duplicate_account');
     $test_client->save();
     cmp_deeply(
-        $c->tcall($method, {token => $token_21}),
+        $c->tcall($method, {token => $token1}),
         {
             status                        => bag(qw(financial_assessment_not_complete financial_information_not_complete)),
             risk_classification           => 'low',
