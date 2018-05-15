@@ -23,6 +23,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     });
 
 subtest 'config' => sub {
+    _create_ticks([['R_100', $now->epoch - 1, 100], ['R_100', $now->epoch + 1, 100.10]]);
     my $c = produce_contract({
         bet_type     => 'CALLSPREAD',
         underlying   => 'R_100',
@@ -32,6 +33,9 @@ subtest 'config' => sub {
         currency     => 'USD',
         payout       => 100,
     });
+    is $c->longcode->[0], 'Get a payout if exit spot is higher than low barrier at [_3] after [_2].';
+    is $c->longcode->[2][0], 'contract start time';
+    is $c->longcode->[3]->{value}, 18000;
     ok !$c->is_binary, 'non-binary';
     ok $c->two_barriers,       'two barriers';
     is $c->pricing_code,       'CALLSPREAD', 'pricing code is CALLSPREAD';
