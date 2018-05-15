@@ -693,7 +693,6 @@ subtest $method => sub {
     }
 
     # 'financial_assessment_not_complete' should not present when everything is complete
-    $data->{account_turnover}->{answer} = 'Less than $25,000';
     test_financial_assessment($data, 0, 'financial_assessment_not_complete should not present when questions are answered properly');
 
     # When some answers are empty
@@ -713,9 +712,9 @@ subtest $method => sub {
     $test_client->set_status('duplicate_account');
     $test_client->save();
     cmp_deeply(
-        $c->tcall($method, {token => $token1}),
+        $c->tcall($method, {token => $token_21}),
         {
-            status                        => bag(qw(financial_assessment_not_complete financial_information_not_complete)),
+            status                        => bag(qw(financial_information_not_complete trading_experience_not_complete)),
             risk_classification           => 'low',
             prompt_client_to_authenticate => '0',
         },
@@ -736,7 +735,7 @@ subtest $method => sub {
     cmp_deeply(
         $c->tcall($method, {token => $token_21}),
         {
-            status                        => bag(qw(financial_assessment_not_complete document_needs_action)),
+            status                        => bag(qw(financial_information_not_complete trading_experience_not_complete document_needs_action)),
             risk_classification           => 'low',
             prompt_client_to_authenticate => '1',
         },
@@ -749,7 +748,7 @@ subtest $method => sub {
     cmp_deeply(
         $c->tcall($method, {token => $token_21}),
         {
-            status                        => bag(qw(financial_assessment_not_complete document_under_review)),
+            status                        => bag(qw(financial_information_not_complete trading_experience_not_complete document_under_review)),
             risk_classification           => 'low',
             prompt_client_to_authenticate => '1',
         },
@@ -763,7 +762,7 @@ subtest $method => sub {
     cmp_deeply(
         $c->tcall($method, {token => $token_21}),
         {
-            status                        => bag(qw(financial_assessment_not_complete)),
+            status                        => bag(qw(financial_information_not_complete trading_experience_not_complete)),
             risk_classification           => 'low',
             prompt_client_to_authenticate => '0',
         },
@@ -776,7 +775,7 @@ subtest $method => sub {
     cmp_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status                        => bag(qw(authenticated)),
+            status                        => bag(qw(authenticated financial_assessment_not_complete financial_information_not_complete)),
             risk_classification           => 'low',
             prompt_client_to_authenticate => '1',
         },
@@ -787,8 +786,8 @@ subtest $method => sub {
     cmp_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status                        => bag(qw(age_verification authenticated)),
-            risk_classification           => 'low',
+            status              => bag(qw(financial_assessment_not_complete financial_information_not_complete age_verification authenticated)),
+            risk_classification => 'low',
             prompt_client_to_authenticate => '0',
         },
         'ok, authenticated and age verified'
