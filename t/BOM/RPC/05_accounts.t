@@ -691,10 +691,6 @@ subtest $method => sub {
         my $res = ((grep { $_ eq 'financial_assessment_not_complete' } @{$c->tcall($method, {token => $token1})->{status}}) == $is_present);
         ok($res, $msg);
     }
-    # When answer is '0', 'financial_assessment_not_complete' should not present
-    #         as '0' may be one of the acceptable answers for options in the future
-    $data->{account_turnover}->{answer} = '0';
-    test_financial_assessment($data, 0, 'financial_assessment_not_complete should not present when questions are answered properly');
 
     # 'financial_assessment_not_complete' should not present when everything is complete
     $data->{account_turnover}->{answer} = 'Less than $25,000';
@@ -719,7 +715,7 @@ subtest $method => sub {
     cmp_deeply(
         $c->tcall($method, {token => $token_21}),
         {
-            status                        => bag(qw(financial_assessment_not_complete)),
+            status                        => bag(qw(financial_assessment_not_complete financial_information_not_complete)),
             risk_classification           => 'low',
             prompt_client_to_authenticate => '0',
         },

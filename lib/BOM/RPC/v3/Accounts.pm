@@ -516,8 +516,10 @@ rpc get_account_status => sub {
     my $input_mappings = BOM::Platform::Account::Real::default::get_financial_input_mapping();
     my %financial_data = map { $_ => $params->{args}->{$_} } BOM::RPC::v3::Utility::keys_of_values $input_mappings;
 
-    my $is_financial_info_incomplete = any { !$financial_assessment->{$_} } keys $input_mappings->{financial_information};
-    my $is_trading_exp_incomplete    = any { !$financial_assessment->{$_} } keys $input_mappings->{trading_experience};
+    my $is_financial_info_incomplete =
+        any { !$financial_assessment->{$_} or !$financial_assessment->{$_}->{answer} } keys $input_mappings->{financial_information};
+    my $is_trading_exp_incomplete =
+        any { !$financial_assessment->{$_} or !$financial_assessment->{$_}->{answer} } keys $input_mappings->{trading_experience};
 
     push(@status, 'financial_information_not_complete') if $is_financial_info_incomplete;
     push(@status, 'trading_experience_not_complete')    if $is_trading_exp_incomplete;
