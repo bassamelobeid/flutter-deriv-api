@@ -99,7 +99,6 @@ subtest 'test prices across barriers' => sub {
             underlying   => $underlying,
             current_tick => $current_tick,
         });
-$DB::single=1;
         is $c->ask_price, $d->[1], "price is $d->[1] for barrier $d->[0]";
     }
 };
