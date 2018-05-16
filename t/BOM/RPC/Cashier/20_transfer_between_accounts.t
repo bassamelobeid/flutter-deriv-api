@@ -19,6 +19,7 @@ use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::Token;
+use Email::Stuffer::TestLinks;
 
 use utf8;
 

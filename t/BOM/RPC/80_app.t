@@ -15,6 +15,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Database::Model::AccessToken;
 use BOM::Test::RPC::Client;
 use Test::Mojo;
+use Email::Stuffer::TestLinks;
 
 my $test_client  = create_test_user();
 my $test_loginid = $test_client->loginid;

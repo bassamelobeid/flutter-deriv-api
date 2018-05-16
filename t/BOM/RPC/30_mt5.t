@@ -17,6 +17,7 @@ use BOM::Test::Helper::Client qw(create_client top_up);
 use BOM::MT5::User::Async;
 use BOM::Platform::Token;
 use BOM::User;
+use Email::Stuffer::TestLinks;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 my $json = JSON::MaybeXS->new;

@@ -9,6 +9,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use Email::Folder::Search;
+use Email::Stuffer::TestLinks;
 use List::Util qw( all );
 
 #########################################################

@@ -9,6 +9,7 @@ use BOM::User;
 use utf8;
 use BOM::Platform::Token;
 use BOM::Platform::Runtime;
+use Email::Stuffer::TestLinks;
 
 my $email_cr = 'abc@binary.com';
 my $dob      = '1990-07-09';
