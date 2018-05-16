@@ -60,6 +60,23 @@ override _build_app_markup_dollar_amount => sub {
     financialrounding('price', $self->currency, $self->app_markup_per_unit) * $self->multiplier;
 };
 
+override _validate_price => sub {
+    my $self = shift;
+
+    my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
+
+    my @err;
+    if (not $self->ask_price or $self->ask_price == 0) {
+        push @err,
+            {
+            message           => 'Lookbacks ask price can not be zero .',
+            message_to_client => [$ERROR_MAPPING->{InvalidNonBinaryPrice}],
+            };
+    }
+
+    return @err;
+};
+
 =head2 commission_per_unit
 
 Return commission of the contract in dollar amount for one unit, not percentage.

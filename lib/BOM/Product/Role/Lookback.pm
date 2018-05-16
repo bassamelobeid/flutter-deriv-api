@@ -147,23 +147,6 @@ sub get_ohlc_for_period {
     });
 }
 
-override _validate_price => sub {
-    my $self = shift;
-
-    my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
-
-    my @err;
-    if (not $self->ask_price or $self->ask_price == 0) {
-        push @err,
-            {
-            message           => 'Lookbacks ask price can not be zero .',
-            message_to_client => [$ERROR_MAPPING->{InvalidLookbacksPrice}],
-            };
-    }
-
-    return @err;
-};
-
 sub _build_pricing_engine_name {
     return 'Pricing::Engine::Lookback';
 }
