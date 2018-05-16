@@ -63,12 +63,7 @@ sub _collect_vol_ages {
         submarket => 'smart_fx'
     );
 
-    my @smart_indices = create_underlying_db->get_symbols_for(
-        market    => 'indices',
-        submarket => 'smart_index'
-    );
-
-    my @offer_underlyings = (@offered_forex, @offered_others, @smart_fx, @smart_indices);
+    my @offer_underlyings = (@offered_forex, @offered_others, @smart_fx);
 
     my @symbols = grep { !$skip_list{$_} } (@offer_underlyings, @quanto_currencies);
     foreach my $symbol (@symbols) {
@@ -86,9 +81,6 @@ sub _collect_vol_ages {
             }
         }
 
-        if ($market eq 'indices' and $underlying->submarket->name eq 'smart_index') {
-            $market = 'smart_index';
-        }
         stats_gauge($market . '_vol_age', $vol_age, {tags => ['tag:' . $symbol]});
     }
     return;
