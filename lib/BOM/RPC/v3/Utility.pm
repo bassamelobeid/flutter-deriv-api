@@ -216,18 +216,9 @@ sub check_authorization {
 
     return create_error({
             code              => 'DisabledClient',
-            message_to_client => localize('This account is unavailable.')}) unless is_account_available($client);
+            message_to_client => localize('This account is unavailable.')}) unless $client->is_available;
 
     return;
-}
-
-sub is_account_available {
-    my $client = shift;
-    my @unavailable_status = ('disabled', 'duplicate_account');
-    foreach my $status (@unavailable_status) {
-        return 0 if $client->get_status($status);
-    }
-    return 1;
 }
 
 sub is_verification_token_valid {
@@ -339,40 +330,6 @@ sub filter_siblings_by_landing_company {
     return {map { $_ => $siblings->{$_} } grep { $siblings->{$_}->{landing_company_name} eq $landing_company_name } keys %$siblings};
 }
 
-# TODO port to BOM::User::Client ?
-sub get_real_account_siblings_information {
-    my ($client, $no_disabled) = @_;
-
-    my $user = $client->user;
-    # return empty if we are not able to find user, this should not
-    # happen but added as additional check
-    return {} unless $user;
-
-    my @clients = ();
-    if ($no_disabled) {
-        @clients = $user->clients;
-    } else {
-        @clients = $user->clients(include_disabled => 1);
-    }
-
-    # filter out virtual clients
-    @clients = grep { not $_->is_virtual } @clients;
-
-    my $siblings;
-    foreach my $cl (@clients) {
-        my $acc = $cl->default_account;
-
-        $siblings->{$cl->loginid} = {
-            loginid              => $cl->loginid,
-            landing_company_name => $cl->landing_company->short,
-            currency             => $acc ? $acc->currency_code : '',
-            balance              => $acc ? formatnumber('amount', $acc->currency_code, $acc->balance) : "0.00",
-        };
-    }
-
-    return $siblings;
-}
-
 =head2 get_client_currency_information
 
     get_client_currency_information($siblings, $landing_company_name)
@@ -428,7 +385,7 @@ sub validate_make_new_account {
             message_to_client => $error_map->{'invalid residence'}}) if ($countries_instance->restricted_country($residence));
 
     # get all real account siblings
-    my $siblings = get_real_account_siblings_information($client);
+    my $siblings = $client->real_account_siblings_information;
 
     # if no real sibling is present then its virtual
     if (scalar(keys %$siblings) == 0) {
@@ -536,7 +493,7 @@ sub validate_make_new_account {
 sub validate_set_currency {
     my ($client, $currency) = @_;
 
-    my $siblings = get_real_account_siblings_information($client);
+    my $siblings = $client->real_account_siblings_information;
     # is virtual check is already done in set account currency
     # but better to have it here as well so that this sub can
     # be pluggable
