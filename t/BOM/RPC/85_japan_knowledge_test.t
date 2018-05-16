@@ -12,6 +12,7 @@ use BOM::Platform::Account::Virtual;
 use BOM::RPC::v3::NewAccount;
 use BOM::RPC::v3::Japan::NewAccount;
 use BOM::RPC::v3::Accounts;
+use Email::Stuffer::TestLinks;
 
 ## do not send email
 my $client_mocked = Test::MockModule->new('BOM::User::Client');

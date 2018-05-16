@@ -13,6 +13,7 @@ use Format::Util::Numbers qw( formatnumber );
 use BOM::RPC::v3::Cashier;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client qw( top_up );
+use Email::Stuffer::TestLinks;
 
 my ($agent, $payee, $payer, $test_currency, $test_amount, $testargs);
 

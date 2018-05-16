@@ -77,15 +77,11 @@ sub _get_upgradeable_landing_companies {
     if ($client->landing_company->short eq 'costarica') {
 
         # Get siblings of the current client
-        my $siblings = BOM::RPC::v3::Utility::get_real_account_siblings_information($client);
-
-        my ($fiat_check, $lc_num_crypto, $client_num_crypto) =
-            BOM::RPC::v3::Utility::get_client_currency_information($siblings, $client->landing_company->short);
-
-        my $cryptocheck = ($lc_num_crypto && $lc_num_crypto == $client_num_crypto);
+        my $siblings = $client->real_account_siblings_information;
 
         # Push to upgradeable_landing_companies, if possible to open another CR account
-        push @upgradeable_landing_companies, 'costarica' if (!$fiat_check || !$cryptocheck);
+        push @upgradeable_landing_companies, 'costarica'
+            if BOM::RPC::v3::Utility::get_available_currencies($siblings, $client->landing_company->short);
     }
 
     return \@upgradeable_landing_companies;
@@ -120,8 +116,7 @@ rpc authorize => sub {
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'AccountDisabled',
-            message_to_client => BOM::Platform::Context::localize("Account is disabled.")}
-    ) unless BOM::RPC::v3::Utility::is_account_available($client);
+            message_to_client => BOM::Platform::Context::localize("Account is disabled.")}) unless $client->is_available;
 
     my $user = $client->user;
     my $token_type;

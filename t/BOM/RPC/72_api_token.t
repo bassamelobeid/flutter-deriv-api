@@ -14,6 +14,7 @@ use BOM::User;
 use BOM::User::Client;
 use BOM::RPC::v3::Accounts;
 use BOM::Database::Model::AccessToken;
+use Email::Stuffer::TestLinks;
 
 # cleanup
 BOM::Database::Model::AccessToken->new->dbic->dbh->do("

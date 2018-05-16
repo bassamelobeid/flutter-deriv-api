@@ -27,6 +27,7 @@ use BOM::Test::Helper::Client qw( create_client top_up );
 use BOM::Test::RPC::Client;
 
 use Test::BOM::RPC::Contract;
+use Email::Stuffer::TestLinks;
 
 my %default_call_params = (
     client_ip  => '127.0.0.1',

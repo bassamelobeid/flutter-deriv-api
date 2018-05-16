@@ -10,6 +10,7 @@ use MojoX::JSON::RPC::Client;
 use Date::Utility;
 
 use BOM::Test::RPC::Client;
+use Email::Stuffer::TestLinks;
 
 use utf8;
 

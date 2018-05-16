@@ -7,6 +7,7 @@ use Test::Fatal;
 use Test::MockTime qw(:all);
 use File::Temp qw(tempfile);
 use YAML::XS qw(LoadFile DumpFile);
+use Email::Stuffer::TestLinks;
 
 use BOM::RPC::v3::Utility;
 

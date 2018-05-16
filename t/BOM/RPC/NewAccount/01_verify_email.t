@@ -15,6 +15,7 @@ use BOM::RPC::v3::Utility;
 use BOM::Database::Model::AccessToken;
 use Email::Folder::Search;
 use BOM::User;
+use Email::Stuffer::TestLinks;
 
 use utf8;
 

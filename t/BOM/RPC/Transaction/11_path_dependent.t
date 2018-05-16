@@ -14,6 +14,7 @@ use BOM::Database::Model::OAuth;
 
 use BOM::Test::RPC::Client;
 use Test::BOM::RPC::Contract;
+use Email::Stuffer::TestLinks;
 
 initialize_realtime_ticks_db();
 
