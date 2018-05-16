@@ -572,7 +572,6 @@ subtest 'batch-buy multiple databases and datadog', sub {
             ready_to_sell  => 0,    # obviously
         };
         is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
-
         check_datadog
             action_name => 'increment',
             data        => [
@@ -582,6 +581,7 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         virtual:yes
                         rmgenv:production
                         contract_class:higher_lower_bet
+                        landing_company:virtual
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
@@ -594,6 +594,7 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         virtual:yes
                         rmgenv:production
                         contract_class:higher_lower_bet
+                        landing_company:virtual
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
@@ -607,6 +608,7 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         virtual:yes
                         rmgenv:production
                         contract_class:higher_lower_bet
+                        landing_company:virtual
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
@@ -620,6 +622,7 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         virtual:yes
                         rmgenv:production
                         contract_class:higher_lower_bet
+                        landing_company:virtual
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
@@ -633,6 +636,7 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         virtual:no
                         rmgenv:production
                         contract_class:higher_lower_bet
+                        landing_company:virtual
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
@@ -646,6 +650,7 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         virtual:no
                         rmgenv:production
                         contract_class:higher_lower_bet
+                        landing_company:virtual
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
@@ -659,6 +664,7 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         virtual:no
                         rmgenv:production
                         contract_class:higher_lower_bet
+                        landing_company:virtual
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
@@ -672,6 +678,7 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         virtual:no
                         rmgenv:production
                         contract_class:higher_lower_bet
+                        landing_company:virtual
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
@@ -684,6 +691,7 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         virtual:yes
                         rmgenv:production
                         contract_class:higher_lower_bet
+                        landing_company:virtual
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
@@ -696,6 +704,7 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         virtual:yes
                         rmgenv:production
                         contract_class:higher_lower_bet
+                        landing_company:virtual
                         amount_type:payout
                         expiry_type:duration /
                 ]}];
