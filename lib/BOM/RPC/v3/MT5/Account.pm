@@ -280,7 +280,7 @@ async_rpc mt5_new_account => sub {
                     code              => 'FinancialAssessmentMandatory',
                     message_to_client => localize('Please complete financial assessment.')})
                 if any { !$client->financial_assessment->{$_} }
-            (keys %$input_mappings->{financial_information}, keys %$input_mappings->{trading_experience});
+            (keys %{$input_mappings->{financial_information}}, keys %{$input_mappings->{trading_experience}});
         }
 
         # populate mt5 agent account from manager id if applicable
