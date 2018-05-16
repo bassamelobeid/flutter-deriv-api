@@ -22,6 +22,7 @@ use BOM::Database::Model::OAuth;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
+use Email::Stuffer::TestLinks;
 
 use utf8;
 

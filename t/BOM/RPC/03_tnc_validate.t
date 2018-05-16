@@ -11,6 +11,7 @@ use BOM::RPC::v3::Accounts;
 use BOM::Database::Model::OAuth;
 use utf8;
 use Data::Dumper;
+use Email::Stuffer::TestLinks;
 
 my $email       = 'dummy@binary.com';
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({

@@ -6,6 +6,7 @@ use BOM::Test::RPC::Client;
 use Test::Most;
 use Test::Mojo;
 use Data::Dumper;
+use Email::Stuffer::TestLinks;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 subtest 'residence_list' => sub {
