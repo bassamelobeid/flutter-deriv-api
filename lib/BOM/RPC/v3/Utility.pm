@@ -102,6 +102,15 @@ sub validation_checks {
     return undef;
 }
 
+sub get_suspended_crypto_currencies {
+    my @suspended_currencies = split /,/, BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocurrencies;
+    s/^\s+|\s+$//g for @suspended_currencies;
+
+    my %suspended_currencies_hash = map { $_ => 1 } @suspended_currencies;
+
+    return \%suspended_currencies_hash;
+}
+
 sub get_token_details {
     my $token = shift;
 
@@ -330,26 +339,39 @@ sub filter_siblings_by_landing_company {
     return {map { $_ => $siblings->{$_} } grep { $siblings->{$_}->{landing_company_name} eq $landing_company_name } keys %$siblings};
 }
 
-=head2 get_client_currency_information
+=head2 get_available_currencies
 
-    get_client_currency_information($siblings, $landing_company_name)
+    get_available_currencies($siblings, $landing_company_name)
 
     Get the currency statuses (fiat and crypto) of the clients, based on the landing company.
 
 =cut
 
-sub get_client_currency_information {
+sub get_available_currencies {
     my ($siblings, $landing_company_name) = @_;
 
-    my $fiat_check = grep { ((LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency})) // '') eq 'fiat' } keys %$siblings;
-
+    # Get all the currencies (as per the landing company) and from client
     my $legal_allowed_currencies = LandingCompany::Registry::get($landing_company_name)->legal_allowed_currencies;
-    my $lc_num_crypto = grep { ($legal_allowed_currencies->{$_} // '') eq 'crypto' } keys %{$legal_allowed_currencies};
+    my @client_currencies = map { $siblings->{$_}->{currency} } keys %$siblings;
 
-    my $client_num_crypto = (grep { (LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) // '') eq 'crypto' } keys %$siblings)
-        // 0;
+    # Get available currencies for this landing company
+    my @available_currencies = @{filter_out_suspended_cryptocurrencies($landing_company_name)};
 
-    return ($fiat_check, $lc_num_crypto, $client_num_crypto);
+    # Check if client has a fiat currency or not
+    # If yes, then remove all fiat currencies
+    my $has_fiat = any { (LandingCompany::Registry::get_currency_type($_) // '') eq 'fiat' } @client_currencies;
+
+    if ($has_fiat) {
+        @available_currencies = grep { $legal_allowed_currencies->{$_} ne 'fiat' } @available_currencies;
+    }
+
+    # Filter out the cryptocurrencies used by client
+    @available_currencies = grep {
+        my $currency = $_;
+        !any(sub { $_ eq $currency }, @client_currencies)
+    } @available_currencies;
+
+    return @available_currencies;
 }
 
 =head2 validate_make_new_account
@@ -473,19 +495,10 @@ sub validate_make_new_account {
     # check if all currencies are exhausted i.e.
     # - if client has one type of fiat currency don't allow them to open another
     # - if client has all of allowed cryptocurrency
-    my ($fiat_check, $lc_num_crypto, $client_num_crypto) = get_client_currency_information($siblings, $landing_company_name);
+    my @available_currencies = get_available_currencies($siblings, $landing_company_name);
 
-    # check if client has fiat currency, if not then return as we
-    # allow them to open new account
-    return undef unless $fiat_check;
-
-    # check if landing company supports crypto currency
-    # else return error as client exhausted fiat currency
-    return $error unless $lc_num_crypto;
-
-    # send error if number of crypto account of client is same
-    # as number of crypto account supported by landing company
-    return $error if ($lc_num_crypto eq $client_num_crypto);
+    # Check if client can create anymore accounts, if currency is available. Otherwise, return error
+    return $error unless @available_currencies;
 
     return undef;
 }
@@ -696,9 +709,10 @@ sub filter_out_suspended_cryptocurrencies {
     my $landing_company_name = shift;
     my @currencies           = keys %{LandingCompany::Registry::get($landing_company_name)->legal_allowed_currencies};
 
-    my %suspended_currencies = map { $_ => 1 } split /,/, BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocurrencies;
+    my $suspended_currencies = get_suspended_crypto_currencies();
+
     my @valid_payout_currencies =
-        sort grep { !exists $suspended_currencies{$_} } @currencies;
+        sort grep { !exists $suspended_currencies->{$_} } @currencies;
     return \@valid_payout_currencies;
 }
 
