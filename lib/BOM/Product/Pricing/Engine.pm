@@ -17,7 +17,7 @@ extends 'BOM::Product::Pricing::Engine';
 =cut
 
 use Moose;
-use Math::Business::BlackScholes::Binaries;
+use Math::Business::BlackScholesMerton::Binaries;
 use Math::Util::CalculatedValue::Validatable;
 use YAML::XS qw(LoadFile);
 
@@ -74,7 +74,7 @@ sub BUILD {
 sub _build_formula {
     my $self = shift;
 
-    my $formula_name = 'Math::Business::BlackScholes::Binaries::' . lc $self->bet->pricing_code;
+    my $formula_name = 'Math::Business::BlackScholesMerton::Binaries::' . lc $self->bet->pricing_code;
 
     return \&$formula_name;
 }
@@ -134,7 +134,8 @@ sub _build_d2 {
     my $bet  = $self->bet;
     my $args = $bet->_pricing_args;
 
-    my $d2 = Math::Business::BlackScholes::Binaries::d2($args->{spot}, $args->{barrier1}, $args->{t}, $bet->discount_rate, $bet->mu, $args->{iv});
+    my $d2 =
+        Math::Business::BlackScholesMerton::Binaries::d2($args->{spot}, $args->{barrier1}, $args->{t}, $bet->discount_rate, $bet->mu, $args->{iv});
 
     my $d2_ret = Math::Util::CalculatedValue::Validatable->new({
         name        => 'd2',
