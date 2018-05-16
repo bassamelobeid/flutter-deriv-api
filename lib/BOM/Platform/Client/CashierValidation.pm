@@ -156,9 +156,10 @@ this will return false for currencies such as USD / GBP.
 
 sub is_crypto_currency_suspended {
     my $currency = shift or die "expected currency parameter";
+
     return 1 if BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocashier;
-    return 1 if grep { $currency eq $_ } split /,/, BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocurrencies;
-    return 0;
+
+    return BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocurrencies =~ /\Q$currency\E/;
 }
 
 =head2 pre_withdrawal_validation
