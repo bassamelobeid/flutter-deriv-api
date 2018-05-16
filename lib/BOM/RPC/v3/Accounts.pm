@@ -31,6 +31,7 @@ use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::RPC::v3::Japan::NewAccount;
 use BOM::Platform::Context qw (localize request);
+use BOM::Platform::Client::CashierValidation;
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Locale qw/get_state_by_id/;
@@ -1591,15 +1592,12 @@ rpc set_account_currency => sub {
 
     my ($client, $currency) = @{$params}{qw/client currency/};
 
-    # Get suspended currencies
-    my %suspended_currencies = map { $_ => 1 } split /,/, BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocurrencies;
-
     # Return an error if the currency is a suspended currency or if the currency chosen is not a legal currency
     return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidCurrency',
             message_to_client => localize("The provided currency [_1] is not applicable for this account.", $currency)})
         if (not $client->landing_company->is_currency_legal($currency)
-        or exists $suspended_currencies{$currency});
+        or BOM::Platform::Client::CashierValidation::is_crypto_currency_suspended($currency));
 
     # bail out if default account is already set
     return {status => 0} if $client->default_account;

@@ -11,7 +11,6 @@ use Email::Stuffer::TestLinks;
 
 use BOM::RPC::v3::Utility;
 
-
 (undef, my $rate_file) = tempfile();
 my $limits = {
     virtual_buy_transaction => {
