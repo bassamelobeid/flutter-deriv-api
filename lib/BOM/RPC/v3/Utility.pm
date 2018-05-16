@@ -102,6 +102,15 @@ sub validation_checks {
     return undef;
 }
 
+sub get_suspended_crypto_currencies {
+    my @suspended_currencies = split /,/, BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocurrencies;
+    s/^\s+|\s+$//g for @suspended_currencies;
+
+    my %suspended_currencies_hash = map { $_ => 1 } @suspended_currencies;
+
+    return \%suspended_currencies_hash;
+}
+
 sub get_token_details {
     my $token = shift;
 
@@ -216,18 +225,9 @@ sub check_authorization {
 
     return create_error({
             code              => 'DisabledClient',
-            message_to_client => localize('This account is unavailable.')}) unless is_account_available($client);
+            message_to_client => localize('This account is unavailable.')}) unless $client->is_available;
 
     return;
-}
-
-sub is_account_available {
-    my $client = shift;
-    my @unavailable_status = ('disabled', 'duplicate_account');
-    foreach my $status (@unavailable_status) {
-        return 0 if $client->get_status($status);
-    }
-    return 1;
 }
 
 sub is_verification_token_valid {
@@ -339,60 +339,39 @@ sub filter_siblings_by_landing_company {
     return {map { $_ => $siblings->{$_} } grep { $siblings->{$_}->{landing_company_name} eq $landing_company_name } keys %$siblings};
 }
 
-# TODO port to BOM::User::Client ?
-sub get_real_account_siblings_information {
-    my ($client, $no_disabled) = @_;
+=head2 get_available_currencies
 
-    my $user = $client->user;
-    # return empty if we are not able to find user, this should not
-    # happen but added as additional check
-    return {} unless $user;
-
-    my @clients = ();
-    if ($no_disabled) {
-        @clients = $user->clients;
-    } else {
-        @clients = $user->clients(include_disabled => 1);
-    }
-
-    # filter out virtual clients
-    @clients = grep { not $_->is_virtual } @clients;
-
-    my $siblings;
-    foreach my $cl (@clients) {
-        my $acc = $cl->default_account;
-
-        $siblings->{$cl->loginid} = {
-            loginid              => $cl->loginid,
-            landing_company_name => $cl->landing_company->short,
-            currency             => $acc ? $acc->currency_code : '',
-            balance              => $acc ? formatnumber('amount', $acc->currency_code, $acc->balance) : "0.00",
-        };
-    }
-
-    return $siblings;
-}
-
-=head2 get_client_currency_information
-
-    get_client_currency_information($siblings, $landing_company_name)
+    get_available_currencies($siblings, $landing_company_name)
 
     Get the currency statuses (fiat and crypto) of the clients, based on the landing company.
 
 =cut
 
-sub get_client_currency_information {
+sub get_available_currencies {
     my ($siblings, $landing_company_name) = @_;
 
-    my $fiat_check = grep { ((LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency})) // '') eq 'fiat' } keys %$siblings;
-
+    # Get all the currencies (as per the landing company) and from client
     my $legal_allowed_currencies = LandingCompany::Registry::get($landing_company_name)->legal_allowed_currencies;
-    my $lc_num_crypto = grep { ($legal_allowed_currencies->{$_} // '') eq 'crypto' } keys %{$legal_allowed_currencies};
+    my @client_currencies = map { $siblings->{$_}->{currency} } keys %$siblings;
 
-    my $client_num_crypto = (grep { (LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) // '') eq 'crypto' } keys %$siblings)
-        // 0;
+    # Get available currencies for this landing company
+    my @available_currencies = @{filter_out_suspended_cryptocurrencies($landing_company_name)};
 
-    return ($fiat_check, $lc_num_crypto, $client_num_crypto);
+    # Check if client has a fiat currency or not
+    # If yes, then remove all fiat currencies
+    my $has_fiat = any { (LandingCompany::Registry::get_currency_type($_) // '') eq 'fiat' } @client_currencies;
+
+    if ($has_fiat) {
+        @available_currencies = grep { $legal_allowed_currencies->{$_} ne 'fiat' } @available_currencies;
+    }
+
+    # Filter out the cryptocurrencies used by client
+    @available_currencies = grep {
+        my $currency = $_;
+        !any(sub { $_ eq $currency }, @client_currencies)
+    } @available_currencies;
+
+    return @available_currencies;
 }
 
 =head2 validate_make_new_account
@@ -428,7 +407,7 @@ sub validate_make_new_account {
             message_to_client => $error_map->{'invalid residence'}}) if ($countries_instance->restricted_country($residence));
 
     # get all real account siblings
-    my $siblings = get_real_account_siblings_information($client);
+    my $siblings = $client->real_account_siblings_information;
 
     # if no real sibling is present then its virtual
     if (scalar(keys %$siblings) == 0) {
@@ -516,19 +495,10 @@ sub validate_make_new_account {
     # check if all currencies are exhausted i.e.
     # - if client has one type of fiat currency don't allow them to open another
     # - if client has all of allowed cryptocurrency
-    my ($fiat_check, $lc_num_crypto, $client_num_crypto) = get_client_currency_information($siblings, $landing_company_name);
+    my @available_currencies = get_available_currencies($siblings, $landing_company_name);
 
-    # check if client has fiat currency, if not then return as we
-    # allow them to open new account
-    return undef unless $fiat_check;
-
-    # check if landing company supports crypto currency
-    # else return error as client exhausted fiat currency
-    return $error unless $lc_num_crypto;
-
-    # send error if number of crypto account of client is same
-    # as number of crypto account supported by landing company
-    return $error if ($lc_num_crypto eq $client_num_crypto);
+    # Check if client can create anymore accounts, if currency is available. Otherwise, return error
+    return $error unless @available_currencies;
 
     return undef;
 }
@@ -536,7 +506,7 @@ sub validate_make_new_account {
 sub validate_set_currency {
     my ($client, $currency) = @_;
 
-    my $siblings = get_real_account_siblings_information($client);
+    my $siblings = $client->real_account_siblings_information;
     # is virtual check is already done in set account currency
     # but better to have it here as well so that this sub can
     # be pluggable
@@ -734,9 +704,10 @@ sub filter_out_suspended_cryptocurrencies {
     my $landing_company_name = shift;
     my @currencies           = keys %{LandingCompany::Registry::get($landing_company_name)->legal_allowed_currencies};
 
-    my %suspended_currencies = map { $_ => 1 } split /,/, BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocurrencies;
+    my $suspended_currencies = get_suspended_crypto_currencies();
+
     my @valid_payout_currencies =
-        sort grep { !exists $suspended_currencies{$_} } @currencies;
+        sort grep { !exists $suspended_currencies->{$_} } @currencies;
     return \@valid_payout_currencies;
 }
 
