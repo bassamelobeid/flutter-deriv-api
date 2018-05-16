@@ -15,8 +15,8 @@ use Moose::Role;
 requires 'bet';
 
 use Math::Cephes::Matrix qw(mat);
-use Math::Business::BlackScholes::Binaries;
-use Math::Business::BlackScholes::NonBinaries;
+use Math::Business::BlackScholesMerton::Binaries;
+use Math::Business::BlackScholesMerton::NonBinaries;
 
 use BOM::Product::Pricing::Engine::BlackScholes;
 use BOM::Product::Pricing::Greeks::BlackScholes;
@@ -28,8 +28,8 @@ has [qw(priced_portfolios hedge_cost_matrix on_equities vol_spread vvv_matrix gr
 );
 
 my %analytic_functions = (
-    VANILLA_CALL => \&Math::Business::BlackScholes::NonBinaries::vanilla_call,
-    VANILLA_PUT  => \&Math::Business::BlackScholes::NonBinaries::vanilla_put,
+    VANILLA_CALL => \&Math::Business::BlackScholesMerton::NonBinaries::vanilla_call,
+    VANILLA_PUT  => \&Math::Business::BlackScholesMerton::NonBinaries::vanilla_put,
 );
 
 my %greek_functions = (

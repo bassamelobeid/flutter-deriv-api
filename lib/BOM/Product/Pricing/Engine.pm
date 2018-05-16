@@ -17,8 +17,8 @@ extends 'BOM::Product::Pricing::Engine';
 =cut
 
 use Moose;
-use Math::Business::BlackScholes::Binaries;
-use Math::Business::BlackScholes::NonBinaries;
+use Math::Business::BlackScholesMerton::Binaries;
+use Math::Business::BlackScholesMerton::NonBinaries;
 use Math::Util::CalculatedValue::Validatable;
 use YAML::XS qw(LoadFile);
 
@@ -76,8 +76,8 @@ sub _build_formula {
     my $self = shift;
 
     my $module =
-          $self->bet->payout_type eq 'binary'     ? 'Math::Business::BlackScholes::Binaries'
-        : $self->bet->payout_type eq 'non-binary' ? 'Math::Business::BlackScholes::NonBinaries'
+          $self->bet->payout_type eq 'binary'     ? 'Math::Business::BlackScholesMerton::Binaries'
+        : $self->bet->payout_type eq 'non-binary' ? 'Math::Business::BlackScholesMerton::NonBinaries'
         :                                           undef;
 
     die 'could not find formula to price ' . $self->bet->pricing_code unless $module;
@@ -142,7 +142,8 @@ sub _build_d2 {
     my $bet  = $self->bet;
     my $args = $bet->_pricing_args;
 
-    my $d2 = Math::Business::BlackScholes::Binaries::d2($args->{spot}, $args->{barrier1}, $args->{t}, $bet->discount_rate, $bet->mu, $args->{iv});
+    my $d2 =
+        Math::Business::BlackScholesMerton::Binaries::d2($args->{spot}, $args->{barrier1}, $args->{t}, $bet->discount_rate, $bet->mu, $args->{iv});
 
     my $d2_ret = Math::Util::CalculatedValue::Validatable->new({
         name        => 'd2',
