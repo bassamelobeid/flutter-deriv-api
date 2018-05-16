@@ -28,7 +28,7 @@ my %file_details = (
     },
     asians => {
         filename => module_path('Pricing::Engine::BlackScholes'),
-        hash     => '568ed7f0777bc9a0197d097acbce62eabb79505e'
+        hash     => 'b98e6d6b9428b0116fc65b79fff8153924bdbc3b'
     },
     digitsmatchdiffers => {
         filename => module_path('BOM::Product::Contract::Digitmatch'),
