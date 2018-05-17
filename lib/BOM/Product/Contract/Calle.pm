@@ -7,7 +7,6 @@ with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier', 'BOM::Pr
 use BOM::Product::Exception;
 
 sub ticks_to_expiry {
-    my $self = shift;
 
     # Add one since we want N ticks *after* the entry spot
     return shift->tick_count + 1;
