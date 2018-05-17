@@ -114,10 +114,10 @@ subtest 'ask/bid price' => sub {
     };
     my $c = produce_contract($args);
     is $c->multiplier, 100, 'multiplier is 100';
-    is $c->pricing_engine->theo_price, 0.479312425854497, 'theo price 0.479312425854497';
-    is $c->commission_per_unit, 0.01, 'commission per unit is base commission * theo probability per unit, at least 1 cent commission';
-    is $c->ask_price,           50,   'correct ask price';
-    is $c->bid_price,           48,   'correct bid price';
+    is $c->pricing_engine->theo_price, 0.9228300523766, 'theo price 0.9228300523766';
+    is $c->commission_per_unit, 0.013842450785649, '';
+    is $c->ask_price,           93.67,   'correct ask price';
+    is $c->bid_price,           91,   'correct bid price';
 };
 
 sub _create_ticks {
