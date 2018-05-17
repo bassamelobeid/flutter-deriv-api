@@ -69,20 +69,14 @@ sub do_proveid {
 
     # Do not send ID Authentication email if Experian request has failed, setting the user to unwelcome status
     unless ($prove_id_result) {
-        $set_status->(
-            'unwelcome',
-            'FailedExperian - Unable to fetch the Experian results',
-            'User put in unwelcome until Experian results are available'
-        )->save;
+        $client->set_status('unwelcome', 'system', 'FailedExperian - Unable to fetch the Experian results')->save;
         return undef;
     }
 
     my $unwelcome_status = $client->get_status('unwelcome');
 
-    if ($unwelcome_status and $unwelcome_status->reason =~ /FailedExperian/) {
-        $self->_notify('Unblock unwelcomed user', 'Experian result is now fetched correctly');
-        $client->clr_status('unwelcome', 'system', 'Experian result is now available');
-    }
+    $client->clr_status('unwelcome', 'system', 'Experian result is now available')
+        if ($unwelcome_status and $unwelcome_status->reason =~ /FailedExperian/);
 
     # deceased or fraud => disable the client
     if ($prove_id_result->{deceased} or $prove_id_result->{fraud}) {
