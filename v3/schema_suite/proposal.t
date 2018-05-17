@@ -160,10 +160,10 @@ test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive_negative.
 
 # callput spread
 test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_receive_callputspread.json',
-    '100', 'CALLSPREAD', 'frxUSDJPY', '7', 'd', '97.200', '97.150', 'Get a payout if exit spot is higher than low barrier at close on 2016-08-16.', '100.00', '100.00',
+    '100', 'CALLSPREAD', 'frxUSDJPY', '7', 'd', '97.200', '97.150', 'Get a payout if exit spot is higher than low barrier at close on 2016-08-16.', '53.40', '53.40',
     '97.140';
 
 test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_receive_callputspread.json',
-    '100', 'PUTSPREAD', 'frxUSDJPY', '7', 'd', '97.200', '97.150', 'Get a payout if exit spot is lower than high barrier at close on 2016-08-16.', '100.00', '100.00',
+    '100', 'PUTSPREAD', 'frxUSDJPY', '7', 'd', '97.200', '97.150', 'Get a payout if exit spot is lower than high barrier at close on 2016-08-16.', '50.09', '50.09',
     '97.140';
 finish;
