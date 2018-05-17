@@ -7,6 +7,7 @@ use BOM::Platform::Config;
 
 use List::Util qw( first );
 use Scalar::Util qw( looks_like_number );
+use Carp;
 
 ## no critic (RequireArgUnpacking)
 
@@ -56,7 +57,7 @@ sub get_default_plan {
 sub is_subordinate_affiliate {
     my ($self, $affiliate_id) = @_;
 
-    my $user = $self->get_user($affiliate_id) or die $self->errstr;
+    my $user = $self->get_user($affiliate_id) or croak $self->errstr;
 
     my $affiliate_variables = $user->{USER_VARIABLES}->{VARIABLE};
     $affiliate_variables = [$affiliate_variables] unless ref($affiliate_variables) eq 'ARRAY';
@@ -106,14 +107,14 @@ sub _find_affiliate_by_variable {
     my $user = $self->get_users(
         VARIABLE_NAME  => $variable_name,
         VARIABLE_VALUE => $value
-    ) or die $self->errstr;
+    ) or croak $self->errstr;
     return unless $user->{USER};    # no matches
 
     # many matches
-    die 'Search returned more than one user' if ref($user->{USER}) eq "ARRAY";
+    croak 'Search returned more than one user' if ref($user->{USER}) eq "ARRAY";
 
     my $affiliate_id = $user->{USER}->{ID} || '';
-    die "ID is not a number? [id:$affiliate_id] while searching for variable [$variable_name => $value]" unless looks_like_number($affiliate_id);
+    croak "ID is not a number? [id:$affiliate_id] while searching for variable [$variable_name => $value]" unless looks_like_number($affiliate_id);
 
     return $affiliate_id;
 }
@@ -121,21 +122,21 @@ sub _find_affiliate_by_variable {
 sub get_token {
     my ($self, $args_ref) = @_;
 
-    my $affiliate_id = $args_ref->{affiliate_id} or die 'Must pass affiliate_id to get_token';
+    my $affiliate_id = $args_ref->{affiliate_id} or croak 'Must pass affiliate_id to get_token';
 
     my $plan = $args_ref->{plan} || $self->get_default_plan($affiliate_id) || '';
     my $setup_id = $plan ? $self->_get_setup_id($plan) : '';
     if (not $setup_id) {
-        die "Unable to get Setup ID for affiliate[$affiliate_id], plan[$plan]";
+        croak "Unable to get Setup ID for affiliate[$affiliate_id], plan[$plan]";
     }
 
     my $token_info = $self->encode_token(
         USER_ID  => $affiliate_id,
         SETUP_ID => $setup_id,
         ($args_ref->{media_id}) ? (MEDIA_ID => $args_ref->{media_id}) : (),
-    ) or die $self->errstr;
+    ) or croak $self->errstr;
 
-    my $token = $token_info->{TOKEN} or die "Could not extract token from response.";
+    my $token = $token_info->{TOKEN} or croak "Could not extract token from response.";
     return $token;
 }
 
@@ -211,6 +212,7 @@ sub fetch_account_transactions {
         'TO_DATE'          => $args{TO_DATE},
     );
     my $r = $transactions->{TRANSACTION};
+    croak "No transactions found for $args{FROM_DATE} to $args{TO_DATE}" unless $r;
     my @all_transactions = (ref $r eq 'ARRAY') ? @$r : ($r);
 
     # Affiliates can have one of several different payment methods. One such
