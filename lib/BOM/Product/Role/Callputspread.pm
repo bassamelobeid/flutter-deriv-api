@@ -11,7 +11,7 @@ use BOM::Product::Exception;
 
 use constant {
     MINIMUM_BID_PRICE               => 0,
-    MINIMUM_COMMISSION_PER_CONTRACT => 0.1,    # 10 cents commission per contract
+    MINIMUM_COMMISSION_PER_CONTRACT => 0.5,    # 50 cents commission per contract
 };
 
 override '_build_ask_price' => sub {
@@ -20,6 +20,9 @@ override '_build_ask_price' => sub {
     my $ask_price          = $self->_ask_price_per_unit * $self->multiplier;
     my $commission_charged = $self->commission_per_unit * $self->multiplier;
 
+    # callput spread can have a price per unit for less than 1 cent for forex contracts.
+    # Hence, we removed the minimums on commission per unit and ask price per unit.
+    # But, we need to make sure we can at least 10 cents commission per contract.
     if ($commission_charged < MINIMUM_COMMISSION_PER_CONTRACT) {
         $ask_price = $ask_price - $commission_charged + MINIMUM_COMMISSION_PER_CONTRACT;
     }
