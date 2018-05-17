@@ -5,6 +5,7 @@ use Moose::Role;
 with 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::ExpireAtEnd', 'BOM::Product::Role::NonBinary';
 
 use LandingCompany::Commission qw(get_underlying_base_commission);
+use List::Util qw(max);
 use Pricing::Engine::Callputspread;
 
 use BOM::Product::Exception;
