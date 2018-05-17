@@ -5,7 +5,8 @@ use Moose::Role;
 with 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::ExpireAtEnd', 'BOM::Product::Role::NonBinary';
 
 use LandingCompany::Commission qw(get_underlying_base_commission);
-use List::Util qw(max);
+use Format::Util::Numbers qw/financialrounding/;
+use List::Util qw(min);
 use Pricing::Engine::Callputspread;
 
 use BOM::Product::Exception;
@@ -28,7 +29,7 @@ override '_build_ask_price' => sub {
         $ask_price = $ask_price - $commission_charged + MINIMUM_COMMISSION_PER_CONTRACT;
     }
 
-    $ask_price = max($self->maximum_ask_price, $ask_price);
+    $ask_price = min($self->maximum_ask_price, $ask_price);
 
     return financialrounding('price', $self->currency, $ask_price);
 };
