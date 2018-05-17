@@ -59,6 +59,14 @@ override _validate_price => sub {
             };
     }
 
+    if (abs($self->ask_price - $self->payout) < 0.001) {
+        push @err,
+            {
+            message           => 'buy price is equals to payout',
+            message_to_client => [$ERROR_MAPPING->{NoReturn}],
+            };
+    }
+
     return @err;
 };
 
