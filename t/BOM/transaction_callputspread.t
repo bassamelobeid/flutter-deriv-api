@@ -255,13 +255,14 @@ subtest 'offerings' => sub {
         high_barrier => 100,
         low_barrier  => 99,
     };
-    my $invalid_duration = 'Intraday duration not acceptable';
-    my $invalid_category = 'Invalid contract category';
+    my $invalid_duration         = 'Intraday duration not acceptable';
+    my $invalid_category         = 'Invalid contract category';
+    my $unauthorized_combination = 'trying unauthorised combination';
     foreach my $data ((
             ['R_100', '15s', 1],
             ['R_100',     '14s',   0, $invalid_duration],
-            ['frxUSDJPY', '2m',    1],
-            ['frxUSDJPY', '1m59s', 0, $invalid_duration],
+            ['frxUSDJPY', '2m',    0, $unauthorized_combination],
+            ['frxUSDJPY', '1m59s', 0, $unauthorized_combination],
             ['AEX',       '1d',    0, $invalid_category],
             ['frxXAGUSD', '1d',    0, $invalid_category]))
     {
