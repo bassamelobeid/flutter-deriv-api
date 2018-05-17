@@ -123,17 +123,15 @@ sub process {
         my $allowed_amount_type = $contract_class->allowed_amount_type;
 
         # due to the huge number of test cases where we pass in a payout, we will have to have this outer if condition
-        if ($contract_params->{amount_type}) {
+        if ($contract_params->{amount_type} and defined $contract_params->{amount}) {
             if ($allowed_amount_type->{$contract_params->{amount_type}}) {
                 # if amount_type and amount are defined, give them priority.
-                if ($contract_params->{amount} and $contract_params->{amount_type}) {
-                    if ($contract_params->{amount_type} eq 'payout') {
-                        $contract_params->{payout} = $contract_params->{amount};
-                    } elsif ($contract_params->{amount_type} eq 'stake') {
-                        $contract_params->{ask_price} = $contract_params->{amount};
-                    } else {
-                        $contract_params->{payout} = 0;    # if we don't know what it is, set payout to zero
-                    }
+                if ($contract_params->{amount_type} eq 'payout') {
+                    $contract_params->{payout} = $contract_params->{amount};
+                } elsif ($contract_params->{amount_type} eq 'stake') {
+                    $contract_params->{ask_price} = $contract_params->{amount};
+                } else {
+                    $contract_params->{payout} = 0;    # if we don't know what it is, set payout to zero
                 }
 
             } else {
