@@ -2,27 +2,10 @@ package BOM::Product::Role::NonBinary;
 
 use Moose::Role;
 
-requires 'theo_price', 'base_commission', 'multiplier', 'minimum_ask_price_per_unit', 'minimum_bid_price';
+requires 'theo_price', 'base_commission', 'multiplier', 'minimum_bid_price';
 
 use List::Util qw(max min);
 use Format::Util::Numbers qw/financialrounding/;
-
-=head2 MINIMUM_COMMISSION_PER_UNIT
-A minimum of 1 cent commission per unit.
-=cut
-
-use constant MINIMUM_COMMISSION_PER_UNIT => 0.01;
-
-override '_build_ask_price' => sub {
-    my $self = shift;
-
-    my $ask_price = financialrounding('price', $self->currency, $self->_ask_price_per_unit) * $self->multiplier;
-    if ($self->can('maximum_ask_price')) {
-        $ask_price = financialrounding('price', $self->currency, min($self->maximum_ask_price, $ask_price));
-    }
-
-    return $ask_price;
-};
 
 has _ask_price_per_unit => (
     is         => 'ro',
@@ -32,7 +15,9 @@ has _ask_price_per_unit => (
 sub _build__ask_price_per_unit {
     my $self = shift;
 
-    return max($self->minimum_ask_price_per_unit, $self->theo_price + $self->commission_per_unit + $self->app_markup_per_unit);
+    my $ask_price_per_unit = $self->theo_price + $self->commission_per_unit + $self->app_markup_per_unit;
+    return max($self->minimum_ask_price_per_unit, $ask_price_per_unit) if $self->can('minimum_ask_price_per_unit');
+    return $ask_price_per_unit;
 }
 
 override '_build_bid_price' => sub {
@@ -88,9 +73,10 @@ sub commission_per_unit {
     my $self = shift;
 
     # base_commission is in percentage
-    my $base = $self->base_commission;
-
-    return max(MINIMUM_COMMISSION_PER_UNIT, $self->pricing_engine->theo_price * $base);
+    my $base                = $self->base_commission;
+    my $commission_per_unit = $self->pricing_engine->theo_price * $base;
+    return max($self->minimum_commission_per_unit, $commission_per_unit) if $self->can('minimum_commission_per_unit');
+    return $commission_per_unit;
 }
 
 sub app_markup_per_unit {

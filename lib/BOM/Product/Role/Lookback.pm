@@ -16,12 +16,21 @@ use BOM::Market::DataDecimate;
 my $minimum_multiplier_config = LoadFile('/home/git/regentmarkets/bom/config/files/lookback_minimum_multiplier.yml');
 
 use constant {
-    MINIMUM_ASK_PRICE_PER_UNIT => 0.50,
-    MINIMUM_BID_PRICE          => 0,      # can't go negative
+    MINIMUM_ASK_PRICE_PER_UNIT  => 0.50,
+    MINIMUM_BID_PRICE           => 0,      # can't go negative
+    MINIMUM_COMMISSION_PER_UNIT => 0.01,
 };
 
 # forward declaration for 'requires' to work in BOM::Product::Role::NonBinary
 sub multiplier;
+
+override '_build_ask_price' => sub {
+    my $self = shift;
+
+    # for lookbacks, we are setting a minimum_ask_price_per_unit and a minimum_commission_per_unit.
+    # hence, the ask price is a simple price per unit multiplied by number of units.
+    return financialrounding('price', $self->currency, $self->_ask_price_per_unit) * $self->multiplier;
+};
 
 override _build_theo_price => sub {
     my $self = shift;
@@ -49,6 +58,10 @@ sub minimum_ask_price_per_unit {
 
 sub minimum_bid_price {
     return MINIMUM_BID_PRICE;
+}
+
+sub minimum_commission_per_unit {
+    return MINIMUM_COMMISSION_PER_UNIT;
 }
 
 =head2 minimum_multiplier

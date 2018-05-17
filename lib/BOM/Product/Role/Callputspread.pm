@@ -10,8 +10,23 @@ use Pricing::Engine::Callputspread;
 use BOM::Product::Exception;
 
 use constant {
-    MINIMUM_ASK_PRICE_PER_UNIT => 0.50,
-    MINIMUM_BID_PRICE          => 0,
+    MINIMUM_BID_PRICE               => 0,
+    MINIMUM_COMMISSION_PER_CONTRACT => 0.1,    # 10 cents commission per contract
+};
+
+override '_build_ask_price' => sub {
+    my $self = shift;
+
+    my $ask_price          = $self->_ask_price_per_unit * $self->multiplier;
+    my $commission_charged = $self->commission_per_unit * $self->multiplier;
+
+    if ($commission_charged < MINIMUM_COMMISSION_PER_CONTRACT) {
+        $ask_price = $ask_price - $commission_charged + MINIMUM_COMMISSION_PER_CONTRACT;
+    }
+
+    $ask_price = max($self->maximum_ask_price, $ask_price);
+
+    return financialrounding('price', $self->currency, $ask_price);
 };
 
 =head2 theo_price
@@ -70,10 +85,6 @@ sub multiplier {
     my $self = shift;
 
     return $self->payout / ($self->high_barrier->as_absolute - $self->low_barrier->as_absolute);
-}
-
-sub minimum_ask_price_per_unit {
-    return MINIMUM_ASK_PRICE_PER_UNIT;
 }
 
 sub minimum_bid_price {
