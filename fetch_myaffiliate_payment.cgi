@@ -2,18 +2,20 @@
 package main;
 use strict;
 use warnings;
+no indirect;
 
-use Getopt::Long;
-use Text::CSV;
-use IO::File;
+use Digest::MD5;
+use Path::Tiny;
 use Try::Tiny;
 use Fcntl qw/:flock O_RDWR O_CREAT/;
 use Brands;
 use BOM::MyAffiliates::PaymentToAccountManager;
+use BOM::Platform::Config;
 use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::Config qw/get_tmp_path_or_die/;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::Backoffice::Script::DocumentUpload -config => BOM::Platform::Config::third_party()->{myaffiliates};
 use BOM::Backoffice::Sysinit ();
 use f_brokerincludeall;
 
@@ -28,8 +30,7 @@ unless (request()->param('from') and request()->param('to')) {
     code_exit_BO();
 }
 
-my $from    = Date::Utility->new(request()->param('from'));
-my $to      = Date::Utility->new(request()->param('to'));
+my $expiry  = 3600;                    # 1 hour
 my $tmp_dir = get_tmp_path_or_die();
 
 my $lf = '/var/run/bom-daemon/fetch_myaffiliate_payment.lock';
@@ -44,71 +45,48 @@ flock $lock, LOCK_EX | LOCK_NB or do {
     code_exit_BO();
 };
 
-my $pid = fork;
-if (not defined $pid) {
-    print "An error has occurred -- cannot fork";
-} elsif ($pid) {
-    waitpid $pid, 0;
-    if ($?) {
-        print "An error has occurred -- child comes back with $?";
-    } else {
-        print "Fetch Myaffiliates payment triggered, info will be emailed soon to " . Brands->new(name => request()->brand)->emails('affiliates');
-    }
-} else {
-    # 1st, break parent/child relationship
-    require POSIX;
-    $pid = fork;
-    POSIX::_exit 1 unless defined $pid;
-    POSIX::_exit 0 if $pid;
-
-    truncate $lock, 0;
-    syswrite $lock, "$$\n";
-
-    # next daemonize
-    for my $fd (0 .. 1000) {
-        next if $fd == fileno $lock;
-        POSIX::close $fd;
-    }
-
-    POSIX::open("/dev/null", POSIX::O_RDONLY());    # stdin
-    POSIX::open("/dev/null", POSIX::O_WRONLY());    # stdout
-    POSIX::open("/dev/null", POSIX::O_WRONLY());    # stderr
-
-    $0 = "fetch myaffiliate payment info worker";   ## no critic (RequireLocalizedPunctuationVars)
-    POSIX::setsid;
-
-    $SIG{ALRM} = sub { truncate $lock, 0; POSIX::_exit 19 };    ## no critic (RequireLocalizedPunctuationVars)
-    alarm 900;
-
-    try {
-        my @csv_file_locs = BOM::MyAffiliates::PaymentToAccountManager->new(
+try {
+    my $from = Date::Utility->new(request()->param('from'));
+    my $to   = Date::Utility->new(request()->param('to'));
+    my $zip  = path(
+        BOM::MyAffiliates::PaymentToAccountManager->new(
             from    => $from,
             to      => $to,
             tmp_dir => $tmp_dir,
-        )->get_csv_file_locs;
+        )->get_csv_zip
+    );
+    my $csum = Digest::MD5->new->addfile($zip->openr)->hexdigest;
+    BOM::Backoffice::Script::DocumentUpload::upload($zip->basename, $zip, $csum) or die "Upload failed for @{[ $zip->basename ]}: $!";
 
-        my @message = ('"To BOM Account" affiliate payment CSVs are attached for review and upload into the affiliate payment backoffice tool.');
-        if (grep { $_ =~ /ERRORS/ } @csv_file_locs) {
-            push @message, '';
-            push @message,
-                'NOTE: There are reported ERRORS. Please CHECK AND FIX the erroneous transactions in MyAffiliates then work with SWAT to rerun the cronjob.';
-        }
+    my @message =
+        ('"To BOM Account" affiliate payment CSVs zip archive is linked below for review and upload into the affiliate payment backoffice tool.');
+    push @message, '';
+    push @message,
+        'NOTE: There may be reported ERRORS; if so, please CHECK AND FIX the erroneous transactions in MyAffiliates then work with SWAT to rerun the cronjob.';
 
-        my $brand = Brands->new(name => request()->brand);
-        send_email({
-            from       => $brand->emails('system'),
-            to         => $brand->emails('affiliates'),
-            subject    => 'Fetch Myaffiliates payment info: (' . $from->date_yyyymmdd . ' - ' . $to->date_yyyymmdd . ')',
-            message    => \@message,
-            attachment => \@csv_file_locs,
-        });
-        truncate $lock, 0;
-    }
-    catch {
-        warn("Error: $_");
-    };
+    push @message, '';
+    push @message, 'Please find the generated payment reports archive at the link below:';
+    push @message, 'NOTE: The link below is valid for 1 hour from the time of request, please download it immediately before this link expires.';
+    push @message, '';
+    push @message, BOM::Backoffice::Script::DocumentUpload::get_s3_url($zip->basename, $expiry);
 
-    POSIX::_exit 0;
+    my $brand = Brands->new(name => request()->brand);
+    send_email({
+        from    => $brand->emails('system'),
+        to      => $brand->emails('affiliates'),
+        subject => 'Fetch Myaffiliates payment info: (' . $from->date_yyyymmdd . ' - ' . $to->date_yyyymmdd . ')',
+        message => \@message,
+    });
+    truncate $lock, 0;
+
+    print "Fetch Myaffiliates payment triggered, info will be emailed soon to " . $brand->emails('affiliates');
 }
+catch {
+    my $error = $_;
+
+    warn "Error: $error";
+    $error =~ s/at .*$//;
+    print "An error has occurred -- $error\n";
+};
 
 code_exit_BO();
