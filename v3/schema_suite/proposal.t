@@ -159,11 +159,15 @@ test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_re
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive_negative.json', '-1', 'ASIANU', 'R_100', '5', 't';
 
 # callput spread
-test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_receive_callputspread.json',
-    '100', 'CALLSPREAD', 'frxUSDJPY', '7', 'd', '97.200', '97.150', 'Get a payout if exit spot is higher than low barrier at close on 2016-08-16.', '53.40', '53.40',
-    '97.140';
+test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_offerings_validation_error.json',
+    '100', 'CALLSPREAD', 'frxUSDJPY', '7', 'd', '97.200', '97.150';
+
+test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_offerings_validation_error.json',
+    '100', 'PUTSPREAD', 'frxUSDJPY', '7', 'd', '97.200', '97.150';
 
 test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_receive_callputspread.json',
-    '100', 'PUTSPREAD', 'frxUSDJPY', '7', 'd', '97.200', '97.150', 'Get a payout if exit spot is lower than high barrier at close on 2016-08-16.', '50.09', '50.09',
-    '97.140';
+    '100', 'CALLSPREAD', 'R_100', '7', 'd', '65258.00', '65208.19', 'Get a payout if the exit spot of Volatility 100 Index is higher than low barrier at close on 2016-08-16.', '47.95','47.95','65258.19';
+
+test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_receive_callputspread.json',
+    '100', 'PUTSPREAD', 'R_100', '7', 'd', '65258.00', '65208.19', 'Get a payout if the exit spot of Volatility 100 Index is lower than high barrier at close on 2016-08-16.', '53.54','53.54','65258.19';
 finish;
