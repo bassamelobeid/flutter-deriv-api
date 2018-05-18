@@ -97,7 +97,7 @@ my %summary_amount_by_currency;
 my @invalid_lines;
 my $line_number;
 my %client_to_be_processed;
-my $is_doughflow_credit = 0;
+my $is_transaction_id_required = 0;
 read_csv_row_and_callback(
     \@payment_lines,
     sub {
@@ -109,12 +109,12 @@ read_csv_row_and_callback(
         if ($format eq 'doughflow') {
             ($login_id, $action, $trace_id, $payment_processor, $currency, $amount, $statement_comment, $transaction_id) = @_;
             $payment_type = 'external_cashier';
-            if ($action eq 'credit') {
-                $is_doughflow_credit = 1;
-                $cols_expected       = 8;
+            if ($action eq 'credit' and $statement_comment !~ 'DoughFlow withdrawal_reversal') {
+                $is_transaction_id_required = 1;
+                $cols_expected              = 8;
             } else {
-                $is_doughflow_credit = 0;
-                $cols_expected       = 7;
+                $is_transaction_id_required = 0;
+                $cols_expected              = 7;
             }
         } else {
             ($login_id, $action, $payment_type, $currency, $amount, $statement_comment) = @_;
@@ -139,7 +139,7 @@ read_csv_row_and_callback(
             $client = eval { BOM::User::Client->new({loginid => $login_id}) } or $error = ($@ || 'No such client'), last;
             my $signed_amount = $action eq 'debit' ? $amount * -1 : $amount;
 
-            if ($is_doughflow_credit) {
+            if ($is_transaction_id_required) {
                 $error = "Transaction id is mandatory for doughflow credit"
                     if not $transaction_id or $transaction_id !~ '\w+';
                 $error = "Transaction id provided does not match with one provided in comment (it should be in format like: transaction_id=33232)."
@@ -182,7 +182,7 @@ read_csv_row_and_callback(
             trace_id          => $trace_id,
         );
 
-        $row{transaction_id} = $transaction_id if $is_doughflow_credit;
+        $row{transaction_id} = $transaction_id if $is_transaction_id_required;
 
         if ($error) {
             $client_account_table .= construct_row_line(%row, error => $error);
