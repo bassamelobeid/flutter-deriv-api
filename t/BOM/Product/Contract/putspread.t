@@ -117,7 +117,7 @@ subtest 'ask/bid price' => sub {
     is $c->pricing_engine->theo_price, 0.0771698461293069, 'theo price 0.0771698461293069';
     is $c->commission_per_unit, 0.0011575476919396;
     is $c->ask_price,           8.22,   'correct ask price';
-    is $c->bid_price,           8,   'correct bid price';
+    is $c->bid_price,           7.6,   'correct bid price';
 };
 
 sub _create_ticks {
