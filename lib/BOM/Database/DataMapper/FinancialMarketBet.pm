@@ -27,6 +27,7 @@ use BOM::Database::Model::FinancialMarketBet::DigitBet;
 use BOM::Database::Model::FinancialMarketBet::LookbackOption;
 use BOM::Database::Model::FinancialMarketBet::ResetBet;
 use BOM::Database::Model::FinancialMarketBet::HighLowTick;
+use BOM::Database::Model::FinancialMarketBet::CallputSpread;
 use Date::Utility;
 use Try::Tiny;
 
