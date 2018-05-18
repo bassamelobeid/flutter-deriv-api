@@ -80,7 +80,7 @@ my %financial_data = (
 
 my $financial_evaluation = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
 $test_client->financial_assessment({
-    data => Encode::encode_utf8($json->encode($financial_evaluation->{user_data})),
+    data => Encode::encode_utf8($json->encode($financial_evaluation)),
 });
 $test_client->save;
 
