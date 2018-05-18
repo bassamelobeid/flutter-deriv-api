@@ -66,23 +66,6 @@
                   },
                   "required": "1"
               },
-              "stocks": {
-                  "type": "array",
-                  "items": {
-                      "type": "object",
-                      "properties": {
-                          "name": {
-                              "type": "string",
-                              "pattern": "^OTC Stocks$"
-                          },
-                          "turnover_limit": {
-                              "type": "integer",
-                              "pattern": "^10000$"
-                          }
-                      }
-                  },
-                  "required": "1"
-              },
               "volidx": {
                   "type": "array",
                   "items": {
