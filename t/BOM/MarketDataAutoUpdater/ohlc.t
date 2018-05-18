@@ -91,24 +91,6 @@ subtest 'valid index' => sub {
 
 };
 
-subtest 'valid stocks' => sub {
-    my $updater = BOM::MarketDataAutoUpdater::OHLC->new(
-        file              => [$data_path . '/stocks.csv'],
-        directory_to_save => tempdir,
-    );
-    lives_ok {
-        update_combined_realtime(
-            underlying_symbol => 'FPFP',
-            datetime          => Date::Utility->new,
-            tick              => {quote => 33},
-        );
-
-        $updater->run();
-        ok($updater->report->{FPFP}->{success}, 'FPFP is updated');
-    }
-    'ohlc for FPFP updated successfully';
-};
-
 restore_time();
 subtest 'valid close' => sub {
     my $updater = BOM::MarketDataAutoUpdater::OHLC->new(
