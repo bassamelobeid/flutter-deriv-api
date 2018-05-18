@@ -33,7 +33,7 @@ override '_build_ask_price' => sub {
 
     # callput spread can have a price per unit for less than 1 cent for forex contracts.
     # Hence, we removed the minimums on commission per unit and ask price per unit.
-    # But, we need to make sure we can at least 10 cents commission per contract.
+    # But, we need to make sure we can at least 50 cents commission per contract.
     if ($commission_charged < MINIMUM_COMMISSION_PER_CONTRACT) {
         $ask_price = $ask_price - $commission_charged + MINIMUM_COMMISSION_PER_CONTRACT;
     }
