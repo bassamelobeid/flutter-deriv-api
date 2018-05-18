@@ -49,11 +49,11 @@ is $res->{error}->{code}, 'UnknownLandingCompany';
 ## residence_list
 $res = $t->await::residence_list({residence_list => 1});
 ok $res->{residence_list};
-is_deeply $res->{residence_list}->[102],
+is_deeply $res->{residence_list}->[101],
     {
     disabled  => 'DISABLED',
     value     => 'ir',
-    text      => 'Iran, Islamic Republic of',
+    text      => 'Iran',
     phone_idd => '98',
     disabled  => 'DISABLED'
     };
