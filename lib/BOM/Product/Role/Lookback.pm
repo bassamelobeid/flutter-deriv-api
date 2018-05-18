@@ -21,6 +21,15 @@ use constant {
     MINIMUM_COMMISSION_PER_UNIT => 0.01,
 };
 
+=head2 user_defined_multiplier
+We round price per unit to the nearest cent before multiplying it with the multiplier
+=cut
+
+has user_defined_multiplier => (
+    is      => 'ro',
+    default => 1,
+);
+
 # forward declaration for 'requires' to work in BOM::Product::Role::NonBinary
 sub multiplier;
 

@@ -16,6 +16,15 @@ use constant {
     MINIMUM_COMMISSION_PER_CONTRACT => 0.5,    # 50 cents commission per contract
 };
 
+=head2 user_defined_multiplier
+price per unit is not rounded to the nearest cent because we could get price below one cent.
+=cut
+
+has user_defined_multiplier => (
+    is      => 'ro',
+    default => 0,
+);
+
 override '_build_ask_price' => sub {
     my $self = shift;
 

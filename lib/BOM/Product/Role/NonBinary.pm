@@ -29,7 +29,8 @@ override '_build_bid_price' => sub {
         $bid_price = $self->value;
     } else {
         my $bid_price_per_unit = max($self->minimum_bid_price, $self->_ask_price_per_unit - 2 * $self->commission_per_unit);
-        $bid_price = financialrounding('price', $self->currency, $bid_price_per_unit) * $self->multiplier;
+        $bid_price_per_unit = financialrounding('price', $self->currency, $bid_price_per_unit) if $self->user_defined_multiplier;
+        $bid_price = $bid_price_per_unit * $self->multiplier;
     }
 
     if ($self->can('maximum_bid_price')) {
