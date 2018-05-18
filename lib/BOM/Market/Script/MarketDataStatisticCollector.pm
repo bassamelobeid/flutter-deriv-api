@@ -80,6 +80,7 @@ sub _collect_vol_ages {
                 $market = 'smart_fx';
             }
         }
+
         stats_gauge($market . '_vol_age', $vol_age, {tags => ['tag:' . $symbol]});
     }
     return;
