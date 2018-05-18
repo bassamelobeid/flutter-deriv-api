@@ -69,6 +69,7 @@ my %financial_data = (
     "income_source"                        => "Self-Employed",
     "net_income"                           => '$25,000 - $50,000',
     "estimated_worth"                      => '$100,000 - $250,000',
+    "account_turnover"                     => '$25,000 - $50,000',
     "occupation"                           => 'Managers',
     "employment_status"                    => "Self-Employed",
     "source_of_wealth"                     => "Company Ownership",
