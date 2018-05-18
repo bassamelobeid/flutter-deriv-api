@@ -4,8 +4,10 @@ use Moose::Role;
 
 requires 'theo_price', 'base_commission', 'multiplier', 'minimum_bid_price';
 
+use BOM::Platform::Config;
 use List::Util qw(max min);
 use Format::Util::Numbers qw/financialrounding/;
+use Scalar::Util qw(looks_like_number);
 
 has _ask_price_per_unit => (
     is         => 'ro',
@@ -62,6 +64,22 @@ override _validate_price => sub {
         return {
             message           => 'buy price is equals to payout',
             message_to_client => [$ERROR_MAPPING->{NoReturn}],
+        };
+    }
+
+    my $static     = BOM::Platform::Config::quants;
+    my $bet_limits = $static->{bet_limits};
+    # NOTE: this evaluates only the contract-specific payout limit. There may be further
+    # client-specific restrictions which are evaluated in B:P::Transaction.
+    my $per_contract_payout_limit = $static->{risk_profile}{$self->risk_profile->get_risk_profile}{payout}{$self->currency};
+    my @possible_payout_maxes = ($bet_limits->{maximum_payout}->{$self->currency}, $per_contract_payout_limit);
+
+    my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);
+
+    if ($self->payout > $payout_max) {
+        return {
+            message           => 'payout exceeded maximum allowed',
+            message_to_client => [$ERROR_MAPPING->{PayoutLimitExceeded}, $payout_max],
         };
     }
 

@@ -93,6 +93,7 @@ my $config = {
         SameTradingDayExpiry          => 'Contracts on this market with a duration of under 24 hours must expire on the same trading day.',
         SelectedTickNumberLimits      => 'Number of ticks must be between [_1] and [_2].',
         SettlementError               => 'An error occurred during contract settlement.',
+        PayoutLimitExceeded           => 'Maximum payout allowed is [_1].',
         StakePayoutLimits             => 'Minimum stake of [_1] and maximum payout of [_2].',
         TicksNumberLimits             => 'Number of ticks must be between [_1] and [_2].',
         TooManyHolidays               => 'Too many market holidays during the contract period.',
