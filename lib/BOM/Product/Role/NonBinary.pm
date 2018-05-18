@@ -51,24 +51,21 @@ override _validate_price => sub {
 
     my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
-    my @err;
     if (not $self->ask_price or $self->ask_price == 0) {
-        push @err,
-            {
+        return {
             message           => 'Lookbacks ask price can not be zero .',
             message_to_client => [$ERROR_MAPPING->{InvalidNonBinaryPrice}],
-            };
+        };
     }
 
     if (abs($self->ask_price - $self->payout) < 0.001) {
-        push @err,
-            {
+        return {
             message           => 'buy price is equals to payout',
             message_to_client => [$ERROR_MAPPING->{NoReturn}],
-            };
+        };
     }
 
-    return @err;
+    return;
 };
 
 =head2 commission_per_unit
