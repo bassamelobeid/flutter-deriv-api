@@ -447,7 +447,7 @@ subtest 'buy a bet', sub {
             cmp_ok $fmb->{id}, '>', 0, 'id';
             is $fmb->{account_id}, $acc_usd->id, 'account_id';
             is $fmb->{bet_class}, 'touch_bet', 'bet_class';
-            is $fmb->{bet_type},  'ONETOUCH',  'bet_type';
+            is $fmb->{bet_type},  'ONETOUCH',     'bet_type';
             is $fmb->{buy_price} + 0, 3.5, 'buy_price';
             is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
             cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
@@ -461,7 +461,7 @@ subtest 'buy a bet', sub {
             cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
             like $fmb->{short_code}, qr/ONETOUCH_R_50_100_/, 'short_code';
             cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
-            is $fmb->{tick_count},        5,      'tick_count';
+            is $fmb->{tick_count},        5,  'tick_count';
             is $fmb->{underlying_symbol}, 'R_50', 'underlying_symbol';
         };
 
