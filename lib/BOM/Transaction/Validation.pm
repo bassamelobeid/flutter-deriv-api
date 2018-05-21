@@ -545,8 +545,8 @@ sub _validate_stake_limit {
 
     my $stake_limit =
         $landing_company->short eq 'maltainvest'
-        ? BOM::Platform::Config::quants->{bet_limits}->{min_stake}->{maltainvest}->{default_market}->{$currency}
-        : $contract->staking_limits->{min};
+        ? BOM::Platform::Config::quants->{bet_limits}->{min_stake}->{maltainvest}->{$currency}
+        : $contract->staking_limits->{min};    # minimum is always a stake check
 
     if ($contract->ask_price < $stake_limit) {
         return Error::Base->cuss(

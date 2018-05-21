@@ -699,7 +699,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
             base_amount => 0.1 + $allowed_move + 0.001,
         });
         $mock_call->mock('ask_probability', sub { $ask_cv });
-        $mock_contract->mock('payout', sub { 10 / $ask_cv->amount });
+        $mock_contract->mock('payout',          sub { 10 / $ask_cv->amount });
 
         my $contract = produce_contract({
             underlying   => create_underlying('frxUSDJPY'),
@@ -742,8 +742,8 @@ subtest 'BUY - trade pricing adjustment' => sub {
             base_amount => 0.1 + $allowed_move - 0.001,
         });
         $mock_call->mock('ask_probability', sub { $ask_cv });
-        $mock_contract->mock('payout',    sub { 10 / $ask_cv->amount });
-        $mock_contract->mock('ask_price', sub { $ask_cv->amount * 100 });
+        $mock_contract->mock('payout',          sub { 10 / $ask_cv->amount });
+        $mock_contract->mock('ask_price',       sub { $ask_cv->amount * 100 });
         # amount_type = stake, payout decrease within range of allowed move
         $transaction = BOM::Transaction->new({
             client        => $client,
@@ -770,8 +770,8 @@ subtest 'BUY - trade pricing adjustment' => sub {
             base_amount => 0.1 - $allowed_move + 0.001,
         });
         $mock_call->mock('ask_probability', sub { $ask_cv });
-        $mock_contract->mock('ask_price', sub { $ask_cv->amount * 100 });
-        $mock_contract->mock('payout',    sub { 10 / $ask_cv->amount });
+        $mock_contract->mock('ask_price',       sub { $ask_cv->amount * 100 });
+        $mock_contract->mock('payout',          sub { 10 / $ask_cv->amount });
 
         $transaction = BOM::Transaction->new({
             client        => $client,
@@ -798,8 +798,8 @@ subtest 'BUY - trade pricing adjustment' => sub {
             base_amount => 0.1 - $allowed_move - 0.001,
         });
         $mock_call->mock('ask_probability', sub { $ask_cv });
-        $mock_contract->mock('ask_price', sub { $ask_cv->amount * 100 });
-        $mock_contract->mock('payout', sub { roundcommon(0.001, 10 / $ask_cv->amount) });
+        $mock_contract->mock('ask_price',       sub { $ask_cv->amount * 100 });
+        $mock_contract->mock('payout',          sub { roundcommon(0.001, 10 / $ask_cv->amount) });
 
         $transaction = BOM::Transaction->new({
             client        => $client,
@@ -1156,19 +1156,6 @@ subtest 'validate stake limit' => sub {
     }
     'error out on 0.49 stake for non MF borker';
     $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MF'});
-    $contract = produce_contract({
-        underlying      => create_underlying('frxUSDJPY'),
-        bet_type        => 'CALL',
-        currency        => 'GBP',
-        payout          => 100,
-        date_start      => $now,
-        date_expiry     => $now->epoch + 300,
-        date_pricing    => Date::Utility->new($now->epoch - 100),
-        current_tick    => $tick,
-        barrier         => 'S0P',
-        landing_company => 'maltainvest',
-    });
-    Test::MockObject::Extends->new($contract);
     $contract->mock('ask_price', sub { 5 });
     $transaction = BOM::Transaction->new({
         client        => $client,
