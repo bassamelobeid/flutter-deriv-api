@@ -19,8 +19,6 @@ use BOM::Backoffice::Script::DocumentUpload;
 use BOM::Backoffice::Sysinit ();
 use f_brokerincludeall;
 
-my $document_upload = BOM::Backoffice::Script::DocumentUpload->new(config => BOM::Platform::Config::third_party()->{myaffiliates});
-
 BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('Myaffiliate Payment');
@@ -58,6 +56,9 @@ try {
         )->get_csv_zip
     );
     my $csum = Digest::MD5->new->addfile($zip->openr)->hexdigest;
+
+    my $document_upload = BOM::Backoffice::Script::DocumentUpload->new(config => BOM::Platform::Config::third_party()->{myaffiliates});
+
     $document_upload->upload($zip->basename, $zip, $csum) or die "Upload failed for @{[ $zip->basename ]}: $!";
 
     my @message =

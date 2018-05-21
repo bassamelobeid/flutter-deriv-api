@@ -20,8 +20,6 @@ use BOM::Backoffice::FormAccounts;
 use BOM::Backoffice::Config;
 use BOM::Backoffice::Script::DocumentUpload;
 
-my $document_upload = BOM::Backoffice::Script::DocumentUpload->new(config => BOM::Backoffice::Config::config()->{document_auth_s3});
-
 sub get_currency_options {
     my $currency_options;
     foreach my $currency (@{request()->available_currencies}) {
@@ -491,6 +489,8 @@ SQL
         my $input = qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date" $extra>};
         $input .= qq{comments <input type="text" style="width:100px" maxlength="20" name="comments_$id" value="$comments" $extra>};
         $input .= qq{document id <input type="text" style="width:100px" maxlength="20" name="document_id_$id" value="$document_id" $extra>};
+
+        my $document_upload = BOM::Backoffice::Script::DocumentUpload->new(config => BOM::Backoffice::Config::config()->{document_auth_s3});
 
         my $url = $document_upload->get_s3_url($file_name);
 

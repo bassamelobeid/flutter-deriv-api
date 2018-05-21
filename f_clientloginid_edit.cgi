@@ -45,8 +45,6 @@ use constant MAX_FILE_SIZE => 3 * 2**20;
 
 BOM::Backoffice::Sysinit::init();
 
-my $document_upload = BOM::Backoffice::Script::DocumentUpload->new(config => BOM::Backoffice::Config::config()->{document_auth_s3});
-
 my %input = %{request()->params};
 
 PrintContentType();
@@ -300,6 +298,8 @@ if ($input{whattodo} eq 'uploadID') {
         my $file_id               = $query_result->{file_id};
         my $new_file_name         = "$loginid.$doctype.$file_id.$docformat";
         my $abs_path_to_temp_file = $cgi->tmpFileName($filetoupload);
+
+        my $document_upload = BOM::Backoffice::Script::DocumentUpload->new(config => BOM::Backoffice::Config::config()->{document_auth_s3});
 
         my $checksum = $document_upload->upload($new_file_name, $abs_path_to_temp_file, $file_checksum)
             or die "Upload failed for $filetoupload";
