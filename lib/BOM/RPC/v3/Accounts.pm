@@ -263,7 +263,7 @@ Returns a hashref of landing_company parameters
 =cut
 
 sub __build_landing_company {
-    my ($lc) = @_;
+    my $lc = shift;
 
     # Get suspended currencies and remove them from list of legal currencies
     my $payout_currencies = BOM::RPC::v3::Utility::filter_out_suspended_cryptocurrencies($lc->short);
@@ -277,8 +277,35 @@ sub __build_landing_company {
         legal_allowed_currencies          => $payout_currencies,
         legal_allowed_markets             => $lc->legal_allowed_markets,
         legal_allowed_contract_categories => $lc->legal_allowed_contract_categories,
-        has_reality_check                 => $lc->has_reality_check ? 1 : 0
-    };
+        has_reality_check                 => $lc->has_reality_check ? 1 : 0,
+        currency_config                   => _currency_config($payout_currencies, $lc->short, $lc->legal_allowed_markets)};
+}
+
+sub _currency_config {
+    my ($currencies, $lc, $markets) = @_;
+
+    my $bet_limits = BOM::Platform::Config::quants->{bet_limits};
+    my $lc_min     = $bet_limits->{min_stake}->{$lc} || $bet_limits->{min_stake}->{default_landing_company};
+    my $lc_max     = $bet_limits->{max_payout}->{$lc} || $bet_limits->{max_payout}->{default_landing_company};
+
+    my $config = {};
+
+    for my $market (@$markets) {
+
+        my $market_min = $lc_min->{$market} || $lc_min->{default_market};
+        my $market_max = $lc_max->{$market} || $lc_max->{default_market};
+
+        for my $currency (@$currencies) {
+
+            my $min_stake  = $market_min->{$currency};
+            my $max_payout = $market_max->{$currency};
+
+            $config->{$market}->{$currency}->{max_payout} = $max_payout;
+            $config->{$market}->{$currency}->{min_stake}  = $min_stake;
+        }
+    }
+
+    return $config;
 }
 
 rpc statement => sub {
