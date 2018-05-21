@@ -490,7 +490,10 @@ sub validate_make_new_account {
                     localize('Please set the currency for your existing account [_1], in order to create more accounts.', $loginid_no_curr)});
     }
 
-    return _currency_type_error() if ($request_data->{currency} and not _is_currency_allowed($siblings, $request_data->{currency}));
+    if ($request_data->{currency}) {
+        my $is_currency_allowed = _is_currency_allowed($client, $siblings, $request_data->{currency});
+        return _currency_type_error($is_currency_allowed->{message}) unless $is_currency_allowed->{allowed};
+    }
 
     # check if all currencies are exhausted i.e.
     # - if client has one type of fiat currency don't allow them to open another
@@ -514,32 +517,51 @@ sub validate_set_currency {
 
     $siblings = filter_siblings_by_landing_company($client->landing_company->short, $siblings);
 
-    return _currency_type_error() unless _is_currency_allowed($siblings, $currency);
+    my $is_currency_allowed = _is_currency_allowed($client, $siblings, $currency);
+    return _currency_type_error($is_currency_allowed->{message}) unless $is_currency_allowed->{allowed};
 
     return undef;
 }
 
 sub _currency_type_error {
+    my $message = shift;
     return create_error({
             code              => 'CurrencyTypeNotAllowed',
-            message_to_client => localize('Please note that you are limited to one account per currency type.')});
+            message_to_client => localize($message)});
 }
 
 sub _is_currency_allowed {
+    my $client   = shift;
     my $siblings = shift;
     my $currency = shift;
+
+    my $result = {
+        allowed => 0,
+        message => 'Please note that you are limited to one account per currency type.'
+    };
 
     # check if currency is fiat or crypto
     my $type = LandingCompany::Registry::get_currency_type($currency);
 
     # if fiat then check if client has already any fiat, if yes then don't allow
-    return 0
+    return $result
         if ($type eq 'fiat'
         and grep { (LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) // '') eq 'fiat' } keys %$siblings);
     # if crypto check if client has same crypto, if yes then don't allow
-    return 0 if ($type eq 'crypto' and grep { $currency eq ($siblings->{$_}->{currency} // '') } keys %$siblings);
+    return $result if ($type eq 'crypto' and grep { $currency eq ($siblings->{$_}->{currency} // '') } keys %$siblings);
+    # if currency is experimental and client is not allowed to use such currencies we don't allow
 
-    return 1;
+    my $allowed_accounts = BOM::Platform::Runtime->instance->app_config->payments->experimental_currencies_allowed;
+    my $client_email     = $client->email;
+    $result->{message} = 'Please note that the selected currency is allowed for limited accounts only';
+
+    return $result
+        if (LandingCompany::Registry::is_currency_experimental($currency)
+        and not any { /\Q$client_email\E/i } @$allowed_accounts);
+
+    $result->{allowed} = 1;
+
+    return $result;
 }
 
 sub validate_uri {
