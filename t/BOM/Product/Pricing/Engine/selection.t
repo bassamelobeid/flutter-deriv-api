@@ -14,6 +14,7 @@ use LandingCompany::Registry;
 use BOM::Product::ContractFinder;
 use BOM::Product::ContractFactory qw(produce_contract);
 use YAML::XS;
+use List::Util;
 
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db;
@@ -65,11 +66,17 @@ subtest 'test everything' => sub {
                 currency     => 'USD',
                 payout       => 100,
             };
-            if (grep {$ref->{contract_type} eq $_ } qw(LBFLOATCALL LBFLOATPUT LBHIGHLOW)) {
-                $contract_args->{multiplier} = 1;
+            if (List::Util::any { $ref->{contract_type} eq $_ } qw(LBFLOATCALL LBFLOATPUT LBHIGHLOW)) {
+                $contract_args->{multiplier}  = 1;
                 $contract_args->{amount_type} = 'multiplier';
-            } elsif (grep {$ref->{contract_type} eq $_} qw(TICKHIGH TICKLOW)) {
-                $contract_args->{selected_tick} =1;
+            } elsif (
+                List::Util::any {
+                    $ref->{contract_type} eq $_
+                }
+                qw(TICKHIGH TICKLOW)
+                )
+            {
+                $contract_args->{selected_tick} = 1;
             } else {
                 $contract_args = {%$contract_args, %barriers};
             }
