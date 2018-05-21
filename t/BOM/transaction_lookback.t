@@ -483,7 +483,6 @@ subtest 'buy a bet', sub {
     'survived';
 };
 
-
 subtest 'sell a bet', sub {
     plan tests => 10;
     lives_ok {
@@ -491,16 +490,16 @@ subtest 'sell a bet', sub {
         my $reset_time = guard { restore_time };
 
         my $contract = produce_contract({
-                underlying => $underlying_R50,
-                bet_type   => 'LBFLOATCALL',
-                currency   => 'USD',
-                multiplier   => 5,
-                amount_type  => 'multiplier',
-                duration   => '30m',
-                current_tick => $tick,
-                entry_tick   => $tick,
-                exit_tick    => $tick,
-                barrier      => 'S0P',
+            underlying   => $underlying_R50,
+            bet_type     => 'LBFLOATCALL',
+            currency     => 'USD',
+            multiplier   => 5,
+            amount_type  => 'multiplier',
+            duration     => '30m',
+            current_tick => $tick,
+            entry_tick   => $tick,
+            exit_tick    => $tick,
+            barrier      => 'S0P',
         });
         my $txn;
         #note 'bid price: ' . $contract->bid_price;
@@ -531,7 +530,7 @@ subtest 'sell a bet', sub {
             is $trx->{account_id}, $acc_usd->id, 'account_id';
             is $trx->{action_type}, 'sell', 'action_type';
             is $trx->{amount} + 0, $contract->bid_price, 'amount';
-            is $trx->{balance_after} + 0, 5000 - 2.5  + $contract->bid_price, 'balance_after';
+            is $trx->{balance_after} + 0, 5000 - 2.5 + $contract->bid_price, 'balance_after';
             is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $trx->{payment_id},    undef,                  'payment_id';
             is $trx->{quantity},      1,                      'quantity';
@@ -549,13 +548,13 @@ subtest 'sell a bet', sub {
             cmp_ok $fmb->{id}, '>', 0, 'id';
             is $fmb->{account_id}, $acc_usd->id, 'account_id';
             is $fmb->{bet_class}, 'lookback_option', 'bet_class';
-            is $fmb->{bet_type},  'LBFLOATCALL',             'bet_type';
+            is $fmb->{bet_type},  'LBFLOATCALL',     'bet_type';
             is $fmb->{buy_price} + 0, 2.5, 'buy_price';
             is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
             cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
             is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
-            is $fmb->{is_expired}, 0, 'is_expired';
-            is !$fmb->{is_sold},    !1, 'is_sold';
+            is $fmb->{is_expired},   0,     'is_expired';
+            is !$fmb->{is_sold}, !1, 'is_sold';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
             like $fmb->{remark}, qr/\btrade\[2\.50000\]/, 'remark';
             is $fmb->{sell_price} + 0, $contract->bid_price, 'sell_price';
@@ -601,7 +600,6 @@ subtest 'sell a bet', sub {
     }
     'survived';
 };
-
 
 subtest 'sell_expired_contracts', sub {
     plan tests => 7;
