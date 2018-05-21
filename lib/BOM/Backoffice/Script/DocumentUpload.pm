@@ -14,7 +14,7 @@ use constant UPLOAD_TIMEOUT => 120;
 sub new {
     my ($class, %args) = @_;
 
-    my $config = delete $args{config};
+    my $config = delete $args{config} || die "S3 config is required";
 
     # TODO: unify config keys across different s3 configs
     my $self = {
