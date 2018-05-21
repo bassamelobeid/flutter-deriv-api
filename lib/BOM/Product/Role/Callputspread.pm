@@ -13,7 +13,6 @@ use BOM::Product::Exception;
 
 use constant {
     MINIMUM_BID_PRICE               => 0,
-    MINIMUM_COMMISSION_PER_CONTRACT => 0.5,    # 50 cents commission per contract
 };
 
 =head2 user_defined_multiplier
@@ -25,6 +24,19 @@ has user_defined_multiplier => (
     default => 0,
 );
 
+has minimum_commission_per_contract => (
+    is         => 'ro',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
+sub _build_minimum_commission_per_contract {
+    my $self          = shift;
+    my $currency_type = LandingCompany::Registry::get_currency_type($self->currency);
+    my $minimum_commission  = $currency_type eq 'crypto' and $self->currency ne 'DAI' ? 0.00012 : 0.5;
+    return $minimum_commission;
+}
+
 override '_build_ask_price' => sub {
     my $self = shift;
 
@@ -34,8 +46,8 @@ override '_build_ask_price' => sub {
     # callput spread can have a price per unit for less than 1 cent for forex contracts.
     # Hence, we removed the minimums on commission per unit and ask price per unit.
     # But, we need to make sure we can at least 50 cents commission per contract.
-    if ($commission_charged < MINIMUM_COMMISSION_PER_CONTRACT) {
-        $ask_price = $ask_price - $commission_charged + MINIMUM_COMMISSION_PER_CONTRACT;
+    if ($commission_charged < $self->minimum_commission_per_contract) {
+        $ask_price = $ask_price - $commission_charged + $self->minimum_commission_per_contract;
     }
 
     $ask_price = min($self->maximum_ask_price, $ask_price);
