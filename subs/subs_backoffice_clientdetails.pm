@@ -659,4 +659,11 @@ sub get_untrusted_types {
     ];
 }
 
+sub get_open_contracts {
+    my $client = shift;
+    return BOM::Database::ClientDB->new({
+            client_loginid => $client->loginid,
+            operation      => 'replica',
+        })->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client->loginid, $client->currency, 'false']);
+}
 1;
