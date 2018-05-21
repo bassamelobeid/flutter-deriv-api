@@ -61,7 +61,7 @@ subtest everything => sub {
         like($updater->report->{error}->[0], qr/unregconized bloomberg symbol/i, 'added invalid Bloomberg symbol to skipped list');
         ok !$updater->report->{N225}->{success}, 'N225 failed to update because of invalid date';
         my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
-        my $underlying = create_underlying('N225');
+        my $underlying       = create_underlying('N225');
         SKIP: {
             # OHLC::_passes_sanity_check has no chance to produce correct error if market is closed for now
             skip "No tradings on weekends" unless $trading_calendar->trades_on($underlying->exchange, Date::Utility->new);

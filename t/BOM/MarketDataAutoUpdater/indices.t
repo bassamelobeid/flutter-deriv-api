@@ -19,7 +19,6 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Test::MockModule;
 
-
 # some checks hide failures output if market is no open
 # but tests still want it to fail, so let's make markets always open
 my $module = Test::MockModule->new('Finance::Calendar');
