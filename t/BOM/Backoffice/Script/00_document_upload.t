@@ -10,12 +10,11 @@ BEGIN {
 }
 
 my $config = {
-    document_auth_s3 => {
-        access_key => 'fake_access_key',
-        secret_key => 'fake_secret_key',
-        region     => 'fake_region',
-        bucket     => 'fake_bucket',
-    }};
+    access_key => 'fake_access_key',
+    secret_key => 'fake_secret_key',
+    region     => 'fake_region',
+    bucket     => 'fake_bucket',
+};
 
 use BOM::Backoffice::Script::DocumentUpload;
 
