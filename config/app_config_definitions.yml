@@ -113,6 +113,11 @@ payments:
                   isa: Num
                   default: 0.002
                   global: 1
+    experimental_currencies_allowed:
+      description: "List of emails that allowed to deposite using experimental currencies"
+      isa: ArrayRef
+      default: []
+      global: 1
 quants:
   description: "Various quants' parameters"
   isa: section
@@ -141,11 +146,6 @@ quants:
                   global: 1
                 commodities:
                   description: "The scaling factor for all commodities commissions. (percent of base commission. Example: Base commission is 3.5%, when you input 100%, the commission charge will be 3.5%. If you input 50%, the commission charge will only be 1.75%.)"
-                  isa: Num
-                  default: 100
-                  global: 1
-                stocks:
-                  description: "The scaling factor for all stocks commissions. (percent of base commission. Example: Base commission is 3.5%, when you input 100%, the commission charge will be 3.5%. If you input 50%, the commission charge will only be 1.75%.)"
                   isa: Num
                   default: 100
                   global: 1
