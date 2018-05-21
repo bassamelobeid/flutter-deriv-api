@@ -113,7 +113,6 @@ sub _init {
                                 'forex'       => '100',
                                 'indices'     => '100',
                                 'commodities' => '100',
-                                'stocks'      => '100',
                                 'volidx'      => '100',
                                 'config'      => '100',
                             }}
