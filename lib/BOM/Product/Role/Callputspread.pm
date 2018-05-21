@@ -8,11 +8,13 @@ use LandingCompany::Commission qw(get_underlying_base_commission);
 use Format::Util::Numbers qw/financialrounding/;
 use List::Util qw(min);
 use Pricing::Engine::Callputspread;
+use YAML::XS qw(LoadFile);
 
 use BOM::Product::Exception;
 
+my $minimum_commission_config = LoadFile('/home/git/regentmarkets/bom/config/files/callputspread_minimum_commission.yml');
 use constant {
-    MINIMUM_BID_PRICE               => 0,
+    MINIMUM_BID_PRICE => 0,
 };
 
 =head2 user_defined_multiplier
@@ -31,10 +33,9 @@ has minimum_commission_per_contract => (
 );
 
 sub _build_minimum_commission_per_contract {
-    my $self          = shift;
-    my $currency_type = LandingCompany::Registry::get_currency_type($self->currency);
-    my $minimum_commission  = $currency_type eq 'crypto' and $self->currency ne 'DAI' ? 0.00012 : 0.5;
-    return $minimum_commission;
+    my $self = shift;
+
+    return minimum_multiplier_config->{$self->currency};
 }
 
 override '_build_ask_price' => sub {
