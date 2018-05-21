@@ -67,7 +67,7 @@
         },
         "barrier": {
           "type": "string",
-          "description":"Barrier for the contract (or last digit prediction for digit contracts). Contracts less than 24 hours in duration would need a relative barrier (barriers which need +/-), where entry spot would be adjusted accordingly with that amount to define a barrier, except for Volatility Indices as they support both relative and absolute barriers. ",
+          "description":"Barrier for the contract (or last digit prediction for digit contracts). Contracts less than 24 hours in duration would need a relative barrier (barriers which need +/-), where entry spot would be adjusted accordingly with that amount to define a barrier, except for Volatility Indices as they support both relative and absolute barriers.",
           "pattern": "^[+-]?\\d+\\.?\\d*$"
         },
         "barrier2": {
