@@ -35,7 +35,7 @@ has minimum_commission_per_contract => (
 sub _build_minimum_commission_per_contract {
     my $self = shift;
 
-    return minimum_multiplier_config->{$self->currency};
+    return $minimum_multiplier_config->{$self->currency};
 }
 
 override '_build_ask_price' => sub {
