@@ -16,7 +16,7 @@ __PACKAGE__->meta->setup(
         amount           => { type => 'numeric' },
         fee              => { type => 'numeric' },
         transaction_type => { type => 'enum', check_in => [ 'deposit', 'withdrawal' ], db_type => 'payment.payment_txn_type', not_null => 1 },
-        status           => { type => 'enum', check_in => [ 'NEW', 'PENDING', 'CONFIRMED', 'LOCKED', 'VERIFIED', 'REJECTED', 'PROCESSING', 'SENT', 'ERROR', 'RESOLVED', 'PERFORMING_BLOCKCHAIN_TXN', 'MIGRATED' ], db_type => 'payment.ctc_status', not_null => 1 },
+        status           => { type => 'enum', check_in => [ 'NEW', 'PENDING', 'CONFIRMED', 'LOCKED', 'VERIFIED', 'REJECTED', 'PROCESSING', 'SENT', 'ERROR', 'RESOLVED', 'PERFORMING_BLOCKCHAIN_TXN', 'MIGRATED', 'APPROVING_BLOCKCHAIN_TXN' ], db_type => 'payment.ctc_status', not_null => 1 },
         payment_id       => { type => 'bigint' },
         ip_address       => { type => 'scalar' },
         remark           => { type => 'text' },
