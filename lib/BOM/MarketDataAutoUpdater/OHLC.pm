@@ -52,7 +52,7 @@ sub run {
     }
 
     my @symbols_to_update = create_underlying_db->get_symbols_for(
-        market            => ['stocks', 'indices'],
+        market            => ['indices'],
         contract_category => 'ANY',
         exclude_disabled  => 1,
     );
