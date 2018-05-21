@@ -738,7 +738,7 @@ if ($link_acc) {
 my $siblings;
 if ($user) {
     $siblings = $user->bom_loginid_details;
-    my @mt_logins = $user->mt5_logins;
+    my @mt_logins = sort map { $_->loginid } grep { $_->loginid =~ /^MT\d+$/ } $user->loginid;
 
     if (%$siblings or @mt_logins > 0) {
         print "<p>Corresponding accounts: </p><ul>";
