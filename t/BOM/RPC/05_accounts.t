@@ -295,7 +295,7 @@ subtest $method => sub {
 $method = 'landing_company_details';
 subtest $method => sub {
     is_deeply(
-        $c->tcall($method, {args => {landing_company_details => 'nosuchcountry'}}),
+        $c->tcall($method, {args => {landing_company_details => 'nosuchlandingcompany'}}),
         {
             error => {
                 message_to_client => 'Unknown landing company.',
@@ -305,6 +305,11 @@ subtest $method => sub {
         "no such landing company"
     );
     is($c->tcall($method, {args => {landing_company_details => 'costarica'}})->{name}, 'Binary (C.R.) S.A.', "details result ok");
+    cmp_bag(
+        [keys %{$c->tcall($method, {args => {landing_company_details => 'costarica'}})->{currency_config}->{volidx}}],
+        ['USD', 'AUD', 'BCH', 'BTC', 'ETH', 'EUR', 'GBP', 'LTC', 'DAI'],
+        "currency config ok"
+    );
 };
 
 $method = 'statement';
