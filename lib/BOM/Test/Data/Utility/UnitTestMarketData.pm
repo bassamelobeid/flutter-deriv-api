@@ -162,7 +162,7 @@ sub create_doc {
     my ($yaml_db, $data_mod) = @_;
 
     if (grep { $_ eq $yaml_db }
-        qw{currency randomindex stock index holiday economic_events partial_trading asset correlation_matrix volsurface_moneyness volsurface_delta})
+        qw{currency randomindex index holiday economic_events partial_trading asset correlation_matrix volsurface_moneyness volsurface_delta})
     {
         $data_mod->{chronicle_reader} = BOM::Platform::Chronicle::get_chronicle_reader();
         $data_mod->{chronicle_writer} = BOM::Platform::Chronicle::get_chronicle_writer();
