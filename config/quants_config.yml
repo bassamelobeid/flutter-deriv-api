@@ -22,55 +22,58 @@ bet_limits:
     LTC: 2.5
     ETC: 2.5
     DAI: 200
-  maximum_payout:
-    USD: 50000
-    EUR: 50000
-    AUD: 50000
-    GBP: 50000
-    JPY: 5000000
-    BTC: 5
-    BCH: 5
-    ETH: 10
-    LTC: 50
-    ETC: 50
-    DAI: 5000
-  min_payout:
-    default:
-      USD: 1
-      EUR: 1
-      AUD: 1
-      GBP: 1
-      JPY: 70
-      BTC: 0.0004
-      BCH: 0.002
-      ETH: 0.004
-      LTC: 0.02
-      ETC: 0.02
-      DAI: 1
-    volidx:
-      USD: 0.7
-      EUR: 0.7
-      AUD: 0.7
-      GBP: 0.7
-      JPY: 70
-      BTC: 0.0004
-      BCH: 0.002
-      ETH: 0.004
-      LTC: 0.02
-      ETC: 0.02
-      DAI: 1
+  max_payout:
+    default_landing_company:
+      default_market:
+        USD: 50000
+        EUR: 50000
+        AUD: 50000
+        GBP: 50000
+        JPY: 5000000
+        BTC: 5
+        BCH: 5
+        ETH: 10
+        LTC: 50
+        ETC: 50
+        DAI: 5000
   min_stake:
+    default_landing_company:
+      default_market:
+        USD: 0.5
+        EUR: 0.5
+        AUD: 0.5
+        GBP: 0.5
+        JPY: 35
+        BTC: 0.0002
+        BCH: 0.001
+        ETH: 0.002
+        LTC: 0.01
+        ETC: 0.05
+        DAI: 0.5
+      volidx:
+        USD: 0.35
+        EUR: 0.35
+        AUD: 0.35
+        GBP: 0.35
+        JPY: 35
+        BTC: 0.0002
+        BCH: 0.001
+        ETH: 0.002
+        LTC: 0.01
+        ETC: 0.05
+        DAI: 0.5
     maltainvest:
-      USD: 5
-      EUR: 5
-      AUD: 5
-      GBP: 5
-      BTC: 0.005
-      BCH: 0.025
-      ETH: 0.05
-      LTC: 0.25
-      ETC: 0.25
-      DAI: 5
+      default_market:
+        USD: 5
+        EUR: 5
+        AUD: 5
+        GBP: 5
+        BTC: 0.002
+        BCH: 0.01
+        ETH: 0.02
+        LTC: 0.1
+        ETC: 1
+        DAI: 5
   min_commission_amount:
     USD: 0.02 # 0.02 dollar
     EUR: 0.02
