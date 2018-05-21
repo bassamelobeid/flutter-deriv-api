@@ -212,6 +212,7 @@ sub get_settings_by_group {
                 payments.transfer_between_accounts.fees.crypto
                 payments.transfer_between_accounts.amount.fiat.min
                 payments.transfer_between_accounts.amount.crypto.min
+                payments.experimental_currencies_allowed
                 )]};
 
     my $settings;

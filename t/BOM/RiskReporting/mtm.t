@@ -72,6 +72,11 @@ create_underlying('frxETCUSD')->set_combined_realtime({
     quote => 100
 });
 
+create_underlying('frxDAIUSD')->set_combined_realtime({
+    epoch => time,
+    quote => 100
+});
+
 foreach my $symbol (keys %date_string) {
     my @dates = @{$date_string{$symbol}};
     foreach my $date (@dates) {
