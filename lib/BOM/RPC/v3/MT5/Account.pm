@@ -277,12 +277,14 @@ async_rpc mt5_new_account => sub {
             return Future->done($invalid_sub_type_error) unless $mt5_account_type;
             my $input_mappings = BOM::Platform::Account::Real::default::get_financial_input_mapping();
 
-            my $json    = JSON::MaybeXS->new;
-            my $fa_data = $json->decode($client->financial_assessment->{data});
+            my $json = JSON::MaybeXS->new;
+            my $fa_json_data;
+            $fa_json_data = $json->decode($client->financial_assessment->{data}) if $client->financial_assessment();
             return create_error_future({
                     code              => 'FinancialAssessmentMandatory',
-                    message_to_client => localize('Please complete financial assessment.')}
-            ) if any { !$fa_data->{$_} } (keys %{$input_mappings->{financial_information}}, keys %{$input_mappings->{trading_experience}});
+                    message_to_client => localize('Please complete financial assessment.')})
+                if not $fa_json_data
+                or any { !$fa_json_data->{$_} } (keys %{$input_mappings->{financial_information}}, keys %{$input_mappings->{trading_experience}});
 
         }
 
