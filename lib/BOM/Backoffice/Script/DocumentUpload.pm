@@ -23,9 +23,9 @@ sub new {
             secret_key => $config->{aws_secret_access_key} // $config->{secret_key},
             region     => $config->{region}                // 'ap-southeast-1',
             bucket     => $config->{aws_bucket}            // $config->{bucket},
-        }}
+        }};
 
-        return bless $self, $class;
+    return bless $self, $class;
 }
 
 sub get_s3_url {
@@ -46,8 +46,10 @@ sub upload {
     die 'Unable to read the upload file handle' unless $file->exists;
 
     my $s3 = Net::Async::Webservice::S3->new(
-        %{$self->{config}},
-        timeout => UPLOAD_TIMEOUT,
+        access_key => $self->{config}->{access_key},
+        secret_key => $self->{config}->{secret_key},
+        bucket     => $self->{config}->{bucket},
+        timeout    => UPLOAD_TIMEOUT,
     );
 
     my $loop = IO::Async::Loop->new;
