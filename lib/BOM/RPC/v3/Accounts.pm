@@ -17,7 +17,7 @@ use Try::Tiny;
 use WWW::OneAll;
 use Date::Utility;
 use HTML::Entities qw(encode_entities);
-use List::Util qw(any sum0 first);
+use List::Util qw(any none sum0 first);
 
 use Brands;
 use BOM::User::Client;
@@ -537,18 +537,36 @@ rpc get_account_status => sub {
     push @status, 'unwelcome' if not $already_unwelcomed and BOM::Transaction::Validation->new({clients => [$client]})->check_trade_status($client);
 
     push @status, 'social_signup' if $user->has_social_signup;
+
     # check whether the user need to perform financial assessment
     my $financial_assessment = $client->financial_assessment();
     $financial_assessment = ref($financial_assessment) ? $json->decode($financial_assessment->data || '{}') : {};
-    push @status,
-        'financial_assessment_not_complete'
-        if (
-        any { !length $financial_assessment->{$_}->{answer} }
-        keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
+    my $input_mappings = BOM::Platform::Account::Real::default::get_financial_input_mapping();
+    my %financial_data = map { $_ => $params->{args}->{$_} } BOM::RPC::v3::Utility::keys_of_values $input_mappings;
+
+    my $is_financial_info_incomplete =
+        any { not $financial_assessment->{$_} or not $financial_assessment->{$_}->{answer} } keys %{$input_mappings->{financial_information}};
+    my $is_trading_exp_incomplete =
+        any { not $financial_assessment->{$_} or not $financial_assessment->{$_}->{answer} } keys %{$input_mappings->{trading_experience}};
+
+    push(@status, 'financial_information_not_complete') if $is_financial_info_incomplete;
+    push(@status, 'trading_experience_not_complete')    if $is_trading_exp_incomplete;
+
+    my $shortcode = $client->landing_company->short;
+
+    if ($shortcode eq 'maltainvest'
+        and ($is_financial_info_incomplete or $is_trading_exp_incomplete))
+    {
+        push(@status, 'financial_assessment_not_complete');
+    } elsif ($shortcode =~ /^iom|malta|costarica$/
+        and $risk_classification eq 'high'
+        and $is_financial_info_incomplete)
+    {
+        push(@status, 'financial_assessment_not_complete');
+    }
 
     my $prompt_client_to_authenticate = 0;
-    my $shortcode                     = $client->landing_company->short;
-    my $authentication_in_progress    = $client->get_status('document_needs_action') || $client->get_status('document_under_review');
+    my $authentication_in_progress = $client->get_status('document_needs_action') || $client->get_status('document_under_review');
     if ($client->client_fully_authenticated) {
         # Authenticated clients still need to go through age verification checks for IOM/MF/MLT
         if (any { $shortcode eq $_ } qw(iom malta maltainvest)) {
@@ -1659,22 +1677,15 @@ rpc set_financial_assessment => sub {
 
     my ($response, $subject, $message);
     try {
-        my %financial_data = map { $_ => $params->{args}->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
+        my $input_mappings       = BOM::Platform::Account::Real::default::get_financial_input_mapping();
+        my %financial_data       = map { $_ => $params->{args}->{$_} } BOM::RPC::v3::Utility::keys_of_values $input_mappings;
         my $financial_evaluation = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
 
-        my $user = $client->user;
-        foreach my $cli ($user->clients) {
-            $cli->financial_assessment({
-                data => Encode::encode_utf8($json->encode($financial_evaluation->{user_data})),
-            });
-            $cli->save;
-        }
+        BOM::RPC::v3::Utility::_update_existing_financial_assessment($client->user, %$financial_evaluation);
 
-        $response = {
-            score => $financial_evaluation->{total_score},
-        };
-        $subject = $client_loginid . ' assessment test details have been updated';
-        $message = ["$client_loginid score is " . $financial_evaluation->{total_score}];
+        $response = {map { $_ => $financial_evaluation->{$_} } qw(total_score cfd_score trading_score financial_information_score)};
+        $subject  = $client_loginid . ' assessment test details have been updated';
+        $message  = ["$client_loginid score is " . $financial_evaluation->{total_score}];
     }
     catch {
         $response = BOM::RPC::v3::Utility::create_error({
@@ -1702,17 +1713,16 @@ rpc get_financial_assessment => sub {
     my $client = $params->{client};
     return BOM::RPC::v3::Utility::permission_error() if ($client->is_virtual or $client->landing_company->short eq 'japan');
 
-    my $response             = {};
-    my $financial_assessment = $client->financial_assessment();
-    if ($financial_assessment) {
+    my $response = {};
+    if (my $financial_assessment = $client->financial_assessment()) {
         my $data = $json->decode($financial_assessment->data);
         if ($data) {
+            my %score_keys = map { $_ => 1 } qw(total_score financial_information_score trading_score cfd_score);
             foreach my $key (keys %$data) {
-                unless ($key =~ /total_score/) {
-                    $response->{$key} = $data->{$key}->{answer};
-                }
+                $response->{$key} = $data->{$key}->{answer} if not exists $score_keys{$key};
             }
-            $response->{score} = $data->{total_score};
+
+            $response->{$_} = $data->{$_} // 0 for keys %score_keys;
         }
     }
 
