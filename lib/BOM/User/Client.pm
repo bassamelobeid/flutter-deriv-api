@@ -381,7 +381,7 @@ sub documents_expired {
     my $today = Date::Utility->today;
     my @docs  = $self->client_authentication_document or return undef;    # Rose
     for my $doc (@docs) {
-        my $expires = $doc->expiration_date || return undef;
+        my $expires = $doc->expiration_date || next;
         return if Date::Utility->new($expires)->is_after($today);
     }
     return 1;
