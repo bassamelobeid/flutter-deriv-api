@@ -391,7 +391,7 @@ async_rpc mt5_new_account => sub {
                             return Future->done({
                                     login        => $mt5_login,
                                     balance      => $balance,
-                                    currency     => ($mt_company =~ /vanuatu|costarica|demo/ ? 'USD' : 'EUR'),
+                                    currency     => ($mt_company =~ /champion|vanuatu|costarica|demo/ ? 'USD' : 'EUR'),
                                     account_type => $account_type,
                                     ($mt5_account_type) ? (mt5_account_type => $mt5_account_type) : ()});
                         });
@@ -570,7 +570,7 @@ sub _extract_settings {
             warn "Invalid country name $country for mt5 settings, can't extract code from Locale::Country::Extra";
         }
     }
-    $filtered_settings->{currency} = $settings->{group} =~ /vanuatu|costarica|demo/ ? 'USD' : 'EUR';
+    $filtered_settings->{currency} = $settings->{group} =~ /vanuatu|costarica|demo|champion/ ? 'USD' : 'EUR';
     @{$filtered_settings}{@allowed_keys} = @{$settings}{@allowed_keys};
     return $filtered_settings;
 }
