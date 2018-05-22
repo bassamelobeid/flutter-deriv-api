@@ -89,7 +89,6 @@ subtest 'MLT upgrade to MF account' => sub {
         my $res = $t->await::new_account_maltainvest(\%details);
         ok($res->{new_account_maltainvest});
         test_schema('new_account_maltainvest', $res);
-
         my $loginid = $res->{new_account_maltainvest}->{client_id};
         like($loginid, qr/^MF\d+$/, "got MF client $loginid");
 

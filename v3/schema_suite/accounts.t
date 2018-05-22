@@ -181,7 +181,7 @@ fail_test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies
 # ADMIN SCOPE CALLS (MF)
 test_sendrecv 'set_financial_assessment/test_send.json',        'set_financial_assessment/test_receive.json';
 test_sendrecv_params 'get_financial_assessment/test_send.json', 'get_financial_assessment/test_receive.json',
-    $suite->get_stashed('set_financial_assessment/set_financial_assessment/score');
+    $suite->get_stashed('set_financial_assessment/set_financial_assessment/total_score');
 
 fail_test_sendrecv 'logout/test_send_to_fail.json', 'logout/test_receive.json';
 test_sendrecv 'logout/test_send.json',              'logout/test_receive.json';

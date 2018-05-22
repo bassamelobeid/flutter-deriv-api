@@ -55,9 +55,7 @@ my %generic_req = (
     expiration_date => '2020-01-01',
 );
 
-use constant {
-    FAIL_TEST_DATA => 'Some text'
-};
+use constant {FAIL_TEST_DATA => 'Some text'};
 
 subtest 'Fail during upload' => sub {
     my $data   = FAIL_TEST_DATA;
@@ -131,7 +129,7 @@ subtest 'binary frame should be sent correctly' => sub {
 };
 
 subtest 'sending two files concurrently' => sub {
-    my @data   = ('Some tex1', 'Some tex2');
+    my @data = ('Some tex1', 'Some tex2');
     # Note: this test is hardcoded to expect data of a certain length
     #   so change the contents of these strings, but not the length
 
@@ -192,9 +190,9 @@ subtest 'Maximum file size' => sub {
 subtest 'Invalid document_format' => sub {
     my $req = {
         %generic_req,
-        req_id          => ++$req_id,
-        file_size       => 1,
-        document_format => 'INVALID',
+        req_id            => ++$req_id,
+        file_size         => 1,
+        document_format   => 'INVALID',
         expected_checksum => 'INVALID',
     };
 
@@ -243,8 +241,8 @@ subtest 'Checksum not matching the etag' => sub {
 
 subtest 'Duplicate upload rejected' => sub {
     # First upload
-    my $data   = 'File';
-    my $length = length $data;
+    my $data        = 'File';
+    my $length      = length $data;
     my %upload_info = document_upload_ok($data, file_size => $length);
 
     # Request to upload the same file again
@@ -252,15 +250,15 @@ subtest 'Duplicate upload rejected' => sub {
     my $res = send_chunks($data, %upload_info);
 
     my $error = $res->{error};
-    is $error->{code}, 'DuplicateUpload', 'Error code for duplicate document';
+    is $error->{code},    'DuplicateUpload',            'Error code for duplicate document';
     is $error->{message}, 'Document already uploaded.', 'Error msg for duplicate document';
 };
 
 subtest 'Document with wrong checksum rejected' => sub {
-    my $data   = 'This is the expected text';
-    my $other_data   = 'This is not expected text';
-    my $length = length $data;
-    my $checksum = md5_hex($data);
+    my $data       = 'This is the expected text';
+    my $other_data = 'This is not expected text';
+    my $length     = length $data;
+    my $checksum   = md5_hex($data);
 
     my %upload_info = request_upload($data);
 
@@ -273,7 +271,7 @@ subtest 'Document with wrong checksum rejected' => sub {
         $t->send_ok({binary => $frames[$i]});
     }
     $res = get_response($t);
-        
+
     my $error = $res->{error};
     is $error->{code}, 'ChecksumMismatch', 'Error code for checksum fail';
     is $error->{message}, 'Checksum verification failed.', 'Error msg for checksum fail';
@@ -290,7 +288,7 @@ subtest 'Attempt to restart a timed out upload' => sub {
     my $data   = 'Timeout data';
     my $length = length $data;
 
-    my $request = {};
+    my $request     = {};
     my $upload_info = {request_upload($data)};
     receive_ok($data, %$upload_info);
     $request->{upload_info} = $upload_info;
@@ -303,7 +301,6 @@ subtest 'Attempt to restart a timed out upload' => sub {
 
     document_upload_ok($data, file_size => $length);
 };
-
 
 sub gen_frames {
     my ($data,      %upload_info) = @_;
@@ -355,9 +352,9 @@ sub request_upload {
 
     my $req = {
         %generic_req, %metadata,
-        req_id => ++$req_id,
+        req_id            => ++$req_id,
         expected_checksum => md5_hex($data),
-        file_size => min(length $data, MAX_FILE_SIZE),
+        file_size         => min(length $data, MAX_FILE_SIZE),
         # The min is necessary to handle the special case for test 'Maximum file size'
         #   which sends frames in excess of the maximum allowed file size, but needs
         #   to spoof the size so the upload isn't disallowed at the start.

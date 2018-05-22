@@ -8,9 +8,21 @@
     "get_financial_assessment": {
       "type": "object",
       "properties": {
-        "score": {
+        "total_score": {
           "type": "integer",
           "pattern": "^[_1]$",
+          "required": "1"
+        },
+        "cfd_score": {
+          "type": "integer",
+          "required": "1"
+        },
+        "financial_information_score": {
+          "type": "integer",
+          "required": "1"
+        },
+        "trading_score": {
+          "type": "integer",
           "required": "1"
         },
         "account_turnover": {
@@ -19,63 +31,35 @@
         },
         "forex_trading_frequency": {
           "type": "string",
-          "pattern": "^0\\-5 transactions in the past 12 months$",
-          "required": "1"
+          "pattern": "^0\\-5 transactions in the past 12 months$"
         },
         "forex_trading_experience": {
           "type": "string",
-          "pattern": "^Over 3 years$",
-          "required": "1"
+          "pattern": "^Over 3 years$"
         },
-        "indices_trading_frequency": {
+        "binary_options_trading_frequency": {
           "type": "string",
-          "pattern": "^40 transactions or more in the past 12 months$",
-          "required": "1"
+          "pattern": "^40 transactions or more in the past 12 months$"
         },
-        "indices_trading_experience": {
+        "binary_options_trading_experience": {
           "type": "string",
-          "pattern": "^1\\-2 years$",
-          "required": "1"
+          "pattern": "^1\\-2 years$"
         },
-        "commodities_trading_frequency": {
+        "cfd_trading_frequency": {
           "type": "string",
-          "pattern": "^0\\-5 transactions in the past 12 months$",
-          "required": "1"
+          "pattern": "^0\\-5 transactions in the past 12 months$"
         },
-        "commodities_trading_experience": {
+        "cfd_trading_experience": {
           "type": "string",
-          "pattern": "^1\\-2 years$",
-          "required": "1"
-        },
-        "stocks_trading_experience": {
-          "type": "string",
-          "pattern": "^1\\-2 years$",
-          "required": "1"
-        },
-        "stocks_trading_frequency": {
-          "type": "string",
-          "pattern": "^0\\-5 transactions in the past 12 months$",
-          "required": "1"
-        },
-        "other_derivatives_trading_frequency": {
-          "type": "string",
-          "pattern": "^0\\-5 transactions in the past 12 months$",
-          "required": "1"
-        },
-        "other_derivatives_trading_experience": {
-          "type": "string",
-          "pattern": "^Over 3 years$",
-          "required": "1"
+          "pattern": "^1\\-2 years$"
         },
         "other_instruments_trading_frequency": {
           "type": "string",
-          "pattern": "^6\\-10 transactions in the past 12 months$",
-          "required": "1"
+          "pattern": "^6\\-10 transactions in the past 12 months$"
         },
         "other_instruments_trading_experience": {
           "type": "string",
-          "pattern": "^Over 3 years$",
-          "required": "1"
+          "pattern": "^Over 3 years$"
         },
         "employment_industry": {
           "type": "string",
