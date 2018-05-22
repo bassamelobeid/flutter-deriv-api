@@ -174,20 +174,20 @@ if ($view_action eq 'withdrawals') {
         my $over_limit = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($staff, in_USD($amount, $currency));
         code_exit_BO($over_limit->get_mesg()) if $over_limit;
 
-        my $found;
-        ($found) = $dbic->run(ping => sub { $_->selectrow_array('SELECT payment.ctc_set_remark(?, ?, ?)', undef, $address, $currency, $set_remark) })
+        my $error;
+        ($error) = $dbic->run(ping => sub { $_->selectrow_array('SELECT payment.ctc_set_remark(?, ?, ?)', undef, $address, $currency, $set_remark) })
             if $action eq 'Save';
-        ($found) = $dbic->run(
+        ($error) = $dbic->run(
             ping => sub {
                 $_->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?, ?, ?)',
                     undef, $address, $currency, $staff, ($set_remark ne '' ? $set_remark : undef));
             }) if $action eq 'Verify';
-        ($found) = $dbic->run(
+        ($error) = $dbic->run(
             ping => sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?, ?)', undef, $address, $currency, $set_remark) })
             if $action eq 'Reject';
 
-        code_exit_BO("ERROR: No record found. Please check with someone from IT team before proceeding.")
-            unless ($found);
+        code_exit_BO("ERROR: $error. Please check with someone from IT team before proceeding.")
+            if ($error);
     }
 
     my $ctc_status = $view_type eq 'pending' ? 'LOCKED' : uc($view_type);
