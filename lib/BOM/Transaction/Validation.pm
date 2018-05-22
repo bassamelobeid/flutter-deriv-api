@@ -222,9 +222,9 @@ sub _validate_sell_pricing_adjustment {
     ### TODO: move out from validation
     $self->transaction->requested_price($amount);
     $self->transaction->recomputed_price($recomputed_amount);
-    my $recomputed      = $contract->is_binary ? $contract->bid_probability->amount : $contract->bid_price;
-    my $non_binary_move = ($requested == 0)    ? $recomputed - $requested           : ($recomputed - $requested) / $requested;
-    my $move            = $contract->is_binary ? $recomputed - $requested           : $non_binary_move;
+    my $recomputed = $contract->is_binary ? $contract->bid_probability->amount : formatnumber('price', $contract->currency, $contract->bid_price);
+    my $non_binary_move = ($requested == 0)    ? $recomputed - $requested : ($recomputed - $requested) / $requested;
+    my $move            = $contract->is_binary ? $recomputed - $requested : $non_binary_move;
     my $slippage        = $recomputed_amount - $amount;
     my $allowed_move    = $contract->allowed_slippage;
 
@@ -270,9 +270,9 @@ sub _validate_trade_pricing_adjustment {
     # set the requested price and recomputed price to be store in db
     $self->transaction->requested_price($self->transaction->price);
     $self->transaction->recomputed_price($contract->ask_price);
-    my $recomputed = $contract->is_binary ? $contract->ask_probability->amount : $contract->ask_price;
-    my $move       = $contract->is_binary ? $requested - $recomputed           : ($requested - $recomputed) / $requested;
-    my $slippage   = $self->transaction->price - $contract->ask_price;
+    my $recomputed = $contract->is_binary ? $contract->ask_probability->amount : formatnumber('price', $contract->currency, $contract->ask_price);
+    my $move = $contract->is_binary ? $requested - $recomputed : ($requested - $recomputed) / $requested;
+    my $slippage     = $self->transaction->price - $contract->ask_price;
     my $allowed_move = $contract->allowed_slippage;
 
     $allowed_move = 0 if $contract->is_binary and $recomputed == 1;
