@@ -273,8 +273,7 @@ subtest 'get_ask' => sub {
             'landing_company'       => 'virtual',
             'staking_limits'        => {
                 'min'               => '0.35',
-                'max'               => 50000,
-                'message_to_client' => ['Minimum stake of [_1] and maximum payout of [_2].', '0.35', '50000.00']}}};
+                'max'               => 50000}}};
        
 
     cmp_deeply($result, $expected, 'the left values are all right');
