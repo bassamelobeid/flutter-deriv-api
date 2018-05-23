@@ -391,7 +391,7 @@ sub aml_risk {
 sub is_financial_assessment_complete {
     my $self = shift;
 
-    my $sc  = $client->landing_company->short;
+    my $sc  = $self->landing_company->short;
     my $aml = $self->aml_risk();
 
     my $is_FI = $self->is_financial_information_complete();
