@@ -32,7 +32,7 @@ my $id2 = $dbic->run(
         return $sth->fetchrow_hashref;
     });
 $client = BOM::User::Client->new({loginid => $client->loginid});
-is $client->documents_expired(), undef, "document is expired";
+is $client->documents_expired(), 1, "document is expired";
 
 ## Testing expiration with the first row with a valid date and the second expired
 $date = Date::Utility->today()->minus_time_interval('1d')->date;
@@ -43,7 +43,7 @@ $dbic->run(
         $sth->execute($date, $id1->{start_document_upload});
     });
 $client = BOM::User::Client->new({loginid => $client->loginid});
-is $client->documents_expired(), undef,  "document is expired";
+is $client->documents_expired(), 1,  "document is expired";
 
 ## Testing expiration with the 2 valid dates
 $dbic->run(
@@ -52,6 +52,6 @@ $dbic->run(
         $sth->execute($date, $id2->{start_document_upload});
     });
 $client = BOM::User::Client->new({loginid => $client->loginid});
-is $client->documents_expired(), 1,  "document is NOT expired";
+is $client->documents_expired(), 0,  "document is NOT expired";
 
 done_testing();

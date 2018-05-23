@@ -382,9 +382,9 @@ sub documents_expired {
     my @docs  = $self->client_authentication_document or return undef;    # Rose
     for my $doc (@docs) {
         my $expires = $doc->expiration_date || next;
-        return if Date::Utility->new($expires)->is_after($today);
+        return 1 if Date::Utility->new($expires)->is_after($today);
     }
-    return 1;
+    return 0;
 }
 
 sub has_valid_documents {
