@@ -15,9 +15,8 @@ my $client = create_client();
 $client->set_default_account('USD');
 $client->save();
 my $dbic = $client->db->dbic;
-## Testing expiration with the first row null
-my $date = Date::Utility->today()->plus_time_interval('1d')->date;
-
+## Testing expiration with the first row numy $date = Date::Utility->today()->plus_time_interval('1d')->date;
+my $date = Date::Utility->today()->minus_time_interval('1d')->date;
 my $id1 = $dbic->run(
     fixup => sub {
         my $sth = $_->prepare(q{select * from betonmarkets.start_document_upload(?,'proofaddress','PNG',null,'12345',null)});
@@ -35,7 +34,7 @@ $client = BOM::User::Client->new({loginid => $client->loginid});
 is $client->documents_expired(), 1, "document is expired";
 
 ## Testing expiration with the first row with a valid date and the second expired
-$date = Date::Utility->today()->minus_time_interval('1d')->date;
+$date = Date::Utility->today()->plus_time_interval('1d')->date;
 
 $dbic->run(
     fixup => sub {
