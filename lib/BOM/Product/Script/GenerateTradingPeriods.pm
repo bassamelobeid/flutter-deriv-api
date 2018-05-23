@@ -38,7 +38,6 @@ sub run {
     $fm->run_on_start(
         sub {
             my ($pid, $ident) = @_;
-            warn "Processing $ident. pid [$pid]";
         });
 
     $fm->run_on_finish(
@@ -49,7 +48,6 @@ sub run {
                     . Date::Utility->new($data->{next_generation_time})->datetime;
                 _set_next_generation_time($data->{next_generation_time});
             }
-            warn "Finished processing $ident with exit_code[$exit_code]";
         });
 
     my $exchange = Finance::Exchange->create_exchange('FOREX');
