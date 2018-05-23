@@ -380,7 +380,7 @@ sub set_authentication {
 sub aml_risk {
     my $self = shift;
 
-    my $risk = $client->aml_risk_classification // '';
+    my $risk = $self->aml_risk_classification // '';
 
     # we need to send only low, standard, high as manual override is for internal purpose
     $risk =~ s/manual override - //;
