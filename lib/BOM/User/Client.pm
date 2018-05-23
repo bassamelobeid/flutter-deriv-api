@@ -382,7 +382,7 @@ sub aml_risk {
 
     my $risk = $self->aml_risk_classification // '';
 
-    # we need to send only low, standard, high as manual override is for internal purpose
+    # use `low`, `standard`, `high` as prepending `manual override` string is for internal purpose
     $risk =~ s/manual override - //;
 
     return $risk;
