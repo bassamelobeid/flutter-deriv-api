@@ -8,7 +8,7 @@ our $VERSION = '0.145';
 
 use Email::Stuffer;
 use Date::Utility;
-use List::Util;
+use List::Util qw/any/;
 use Format::Util::Numbers qw(roundcommon);
 use Try::Tiny;
 use JSON::MaybeXS;
@@ -18,6 +18,8 @@ use Rose::Object::MakeMethods::Generic scalar => ['self_exclusion_cache'];
 
 use LandingCompany::Registry;
 use BOM::User::Client::Payments;
+
+use BOM::Platform::Account::Real::default;
 
 use BOM::User::Client::PaymentAgent;
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
