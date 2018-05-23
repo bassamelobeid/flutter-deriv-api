@@ -377,6 +377,63 @@ sub set_authentication {
         }
 }
 
+sub aml_risk {
+    my $self = shift;
+
+    my $risk = $client->aml_risk_classification // '';
+
+    # we need to send only low, standard, high as manual override is for internal purpose
+    $risk =~ s/manual override - //;
+
+    return $risk;
+}
+
+sub is_financial_assessment_complete {
+    my $self = shift;
+
+    my $sc  = $client->landing_company->short;
+    my $aml = $self->aml_risk();
+
+    my $is_FI = $self->is_financial_information_complete();
+    my $is_TE = $self->is_trading_experience_complete();
+
+    return 0 if $sc eq 'maltainvest' and (!$is_FI or !$is_TE);
+    return 0 if $sc =~ /^iom|malta|costarica$/ and $aml eq 'high' and $is_FI;
+    return 1;
+}
+
+sub is_trading_experience_complete {
+    my $self = shift;
+
+    my $fa = $self->_decode_financial_assessment();
+    my $im = BOM::Platform::Account::Real::default::get_financial_input_mapping();
+    my $is_trading_exp_complete =
+        not(any { not $fa->{$_} or not $fa->{$_}->{answer} } keys %{$im->{trading_experience}});
+
+    return $is_trading_exp_complete;
+}
+
+sub is_financial_information_complete {
+    my $self = shift;
+
+    my $fa = $self->_decode_financial_assessment();
+    my $im = BOM::Platform::Account::Real::default::get_financial_input_mapping();
+    my $is_financial_info_complete =
+        not(any { not $fa->{$_} or not $fa->{$_}->{answer} } keys %{$im->{financial_information}});
+
+    return $is_financial_info_complete;
+}
+
+sub _decode_financial_assessment {
+    my $self = shift;
+
+    my $fa = $self->financial_assessment();
+    $fa =
+        ref($fa) ? $json->decode($fa->data || '{}') : {};
+
+    return $fa;
+}
+
 sub documents_expired {
     my $self  = shift;
     my $today = Date::Utility->today;
