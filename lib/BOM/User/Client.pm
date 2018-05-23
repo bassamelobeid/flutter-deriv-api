@@ -428,8 +428,7 @@ sub _decode_financial_assessment {
     my $self = shift;
 
     my $fa = $self->financial_assessment();
-    $fa =
-        ref($fa) ? $json->decode($fa->data || '{}') : {};
+    $fa = ref($fa) ? $json->decode($fa->data || '{}') : {};
 
     return $fa;
 }
