@@ -117,6 +117,8 @@ my %skip_type = (
     LBFLOATCALL => 1,
     LBFLOATPUT  => 1,
     LBHIGHLOW   => 1,
+    CALLSPREAD  => 1,
+    PUTSPREAD   => 1,
 );
 
 my @ct = grep { not $skip_type{$_} } grep { !$equal{$_} } LandingCompany::Registry::get('costarica')->basic_offerings($offerings_cfg)->query({
