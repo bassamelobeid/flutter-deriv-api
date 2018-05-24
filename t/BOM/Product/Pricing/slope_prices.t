@@ -27,10 +27,11 @@ my $now           = Date::Utility->new('2016-02-01');
 note('Pricing on ' . $now->datetime);
 
 my %skip_category = (
-    asian    => 1,
-    digits   => 1,
-    spreads  => 1,
-    lookback => 1,
+    asian         => 1,
+    digits        => 1,
+    spreads       => 1,
+    lookback      => 1,
+    callputspread => 1,
 );
 
 my $expectation        = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/slope_config.yml');

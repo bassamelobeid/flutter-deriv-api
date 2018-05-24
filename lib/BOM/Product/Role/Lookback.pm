@@ -16,12 +16,30 @@ use BOM::Market::DataDecimate;
 my $minimum_multiplier_config = LoadFile('/home/git/regentmarkets/bom/config/files/lookback_minimum_multiplier.yml');
 
 use constant {
-    MINIMUM_ASK_PRICE_PER_UNIT => 0.50,
-    MINIMUM_BID_PRICE          => 0,      # can't go negative
+    MINIMUM_ASK_PRICE_PER_UNIT  => 0.50,
+    MINIMUM_BID_PRICE           => 0,      # can't go negative
+    MINIMUM_COMMISSION_PER_UNIT => 0.01,
 };
+
+=head2 user_defined_multiplier
+We round price per unit to the nearest cent before multiplying it with the multiplier
+=cut
+
+has user_defined_multiplier => (
+    is      => 'ro',
+    default => 1,
+);
 
 # forward declaration for 'requires' to work in BOM::Product::Role::NonBinary
 sub multiplier;
+
+override '_build_ask_price' => sub {
+    my $self = shift;
+
+    # for lookbacks, we are setting a minimum_ask_price_per_unit and a minimum_commission_per_unit.
+    # hence, the ask price is a simple price per unit multiplied by number of units.
+    return financialrounding('price', $self->currency, $self->_ask_price_per_unit) * $self->multiplier;
+};
 
 override _build_theo_price => sub {
     my $self = shift;
@@ -49,6 +67,10 @@ sub minimum_ask_price_per_unit {
 
 sub minimum_bid_price {
     return MINIMUM_BID_PRICE;
+}
+
+sub minimum_commission_per_unit {
+    return MINIMUM_COMMISSION_PER_UNIT;
 }
 
 =head2 minimum_multiplier
@@ -147,23 +169,6 @@ sub get_ohlc_for_period {
     });
 }
 
-override _validate_price => sub {
-    my $self = shift;
-
-    my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
-
-    my @err;
-    if (not $self->ask_price or $self->ask_price == 0) {
-        push @err,
-            {
-            message           => 'Lookbacks ask price can not be zero .',
-            message_to_client => [$ERROR_MAPPING->{InvalidLookbacksPrice}],
-            };
-    }
-
-    return @err;
-};
-
 sub _build_pricing_engine_name {
     return 'Pricing::Engine::Lookback';
 }
@@ -188,6 +193,12 @@ override shortcode => sub {
     my @shortcode_elements = ($contract_type, $self->underlying->symbol, $self->multiplier, $shortcode_date_start, $shortcode_date_expiry);
 
     return uc join '_', @shortcode_elements;
+};
+
+override allowed_amount_type => sub {
+    return {
+        multiplier => 1,
+    };
 };
 
 1;

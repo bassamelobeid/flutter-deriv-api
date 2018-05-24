@@ -56,7 +56,7 @@ sub decorate {
 
         # This key is being used to decide whether to show additional
         # barrier field on the frontend.
-        if ($contract_category =~ /^(?:stays|ends)inout$/) {
+        if ($contract_category =~ /^(?:staysinout|endsinout|callputspread)$/) {
             $o->{barriers} = 2;
         } elsif ($contract_category eq 'lookback'
             or $contract_category eq 'asian'
