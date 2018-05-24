@@ -87,10 +87,10 @@ sub create_account {
     return $status;
 }
 
-# Show Risk Disclosure warning message if the trading score is from 8 to 16 or CFD is 4
+# Don't show Risk Disclosure warning message if the trading score is from 8 to 16 or CFD is 4
 sub _should_warn {
     my $financial_assessment = shift;
-    return ($financial_assessment->{trading_score} > 7 or $financial_assessment->{cfd_score} > 3);
+    return ($financial_assessment->{trading_score} > 8 or $financial_assessment->{cfd_score} < 4);
 }
 
 1;
