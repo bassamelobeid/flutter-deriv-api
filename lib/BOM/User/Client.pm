@@ -6,6 +6,7 @@ use warnings;
 
 our $VERSION = '0.145';
 
+use feature qw(state);
 use Email::Stuffer;
 use Date::Utility;
 use List::Util qw/any/;
@@ -438,10 +439,10 @@ sub documents_expired {
     my $today = Date::Utility->today;
     my @docs  = $self->client_authentication_document or return undef;    # Rose
     for my $doc (@docs) {
-        my $expires = $doc->expiration_date || return undef;
-        return if Date::Utility->new($expires)->is_after($today);
+        my $expires = $doc->expiration_date || next;
+        return 1 if Date::Utility->new($expires)->is_before($today);
     }
-    return 1;
+    return 0;
 }
 
 sub has_valid_documents {
@@ -897,6 +898,57 @@ sub user {
     $user ||= BOM::User->new({email => $self->email});
 
     return $user;
+}
+
+=head2 is_available
+
+return false if client is disabled or is duplicated account
+
+=cut
+
+sub is_available {
+    my $self = shift;
+    foreach my $status (qw(disabled duplicate_account)) {
+        return 0 if $self->get_status($status);
+    }
+    return 1;
+}
+
+sub cookie_string {
+    my $self = shift;
+
+    my $str = join(':', $self->loginid, $self->is_virtual ? 'V' : 'R', $self->get_status('disabled') ? 'D' : 'E');
+
+    return $str;
+}
+
+sub real_account_siblings_information {
+    my ($self, %args) = @_;
+    my $include_disabled = $args{include_disabled} // 1;
+
+    my $user = $self->user;
+    # return empty if we are not able to find user, this should not
+    # happen but added as additional check
+    return {} unless $user;
+
+    my @clients = $user->clients(include_disabled => $include_disabled);
+
+    # filter out virtual clients
+    @clients = grep { not $_->is_virtual } @clients;
+
+    my $siblings;
+    foreach my $cl (@clients) {
+        my $acc = $cl->default_account;
+
+        $siblings->{$cl->loginid} = {
+            loginid              => $cl->loginid,
+            landing_company_name => $cl->landing_company->short,
+            currency => $acc ? $acc->currency_code : '',
+            balance => $acc ? formatnumber('amount', $acc->currency_code, $acc->balance) : "0.00",
+        };
+    }
+
+    return $siblings;
 }
 
 1;

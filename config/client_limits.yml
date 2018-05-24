@@ -9,6 +9,7 @@ maximum_daily_turnover:
   ETH: 100
   LTC: 500
   ETC: 500
+  DAI: 500000
 max_balance:
   virtual:
     USD: 1000000
@@ -21,6 +22,7 @@ max_balance:
     ETH: 200
     LTC: 1000
     ETC: 1000
+    DAI: 1000000
   real:
     USD: 300000
     EUR: 300000
@@ -32,6 +34,7 @@ max_balance:
     ETH: 100
     LTC: 500
     ETC: 500
+    DAI: 3000000
 max_payout_open_positions:
     USD: 50000
     EUR: 50000
@@ -43,4 +46,5 @@ max_payout_open_positions:
     ETH: 10
     LTC: 50
     ETC: 50
+    DAI: 50000
 max_open_bets_default: 60
