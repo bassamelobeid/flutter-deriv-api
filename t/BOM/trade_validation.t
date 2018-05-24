@@ -98,8 +98,6 @@ my $contract = produce_contract({
 
 my $mock_call = Test::MockModule->new('BOM::Product::Contract::Call');
 subtest 'IOM withdrawal limit' => sub {
-    plan tests => 5;
-
     my $withdraw_limit = BOM::User::Client::payment_limits()->{withdrawal_limits}->{iom}->{limit_for_days};
 
     $client->payment_free_gift(
@@ -158,8 +156,6 @@ subtest 'IOM withdrawal limit' => sub {
 };
 
 subtest 'Is contract valid to buy' => sub {
-    plan tests => 4;
-
     my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
     $mock_contract->mock('is_valid_to_buy', sub { 1 });
 
@@ -208,8 +204,6 @@ subtest 'Is contract valid to buy' => sub {
 };
 
 subtest 'Is contract valid to sell' => sub {
-    plan tests => 4;
-
     my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
     $mock_contract->mock('is_valid_to_sell', sub { 1 });
 
@@ -263,8 +257,6 @@ subtest 'Is contract valid to sell' => sub {
 };
 
 subtest 'contract date pricing Validation' => sub {
-    plan tests => 3;
-
     my $now = Date::Utility->new;
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -302,8 +294,6 @@ subtest 'contract date pricing Validation' => sub {
 };
 
 subtest 'valid currency test' => sub {
-    plan tests => 3;
-
     my $mock_contract = Test::MockModule->new('BOM::User::Client');
 
     subtest 'invalid currency' => sub {
@@ -419,8 +409,6 @@ subtest 'valid currency test' => sub {
 };
 
 subtest 'BUY - trade pricing adjustment' => sub {
-    plan tests => 3;
-
     my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
 
     subtest 'do not allow move if recomputed is 1' => sub {
@@ -1022,12 +1010,7 @@ subtest 'SELL - sell pricing adjustment' => sub {
 };
 
 subtest 'Purchase Sell Contract' => sub {
-    plan tests => 5;
-
-    my $client = BOM::User::Client->new({loginid => 'CR2002'});
-    $client = BOM::User::Client::get_instance({'loginid' => $client->loginid});
-    my $mocked_client = Test::MockModule->new('BOM::User::Client');
-    $mocked_client->mock('residence', sub { return 'al' });
+    $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MLT'});
     my $currency = 'USD';
     $client->set_default_account($currency);
 
@@ -1064,9 +1047,12 @@ subtest 'Purchase Sell Contract' => sub {
     });
 
     my $error = $bpt->buy;
-    note $error;
-    ok(ref $error, 'TNC validation failed');
+    like($error, qr/PleaseAuthenticate/, 'Account authentication validation failed');
     my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+    $mock_validation->mock(check_trade_status => sub { note "mocked Transaction::Validation->check_trade_status returning nothing"; undef });
+
+    $error = $bpt->buy;
+    like($error, qr/ASK_TNC_APPROVAL/, 'TNC validation failed');
     $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
 
     $bpt = BOM::Transaction->new({
@@ -1261,3 +1247,5 @@ subtest 'country offerings validation' => sub {
         };
     }
 };
+
+done_testing();

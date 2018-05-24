@@ -733,6 +733,7 @@ sub validate_tnc {
 
     # we shouldn't get to this error, so we can die it directly
     return if $client->is_virtual;
+    return unless $client->landing_company->tnc_required;
 
     my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
     my $client_tnc_status   = $client->get_status('tnc_approval');
