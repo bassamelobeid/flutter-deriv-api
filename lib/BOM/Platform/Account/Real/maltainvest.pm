@@ -70,22 +70,6 @@ sub create_account {
 
     BOM::Platform::Account::Real::default::add_details_to_desk($client, $details);
 
-    if ($is_professional) {
-        my $brand = Brands->new(name => request()->brand);
-        send_email({
-                from    => $brand->emails('support'),
-                to      => $brand->emails('compliance'),
-                subject => $client->loginid . ' considered as professional trader',
-                message => [
-                          $client->loginid
-                        . ' scored '
-                        . $financial_assessment->{trading_score}
-                        . ' in trading experience and '
-                        . $financial_assessment->{cfd_score}
-                        . ' in cfd assessments, and is therefore considered a professional trader.'
-                ],
-            });
-    }
     return $status;
 }
 
