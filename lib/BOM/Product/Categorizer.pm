@@ -119,10 +119,13 @@ sub process {
     my $contract_params = $self->_initialize_contract_parameters();
 
     foreach my $c_type (@$c_types) {
+        my $contract_class      = 'BOM::Product::Contract::' . ucfirst lc $c_type->{bet_type};
+        my $allowed_amount_type = $contract_class->allowed_amount_type;
 
-        if ($c_type->{category}->is_binary) {
-            # if amount_type and amount are defined, give them priority.
-            if ($contract_params->{amount} and $contract_params->{amount_type}) {
+        # due to the huge number of test cases where we pass in a payout, we will have to have this outer if condition
+        if ($contract_params->{amount_type} and defined $contract_params->{amount}) {
+            if ($allowed_amount_type->{$contract_params->{amount_type}}) {
+                # if amount_type and amount are defined, give them priority.
                 if ($contract_params->{amount_type} eq 'payout') {
                     $contract_params->{payout} = $contract_params->{amount};
                 } elsif ($contract_params->{amount_type} eq 'stake') {
@@ -130,21 +133,24 @@ sub process {
                 } else {
                     $contract_params->{payout} = 0;    # if we don't know what it is, set payout to zero
                 }
-            }
 
-            # if stake is defined, set it to ask_price.
-            if ($contract_params->{stake}) {
-                $contract_params->{ask_price} = $contract_params->{stake};
+            } else {
+                my @allowed = keys %$allowed_amount_type;
+                my $error_code = scalar(@allowed) > 1 ? 'WrongAmountTypeTwo' : 'WrongAmountTypeOne';
+                BOM::Product::Exception->throw(
+                    error_code => $error_code,
+                    error_args => \@allowed,
+                );
             }
+        }
 
-            unless (defined $contract_params->{payout} or defined $contract_params->{ask_price}) {
-                $contract_params->{payout} = 0;        # last safety net
-            }
+        # if stake is defined, set it to ask_price.
+        if ($contract_params->{stake}) {
+            $contract_params->{ask_price} = $contract_params->{stake};
+        }
 
-        } else {
-            if ($contract_params->{amount_type} ne 'multiplier') {
-                BOM::Product::Exception->throw(error_code => 'WrongAmountTypeNonBinary');
-            }
+        unless (defined $contract_params->{payout} or defined $contract_params->{ask_price}) {
+            $contract_params->{payout} = 0;    # last safety net
         }
 
         if (@$barriers) {

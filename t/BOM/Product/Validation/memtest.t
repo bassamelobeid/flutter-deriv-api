@@ -144,7 +144,7 @@ $SIG{__WARN__} = sub { my $w = shift; return if $w =~ /^Unhandled type: GLOB/; d
 sub _get_barrier {
     my $type = shift;
 
-    if ($type =~ /(EXPIRYMISS|EXPIRYRANGE|RANGE|UPORDOWN)/) {
+    if ($type =~ /(EXPIRYMISS|EXPIRYRANGE|RANGE|UPORDOWN|CALLSPREAD|PUTSPREAD)/) {
         return {
             daily => [{
                     high_barrier => 120,
@@ -233,7 +233,11 @@ subtest 'memory cycle test' => sub {
                                         payout       => 100,
                                         current_tick => $current_tick,
                                         %{$barrier}});
-                                ok $c->ask_probability, 'ask_probability';
+                                if ($c->is_binary) {
+                                    ok $c->ask_probability, 'ask_probability';
+                                } else {
+                                    ok $c->ask_price, 'ask price';
+                                }
                                 memory_cycle_ok($c);
                             }
                             "lives through mem test [contract_type[$type] underlying_symbol[$u_symbol] start_type[$start_type] expiry_type[$expiry_type]";

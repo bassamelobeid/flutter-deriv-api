@@ -104,7 +104,6 @@ has 'staking_limits' => (
 
 sub _build_staking_limits {
     my $self = shift;
-
     my $curr = $self->currency;
 
     my $static     = BOM::Platform::Config::quants;
@@ -112,28 +111,29 @@ sub _build_staking_limits {
     # NOTE: this evaluates only the contract-specific payout limit. There may be further
     # client-specific restrictions which are evaluated in B:P::Transaction.
     my $per_contract_payout_limit = $static->{risk_profile}{$self->risk_profile->get_risk_profile}{payout}{$self->currency};
-    my @possible_payout_maxes = ($bet_limits->{maximum_payout}->{$curr}, $per_contract_payout_limit);
+    my @possible_payout_maxes     = ();
+    my $stake_min;
+    @possible_payout_maxes = (
+          $bet_limits->{max_payout}->{default_landing_company}->{$self->underlying->market->name}
+        ? $bet_limits->{max_payout}->{default_landing_company}->{$self->underlying->market->name}->{$curr}
+        : $bet_limits->{max_payout}->{default_landing_company}->{default_market}->{$curr},
+        $per_contract_payout_limit
+    );
+
+    $stake_min =
+          $bet_limits->{min_stake}->{default_landing_company}->{$self->underlying->market->name}
+        ? $bet_limits->{min_stake}->{default_landing_company}->{$self->underlying->market->name}->{$curr}
+        : $bet_limits->{min_stake}->{default_landing_company}->{default_market}->{$curr};
+
     push @possible_payout_maxes, $bet_limits->{inefficient_period_payout_max}->{$self->currency} if $self->apply_market_inefficient_limit;
 
     my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);
-    my $payout_min =
-        ($self->underlying->market->name eq 'volidx')
-        ? $bet_limits->{min_payout}->{volidx}->{$curr}
-        : $bet_limits->{min_payout}->{default}->{$curr};
-    my $stake_min = ($self->for_sale) ? $payout_min / 20 : $payout_min / 2;
 
-    my $message_to_client;
-    if ($self->for_sale) {
-        $message_to_client = [$ERROR_MAPPING->{MarketPricePayoutClose}];
-    } else {
-        $message_to_client =
-            [$ERROR_MAPPING->{StakePayoutLimits}, formatnumber('price', $curr, $stake_min), formatnumber('price', $curr, $payout_max)];
-    }
+    $stake_min /= 10 if ($self->for_sale);
 
     return {
-        min               => $stake_min,
-        max               => $payout_max,
-        message_to_client => $message_to_client,
+        min => $stake_min,
+        max => $payout_max,
     };
 }
 

@@ -38,9 +38,9 @@ my $c = produce_contract($args);
 subtest 'Test that contract can be created correctly' => sub {
     lives_ok {
         my $c = produce_contract($args);
-        is $c->code,            'TICKLOW';
-        is $c->pricing_code,    'TICKLOW';
-        is $c->sentiment,       'low';
+        is $c->code,         'TICKLOW';
+        is $c->pricing_code, 'TICKLOW';
+        is $c->sentiment,    'low';
         is $c->category->code, 'highlowticks';
         is_deeply $c->supported_expiries, ['tick'];
         isa_ok $c, 'BOM::Product::Contract::Ticklow';

@@ -15,6 +15,7 @@ use Moose::Role;
 requires 'bet';
 
 use Math::Cephes::Matrix qw(mat);
+use Math::Business::BlackScholesMerton::Binaries;
 use Math::Business::BlackScholesMerton::NonBinaries;
 
 use BOM::Product::Pricing::Engine::BlackScholes;

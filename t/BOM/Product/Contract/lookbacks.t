@@ -159,13 +159,15 @@ subtest 'lbhighlow' => sub {
 
 subtest 'invalid amount_type' => sub {
     $args->{amount_type} = 'unkown';
+    $args->{amount} = 1;
     try {
         produce_contract($args);
     }
     catch {
         isa_ok $_, 'BOM::Product::Exception';
-        is $_->error_code, 'WrongAmountTypeNonBinary', 'correct error code';
-        is $_->message_to_client->[0], 'Basis has to be equal to multiplier for non-binary options.';
+        is $_->error_code, 'WrongAmountTypeOne', 'correct error code';
+        is $_->message_to_client->[0], 'Basis must be [_1] for this contract.';
+        is $_->message_to_client->[1], 'multiplier';
     };
 };
 

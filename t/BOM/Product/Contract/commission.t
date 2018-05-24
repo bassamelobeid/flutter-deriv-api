@@ -260,19 +260,6 @@ subtest 'stake' => sub {
     cmp_ok $c->payout, '==', 5, "Indices' payout is re-adjusted to 5 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
 
     $c = produce_contract({
-        bet_type         => 'CALL',
-        underlying       => 'USMSFT',
-        barrier          => 'S0P',
-        duration         => '10m',
-        currency         => 'USD',
-        amount_type      => 'stake',
-        amount           => $stake,
-        theo_probability => $theo_probability,
-        base_commission  => $base_commission,
-    });
-    cmp_ok $c->payout, '==', 5, "Stocks' payout is re-adjusted to 5 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
-
-    $c = produce_contract({
         bet_type    => 'CALL',
         underlying  => 'frxUSDJPY',
         barrier     => 'S0P',

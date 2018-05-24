@@ -57,17 +57,17 @@ subtest 'tick expiry one touch no touch' => sub {
 
     my $c = produce_contract($args);
     ok $c->tick_expiry, 'is tick expiry contract';
-    is $c->tick_count, 5, 'number of ticks is 5'; 
+    is $c->tick_count, 5, 'number of ticks is 5';
 
     #Let's check the date Expiry
     is $c->date_expiry->epoch, 1404986410, 'expected date expiry';
-    is $c->date_start->epoch, 1404986400, 'expected date start';
+    is $c->date_start->epoch,  1404986400, 'expected date start';
 
 # Here we simulate the proposal open contract by using tick_expiry and tick_count
     $args->{date_pricing} = $one_day->plus_time_interval('2s');
     delete $args->{duration};
     $args->{tick_expiry} = 1;
-    $args->{tick_count} = 5;
+    $args->{tick_count}  = 5;
 
     $c = produce_contract($args);
     ok $c->tick_expiry, 'is tick expiry contract';
@@ -80,11 +80,11 @@ subtest 'tick expiry one touch no touch' => sub {
 
     #Let's check the date Expiry
     is $c->date_expiry->epoch, 1404986410, 'expected date expiry';
-    is $c->date_start->epoch, 1404986400, 'expected date start';
-    is $c->entry_tick->quote, 101, 'correct entry tick';
+    is $c->date_start->epoch,  1404986400, 'expected date start';
+    is $c->entry_tick->quote,  101,        'correct entry tick';
 
     my %expected_bid_price = (
-	2 => 43.44,
+        2 => 43.44,
         3 => 34.11,
         4 => 18.06,
         5 => 53.64,
@@ -94,7 +94,7 @@ subtest 'tick expiry one touch no touch' => sub {
 
         my $index = $_;
 
-        $args->{barrier} = '+' . $index . '.0';
+        $args->{barrier}      = '+' . $index . '.0';
         $args->{date_pricing} = $one_day->plus_time_interval(($index * 2) . 's');
 
         # Before next tick is available
@@ -102,7 +102,7 @@ subtest 'tick expiry one touch no touch' => sub {
         ok !$c->is_expired, 'contract did not touch barrier';
         ok !$c->hit_tick,   'no hit tick';
         is $c->current_tick->quote, 101 + ($index - 2) + 1, 'correct current tick' if $index > 2;
-        is $c->current_tick->quote, 101 , 'correct current tick' if $index == 2;
+        is $c->current_tick->quote, 101, 'correct current tick' if $index == 2;
 
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
@@ -114,10 +114,10 @@ subtest 'tick expiry one touch no touch' => sub {
         $c = produce_contract($args);
         ok $c->is_expired, 'contract is expired once it touch the barrier';
 
-        ok $c->hit_tick,   'hit tick';
+        ok $c->hit_tick, 'hit tick';
         cmp_ok $c->hit_tick->quote, '==', 101 + $index;
-        is $c->current_tick->quote, 101 + $index, 'correct current tick';    
-        # Check hit tick against barrier    
+        is $c->current_tick->quote, 101 + $index, 'correct current tick';
+        # Check hit tick against barrier
         ok $c->hit_tick->quote == $c->barrier->as_absolute;
 
         is $c->date_expiry->epoch, 1404986410, 'checking date expiry';
@@ -126,7 +126,7 @@ subtest 'tick expiry one touch no touch' => sub {
         is $c->is_valid_to_sell, 1, 'is_valid_to_sell';
 
         # No barrier hit test case
-        $args->{barrier} = '+' . ($index+0.02);
+        $args->{barrier} = '+' . ($index + 0.02);
         $c = produce_contract($args);
         ok !$c->is_expired, 'contract did not touch barrier';
         ok !$c->hit_tick,   'no hit tick';
@@ -159,11 +159,11 @@ subtest 'tick expiry one touch no touch' => sub {
 
     is $c->date_expiry->epoch, 1404986410, 'checking date expiry';
 
-    $c                    = produce_contract($args);
+    $c = produce_contract($args);
     ok $c->is_expired, 'Here is the last one, 5th tick after entry tick';
     ok $c->hit_tick,   'hit tick';
-    cmp_ok $c->hit_tick->quote, '==', 108;    
-    is $c->current_tick->quote, 108, 'correct current tick';
+    cmp_ok $c->hit_tick->quote, '==', 108;
+    is $c->current_tick->quote, 108,  'correct current tick';
 
     is $c->date_expiry->epoch, 1404986412, 'checking date expiry --';
 
@@ -174,7 +174,7 @@ subtest 'tick expiry one touch no touch' => sub {
     $args->{barrier} = '-1.0';
     $c = produce_contract($args);
     ok $c->is_expired, 'Here is the last one, 5th tick after entry tick';
-    ok !$c->hit_tick,   'no hit tick';
+    ok !$c->hit_tick, 'no hit tick';
     is $c->current_tick->quote, 108, 'correct current tick';
 
     is $c->bid_price, 0, 'Correct bid price at expiry in case of no hit';
@@ -182,11 +182,11 @@ subtest 'tick expiry one touch no touch' => sub {
     is $c->is_valid_to_sell, 1, 'is_valid_to_sell';
 
 # Let check the hit tick is correct when backprice
-    $args->{barrier}      = '+2.0';
+    $args->{barrier} = '+2.0';
 
     $c = produce_contract($args);
 
-    ok $c->hit_tick,   'hit tick';
+    ok $c->hit_tick, 'hit tick';
     cmp_ok $c->hit_tick->quote, '==', 103;
 };
 
