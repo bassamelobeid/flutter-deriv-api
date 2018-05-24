@@ -38,9 +38,9 @@ sub create_account {
 
     my $financial_assessment = BOM::Platform::Account::Real::default::get_financial_assessment_score($financial_data);
 
-    my $is_professional = _is_professional_client($financial_assessment);
+    my $should_warn = _should_warn($financial_assessment);
 
-    return {error => 'show risk disclaimer'} if not $accept_risk and not $is_professional;
+    return {error => 'show risk disclaimer'} if not $accept_risk and not $should_warn;
 
     my $register = BOM::Platform::Account::Real::default::register_client($details);
     return $register if ($register->{error});
@@ -53,7 +53,7 @@ sub create_account {
     $client->set_status('unwelcome', 'SYSTEM', 'Trading disabled for investment Europe ltd');
     if ($accept_risk) {
         $client->set_status('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
-    } elsif ($is_professional) {
+    } elsif ($should_warn) {
         $client->set_status('financial_risk_approval', 'SYSTEM', 'Financial risk approved based on financial assessment score');
     }
 
@@ -71,8 +71,8 @@ sub create_account {
     return $status;
 }
 
-# Consider client as a professional trader if the trading score is from 8 to 16 or CFD is 4
-sub _is_professional_client {
+# Show Risk Disclosure warning message if the trading score is from 8 to 16 or CFD is 4
+sub _should_warn {
     my $financial_assessment = shift;
     return ($financial_assessment->{trading_score} > 7 or $financial_assessment->{cfd_score} > 3);
 }
