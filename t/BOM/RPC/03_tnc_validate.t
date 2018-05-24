@@ -15,28 +15,50 @@ use Email::Stuffer::TestLinks;
 
 my $email       = 'dummy@binary.com';
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MX',
+});
+my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
 $test_client->email($email);
 $test_client->save;
+$test_client_cr->email($email);
+$test_client_cr->save;
 my $user = BOM::User->create(
     email    => $email,
     password => '1234',
 );
 $user->add_loginid({loginid => $test_client->loginid});
+$user->add_loginid({loginid => $test_client_cr->loginid});
 $user->save;
 
 my $oauth = BOM::Database::Model::OAuth->new;
 my ($token) = $oauth->store_access_token_only(1, $test_client->loginid);
+my ($token_cr) = $oauth->store_access_token_only(1, $test_client_cr->loginid);
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
+my @methods = qw(buy buy_contract_for_multiple_accounts sell cashier);
+
 my $params = {
+    language => 'EN',
+    token    => $token_cr,
+};
+
+# Since we're caling these methods without proper parameters warnings may be generated if the tnc check passes
+Test::Warnings::allow_warnings(1);
+subtest 'tnc exempt' => sub {
+    for my $method (@methods) {
+        my $result = $c->call_ok($method, $params);
+        isnt($result->{error}->{message_to_client}, 'Terms and conditions approval is required.', "method $method check tnc exempt");
+    }
+};
+Test::Warnings::allow_warnings(0);
+
+$params = {
     language => 'EN',
     token    => $token,
 };
-
-my @methods = qw(buy buy_contract_for_multiple_accounts sell cashier);
 
 subtest 'no tnc yet' => sub {
     for my $method (@methods) {

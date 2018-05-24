@@ -84,7 +84,7 @@ subtest 'common' => sub {
     my $user_mocked = Test::MockModule->new('BOM::User');
     $user_mocked->mock('new', sub { bless {}, 'BOM::User' });
 
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr1->loginid, 'test token');
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mx->loginid, 'test token');
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_TNC_APPROVAL', 'Client needs to approve tnc before')
         ->error_message_is('Terms and conditions approval is required.', 'Correct error message for terms and conditions');
 
@@ -100,6 +100,7 @@ subtest 'common' => sub {
     $client_cr1->set_default_account('JPY');
     $client_cr1->save;
 
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr1->loginid, 'test token');
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has wrong default currency for landing_company')
         ->error_message_is('JPY transactions may not be performed with this account.', 'Correct error message for wrong default account');
