@@ -680,6 +680,16 @@ rpc paymentagent_withdraw => sub {
         });
     };
 
+    # 04/05/2018: Currently this check is irrelevent, because only CR clients can use payment agents, and they
+    #   aren't required to accept T&Cs. It's here just in case payments agents are enabled for other lcs.
+    my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
+    my $client_tnc_status   = $client->get_status('tnc_approval');
+
+    return $error_sub->(localize('Terms and conditions approval is required.'))
+        if (!$client->is_virtual
+        && $client->landing_company->tnc_required
+        && $client_tnc_status->reason ne $current_tnc_version);
+
     my $amount_validation_error = _validate_amount($amount, $currency);
     return $error_sub->($amount_validation_error) if $amount_validation_error;
 
