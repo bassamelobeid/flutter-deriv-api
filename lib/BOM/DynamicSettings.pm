@@ -317,7 +317,7 @@ sub parse_and_refine_setting {
 sub get_extra_validation {
     my $setting = shift;
     state $setting_validators = {
-        'cgi.terms_conditions_version'   => \&validate_tnc_date,
+        'cgi.terms_conditions_version' => \&validate_tnc_date,
     };
 
     return $setting_validators->{$setting};
