@@ -26,7 +26,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use await;
 
-use constant MAX_FILE_SIZE  => 2**20 * 3;    # 3MB
+use constant MAX_FILE_SIZE  => 2**20 * 8;    # 8MB
 use constant MAX_CHUNK_SIZE => 2**17;
 
 override_subs();
