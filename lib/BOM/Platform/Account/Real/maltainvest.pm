@@ -37,20 +37,27 @@ sub create_account {
     }
 
     my $financial_assessment = BOM::Platform::Account::Real::default::get_financial_assessment_score($financial_data);
-    if (not $accept_risk and $financial_assessment->{total_score} < 60) {
-        return {error => 'show risk disclaimer'};
-    }
+    # Based on the scoring result of the test: show the
+    # Risk Disclosure if client is not professional
+
+    my $is_professional = _is_professional_client($financial_assessment);
+
+    return {error => 'show risk disclaimer'} if not $accept_risk and not $is_professional;
 
     my $register = BOM::Platform::Account::Real::default::register_client($details);
     return $register if ($register->{error});
 
     my $client = $register->{client};
     $client->financial_assessment({
-        data => Encode::encode_utf8(JSON::MaybeXS->new->encode($financial_assessment->{user_data})),
+        data => Encode::encode_utf8(JSON::MaybeXS->new->encode($financial_assessment)),
     });
     # after_register_client sub save client so no need to call it here
     $client->set_status('unwelcome', 'SYSTEM', 'Trading disabled for investment Europe ltd');
-    $client->set_status('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure') if $accept_risk;
+    if ($accept_risk) {
+        $client->set_status('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
+    } elsif ($is_professional) {
+        $client->set_status('financial_risk_approval', 'SYSTEM', 'Financial risk approved based on financial assessment score');
+    }
 
     my $status = BOM::Platform::Account::Real::default::after_register_client({
         client      => $client,
@@ -63,17 +70,29 @@ sub create_account {
 
     BOM::Platform::Account::Real::default::add_details_to_desk($client, $details);
 
-    if ($financial_assessment->{total_score} > 59) {
+    if ($is_professional) {
         my $brand = Brands->new(name => request()->brand);
         send_email({
-            from    => $brand->emails('support'),
-            to      => $brand->emails('compliance'),
-            subject => $client->loginid . ' considered as professional trader',
-            message =>
-                [$client->loginid . ' scored ' . $financial_assessment->{total_score} . ' and is therefore considered a professional trader.'],
-        });
+                from    => $brand->emails('support'),
+                to      => $brand->emails('compliance'),
+                subject => $client->loginid . ' considered as professional trader',
+                message => [
+                          $client->loginid
+                        . ' scored '
+                        . $financial_assessment->{trading_score}
+                        . ' in trading experience and '
+                        . $financial_assessment->{cfd_score}
+                        . ' in cfd assessments, and is therefore considered a professional trader.'
+                ],
+            });
     }
     return $status;
+}
+
+# Consider client as a professional trader if the trading score is from 8 to 16 or CFD is 4
+sub _is_professional_client {
+    my $financial_assessment = shift;
+    return ($financial_assessment->{trading_score} > 7 or $financial_assessment->{cfd_score} > 3);
 }
 
 1;

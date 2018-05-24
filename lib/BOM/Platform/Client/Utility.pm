@@ -58,7 +58,8 @@ sub set_gamstop_self_exclusion {
 
     my $gamstop_config = BOM::Platform::Config::third_party->{gamstop};
 
-    my $landing_company_config = $gamstop_config->{config}->{$client->landing_company->short};
+    my $lc                     = $client->landing_company->short;
+    my $landing_company_config = $gamstop_config->{config}->{$lc};
     # don't request if we don't have gamstop key per landing company
     return undef unless $landing_company_config;
 
@@ -76,7 +77,7 @@ sub set_gamstop_self_exclusion {
             postcode      => $client->postcode,
         );
 
-        stats_inc('GAMSTOP_RESPONSE', {tags => ['EXCLUSION:' . ($gamstop_response->get_exclusion() // 'NA')]});
+        stats_inc('GAMSTOP_RESPONSE', {tags => ['EXCLUSION:' . ($gamstop_response->get_exclusion() // 'NA'), "landing_company:$lc"]});
     }
     catch {
         stats_inc('GAMSTOP_CONNECT_FAILURE') if $_ =~ /^Error/;

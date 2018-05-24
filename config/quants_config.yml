@@ -21,53 +21,59 @@ bet_limits:
     ETH: 0.5
     LTC: 2.5
     ETC: 2.5
-  maximum_payout:
-    USD: 50000
-    EUR: 50000
-    AUD: 50000
-    GBP: 50000
-    JPY: 5000000
-    BTC: 5
-    BCH: 5
-    ETH: 10
-    LTC: 50
-    ETC: 50
-  min_payout:
-    default:
-      USD: 1
-      EUR: 1
-      AUD: 1
-      GBP: 1
-      JPY: 70
-      BTC: 0.0004
-      BCH: 0.002
-      ETH: 0.004
-      LTC: 0.02
-      ETC: 0.02
-      DAI: 1
-    volidx:
-      USD: 0.7
-      EUR: 0.7
-      AUD: 0.7
-      GBP: 0.7
-      JPY: 70
-      BTC: 0.0004
-      BCH: 0.002
-      ETH: 0.004
-      LTC: 0.02
-      ETC: 0.02
-      DAI: 1
+    DAI: 200
+  max_payout:
+    default_landing_company:
+      default_market:
+        USD: 50000
+        EUR: 50000
+        AUD: 50000
+        GBP: 50000
+        JPY: 5000000
+        BTC: 5
+        BCH: 5
+        ETH: 10
+        LTC: 50
+        ETC: 50
+        DAI: 5000
   min_stake:
+    default_landing_company:
+      default_market:
+        USD: 0.5
+        EUR: 0.5
+        AUD: 0.5
+        GBP: 0.5
+        JPY: 35
+        BTC: 0.0002
+        BCH: 0.001
+        ETH: 0.002
+        LTC: 0.01
+        ETC: 0.05
+        DAI: 0.5
+      volidx:
+        USD: 0.35
+        EUR: 0.35
+        AUD: 0.35
+        GBP: 0.35
+        JPY: 35
+        BTC: 0.0002
+        BCH: 0.001
+        ETH: 0.002
+        LTC: 0.01
+        ETC: 0.05
+        DAI: 0.5
     maltainvest:
-      USD: 5
-      EUR: 5
-      AUD: 5
-      GBP: 5
-      BTC: 0.005
-      BCH: 0.025
-      ETH: 0.05
-      LTC: 0.25
-      ETC: 0.25
+      default_market:
+        USD: 5
+        EUR: 5
+        AUD: 5
+        GBP: 5
+        BTC: 0.002
+        BCH: 0.01
+        ETH: 0.02
+        LTC: 0.1
+        ETC: 1
+        DAI: 5
   min_commission_amount:
     USD: 0.02 # 0.02 dollar
     EUR: 0.02
@@ -79,6 +85,7 @@ bet_limits:
     ETH: 0.00015
     LTC: 0.00075
     ETC: 0.0015
+    DAI: 0.02
 
 #Lookback option limits – the Value-at-risk approach
 #
@@ -116,6 +123,7 @@ lookback_limits:
     ETH: 3
     LTC: 3
     ETC: 3
+    DAI: 300
 
 risk_profile:
   no_business:
@@ -130,6 +138,7 @@ risk_profile:
           ETH: 0
           LTC: 0
           ETC: 0
+          DAI: 0
       payout:
           USD: 0
           EUR: 0
@@ -141,6 +150,7 @@ risk_profile:
           ETH: 0
           LTC: 0
           ETC: 0
+          DAI: 0
   extreme_risk:
       turnover:
           USD: 1000
@@ -153,6 +163,7 @@ risk_profile:
           ETH: 2
           LTC: 10
           ETC: 10
+          DAI: 1000
       payout:
           USD: 100
           EUR: 100
@@ -164,6 +175,7 @@ risk_profile:
           ETH: 0.2
           LTC: 1
           ETC: 1
+          DAI: 100
   high_risk:
       turnover:
           USD: 50000
@@ -176,6 +188,7 @@ risk_profile:
           ETH: 50
           LTC: 250
           ETC: 250
+          DAI: 50000
       payout:
           USD: 5000
           EUR: 5000
@@ -187,6 +200,7 @@ risk_profile:
           ETH: 5
           LTC: 50
           ETC: 50
+          DAI: 5000
   medium_risk:
       turnover:
           USD: 100000
@@ -199,6 +213,7 @@ risk_profile:
           ETH: 50
           LTC: 250
           ETC: 250
+          DAI: 100000
       payout:
           USD: 20000
           EUR: 20000
@@ -210,6 +225,7 @@ risk_profile:
           ETH: 5
           LTC: 50
           ETC: 50
+          DAI: 20000
   low_risk:
       turnover:
           USD: 500000
@@ -222,6 +238,7 @@ risk_profile:
           ETH: 100
           LTC: 500
           ETC: 500
+          DAI: 500000
       payout:
           USD: 50000
           EUR: 50000
@@ -233,3 +250,4 @@ risk_profile:
           ETH: 10
           LTC: 50
           ETC: 50
+          DAI: 50000
