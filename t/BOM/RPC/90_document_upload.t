@@ -73,7 +73,7 @@ my %default_args = (
 use constant {
     EXP_DATE_PAST   => '2017-08-09',
     INVALID_FILE_ID => 1231531,
-    MAX_FILE_SIZE   => 3 * 2**20,
+    MAX_FILE_SIZE   => 8 * 2**20,
 };
 
 #########################################################
