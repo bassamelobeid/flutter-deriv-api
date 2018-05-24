@@ -117,8 +117,8 @@ if (defined $do_calculation) {
     }
 }
 
-my $open_contracts = $clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client->loginid, $client->currency, 'false']);
-foreach my $contract (@{$open_contracts}) {
+my $open_contracts = get_open_contracts($client);
+foreach my $contract (@$open_contracts) {
     $contract->{purchase_date} = Date::Utility->new($contract->{purchase_time});
 }
 

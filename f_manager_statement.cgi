@@ -76,13 +76,8 @@ BOM::Transaction::sell_expired_contracts({
     client => $client,
 });
 
-my $clientdb = BOM::Database::ClientDB->new({
-    client_loginid => $client->loginid,
-    operation      => 'replica',
-});
-
-my $open_bets = $clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client->loginid, $client->currency, 'false']);
-foreach my $open_bet (@{$open_bets}) {
+my $open_bets = get_open_contracts($client);
+foreach my $open_bet (@$open_bets) {
     my $bet = produce_contract($open_bet->{short_code}, $client->currency);
     $open_bet->{description} = localize($bet->longcode);
     if ($bet->may_settle_automatically) {
@@ -91,10 +86,14 @@ foreach my $open_bet (@{$open_bets}) {
 }
 
 my $acnt_dm = BOM::Database::DataMapper::Account->new({
-    client_loginid => $client->loginid,
-    currency_code  => $client->currency,
-    db             => $clientdb->db,
-});
+        client_loginid => $client->loginid,
+        currency_code  => $client->currency,
+        db             => BOM::Database::ClientDB->new({
+                client_loginid => $client->loginid,
+                operation      => 'replica'
+            }
+        )->db,
+    });
 
 BOM::Backoffice::Request::template->process(
     'backoffice/account/portfolio.html.tt',

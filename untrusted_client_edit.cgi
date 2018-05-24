@@ -73,12 +73,19 @@ foreach my $login_id (split(/\s+/, $clientID)) {
         "<font color=red><b>ERROR :</b></font>&nbsp;&nbsp;Failed to enable this client <b>$encoded_login_id</b>. Please try again.";
     my $remove_success_msg =
         "<font color=green><b>SUCCESS :</b></font>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has been removed from  <b>$file_name</b>";
+    my $open_trades_error_msg =
+        "<font color=red><b>ERROR :</b></font>&nbsp;&nbsp;Account <b>$encoded_login_id</b> cannot be marked as disabled as account has open positions. Please check account portfolio.";
 
     # DISABLED/CLOSED CLIENT LOGIN
     if ($client_status_type eq 'disabledlogins') {
         if ($action eq 'insert_data') {
-            $client->set_status('disabled', $clerk, $reason);
-            $printline = $client->save ? $insert_success_msg : $insert_error_msg;
+            #should check portfolio
+            if (@{get_open_contracts($client)}) {
+                $printline = $open_trades_error_msg;
+            } else {
+                $client->set_status('disabled', $clerk, $reason);
+                $printline = $client->save ? $insert_success_msg : $insert_error_msg;
+            }
         }
         # remove client from $broker.disabledlogins
         elsif ($action eq 'remove_data') {

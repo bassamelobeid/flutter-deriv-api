@@ -14,7 +14,7 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 create_underlying("frx${_}USD")->set_combined_realtime({
         epoch => time,
         quote => 100
-    }) for ('BCH', 'EUR', 'BTC', 'GBP', 'LTC', 'ETH', 'AUD', 'JPY');
+    }) for ('BCH', 'EUR', 'BTC', 'GBP', 'LTC', 'ETH', 'AUD', 'JPY', 'DAI');
 
 my $dashboard = BOM::RiskReporting::Dashboard->new(
     client => $test_client,

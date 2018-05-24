@@ -17,7 +17,7 @@
     <tr>
         <td>CR0001</td><td>credit</td><td>714859<td>DCash1</td><td>USD</td><td>10.00</td><td>"DoughFlow deposit"</td><td>143222</td>
     </tr>
-    <tr><td colspan="8" align="center">Please note that for debit transaction id is not required</td></tr>
+    <tr><td colspan="8" align="center">Please note that for debit and withdrawal reversal, transaction id is not required</td></tr>
     <tr>
         <td>CR0001</td><td>debit</td><td>714859<td>NETeller</td><td>USD</td><td>10.00</td><td>"reversal of DoughFlow deposit"</td><td></td>
     </tr>
