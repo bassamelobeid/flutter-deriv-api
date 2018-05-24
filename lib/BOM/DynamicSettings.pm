@@ -9,6 +9,7 @@ use HTML::Entities;
 use JSON::MaybeXS;
 use Text::CSV;
 use Try::Tiny;
+use feature 'state';
 
 use BOM::Platform::Runtime;
 
@@ -73,6 +74,9 @@ sub save_settings {
                     my $compare = Data::Compare->new($new_value, $old_value);
                     try {
                         if (not $compare->Cmp) {
+                            my $extra_validation = get_extra_validation($s);
+                            $extra_validation->($new_value, $old_value) if $extra_validation;
+
                             $data_set->{global}->set($s, $new_value);
                             $message .= join('', '<div id="saved">Set ', encode_entities($s), ' to ', encode_entities($display_value), '</div>');
                         }
@@ -80,7 +84,8 @@ sub save_settings {
                     catch {
                         $message .= join('',
                             '<div id="error">Invalid value, could not set ',
-                            encode_entities($s), ' to ', encode_entities($display_value), '</div>');
+                            encode_entities($s), ' to ', encode_entities($display_value),
+                            ' because ', $_, '</div>');
                         $has_errors = 1;
                     };
                 }
@@ -302,6 +307,50 @@ sub parse_and_refine_setting {
 
     return ($input_value, $display_value);
 
+}
+
+# This contains functions to do field-specific validation on the dynamic settings
+#   Functions specified should:
+#       - Accept one argument (the value being validated)...
+#       -   and an optional second argument (the old value)
+#       - If there is a problem die with a message describing the issue.
+sub get_extra_validation {
+    my $setting = shift;
+    state $setting_validators = {
+        'cgi.terms_conditions_version'   => \&validate_tnc_date,
+    };
+
+    return $setting_validators->{$setting};
+}
+
+sub validate_tnc_date {
+    # Note: this sub is also used for error checking in BOM :: DynamicSettings
+    #   Do not change inputs or outputs
+
+    my $version = shift;
+
+    # Check expected date format
+    die 'Incorrect date format (must be yyyy-mm-dd)'
+        unless $version =~ /^Version [0-9]+ [0-9]{4}-[0-9]{2}-[0-9]{2}$/;
+
+    # Todo:...
+
+    # Date needs to be valid and compatible with Date::Utility
+    my ($date, $error);
+    try {
+        $date = Date::Utility->new($version);
+    }
+    catch {
+        $error = 1;
+    };
+    die "$version is not a valid date" if $error;
+
+    # Date shouldn't be in the future
+    my $diff = $date->days_between(Date::Utility::today);
+    die 'Date is over a week in the future' if $diff > 7;
+
+    # No errors
+    return;
 }
 
 1;
