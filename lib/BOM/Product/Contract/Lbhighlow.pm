@@ -12,6 +12,8 @@ sub check_expiry_conditions {
         if (defined $high and defined $low) {
             my $value = ($high - $low) * $self->multiplier;
             $self->value($value);
+
+            warn "Negative value for lookback: " . $self->shortcode . " low:" . $low . " high:" . $high if $value < 0;
         }
     }
 
