@@ -33,7 +33,7 @@ subtest 'config' => sub {
         currency     => 'USD',
         payout       => 100,
     });
-    is $c->longcode->[0], 'Get a payout if the exit spot of [_1] is lower than high barrier at [_3] after [_2].';
+    is $c->longcode->[0], 'Win up to [_7] [_6] if [_1]\'s exit tick is between [_4] and [_5] or [_7] [_6] if it falls below [_5] at [_3] after [_2].';
     is $c->longcode->[2][0], 'contract start time';
     is $c->longcode->[3]->{value}, 18000;
     ok !$c->is_binary, 'non-binary';
