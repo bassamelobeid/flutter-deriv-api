@@ -688,7 +688,7 @@ rpc paymentagent_withdraw => sub {
     return $error_sub->(localize('Terms and conditions approval is required.'))
         if (!$client->is_virtual
         && $client->landing_company->tnc_required
-        && $client_tnc_status->reason ne $current_tnc_version);
+        && (!$client_tnc_status || $client_tnc_status->reason ne $current_tnc_version));
 
     my $amount_validation_error = _validate_amount($amount, $currency);
     return $error_sub->($amount_validation_error) if $amount_validation_error;
