@@ -37,8 +37,6 @@ sub create_account {
     }
 
     my $financial_assessment = BOM::Platform::Account::Real::default::get_financial_assessment_score($financial_data);
-    # Based on the scoring result of the test: show the
-    # Risk Disclosure if client is not professional
 
     my $is_professional = _is_professional_client($financial_assessment);
 
