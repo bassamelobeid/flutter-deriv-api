@@ -70,37 +70,20 @@ sub create_account {
     BOM::Platform::Account::Real::default::add_details_to_desk($client, $details);
 
     my $brand = Brands->new(name => request()->brand);
-    if ($should_warn) {
-        send_email({
-                from    => $brand->emails('support'),
-                to      => $brand->emails('compliance'),
-                subject => $client->loginid . ' appropriateness test scoring',
-                message => [
-                          $client->loginid
-                        . ' scored '
-                        . $financial_assessment->{trading_score}
-                        . ' in trading experience and '
-                        . $financial_assessment->{cfd_score}
-                        . ' in cfd assessments, and is therefore risk disclosure was shown and client accepted the disclosure.'
-                ],
-            });
-    } else {
-        send_email({
-                from    => $brand->emails('support'),
-                to      => $brand->emails('compliance'),
-                subject => $client->loginid . ' appropriateness test scoring',
-                message => [
-                          $client->loginid
-                        . ' scored '
-                        . $financial_assessment->{trading_score}
-                        . ' in trading experience and '
-                        . $financial_assessment->{cfd_score}
-                        . ' in cfd assessments, and is therefore risk disclosure was not shown.'
-                ],
-            });
-
-    }
-
+    send_email({
+            from    => $brand->emails('support'),
+            to      => $brand->emails('compliance'),
+            subject => $client->loginid . ' appropriateness test scoring',
+            message => [
+                      $client->loginid
+                    . ' scored '
+                    . $financial_assessment->{trading_score}
+                    . ' in trading experience and '
+                    . $financial_assessment->{cfd_score}
+                    . ' in cfd assessments, and is therefore risk disclosure was '
+                    . ($should_warn ? ' shown and client accepted the disclosure.' : ' not shown.')
+            ],
+        });
     return $status;
 }
 
