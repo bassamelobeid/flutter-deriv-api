@@ -100,7 +100,7 @@ rpc "cashier", sub {
 
     my ($brand, $currency) = (Brands->new(name => request()->brand), $client->default_account->currency_code);
 
-    if (LandingCompany::Registry::get('costarica')->legal_allowed_currencies->{$currency} eq 'crypto') {
+    if (LandingCompany::Registry::get_currency_type($currency) eq 'crypto') {
         return _get_cryptocurrency_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language}, $brand->name);
     }
 

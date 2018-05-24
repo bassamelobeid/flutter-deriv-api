@@ -252,7 +252,7 @@ my $method = 'payout_currencies';
 subtest $method => sub {
     # we shouldn't care about order of currencies
     # we just need to send array back
-    cmp_bag($c->tcall($method, {token => '12345'}), [qw(USD EUR GBP AUD BTC BCH LTC ETH)], 'invalid token will get all currencies');
+    cmp_bag($c->tcall($method, {token => '12345'}), [qw(USD EUR GBP AUD BTC BCH LTC ETH DAI)], 'invalid token will get all currencies');
     cmp_bag(
         $c->tcall(
             $method,
@@ -260,12 +260,12 @@ subtest $method => sub {
                 token => undef,
             }
         ),
-        [qw(USD EUR GBP AUD BTC BCH LTC ETH)],
+        [qw(USD EUR GBP AUD BTC BCH LTC ETH DAI)],
         'undefined token will get all currencies'
     );
 
     cmp_bag($c->tcall($method, {token => $token_21}), ['USD'], "will return client's currency");
-    cmp_bag($c->tcall($method, {}), [qw(USD EUR GBP AUD BTC BCH LTC ETH)], "will return legal currencies if no token");
+    cmp_bag($c->tcall($method, {}), [qw(USD EUR GBP AUD BTC BCH LTC ETH DAI)], "will return legal currencies if no token");
 };
 
 $method = 'landing_company';
@@ -295,7 +295,7 @@ subtest $method => sub {
 $method = 'landing_company_details';
 subtest $method => sub {
     is_deeply(
-        $c->tcall($method, {args => {landing_company_details => 'nosuchcountry'}}),
+        $c->tcall($method, {args => {landing_company_details => 'nosuchlandingcompany'}}),
         {
             error => {
                 message_to_client => 'Unknown landing company.',
@@ -305,6 +305,11 @@ subtest $method => sub {
         "no such landing company"
     );
     is($c->tcall($method, {args => {landing_company_details => 'costarica'}})->{name}, 'Binary (C.R.) S.A.', "details result ok");
+    cmp_bag(
+        [keys %{$c->tcall($method, {args => {landing_company_details => 'costarica'}})->{currency_config}->{volidx}}],
+        ['USD', 'AUD', 'BCH', 'BTC', 'ETH', 'EUR', 'GBP', 'LTC', 'DAI'],
+        "currency config ok"
+    );
 };
 
 $method = 'statement';
@@ -692,30 +697,30 @@ subtest $method => sub {
         my $res = ((grep { $_ eq 'financial_assessment_not_complete' } @{$c->tcall($method, {token => $token1})->{status}}) == $is_present);
         ok($res, $msg);
     }
-    # test 1: when some answers are empty
+
+    # 'financial_assessment_not_complete' should not present when everything is complete
+    test_financial_assessment($data, 0, 'financial_assessment_not_complete should not present when questions are answered properly');
+
+    # When some answers are empty
     $data->{account_turnover}->{answer} = "";
     test_financial_assessment($data, 1, 'financial_assessment_not_complete should present when some answers are empty');
-    # test 2: when some questions are not answered
+
+    # When some questions are not answered
     delete $data->{account_turnover};
-    test_financial_assessment($data, 1, 'financial_assessment_not_complete should present when questions are answered properly');
-    # test 3: when the client's risk classification is different
+    test_financial_assessment($data, 1, 'financial_assessment_not_complete should present when questions are not answered');
+
+    # When the client's risk classification is different
     $test_client->aml_risk_classification('high');
     $test_client->save();
     test_financial_assessment($data, 1, "financial_assessment_not_complete should present regardless of the client's risk classification");
-    # test 4: when answer is '0', 'financial_assessment_not_complete' should not present
-    #         as '0' may be one of the acceptable answers for options in the future
-    $data->{account_turnover}->{answer} = '0';
-    test_financial_assessment($data, 0, 'financial_assessment_not_complete should not present when questions are answered properly');
-    # test 5: 'financial_assessment_not_complete' should not present when everything is complete
-    $data->{account_turnover}->{answer} = 'Less than $25,000';
-    test_financial_assessment($data, 0, 'financial_assessment_not_complete should not present when questions are answered properly');
 
     # duplicate_account is not supposed to be shown to the users
-    $test_client->set_status('duplicate_account')->save;
+    $test_client->set_status('duplicate_account');
+    $test_client->save();
     cmp_deeply(
         $c->tcall($method, {token => $token_21}),
         {
-            status                        => bag(qw(financial_assessment_not_complete)),
+            status                        => bag(qw(financial_information_not_complete trading_experience_not_complete)),
             risk_classification           => 'low',
             prompt_client_to_authenticate => '0',
         },
@@ -736,7 +741,7 @@ subtest $method => sub {
     cmp_deeply(
         $c->tcall($method, {token => $token_21}),
         {
-            status                        => bag(qw(financial_assessment_not_complete document_needs_action)),
+            status                        => bag(qw(financial_information_not_complete trading_experience_not_complete document_needs_action)),
             risk_classification           => 'low',
             prompt_client_to_authenticate => '1',
         },
@@ -749,7 +754,7 @@ subtest $method => sub {
     cmp_deeply(
         $c->tcall($method, {token => $token_21}),
         {
-            status                        => bag(qw(financial_assessment_not_complete document_under_review)),
+            status                        => bag(qw(financial_information_not_complete trading_experience_not_complete document_under_review)),
             risk_classification           => 'low',
             prompt_client_to_authenticate => '1',
         },
@@ -763,7 +768,7 @@ subtest $method => sub {
     cmp_deeply(
         $c->tcall($method, {token => $token_21}),
         {
-            status                        => bag(qw(financial_assessment_not_complete)),
+            status                        => bag(qw(financial_information_not_complete trading_experience_not_complete)),
             risk_classification           => 'low',
             prompt_client_to_authenticate => '0',
         },
@@ -776,7 +781,7 @@ subtest $method => sub {
     cmp_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status                        => bag(qw(authenticated)),
+            status                        => bag(qw(authenticated financial_assessment_not_complete financial_information_not_complete)),
             risk_classification           => 'low',
             prompt_client_to_authenticate => '1',
         },
@@ -787,8 +792,8 @@ subtest $method => sub {
     cmp_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status                        => bag(qw(age_verification authenticated)),
-            risk_classification           => 'low',
+            status              => bag(qw(financial_assessment_not_complete financial_information_not_complete age_verification authenticated)),
+            risk_classification => 'low',
             prompt_client_to_authenticate => '0',
         },
         'ok, authenticated and age verified'
@@ -1161,26 +1166,22 @@ $method = 'set_financial_assessment';
 subtest $method => sub {
     my $args = {
         "set_financial_assessment"             => 1,
-        "forex_trading_experience"             => "Over 3 years",
-        "forex_trading_frequency"              => "0-5 transactions in the past 12 months",
-        "indices_trading_experience"           => "1-2 years",
-        "indices_trading_frequency"            => "40 transactions or more in the past 12 months",
-        "commodities_trading_experience"       => "1-2 years",
-        "commodities_trading_frequency"        => "0-5 transactions in the past 12 months",
-        "stocks_trading_experience"            => "1-2 years",
-        "stocks_trading_frequency"             => "0-5 transactions in the past 12 months",
-        "other_derivatives_trading_experience" => "Over 3 years",
-        "other_derivatives_trading_frequency"  => "0-5 transactions in the past 12 months",
-        "other_instruments_trading_experience" => "Over 3 years",
-        "other_instruments_trading_frequency"  => "6-10 transactions in the past 12 months",
-        "employment_industry"                  => "Finance",
-        "education_level"                      => "Secondary",
-        "income_source"                        => "Self-Employed",
-        "net_income"                           => '$25,000 - $50,000',
-        "estimated_worth"                      => '$100,000 - $250,000',
-        "occupation"                           => 'Managers',
-        "employment_status"                    => "Self-Employed",
-        "source_of_wealth"                     => "Company Ownership",
+        "forex_trading_experience"             => "Over 3 years",                                     # +2
+        "forex_trading_frequency"              => "0-5 transactions in the past 12 months",           # +0
+        "binary_options_trading_experience"    => "1-2 years",                                        # +1
+        "binary_options_trading_frequency"     => "40 transactions or more in the past 12 months",    # +2
+        "cfd_trading_experience"               => "1-2 years",                                        # +1
+        "cfd_trading_frequency"                => "0-5 transactions in the past 12 months",           # +0
+        "other_instruments_trading_experience" => "Over 3 years",                                     # +2
+        "other_instruments_trading_frequency"  => "6-10 transactions in the past 12 months",          # +1
+        "employment_industry"                  => "Finance",                                          # +15
+        "education_level"                      => "Secondary",                                        # +1
+        "income_source"                        => "Self-Employed",                                    # +0
+        "net_income"                           => '$25,000 - $50,000',                                # +1
+        "estimated_worth"                      => '$100,000 - $250,000',                              # +1
+        "occupation"                           => 'Managers',                                         # +0
+        "employment_status"                    => "Self-Employed",                                    # +0
+        "source_of_wealth"                     => "Company Ownership",                                # +0
     };
 
     my $res = $c->tcall(
@@ -1205,7 +1206,10 @@ subtest $method => sub {
             args  => $args,
             token => $token1
         });
-    cmp_ok($res->{score}, "<", 60, "Got correct score");
+    cmp_ok($res->{total_score},                 "==", 27, "Got correct total score");
+    cmp_ok($res->{financial_information_score}, "==", 18, "Got correct financial information score");
+    cmp_ok($res->{trading_score},               "==", 9,  "Got correct trading score");
+    cmp_ok($res->{cfd_score},                   "==", 1,  "Got correct CFD score");
 
     # test that setting this for one client also sets it for client with different landing company
     is($c->tcall('get_financial_assessment', {token => $token_mlt})->{source_of_wealth}, undef, "Financial assessment not set for MLT client");
@@ -1261,7 +1265,10 @@ subtest $method => sub {
             args  => $args,
             token => $token1
         });
-    cmp_ok($res->{score}, "==", 30, "Got correct score");
+    cmp_ok($res->{total_score},                 "==", 27, "Got correct total score");
+    cmp_ok($res->{financial_information_score}, "==", 18, "Got correct financial information score");
+    cmp_ok($res->{trading_score},               "==", 9,  "Got correct trading score");
+    cmp_ok($res->{cfd_score},                   "==", 1,  "Got correct CFD score");
     is $res->{education_level}, 'Secondary', 'Got correct answer for assessment key';
 };
 

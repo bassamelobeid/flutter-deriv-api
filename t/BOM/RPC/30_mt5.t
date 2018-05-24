@@ -58,14 +58,10 @@ $user->save;
 my %financial_data = (
     "forex_trading_experience"             => "Over 3 years",
     "forex_trading_frequency"              => "0-5 transactions in the past 12 months",
-    "indices_trading_experience"           => "1-2 years",
-    "indices_trading_frequency"            => "40 transactions or more in the past 12 months",
-    "commodities_trading_experience"       => "1-2 years",
-    "commodities_trading_frequency"        => "0-5 transactions in the past 12 months",
-    "stocks_trading_experience"            => "1-2 years",
-    "stocks_trading_frequency"             => "0-5 transactions in the past 12 months",
-    "other_derivatives_trading_experience" => "Over 3 years",
-    "other_derivatives_trading_frequency"  => "0-5 transactions in the past 12 months",
+    "binary_options_trading_experience"    => "1-2 years",
+    "binary_options_trading_frequency"     => "40 transactions or more in the past 12 months",
+    "cfd_trading_experience"               => "1-2 years",
+    "cfd_trading_frequency"                => "0-5 transactions in the past 12 months",
     "other_instruments_trading_experience" => "Over 3 years",
     "other_instruments_trading_frequency"  => "6-10 transactions in the past 12 months",
     "employment_industry"                  => "Finance",
@@ -73,6 +69,7 @@ my %financial_data = (
     "income_source"                        => "Self-Employed",
     "net_income"                           => '$25,000 - $50,000',
     "estimated_worth"                      => '$100,000 - $250,000',
+    "account_turnover"                     => '$25,000 - $50,000',
     "occupation"                           => 'Managers',
     "employment_status"                    => "Self-Employed",
     "source_of_wealth"                     => "Company Ownership",
@@ -80,7 +77,7 @@ my %financial_data = (
 
 my $financial_evaluation = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
 $test_client->financial_assessment({
-    data => Encode::encode_utf8($json->encode($financial_evaluation->{user_data})),
+    data => Encode::encode_utf8($json->encode($financial_evaluation)),
 });
 $test_client->save;
 

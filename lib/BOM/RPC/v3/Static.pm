@@ -143,12 +143,14 @@ sub _currencies_config {
 
     # Get available currencies
     my $payout_currencies = BOM::RPC::v3::Utility::filter_out_suspended_cryptocurrencies('costarica');
-
     my %currencies_config = map {
         $_ => {
             fractional_digits => $amt_precision->{$_},
             type              => LandingCompany::Registry::get_currency_type($_),
-            stake_default     => max($bet_limits->{min_payout}->{volidx}->{$_}, $bet_limits->{min_payout}->{default}->{$_}) / 2,
+            stake_default     => max(
+                $bet_limits->{min_stake}->{default_landing_company}->{volidx}->{$_},
+                $bet_limits->{min_stake}->{default_landing_company}->{default_market}->{$_}
+            ),
             }
     } @{$payout_currencies};
     return \%currencies_config;
@@ -160,7 +162,6 @@ rpc website_status => sub {
     my $params = shift;
 
     my $app_config = BOM::Platform::Runtime->instance->app_config;
-
     return {
         terms_conditions_version => $app_config->cgi->terms_conditions_version,
         api_call_limits          => BOM::RPC::v3::Utility::site_limits,

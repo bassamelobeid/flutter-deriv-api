@@ -2,9 +2,21 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
-    "score": {
+    "total_score": {
       "type": "integer",
-      "required": "1"
+      "description": "Financial assessment score based on answers"
+    },
+    "cfd_score": {
+      "type": "integer",
+      "description": "CFD score based on answers"
+    },
+    "financial_information_score": {
+      "type": "integer",
+      "description": "Financial information score based on answers"
+    },
+    "trading_score": {
+      "type": "integer",
+      "description": "Trading score based on answers"
     }
   }
 }
