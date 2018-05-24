@@ -12,6 +12,15 @@ sub check_expiry_conditions {
         if (defined $low) {
             my $value = ($self->exit_tick->quote - $low) * $self->multiplier;
             $self->value($value);
+
+            warn "Negative value for lookback: "
+                . $self->shortcode . " low:"
+                . $low
+                . " exit tick:"
+                . $self->exit_tick->quote
+                . " exit tick epoch: "
+                . $self->exit_tick->epoch
+                if $value < 0;
         }
     }
 
