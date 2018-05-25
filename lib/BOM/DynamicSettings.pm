@@ -196,7 +196,6 @@ sub get_settings_by_group {
                 quants.commission.adjustment.per_market_scaling.forex
                 quants.commission.adjustment.per_market_scaling.indices
                 quants.commission.adjustment.per_market_scaling.commodities
-                quants.commission.adjustment.per_market_scaling.stocks
                 quants.commission.adjustment.per_market_scaling.volidx
                 quants.markets.disabled
                 quants.features.suspend_contract_types
