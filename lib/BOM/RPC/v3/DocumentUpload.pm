@@ -13,7 +13,7 @@ use base qw(Exporter);
 
 use BOM::RPC::Registry '-dsl';
 
-our @EXPORT = qw(MAX_FILE_SIZE);
+our @EXPORT_OK = qw(MAX_FILE_SIZE);
 
 use constant MAX_FILE_SIZE => 8 * 2**20;
 
