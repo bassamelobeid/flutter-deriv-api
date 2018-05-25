@@ -131,13 +131,15 @@ sub _build_spot_min_max {
     my ($high, $low) = ($self->pricing_spot, $self->pricing_spot);
 
     if ($self->date_pricing->epoch > $self->date_start->epoch) {
+        #Let's be more defensive here and use date pricing as well to determine the backprice flag.
+        my $backprice = (defined $self->underlying->for_date or $self->date_pricing->is_after($self->date_expiry)) ? 1 : 0;
 
         my $decimate = BOM::Market::DataDecimate->new({market => $self->market->name});
         my $ticks = $decimate->get({
             underlying  => $self->underlying,
             start_epoch => $start_epoch,
             end_epoch   => $end_epoch,
-            backprice   => $self->underlying->for_date,
+            backprice   => $backprice,
             decimate    => 0,
         });
 
