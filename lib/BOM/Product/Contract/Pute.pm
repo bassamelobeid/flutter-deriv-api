@@ -11,7 +11,6 @@ sub ticks_to_expiry {
     return shift->tick_count + 1;
 }
 
-
 sub check_expiry_conditions {
     my $self = shift;
 
