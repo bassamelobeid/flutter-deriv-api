@@ -41,11 +41,11 @@
                 },
                 "legal_allowed_markets": {
                     "type": "array",
-                    "minItems": 5,
+                    "minItems": 4,
                     "required": "1",
                     "items": {
                         "type": "string",
-                        "pattern": "^(commodities|forex|indices|stocks|volidx)$",
+                        "pattern": "^(commodities|forex|indices|volidx)$",
                         "required": "1"
                     }
                 },
@@ -55,7 +55,7 @@
                     "required": "1",
                     "items": {
                         "type": "string",
-                        "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputequal)$",
+                        "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|callputequal)$",
                         "required": "1"
                     }
                 },
