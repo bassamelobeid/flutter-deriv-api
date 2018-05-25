@@ -380,7 +380,8 @@ async_rpc mt5_new_account => sub {
                                         }
                                     });
                             } elsif ($account_type eq 'financial' && $client->landing_company->short eq 'costarica') {
-                                _send_notification_email($client, $mt5_login, $brand, $params->{language}) unless $client->client_fully_authenticated;
+                                _send_notification_email($client, $mt5_login, $brand, $params->{language}, $group)
+                                    unless $client->client_fully_authenticated;
                                 Future->done;
                             } else {
                                 Future->done;
@@ -410,7 +411,7 @@ sub _check_logins {
 }
 
 sub _send_notification_email {
-    my ($client, $mt5_login, $brand, $language) = @_;
+    my ($client, $mt5_login, $brand, $language, $group) = @_;
     $language = 'en' unless defined $language;
     #language in params is in upper form.
     $language = lc $language;
@@ -456,7 +457,7 @@ Binary.com
                 to      => $brand->emails('support'),
                 subject => 'Asked for authentication documents',
                 message => [
-                    "${\$client->loginid} created MT5 Financial Account MT$mt5_login.\nIf client has not submitted document within five days please disable account and inform compliance"
+                    "${\$client->loginid} created MT5 Financial Account MT$mt5_login, type $group.\nIf client has not submitted document within five days please disable account and inform compliance"
                 ],
                 use_email_template    => 0,
                 email_content_is_html => 0,
