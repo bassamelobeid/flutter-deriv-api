@@ -15,14 +15,14 @@ VM Volatility Monitors
 OVDV Currency Volatility Surface
 MRKT Market (to get vols contributed by different banks)
 
-For indices and stocks:
+For indices:
 TRMS Term Structure
 HIVG Historical Implied Volatility Graph
 
 IMPORTANT! If using NDX (Nasdaq-100) vols, then deduct about 1.5%
 to arrive at Nasdaq Composite (CCMP) vols
 
-To know which stock indices we get in realtime:  EXCH
+To know which indices we get in realtime:  EXCH
 Another way:  DAX Index EXC
 To filter the entire stock universide: QSRC <go> 28 <go>
 
