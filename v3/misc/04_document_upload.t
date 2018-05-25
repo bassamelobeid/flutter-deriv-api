@@ -24,9 +24,9 @@ use BOM::User;
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::RPC::v3::DocumentUpload qw(MAX_FILE_SIZE);
 use await;
 
+use constant MAX_FILE_SIZE => 8 * 2**20;
 use constant MAX_CHUNK_SIZE => 2**17;
 
 override_subs();
