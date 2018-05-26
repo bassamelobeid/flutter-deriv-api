@@ -11,6 +11,7 @@ use BOM::Database::Model::OAuth;
 use Email::Folder::Search;
 use Email::Stuffer::TestLinks;
 use List::Util qw( all );
+use BOM::RPC::v3::DocumentUpload qw(MAX_FILE_SIZE);
 
 #########################################################
 ## Setup test RPC
@@ -73,8 +74,8 @@ my %default_args = (
 use constant {
     EXP_DATE_PAST   => '2017-08-09',
     INVALID_FILE_ID => 1231531,
-    MAX_FILE_SIZE   => 3 * 2**20,
 };
+
 
 #########################################################
 ## Tests for initial argument error handling

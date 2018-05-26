@@ -9,10 +9,13 @@ use Date::Utility;
 use BOM::Platform::Email qw(send_email);
 use Try::Tiny;
 use feature 'state';
+use base qw(Exporter);
 
 use BOM::RPC::Registry '-dsl';
 
-use constant MAX_FILE_SIZE => 3 * 2**20;
+our @EXPORT_OK = qw(MAX_FILE_SIZE);
+
+use constant MAX_FILE_SIZE => 8 * 2**20;
 
 requires_auth();
 
