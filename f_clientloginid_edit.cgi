@@ -41,7 +41,7 @@ use BOM::Backoffice::Script::DocumentUpload;
 use Finance::MIFIR::CONCAT qw(mifir_concat);
 use BOM::Platform::Client::DocumentUpload;
 
-use constant MAX_FILE_SIZE => 3 * 2**20;
+use constant MAX_FILE_SIZE => 8 * 2**20;
 
 BOM::Backoffice::Sysinit::init();
 
