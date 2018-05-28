@@ -39,3 +39,4 @@ $suite->get_token('test@binary.com');
 
 ###get_stashed
 
+All responses generated are stored for each api call made. These responses are all accessible with the use of this fuction. When a successful call is made, 
