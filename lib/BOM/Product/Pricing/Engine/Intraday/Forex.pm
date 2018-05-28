@@ -106,7 +106,7 @@ has apply_equal_tie_markup => (
 
 sub _build_apply_equal_tie_markup {
     my $self = shift;
-    return (($self->bet->code eq 'CALLE' or $self->bet->code eq 'PUTE') and ($bet->underlying->submarket->name eq 'major_pairs' or $bet->underlying->submarket->name eq 'minor_pairs')) ? 1 : 0;
+    return (($self->bet->code eq 'CALLE' or $self->bet->code eq 'PUTE') and ($self->bet->underlying->submarket->name eq 'major_pairs' or $self->bet->underlying->submarket->name eq 'minor_pairs')) ? 1 : 0;
 }
 
 sub _build_base_probability {
