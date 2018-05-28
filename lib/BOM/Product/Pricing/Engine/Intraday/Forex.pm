@@ -317,7 +317,7 @@ sub _build_risk_markup {
                     base_amount => $shortterm_risk_interpolator->linear($bet->remaining_time->minutes),
                 })) if $bet->remaining_time->minutes <= 15;
     }
-    $risk_markup->include_adjustment('add', Pricing::Engine::Markup::EqualTie->new(underlying_symbol => $bet->underlying->symbol)->markup)
+    $risk_markup->include_adjustment('add', Pricing::Engine::Markup::EqualTie->new(underlying_symbol => $bet->underlying->symbol, timeinyears => $bet->timeinyears->amount)->markup)
         if $self->apply_equal_tie_markup;
 
     return $risk_markup;
