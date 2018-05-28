@@ -33,7 +33,7 @@ $user->add_loginid({loginid => $test_client_cr->loginid});
 $user->save;
 
 my $oauth = BOM::Database::Model::OAuth->new;
-my ($token) = $oauth->store_access_token_only(1, $test_client->loginid);
+my ($token)    = $oauth->store_access_token_only(1, $test_client->loginid);
 my ($token_cr) = $oauth->store_access_token_only(1, $test_client_cr->loginid);
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
