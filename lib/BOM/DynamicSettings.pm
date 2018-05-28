@@ -316,16 +316,13 @@ sub parse_and_refine_setting {
 sub get_extra_validation {
     my $setting = shift;
     state $setting_validators = {
-        'cgi.terms_conditions_version' => \&validate_tnc_date,
+        'cgi.terms_conditions_version' => \&validate_tnc_string,
     };
 
     return $setting_validators->{$setting};
 }
 
-sub validate_tnc_date {
-    # Note: this sub is also used for error checking in BOM :: DynamicSettings
-    #   Do not change inputs or outputs
-
+sub validate_tnc_string {
     my ($new_string, $old_string) = @_;
 
     # Check expected date format
