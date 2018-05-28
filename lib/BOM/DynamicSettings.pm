@@ -326,27 +326,33 @@ sub validate_tnc_date {
     # Note: this sub is also used for error checking in BOM :: DynamicSettings
     #   Do not change inputs or outputs
 
-    my $version = shift;
+    my ($new_string, $old_string) = @_;
 
     # Check expected date format
-    die 'Incorrect date format (must be yyyy-mm-dd)'
-        unless $version =~ /^Version [0-9]+ [0-9]{4}-[0-9]{2}-[0-9]{2}$/;
+    die 'Incorrect date format (must be Version XX yyyy-mm-dd)'
+        unless $new_string =~ /^Version ([0-9]+) ([0-9]{4}-[0-9]{2}-[0-9]{2})$/;
 
-    # Todo:...
+    my ($verison, $date) = ($1, $2);
 
     # Date needs to be valid and compatible with Date::Utility
-    my ($date, $error);
+    my $error;
     try {
-        $date = Date::Utility->new($version);
+        Date::Utility->new($date);
     }
     catch {
         $error = 1;
     };
-    die "$version is not a valid date" if $error;
+    die "$new_string is not a valid date" if $error;
 
     # Date shouldn't be in the future
-    my $diff = $date->days_between(Date::Utility::today);
-    die 'Date is over a week in the future' if $diff > 7;
+    die 'Date is in the future' if Date::Utility->new($date)->is_after(Date::Utility::today);
+
+    # Shouldn't go backward from old
+    die 'Existing version failed validation. Please raise with IT.'
+        unless $old_string =~ /^Version ([0-9]+) ([0-9]{4}-[0-9]{2}-[0-9]{2})$/;
+
+    die 'New version is lower than previous' if $verison < $1;
+    die 'New date is older than previous' if Date::Utility->new($date)->is_before(Date::Utility->new($2));
 
     # No errors
     return;
