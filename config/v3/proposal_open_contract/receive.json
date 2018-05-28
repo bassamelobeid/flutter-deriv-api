@@ -267,11 +267,11 @@
     },
     "profit": {
           "type": "number",
-          "description": ""
+          "description": "The latest bid price minus buy price."
     },
     "profit_percentage": {
           "type": "string",
-          "description": ""
+          "description": "Profit in percentage."
     },
     "msg_type": {
       "type": "string",
