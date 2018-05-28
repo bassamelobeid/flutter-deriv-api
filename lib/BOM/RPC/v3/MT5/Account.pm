@@ -132,33 +132,30 @@ sub get_mt5_logins {
     my $f = fmap1 {
         shift =~ /^MT(\d+)$/;
         my $login = $1;
-        return BOM::MT5::User::Async::get_user($login)->then(
+        return mt5_get_settings({
+                client => $client,
+                args   => {login => $login}}
+            )->then(
             sub {
                 my ($setting) = @_;
-                return Future->fail('MT5GetUserError', $setting->{error}) if (ref $setting eq 'HASH' and $setting->{error});
-                my $acc = {login => $login};
-                if (ref $setting eq 'HASH' && $setting->{group}) {
-                    $acc->{group} = $setting->{group};
-                }
-                $setting = _extract_settings($setting);
-                @{$acc}{keys %$setting} = values %$setting;
+                $setting = _filter_settings($setting, qw/balance company country currency email group leverage login name/);
                 return Future->needs_all(
                     mt5_mamm({
                             client => $client,
                             args   => {login => $login}}
                     ),
-                    Future->done($acc));
+                    Future->done($setting));
             }
             )->then(
             sub {
-                my ($mamm, $acc) = @_;
-                @{$acc}{keys %$mamm} = values %$mamm;
-                return Future->done($acc);
+                my ($mamm, $setting) = @_;
+                @{$setting}{keys %$mamm} = values %$mamm;
+                return Future->done($setting);
             });
     }
     foreach        => [$user->mt5_logins],
         concurrent => 4;
-    # purely to keep perlcritic+perltidy happy :(
+# purely to keep perlcritic+perltidy happy :(
     return $f;
 }
 
@@ -553,25 +550,34 @@ async_rpc mt5_get_settings => sub {
         sub {
             my ($settings) = @_;
             return Future->fail('MT5GetUserError', $settings->{error}) if (ref $settings eq 'HASH' and $settings->{error});
-            $settings = _extract_settings($settings, ['address', 'city', 'state', 'zipCode', 'phone', 'phonePassword']);
+            if (my $country = $settings->{country}) {
+                my $country_code = Locale::Country::Extra->new()->code_from_country($country);
+                if ($country_code) {
+                    $settings->{country} = $country_code;
+                } else {
+                    warn "Invalid country name $country for mt5 settings, can't extract code from Locale::Country::Extra";
+                }
+            }
             return Future->done($settings);
+        }
+        )->then(
+        sub {
+            my ($settings) = @_;
+            return BOM::MT5::User::Async::get_group($settings->{group})->then(
+                sub {
+                    my ($group_details) = @_;
+                    return Future->fail('MT5GetGroupError', $group_details->{error}) if (ref $group_details eq 'HASH' and $group_details->{error});
+                    $settings->{currency} = $group_details->{currency};
+                    $settings = _filter_settings($settings,
+                        qw/address balance city company country currency email group leverage login name phone phonePassword state zipCode/);
+                    return Future->done($settings);
+                });
         });
 };
 
-sub _extract_settings {
-    my ($settings, $additional_keys) = @_;
-    my @allowed_keys      = qw/login email group balance name company leverage/;
+sub _filter_settings {
+    my ($settings, @allowed_keys) = @_;
     my $filtered_settings = {};
-    push @allowed_keys, @$additional_keys if ref $additional_keys eq 'ARRAY';
-    if (my $country = $settings->{country}) {
-        my $country_code = Locale::Country::Extra->new()->code_from_country($country);
-        if ($country_code) {
-            $filtered_settings->{country} = $country_code;
-        } else {
-            warn "Invalid country name $country for mt5 settings, can't extract code from Locale::Country::Extra";
-        }
-    }
-    $filtered_settings->{currency} = $settings->{group} =~ /vanuatu|costarica|demo|champion/ ? 'USD' : 'EUR';
     @{$filtered_settings}{@allowed_keys} = @{$settings}{@allowed_keys};
     return $filtered_settings;
 }
