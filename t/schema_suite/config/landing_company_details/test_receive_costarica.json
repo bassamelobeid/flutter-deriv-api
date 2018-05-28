@@ -51,7 +51,7 @@
             "required": "1",
             "items": {
                 "type": "string",
-                "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|highlowticks|reset)$",
+                "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|highlowticks|reset|callputspread)$",
                 "required": "1"
             }
         },

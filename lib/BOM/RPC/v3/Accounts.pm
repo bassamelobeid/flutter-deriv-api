@@ -50,7 +50,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
 use BOM::Platform::Runtime;
 
-my $allowed_fields_for_virtual = qr/passthrough|set_settings|email_consent|residence|allow_copiers/;
+my $allowed_fields_for_virtual = qr/set_settings|email_consent|residence|allow_copiers/;
 my $email_field_labels         = {
     exclude_until          => 'Exclude from website until',
     max_balance            => 'Maximum account cash balance',
@@ -1024,6 +1024,14 @@ rpc set_settings => sub {
     # need to handle for $jp_status->{status} as that come from japan settings
     return {status => 1} if $jp_status->{status};
 
+    # only allow current client to set allow_copiers
+    if (defined $allow_copiers) {
+        $client->allow_copiers($allow_copiers);
+        return BOM::RPC::v3::Utility::client_error() unless $client->save();
+    }
+
+    return {status => 1} if $client->is_virtual;
+
     my $tax_residence             = $args->{'tax_residence'}             // '';
     my $tax_identification_number = $args->{'tax_identification_number'} // '';
 
@@ -1123,14 +1131,6 @@ rpc set_settings => sub {
     }
     # update client value after latest changes
     $client = BOM::User::Client->new({loginid => $client->loginid});
-
-    # only allow current client to set allow_copiers
-    if (defined $allow_copiers) {
-        $client->allow_copiers($allow_copiers);
-    }
-    if (not $client->save()) {
-        return BOM::RPC::v3::Utility::client_error();
-    }
 
     if ($cil_message) {
         $client->add_note('Update Address Notification', $cil_message);

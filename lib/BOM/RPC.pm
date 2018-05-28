@@ -41,6 +41,8 @@ use BOM::RPC::v3::DocumentUpload;
 use BOM::RPC::v3::Pricing;
 use BOM::RPC::v3::MarketData;
 
+use constant REQUEST_ARGUMENTS_TO_BE_IGNORED => qw (req_id passthrough);
+
 # TODO(leonerd): this one RPC is unusual, coming from Utility.pm which doesn't
 # contain any other RPCs
 BOM::RPC::Registry::register(longcode => \&BOM::RPC::v3::Utility::longcode);
@@ -113,6 +115,10 @@ sub wrap_rpc_sub {
         my $params = $original_args[0] // {};
 
         $params->{token} = $params->{args}->{authorize} if !$params->{token} && $params->{args}->{authorize};
+
+        foreach (REQUEST_ARGUMENTS_TO_BE_IGNORED) {
+            delete $params->{args}{$_};
+        }
 
         $params->{token_details} = BOM::RPC::v3::Utility::get_token_details($params->{token});
 

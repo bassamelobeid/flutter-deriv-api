@@ -75,7 +75,6 @@ rpc "new_account_virtual",
                 $args->{utm_medium}      ? (utm_medium         => $args->{utm_medium})      : (),
                 $args->{utm_campaign}    ? (utm_campaign       => $args->{utm_campaign})    : (),
                 $args->{gclid_url}       ? (gclid_url          => $args->{gclid_url})       : (),
-                $args->{email_consent}   ? (email_consent      => $args->{email_consent})   : (),
             },
         });
 
