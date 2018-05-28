@@ -640,6 +640,7 @@ sub process_bid_event {
             if ($response->{buy_price} and $response->{bid_price}) {
                 $response->{profit}            = $response->{bid_price} - $response->{buy_price};
                 $response->{profit_percentage} = $response->{profit} / $response->{buy_price} * 100;
+                $response->{profit_percentage} = $response->{profit_percentage} . '%';
             }
             Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid})
                 if $response->{is_sold};
