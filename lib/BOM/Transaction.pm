@@ -1007,7 +1007,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
             -type              => 'OpenPositionLimit',
             -mesg              => "Client has reached the limit of $limit open positions.",
             -message_to_client => BOM::Platform::Context::localize(
-                'Sorry, you cannot hold more than [_1] contracts at a given time. Please visit the statement page to automatically sell your expired contracts.',
+                'Sorry, you cannot hold more than [_1] contracts at a given time. Please wait until some contracts have closed and try again.',
                 $limit
             ),
         );
