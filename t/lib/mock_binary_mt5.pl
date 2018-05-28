@@ -30,6 +30,11 @@ my %DETAILS = (
     balance => '1234.56',
 );
 
+my %GROUP_DETAILS = (
+    currency => 'USD',
+    group    => 'real\costarica',
+);
+
 my $json = JSON::MaybeXS->new;
 
 my $cmd   = shift @ARGV;
@@ -97,6 +102,18 @@ sub cmd_UserGet {
     return {
         ret_code => MT_RET_OK,
         user     => {pairgrep { $a ne "password" } %DETAILS},
+    };
+}
+
+sub cmd_GroupGet {
+    my ($input) = @_;
+
+    return {
+        ret_code => MT_RET_OK,
+        group    => {
+            %GROUP_DETAILS,
+            group => $input->{group},
+        },
     };
 }
 
