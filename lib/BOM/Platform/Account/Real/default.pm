@@ -32,7 +32,7 @@ sub validate {
     my $msg = "acc opening err: from_loginid[" . $from_client->loginid . "], broker[$broker], residence[$residence], error: ";
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
-        warn($msg . 'new account opening suspended');
+        warn $msg . ' - new account opening suspended';
         return {error => 'invalid'};
     }
     unless ($user->email_verified) {
@@ -116,7 +116,7 @@ sub register_client {
         $error = $_;
     };
     if ($error) {
-        warn("Real: register_and_return_new_client err [$error]");
+        warn "Real: register_and_return_new_client exception [$error]";
         return {error => 'invalid'};
     }
     return {client => $client};
@@ -186,7 +186,7 @@ sub add_details_to_desk {
             $desk_api->upload($copy);
         }
         catch {
-            warn("Unable to add loginid " . $client->loginid . "(" . $client->email . ") to desk.com API: $_");
+            warn "Unable to add loginid " . $client->loginid . "(" . $client->email . ") to desk.com API: $_";
         };
     }
 
