@@ -266,4 +266,19 @@ sub get_open_positions_count {
         });
 }
 
+sub get_group {
+    my $group_name = shift;
+
+    return _invoke_mt5('GroupGet', {group => $group_name})->then(
+        sub {
+            my ($hash) = @_;
+            if ($hash->{error}) {
+                return Future->done({error => $hash->{error}});
+            }
+
+            my $ret = $hash->{group};
+            return Future->done($ret);
+        });
+}
+
 1;
