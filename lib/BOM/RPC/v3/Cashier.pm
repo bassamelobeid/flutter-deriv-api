@@ -681,7 +681,7 @@ rpc paymentagent_withdraw => sub {
     };
 
     # 04/05/2018: Currently this check is irrelevent, because only CR clients can use payment agents, and they
-    #   aren't required to accept T&Cs. It's here just in case payments agents are enabled for other lcs.
+    #   aren't required to accept T&Cs. It's here in case either of these situations change.
     return $error_sub->(localize('Terms and conditions approval is required.')) if $client->is_tnc_approval_required;
 
     my $amount_validation_error = _validate_amount($amount, $currency);
