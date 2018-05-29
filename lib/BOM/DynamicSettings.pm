@@ -326,20 +326,13 @@ sub validate_tnc_string {
     my ($new_string, $old_string) = @_;
 
     # Check expected date format
-    die 'Incorrect date format (must be Version XX yyyy-mm-dd)'
+    die 'Incorrect format (must be Version XX yyyy-mm-dd)'
         unless $new_string =~ /^Version ([0-9]+) ([0-9]{4}-[0-9]{2}-[0-9]{2})$/;
 
     my ($verison, $date) = ($1, $2);
 
-    # Date needs to be valid and compatible with Date::Utility
-    my $error;
-    try {
-        Date::Utility->new($date);
-    }
-    catch {
-        $error = 1;
-    };
-    die "$new_string is not a valid date" if $error;
+    # Date needs to be valid (will die if not)
+    Date::Utility->new($date);
 
     # Date shouldn't be in the future
     die 'Date is in the future' if Date::Utility->new($date)->is_after(Date::Utility::today);
