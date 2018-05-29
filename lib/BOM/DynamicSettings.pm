@@ -325,9 +325,11 @@ sub get_extra_validation {
 sub validate_tnc_string {
     my ($new_string, $old_string) = @_;
 
+    state $tnc_string_format = qr/^Version ([0-9]+) ([0-9]{4}-[0-9]{2}-[0-9]{2})$/;
+
     # Check expected date format
-    die 'Incorrect format (must be Version XX yyyy-mm-dd)'
-        unless $new_string =~ /^Version ([0-9]+) ([0-9]{4}-[0-9]{2}-[0-9]{2})$/;
+    die 'Incorrect format (must be Version X yyyy-mm-dd)'
+        unless $new_string =~ $tnc_string_format;
 
     my ($verison, $date) = ($1, $2);
 
@@ -339,7 +341,7 @@ sub validate_tnc_string {
 
     # Shouldn't go backward from old
     die 'Existing version failed validation. Please raise with IT.'
-        unless $old_string =~ /^Version ([0-9]+) ([0-9]{4}-[0-9]{2}-[0-9]{2})$/;
+        unless $old_string =~ $tnc_string_format;
 
     die 'New version is lower than previous' if $verison < $1;
     die 'New date is older than previous' if Date::Utility->new($date)->is_before(Date::Utility->new($2));
