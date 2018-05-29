@@ -346,8 +346,8 @@ subtest 'call pricing engine equal tie markup' => sub {
             payout       => 10,
             current_tick => $ct,
         });
-        ok $c->pricing_engine->apply_equal_tie_markup, 'can apply_equal_tie_markup ';
-        cmp_ok $c->pricing_engine->risk_markup->peek_amount('equal_tie_markup'), '==', 0.00, 'correct equal tie markup';
+        ok !$c->pricing_engine->apply_equal_tie_markup, 'can apply_equal_tie_markup ';
+        ok !defined $c->pricing_engine->risk_markup->peek_amount('equal_tie_markup'), 'correct equal tie markup';
     }
     'no equal tie for call WLDUSD';
 
@@ -380,7 +380,7 @@ subtest 'call pricing engine equal tie markup' => sub {
         });
         ok $c->pricing_engine->apply_equal_tie_markup, 'can apply_equal_tie_markup';
         ok $c->ask_price, 'can ask price';
-        cmp_ok $c->debug_information->{risk_markup}{parameters}{equal_tie_markup}, '==', 0.02, 'correct equal tie markup';
+        cmp_ok $c->debug_information->{risk_markup}{parameters}{equal_tie_markup}, '==', 0.00, 'correct equal tie markup';
     }
     'correct equal tie markup for USDJPY';
 
@@ -398,7 +398,7 @@ subtest 'call pricing engine equal tie markup' => sub {
         });
         ok $c->pricing_engine->apply_equal_tie_markup, 'can apply_equal_tie_markup';
         ok $c->ask_price, 'can ask price';
-        cmp_ok $c->debug_information->{risk_markup}{parameters}{equal_tie_markup}, '==', 0.05, 'correct equal tie markup';
+        cmp_ok $c->debug_information->{risk_markup}{parameters}{equal_tie_markup}, '==', 0.00, 'correct equal tie markup';
     }
     'correct equal tie markup for AUDPLN';
 
@@ -418,7 +418,7 @@ subtest 'call pricing engine equal tie markup' => sub {
         });
         ok $c->pricing_engine->apply_equal_tie_markup, 'can apply_equal_tie_markup';
         ok $c->ask_price, 'can ask price';
-        cmp_ok $c->debug_information->{risk_markup}{parameters}{equal_tie_markup}, '==', 0.02, 'correct equal tie markup';
+        cmp_ok $c->debug_information->{risk_markup}{parameters}{equal_tie_markup}, '==', 0.00, 'correct equal tie markup';
 
     }
     'correct equal tie markup for USDJPY';
@@ -454,9 +454,9 @@ subtest 'call pricing engine equal tie markup' => sub {
             payout       => 10,
             current_tick => $ct,
         });
-        ok $c->pricing_engine->apply_equal_tie_markup, 'can apply_equal_tie_markup ';
+        ok !$c->pricing_engine->apply_equal_tie_markup, 'can not apply_equal_tie_markup ';
         ok $c->ask_price, 'can ask price';
-        cmp_ok $c->debug_information->{risk_markup}{parameters}{equal_tie_markup}, '==', 0.00, 'correct equal tie markup';
+        ok !defined $c->debug_information->{risk_markup}{parameters}{equal_tie_markup}, 'no defined correct equal tie markup';
     }
     'no equal tie for call WLDUSD';
 
