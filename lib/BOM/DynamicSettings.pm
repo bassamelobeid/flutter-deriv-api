@@ -85,7 +85,7 @@ sub save_settings {
                         $message .= join('',
                             '<div id="error">Invalid value, could not set ',
                             encode_entities($s), ' to ', encode_entities($display_value),
-                            ' because ', $_, '</div>');
+                            ' because ', encode_entities($_), '</div>');
                         $has_errors = 1;
                     };
                 }
@@ -329,22 +329,20 @@ sub validate_tnc_string {
 
     # Check expected date format
     die 'Incorrect format (must be Version X yyyy-mm-dd)'
-        unless $new_string =~ $tnc_string_format;
-
-    my ($verison, $date) = ($1, $2);
+        unless my ($version, $date) = $new_string =~ $tnc_string_format;
 
     # Date needs to be valid (will die if not)
-    Date::Utility->new($date);
+    my $new_date = Date::Utility->new($date);
 
     # Date shouldn't be in the future
-    die 'Date is in the future' if Date::Utility->new($date)->is_after(Date::Utility::today);
+    die 'Date is in the future' if $new_date->is_after(Date::Utility::today);
 
     # Shouldn't go backward from old
     die 'Existing version failed validation. Please raise with IT.'
-        unless $old_string =~ $tnc_string_format;
+        unless my ($old_version, $old_date) = $old_string =~ $tnc_string_format;
 
-    die 'New version is lower than previous' if $verison < $1;
-    die 'New date is older than previous' if Date::Utility->new($date)->is_before(Date::Utility->new($2));
+    die 'New version is lower than previous' if $verison < $old_version;
+    die 'New date is older than previous' if $new_date->is_before(Date::Utility->new($old_date));
 
     # No errors
     return;
