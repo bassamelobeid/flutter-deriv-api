@@ -52,7 +52,7 @@ $suite->get_stashed('api_token/api_token/tokens/0/token');
 
 ###free_gift
 
-Use this to give an account a free gift of a specified amount in a specified currency. If no currency is provided, USD is chosen by default. If no amount is specified, 10000 is chosen by default.
+Use this function to give an account a free gift of a specified amount in a specified currency. If no currency is provided, USD is chosen by default. If no amount is specified, 10000 is chosen by default.
 
 ```
 $suite->free_gift("CR90000001", 'GBP', '12345');
@@ -64,7 +64,7 @@ $suite->free_gift($suite->get_stashed('new_account_real/new_account_real/client_
 
 ###set_language
 
-This should be called at the beginning of every test module, passing in whichever language is relevant.
+This function should be called at the beginning of every test module, passing in whichever language is relevant.
 
 ```
 set_language 'EN';
@@ -72,7 +72,7 @@ set_language 'EN';
 
 ###reset_app
 
-This can be called to reset the module with the same configuration defined in the `start` function.
+This function can be called to reset the module with the same configuration defined in the `start` function.
 
 ```
 reset_app;
@@ -80,9 +80,31 @@ reset_app;
 
 ###finish
 
-This should be called at the end of every test module.
+This function should be called at the end of every test module.
 
 ```
 finish;
 ```
+
+###test_sendrecv // test_sendrecv_params
+
+These functions takes in at least two variables, one for the request to be sent and one for the expected response received. If the response received from the call does not match the expected response, the test will fail. 
+
+The request and response files will have to be defined in `v3/schema_suite/config`, categorized in their appropriate folder.
+
+```
+test_sendrecv 'proposal/test_send_buy.json', 'proposal/test_receive_buy.json';
+```
+
+Often times, multiple tests will have to be done for the same API call. These tests will involve very similar request save for a few parameters. Instead of making multiple files with these similar requests, we use `test_sendrecv_params` which takes in the path to a request file, a response file as well as additional parameters that are used in the json files. The parameters are used in the json files with `[_1]` for the first parameter, `[_2]` for the second, and so on.
+
+```
+test_sendrecv_params 'new_account_real/test_send.json',      'new_account_real/test_receive_cr.json', 'Peter', 'id';
+```
+
+In the example above, we are sending a request for a new real account with first name `Peter` and residence `Indonesia`. Using this structure, we can send new real account requests with different first names and residences by changing the parameters we pass into this function. Note that the file `new_account_real/test_send.json` has the first name parameter as `[_1]` and the residence parameter as `[_2]`.
+
+###fail_test_sendrecv // fail_test_sendrecv_params
+
+These functions work in the same way `test_sendrecv` and `test_sendrecv_params` does, but instead expects the response not to match the second file passed in. 
 
