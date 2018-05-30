@@ -62,7 +62,7 @@ sub decorate {
             or $contract_category eq 'asian'
             or $barrier_category eq 'euro_atm'
             or $contract_type =~ /^DIGIT(?:EVEN|ODD)$/
-            or $contract_type =~ /^(TICKHIGH|TICKLOW)/)
+            or $contract_category eq 'highlowticks')
         {
             $o->{barriers} = 0;
         } else {
