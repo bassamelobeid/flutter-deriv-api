@@ -42,10 +42,16 @@ subtest 'Age Verified' => sub {
                 expiration_date            => '2025-10-10',
                 authentication_method_code => 'ID_DOCUMENT'
             });
-            ok $client->has_valid_documents, "Client now has a valid document";
+            ok $client->has_valid_documents, "Client has valid documents";
+
+	    $doc->status('uploading');
+            ok !$client->has_valid_documents, "Documents with status of 'uploading' are not valid";
+
+	    $doc->status('uploaded');
+            ok $client->has_valid_documents, "Documents with status of 'uploaded' are valid";
 
             $doc->expiration_date('2008-03-03');    #this day should never come again.
-            ok !$client->has_valid_documents, "Documents are not valid any more";
+            ok !$client->has_valid_documents, "Documents that are expired are not valid";
         };
     }
 };
