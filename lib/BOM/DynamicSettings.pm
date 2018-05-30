@@ -341,7 +341,7 @@ sub validate_tnc_string {
     die 'Existing version failed validation. Please raise with IT.'
         unless my ($old_version, $old_date) = $old_string =~ $tnc_string_format;
 
-    die 'New version is lower than previous' if $verison < $old_version;
+    die 'New version is lower than previous' if $version < $old_version;
     die 'New date is older than previous' if $new_date->is_before(Date::Utility->new($old_date));
 
     # No errors
