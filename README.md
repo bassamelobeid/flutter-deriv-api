@@ -39,4 +39,26 @@ $suite->get_token('test@binary.com');
 
 ###get_stashed
 
-All responses generated are stored for each api call made. These responses are all accessible with the use of this fuction. When a successful call is made, 
+All responses generated are stored for each successful api call made. These responses are all accessible with the use of this fuction. The responses are stored in an object with the name of the call made. 
+
+```
+test_sendrecv 'proposal/test_send_buy.json', 'proposal/test_receive_buy.json';
+$suite->get_stashed('proposal/proposal/id');
+```
+```
+test_sendrecv_params 'api_token/test_send_create.json', 'api_token/test_receive_create.json', 'test';
+$suite->get_stashed('api_token/api_token/tokens/0/token');
+```
+
+###free_gift
+
+Use this to give an account a free gift of a specified amount in a specified currency. If no currency is provided, USD is chosen by default. If no amount is specified, 10000 is chosen by default.
+```
+$suite->free_gift("CR90000001", 'GBP', '12345');
+```
+However, in these test cases, it is highly recommended to use the stored login id from a previous call that was made.
+```
+$suite->free_gift($suite->get_stashed('new_account_real/new_account_real/client_id'), 'GBP', '12345');
+```
+
+###
