@@ -36,11 +36,12 @@ use BOM::Database::ClientDB;
 use BOM::Platform::Config;
 use BOM::Backoffice::FormAccounts;
 use BOM::Database::Model::AccessToken;
+use BOM::Backoffice::Config;
 use BOM::Backoffice::Script::DocumentUpload;
 use Finance::MIFIR::CONCAT qw(mifir_concat);
 use BOM::Platform::Client::DocumentUpload;
 
-use constant MAX_FILE_SIZE => 3 * 2**20;
+use constant MAX_FILE_SIZE => 8 * 2**20;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -298,7 +299,9 @@ if ($input{whattodo} eq 'uploadID') {
         my $new_file_name         = "$loginid.$doctype.$file_id.$docformat";
         my $abs_path_to_temp_file = $cgi->tmpFileName($filetoupload);
 
-        my $checksum = BOM::Backoffice::Script::DocumentUpload::upload($new_file_name, $abs_path_to_temp_file, $file_checksum)
+        my $document_upload = BOM::Backoffice::Script::DocumentUpload->new(config => BOM::Backoffice::Config::config()->{document_auth_s3});
+
+        my $checksum = $document_upload->upload($new_file_name, $abs_path_to_temp_file, $file_checksum)
             or die "Upload failed for $filetoupload";
 
         $query_result = BOM::Platform::Client::DocumentUpload::finish_document_upload(

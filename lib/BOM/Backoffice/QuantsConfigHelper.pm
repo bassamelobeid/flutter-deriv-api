@@ -118,7 +118,7 @@ sub rebuild_aggregate_tables {
 sub decorate_for_display {
     my $records = shift;
 
-    my @market_order = qw(forex indices commodities stocks volidx default);
+    my @market_order = qw(forex indices commodities volidx default);
     my @type_order   = qw(market symbol_default symbol);
 
     my @sorted_records = ();

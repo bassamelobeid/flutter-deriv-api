@@ -17,6 +17,7 @@ use BOM::Platform::Client::Utility ();
 use BOM::Backoffice::Request qw(request);
 use BOM::Platform::Locale;
 use BOM::Backoffice::FormAccounts;
+use BOM::Backoffice::Config;
 use BOM::Backoffice::Script::DocumentUpload;
 
 sub get_currency_options {
@@ -489,7 +490,9 @@ SQL
         $input .= qq{comments <input type="text" style="width:100px" maxlength="20" name="comments_$id" value="$comments" $extra>};
         $input .= qq{document id <input type="text" style="width:100px" maxlength="20" name="document_id_$id" value="$document_id" $extra>};
 
-        my $url = BOM::Backoffice::Script::DocumentUpload::get_s3_url($file_name);
+        my $document_upload = BOM::Backoffice::Script::DocumentUpload->new(config => BOM::Backoffice::Config::config()->{document_auth_s3});
+
+        my $url = $document_upload->get_s3_url($file_name);
 
         $links .= qq{<tr><td><a href="$url">$file_name</a></td>$age_display<td>$input};
         if ($show_delete && !$args{no_edit}) {
