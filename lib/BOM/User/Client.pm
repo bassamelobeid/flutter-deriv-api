@@ -440,6 +440,7 @@ sub documents_expired {
     my @docs  = $self->client_authentication_document or return undef;    # Rose
     for my $doc (@docs) {
         my $expires = $doc->expiration_date || next;
+        next if defined $doc->status and $doc->status eq 'uploading';
         return 1 if Date::Utility->new($expires)->is_before($today);
     }
     return 0;
@@ -450,6 +451,7 @@ sub has_valid_documents {
     my $today = Date::Utility->today;
     for my $doc ($self->client_authentication_document) {
         my $expires = $doc->expiration_date || next;
+        next if defined $doc->status and $doc->status eq 'uploading';
         return 1 if Date::Utility->new($expires)->is_after($today);
     }
     return undef;
