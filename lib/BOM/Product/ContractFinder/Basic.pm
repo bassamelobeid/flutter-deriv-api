@@ -61,7 +61,8 @@ sub decorate {
         } elsif ($contract_category eq 'lookback'
             or $contract_category eq 'asian'
             or $barrier_category eq 'euro_atm'
-            or $contract_type =~ /^DIGIT(?:EVEN|ODD)$/)
+            or $contract_type =~ /^DIGIT(?:EVEN|ODD)$/
+            or $contract_type =~ /^(TICKHIGH|TICKLOW)/)
         {
             $o->{barriers} = 0;
         } else {
