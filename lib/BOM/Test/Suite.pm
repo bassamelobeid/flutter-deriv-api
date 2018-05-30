@@ -201,8 +201,8 @@ sub change_status {
 }
 
 sub free_gift {
-    my ($self, $loginid) = @_;
-    _free_gift($loginid);
+    my ($self, $loginid, $currency) = @_;
+    _free_gift($loginid, $currency);
     return;
 }
 
@@ -324,10 +324,11 @@ sub _get_stashed {
 }
 
 sub _free_gift {
-    my ($loginid) = @_;
+    my ($loginid, $currency) = @_;
+    $currency ||= 'USD';
     my $client = BOM::User::Client->new({loginid => $loginid});
     $client->payment_free_gift(
-        currency => 'USD',
+        currency => $currency,
         amount   => 10000,
         remark   => 'free gift',
     );
