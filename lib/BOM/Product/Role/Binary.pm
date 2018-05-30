@@ -4,6 +4,7 @@ use Moose::Role;
 
 use BOM::Platform::Config;
 use BOM::Product::Static;
+use BOM::Platform::Config::ContractPricingLimits qw/market_pricing_limits/;
 
 use List::Util qw(min);
 use Scalar::Util qw(looks_like_number);
@@ -104,32 +105,25 @@ has 'staking_limits' => (
 
 sub _build_staking_limits {
     my $self = shift;
-    my $curr = $self->currency;
-
-    my $static     = BOM::Platform::Config::quants;
-    my $bet_limits = $static->{bet_limits};
     # NOTE: this evaluates only the contract-specific payout limit. There may be further
-    # client-specific restrictions which are evaluated in B:P::Transaction.
+    # client-specific restrictions which are evaluated in B:P::Transaction =>
+    my $curr   = $self->currency;
+    my $lc     = $self->landing_company;
+    my $market = $self->underlying->market->name;
+
+    my $bet_limits = market_pricing_limits([$curr], $lc, [$market])->{$market}->{$curr};
+    my $static = BOM::Platform::Config::quants;
+
+    my $bl_min = $bet_limits->{min_stake};
+    my $bl_max = $bet_limits->{max_payout};
+
     my $per_contract_payout_limit = $static->{risk_profile}{$self->risk_profile->get_risk_profile}{payout}{$self->currency};
-    my @possible_payout_maxes     = ();
-    my $stake_min;
-    @possible_payout_maxes = (
-          $bet_limits->{max_payout}->{default_landing_company}->{$self->underlying->market->name}
-        ? $bet_limits->{max_payout}->{default_landing_company}->{$self->underlying->market->name}->{$curr}
-        : $bet_limits->{max_payout}->{default_landing_company}->{default_market}->{$curr},
-        $per_contract_payout_limit
-    );
-
-    $stake_min =
-          $bet_limits->{min_stake}->{default_landing_company}->{$self->underlying->market->name}
-        ? $bet_limits->{min_stake}->{default_landing_company}->{$self->underlying->market->name}->{$curr}
-        : $bet_limits->{min_stake}->{default_landing_company}->{default_market}->{$curr};
-
-    push @possible_payout_maxes, $bet_limits->{inefficient_period_payout_max}->{$self->currency} if $self->apply_market_inefficient_limit;
+    my @possible_payout_maxes = ($bl_max, $per_contract_payout_limit);
+    push @possible_payout_maxes, $static->{bet_limits}->{inefficient_period_payout_max}->{$self->currency} if $self->apply_market_inefficient_limit;
 
     my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);
 
-    $stake_min /= 10 if ($self->for_sale);
+    my $stake_min = ($self->for_sale) ? $bl_min / 10 : $bl_min;
 
     return {
         min => $stake_min,
