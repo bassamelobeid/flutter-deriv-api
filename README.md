@@ -10,7 +10,7 @@ Note: This will include dependencies from `.proverc` file in the `binary-websock
 
 ##JSON Schema Testing
 
-The JSON Schema testing files are all located in `v3/schema_suite/`. In these files we use a number of functions listed below (with their description, usage and examples).
+The JSON Schema testing files are all located in `v3/schema_suite/`. In these files we use a number of functions listed below (with their description, usage and examples). The test modules are structured in a way where the request and expected response files are stored in `v3/schema_suite/config` and these files are used by the `test_sendrecv` function among others. To add a basic test, you first have to create a json file containing the request to be sent, another json file containing the expected response and call `test_sendrecv` or `test_sendrecv_params` to check if the actual response matches the expected response.
 
 ---
 ###start
@@ -104,7 +104,8 @@ test_sendrecv_params 'new_account_real/test_send.json',      'new_account_real/t
 
 In the example above, we are sending a request for a new real account with first name `Peter` and residence `Indonesia`. Using this structure, we can send new real account requests with different first names and residences by changing the parameters we pass into this function. Note that the file `new_account_real/test_send.json` has the first name parameter as `[_1]` and the residence parameter as `[_2]`.
 
+For testing responses of subscribed calls, look at `test_last_stream`.
+
 ###fail_test_sendrecv // fail_test_sendrecv_params
 
 These functions work in the same way `test_sendrecv` and `test_sendrecv_params` does, but instead expects the response not to match the second file passed in. 
-
