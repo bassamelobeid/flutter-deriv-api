@@ -53,6 +53,7 @@ $suite->get_stashed('api_token/api_token/tokens/0/token');
 ###free_gift
 
 Use this to give an account a free gift of a specified amount in a specified currency. If no currency is provided, USD is chosen by default. If no amount is specified, 10000 is chosen by default.
+
 ```
 $suite->free_gift("CR90000001", 'GBP', '12345');
 ```
@@ -61,4 +62,27 @@ However, in these test cases, it is highly recommended to use the stored login i
 $suite->free_gift($suite->get_stashed('new_account_real/new_account_real/client_id'), 'GBP', '12345');
 ```
 
-###
+###set_language
+
+This should be called at the beginning of every test module, passing in whichever language is relevant.
+
+```
+set_language 'EN';
+```
+
+###reset_app
+
+This can be called to reset the module with the same configuration defined in the `start` function.
+
+```
+reset_app;
+```
+
+###finish
+
+This should be called at the end of every test module.
+
+```
+finish;
+```
+
