@@ -33,6 +33,7 @@ sub create_account {
 
     my ($client, $error);
     my $brand_name = $details->{brand_name} // request()->brand;
+    my $brand_country_instance = Brands->new(name => $brand_name)->countries_instance;
     try {
         # set virtual company if residence is provided otherwise use brand name to infer the broker code
         my $default_virtual;
@@ -40,8 +41,7 @@ sub create_account {
         $default_virtual = 'virtual'          if $brand_name eq 'binary';
         return {error => 'invalid brand company'} unless $default_virtual;
 
-        my $company_name =
-            $residence ? Brands->new(name => $brand_name)->countries_instance->virtual_company_for_country($residence) : $default_virtual;
+        my $company_name = $residence ? $brand_country_instance->virtual_company_for_country($residence) : $default_virtual;
 
         $client = BOM::User::Client->register_and_return_new_client({
             broker_code                   => LandingCompany::Registry::get($company_name)->broker_codes->[0],
@@ -80,20 +80,24 @@ sub create_account {
     my $utm_medium        = $details->{utm_medium};
     my $utm_campaign      = $details->{utm_campaign};
     my $gclid_url         = $details->{gclid_url};
-    my $email_consent     = $details->{email_consent};
     my $has_social_signup = $details->{has_social_signup} // 0;
+
+    my $email_consent = 0;
+    try {
+        $email_consent = LandingCompany::Registry::get($brand_country_instance->real_company_for_country($residence))->email_consent->{default};
+    };
 
     my $user = BOM::User->create(
         email             => $email,
         password          => $password,
         email_verified    => 1,
         has_social_signup => $has_social_signup,
-        $email_consent ? (email_consent => $email_consent) : (),
-        $source        ? (app_id        => $source)        : (),
-        $utm_source    ? (utm_source    => $utm_source)    : (),
-        $utm_medium    ? (utm_medium    => $utm_medium)    : (),
-        $utm_campaign  ? (utm_campaign  => $utm_campaign)  : (),
-        $gclid_url     ? (gclid_url     => $gclid_url)     : ());
+        email_consent     => $email_consent,
+        $source       ? (app_id       => $source)       : (),
+        $utm_source   ? (utm_source   => $utm_source)   : (),
+        $utm_medium   ? (utm_medium   => $utm_medium)   : (),
+        $utm_campaign ? (utm_campaign => $utm_campaign) : (),
+        $gclid_url    ? (gclid_url    => $gclid_url)    : ());
     $user->add_loginid({loginid => $client->loginid});
     $user->save;
     $client->deposit_virtual_funds($source, localize('Virtual money credit to account'));

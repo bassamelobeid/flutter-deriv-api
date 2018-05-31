@@ -78,7 +78,7 @@ sub validate {
 
     # landing company or country specific validations
     if ($landing_company->short eq 'maltainvest') {
-        return _create_error(localize('Please authenticate your account.'), 'ASK_AUTHENTICATE') unless $client->client_fully_authenticated;
+        return _create_error(localize('Please authenticate your account.'), 'ASK_AUTHENTICATE') unless $client->fully_authenticated;
 
         return _create_error(localize('Financial Risk approval is required.'), 'ASK_FINANCIAL_RISK_APPROVAL')
             unless $client->get_status('financial_risk_approval');
@@ -251,7 +251,7 @@ sub _withdrawal_validation_period {
 sub _withdrawal_validation {
     my ($client, $total) = @_;
 
-    my ($lc, $is_authenticated) = ($client->landing_company->short, $client->client_fully_authenticated);
+    my ($lc, $is_authenticated) = ($client->landing_company->short, $client->fully_authenticated);
 
     return _create_error(localize('Account needs age verification.')) if ($lc =~ /^(?:malta|iom)$/ and not $client->get_status('age_verification'));
     return _create_error(localize('Please authenticate your account.')) if ($lc eq 'iom'   and not $is_authenticated and $total >= 3000);

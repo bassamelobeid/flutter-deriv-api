@@ -60,7 +60,7 @@ sub check {
     $client->save;
 
     # we don't mark or log fully_authenticated clients
-    return if (not $sanctioned_info->{matched} or $client->client_fully_authenticated);
+    return if (not $sanctioned_info->{matched} or $client->fully_authenticated);
 
     my $client_loginid = $client->loginid;
     my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);
