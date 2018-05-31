@@ -500,7 +500,12 @@ rpc get_account_status => sub {
         }
     }
 
-    push @status, 'authenticated' if ($client->client_fully_authenticated);
+    my $id_auth_status             = $client->authentication_status;
+    my $authentication_in_progress = $id_auth_status =~ /under_review|needs_action/;
+
+    push @status, 'document_' . $id_auth_status if $authentication_in_progress;
+
+    push @status, 'authenticated' if ($client->fully_authenticated);
     my $risk_classification = $client->aml_risk_classification // '';
 
     # we need to send only low, standard, high as manual override is for internal purpose
@@ -540,8 +545,7 @@ rpc get_account_status => sub {
     }
 
     my $prompt_client_to_authenticate = 0;
-    my $authentication_in_progress = $client->get_status('document_needs_action') || $client->get_status('document_under_review');
-    if ($client->client_fully_authenticated) {
+    if ($client->fully_authenticated) {
         # Authenticated clients still need to go through age verification checks for IOM/MF/MLT
         if (any { $shortcode eq $_ } qw(iom malta maltainvest)) {
             $prompt_client_to_authenticate = 1 unless $client->get_status('age_verification');
@@ -1039,7 +1043,7 @@ rpc set_settings => sub {
         or $addressState ne $client->state
         or $addressPostcode ne $client->postcode)
     {
-        my $authenticated = $client->client_fully_authenticated;
+        my $authenticated = $client->fully_authenticated;
         $cil_message =
               ($authenticated ? 'Authenticated' : 'Non-authenticated')
             . ' client ['

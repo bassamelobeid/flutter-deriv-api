@@ -91,7 +91,7 @@ sub successful_upload {
     try {
         ($status_changed) = $client->db->dbic->run(
             ping => sub {
-                $_->selectrow_array('SELECT * FROM betonmarkets.set_document_under_review(?,?)', undef, $client_id, 'Documents uploaded');
+                $_->selectrow_array('SELECT * FROM betonmarkets.set_document_under_review(?)', undef, $client_id);
             });
     }
     catch {
