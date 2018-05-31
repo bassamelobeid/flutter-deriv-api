@@ -205,7 +205,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
         is $res->{error}->{message_to_client}, 'Please authenticate your account.', 'Correct error message for not authenticated';
 
         my $mock_client = Test::MockModule->new('BOM::User::Client');
-        $mock_client->mock(client_fully_authenticated => sub { note "mocked Client->client_fully_authenticated returning true"; 1 });
+        $mock_client->mock(fully_authenticated => sub { note "mocked Client->fully_authenticated returning true"; 1 });
 
         $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
         is $res->{error}->{code},              'ASK_FINANCIAL_RISK_APPROVAL',          'Correct error code';
@@ -240,7 +240,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
         $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
         is $res, undef, 'Validation passed, making tax residence undef will not delete status';
 
-        $mock_client->unmock('client_fully_authenticated');
+        $mock_client->unmock('fully_authenticated');
     };
 
     subtest 'gb as residence' => sub {
@@ -370,14 +370,14 @@ subtest 'Cashier validation landing company and country specific' => sub {
             'Not applicable for CR hence validation passed';
 
         my $mock_client = Test::MockModule->new('BOM::User::Client');
-        $mock_client->mock(client_fully_authenticated => sub { note "mocked Client->client_fully_authenticated returning true"; 1 });
+        $mock_client->mock(fully_authenticated => sub { note "mocked Client->fully_authenticated returning true"; 1 });
 
         is BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($mlt_client->loginid, 10000), undef,
             'Fully authenticated and age verified hence passed';
         is BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($mx_client->loginid, 10000), undef,
             'Fully authenticated and age verified hence passed';
 
-        $mock_client->unmock('client_fully_authenticated');
+        $mock_client->unmock('fully_authenticated');
     };
 };
 
