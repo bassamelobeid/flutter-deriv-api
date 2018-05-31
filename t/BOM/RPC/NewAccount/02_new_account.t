@@ -18,6 +18,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::Token;
 use BOM::User::Client;
 use Email::Stuffer::TestLinks;
+use Email::Folder::Search;
 
 use utf8;
 
@@ -405,7 +406,8 @@ subtest $method => sub {
         $params->{token}               = $auth_token;
         $params->{args}->{residence}   = 'gb';
 
-        $mailbox->clear;
+        my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
+        $mailbox->init;
 
         # call with totally random values - our client still should have correct one
         ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name residence address_city/;
