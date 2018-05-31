@@ -32,7 +32,7 @@ sub run_authentication {
     # Binary Investment accounts are set to "unwelcome" when they are first created.  Document
     # submission is REQUIRED before the account is enabled for use
     my $landing_company;
-    return if $client->client_fully_authenticated || ($landing_company = $client->landing_company->short) eq 'maltainvest';
+    return if $client->fully_authenticated || ($landing_company = $client->landing_company->short) eq 'maltainvest';
 
     # any of these callouts might invoke _request_id_authentication which
     # will return a structure suitable for passing to a mailer.

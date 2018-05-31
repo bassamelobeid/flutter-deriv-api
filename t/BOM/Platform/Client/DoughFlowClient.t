@@ -114,7 +114,7 @@ subtest 'Profile mapped correctly to DF levels' => sub {
     $mock_client->set_status('age_verification');
     is $mock_client->Profile, 2, '.. and age verified => 2';
 
-    $mock_client->set_true(-client_fully_authenticated);
+    $mock_client->set_true(-fully_authenticated);
     is $mock_client->Profile, 3, '... and authenticated identity => 3';
 
     $mock_client->set_always(-date_joined, Date::Utility->new->minus_time_interval("6mo")->date_yyyymmdd);

@@ -226,7 +226,7 @@ sub Profile {
     return 5 if $self->is_vip;
 
     if ($self->get_status('age_verification') || $self->has_valid_documents) {
-        if ($self->client_fully_authenticated) {
+        if ($self->fully_authenticated) {
             if ($self->_days_since_joined > 180) {
                 return 4;
             }

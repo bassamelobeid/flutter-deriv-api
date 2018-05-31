@@ -115,7 +115,7 @@ subtest 'When auth not required' => sub {
                 local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
                 $v->run_authentication;
             };
-            ok !$v->client->client_fully_authenticated, 'client should not be fully authenticated';
+            ok !$v->client->fully_authenticated, 'client should not be fully authenticated';
             ok !$v->client->get_status('age_verification'), 'client should not be age verified';
             ok !$v->client->get_status('unwelcome'),        'client is not unwelcome';
             ok $v->client->get_status('cashier_locked'), 'client is now cashier_locked';
@@ -132,7 +132,7 @@ subtest 'When auth not required' => sub {
                 local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
                 $v->run_authentication;
             };
-            ok !$v->client->client_fully_authenticated, 'client should not be fully authenticated';
+            ok !$v->client->fully_authenticated, 'client should not be fully authenticated';
             ok !$v->client->get_status('age_verification'), 'client should not be age verified';
             ok $v->client->get_status('unwelcome'), 'client is now unwelcome';
             }
@@ -148,7 +148,7 @@ subtest 'When auth not required' => sub {
         my $v = IDAuthentication->new(client => $c);
         $v->run_authentication;
 
-        ok !$v->client->client_fully_authenticated, 'client should not be fully authenticated';
+        ok !$v->client->fully_authenticated, 'client should not be fully authenticated';
         ok !$v->client->get_status('age_verification'), 'client should not be age verified';
         ok !$v->client->get_status('cashier_locked'),   'cashier not locked';
     };
@@ -192,7 +192,7 @@ subtest 'proveid' => sub {
         my @notif = @{$v->notified};
         is @notif, 1, 'sent two notifications';
         like $notif[0][0], qr/PEP match/, 'notification is correct';
-        ok !$v->client->client_fully_authenticated, 'client not fully authenticated';
+        ok !$v->client->fully_authenticated, 'client not fully authenticated';
         ok $v->client->get_status('age_verification'), 'client is age verified';
         ok $v->client->get_status('unwelcome'),        'client is now unwelcome';
     };
@@ -211,7 +211,7 @@ subtest 'proveid' => sub {
             local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
             $v->run_authentication;
         };
-        ok !$v->client->client_fully_authenticated, 'client not fully authenticated';
+        ok !$v->client->fully_authenticated, 'client not fully authenticated';
         ok !$v->client->get_status('age_verification'), 'client not age verified';
         ok $v->client->get_status('unwelcome'), 'client now unwelcome';
     };
@@ -235,7 +235,7 @@ subtest 'proveid' => sub {
                 local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
                 $v->run_authentication;
             };
-            ok !$v->client->client_fully_authenticated, 'client not fully authenticated: ' . $type;
+            ok !$v->client->fully_authenticated, 'client not fully authenticated: ' . $type;
             ok !$v->client->get_status('age_verification'), 'client not age verified: ' . $type;
             ok !$v->client->get_status('unwelcome'),        'client is not unwelcome: ' . $type;
         }
@@ -252,7 +252,7 @@ subtest 'proveid' => sub {
         $v->mock(-_fetch_proveid, sub { return {age_verified => 1} });
         $v->run_authentication;
         is $v->notified, undef, 'sent zero notification';
-        ok !$v->client->client_fully_authenticated, 'client not fully authenticated';
+        ok !$v->client->fully_authenticated, 'client not fully authenticated';
         ok $v->client->get_status('age_verification'), 'client is age verified';
         ok !$v->client->get_status('cashier_locked'), 'cashier not locked';
     };
@@ -271,7 +271,7 @@ subtest 'proveid' => sub {
             local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
             $v->run_authentication;
         };
-        ok !$v->client->client_fully_authenticated, 'client not fully authenticated';
+        ok !$v->client->fully_authenticated, 'client not fully authenticated';
         ok !$v->client->get_status('age_verification'), 'client not age verified';
         ok $v->client->get_status('unwelcome'), 'client now unwelcome';
     };
