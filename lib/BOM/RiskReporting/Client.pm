@@ -44,15 +44,15 @@ has _update => (
 sub _client_details {
     my $self = shift;
 
+    my $client = $self->client;
+
     return {
-        name              => $self->client->first_name . ' ' . $self->client->last_name,
-        date_joined       => $self->client->date_joined,
-        residence         => $self->client->residence,
-        loginid           => $self->client->loginid,
-        citizen           => $self->client->citizen || '',
-        id_authentication => ($self->client->get_authentication('ID_NOTARIZED')) ? 'notorized'
-        : ($self->client->get_authentication('ID_DOCUMENT')) ? 'scans'
-        :                                                      'no',
+        name              => $client->first_name . ' ' . $client->last_name,
+        date_joined       => $client->date_joined,
+        residence         => $client->residence,
+        loginid           => $client->loginid,
+        citizen           => $client->citizen || '',
+        id_authentication => $client->fully_authenticated ? $client->authentication_status : 'no',
     };
 }
 

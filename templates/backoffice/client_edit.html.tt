@@ -269,24 +269,21 @@ table#client_edit td{
                 {'value' => 'ID_DOCUMENT', 'details' => 'Authenticated with scans' }
                 {'value' => 'ID_NOTARIZED', 'details' => 'Authenticated with Notarized docs' }
                 {'value' => 'NEEDS_ACTION', 'details' => 'Needs Action' }
-           ]
+           ];
+	   authentication_status = client.authentication_status;
         %]
         <td id="verification">:
             [%
                 text;
-                IF client.get_authentication('ID_DOCUMENT').status == 'pass';
-                    text = 'Authenticated with scans,';
-                END;
-                IF client.get_authentication('ID_NOTARIZED').status == 'pass';
+                IF authentication_status == 'scans';
+                    text = 'Authenticated with scans';
+                ELSIF authentication_status == 'notarized';
                     text = 'Authenticated with Notarized docs';
-                END;
-                IF client.get_status('document_under_review');
+                ELSIF authentication_status == 'under_review';
                     text = 'Under Review';
-                END;
-                IF client.get_status('document_needs_action');
+                ELSIF authentication_status == 'needs_action';
                     text = 'Needs Action';
-                END;
-                IF not text;
+                ELSE;
                     text = 'Not authenticated';
                 END;
             %]
