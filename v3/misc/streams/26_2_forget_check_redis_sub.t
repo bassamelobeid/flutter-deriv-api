@@ -38,10 +38,10 @@ use Test::MockObject::Extends;
 use Mojo::Redis2;
 use Binary::WebSocketAPI::v3::Instance::Redis qw| redis_pricer |;
 
-my $t = build_wsapi_test();
+my $t            = build_wsapi_test();
 my $redis_pricer = Test::MockObject::Extends->new(redis_pricer);
 
-my $keys_hash     = {};
+my $keys_hash = {};
 $redis_pricer->mock(
     'subscribe',
     sub {
@@ -197,7 +197,12 @@ done_testing();
 sub create_proposals {
     for my $s (@symbols) {
         for my $ct (qw(CALL PUT)) {
-            $res = $t->await::proposal({%$req, symbol => $s, contract_type => $ct}, {timeout => 5});
+            $res = $t->await::proposal({
+                    %$req,
+                    symbol        => $s,
+                    contract_type => $ct
+                },
+                {timeout => 5});
             note explain \%stats, \%tags;
             ok $res->{proposal}{id}, 'Should return id';
             $sub_ids->{$s} = $res->{proposal}->{id};
