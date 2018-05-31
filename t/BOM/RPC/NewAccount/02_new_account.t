@@ -70,15 +70,17 @@ subtest $method => sub {
         ->has_no_system_error->has_error->error_code_is('InvalidToken', 'If email verification_code is wrong it should return error')
         ->error_message_is('Your token has expired or is invalid.', 'If email verification_code is wrong it should return error_message');
 
-    $params->{args}->{verification_code} = BOM::Platform::Token->new(
-        email       => $email,
-        created_for => 'account_opening'
-    )->token;
     $params->{args}->{residence}    = 'id';
     $params->{args}->{utm_source}   = 'google.com';
     $params->{args}->{utm_medium}   = 'email';
     $params->{args}->{utm_campaign} = 'spring sale';
     $params->{args}->{gclid_url}    = 'FQdb3wodOkkGBgCMrlnPq42q8C';
+
+    $params->{args}->{verification_code} = BOM::Platform::Token->new(
+        email       => $email,
+        created_for => 'account_opening'
+    )->token;
+
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
         ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
         ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
@@ -90,27 +92,47 @@ subtest $method => sub {
     });
     ok $user->utm_source =~ '^google\.com$',               'utm registered as expected';
     ok $user->gclid_url =~ '^FQdb3wodOkkGBgCMrlnPq42q8C$', 'gclid value returned as expected';
-    is $user->email_consent, undef, 'email consent not passed during account creation so its undef';
+    is $user->email_consent, 1, 'email consent for new account is 1 for residence under costarica';
 
     my ($resp_loginid, $t, $uaf) =
         @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
     is $resp_loginid, $new_loginid, 'correct oauth token';
 
-    my $vr_email = 'new_email' . rand(999) . '@binary.com';
-    $params->{args}->{verification_code} = BOM::Platform::Token->new(
-        email       => $vr_email,
-        created_for => 'account_opening'
-    )->token;
-    $params->{args}->{email_consent} = 1;
+    subtest 'European client - de' => sub {
+        my $vr_email = 'new_email' . rand(999) . '@binary.com';
+        $params->{args}->{verification_code} = BOM::Platform::Token->new(
+            email       => $vr_email,
+            created_for => 'account_opening'
+        )->token;
 
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
-        ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
-        ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
+        $params->{args}->{residence} = 'de';
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
+            ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
+            ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
 
-    $user = BOM::User->new({
-        email => $vr_email,
-    });
-    is $user->email_consent, 1, 'email consent is correct';
+        $user = BOM::User->new({
+            email => $vr_email,
+        });
+        is $user->email_consent, 0, 'email consent for new account is 0 for european clients - de';
+    };
+
+    subtest 'European client - gb' => sub {
+        my $vr_email = 'new_email' . rand(999) . '@binary.com';
+        $params->{args}->{verification_code} = BOM::Platform::Token->new(
+            email       => $vr_email,
+            created_for => 'account_opening'
+        )->token;
+
+        $params->{args}->{residence} = 'gb';
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
+            ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
+            ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
+
+        $user = BOM::User->new({
+            email => $vr_email,
+        });
+        is $user->email_consent, 0, 'email consent for new account is 0 for european clients - gb';
+    };
 };
 
 $method = 'new_account_real';
@@ -319,14 +341,12 @@ subtest $method => sub {
 
         $params->{args}->{residence} = 'id';
 
-        warnings_like {
-            $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('invalid residence',
-                'It should return error if residence does not fit with maltainvest')->error_message_is(
-                'Sorry, our service is not available for your country of residence.',
-                'It should return error if residence does not fit with maltainvest'
-                );
-        }
-        [qr/^acc opening err:/], "Expected warn about wrong residence";
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('invalid residence', 'It should return error if residence does not fit with maltainvest')
+            ->error_message_is(
+            'Sorry, our service is not available for your country of residence.',
+            'It should return error if residence does not fit with maltainvest'
+            );
 
         $params->{args}->{residence} = 'de';
 

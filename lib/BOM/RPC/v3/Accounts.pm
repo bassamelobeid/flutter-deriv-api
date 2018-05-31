@@ -49,8 +49,9 @@ use BOM::Database::DataMapper::Transaction;
 use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
 use BOM::Platform::Runtime;
+use BOM::Platform::Config::ContractPricingLimits qw(market_pricing_limits);
 
-my $allowed_fields_for_virtual = qr/passthrough|set_settings|email_consent|residence|allow_copiers/;
+my $allowed_fields_for_virtual = qr/set_settings|email_consent|residence|allow_copiers/;
 my $email_field_labels         = {
     exclude_until          => 'Exclude from website until',
     max_balance            => 'Maximum account cash balance',
@@ -278,34 +279,7 @@ sub __build_landing_company {
         legal_allowed_markets             => $lc->legal_allowed_markets,
         legal_allowed_contract_categories => $lc->legal_allowed_contract_categories,
         has_reality_check                 => $lc->has_reality_check ? 1 : 0,
-        currency_config                   => _currency_config($payout_currencies, $lc->short, $lc->legal_allowed_markets)};
-}
-
-sub _currency_config {
-    my ($currencies, $lc, $markets) = @_;
-
-    my $bet_limits = BOM::Platform::Config::quants->{bet_limits};
-    my $lc_min     = $bet_limits->{min_stake}->{$lc} || $bet_limits->{min_stake}->{default_landing_company};
-    my $lc_max     = $bet_limits->{max_payout}->{$lc} || $bet_limits->{max_payout}->{default_landing_company};
-
-    my $config = {};
-
-    for my $market (@$markets) {
-
-        my $market_min = $lc_min->{$market} || $lc_min->{default_market};
-        my $market_max = $lc_max->{$market} || $lc_max->{default_market};
-
-        for my $currency (@$currencies) {
-
-            my $min_stake  = $market_min->{$currency};
-            my $max_payout = $market_max->{$currency};
-
-            $config->{$market}->{$currency}->{max_payout} = $max_payout;
-            $config->{$market}->{$currency}->{min_stake}  = $min_stake;
-        }
-    }
-
-    return $config;
+        currency_config                   => market_pricing_limits($payout_currencies, $lc->short, $lc->legal_allowed_markets)};
 }
 
 rpc statement => sub {
@@ -526,7 +500,12 @@ rpc get_account_status => sub {
         }
     }
 
-    push @status, 'authenticated' if ($client->client_fully_authenticated);
+    my $id_auth_status             = $client->authentication_status;
+    my $authentication_in_progress = $id_auth_status =~ /under_review|needs_action/;
+
+    push @status, 'document_' . $id_auth_status if $authentication_in_progress;
+
+    push @status, 'authenticated' if ($client->fully_authenticated);
     my $risk_classification = $client->aml_risk_classification // '';
 
     # we need to send only low, standard, high as manual override is for internal purpose
@@ -566,8 +545,7 @@ rpc get_account_status => sub {
     }
 
     my $prompt_client_to_authenticate = 0;
-    my $authentication_in_progress = $client->get_status('document_needs_action') || $client->get_status('document_under_review');
-    if ($client->client_fully_authenticated) {
+    if ($client->fully_authenticated) {
         # Authenticated clients still need to go through age verification checks for IOM/MF/MLT
         if (any { $shortcode eq $_ } qw(iom malta maltainvest)) {
             $prompt_client_to_authenticate = 1 unless $client->get_status('age_verification');
@@ -1024,6 +1002,14 @@ rpc set_settings => sub {
     # need to handle for $jp_status->{status} as that come from japan settings
     return {status => 1} if $jp_status->{status};
 
+    # only allow current client to set allow_copiers
+    if (defined $allow_copiers) {
+        $client->allow_copiers($allow_copiers);
+        return BOM::RPC::v3::Utility::client_error() unless $client->save();
+    }
+
+    return {status => 1} if $client->is_virtual;
+
     my $tax_residence             = $args->{'tax_residence'}             // '';
     my $tax_identification_number = $args->{'tax_identification_number'} // '';
 
@@ -1057,7 +1043,7 @@ rpc set_settings => sub {
         or $addressState ne $client->state
         or $addressPostcode ne $client->postcode)
     {
-        my $authenticated = $client->client_fully_authenticated;
+        my $authenticated = $client->fully_authenticated;
         $cil_message =
               ($authenticated ? 'Authenticated' : 'Non-authenticated')
             . ' client ['
@@ -1123,14 +1109,6 @@ rpc set_settings => sub {
     }
     # update client value after latest changes
     $client = BOM::User::Client->new({loginid => $client->loginid});
-
-    # only allow current client to set allow_copiers
-    if (defined $allow_copiers) {
-        $client->allow_copiers($allow_copiers);
-    }
-    if (not $client->save()) {
-        return BOM::RPC::v3::Utility::client_error();
-    }
 
     if ($cil_message) {
         $client->add_note('Update Address Notification', $cil_message);

@@ -14,6 +14,7 @@ use Email::Folder::Search;
 use Email::Stuffer::TestLinks;
 
 use Format::Util::Numbers qw/formatnumber/;
+use Scalar::Util qw/looks_like_number/;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -304,12 +305,14 @@ subtest $method => sub {
         },
         "no such landing company"
     );
-    is($c->tcall($method, {args => {landing_company_details => 'costarica'}})->{name}, 'Binary (C.R.) S.A.', "details result ok");
-    cmp_bag(
-        [keys %{$c->tcall($method, {args => {landing_company_details => 'costarica'}})->{currency_config}->{volidx}}],
-        ['USD', 'AUD', 'BCH', 'BTC', 'ETH', 'EUR', 'GBP', 'LTC', 'DAI'],
-        "currency config ok"
-    );
+    my $result = $c->tcall($method, {args => {landing_company_details => 'costarica'}});
+    is($result->{name}, 'Binary (C.R.) S.A.', "details result ok");
+    cmp_bag([keys %{$result->{currency_config}->{volidx}}], ['USD', 'AUD', 'BCH', 'BTC', 'ETH', 'EUR', 'GBP', 'LTC', 'DAI'], "currency config ok");
+    ok(!(grep { !looks_like_number($_) } get_values($result->{currency_config})), 'limits for costarica are all numeric');
+
+    $result = $c->tcall($method, {args => {landing_company_details => 'maltainvest'}});
+    cmp_bag([keys %{$result->{currency_config}->{forex}}], ['USD', 'EUR', 'GBP'], "currency config for maltainvest ok");
+    ok(!(grep { !looks_like_number($_) } get_values($result->{currency_config})), 'limits for maltainvest are all numeric');
 };
 
 $method = 'statement';
@@ -736,7 +739,7 @@ subtest $method => sub {
     $test_client->aml_risk_classification('low');
     $test_client->save();
 
-    $test_client_cr->set_status('document_needs_action');
+    $test_client_cr->set_authentication('ID_DOCUMENT')->status('needs_action');
     $test_client_cr->save;
     cmp_deeply(
         $c->tcall($method, {token => $token_21}),
@@ -748,8 +751,7 @@ subtest $method => sub {
         'authentication page should be shown if needs action is set regardless of balance'
     );
 
-    $test_client_cr->clr_status('document_needs_action');
-    $test_client_cr->set_status('document_under_review');
+    $test_client_cr->set_authentication('ID_DOCUMENT')->status('under_review');
     $test_client_cr->save;
     cmp_deeply(
         $c->tcall($method, {token => $token_21}),
@@ -762,7 +764,7 @@ subtest $method => sub {
     );
 
     # Revert under review state
-    $test_client_cr->clr_status('document_under_review');
+    $test_client_cr->get_authentication('ID_DOCUMENT')->delete;
     $test_client_cr->save;
 
     cmp_deeply(
@@ -1817,5 +1819,15 @@ subtest 'get and set self_exclusion' => sub {
     ok(@msgs, 'Email for MLT client limits with MT5 accounts');
     like($msgs[0]{body}, qr/MT$mt5_loginid/, 'email content is ok');
 };
+
+# Recursively get values from nested hashes
+sub get_values {
+    my $in = shift;
+    my @vals;
+    for my $v (values %$in) {
+        push @vals => ref $v eq 'HASH' ? get_values($v) : $v;
+    }
+    return @vals;
+}
 
 done_testing();

@@ -84,7 +84,7 @@ subtest 'common' => sub {
     my $user_mocked = Test::MockModule->new('BOM::User');
     $user_mocked->mock('new', sub { bless {}, 'BOM::User' });
 
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr1->loginid, 'test token');
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mx->loginid, 'test token');
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_TNC_APPROVAL', 'Client needs to approve tnc before')
         ->error_message_is('Terms and conditions approval is required.', 'Correct error message for terms and conditions');
 
@@ -100,6 +100,7 @@ subtest 'common' => sub {
     $client_cr1->set_default_account('JPY');
     $client_cr1->save;
 
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr1->loginid, 'test token');
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has wrong default currency for landing_company')
         ->error_message_is('JPY transactions may not be performed with this account.', 'Correct error message for wrong default account');
@@ -274,12 +275,11 @@ subtest 'all status are covered' => sub {
     my $all_status = BOM::User::Client::client_status_types;
     # Flags to represent state, rather than status for preventing cashier access:
     # * social signup, jp_transaction_detail, duplicate_account, migrated_single_email
-    # * document_under_review, document_needs_action - for document_upload state
     # * professional, professional_requested
     my @temp_status =
         grep {
         $_ !~
-            /^(?:social_signup|jp_transaction_detail|duplicate_account|migrated_single_email|document_under_review|document_needs_action|professional|professional_requested|proveid_requested|proveid_pending)$/
+            /^(?:social_signup|jp_transaction_detail|duplicate_account|migrated_single_email|professional|professional_requested|proveid_requested|proveid_pending)$/
         }
         keys %$all_status;
     fail("missing status $_") for sort grep !exists $seen{$_}, @temp_status;

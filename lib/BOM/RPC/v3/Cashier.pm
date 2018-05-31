@@ -294,7 +294,7 @@ rpc get_limits => sub {
     my $lifetimelimit         = $wl_config->{lifetime_limit};
     my $withdrawal_limit_curr = $wl_config->{currency};
 
-    if ($client->client_fully_authenticated) {
+    if ($client->fully_authenticated) {
         $numdayslimit  = 99999999;
         $lifetimelimit = 99999999;
     }
@@ -679,6 +679,10 @@ rpc paymentagent_withdraw => sub {
             ($message) ? (message => $message) : (),
         });
     };
+
+    # 2018/05/04: Currently this check is irrelevent, because only CR clients can use payment agents, and they
+    #   aren't required to accept T&Cs. It's here in case either of these situations change.
+    return $error_sub->(localize('Terms and conditions approval is required.')) if $client->is_tnc_approval_required;
 
     my $amount_validation_error = _validate_amount($amount, $currency);
     return $error_sub->($amount_validation_error) if $amount_validation_error;

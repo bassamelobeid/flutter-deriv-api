@@ -11,6 +11,7 @@ use BOM::Database::Model::OAuth;
 use Email::Folder::Search;
 use Email::Stuffer::TestLinks;
 use List::Util qw( all );
+use BOM::RPC::v3::DocumentUpload qw(MAX_FILE_SIZE);
 
 #########################################################
 ## Setup test RPC
@@ -73,7 +74,6 @@ my %default_args = (
 use constant {
     EXP_DATE_PAST   => '2017-08-09',
     INVALID_FILE_ID => 1231531,
-    MAX_FILE_SIZE   => 3 * 2**20,
 };
 
 #########################################################
@@ -266,8 +266,7 @@ sub finish_successful_upload {
     is $doc->checksum, $checksum, 'Checksum should be added correctly';
 
     # Check client status is correct
-    is($client->get_status('document_under_review')->reason, 'Documents uploaded', 'client\'s status changed');
-    ok(!$client->get_status('document_needs_action'), 'Document should not be in needs_action state');
+    ok($client->authentication_status eq 'under_review', 'Document should be under_review');
 
 }
 
