@@ -77,7 +77,7 @@ sub validate_payment {
                 if $absamt > $unfrozen;
         }
 
-        return 1 if $self->client_fully_authenticated;
+        return 1 if $self->fully_authenticated;
 
         my $lc = $self->landing_company->short;
         my $lc_limits;

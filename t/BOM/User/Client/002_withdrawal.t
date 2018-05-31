@@ -279,7 +279,7 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
         residence   => 'gb'
     );
 
-    ok(!$client->client_fully_authenticated, 'client has not authenticated identity.');
+    ok(!$client->fully_authenticated, 'client has not authenticated identity.');
 
     my $gbp_amount = _GBP_equiv(6200);
     $client->smart_payment(
@@ -361,7 +361,7 @@ subtest 'Total EUR2000 MLT limitation.' => sub {
             broker_code => 'MLT',
             residence   => 'nl'
         );
-        ok(!$client->client_fully_authenticated, 'client has not authenticated identity.');
+        ok(!$client->fully_authenticated, 'client has not authenticated identity.');
 
         $client->smart_payment(%deposit_eur, amount => 10000);
         $client->clr_status('cashier_locked');    # first-deposit will cause this in non-CR clients!
