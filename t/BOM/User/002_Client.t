@@ -16,7 +16,7 @@ subtest 'Almost all accessor/modifiers' => sub {
     note "broker_code ", $client->broker_code;
     note "broker ",      $client->broker;
 
-    is($client->client_fully_authenticated(), 1, 'The client is fully authenticated');
+    is($client->fully_authenticated(), 1, 'The client is fully authenticated');
 
     is(
         $client->get_limit({

@@ -59,12 +59,8 @@ my $CLIENT_STATUS_TYPES = {
     jp_transaction_detail => 1,
     # we migrated client to single login and kept single login
     # so all other will be marked with this
-    migrated_single_email => 0,
-    duplicate_account     => 0,
-    # indicate if there has been a change in uploaded documents.
-    document_under_review => 1,
-    # indicates if there was a problem with uploaded documents.
-    document_needs_action  => 1,
+    migrated_single_email  => 0,
+    duplicate_account      => 0,
     professional_requested => 1,
     professional           => 1,
     # TODO (Amin): Find a way to add a config for hidden status codes (prove_*)
@@ -399,11 +395,33 @@ sub has_valid_documents {
     return undef;
 }
 
-sub client_fully_authenticated {
-    my $self        = shift;
-    my $ID_DOCUMENT = $self->get_authentication('ID_DOCUMENT');
-    my $NOTARIZED   = $self->get_authentication('ID_NOTARIZED');
-    return (($ID_DOCUMENT and $ID_DOCUMENT->status eq 'pass') or ($NOTARIZED and $NOTARIZED->status eq 'pass'));
+sub fully_authenticated {
+    my $self = shift;
+
+    for my $method (qw/ID_DOCUMENT ID_NOTARIZED/) {
+        my $auth = $self->get_authentication($method);
+        return 1 if $auth and $auth->status eq 'pass';
+    }
+
+    return 0;
+}
+
+sub authentication_status {
+    my ($self) = @_;
+
+    my $notarized = $self->get_authentication('ID_NOTARIZED');
+
+    return 'notarized' if $notarized and $notarized->status eq 'pass';
+
+    my $id_auth = $self->get_authentication('ID_DOCUMENT');
+
+    return 'no' unless $id_auth;
+
+    my $id_auth_status = $id_auth->status;
+
+    return 'scans' if $id_auth_status eq 'pass';
+
+    return $id_auth_status;
 }
 
 sub set_exclusion {
