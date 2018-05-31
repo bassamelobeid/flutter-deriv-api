@@ -592,13 +592,20 @@ for my $withdraw_currency ('USD', 'BTC') {
         like($res->{error}{message_to_client}, qr/due to system maintenance/, $test);
         $runtime_system->suspend->system(0);
 
-        $test = 'Withdrawal fails if payment agent facility not available/';
-        ## Right now only CR offers payment agents according to:
-        ## /home/git/regentmarkets/cpan/local/lib/perl5/auto/share/dist/LandingCompany/landing_companies.yml
+        $test = 'Withdrawal fails if T&C approval is needed';
+        ## Right now CR clients don't require T&C acceptance
         my $malta_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MLT'});
         $testargs->{oldclient} = $testargs->{client};
         $testargs->{client}    = $malta_client;
         $res                   = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
+        like($res->{error}{message_to_client}, qr/Terms and conditions approval is required/, $test);
+        $malta_client->set_status('tnc_approval', 'system', BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version);
+        $malta_client->save;
+
+        $test = 'Withdrawal fails if payment agent facility not available/';
+        ## Right now only CR offers payment agents according to:
+        ## /home/git/regentmarkets/cpan/local/lib/perl5/auto/share/dist/LandingCompany/landing_companies.yml
+        $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/agent facilities are not available/, $test);
         $testargs->{client} = delete $testargs->{oldclient};
 
@@ -636,6 +643,8 @@ for my $withdraw_currency ('USD', 'BTC') {
         $test = 'Withdrawal fails if client and payment agent have different brokers';
         ## Problem: Only CR currently allows payment agents, so we have to use a little trickery
         $payer->broker('MLT');
+        $payer->set_status('tnc_approval', 'system', BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version);
+        $payer->save;
         $mock_landingcompany->mock('allows_payment_agents', sub { return 1; });
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/withdrawals are not allowed for specified accounts/, $test);
