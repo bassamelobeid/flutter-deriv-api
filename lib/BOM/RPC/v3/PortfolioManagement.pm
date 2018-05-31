@@ -5,7 +5,7 @@ use warnings;
 
 use Date::Utility;
 use Try::Tiny;
-use Format::Util::Numbers qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber roundcommon/;
 
 use BOM::RPC::Registry '-dsl';
 
@@ -170,6 +170,10 @@ rpc proposal_open_contract => sub {
             $bid->{sell_time}       = $sell_time if $sell_time;
             $bid->{sell_price}      = formatnumber('price', $currency, $fmb->{sell_price}) if defined $fmb->{sell_price};
 
+            if (defined $bid->{buy_price} and $bid->{bid_price}) {
+                $bid->{profit} = formatnumber('price', $currency, $bid->{bid_price} - $bid->{buy_price});
+                $bid->{profit_percentage} = roundcommon(0.01, $bid->{profit} / $bid->{buy_price} * 100);
+            }
             $response->{$id} = $bid;
         }
     }
