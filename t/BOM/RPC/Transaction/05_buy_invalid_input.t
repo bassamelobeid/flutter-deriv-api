@@ -29,7 +29,6 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     email       => $email,
 });
 my $loginid = $client->loginid;
-
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
