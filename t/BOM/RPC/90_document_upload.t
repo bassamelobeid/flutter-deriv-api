@@ -266,8 +266,7 @@ sub finish_successful_upload {
     is $doc->checksum, $checksum, 'Checksum should be added correctly';
 
     # Check client status is correct
-    is($client->get_status('document_under_review')->reason, 'Documents uploaded', 'client\'s status changed');
-    ok(!$client->get_status('document_needs_action'), 'Document should not be in needs_action state');
+    ok($client->authentication_status eq 'under_review', 'Document should be under_review');
 
 }
 
