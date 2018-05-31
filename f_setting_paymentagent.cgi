@@ -33,7 +33,7 @@ if ($whattodo eq 'create') {
 
     code_exit_BO("Error : wrong loginid ($loginid) could not get client instance")                 unless $client;
     code_exit_BO("Client has not set account currency. Currency is mandatory for payment agent")   unless $client->default_account;
-    code_exit_BO("Please note that to become payment agent client has to be fully authenticated.") unless $client->client_fully_authenticated;
+    code_exit_BO("Please note that to become payment agent client has to be fully authenticated.") unless $client->fully_authenticated;
 
     my $payment_agent_registration_form = BOM::Backoffice::Form::get_payment_agent_registration_form($loginid, $broker);
     print $payment_agent_registration_form->build();
