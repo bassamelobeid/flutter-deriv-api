@@ -382,6 +382,7 @@ sub documents_expired {
     my @docs  = $self->client_authentication_document or return undef;    # Rose
     for my $doc (@docs) {
         my $expires = $doc->expiration_date || next;
+        next if defined $doc->status and $doc->status eq 'uploading';
         return 1 if Date::Utility->new($expires)->is_before($today);
     }
     return 0;
@@ -392,6 +393,7 @@ sub has_valid_documents {
     my $today = Date::Utility->today;
     for my $doc ($self->client_authentication_document) {
         my $expires = $doc->expiration_date || next;
+        next if defined $doc->status and $doc->status eq 'uploading';
         return 1 if Date::Utility->new($expires)->is_after($today);
     }
     return undef;
@@ -891,6 +893,19 @@ sub real_account_siblings_information {
     }
 
     return $siblings;
+}
+
+sub is_tnc_approval_required {
+    my $self = shift;
+
+    return 0 if $self->is_virtual;
+    return 0 unless $self->landing_company->tnc_required;
+
+    my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
+    my $client_tnc_status   = $self->get_status('tnc_approval');
+    return 1 if (not $client_tnc_status or ($client_tnc_status->reason ne $current_tnc_version));
+
+    return 0;
 }
 
 1;
