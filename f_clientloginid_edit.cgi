@@ -512,21 +512,14 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         }
 
         if ($key eq 'client_authentication' and $input{$key}) {
-            if ($input{$key} eq 'ID_DOCUMENT' or $input{$key} eq 'ID_NOTARIZED') {
-                $client->set_authentication($input{$key})->status('pass');
-            } else {
-                foreach my $m (@{$client->client_authentication_method}) {
-                    $m->delete;
-                }
-            }
+            my $auth_method = $input{$key};
 
-            if ($input{$key} eq 'NEEDS_ACTION') {
-                $client->set_status('document_needs_action', $clerk, 'Documents uploaded');
-            } else {
-                $client->clr_status('document_needs_action');
-            }
+            # Remove existing status to make the auth methods mutually exclusive
+            $_->delete for @{$client->client_authentication_method};
 
-            $client->clr_status('document_under_review');
+            $client->set_authentication('ID_NOTARIZED')->status('pass')        if $auth_method eq 'ID_NOTARIZED';
+            $client->set_authentication('ID_DOCUMENT')->status('pass')         if $auth_method eq 'ID_DOCUMENT';
+            $client->set_authentication('ID_DOCUMENT')->status('needs_action') if $auth_method eq 'NEEDS_ACTION';
         }
 
         if ($key eq 'myaffiliates_token' and $input{$key}) {
