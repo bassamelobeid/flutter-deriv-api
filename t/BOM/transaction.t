@@ -1233,7 +1233,7 @@ subtest 'max_turnover validation', sub {
             my $mock_client = Test::MockModule->new('BOM::User::Client');
             $mock_client->mock(get_limit_for_daily_turnover =>
                     sub { note "mocked Client->get_limit_for_daily_turnover returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 });
-            $mock_client->mock(client_fully_authenticated => sub { note "mocked Client->client_fully_authenticated returning false"; undef });
+            $mock_client->mock(fully_authenticated => sub { note "mocked Client->fully_authenticated returning false"; undef });
 
             is +BOM::Transaction->new({
                     client        => $cl,
@@ -1275,7 +1275,7 @@ subtest 'max_turnover validation', sub {
             my $mock_client = Test::MockModule->new('BOM::User::Client');
             $mock_client->mock(get_limit_for_daily_turnover =>
                     sub { note "mocked Client->get_limit_for_daily_turnover returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 });
-            $mock_client->mock(client_fully_authenticated => sub { note "mocked Client->client_fully_authenticated returning true"; 1 });
+            $mock_client->mock(fully_authenticated => sub { note "mocked Client->fully_authenticated returning true"; 1 });
 
             $txn->buy;
         };

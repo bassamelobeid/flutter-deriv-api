@@ -506,7 +506,7 @@ sub _validate_iom_withdrawal_limit {
     my $numdayslimit      = $withdrawal_limits->{$landing_company_short}->{limit_for_days};
     my $lifetimelimit     = $withdrawal_limits->{$landing_company_short}->{lifetime_limit};
 
-    if ($client->client_fully_authenticated) {
+    if ($client->fully_authenticated) {
         $numdayslimit  = 99999999;
         $lifetimelimit = 99999999;
     }
@@ -797,7 +797,7 @@ sub check_trade_status {
             and not $client->get_status('age_verification')
             and $client->has_deposits
         )
-        or ($client->landing_company->short eq 'maltainvest' and not $client->client_fully_authenticated))
+        or ($client->landing_company->short eq 'maltainvest' and not $client->fully_authenticated))
     {
         return Error::Base->cuss(
             -type              => 'PleaseAuthenticate',

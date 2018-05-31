@@ -147,7 +147,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_10',
 });
 
-my $underlying_R10    = create_underlying('R_10');
+my $underlying_R10 = create_underlying('R_10');
 
 sub db {
     return BOM::Database::ClientDB->new({
@@ -362,7 +362,7 @@ my $new_acc_usd = $new_client->find_account(query => [currency_code => 'USD'])->
 subtest 'test slippage', sub {
     plan tests => 2;
     lives_ok {
-        
+
         # Extra case. When multiplier is 1.499
         my $contract = produce_contract({
             underlying   => $underlying_R10,

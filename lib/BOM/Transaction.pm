@@ -988,7 +988,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $error_message =
             BOM::Platform::Context::localize('Purchasing this contract will cause you to exceed your daily turnover limit of [_1][_2].',
             $currency, $limit);
-        if (not $client->client_fully_authenticated) {
+        if (not $client->fully_authenticated) {
             $error_message .= ' ' . BOM::Platform::Context::localize('Please authenticate your account to increase your daily turnover limit.');
         }
 
