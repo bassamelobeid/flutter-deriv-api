@@ -405,6 +405,8 @@ subtest $method => sub {
         $params->{token}               = $auth_token;
         $params->{args}->{residence}   = 'gb';
 
+        $mailbox->clear;
+
         # call with totally random values - our client still should have correct one
         ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name residence address_city/;
         $params->{args}->{phone}         = '1234567890';
@@ -422,6 +424,11 @@ subtest $method => sub {
         is($result->{tax_residence}, 'de,nl', 'MF client has tax residence set');
         $result = $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token_mf})->result;
         isnt(keys $result, 0, 'MF client has financial assessment set');
+        my @msgs = $mailbox->search(
+            email   => 'compliance@binary.com',
+            subject => qr/\Q$test_loginid appropriateness test scoring\E/
+        );
+        ok(@msgs, "Risk disclosure email received");
     };
 
     my $client_mx;
