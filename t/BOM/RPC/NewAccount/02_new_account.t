@@ -429,7 +429,7 @@ subtest $method => sub {
         isnt(keys $result, 0, 'MF client has financial assessment set');
         my @msgs = $mailbox->search(
             email   => 'compliance@binary.com',
-            subject => qr/\Q$test_loginid appropriateness test scoring\E/
+            subject => qr/\Q$new_loginid appropriateness test scoring\E/
         );
         ok(@msgs, "Risk disclosure email received");
     };
