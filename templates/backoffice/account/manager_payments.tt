@@ -120,6 +120,8 @@
     <td class="all_payment_types bank_money_transfer">
         <select name="bom_bank_info">
             <option value="RBSI BSL 5880-58511983">RBSI BSL 5880-58511983</option>
+            <option value="RBSI BEL 5880-58442434">RBSI BEL 5880-58442434</option>
+            <option value="RBSI BIOM 5880-58321386">RBSI BIOM 5880-58321386</option>
             <option value="NBG BSL EUR 12901168">NBG BSL EUR 12901168</option>
             <option value="NBG BSL USD 12901169">NBG BSL USD 12901169</option>
             <option value="NBG BSL GBP 12901170">NBG BSL GBP 12901170</option>
