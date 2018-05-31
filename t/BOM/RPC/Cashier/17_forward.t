@@ -275,12 +275,11 @@ subtest 'all status are covered' => sub {
     my $all_status = BOM::User::Client::client_status_types;
     # Flags to represent state, rather than status for preventing cashier access:
     # * social signup, jp_transaction_detail, duplicate_account, migrated_single_email
-    # * document_under_review, document_needs_action - for document_upload state
     # * professional, professional_requested
     my @temp_status =
         grep {
         $_ !~
-            /^(?:social_signup|jp_transaction_detail|duplicate_account|migrated_single_email|document_under_review|document_needs_action|professional|professional_requested|proveid_requested|proveid_pending)$/
+            /^(?:social_signup|jp_transaction_detail|duplicate_account|migrated_single_email|professional|professional_requested|proveid_requested|proveid_pending)$/
         }
         keys %$all_status;
     fail("missing status $_") for sort grep !exists $seen{$_}, @temp_status;

@@ -378,7 +378,7 @@ async_rpc mt5_new_account => sub {
                                     });
                             } elsif ($account_type eq 'financial' && $client->landing_company->short eq 'costarica') {
                                 _send_notification_email($client, $mt5_login, $brand, $params->{language}, $group)
-                                    unless $client->client_fully_authenticated;
+                                    unless $client->fully_authenticated;
                                 Future->done;
                             } else {
                                 Future->done;
@@ -1442,7 +1442,7 @@ sub _mt5_validate_and_get_amount {
             return _make_error($error_code, localize('Please authenticate your account.'))
                 if ($action eq 'withdrawal'
                 and ($setting->{group} // '') !~ /^real\\costarica$/
-                and not $authorized_client->client_fully_authenticated);
+                and not $authorized_client->fully_authenticated);
 
             my $mt5_currency = $setting->{currency};
             return _make_error($error_code, localize('Invalid MT5 currency - had [_1] and should be USD or EUR.', $mt5_currency))

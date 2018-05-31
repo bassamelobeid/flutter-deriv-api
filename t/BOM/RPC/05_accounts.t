@@ -739,7 +739,7 @@ subtest $method => sub {
     $test_client->aml_risk_classification('low');
     $test_client->save();
 
-    $test_client_cr->set_status('document_needs_action');
+    $test_client_cr->set_authentication('ID_DOCUMENT')->status('needs_action');
     $test_client_cr->save;
     cmp_deeply(
         $c->tcall($method, {token => $token_21}),
@@ -751,8 +751,7 @@ subtest $method => sub {
         'authentication page should be shown if needs action is set regardless of balance'
     );
 
-    $test_client_cr->clr_status('document_needs_action');
-    $test_client_cr->set_status('document_under_review');
+    $test_client_cr->set_authentication('ID_DOCUMENT')->status('under_review');
     $test_client_cr->save;
     cmp_deeply(
         $c->tcall($method, {token => $token_21}),
@@ -765,7 +764,7 @@ subtest $method => sub {
     );
 
     # Revert under review state
-    $test_client_cr->clr_status('document_under_review');
+    $test_client_cr->get_authentication('ID_DOCUMENT')->delete;
     $test_client_cr->save;
 
     cmp_deeply(
