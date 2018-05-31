@@ -407,7 +407,8 @@ subtest $method => sub {
         $params->{args}->{residence}   = 'gb';
 
         my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
-        $mailbox->init;
+        $mailbox->init();
+        $mailbox->clear();
 
         # call with totally random values - our client still should have correct one
         ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name residence address_city/;
