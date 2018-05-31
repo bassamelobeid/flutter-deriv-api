@@ -137,8 +137,8 @@ print "<br /><br /><table border=\"1\" cellpadding=\"3\">" . "<tr>"
         category => "client_status_disabled"
     })
     . '">Disabled logins</a>' . "</td>"
-    . "<td>LoginIDs on this list will not be able to log into their accounts - the system will say 'wrong loginID or password'.</td>" . "</tr>"
-    . "<tr>"
+    . "<td>Client cannot login into disabled account, if all user's accounts have been disabled, the system says: account is unavailable.</td>"
+    . "</tr>" . "<tr>"
     . "<td>$untrusted_cashier_action</td>" . "<td>"
     . '<a href="'
     . request()->url_for(
@@ -148,8 +148,7 @@ print "<br /><br /><table border=\"1\" cellpadding=\"3\">" . "<tr>"
         category => "client_status_cashier_locked"
     })
     . '">Lock Cashier Logins</a>' . "</td>"
-    . "<td>To prohibit a client from making any further deposits or withdrawals (i.e. to completely lock the cashier section), add the client to this list.</td>"
-    . "</tr>" . "<tr>"
+    . "<td>Client cannot make a deposit or withdrawal.</td>" . "</tr>" . "<tr>"
     . "<td>$untrusted_unwelcome_action</td>" . "<td>"
     . '<a href="'
     . request()->url_for(
@@ -159,8 +158,7 @@ print "<br /><br /><table border=\"1\" cellpadding=\"3\">" . "<tr>"
         category => "client_status_unwelcome"
     })
     . '">Unwelcome Logins</a>' . "</td>"
-    . "<td>Clients on this list will be able to log into their accounts, but they will not be able to deposit extra money nor buy any new contracts. They will be able to withdraw money, and they will also be able to close out positions.</td>"
-    . "</tr>" . "<tr>"
+    . "<td>Client can log in, close an open position, make a withdrawal but cannot deposit or open a new trade.</td>" . "</tr>" . "<tr>"
     . "<td>$untrusted_withdrawal_action</td>" . "<td>"
     . '<a href="'
     . request()->url_for(
@@ -170,7 +168,7 @@ print "<br /><br /><table border=\"1\" cellpadding=\"3\">" . "<tr>"
         category => "client_status_withdrawal_locked"
     })
     . '">Locked Withdrawals</a>' . "</td>"
-    . "<td>Only withdrawals are disabled</td>" . "</tr>"
+    . "<td>Client cannot submit new withdrawal requests.</td>" . "</tr>"
     . "</table><br />";
 
 # view all disabled accounts details
