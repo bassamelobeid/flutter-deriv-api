@@ -1186,8 +1186,6 @@ subtest $method => sub {
         "source_of_wealth"                     => "Company Ownership",                                # +0
     };
 
-    $mailbox->clear;
-
     my $res = $c->tcall(
         $method,
         {
@@ -1214,12 +1212,6 @@ subtest $method => sub {
     cmp_ok($res->{financial_information_score}, "==", 18, "Got correct financial information score");
     cmp_ok($res->{trading_score},               "==", 9,  "Got correct trading score");
     cmp_ok($res->{cfd_score},                   "==", 1,  "Got correct CFD score");
-
-    my @msgs = $mailbox->search(
-        email   => 'compliance@binary.com',
-        subject => qr/\Q$test_loginid appropriateness test scoring\E/
-    );
-    ok(@msgs, "Risk disclosure email received");
 
     # test that setting this for one client also sets it for client with different landing company
     is($c->tcall('get_financial_assessment', {token => $token_mlt})->{source_of_wealth}, undef, "Financial assessment not set for MLT client");
