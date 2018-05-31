@@ -77,6 +77,15 @@ sub _validate_price {
     return undef;
 }
 
+sub _validate_currency {
+    my ($client) = @_;
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'NoCurrencySet',
+            message_to_client => localize('Please set the currency of your account.')}) if (not $client->default_account);
+    return undef;
+}
+
 sub _validate_amount {
     my ($amount, $currency) = @_;
 
@@ -130,6 +139,9 @@ rpc buy => sub {
     my $price    = $args->{price};
     my $currency = $client->currency;
     my ($amount, $amount_type) = @{$contract_parameters}{qw/amount amount_type/};
+
+    $error = _validate_currency($client);
+    return $error if $error;
 
     $error = _validate_price($price, $currency);
     return $error if $error;
@@ -241,6 +253,9 @@ rpc buy_contract_for_multiple_accounts => sub {
     my $price    = $args->{price};
     my $currency = $client->currency;
     my ($amount, $amount_type) = @{$contract_parameters}{qw/amount amount_type/};
+
+    $error = _validate_currency($client);
+    return $error if $error;
 
     $error = _validate_price($price, $currency);
     return $error if $error;
