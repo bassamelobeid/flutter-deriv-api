@@ -9,6 +9,7 @@ use HTML::Entities;
 use JSON::MaybeXS;
 use Text::CSV;
 use Try::Tiny;
+use feature 'state';
 
 use BOM::Platform::Runtime;
 
@@ -73,6 +74,9 @@ sub save_settings {
                     my $compare = Data::Compare->new($new_value, $old_value);
                     try {
                         if (not $compare->Cmp) {
+                            my $extra_validation = get_extra_validation($s);
+                            $extra_validation->($new_value, $old_value) if $extra_validation;
+
                             $data_set->{global}->set($s, $new_value);
                             $message .= join('', '<div id="saved">Set ', encode_entities($s), ' to ', encode_entities($display_value), '</div>');
                         }
@@ -80,7 +84,8 @@ sub save_settings {
                     catch {
                         $message .= join('',
                             '<div id="error">Invalid value, could not set ',
-                            encode_entities($s), ' to ', encode_entities($display_value), '</div>');
+                            encode_entities($s), ' to ', encode_entities($display_value),
+                            ' because ', encode_entities($_), '</div>');
                         $has_errors = 1;
                     };
                 }
@@ -301,6 +306,46 @@ sub parse_and_refine_setting {
 
     return ($input_value, $display_value);
 
+}
+
+# This contains functions to do field-specific validation on the dynamic settings
+#   Functions specified should:
+#       - Accept one argument (the value being validated)...
+#       -   and an optional second argument (the old value)
+#       - If there is a problem die with a message describing the issue.
+sub get_extra_validation {
+    my $setting = shift;
+    state $setting_validators = {
+        'cgi.terms_conditions_version' => \&validate_tnc_string,
+    };
+
+    return $setting_validators->{$setting};
+}
+
+sub validate_tnc_string {
+    my ($new_string, $old_string) = @_;
+
+    state $tnc_string_format = qr/^Version ([0-9]+) ([0-9]{4}-[0-9]{2}-[0-9]{2})$/;
+
+    # Check expected date format
+    die 'Incorrect format (must be Version X yyyy-mm-dd)'
+        unless my ($version, $date) = $new_string =~ $tnc_string_format;
+
+    # Date needs to be valid (will die if not)
+    my $new_date = Date::Utility->new($date);
+
+    # Date shouldn't be in the future
+    die 'Date is in the future' if $new_date->is_after(Date::Utility::today);
+
+    # Shouldn't go backward from old
+    die 'Existing version failed validation. Please raise with IT.'
+        unless my ($old_version, $old_date) = $old_string =~ $tnc_string_format;
+
+    die 'New version is lower than previous' if $version < $old_version;
+    die 'New date is older than previous' if $new_date->is_before(Date::Utility->new($old_date));
+
+    # No errors
+    return;
 }
 
 1;
