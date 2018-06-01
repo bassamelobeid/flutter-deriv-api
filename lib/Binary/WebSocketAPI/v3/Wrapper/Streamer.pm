@@ -578,8 +578,7 @@ sub _skip_streaming {
         $skip_atm_tick_expiry =
             ($skip_symbols and $skip_type_list{$args->{contract_type}} and $args->{duration_unit} eq 't' and $atm_contract);
         $skip_digit =
-            ($args->{contract_type} =~ /^DIGIT$/ and $skip_symbols and $args->{duration_unit} eq 't');
-
+            ($args->{contract_type} =~ /^DIGIT/ and $skip_symbols and $args->{duration_unit} eq 't');
         $skip_intraday_atm_non_fixed_expiry =
             ($skip_symbols and $skip_duration_list{$args->{duration_unit}} and $atm_contract and not $fixed_expiry);
     }
