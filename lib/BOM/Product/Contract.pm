@@ -474,7 +474,7 @@ Ratio of slippage we allow for this contract, where 0.01 is 1%.
 sub allowed_slippage {
     my $self = shift;
 
-    # our commission for volatility indices is 1.5% so we can let it slipped more than that.
+    # our commission for volatility indices is 1.5% so we can't let it slipped more than that.
     return 0.002 if $self->market->name eq 'volidx';
     return 0.0175;
 }
