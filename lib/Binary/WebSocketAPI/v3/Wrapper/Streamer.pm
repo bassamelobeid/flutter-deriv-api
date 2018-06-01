@@ -572,15 +572,19 @@ sub _skip_streaming {
     my $atm_contract =
         ($args->{contract_type} =~ /^(CALL|PUT)$/ and not($args->{barrier} or ($args->{proposal_array} and $args->{barriers}))) ? 1 : 0;
     my $fixed_expiry = $args->{date_expiry} ? 1 : 0;
-    my ($skip_atm_tick_expiry, $skip_intraday_atm_non_fixed_expiry) = (0, 0);
+    my ($skip_atm_tick_expiry, $skip_intraday_atm_non_fixed_expiry, $skip_digit) = (0, 0, 0);
+
     if (defined $args->{duration_unit}) {
         $skip_atm_tick_expiry =
             ($skip_symbols and $skip_type_list{$args->{contract_type}} and $args->{duration_unit} eq 't' and $atm_contract);
+        $skip_digit =
+            ($args->{contract_type} =~ /^DIGIT$/ and $skip_symbols and $args->{duration_unit} eq 't');
+
         $skip_intraday_atm_non_fixed_expiry =
             ($skip_symbols and $skip_duration_list{$args->{duration_unit}} and $atm_contract and not $fixed_expiry);
     }
 
-    return 1 if ($skip_atm_tick_expiry or $skip_intraday_atm_non_fixed_expiry);
+    return 1 if ($skip_atm_tick_expiry or $skip_intraday_atm_non_fixed_expiry or $skip_digit);
     return;
 }
 
