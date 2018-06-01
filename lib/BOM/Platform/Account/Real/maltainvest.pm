@@ -54,7 +54,7 @@ sub create_account {
     $client->set_status('unwelcome', 'SYSTEM', 'Trading disabled for investment Europe ltd');
     if ($accept_risk) {
         $client->set_status('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
-    } elsif ($should_warn) {
+    } elsif (not $should_warn) {
         $client->set_status('financial_risk_approval', 'SYSTEM', 'Financial risk approved based on financial assessment score');
     }
 
@@ -80,17 +80,24 @@ sub create_account {
                     . $financial_assessment->{trading_score}
                     . ' in trading experience and '
                     . $financial_assessment->{cfd_score}
-                    . ' in cfd assessments, and is therefore risk disclosure was '
+                    . ' in CFD assessments, and therefore risk disclosure was '
                     . ($should_warn ? ' shown and client accepted the disclosure.' : ' not shown.')
             ],
         });
     return $status;
 }
 
-# Don't show Risk Disclosure warning message if the trading score is from 8 to 16 or CFD is 4
+# Show the Risk Disclosure warning message when the trading score is less than 8 or CFD score is less than 4
 sub _should_warn {
-    my $financial_assessment = shift;
-    return ($financial_assessment->{trading_score} > 8 or $financial_assessment->{cfd_score} < 4);
+    my $fa = shift or die;
+
+    # No warning when CFD score is 4
+    return 0 if $fa->{cfd_score} == 4;
+
+    # No warning when trading score is from 8 to 16
+    return 0 if ($fa->{trading_score} >= 8 and $fa->{trading_score} <= 16);
+
+    return 1;
 }
 
 1;
