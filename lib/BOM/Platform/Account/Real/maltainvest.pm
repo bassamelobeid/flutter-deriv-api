@@ -81,7 +81,7 @@ sub create_account {
                     . ' in trading experience and '
                     . $financial_assessment->{cfd_score}
                     . ' in CFD assessments, and therefore risk disclosure was '
-                    . ($should_warn ? ' shown and client accepted the disclosure.' : ' not shown.')
+                    . ($should_warn ? 'shown and client accepted the disclosure.' : 'not shown.')
             ],
         });
     return $status;
