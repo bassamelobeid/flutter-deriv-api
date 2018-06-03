@@ -90,6 +90,9 @@ override _build_bid_price => sub {
 override _build_ask_price => sub {
     my $self = shift;
 
+    # Ensure theo_probability exists before computing ask_probability/ask_price
+    $self->theo_probability;
+
     return $self->_price_from_prob('ask_probability');
 };
 
