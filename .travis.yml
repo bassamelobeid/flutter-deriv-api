@@ -24,6 +24,7 @@ before_install:
     - /tmp/travis-scripts/setup_ssh.sh
     - sudo mkdir -p /home/git/regentmarkets
     - . /tmp/travis-scripts/setup_perl.sh
+    - /tmp/travis-scripts/setup_cpan.sh
     - /tmp/travis-scripts/fixHostName.sh
     - /tmp/travis-scripts/redis.sh
     - sudo mkdir -p /etc/rmg/
