@@ -10,12 +10,12 @@ use Getopt::Long;
 
 use Brands;
 use Date::Utility;
-use BOM::Platform::Config;
+use BOM::Config;
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Utility qw(master_live_server_error);
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::DailySummaryReport;
 use LandingCompany;
 use LandingCompany::Registry;
@@ -41,7 +41,7 @@ my @brokercodes = ($brokercodes) ? split(/,/, $brokercodes) : LandingCompany::Re
 my @currencies  = ($currencies)  ? split(/,/, $currencies)  : LandingCompany::Registry->new()->all_currencies;
 
 # This report will now only be run on the master server
-master_live_server_error() unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}}));
+master_live_server_error() unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}}));
 
 my $run_for = Date::Utility->new($for_date);
 
@@ -49,7 +49,7 @@ my $total_pl = BOM::DailySummaryReport->new(
     for_date    => $for_date,
     currencies  => \@currencies,
     brokercodes => \@brokercodes,
-    broker_path => BOM::Platform::Runtime->instance->app_config->system->directory->db . '/f_broker/',
+    broker_path => BOM::Config::Runtime->instance->app_config->system->directory->db . '/f_broker/',
 )->generate_report;
 
 my @mail_msg;

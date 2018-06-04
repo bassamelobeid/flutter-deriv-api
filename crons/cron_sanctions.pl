@@ -10,7 +10,7 @@ use Parallel::ForkManager;
 use Brands;
 use BOM::User::Client;
 use BOM::Database::ClientDB;
-use BOM::Platform::Config;
+use BOM::Config;
 use BOM::Platform::Email qw(send_email);
 
 =head2
@@ -28,7 +28,7 @@ my $verbose      = 0;
 my $childs       = 2;
 
 my $brand = Brands->new(name => 'binary');
-my $sanctions = Data::Validate::Sanctions->new(sanction_file => BOM::Platform::Config::sanction_file);
+my $sanctions = Data::Validate::Sanctions->new(sanction_file => BOM::Config::sanction_file);
 
 my $last_run = (stat $file_flag)[9] // 0;
 $sanctions->update_data();

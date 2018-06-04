@@ -16,8 +16,8 @@ use BOM::Backoffice::Cookie;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request localize);
 use BOM::Backoffice::Request::Base;
-use BOM::Platform::Chronicle;
-use BOM::Platform::Config;
+use BOM::Config::Chronicle;
+use BOM::Config;
 
 use Try::Tiny::Except ();    # should be preloaded as early as possible
                              # this statement here is merely a comment.
@@ -123,7 +123,7 @@ sub init {
     alarm(0);
     build_request();
 
-    if (BOM::Platform::Config::on_qa()) {
+    if (BOM::Config::on_qa()) {
         # Sometimes it is needed to do some stuff on QA's backoffice with production databases (backpricing for Quants/Japan checking/etc)
         # here we implemenet an easy way of selection of needed database
         my $needed_service =
@@ -131,7 +131,7 @@ sub init {
 
         #in case backprice settings have changed for session, make sure this fork uses newer pg_service file, but clearing Chronicle instance
         if (!$ENV{PGSERVICEFILE} || $needed_service ne $ENV{PGSERVICEFILE}) {
-            BOM::Platform::Chronicle::clear_connections();
+            BOM::Config::Chronicle::clear_connections();
             $ENV{PGSERVICEFILE} = $needed_service;    ## no critic (RequireLocalizedPunctuationVars)
         }
     }

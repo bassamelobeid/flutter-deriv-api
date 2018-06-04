@@ -13,8 +13,8 @@ use LandingCompany::Registry;
 
 use BOM::Backoffice::Request;
 use BOM::MarketData qw(create_underlying_db);
-use BOM::Platform::Chronicle;
-use BOM::Platform::Runtime;
+use BOM::Config::Chronicle;
+use BOM::Config::Runtime;
 
 my $json = JSON::MaybeXS->new;
 
@@ -176,7 +176,7 @@ sub _regenerate {
     Volatility::EconomicEvents::generate_variance({
         underlying_symbols => [_get_affected_underlying_symbols()],
         economic_events    => $events,
-        chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
+        chronicle_writer   => BOM::Config::Chronicle::get_chronicle_writer(),
     });
 
     return;
@@ -192,15 +192,15 @@ sub _get_affected_underlying_symbols {
     return @symbols if @symbols;
 
     # default to costarica since it does not matter
-    my $offerings_obj = LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
+    my $offerings_obj = LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
     @symbols = $offerings_obj->query({submarket => 'major_pairs'}, ['underlying_symbol']);
     return @symbols;
 }
 
 sub _eec {
     return Quant::Framework::EconomicEventCalendar->new(
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
     );
 }
 

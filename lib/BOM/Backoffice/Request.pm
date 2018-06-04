@@ -14,7 +14,7 @@ use Format::Util::Numbers;
 our @EXPORT_OK = qw(request localize template);
 
 use Time::Duration::Concise::Localize;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Platform::Context::I18N;
 use BOM::Backoffice::Request::Base;
 
@@ -41,7 +41,7 @@ sub request_completed {
 
 sub _configure_for_request {
     my $request = shift;
-    BOM::Platform::Runtime->instance->app_config->check_for_update();
+    BOM::Config::Runtime->instance->app_config->check_for_update();
     return $request;
 }
 
@@ -108,7 +108,7 @@ sub template {
 sub _configure_template_stash_for {
     my $request = shift;
     return Template::Stash->new({
-        runtime      => BOM::Platform::Runtime->instance,
+        runtime      => BOM::Config::Runtime->instance,
         language     => $request->language,
         request      => $request,
         broker_name  => 'Binary.com',

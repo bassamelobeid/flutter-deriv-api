@@ -17,7 +17,7 @@ To get risk report for open positions at 00GMT of a historical date: perl bin/ri
 =cut
 
 use Moose;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use Date::Utility;
 use BOM::RiskReporting::ScenarioAnalysis;
 

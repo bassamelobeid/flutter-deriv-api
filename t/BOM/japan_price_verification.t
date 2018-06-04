@@ -14,7 +14,7 @@ use Math::Util::CalculatedValue::Validatable;
 use BOM::Pricing::JapanContractDetails;
 use BOM::MarketData qw(create_underlying);
 use BOM::Market::DataDecimate;
-use BOM::Platform::RedisReplicated;
+use BOM::Config::RedisReplicated;
 use Data::Decimate qw(decimate);
 
 use lib qw(/home/git/regentmarkets/bom-backoffice);
@@ -28,7 +28,7 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use Format::Util::Numbers qw(roundcommon);
 use YAML::XS qw(LoadFile);
 
-BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom-test/feed/combined/');
+BOM::Config::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom-test/feed/combined/');
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
 my $volsurfaces = {
     1352345145 => LoadFile('/home/git/regentmarkets/bom-test/data/20121108_volsurfaces.yml'),
@@ -109,7 +109,7 @@ sub prepare_market_data {
         }) for ('USD', 'JPY-USD', 'JPY');
 
     Volatility::EconomicEvents::generate_variance({
-        chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer,
+        chronicle_writer   => BOM::Config::Chronicle::get_chronicle_writer,
         underlying_symbols => [$underlying->symbol],
         economic_events    => $news->{$date->epoch},
         date               => $date,

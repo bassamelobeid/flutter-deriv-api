@@ -3,7 +3,7 @@ package BOM::MarketData::Display::VolatilitySurface;
 use Moose;
 
 use Date::Utility;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Backoffice::Request qw(request template);
 use Format::Util::Numbers qw( roundcommon );
 use VolSurface::Utils qw( get_1vol_butterfly );
@@ -13,7 +13,7 @@ use BOM::MarketData::Types;
 use List::Util qw(uniq);
 use Try::Tiny;
 use Quant::Framework;
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 
 =head1 surface
 

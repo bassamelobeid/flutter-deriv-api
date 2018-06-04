@@ -18,7 +18,7 @@ use Date::Utility;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::RiskReporting::MarkedToModel;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Database::DataMapper::CollectorReporting;
 
 my $now         = Date::Utility->new(time);
@@ -177,7 +177,7 @@ subtest 'realtime report generation' => sub {
             return $result;
         });
     #mock on_production to test email
-    my $mocked_system = Test::MockModule->new('BOM::Platform::Config');
+    my $mocked_system = Test::MockModule->new('BOM::Config');
     $mocked_system->mock('on_production', sub { 1 });
 
     my $results;

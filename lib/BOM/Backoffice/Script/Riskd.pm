@@ -4,7 +4,7 @@ use Moose;
 no indirect;
 
 use Time::Duration::Concise::Localize;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 
 use BOM::RiskReporting::Dashboard;
 use BOM::RiskReporting::MarkedToModel;
@@ -47,7 +47,7 @@ sub rest {
     my $self     = shift;
     my $how_long = $self->rest_period;
 
-    BOM::Platform::Runtime->instance->app_config->check_for_update;    # We're a long-running process. See if config changed underneath us.
+    BOM::Config::Runtime->instance->app_config->check_for_update;    # We're a long-running process. See if config changed underneath us.
     sleep($how_long->seconds);
 
     return;

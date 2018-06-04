@@ -10,7 +10,7 @@ use List::Util qw(sum shuffle);
 use Postgres::FeedDB;
 use Postgres::FeedDB::Spot::DatabaseAPI;
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 
 use YAML qw(LoadFile);
 use Path::Tiny;

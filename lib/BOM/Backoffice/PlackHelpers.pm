@@ -15,7 +15,7 @@ use CGI::Util;
 use CGI::Cookie;
 use Try::Tiny;
 
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Backoffice::Request qw(request);
 use base qw( Exporter );
 

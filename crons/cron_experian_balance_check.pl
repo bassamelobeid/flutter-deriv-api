@@ -10,15 +10,15 @@ use warnings;
 use Try::Tiny;
 
 use BOM::Backoffice::ExperianBalance;
-use BOM::Platform::Config;
+use BOM::Config;
 use BOM::Platform::Email qw(send_email);
 
 my $brand = Brands->new(name => 'binary');
 
 my ($used, $limit);
 try {
-    ($used, $limit) = BOM::Backoffice::ExperianBalance::get_balance(BOM::Platform::Config::third_party->{proveid}->{username},
-        BOM::Platform::Config::third_party->{proveid}->{password});
+    ($used, $limit) = BOM::Backoffice::ExperianBalance::get_balance(BOM::Config::third_party->{proveid}->{username},
+        BOM::Config::third_party->{proveid}->{password});
 }
 catch {
     warn "An error occurred: $_";
