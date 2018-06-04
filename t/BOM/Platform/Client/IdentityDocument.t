@@ -44,10 +44,10 @@ subtest 'Age Verified' => sub {
             });
             ok $client->has_valid_documents, "Client has valid documents";
 
-	    $doc->status('uploading');
+            $doc->status('uploading');
             ok !$client->has_valid_documents, "Documents with status of 'uploading' are not valid";
 
-	    $doc->status('uploaded');
+            $doc->status('uploaded');
             ok $client->has_valid_documents, "Documents with status of 'uploaded' are valid";
 
             $doc->expiration_date('2008-03-03');    #this day should never come again.

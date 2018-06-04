@@ -84,7 +84,8 @@ sub create_account {
 
     my $email_consent = 0;
     try {
-        $email_consent = LandingCompany::Registry::get($brand_country_instance->real_company_for_country($residence))->email_consent->{default};
+        my $country_company = $brand_country_instance->real_company_for_country($residence);
+        $email_consent = LandingCompany::Registry::get($country_company)->email_consent->{default} if $country_company;
     };
 
     my $user = BOM::User->create(
