@@ -170,8 +170,9 @@ subtest 'get_ask' => sub {
             'proposal'              => 1,
             'date_start'            => ignore(),
             'staking_limits'        => {
-                'min'               => '0.35',
-                'max'               => 50000}}};
+                'min' => '0.35',
+                'max' => 50000
+            }}};
     cmp_deeply($result, $expected, 'the left values are all right');
 
     $params->{symbol} = "invalid symbol";

@@ -83,7 +83,7 @@ subtest 'prepare_ask' => sub {
         "symbol"        => "R_50",
         "duration"      => "15",
         "duration_unit" => "m",
-        'barrier'     => 'S0P',
+        'barrier'       => 'S0P',
     };
     my $expected = {
         'barrier'     => 'S0P',
@@ -229,15 +229,15 @@ subtest $method => sub {
 
 subtest 'get_ask' => sub {
     my $params = {
-        "proposal"         => 1,
-        "amount"           => "10",
-        "basis"            => "payout",
-        "contract_type"    => "RESETCALL",
-        "currency"         => "USD",
-        "duration"         => "15",
-        "duration_unit"    => "m",
-        "symbol"           => "R_50",
-        "landing_company"  =>"virtual",
+        "proposal"        => 1,
+        "amount"          => "10",
+        "basis"           => "payout",
+        "contract_type"   => "RESETCALL",
+        "currency"        => "USD",
+        "duration"        => "15",
+        "duration_unit"   => "m",
+        "symbol"          => "R_50",
+        "landing_company" => "virtual",
     };
 
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -251,9 +251,9 @@ subtest 'get_ask' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'       => '6.41',
-        'ask_price'           => '6.41',
-        'longcode'            => "Win payout if Volatility 50 Index after 15 minutes is strictly higher than it was at either entry or 7 minutes 30 seconds.",
+        'display_value' => '6.41',
+        'ask_price'     => '6.41',
+        'longcode' => "Win payout if Volatility 50 Index after 15 minutes is strictly higher than it was at either entry or 7 minutes 30 seconds.",
 
         'spot'                => '963.3054',
         'payout'              => '10',
@@ -265,16 +265,16 @@ subtest 'get_ask' => sub {
             'underlying'            => 'R_50',
             'currency'              => 'USD',
             base_commission         => '0.015',
-            'amount'            => '10',
+            'amount'                => '10',
             'amount_type'           => 'payout',
             'app_markup_percentage' => 0,
             'proposal'              => 1,
             'date_start'            => ignore(),
             'landing_company'       => 'virtual',
             'staking_limits'        => {
-                'min'               => '0.35',
-                'max'               => 50000}}};
-       
+                'min' => '0.35',
+                'max' => 50000
+            }}};
 
     cmp_deeply($result, $expected, 'the left values are all right');
 };
@@ -283,15 +283,15 @@ subtest 'send_ask' => sub {
     my $params = {
         client_ip => '127.0.0.1',
         args      => {
-            "proposal"         => 1,
-            "payout"       => "10",
-            "basis"            => "payout",
-            "contract_type"    => "RESETCALL",
-            "currency"         => "USD",
-            "duration"         => "15",
-            "duration_unit"    => "m",
-            "symbol"           => "R_50",
-            "landing_company"  => "virtual",
+            "proposal"        => 1,
+            "payout"          => "10",
+            "basis"           => "payout",
+            "contract_type"   => "RESETCALL",
+            "currency"        => "USD",
+            "duration"        => "15",
+            "duration_unit"   => "m",
+            "symbol"          => "R_50",
+            "landing_company" => "virtual",
         }};
 
     my $result = $c->call_ok('send_ask', $params)->has_no_error->result;
