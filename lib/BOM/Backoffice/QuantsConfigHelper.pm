@@ -248,7 +248,7 @@ sub get_config_input {
             });
     }
 
-    my $lc       = LandingCompany::Registry::get('virtual');                   # to get everything in the offerings list.
+    my $lc       = LandingCompany::Registry::get('virtual');                 # to get everything in the offerings list.
     my $o_config = BOM::Config::Runtime->instance->get_offerings_config();
 
     return [uniq(map { $_->values_for_key($key) } ($lc->basic_offerings($o_config), $lc->multi_barrier_offerings($o_config)))];
