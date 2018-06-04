@@ -3,8 +3,8 @@ package BOM::MyAffiliatesApp;
 use Mojo::Base 'Mojolicious';
 
 use Date::Utility;
-use BOM::Platform::Config;
-use BOM::Platform::Runtime;
+use BOM::Config;
+use BOM::Config::Runtime;
 
 sub startup {
     my $app = shift;

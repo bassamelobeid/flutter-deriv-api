@@ -4,7 +4,7 @@ use Mojo::Base 'Mojolicious::Controller';
 use Date::Utility;
 use Path::Tiny;
 
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 
 sub activity_report {
     my $c = shift;
@@ -30,7 +30,7 @@ sub __send_file {
 
     $date or return $c->__bad_request('the request was missing date');
 
-    my $path = BOM::Platform::Runtime->instance->app_config->system->directory->db . '/myaffiliates/';
+    my $path = BOM::Config::Runtime->instance->app_config->system->directory->db . '/myaffiliates/';
     Path::Tiny::path($path)->mkpath unless -d $path;
 
     my $filename;

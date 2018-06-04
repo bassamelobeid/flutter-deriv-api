@@ -9,7 +9,7 @@ use FileHandle;
 use Date::Utility;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::CollectorReporting;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::MyAffiliates::BackfillManager;
 use LandingCompany;
 
@@ -47,7 +47,7 @@ has filepath => (
 );
 
 sub _build_filepath {
-    return BOM::Platform::Runtime->instance->app_config->system->directory->db . '/myaffiliates/';
+    return BOM::Config::Runtime->instance->app_config->system->directory->db . '/myaffiliates/';
 }
 
 has filename => (
