@@ -102,7 +102,7 @@ foreach my $bet_info (@bet_infos) {
                     is_sold           => 0,
                     bet_class         => $bet_info->{bet_class},
                     bet_type          => $bet_info->{bet_type},
-                    short_code        => '0_0_S0P_0', # ATM/non-ATM is required
+                    short_code        => '0_0_S0P_0',                      # ATM/non-ATM is required
                     quantity          => 1,
                 },
                 db => $connection_builder->db,
@@ -231,7 +231,7 @@ subtest get_open_bets_at_end_of => sub {
                         is_sold           => 0,
                         bet_class         => $bet_info->{bet_class},
                         bet_type          => $bet_info->{bet_type},
-                        short_code        => '0_0_S0P_0', # ATM/non-ATM is required
+                        short_code        => '0_0_S0P_0',                      # ATM/non-ATM is required
                         quantity          => 1,
                     },
                     db => $connection_builder->db,
@@ -240,7 +240,8 @@ subtest get_open_bets_at_end_of => sub {
             my ($fmb, $txn) = $financial_market_bet_helper->buy_bet;
             push @expect, $fmb->{id};
         }
-    } 'buy a few bets';
+    }
+    'buy a few bets';
 
     my $client_ref = BOM::Database::DataMapper::Transaction->new({
             broker_code => 'CR',
@@ -251,7 +252,7 @@ subtest get_open_bets_at_end_of => sub {
             start_of_next_day => '2011-1-1',
         });
 
-    is_deeply([sort { $a <=> $b } keys %{$client_ref->{$account->id}}], [sort { $a <=> $b} @expect]);
+    is_deeply([sort { $a <=> $b } keys %{$client_ref->{$account->id}}], [sort { $a <=> $b } @expect]);
 };
 
 subtest 'get_transactions' => sub {

@@ -155,7 +155,7 @@ lives_ok {
         bet_data => {is_expired => 1},
         db       => $connection_builder->db,
     });
-    $financial_market_bet_helper->bet_data->{quantity} = 1;
+    $financial_market_bet_helper->bet_data->{quantity}  = 1;
     $financial_market_bet_helper->bet_data->{sell_time} = Date::Utility::today->db_timestamp;
     $financial_market_bet_helper->sell_bet // die "Bet not sold";
     $sell_price = 40;
@@ -168,11 +168,11 @@ cmp_ok($legacy_bet->financial_market_bet_open_record->payout_price, '==', financ
 cmp_ok($legacy_bet->financial_market_bet_open_record->buy_price,    '==', financialrounding('amount', 'USD', $buy_price),    'buy_price');
 cmp_ok($legacy_bet->financial_market_bet_open_record->sell_price,   '==', financialrounding('amount', 'USD', $sell_price),   'sell_price');
 is($legacy_bet->financial_market_bet_open_record->expiry_time->epoch, $expiry_time->epoch, 'expiry_time');
-is($legacy_bet->financial_market_bet_open_record->is_expired,  $is_expired,  'is_expired');
-is($legacy_bet->financial_market_bet_open_record->is_sold,     1,            'is_sold');
-is($legacy_bet->financial_market_bet_open_record->bet_class,   $bet_class,   'bet_class');
-is($legacy_bet->financial_market_bet_open_record->bet_type,    $bet_type,    'bet_class');
-is($legacy_bet->financial_market_bet_open_record->short_code,  $short_code,  'shoct_code');
+is($legacy_bet->financial_market_bet_open_record->is_expired,         $is_expired,         'is_expired');
+is($legacy_bet->financial_market_bet_open_record->is_sold,            1,                   'is_sold');
+is($legacy_bet->financial_market_bet_open_record->bet_class,          $bet_class,          'bet_class');
+is($legacy_bet->financial_market_bet_open_record->bet_type,           $bet_type,           'bet_class');
+is($legacy_bet->financial_market_bet_open_record->short_code,         $short_code,         'shoct_code');
 
 is($legacy_bet->legacy_bet_record->absolute_higher_barrier, $absolute_higher_barrier, 'absolute_higher_barrier');
 is($legacy_bet->legacy_bet_record->absolute_lower_barrier,  $absolute_lower_barrier,  'absolute_lower_barrier');

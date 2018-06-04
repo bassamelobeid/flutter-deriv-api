@@ -65,8 +65,8 @@ sub insert_hl_bet {
     my ($fmb, $txn) = $hl_helper->buy_bet;
     $fmb->{quantity} = 1;
     $hl_helper->bet_data($fmb);
-    $fmb->{sell_price} = ($win) ? $payout : 0;
-    $fmb->{sell_time} = Date::Utility->new($date->epoch + 10)->db_timestamp;
+    $fmb->{sell_price}                               = ($win) ? $payout : 0;
+    $fmb->{sell_time}                                = Date::Utility->new($date->epoch + 10)->db_timestamp;
     $hl_helper->transaction_data->{transaction_time} = Date::Utility->new($date->epoch + 10)->db_timestamp;
 
     ($fmb, $txn) = $hl_helper->sell_bet;
