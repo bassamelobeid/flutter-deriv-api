@@ -21,10 +21,10 @@ use BOM::Platform::Context qw (request);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Platform::RedisReplicated;
+use BOM::Config::RedisReplicated;
 use BOM::Product::ContractFactory qw( produce_contract );
 use Quant::Framework;
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 
 initialize_realtime_ticks_db();
 my $now   = Date::Utility->new('2005-09-21 06:46:00');

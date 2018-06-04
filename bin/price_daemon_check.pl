@@ -4,7 +4,7 @@ use warnings;
 
 # load this file to force MOJO::JSON to use JSON::MaybeXS
 use Mojo::JSON::MaybeXS;
-use BOM::Platform::RedisReplicated;
+use BOM::Config::RedisReplicated;
 use DataDog::DogStatsd::Helper;
 use Encode;
 use JSON::MaybeXS;
@@ -13,7 +13,7 @@ use Time::HiRes ();
 use Mojo::UserAgent;
 use Try::Tiny;
 
-my $redis = BOM::Platform::RedisReplicated::redis_pricer;
+my $redis = BOM::Config::RedisReplicated::redis_pricer;
 
 #Getting all PRICER_STATUS keys from redis along with their pricing timing.
 my %pricers_on_ip;

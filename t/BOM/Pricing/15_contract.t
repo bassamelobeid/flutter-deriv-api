@@ -21,13 +21,13 @@ use BOM::Platform::Context qw (request);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Platform::RedisReplicated;
+use BOM::Config::RedisReplicated;
 use BOM::Product::ContractFactory qw( produce_contract );
 use Quant::Framework;
-use BOM::Platform::Chronicle;
-use BOM::Platform::Runtime;
+use BOM::Config::Chronicle;
+use BOM::Config::Runtime;
 
-BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
     '{"yyy": {"market": "forex", "barrier_category": "euro_atm", "commission": "0.05", "name": "test commission", "updated_on": "xxx date", "updated_by": "xxyy"}}'
 );
 

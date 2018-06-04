@@ -19,10 +19,10 @@ use Scalar::Util::Numeric qw(isint);
 
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use BOM::Platform::Config;
+use BOM::Config;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Locale;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Product::ContractFactory qw(produce_contract produce_batch_contract);
 use BOM::Product::ContractFinder;
 use Finance::Contract::Longcode qw( shortcode_to_parameters);
@@ -699,7 +699,7 @@ sub _validate_offerings {
         my $landing_company = LandingCompany::Registry::get($args_copy->{landing_company} // 'costarica');
         my $method = $contract->is_parameters_predefined ? 'multi_barrier_offerings_for_country' : 'basic_offerings_for_country';
         my $offerings_obj =
-            $landing_company->$method(delete $args_copy->{country_code} // '', BOM::Platform::Runtime->instance->get_offerings_config);
+            $landing_company->$method(delete $args_copy->{country_code} // '', BOM::Config::Runtime->instance->get_offerings_config);
 
         die 'Could not find offerings for ' . $args_copy->{country_code} unless $offerings_obj;
 

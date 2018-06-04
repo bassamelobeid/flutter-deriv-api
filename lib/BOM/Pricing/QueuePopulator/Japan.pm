@@ -16,7 +16,7 @@ requesting them.
 
 =cut
 
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 
 use BOM::Product::ContractFinder;
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -54,7 +54,7 @@ Instantiates - currently, no parameters are expected.
 sub new {
     my ($class, %args) = @_;
     $args{appconfig_age} = 0;
-    $args{redis}         = BOM::Platform::RedisReplicated::redis_pricer();
+    $args{redis}         = BOM::Config::RedisReplicated::redis_pricer();
     return bless \%args, $class;
 }
 
@@ -84,7 +84,7 @@ sub check_appconfig {
     my ($self) = @_;
     my $start = Time::HiRes::time;
     if ($start - $self->{appconfig_age} >= APP_CONFIG_REFRESH_INTERVAL) {
-        BOM::Platform::Runtime->instance->app_config->check_for_update;
+        BOM::Config::Runtime->instance->app_config->check_for_update;
         $self->{appconfig_age} = $start;
     }
     return;
@@ -109,7 +109,7 @@ sub process {    ## no critic qw(Subroutines::RequireArgUnpacking)
     # Get a full list of symbols since some may have been updated/disabled
     # since the last time
     my @symbols =
-        LandingCompany::Registry::get($landing_company)->multi_barrier_offerings(BOM::Platform::Runtime->instance->get_offerings_config)
+        LandingCompany::Registry::get($landing_company)->multi_barrier_offerings(BOM::Config::Runtime->instance->get_offerings_config)
         ->values_for_key('underlying_symbol');
     my $now = Time::HiRes::time;
     $log->debugf("Retrieved symbols - %.2fms", 1000 * ($now - $start));
