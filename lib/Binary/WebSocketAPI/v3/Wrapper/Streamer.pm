@@ -576,7 +576,7 @@ sub _skip_streaming {
     if (defined $args->{duration_unit}) {
 
         $skip_atm_callput =
-            ($skip_symbols and $skip_duration_list{$args->{duration_unit}} and $atm_contract);
+            ($skip_symbols and $skip_duration_list{$args->{duration_unit}} and $atm_callput_contract);
 
         $skip_digit =
             ($args->{contract_type} =~ /^DIGIT/ and $skip_symbols and $args->{duration_unit} eq 't');
