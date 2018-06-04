@@ -562,6 +562,7 @@ sub process_transaction_updates {
 
 my %skip_duration_list = map { $_ => 1 } qw(t s m h);
 my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 R_10 RDBULL RDBEAR);
+my %skip_type_list     = map { $_ => 1 } qw(DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN ASIAND ASIANU TICKHIGH TICKLOW);
 
 sub _skip_streaming {
     my $args = shift;
@@ -571,19 +572,18 @@ sub _skip_streaming {
     my $atm_callput_contract =
         ($args->{contract_type} =~ /^(CALL|PUT)$/ and not($args->{barrier} or ($args->{proposal_array} and $args->{barriers}))) ? 1 : 0;
 
-    my ($skip_atm_callput, $skip_digit) = (0, 0);
+    my ($skip_atm_callput, $skip_contract_type) = (0, 0);
 
     if (defined $args->{duration_unit}) {
 
         $skip_atm_callput =
             ($skip_symbols and $skip_duration_list{$args->{duration_unit}} and $atm_callput_contract);
 
-        $skip_digit =
-            ($args->{contract_type} =~ /^DIGIT/ and $skip_symbols and $args->{duration_unit} eq 't');
+        $skip_contract_type =  ($skip_symbols and $skip_type_list{$args->{contract_type}});
 
     }
 
-    return 1 if ($skip_atm_callput or $skip_digit);
+    return 1 if ($skip_atm_callput or $skip_contract_type);
     return;
 }
 
