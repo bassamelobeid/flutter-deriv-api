@@ -18,7 +18,7 @@ use Cache::RedisDB;
 use Sereal::Encoder;
 
 use BOM::Database::Model::OAuth;
-use BOM::Platform::RedisReplicated;
+use BOM::Config::RedisReplicated;
 use BOM::User::Client;
 use BOM::Test::Data::Utility::UnitTestMarketData;    # we :init later for unit/auth test DBs
 use BOM::Test::Data::Utility::UnitTestDatabase;
@@ -290,7 +290,7 @@ sub print_test_diag {
 # e.g. _get_token('test@binary.com')
 sub _get_token {
     my $email  = shift;
-    my $redis  = BOM::Platform::RedisReplicated::redis_read;
+    my $redis  = BOM::Config::RedisReplicated::redis_read;
     my $tokens = $redis->execute('keys', 'VERIFICATION_TOKEN::*');
 
     my $code;
@@ -395,7 +395,7 @@ sub _setup_market_data {
         canonical => 1,
     });
 
-    my $redis = BOM::Platform::RedisReplicated::redis_write();
+    my $redis = BOM::Config::RedisReplicated::redis_write();
     for my $key (sort keys %$tick_data) {
         my $ticks = $tick_data->{$key};
         $redis->zadd($key, $_->{epoch}, $encoder->encode($_)) for @$ticks;

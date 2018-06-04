@@ -80,7 +80,7 @@ set in this module's C<MAX_REDIS_KEYS>.
 
 Used in binary-websocket-api.
 
-=item L<BOM::Platform::RedisReplicated>
+=item L<BOM::Config::RedisReplicated>
 
 Used in bom-rpc.
 
