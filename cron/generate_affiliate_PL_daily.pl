@@ -30,9 +30,9 @@ my $processing_date = Date::Utility->new($from_date->epoch);
 my $output_dir = BOM::Platform::Runtime->instance->app_config->system->directory->db . '/myaffiliates/';
 path($output_dir)->mkpath if (not -d $output_dir);
 
-my $output_zip = "myaffiliates_" . $from_date->date_yyyymmdd . "-" . $to_date->date_yyyymmdd. ".zip";
+my $output_zip      = "myaffiliates_" . $from_date->date_yyyymmdd . "-" . $to_date->date_yyyymmdd . ".zip";
 my $output_zip_path = path("/tmp/$output_zip");
-my $zip = Archive::Zip->new();
+my $zip             = Archive::Zip->new();
 
 while ($to_date->days_between($processing_date) >= 0) {
     my $output_filename = $output_dir . 'pl_' . $processing_date->date_yyyymmdd . '.csv';
@@ -57,11 +57,11 @@ while ($to_date->days_between($processing_date) >= 0) {
     $processing_date = Date::Utility->new($processing_date->epoch + 86400);
 }
 
-die "unable to create zip file at: ${\$output_zip_path->stringify}" unless ( $zip->writeToFileNamed($output_zip_path->stringify) == AZ_OK );
+die "unable to create zip file at: ${\$output_zip_path->stringify}" unless ($zip->writeToFileNamed($output_zip_path->stringify) == AZ_OK);
 
 my $config = LoadFile('/etc/rmg/third_party.yml')->{myaffiliates};
-my $loop = IO::Async::Loop->new;
-my $s3 = Net::Async::Webservice::S3->new(
+my $loop   = IO::Async::Loop->new;
+my $s3     = Net::Async::Webservice::S3->new(
     access_key => $config->{aws_access_key_id},
     secret_key => $config->{aws_secret_access_key},
     bucket     => $config->{aws_bucket},
@@ -81,14 +81,14 @@ try {
         value => $output_zip_path->slurp
     )->get;
     my $download_url = $url_generator->generate_url('GET', $output_zip);
-    
+
     my $brand = Brands->new();
     # email CSV out for reporting purposes
     send_email({
-        from       => $brand->emails('system'),
-        to         => $brand->emails('affiliates'),
-        subject    => 'CRON generate_affiliate_PL_daily: ' . ' for date range ' . $from_date->date_yyyymmdd . ' - ' . $to_date->date_yyyymmdd,
-        message    => ["Find links to download CSV that was generated:\n" . $download_url],
+        from    => $brand->emails('system'),
+        to      => $brand->emails('affiliates'),
+        subject => 'CRON generate_affiliate_PL_daily: ' . ' for date range ' . $from_date->date_yyyymmdd . ' - ' . $to_date->date_yyyymmdd,
+        message => ["Find links to download CSV that was generated:\n" . $download_url],
     });
 }
 catch {
