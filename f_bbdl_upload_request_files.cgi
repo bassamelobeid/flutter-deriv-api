@@ -9,8 +9,8 @@ use HTML::Entities;
 
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
-use BOM::Platform::Runtime;
-use BOM::Platform::Config;
+use BOM::Config::Runtime;
+use BOM::Config;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use Bloomberg::FileDownloader;
 use Bloomberg::RequestFiles;
@@ -26,7 +26,7 @@ my $type      = $cgi->param('type');
 Bar("BBDL RequestFiles Upload");
 
 #don't allow from devserver, to avoid uploading wrong files
-if (not BOM::Platform::Config::on_production()) {
+if (not BOM::Config::on_production()) {
     print "<font color=red>Sorry, you cannot upload files from a development server. Please use a live server.</font>";
     code_exit_BO();
 }

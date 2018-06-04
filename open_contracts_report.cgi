@@ -10,7 +10,7 @@ use BOM::Database::ClientDB;
 use BOM::Backoffice::PlackHelpers qw/PrintContentType_XSendfile/;
 use BOM::Backoffice::Sysinit ();
 use Volatility::EconomicEvents;
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 use Quant::Framework::EconomicEventCalendar;
 
 use f_brokerincludeall;
@@ -121,8 +121,8 @@ foreach my $ref (@$open_contracts) {
 
     Volatility::EconomicEvents::set_prefix($seasonality_prefix);
     my $EEC = Quant::Framework::EconomicEventCalendar->new({
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(1),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(1),
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
     });
     my $events = $EEC->get_latest_events_for_period({
             from => $contract->date_start,
@@ -134,7 +134,7 @@ foreach my $ref (@$open_contracts) {
         underlying_symbols => [$contract->underlying->symbol],
         economic_events    => $events,
         date               => $contract->date_start,
-        chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
+        chronicle_writer   => BOM::Config::Chronicle::get_chronicle_writer(),
     });
 
     $ref->{mtm_price}     = $contract->bid_price;

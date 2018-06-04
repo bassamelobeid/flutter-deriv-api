@@ -7,7 +7,7 @@ no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix the
 
 use f_brokerincludeall;
 use Auth::DuoWeb;
-use BOM::Platform::Config;
+use BOM::Config;
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
@@ -27,9 +27,9 @@ if (not $staff) {
 my $post_action = "login.cgi";
 
 my $sig_request = Auth::DuoWeb::sign_request(
-    BOM::Platform::Config::third_party->{duosecurity}->{ikey},
-    BOM::Platform::Config::third_party->{duosecurity}->{skey},
-    BOM::Platform::Config::third_party->{duosecurity}->{akey},
+    BOM::Config::third_party->{duosecurity}->{ikey},
+    BOM::Config::third_party->{duosecurity}->{skey},
+    BOM::Config::third_party->{duosecurity}->{akey},
     $staff->{email},
 );
 

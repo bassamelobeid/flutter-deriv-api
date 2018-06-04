@@ -14,7 +14,7 @@ use Text::Trim;
 use Date::Utility;
 use BOM::User::Client;
 use BOM::User;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();

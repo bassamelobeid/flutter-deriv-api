@@ -18,7 +18,7 @@ BrokerPresentation("TRUSTED CLIENT");
 my $broker = request()->broker_code;
 my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
-my $dbloc           = BOM::Platform::Runtime->instance->app_config->system->directory->db;
+my $dbloc           = BOM::Config::Runtime->instance->app_config->system->directory->db;
 my $clientID        = uc request()->param('login_id');
 my $action          = request()->param('trusted_action');
 my $action_type     = request()->param('trusted_action_type');

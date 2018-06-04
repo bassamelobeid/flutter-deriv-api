@@ -28,7 +28,7 @@ BrokerPresentation('MARKETING TOOLS');
 my %input  = %{request()->params};
 my $broker = request()->broker_code;
 
-my $where = BOM::Platform::Runtime->instance->app_config->system->directory->db . '/affiliates/' . $broker;
+my $where = BOM::Config::Runtime->instance->app_config->system->directory->db . '/affiliates/' . $broker;
 if (not -d $where) {
     system("mkdir -p $where");
 }

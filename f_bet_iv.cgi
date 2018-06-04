@@ -6,7 +6,7 @@ use warnings;
 use open qw[ :encoding(UTF-8) ];
 
 use f_brokerincludeall;
-use BOM::Platform::Config;
+use BOM::Config;
 use subs::subs_dividend_from_excel_file;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
@@ -41,7 +41,7 @@ print '<p>BLOOMBERG DATA LICENSE (BBDL) is an FTP service where we can make requ
  <br>Note1: to view currently scheduled batch files, upload the JYSscheduled.req request file.
  Then wait a minute and download scheduled.out . </p>';
 
-master_live_server_error() unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}}));
+master_live_server_error() unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}}));
 
 my $bbdl                  = Bloomberg::FileDownloader->new();
 my $directory_listing_url = request()->url_for('backoffice/f_bbdl_list_directory.cgi');

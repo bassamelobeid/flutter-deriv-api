@@ -31,7 +31,7 @@ if ($path =~ /\>/)                     { PrintContentType(); print "Wrong input 
 if ($path =~ /\</)                     { PrintContentType(); print "Wrong input (4) $encoded_path"; code_exit_BO(); }
 if ($path =~ /[\<\>\?\,\[\]\{\}\*\`]/) { PrintContentType(); print "Wrong input (5) $encoded_path"; code_exit_BO(); }
 
-my $dbloc = BOM::Platform::Runtime->instance->app_config->system->directory->db;
+my $dbloc = BOM::Config::Runtime->instance->app_config->system->directory->db;
 
 my $full_path;
 if ($category eq '192_result') {

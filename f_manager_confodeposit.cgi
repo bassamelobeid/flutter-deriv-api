@@ -24,7 +24,7 @@ use BOM::User::AuditLog;
 use BOM::ContractInfo;
 use BOM::Backoffice::Config;
 use BOM::Backoffice::Sysinit ();
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -40,7 +40,7 @@ for (qw/account amount currency ttype range/) {
     code_exit_BO();
 }
 
-if (BOM::Platform::Runtime->instance->app_config->system->suspend->system) {
+if (BOM::Config::Runtime->instance->app_config->system->suspend->system) {
     print "ERROR: Sytem is suspended";
     code_exit_BO();
 }

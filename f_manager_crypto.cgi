@@ -79,7 +79,7 @@ my $tt              = BOM::Backoffice::Request::template;
         'backoffice/crypto_cashier/main.tt2',
         {
             rpc_command => $cmd,
-            testnet     => BOM::Platform::Config::on_qa() ? 1 : 0
+            testnet     => BOM::Config::on_qa() ? 1 : 0
         }) || die $tt->error();
 }
 
@@ -133,7 +133,7 @@ my $display_transactions = sub {
             view_action     => $view_action,
             view_type       => $view_type,
             controller_url  => request()->url_for('backoffice/f_manager_crypto.cgi'),
-            testnet         => BOM::Platform::Config::on_qa() ? 1 : 0,
+            testnet         => BOM::Config::on_qa() ? 1 : 0,
             staff           => $staff,
         }) || die $tt->error();
 };

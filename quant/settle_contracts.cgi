@@ -17,7 +17,7 @@ use Cache::RedisDB;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::Helper::FinancialMarketBet;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
@@ -29,7 +29,7 @@ BrokerPresentation('Manually Settle Contracts');
 
 Bar('Manually Settle Contracts');
 
-my $rt = BOM::Platform::Runtime->instance;
+my $rt = BOM::Config::Runtime->instance;
 
 my $broker_db = BOM::Database::ClientDB->new({
         broker_code => request()->param('broker'),

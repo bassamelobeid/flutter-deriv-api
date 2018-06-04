@@ -9,8 +9,8 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 
 use f_brokerincludeall;
 
-use BOM::Platform::Config;
-use BOM::Platform::Runtime;
+use BOM::Config;
+use BOM::Config::Runtime;
 use HTML::Entities;
 use Data::Compare;
 use BOM::Backoffice::Request qw(request);
@@ -56,7 +56,7 @@ if (scalar @{$settings_list;} == 0) {
 
 my $submitted = request()->param('submitted');
 
-if (not(grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}})) {
+if (not(grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}})) {
     print '<div id="message"><div id="error">' . master_live_server_error() . '</div></div><br />';
 } else {
     BOM::DynamicSettings::save_settings({

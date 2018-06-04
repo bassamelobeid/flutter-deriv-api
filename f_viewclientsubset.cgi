@@ -19,7 +19,7 @@ use open qw[ :encoding(UTF-8) ];
 
 use BOM::Database::DataMapper::Account;
 use BOM::Backoffice::Request qw(request);
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Backoffice::Config;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel);
 use BOM::Backoffice::Utility qw( master_live_server_error );
@@ -27,7 +27,7 @@ use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
-master_live_server_error() unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}}));
+master_live_server_error() unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}}));
 
 my $show = encode_entities(request()->param('show') // "");
 if (request()->param('action') ne 'DOWNLOAD CSV') {
@@ -238,7 +238,7 @@ sub get_client_by_status {
     my $yesterday = Date::Utility->new(time - 86400)->date_ddmmmyy;
     foreach my $curr (@{request()->available_currencies}) {
         my $summaryfilename =
-            BOM::Platform::Runtime->instance->app_config->system->directory->db . "/f_broker/$broker/dailysummary/" . $yesterday . ".summary";
+            BOM::Config::Runtime->instance->app_config->system->directory->db . "/f_broker/$broker/dailysummary/" . $yesterday . ".summary";
         if ($curr ne 'USD') {
             $summaryfilename .= '.' . $curr;
         }

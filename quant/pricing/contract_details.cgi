@@ -25,7 +25,7 @@ use BOM::Backoffice::Sysinit ();
 use BOM::Database::DataMapper::Transaction;
 use LandingCompany::Registry;
 BOM::Backoffice::Sysinit::init();
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Pricing::JapanContractDetails;
 use BOM::JapanContractDetailsOutput;
 use Data::Dumper;

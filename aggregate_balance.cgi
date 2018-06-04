@@ -12,7 +12,7 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 
-unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}})) {
+unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}})) {
     code_exit_BO("WARNING! You are not on the Master Live Server. Suggest you use these tools on the Master Live Server instead.");
 }
 

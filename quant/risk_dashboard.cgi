@@ -7,7 +7,7 @@ use open qw[ :encoding(UTF-8) ];
 
 use f_brokerincludeall;
 use BOM::RiskReporting::Dashboard;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
