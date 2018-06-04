@@ -148,21 +148,21 @@ sub _build_params {
     my $params = {};
     if (my $request = $self->cgi) {
         foreach my $param ($request->param) {
-            my @p = $request->param($param);
-            if (scalar @p > 1) {
-                $params->{$param} = \@p;
+            my $p = $request->param($param);
+            if (scalar @$p > 1) {
+                $params->{$param} = $p;
             } else {
-                $params->{$param} = shift @p;
+                $params->{$param} = shift @$p;
             }
         }
         #Sometimes we also have params on post apart from the post values. Collect them as well.
         if ($self->http_method eq 'POST') {
             foreach my $param ($request->url_param) {
-                my @p = $request->url_param($param);
-                if (scalar @p > 1) {
-                    $params->{$param} = \@p;
+                my $p = $request->url_param($param);
+                if (scalar @$p > 1) {
+                    $params->{$param} = $p;
                 } else {
-                    $params->{$param} = shift @p;
+                    $params->{$param} = shift @$p;
                 }
             }
         }
