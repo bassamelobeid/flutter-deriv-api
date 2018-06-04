@@ -38,7 +38,7 @@ install:
     - . /tmp/travis-scripts/setup_perl5lib.sh
 script:
     - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
-    - ln -sf $PWD /home/git/regentmarkets/bom-config
+    - sudo ln -sf $PWD /home/git/regentmarkets/bom-config
     - make test
 
 after_script:
