@@ -88,7 +88,7 @@ if (defined $do_calculation) {
         my $start_epoch = Date::Utility->new($contract->{start_time})->epoch;
         my $sell_epoch  = Date::Utility->new($contract->{sell_time})->epoch;
 
-        if ($contract->{bet_type} eq 'CALL' or $contract->{bet_type} eq 'PUT') {
+        if ($contract->{bet_type} =~ /^CALL/ or $contract->{bet_type} =~ /^PUT/) {
             push @start_time,        $start_epoch;
             push @sell_time,         $sell_epoch;
             push @buy_price,         $contract->{buy_price};

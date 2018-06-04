@@ -5,7 +5,7 @@ intraday_historical:
     commission_markup: 0.035
     intraday_delta_correction: 0.00829115776959762
     intraday_vega_correction: 0.00163571743253538
-    risk_markup: 0.01
+    risk_markup: 0.03
   bs_probability:
     K: '79.820'
     S: '79.817'
@@ -132,9 +132,11 @@ slope:
     opposite_contract_spot_spread_markup: 0.00304711660592641
     opposite_contract_theoretical_probability: 0.0649085019413889
     opposite_contract_vol_spread_markup: 0.0207666840453909
+    opposite_contract_equal_tie_markup: 0
   risk_markup:
     spot_spread_markup: 0.00304711660592641
     vol_spread_markup: 0.0207666840453909
+    equal_tie_markup: 0
   slope_adjustment:
     call_slope: -0.0025799239872365
     call_vanilla_vega: 1.87944365241045
