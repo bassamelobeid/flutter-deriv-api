@@ -193,12 +193,12 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
 						<input type="submit" value="RISK DASHBOARD">
 					</font></form>
                 </td>
-				<td align="center">
-					<p><b>TRADING STRATEGIES</b></p>
-					<form action="~ . request()->url_for('backoffice/quant/trading_strategy.cgi') . qq~" method="post"><font size=2>
-						<input type="submit" value="TRADING STRATEGIES">
-					</font></form>
-                </td>
+                                <td align="center" width="50%">
+                                        <p><b>QUANTS RISK MANAGEMENT TOOL</b></p>
+                                        <form action="~ . request()->url_for('backoffice/quant/quants_config.cgi') . qq~" method="post"><font size=2>
+                                                <input type="submit" value="GO">
+                                        </font></form>
+                                </td>
 			</tr>
 			<tr>
 				</td>
@@ -243,15 +243,6 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
 					<p><b>PRODUCT MANAGEMENT</b></p>
 					<form action="~ . request()->url_for('backoffice/quant/product_management.cgi') . qq~" method="post"><font size=2>
                                                 <input type="submit" value="PRODUCT MANAGEMENT">
-					</font></form>
-				</td>
-
-			</tr>
-			 <tr>	
-                                <td align="center" width="50%">
-					<p><b>QUANTS RISK MANAGEMENT TOOL</b></p>
-					<form action="~ . request()->url_for('backoffice/quant/quants_config.cgi') . qq~" method="post"><font size=2>
-                                                <input type="submit" value="GO">
 					</font></form>
 				</td>
 
