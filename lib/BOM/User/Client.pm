@@ -9,7 +9,7 @@ our $VERSION = '0.145';
 use feature qw(state);
 use Email::Stuffer;
 use Date::Utility;
-use List::Util qw/any/;
+use List::Util qw/all/;
 use Format::Util::Numbers qw(roundcommon);
 use Try::Tiny;
 use JSON::MaybeXS;
