@@ -32,7 +32,7 @@ sub instance {
 sub _build_app_config {
     my $self = shift;
     return App::Config::Chronicle->new(
-        definition_yml   => '/home/git/regentmarkets/bom-platform/config/app_config_definitions.yml',
+        definition_yml   => '/home/git/regentmarkets/bom-config/share/app_config_definitions.yml',
         chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         setting_name     => 'binary',
@@ -42,7 +42,7 @@ sub _build_app_config {
 sub _build_quant_config {
     my $self = shift;
     return App::Config::Chronicle->new(
-        definition_yml   => '/home/git/regentmarkets/bom-platform/config/limits.yml',
+        definition_yml   => '/home/git/regentmarkets/bom-config/share/limits.yml',
         chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         setting_name     => 'limits',

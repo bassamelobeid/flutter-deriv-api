@@ -36,12 +36,12 @@ sub third_party {
 }
 
 sub quants {
-    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/quants_config.yml');
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/quants_config.yml');
     return $config;
 }
 
 sub payment_agent {
-    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/paymentagent_config.yml');
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/paymentagent_config.yml');
     return $config;
 }
 
