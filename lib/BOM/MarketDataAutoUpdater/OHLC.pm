@@ -6,21 +6,21 @@ extends 'BOM::MarketDataAutoUpdater';
 use Text::CSV::Slurp;
 use Path::Tiny;
 
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 use Date::Utility;
 use Finance::Asset::Market::Registry;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData qw(create_underlying_db);
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use Bloomberg::FileDownloader;
 use Bloomberg::RequestFiles;
 use Quant::Framework;
-use BOM::Platform::Chronicle
+use BOM::Config::Chronicle
 
     has directory_to_save => (
     is      => 'ro',
     default => sub {
-        return BOM::Platform::Runtime->instance->app_config->system->directory->feed . '/market';
+        return BOM::Config::Runtime->instance->app_config->system->directory->feed . '/market';
     });
 
 has file => (
@@ -57,7 +57,7 @@ sub run {
         exclude_disabled  => 1,
     );
 
-    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
+    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
 
     foreach my $file (@files) {
         my @bloomberg_result_lines = path($file)->lines_utf8;
@@ -218,7 +218,7 @@ sub verify_ohlc_update {
 
         # we are checking back past 10 day OHLC, so start to look back calendar from that day
         my $for_date = $now->minus_time_interval('10d');
-        my $calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($for_date), $for_date);
+        my $calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader($for_date), $for_date);
         next if $calendar->is_holiday_for($underlying->exchange, $now);
         next if ($underlying->submarket->is_OTC);
         if (my @filelines = path($db_file)->lines_utf8) {

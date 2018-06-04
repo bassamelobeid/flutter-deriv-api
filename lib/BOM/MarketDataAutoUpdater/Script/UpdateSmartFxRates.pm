@@ -64,8 +64,8 @@ sub script_run {
         for my $term (
             sort { $a <=> $b } keys %{Quant::Framework::InterestRate->new({
                         symbol           => 'USD',
-                        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-                        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+                        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+                        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
                     }
                 )->rates
             })
@@ -78,8 +78,8 @@ sub script_run {
             symbol           => $symbol,
             rates            => \%world_rate,
             recorded_date    => $date,
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         });
         $ir->save;
     }

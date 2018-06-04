@@ -2,7 +2,7 @@ package BOM::MarketDataAutoUpdater;
 
 use Moose;
 use Date::Utility;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use Email::Stuffer;
 use Cache::RedisDB;
 

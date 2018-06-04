@@ -12,7 +12,7 @@ use Test::MockModule;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 use Quant::Framework;
 
 my $abspath   = rel2abs((splitpath(__FILE__))[1]);
@@ -60,7 +60,7 @@ subtest everything => sub {
         $updater->run();
         like($updater->report->{error}->[0], qr/unregconized bloomberg symbol/i, 'added invalid Bloomberg symbol to skipped list');
         ok !$updater->report->{N225}->{success}, 'N225 failed to update because of invalid date';
-        my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
+        my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
         my $underlying       = create_underlying('N225');
         SKIP: {
             # OHLC::_passes_sanity_check has no chance to produce correct error if market is closed for now

@@ -56,8 +56,8 @@ my $test_surface = Quant::Framework::Utils::Test::create_doc(
     'volsurface_moneyness',
     {
         underlying       => create_underlying('TOP40'),
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader,
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer,
         recorded_date    => Date::Utility->new,
     });
 
@@ -65,8 +65,8 @@ my $test_surface2 = Quant::Framework::Utils::Test::create_doc(
     'volsurface_moneyness',
     {
         underlying       => create_underlying('AS51'),
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader,
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer,
         recorded_date    => Date::Utility->new,
     });
 
@@ -98,8 +98,8 @@ subtest 'surface has not change' => sub {
         'volsurface_moneyness',
         {
             underlying       => create_underlying('TOP40'),
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader,
+            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer,
             recorded_date    => Date::Utility->new(Date::Utility->new - 18000),
         });
     my $au = BOM::MarketDataAutoUpdater::Indices->new(
@@ -120,8 +120,8 @@ subtest 'First Term is 7' => sub {
         'volsurface_moneyness',
         {
             underlying       => create_underlying('AS51'),
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader,
+            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer,
             recorded_date    => Date::Utility->new,
         });
     my $au = BOM::MarketDataAutoUpdater::Indices->new(

@@ -27,8 +27,8 @@ use Try::Tiny;
 use BOM::MarketData qw(create_underlying create_underlying_db);
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData::Types;
-use BOM::Platform::Chronicle;
-use BOM::Platform::Runtime;
+use BOM::Config::Chronicle;
+use BOM::Config::Runtime;
 
 has file => (
     is         => 'ro',
@@ -119,7 +119,7 @@ sub _build_symbols_to_update {
     );
     my %skip_list =
         map { $_ => 1 } (
-        @{BOM::Platform::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol},
+        @{BOM::Config::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol},
         qw(frxBROUSD frxBROAUD frxBROEUR frxBROGBP frxXPTAUD frxXPDAUD frxAUDSAR)
         );
     my @symbols =
@@ -181,7 +181,7 @@ sub run {
     my $one_hour_after_rollover = $rollover_date->plus_time_interval('1h');
     my $surfaces_from_file      = $self->surfaces_from_file;
 
-    my @non_atm_symbol = LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config)
+    my @non_atm_symbol = LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config)
         ->query({barrier_category => ['euro_non_atm', 'american']}, ['underlying_symbol']);
 
     foreach my $symbol (@{$self->symbols_to_update}) {
@@ -227,8 +227,8 @@ sub run {
             underlying       => $underlying,
             creation_date    => $raw_volsurface->{creation_date},
             surface          => $raw_volsurface->{surface},
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         });
 
         if (defined $volsurface and $volsurface->is_valid and $self->passes_additional_check($volsurface)) {
@@ -241,7 +241,7 @@ sub run {
                     $volsurface->validation_error =~ /identical to existing one/
                     && time - Quant::Framework::VolSurface::Delta->new({
                             underlying       => $underlying,
-                            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
+                            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
                         }
                     )->creation_date->epoch < 60 * 60
 
@@ -286,7 +286,7 @@ sub passes_additional_check {
     # for the same reasons. This is likely mostly partially covered by some of the above,
     # but I am sitting here fixing this on Christmas, so I might be missing something.
     my $underlying         = create_underlying($volsurface->underlying->symbol);
-    my $calendar           = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
+    my $calendar           = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
     my $creation_date      = $volsurface->creation_date;
     my $friday_after_close = ($creation_date->day_of_week == 5 and not $calendar->is_open_at($underlying->exchange, $creation_date));
     my $wont_open          = not $calendar->trades_on($underlying->exchange, $volsurface->effective_date);

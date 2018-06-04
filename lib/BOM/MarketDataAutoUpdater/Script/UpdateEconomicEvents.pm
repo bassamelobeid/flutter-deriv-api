@@ -5,12 +5,12 @@ with 'App::Base::Script';
 
 use ForexFactory;
 use BOM::MarketData qw(create_underlying create_underlying_db);
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use Date::Utility;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
 use JSON::MaybeXS;
 use Path::Tiny;
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 use Try::Tiny;
 use List::Util qw(first uniq max);
 use Sys::Info;
@@ -44,8 +44,8 @@ sub script_run {
         Quant::Framework::EconomicEventCalendar->new(
             events           => $events_received,
             recorded_date    => Date::Utility->new,
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         )->save;
 
         print "stored " . (scalar @$events_received) . "\n";
@@ -55,7 +55,7 @@ sub script_run {
         Volatility::EconomicEvents::generate_variance({
             underlying_symbols => \@underlying_symbols,
             economic_events    => $events_received,
-            chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
+            chronicle_writer   => BOM::Config::Chronicle::get_chronicle_writer(),
             strict             => 1,
         });
 
