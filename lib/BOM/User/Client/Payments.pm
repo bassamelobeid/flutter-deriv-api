@@ -77,7 +77,7 @@ sub validate_payment {
                 if $absamt > $unfrozen;
         }
 
-        return 1 if $self->client_fully_authenticated;
+        return 1 if $self->fully_authenticated;
 
         my $lc = $self->landing_company->short;
         my $lc_limits;
@@ -223,7 +223,7 @@ sub smart_payment {
         adjustment          => 'legacy_payment',
         adjustment_purchase => 'legacy_payment',
         adjustment_sale     => 'legacy_payment',
-        crypto_deposit      => 'legacy_payment',
+        crypto_cashier      => 'legacy_payment',
         test_account        => 'legacy_payment',
         commission_paid     => 'legacy_payment',
         dormant_fee         => 'payment_fee',

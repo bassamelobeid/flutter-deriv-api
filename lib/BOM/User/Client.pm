@@ -6,6 +6,7 @@ use warnings;
 
 our $VERSION = '0.145';
 
+use feature qw(state);
 use Email::Stuffer;
 use Date::Utility;
 use List::Util qw/any/;
@@ -60,12 +61,8 @@ my $CLIENT_STATUS_TYPES = {
     jp_transaction_detail => 1,
     # we migrated client to single login and kept single login
     # so all other will be marked with this
-    migrated_single_email => 0,
-    duplicate_account     => 0,
-    # indicate if there has been a change in uploaded documents.
-    document_under_review => 1,
-    # indicates if there was a problem with uploaded documents.
-    document_needs_action  => 1,
+    migrated_single_email  => 0,
+    duplicate_account      => 0,
     professional_requested => 1,
     professional           => 1,
     # TODO (Amin): Find a way to add a config for hidden status codes (prove_*)
@@ -438,10 +435,11 @@ sub documents_expired {
     my $today = Date::Utility->today;
     my @docs  = $self->client_authentication_document or return undef;    # Rose
     for my $doc (@docs) {
-        my $expires = $doc->expiration_date || return undef;
-        return if Date::Utility->new($expires)->is_after($today);
+        my $expires = $doc->expiration_date || next;
+        next if defined $doc->status and $doc->status eq 'uploading';
+        return 1 if Date::Utility->new($expires)->is_before($today);
     }
-    return 1;
+    return 0;
 }
 
 sub has_valid_documents {
@@ -449,16 +447,39 @@ sub has_valid_documents {
     my $today = Date::Utility->today;
     for my $doc ($self->client_authentication_document) {
         my $expires = $doc->expiration_date || next;
+        next if defined $doc->status and $doc->status eq 'uploading';
         return 1 if Date::Utility->new($expires)->is_after($today);
     }
     return undef;
 }
 
-sub client_fully_authenticated {
-    my $self        = shift;
-    my $ID_DOCUMENT = $self->get_authentication('ID_DOCUMENT');
-    my $NOTARIZED   = $self->get_authentication('ID_NOTARIZED');
-    return (($ID_DOCUMENT and $ID_DOCUMENT->status eq 'pass') or ($NOTARIZED and $NOTARIZED->status eq 'pass'));
+sub fully_authenticated {
+    my $self = shift;
+
+    for my $method (qw/ID_DOCUMENT ID_NOTARIZED/) {
+        my $auth = $self->get_authentication($method);
+        return 1 if $auth and $auth->status eq 'pass';
+    }
+
+    return 0;
+}
+
+sub authentication_status {
+    my ($self) = @_;
+
+    my $notarized = $self->get_authentication('ID_NOTARIZED');
+
+    return 'notarized' if $notarized and $notarized->status eq 'pass';
+
+    my $id_auth = $self->get_authentication('ID_DOCUMENT');
+
+    return 'no' unless $id_auth;
+
+    my $id_auth_status = $id_auth->status;
+
+    return 'scans' if $id_auth_status eq 'pass';
+
+    return $id_auth_status;
 }
 
 sub set_exclusion {
@@ -897,6 +918,70 @@ sub user {
     $user ||= BOM::User->new({email => $self->email});
 
     return $user;
+}
+
+=head2 is_available
+
+return false if client is disabled or is duplicated account
+
+=cut
+
+sub is_available {
+    my $self = shift;
+    foreach my $status (qw(disabled duplicate_account)) {
+        return 0 if $self->get_status($status);
+    }
+    return 1;
+}
+
+sub cookie_string {
+    my $self = shift;
+
+    my $str = join(':', $self->loginid, $self->is_virtual ? 'V' : 'R', $self->get_status('disabled') ? 'D' : 'E');
+
+    return $str;
+}
+
+sub real_account_siblings_information {
+    my ($self, %args) = @_;
+    my $include_disabled = $args{include_disabled} // 1;
+
+    my $user = $self->user;
+    # return empty if we are not able to find user, this should not
+    # happen but added as additional check
+    return {} unless $user;
+
+    my @clients = $user->clients(include_disabled => $include_disabled);
+
+    # filter out virtual clients
+    @clients = grep { not $_->is_virtual } @clients;
+
+    my $siblings;
+    foreach my $cl (@clients) {
+        my $acc = $cl->default_account;
+
+        $siblings->{$cl->loginid} = {
+            loginid              => $cl->loginid,
+            landing_company_name => $cl->landing_company->short,
+            currency => $acc ? $acc->currency_code : '',
+            balance => $acc ? formatnumber('amount', $acc->currency_code, $acc->balance) : "0.00",
+        };
+    }
+
+    return $siblings;
+}
+
+sub is_tnc_approval_required {
+    my $self = shift;
+
+    return 0 if $self->is_virtual;
+    return 0 unless $self->landing_company->tnc_required;
+
+    my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
+    my $client_tnc_status   = $self->get_status('tnc_approval');
+    return 1 if (not $client_tnc_status or ($client_tnc_status->reason ne $current_tnc_version));
+
+    return 0;
 }
 
 1;
