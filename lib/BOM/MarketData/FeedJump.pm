@@ -27,8 +27,8 @@ use warnings;
 use Moo;
 
 use Mojo::Redis2;
-use BOM::Platform::QuantsConfig;
-use BOM::Platform::Chronicle;
+use BOM::Config::QuantsConfig;
+use BOM::Config::Chronicle;
 use Quant::Framework::EconomicEventCalendar;
 use LandingCompany::Registry;
 
@@ -52,13 +52,13 @@ sub BUILD {
     my $self = shift;
 
     my $eec = Quant::Framework::EconomicEventCalendar->new(
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer,
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader,
     );
     $self->_eec($eec);
 
     # we are only concern about the 9 forex pairs where we offer multi-barrier trading on.
-    my $offerings_obj = LandingCompany::Registry::get('japan')->multi_barrier_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
+    my $offerings_obj = LandingCompany::Registry::get('japan')->multi_barrier_offerings(BOM::Config::Runtime->instance->get_offerings_config);
     my %symbols = map { $_ => 1 } $offerings_obj->values_for_key('underlying_symbol');
     $self->_symbols_to_perform_check(\%symbols);
 
@@ -115,9 +115,9 @@ sub _perform_checks {
         if ($fraction <= 1 - $self->_jump_threshold || $fraction >= 1 + $self->_jump_threshold) {
             # If sudden jump is caused by economic event, the we will add commission to ITM and OTM contracts.
             # Else we will just add commission to ITM contracts.
-            my $quants_config = BOM::Platform::QuantsConfig->new(
-                chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
-                chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
+            my $quants_config = BOM::Config::QuantsConfig->new(
+                chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer,
+                chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader,
                 recorded_date    => Date::Utility->new
             );
             $quants_config->save_config(

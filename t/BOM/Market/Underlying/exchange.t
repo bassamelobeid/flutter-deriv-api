@@ -5,7 +5,7 @@ use Test::Most;
 use Test::FailWarnings;
 use Data::Chronicle::Mock;
 
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::Test::Data::Utility::UnitTestMarketData;

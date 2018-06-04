@@ -12,14 +12,14 @@ To set statistic of market data. For example age of vol file, age of dividend, a
 
 use Moose;
 
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 with 'App::Base::Script';
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData::VolSurface::Flat;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
 use BOM::MarketData qw(create_underlying_db);
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use Quant::Framework::CorrelationMatrix;
 use Quant::Framework::ImpliedRate;
 use Quant::Framework::InterestRate;
@@ -46,7 +46,7 @@ sub _collect_vol_ages {
     );
     my %skip_list =
         map { $_ => 1 } (
-        @{BOM::Platform::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol},
+        @{BOM::Config::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol},
         qw(OMXS30 IBOV KOSPI2 SPTSX60 USAAPL USGOOG USMSFT USORCL USQCOM USQQQQ frxBROUSD frxBROAUD frxBROEUR frxBROGBP frxXPTAUD frxXPDAUD frxAUDSAR)
         );
     my @offered_forex = grep { not $skip_list{$_} } create_underlying_db->get_symbols_for(
@@ -116,8 +116,8 @@ sub _collect_rates_ages {
     foreach my $implied_symbol_to_update (@implied_symbols_to_update) {
         my $rates_in_used = Quant::Framework::ImpliedRate->new(
             symbol           => $implied_symbol_to_update,
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         );
         my $rates_age = (time - $rates_in_used->recorded_date->epoch) / 3600;
         stats_gauge('interest_rate_age', $rates_age, {tags => ['tag:' . $implied_symbol_to_update]});
@@ -131,8 +131,8 @@ sub _collect_rates_ages {
         }
         my $currency_in_used = Quant::Framework::InterestRate->new(
             symbol           => $currency_symbol_to_update,
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         );
         my $currency_rate_age = (time - $currency_in_used->recorded_date->epoch) / 3600;
 
@@ -146,8 +146,8 @@ sub _collect_rates_ages {
     foreach my $smart_fx (@smart_fx) {
         my $smart_fx_in_used = Quant::Framework::InterestRate->new(
             symbol           => $smart_fx,
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         );
         my $smart_fx_age = (time - $smart_fx_in_used->recorded_date->epoch) / 3600;
 
@@ -161,7 +161,7 @@ sub _collect_correlation_ages {
 
     my $latest_correlation_matrix_age = time - Quant::Framework::CorrelationMatrix->new({
             symbol           => 'indices',
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader()})->recorded_date->epoch;
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader()})->recorded_date->epoch;
     stats_gauge('correlation_matrix.age', $latest_correlation_matrix_age);
     return;
 
@@ -189,7 +189,7 @@ sub _collect_dividend_ages {
 
     my %skip_list =
         map { $_ => 1 } (
-        @{BOM::Platform::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol},
+        @{BOM::Config::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol},
         qw(OMXS30 USAAPL USGOOG USMSFT USORCL USQCOM USQQQQ frxBROUSD frxBROAUD frxBROEUR frxBROGBP frxXPTAUD frxXPDAUD)
         );
     my @offer_indices = grep { not $skip_list{$_} and $_ !~ /^SYN/ } create_underlying_db->get_symbols_for(
@@ -200,8 +200,8 @@ sub _collect_dividend_ages {
     foreach my $index (@offer_indices) {
         my $dividend_in_used = Quant::Framework::Asset->new(
             symbol           => $index,
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer());
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer());
 
         my $dividend_age = (time - $dividend_in_used->recorded_date->epoch) / 3600;
         stats_gauge('dividend_rate_age', $dividend_age, {tags => ['tag:' . $index]});
