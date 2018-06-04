@@ -3,7 +3,7 @@ package BOM::OAuth::OneAll;
 use v5.10;
 use Mojo::Base 'Mojolicious::Controller';
 use WWW::OneAll;
-use BOM::Platform::Config;
+use BOM::Config;
 use BOM::Platform::Context qw(localize);
 use BOM::Database::Model::UserConnect;
 use BOM::User;
@@ -37,8 +37,8 @@ sub callback {
 
     my $oneall = WWW::OneAll->new(
         subdomain   => 'binary',
-        public_key  => BOM::Platform::Config::third_party->{"oneall"}->{public_key},
-        private_key => BOM::Platform::Config::third_party->{"oneall"}->{private_key},
+        public_key  => BOM::Config::third_party->{"oneall"}->{public_key},
+        private_key => BOM::Config::third_party->{"oneall"}->{private_key},
     );
     my $data = $oneall->connection($connection_token) or die $oneall->errstr;
     # redirect client to auth page when recieving bad status code from oneall
