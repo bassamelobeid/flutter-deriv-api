@@ -7,7 +7,7 @@ with 'BOM::API::Payment::Role::Plack';
 
 use BOM::Database::ClientDB;
 use BOM::Database::Model::HandoffToken;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use LandingCompany::Registry;
 
 sub session_GET {

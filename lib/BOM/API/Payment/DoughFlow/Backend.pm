@@ -12,7 +12,7 @@ use Data::Dumper;
 
 use Format::Util::Numbers qw/financialrounding/;
 
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Platform::Client::Utility;
@@ -118,11 +118,11 @@ sub validate_as_payment {
         return $c->status_bad_request($err);
     }
 
-    if (BOM::Platform::Runtime->instance->app_config->system->suspend->system) {
+    if (BOM::Config::Runtime->instance->app_config->system->suspend->system) {
         return $c->throw(403, 'Client activity disabled at this time');
     }
 
-    if (BOM::Platform::Runtime->instance->app_config->system->suspend->payments) {
+    if (BOM::Config::Runtime->instance->app_config->system->suspend->payments) {
         return $c->throw(403, 'Payments are suspended.');
     }
 
