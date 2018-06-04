@@ -22,13 +22,13 @@ use Finance::Contract::Category;
 use Format::Util::Numbers qw/formatnumber financialrounding/;
 use List::Util qw(min);
 
-use BOM::Platform::Config;
-use BOM::Platform::Runtime;
-use BOM::Platform::Chronicle;
+use BOM::Config;
+use BOM::Config::Runtime;
+use BOM::Config::Chronicle;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::Platform::Context qw(localize request);
-use BOM::Platform::RedisReplicated;
+use BOM::Config::RedisReplicated;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
@@ -41,7 +41,7 @@ use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Database::Helper::RejectedTrade;
 use BOM::Database::ClientDB;
 use BOM::Transaction::Validation;
-use BOM::Platform::RedisReplicated;
+use BOM::Config::RedisReplicated;
 
 =head1 NAME
 
@@ -243,7 +243,7 @@ sub stats_start {
 
     my $broker    = lc($client->broker_code);
     my $virtual   = $client->is_virtual ? 'yes' : 'no';
-    my $rmgenv    = BOM::Platform::Config::env;
+    my $rmgenv    = BOM::Config::env;
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
     my $lc        = $client->landing_company->short;
     my $tags      = {tags => ["broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "contract_class:$bet_class", "landing_company:$lc"]};
@@ -342,7 +342,7 @@ sub calculate_limits {
 
     my %limits;
 
-    my $static_config = BOM::Platform::Config::quants;
+    my $static_config = BOM::Config::quants;
 
     my $contract = $self->contract;
     my $currency = $contract->currency;
@@ -357,7 +357,7 @@ sub calculate_limits {
     unless ($client->is_virtual) {
         # only pass true values if global limit checks are enabled.
         # actual checks happens in the database
-        my $app_config = BOM::Platform::Runtime->instance->app_config;
+        my $app_config = BOM::Config::Runtime->instance->app_config;
         foreach my $check_name (qw(global_potential_loss global_realized_loss)) {
             my $method       = 'enable_' . $check_name;
             my $alert_method = $check_name . '_alert_threshold';
@@ -400,7 +400,7 @@ sub calculate_limits {
     }
 
     if ($client->landing_company->short eq 'japan') {
-        my $qc = BOM::Platform::QuantsConfig->new(chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader());
+        my $qc = BOM::Config::QuantsConfig->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader());
         my $klfb_config = $qc->get_config('klfb')->[0];
         $limits{klfb_risk_limit} = {
             limit => $klfb_config->{limit},
@@ -601,9 +601,9 @@ sub buy {
 
     # Japan's regulator required us to keep monitor on our risk level and alert the team if the risk level is reaching the limit
     # Hence we have this piece of code which will calculate them and update datalog
-    if ($self->client->landing_company->short eq 'japan' and BOM::Platform::RedisReplicated::redis_read()->exists('klfb_risk::JP')) {
+    if ($self->client->landing_company->short eq 'japan' and BOM::Config::RedisReplicated::redis_read()->exists('klfb_risk::JP')) {
         my $new_klfb_risk = $fmb->{payout_price} - $fmb->{buy_price};
-        BOM::Platform::RedisReplicated::redis_write()->incrbyfloat('klfb_risk::JP', $new_klfb_risk);
+        BOM::Config::RedisReplicated::redis_write()->incrbyfloat('klfb_risk::JP', $new_klfb_risk);
     }
     return;
 }
@@ -863,9 +863,9 @@ sub sell {
     $self->transaction_id($txn->{id});
     $self->reference_id($buy_txn_id);
 
-    if ($self->client->landing_company->short eq 'japan' and BOM::Platform::RedisReplicated::redis_read()->exists('klfb_risk::JP')) {
+    if ($self->client->landing_company->short eq 'japan' and BOM::Config::RedisReplicated::redis_read()->exists('klfb_risk::JP')) {
         my $new_klfb_risk = ($fmb->{sell_price} - $fmb->{buy_price}) - ($fmb->{payout_price} - $fmb->{buy_price});
-        BOM::Platform::RedisReplicated::redis_write()->incrbyfloat('klfb_risk::JP', $new_klfb_risk);
+        BOM::Config::RedisReplicated::redis_write()->incrbyfloat('klfb_risk::JP', $new_klfb_risk);
     }
     return;
 }
@@ -1457,7 +1457,7 @@ sub sell_expired_contracts {
 
     my $broker    = lc($client->broker_code);
     my $virtual   = $client->is_virtual ? 'yes' : 'no';
-    my $rmgenv    = BOM::Platform::Config::env;
+    my $rmgenv    = BOM::Config::env;
     my $sell_type = (defined $source and exists $source_to_sell_type{$source}) ? $source_to_sell_type{$source} : 'expired';
     my @tags      = ("broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "sell_type:$sell_type");
 

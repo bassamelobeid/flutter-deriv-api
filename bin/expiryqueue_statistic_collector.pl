@@ -14,9 +14,9 @@ Expose statistics for the status of the expiry queue.
 
 use Moose;
 
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 with 'App::Base::Script';
-use BOM::Platform::Config;
+use BOM::Config;
 
 use DataDog::DogStatsd::Helper qw(stats_gauge);
 use ExpiryQueue qw( queue_status );
@@ -24,7 +24,7 @@ use ExpiryQueue qw( queue_status );
 sub script_run {
     my $self = shift;
 
-    my $tags = {tags => ['rmgenv:' . BOM::Platform::Config::env,]};
+    my $tags = {tags => ['rmgenv:' . BOM::Config::env,]};
     my $status = queue_status();
     foreach my $which (keys %$status) {
         stats_gauge('expiryqueue.' . $which, $status->{$which}, $tags);
