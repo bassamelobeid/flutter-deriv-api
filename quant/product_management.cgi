@@ -256,9 +256,8 @@ if ($r->param('update_klfb_limit')) {
 BOM::Backoffice::Request::template->process(
     'backoffice/japan_klfb.html.tt',
     {
-        url => request()->url_for('backoffice/quant/product_management.cgi'),
-        existing_klfb =>
-            BOM::Config::QuantsConfig->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader())->get_config('klfb')->[0],
+        url           => request()->url_for('backoffice/quant/product_management.cgi'),
+        existing_klfb => BOM::Config::QuantsConfig->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader())->get_config('klfb')->[0],
     }) || die BOM::Backoffice::Request::template->error;
 
 code_exit_BO();
