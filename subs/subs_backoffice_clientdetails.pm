@@ -174,7 +174,7 @@ sub print_client_details {
         $client_phone_country = 'Unknown';
     }
 
-    my @language_options = @{BOM::Platform::Runtime->instance->app_config->cgi->allowed_languages};
+    my @language_options = @{BOM::Config::Runtime->instance->app_config->cgi->allowed_languages};
 
     # SECURITYS SECTION
     my $secret_answer = BOM::Platform::Client::Utility::decrypt_secret_answer($client->secret_answer);

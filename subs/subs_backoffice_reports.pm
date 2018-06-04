@@ -10,7 +10,7 @@ use Cache::RedisDB;
 use Format::Util::Numbers qw/roundcommon financialrounding/;
 
 use LandingCompany::Registry;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 
 sub DailyTurnOverReport {
     my ($args, $options) = @_;

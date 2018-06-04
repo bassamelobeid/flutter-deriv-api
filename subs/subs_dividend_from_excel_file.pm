@@ -13,7 +13,7 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData::Types;
 use SuperDerivatives::UnderlyingConfig;
 use Quant::Framework::Asset;
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 use BOM::Backoffice::Request;
 
 sub process_dividend {
@@ -52,16 +52,16 @@ sub save_dividends {
                 symbol           => $symbol,
                 rates            => $rates,
                 recorded_date    => Date::Utility->new,
-                chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-                chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+                chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+                chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
             );
             if (exists $otc_indices{'OTC_' . $symbol}) {
                 my $otc_dividend = Quant::Framework::Asset->new(
                     symbol           => 'OTC_' . $symbol,
                     rates            => $rates,
                     recorded_date    => Date::Utility->new,
-                    chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-                    chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+                    chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+                    chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
                 );
                 $otc_dividend->save;
             }
