@@ -30,10 +30,10 @@ use BOM::MarketData qw(create_underlying);
 use BOM::User;
 use BOM::Platform::Client::DoughFlowClient;
 use BOM::Platform::Doughflow qw( get_sportsbook get_doughflow_language_code_for );
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Config;
+use BOM::Config;
 use BOM::User::AuditLog;
 use BOM::Platform::RiskProfile;
 use BOM::Platform::Client::CashierValidation;
@@ -112,8 +112,8 @@ rpc "cashier", sub {
         SSL_verify_mode => SSL_VERIFY_NONE
     );    #temporarily disable host verification as full ssl certificate chain is not available in doughflow.
 
-    my $doughflow_loc     = BOM::Platform::Config::third_party->{doughflow}->{$brand->name};
-    my $doughflow_pass    = BOM::Platform::Config::third_party->{doughflow}->{passcode};
+    my $doughflow_loc     = BOM::Config::third_party->{doughflow}->{$brand->name};
+    my $doughflow_pass    = BOM::Config::third_party->{doughflow}->{passcode};
     my $url               = $doughflow_loc . '/CreateCustomer.asp';
     my $sportsbook        = get_sportsbook($df_client->broker, $currency);
     my $handoff_token_key = _get_handoff_token_key($df_client->loginid);
@@ -364,7 +364,7 @@ rpc "paymentagent_list",
     foreach my $loginid (keys %{$authenticated_paymentagent_agents}) {
         my $payment_agent = $authenticated_paymentagent_agents->{$loginid};
         my $min_max =
-            BOM::Platform::Config::payment_agent()->{payment_limits}->{LandingCompany::Registry::get_currency_type($payment_agent->{currency_code})};
+            BOM::Config::payment_agent()->{payment_limits}->{LandingCompany::Registry::get_currency_type($payment_agent->{currency_code})};
 
         push @{$payment_agent_table_row},
             {
@@ -421,7 +421,7 @@ rpc paymentagent_transfer => sub {
 
     my $error_msg;
     my $payment_agent = $client_fm->payment_agent;
-    my $app_config    = BOM::Platform::Runtime->instance->app_config;
+    my $app_config    = BOM::Config::Runtime->instance->app_config;
     if (   $app_config->system->suspend->payments
         or $app_config->system->suspend->payment_agents
         or $app_config->system->suspend->system)
@@ -452,7 +452,7 @@ rpc paymentagent_transfer => sub {
 
     my $max_withdrawal = $payment_agent->max_withdrawal;
     my $min_withdrawal = $payment_agent->min_withdrawal;
-    my $min_max        = BOM::Platform::Config::payment_agent()->{payment_limits}->{LandingCompany::Registry::get_currency_type($currency)};
+    my $min_max        = BOM::Config::payment_agent()->{payment_limits}->{LandingCompany::Registry::get_currency_type($currency)};
 
     if ($max_withdrawal) {
         return $error_sub->(localize("Invalid amount. Maximum withdrawal allowed is [_1].", $max_withdrawal)) if $amount > $max_withdrawal;
@@ -687,7 +687,7 @@ rpc paymentagent_withdraw => sub {
     my $amount_validation_error = _validate_amount($amount, $currency);
     return $error_sub->($amount_validation_error) if $amount_validation_error;
 
-    my $app_config = BOM::Platform::Runtime->instance->app_config;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
     if (   $app_config->system->suspend->payments
         or $app_config->system->suspend->payment_agents
         or $app_config->system->suspend->system)
@@ -730,7 +730,7 @@ rpc paymentagent_withdraw => sub {
     return $error_sub->(localize("You cannot perform this action, as [_1] is not default currency for payment agent account [_2].", $currency))
         if ($pa_client->currency ne $currency or not $pa_client->default_account);
 
-    my $min_max = BOM::Platform::Config::payment_agent()->{payment_limits}->{LandingCompany::Registry::get_currency_type($currency)};
+    my $min_max = BOM::Config::payment_agent()->{payment_limits}->{LandingCompany::Registry::get_currency_type($currency)};
     return $error_sub->(localize('Invalid amount. Minimum is [_1], maximum is [_2].', $min_max->{minimum}, $min_max->{maximum}))
         if ($amount < $min_max->{minimum} || $amount > $min_max->{maximum});
 
@@ -974,7 +974,7 @@ rpc transfer_between_accounts => sub {
         # transfers at weekends again.
         if (my $ul = create_underlying('frxBTCUSD')) {
             $can_transfer = 1
-                if Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader)
+                if Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader)
                 ->is_open_at($ul->exchange, Date::Utility->new);
         }
         return _transfer_between_accounts_error(localize('Account transfers are currently suspended.')) unless $can_transfer;
@@ -1293,7 +1293,7 @@ sub _validate_transfer_between_accounts {
     return _transfer_between_accounts_error(localize('Your [_1] cashier is locked as per your request.', $client_to->loginid))
         if $client_to->cashier_setting_password;
 
-    my $min_allowed_amount = BOM::Platform::Runtime->instance->app_config->payments->transfer_between_accounts->amount->$from_currency_type->min;
+    my $min_allowed_amount = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->amount->$from_currency_type->min;
     return _transfer_between_accounts_error(
         localize(
             'Provided amount is not within permissible limits. Minimum transfer amount for provided currency is [_1].',

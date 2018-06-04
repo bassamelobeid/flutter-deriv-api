@@ -86,7 +86,7 @@ my $mock_date              = Test::MockModule->new('Date::Utility');
 my $mock_currencyconverter = Test::MockModule->new('Postgres::FeedDB::CurrencyConverter');
 $mock_currencyconverter->mock('in_USD', sub { return $_[1] eq 'USD' ? $_[0] : 5000 * $_[0]; });
 
-my $runtime_system = BOM::Platform::Runtime->instance->app_config->system;
+my $runtime_system = BOM::Config::Runtime->instance->app_config->system;
 
 ## Don't ever send an email out
 $mock_clientaccount->mock('add_note', sub { return 1 });
@@ -275,7 +275,7 @@ for my $transfer_currency ('USD', 'BTC') {
 
         $test = 'Transfer fails is amount is over the landing company maximum';
         my $currency_type = LandingCompany::Registry::get_currency_type($test_currency);                ## e.g. "fiat"
-        my $lim           = BOM::Platform::Config::payment_agent()->{payment_limits}{$currency_type};
+        my $lim           = BOM::Config::payment_agent()->{payment_limits}{$currency_type};
         $max                      = $lim->{maximum};
         $testargs->{args}{amount} = $max * 1.5;
         $res                      = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
@@ -574,7 +574,7 @@ for my $withdraw_currency ('USD', 'BTC') {
         ## you will probably see a frequency error
 
         $test = 'Withdrawal fails if payments are suspended';
-        my $runtime_system = BOM::Platform::Runtime->instance->app_config->system;
+        my $runtime_system = BOM::Config::Runtime->instance->app_config->system;
         $runtime_system->suspend->payments(1);
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/due to system maintenance/, $test);
@@ -599,7 +599,7 @@ for my $withdraw_currency ('USD', 'BTC') {
         $testargs->{client}    = $malta_client;
         $res                   = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/Terms and conditions approval is required/, $test);
-        $malta_client->set_status('tnc_approval', 'system', BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version);
+        $malta_client->set_status('tnc_approval', 'system', BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version);
         $malta_client->save;
 
         $test = 'Withdrawal fails if payment agent facility not available/';
@@ -643,7 +643,7 @@ for my $withdraw_currency ('USD', 'BTC') {
         $test = 'Withdrawal fails if client and payment agent have different brokers';
         ## Problem: Only CR currently allows payment agents, so we have to use a little trickery
         $payer->broker('MLT');
-        $payer->set_status('tnc_approval', 'system', BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version);
+        $payer->set_status('tnc_approval', 'system', BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version);
         $payer->save;
         $mock_landingcompany->mock('allows_payment_agents', sub { return 1; });
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);

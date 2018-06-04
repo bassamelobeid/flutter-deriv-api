@@ -13,19 +13,19 @@ use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Quant::Framework;
 use LandingCompany::Registry;
 
-use BOM::Platform::Chronicle;
-use BOM::Platform::Config;
+use BOM::Config::Chronicle;
+use BOM::Config;
 use BOM::RPC::v3::Utility;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Locale;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 
 sub validate_symbol {
     my $symbol = shift;
     my @offerings =
-        LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config)
+        LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config)
         ->values_for_key('underlying_symbol');
     if (!$symbol || none { $symbol eq $_ } @offerings) {
 
@@ -59,7 +59,7 @@ sub validate_license {
 sub validate_is_open {
     my $ul = shift;
 
-    unless (Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader())->is_open($ul->exchange)) {
+    unless (Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader())->is_open($ul->exchange)) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'MarketIsClosed',
             message_to_client => localize('This market is presently closed.'),
