@@ -1,0 +1,2 @@
+# bom-config
+Configuration management
