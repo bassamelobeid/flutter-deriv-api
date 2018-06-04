@@ -197,61 +197,8 @@ has reset_time_in_years => (
     lazy_build => 1,
 );
 
-## METHODS  #######################
-my $pc_params_setters = {
-    timeinyears            => sub { my $self = shift; $self->price_calculator->timeinyears($self->timeinyears) },
-    discount_rate          => sub { my $self = shift; $self->price_calculator->discount_rate($self->discount_rate) },
-    staking_limits         => sub { my $self = shift; $self->price_calculator->staking_limits($self->staking_limits) },
-    theo_probability       => sub { my $self = shift; $self->price_calculator->theo_probability($self->theo_probability) },
-    commission_markup      => sub { my $self = shift; $self->price_calculator->commission_markup($self->commission_markup) },
-    min_commission_amount  => sub { my $self = shift; $self->price_calculator->min_commission_amount($self->min_commission_amount) },
-    commission_from_stake  => sub { my $self = shift; $self->price_calculator->commission_from_stake($self->commission_from_stake) },
-    discounted_probability => sub { my $self = shift; $self->price_calculator->discounted_probability($self->discounted_probability) },
-    probability            => sub {
-        my $self = shift;
-        my $probability;
-        if ($self->new_interface_engine) {
-            $probability = Math::Util::CalculatedValue::Validatable->new({
-                name        => 'theo_probability',
-                description => 'theoretical value of a contract',
-                set_by      => $self->pricing_engine_name,
-                base_amount => $self->pricing_engine->theo_probability,
-                minimum     => 0,
-                maximum     => 1,
-            });
-        } else {
-            $probability = $self->pricing_engine->probability;
-        }
-        $self->price_calculator->theo_probability($probability);
-    },
-    opposite_ask_probability => sub {
-        my $self = shift;
-        $self->price_calculator->opposite_ask_probability($self->opposite_contract_for_sale->ask_probability);
-    },
-};
-
-my $pc_needed_params_map = {
-    theo_probability       => [qw/ probability /],
-    ask_probability        => [qw/ theo_probability /],
-    bid_probability        => [qw/ theo_probability discounted_probability opposite_ask_probability /],
-    payout                 => [qw/ theo_probability commission_from_stake /],
-    commission_markup      => [qw/ theo_probability min_commission_amount/],
-    commission_from_stake  => [qw/ theo_probability commission_markup /],
-    validate_price         => [qw/ theo_probability commission_markup commission_from_stake staking_limits /],
-    discounted_probability => [qw/ timeinyears discount_rate /],
-};
-
 sub commission_multiplier {
     return shift->price_calculator->commission_multiplier(@_);
-}
-
-sub _set_price_calculator_params {
-    my ($self, $method) = @_;
-
-    for my $key (@{$pc_needed_params_map->{$method}}) {
-        $pc_params_setters->{$key}->($self);
-    }
-    return;
 }
 
 # reset_time is used for actually resetting the barrier.
@@ -553,14 +500,18 @@ sub _build_base_commission {
 sub _build_commission_markup {
     my $self = shift;
 
-    $self->_set_price_calculator_params('commission_markup');
+    # commission_markup needs theo_probability and min_commission_amount
+    $self->price_calculator->theo_probability($self->theo_probability);
+    $self->price_calculator->min_commission_amount($self->min_commission_amount);
     return $self->price_calculator->commission_markup;
 }
 
 sub _build_commission_from_stake {
     my $self = shift;
 
-    $self->_set_price_calculator_params('commission_from_stake');
+    # commission_from_stake needs theo_probability and commission_markup
+    $self->price_calculator->theo_probability($self->theo_probability);
+    $self->price_calculator->commission_markup($self->commission_markup);
     return $self->price_calculator->commission_from_stake;
 }
 
