@@ -1,8 +1,8 @@
-package BOM::Platform::RedisReplicated;
+package BOM::Config::RedisReplicated;
 
 =head1 NAME
 
-BOM::Platform::RedisReplicated - Provides read/write pair of redis client
+BOM::Config::RedisReplicated - Provides read/write pair of redis client
 
 =head1 DESCRIPTION
 

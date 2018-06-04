@@ -1,8 +1,8 @@
-package BOM::Platform::Chronicle;
+package BOM::Config::Chronicle;
 
 =head1 NAME
 
-BOM::Platform::Chronicle - Provides efficient data storage for volatile and time-based data
+BOM::Config::Chronicle - Provides efficient data storage for volatile and time-based data
 
 =head1 DESCRIPTION
 
@@ -51,11 +51,11 @@ Returns a Data::Chronicle::Writer object.
 
 =head1 Example
 
-    use BOM::Platform::Chronicle;
+    use BOM::Config::Chronicle;
 
     my $d = get_some_data();
-    my $reader = BOM::Platform::Chronicle::get_chronicle_reader();
-    my $writer = BOM::Platform::Chronicle::get_chronicle_writer();
+    my $reader = BOM::Config::Chronicle::get_chronicle_reader();
+    my $writer = BOM::Config::Chronicle::get_chronicle_writer();
 
     #store data into Chronicle
     writer->set("vol_surface", "frxUSDJPY", $d);
@@ -73,7 +73,7 @@ use warnings;
 
 use DBIx::Connector::Pg;
 use Date::Utility;
-use BOM::Platform::RedisReplicated;
+use BOM::Config::RedisReplicated;
 
 use Data::Chronicle::Reader;
 use Data::Chronicle::Writer;
@@ -81,7 +81,7 @@ use Data::Chronicle::Writer;
 sub get_chronicle_writer {
     return Data::Chronicle::Writer->new(
         publish_on_set => 1,
-        cache_writer   => BOM::Platform::RedisReplicated::redis_write(),
+        cache_writer   => BOM::Config::RedisReplicated::redis_write(),
         dbic           => dbic(),
     );
 }
@@ -89,7 +89,7 @@ sub get_chronicle_writer {
 sub get_chronicle_reader {
     #if for_date is specified, then this chronicle_reader will be used for historical data fetching, so it needs a database connection
     my $for_date = shift;
-    my $redis    = BOM::Platform::RedisReplicated::redis_read();
+    my $redis    = BOM::Config::RedisReplicated::redis_read();
 
     if ($for_date) {
         return Data::Chronicle::Reader->new(

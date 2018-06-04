@@ -7,13 +7,13 @@ use Test::More;
 use Test::Exception;
 use Test::FailWarnings;
 
-use BOM::Platform::QuantsConfig;
-use BOM::Platform::Chronicle;
+use BOM::Config::QuantsConfig;
+use BOM::Config::Chronicle;
 use Date::Utility;
 
-my $qc = BOM::Platform::QuantsConfig->new(
-    chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
-    chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
+my $qc = BOM::Config::QuantsConfig->new(
+    chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader,
+    chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer,
     recorded_date    => Date::Utility->new
 );
 

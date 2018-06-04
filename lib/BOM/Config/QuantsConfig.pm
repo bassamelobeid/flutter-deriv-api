@@ -1,20 +1,20 @@
-package BOM::Platform::QuantsConfig;
+package BOM::Config::QuantsConfig;
 
 use Moose;
 
 =head1 NAME
 
-BOM::Platform::QuantsConfig - A class to handle dynamic quants config
+BOM::Config::QuantsConfig - A class to handle dynamic quants config
 
 =head1 USAGE
 
-    use BOM::Platform::QuantsConfig;
+    use BOM::Config::QuantsConfig;
     use Date::Utility;
-    use BOM::Platform::Chronicle;
+    use BOM::Config::Chronicle;
 
-    my $qc = BOM::Platform::QuantsConfig->new(
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
+    my $qc = BOM::Config::QuantsConfig->new(
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader,
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer,
         recorded_date    => Date::Utility->new
     );
 
@@ -29,7 +29,7 @@ use Scalar::Util qw(looks_like_number);
 use Finance::Contract::Category;
 use Try::Tiny;
 
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 
 has [qw(chronicle_reader chronicle_writer)] => (is => 'ro');
 
@@ -208,7 +208,7 @@ sub _validate {
     if ($key eq 'contract_type') {
         @valid = keys %{Finance::Contract::Category::get_all_contract_types()};
     } else {
-        my $offerings_obj = LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
+        my $offerings_obj = LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
         @valid = $offerings_obj->values_for_key($key);
     }
 

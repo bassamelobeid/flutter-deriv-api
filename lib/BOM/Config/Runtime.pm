@@ -1,10 +1,10 @@
-package BOM::Platform::Runtime;
+package BOM::Config::Runtime;
 
 use Moose;
 use feature 'state';
 
 use App::Config::Chronicle;
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 
 has 'app_config' => (
     is         => 'ro',
@@ -33,8 +33,8 @@ sub _build_app_config {
     my $self = shift;
     return App::Config::Chronicle->new(
         definition_yml   => '/home/git/regentmarkets/bom-platform/config/app_config_definitions.yml',
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         setting_name     => 'binary',
     );
 }
@@ -43,8 +43,8 @@ sub _build_quant_config {
     my $self = shift;
     return App::Config::Chronicle->new(
         definition_yml   => '/home/git/regentmarkets/bom-platform/config/limits.yml',
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         setting_name     => 'limits',
     );
 }
