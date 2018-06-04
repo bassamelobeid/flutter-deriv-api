@@ -284,8 +284,14 @@ sub _create_new_interface_engine {
         );
         if ($self->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope') {
             #pricing_vol can be calculated using an empirical vol. So we have to sent the raw numbers
+            my $apply_equal_tie_markup = ((
+                           $self->code eq 'CALLE'
+                        or $self->code eq 'PUTE'
+                )
+                    and ($self->underlying->submarket->name eq 'major_pairs' or $self->underlying->submarket->name eq 'minor_pairs')) ? 1 : 0;
             %pricing_parameters = (
                 %contract_config,
+                apply_equal_tie_markup   => $apply_equal_tie_markup,
                 chronicle_reader         => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
                 discount_rate            => $self->discount_rate,
                 mu                       => $self->mu,

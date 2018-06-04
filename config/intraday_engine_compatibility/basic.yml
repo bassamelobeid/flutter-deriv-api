@@ -31,6 +31,12 @@ WLDAUD: &smart_fx
         euro_atm:
           max: 10h
           min: 3m
+  callputequal:
+    intraday:
+      spot:
+        euro_atm:
+          max: 10h
+          min: 3m
 WLDEUR: *smart_fx
 WLDGBP: *smart_fx
 WLDUSD: *smart_fx
@@ -41,6 +47,12 @@ frxAUDCAD: &inactive_fx
         euro_atm:
           max: 5h
           min: 3m
+  callputequal:
+    intraday:
+      spot:
+        euro_atm:
+          max: 5h
+          min: 5m
 frxAUDCHF: *inactive_fx
 frxAUDNZD: *inactive_fx
 frxAUDPLN: *inactive_fx
@@ -59,6 +71,12 @@ frxAUDJPY: &active_fx
         euro_non_atm:
           max: 5h
           min: 15m
+  callputequal:
+    intraday:
+      spot:
+        euro_atm:
+          max: 5h
+          min: 3m
 frxAUDUSD: *active_fx
 frxEURAUD: *active_fx
 frxEURCAD: *active_fx

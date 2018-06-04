@@ -18,6 +18,7 @@ use BOM::Platform::Chronicle;
 
 use Pricing::Engine::Intraday::Forex::Base;
 use Pricing::Engine::Markup::EconomicEventsSpotRisk;
+use Pricing::Engine::Markup::EqualTie;
 
 =head2 tick_source
 
@@ -96,6 +97,20 @@ sub _build_base_engine {
         (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code)));
 
     return Pricing::Engine::Intraday::Forex::Base->new(%args,);
+}
+
+has apply_equal_tie_markup => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_apply_equal_tie_markup {
+    my $self = shift;
+    return ((
+                   $self->bet->code eq 'CALLE'
+                or $self->bet->code eq 'PUTE'
+        )
+            and ($self->bet->underlying->submarket->name eq 'major_pairs' or $self->bet->underlying->submarket->name eq 'minor_pairs')) ? 1 : 0;
 }
 
 sub _build_base_probability {
@@ -306,6 +321,13 @@ sub _build_risk_markup {
                     base_amount => $shortterm_risk_interpolator->linear($bet->remaining_time->minutes),
                 })) if $bet->remaining_time->minutes <= 15;
     }
+    $risk_markup->include_adjustment(
+        'add',
+        Pricing::Engine::Markup::EqualTie->new(
+            underlying_symbol => $bet->underlying->symbol,
+            timeinyears       => $bet->timeinyears->amount
+        )->markup
+    ) if $self->apply_equal_tie_markup;
 
     return $risk_markup;
 }

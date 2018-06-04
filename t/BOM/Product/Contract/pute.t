@@ -105,7 +105,7 @@ subtest 'call variations' => sub {
         $args->{date_pricing} = $now;
         $args->{date_start}   = $now;
         $args->{duration}     = '15m';
-        $args->{barrier}      = 'S10P';
+        $args->{barrier}      = 'S0P';
         $c                    = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Pute';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
@@ -138,7 +138,7 @@ subtest 'expiry conditions' => sub {
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',
         epoch      => $now->epoch + 509,
-        quote      => 100.010,
+        quote      => 100.00,
     });
     $c = produce_contract($args);
     ok $c->exit_tick, 'has exit tick';

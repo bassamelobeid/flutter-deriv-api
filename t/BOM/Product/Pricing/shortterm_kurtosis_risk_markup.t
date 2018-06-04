@@ -43,7 +43,7 @@ my $fake_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 
 my $bet_params = {
     underlying           => 'frxUSDJPY',
-    bet_type             => 'CALL',
+    bet_type             => 'CALLE',
     duration             => '15m',
     barrier              => 'S10P',
     current_tick         => $fake_tick,

@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::Most tests => 8;
+use Test::Most tests => 9;
 use Test::Warnings;
 use Test::Deep;
 use Test::Exception;
@@ -23,7 +23,18 @@ subtest 'callput' => sub {
     ok !$cat->is_path_dependent;
     ok $cat->barrier_at_start, 'barrier determined at start';
     is_deeply $cat->supported_expiries, ['intraday', 'daily', 'tick'];
-    cmp_bag $cat->available_types, ['CALLE', 'CALL', 'PUTE', 'PUT'];
+    cmp_bag $cat->available_types, ['CALL', 'PUT'];
+};
+
+subtest 'callputequal' => sub {
+    my $cat = Finance::Contract::Category->new('callputequal');
+    is $cat->code,          'callputequal';
+    is $cat->display_order, 9;
+    is $cat->display_name,  'Rise/Fall Equal';
+    ok !$cat->is_path_dependent;
+    ok $cat->barrier_at_start, 'barrier determined at start';
+    is_deeply $cat->supported_expiries, ['intraday', 'daily', 'tick'];
+    cmp_bag $cat->available_types, ['CALLE', 'PUTE'];
 };
 
 subtest 'asian' => sub {

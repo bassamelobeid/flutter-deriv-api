@@ -7,12 +7,8 @@ with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier', 'BOM::Pr
 use BOM::Product::Exception;
 
 sub ticks_to_expiry {
-    my $self = shift;
-
-    return BOM::Product::Exception->throw(
-        error_code => 'InvalidTickExpiry',
-        error_args => [$self->code],
-    );
+    # Add one since we want N ticks *after* the entry spot
+    return shift->tick_count + 1;
 }
 
 sub check_expiry_conditions {

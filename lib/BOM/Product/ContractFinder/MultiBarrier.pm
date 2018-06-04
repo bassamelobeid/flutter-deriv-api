@@ -24,8 +24,8 @@ sub decorate {
     foreach my $offering (@$offerings) {
         my $min_duration_interval = Time::Duration::Concise->new(interval => $offering->{min_contract_duration});
         my $minimum_contract_duration;
-        # we offer 0 day (end of day) and intraday durations to callput only
-        if ($offering->{contract_category} ne 'callput') {
+        # we offer 0 day (end of day) and intraday durations to callputequal only
+        if ($offering->{contract_category} ne 'callputequal' and $offering->{contract_category} ne 'callput') {
             $minimum_contract_duration = max(86400, $min_duration_interval->seconds);
         } else {
             # This complexity is due to the 0 day offering. For offerings when minimum contract duration is greater than 1 day, we will allow 0 day.
@@ -36,7 +36,12 @@ sub decorate {
         }
 
         my $maximum_contract_duration =
-            ($offering->{contract_category} eq 'callput' and $offering->{expiry_type} eq 'intraday')
+            ((
+                       $offering->{contract_category} eq 'callputequal'
+                    or $offering->{contract_category} eq 'callput'
+            )
+                and $offering->{expiry_type} eq 'intraday'
+            )
             ? 21600
             : Time::Duration::Concise->new({interval => $offering->{max_contract_duration}})->seconds;
 
