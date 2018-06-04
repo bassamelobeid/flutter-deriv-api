@@ -274,7 +274,7 @@ for my $transfer_currency ('USD', 'BTC') {
         $agent->payment_agent->min_withdrawal(undef);
 
         $test = 'Transfer fails is amount is over the landing company maximum';
-        my $currency_type = LandingCompany::Registry::get_currency_type($test_currency);                ## e.g. "fiat"
+        my $currency_type = LandingCompany::Registry::get_currency_type($test_currency);      ## e.g. "fiat"
         my $lim           = BOM::Config::payment_agent()->{payment_limits}{$currency_type};
         $max                      = $lim->{maximum};
         $testargs->{args}{amount} = $max * 1.5;
