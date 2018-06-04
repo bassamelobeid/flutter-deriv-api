@@ -3,9 +3,9 @@ package BOM::Platform::ProveID;
 use strict;
 use warnings;
 
-use BOM::Platform::Runtime;
-use BOM::Platform::Config;
-use BOM::Platform::RedisReplicated;
+use BOM::Config::Runtime;
+use BOM::Config;
+use BOM::Config::RedisReplicated;
 use base 'Experian::IDAuth';
 
 =head1 NOTES
@@ -30,9 +30,9 @@ sub _throttle {
     my $loginid = shift;
     my $key     = 'PROVEID::THROTTLE::' . $loginid;
 
-    die 'Too many ProveID requests for ' . $loginid if BOM::Platform::RedisReplicated::redis_read()->get($key);
+    die 'Too many ProveID requests for ' . $loginid if BOM::Config::RedisReplicated::redis_read()->get($key);
 
-    BOM::Platform::RedisReplicated::redis_write()->set($key, 1, 'EX', 3600);
+    BOM::Config::RedisReplicated::redis_write()->set($key, 1, 'EX', 3600);
 
     return 1;
 }
@@ -57,13 +57,13 @@ sub defaults {
 
     my $client = $self->{client};
     my $broker = $client->broker;
-    my $db     = BOM::Platform::Runtime->instance->app_config->system->directory->db;
+    my $db     = BOM::Config::Runtime->instance->app_config->system->directory->db;
     my $folder = "$db/f_accounts/$broker/192com_authentication";
 
     return (
         $self->SUPER::defaults,
-        username      => BOM::Platform::Config::third_party->{proveid}->{username},
-        password      => BOM::Platform::Config::third_party->{proveid}->{password},
+        username      => BOM::Config::third_party->{proveid}->{username},
+        password      => BOM::Config::third_party->{proveid}->{password},
         folder        => $folder,
         residence     => $client->residence,
         postcode      => $client->postcode || '',

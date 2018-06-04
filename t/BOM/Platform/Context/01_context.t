@@ -8,7 +8,7 @@ use Test::Exception;
 use Test::MockModule;
 use Test::Warnings;
 
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Platform::Context;
 use Data::Dumper;
 

@@ -2,7 +2,7 @@ package BOM::Platform::Client::Sanctions;
 
 use Moose;
 
-use BOM::Platform::Config;
+use BOM::Config;
 use BOM::Platform::Email qw(send_email);
 use BOM::User::Client;
 use Data::Validate::Sanctions;
@@ -35,7 +35,7 @@ has brand => (
     required => 1,
 );
 
-our $sanctions = Data::Validate::Sanctions->new(sanction_file => BOM::Platform::Config::sanction_file);
+our $sanctions = Data::Validate::Sanctions->new(sanction_file => BOM::Config::sanction_file);
 
 =head2 check
 

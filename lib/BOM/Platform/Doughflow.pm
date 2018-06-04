@@ -14,8 +14,8 @@ our Doughflow integration.
 use strict;
 use warnings;
 
-use BOM::Platform::Runtime;
-use BOM::Platform::Config;
+use BOM::Config::Runtime;
+use BOM::Config;
 use LandingCompany::Registry;
 
 use base qw( Exporter );
@@ -28,7 +28,7 @@ sub get_sportsbook {
     my ($broker, $currency) = @_;
     my $sportsbook;
 
-    if (not BOM::Platform::Config::on_production()) {
+    if (not BOM::Config::on_production()) {
         return 'test';
     }
 
@@ -66,7 +66,7 @@ sub get_doughflow_language_code_for {
     } elsif (
         grep {
             $_ eq $lang
-        } @{BOM::Platform::Runtime->instance->app_config->cgi->allowed_languages})
+        } @{BOM::Config::Runtime->instance->app_config->cgi->allowed_languages})
     {
         $code = lc $lang;
     }

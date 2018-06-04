@@ -13,8 +13,8 @@ use BOM::User::Client;
 use BOM::User::Client::Desk;
 
 use BOM::Database::ClientDB;
-use BOM::Platform::Config;
-use BOM::Platform::Runtime;
+use BOM::Config;
+use BOM::Config::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Client::Sanctions;
@@ -31,7 +31,7 @@ sub validate {
 
     my $msg = "acc opening err: from_loginid[" . $from_client->loginid . "], broker[$broker], residence[$residence], error: ";
 
-    if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
+    if (BOM::Config::Runtime->instance->app_config->system->suspend->new_accounts) {
         warn $msg . ' - new account opening suspended';
         return {error => 'invalid'};
     }
@@ -126,7 +126,7 @@ sub after_register_client {
     my $args = shift;
     my ($client, $user, $details, $ip, $country) = @{$args}{qw(client user details ip country)};
     if (not $client->is_virtual) {
-        $client->set_status('tnc_approval', 'system', BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version);
+        $client->set_status('tnc_approval', 'system', BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version);
         $client->save;
     }
 
@@ -168,14 +168,14 @@ sub after_register_client {
 sub add_details_to_desk {
     my ($client, $details) = @_;
 
-    if (BOM::Platform::Config::on_production()) {
+    if (BOM::Config::on_production()) {
         try {
             my $desk_api = BOM::User::Client::Desk->new({
-                desk_url     => BOM::Platform::Config::third_party->{desk}->{api_uri},
-                api_key      => BOM::Platform::Config::third_party->{desk}->{api_key},
-                secret_key   => BOM::Platform::Config::third_party->{desk}->{api_key_secret},
-                token        => BOM::Platform::Config::third_party->{desk}->{access_token},
-                token_secret => BOM::Platform::Config::third_party->{desk}->{access_token_secret},
+                desk_url     => BOM::Config::third_party->{desk}->{api_uri},
+                api_key      => BOM::Config::third_party->{desk}->{api_key},
+                secret_key   => BOM::Config::third_party->{desk}->{api_key_secret},
+                token        => BOM::Config::third_party->{desk}->{access_token},
+                token_secret => BOM::Config::third_party->{desk}->{access_token_secret},
             });
 
             # we don't want to modify original details hence create

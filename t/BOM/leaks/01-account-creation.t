@@ -5,13 +5,13 @@ use Test::NoLeaks;
 use Test::More;
 use Test::MockModule;
 use BOM::Platform::Account::Virtual;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Platform::Config;
+use BOM::Config;
 
 my $on_production = 1;
-my $config_mocked = Test::MockModule->new('BOM::Platform::Config');
+my $config_mocked = Test::MockModule->new('BOM::Config');
 $config_mocked->mock('on_production', sub { return $on_production });
 
 my $passes_count = 0;

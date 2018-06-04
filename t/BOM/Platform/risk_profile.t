@@ -10,7 +10,7 @@ use Test::Warnings;
 use Quant::Framework::Underlying;
 
 use BOM::Platform::RiskProfile;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Test::Helper::Client qw(create_client);
 
 my $ul = Quant::Framework::Underlying->new('frxUSDJPY');
@@ -60,7 +60,7 @@ subtest 'get_risk_profile' => sub {
     is $limit->[0]->{submarket},    'major_pairs',                'submarket specific';
 
     note("set custom_product_profiles to no_business for forex market");
-    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"xxx": {"market": "forex", "risk_profile": "no_business", "name": "test custom"}}');
     $rp = BOM::Platform::RiskProfile->new(%args);
     is $rp->get_risk_profile, 'no_business', 'no business overrides default risk_profile';
@@ -74,7 +74,7 @@ subtest 'get_risk_profile' => sub {
     is $limit->[0]->{market},       'forex',                      'market specific';
 
     note("set custom_product_profiles to no_business for landing_company japan");
-    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"xxx": {"landing_company": "japan", "risk_profile": "no_business", "name": "test japan"}}');
     $rp = BOM::Platform::RiskProfile->new(%args);
     is $rp->get_risk_profile, 'medium_risk', 'default medium_risk profile received because mismatch of landing_company';
@@ -112,7 +112,7 @@ subtest 'get_risk_profile' => sub {
 
 subtest 'comma separated entries' => sub {
     note("set custom_product_profiles to no_business for frxUSDJPY & frxAUDJPY");
-    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"xxx": {"market": "forex", "underlying_symbol": "frxUSDJPY,frxAUDJPY", "risk_profile": "no_business", "name": "test custom"}}');
     is $args{symbol}, 'R_100', 'symbol is R_100';
     my $rp = BOM::Platform::RiskProfile->new(%args);
@@ -133,7 +133,7 @@ subtest 'comma separated entries' => sub {
 
 subtest 'custom client profile' => sub {
     note("set volatility index to no business for client XYZ");
-    BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(
+    BOM::Config::Runtime->instance->app_config->quants->custom_client_profiles(
         '{"CR1": {"reason": "test XYZ", "custom_limits": {"xxx": {"market": "volidx", "risk_profile": "no_business", "name": "test custom"}}}}');
     my $rp = BOM::Platform::RiskProfile->new(%args);
     my @cl_pr = $rp->get_client_profiles('CR2', 'costarica');
@@ -143,7 +143,7 @@ subtest 'custom client profile' => sub {
 };
 
 subtest 'turnover limit parameters' => sub {
-    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"xxx": {"market": "volidx", "expiry_type": "tick", "risk_profile": "no_business", "name": "test custom"}}');
     my $rp = BOM::Platform::RiskProfile->new(%args, expiry_type => 'tick');
     is $rp->contract_info->{expiry_type}, 'tick', 'tick expiry';
@@ -152,7 +152,7 @@ subtest 'turnover limit parameters' => sub {
     is $param->[0]->{limit}, 0,             'turnover limit correctly set to zero';
     ok $param->[0]->{tick_expiry}, 'tick_expiry set to 1';
     is scalar(@{$param->[0]->{symbols}}), 7, '7 symbols selected';
-    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"xxx": {"market": "volidx", "expiry_type": "intraday", "risk_profile": "no_business", "name": "test custom"}}');
     $rp = BOM::Platform::RiskProfile->new(%args, expiry_type => 'intraday');
     is $rp->contract_info->{expiry_type}, 'intraday', 'intraday expiry';
@@ -161,7 +161,7 @@ subtest 'turnover limit parameters' => sub {
     is $param->[0]->{limit}, 0,             'turnover limit correctly set to zero';
     ok !$param->[0]->{daily}, 'daily set to 0';
     is scalar(@{$param->[0]->{symbols}}), 7, '7 symbols selected';
-    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"xxx": {"market": "volidx", "expiry_type": "daily", "risk_profile": "no_business", "name": "test custom"}}');
     $rp = BOM::Platform::RiskProfile->new(%args, expiry_type => 'daily');
     is $rp->contract_info->{expiry_type}, 'daily', 'daily expiry';
@@ -170,7 +170,7 @@ subtest 'turnover limit parameters' => sub {
     is $param->[0]->{limit}, 0,             'turnover limit correctly set to zero';
     ok $param->[0]->{daily}, 'daily set to 1';
     is scalar(@{$param->[0]->{symbols}}), 7, '7 symbols selected';
-    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"xxx": {"underlying_symbol": "R_100,R_10", "expiry_type": "daily", "risk_profile": "no_business", "name": "test custom"}}');
     $rp = BOM::Platform::RiskProfile->new(%args, expiry_type => 'daily');
     is $rp->contract_info->{expiry_type}, 'daily', 'daily expiry';
@@ -186,7 +186,7 @@ subtest 'turnover limit parameters' => sub {
 
 subtest 'empty limit condition' => sub {
     note("set custom_product_profiles to no_business without any condition");
-    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles('{"xxx": {"risk_profile": "no_business", "name": "test custom"}}');
+    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles('{"xxx": {"risk_profile": "no_business", "name": "test custom"}}');
     my $rp = BOM::Platform::RiskProfile->new(%args);
     is $rp->get_risk_profile, 'low_risk', 'ignore profile with no conditions';
 };
@@ -255,7 +255,7 @@ subtest 'check for risk_profile consistency' => sub {
     # We had a bug where we use 'each' to iterate over match conditions without resetting the iterator.
     # It is replaced with 'keys'
     # This test ensures we don't have this problem again.
-    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"yyy": {"market": "forex", "contract_category": "callput", "risk_profile": "high_risk", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}}'
     );
     my %expected = (
@@ -284,7 +284,7 @@ subtest 'check for risk_profile consistency' => sub {
 };
 
 subtest 'commission profile' => sub {
-    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"yyy": {"market": "forex", "contract_category": "callput", "commission": "0.1", "barrier_category": "euro_non_atm", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}}'
     );
     $ul = Quant::Framework::Underlying->new('frxUSDJPY');
@@ -309,7 +309,7 @@ subtest 'commission profile' => sub {
     ok $rp->get_commission, 'has custom commission for euro_non_atm';
     is $rp->get_commission, 0.1, 'commission is 0.1';
 
-    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"yyy": {"market": "forex", "contract_category": "callput", "commission": "0.1", "barrier_category": "euro_non_atm", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}, "zyy": {"contract_category": "callput", "commission": "0.2", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}}'
     );
     $rp = BOM::Platform::RiskProfile->new(%args);
@@ -318,7 +318,7 @@ subtest 'commission profile' => sub {
 };
 
 subtest 'precedence' => sub {
-    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"yyy": {"underlying_symbol": "frxUSDJPY", "market": "forex", "contract_category": "callput", "risk_profile": "high_risk", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}}'
     );
     $ul = Quant::Framework::Underlying->new('frxUSDJPY');
@@ -344,5 +344,5 @@ subtest 'precedence' => sub {
 
 done_testing();
 #cleanup
-BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles('{}');
-BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles('{}');
+BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles('{}');
+BOM::Config::Runtime->instance->app_config->quants->custom_client_profiles('{}');
