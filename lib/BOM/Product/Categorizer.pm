@@ -24,7 +24,7 @@ use Quant::Framework;
 use Finance::Contract::Category;
 use List::Util qw(all);
 
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 use BOM::MarketData qw(create_underlying);
 use Finance::Contract::Category;
 use BOM::Product::Exception;
@@ -328,7 +328,7 @@ sub _build__trading_calendar {
     my $self = shift;
 
     my $for_date = $self->parameters->{date_pricing} ? Date::Utility->new($self->parameters->{date_pricing}) : undef;
-    return Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($for_date), $for_date);
+    return Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader($for_date), $for_date);
 }
 
 no Moose;

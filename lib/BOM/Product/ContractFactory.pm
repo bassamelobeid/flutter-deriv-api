@@ -140,7 +140,7 @@ sub _validate_input_parameters {
 
     # hard-coded costarica because that's the widest offerings range we have.
     my $lc        = LandingCompany::Registry::get('costarica');
-    my $offerings = $lc->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config());
+    my $offerings = $lc->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config());
 
     my $us = $params->{underlying}->symbol;
 

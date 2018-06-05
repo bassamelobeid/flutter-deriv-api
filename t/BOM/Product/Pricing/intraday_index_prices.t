@@ -9,7 +9,7 @@ use Test::Exception;
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use LandingCompany::Registry;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Date::Utility;
@@ -21,7 +21,7 @@ use Test::BOM::UnitTestPrice qw(:init);
 my $now = Date::Utility->new('2016-02-01');
 note('Pricing on ' . $now->datetime);
 
-my $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
+my $offerings_cfg = BOM::Config::Runtime->instance->get_offerings_config;
 my %skip_category = (
     asian   => 1,
     digits  => 1,

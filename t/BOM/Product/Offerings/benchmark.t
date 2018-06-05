@@ -5,14 +5,14 @@ use Test::Warnings;
 use LandingCompany::Registry;
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 
 use Time::HiRes;
 
 subtest 'benchmark offerings' => sub {
     foreach my $lc (LandingCompany::Registry->new->all) {
         my $before = Time::HiRes::time;
-        my $config = BOM::Platform::Runtime->instance->get_offerings_config;
+        my $config = BOM::Config::Runtime->instance->get_offerings_config;
 
         my $offerings_obj = $lc->basic_offerings($config);
         $offerings_obj->values_for_key('market');

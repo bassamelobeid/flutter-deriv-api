@@ -9,11 +9,11 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Date::Utility;
 
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 use Quant::Framework;
 use Quant::Framework::VolSurface::Utils qw(NY1700_rollover_date_on);
 
@@ -25,7 +25,7 @@ $mocked->mock(
         [map { {epoch => $_, decimate_epoch => $_, quote => 100 + 0.005 * $_} } (0 .. 80)];
     });
 
-my $trading_calendar    = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
+my $trading_calendar    = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
 my $weekday             = Date::Utility->new('2016-03-29');
 my $usdjpy_weekday_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxAUDUSD',

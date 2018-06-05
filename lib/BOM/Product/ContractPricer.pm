@@ -23,12 +23,12 @@ use LandingCompany::Commission qw(get_underlying_base_commission);
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::Product::Pricing::Greeks;
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 use BOM::Product::Pricing::Greeks::BlackScholes;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Product::ContractVol;
 use BOM::Market::DataDecimate;
-use BOM::Platform::Config;
+use BOM::Config;
 
 ## ATTRIBUTES  #######################
 
@@ -291,8 +291,8 @@ sub _create_new_interface_engine {
                     and ($self->underlying->submarket->name eq 'major_pairs' or $self->underlying->submarket->name eq 'minor_pairs')) ? 1 : 0;
             %pricing_parameters = (
                 %contract_config,
+                chronicle_reader         => BOM::Config::Chronicle::get_chronicle_reader($self->underlying->for_date),
                 apply_equal_tie_markup   => $apply_equal_tie_markup,
-                chronicle_reader         => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
                 discount_rate            => $self->discount_rate,
                 mu                       => $self->mu,
                 vol                      => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
@@ -366,7 +366,7 @@ sub _generate_market_data {
     );
 
     my $ee = Quant::Framework::EconomicEventCalendar->new({
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($for_date),
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader($for_date),
         }
         )->get_latest_events_for_period({
             from => $date_start->minus_time_interval('10m'),
@@ -482,7 +482,7 @@ sub _build_base_commission {
     my $self = shift;
 
     my $market_name        = $self->market->name;
-    my $per_market_scaling = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market_name;
+    my $per_market_scaling = BOM::Config::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market_name;
     my $args               = {underlying_symbol => $self->underlying->symbol};
     if ($self->can('landing_company')) {
         $args->{landing_company} = $self->landing_company;
@@ -552,8 +552,8 @@ sub _build_discount_rate {
     my %args = (
         symbol => $self->currency,
         $self->underlying->for_date ? (for_date => $self->underlying->for_date) : (),
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader($self->underlying->for_date),
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
     );
     my $curr_obj = Quant::Framework::Currency->new(%args);
 
@@ -616,7 +616,7 @@ sub _build_rho {
         $rhos{fd_dq} =
             $w * (($atm_vols->{forqqq}**2 - $atm_vols->{fordom}**2 - $atm_vols->{domqqq}**2) / (2 * $atm_vols->{fordom} * $atm_vols->{domqqq}));
     } elsif ($self->underlying->market->name eq 'indices') {
-        my $cr             = BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date);
+        my $cr             = BOM::Config::Chronicle::get_chronicle_reader($self->underlying->for_date);
         my $construct_args = {
             symbol           => $self->underlying->market->name,
             for_date         => $self->underlying->for_date,
@@ -749,7 +749,7 @@ sub _match_symbol {
 sub _build_min_commission_amount {
     my $self = shift;
 
-    my $static = BOM::Platform::Config::quants;
+    my $static = BOM::Config::quants;
 
     return $static->{bet_limits}->{min_commission_amount}->{$self->currency} // 0;
 }

@@ -11,7 +11,7 @@ use Volatility::EconomicEvents;
 
 use BOM::Market::DataDecimate;
 use BOM::MarketData::Fetcher::VolSurface;
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 use BOM::Product::Static;
 
 ## ATTRIBUTES  #######################
@@ -227,8 +227,8 @@ sub _build_empirical_volsurface {
 
     return VolSurface::Empirical->new(
         underlying       => $self->underlying,
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader($self->underlying->for_date),
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer,
     );
 }
 

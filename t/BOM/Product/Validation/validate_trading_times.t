@@ -11,12 +11,12 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Date::Utility;
 
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Test::MockModule;
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 use Quant::Framework;
 
 my $weekend             = Date::Utility->new('2016-03-26');
@@ -217,7 +217,7 @@ subtest 'intraday must be same day' => sub {
 
 subtest 'too many holiday for multiday indices contracts' => sub {
     my $hsi              = create_underlying('HSI');
-    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
+    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
     my $monday_open      = $hsi->calendar->opening_on($hsi->exchange, Date::Utility->new('2016-04-04'))->plus_time_interval('15m');
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',

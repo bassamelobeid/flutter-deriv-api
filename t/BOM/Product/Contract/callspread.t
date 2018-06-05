@@ -116,8 +116,8 @@ subtest 'ask/bid price' => sub {
     is $c->multiplier, 100, 'multiplier is 100';
     is $c->pricing_engine->theo_price, 0.9228300523766, 'theo price 0.9228300523766';
     is $c->commission_per_unit, 0.013842450785649, '';
-    is $c->ask_price,           93.67,   'correct ask price';
-    is $c->bid_price,           90.9,   'correct bid price';
+    is $c->ask_price,           93.67,             'correct ask price';
+    is $c->bid_price,           90.9,              'correct bid price';
 };
 
 sub _create_ticks {

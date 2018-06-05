@@ -22,7 +22,7 @@ use Test::BOM::UnitTestPrice;
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
-BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom-test/feed/combined');
+BOM::Config::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom-test/feed/combined');
 
 my $date_start = Date::Utility->new(1352345145);
 note('Pricing on ' . $date_start->datetime);
@@ -30,7 +30,7 @@ my $date_pricing = $date_start;
 my $date_expiry  = $date_start->plus_time_interval('1000s');
 my $underlying   = create_underlying('frxUSDJPY', $date_pricing);
 
-my $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
+my $offerings_cfg = BOM::Config::Runtime->instance->get_offerings_config;
 
 my $missing_ticks = data_from_csv('t/BOM/Product/Pricing/missing_ticks.csv');
 

@@ -25,7 +25,7 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
 use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 use Quant::Framework;
 
 my $FRW_frxUSDJPY_ON = create_underlying('FRW_frxUSDJPY_ON');
@@ -248,7 +248,7 @@ subtest Equity => sub {
 
     # normal one day bet
     my $underlying       = create_underlying('FCHI');
-    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
+    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
     my $bet              = _sample_bet(
         underlying  => $underlying,
         date_start  => Date::Utility->new('2012-01-11 10:30:00'),

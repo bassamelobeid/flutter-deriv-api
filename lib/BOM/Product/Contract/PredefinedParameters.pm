@@ -20,9 +20,9 @@ use Finance::Contract::Category;
 use LandingCompany::Registry;
 
 use BOM::MarketData qw(create_underlying);
-use BOM::Platform::RedisReplicated;
-use BOM::Platform::Runtime;
-use BOM::Platform::Chronicle;
+use BOM::Config::RedisReplicated;
+use BOM::Config::Runtime;
+use BOM::Config::Chronicle;
 
 my $cache_namespace = 'predefined_parameters';
 my $json            = JSON::MaybeXS->new;
@@ -30,7 +30,7 @@ my $json            = JSON::MaybeXS->new;
 sub _trading_calendar {
     my $for_date = shift;
 
-    return Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($for_date), $for_date);
+    return Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader($for_date), $for_date);
 }
 
 =head2 get_trading_periods
@@ -55,7 +55,7 @@ sub get_trading_periods {
     my $for_date = $underlying->for_date;
     my $method   = $for_date ? 'get_for' : 'get';
     my @key      = trading_period_key($underlying->symbol, $date);
-    my $cache    = BOM::Platform::Chronicle::get_chronicle_reader($for_date)->$method(@key, $for_date);
+    my $cache    = BOM::Config::Chronicle::get_chronicle_reader($for_date)->$method(@key, $for_date);
 
     return $cache if $cache;
 
@@ -129,7 +129,7 @@ sub update_predefined_highlow {
 
     foreach my $period (@periods) {
         my $key = join '_', ('highlow', $underlying->symbol, $period->{date_start}->{epoch}, $period->{date_expiry}->{epoch});
-        my $cache = BOM::Platform::RedisReplicated::redis_read()->get($cache_namespace . '::' . $key);
+        my $cache = BOM::Config::RedisReplicated::redis_read()->get($cache_namespace . '::' . $key);
         my ($new_high, $new_low);
 
         if ($cache) {
@@ -149,7 +149,7 @@ sub update_predefined_highlow {
         }
         my $ttl = max(1, $period->{date_expiry}->{epoch} - $tick_epoch);
         # not using chronicle here because we don't want to save historical highlow data
-        BOM::Platform::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, $json->encode([$new_high, $new_low]), 'EX', $ttl);
+        BOM::Config::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, $json->encode([$new_high, $new_low]), 'EX', $ttl);
     }
 
     return 1;
@@ -168,7 +168,7 @@ sub _get_predefined_highlow {
     }
 
     my $highlow_key = join '_', ('highlow', $underlying->symbol, $period->{date_start}->{epoch}, $period->{date_expiry}->{epoch});
-    my $cache = BOM::Platform::RedisReplicated::redis_read->get($cache_namespace . '::' . $highlow_key);
+    my $cache = BOM::Config::RedisReplicated::redis_read->get($cache_namespace . '::' . $highlow_key);
 
     return @{$json->decode($cache)} if ($cache);
     return ();
@@ -242,7 +242,7 @@ sub get_available_barriers {
     my $method = $underlying->for_date ? 'get_for' : 'get';
     my $available_barriers = [];
     my ($namespace, $key) = predefined_barriers_key($underlying->symbol, $trading_period);
-    my $barriers = BOM::Platform::Chronicle::get_chronicle_reader($underlying->for_date)->$method($namespace, $key, $date);
+    my $barriers = BOM::Config::Chronicle::get_chronicle_reader($underlying->for_date)->$method($namespace, $key, $date);
 
     return $available_barriers unless $barriers;
 
@@ -320,7 +320,7 @@ sub generate_barriers_for_window {
     }
 
     my $key = join '_', ('barriers', $symbol, $trading_period->{date_start}->{epoch}, $trading_period->{date_expiry}->{epoch});
-    my $cache = BOM::Platform::RedisReplicated::redis_read()->get($cache_namespace . '::' . $key);
+    my $cache = BOM::Config::RedisReplicated::redis_read()->get($cache_namespace . '::' . $key);
 
     # return if barriers are generated already
     return if $cache;
@@ -367,7 +367,7 @@ sub get_predefined_barriers_by_contract_category {
     my $method = $date ? 'get_for' : 'get';
     my ($namespace, $key) = barrier_by_category_key($symbol);
 
-    return BOM::Platform::Chronicle::get_chronicle_reader($date)->$method($namespace, $key, $date);
+    return BOM::Config::Chronicle::get_chronicle_reader($date)->$method($namespace, $key, $date);
 }
 
 sub _get_spot {
@@ -378,7 +378,7 @@ sub _get_spot {
 
     my $now = time;
     my $tick_from_distributor_redis;
-    my $redis = BOM::Platform::RedisReplicated::redis_read();
+    my $redis = BOM::Config::RedisReplicated::redis_read();
     my $redis_tick_json;
     my $redis_tick_from_date_start;
 

@@ -3,14 +3,14 @@ use strict;
 use warnings;
 
 use LandingCompany::Registry;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Product::Contract::PredefinedParameters qw(update_predefined_highlow);
 use Cache::RedisDB;
 use JSON::MaybeXS;
 
 #Update high and low of symbols for predefined periods.
 sub run {
-    my $offerings_obj = LandingCompany::Registry::get('japan')->multi_barrier_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
+    my $offerings_obj = LandingCompany::Registry::get('japan')->multi_barrier_offerings(BOM::Config::Runtime->instance->get_offerings_config);
     my @symbols       = $offerings_obj->values_for_key('underlying_symbol');
 
     my $redis = Cache::RedisDB->redis;

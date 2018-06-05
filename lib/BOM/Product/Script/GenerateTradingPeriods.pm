@@ -5,14 +5,14 @@ use warnings;
 use LandingCompany::Registry;
 use BOM::Product::ContractFinder;
 use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods next_generation_epoch generate_barriers_for_window);
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use Time::HiRes qw(clock_nanosleep TIMER_ABSTIME CLOCK_REALTIME);
 use Date::Utility;
 use List::Util qw(max min);
 use Scalar::Util qw(looks_like_number);
 use Parallel::ForkManager;
 use Quant::Framework;
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 
 #This daemon generates predefined trading periods for selected underlying symbols at every hour
 
@@ -25,9 +25,9 @@ sub _set_next_generation_time {
 
 sub run {
 
-    my $offerings_obj    = LandingCompany::Registry::get('japan')->multi_barrier_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
+    my $offerings_obj    = LandingCompany::Registry::get('japan')->multi_barrier_offerings(BOM::Config::Runtime->instance->get_offerings_config);
     my @selected_symbols = $offerings_obj->values_for_key('underlying_symbol');
-    my $chronicle_writer = BOM::Platform::Chronicle::get_chronicle_writer();
+    my $chronicle_writer = BOM::Config::Chronicle::get_chronicle_writer();
     my $finder           = BOM::Product::ContractFinder->new;
     my $cpu_info         = `/usr/bin/env nproc`;
     chomp $cpu_info;
@@ -55,7 +55,7 @@ sub run {
     while (1) {
         my $now = Date::Utility->new;
 
-        my $trading_day = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader())->trades_on($exchange, $now);
+        my $trading_day = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader())->trades_on($exchange, $now);
         _set_next_generation_time(next_generation_epoch($now));
 
         foreach my $symbol (@selected_symbols) {

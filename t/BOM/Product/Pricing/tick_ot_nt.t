@@ -8,7 +8,7 @@ use Test::Exception;
 
 use Format::Util::Numbers qw(roundnear);
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use LandingCompany::Registry;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
@@ -19,7 +19,7 @@ use Test::MockModule;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use Test::BOM::UnitTestPrice;
 
-my $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
+my $offerings_cfg = BOM::Config::Runtime->instance->get_offerings_config;
 my $now           = Date::Utility->new('2016-02-01');
 note('Pricing on ' . $now->datetime);
 

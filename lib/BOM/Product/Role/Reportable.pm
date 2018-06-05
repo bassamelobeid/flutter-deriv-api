@@ -4,7 +4,7 @@ use Moose::Role;
 
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
-use BOM::Platform::Config;
+use BOM::Config;
 
 my @bool_attrs = qw(is_intraday is_forward_starting is_atm_bet);
 
@@ -19,11 +19,9 @@ sub _report_validation_stats {
     # These attempt to be close to the Transaction stats without compromising their value.
     # It may be worth adding a free-form 'source' identification, but I don't want to go
     # down that road just yet.
-    my $tags = {
-        tags => [
-            'rmgenv:' . BOM::Platform::Config::env,
-            'contract_class:' . $self->code,
-            map { substr($_, 3) . ':' . ($self->$_ ? 'yes' : 'no') } (@bool_attrs)]};
+    my $tags =
+        {tags =>
+            ['rmgenv:' . BOM::Config::env, 'contract_class:' . $self->code, map { substr($_, 3) . ':' . ($self->$_ ? 'yes' : 'no') } (@bool_attrs)]};
 
     stats_inc($stats_name . 'attempt', $tags);
     if ($valid) {

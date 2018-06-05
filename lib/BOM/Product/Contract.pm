@@ -51,7 +51,7 @@ use Quant::Framework::VolSurface::Utils;
 use Quant::Framework::EconomicEventCalendar;
 use Postgres::FeedDB::Spot::Tick;
 
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 use BOM::MarketData::Types;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Platform::RiskProfile;
@@ -171,7 +171,7 @@ sub _build_trading_calendar {
 
     my $for_date = $self->underlying->for_date;
 
-    return Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader($for_date), $for_date);
+    return Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader($for_date), $for_date);
 }
 
 has [qw(opposite_contract opposite_contract_for_sale)] => (
@@ -713,7 +713,7 @@ sub _build_applicable_economic_events {
     my $end   = $current_epoch + $seconds_to_expiry;
 
     my $events = Quant::Framework::EconomicEventCalendar->new({
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($self->underlying->for_date),
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader($self->underlying->for_date),
         }
         )->get_latest_events_for_period({
             from => Date::Utility->new($start),

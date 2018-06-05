@@ -2,9 +2,9 @@ package BOM::Product::Role::Binary;
 
 use Moose::Role;
 
-use BOM::Platform::Config;
+use BOM::Config;
 use BOM::Product::Static;
-use BOM::Platform::Config::ContractPricingLimits qw/market_pricing_limits/;
+use BOM::Config::ContractPricingLimits qw/market_pricing_limits/;
 
 use List::Util qw(min);
 use Scalar::Util qw(looks_like_number);
@@ -135,7 +135,7 @@ sub _build_staking_limits {
     my $market = $self->underlying->market->name;
 
     my $bet_limits = market_pricing_limits([$curr], $lc, [$market])->{$market}->{$curr};
-    my $static = BOM::Platform::Config::quants;
+    my $static = BOM::Config::quants;
 
     my $bl_min = $bet_limits->{min_stake};
     my $bl_max = $bet_limits->{max_payout};

@@ -8,7 +8,7 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Date::Utility;
 
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
@@ -49,18 +49,18 @@ $mocked_FA->mock('cached_underlyings', sub { {} });
 
 note("Validation runs on " . $now->datetime);
 subtest 'system wide suspend trading' => sub {
-    BOM::Platform::Runtime->instance->app_config->system->suspend->trading(1);
+    BOM::Config::Runtime->instance->app_config->system->suspend->trading(1);
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like($c->primary_validation_error->{message}, qr/All trading suspended on system/, 'trading suspended message');
-    BOM::Platform::Runtime->instance->app_config->system->suspend->trading(0);
+    BOM::Config::Runtime->instance->app_config->system->suspend->trading(0);
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'ok to buy';
 };
 
 subtest 'custom suspend trading' => sub {
-    my $orig = BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles;
-    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+    my $orig = BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles;
+    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"xxx": {"market": "forex", "contract_category":"callput", "expiry_type": "tick", "risk_profile": "no_business"}}');
     $bet_params->{underlying} = 'frxUSDJPY';
     $bet_params->{bet_type}   = 'CALL', $bet_params->{duration} = '5t';

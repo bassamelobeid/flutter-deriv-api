@@ -13,9 +13,9 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 
-BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom-test/feed/combined');
+BOM::Config::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom-test/feed/combined');
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
 
 my $test_date = Date::Utility->new('8-Nov-12');

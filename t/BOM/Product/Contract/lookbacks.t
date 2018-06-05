@@ -159,7 +159,7 @@ subtest 'lbhighlow' => sub {
 
 subtest 'invalid amount_type' => sub {
     $args->{amount_type} = 'unkown';
-    $args->{amount} = 1;
+    $args->{amount}      = 1;
     try {
         produce_contract($args);
     }

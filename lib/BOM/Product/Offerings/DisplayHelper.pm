@@ -26,9 +26,9 @@ use Finance::Asset::SubMarket::Registry;
 use List::UtilsBy qw(sort_by);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 use Quant::Framework;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 
 =head1 ATTRIBUTES
 
@@ -96,7 +96,7 @@ has trading_calendar => (
 );
 
 sub _build_trading_calendar {
-    return Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
+    return Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
 }
 
 my %known_decorations = (

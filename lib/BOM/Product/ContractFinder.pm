@@ -7,7 +7,7 @@ use LandingCompany::Registry;
 
 use BOM::Product::ContractFinder::Basic;
 use BOM::Product::ContractFinder::MultiBarrier;
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 use BOM::MarketData qw(create_underlying);
 
 has for_date => (
@@ -92,7 +92,7 @@ sub _get_multi_barrier_offerings {
 
     $landing_company_short //= 'japan';
     my $landing_company = LandingCompany::Registry::get($landing_company_short);
-    my $offerings_obj = $landing_company->multi_barrier_offerings_for_country($country_code, BOM::Platform::Runtime->instance->get_offerings_config);
+    my $offerings_obj = $landing_company->multi_barrier_offerings_for_country($country_code, BOM::Config::Runtime->instance->get_offerings_config);
 
     my @offerings = map { $offerings_obj->query($_) } ({
             expiry_type       => 'daily',
@@ -127,7 +127,7 @@ sub _get_basic_offerings {
 
     $landing_company_short //= 'costarica';
     my $landing_company = LandingCompany::Registry::get($landing_company_short);
-    my $offerings_obj = $landing_company->basic_offerings_for_country($country_code, BOM::Platform::Runtime->instance->get_offerings_config);
+    my $offerings_obj = $landing_company->basic_offerings_for_country($country_code, BOM::Config::Runtime->instance->get_offerings_config);
 
     return [$offerings_obj->query({underlying_symbol => $symbol})];
 }
@@ -141,7 +141,7 @@ has _trading_calendar => (
 sub _build_trading_calendar {
     my $self = shift;
 
-    my $cr = BOM::Platform::Chronicle::get_chronicle_reader($self->for_date);
+    my $cr = BOM::Config::Chronicle::get_chronicle_reader($self->for_date);
     return Quant::Framework->new->trading_calendar($cr, $self->for_date);
 }
 

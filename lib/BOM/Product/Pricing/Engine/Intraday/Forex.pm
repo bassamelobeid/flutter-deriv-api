@@ -13,8 +13,8 @@ use Volatility::Seasonality;
 use VolSurface::Utils qw( get_delta_for_strike );
 use Math::Function::Interpolator;
 use Finance::Exchange;
-use BOM::Platform::QuantsConfig;
-use BOM::Platform::Chronicle;
+use BOM::Config::QuantsConfig;
+use BOM::Config::Chronicle;
 
 use Pricing::Engine::Intraday::Forex::Base;
 use Pricing::Engine::Markup::EconomicEventsSpotRisk;
@@ -336,8 +336,8 @@ sub event_markup {
     my $self = shift;
 
     my $for_date = $self->bet->underlying->for_date;
-    my $qc       = BOM::Platform::QuantsConfig->new(
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($for_date),
+    my $qc       = BOM::Config::QuantsConfig->new(
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader($for_date),
         for_date         => $for_date
     );
     my $event_markup = $qc->get_config(

@@ -14,11 +14,11 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Platform::RedisReplicated;
+use BOM::Config::RedisReplicated;
 use Test::MockModule;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 
-BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
     '{"yyy": {"market": "forex", "barrier_category": "euro_atm", "commission": "0.05", "name": "test commission", "updated_on": "xxx date", "updated_by": "xxyy"}}'
 );
 
@@ -70,7 +70,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     quote      => 0.9936,
 });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $now});
-my $redis     = BOM::Platform::RedisReplicated::redis_write();
+my $redis     = BOM::Config::RedisReplicated::redis_write();
 my $undec_key = "DECIMATE_frxAUDCAD" . "_31m_FULL";
 my $encoder   = Sereal::Encoder->new({
     canonical => 1,

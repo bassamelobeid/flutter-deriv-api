@@ -9,7 +9,7 @@ use Scalar::Util qw(blessed);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -141,8 +141,8 @@ subtest 'absolute barrier for a non-intraday contract' => sub {
         'volsurface_delta',
         {
             underlying       => $forex,
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader,
+            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer,
             recorded_date    => $now,
             surface_data     => {
                 1 => {

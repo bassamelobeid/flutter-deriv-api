@@ -10,16 +10,16 @@ use Test::MockModule;
 use Date::Utility;
 use Math::Util::CalculatedValue::Validatable;
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Platform::QuantsConfig;
-use BOM::Platform::Chronicle;
+use BOM::Config::QuantsConfig;
+use BOM::Config::Chronicle;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
 my $now = Date::Utility->new('2017-09-07');
-my $qc  = BOM::Platform::QuantsConfig->new(
-    chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
-    chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
+my $qc  = BOM::Config::QuantsConfig->new(
+    chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader,
+    chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer,
     recorded_date    => $now->minus_time_interval('4h'),
 );
 

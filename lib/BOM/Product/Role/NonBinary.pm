@@ -4,7 +4,7 @@ use Moose::Role;
 
 requires 'theo_price', 'base_commission', 'multiplier', 'minimum_bid_price';
 
-use BOM::Platform::Config;
+use BOM::Config;
 use List::Util qw(max min);
 use Format::Util::Numbers qw/financialrounding/;
 use Scalar::Util qw(looks_like_number);
@@ -67,7 +67,7 @@ override _validate_price => sub {
         };
     }
 
-    my $static     = BOM::Platform::Config::quants;
+    my $static     = BOM::Config::quants;
     my $bet_limits = $static->{bet_limits};
     # NOTE: this evaluates only the contract-specific payout limit. There may be further
     # client-specific restrictions which are evaluated in B:P::Transaction.

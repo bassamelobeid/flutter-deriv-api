@@ -9,7 +9,7 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::MarketData qw(create_underlying_db);
 use LandingCompany::Registry;
 
-my $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
+my $offerings_cfg = BOM::Config::Runtime->instance->get_offerings_config;
 
 my $udb = create_underlying_db();
 

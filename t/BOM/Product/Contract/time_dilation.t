@@ -18,7 +18,7 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 

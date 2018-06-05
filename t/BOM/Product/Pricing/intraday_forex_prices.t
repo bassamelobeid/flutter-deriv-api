@@ -14,19 +14,19 @@ use Date::Utility;
 use BOM::Market::DataDecimate;
 use BOM::MarketData qw(create_underlying_db create_underlying);
 use BOM::MarketData::Types;
-use BOM::Platform::Chronicle;
-use BOM::Platform::RedisReplicated;
+use BOM::Config::Chronicle;
+use BOM::Config::RedisReplicated;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use Test::BOM::UnitTestPrice;
 
-BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
     '{"yyy": {"market": "forex", "barrier_category": "euro_atm", "commission": "0.05", "name": "test commission", "updated_on": "xxx date", "updated_by": "xxyy"}}'
 );
-BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom-test/feed/combined');
+BOM::Config::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom-test/feed/combined');
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
 my $volsurfaces = LoadFile('/home/git/regentmarkets/bom-test/data/20121108_volsurfaces.yml');
 my $news        = LoadFile('/home/git/regentmarkets/bom-test/data/20121108_news.yml');
@@ -44,7 +44,7 @@ my $payout          = 10000;
 my $payout_currency = 'GBP';
 my $duration        = 3600;
 
-my $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
+my $offerings_cfg = BOM::Config::Runtime->instance->get_offerings_config;
 
 my $start = $date_start->epoch - 7200;
 $start = $start - $start % 15;
@@ -207,7 +207,7 @@ subtest 'prices with economic events' => sub {
     Volatility::EconomicEvents::generate_variance({
         underlying_symbols => [$underlying->symbol],
         economic_events    => $news,
-        chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer,
+        chronicle_writer   => BOM::Config::Chronicle::get_chronicle_writer,
         date               => $date_start,
     });
 

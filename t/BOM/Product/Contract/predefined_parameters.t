@@ -350,7 +350,7 @@ sub setup_ticks {
         });
         # simulate distributor work
         if ($quote) {
-            BOM::Platform::RedisReplicated::redis_write()->set(
+            BOM::Config::RedisReplicated::redis_write()->set(
                 "Distributor::QUOTE::$symbol",
                 Encode::encode_utf8(
                     JSON::MaybeXS->new->encode({

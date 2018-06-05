@@ -19,7 +19,7 @@ use BOM::MarketData::Types;
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom-test/feed/combined');
+BOM::Config::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom-test/feed/combined');
 
 my @symbols = map { create_underlying($_) } create_underlying_db->symbols_for_intraday_index;
 

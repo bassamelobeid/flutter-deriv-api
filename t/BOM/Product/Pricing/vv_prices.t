@@ -32,7 +32,7 @@ my $expectation        = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pri
 my @underlying_symbols = ('frxBROUSD', 'AEX', 'frxXAUUSD', 'WLDEUR', 'frxEURSEK', 'frxUSDJPY');
 my $payout_currency    = 'USD';
 my $spot               = 100;
-my $offerings_cfg      = BOM::Platform::Runtime->instance->get_offerings_config;
+my $offerings_cfg      = BOM::Config::Runtime->instance->get_offerings_config;
 my $offerings_obj      = LandingCompany::Registry::get('costarica')->basic_offerings($offerings_cfg);
 
 foreach my $ul (map { create_underlying($_) } @underlying_symbols) {

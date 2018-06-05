@@ -12,7 +12,7 @@ use File::Slurp;
 
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);

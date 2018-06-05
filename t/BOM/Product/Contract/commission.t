@@ -437,12 +437,12 @@ sub test_flexible_commission {
         currency    => 'USD',
     };
 
-    BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market(100);
+    BOM::Config::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market(100);
     my $c = produce_contract($args);
     is $c->commission_markup->amount, $c->base_commission, "correct commission markup without scaling for $symbol" . $c->commission_markup->amount;
     my $original_commission = $c->commission_markup->amount;
 
-    BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market($scaling);
+    BOM::Config::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market($scaling);
     $c = produce_contract($args);
     if ($scaling == 10000) {
         cmp_ok $c->ask_price, '==', 1000, "max ask price when commissoin scaling is max for $symbol";
@@ -466,7 +466,7 @@ subtest 'flexible commission check for different markets' => sub {
 };
 
 subtest 'non ATM volatility indices variable commission structure' => sub {
-    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"yyy": {"market": "volidx", "commission": "0.1", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}}');
     my $args = {
         bet_type   => "CALL",
@@ -478,7 +478,7 @@ subtest 'non ATM volatility indices variable commission structure' => sub {
     };
     my $c = produce_contract($args);
     is $c->base_commission, 10, 'base commission is 10% if custom commission is matched';
-    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles('{}');
+    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles('{}');
     $c = produce_contract($args);
     is $c->base_commission, 1.5, 'base commission is 0.015 for less than 1-minute non ATM contract on R_100';
     $args->{duration} = '60s';

@@ -38,7 +38,7 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 my $mocked_underlying = Test::MockModule->new('Quant::Framework::Underlying');
 $mocked_underlying->mock('spot_tick', sub { return $tick });
-my $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
+my $offerings_cfg = BOM::Config::Runtime->instance->get_offerings_config;
 
 subtest 'test everything' => sub {
     my $expected = YAML::XS::LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/Engine/selection_config.yml');

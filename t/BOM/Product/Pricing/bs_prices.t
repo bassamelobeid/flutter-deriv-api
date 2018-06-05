@@ -14,19 +14,19 @@ use LandingCompany::Registry;
 use Test::BOM::UnitTestPrice;
 
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-my $offerings_cfg = BOM::Platform::Runtime->instance->get_offerings_config;
+my $offerings_cfg = BOM::Config::Runtime->instance->get_offerings_config;
 my $now           = Date::Utility->new('2016-02-01');
 note('Pricing on ' . $now->datetime);
 
 my %skip_category = (
-    asian   => 1,
-    digits  => 1,
-    spreads => 1,
+    asian         => 1,
+    digits        => 1,
+    spreads       => 1,
     callputspread => 1,
 );
 

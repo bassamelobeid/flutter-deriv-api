@@ -10,8 +10,8 @@ use Scalar::Util::Numeric qw(isint);
 
 use LandingCompany::Registry;
 
-use BOM::Platform::Runtime;
-use BOM::Platform::Config;
+use BOM::Config::Runtime;
+use BOM::Config;
 use BOM::Product::Static;
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
@@ -160,7 +160,7 @@ sub _validate_offerings {
 
     my $message_to_client = [$ERROR_MAPPING->{TradeTemporarilyUnavailable}];
 
-    if (BOM::Platform::Runtime->instance->app_config->system->suspend->trading) {
+    if (BOM::Config::Runtime->instance->app_config->system->suspend->trading) {
         return {
             message           => 'All trading suspended on system',
             message_to_client => $message_to_client,
@@ -170,7 +170,7 @@ sub _validate_offerings {
     my $underlying    = $self->underlying;
     my $contract_code = $self->code;
     # check if trades are suspended on that claimtype
-    my $suspend_contract_types = BOM::Platform::Runtime->instance->app_config->quants->features->suspend_contract_types;
+    my $suspend_contract_types = BOM::Config::Runtime->instance->app_config->quants->features->suspend_contract_types;
     if (@$suspend_contract_types and first { $contract_code eq $_ } @{$suspend_contract_types}) {
         return {
             message           => "Trading suspended for contract type [code: " . $contract_code . "]",
@@ -178,7 +178,7 @@ sub _validate_offerings {
         };
     }
 
-    if (first { $_ eq $underlying->symbol } @{BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades}) {
+    if (first { $_ eq $underlying->symbol } @{BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_trades}) {
         return {
             message           => "Underlying trades suspended [symbol: " . $underlying->symbol . "]",
             message_to_client => $message_to_client,
@@ -715,8 +715,8 @@ sub _build_date_expiry_blackouts {
             push @periods, [$end_of_trading->minus_time_interval($expiry_blackout)->epoch, $end_of_trading->epoch];
         }
     } elsif ($self->expiry_daily and $underlying->market->equity and not $self->is_atm_bet) {
-        my $start_of_period = BOM::Platform::Config::quants->{bet_limits}->{holiday_blackout_start};
-        my $end_of_period   = BOM::Platform::Config::quants->{bet_limits}->{holiday_blackout_end};
+        my $start_of_period = BOM::Config::quants->{bet_limits}->{holiday_blackout_start};
+        my $end_of_period   = BOM::Config::quants->{bet_limits}->{holiday_blackout_end};
         if ($self->date_start->day_of_year >= $start_of_period or $self->date_start->day_of_year <= $end_of_period) {
             my $year = $self->date_start->day_of_year > $start_of_period ? $date_start->year : $date_start->year - 1;
             my $end_blackout = Date::Utility->new($year . '-12-31')->plus_time_interval($end_of_period . 'd23h59m59s');
