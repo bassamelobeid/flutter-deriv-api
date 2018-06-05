@@ -16,7 +16,7 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::DataMapper::Copier;
 use BOM::MarketData qw(create_underlying);
 use BOM::Platform::Context qw (localize);
-use BOM::Platform::RedisReplicated;
+use BOM::Config::RedisReplicated;
 
 rpc copytrading_statistics => sub {
     my $params = shift->{args};
@@ -161,20 +161,20 @@ rpc copytrading_statistics => sub {
     }
 
     # trades average duration
-    $result_hash->{avg_duration} = sprintf("%u", BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_AVG_DURATION:$trader_id") || 0);
+    $result_hash->{avg_duration} = sprintf("%u", BOM::Config::RedisReplicated::redis_read->get("COPY_TRADING_AVG_DURATION:$trader_id") || 0);
 
     # trades profitable && total trades count
-    my $win_trades  = BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_PROFITABLE:$trader_id:win")  || 0;
-    my $loss_trades = BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_PROFITABLE:$trader_id:loss") || 0;
+    my $win_trades  = BOM::Config::RedisReplicated::redis_read->get("COPY_TRADING_PROFITABLE:$trader_id:win")  || 0;
+    my $loss_trades = BOM::Config::RedisReplicated::redis_read->get("COPY_TRADING_PROFITABLE:$trader_id:loss") || 0;
     $result_hash->{total_trades} = $win_trades + $loss_trades;
     $result_hash->{trades_profitable} = sprintf("%.4f", $win_trades / ($result_hash->{total_trades} || 1));
     $result_hash->{avg_profit} =
-        sprintf("%.4f", BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:win") || 0);
+        sprintf("%.4f", BOM::Config::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:win") || 0);
     $result_hash->{avg_loss} =
-        sprintf("%.4f", BOM::Platform::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:loss") || 0);
+        sprintf("%.4f", BOM::Config::RedisReplicated::redis_read->get("COPY_TRADING_AVG_PROFIT:$trader_id:loss") || 0);
 
     # trades_breakdown
-    my %symbols_breakdown = @{BOM::Platform::RedisReplicated::redis_read->hgetall("COPY_TRADING_SYMBOLS_BREAKDOWN:$trader_id")};
+    my %symbols_breakdown = @{BOM::Config::RedisReplicated::redis_read->hgetall("COPY_TRADING_SYMBOLS_BREAKDOWN:$trader_id")};
     for my $symbol (keys %symbols_breakdown) {
         my $trades = $symbols_breakdown{$symbol};
         $result_hash->{trades_breakdown}->{create_underlying($symbol)->market->name} += $trades;

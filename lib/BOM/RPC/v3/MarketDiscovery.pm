@@ -15,8 +15,8 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::User::Client;
 use BOM::Platform::Context qw (localize request);
-use BOM::Platform::Runtime;
-use BOM::Platform::Chronicle;
+use BOM::Config::Runtime;
+use BOM::Config::Chronicle;
 use Quant::Framework;
 use LandingCompany::Registry;
 use List::UtilsBy qw(sort_by);
@@ -38,19 +38,19 @@ rpc active_symbols => sub {
         });
         $product_type //= $client->landing_company->default_offerings;
         my $method = $product_type eq 'basic' ? 'basic_offerings_for_country' : 'multi_barrier_offerings_for_country';
-        $offerings_obj = $client->landing_company->$method($client->residence, BOM::Platform::Runtime->instance->get_offerings_config);
+        $offerings_obj = $client->landing_company->$method($client->residence, BOM::Config::Runtime->instance->get_offerings_config);
     }
 
     unless ($offerings_obj) {
         my $landing_company = LandingCompany::Registry::get($landing_company_name);
         $product_type //= $landing_company->default_offerings;
         my $method = $product_type eq 'basic' ? 'basic_offerings_for_country' : 'multi_barrier_offerings_for_country';
-        $offerings_obj = $landing_company->$method($country_code, BOM::Platform::Runtime->instance->get_offerings_config);
+        $offerings_obj = $landing_company->$method($country_code, BOM::Config::Runtime->instance->get_offerings_config);
     }
 
     die 'Could not retrieve offerings for landing_company[' . $landing_company_name . '] product_type[' . $product_type . ']' unless ($offerings_obj);
 
-    my $appconfig_revision = BOM::Platform::Runtime->instance->app_config->current_revision;
+    my $appconfig_revision = BOM::Config::Runtime->instance->app_config->current_revision;
     my ($namespace, $key) = (
         'legal_allowed_markets', join('::', ($params->{args}->{active_symbols}, $language, $offerings_obj->name, $product_type, $appconfig_revision))
     );
@@ -85,7 +85,7 @@ sub _description {
     my $symbol           = shift;
     my $by               = shift || 'brief';
     my $ul               = create_underlying($symbol) || return;
-    my $trading_calendar = eval { Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader) };
+    my $trading_calendar = eval { Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader) };
     my $iim              = $ul->intraday_interval ? $ul->intraday_interval->minutes : '';
     # sometimes the ul's exchange definition or spot-pricing is not availble yet.  Make that not fatal.
     my $exchange_is_open = $trading_calendar ? $trading_calendar->is_open_at($ul->exchange, Date::Utility->new) : '';

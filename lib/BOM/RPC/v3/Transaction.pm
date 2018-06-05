@@ -17,7 +17,7 @@ use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::Transaction;
 use BOM::Platform::Context qw (localize request);
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Copier;
