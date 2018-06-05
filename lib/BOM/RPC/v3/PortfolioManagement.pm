@@ -156,7 +156,7 @@ rpc proposal_open_contract => sub {
         $contract->{sell_time} //= $sell_time;
 
         $contract = BOM::Pricing::v3::Contract::get_bid($contract);
-        if ($bid->{error}) {
+        if ($contract->{error}) {
             $response->{$id} = $contract;
         } else {
             my $transaction_ids = {buy => $fmb->{buy_transaction_id}};
