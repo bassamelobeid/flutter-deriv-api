@@ -120,14 +120,14 @@ lives_ok {
     $range->sell_price(40);
 
     my $range_helper = BOM::Database::Helper::FinancialMarketBet->new({
-        %account_data,
-        bet      => $range,
-        bet_data => {
-            is_expired => 1,
-            sell_time  => Date::Utility::today->db_timestamp,
-        },
-        db       => $connection_builder->db,
-    });
+            %account_data,
+            bet      => $range,
+            bet_data => {
+                is_expired => 1,
+                sell_time  => Date::Utility::today->db_timestamp,
+            },
+            db => $connection_builder->db,
+        });
     $range_helper->bet_data->{quantity} = 1;
     $range_helper->sell_bet // die "Bet not sold";
 }

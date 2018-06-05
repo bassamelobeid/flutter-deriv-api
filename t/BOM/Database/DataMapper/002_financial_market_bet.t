@@ -50,8 +50,11 @@ sub sell {
                 transaction_time => scalar $bet_data->{transaction_time},
                 staff_loginid    => scalar $bet_data->{staff_loginid},
             },
-            bet_data => +{sell_time => Date::Utility::today->db_timestamp, %$bet_data},
-            db       => $connection_builder->db,
+            bet_data => +{
+                sell_time => Date::Utility::today->db_timestamp,
+                %$bet_data
+            },
+            db => $connection_builder->db,
         })->sell_bet;
 }
 

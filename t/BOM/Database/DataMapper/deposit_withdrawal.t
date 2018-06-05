@@ -73,7 +73,7 @@ subtest 'get total withdrawal' => sub {
     cmp_ok($payment_data_mapper->get_total_withdrawal(), '==', 150, 'check total withdrawal after two withdrawals');
     cmp_ok($payment_data_mapper->get_total_withdrawal({start_time => $twenty_days_before}), '==', 50,  'check total withdrawal, from last 20 days');
     cmp_ok($payment_data_mapper->get_total_withdrawal({exclude    => ['free_gift']}),       '==', 100, 'check total withdrawal, excluding free_gift');
-    cmp_ok($payment_data_mapper->get_total_withdrawal({exclude    => ['legacy_payment']}),  '==', 50,  'check total withdrawal, excluding legacy_payment');
+    cmp_ok($payment_data_mapper->get_total_withdrawal({exclude => ['legacy_payment']}), '==', 50, 'check total withdrawal, excluding legacy_payment');
     cmp_ok(
         $payment_data_mapper->get_total_withdrawal({
                 start_time => $twenty_days_before,
