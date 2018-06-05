@@ -457,7 +457,7 @@ sub get_self_exclusion_form {
         {
             my $now           = Date::Utility->new;
             my $exclusion_end = Date::Utility->new($exclude_until);
-            my $six_month     = Date::Utility->new->plus_months(6)->truncate_to_day;
+            my $six_month     = Date::Utility->new->plus_time_interval('6mo')->truncate_to_day;
 
             #server side checking for the exclude until date which must be larger than today's date
             if (not $exclusion_end->is_after($now)) {
