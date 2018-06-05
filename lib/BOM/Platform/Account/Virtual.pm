@@ -10,7 +10,7 @@ use BOM::User::Client;
 use LandingCompany::Registry;
 
 use BOM::User::Password;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::User;
 use BOM::Platform::Token;
 use BOM::Platform::Context qw(localize request);
@@ -23,7 +23,7 @@ sub create_account {
     my $password  = $details->{client_password} ? BOM::User::Password::hashpw($details->{client_password}) : '';
     my $residence = $details->{residence};
 
-    if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
+    if (BOM::Config::Runtime->instance->app_config->system->suspend->new_accounts) {
         return {error => 'invalid'};
     } elsif (BOM::User->new({email => $email})) {
         return {error => 'duplicate email'};

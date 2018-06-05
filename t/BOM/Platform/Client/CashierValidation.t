@@ -9,7 +9,7 @@ use Test::Warnings;
 
 use BOM::User::Client;
 
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Platform::Client::CashierValidation;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
@@ -62,7 +62,7 @@ subtest prepare => sub {
 };
 
 subtest 'Check cashier suspended' => sub {
-    BOM::Platform::Runtime->instance->app_config->system->suspend->system(1);
+    BOM::Config::Runtime->instance->app_config->system->suspend->system(1);
     my $res = BOM::Platform::Client::CashierValidation::validate($vr_client->loginid, 'deposit');
     is_deeply({
             error => {
@@ -75,17 +75,17 @@ subtest 'Check cashier suspended' => sub {
     );
     is $res->{error}->{code}, $generic_err_code, 'Correct error code';
     is $res->{error}->{message_to_client}, 'Sorry, cashier is temporarily unavailable due to system maintenance.', 'Correct error message';
-    BOM::Platform::Runtime->instance->app_config->system->suspend->system(0);
+    BOM::Config::Runtime->instance->app_config->system->suspend->system(0);
 
-    BOM::Platform::Runtime->instance->app_config->system->suspend->payments(1);
+    BOM::Config::Runtime->instance->app_config->system->suspend->payments(1);
     $res = BOM::Platform::Client::CashierValidation::validate($vr_client->loginid, 'deposit');
     is $res->{error}->{code}, $generic_err_code, 'Correct error code';
     is $res->{error}->{message_to_client}, 'Sorry, cashier is temporarily unavailable due to system maintenance.', 'Correct error message';
-    BOM::Platform::Runtime->instance->app_config->system->suspend->payments(0);
+    BOM::Config::Runtime->instance->app_config->system->suspend->payments(0);
 
-    BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocashier(1);
+    BOM::Config::Runtime->instance->app_config->system->suspend->cryptocashier(1);
     ok BOM::Platform::Client::CashierValidation::is_crypto_cashier_suspended, 'crpto cashier suspended';
-    BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocashier(0);
+    BOM::Config::Runtime->instance->app_config->system->suspend->cryptocashier(0);
 };
 
 subtest 'Cashier validation common' => sub {

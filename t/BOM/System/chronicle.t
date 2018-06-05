@@ -8,10 +8,10 @@ use Test::Warnings;
 use Time::HiRes;
 use Time::Local ();
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 use Date::Utility;
 
-my ($reader, $writer) = (BOM::Platform::Chronicle::get_chronicle_reader(1), BOM::Platform::Chronicle::get_chronicle_writer());
+my ($reader, $writer) = (BOM::Config::Chronicle::get_chronicle_reader(1), BOM::Config::Chronicle::get_chronicle_writer());
 
 my $d = {
     sample1 => [1, 2, 3],

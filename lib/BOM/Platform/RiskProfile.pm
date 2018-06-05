@@ -22,8 +22,8 @@ use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
 use LandingCompany::Registry;
 
-use BOM::Platform::Runtime;
-use BOM::Platform::Config;
+use BOM::Config::Runtime;
+use BOM::Config;
 
 use constant RISK_PROFILES => [qw(no_business extreme_risk high_risk medium_risk low_risk)];
 
@@ -158,8 +158,8 @@ my $product_profiles_compiled = {};
 sub _build_raw_custom_profiles {
     my $self = shift;
 
-    my $ptr = \BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles;    # use a reference to avoid copying
-    $product_profiles_compiled = $json->decode($product_profiles_txt = $$ptr)                    # copy and compile
+    my $ptr = \BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles;    # use a reference to avoid copying
+    $product_profiles_compiled = $json->decode($product_profiles_txt = $$ptr)                  # copy and compile
         unless $$ptr eq $product_profiles_txt;
 
     return $product_profiles_compiled;
@@ -214,7 +214,7 @@ sub get_turnover_limit_parameters {
 
             $params = {
                 name  => $_->{name},
-                limit => BOM::Platform::Config::quants->{risk_profile}->{$_->{risk_profile}}{turnover}{$self->currency},
+                limit => BOM::Config::quants->{risk_profile}->{$_->{risk_profile}}{turnover}{$self->currency},
             };
 
             if (my $exp = $_->{expiry_type}) {
@@ -264,8 +264,8 @@ sub get_client_profiles {
     my ($self, $loginid, $landing_company_short) = @_;
 
     if ($loginid && $landing_company_short) {
-        my $ptr = \BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles;    # use a pointer to avoid copying
-        $custom_limits_compiled = $json->decode($custom_limits_txt = $$ptr)                         # copy and compile
+        my $ptr = \BOM::Config::Runtime->instance->app_config->quants->custom_client_profiles;    # use a pointer to avoid copying
+        $custom_limits_compiled = $json->decode($custom_limits_txt = $$ptr)                       # copy and compile
             unless $$ptr eq $custom_limits_txt;
 
         my @client_limits = do {
@@ -304,7 +304,7 @@ sub get_current_profile_definitions {
     my $offerings_obj = _offerings_obj($landing_company, $country_code);
     my @markets =
         map { Finance::Asset::Market::Registry->get($_) } $offerings_obj->values_for_key('market');
-    my $limit_ref = BOM::Platform::Config::quants->{risk_profile};
+    my $limit_ref = BOM::Config::quants->{risk_profile};
 
     my %limits;
     foreach my $market (@markets) {
@@ -374,7 +374,7 @@ sub _offerings_obj {
 
     my $landing_company = LandingCompany::Registry::get($landing_company_short);
     my $method = $landing_company->default_offerings eq 'basic' ? 'basic_offerings' : 'multi_barrier_offerings';
-    return $landing_company->$method(BOM::Platform::Runtime->instance->get_offerings_config);
+    return $landing_company->$method(BOM::Config::Runtime->instance->get_offerings_config);
 }
 
 no Moose;

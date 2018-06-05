@@ -15,7 +15,7 @@ use Try::Tiny;
 use Webservice::GAMSTOP;
 use Brands;
 
-use BOM::Platform::Config;
+use BOM::Config;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(request);
 
@@ -30,9 +30,9 @@ sub decrypt_secret_answer {
         return Crypt::NamedKeys->new(keyname => 'client_secret_answer')->decrypt_payload(value => $secret_answer);
     } elsif ($secret_answer =~ s/^::ecp::(\S+)$/$1/) {    # legacy blowfish
         my $cipher = Crypt::CBC->new({
-            'key'    => BOM::Platform::Config::aes_keys->{client_secret_answer}->{1},
+            'key'    => BOM::Config::aes_keys->{client_secret_answer}->{1},
             'cipher' => 'Blowfish',
-            'iv'     => BOM::Platform::Config::aes_keys->{client_secret_iv}->{1},
+            'iv'     => BOM::Config::aes_keys->{client_secret_iv}->{1},
             'header' => 'randomiv',
         });
 
@@ -56,7 +56,7 @@ sub set_gamstop_self_exclusion {
     # gamstop is only applicable for UK residence
     return undef unless $client->residence eq 'gb';
 
-    my $gamstop_config = BOM::Platform::Config::third_party->{gamstop};
+    my $gamstop_config = BOM::Config::third_party->{gamstop};
 
     my $lc                     = $client->landing_company->short;
     my $landing_company_config = $gamstop_config->{config}->{$lc};

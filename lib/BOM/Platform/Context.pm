@@ -144,7 +144,7 @@ sub _configure_template_for {
 sub _configure_for_request {
     my $request = shift;
 
-    BOM::Platform::Runtime->instance->app_config->check_for_update();
+    BOM::Config::Runtime->instance->app_config->check_for_update();
     #Lazy initialization of few params
     $template_config = {};
 
