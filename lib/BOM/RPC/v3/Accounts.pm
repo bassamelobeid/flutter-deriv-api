@@ -32,7 +32,7 @@ use BOM::RPC::v3::PortfolioManagement;
 use BOM::RPC::v3::Japan::NewAccount;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Client::CashierValidation;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Locale qw/get_state_by_id/;
 use BOM::User;
@@ -40,7 +40,7 @@ use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Token;
 use BOM::Transaction;
-use BOM::Platform::Config;
+use BOM::Config;
 use BOM::User::Password;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
@@ -48,8 +48,8 @@ use BOM::Database::Model::AccessToken;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
-use BOM::Platform::Runtime;
-use BOM::Platform::Config::ContractPricingLimits qw(market_pricing_limits);
+use BOM::Config::Runtime;
+use BOM::Config::ContractPricingLimits qw(market_pricing_limits);
 
 my $allowed_fields_for_virtual = qr/set_settings|email_consent|residence|allow_copiers/;
 my $email_field_labels         = {
@@ -285,7 +285,7 @@ sub __build_landing_company {
 rpc statement => sub {
     my $params = shift;
 
-    my $app_config = BOM::Platform::Runtime->instance->app_config;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
     if ($app_config->system->suspend->expensive_api_calls) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'SuspendedDueToLoad',
@@ -363,7 +363,7 @@ rpc statement => sub {
 rpc profit_table => sub {
     my $params = shift;
 
-    my $app_config = BOM::Platform::Runtime->instance->app_config;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
     if ($app_config->system->suspend->expensive_api_calls) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'SuspendedDueToLoad',
@@ -1505,7 +1505,7 @@ rpc api_token => sub {
         # send notification to cancel streaming, if we add more streaming
         # for authenticated calls in future, we need to add here as well
         if (defined $params->{account_id}) {
-            BOM::Platform::RedisReplicated::redis_write()->publish(
+            BOM::Config::RedisReplicated::redis_write()->publish(
                 'TXNUPDATE::transaction_' . $params->{account_id},
                 Encode::encode_utf8(
                     $json->encode({
@@ -1560,7 +1560,7 @@ rpc tnc_approval => sub {
             return BOM::RPC::v3::Utility::client_error();
         }
     } else {
-        my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
+        my $current_tnc_version = BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version;
         my $client_tnc_status   = $client->get_status('tnc_approval');
 
         if (not $client_tnc_status
@@ -1710,7 +1710,7 @@ rpc get_financial_assessment => sub {
 rpc reality_check => sub {
     my $params = shift;
 
-    my $app_config = BOM::Platform::Runtime->instance->app_config;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
     if ($app_config->system->suspend->expensive_api_calls) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'SuspendedDueToLoad',

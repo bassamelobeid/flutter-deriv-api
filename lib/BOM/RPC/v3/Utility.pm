@@ -32,11 +32,11 @@ use LandingCompany::Registry;
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::ProveID;
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Platform::RedisReplicated;
+use BOM::Config::RedisReplicated;
 use BOM::Database::Model::AccessToken;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::Context qw (localize request);
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Platform::Token;
 use Finance::Contract::Longcode qw(shortcode_to_longcode);
 use BOM::Platform::Email qw(send_email);
@@ -103,7 +103,7 @@ sub validation_checks {
 }
 
 sub get_suspended_crypto_currencies {
-    my @suspended_currencies = split /,/, BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocurrencies;
+    my @suspended_currencies = split /,/, BOM::Config::Runtime->instance->app_config->system->suspend->cryptocurrencies;
     s/^\s+|\s+$//g for @suspended_currencies;
 
     my %suspended_currencies_hash = map { $_ => 1 } @suspended_currencies;
@@ -551,7 +551,7 @@ sub _is_currency_allowed {
     return $result if ($type eq 'crypto' and grep { $currency eq ($siblings->{$_}->{currency} // '') } keys %$siblings);
     # if currency is experimental and client is not allowed to use such currencies we don't allow
 
-    my $allowed_accounts = BOM::Platform::Runtime->instance->app_config->payments->experimental_currencies_allowed;
+    my $allowed_accounts = BOM::Config::Runtime->instance->app_config->payments->experimental_currencies_allowed;
     my $client_email     = $client->email;
     $result->{message} = 'Please note that the selected currency is allowed for limited accounts only';
 

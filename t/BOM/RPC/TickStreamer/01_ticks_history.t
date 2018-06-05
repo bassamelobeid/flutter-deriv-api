@@ -11,7 +11,7 @@ use Data::Dumper;
 use Date::Utility;
 use File::Temp;
 
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 use Quant::Framework;
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::FeedTestDatabase qw/:init/;
@@ -208,7 +208,7 @@ subtest '_validate_start_end' => sub {
 
     set_fixed_time($now->plus_time_interval('5h')->epoch);
     my $ul               = create_underlying('HSI');
-    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
+    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
     $params->{args}->{end}   = $trading_calendar->closing_on($ul->exchange, $now)->plus_time_interval('1m')->epoch;
     $params->{args}->{start} = $trading_calendar->closing_on($ul->exchange, $now)->minus_time_interval('39m')->epoch;
     delete $params->{args}->{count};

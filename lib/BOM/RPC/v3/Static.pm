@@ -30,10 +30,10 @@ use JSON::MaybeXS;
 
 use BOM::RPC::Registry '-dsl';
 
-use BOM::Platform::RedisReplicated;
-use BOM::Platform::Runtime;
+use BOM::Config::RedisReplicated;
+use BOM::Config::Runtime;
 use BOM::Platform::Locale;
-use BOM::Platform::Config;
+use BOM::Config;
 use BOM::Platform::Context qw (request);
 use BOM::Database::ClientDB;
 use BOM::RPC::v3::Utility;
@@ -136,7 +136,7 @@ rpc states_list => sub {
 
 sub _currencies_config {
     my $amt_precision = Format::Util::Numbers::get_precision_config()->{price};
-    my $bet_limits    = BOM::Platform::Config::quants->{bet_limits};
+    my $bet_limits    = BOM::Config::quants->{bet_limits};
     # As a stake_default (amount, which will be pre-populated for this currency on our website,
     # if there were no amount entered by client), we get max out of two minimal possible stakes.
     # Logic is copied from _build_staking_limits
@@ -161,7 +161,7 @@ my $json = JSON::MaybeXS->new;
 rpc website_status => sub {
     my $params = shift;
 
-    my $app_config = BOM::Platform::Runtime->instance->app_config;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
     return {
         terms_conditions_version => $app_config->cgi->terms_conditions_version,
         api_call_limits          => BOM::RPC::v3::Utility::site_limits,

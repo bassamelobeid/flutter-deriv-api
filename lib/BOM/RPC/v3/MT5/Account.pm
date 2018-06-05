@@ -23,7 +23,7 @@ use BOM::RPC::Registry '-dsl';
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Cashier;
 use BOM::RPC::v3::Accounts;
-use BOM::Platform::Config;
+use BOM::Config;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Account::Real::default;
@@ -31,7 +31,7 @@ use BOM::User;
 use BOM::User::Client;
 use BOM::MT5::User::Async;
 use BOM::Database::ClientDB;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Platform::Email;
 use BOM::Transaction;
 
@@ -179,9 +179,9 @@ sub _throttle {
     my $loginid = shift;
     my $key     = MT5_ACCOUNT_THROTTLE_KEY_PREFIX . $loginid;
 
-    return 1 if BOM::Platform::RedisReplicated::redis_read()->get($key);
+    return 1 if BOM::Config::RedisReplicated::redis_read()->get($key);
 
-    BOM::Platform::RedisReplicated::redis_write()->set($key, 1, 'EX', 60);
+    BOM::Config::RedisReplicated::redis_write()->set($key, 1, 'EX', 60);
 
     return 0;
 }
@@ -192,7 +192,7 @@ sub reset_throttler {
     my $loginid = shift;
     my $key     = MT5_ACCOUNT_THROTTLE_KEY_PREFIX . $loginid;
 
-    return BOM::Platform::RedisReplicated::redis_write->del($key);
+    return BOM::Config::RedisReplicated::redis_write->del($key);
 }
 
 async_rpc mt5_new_account => sub {
@@ -1336,7 +1336,7 @@ async_rpc mt5_mamm => sub {
 };
 
 sub _is_mt5_suspended {
-    my $app_config = BOM::Platform::Runtime->instance->app_config;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
 
     if ($app_config->system->suspend->mt5) {
         return BOM::RPC::v3::Utility::create_error({
@@ -1351,9 +1351,9 @@ sub _get_mt5_account_from_affiliate_token {
 
     if ($token) {
         my $aff = WebService::MyAffiliates->new(
-            user    => BOM::Platform::Config::third_party->{myaffiliates}->{user},
-            pass    => BOM::Platform::Config::third_party->{myaffiliates}->{pass},
-            host    => BOM::Platform::Config::third_party->{myaffiliates}->{host},
+            user    => BOM::Config::third_party->{myaffiliates}->{user},
+            pass    => BOM::Config::third_party->{myaffiliates}->{pass},
+            host    => BOM::Config::third_party->{myaffiliates}->{host},
             timeout => 10
         ) or return;
 
@@ -1378,7 +1378,7 @@ sub _mt5_validate_and_get_amount {
     my $mt5_suspended = _is_mt5_suspended();
     return Future->done($mt5_suspended) if $mt5_suspended;
 
-    my $app_config = BOM::Platform::Runtime->instance->app_config;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
     return _make_error($error_code, localize('Payments are suspended.'))
         if ($app_config->system->suspend->payments or $app_config->system->suspend->system);
 

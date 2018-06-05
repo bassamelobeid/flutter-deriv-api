@@ -44,8 +44,7 @@ my $first_entry_mlt = [
         ["endsinout",    "Ends Between/Ends Outside",  "2m", "365d"],
         ["staysinout",   "Stays Between/Goes Outside", "2m", "365d"],
         ["digits",       "Digits",                     "5t", "10t"],
-        ["asian",        "Asians",                     "5t", "10t"],
-        ["callputequal", "Rise/Fall Equal",            "5t", "365d"]]];
+        ["asian",        "Asians",                     "5t", "10t"]]];
 my $first_entry_cr_mf = [
     "frxAUDJPY",
     "AUD/JPY",

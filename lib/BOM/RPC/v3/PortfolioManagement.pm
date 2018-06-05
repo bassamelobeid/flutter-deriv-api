@@ -14,7 +14,7 @@ use BOM::RPC::v3::Accounts;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (request localize);
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Transaction;
 use BOM::Pricing::v3::Contract;
 
@@ -23,7 +23,7 @@ requires_auth();
 rpc portfolio => sub {
     my $params = shift;
 
-    my $app_config = BOM::Platform::Runtime->instance->app_config;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
     if ($app_config->system->suspend->expensive_api_calls) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'SuspendedDueToLoad',
