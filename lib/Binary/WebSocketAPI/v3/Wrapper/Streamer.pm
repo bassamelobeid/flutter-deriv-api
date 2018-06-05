@@ -562,7 +562,7 @@ sub process_transaction_updates {
 
 my %skip_duration_list = map { $_ => 1 } qw(t s m h);
 my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 R_10 RDBULL RDBEAR);
-my %skip_type_list     = map { $_ => 1 } qw(DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN ASIAND ASIANU TICKHIGH TICKLOW);
+my %skip_type_list     = map { $_ => 1 } qw(DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN ASIAND ASIANU TICKHIGH TICKLOW RESETCALL RESETPUT);
 
 sub _skip_streaming {
     my $args = shift;
