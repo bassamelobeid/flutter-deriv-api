@@ -128,6 +128,11 @@ sub maximum_bid_price {
     return $self->payout;
 }
 
+sub maximum_payout {
+    my $self = shift;
+    return $self->payout;
+}
+
 =head2 ticks_to_expiry
 
 The number of ticks required from contract start time to expiry.
