@@ -18,7 +18,7 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Cache::RedisDB;
 use Date::Utility;
 use Format::Util::Numbers qw(roundcommon);
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 use Finance::Asset::SubMarket;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
@@ -213,7 +213,7 @@ subtest 'all attributes on a variety of underlyings' => sub {
 
         my $expiry_conventions = Quant::Framework::ExpiryConventions->new(
             underlying       => $underlying,
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($underlying->for_date),
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader($underlying->for_date),
             calendar         => $underlying->calendar,
         );
 
@@ -331,7 +331,7 @@ subtest vol_expiry_date => sub {
 
     my $expiry_conventions = Quant::Framework::ExpiryConventions->new(
         underlying       => $underlying,
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader($underlying->for_date),
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader($underlying->for_date),
         calendar         => $underlying->calendar,
     );
 
@@ -471,8 +471,8 @@ subtest 'all methods on a selection of underlyings' => sub {
         'volsurface_delta',
         {
             underlying       => create_underlying('frxEURUSD'),
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
             recorded_date    => Date::Utility->new,
         });
 

@@ -8,7 +8,7 @@ use YAML::XS qw(DumpFile LoadFile);
 
 use Finance::Contract::Category;
 use BOM::MarketData qw(create_underlying_db);
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 
 
 my $udb;
@@ -180,8 +180,8 @@ subtest "sub market related" => sub {
 };
 
 subtest 'including disabled' => sub {
-    my $orig_buy = BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy;
-    BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy(['frxUSDJPY']);
+    my $orig_buy = BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_buy;
+    BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_buy(['frxUSDJPY']);
     ok(
         scalar grep { $_ eq 'frxUSDJPY' } (
             $udb->get_symbols_for(
@@ -202,7 +202,7 @@ subtest 'including disabled' => sub {
         0,
         "USD/JPY is not returned for when unfiltered for disabled."
     );
-    BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy($orig_buy);
+    BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_buy($orig_buy);
 };
 
 done_testing;

@@ -3,13 +3,13 @@ use warnings;
 use Test::Most;
 use Test::FailWarnings;
 use BOM::Market::DataDecimate;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 
-BOM::Platform::Runtime->instance->app_config;
+BOM::Config::Runtime->instance->app_config;
 
 my $time = time;
 
-my $redis     = BOM::Platform::RedisReplicated::redis_write();
+my $redis     = BOM::Config::RedisReplicated::redis_write();
 my $undec_key = "DECIMATE_frxUSDJPY" . "_31m_FULL";
 my $encoder   = Sereal::Encoder->new({
     canonical => 1,
