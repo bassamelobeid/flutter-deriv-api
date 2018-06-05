@@ -3,7 +3,7 @@ use strict;
 use warnings;
 
 use Text::CSV;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Database::ClientDB;
 use Date::Utility;
 

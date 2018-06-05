@@ -35,6 +35,7 @@ before_install:
 
     - /tmp/travis-scripts/parallel_clone_branch.sh
       regentmarkets/bom-test
+      regentmarkets/bom-config
       regentmarkets/bom
       regentmarkets/bom-postgres
       regentmarkets/bom-market

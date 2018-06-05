@@ -13,11 +13,11 @@ use List::Util qw(shuffle);
 
 use BOM::Platform::Context;
 use BOM::Platform::Context::I18N;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 
 my @languages = qw(EN DE ES FR ID JA PL PT RU ZH_CN VI ZH_TW IT TH);
 
-is @{BOM::Platform::Runtime->instance->app_config->cgi->supported_languages}, @languages, "correct number of languages";
+is @{BOM::Config::Runtime->instance->app_config->cgi->supported_languages}, @languages, "correct number of languages";
 
 foreach my $language (@languages) {
     subtest "Testing Language : $language" => sub {

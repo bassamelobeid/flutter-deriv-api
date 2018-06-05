@@ -21,7 +21,7 @@ use Brands;
 use BOM::User::Client;
 use LandingCompany::Registry;
 
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Platform::Context qw/request localize/;
 
 =head2 validate
@@ -124,7 +124,7 @@ Returns whether system is currently suspended or not
 =cut
 
 sub is_system_suspended {
-    return BOM::Platform::Runtime->instance->app_config->system->suspend->system;
+    return BOM::Config::Runtime->instance->app_config->system->suspend->system;
 }
 
 =head2 is_payment_suspended
@@ -134,7 +134,7 @@ Returns whether payment is currently suspended or not
 =cut
 
 sub is_payment_suspended {
-    return BOM::Platform::Runtime->instance->app_config->system->suspend->payments;
+    return BOM::Config::Runtime->instance->app_config->system->suspend->payments;
 }
 
 =head2 is_crypto_cashier_suspended
@@ -144,7 +144,7 @@ Returns whether crypto cashier is currently suspended or not
 =cut
 
 sub is_crypto_cashier_suspended {
-    return BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocashier;
+    return BOM::Config::Runtime->instance->app_config->system->suspend->cryptocashier;
 }
 
 =head2 is_crypto_currency_suspended {
@@ -157,9 +157,9 @@ this will return false for currencies such as USD / GBP.
 sub is_crypto_currency_suspended {
     my $currency = shift or die "expected currency parameter";
 
-    return 1 if BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocashier;
+    return 1 if BOM::Config::Runtime->instance->app_config->system->suspend->cryptocashier;
 
-    return BOM::Platform::Runtime->instance->app_config->system->suspend->cryptocurrencies =~ /\Q$currency\E/;
+    return BOM::Config::Runtime->instance->app_config->system->suspend->cryptocurrencies =~ /\Q$currency\E/;
 }
 
 =head2 pre_withdrawal_validation
@@ -222,7 +222,7 @@ sub calculate_to_amount_with_fees {
             # no fees for authenticate payment agent
             $fees = 0;
         } else {
-            $fees_percent = BOM::Platform::Runtime->instance->app_config->payments->transfer_between_accounts->fees->$from_currency_type;
+            $fees_percent = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->fees->$from_currency_type;
             $fees = ($amount) * ($fees_percent / 100);
         }
 
