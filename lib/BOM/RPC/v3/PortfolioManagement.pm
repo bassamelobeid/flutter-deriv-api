@@ -5,7 +5,7 @@ use warnings;
 
 use Date::Utility;
 use Try::Tiny;
-use Format::Util::Numbers qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber roundcommon/;
 
 use BOM::RPC::Registry '-dsl';
 
@@ -140,7 +140,7 @@ rpc proposal_open_contract => sub {
         my $id = $fmb->{id};
         my $sell_time;
         $sell_time = Date::Utility->new($fmb->{sell_time})->epoch if $fmb->{sell_time};
-        my $bid = {
+        my $contract = {
             short_code            => $fmb->{short_code},
             contract_id           => $id,
             currency              => $currency,
@@ -153,24 +153,31 @@ rpc proposal_open_contract => sub {
             account_id            => $fmb->{account_id},
             country_code          => $client->residence,
         };
-        $bid->{sell_time} //= $sell_time;
+        $contract->{sell_time} //= $sell_time;
 
-        $bid = BOM::Pricing::v3::Contract::get_bid($bid);
-        if ($bid->{error}) {
-            $response->{$id} = $bid;
+        $contract = BOM::Pricing::v3::Contract::get_bid($contract);
+        if ($contract->{error}) {
+            $response->{$id} = $contract;
         } else {
             my $transaction_ids = {buy => $fmb->{buy_transaction_id}};
             $transaction_ids->{sell} = $fmb->{sell_transaction_id} if ($fmb->{sell_transaction_id});
 
-            $bid->{purchase_time}   = Date::Utility->new($fmb->{purchase_time})->epoch;
-            $bid->{transaction_ids} = $transaction_ids;
-            $bid->{buy_price}       = $fmb->{buy_price};
-            $bid->{account_id}      = $fmb->{account_id};
-            $bid->{is_sold}         = $fmb->{is_sold};
-            $bid->{sell_time}       = $sell_time if $sell_time;
-            $bid->{sell_price}      = formatnumber('price', $currency, $fmb->{sell_price}) if defined $fmb->{sell_price};
+            $contract->{purchase_time}   = Date::Utility->new($fmb->{purchase_time})->epoch;
+            $contract->{transaction_ids} = $transaction_ids;
+            $contract->{buy_price}       = $fmb->{buy_price};
+            $contract->{account_id}      = $fmb->{account_id};
+            $contract->{is_sold}         = $fmb->{is_sold};
+            $contract->{sell_time}       = $sell_time if $sell_time;
+            $contract->{sell_price}      = formatnumber('price', $currency, $fmb->{sell_price}) if defined $fmb->{sell_price};
 
-            $response->{$id} = $bid;
+            if (defined $contract->{buy_price} and (defined $contract->{bid_price} or defined $contract->{sell_price})) {
+                $contract->{profit} =
+                    (defined $contract->{sell_price})
+                    ? formatnumber('price', $currency, $contract->{sell_price} - $contract->{buy_price})
+                    : formatnumber('price', $currency, $contract->{bid_price} - $contract->{buy_price});
+                $contract->{profit_percentage} = roundcommon(0.01, $contract->{profit} / $contract->{buy_price} * 100);
+            }
+            $response->{$id} = $contract;
         }
     }
     return $response;
