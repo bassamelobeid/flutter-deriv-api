@@ -15,8 +15,6 @@ use BOM::Database::Helper::RejectedTrade;
 use BOM::Platform::Context qw(localize request);
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use Locale::Country::Extra;
-use Geo::Region;
-use Geo::Region::Constant qw( :all );
 use BOM::Database::ClientDB;
 use Date::Utility;
 
