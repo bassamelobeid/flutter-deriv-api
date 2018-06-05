@@ -560,27 +560,31 @@ sub process_transaction_updates {
     return;
 }
 
-my %skip_duration_list = map { $_ => 1 } qw(s m h);
+my %skip_duration_list = map { $_ => 1 } qw(t s m h);
 my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 R_10 RDBULL RDBEAR);
-my %skip_type_list     = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN CALLE PUTE);
+my %skip_type_list =
+    map { $_ => 1 } qw(DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN ASIAND ASIANU TICKHIGH TICKLOW RESETCALL RESETPUT);
 
 sub _skip_streaming {
     my $args = shift;
 
     return 1 if $args->{skip_streaming};
     my $skip_symbols = ($skip_symbol_list{$args->{symbol}}) ? 1 : 0;
-    my $atm_contract =
-        ($args->{contract_type} =~ /^(CALL|PUT)/ and not($args->{barrier} or ($args->{proposal_array} and $args->{barriers}))) ? 1 : 0;
-    my $fixed_expiry = $args->{date_expiry} ? 1 : 0;
-    my ($skip_atm_tick_expiry, $skip_intraday_atm_non_fixed_expiry) = (0, 0);
+    my $atm_callput_contract =
+        ($args->{contract_type} =~ /^(CALL|PUT)$/ and not($args->{barrier} or ($args->{proposal_array} and $args->{barriers}))) ? 1 : 0;
+
+    my ($skip_atm_callput, $skip_contract_type) = (0, 0);
+
     if (defined $args->{duration_unit}) {
-        $skip_atm_tick_expiry =
-            ($skip_symbols and $skip_type_list{$args->{contract_type}} and $args->{duration_unit} eq 't' and $atm_contract);
-        $skip_intraday_atm_non_fixed_expiry =
-            ($skip_symbols and $skip_duration_list{$args->{duration_unit}} and $atm_contract and not $fixed_expiry);
+
+        $skip_atm_callput =
+            ($skip_symbols and $skip_duration_list{$args->{duration_unit}} and $atm_callput_contract);
+
+        $skip_contract_type = ($skip_symbols and $skip_type_list{$args->{contract_type}});
+
     }
 
-    return 1 if ($skip_atm_tick_expiry or $skip_intraday_atm_non_fixed_expiry);
+    return 1 if ($skip_atm_callput or $skip_contract_type);
     return;
 }
 
