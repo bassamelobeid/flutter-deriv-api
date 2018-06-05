@@ -6,6 +6,19 @@ commission:
     level_multiplier: 1.4
   adjustment:
     forward_start_factor: 1.5
+    
+default_stake:
+  USD: 10
+  EUR: 10
+  AUD: 10
+  GBP: 10
+  JPY: 1000
+  BTC: 0.003
+  BCH: 0.03
+  ETH: 0.05
+  LTC: 0.25
+  ETC: 2
+  DAI: 10
 
 bet_limits:
   holiday_blackout_start: 345
