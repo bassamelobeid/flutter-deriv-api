@@ -14,8 +14,8 @@ use Data::Dumper;
 
 use BOM::MarketData qw(create_underlying);
 use BOM::Platform::Context;
-use BOM::Platform::RedisReplicated;
-use BOM::Platform::Runtime;
+use BOM::Config::RedisReplicated;
+use BOM::Config::Runtime;
 use BOM::Pricing::v3::Contract;
 
 use constant {
@@ -109,7 +109,7 @@ sub process_job {
 
 sub run {
     my ($self, %args) = @_;
-    my $redis = BOM::Platform::RedisReplicated::redis_pricer;
+    my $redis = BOM::Config::RedisReplicated::redis_pricer;
 
     my $tv_appconfig          = [0, 0];
     my $tv                    = [Time::HiRes::gettimeofday];
@@ -129,10 +129,10 @@ sub run {
         $tv = $tv_now;
 
         if (Time::HiRes::tv_interval($tv_appconfig, $tv_now) >= 15) {
-            my $rev = BOM::Platform::Runtime->instance->app_config->check_for_update;
+            my $rev = BOM::Config::Runtime->instance->app_config->check_for_update;
             # Will return empty if we didn't need to update, so make sure we apply actual
             # version before our check here
-            $rev ||= BOM::Platform::Runtime->instance->app_config->current_revision;
+            $rev ||= BOM::Config::Runtime->instance->app_config->current_revision;
             $tv_appconfig = $tv_now;
         }
 

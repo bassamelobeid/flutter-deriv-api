@@ -49,7 +49,7 @@ subtest "Request $method" => sub {
     ok !grep { $_->{contract_type} =~ /^(EXPIRYMISS|EXPIRYRANGE)E$/ } @{$result->{available}};
 
     # mock distributor quote
-    my $redis = BOM::Platform::RedisReplicated::redis_write();
+    my $redis = BOM::Config::RedisReplicated::redis_write();
     $redis->set(
         'Distributor::QUOTE::frxUSDJPY',
         encode_json({

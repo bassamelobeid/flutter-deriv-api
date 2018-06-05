@@ -21,10 +21,10 @@ use BOM::Platform::Context qw (request);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Platform::RedisReplicated;
+use BOM::Config::RedisReplicated;
 use BOM::Product::ContractFactory qw( produce_contract );
 use Quant::Framework;
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 
 initialize_realtime_ticks_db();
 my $now   = Date::Utility->new('2005-09-21 06:46:00');
@@ -83,7 +83,7 @@ subtest 'prepare_ask' => sub {
         "symbol"        => "R_50",
         "duration"      => "5",
         "duration_unit" => "t",
-        'barrier'     => '+0.3054',
+        'barrier'       => '+0.3054',
     };
     my $expected = {
         'barrier'     => '+0.3054',
@@ -142,7 +142,7 @@ subtest $method => sub {
             'symbol'       => 'R_50',
             'longcode'     => "Win payout if Volatility 50 Index touches entry spot plus 2.9054 through 5 ticks after first tick.",
             'display_name' => 'Volatility 50 Index',
-            'date_expiry'  => '1127285670', 
+            'date_expiry'  => '1127285670',
             'barrier'      => 'S29054P',
         },
         'result is ok'
@@ -152,16 +152,16 @@ subtest $method => sub {
 
 subtest 'get_ask' => sub {
     my $params = {
-        "proposal"         => 1,
-        "amount"           => "100",
-        "basis"            => "payout",
-        "contract_type"    => "ONETOUCH",
-        "currency"         => "USD",
-        "duration"         => "5",
-        "duration_unit"    => "t",
-        "symbol"           => "R_50",
-        "landing_company"  =>"virtual",
-        "barrier"          => "+0.3054"
+        "proposal"        => 1,
+        "amount"          => "100",
+        "basis"           => "payout",
+        "contract_type"   => "ONETOUCH",
+        "currency"        => "USD",
+        "duration"        => "5",
+        "duration_unit"   => "t",
+        "symbol"          => "R_50",
+        "landing_company" => "virtual",
+        "barrier"         => "+0.3054"
     };
 
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -175,9 +175,9 @@ subtest 'get_ask' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'       => '20.06',
-        'ask_price'           => '20.06',
-        'longcode'            => "Win payout if Volatility 50 Index touches entry spot plus 0.3054 through 5 ticks after first tick.",
+        'display_value' => '20.06',
+        'ask_price'     => '20.06',
+        'longcode'      => "Win payout if Volatility 50 Index touches entry spot plus 0.3054 through 5 ticks after first tick.",
 
         'spot'                => '963.3054',
         'payout'              => '100',
@@ -196,9 +196,9 @@ subtest 'get_ask' => sub {
             'date_start'            => ignore(),
             'landing_company'       => 'virtual',
             'staking_limits'        => {
-                'min'               => '0.35',
-                'max'               => 50000}}};
-       
+                'min' => '0.35',
+                'max' => 50000
+            }}};
 
     cmp_deeply($result, $expected, 'the left values are all right');
 };
@@ -207,16 +207,16 @@ subtest 'send_ask' => sub {
     my $params = {
         client_ip => '127.0.0.1',
         args      => {
-            "proposal"         => 1,
-            "payout"           => "100",
-            "basis"            => "payout",
-            "contract_type"    => "ONETOUCH",
-            "currency"         => "USD",
-            "duration"         => "5",
-            "duration_unit"    => "t",
-            "symbol"           => "R_50",
-            "landing_company"  => "virtual",
-            "barrier"          => "+0.3054"
+            "proposal"        => 1,
+            "payout"          => "100",
+            "basis"           => "payout",
+            "contract_type"   => "ONETOUCH",
+            "currency"        => "USD",
+            "duration"        => "5",
+            "duration_unit"   => "t",
+            "symbol"          => "R_50",
+            "landing_company" => "virtual",
+            "barrier"         => "+0.3054"
         }};
 
     my $result = $c->call_ok('send_ask', $params)->has_no_error->result;

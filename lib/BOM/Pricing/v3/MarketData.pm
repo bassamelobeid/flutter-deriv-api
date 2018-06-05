@@ -23,17 +23,17 @@ use Locale::Country::Extra;
 
 use BOM::User::Client;
 use BOM::Platform::Context qw (localize);
-use BOM::Platform::Runtime;
-use BOM::Platform::Chronicle;
+use BOM::Config::Runtime;
+use BOM::Config::Chronicle;
 use BOM::Product::Offerings::DisplayHelper;
 use LandingCompany::Registry;
 
 sub _get_cache {
     my ($name) = @_;
-    my $v = BOM::Platform::Chronicle::get_chronicle_reader()->get('OFFERINGS', $name);
+    my $v = BOM::Config::Chronicle::get_chronicle_reader()->get('OFFERINGS', $name);
     return undef if not $v;
     if ($v->{digest} ne _get_digest()) {
-        BOM::Platform::Chronicle::get_chronicle_writer()->cache_writer->del('OFFERINGS', $name);
+        BOM::Config::Chronicle::get_chronicle_writer()->cache_writer->del('OFFERINGS', $name);
         return undef;
     }
     return $v->{value};
@@ -41,7 +41,7 @@ sub _get_cache {
 
 sub _set_cache {
     my ($name, $value) = @_;
-    BOM::Platform::Chronicle::get_chronicle_writer()->set(
+    BOM::Config::Chronicle::get_chronicle_writer()->set(
         'OFFERINGS',
         $name,
         {
@@ -56,9 +56,9 @@ sub _set_cache {
 
 sub _get_digest {
 
-    my $offerings_config     = BOM::Platform::Runtime->instance->get_offerings_config();
+    my $offerings_config     = BOM::Config::Runtime->instance->get_offerings_config();
     my $trading_calendar_rev = 0;
-    my $reader               = BOM::Platform::Chronicle::get_chronicle_reader();
+    my $reader               = BOM::Config::Chronicle::get_chronicle_reader();
     # information on 'Resources' are dependent on information of trading calendar. A hard cache of 1 day will
     # make information on 'Resources' out of date. Though this doesn't happen very often but we need to get this right.
     for (['holidays', 'holidays'], ['partial_trading', 'early_closes'], ['partial_trading', 'late_opens']) {
@@ -247,7 +247,7 @@ Returns a hashref containing the following:
 sub generate_trading_times {
     my $date = shift;
 
-    my $offerings = LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
+    my $offerings = LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
     my $tree      = BOM::Product::Offerings::DisplayHelper->new(
         date      => $date,
         offerings => $offerings
@@ -334,7 +334,7 @@ Returns an arrayref, where each array element contains the following values (in 
 sub generate_asset_index {
     my ($country_code, $landing_company_name, $language) = @_;
 
-    my $config          = BOM::Platform::Runtime->instance->get_offerings_config;
+    my $config          = BOM::Config::Runtime->instance->get_offerings_config;
     my $landing_company = LandingCompany::Registry::get($landing_company_name);
     my $offerings       = $landing_company->basic_offerings_for_country($country_code, $config);
 

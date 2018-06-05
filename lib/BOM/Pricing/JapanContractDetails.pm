@@ -16,8 +16,8 @@ use Volatility::EconomicEvents;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Product::Pricing::Engine::Intraday::Forex;
-use BOM::Platform::Runtime;
-use BOM::Platform::Chronicle;
+use BOM::Config::Runtime;
+use BOM::Config::Chronicle;
 
 sub parse_file {
     my ($file, $landing_company) = @_;
@@ -171,8 +171,8 @@ sub verify_with_shortcode {
 
     Volatility::EconomicEvents::set_prefix($seasonality_prefix);
     my $EEC = Quant::Framework::EconomicEventCalendar->new({
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(1),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(1),
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
     });
     my $events = $EEC->get_latest_events_for_period({
             from => $contract->date_start,
@@ -184,7 +184,7 @@ sub verify_with_shortcode {
         underlying_symbols => [$contract->underlying->symbol],
         economic_events    => $events,
         date               => $contract->date_start,
-        chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
+        chronicle_writer   => BOM::Config::Chronicle::get_chronicle_writer(),
     });
 
     # due to complexity in $action_type, this is a hacky fix.
@@ -293,7 +293,7 @@ sub _get_pricing_parameter_from_IH_pricer {
     };
 
     $pricing_parameters->{intraday_vega_correction} = {
-        historical_vol_mean_reversion => BOM::Platform::Config::quants->{commission}->{intraday}->{historical_vol_meanrev},
+        historical_vol_mean_reversion => BOM::Config::quants->{commission}->{intraday}->{historical_vol_meanrev},
         long_term_prediction          => $pe->long_term_prediction->amount,
         intraday_vega                 => $pe->base_probability->peek_amount('intraday_vega'),
     };

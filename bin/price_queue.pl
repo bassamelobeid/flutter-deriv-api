@@ -1,7 +1,7 @@
 #!/etc/rmg/bin/perl
 use strict;
 use warnings;
-use BOM::Platform::RedisReplicated;
+use BOM::Config::RedisReplicated;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_gauge);
 use Time::HiRes qw(time clock_nanosleep CLOCK_REALTIME);
 use LWP::Simple 'get';
@@ -39,8 +39,8 @@ Process the priority queue instead of the regular queue.
 =cut
 
 my $internal_ip = get("http://169.254.169.254/latest/meta-data/local-ipv4");
-my $redis       = BOM::Platform::RedisReplicated::redis_pricer;
-my $redis_sub   = BOM::Platform::RedisReplicated::redis_pricer(timeout => 60);
+my $redis       = BOM::Config::RedisReplicated::redis_pricer;
+my $redis_sub   = BOM::Config::RedisReplicated::redis_pricer(timeout => 60);
 my $iteration   = 0;
 
 GetOptions
