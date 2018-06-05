@@ -11,8 +11,8 @@ use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
-use BOM::Platform::RedisReplicated;
-use BOM::Platform::Runtime;
+use BOM::Config::RedisReplicated;
+use BOM::Config::Runtime;
 use BOM::Test::Data::Utility::FeedTestDatabase;
 use Date::Utility;
 use await;
@@ -37,7 +37,7 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
 $client->email($email);
-$client->set_status('tnc_approval', 'system', BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version);
+$client->set_status('tnc_approval', 'system', BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version);
 $client->save;
 
 my $loginid = $client->loginid;

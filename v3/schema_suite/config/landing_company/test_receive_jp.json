@@ -81,7 +81,7 @@
                             "required": "1",
                             "items": {
                                 "type": "string",
-                                "pattern": "^(callput|endsinout|staysinout|touchnotouch|callputequal)$",
+                                "pattern": "^(callput|callputequal|endsinout|staysinout|touchnotouch)$",
                                 "required": "1"
                             }
                         },

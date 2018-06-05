@@ -19,10 +19,10 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Database::Model::OAuth;
-use BOM::Platform::RedisReplicated;
-use BOM::Platform::Runtime;
+use BOM::Config::RedisReplicated;
+use BOM::Config::Runtime;
 use BOM::MarketData qw(create_underlying);
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 
 initialize_realtime_ticks_db();
 my $t = build_wsapi_test();
@@ -75,7 +75,7 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
 $client->email($email);
-$client->set_status('tnc_approval', 'system', BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version);
+$client->set_status('tnc_approval', 'system', BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version);
 $client->save;
 
 my $loginid = $client->loginid;
@@ -98,7 +98,7 @@ my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $logi
 
 my $authorize = $t->await::authorize({authorize => $token});
 
-my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
+my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
 my $underlying       = create_underlying('frxUSDJPY');
 
 SKIP: {

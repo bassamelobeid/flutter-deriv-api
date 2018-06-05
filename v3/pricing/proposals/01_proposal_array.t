@@ -15,8 +15,8 @@ use Binary::WebSocketAPI::v3::Instance::Redis qw| redis_pricer |;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Platform::RedisReplicated;
-use BOM::Platform::Chronicle;
+use BOM::Config::RedisReplicated;
+use BOM::Config::Chronicle;
 use BOM::MarketData qw(create_underlying);
 
 use Sereal::Encoder;
@@ -26,7 +26,7 @@ my $encoder = Sereal::Encoder->new({
     canonical => 1,
 });
 
-my $redis = BOM::Platform::RedisReplicated::redis_write();
+my $redis = BOM::Config::RedisReplicated::redis_write();
 my @tick_data;
 my $start_time    = time;
 my $previous_tick = 100;
@@ -123,7 +123,7 @@ my $proposal_array_req_tpl = {
     'contract_type'        => undef,
     'passthrough'          => {}};
 
-my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
+my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
 my $underlying       = create_underlying('frxUSDJPY');
 my $skip             = !$trading_calendar->is_open_at($underlying->exchange, Date::Utility->new);
 

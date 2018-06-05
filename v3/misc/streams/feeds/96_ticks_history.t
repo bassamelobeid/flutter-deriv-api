@@ -12,7 +12,7 @@ use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Quant::Framework;
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 
 my $time      = Date::Utility->new;
 my $test_date = Date::Utility->new('2012-03-14 07:00:00');
@@ -60,7 +60,7 @@ subtest 'call_ticks_history' => sub {
     };
 
     my $underlying = create_underlying('frxUSDJPY');
-    my $calendar   = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
+    my $calendar   = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
     my $is_open    = $calendar->is_open_at($underlying->exchange, Date::Utility->new($time));
 
     $t->send_ok({json => $req_storage});

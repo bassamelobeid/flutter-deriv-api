@@ -12,7 +12,7 @@ use File::Temp;
 use Date::Utility;
 use await;
 
-use BOM::Platform::RedisReplicated;
+use BOM::Config::RedisReplicated;
 use BOM::Test::Data::Utility::FeedTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
@@ -41,7 +41,7 @@ initialize_realtime_ticks_db();
             bid    => $i + 1,
             ohlc   => $ohlc_sample,
         };
-        BOM::Platform::RedisReplicated::redis_write->publish("FEED::$symbol", Encode::encode_utf8(JSON::MaybeXS->new->encode($payload)));
+        BOM::Config::RedisReplicated::redis_write->publish("FEED::$symbol", Encode::encode_utf8(JSON::MaybeXS->new->encode($payload)));
     }
 
     my $t = build_wsapi_test();

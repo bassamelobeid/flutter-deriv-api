@@ -6,7 +6,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;
 use Test::MockModule;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 
 use await;
 
@@ -76,7 +76,7 @@ ok $call_params->{country_code};
 
 $res = $t->await::website_status({website_status => 1});
 is $res->{msg_type}, 'website_status';
-is $res->{website_status}->{terms_conditions_version}, BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
+is $res->{website_status}->{terms_conditions_version}, BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version;
 
 ## exchage_rates
 $res = $t->await::exchange_rates({

@@ -10,15 +10,15 @@ use BOM::Test::Helper qw/build_wsapi_test test_schema/;
 use Test::MockModule;
 use Mojo::Redis2;
 use Clone;
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 
 my $json = JSON::MaybeXS->new;
 my $t    = build_wsapi_test();
 $t = $t->send_ok({json => {website_status => 1}})->message_ok;
 my $res = $json->decode(Encode::decode_utf8($t->message->[1]));
 
-my $reader = BOM::Platform::Chronicle::get_chronicle_reader();
-my $writer = BOM::Platform::Chronicle::get_chronicle_writer();
+my $reader = BOM::Config::Chronicle::get_chronicle_reader();
+my $writer = BOM::Config::Chronicle::get_chronicle_writer();
 
 is $res->{website_status}->{terms_conditions_version},
     $reader->get('app_settings', 'binary')->{global}->{cgi}->{terms_conditions_version},

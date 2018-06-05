@@ -22,7 +22,7 @@ BEGIN {
 is_deeply(\%stats, {}, 'start with no metrics');
 is_deeply(\%tags,  {}, 'start with no tags');
 
-use BOM::Platform::RedisReplicated;
+use BOM::Config::RedisReplicated;
 use Sereal::Encoder;
 use BOM::Test::Helper qw/build_wsapi_test build_test_R_50_data/;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -30,7 +30,7 @@ use BOM::Database::Model::OAuth;
 use BOM::MarketData qw(create_underlying);
 
 use Quant::Framework;
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 
 use await;
 
@@ -74,7 +74,7 @@ for (my $i = $time - 1800; $i <= $time; $i += 15) {
         decimate_epoch => $i,
         quote          => 100 + rand(0.0001)};
 }
-my $redis = BOM::Platform::RedisReplicated::redis_write();
+my $redis = BOM::Config::RedisReplicated::redis_write();
 
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -137,7 +137,7 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
 $client->email($email);
-$client->set_status('tnc_approval', 'system', BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version);
+$client->set_status('tnc_approval', 'system', BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version);
 $client->save;
 my $loginid = $client->loginid;
 my $user    = BOM::User->create(
@@ -172,7 +172,7 @@ $req = {
     "duration_unit" => "m",
 };
 
-my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader());
+my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
 my $underlying       = create_underlying('frxUSDJPY');
 
 SKIP: {

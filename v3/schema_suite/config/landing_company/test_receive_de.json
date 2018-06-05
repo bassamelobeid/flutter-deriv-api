@@ -80,7 +80,7 @@
                             "required": "1",
                             "items": {
                                 "type": "string",
-                                "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|callputspread|callputequal)$",
+                                "pattern": "^(asian|callput|callputequal|digits|endsinout|staysinout|touchnotouch|callputspread)$",
                                 "required": "1"
                             }
                         },
