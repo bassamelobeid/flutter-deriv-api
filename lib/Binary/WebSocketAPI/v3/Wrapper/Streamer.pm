@@ -562,7 +562,8 @@ sub process_transaction_updates {
 
 my %skip_duration_list = map { $_ => 1 } qw(t s m h);
 my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 R_10 RDBULL RDBEAR);
-my %skip_type_list     = map { $_ => 1 } qw(DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN ASIAND ASIANU TICKHIGH TICKLOW RESETCALL RESETPUT);
+my %skip_type_list =
+    map { $_ => 1 } qw(DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN ASIAND ASIANU TICKHIGH TICKLOW RESETCALL RESETPUT);
 
 sub _skip_streaming {
     my $args = shift;
@@ -579,12 +580,12 @@ sub _skip_streaming {
         $skip_atm_callput =
             ($skip_symbols and $skip_duration_list{$args->{duration_unit}} and $atm_callput_contract);
 
-        $skip_contract_type =  ($skip_symbols and $skip_type_list{$args->{contract_type}});
+        $skip_contract_type = ($skip_symbols and $skip_type_list{$args->{contract_type}});
 
     }
 
     return 1 if ($skip_atm_callput or $skip_contract_type);
-    return ;
+    return;
 }
 
 my $RAND;
