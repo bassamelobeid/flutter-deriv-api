@@ -373,7 +373,7 @@ sub get_bid {
             currency            => $contract->currency,
             longcode            => localize($contract->longcode),
             shortcode           => $contract->shortcode,
-            ($contract->is_binary) ? (payout => $contract->payout) : (),    # The concept of payout only applies to binary
+            ($contract->is_binary) ? (payout => $contract->payout) : ($contract->can('maximum_payout')) ? (payout => $contract->maximum_payout) : (),
             contract_type => $contract->code,
             bid_price     => formatnumber('price', $contract->currency, $contract->bid_price),
         };
@@ -383,7 +383,7 @@ sub get_bid {
             $response->{status} = $sell_price == $contract->payout ? "won" : "lost";
         } elsif ($is_sold and not $is_expired) {
             $response->{status} = 'sold';
-        } else {                                                            # not sold
+        } else {    # not sold
             $response->{status} = 'open';
         }
 
