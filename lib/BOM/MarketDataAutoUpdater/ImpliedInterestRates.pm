@@ -9,15 +9,15 @@ use Text::CSV::Slurp;
 use Format::Util::Numbers qw(roundcommon);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 use Bloomberg::FileDownloader;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use Bloomberg::UnderlyingConfig;
 use Quant::Framework::ImpliedRate;
 use Quant::Framework::Currency;
 use Quant::Framework;
 use Quant::Framework::ExpiryConventions;
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 
 has file => (
     is         => 'ro',
@@ -75,8 +75,8 @@ sub run {
         my $implied_symbol                = $currency_to_imply_symbol . '-' . $currency_to_imply_from_symbol;
         my $currency_to_imply             = Quant::Framework::Currency->new({
             symbol           => $currency_to_imply_symbol,
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         });
         # According to Bloomberg,
         # a) Implied rate for asset currency:
@@ -93,7 +93,7 @@ sub run {
         #    - While for other tenors other than ON:
         #      Implied rate = ((Tenor_forward_outright * (1 + asset_currency_rate/100 * tiy))/spot - 1)/ tiy
 
-        my $trading_calendar  = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
+        my $trading_calendar  = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
         my $expiry_convention = Quant::Framework::ExpiryConventions->new(
             calendar   => $trading_calendar,
             underlying => $underlying,
@@ -188,8 +188,8 @@ sub run {
             symbol           => $implied_symbol,
             rates            => $implied_rates,
             recorded_date    => Date::Utility->new,
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         );
 
         $implied->save;
@@ -208,8 +208,8 @@ sub run {
                 365 => 0
             },
             recorded_date    => Date::Utility->new,
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         )->save;
 
         $report->{$sym}->{success} = 1;

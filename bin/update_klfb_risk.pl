@@ -4,10 +4,10 @@ use warnings;
 use JSON::MaybeXS;
 use BOM::Database::ClientDB;
 use Date::Utility;
-use BOM::Platform::RedisReplicated;
+use BOM::Config::RedisReplicated;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_count stats_gauge);
 
-my $klfb_risk_cache = BOM::Platform::RedisReplicated::redis_read()->get('klfb_risk::JP');
+my $klfb_risk_cache = BOM::Config::RedisReplicated::redis_read()->get('klfb_risk::JP');
 if (not $klfb_risk_cache) {
 
     my $clientdb = BOM::Database::ClientDB->new({
@@ -23,7 +23,7 @@ if (not $klfb_risk_cache) {
     my $risk =
         $clientdb->getall_arrayref('select * from bet_v1.klfb_risk_limit(?,?,?,?)', [undef, undef, undef, $limit])->[0]->{klfb_risk_limit}->{current} // 0;
 
-    BOM::Platform::RedisReplicated::redis_write()->set('klfb_risk::JP', $risk, 'EX', 24 * 60 * 60);
+    BOM::Config::RedisReplicated::redis_write()->set('klfb_risk::JP', $risk, 'EX', 24 * 60 * 60);
 
 } else {
 

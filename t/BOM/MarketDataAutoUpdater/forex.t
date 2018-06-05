@@ -65,8 +65,8 @@ Quant::Framework::Utils::Test::create_doc(
     'volsurface_delta',
     {
         underlying       => create_underlying($_),
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader,
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer,
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader,
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer,
         recorded_date    => Date::Utility->new,
     }) for qw(frxAUDJPY frxGBPJPY frxUSDJPY frxGBPINR);
 

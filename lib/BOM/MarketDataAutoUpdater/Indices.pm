@@ -15,7 +15,7 @@ extends 'BOM::MarketDataAutoUpdater';
 
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::MarketData qw(create_underlying_db);
 use SuperDerivatives::VolSurface;
 use Try::Tiny;
@@ -64,7 +64,7 @@ has symbols_to_update => (
 sub _build_symbols_to_update {
     my $self      = shift;
     my $market    = $self->input_market;
-    my %skip_list = map { $_ => 1 } (@{BOM::Platform::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol});
+    my %skip_list = map { $_ => 1 } (@{BOM::Config::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol});
 
     my @symbols_to_update;
     if ($market eq 'indices') {
@@ -118,8 +118,8 @@ sub run {
                 underlying       => $underlying,
                 creation_date    => $raw_volsurface->{creation_date},
                 spot_reference   => $raw_volsurface->{spot_reference},
-                chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-                chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+                chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+                chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
                 surface          => $raw_volsurface->{surface},
             });
             if ($volsurface->is_valid) {
@@ -141,7 +141,7 @@ sub run {
                     };
                 }
             } else {
-                my $calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
+                my $calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
 
                 if ($calendar->is_open($underlying->exchange)) {
                     # Ignore all error when exchange is closed.

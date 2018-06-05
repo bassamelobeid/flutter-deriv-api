@@ -71,8 +71,8 @@ sub run {
                 symbol           => $currency_symbol,
                 rates            => $data,
                 recorded_date    => Date::Utility->new,
-                chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-                chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+                chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+                chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
             );
             $rates->save;
             $report->{$currency_symbol}->{success} = 1;
@@ -126,8 +126,8 @@ sub _update_related_currency {
             symbol           => $_,
             rates            => $data,
             recorded_date    => Date::Utility->new,
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         );
         $rates->save;
         $self->report->{$_}->{success} = 1;
