@@ -18,6 +18,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::Token;
 use BOM::User::Client;
 use Email::Stuffer::TestLinks;
+use Email::Folder::Search;
 
 use utf8;
 
@@ -405,6 +406,10 @@ subtest $method => sub {
         $params->{token}               = $auth_token;
         $params->{args}->{residence}   = 'gb';
 
+        my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
+        $mailbox->init();
+        $mailbox->clear();
+
         # call with totally random values - our client still should have correct one
         ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name residence address_city/;
         $params->{args}->{phone}         = '1234567890';
@@ -422,6 +427,11 @@ subtest $method => sub {
         is($result->{tax_residence}, 'de,nl', 'MF client has tax residence set');
         $result = $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token_mf})->result;
         isnt(keys $result, 0, 'MF client has financial assessment set');
+        my @msgs = $mailbox->search(
+            email   => 'compliance@binary.com',
+            subject => qr/\Q$new_loginid appropriateness test scoring\E/
+        );
+        ok(@msgs, "Risk disclosure email received");
     };
 
     my $client_mx;
