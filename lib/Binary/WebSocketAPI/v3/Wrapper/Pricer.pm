@@ -17,6 +17,7 @@ use Price::Calculator;
 use Clone::PP qw(clone);
 use List::UtilsBy qw(bundle_by);
 use List::Util qw(min);
+use Format::Util::Numbers qw/formatnumber roundcommon/;
 
 use Future::Mojo          ();
 use Future::Utils         ();
@@ -637,6 +638,10 @@ sub process_bid_event {
             $response->{buy_price}       = $passed_fields->{buy_price};
             $response->{purchase_time}   = $passed_fields->{purchase_time};
             $response->{is_sold}         = $passed_fields->{is_sold};
+            if ($response->{buy_price} and $response->{bid_price} and $response->{currency}) {
+                $response->{profit} = formatnumber('price', $response->{currency}, $response->{bid_price} - $response->{buy_price});
+                $response->{profit_percentage} = roundcommon(0.01, $response->{profit} / $response->{buy_price} * 100);
+            }
             Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid})
                 if $response->{is_sold};
             $response->{longcode} = $passed_fields->{longcode};
