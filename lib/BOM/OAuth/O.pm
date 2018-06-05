@@ -18,7 +18,7 @@ use BOM::User::Client;
 use LandingCompany::Registry;
 use Brands;
 
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Platform::Context qw(localize);
 use BOM::User;
 use BOM::User::TOTP;
@@ -272,7 +272,7 @@ sub _login {
 
         }
 
-        if (BOM::Platform::Runtime->instance->app_config->system->suspend->all_logins) {
+        if (BOM::Config::Runtime->instance->app_config->system->suspend->all_logins) {
             $err = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
             BOM::User::AuditLog::log('system suspend all login', $user->email);
             last;
@@ -292,7 +292,7 @@ sub _login {
         my @clients = $user->clients;
         $client = $clients[0];
 
-        if (grep { $client->loginid =~ /^$_/ } @{BOM::Platform::Runtime->instance->app_config->system->suspend->logins}) {
+        if (grep { $client->loginid =~ /^$_/ } @{BOM::Config::Runtime->instance->app_config->system->suspend->logins}) {
             $err = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
         } elsif ($client->get_status('disabled')) {
             $err = localize('This account has been disabled.');
@@ -395,7 +395,7 @@ sub _login {
 
 # fetch social login feature status from settings
 sub _is_social_login_suspended {
-    return BOM::Platform::Runtime->instance->app_config->system->suspend->social_logins;
+    return BOM::Config::Runtime->instance->app_config->system->suspend->social_logins;
 }
 
 # determine availability status of social login feature

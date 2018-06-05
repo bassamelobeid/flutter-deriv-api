@@ -76,8 +76,8 @@ ok $csrf_token, 'csrf_token is there';
 $t->post_ok(
     "/authorize?app_id=$app_id" => form => {
         totp_proceed => 1,
-        otp         => Authen::OATH->new()->totp($secret_key),
-        csrf_token  => $csrf_token
+        otp          => Authen::OATH->new()->totp($secret_key),
+        csrf_token   => $csrf_token
     });
 
 # confirm_scopes after login
