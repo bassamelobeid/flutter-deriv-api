@@ -1,0 +1,7 @@
+payment_limits:
+  fiat:
+      minimum: 10
+      maximum: 2000
+  crypto:
+      minimum: 0.002
+      maximum: 5
