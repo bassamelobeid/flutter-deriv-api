@@ -17,7 +17,7 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase;
 use BOM::Test::Helper::Client qw(create_client);
 use BOM::User::Client;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Transaction;
 use BOM::Transaction::Validation;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );

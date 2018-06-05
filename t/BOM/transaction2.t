@@ -212,7 +212,7 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
 
         note("tick_expiry_engine_daily_turnover's risk type is high_risk");
         note("mocked high_risk USD limit to 149.99");
-        BOM::Platform::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
+        BOM::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'CALL',
@@ -258,7 +258,7 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
                     "name"              => "tick_expiry_engine_turnover_limit"
                 }};
 
-            BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles($json->encode($new));
+            BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles($json->encode($new));
 
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
@@ -303,7 +303,7 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             note("mocked high_risk USD limit to 150");
-            BOM::Platform::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 150.00;
+            BOM::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 150.00;
 
             $contract = make_similar_contract($contract);
             # create a new transaction object to get pristine (undef) contract_id and the like
@@ -336,7 +336,7 @@ subtest 'asian_daily_turnover_limit', sub {
 
         note("asian_turnover_limit's risk type is high_risk");
         note("mocked high_risk USD limit to 149.99");
-        BOM::Platform::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
+        BOM::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
         my $contract = produce_contract({
             underlying   => 'R_100',
             bet_type     => 'ASIANU',
@@ -379,7 +379,7 @@ subtest 'asian_daily_turnover_limit', sub {
                     "name"              => "asian_turnover_limit"
                 }};
 
-            BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles($json->encode($new));
+            BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles($json->encode($new));
 
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
@@ -426,7 +426,7 @@ subtest 'asian_daily_turnover_limit', sub {
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             note("mocked high_risk USD limit to 150.00");
-            BOM::Platform::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 150.00;
+            BOM::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 150.00;
 
             $contract = make_similar_contract($contract);
             # create a new transaction object to get pristine (undef) contract_id and the like
@@ -460,7 +460,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
 
         note("intraday_spot_index_turnover_limit's risk type is high_risk");
         note("mocked high_risk USD limit to 149.99");
-        BOM::Platform::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
+        BOM::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
         my $contract = produce_contract({
             underlying   => $underlying_GDAXI,
             bet_type     => 'CALL',
@@ -512,7 +512,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
                     "name"              => "intraday_spot_index_turnover_limit"
                 }};
 
-            BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles($json->encode($new));
+            BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles($json->encode($new));
 
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
@@ -604,7 +604,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             note("mocked high_risk USD limit to 150.00");
-            BOM::Platform::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 150.00;
+            BOM::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 150.00;
             $contract = make_similar_contract($contract);
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Transaction->new({
@@ -667,7 +667,7 @@ subtest 'smartfx_turnover_limit', sub {
 
             note("smart_fx_turnover_limit's risk type is high_risk");
             note("mocked high_risk USD limit to 149.99");
-            BOM::Platform::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
+            BOM::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
 
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
@@ -715,7 +715,7 @@ subtest 'smartfx_turnover_limit', sub {
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             note("mocked high_risk USD limit to 150.00");
-            BOM::Platform::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 150.00;
+            BOM::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 150.00;
 
             $contract = make_similar_contract($contract);
             # create a new transaction object to get pristine (undef) contract_id and the like
@@ -748,7 +748,7 @@ subtest 'custom client limit' => sub {
 
         note("tick_expiry_engine_daily_turnover's risk type is high_risk");
         note("mocked high_risk USD limit to 149.99");
-        BOM::Platform::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
+        BOM::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'CALL',
@@ -793,7 +793,7 @@ subtest 'custom client limit' => sub {
                     "risk_profile"      => "high_risk",
                     "name"              => "tick_expiry_engine_turnover_limit"
                 }};
-            BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles($json->encode($new));
+            BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles($json->encode($new));
 
             note('mocking custom_client_profiles to no_business profile');
             my $fake = {
@@ -805,7 +805,7 @@ subtest 'custom client limit' => sub {
                         }}
                 },
             };
-            BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles($json->encode($fake));
+            BOM::Config::Runtime->instance->app_config->quants->custom_client_profiles($json->encode($fake));
 
             $txn->buy;
         };
@@ -839,7 +839,7 @@ subtest 'non atm turnover checks' => sub {
 
         note("sets non_atm tick expiry forex to extreme risk");
         note("mocked extreme_risk USD limit to 149.99");
-        BOM::Platform::Config::quants->{risk_profile}{extreme_risk}{turnover}{USD} = 149.99;
+        BOM::Config::quants->{risk_profile}{extreme_risk}{turnover}{USD} = 149.99;
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'CALL',
@@ -885,7 +885,7 @@ subtest 'non atm turnover checks' => sub {
                     "risk_profile"      => "extreme_risk",
                     "name"              => "tick_expiry_nonatm_turnover_limit"
                 }};
-            BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles($json->encode($new));
+            BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles($json->encode($new));
 
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
@@ -954,7 +954,7 @@ subtest 'non atm turnover checks' => sub {
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             note("mocked extreme_tisk USD limit to 150.00");
-            BOM::Platform::Config::quants->{risk_profile}{extreme_risk}{turnover}{USD} = 150.00;
+            BOM::Config::quants->{risk_profile}{extreme_risk}{turnover}{USD} = 150.00;
 
             $contract = make_similar_contract($contract);
             # create a new transaction object to get pristine (undef) contract_id and the like
@@ -977,7 +977,7 @@ subtest 'non atm turnover checks' => sub {
 # see further transaction.t:  many more tests
 #             transaction2.t: special turnover limits
 my $empty_hashref = {};
-BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles($json->encode($empty_hashref));
-BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles($json->encode($empty_hashref));
+BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles($json->encode($empty_hashref));
+BOM::Config::Runtime->instance->app_config->quants->custom_client_profiles($json->encode($empty_hashref));
 
 done_testing;

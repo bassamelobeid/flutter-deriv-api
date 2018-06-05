@@ -45,7 +45,7 @@ for my $mock (qw(increment decrement timing gauge count)) {
 
 {
     no warnings 'redefine';
-    *BOM::Platform::Config::env = sub { return 'production' };    # for testing datadog
+    *BOM::Config::env = sub { return 'production' };    # for testing datadog
 }
 
 sub reset_datadog {

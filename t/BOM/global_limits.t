@@ -14,7 +14,7 @@ use BOM::Transaction;
 use BOM::Transaction::Validation;
 use Math::Util::CalculatedValue::Validatable;
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Database::ClientDB;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -67,8 +67,8 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $now
     });
 
-BOM::Platform::Runtime->instance->app_config->quants->enable_global_potential_loss(1);
-BOM::Platform::Runtime->instance->app_config->quants->enable_global_realized_loss(1);
+BOM::Config::Runtime->instance->app_config->quants->enable_global_potential_loss(1);
+BOM::Config::Runtime->instance->app_config->quants->enable_global_realized_loss(1);
 my $cl = create_client('CR');
 top_up $cl, 'USD', 5000;
 
@@ -101,7 +101,7 @@ subtest 'symbol not defined' => sub {
 
 subtest 'global potential loss' => sub {
     close_all_open_contracts('CR');
-    ok(BOM::Platform::Runtime->instance->app_config->quants->enable_global_potential_loss, 'global potential loss check is turned on');
+    ok(BOM::Config::Runtime->instance->app_config->quants->enable_global_potential_loss, 'global potential loss check is turned on');
 
     BOM::Test::Helper::QuantsConfig::create_config({
         limit_type   => 'global_potential_loss',
@@ -134,7 +134,7 @@ subtest 'global potential loss' => sub {
     is $error->{'-message_to_client'}, 'No further trading is allowed on this contract type for the current trading session.';
 
     note("turn off global potential loss check");
-    BOM::Platform::Runtime->instance->app_config->quants->enable_global_potential_loss(0);
+    BOM::Config::Runtime->instance->app_config->quants->enable_global_potential_loss(0);
 
     $error = do {
         my $txn = BOM::Transaction->new({
@@ -150,7 +150,7 @@ subtest 'global potential loss' => sub {
 
     ok !$error, 'no error';
     note("turn on global potential loss check");
-    BOM::Platform::Runtime->instance->app_config->quants->enable_global_potential_loss(1);
+    BOM::Config::Runtime->instance->app_config->quants->enable_global_potential_loss(1);
 
     sleep(1);    # prevent race condition
     close_all_open_contracts('CR', 1);    #close with full payout
@@ -258,9 +258,9 @@ subtest 'global realized loss' => sub {
     close_all_open_contracts('CR', 1);    #1 close with full payout
 
     # disable global potential loss
-    BOM::Platform::Runtime->instance->app_config->quants->enable_global_potential_loss(0);
+    BOM::Config::Runtime->instance->app_config->quants->enable_global_potential_loss(0);
     # current loss for R_100-callput-daily-non_atm is 100 USD
-    ok(BOM::Platform::Runtime->instance->app_config->quants->enable_global_realized_loss, 'global realized loss check is turned on');
+    ok(BOM::Config::Runtime->instance->app_config->quants->enable_global_realized_loss, 'global realized loss check is turned on');
 
     BOM::Test::Helper::QuantsConfig::create_config({
         limit_type   => 'global_realized_loss',
@@ -292,7 +292,7 @@ subtest 'global realized loss' => sub {
     is $error->{'-message_to_client'}, 'No further trading is allowed on this contract type for the current trading session.';
 
     note("turn off global realized loss check");
-    BOM::Platform::Runtime->instance->app_config->quants->enable_global_realized_loss(0);
+    BOM::Config::Runtime->instance->app_config->quants->enable_global_realized_loss(0);
 
     $error = do {
         my $txn = BOM::Transaction->new({
@@ -308,7 +308,7 @@ subtest 'global realized loss' => sub {
 
     ok !$error, 'no error';
     note("turn on global realized loss check");
-    BOM::Platform::Runtime->instance->app_config->quants->enable_global_realized_loss(1);
+    BOM::Config::Runtime->instance->app_config->quants->enable_global_realized_loss(1);
 
     sleep(1);    # prevent race condition
     close_all_open_contracts('CR', 1);

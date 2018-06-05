@@ -12,7 +12,7 @@ use Crypt::NamedKeys;
 use BOM::User::Client;
 use BOM::User::Password;
 use BOM::Platform::Client::Utility;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 
 use Date::Utility;
 use BOM::Transaction;
@@ -262,9 +262,9 @@ subtest 'japan KLFB' => sub {
 
     close_all_open_contracts('JP');
     my $now           = Date::Utility->new;
-    my $quants_config = BOM::Platform::QuantsConfig->new(
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+    my $quants_config = BOM::Config::QuantsConfig->new(
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         recorded_date    => $now,
     );
 
@@ -2251,7 +2251,7 @@ subtest 'buy on suspend_trading|suspend_trades|suspend_buy|disabled_market|suspe
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
             note "setting app_config->system->suspend_trading to 1";
-            BOM::Platform::Runtime->instance->app_config->system->suspend->trading(1);
+            BOM::Config::Runtime->instance->app_config->system->suspend->trading(1);
 
             my $txn = BOM::Transaction->new({
                 client        => $cl,
@@ -2271,7 +2271,7 @@ subtest 'buy on suspend_trading|suspend_trades|suspend_buy|disabled_market|suspe
             'message to clien is Trading is not offered for this duration.';
 
         note "reset app_config->system->suspend_trading to 0";
-        BOM::Platform::Runtime->instance->app_config->system->suspend->trading(0);
+        BOM::Config::Runtime->instance->app_config->system->suspend->trading(0);
         $error = do {
             my $txn = BOM::Transaction->new({
                 client        => $cl,
@@ -2309,7 +2309,7 @@ subtest 'buy on suspend_trading|suspend_trades|suspend_buy|disabled_market|suspe
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
             note "setting quants->underlyings->suspend_trades to ['R_50']";
-            BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades(['R_50']);
+            BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_trades(['R_50']);
 
             my $txn = BOM::Transaction->new({
                 client        => $cl,
@@ -2329,7 +2329,7 @@ subtest 'buy on suspend_trading|suspend_trades|suspend_buy|disabled_market|suspe
             'message to clien is Trading is not offered for this duration.';
 
         note "reset quants->underlyings->suspend_trades to []";
-        BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades([]);
+        BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_trades([]);
 
         $error = do {
             my $txn = BOM::Transaction->new({
@@ -2368,7 +2368,7 @@ subtest 'buy on suspend_trading|suspend_trades|suspend_buy|disabled_market|suspe
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
             note "setting quants->underlyings->suspend_buy to ['R_50']";
-            BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy(['R_50']);
+            BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_buy(['R_50']);
 
             my $txn = BOM::Transaction->new({
                 client        => $cl,
@@ -2388,7 +2388,7 @@ subtest 'buy on suspend_trading|suspend_trades|suspend_buy|disabled_market|suspe
             'message to clien is Trading is not offered for this duration.';
 
         note "reset quants->underlyings->suspend_buy to []";
-        BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy([]);
+        BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_buy([]);
 
         $error = do {
             my $txn = BOM::Transaction->new({
@@ -2429,7 +2429,7 @@ subtest 'buy on suspend_trading|suspend_trades|suspend_buy|disabled_market|suspe
                         sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
                 $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
                 note "setting quants->features->suspend_contract_types to ['CALL']";
-                BOM::Platform::Runtime->instance->app_config->quants->features->suspend_contract_types(['CALL']);
+                BOM::Config::Runtime->instance->app_config->quants->features->suspend_contract_types(['CALL']);
 
                 my $txn = BOM::Transaction->new({
                     client        => $cl,
@@ -2475,7 +2475,7 @@ subtest 'buy on suspend_trading|suspend_trades|suspend_buy|disabled_market|suspe
             ok !$error, 'no error buy a PUT';
 
             note "reset app_config->quants->features->suspend_contract_types to []";
-            BOM::Platform::Runtime->instance->app_config->quants->features->suspend_contract_types([]);
+            BOM::Config::Runtime->instance->app_config->quants->features->suspend_contract_types([]);
 
         }
         $contract = produce_contract({
@@ -2500,7 +2500,7 @@ subtest 'buy on suspend_trading|suspend_trades|suspend_buy|disabled_market|suspe
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
             note "setting quants->markets->disabled to [''volidx']";
-            BOM::Platform::Runtime->instance->app_config->quants->markets->disabled(['volidx']);
+            BOM::Config::Runtime->instance->app_config->quants->markets->disabled(['volidx']);
 
             my $txn = BOM::Transaction->new({
                 client        => $cl,
@@ -2520,7 +2520,7 @@ subtest 'buy on suspend_trading|suspend_trades|suspend_buy|disabled_market|suspe
             'message to clien is Trading is not offered for this duration.';
 
         note "reset quants->markets->disabled to []";
-        BOM::Platform::Runtime->instance->app_config->quants->markets->disabled([]);
+        BOM::Config::Runtime->instance->app_config->quants->markets->disabled([]);
 
         $error = do {
             my $txn = BOM::Transaction->new({
