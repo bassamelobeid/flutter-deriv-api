@@ -89,23 +89,23 @@ sub price_superderivatives_bets_locally {
     my $i         = 0;
     # some underlying we do not offer anymore but the tests still have it
     my $mock = Test::MockModule->new('BOM::Product::ContractFactory');
-    $mock->mock('_validate_input_parameters', sub {});
+    $mock->mock('_validate_input_parameters', sub { });
 
-    my $module = Test::MockModule->new('Quant::Framework::VolSurface::Moneyness');
+    my $module         = Test::MockModule->new('Quant::Framework::VolSurface::Moneyness');
     my $spot_reference = 0;
     $module->mock('spot_reference', sub { return $spot_reference; });
 
     foreach my $record (@$records) {
         my $bet_args = {
-            current_spot => $record->{spot},
-            underlying   => $record->{underlying},
-            bet_type     => $record->{bet_type},
-            date_start   => $record->{date_start}->epoch + $record->{start_offset},
-            date_expiry  => $record->{date_expiry}->epoch + $record->{expiry_offset},
-            volsurface   => $record->{volsurface},
-            payout       => $record->{payout},
-            currency     => $record->{currency},
-            date_pricing => $record->{date_start}->epoch + 9 * 3600,
+            current_spot              => $record->{spot},
+            underlying                => $record->{underlying},
+            bet_type                  => $record->{bet_type},
+            date_start                => $record->{date_start}->epoch + $record->{start_offset},
+            date_expiry               => $record->{date_expiry}->epoch + $record->{expiry_offset},
+            volsurface                => $record->{volsurface},
+            payout                    => $record->{payout},
+            currency                  => $record->{currency},
+            date_pricing              => $record->{date_start}->epoch + 9 * 3600,
             uses_empirical_volatility => 0,
         };
         $spot_reference = $record->{volsurface}->{spot_reference};
@@ -124,7 +124,8 @@ sub price_superderivatives_bets_locally {
 
         my $bet = produce_contract($bet_args);
 
-        my $base_prob = $bet->pricing_engine->can('_base_probability') ? $bet->pricing_engine->_base_probability : $bet->pricing_engine->base_probability;
+        my $base_prob =
+            $bet->pricing_engine->can('_base_probability') ? $bet->pricing_engine->_base_probability : $bet->pricing_engine->base_probability;
         $base_prob = $base_prob->amount if ref $base_prob;
 
         my $bom_mid  = $base_prob;

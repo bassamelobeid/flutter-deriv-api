@@ -7,9 +7,8 @@ use Carp;
 use Date::Utility;
 use BOM::MarketData qw(create_underlying);
 use Quant::Framework;
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-
 
 =head1 original_spot
 
@@ -118,8 +117,8 @@ sub _setup_rates {
             recorded_date    => $date,
             type             => 'implied',
             implied_from     => $asset->symbol,
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         );
         $quoted_currency->save;
     } else {
@@ -128,8 +127,8 @@ sub _setup_rates {
             rates            => $rates->{quoted_currency_rate},
             recorded_date    => $date,
             type             => 'market',
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         );
         $quoted_currency->save;
     }
@@ -141,8 +140,8 @@ sub _setup_rates {
             recorded_date    => $date,
             type             => 'implied',
             implied_from     => $quoted_currency->symbol,
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         );
         $asset->save;
     } else {
@@ -151,8 +150,8 @@ sub _setup_rates {
                 symbol           => $asset->symbol,
                 rates            => $rates->{asset_rate}->{continuous},
                 recorded_date    => $date,
-                chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-                chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+                chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+                chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
             );
         } else {
             $asset = Quant::Framework::InterestRate->new(
@@ -160,8 +159,8 @@ sub _setup_rates {
                 rates            => $rates->{asset_rate}->{continuous},
                 recorded_date    => $date,
                 type             => 'market',
-                chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-                chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+                chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+                chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
             );
         }
         $asset->save;
@@ -212,8 +211,8 @@ sub _reset_rates {
             recorded_date    => Date::Utility->new,
             type             => 'implied',
             implied_from     => $underlying->asset->symbol,
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         );
         $current_quoted_currency_data->save;
 
@@ -224,8 +223,8 @@ sub _reset_rates {
             rates            => $reset_data->{quoted_currency},
             recorded_date    => Date::Utility->new,
             type             => 'market',
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
 
         );
         $current_quoted_currency_data->save;
@@ -239,8 +238,8 @@ sub _reset_rates {
             recorded_date    => Date::Utility->new,
             type             => 'implied',
             implied_from     => $underlying->quoted_currency->symbol,
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         );
         $current_asset_data->save;
 
@@ -251,8 +250,8 @@ sub _reset_rates {
             rates            => $reset_data->{asset},
             recorded_date    => Date::Utility->new,
             type             => 'market',
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         );
         $current_asset_data->save;
 

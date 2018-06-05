@@ -68,18 +68,18 @@ sub _build_records {
     my $surface_data = $self->_get_surface_data($vol_lines, $underlying, $spot, $rate);
 
     $underlying->set_combined_realtime({
-            epoch => $date_start->epoch,
-            quote => $spot
-        });
+        epoch => $date_start->epoch,
+        quote => $spot
+    });
 
     my $surface = Quant::Framework::VolSurface::Delta->new(
-        underlying    => $underlying,
-        creation_date => $date_start,
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-        surface       => $surface_data,
-        cutoff        => 'New York 10:00',
-        deltas        => [25, 50, 75],
+        underlying       => $underlying,
+        creation_date    => $date_start,
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
+        surface          => $surface_data,
+        cutoff           => 'New York 10:00',
+        deltas           => [25, 50, 75],
     );
 
     my $record_param = {
@@ -180,7 +180,6 @@ sub _get_records_for {
         push @all_records, $params;
     }
 
-
     return \@all_records;
 }
 
@@ -193,17 +192,17 @@ sub _convert_sd_mid_to_numeraire {
     my $barrier        = $args->{barrier};
     my $bet_type       = $args->{bet_type};
     my $initial_sd_mid = $args->{initial_mid};
-    
+
     my %pricing_param = (
-        underlying   => $underlying,
-        barrier      => $barrier,
-        barrier2     => $args->{barrier2},
-        date_start   => $args->{date_start},
-        date_expiry  => $args->{date_expiry},
-        volsurface   => $args->{volsurface}->clone(),
-        payout       => $args->{payout},
-        currency     => $args->{currency},
-        date_pricing => $args->{date_start},
+        underlying                => $underlying,
+        barrier                   => $barrier,
+        barrier2                  => $args->{barrier2},
+        date_start                => $args->{date_start},
+        date_expiry               => $args->{date_expiry},
+        volsurface                => $args->{volsurface}->clone(),
+        payout                    => $args->{payout},
+        currency                  => $args->{currency},
+        date_pricing              => $args->{date_start},
         uses_empirical_volatility => 0,
     );
 
@@ -211,8 +210,9 @@ sub _convert_sd_mid_to_numeraire {
 
     if ($bet_type eq 'CALL') {
         $pricing_param{bet_type} = 'VANILLA_CALL';
-        my $compare_bet    = produce_contract(\%pricing_param);
-        my $compare_bet_bs = Math::Business::BlackScholesMerton::NonBinaries::vanilla_call($spot, $barrier, $tiy, $underlying->dividend_rate_for($tiy),
+        my $compare_bet = produce_contract(\%pricing_param);
+        my $compare_bet_bs =
+            Math::Business::BlackScholesMerton::NonBinaries::vanilla_call($spot, $barrier, $tiy, $underlying->dividend_rate_for($tiy),
             $compare_bet->mu, $compare_bet->vol_at_strike);
         $sd_mid = ($initial_sd_mid * $spot - $compare_bet_bs) / $barrier;
     } elsif ($bet_type eq 'PUT') {

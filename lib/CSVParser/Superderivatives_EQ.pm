@@ -11,7 +11,7 @@ use Quant::Framework::VolSurface::Moneyness;
 use SetupDatasetTestFixture;
 use Date::Utility;
 use Scalar::Util qw(looks_like_number);
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 
 has file => (
     is       => 'ro',
@@ -41,7 +41,7 @@ sub _build_records {
 
     return if not $hour or not $minute;
 
-    my $start_offset = ($hour - 8) * 3600 + $minute * 60;                   # in seconds
+    my $start_offset = ($hour - 8) * 3600 + $minute * 60;        # in seconds
     my $underlying   = create_underlying($data->{underlying});
     my $rates        = $self->get_rates($data, $underlying);
     my $date_start   = Date::Utility->new($data->{date});
@@ -50,8 +50,8 @@ sub _build_records {
 
     my $surface = Quant::Framework::VolSurface::Moneyness->new(
         underlying       => $underlying,
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         surface          => $surface_data,
         creation_date    => Date::Utility->new($date_start),
         spot_reference   => $spot,
@@ -87,7 +87,7 @@ sub _build_records {
         my $barrier2 = (defined $record->{barrier2}) ? $record->{barrier2} / 100 * $spot : undef;
         my $bet_type = $record->{bet_type};
 
-        my $closing = $underlying->calendar->closing_on($underlying->exchange,$date_expiry);
+        my $closing = $underlying->calendar->closing_on($underlying->exchange, $date_expiry);
         next unless $closing;
         my $params = {
             spot          => $spot,
@@ -138,8 +138,8 @@ sub _setup_quanto_rate {
         rates            => \%applicable_rates,
         creation_date    => $date->datetime_iso8601,
         type             => 'market',
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
     );
 
     $rate->save;
@@ -160,11 +160,11 @@ sub _setup_quanto_volsurface {
         $surface_data{$term}->{vol_spread} = {50 => 0.12};
     }
     my $volsurface = Quant::Framework::VolSurface::Delta->new(
-        surface       => \%surface_data,
+        surface          => \%surface_data,
         underlying       => $underlying,
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
-        creation_date => $date,
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
+        creation_date    => $date,
     );
 
     return $volsurface->save;

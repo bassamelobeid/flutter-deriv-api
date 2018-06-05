@@ -104,11 +104,10 @@ has 'underlying_symbol' => (
 );
 
 has 'current_spot' => (
-    is => 'rw',
-    isa => 'Num', 
+    is  => 'rw',
+    isa => 'Num',
 
 );
-
 
 has 'underlying' => (
     is         => 'rw',
@@ -236,16 +235,16 @@ has 'volsurface' => (
 sub _build_bet {
     my $self     = shift;
     my $bet_args = {
-        underlying   => $self->underlying,
-        current_spot => $self->spot,
-        bet_type     => $self->bet_type,
-        date_start   => $self->date_start,
-        date_expiry  => $self->expiry_date_bom,
-        payout       => $self->payout_amount,
-        currency     => $self->payout_currency,
-        date_pricing => $self->date_pricing,
-        q_rate       => $self->q,
-        r_rate       => $self->r,
+        underlying                => $self->underlying,
+        current_spot              => $self->spot,
+        bet_type                  => $self->bet_type,
+        date_start                => $self->date_start,
+        date_expiry               => $self->expiry_date_bom,
+        payout                    => $self->payout_amount,
+        currency                  => $self->payout_currency,
+        date_pricing              => $self->date_pricing,
+        q_rate                    => $self->q,
+        r_rate                    => $self->r,
         uses_empirical_volatility => 0,
     };
     if ($self->_get_bet_type_bloomberg eq 'DNT' or $self->_get_bet_type_bloomberg eq 'DOT') {
@@ -291,7 +290,8 @@ sub _build_price {
 sub _build_theo_prob {
     my $self = shift;
     my $bet  = $self->bet;
-    my $theo= $bet->pricing_engine->can('_base_probability') ? $bet->pricing_engine->_base_probability : $bet->pricing_engine->base_probability->amount;
+    my $theo =
+        $bet->pricing_engine->can('_base_probability') ? $bet->pricing_engine->_base_probability : $bet->pricing_engine->base_probability->amount;
 
     return $theo;
 }
@@ -377,7 +377,7 @@ sub _get_delivery_date_bloomberg {
     my $self          = shift;
     my $delivery_date = Date::Utility->new($self->expiry_date_bom->epoch + 86400);
     if (!$self->underlying->calendar->trades_on($self->underlying->exchange, $delivery_date)) {
-        $delivery_date = $self->underlying->calendar->trade_date_after($self->underlying->exchange,$delivery_date);
+        $delivery_date = $self->underlying->calendar->trade_date_after($self->underlying->exchange, $delivery_date);
     }
     return $delivery_date->month . '/' . $delivery_date->day_of_month . '/' . $delivery_date->year;
 }
@@ -404,7 +404,7 @@ sub _get_notes {
         . sprintf("%.3f", $self->bet->vanna) . ' vol='
         . sprintf("%.3f", $self->bet->volga)
         . ' avol='
-        . sprintf("%.3f", $self->bet->_pricing_args->{iv}) . ' tv='
+        . sprintf("%.3f", $self->bet->_pricing_args->{iv}) . ' tv=';
 }
 
 sub get_csv_line {
@@ -698,16 +698,16 @@ sub _build_config {
 sub get_volsurface {
     my ($self, $underlying_symbol) = @_;
 
-    my $data          = $self->config->{volsurface}->{$underlying_symbol};
-    my $surface       = Quant::Framework::VolSurface::Delta->new(
-        underlying      => create_underlying($underlying_symbol),
-        creation_date   => Date::Utility->new($data->{creation_date}),
-        surface         => $data->{surface_data},
-        print_precision => undef,
-        cutoff          => $data->{cutoff},
-        deltas          => [25, 50, 75],
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+    my $data    = $self->config->{volsurface}->{$underlying_symbol};
+    my $surface = Quant::Framework::VolSurface::Delta->new(
+        underlying       => create_underlying($underlying_symbol),
+        creation_date    => Date::Utility->new($data->{creation_date}),
+        surface          => $data->{surface_data},
+        print_precision  => undef,
+        cutoff           => $data->{cutoff},
+        deltas           => [25, 50, 75],
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
     );
 
     return $surface;
@@ -779,20 +779,20 @@ sub price_list {
         } else {
             $contract_args->{barrier} = exported_high_barrier(\@fields, $headers);
         }
-        my $underlying =  create_underlying($underlying_symbol);
+        my $underlying            = create_underlying($underlying_symbol);
         my $interest_rates_config = _get_interest_rate_data();
 
         my $rate = {
-             asset_rate           => {continuous => $interest_rates_config->{$underlying->asset_symbol}},
-             quoted_currency_rate => $interest_rates_config->{$underlying->quoted_currency_symbol},
-         };
-
+            asset_rate => {continuous => $interest_rates_config->{$underlying->asset_symbol}},
+            quoted_currency_rate => $interest_rates_config->{$underlying->quoted_currency_symbol},
+        };
 
         my $fixture = SetupDatasetTestFixture->new;
         $fixture->setup_test_fixture({
-                underlying => $underlying,
-                rates      => $rate,
-                date       => $pricing_date});
+            underlying => $underlying,
+            rates      => $rate,
+            date       => $pricing_date
+        });
         $contract_args->{volsurface} = $self->get_volsurface($underlying_symbol);
         try {
             $contract = CSVParser::Bloomberg->new($contract_args);
@@ -829,7 +829,6 @@ sub _get_interest_rate_data {
 
     return $rates;
 }
-
 
 __PACKAGE__->meta->make_immutable;
 1;

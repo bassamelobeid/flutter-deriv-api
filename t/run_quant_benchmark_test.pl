@@ -17,11 +17,10 @@ use Runner::Merlin;
 use Runner::Superderivatives_EQ;
 use Runner::Superderivatives_FX;
 use Runner::Bloomberg;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
 use Text::CSV;
-
 
 sub documentation {
     return 'This script runs quant\'s pricing-related datasets';
@@ -36,7 +35,7 @@ sub _benchmark_testing_setup {
 
     open(my $data, '<', $file_path) or die "Could not open '$file_path' $!\n";
     my $dummy_line       = <$data>;
-    my $chronicle_writer = BOM::Platform::Chronicle::get_chronicle_writer;
+    my $chronicle_writer = BOM::Config::Chronicle::get_chronicle_writer();
     while (my $line = <$data>) {
         chomp $line;
 

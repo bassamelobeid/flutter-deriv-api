@@ -5,7 +5,7 @@ use Moose;
 use lib ("/home/git/regentmarkets/bom/t/BOM/Product");
 use Path::Tiny;
 use List::Util qw(sum max);
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use CSVParser::Bloomberg;
 has suite => (
     is      => 'ro',
@@ -26,8 +26,7 @@ has report_file => (
         {
             all           => path('/tmp/ovra_result_file.csv'),
             analysis_base => path('/tmp/ovra_base_analysis_file.csv'),
-            analysis_num  => path('/tmp/ovra_num_analysis_file.csv')
-        };
+            analysis_num  => path('/tmp/ovra_num_analysis_file.csv')};
     },
 );
 

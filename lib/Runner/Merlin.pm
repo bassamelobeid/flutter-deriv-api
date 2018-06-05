@@ -109,20 +109,21 @@ sub _calculate_results {
         my $arb_available = ($bet->bid_probability->amount > $record->{merlin_ask} or $bet->ask_probability->amount < $record->{merlin_bid}) ? 1 : 0;
 
         my $bs_prob = $bet->pricing_engine->can('_bs_probability') ? $bet->pricing_engine->_bs_probability : $bet->pricing_engine->bs_probability;
-        my $base_prob = $bet->pricing_engine->can('_base_probability') ? $bet->pricing_engine->_base_probability : $bet->pricing_engine->base_probability;
+        my $base_prob =
+            $bet->pricing_engine->can('_base_probability') ? $bet->pricing_engine->_base_probability : $bet->pricing_engine->base_probability;
 
-        $bs_prob = $bs_prob->amount if ref $bs_prob;
+        $bs_prob   = $bs_prob->amount   if ref $bs_prob;
         $base_prob = $base_prob->amount if ref $base_prob;
 
-        my $tv_diff       = abs($record->{merlin_tv} - $bs_prob);
-        my $mid_diff      = abs($merlin_mid - $base_prob);
+        my $tv_diff  = abs($record->{merlin_tv} - $bs_prob);
+        my $mid_diff = abs($merlin_mid - $base_prob);
         my @barriers = $bet->two_barriers ? ($bet->high_barrier->as_absolute, $bet->low_barrier->as_absolute) : ($bet->barrier->as_absolute, 'NA');
 
         my @output_array = (
             $record->{bet_num},            $record->{volcut},        $record->{cut},                      $record->{currency},
             $record->{underlying}->symbol, $bet_type,                $record->{date_start}->date_ddmmmyy, $record->{date_expiry}->date,
             $bet->pricing_spot,            @barriers,                $record->{merlin_tv},                $bet->theo_probability,
-            $tv_diff,                      $merlin_mid,              $base_prob,                             $mid_diff,
+            $tv_diff,                      $merlin_mid,              $base_prob,                          $mid_diff,
             $record->{atm_vol},            $bet->atm_vols->{fordom}, $arb_available,                      $base_or_num,
             $record->{transformed_cut});
 
@@ -144,18 +145,18 @@ sub _get_bet_args {
     my $record = shift;
     my $when   = Date::Utility->new($record->{date_start});
     $record->{surface}->{creation_date} = $when;
-    my $args   = {
-        current_spot => $record->{current_spot},
-        underlying   => $record->{underlying},
-        q_rate       => $record->{q_rate},
-        r_rate       => $record->{r_rate},
-        bet_type     => $record->{bet_type},
-        date_start   => $when,
-        date_expiry  => $record->{date_expiry},
-        volsurface   => $record->{surface},
-        payout       => $record->{payout},
-        currency     => $record->{currency},
-        date_pricing => $record->{date_start},
+    my $args = {
+        current_spot              => $record->{current_spot},
+        underlying                => $record->{underlying},
+        q_rate                    => $record->{q_rate},
+        r_rate                    => $record->{r_rate},
+        bet_type                  => $record->{bet_type},
+        date_start                => $when,
+        date_expiry               => $record->{date_expiry},
+        volsurface                => $record->{surface},
+        payout                    => $record->{payout},
+        currency                  => $record->{currency},
+        date_pricing              => $record->{date_start},
         uses_empirical_volatility => 0,
     };
 

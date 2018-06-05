@@ -7,7 +7,7 @@ use Test::More;
 plan tests => 1;
 
 BEGIN {
-    use_ok( 'Quant::Benchmark' ) || print "Bail out!\n";
+    use_ok('Quant::Benchmark') || print "Bail out!\n";
 }
 
-diag( "Testing Quant::Benchmark $Quant::VERSION, Perl $], $^X" );
+diag("Testing Quant::Benchmark $Quant::VERSION, Perl $], $^X");
