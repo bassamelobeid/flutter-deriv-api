@@ -37,12 +37,11 @@ sub create_account {
     }
 
     my $financial_assessment = BOM::Platform::Account::Real::default::get_financial_assessment_score($financial_data);
-    # Based on the scoring result of the test: show the
-    # Risk Disclosure if client is not professional
 
-    my $is_professional = _is_professional_client($financial_assessment);
+    my $should_warn = _should_warn($financial_assessment);
 
-    return {error => 'show risk disclaimer'} if not $accept_risk and not $is_professional;
+    # show Risk disclosure warning if client haven't accepted risk yet and FA score matches warning conditions
+    return {error => 'show risk disclaimer'} if !$accept_risk && $should_warn;
 
     my $register = BOM::Platform::Account::Real::default::register_client($details);
     return $register if ($register->{error});
@@ -55,7 +54,7 @@ sub create_account {
     $client->set_status('unwelcome', 'SYSTEM', 'Trading disabled for investment Europe ltd');
     if ($accept_risk) {
         $client->set_status('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
-    } elsif ($is_professional) {
+    } elsif (not $should_warn) {
         $client->set_status('financial_risk_approval', 'SYSTEM', 'Financial risk approved based on financial assessment score');
     }
 
@@ -70,29 +69,35 @@ sub create_account {
 
     BOM::Platform::Account::Real::default::add_details_to_desk($client, $details);
 
-    if ($is_professional) {
-        my $brand = Brands->new(name => request()->brand);
-        send_email({
-                from    => $brand->emails('support'),
-                to      => $brand->emails('compliance'),
-                subject => $client->loginid . ' considered as professional trader',
-                message => [
-                          $client->loginid
-                        . ' scored '
-                        . $financial_assessment->{trading_score}
-                        . ' in trading experience and '
-                        . $financial_assessment->{cfd_score}
-                        . ' in cfd assessments, and is therefore considered a professional trader.'
-                ],
-            });
-    }
+    my $brand = Brands->new(name => request()->brand);
+    send_email({
+            from    => $brand->emails('support'),
+            to      => $brand->emails('compliance'),
+            subject => $client->loginid . ' appropriateness test scoring',
+            message => [
+                      $client->loginid
+                    . ' scored '
+                    . $financial_assessment->{trading_score}
+                    . ' in trading experience and '
+                    . $financial_assessment->{cfd_score}
+                    . ' in CFD assessments, and therefore risk disclosure was '
+                    . ($should_warn ? 'shown and client accepted the disclosure.' : 'not shown.')
+            ],
+        });
     return $status;
 }
 
-# Consider client as a professional trader if the trading score is from 8 to 16 or CFD is 4
-sub _is_professional_client {
-    my $financial_assessment = shift;
-    return ($financial_assessment->{trading_score} > 7 or $financial_assessment->{cfd_score} > 3);
+# Show the Risk Disclosure warning message when the trading score is less than 8 or CFD score is less than 4
+sub _should_warn {
+    my $fa = shift or die;
+
+    # No warning when CFD score is 4
+    return 0 if $fa->{cfd_score} == 4;
+
+    # No warning when trading score is from 8 to 16
+    return 0 if ($fa->{trading_score} >= 8 and $fa->{trading_score} <= 16);
+
+    return 1;
 }
 
 1;
