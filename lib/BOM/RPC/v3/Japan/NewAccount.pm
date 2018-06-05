@@ -18,7 +18,7 @@ use BOM::Platform::Locale;
 use BOM::Platform::Account::Real::japan;
 use BOM::Platform::Email qw(send_email);
 use BOM::User;
-use BOM::Platform::Config;
+use BOM::Config;
 use BOM::Platform::Context qw (localize request);
 use BOM::User::AuditLog;
 use BOM::Database::Helper::QuestionsAnswered;

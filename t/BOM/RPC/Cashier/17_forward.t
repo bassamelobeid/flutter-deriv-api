@@ -88,7 +88,7 @@ subtest 'common' => sub {
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_TNC_APPROVAL', 'Client needs to approve tnc before')
         ->error_message_is('Terms and conditions approval is required.', 'Correct error message for terms and conditions');
 
-    my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
+    my $current_tnc_version = BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version;
 
     $client_mf->set_status('tnc_approval', 'system', $current_tnc_version);
     $client_mf->save;
@@ -241,7 +241,7 @@ subtest 'landing_companies_specific' => sub {
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_jp->loginid, 'test token');
     $client_jp->set_default_account('JPY');
     $client_jp->residence('jp');
-    my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
+    my $current_tnc_version = BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version;
     $client_jp->set_status('tnc_approval',              'system', $current_tnc_version);
     $client_jp->set_status('jp_knowledge_test_pending', 'system', 'set for test');
     $client_jp->save;

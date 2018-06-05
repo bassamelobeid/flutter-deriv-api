@@ -14,7 +14,7 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Platform::Context qw (localize request);
 use Quant::Framework;
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 
 rpc ticks => sub {
     my $params = shift;
@@ -212,7 +212,7 @@ sub _validate_start_end {
     my $end              = $args->{end} !~ /^[0-9]+$/ ? time() : $args->{end};
     my $count            = $args->{count};
     my $granularity      = $args->{granularity};
-    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Platform::Chronicle::get_chronicle_reader);
+    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
     my $exchange         = $ul->exchange;
 
     # special case to send explicit error when
