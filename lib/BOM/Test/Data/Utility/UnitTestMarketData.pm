@@ -25,8 +25,8 @@ use List::Util qw(uniq);
 
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use BOM::Platform::Chronicle;
-use BOM::Platform::RedisReplicated;
+use BOM::Config::Chronicle;
+use BOM::Config::RedisReplicated;
 use BOM::Test;
 
 use Quant::Framework::VolSurface::Delta;
@@ -56,8 +56,8 @@ sub _initialize_symbol_dividend {
 
     my $dv = Quant::Framework::Asset->new(
         symbol           => $symbol,
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
     );
 
     $dv->document($document);
@@ -65,10 +65,10 @@ sub _initialize_symbol_dividend {
 }
 
 sub _init {
-    my $writer = BOM::Platform::Chronicle::get_chronicle_writer();
+    my $writer = BOM::Config::Chronicle::get_chronicle_writer();
     #delete chronicle data too (Redis and Pg)
     $writer->cache_writer->flushall;
-    BOM::Platform::Chronicle::dbic()->run(fixup => sub { $_->do('delete from chronicle;') }) if BOM::Platform::Chronicle::dbic();
+    BOM::Config::Chronicle::dbic()->run(fixup => sub { $_->do('delete from chronicle;') }) if BOM::Config::Chronicle::dbic();
     $writer->set(
         'app_settings',
         'binary',
@@ -125,7 +125,7 @@ sub _init {
         },
         Date::Utility->new
     );
-    # BOM::Platform::Runtime->instance(undef);
+    # BOM::Config::Runtime->instance(undef);
 
     _initialize_symbol_dividend "R_25",   0;
     _initialize_symbol_dividend "R_50",   0;
@@ -164,8 +164,8 @@ sub create_doc {
     if (grep { $_ eq $yaml_db }
         qw{currency randomindex index holiday economic_events partial_trading asset correlation_matrix volsurface_moneyness volsurface_delta})
     {
-        $data_mod->{chronicle_reader} = BOM::Platform::Chronicle::get_chronicle_reader();
-        $data_mod->{chronicle_writer} = BOM::Platform::Chronicle::get_chronicle_writer();
+        $data_mod->{chronicle_reader} = BOM::Config::Chronicle::get_chronicle_reader();
+        $data_mod->{chronicle_writer} = BOM::Config::Chronicle::get_chronicle_writer();
 
         if ($yaml_db eq 'volsurface_delta' or $yaml_db eq 'volsurface_moneyness') {
             if (exists($data_mod->{symbol}) and not exists($data_mod->{underlying})) {
@@ -230,7 +230,7 @@ sub create_predefined_barriers_by_contract_category {
 
     my $data = BOM::Product::ContractFinder->new(for_date => $date)->multi_barrier_contracts_by_category_for({symbol => $symbol});
     my @redis_key = BOM::Product::Contract::PredefinedParameters::barrier_by_category_key($symbol);
-    BOM::Platform::Chronicle::get_chronicle_writer()->set(@redis_key, $data, $date, 1, 300);    # cached for 5 minutes
+    BOM::Config::Chronicle::get_chronicle_writer()->set(@redis_key, $data, $date, 1, 300);    # cached for 5 minutes
 
     return $data;
 }
@@ -243,7 +243,7 @@ sub create_trading_periods {
 
     # 1 - to save to chronicle database
     # ttl - set to 5 minutes
-    BOM::Platform::Chronicle::get_chronicle_writer()->set(@redis_key, [grep { defined } @$periods], $date, 1, 300);
+    BOM::Config::Chronicle::get_chronicle_writer()->set(@redis_key, [grep { defined } @$periods], $date, 1, 300);
 
     return $periods;
 }
@@ -258,7 +258,7 @@ sub create_predefined_barriers {
 
     # 1 - to save to chronicle database
     # ttl - set to 5 minutes
-    BOM::Platform::Chronicle::get_chronicle_writer()->set(@redis_key, $barriers, $date, 1, 300);
+    BOM::Config::Chronicle::get_chronicle_writer()->set(@redis_key, $barriers, $date, 1, 300);
 
     return $barriers;
 }

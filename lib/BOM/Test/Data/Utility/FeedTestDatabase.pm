@@ -12,7 +12,7 @@ use Postgres::FeedDB::Spot::OHLC;
 use Try::Tiny;
 use YAML::XS qw(LoadFile);
 use Sereal::Encoder;
-use BOM::Platform::RedisReplicated;
+use BOM::Config::RedisReplicated;
 
 use base qw( Exporter );
 our @EXPORT_OK = qw( setup_ticks );
@@ -103,7 +103,7 @@ sub create_historical_ticks {
     my $default_start      = $args->{epoch}      // time;
     my $key                = "DECIMATE_" . $default_underlying . "_15s_DEC";
 
-    my $redis = BOM::Platform::RedisReplicated::redis_write();
+    my $redis = BOM::Config::RedisReplicated::redis_write();
     for my $tick (@$tick_data) {
         $tick->{epoch} = $tick->{decimate_epoch} = $default_start;
         $redis->zadd($key, $tick->{epoch}, $encoder->encode($tick));
