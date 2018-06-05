@@ -12,7 +12,7 @@ use HTML::Entities;
 
 use f_brokerincludeall;
 use Date::Utility;
-use BOM::Platform::Config;
+use BOM::Config;
 use Quant::Framework::InterestRate;
 use BOM::Backoffice::Request qw(request);
 use Quant::Framework::ImpliedRate;
@@ -20,7 +20,7 @@ use Quant::Framework::VolSurface::Delta;
 use Quant::Framework::VolSurface::Moneyness;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData::Display::VolatilitySurface;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::MarketData qw(create_underlying);
@@ -53,7 +53,7 @@ if ($ok == 0) {
     code_exit_BO();
 }
 
-master_live_server_error() unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}}));
+master_live_server_error() unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}}));
 
 my $broker = request()->broker_code;
 my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
@@ -110,8 +110,8 @@ if ($filen eq 'editvol') {
     }
     my %surface_args = (
         underlying       => $underlying,
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         surface          => $surface_data,
         creation_date    => Date::Utility->new,
         (request()->param('spot_reference') ? (spot_reference => request()->param('spot_reference')) : ()),
@@ -196,16 +196,16 @@ if ($filen =~ m!^vol/master(\w{3}(?:-\w{3})?)\.interest$!) {
         symbol           => $symbol,
         rates            => $rates,
         recorded_date    => Date::Utility->new,
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
     );
     $rates_obj->save;
 }
 
 if (not $overridefilename) {
-    my $db_loc = BOM::Platform::Runtime->instance->app_config->system->directory->db;
+    my $db_loc = BOM::Config::Runtime->instance->app_config->system->directory->db;
     if ($filen =~ /^market/) {
-        $db_loc = BOM::Platform::Runtime->instance->app_config->system->directory->feed;
+        $db_loc = BOM::Config::Runtime->instance->app_config->system->directory->feed;
     }
     $overridefilename = $db_loc . '/' . $filen;
 }
@@ -233,7 +233,7 @@ my $fage = (-M $overridefilename) * 24 * 60 * 60;
 # a feed file
 if (    -e $overridefilename
     and $fage < 30
-    and not BOM::Platform::Config::on_qa
+    and not BOM::Config::on_qa
     and $overridefilename !~ /\/combined\//)
 {
     print "<P><font color=red>Problem!! The file has been saved by someone else within the last $fage seconds.
@@ -243,7 +243,7 @@ if (    -e $overridefilename
 }
 
 #internal audit warnings
-if ($filen eq 'f_broker/promocodes.txt' and not BOM::Platform::Config::on_qa and $diff) {
+if ($filen eq 'f_broker/promocodes.txt' and not BOM::Config::on_qa and $diff) {
     warn("promocodes.txt EDITED BY $clerk");
     my $brand = Brands->new(name => request()->brand);
     send_email({
@@ -314,14 +314,14 @@ if (-e "$overridefilename.staffedit") {
 
 # Send email to quant team
 my $message;
-my $dbloc = BOM::Platform::Runtime->instance->app_config->system->directory->db;
+my $dbloc = BOM::Config::Runtime->instance->app_config->system->directory->db;
 $diff =~ s/$dbloc//;
 unless ($diff eq '0') {
     if ($filen =~ /^market/) {
         $message = "FILE $filen CHANGED ON SERVER BY $clerk\n\nDIFFERENCES BETWEEN OLD FILE AND NEW FILE :\n$diff\n";
     }
 }
-if ($message and not BOM::Platform::Config::on_qa) {
+if ($message and not BOM::Config::on_qa) {
     warn("FILECHANGED : File $filen edited by $clerk : $message");
 }
 

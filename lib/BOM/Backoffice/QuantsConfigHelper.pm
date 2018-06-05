@@ -5,7 +5,7 @@ use warnings;
 
 use BOM::Database::QuantsConfig;
 use BOM::Database::ClientDB;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 
 use LandingCompany::Registry;
 use Finance::Contract::Category;
@@ -182,7 +182,7 @@ sub save_threshold {
         return {error => 'threshold amount must be between 0 and 1'};
     }
 
-    my $app_config     = BOM::Platform::Runtime->instance->app_config;
+    my $app_config     = BOM::Config::Runtime->instance->app_config;
     my $threshold_name = $args->{limit_type} . '_alert_threshold';
     my $output         = try {
         $app_config->quants->$threshold_name($amount);
@@ -211,7 +211,7 @@ sub update_config_switch {
     die 'invalid switch input' if (not($switch == 0 or $switch == 1));
 
     my $method     = 'enable_' . $type;
-    my $app_config = BOM::Platform::Runtime->instance->app_config;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
     $app_config->check_for_update();
     my $output = try {
         my $data_in_redis = $app_config->chronicle_reader->get($app_config->setting_namespace, $app_config->setting_name);
@@ -248,8 +248,8 @@ sub get_config_input {
             });
     }
 
-    my $lc       = LandingCompany::Registry::get('virtual');                   # to get everything in the offerings list.
-    my $o_config = BOM::Platform::Runtime->instance->get_offerings_config();
+    my $lc       = LandingCompany::Registry::get('virtual');                 # to get everything in the offerings list.
+    my $o_config = BOM::Config::Runtime->instance->get_offerings_config();
 
     return [uniq(map { $_->values_for_key($key) } ($lc->basic_offerings($o_config), $lc->multi_barrier_offerings($o_config)))];
 }

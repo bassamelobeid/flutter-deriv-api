@@ -18,10 +18,10 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 use BOM::DynamicSettings;
-use BOM::Platform::Config;
+use BOM::Config;
 use BOM::Platform::RiskProfile;
 use BOM::Platform::RiskProfile;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 
 BOM::Backoffice::Sysinit::init();
 my $json = JSON::MaybeXS->new;
@@ -31,8 +31,8 @@ BrokerPresentation('Product Management');
 
 my $staff            = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $r                = request();
-my $limit_profile    = BOM::Platform::Config::quants->{risk_profile};
-my $quants_config    = BOM::Platform::Runtime->instance->app_config->quants;
+my $limit_profile    = BOM::Config::quants->{risk_profile};
+my $quants_config    = BOM::Config::Runtime->instance->app_config->quants;
 my %known_profiles   = map { $_ => 1 } keys %$limit_profile;
 my %allowed_multiple = (
     market            => 1,
@@ -50,7 +50,7 @@ if ($r->param('update_limit')) {
     my $non_binary_contract_limit = $r->param('non_binary_contract_limit');
 
     my @known_keys    = qw(contract_category market submarket underlying_symbol start_type expiry_type barrier_category landing_company);
-    my $offerings_obj = LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config);
+    my $offerings_obj = LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
     my %known_values  = map { $_ => [$offerings_obj->values_for_key($_)] } @known_keys;
 
     # landing company is not part of offerings object.
@@ -142,7 +142,7 @@ BOM::DynamicSettings::dynamic_save() if $need_to_save;
 
 Bar("Limit Definitions");
 
-my $limit_defs          = BOM::Platform::Config::quants->{risk_profile};
+my $limit_defs          = BOM::Config::quants->{risk_profile};
 my $current_definitions = BOM::Platform::RiskProfile::get_current_profile_definitions();
 
 BOM::Backoffice::Request::template->process(
@@ -232,9 +232,9 @@ BOM::Backoffice::Request::template->process(
 Bar("Japan KLFB");
 
 if ($r->param('update_klfb_limit')) {
-    my $config = BOM::Platform::QuantsConfig->new(
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+    my $config = BOM::Config::QuantsConfig->new(
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         recorded_date    => Date::Utility->new,
     );
     try {
@@ -256,9 +256,8 @@ if ($r->param('update_klfb_limit')) {
 BOM::Backoffice::Request::template->process(
     'backoffice/japan_klfb.html.tt',
     {
-        url => request()->url_for('backoffice/quant/product_management.cgi'),
-        existing_klfb =>
-            BOM::Platform::QuantsConfig->new(chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader())->get_config('klfb')->[0],
+        url           => request()->url_for('backoffice/quant/product_management.cgi'),
+        existing_klfb => BOM::Config::QuantsConfig->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader())->get_config('klfb')->[0],
     }) || die BOM::Backoffice::Request::template->error;
 
 code_exit_BO();

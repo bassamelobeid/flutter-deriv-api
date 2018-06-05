@@ -11,7 +11,7 @@ use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel PrintContentType_XSendfile);
 use BOM::Product::Pricing::Engine::Intraday::Forex;
 use BOM::Database::ClientDB;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Backoffice::Config qw/get_tmp_path_or_die/;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Backoffice::Sysinit ();

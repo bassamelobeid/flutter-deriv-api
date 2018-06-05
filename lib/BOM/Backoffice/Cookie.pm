@@ -6,7 +6,7 @@ use strict;
 use CGI::Cookie;
 use CGI::Util;
 use BOM::Backoffice::Request qw(request);
-use BOM::Platform::Config;
+use BOM::Config;
 
 my @base_cookies_list = qw/staff auth_token/;
 
@@ -25,7 +25,7 @@ sub _build_cookie {
 sub build_cookies {
     my $values = shift // {};
     return [map { defined($values->{$_}) ? _build_cookie($_, $values->{$_}, '+30d') : () }
-            (@base_cookies_list, BOM::Platform::Config::on_qa() ? 'backprice' : ())];
+            (@base_cookies_list, BOM::Config::on_qa() ? 'backprice' : ())];
 }
 
 # expire cookies, by setting "expires" in the past

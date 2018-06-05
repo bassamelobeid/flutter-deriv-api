@@ -17,7 +17,7 @@ use BOM::DailySummaryReport;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Platform::Client::Utility;
 use BOM::User::Password;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -82,7 +82,7 @@ subtest 'skip if it dies' => sub {
                 for_date    => Date::Utility->new->date_yyyymmdd,
                 currencies  => ['USD'],
                 brokercodes => ['CR'],
-                broker_path => BOM::Platform::Runtime->instance->app_config->system->directory->db . '/f_broker/',
+                broker_path => BOM::Config::Runtime->instance->app_config->system->directory->db . '/f_broker/',
                 save_file   => 0,
             )->generate_report;
         }
@@ -128,7 +128,7 @@ subtest 'successful run' => sub {
                 for_date    => $next_day->date_yyyymmdd,
                 currencies  => ['USD'],
                 brokercodes => ['CR'],
-                broker_path => BOM::Platform::Runtime->instance->app_config->system->directory->db . '/f_broker/',
+                broker_path => BOM::Config::Runtime->instance->app_config->system->directory->db . '/f_broker/',
                 save_file   => 0,
             )->generate_report;
         }

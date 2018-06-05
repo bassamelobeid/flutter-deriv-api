@@ -25,7 +25,7 @@ use Crypt::NamedKeys;
 
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 
-use BOM::Platform::Config;
+use BOM::Config;
 use BOM::Backoffice::Script::ValidateStaffPaymentLimit;
 
 has staff => (
@@ -47,7 +47,7 @@ has _environment => (
 );
 
 sub _build__environment {
-    my $env = BOM::Platform::Config::on_production() ? 'production' : 'others';
+    my $env = BOM::Config::on_production() ? 'production' : 'others';
     return $env;
 }
 

@@ -7,11 +7,11 @@ use Path::Tiny;
 use Try::Tiny;
 
 use BOM::Platform::ProveID;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Platform::Client::IDAuthentication;
 use BOM::User::Client;
 
-my $accounts_dir = BOM::Platform::Runtime->instance->app_config->system->directory->db . "/f_accounts";
+my $accounts_dir = BOM::Config::Runtime->instance->app_config->system->directory->db . "/f_accounts";
 my $so = 'ProveID_KYC';    # At the time of writing this script this is the only search option we have
 
 for my $broker (qw/MF MX/) {

@@ -12,7 +12,7 @@ use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
-use BOM::Platform::RedisReplicated;
+use BOM::Config::RedisReplicated;
 
 PrintContentType();
 BrokerPresentation("UNTRUSTED/DISABLE CLIENT");
@@ -26,7 +26,7 @@ my $removed            = request()->param('removed');
 my $client_status_type = request()->param('untrusted_action_type');
 my $reason             = request()->param('untrusted_reason');
 my $additional_info    = request()->param('additional_info');
-my $file_path          = BOM::Platform::Runtime->instance->app_config->system->directory->db . "/f_broker/$broker/";
+my $file_path          = BOM::Config::Runtime->instance->app_config->system->directory->db . "/f_broker/$broker/";
 my $file_name          = "$broker.$client_status_type";
 
 # append the input text if additional infomation exist

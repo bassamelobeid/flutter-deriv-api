@@ -11,11 +11,11 @@ use Text::CSV;
 use Try::Tiny;
 use feature 'state';
 
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 
 sub get_all_settings_list {
     my $setting = shift;
-    my $ds      = BOM::Platform::Runtime->instance->app_config->dynamic_settings_info;
+    my $ds      = BOM::Config::Runtime->instance->app_config->dynamic_settings_info;
     if ($setting eq 'global') {
         return keys %{$ds->{global}};
     }
@@ -28,7 +28,7 @@ sub textify_obj {
 }
 
 sub dynamic_save {
-    return 0 unless BOM::Platform::Runtime->instance->app_config->save_dynamic;
+    return 0 unless BOM::Config::Runtime->instance->app_config->save_dynamic;
     return 1;
 }
 
@@ -40,7 +40,7 @@ sub save_settings {
 
     my $message = "";
     if ($submitted) {
-        my $data_set = BOM::Platform::Runtime->instance->app_config->data_set;
+        my $data_set = BOM::Config::Runtime->instance->app_config->data_set;
 
         my $setting_revision   = $data_set->{version};
         my $submitted_revision = $settings->{'revision'};
@@ -63,7 +63,7 @@ sub save_settings {
             }
 
             my $has_errors       = 0;
-            my $dynamic_settings = BOM::Platform::Runtime->instance->app_config->dynamic_settings_info;
+            my $dynamic_settings = BOM::Config::Runtime->instance->app_config->dynamic_settings_info;
 
             SAVESETTING:
             foreach my $s (@settings) {
@@ -116,14 +116,14 @@ sub generate_settings_branch {
     my $title             = $args->{title};
     my $submitted         = $args->{submitted};
 
-    my $data_set         = BOM::Platform::Runtime->instance->app_config->data_set;
+    my $data_set         = BOM::Config::Runtime->instance->app_config->data_set;
     my $setting_revision = $data_set->{version};
     my $categories       = {};
 
     SETTINGS:
     foreach my $ds (sort { scalar split(/\./, $a) >= scalar split(/\./, $b) } @{$settings;}) {
         next SETTINGS unless grep { $ds eq $_ } @{$settings_in_group;};
-        my $ds_ref = BOM::Platform::Runtime->instance->app_config->dynamic_settings_info->{$submitted}->{$ds};
+        my $ds_ref = BOM::Config::Runtime->instance->app_config->dynamic_settings_info->{$submitted}->{$ds};
 
         my $value;
         if ($submitted eq 'global') {

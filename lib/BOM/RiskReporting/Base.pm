@@ -16,7 +16,7 @@ BOM::RiskReport::Base->new->generate;
 use strict;
 use warnings;
 
-use BOM::Platform::Config;
+use BOM::Config;
 use Postgres::FeedDB::CurrencyConverter qw(in_USD);
 use LandingCompany::Registry;
 use Format::Util::Numbers qw/financialrounding/;

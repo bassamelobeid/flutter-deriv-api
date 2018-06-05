@@ -35,7 +35,7 @@ use BOM::MarketData::Types;
 use BOM::Backoffice::Request;
 use Date::Utility;
 use Volatility::EconomicEvents;
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 use Quant::Framework::EconomicEventCalendar;
 
 has 'min_contract_length' => (
@@ -57,8 +57,8 @@ sub generate {
         my $seasonality_prefix = 'bo_' . time . '_';
         Volatility::EconomicEvents::set_prefix($seasonality_prefix);
         my $EEC = Quant::Framework::EconomicEventCalendar->new({
-            chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(1),
-            chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(1),
+            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         });
 
         my $for_date_obj = Date::Utility->new($for_date);
@@ -142,7 +142,7 @@ sub generate {
                     underlying_symbols => [$underlying_symbol],
                     economic_events    => $events,
                     date               => $bet->date_start,
-                    chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
+                    chronicle_writer   => BOM::Config::Chronicle::get_chronicle_writer(),
             });
 
         }

@@ -6,7 +6,7 @@ use warnings;
 
 use Date::Utility;
 use Text::CSV;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType_excel );
 use BOM::Database::ClientDB;
 use BOM::Backoffice::Sysinit ();

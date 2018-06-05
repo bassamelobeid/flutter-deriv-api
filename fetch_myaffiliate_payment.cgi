@@ -10,7 +10,7 @@ use Try::Tiny;
 use Fcntl qw/:flock O_RDWR O_CREAT/;
 use Brands;
 use BOM::MyAffiliates::PaymentToAccountManager;
-use BOM::Platform::Config;
+use BOM::Config;
 use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::Config qw/get_tmp_path_or_die/;
 use BOM::Backoffice::Request qw(request);
@@ -57,7 +57,7 @@ try {
     );
     my $csum = Digest::MD5->new->addfile($zip->openr)->hexdigest;
 
-    my $document_upload = BOM::Backoffice::Script::DocumentUpload->new(config => BOM::Platform::Config::third_party()->{myaffiliates});
+    my $document_upload = BOM::Backoffice::Script::DocumentUpload->new(config => BOM::Config::third_party()->{myaffiliates});
 
     $document_upload->upload($zip->basename, $zip, $csum) or die "Upload failed for @{[ $zip->basename ]}: $!";
 

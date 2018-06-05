@@ -15,7 +15,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Token;
-use BOM::Platform::Config;
+use BOM::Config;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();

@@ -15,10 +15,10 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::QuantsConfigHelper;
 use BOM::Database::QuantsConfig;
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 use BOM::Database::ClientDB;
 use List::MoreUtils qw(uniq);
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 
 BOM::Backoffice::Sysinit::init();
 my $json = JSON::MaybeXS->new;
@@ -29,7 +29,7 @@ BrokerPresentation('Quants Risk Management Tool');
 my $staff = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $r     = request();
 
-my $app_config    = BOM::Platform::Runtime->instance->app_config;
+my $app_config    = BOM::Config::Runtime->instance->app_config;
 my $data_in_redis = $app_config->chronicle_reader->get($app_config->setting_namespace, $app_config->setting_name);
 my $old_config    = 0;
 # due to app_config data_set cache, config might not be saved.

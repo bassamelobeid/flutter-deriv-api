@@ -10,16 +10,16 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use SuperDerivatives::Correlation qw( upload_and_process_correlations );
 use subs::subs_dividend_from_excel_file;
 use BOM::Backoffice::Sysinit ();
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 use Try::Tiny;
 BOM::Backoffice::Sysinit::init();
-use BOM::Platform::Config;
+use BOM::Config;
 
 PrintContentType();
 BrokerPresentation("QUANT BACKOFFICE");
 
-use BOM::Platform::Config;
-use BOM::Platform::Runtime;
+use BOM::Config;
+use BOM::Config::Runtime;
 use BOM::Backoffice::Utility;
 use Date::Utility;
 use BOM::Backoffice::Request qw(request);
@@ -29,7 +29,7 @@ my $broker = request()->broker_code;
 
 if ($broker !~ /^\w+$/) { die "Bad broker code $broker in $0"; }
 
-master_live_server_error() unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Platform::Config::node()->{node}->{roles}}));
+master_live_server_error() unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}}));
 
 # Upload Dividend
 # Currently we can get a list of forecast dividend from Bloomberg but in excel format
@@ -60,8 +60,8 @@ if (request()->param('whattodo') and request()->param('whattodo') eq 'process_su
     my ($data, @to_print) = upload_and_process_correlations($filetoupload);
     my $correlation_matrix = Quant::Framework::CorrelationMatrix->new({
         symbol           => 'indices',
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         chronicle_write  => 1,
         recorded_date    => Date::Utility->new
     });

@@ -31,7 +31,7 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use Time::Duration::Concise::Localize;
 use BOM::Database::DataMapper::CollectorReporting;
-use BOM::Platform::Config;
+use BOM::Config;
 use Bloomberg::UnderlyingConfig;
 use Text::CSV;
 use BOM::Database::DataMapper::FinancialMarketBet;
@@ -269,7 +269,7 @@ sub sell_expired_contracts {
                 );
         }
 
-        if (BOM::Platform::Config::on_production()) {
+        if (BOM::Config::on_production()) {
             my $from = '"Autosell" <autosell@regentmarkets.com>';
             my $to   = 'quants-market-data@regentmarkets.com';
             Email::Stuffer->from($from)->to($to)->subject($subject)->text_body(join("\n", @msg) . "\n\n")->send

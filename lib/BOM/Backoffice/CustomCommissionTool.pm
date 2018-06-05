@@ -4,8 +4,8 @@ use strict;
 use warnings;
 
 use BOM::Backoffice::Request;
-use BOM::Platform::QuantsConfig;
-use BOM::Platform::Chronicle;
+use BOM::Config::QuantsConfig;
+use BOM::Config::Chronicle;
 use JSON::MaybeXS;
 use Try::Tiny;
 use List::Util qw(max);
@@ -82,9 +82,9 @@ sub _err {
 }
 
 sub _qc {
-    return BOM::Platform::QuantsConfig->new(
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+    return BOM::Config::QuantsConfig->new(
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         recorded_date    => Date::Utility->new,
     );
 }

@@ -9,7 +9,7 @@ use HTML::Entities;
 use BOM::User::Client::PaymentAgent;
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Backoffice::Form;
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
@@ -79,7 +79,7 @@ if ($whattodo eq 'show') {
 
     my $currency = $pa->currency_code // $client->default_account->currency_code;
 
-    my $min_max = BOM::Platform::Config::payment_agent()->{payment_limits}->{LandingCompany::Registry::get_currency_type($currency)};
+    my $min_max = BOM::Config::payment_agent()->{payment_limits}->{LandingCompany::Registry::get_currency_type($currency)};
 
     my ($max_withdrawal, $min_withdrawal) =
         (request()->param('pa_max_withdrawal') || $min_max->{maximum}, request()->param('pa_min_withdrawal') || $min_max->{minimum});

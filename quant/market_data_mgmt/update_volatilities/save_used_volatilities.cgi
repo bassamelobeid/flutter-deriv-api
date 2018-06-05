@@ -7,7 +7,7 @@ use HTML::Entities;
 
 use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Display::VolatilitySurface;

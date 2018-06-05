@@ -17,8 +17,8 @@ my $currency_symbol         = request()->param('symbol');
 my $encoded_currency_symbol = encode_entities($currency_symbol);
 my $existing_interest_rate  = Quant::Framework::InterestRate->new({
         symbol           => $currency_symbol,
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
     })->rates;
 
 Bar("Updates $encoded_currency_symbol rates");

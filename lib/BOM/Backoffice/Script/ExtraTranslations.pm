@@ -20,7 +20,7 @@ use BOM::MarketData::Types;
 use BOM::Product::Static;
 use BOM::User::Static;
 use Finance::Contract::Longcode;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 
 has file_container => (
     is         => 'ro',
@@ -196,7 +196,7 @@ sub add_contract_categories {
     my $fh = $self->pot_append_fh;
     my @all_categories =
         map { Finance::Contract::Category->new($_) }
-        LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Platform::Runtime->instance->get_offerings_config)
+        LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config)
         ->values_for_key('contract_category');
     foreach my $contract_category (@all_categories) {
         if ($contract_category->display_name) {

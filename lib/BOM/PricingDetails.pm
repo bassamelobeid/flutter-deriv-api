@@ -18,7 +18,7 @@ use namespace::autoclean;
 use List::MoreUtils qw(uniq);
 use Try::Tiny;
 
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Backoffice::Request;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
@@ -28,7 +28,7 @@ use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use VolSurface::Utils qw( get_delta_for_strike get_strike_for_spot_delta get_1vol_butterfly);
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
-use BOM::Platform::Chronicle;
+use BOM::Config::Chronicle;
 use Volatility::EconomicEvents;
 
 use BOM::MarketData::Display::VolatilitySurface;
@@ -88,8 +88,8 @@ sub debug_link {
 
     Volatility::EconomicEvents::set_prefix($seasonality_prefix);
     my $EEC = Quant::Framework::EconomicEventCalendar->new({
-        chronicle_reader => BOM::Platform::Chronicle::get_chronicle_reader(1),
-        chronicle_writer => BOM::Platform::Chronicle::get_chronicle_writer(),
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(1),
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
     });
 
     foreach my $pair (qw(fordom domqqq forqqq)) {
@@ -105,7 +105,7 @@ sub debug_link {
             underlying_symbols => [$pair_ref->{underlying}->system_symbol],
             economic_events    => $events,
             date               => $bet->date_start,
-            chronicle_writer   => BOM::Platform::Chronicle::get_chronicle_writer(),
+            chronicle_writer   => BOM::Config::Chronicle::get_chronicle_writer(),
         });
 
     }
@@ -257,7 +257,7 @@ sub _fetch_historical_surface_date {
     my $back_to = $args->{back_to} || 1;
     my $symbol = $args->{symbol} or die "Must pass in symbol to fetch surface dates.";
 
-    my $reader       = BOM::Platform::Chronicle::get_chronicle_reader(1);
+    my $reader       = BOM::Config::Chronicle::get_chronicle_reader(1);
     my $vdoc         = $reader->get('volatility_surfaces', $symbol);
     my $current_date = $vdoc->{date};
 

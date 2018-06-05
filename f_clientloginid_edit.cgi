@@ -21,7 +21,7 @@ use f_brokerincludeall;
 
 use BOM::User::Client;
 
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Backoffice::Request qw(request);
 use BOM::User;
 use BOM::Platform::Client::IDAuthentication;
@@ -33,7 +33,7 @@ use BOM::Platform::Client::DoughFlowClient;
 use BOM::Platform::Doughflow qw( get_sportsbook );
 use BOM::Database::Model::HandoffToken;
 use BOM::Database::ClientDB;
-use BOM::Platform::Config;
+use BOM::Config;
 use BOM::Backoffice::FormAccounts;
 use BOM::Database::Model::AccessToken;
 use BOM::Backoffice::Config;
@@ -48,7 +48,7 @@ BOM::Backoffice::Sysinit::init();
 my %input = %{request()->params};
 
 PrintContentType();
-my $dbloc   = BOM::Platform::Runtime->instance->app_config->system->directory->db;
+my $dbloc   = BOM::Config::Runtime->instance->app_config->system->directory->db;
 my $loginid = $input{loginID};
 if (not $loginid) { print "<p> Empty loginID.</p>"; code_exit_BO(); }
 $loginid = trim(uc $loginid);
@@ -135,8 +135,8 @@ if ($input{whattodo} eq 'sync_to_DF') {
     );
     $handoff_token->save;
 
-    my $doughflow_loc  = BOM::Platform::Config::third_party->{doughflow}->{request()->brand};
-    my $doughflow_pass = BOM::Platform::Config::third_party->{doughflow}->{passcode};
+    my $doughflow_loc  = BOM::Config::third_party->{doughflow}->{request()->brand};
+    my $doughflow_pass = BOM::Config::third_party->{doughflow}->{passcode};
     my $url            = $doughflow_loc . '/CreateCustomer.asp';
 
     # hit DF's CreateCustomer API
