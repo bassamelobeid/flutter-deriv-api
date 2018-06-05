@@ -584,7 +584,7 @@ sub _skip_streaming {
     }
 
     return 1 if ($skip_atm_callput or $skip_contract_type);
-    return 0;
+    return ;
 }
 
 my $RAND;
