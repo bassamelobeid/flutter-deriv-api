@@ -321,6 +321,16 @@ if ($input{whattodo} eq 'uploadID') {
     code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
 }
 
+# Disabe 2FA if theres is a request for that.
+if ($input{whattodo} eq 'disable_2fa' and $user->is_totp_enabled) {
+    $user->is_totp_enabled(0);
+    $user->secret_key('');
+    $user->save;
+
+    print "<p style=\"color:#eeee00; font-weight:bold;\">2FA Disabled</p>";
+    code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
+}
+
 # PERFORM ON-DEMAND ID CHECKS
 if (my $check_str = $input{do_id_check}) {
     my $result;
@@ -789,6 +799,19 @@ if (not $client->is_virtual) {
         </form>
     };
 }
+
+Bar("Two-Factor Authentication");
+print 'Enabled : <b>' . ($user->is_totp_enabled ? 'Yes' : 'No') . '</b>';
+print qq{
+    <br/><br/>
+    <form action="$self_post" method="get">
+        <input type="hidden" name="whattodo" value="disable_2fa">
+        <input type="hidden" name="broker" value="$encoded_broker">
+        <input type="hidden" name="loginID" value="$encoded_loginid">
+        <input type="submit" value = "Disable 2FA"/>
+        <span style="color:red;">This will disable the 2FA feature. Only user can enable then.</span>
+    </form>
+} if $user->is_totp_enabled;
 
 Bar("$loginid Tokens");
 foreach my $l (sort keys %$siblings) {
