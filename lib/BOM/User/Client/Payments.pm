@@ -16,14 +16,11 @@ use Postgres::FeedDB::CurrencyConverter qw/amount_from_to_currency/;
 
 use BOM::User::Client::PaymentNotificationQueue;
 use BOM::Database::ClientDB;
+use BOM::Config;
 
 ## VERSION
 
 # NOTE.. this is a 'mix-in' of extra subs for BOM::User::Client.  It is not a distinct Class.
-
-sub payment_limits {
-    return state $payment_limits = LoadFile(path(__FILE__)->parent(5) . '/config/payment_limits.yml');
-}
 
 sub validate_payment {
     my ($self, %args) = @_;
@@ -81,7 +78,7 @@ sub validate_payment {
 
         my $lc = $self->landing_company->short;
         my $lc_limits;
-        my $withdrawal_limits = payment_limits()->{withdrawal_limits};
+        my $withdrawal_limits = BOM::Config::payment_limits()->{withdrawal_limits};
         $lc_limits = $withdrawal_limits->{$lc};
         die "Invalid landing company - $lc\n" unless $lc_limits;
 
