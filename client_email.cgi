@@ -14,6 +14,7 @@ use Text::Trim;
 use Date::Utility;
 use BOM::User::Client;
 use BOM::User;
+use BOM::Database::Model::UserConnect;
 use BOM::Config::Runtime;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -79,18 +80,25 @@ if ($error) {
     code_exit_BO();
 }
 
-if ($user->has_social_signup) {
-    print "Cannot change email for users with social signup flag";
-    code_exit_BO();
-}
-
 if ($email ne $new_email) {
     if (BOM::User->new({email => $new_email})) {
         print "Email update not allowed, as same email [$encoded_new_email] already exists in system";
         code_exit_BO();
     }
 
+    my $had_social_signup = '';
+
     try {
+        # remove social signup flag also add note to audit log.
+        if ($user->has_social_signup) {
+            $user->has_social_signup(undef);
+            #remove all other social accounts
+            my $user_connect = BOM::Database::Model::UserConnect->new;
+            my @providers    = $user_connect->get_connects_by_user_id($user->id);
+            $user_connect->remove_connect($user->id, $_) for @providers;
+            $had_social_signup = "(from social signup)";
+        }
+
         $user->email($new_email);
         $user->save;
 
@@ -109,7 +117,9 @@ if ($email ne $new_email) {
     my $msg =
           $now->datetime . " "
         . $input{transtype}
-        . " updated user $email to $new_email by clerk=$clerk (DCcode="
+        . " updated user $email "
+        . $had_social_signup
+        . " to $new_email by clerk=$clerk (DCcode="
         . $input{DCcode}
         . ") $ENV{REMOTE_ADDR}";
     BOM::User::AuditLog::log($msg, $new_email, $clerk);
