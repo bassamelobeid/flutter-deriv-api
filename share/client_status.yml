@@ -1,0 +1,35 @@
+age_verification:
+cashier_locked:
+disabled:
+unwelcome:
+withdrawal_locked:
+ukgc_funds_protection:
+  # UKGC License condition 4.2.1 for UK clients only
+financial_risk_approval:
+  # warned client of any potential risks (compliance)
+crs_tin_information:
+  # CRS/FATCA for collecting tax information for maltainvest (compliance)
+ukrts_max_turnover_limit_not_set:
+  # RTS 12 - Financial Limits - UK Clients
+jp_knowledge_test_pending:
+jp_knowledge_test_fail:
+jp_activation_pending:
+jp_transaction_detail:
+  # status api call by passing this to get bank details provided
+professional_requested:
+professional:
+tnc_approval:
+  # MGA License condition 2.7.1.10 for MLT clients only
+  hide: true
+migrated_single_email:
+  # we migrated client to single login and kept single login
+  # disallow_login won't allow the others to log in
+  disallow_login: true
+  hide: true
+duplicate_account:
+  disallow_login: true
+  hide: true
+proveid_pending:
+  hide: true
+proveid_requested:
+  hide: true
