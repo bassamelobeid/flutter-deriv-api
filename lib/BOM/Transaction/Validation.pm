@@ -17,6 +17,7 @@ use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use Locale::Country::Extra;
 use BOM::Database::ClientDB;
 use Date::Utility;
+use BOM::Config;
 
 has clients => (
     is       => 'ro',
@@ -497,9 +498,7 @@ sub _validate_iom_withdrawal_limit {
     my $landing_company_short = $client->landing_company->short;
     return if ($landing_company_short ne 'iom');
 
-    my $payment_limits = BOM::User::Client::payment_limits();
-
-    my $withdrawal_limits = $payment_limits->{withdrawal_limits};
+    my $withdrawal_limits = BOM::Config::payment_limits()->{withdrawal_limits};
     my $numdays           = $withdrawal_limits->{$landing_company_short}->{for_days};
     my $numdayslimit      = $withdrawal_limits->{$landing_company_short}->{limit_for_days};
     my $lifetimelimit     = $withdrawal_limits->{$landing_company_short}->{lifetime_limit};

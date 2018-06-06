@@ -20,6 +20,7 @@ use BOM::Transaction::Validation;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Math::Util::CalculatedValue::Validatable;
+use BOM::Config;
 
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
@@ -98,7 +99,7 @@ my $contract = produce_contract({
 
 my $mock_call = Test::MockModule->new('BOM::Product::Contract::Call');
 subtest 'IOM withdrawal limit' => sub {
-    my $withdraw_limit = BOM::User::Client::payment_limits()->{withdrawal_limits}->{iom}->{limit_for_days};
+    my $withdraw_limit = BOM::Config::payment_limits()->{withdrawal_limits}->{iom}->{limit_for_days};
 
     $client->payment_free_gift(
         currency     => 'GBP',
