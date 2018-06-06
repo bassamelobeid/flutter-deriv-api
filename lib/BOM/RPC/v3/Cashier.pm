@@ -46,10 +46,11 @@ use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::ClientDB;
 use Quant::Framework;
+use BOM::Config;
 
 requires_auth();
 
-my $payment_limits = BOM::User::Client::payment_limits;
+my $payment_limits = BOM::Config::payment_limits;
 
 rpc "cashier", sub {
     my $params = shift;

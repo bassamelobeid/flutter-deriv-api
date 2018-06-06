@@ -15,11 +15,12 @@ use BOM::Test::RPC::Client;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::RiskProfile;
 use Email::Stuffer::TestLinks;
+use BOM::Config;
 
 use Postgres::FeedDB::CurrencyConverter qw/in_USD amount_from_to_currency/;
 
 my $c              = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
-my $payment_limits = BOM::User::Client::payment_limits();
+my $payment_limits = BOM::Config::payment_limits();
 my $method         = 'get_limits';
 my $params         = {token => '12345'};
 
