@@ -6,6 +6,8 @@ use warnings;
 use Cache::RedisDB;
 use ExpiryQueue qw( dequeue_expired_contract get_queue_id);
 use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
+use DataDog::DogStatsd::Helper qw/stats_timing/;
+
 use List::Util qw(max);
 use Time::HiRes;
 use Try::Tiny;
@@ -50,8 +52,12 @@ sub _daemon_run {
         # Outer `while` to live through possible redis disconnects/restarts
         while (my $info = $iterator->()) {            # Blocking for next available.
             try {
-                my $contract_id = $info->{contract_id};
-                my $client = BOM::User::Client->new({loginid => $info->{held_by}, db_operation => 'replica'});
+                my @processing_start = Time::HiRes::time;
+                my $contract_id      = $info->{contract_id};
+                my $client           = BOM::User::Client->new({
+                    loginid      => $info->{held_by},
+                    db_operation => 'replica'
+                });
                 if ($info->{in_currency} ne $client->currency) {
                     warn(     'Skip on currency mismatch for contract '
                             . $contract_id
@@ -64,9 +70,12 @@ sub _daemon_run {
                 # This returns a result which might be useful for reporting
                 # but for now we will ignore it.
                 my $is_sold = BOM::Transaction::sell_expired_contracts({
-                        client       => $client,
-                        source       => 2,               # app id for `Binary.com expiryd.pl` in auth db => oauth.apps table
-                        contract_ids => [$contract_id]});
+                        client        => $client,
+                        source        => 2,               # app id for `Binary.com expiryd.pl` in auth db => oauth.apps table
+                        contract_ids  => [$contract_id],
+                        collect_stats => 1});
+                
+                my @processing_done = Time::HiRes::time;
 
                 if (not $is_sold or $is_sold->{number_of_sold_bets} == 0) {
                     $info->{sell_failure}++;
@@ -75,6 +84,14 @@ sub _daemon_run {
                         my $future_epoch = $now + 2;
                         $redis->rpush('EXPIRYQUEUE::SELL_FAILURE_' . $future_epoch, $cid);
                     }
+                } else {
+                    # contract sold send data to datadog
+                    my $processing_duration = 1000 * Time::HiRes::tv_interval(\@processing_start, \@processing_done);
+                    my $time_difference = $processing_done[0] - $is_sold->{contract_expiry_epoch};
+                    stats_timing('bom.transactions.expiryd.processing_time',
+                        $processing_duration, {tags => ["tr:$info->{transaction_reference}", "contract_type:$is_sold->{bet_short_code}"]});
+                    stats_timing('bom.transactions.expiryd.time_difference',
+                        $time_difference, {tags => ["tr:$info->{transaction_reference}", "contract_type:$is_sold->{bet_short_code}"]});
                 }
             };    # No catch, let MtM pick up the pieces.
         }

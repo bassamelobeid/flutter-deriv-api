@@ -1324,10 +1324,11 @@ my %source_to_sell_type = (
 );
 
 sub sell_expired_contracts {
-    my $args         = shift;
-    my $client       = $args->{client};
-    my $source       = $args->{source};
-    my $contract_ids = $args->{contract_ids};
+    my $args          = shift;
+    my $client        = $args->{client};
+    my $source        = $args->{source};
+    my $contract_ids  = $args->{contract_ids};
+    my $collect_stats = $args->{collect_stats};
 
     my $currency = $client->currency;
     my $loginid  = $client->loginid;
@@ -1365,8 +1366,8 @@ sub sell_expired_contracts {
     my @transdata;
     my %stats_attempt;
     my %stats_failure;
-    for my $bet (@$bets) {
 
+    for my $bet (@$bets) {
         my $contract;
         my $error;
         my $failure = {fmb_id => $bet->{id}};
@@ -1412,6 +1413,14 @@ sub sell_expired_contracts {
                             }
                         )->[1],
                     });
+
+                # collect stats about expiryd process they should be removed later
+                # expiryd only send one contract id so it's safe to return single value.
+                # this a hack that should be removed later when examination is done.
+                if ($collect_stats) {
+                    $result->{bet_short_code} = $bet->short_code;
+                    $result->{contract_expiry_epoch} = $contract->exit_tick->epoch if $contract->exit_tick;
+                }
 
             } elsif ($client->is_virtual and $now->epoch >= $contract->date_settlement->epoch + 3600) {
                 # for virtual, if can't settle bet due to missing market data, sell contract with buy price
@@ -1530,6 +1539,7 @@ sub sell_expired_contracts {
     $result->{skip_contract}       = $skip_contract;
     $result->{total_credited}      = $total_credited;
     $result->{number_of_sold_bets} = 0 + @$sold;
+
     return $result;
 }
 
