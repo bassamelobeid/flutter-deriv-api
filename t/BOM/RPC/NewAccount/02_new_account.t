@@ -91,6 +91,7 @@ subtest $method => sub {
     my $user = BOM::User->new({
         email => $email,
     });
+
     ok $user->utm_source =~ '^google\.com$',               'utm registered as expected';
     ok $user->gclid_url =~ '^FQdb3wodOkkGBgCMrlnPq42q8C$', 'gclid value returned as expected';
     is $user->email_consent, 1, 'email consent for new account is 1 for residence under costarica';
@@ -244,6 +245,63 @@ subtest $method => sub {
         ok $new_loginid =~ /^CR\d+$/, 'new CR loginid';
     };
 
+    subtest 'Create multiple accounts in CR' => sub {
+
+        my $client_cr = {
+            first_name    => 'James' . rand(999),
+            last_name     => 'Brown' . rand(999),
+            date_of_birth => '1960-01-02',
+        };
+
+        @{$params->{args}}{keys %$client_cr} = values %$client_cr;
+
+        my $password = 'jskjd8292922';
+        my $hash_pwd = BOM::User::Password::hashpw($password);
+        $email = 'new_email' . rand(999) . '@binary.com';
+        $user  = BOM::User->create(
+            email    => $email,
+            password => $hash_pwd
+        );
+        $user->save;
+        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+            email       => $email,
+        });
+        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
+
+        $user->add_loginid({loginid => $client->loginid});
+        $user->email_verified(1);
+        $user->save;
+
+        $params->{args}->{currency} = 'USD';
+
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('create fiat currency account')
+            ->result_value_is(sub { shift->{currency} }, 'USD', 'fiat currency account currency is USD');
+
+        my $new_loginid = $rpc_ct->result->{client_id};
+        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($new_loginid, 'test token');
+
+        $params->{args}->{currency} = 'EUR';
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error('cannot create second fiat currency account')
+            ->error_code_is('CurrencyTypeNotAllowed', 'error code is CurrencyTypeNotAllowed');
+
+        # Delete all params except currency. Info from prior account should be used
+        $params->{args} = {'currency' => 'BCH'};
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('create crypto currency account, reusing info')
+            ->result_value_is(sub { shift->{currency} }, 'BCH', 'crypto account currency is BCH');
+
+        my $cl = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
+        #print $client_cr->{$_}."\n" for keys %$client_cr;
+        is $client_cr->{$_}, $cl->$_, "$_ is correct on created account" for keys %$client_cr;
+
+        $params->{args}->{currency} = 'BCH';
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error('cannot create another crypto currency account with same currency')
+            ->error_code_is('CurrencyTypeNotAllowed', 'error code is CurrencyTypeNotAllowed');
+
+        $params->{args}->{currency} = 'LTC';
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('create second crypto currency account')
+            ->result_value_is(sub { shift->{currency} }, 'LTC', 'crypto account currency is LTC');
+        }
 };
 
 $method = 'new_account_maltainvest';
