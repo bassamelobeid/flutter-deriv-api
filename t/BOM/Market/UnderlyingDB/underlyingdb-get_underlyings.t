@@ -28,7 +28,7 @@ eq_or_diff [sort $udb->available_start_types], [sort qw(spot forward)], 'Correct
 eq_or_diff [sort $udb->markets], [sort qw(commodities forex indices volidx)], "Correct list of markets";
 
 eq_or_diff [sort $udb->symbols_for_intraday_fx], [
-    sort qw(frxAUDCAD frxAUDCHF frxAUDJPY frxAUDNZD frxAUDPLN frxAUDUSD frxEURAUD frxEURCAD frxEURCHF
+    sort qw(frxAUDCAD frxAUDCHF frxAUDJPY frxAUDNZD frxAUDUSD frxEURAUD frxEURCAD frxEURCHF
         frxEURGBP frxEURJPY frxEURNZD frxEURUSD frxGBPAUD frxGBPCAD frxGBPCHF
         frxGBPJPY frxGBPNZD frxGBPUSD frxNZDUSD frxUSDCAD frxUSDCHF frxUSDJPY frxXAGUSD frxXAUUSD WLDAUD WLDEUR WLDGBP WLDUSD)
     ],
@@ -99,7 +99,7 @@ my @ul_forex_active = sort qw(
     frxAUDJPY frxAUDUSD frxEURAUD frxEURCAD frxEURCHF frxEURGBP frxEURJPY
     frxEURUSD frxGBPAUD frxGBPCAD frxGBPCHF frxGBPJPY frxGBPNOK frxGBPPLN
     frxGBPUSD frxNZDUSD frxUSDCAD frxUSDCHF frxUSDJPY frxUSDNOK
-    frxUSDSEK frxEURNZD frxGBPNZD frxAUDCHF frxAUDCAD frxAUDNZD frxAUDPLN
+    frxUSDSEK frxEURNZD frxGBPNZD frxAUDCHF frxAUDCAD frxAUDNZD
     frxNZDJPY frxUSDMXN frxUSDPLN);
 eq_or_diff [
     sort $udb->get_symbols_for(
