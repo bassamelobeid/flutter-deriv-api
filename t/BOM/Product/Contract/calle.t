@@ -32,19 +32,19 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $now,
-    }) for qw(USD JPY AUD PLN );
+    }) for qw(USD JPY AUD CAD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol        => $_,
         recorded_date => $now,
-    }) for qw (JPY-USD PLN-AUD WLDUSD);
+    }) for qw (JPY-USD CAD-AUD WLDUSD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         underlying    => create_underlying($_),
         recorded_date => $now
-    }) for qw (frxUSDJPY frxAUDPLN R_100 WLDUSD);
+    }) for qw (frxUSDJPY frxAUDCAD R_100 WLDUSD);
 my $ct = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
     epoch      => $now->epoch
@@ -77,24 +77,24 @@ $defaults{quote} = 100;
 $redis->zadd($undec_key, $defaults{epoch}, $encoder->encode(\%defaults));
 
 $ct = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'frxAUDPLN',
+    underlying => 'frxAUDCAD',
     epoch      => $now->epoch
 });
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'frxAUDPLN',
+    underlying => 'frxAUDCAD',
     epoch      => $now->epoch + 1,
     quote      => 100,
 });
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $now});
 $redis     = BOM::Config::RedisReplicated::redis_write();
-$undec_key = "DECIMATE_frxAUDPLN" . "_31m_FULL";
+$undec_key = "DECIMATE_frxAUDCAD" . "_31m_FULL";
 $encoder   = Sereal::Encoder->new({
     canonical => 1,
 });
 
 %defaults = (
-    symbol => 'frxAUDPLN',
+    symbol => 'frxAUDCAD',
     epoch  => $now->epoch,
     quote  => 100,
     bid    => 100,
@@ -287,15 +287,15 @@ subtest 'call pricing engine equal tie markup' => sub {
             date_pricing => $now,
             duration     => '20m',
             barrier      => 'S0P',
-            underlying   => 'frxAUDPLN',
+            underlying   => 'frxAUDCAD',
             currency     => 'USD',
             payout       => 10,
             current_tick => $ct,
         });
         ok $c->pricing_engine->apply_equal_tie_markup, 'can apply_equal_tie_markup';
-        cmp_ok $c->pricing_engine->risk_markup->peek_amount('equal_tie_markup'), '==', 0.05, 'correct equal tie markup';
+        cmp_ok $c->pricing_engine->risk_markup->peek_amount('equal_tie_markup'), '==', 0.02, 'correct equal tie markup';
     }
-    'correct equal tie markup for AUDPLN';
+    'correct equal tie markup for AUDCAD';
 
     lives_ok {
         my $c = produce_contract({
@@ -391,7 +391,7 @@ subtest 'call pricing engine equal tie markup' => sub {
             date_pricing => $now,
             duration     => '7d',
             barrier      => 'S0P',
-            underlying   => 'frxAUDPLN',
+            underlying   => 'frxAUDCAD',
             currency     => 'USD',
             payout       => 10,
             current_tick => $ct,
@@ -400,7 +400,7 @@ subtest 'call pricing engine equal tie markup' => sub {
         ok $c->ask_price, 'can ask price';
         cmp_ok $c->debug_information->{risk_markup}{parameters}{equal_tie_markup}, '==', 0.00, 'correct equal tie markup';
     }
-    'correct equal tie markup for AUDPLN';
+    'correct equal tie markup for AUDCAD';
 
     lives_ok {
         my $c = produce_contract({
