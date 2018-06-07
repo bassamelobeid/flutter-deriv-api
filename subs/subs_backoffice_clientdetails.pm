@@ -328,16 +328,15 @@ sub build_client_warning_message {
     }
 
     # build the table
-    my $output = '';
-    if (@output) {
-        $output =
-              '<br /><table border="1" cellpadding="2" style="background-color:#cccccc">' . '<tr>'
-            . '<th>STATUS</th>'
-            . '<th>REASON/INFO</th>'
-            . '<th>STAFF</th>'
-            . '<th>EDIT</th>'
-            . '<th>REMOVE</th>' . '</tr>';
+    my $output =
+          '<br/><table border="1" cellpadding="2" style="background-color:#cccccc">' . '<tr>'
+        . '<th>STATUS</th>'
+        . '<th>REASON/INFO</th>'
+        . '<th>STAFF</th>'
+        . '<th>EDIT</th>'
+        . '<th>REMOVE</th>' . '</tr>';
 
+    if (@output) {
         my $trusted_section;
         foreach my $output_rows (@output) {
             if ($output_rows->{'editlink'} =~ /trusted_action_type=(\w+)/ or $output_rows->{'removelink'} =~ /trusted_action_type=(\w+)/) {
@@ -363,39 +362,39 @@ sub build_client_warning_message {
                 . $output_rows->{'removelink'}
                 . '</b></td></tr>';
         }
-
-# Show all remaining status info
-        for my $status (sort keys %client_status) {
-            my $info = $client_status{$status};
-            $output .= '<tr>'
-                . '<td align="left">'
-                . $status . '</td>'
-                . '<td><b>'
-                . $info->reason
-                . '</b></td>'
-                . '<td><b>'
-                . $info->staff_name
-                . '</b></td>'
-                . '<td colspan="2">&nbsp;</td>' . '</tr>';
-        }
-        $output .= '</table><br>';
-
-        $output .= qq~
-        <script type="text/javascript" language="javascript">
-             function append_dccode(linkobj)
-             {
-                var dcc_staff_id = 'dcc_staff_'+linkobj.id;
-                var dcc_id       = 'dcc_'+linkobj.id;
-
-                var dccstaff = \$('#'+dcc_staff_id).val();
-                var dcc      = \$('#'+dcc_id).val();
-
-                linkobj.href.replace(/\&dcstaff.+/,'');
-                linkobj.href = linkobj.href + '&dccstaff=' + dccstaff + '&dcc=' + dcc;
-             }
-        </script>
-        ~;
     }
+
+    # Show all remaining status info
+    for my $status (sort keys %client_status) {
+        my $info = $client_status{$status};
+        $output .= '<tr>'
+            . '<td align="left">'
+            . $status . '</td>'
+            . '<td><b>'
+            . $info->reason
+            . '</b></td>'
+            . '<td><b>'
+            . $info->staff_name
+            . '</b></td>'
+            . '<td colspan="2">&nbsp;</td>' . '</tr>';
+    }
+    $output .= '</table><br>';
+
+    $output .= qq~
+    <script type="text/javascript" language="javascript">
+         function append_dccode(linkobj)
+         {
+            var dcc_staff_id = 'dcc_staff_'+linkobj.id;
+            var dcc_id       = 'dcc_'+linkobj.id;
+
+            var dccstaff = \$('#'+dcc_staff_id).val();
+            var dcc      = \$('#'+dcc_id).val();
+
+            linkobj.href.replace(/\&dcstaff.+/,'');
+            linkobj.href = linkobj.href + '&dccstaff=' + dccstaff + '&dcc=' + dcc;
+         }
+    </script>
+    ~;
 
     return $output;
 }
