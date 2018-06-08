@@ -1,5 +1,4 @@
 #!/etc/rmg/bin/perl
-
 use strict;
 use warnings;
 
@@ -32,7 +31,8 @@ These options are available:
   -h, --help                Show this message.
 EOF
 
-$threads_number //= 5;
+$threads_number ||= 5;
+die 'invalid number of processes' unless $threads_number > 0;
 
 my @pids;
 
@@ -102,9 +102,7 @@ sub _daemon_run {
 print "parent $$ launching child processes\n";
 
 for (my $i = 1; $i < $threads_number; $i++) {
-    my $pid;
-    select undef, undef, undef, 0.2 until defined($pid = fork);
-    if ($pid) {
+    if(my $pid = fork // die 'unable to fork - ' . $!) {
         push @pids, $pid;
     } else {
         @pids = ();
