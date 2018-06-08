@@ -3,6 +3,8 @@ package BOM::Product::Role::AmericanExpiry;
 use Moose::Role;
 use BOM::Product::Static;
 
+use List::Util qw/any first/;
+
 override is_expired => sub {
     my $self       = shift;
     my $is_expired = $self->check_expiry_conditions;
@@ -78,15 +80,19 @@ sub get_tick_expiry_hit_tick {
 
     my @ticks_since_start = @{$self->get_ticks_for_tick_expiry};
     my $tick;
-    for (my $i = 1; $i <= $#ticks_since_start; $i++) {
-        if (   (defined $args{higher} and $ticks_since_start[$i]->quote >= $args{higher})
-            or (defined $args{lower} and $ticks_since_start[$i]->quote <= $args{lower}))
-        {
-            $tick = $ticks_since_start[$i];
-            last;
+
+    if ($self->bet_type eq 'TICKHIGH' or $self->bet_type eq 'TICKLOW') {
+        return $self->calculate_highlow_hit_tick;
+    } else {
+        for (my $i = 1; $i <= $#ticks_since_start; $i++) {
+            if (   (defined $args{higher} and $ticks_since_start[$i]->quote >= $args{higher})
+                or (defined $args{lower} and $ticks_since_start[$i]->quote <= $args{lower}))
+            {
+                $tick = $ticks_since_start[$i];
+                last;
+            }
         }
     }
-
     return $tick;
 }
 
@@ -121,6 +127,58 @@ sub get_high_low_for_contract_period {
     }
 
     return ($high, $low, $ok_through_expiry);
+}
+
+# For highlow contract, the analogy is like notouch. If there is no hit tick , client wins.
+# There will be a hit tick ,if there is a tick higher/lower than the selected tick.
+sub calculate_highlow_hit_tick {
+    my $self = shift;
+
+    # Logic for defining hit tick here
+
+    my $ticks = $self->underlying->ticks_in_between_start_limit({
+        start_time => $self->date_start->epoch + 1,
+        limit      => $self->ticks_to_expiry,
+    });
+
+    return 0 unless $self->barrier;
+
+    my $selected_quote = $self->barrier->as_absolute;
+
+    my $hit_tick;
+
+    if ($self->bet_type eq 'TICKHIGH') {
+        # Return the highest tick as the hit_tick
+        if (any { $_->{quote} > $selected_quote } @$ticks) {
+            $hit_tick = $ticks->[0];
+            my $index = 1;
+            for my $current_tick (@$ticks) {
+                if ($current_tick->{quote} > $selected_quote and $current_tick->{quote} > $hit_tick->{quote}) {
+                    $hit_tick = $current_tick;
+                    last if $index > $self->selected_tick;
+                }
+                last if $index == $self->selected_tick and $hit_tick->{quote} > $selected_quote;
+                $index++;
+            }
+            return $hit_tick;
+        }
+    } elsif ($self->bet_type eq 'TICKLOW') {
+        # selected quote is not the lowest.
+        if (any { $_->{quote} < $selected_quote } @$ticks) {
+            $hit_tick = $ticks->[0];
+            my $index = 1;
+            for my $current_tick (@$ticks) {
+                if ($current_tick->{quote} < $selected_quote and $current_tick->{quote} < $hit_tick->{quote}) {
+                    $hit_tick = $current_tick;
+                    last if $index > $self->selected_tick;
+                }
+                last if $index == $self->selected_tick and $hit_tick->{quote} < $selected_quote;
+                $index++;
+            }
+            return $hit_tick;
+        }
+    }
+    return undef;
 }
 
 1;

@@ -1035,6 +1035,12 @@ sub _get_tick_details {
             })};
     my @ticks = (@ticks_before, @ticks_after);
 
+    #Extra logic to highlight highlowticks
+    my $selected_epoch;
+    if ($self->category_code eq 'highlowticks') {
+        $selected_epoch = ($self->hit_tick) ? $self->hit_tick->epoch : $self->entry_tick->epoch + 2 * ($self->selected_tick - 1);
+    }
+
     my @details;
     for (my $i = 0; $i <= $#ticks; $i++) {
         my $t  = $ticks[$i];
@@ -1054,6 +1060,19 @@ sub _get_tick_details {
         } elsif ($t->epoch == $quote_epoch) {
             $t_details->{name} = $quote_name;
             $t_details->{flag} = "highlight_tick";
+        }
+
+        #Extra logic to highlight highlowticks
+        if ($self->category_code eq 'highlowticks') {
+            if ($t->epoch == $selected_epoch) {
+                my $tick_name = ($self->bet_type eq 'TICKHIGH') ? 'Highest Spot' : 'Lowest Spot';
+                if ($t_details->{name}) {
+                    $t_details->{name}[0] = $t_details->{name}[0] . " and " . $tick_name;
+                } else {
+                    $t_details->{name} = [$tick_name];
+                    $t_details->{flag} = "highlight_tick";
+                }
+            }
         }
 
         push @details, $t_details;

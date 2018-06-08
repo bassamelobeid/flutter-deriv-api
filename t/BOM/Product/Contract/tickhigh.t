@@ -32,7 +32,7 @@ my $args = {
     currency      => 'USD',
     payout        => 10,
 };
-$DB::single = 1;
+
 my $c = produce_contract($args);
 
 subtest 'Test that contract can be created correctly' => sub {
@@ -92,42 +92,6 @@ subtest 'Test for condition where last tick is the highest' => sub {
         cmp_ok $c->value, '==', $c->payout, 'full payout';
     }
     'check that last tick is the winning tick';
-
-    lives_ok {
-        $args->{date_pricing} = $now->plus_time_interval('5s');
-        $c = produce_contract({%$args, selected_tick => 1});
-        is $c->exit_tick->quote, 100.1, 'correct exit tick';
-        ok $c->is_expired, 'expired';
-        cmp_ok $c->value, '==', 0, 'payout is 0 as contract is lost';
-    }
-    'first tick is losing tick';
-
-    lives_ok {
-        $args->{date_pricing} = $now->plus_time_interval('5s');
-        $c = produce_contract({%$args, selected_tick => 2});
-        is $c->exit_tick->quote, 100.1, 'correct exit tick';
-        ok $c->is_expired, 'expired';
-        cmp_ok $c->value, '==', 0, 'payout is 0 as contract is lost';
-    }
-    'second tick is losing tick';
-
-    lives_ok {
-        $args->{date_pricing} = $now->plus_time_interval('5s');
-        $c = produce_contract({%$args, selected_tick => 3});
-        is $c->exit_tick->quote, 100.1, 'correct exit tick';
-        ok $c->is_expired, 'expired';
-        cmp_ok $c->value, '==', 0, 'payout is 0 as contract is lost';
-    }
-    'third tick is losing tick';
-
-    lives_ok {
-        $args->{date_pricing} = $now->plus_time_interval('5s');
-        $c = produce_contract({%$args, selected_tick => 4});
-        is $c->exit_tick->quote, 100.1, 'correct exit tick';
-        ok $c->is_expired, 'expired';
-        cmp_ok $c->value, '==', 0, 'payout is 0 as contract is lost';
-    }
-    'fourth tick is losing tick';
 };
 
 subtest 'Test for condition where first tick is the highest' => sub {
@@ -218,7 +182,7 @@ subtest 'Test for condition with two winning ticks' => sub {
     $args->{date_pricing}  = $now;
     $args->{selected_tick} = 1;
 
-    my @quotes = (102.3, 102.4, 102.5, 102.4, 102.5, 102.3);
+    my @quotes = (102.2, 102.4, 102.5, 102.5, 102.5, 102.4);
 
     # Insert ticks
     foreach my $i (0 .. $#quotes) {
@@ -234,47 +198,46 @@ subtest 'Test for condition with two winning ticks' => sub {
         my $c = produce_contract($args);
         ok $c->exit_tick, 'reached exit tick';
         $c = produce_contract($args);
-        is $c->exit_tick->quote, 102.3, 'correct exit tick';
-        ok $c->is_expired, 'expired';
+        is $c->exit_tick->quote, 102.4, 'correct exit tick';
         cmp_ok $c->value, '==', 0, 'payout is 0 as contract is lost';
     }
-    'check that first tick is the winning tick';
+    'check first tick';
 
     lives_ok {
         $args->{date_pricing} = $now->plus_time_interval('5s');
         $c = produce_contract({%$args, selected_tick => 2});
-        is $c->exit_tick->quote, 102.3, 'correct exit tick';
+        is $c->exit_tick->quote, 102.4, 'correct exit tick';
         ok $c->is_expired, 'expired';
         cmp_ok $c->value, '==', $c->payout, 'full payout';
     }
-    'second tick is winning tick';
+    'check second tick';
 
     lives_ok {
         $args->{date_pricing} = $now->plus_time_interval('5s');
         $c = produce_contract({%$args, selected_tick => 3});
-        is $c->exit_tick->quote, 102.3, 'correct exit tick';
+        is $c->exit_tick->quote, 102.4, 'correct exit tick';
         ok $c->is_expired, 'expired';
-        cmp_ok $c->value, '==', 0, 'payout is 0 as contract is lost';
+        cmp_ok $c->value, '==', $c->payout, 'payout is 0 as contract is lost';
     }
-    'third tick is losing tick';
+    'check third tick';
 
     lives_ok {
         $args->{date_pricing} = $now->plus_time_interval('5s');
         $c = produce_contract({%$args, selected_tick => 4});
-        is $c->exit_tick->quote, 102.3, 'correct exit tick';
+        is $c->exit_tick->quote, 102.4, 'correct exit tick';
         ok $c->is_expired, 'expired';
         cmp_ok $c->value, '==', $c->payout, 'full payout';
     }
-    'fourth tick is winning tick';
+    'check fourth tick';
 
     lives_ok {
         $args->{date_pricing} = $now->plus_time_interval('5s');
         $c = produce_contract({%$args, selected_tick => 5});
-        is $c->exit_tick->quote, 102.3, 'correct exit tick';
+        is $c->exit_tick->quote, 102.4, 'correct exit tick';
         ok $c->is_expired, 'expired';
         cmp_ok $c->value, '==', 0, 'payout is 0 as contract is lost';
     }
-    'fifth tick is losing tick';
+    'check fifth tick';
 };
 
 subtest 'Where the second tick is higher than the selected first tick, the contract is lost' => sub {
@@ -307,8 +270,6 @@ subtest 'Where the second tick is higher than the selected first tick, the contr
         my $c = produce_contract({%$args, selected_tick => 1});
         ok !$c->exit_tick, 'first tick is next tick';
         $c = produce_contract({%$args, selected_tick => 1});
-        ok $c->is_expired, 'is expired';
-
         cmp_ok $c->value, '==', 0, 'full payout';
     }
     'check second tick';

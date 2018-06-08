@@ -21,13 +21,14 @@ sub check_expiry_conditions {
 
     my $number_of_ticks = scalar(@$ticks);
 
+    # Do not evaluate until we have the selected tick
+    return 0 if $number_of_ticks < $self->selected_tick;
+
     # If there's no tick yet, the contract is not expired.
     return 0 unless $self->barrier;
 
-    my $selected_quote = $self->barrier->as_absolute;
-
     # selected quote is not the lowest.
-    if (any { $_->{quote} < $selected_quote } @$ticks) {
+    if ($self->calculate_highlow_hit_tick) {
         $self->value(0);
         return 1;    # contract expired
     }
@@ -57,6 +58,8 @@ sub get_permissible_inputs {
         'date_expiry'   => 1,
         'currency'      => 1,
         'payout'        => 1,
+        'basis'         => 1,
+        'symbol'        => 1,
 
         # Stake inputs
         'starts_as_forward_starting' => 1,
@@ -78,17 +81,24 @@ sub get_permissible_inputs {
         'proposal'     => 1,
 
         # Metadata inputs
-        'shortcode'             => 1,
-        'duration'              => 1,
-        'date_pricing'          => 1,
-        'fixed_expiry'          => 1,
-        'tick_expiry'           => 1,
-        'tick_count'            => 1,
-        'is_sold'               => 1,
-        'contract_type'         => 1,
-        'landing_company'       => 1,
-        'app_markup_percentage' => 1,
-        'prediction'            => 1,
+        'shortcode'              => 1,
+        'duration'               => 1,
+        'duration_unit'          => 1,
+        'date_pricing'           => 1,
+        'fixed_expiry'           => 1,
+        'tick_expiry'            => 1,
+        'tick_count'             => 1,
+        'is_sold'                => 1,
+        'contract_type'          => 1,
+        'landing_company'        => 1,
+        'app_markup_percentage'  => 1,
+        'prediction'             => 1,
+        'req_id'                 => 1,
+        'subscribe'              => 1,
+        'form_id'                => 1,
+        'passthrough'            => 1,
+        'price_daemon_cmd'       => 1,
+        'skips_price_validation' => 1,
     };
 }
 
