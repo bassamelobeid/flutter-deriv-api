@@ -8,6 +8,7 @@ no indirect;
 use Mojo::Base 'Mojolicious';
 use Mojo::Redis2;
 use Mojo::IOLoop;
+use IO::Async::Loop::Mojo;
 
 use Binary::WebSocketAPI::Hooks;
 
@@ -33,6 +34,13 @@ use RateLimitations::Pluggable;
 use Scalar::Util qw(weaken);
 use Time::Duration::Concise;
 use YAML::XS qw(LoadFile);
+
+# Set up the event loop singleton so that any code we pull in uses the Mojo
+# version, rather than trying to set its own.
+my $loop = IO::Async::Loop::Mojo->new;
+die 'Unexpected event loop class: had ' . ref($loop) . ', expected a subclass of IO::Async::Loop::Mojo'
+    unless $loop->isa('IO::Async::Loop::Mojo')
+    and IO::Async::Loop->new->isa('IO::Async::Loop::Mojo');
 
 # These are the apps that are hardcoded to point to a different server pool.
 # This list is overwritten by Redis.

@@ -8,7 +8,7 @@ use feature "state";
 
 use Sys::Hostname;
 use Scalar::Util ();
-use IO::Async::Loop::Mojo;
+use IO::Async::Loop;
 use curry;
 
 use Binary::WebSocketAPI::v3::Wrapper::System;
@@ -212,7 +212,8 @@ sub register {
                 });
         });
 
-    $app->helper(loop => sub { my ($c) = @_; $c->stash->{loop} //= IO::Async::Loop::Mojo->new() });
+    # This is stored as a singleton in IO::Async::Loop, so ->new is cheap to call
+    $app->helper(loop => sub { IO::Async::Loop->new });
 
     return;
 }
