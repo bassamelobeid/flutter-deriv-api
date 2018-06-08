@@ -2,17 +2,17 @@ package BOM::MT5::User::Async;
 
 use strict;
 use warnings;
+
+no indirect;
 use JSON;
 use IPC::Run3;
 use Try::Tiny;
 
-# We know we're running inside a Mojo app so this is best
-use IO::Async::Loop::Mojo;
+use IO::Async::Loop;
 
 # Overrideable in unit tests
 our @MT5_WRAPPER_COMMAND = ('php', '/home/git/regentmarkets/php-mt5-webapi/lib/binary_mt5.php');
 
-my $loop          = IO::Async::Loop::Mojo->new;
 my @common_fields = qw(
     email
     name
@@ -49,8 +49,12 @@ sub _invoke_mt5 {
 
     my $in = encode_json($param);
 
-    # TODO(leonerd): This ought to be a method on IO::Async::Loop itself
-    my $f = $loop->new_future;
+    # IO::Async keeps this around as a singleton, so it's safe to call ->new, and
+    # better than tracking in a local `state` variable since if we happen to fork
+    # then we can trust the other IO::Async users to take care of clearing the
+    # previous singleton.
+    my $loop = IO::Async::Loop->new;
+    my $f    = $loop->new_future;
     $loop->run_child(
         command   => [@MT5_WRAPPER_COMMAND, $cmd],
         stdin     => $in,
