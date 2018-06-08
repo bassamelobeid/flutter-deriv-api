@@ -7,6 +7,7 @@ no indirect;
 use Mojo::Base 'Mojolicious';
 use Mojo::IOLoop;
 use MojoX::JSON::RPC::Service;
+use IO::Async::Loop::Mojo;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use Proc::CPUUsage;
 use Time::HiRes;
@@ -48,6 +49,13 @@ use constant REQUEST_ARGUMENTS_TO_BE_IGNORED => qw (req_id passthrough);
 BOM::RPC::Registry::register(longcode => \&BOM::RPC::v3::Utility::longcode);
 
 my $json = JSON::MaybeXS->new;
+
+# This has a side-effect of setting the IO::Async::Loop singleton.
+# Once we drop Mojolicious, this line can be removed.
+my $loop = IO::Async::Loop::Mojo->new;
+die 'Unexpected event loop class: had ' . ref($loop) . ', expected a subclass of IO::Async::Loop::Mojo'
+    unless $loop->isa('IO::Async::Loop::Mojo')
+    and IO::Async::Loop->new->isa('IO::Async::Loop::Mojo');
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
