@@ -167,11 +167,11 @@ test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_off
 
 test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_receive_callputspread.json',
     '100', 'CALLSPREAD', 'R_100', '7', 'd', '65258.00', '65208.19',
-    'Win up to USD 100 if Volatility 100 Index\'s exit tick is between 65208.19 and 65258.00 or USD 100 if it exceeds 65258.00 at close on 2016-08-16.',
+    'Win up to USD 100 if Volatility 100 Index\'s exit tick is between 65208.19 and 65258.00 at close on 2016-08-16.',
     '47.95', '47.95', '65258.19';
 
 test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_receive_callputspread.json',
     '100', 'PUTSPREAD', 'R_100', '7', 'd', '65258.00', '65208.19',
-    'Win up to USD 100 if Volatility 100 Index\'s exit tick is between 65258.00 and 65208.19 or USD 100 if it falls below 65208.19 at close on 2016-08-16.',
+    'Win up to USD 100 if Volatility 100 Index\'s exit tick is between 65258.00 and 65208.19 at close on 2016-08-16.',
     '53.54', '53.54', '65258.19';
 finish;
