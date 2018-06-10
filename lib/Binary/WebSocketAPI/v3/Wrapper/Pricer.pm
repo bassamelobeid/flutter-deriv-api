@@ -519,7 +519,7 @@ sub _pricing_channel_for_ask {
 
     my %args_hash = %{$args};
 
-    if ($args_hash{basis} and $args_hash{basis} ne 'multiplier') {
+    if ($args_hash{basis} and $args_hash{basis} ne 'multiplier' and $args_hash{contract_type} !~ /SPREAD$/) {
         $args_hash{amount} = 1000;
         $args_hash{basis}  = 'payout';
     }
