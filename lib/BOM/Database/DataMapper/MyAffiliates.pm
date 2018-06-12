@@ -20,13 +20,13 @@ sub get_clients_activity {
     my $dbic = $self->db->dbic;
 
     my $sql = q{
-        SELECT * FROM get_myaffiliate_clients_activity($1)
+        SELECT * FROM get_myaffiliate_clients_activity($1, $2, $3)
     };
 
     return $dbic->run(
         fixup => sub {
             my $sth = $_->prepare($sql);
-            $sth->execute($args->{'date'}->datetime_yyyymmdd_hhmmss_TZ);
+            $sth->execute($args->{'date'}->datetime_yyyymmdd_hhmmss_TZ, $args->{only_authenticate} || 'false', $args->{broker_code});
 
             return $sth->fetchall_hashref('loginid');
         });
