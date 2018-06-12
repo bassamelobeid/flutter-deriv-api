@@ -7,7 +7,7 @@ use Date::Utility;
 use Brands;
 
 use BOM::MyAffiliates::TurnoverReporter;
-use BOM::Platform::Runtime;
+use BOM::Config::Runtime;
 use BOM::Platform::Email qw/send_email/;
 
 my $reporter        = BOM::MyAffiliates::TurnoverReporter->new();
@@ -17,7 +17,7 @@ my @csv = $reporter->activity_for_date_as_csv($processing_date->date_ddmmmyy);
 
 exit unless @csv;
 
-my $output_dir = BOM::Platform::Runtime->instance->app_config->system->directory->db . '/myaffiliates/';
+my $output_dir = BOM::Config::Runtime->instance->app_config->system->directory->db . '/myaffiliates/';
 path($output_dir)->mkpath if (not -d $output_dir);
 
 my $output_filename = $output_dir . 'turnover_' . $processing_date->date_yyyymmdd . '.csv';

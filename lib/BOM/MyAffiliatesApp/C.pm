@@ -7,18 +7,19 @@ use Path::Tiny;
 use BOM::Config::Runtime;
 
 sub activity_report {
-    my $c = shift;
-    return $c->__send_file('activity_report');
+    return shift->__send_file('activity_report');
 }
 
 sub registration {
-    my $c = shift;
-    return $c->__send_file('registration');
+    return shift->__send_file('registration');
 }
 
 sub turnover_report {
-    my $c = shift;
-    return $c->__send_file('turnover_report');
+    return shift->__send_file('turnover_report');
+}
+
+sub cost_per_acquisition {
+    return shift->__send_file('cpa_report');
 }
 
 sub __send_file {
@@ -40,6 +41,8 @@ sub __send_file {
         $filename = 'registrations_';
     } elsif ($type eq 'turnover_report') {
         $filename = 'turnover_';
+    } elsif ($type eq 'cpa_report') {
+        $filename = 'cpa_';
     } else {
         return $c->__bad_request("Invalid request");
     }

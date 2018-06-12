@@ -46,13 +46,13 @@ use BOM::Database::DataMapper::MyAffiliates;
 =cut
 
 sub activity_for_date_as_csv {
-    my ($self, $date_selection) = @_;
+    my ($self, $date_selection, $cpa_type) = @_;
 
-    return _generate_csv_output($date_selection);
+    return _generate_csv_output($date_selection, $cpa_type);
 }
 
 sub _generate_csv_output {
-    my $date_selected = shift;
+    my ($date_selected, $cpa_type) = @_;
 
     my $when = Date::Utility->new($date_selected);
 
@@ -63,7 +63,16 @@ sub _generate_csv_output {
 
     $myaffiliates_data_mapper->db->dbic->run(ping => sub { $_->do("SET statement_timeout TO " . 900_000) });
 
-    my $activity = $myaffiliates_data_mapper->get_clients_activity({'date' => $when});
+    my $activity;
+    if ($cpa_type) {
+        $activity = $myaffiliates_data_mapper->get_clients_activity({
+            'date'               => $when,
+            'only_authenticated' => 1,
+            'broker_code'        => 'MF'
+        });
+    } else {
+        $activity = $myaffiliates_data_mapper->get_clients_activity({'date' => $when});
+    }
 
     my @output;
     my %conversion_hash = ();

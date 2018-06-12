@@ -25,6 +25,7 @@ sub startup {
     $r->get('/activity_report')->to('C#activity_report');
     $r->get('/registration')->to('C#registration');
     $r->get('/turnover_report')->to('C#turnover_report');
+    $r->get('/cpa/eu_financial')->to('C#cost_per_acquisition');
 
     return;
 }

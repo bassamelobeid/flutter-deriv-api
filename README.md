@@ -11,6 +11,7 @@ API endpoints are:
 - Activity report: <https://collector01.binary.com/myaffiliates/activity_report?date=2016-05-30>
 - Registration: <https://collector01.binary.com/myaffiliates/registration?date=2016-05-30>
 - Turnover: <https://collector01.binary.com/myaffiliates/turnover_report?date=2016-05-30>
+- Cost Per Acquisition (CPA): <https://collector01.binary.com/myaffiliates/cpa/eu_financial?date=2016-05-30>
 
 # Main Dependencies
 CPAN module: WebService::MyAffiliates
