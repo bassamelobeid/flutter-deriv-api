@@ -88,10 +88,13 @@ sub _daemon_run {
                     # contract sold send data to datadog
                     my $processing_duration = 1000 * Time::HiRes::tv_interval(\@processing_start, \@processing_done);
                     my $time_difference = $processing_done[0] - $is_sold->{contract_expiry_epoch};
+                    my $expiry_type = $is_sold->{expiry_type};
+                    my $contract_type = $is_sold->{bet_type};
+
                     stats_timing('bom.transactions.expiryd.processing_time',
-                        $processing_duration, {tags => ["expiry_type:$is_sold->{expiry_type}", "contract_type:$is_sold->{bet_type}"]});
+                        $processing_duration, {tags => ["expiry_type:$expiry_type", "contract_type:$contract_type"]});
                     stats_timing('bom.transactions.expiryd.time_difference',
-                        $time_difference, {tags => ["expiry_type:$is_sold->{expiry_type}", "contract_type:$is_sold->{bet_type}"]});
+                        $time_difference, {tags => ["expiry_type:$expiry_type", "contract_type:$contract_type"]});
                 }
             };    # No catch, let MtM pick up the pieces.
         }
