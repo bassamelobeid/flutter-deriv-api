@@ -6,13 +6,12 @@ use warnings;
 use Try::Tiny;
 
 use Brands;
-use BOM::User::Client;
 use LandingCompany::Registry;
 
+use BOM::User;
+use BOM::User::Client;
 use BOM::User::Password;
 use BOM::Config::Runtime;
-use BOM::User;
-use BOM::Platform::Token;
 use BOM::Platform::Context qw(localize request);
 
 sub create_account {
@@ -31,50 +30,7 @@ sub create_account {
         return {error => 'invalid residence'};
     }
 
-    my ($client, $error);
-    my $brand_name = $details->{brand_name} // request()->brand;
-    my $brand_country_instance = Brands->new(name => $brand_name)->countries_instance;
-    try {
-        # set virtual company if residence is provided otherwise use brand name to infer the broker code
-        my $default_virtual;
-        $default_virtual = 'champion-virtual' if $brand_name eq 'champion';
-        $default_virtual = 'virtual'          if $brand_name eq 'binary';
-        return {error => 'invalid brand company'} unless $default_virtual;
-
-        my $company_name = $residence ? $brand_country_instance->virtual_company_for_country($residence) : $default_virtual;
-
-        $client = BOM::User::Client->register_and_return_new_client({
-            broker_code                   => LandingCompany::Registry::get($company_name)->broker_codes->[0],
-            client_password               => $password,
-            salutation                    => '',
-            last_name                     => '',
-            first_name                    => '',
-            myaffiliates_token            => $details->{myaffiliates_token} // '',
-            date_of_birth                 => undef,
-            citizen                       => '',
-            residence                     => $residence || '',
-            email                         => $email,
-            address_line_1                => '',
-            address_line_2                => '',
-            address_city                  => '',
-            address_state                 => '',
-            address_postcode              => '',
-            phone                         => '',
-            secret_question               => '',
-            secret_answer                 => '',
-            myaffiliates_token_registered => 0,
-            checked_affiliate_exposures   => 0,
-            latest_environment            => $details->{latest_environment} // '',
-        });
-    }
-    catch {
-        $error = $_;
-    };
-    if ($error) {
-        warn("Virtual: register_and_return_new_client err [$error]");
-        return {error => 'invalid'};
-    }
-
+    my ($user, $client, $error);
     my $source            = $details->{source};
     my $utm_source        = $details->{utm_source};
     my $utm_medium        = $details->{utm_medium};
@@ -82,25 +38,59 @@ sub create_account {
     my $gclid_url         = $details->{gclid_url};
     my $has_social_signup = $details->{has_social_signup} // 0;
 
-    my $email_consent = 0;
     try {
-        my $country_company = $brand_country_instance->real_company_for_country($residence);
-        $email_consent = LandingCompany::Registry::get($country_company)->email_consent->{default} if $country_company;
-    };
+        # Any countries covered by GDPR should default to not sending email, but we would like to
+        # include other users in our default marketing emails.
+        my $brand_name = $details->{brand_name} // request()->brand;
+        my $brand_country_instance = Brands->new(name => $brand_name)->countries_instance;
+        my $country_company        = $brand_country_instance->real_company_for_country($residence);
+        my $email_consent          = $country_company ? LandingCompany::Registry::get($country_company)->email_consent->{default} : 0;
 
-    my $user = BOM::User->create(
-        email             => $email,
-        password          => $password,
-        email_verified    => 1,
-        has_social_signup => $has_social_signup,
-        email_consent     => $email_consent,
-        $source       ? (app_id       => $source)       : (),
-        $utm_source   ? (utm_source   => $utm_source)   : (),
-        $utm_medium   ? (utm_medium   => $utm_medium)   : (),
-        $utm_campaign ? (utm_campaign => $utm_campaign) : (),
-        $gclid_url    ? (gclid_url    => $gclid_url)    : ());
-    $user->add_loginid({loginid => $client->loginid});
-    $user->save;
+        # set virtual company if residence is provided otherwise use brand name to infer the broker code
+        my $default_virtual;
+        $default_virtual = 'champion-virtual' if $brand_name eq 'champion';
+        $default_virtual = 'virtual'          if $brand_name eq 'binary';
+        return {error => 'invalid brand company'} unless $default_virtual;
+
+        $user = BOM::User->create(
+            email             => $email,
+            password          => $password,
+            email_verified    => 1,
+            has_social_signup => $has_social_signup,
+            email_consent     => $email_consent,
+            $source       ? (app_id       => $source)       : (),
+            $utm_source   ? (utm_source   => $utm_source)   : (),
+            $utm_medium   ? (utm_medium   => $utm_medium)   : (),
+            $utm_campaign ? (utm_campaign => $utm_campaign) : (),
+            $gclid_url    ? (gclid_url    => $gclid_url)    : ());
+
+        my $landing_company = $residence ? $brand_country_instance->virtual_company_for_country($residence) : $default_virtual;
+
+        $client = $user->create_client(
+            landing_company  => $landing_company,
+            client_password  => $password,
+            first_name       => '',
+            last_name        => '',
+            email            => $email,
+            residence        => $residence || '',
+            address_line_1   => '',
+            address_line_2   => '',
+            address_city     => '',
+            address_state    => '',
+            address_postcode => '',
+            phone            => '',
+            secret_question  => '',
+            secret_answer    => ''
+        );
+    }
+    catch {
+        $error = $_;
+    };
+    if ($error) {
+        warn("Virtual: create_client err [$error]");
+        return {error => 'invalid'};
+    }
+
     $client->deposit_virtual_funds($source, localize('Virtual money credit to account'));
 
     return {
