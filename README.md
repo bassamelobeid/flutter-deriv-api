@@ -1,18 +1,23 @@
 # BOM-User
 
-#### NAME
-BOM::User - Class representing a company's user object.
-BOM::User::Client - Class representing a company's client related business logic
+## NAME
 
-#### SYNOPSYS
+BOM::User - main class, containing methods to manage user object.
+BOM::User::Client - main class, containing methods to manage clients and various client related statuses, promotions, limits, payments etc. 
+
+## SYNOPSIS
+
 ```
-my %new_client_details = (
-    broker_code     => 'CR',
+# A user represents a person, so the first step is to create one of those
+# in the database.
+my $hash_pwd = BOM::Platform::Password::hashpw("Passw0rd");
+my %new_user_details = (
+    email           => 'jsmith@somedomain.com',
+    # Remaining details are optional
+    password        => $hash_pwd,
     residence       => 'br',
-    client_password => 'x',
     last_name       => 'Smith',
     first_name      => 'John',
-    email           => 'jsmith@somedomain.com',
     salutation      => 'Mr',
     address_line_1  => 'Some address line',
     address_city    => 'City',
@@ -20,18 +25,24 @@ my %new_client_details = (
     secret_question => "Mother's maiden name",
     secret_answer   => 'Johnson',
 );
+my $u = BOM::User->create(\%new_user_details);
 
-# create new client
-my $c = BOM::User::Client->register_and_return_new_client(\%new_client_details);
+# Once you have a user, you'll need one or more clients to be able to log in or trade
+my %new_client_details = (
+    landing_company => 'costarica',
+);
+my $c = $u->create_client(\%new_client_details);
+print $c->loginid; # should give something like CR1234
+
 # set default account currency
 $c->set_default_account('USD');
 
 # get client from db
-$c = BOM::User::Client->new({loginid => 'CLLOGIN'});
+$c = BOM::User::Client->new({loginid => 'CR1234'});
 
 # get client's status and various info
 my $status = $c->get_status;
-my $email  = $c->email;
+my $email  = $u->email;
 
 # produce some payments
 $c->validate_payment({
@@ -43,12 +54,6 @@ $c->payment_account_transfer({
     currensy => 'USD'
 });
 
-my $hash_pwd = BOM::Platform::Password::hashpw("Passw0rd");
-my $user     = BOM::User->create(
-    email    => $email,
-    password => $hash_pwd;
-);
-
 $user->add_loginid({loginid => $c->loginid});
 $user->save;
 
@@ -59,8 +64,6 @@ my @clienst = $user->clients;
 
 This repo contains objects to abstract company's business logic related to clients management and client's payments management
 
-* BOM::User - main class, containing methods to manage user object.
-* BOM::User::Client - main class, containing methods to manage clients and various client related statuses, promotions, limits, payments etc. 
 * BOM::User::Client::PaymentAgent - class to represent any client as a separate payment agent.
 * BOM::User::Client::Desk, which is a wrapper around WWW::Desk - Desk.com API.
 * BOM::User::Client::PaymentAgent, which include client payment agent system.
