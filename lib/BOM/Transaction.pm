@@ -1418,8 +1418,9 @@ sub sell_expired_contracts {
                 # expiryd only send one contract id so it's safe to return single value.
                 # this a hack that should be removed later when examination is done.
                 if ($collect_stats) {
-                    $result->{bet_short_code} = $bet->short_code;
                     $result->{contract_expiry_epoch} = $contract->exit_tick->epoch if $contract->exit_tick;
+                    $result->{bet_type}    = $bet->bet_type;
+                    $result->{expiry_type} = $contract->expiry_type;
                 }
 
             } elsif ($client->is_virtual and $now->epoch >= $contract->date_settlement->epoch + 3600) {

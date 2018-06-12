@@ -89,9 +89,9 @@ sub _daemon_run {
                     my $processing_duration = 1000 * Time::HiRes::tv_interval(\@processing_start, \@processing_done);
                     my $time_difference = $processing_done[0] - $is_sold->{contract_expiry_epoch};
                     stats_timing('bom.transactions.expiryd.processing_time',
-                        $processing_duration, {tags => ["tr:$info->{transaction_reference}", "contract_type:$is_sold->{bet_short_code}"]});
+                        $processing_duration, {tags => ["expiry_type:$is_sold->{expiry_type}", "contract_type:$is_sold->{bet_type}"]});
                     stats_timing('bom.transactions.expiryd.time_difference',
-                        $time_difference, {tags => ["tr:$info->{transaction_reference}", "contract_type:$is_sold->{bet_short_code}"]});
+                        $time_difference, {tags => ["expiry_type:$is_sold->{expiry_type}", "contract_type:$is_sold->{bet_type}"]});
                 }
             };    # No catch, let MtM pick up the pieces.
         }
