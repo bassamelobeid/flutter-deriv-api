@@ -511,5 +511,21 @@ EOF
         print '<p>New ' . $currency . ' address for deposits: <strong>' . encode_entities($rslt) . '</strong></p>';
     }
 
+} elsif ($view_action eq 'prioritize_confirmation') {
+    my $prioritize_address = request()->param('prioritize_address');
+    if ($prioritize_address) {
+        my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
+        my $dbic = $clientdb->db->dbic;
+
+        my ($error) = $dbic->run(
+            ping => sub {
+                $_->selectrow_array('SELECT * FROM payment.ctc_set_address_priority(?, ?)', undef, $prioritize_address, $currency);
+            });
+
+        print "<p style='color:red'><strong>ERROR: $error</strong></p>" if $error;
+        print "<p style='color:green'><strong>SUCCESS: Requested priority</strong></p>" if not $error;
+    } else {
+        print "<p style=\"color:red\"><strong>ERROR: Address not found</strong></p>";
+    }
 }
 code_exit_BO();

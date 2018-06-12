@@ -1,3 +1,4 @@
+<br>
 <form action="[% controller_url %]" method="POST">
     <select name="currency">
       <option value="BTC"[% IF currency == 'BTC' %] selected="selected"[% END %]>Bitcoin</option>
@@ -22,7 +23,7 @@
         <input type="text" name="start_date" class="datepick" value="[% start_date %]">
         <input type="text" name="end_date" class="datepick" value="[% end_date %]">
         <input type="checkbox" name="include_new"><label for="include_new">Show new addresses</label>
-    <br>
+    <br><br>
 <!-- Search -->
         <button type="submit" name="view_action" value="search">Search</button>
         <select name="search_type">
@@ -30,10 +31,15 @@
             <option value="address">Address</option>
         </select>
         <input type="text" name="search_query">
-    <br>
+    <br><br>
+<!-- Manual Confirmation -->
+        <button type="submit" name="view_action" value="prioritize_confirmation">Prioritize Confirmation</button>
+        <label for="prioritize_address">Address</label>
+        <input type="text" name="prioritize_address" >
+    <br><br>
 <!-- Deposit -->
     <button type="submit" name="view_action" value="deposits">Deposit Transactions</button>
-    <br>
+    <br><br>
 <!-- Withdrawal -->
     <button type="submit" name="view_action" value="withdrawals">Withdrawal Transactions</button>
     <br>
