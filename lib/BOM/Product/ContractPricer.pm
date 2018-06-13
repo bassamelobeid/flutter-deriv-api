@@ -197,6 +197,11 @@ has reset_time_in_years => (
     lazy_build => 1,
 );
 
+has reset_spot => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
 sub commission_multiplier {
     return shift->price_calculator->commission_multiplier(@_);
 }
@@ -223,6 +228,26 @@ sub _build_reset_time_in_years {
     my $reset_time_in_years = ($self->date_expiry->epoch - $self->date_start->epoch) * 0.5;
     $reset_time_in_years = $reset_time_in_years / (365 * 24 * 60 * 60);
     return $reset_time_in_years;
+}
+
+sub _build_reset_spot {
+    my $self = shift;
+
+    my $reset_spot = undef;
+
+    if ($self->category_code eq 'reset' and $self->reset_time and $self->date_pricing->epoch > $self->reset_time) {
+        if ($self->tick_expiry) {
+            my @ticks_since_start = @{$self->get_ticks_for_tick_expiry};
+            my $tick_reset_timing = int($self->tick_count * 0.5);
+            if (@ticks_since_start >= ($tick_reset_timing + 1)) {
+                $reset_spot = $ticks_since_start[$tick_reset_timing];
+            }
+        } else {
+            $reset_spot = $self->underlying->tick_at($self->reset_time);
+        }
+    }
+
+    return $reset_spot;
 }
 
 sub _create_new_interface_engine {
