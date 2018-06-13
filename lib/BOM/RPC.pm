@@ -182,6 +182,8 @@ sub wrap_rpc_sub {
         catch {
             # replacing possible objects in $params with strings to avoid error in encode_json function
             my $params = {$original_args[0] ? %{$original_args[0]} : ()};
+            delete $params->{token_details};
+            delete $params->{token};
             $params->{client} = blessed($params->{client}) . ' object: ' . $params->{client}->loginid
                 if eval { $params->{client}->can('loginid') };
             defined blessed($_) and $_ = blessed($_) . ' object' for (values %$params);

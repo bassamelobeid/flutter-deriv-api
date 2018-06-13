@@ -1631,13 +1631,13 @@ rpc set_account_currency => sub {
         return $error if $error;
     }
 
-    # bail out if default account is already set
-    return {status => 0} if $client->default_account;
-
     # no change in default account currency if default account is already set
-    return {status => 1} if ($client->set_default_account($currency));
+    my $status = 0;
+    try {
+        $status = 1 if $client->set_default_account($currency);
+    };
 
-    return {status => 0};
+    return {status => $status};
 };
 
 rpc set_financial_assessment => sub {
