@@ -732,6 +732,10 @@ sub add_note {
     my $to = 'helpdesk@binary.com';
     $to = 'support-newaccount-notifications@binary.com' if $subject =~ /New Sign-Up/ or $subject =~ /Update Address/;
     my $from = $to;
+    # We want to record who this note is for, but many legacy places already include client ID.
+    # If you're reading this, please check for those and remove the condition.
+    my $loginid = $self->loginid;
+    $subject = $loginid . ': ' . $subject unless $subject =~ /\Q$loginid/;
     return Email::Stuffer->from($from)->to($to)->subject($subject)->text_body($content)->send_or_die;
 }
 
