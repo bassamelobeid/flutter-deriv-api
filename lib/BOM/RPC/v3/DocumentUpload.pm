@@ -23,8 +23,7 @@ rpc document_upload => sub {
     my $params = shift;
     my $args   = $params->{args};
     my $status = $args->{status};
-
-    my $error = validate_input($params);
+    my $error  = validate_input($params);
     return create_upload_error($error) if $error;
 
     return start_document_upload($params) if $args->{document_type} and $args->{document_format};
@@ -41,7 +40,6 @@ sub start_document_upload {
     my $loginid = $client->loginid;
     my ($document_type, $document_format, $expected_checksum) =
         @{$args}{qw/document_type document_format expected_checksum/};
-
     unless ($client->get_db eq 'write') {
         $client->set_db('write');
     }
@@ -70,7 +68,6 @@ sub successful_upload {
     my $params = shift;
     my $client = $params->{client};
     my $args   = $params->{args};
-
     unless ($client->get_db eq 'write') {
         $client->set_db('write');
     }
@@ -78,8 +75,9 @@ sub successful_upload {
     _set_staff($client);
 
     my $query_result = BOM::Platform::Client::DocumentUpload::finish_document_upload(
-        client  => $client,
-        file_id => $args->{file_id});
+        client    => $client,
+        file_id   => $args->{file_id},
+        page_type => ($args->{page_type} || ''));
 
     my $err = check_for_query_error($query_result);
     return $err if $err;
