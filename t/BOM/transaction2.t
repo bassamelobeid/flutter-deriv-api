@@ -11,7 +11,6 @@ use Test::Exception;
 use Guard;
 use BOM::User::Client;
 use BOM::User::Password;
-use BOM::Platform::Client::Utility;
 
 use BOM::Platform::Client::IDAuthentication;
 

@@ -124,7 +124,7 @@ sub create_client {
         address_state    => 'st',
         phone            => '+9145257468',
         secret_question  => 'What the f***?',
-        secret_answer    => BOM::Platform::Client::Utility::encrypt_secret_answer('is that'),
+        secret_answer    => BOM::User::Utility::encrypt_secret_answer('is that'),
         date_of_birth    => '1945-08-06',
     });
 }

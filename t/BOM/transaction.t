@@ -11,7 +11,6 @@ use Guard;
 use Crypt::NamedKeys;
 use BOM::User::Client;
 use BOM::User::Password;
-use BOM::Platform::Client::Utility;
 use BOM::Config::Runtime;
 
 use Date::Utility;
