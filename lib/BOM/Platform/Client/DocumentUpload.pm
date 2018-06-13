@@ -22,7 +22,8 @@ sub start_document_upload {
 
 sub finish_document_upload {
     my (%args) = @_;
-    return _do_query($args{client}, ['SELECT * FROM betonmarkets.finish_document_upload(?, ?)', undef, $args{file_id}, $args{comments}]);
+    return _do_query($args{client},
+        ['SELECT * FROM betonmarkets.finish_document_upload(?, ?, ?)', undef, $args{file_id}, $args{comments}, $args{page_type}]);
 }
 
 sub _do_query {
