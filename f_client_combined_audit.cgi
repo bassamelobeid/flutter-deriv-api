@@ -3,14 +3,17 @@ package main;
 
 use strict;
 use warnings;
+
+no indirect;
 no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix these warnings
-use open qw[ :encoding(UTF-8) ];
 use Encode;
 use JSON::MaybeXS;
 use Data::Dumper;
 use Date::Utility;
 use Try::Tiny;
 use HTML::Entities;
+use URI;
+use Mojo::UserAgent;
 
 use f_brokerincludeall;
 use BOM::Backoffice::Request qw(request);
@@ -255,25 +258,26 @@ sub _get_desk_com_entries {
     my $enddate   = shift;
     my $status    = shift;
 
-    my $color = 'black';
-    # add desk.com cases not deleted
-    my $curl_url =
-          BOM::Config::third_party->{desk}->{api_uri}
-        . "cases/search?q=custom_loginid:$loginid+created:"
-        . _get_desk_created_string($startdate, $enddate);
-    if ($status) {
-        $curl_url .= "+status:$status";
-        $color = 'red';
-    }
-    $curl_url .= " -u "
-        . BOM::Config::third_party->{desk}->{username} . ":"
-        . BOM::Config::third_party->{desk}->{password}
-        . " -d 'sort_field=created_at&sort_direction=asc' -G -H 'Accept: application/json'";
+    my $color = $status ? 'red' : 'black';
 
-    my $response     = `curl $curl_url`;
-    my @desk_entries = ();
+    my @desk_entries;
+    my $ua = Mojo::UserAgent->new;
     try {
-        $response = JSON::MaybeXS->new->decode(Encode::decode_utf8($response));
+        my $uri = URI->new(BOM::Config::third_party->{desk}->{api_uri} . 'cases/search');
+        $uri->query_param(
+            q => 'custom_loginid:' . $loginid . ' created:' . _get_desk_created_string($startdate, $enddate) . ($status ? '+status:' . $status : ''));
+        $uri->query_param(sort_field     => 'created_at');
+        $uri->query_param(sort_direction => 'asc');
+        $uri->userinfo(BOM::Config::third_party->{desk}->{username} . ":" . BOM::Config::third_party->{desk}->{password});
+        my $res = $ua->get(
+            "$uri",
+            => {
+                Accept => 'application/json',
+            });
+        die $res->message if $res->is_error;
+        die 'unknown issue with request' unless $res->is_success;
+        my $response = decode_json_utf8($res->body);
+
         if ($response->{total_entries} > 0 and $response->{_embedded} and $response->{_embedded}->{entries}) {
             foreach (sort { Date::Utility->new($a->{created_at})->epoch <=> Date::Utility->new($b->{created_at})->epoch }
                 @{$response->{_embedded}->{entries}})

@@ -3,7 +3,6 @@ package main;
 
 use strict;
 use warnings;
-use open qw[ :encoding(UTF-8) ];
 use Encode;
 use JSON::MaybeXS;
 use Date::Utility;
@@ -16,6 +15,8 @@ use BOM::Config;
 use BOM::User::Client;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
+use URI;
+use Mojo::UserAgent;
 
 BOM::Backoffice::Sysinit::init();
 PrintContentType();
@@ -40,16 +41,24 @@ if (not $client) {
     code_exit_BO();
 }
 
-my $curl_url =
-      BOM::Config::third_party->{desk}->{api_uri}
-    . "cases/search?q=custom_loginid:$loginid+created:$created -u "
-    . BOM::Config::third_party->{desk}->{username} . ":"
-    . BOM::Config::third_party->{desk}->{password}
-    . " -d 'sort_field=created_at&sort_direction=asc' -G -H 'Accept: application/json'";
+my $ua = Mojo::UserAgent->new;
+my $response;
 
-my $response = `curl $curl_url`;
 try {
-    $response = JSON::MaybeXS->new->decode(Encode::decode_utf8($response));
+    my $uri = URI->new(BOM::Config::third_party->{desk}->{api_uri} . 'cases/search');
+    $uri->query_param(q              => 'custom_loginid:' . $loginid . ' created:' . $created);
+    $uri->query_param(sort_field     => 'created_at');
+    $uri->query_param(sort_direction => 'asc');
+    $uri->userinfo(BOM::Config::third_party->{desk}->{username} . ":" . BOM::Config::third_party->{desk}->{password});
+    my $res = $ua->get(
+        "$uri",
+        => {
+            Accept => 'application/json',
+        });
+    die $res->message if $res->is_error;
+    die 'unknown issue with request' unless $res->is_success;
+    $response = decode_json_utf8($res->body);
+
     if ($response->{total_entries} > 0 and $response->{_embedded} and $response->{_embedded}->{entries}) {
         print '<table>';
         foreach (sort { Date::Utility->new($a->{created_at})->epoch <=> Date::Utility->new($b->{created_at})->epoch }
