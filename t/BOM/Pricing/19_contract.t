@@ -178,6 +178,7 @@ subtest 'get_bid' => sub {
             audit_details
             status
             payout
+            reset_time
     ));
     cmp_bag([sort keys %{$result}], [sort @expected_keys]);
 

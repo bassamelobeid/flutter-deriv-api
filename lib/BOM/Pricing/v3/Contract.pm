@@ -376,6 +376,7 @@ sub get_bid {
             ($contract->is_binary) ? (payout => $contract->payout) : ($contract->can('maximum_payout')) ? (payout => $contract->maximum_payout) : (),
             contract_type => $contract->code,
             bid_price     => formatnumber('price', $contract->currency, $contract->bid_price),
+            ($contract->reset_spot) ? (reset_time => $contract->reset_spot->epoch) : (),
         };
 
         if ($is_sold and $is_expired) {
