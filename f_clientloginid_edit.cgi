@@ -4,7 +4,6 @@ use strict;
 use warnings;
 no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix these warnings
 use open qw[ :encoding(UTF-8) ];
-
 use LWP::UserAgent;
 use Text::Trim;
 use File::Copy;
@@ -40,6 +39,7 @@ use BOM::Backoffice::Config;
 use BOM::Backoffice::Script::DocumentUpload;
 use Finance::MIFIR::CONCAT qw(mifir_concat);
 use BOM::Platform::Client::DocumentUpload;
+use File::MimeInfo::Magic qw/extensions mimetype/;
 
 use constant MAX_FILE_SIZE => 8 * 2**20;
 
@@ -202,7 +202,7 @@ if ($input{whattodo} eq 'uploadID') {
     foreach my $i (1 .. 4) {
         my $doctype         = $cgi->param('doctype_' . $i);
         my $filetoupload    = $cgi->upload('FILE_' . $i);
-        my $docformat       = $cgi->param('docformat_' . $i);
+        my $page_type       = $cgi->param('page_type_' . $i);
         my $expiration_date = $cgi->param('expiration_date_' . $i);
         my $document_id     = substr(encode_entities($cgi->param('document_id_' . $i)), 0, 30);
         my $comments        = substr(encode_entities($cgi->param('comments_' . $i)), 0, 255);
@@ -279,9 +279,10 @@ if ($input{whattodo} eq 'uploadID') {
                 "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Exceeds maximum file size (" . MAX_FILE_SIZE . " bytes).</p><br />";
             next;
         }
-        my $file_checksum = Digest::MD5->new->addfile($filetoupload)->hexdigest;
-
-        my $query_result = BOM::Platform::Client::DocumentUpload::start_document_upload(
+        my $file_checksum         = Digest::MD5->new->addfile($filetoupload)->hexdigest;
+        my $abs_path_to_temp_file = $cgi->tmpFileName($filetoupload);
+        my $docformat             = extensions(mimetype($abs_path_to_temp_file));
+        my $query_result          = BOM::Platform::Client::DocumentUpload::start_document_upload(
             client          => $client,
             doctype         => $doctype,
             docformat       => $docformat,
@@ -295,9 +296,10 @@ if ($input{whattodo} eq 'uploadID') {
             next;
         }
 
-        my $file_id               = $query_result->{file_id};
-        my $new_file_name         = "$loginid.$doctype.$file_id.$docformat";
-        my $abs_path_to_temp_file = $cgi->tmpFileName($filetoupload);
+        my $file_id = $query_result->{file_id};
+
+        my $new_file_name = "$loginid.$doctype.$file_id";
+        $new_file_name .= $page_type eq '' ? ".$docformat" : "_$page_type.$docformat";
 
         my $document_upload = BOM::Backoffice::Script::DocumentUpload->new(config => BOM::Backoffice::Config::config()->{document_auth_s3});
 
@@ -305,9 +307,10 @@ if ($input{whattodo} eq 'uploadID') {
             or die "Upload failed for $filetoupload";
 
         $query_result = BOM::Platform::Client::DocumentUpload::finish_document_upload(
-            client   => $client,
-            file_id  => $file_id,
-            comments => $comments
+            client    => $client,
+            file_id   => $file_id,
+            comments  => $comments,
+            page_type => $page_type,
         );
 
         unless ($query_result->{file_id}) {

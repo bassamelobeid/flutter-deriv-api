@@ -31,24 +31,16 @@
     <option value="professional_uk_self_certified_sophisticated">UK self-certified sophisticated</option>
     <option value="other">Other</option>
   </select>
-  <select name=docformat_[% n %]>
-    <option>JPG</option>
-    <option>JPEG</option>
-    <option>GIF</option>
-    <option>PNG</option>
-    <option>TIF</option>
-    <option>PDF</option>
-    <option>PCX</option>
-    <option>EFX</option>
-    <option>JFX</option>
-    <option>DOC</option>
-    <option>TXT</option>
-    <option>MP4</option>
+  <select name="page_type_[% n %]">
+    <option value="" selected>Page Type</option>
+    <option value="front">Front Side</option>
+    <option value="back">Back Side</option>
+    <option value="photo">Photo</option>
   </select>
-  <input type="FILE" name="FILE_[% n %]">
+  <input type="FILE" name="FILE_[% n %]" style="width: 150px">
   Expiration date:<input type="text" size=11 name="expiration_date_[% n %]" placeholder="YYYY-MM-DD">
   Document ID:<input type="text" size=11 name="document_id_[% n %]" placeholder="Document ID">
-  Comments:<input type="text" size=20 name="comments_[% n %]" placeholder="optional, up to 255 characters">
+  Comments:<input type="text" size=25 name="comments_[% n %]" placeholder="optional, up to 255 characters">
     <br>
   [% END %]
   <br>
