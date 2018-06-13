@@ -284,8 +284,8 @@ sub accounts_by_category {
 
         next unless $cl;
 
-        my $all_status = BOM::User::Client::client_status_types();
-        my @do_not_display_status = grep { $all_status->{$_} == 0 } keys %$all_status;
+        my $all_status = BOM::User::Client->status_codes(hidden => 1);
+        my @do_not_display_status = grep { $all_status->{$_}->{disallow_login} } keys %$all_status;
 
         # don't include clients that we don't want to show
         next if grep { $cl->get_status($_) } @do_not_display_status;

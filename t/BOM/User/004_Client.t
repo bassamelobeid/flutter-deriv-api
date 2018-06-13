@@ -11,10 +11,10 @@ use BOM::User::Client;
 my $login_id = 'CR0011';
 my $client;
 
-is_deeply [sort { $a cmp $b } keys %{BOM::User::Client::client_status_types()}], [
-    sort { $a cmp $b }
-        qw/age_verification cashier_locked disabled unwelcome withdrawal_locked ukgc_funds_protection proveid_pending proveid_requested tnc_approval crs_tin_information financial_risk_approval ukrts_max_turnover_limit_not_set jp_knowledge_test_pending jp_knowledge_test_fail jp_activation_pending jp_transaction_detail migrated_single_email duplicate_account
-        professional_requested professional/
+is_deeply [sort keys %{BOM::User::Client->status_codes()}],
+    [
+    sort
+        qw/age_verification cashier_locked disabled unwelcome withdrawal_locked ukgc_funds_protection crs_tin_information financial_risk_approval ukrts_max_turnover_limit_not_set jp_knowledge_test_pending jp_knowledge_test_fail jp_activation_pending jp_transaction_detail professional_requested professional/
     ],
     "correct number of client status";
 
