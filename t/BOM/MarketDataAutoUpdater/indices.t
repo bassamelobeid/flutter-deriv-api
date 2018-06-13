@@ -8,16 +8,17 @@ use Test::Exception;
 use Test::MockModule;
 use Test::Warnings;
 
-use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
-
 use Date::Utility;
 use File::Temp;
 use File::Basename qw(dirname);
+use Mojo::UserAgent;
+
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
+
 use BOM::MarketDataAutoUpdater::Indices;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use Test::MockModule;
 
 # some checks hide failures output if market is no open
 # but tests still want it to fail, so let's make markets always open
@@ -149,7 +150,9 @@ SKIP: {
     subtest 'updated hurray!' => sub {
         my $tmp = File::Temp->newdir;
         # get the real deal because we check date
-        `wget -O $tmp/auto_upload.xls 'https://www.dropbox.com/s/yjl5jqe6f71stf5/auto_upload.xls?dl=1' > /dev/null 2>&1`;
+        my $url = 'https://www.dropbox.com/s/yjl5jqe6f71stf5/auto_upload.xls?dl=1';
+        my $ua  = Mojo::UserAgent->new->max_redirects(5);
+        $ua->get($url)->result->content->asset->move_to("$tmp/auto_upload.xls");
 
         my @symbols_to_update = grep { $_ !~ /^OTC_/ } create_underlying_db->get_symbols_for(
             market            => 'indices',

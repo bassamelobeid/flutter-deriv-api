@@ -13,14 +13,16 @@ Updates Index vols from a given .file file.
 use Moose;
 extends 'BOM::MarketDataAutoUpdater';
 
+use Mojo::UserAgent;
+use Try::Tiny;
+no indirect;
+
+use Quant::Framework::VolSurface::Moneyness;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Config::Runtime;
 use BOM::MarketData qw(create_underlying_db);
 use SuperDerivatives::VolSurface;
-use Try::Tiny;
-use File::Temp;
-use Quant::Framework::VolSurface::Moneyness;
 
 has filename => (
     is => 'ro',
@@ -51,9 +53,12 @@ has uses_binary_spot => (
 sub _build_file {
     my $self     = shift;
     my $filename = $self->filename;
-    my $url      = 'https://www.dropbox.com/s/yjl5jqe6f71stf5/auto_upload.xls?dl=0';
+    my $url      = 'https://www.dropbox.com/s/yjl5jqe6f71stf5/auto_upload.xls?dl=1';
     my $file     = '/tmp/' . $filename;
-    `wget -O $file $url > /dev/null 2>&1`;
+
+    my $ua = Mojo::UserAgent->new->max_redirects(5);
+    $ua->get($url)->result->content->asset->move_to($file);
+
     return $file;
 }
 has symbols_to_update => (
