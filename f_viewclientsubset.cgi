@@ -146,7 +146,7 @@ foreach my $loginID (keys %{$results}) {
         . encode_entities($client->{reason})
         . "&nbsp;</td>" . "</tr>";
 
-    $total_bal += $client->{balance_usd};
+    $total_bal += $client->{balance_in_usd};
 }
 
 # Page navigation
@@ -286,11 +286,11 @@ sub get_client_by_status {
             next;
         }
 
-        if (request()->param('onlynonzerobalance') && $client->{balance_usd} == 0) {
+        if (request()->param('onlynonzerobalance') && $client->{balance_in_usd} == 0) {
             delete $results->{$loginID};
             next;
         }
-        my $bal = $client->{balance_usd};
+        my $bal = $client->{balance_in_usd};
         my $opencontracts = ($SUMMARYFILE{"$loginID-TOTALEQUITY"} > $bal) ? '$' . ($SUMMARYFILE{"$loginID-TOTALEQUITY"} - $bal) : '';
         $client->{equity} = $SUMMARYFILE{"$loginID-TOTALEQUITY"} . ' ' . $opencontracts;
     }
