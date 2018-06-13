@@ -12,7 +12,6 @@ use Test::Warnings;
 
 use BOM::User::Client;
 
-use BOM::Platform::Client::Utility;
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;

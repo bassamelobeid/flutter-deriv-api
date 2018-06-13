@@ -9,7 +9,6 @@ use Brands;
 use LandingCompany::Registry;
 
 use BOM::User;
-use BOM::User::Client;
 use BOM::User::Password;
 use BOM::Config::Runtime;
 use BOM::Platform::Context qw(localize request);

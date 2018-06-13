@@ -157,7 +157,7 @@ sub after_register_client {
         $client->add_note("MX Client [$client_loginid] - first name or last name less than 3 characters", "$notemsg\n");
     }
 
-    BOM::Platform::Client::Utility::set_gamstop_self_exclusion($client);
+    BOM::User::Utility::set_gamstop_self_exclusion($client);
 
     return {
         client => $client,
@@ -430,7 +430,7 @@ sub validate_account_details {
             if (my $answer = $client->secret_answer) {
                 $value = $answer;
             } elsif ($value) {
-                $value = BOM::Platform::Client::Utility::encrypt_secret_answer($value);
+                $value = BOM::User::Utility::encrypt_secret_answer($value);
             }
         }
 

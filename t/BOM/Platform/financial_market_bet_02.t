@@ -13,7 +13,6 @@ use BOM::Database::ClientDB;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Database::Model::FinancialMarketBet::Factory;
 use BOM::Platform::Client::IDAuthentication;
-use BOM::Platform::Client::Utility;
 use BOM::User::Password;
 
 use BOM::Test::Helper::Client qw( create_client top_up );
