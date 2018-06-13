@@ -40,9 +40,9 @@ $client->client_authentication_document(undef);
 is($client->documents_expired(), 0, $test);
 
 $test = q{After call to finish_document_upload, document status changed to 'uploaded'};
-$SQL  = 'SELECT * FROM betonmarkets.finish_document_upload(?,?)';
+$SQL  = 'SELECT * FROM betonmarkets.finish_document_upload(?,?,?)';
 my $sth_doc_finish = $dbh->prepare($SQL);
-$sth_doc_finish->execute($id1, 'Test 1');
+$sth_doc_finish->execute($id1, 'Test 1', '');
 $sth_doc_info->execute($client->loginid);
 $actual = $sth_doc_info->fetchall_arrayref({});
 $expected->[0]{status} = 'uploaded';
@@ -83,7 +83,7 @@ $test = q{BOM::User::Client->documents_expired returns 0 if all documents have n
 ## Create a second document
 $sth_doc_new->execute($client->loginid, 'testing2', 'PNG', undef, 66666, undef);
 my $id2 = $sth_doc_new->fetch()->[0];
-$sth_doc_finish->execute($id2, 'Test 2');
+$sth_doc_finish->execute($id2, 'Test 2', '');
 $SQL = 'UPDATE betonmarkets.client_authentication_document SET expiration_date = null WHERE client_loginid = ?';
 $dbh->do($SQL, undef, $client->loginid);
 $client->client_authentication_document(undef);
