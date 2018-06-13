@@ -30,8 +30,6 @@ use BOM::Platform::Account::Real::japan;
 use BOM::Platform::Email qw(send_email);
 use BOM::User;
 use BOM::Config;
-use BOM::Platform::Context::Request;
-use BOM::Platform::Client::Utility;
 use BOM::Platform::Context qw (request);
 use BOM::Database::Model::OAuth;
 use BOM::User::Client::PaymentNotificationQueue;
