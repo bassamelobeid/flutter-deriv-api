@@ -16,6 +16,7 @@ use URI;
 use Mojo::UserAgent;
 
 use f_brokerincludeall;
+use BOM::User::Utility;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
@@ -136,7 +137,7 @@ foreach my $table (
             $old = $new;
         }
         foreach my $key (sort keys %{$u_db->{$stamp}}) {
-            $new->{secret_answer} = BOM::Platform::Client::Utility::decrypt_secret_answer($new->{secret_answer}) if $key eq 'secret_answer';
+            $new->{secret_answer} = BOM::User::Utility::decrypt_secret_answer($new->{secret_answer}) if $key eq 'secret_answer';
             if ($key eq 'client_addr') {
                 $old->{client_addr} = revers_ip($old->{client_addr});
             }

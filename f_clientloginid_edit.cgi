@@ -24,10 +24,9 @@ use BOM::Config::Runtime;
 use BOM::Backoffice::Request qw(request);
 use BOM::User;
 use BOM::Platform::Client::IDAuthentication;
-use BOM::Platform::Client::Utility;
+use BOM::User::Utility;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Platform::Client::Utility ();
-use BOM::Backoffice::Sysinit       ();
+use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Client::DoughFlowClient;
 use BOM::Platform::Doughflow qw( get_sportsbook );
 use BOM::Database::Model::HandoffToken;
@@ -501,11 +500,11 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             # algorithm provide different encrypted string from the same text based on some randomness
             # so we update this encrypted field only on value change - we don't want our trigger log trash
 
-            my $secret_answer = BOM::Platform::Client::Utility::decrypt_secret_answer($client->secret_answer);
+            my $secret_answer = BOM::User::Utility::decrypt_secret_answer($client->secret_answer);
             $secret_answer = Encode::decode("UTF-8", $secret_answer)
                 unless (Encode::is_utf8($secret_answer));
 
-            $client->secret_answer(BOM::Platform::Client::Utility::encrypt_secret_answer($input{$key}))
+            $client->secret_answer(BOM::User::Utility::encrypt_secret_answer($input{$key}))
                 if ($input{$key} ne $secret_answer);
 
             next CLIENT_KEY;

@@ -15,7 +15,6 @@ use Date::Utility;
 
 use BOM::DailySummaryReport;
 use BOM::Database::Helper::FinancialMarketBet;
-use BOM::Platform::Client::Utility;
 use BOM::User::Password;
 use BOM::Config::Runtime;
 

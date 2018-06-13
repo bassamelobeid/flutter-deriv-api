@@ -13,7 +13,7 @@ use Brands;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
-use BOM::Platform::Client::Utility ();
+use BOM::User::Utility;
 use BOM::Backoffice::Request qw(request);
 use BOM::Platform::Locale;
 use BOM::Backoffice::FormAccounts;
@@ -177,7 +177,7 @@ sub print_client_details {
     my @language_options = @{BOM::Config::Runtime->instance->app_config->cgi->allowed_languages};
 
     # SECURITYS SECTION
-    my $secret_answer = BOM::Platform::Client::Utility::decrypt_secret_answer($client->secret_answer);
+    my $secret_answer = BOM::User::Utility::decrypt_secret_answer($client->secret_answer);
 
     if (!Encode::is_utf8($secret_answer)) {
         $secret_answer = Encode::decode("UTF-8", $secret_answer);
