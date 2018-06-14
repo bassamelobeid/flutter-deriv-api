@@ -12,14 +12,14 @@ has 'dbic' => (
 );
 
 sub _build_dbic {
-    return BOM::Database::AuthDB::rose_db->dbic;
+    return BOM::Database::AuthDB::rose_db()->dbic;
 }
 
 sub __parse_array {
     my ($array_string) = @_;
     return $array_string if ref($array_string) eq 'ARRAY';
     return [] unless $array_string;
-    return BOM::Database::AuthDB::rose_db->parse_array($array_string);
+    return BOM::Database::AuthDB::rose_db()->parse_array($array_string);
 }
 
 my @token_scopes = ('read', 'trade', 'payments', 'admin');

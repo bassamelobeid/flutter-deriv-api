@@ -118,7 +118,7 @@ lives_ok {
             bet_data => {
                 id         => $digit_id,
                 sell_price => 40,
-                sell_time  => Date::Utility::today->db_timestamp,
+                sell_time  => Date::Utility::today()->db_timestamp,
                 quantity   => 1,
             },
             transaction_data => {

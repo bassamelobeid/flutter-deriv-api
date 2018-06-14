@@ -124,7 +124,7 @@ lives_ok {
             bet      => $range,
             bet_data => {
                 is_expired => 1,
-                sell_time  => Date::Utility::today->db_timestamp,
+                sell_time  => Date::Utility::today()->db_timestamp,
             },
             db => $connection_builder->db,
         });

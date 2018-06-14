@@ -150,7 +150,7 @@ lives_ok {
             bet      => $touch_bet,
             bet_data => {
                 is_expired => $is_expired,
-                sell_time  => Date::Utility::today->db_timestamp,
+                sell_time  => Date::Utility::today()->db_timestamp,
             },
             db => $connection_builder->db,
         });

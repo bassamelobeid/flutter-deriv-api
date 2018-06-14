@@ -11,7 +11,7 @@ has 'dbic' => (
 );
 
 sub _build_dbic {
-    return BOM::Database::UserDB::rose_db->dbic;
+    return BOM::Database::UserDB::rose_db()->dbic;
 }
 
 my $json = JSON::MaybeXS->new;

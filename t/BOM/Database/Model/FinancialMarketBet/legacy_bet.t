@@ -156,7 +156,7 @@ lives_ok {
         db       => $connection_builder->db,
     });
     $financial_market_bet_helper->bet_data->{quantity}  = 1;
-    $financial_market_bet_helper->bet_data->{sell_time} = Date::Utility::today->db_timestamp;
+    $financial_market_bet_helper->bet_data->{sell_time} = Date::Utility::today()->db_timestamp;
     $financial_market_bet_helper->sell_bet // die "Bet not sold";
     $sell_price = 40;
 }
