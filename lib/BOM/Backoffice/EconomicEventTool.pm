@@ -52,14 +52,14 @@ sub generate_economic_event_tool {
     my $today  = Date::Utility->new->truncate_to_day;
     my @dates  = map { $today->plus_time_interval($_ . 'd')->date } (0 .. 6);
 
-    return BOM::Backoffice::Request::template->process(
+    return BOM::Backoffice::Request::template()->process(
         'backoffice/economic_event_forms.html.tt',
         +{
             ee_upload_url => $url,
             dates         => \@dates,
             %$events,
         },
-    ) || die BOM::Backoffice::Request::template->error;
+    ) || die BOM::Backoffice::Request::template()->error;
 }
 
 # get the calibration magnitude and duration factor of the given economic event, if any.

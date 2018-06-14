@@ -108,7 +108,7 @@ if (request()->param('whattodo') eq 'closeatzero') {
     }
 
     # Logging
-    Path::Tiny::path(BOM::Backoffice::Config::config->{log}->{deposit})
+    Path::Tiny::path(BOM::Backoffice::Config::config()->{log}->{deposit})
         ->append_utf8($now->datetime
             . "GMT $ttype($buysell) $qty @ $currency$price $bet_ref $loginID clerk=$clerk fellow="
             . request()->param('DCstaff')

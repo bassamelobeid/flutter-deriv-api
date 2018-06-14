@@ -50,12 +50,12 @@ print "</OL>";
 
 Bar("IP related");
 
-BOM::Backoffice::Request::template->process(
+BOM::Backoffice::Request::template()->process(
     'backoffice/ip_search.html.tt',
     {
         ip_search_url => request()->url_for('backoffice/ip_search.cgi'),
         ip            => $ENV{REMOTE_ADDR},
-    }) || die BOM::Backoffice::Request::template->error();
+    }) || die BOM::Backoffice::Request::template()->error();
 
 code_exit_BO();
 

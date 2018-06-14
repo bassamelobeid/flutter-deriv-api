@@ -33,13 +33,13 @@ if ($action && !$loginid) {
 
 PrintContentType();
 BrokerPresentation('Show Risk Report For: ' . $loginid);
-BOM::Backoffice::Request::template->process(
+BOM::Backoffice::Request::template()->process(
     'backoffice/client_risk.html.tt',
     {
         loginid => $loginid,
         data    => $data,
         error   => $error,
     },
-) || die BOM::Backoffice::Request::template->error();
+) || die BOM::Backoffice::Request::template()->error();
 
 code_exit_BO();

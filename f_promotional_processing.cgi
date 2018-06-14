@@ -63,7 +63,7 @@ foreach my $loginid (@approved, @rejected) {
             );
         }
 
-        BOM::Backoffice::Request::template->process(
+        BOM::Backoffice::Request::template()->process(
             'email/bonus_approve.html.tt',
             {
                 name         => $client_name,
@@ -75,7 +75,7 @@ foreach my $loginid (@approved, @rejected) {
             \$email_content
             )
             || die "approving promocode for $client: "
-            . BOM::Backoffice::Request::template->error
+            . BOM::Backoffice::Request::template()->error
 
     } else {
         # reject client
@@ -85,7 +85,7 @@ foreach my $loginid (@approved, @rejected) {
             $client->save();
         }
 
-        BOM::Backoffice::Request::template->process(
+        BOM::Backoffice::Request::template()->process(
             'email/bonus_reject.html.tt',
             {
                 name         => $client_name,
@@ -93,7 +93,7 @@ foreach my $loginid (@approved, @rejected) {
                 website_name => 'Binary.com',
             },
             \$email_content
-        ) || die "rejecting promocode for $client: " . BOM::Backoffice::Request::template->error;
+        ) || die "rejecting promocode for $client: " . BOM::Backoffice::Request::template()->error;
     }
 
     if ($input{"${loginid}_notify"}) {

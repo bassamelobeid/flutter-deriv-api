@@ -84,7 +84,7 @@ push @send_to_template,
         submitted         => request()->param('page'),
     });
 
-BOM::Backoffice::Request::template->process(
+BOM::Backoffice::Request::template()->process(
     'backoffice/dynamic_settings.html.tt',
     {
         'settings' => \@send_to_template,

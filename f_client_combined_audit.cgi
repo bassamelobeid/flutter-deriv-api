@@ -264,12 +264,12 @@ sub _get_desk_com_entries {
     my @desk_entries;
     my $ua = Mojo::UserAgent->new;
     try {
-        my $uri = URI->new(BOM::Config::third_party->{desk}->{api_uri} . 'cases/search');
+        my $uri = URI->new(BOM::Config::third_party()->{desk}->{api_uri} . 'cases/search');
         $uri->query_param(
             q => 'custom_loginid:' . $loginid . ' created:' . _get_desk_created_string($startdate, $enddate) . ($status ? '+status:' . $status : ''));
         $uri->query_param(sort_field     => 'created_at');
         $uri->query_param(sort_direction => 'asc');
-        $uri->userinfo(BOM::Config::third_party->{desk}->{username} . ":" . BOM::Config::third_party->{desk}->{password});
+        $uri->userinfo(BOM::Config::third_party()->{desk}->{username} . ":" . BOM::Config::third_party()->{desk}->{password});
         my $res = $ua->get(
             "$uri",
             => {
@@ -307,8 +307,8 @@ sub _get_desk_com_entries {
         } else {
             push @desk_entries,
                 {
-                timestring  => Date::Utility::today->datetime,
-                description => Date::Utility::today->datetime . ' No desk.com record found',
+                timestring  => Date::Utility::today()->datetime,
+                description => Date::Utility::today()->datetime . ' No desk.com record found',
                 color       => $color
                 };
         }
@@ -316,8 +316,8 @@ sub _get_desk_com_entries {
     catch {
         push @desk_entries,
             {
-            timestring  => Date::Utility::today->datetime,
-            description => Date::Utility::today->datetime . ' Error occurred while accessing desk.com',
+            timestring  => Date::Utility::today()->datetime,
+            description => Date::Utility::today()->datetime . ' Error occurred while accessing desk.com',
             color       => $color
             };
     };

@@ -22,11 +22,11 @@ use Excel::Writer::XLSX;
 sub output_on_display {
     my $contract_params = shift;
     PrintContentType();
-    BOM::Backoffice::Request::template->process(
+    BOM::Backoffice::Request::template()->process(
         'backoffice/contract_details.html.tt',
         {
             pricing_parameters => $contract_params,
-        }) || die BOM::Backoffice::Request::template->error;
+        }) || die BOM::Backoffice::Request::template()->error;
     return;
 }
 

@@ -47,7 +47,7 @@ if (request()->param('raw')) {
       </head>
        <body>
       ~;
-    BOM::Backoffice::Request::template->process('backoffice/view-192-response-yaml.html.tt', {yamlized => $yamlized});
+    BOM::Backoffice::Request::template()->process('backoffice/view-192-response-yaml.html.tt', {yamlized => $yamlized});
     print qq~
        </body>
       </html>

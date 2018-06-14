@@ -96,7 +96,7 @@ if ($input->{'dcctype'} eq 'file_content') {
     BOM::User::AuditLog::log($message);
 
     # Logging
-    Path::Tiny::path(BOM::Backoffice::Config::config->{log}->{deposit})
+    Path::Tiny::path(BOM::Backoffice::Config::config()->{log}->{deposit})
         ->append_utf8($now->datetime
             . "GMT $staff MAKES DUAL CONTROL CODE FOR "
             . $input->{'transtype'}
@@ -135,7 +135,7 @@ if ($input->{'dcctype'} eq 'file_content') {
         . "</font></b></p>";
 
     # Logging
-    Path::Tiny::path(BOM::Backoffice::Config::config->{log}->{deposit})
+    Path::Tiny::path(BOM::Backoffice::Config::config()->{log}->{deposit})
         ->append_utf8($now->datetime
             . "GMT $staff MAKES DUAL CONTROL CODE FOR "
             . $input->{'transtype'}

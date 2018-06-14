@@ -113,14 +113,14 @@ sub generate_holiday_upload_form {
 
     my $form;
 
-    BOM::Backoffice::Request::template->process(
+    BOM::Backoffice::Request::template()->process(
         'backoffice/holiday_upload_form.html.tt',
         {
             broker     => $args->{broker},
             upload_url => $args->{upload_url},
         },
         \$form
-    ) || die BOM::Backoffice::Request::template->error();
+    ) || die BOM::Backoffice::Request::template()->error();
 
     return $form;
 }

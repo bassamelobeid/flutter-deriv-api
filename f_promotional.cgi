@@ -348,7 +348,7 @@ if ($table_elements) {
 print $output;
 
 Bar('Fetch Myaffiliate Payment');
-BOM::Backoffice::Request::template->process(
+BOM::Backoffice::Request::template()->process(
     'backoffice/fetch_myaffiliate_payment.tt',
     {
         action => request()->url_for('backoffice/fetch_myaffiliate_payment.cgi'),

@@ -54,6 +54,6 @@ $report->{aff_titlfy} = sub {
     return ($email and $username) ? $username . ' (' . $email . ')' : ($username // $email);
 };
 
-BOM::Backoffice::Request::template->process('backoffice/risk_dashboard.html.tt', $report);
+BOM::Backoffice::Request::template()->process('backoffice/risk_dashboard.html.tt', $report);
 
 code_exit_BO();

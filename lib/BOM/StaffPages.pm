@@ -11,7 +11,7 @@ sub login {
     my $self     = shift;
     my $bet      = shift;
     my $params   = {};
-    my $clientId = BOM::Config::third_party->{auth0}->{client_id};
+    my $clientId = BOM::Config::third_party()->{auth0}->{client_id};
 
     $params->{submit}   = BOM::Backoffice::Request::request()->url_for('backoffice/second_step_auth.cgi');
     $params->{bet}      = $bet;

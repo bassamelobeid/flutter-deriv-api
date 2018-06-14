@@ -218,7 +218,7 @@ sub log_bo_access {
     $staffname ||= 'unauthenticated';
     my $s = $0;
     $s =~ s{^\Q/home/website/www}{};
-    my $log = BOM::Backoffice::Config::config->{log}->{staff};
+    my $log = BOM::Backoffice::Config::config()->{log}->{staff};
     $log =~ s/%STAFFNAME%/$staffname/g;
 
     if ((-s $log or 0) > 750000) {

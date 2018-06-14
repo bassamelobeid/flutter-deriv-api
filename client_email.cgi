@@ -56,14 +56,14 @@ if (not $user) {
 
 if (not $input{email_edit}) {
     # list loginids with email
-    BOM::Backoffice::Request::template->process(
+    BOM::Backoffice::Request::template()->process(
         'backoffice/client_email.html.tt',
         {
             list     => 1,
             email    => $email,
             loginids => [map { $_->loginid } $user->loginid],
         },
-    ) || die BOM::Backoffice::Request::template->error();
+    ) || die BOM::Backoffice::Request::template()->error();
 
     code_exit_BO();
 }
@@ -124,7 +124,7 @@ if ($email ne $new_email) {
         . ") $ENV{REMOTE_ADDR}";
     BOM::User::AuditLog::log($msg, $new_email, $clerk);
 
-    BOM::Backoffice::Request::template->process(
+    BOM::Backoffice::Request::template()->process(
         'backoffice/client_email.html.tt',
         {
             updated   => 1,
@@ -132,7 +132,7 @@ if ($email ne $new_email) {
             new_email => $new_email,
             loginids  => [map { $_->loginid } $user->loginid],
         },
-    ) || die BOM::Backoffice::Request::template->error();
+    ) || die BOM::Backoffice::Request::template()->error();
 } else {
     print "Same email [$new_email] provided, no update required";
 }

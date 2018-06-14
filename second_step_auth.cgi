@@ -27,9 +27,9 @@ if (not $staff) {
 my $post_action = "login.cgi";
 
 my $sig_request = Auth::DuoWeb::sign_request(
-    BOM::Config::third_party->{duosecurity}->{ikey},
-    BOM::Config::third_party->{duosecurity}->{skey},
-    BOM::Config::third_party->{duosecurity}->{akey},
+    BOM::Config::third_party()->{duosecurity}->{ikey},
+    BOM::Config::third_party()->{duosecurity}->{skey},
+    BOM::Config::third_party()->{duosecurity}->{akey},
     $staff->{email},
 );
 

@@ -57,12 +57,12 @@ my $balance = $txn_dm->get_profit_for_days({
     before => $enddate->datetime
 });
 
-BOM::Backoffice::Request::template->process(
+BOM::Backoffice::Request::template()->process(
     'backoffice/account/profit_check.html.tt',
     {
         currency => $client->currency,
         balance  => $balance,
     },
-) || die BOM::Backoffice::Request::template->error();
+) || die BOM::Backoffice::Request::template()->error();
 
 code_exit_BO();

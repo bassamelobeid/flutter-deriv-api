@@ -28,7 +28,7 @@ if (my $email_list = request()->param('email')) {
                 $limit > 0 ? (limit => $limit) : (),
             );
         }
-        BOM::Backoffice::Request::template->process(
+        BOM::Backoffice::Request::template()->process(
             'backoffice/user_login_history.html.tt',
             {
                 user    => $user,

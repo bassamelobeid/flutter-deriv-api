@@ -41,14 +41,14 @@ my @response_list = map { _retrieve_table_data($_, $broker) } @response_files;
 
 if (@request_list) {
     my $request_f;
-    BOM::Backoffice::Request::template->process(
+    BOM::Backoffice::Request::template()->process(
         'backoffice/bbdl/list_directory.html.tt',
         {
             file_type => 'REQUEST FILES',
             args      => \@request_list
         },
         \$request_f
-    ) || die BOM::Backoffice::Request::template->error();
+    ) || die BOM::Backoffice::Request::template()->error();
 
     print $request_f;
     print "</br></br>";
@@ -57,14 +57,14 @@ if (@request_list) {
 if (@response_list) {
     my $response_f;
 
-    BOM::Backoffice::Request::template->process(
+    BOM::Backoffice::Request::template()->process(
         'backoffice/bbdl/list_directory.html.tt',
         {
             file_type => 'RESPONSE FILES',
             args      => \@response_list
         },
         $response_f
-    ) || die BOM::Backoffice::Request::template->error();
+    ) || die BOM::Backoffice::Request::template()->error();
 
     print $response_f;
 }

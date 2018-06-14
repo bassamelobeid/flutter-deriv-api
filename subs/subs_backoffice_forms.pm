@@ -38,7 +38,7 @@ sub get_update_interest_rates_form {
 sub generate_correlations_upload_form {
     my $args = shift;
     my $form;
-    BOM::Backoffice::Request::template->process(
+    BOM::Backoffice::Request::template()->process(
         'backoffice/correlations_upload_form.html.tt',
         {
             broker     => $args->{broker},

@@ -60,14 +60,14 @@ if (my $il = request()->param('investigate_list')) {
     }
     $reflist = substr($reflist, 0, -2);
 
-    BOM::Backoffice::Request::template->process(
+    BOM::Backoffice::Request::template()->process(
         'backoffice/quant_query.html.tt',
         {
             reasons => \@reasons,
             loginID => $loginID,
             reflist => $reflist,
             details => join($bits_sep, @message),
-        }) || die BOM::Backoffice::Request::template->error();
+        }) || die BOM::Backoffice::Request::template()->error();
 
     code_exit_BO();
 } elsif (my $desc = request()->param('desc')) {

@@ -292,7 +292,7 @@ my $now = Date::Utility->new;
 # Logging
 my $msg = $now->datetime . " $ttype $curr$amount $loginID clerk=$clerk (DCcode=$DCcode) $ENV{REMOTE_ADDR}";
 BOM::User::AuditLog::log($msg, $loginID, $clerk);
-Path::Tiny::path(BOM::Backoffice::Config::config->{log}->{deposit})->append_utf8($msg);
+Path::Tiny::path(BOM::Backoffice::Config::config()->{log}->{deposit})->append_utf8($msg);
 
 # Print confirmation
 Bar("$ttype confirmed");
@@ -321,7 +321,7 @@ my $statement = client_statement_for_backoffice({
     after  => $after
 });
 
-BOM::Backoffice::Request::template->process(
+BOM::Backoffice::Request::template()->process(
     'backoffice/account/statement.html.tt',
     {
         transactions            => $statement->{transactions},
@@ -331,7 +331,7 @@ BOM::Backoffice::Request::template->process(
         depositswithdrawalsonly => request()->param('depositswithdrawalsonly'),
         contract_details        => \&BOM::ContractInfo::get_info,
     },
-) || die BOM::Backoffice::Request::template->error();
+) || die BOM::Backoffice::Request::template()->error();
 
 #View updated statement
 print "<form action=\"" . request()->url_for("backoffice/f_manager_history.cgi") . "\" method=\"post\">";
@@ -346,7 +346,7 @@ if ($informclient) {
 
     my $email_body;
     if ($client->landing_company->short eq 'japan') {
-        BOM::Backoffice::Request::template->process(
+        BOM::Backoffice::Request::template()->process(
             'email/japan/payment_notification.html.tt',
             {
                 last_name    => $client->last_name,
@@ -357,7 +357,7 @@ if ($informclient) {
                 reference_id => $reference_id,
             },
             \$email_body
-        ) || die "payment notification email for $loginID " . BOM::Backoffice::Request::template->error;
+        ) || die "payment notification email for $loginID " . BOM::Backoffice::Request::template()->error;
         $subject .= ' ' . localize('of funds');
     } else {
         $email_body =

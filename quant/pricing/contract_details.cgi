@@ -87,13 +87,13 @@ sub load_template {
     BrokerPresentation("Price Verification Tool");
     Bar("Tools");
 
-    BOM::Backoffice::Request::template->process(
+    BOM::Backoffice::Request::template()->process(
         'backoffice/japan/japan_contract_details.html.tt',
         {
             broker             => $broker,
             pricing_parameters => $pricing_parameters,
             upload_url         => 'contract_details.cgi',
-        }) || die BOM::Backoffice::Request::template->error;
+        }) || die BOM::Backoffice::Request::template()->error;
     return;
 }
 

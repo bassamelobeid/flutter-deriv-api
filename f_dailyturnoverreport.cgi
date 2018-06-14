@@ -23,7 +23,7 @@ Bar("DAILY TURNOVER REPORT for " . $args->{month});
 BrokerPresentation("DAILY TURNOVER REPORT FOR " . $args->{month});
 
 my %template = DailyTurnOverReport($args);
-BOM::Backoffice::Request::template->process(
+BOM::Backoffice::Request::template()->process(
     'backoffice/daily_turnover_report.html.tt',
     {
         dtr        => \%template,

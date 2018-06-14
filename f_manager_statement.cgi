@@ -95,7 +95,7 @@ my $acnt_dm = BOM::Database::DataMapper::Account->new({
         )->db,
     });
 
-BOM::Backoffice::Request::template->process(
+BOM::Backoffice::Request::template()->process(
     'backoffice/account/portfolio.html.tt',
     {
         open_bets => $open_bets,
@@ -103,6 +103,6 @@ BOM::Backoffice::Request::template->process(
         currency  => $client->currency,
         loginid   => $client->loginid,
     },
-) || die BOM::Backoffice::Request::template->error();
+) || die BOM::Backoffice::Request::template()->error();
 
 code_exit_BO();

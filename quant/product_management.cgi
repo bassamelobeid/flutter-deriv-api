@@ -31,7 +31,7 @@ BrokerPresentation('Product Management');
 
 my $staff            = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $r                = request();
-my $limit_profile    = BOM::Config::quants->{risk_profile};
+my $limit_profile    = BOM::Config::quants()->{risk_profile};
 my $quants_config    = BOM::Config::Runtime->instance->app_config->quants;
 my %known_profiles   = map { $_ => 1 } keys %$limit_profile;
 my %allowed_multiple = (
@@ -142,15 +142,15 @@ BOM::DynamicSettings::dynamic_save() if $need_to_save;
 
 Bar("Limit Definitions");
 
-my $limit_defs          = BOM::Config::quants->{risk_profile};
+my $limit_defs          = BOM::Config::quants()->{risk_profile};
 my $current_definitions = BOM::Platform::RiskProfile::get_current_profile_definitions();
 
-BOM::Backoffice::Request::template->process(
+BOM::Backoffice::Request::template()->process(
     'backoffice/profile_definitions.html.tt',
     {
         definitions => $limit_defs,
         current     => $current_definitions,
-    }) || die BOM::Backoffice::Request::template->error;
+    }) || die BOM::Backoffice::Request::template()->error;
 
 Bar("Existing limits");
 
@@ -175,11 +175,11 @@ foreach my $id (keys %$custom_limits) {
     push @output, $output_ref;
 }
 
-BOM::Backoffice::Request::template->process(
+BOM::Backoffice::Request::template()->process(
     'backoffice/existing_limit.html.tt',
     {
         output => \@output,
-    }) || die BOM::Backoffice::Request::template->error;
+    }) || die BOM::Backoffice::Request::template()->error;
 
 Bar("Custom Client Limits");
 
@@ -215,19 +215,19 @@ foreach my $client_loginid (keys %$custom_client_limits) {
         if @output;
 }
 
-BOM::Backoffice::Request::template->process(
+BOM::Backoffice::Request::template()->process(
     'backoffice/custom_client_limit.html.tt',
     {
         output => \@client_output,
-    }) || die BOM::Backoffice::Request::template->error;
+    }) || die BOM::Backoffice::Request::template()->error;
 
 Bar("Update Limit");
 
-BOM::Backoffice::Request::template->process(
+BOM::Backoffice::Request::template()->process(
     'backoffice/update_limit.html.tt',
     {
         url => request()->url_for('backoffice/quant/product_management.cgi'),
-    }) || die BOM::Backoffice::Request::template->error;
+    }) || die BOM::Backoffice::Request::template()->error;
 
 Bar("Japan KLFB");
 
@@ -253,11 +253,11 @@ if ($r->param('update_klfb_limit')) {
 
 }
 
-BOM::Backoffice::Request::template->process(
+BOM::Backoffice::Request::template()->process(
     'backoffice/japan_klfb.html.tt',
     {
         url           => request()->url_for('backoffice/quant/product_management.cgi'),
         existing_klfb => BOM::Config::QuantsConfig->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader())->get_config('klfb')->[0],
-    }) || die BOM::Backoffice::Request::template->error;
+    }) || die BOM::Backoffice::Request::template()->error;
 
 code_exit_BO();

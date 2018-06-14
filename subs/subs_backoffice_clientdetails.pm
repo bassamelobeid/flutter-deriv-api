@@ -61,7 +61,7 @@ sub allow_uplift_self_exclusion {
 
     # Check if client has exclude_until date, and if it has expired
     if ($exclude_until_date) {
-        $after_exclusion_date = Date::Utility::today->is_after($exclude_until_date);
+        $after_exclusion_date = Date::Utility::today()->is_after($exclude_until_date);
     }
 
     # If exclude_until date is unset, Customer Support and Compliance team can insert the exclude_until date
@@ -244,8 +244,8 @@ sub print_client_details {
         tax_residences_countries_name => $tax_residences_countries_name
     };
 
-    return BOM::Backoffice::Request::template->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
-        || die "Error:" . BOM::Backoffice::Request::template->error();
+    return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
+        || die "Error:" . BOM::Backoffice::Request::template()->error();
 }
 
 ## build_client_statement_form #######################################

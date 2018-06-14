@@ -58,7 +58,7 @@ sub save_log_staff_difflog {
     my $staff            = $arg_ref->{'staff'};
     my $diff             = $arg_ref->{'diff'};
 
-    my $log_dir = BOM::Backoffice::Config::config->{log}->{staff_dir};
+    my $log_dir = BOM::Backoffice::Config::config()->{log}->{staff_dir};
     if (not -d $log_dir) {
         system("mkdir $log_dir");
     }
@@ -100,7 +100,7 @@ sub save_log_save_complete_log {
     my $staff            = $arg_ref->{'staff'};
     my $diff             = $arg_ref->{'diff'};
 
-    my $log = BOM::Backoffice::Config::config->{log}->{fsave_complete};
+    my $log = BOM::Backoffice::Config::config()->{log}->{fsave_complete};
 
     if ((-s $log) > 3000000) {
         system("mv $log $log.1");

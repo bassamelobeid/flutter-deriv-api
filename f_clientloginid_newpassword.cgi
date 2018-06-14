@@ -53,7 +53,7 @@ my $link = "https://www.binary.com/" . lc($lang) . "/redirect.html?action=reset_
 my $lost_pass_email;
 my $brand = Brands->new(name => request()->brand);
 
-BOM::Backoffice::Request::template->process("email/lost_password.html.tt", {link => $link}, \$lost_pass_email);
+BOM::Backoffice::Request::template()->process("email/lost_password.html.tt", {link => $link}, \$lost_pass_email);
 
 # email link to client
 Bar('emailing change password link to ' . $loginID);

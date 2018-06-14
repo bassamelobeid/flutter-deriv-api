@@ -165,7 +165,7 @@ sub debug_link {
     }
 
     my $debug_link;
-    BOM::Backoffice::Request::template->process(
+    BOM::Backoffice::Request::template()->process(
         'backoffice/container/debug_link.html.tt',
         {
             bet_id             => $bet->id,
@@ -173,7 +173,7 @@ sub debug_link {
             seasonality_prefix => $seasonality_prefix,
         },
         \$debug_link
-    ) || die BOM::Backoffice::Request::template->error;
+    ) || die BOM::Backoffice::Request::template()->error;
 
     Volatility::EconomicEvents::set_prefix('');
     return $debug_link;
@@ -211,14 +211,14 @@ sub _get_rates {
     }
 
     my $rates_content;
-    BOM::Backoffice::Request::template->process(
+    BOM::Backoffice::Request::template()->process(
         'backoffice/container/full_table_from_arrayrefs.html.tt',
         {
             headers => $headers,
             rows    => $rows,
         },
         \$rates_content
-    ) || die BOM::Backoffice::Request::template->error;
+    ) || die BOM::Backoffice::Request::template()->error;
 
     return $rates_content;
 }
@@ -307,14 +307,14 @@ sub _get_price {
     my $probability = $args->{prob};
 
     my $price_content;
-    BOM::Backoffice::Request::template->process(
+    BOM::Backoffice::Request::template()->process(
         'backoffice/container/tree_builder.html.tt',
         {
             id      => $id,
             content => $self->_debug_prob(['reset', $probability])
         },
         \$price_content
-    ) || die BOM::Backoffice::Request::template->error;
+    ) || die BOM::Backoffice::Request::template()->error;
 
     return $price_content;
 }
@@ -481,13 +481,13 @@ sub _get_overview {
     );
 
     my $overview;
-    BOM::Backoffice::Request::template->process(
+    BOM::Backoffice::Request::template()->process(
         'backoffice/container/multiple_tables.html.tt',
         {
             tables => [@tables],
         },
         \$overview
-    ) || die BOM::Backoffice::Request::template->error;
+    ) || die BOM::Backoffice::Request::template()->error;
 
     return $overview;
 }

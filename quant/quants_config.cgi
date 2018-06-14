@@ -50,13 +50,13 @@ foreach my $config_name (keys %{$supported_config->{per_landing_company}}) {
 
 Bar('Quants Config Switch');
 
-BOM::Backoffice::Request::template->process(
+BOM::Backoffice::Request::template()->process(
     'backoffice/quants_config_switch_form.html.tt',
     {
         upload_url    => request()->url_for('backoffice/quant/update_quants_config.cgi'),
         config_status => \@config_status,
         old_config    => $old_config,
-    }) || die BOM::Backoffice::Request::template->error;
+    }) || die BOM::Backoffice::Request::template()->error;
 
 Bar('Quants Config');
 
@@ -84,7 +84,7 @@ foreach my $ref (@$output_ref) {
 
 my @existing_contract_groups = map { {key => $_, list => $group{$_}} } keys %group;
 
-BOM::Backoffice::Request::template->process(
+BOM::Backoffice::Request::template()->process(
     'backoffice/quants_config_form.html.tt',
     {
         upload_url               => request()->url_for('backoffice/quant/update_quants_config.cgi'),
@@ -98,14 +98,14 @@ BOM::Backoffice::Request::template->process(
             limit_types       => \@limit_types,
             landing_companies => $json->encode(BOM::Backoffice::QuantsConfigHelper::get_config_input('landing_company')),
         },
-    }) || die BOM::Backoffice::Request::template->error;
+    }) || die BOM::Backoffice::Request::template()->error;
 
 Bar('Update Contract Group');
-BOM::Backoffice::Request::template->process(
+BOM::Backoffice::Request::template()->process(
     'backoffice/quants_contract_group_form.html.tt',
     {
         upload_url => request()->url_for('backoffice/quant/update_quants_config.cgi'),
-    }) || die BOM::Backoffice::Request::template->error;
+    }) || die BOM::Backoffice::Request::template()->error;
 
 my $available_global_limits = $quants_config->supported_config_type->{per_landing_company};
 my %current_global_limits   = map {
@@ -117,7 +117,7 @@ my %current_global_limits   = map {
 } keys %$available_global_limits;
 
 Bar('Update Global Limit Alert Threshold');
-BOM::Backoffice::Request::template->process(
+BOM::Backoffice::Request::template()->process(
     'backoffice/quants_global_limit_alert_threshold_form.html.tt',
     {
         upload_url => request()->url_for('backoffice/quant/update_quants_config.cgi'),
@@ -125,5 +125,5 @@ BOM::Backoffice::Request::template->process(
             global_limits  => $available_global_limits,
             current_limits => \%current_global_limits,
         },
-    }) || die BOM::Backoffice::Request::template->error;
+    }) || die BOM::Backoffice::Request::template()->error;
 

@@ -30,8 +30,8 @@ my $passwd = request()->param('pass');
 
 if (request()->param('sig_response')) {
     my $email = Auth::DuoWeb::verify_response(
-        BOM::Config::third_party->{duosecurity}->{ikey}, BOM::Config::third_party->{duosecurity}->{skey},
-        BOM::Config::third_party->{duosecurity}->{akey}, request()->param('sig_response'),
+        BOM::Config::third_party()->{duosecurity}->{ikey}, BOM::Config::third_party()->{duosecurity}->{skey},
+        BOM::Config::third_party()->{duosecurity}->{akey}, request()->param('sig_response'),
     );
 
     $try_to_login = ($email eq request()->param('email'));

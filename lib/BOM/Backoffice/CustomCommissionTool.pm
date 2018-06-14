@@ -17,13 +17,13 @@ sub generate_commission_form {
     my $url = shift;
 
     my @config = map { _get_info($_) } @{_qc()->get_config('commission')};
-    return BOM::Backoffice::Request::template->process(
+    return BOM::Backoffice::Request::template()->process(
         'backoffice/custom_commission_form.html.tt',
         {
             upload_url => $url,
             config     => $json->encode(\@config),
         },
-    ) || die BOM::Backoffice::Request::template->error;
+    ) || die BOM::Backoffice::Request::template()->error;
 }
 
 sub _check_value {

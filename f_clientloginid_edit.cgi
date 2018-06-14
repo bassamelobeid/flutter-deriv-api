@@ -108,14 +108,14 @@ if ($input{whattodo} eq 'sync_to_DF') {
     my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $loginid});
     my $currency = $df_client->doughflow_currency;
     if (not $currency) {
-        BOM::Backoffice::Request::template->process(
+        BOM::Backoffice::Request::template()->process(
             'backoffice/client_edit_msg.tt',
             {
                 message  => 'ERROR: Client never deposited before, no sync to Doughflow is allowed !!',
                 error    => 1,
                 self_url => $self_href,
             },
-        ) || die BOM::Backoffice::Request::template->error();
+        ) || die BOM::Backoffice::Request::template()->error();
         code_exit_BO();
     }
 
@@ -134,8 +134,8 @@ if ($input{whattodo} eq 'sync_to_DF') {
     );
     $handoff_token->save;
 
-    my $doughflow_loc  = BOM::Config::third_party->{doughflow}->{request()->brand};
-    my $doughflow_pass = BOM::Config::third_party->{doughflow}->{passcode};
+    my $doughflow_loc  = BOM::Config::third_party()->{doughflow}->{request()->brand};
+    my $doughflow_pass = BOM::Config::third_party()->{doughflow}->{passcode};
     my $url            = $doughflow_loc . '/CreateCustomer.asp';
 
     # hit DF's CreateCustomer API
@@ -154,14 +154,14 @@ if ($input{whattodo} eq 'sync_to_DF') {
                 Password       => $handoff_token->key,
             }));
     if ($result->{'_content'} ne 'OK') {
-        BOM::Backoffice::Request::template->process(
+        BOM::Backoffice::Request::template()->process(
             'backoffice/client_edit_msg.tt',
             {
                 message  => "FAILED syncing client authentication status to Doughflow, ERROR: $result->{_content}",
                 error    => 1,
                 self_url => $self_href,
             },
-        ) || die BOM::Backoffice::Request::template->error();
+        ) || die BOM::Backoffice::Request::template()->error();
         code_exit_BO();
     }
 
@@ -178,13 +178,13 @@ if ($input{whattodo} eq 'sync_to_DF') {
         . $df_client->Profile;
     BOM::User::AuditLog::log($msg, $loginid, $clerk);
 
-    BOM::Backoffice::Request::template->process(
+    BOM::Backoffice::Request::template()->process(
         'backoffice/client_edit_msg.tt',
         {
             message  => "Successfully syncing client authentication status to Doughflow",
             self_url => $self_href,
         },
-    ) || die BOM::Backoffice::Request::template->error();
+    ) || die BOM::Backoffice::Request::template()->error();
     code_exit_BO();
 }
 
@@ -667,7 +667,7 @@ Bar("$loginid STATUSES");
 if (my $statuses = build_client_warning_message($loginid)) {
     print $statuses;
 }
-BOM::Backoffice::Request::template->process(
+BOM::Backoffice::Request::template()->process(
     'backoffice/account/untrusted_form.html.tt',
     {
         edit_url => request()->url_for('backoffice/untrusted_client_edit.cgi'),
@@ -675,7 +675,7 @@ BOM::Backoffice::Request::template->process(
         broker   => $broker,
         clientid => $loginid,
         actions  => get_untrusted_types(),
-    }) || die BOM::Backoffice::Request::template->error();
+    }) || die BOM::Backoffice::Request::template()->error();
 
 # Show Self-Exclusion link
 Bar("$loginid SELF-EXCLUSION SETTINGS");
@@ -832,7 +832,7 @@ print '<br/><br/>';
 if (not $client->is_virtual) {
     #upload new ID doc
     Bar("Upload new ID document");
-    BOM::Backoffice::Request::template->process(
+    BOM::Backoffice::Request::template()->process(
         'backoffice/client_edit_upload_doc.html.tt',
         {
             self_post => $self_post,
@@ -861,7 +861,7 @@ my $login_history = $user->find_login_history(
     limit   => $limit
 );
 
-BOM::Backoffice::Request::template->process(
+BOM::Backoffice::Request::template()->process(
     'backoffice/user_login_history.html.tt',
     {
         user    => $user,

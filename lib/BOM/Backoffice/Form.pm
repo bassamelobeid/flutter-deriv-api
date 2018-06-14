@@ -50,7 +50,7 @@ sub get_self_exclusion_form {
             # applicable to clients under Binary (Europe) Ltd & Binary (IOM) Ltd only. Change is also
             # applicable to clients under Binary Investments (Europe) Ltd for standardisation.
             # (http://www.gamblingcommission.gov.uk/PDF/LCCP/Licence-conditions-and-codes-of-practice.pdf)
-            if (Date::Utility::today->days_between($limit_exclude_until) >= 0 && $client->landing_company->short !~ /^(?:iom|malta|maltainvest)$/) {
+            if (Date::Utility::today()->days_between($limit_exclude_until) >= 0 && $client->landing_company->short !~ /^(?:iom|malta|maltainvest)$/) {
                 undef $limit_exclude_until;
             } else {
                 $limit_exclude_until = $limit_exclude_until->date;

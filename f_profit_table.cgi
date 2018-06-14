@@ -122,7 +122,7 @@ foreach my $contract (@$open_contracts) {
     $contract->{purchase_date} = Date::Utility->new($contract->{purchase_time});
 }
 
-BOM::Backoffice::Request::template->process(
+BOM::Backoffice::Request::template()->process(
     'backoffice/account/profit_table.html.tt',
     {
         sold_contracts              => $sold_contracts,
@@ -138,6 +138,6 @@ BOM::Backoffice::Request::template->process(
         contract_details            => \&BOM::ContractInfo::get_info,
         performance_probability     => $performance_probability,
         inv_performance_probability => $inv_performance_probability,
-    }) || die BOM::Backoffice::Request::template->error();
+    }) || die BOM::Backoffice::Request::template()->error();
 
 code_exit_BO();

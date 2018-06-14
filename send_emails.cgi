@@ -37,7 +37,7 @@ code_exit_BO("Please provide valid loginid.") unless $client->landing_company->s
 $action_type = $action_type eq 'deposit' ? localize('Deposit') : localize('Withdrawal');
 
 my $email_content;
-BOM::Backoffice::Request::template->process(
+BOM::Backoffice::Request::template()->process(
     'email/japan/payment_notification.html.tt',
     {
         last_name    => $client->last_name,
@@ -48,7 +48,7 @@ BOM::Backoffice::Request::template->process(
         reference_id => $reference_id,
     },
     \$email_content
-) || die "payment notification email for $loginid " . BOM::Backoffice::Request::template->error;
+) || die "payment notification email for $loginid " . BOM::Backoffice::Request::template()->error;
 
 try {
     send_email({

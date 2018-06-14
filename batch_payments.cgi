@@ -319,7 +319,7 @@ if ($preview and @invalid_lines == 0) {
 
     my $msg = $now->datetime . " $transtype batch transactions done by clerk=$clerk (DCcode=$control_code) $ENV{REMOTE_ADDR}";
     BOM::User::AuditLog::log($msg, '', $clerk);
-    Path::Tiny::path(BOM::Backoffice::Config::config->{log}->{deposit})->append_utf8($msg);
+    Path::Tiny::path(BOM::Backoffice::Config::config()->{log}->{deposit})->append_utf8($msg);
 
     my $brand = Brands->new(name => request()->brand);
     send_email({

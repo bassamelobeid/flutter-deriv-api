@@ -91,7 +91,7 @@ my ($deposits_to_date, $withdrawals_to_date) = $dbic->run(
         return @{$sth->fetchall_arrayref->[0]};
     });
 
-BOM::Backoffice::Request::template->process(
+BOM::Backoffice::Request::template()->process(
     'backoffice/account/statement.html.tt',
     {
         transactions            => $statement->{transactions},
@@ -117,7 +117,7 @@ BOM::Backoffice::Request::template->process(
         startdate => $startdate,
         enddate   => $enddate,
     },
-) || die BOM::Backoffice::Request::template->error();
+) || die BOM::Backoffice::Request::template()->error();
 
 code_exit_BO();
 

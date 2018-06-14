@@ -108,7 +108,7 @@ if (request()->param('editlink') and $client_login and request()->param('untrust
         . "</b> file. "
         . "<br />To change the reason, kindly select from the dropdown selection list below and click 'Go'.<br /><br /></font>";
 }
-BOM::Backoffice::Request::template->process(
+BOM::Backoffice::Request::template()->process(
     'backoffice/account/untrusted_form.html.tt',
     {
         selected_untrusted_action => request()->param('untrusted_action_type'),
@@ -118,7 +118,7 @@ BOM::Backoffice::Request::template->process(
         clientid                  => $client_login,
         actions                   => get_untrusted_types(),
         show_login                => 1,
-    }) || die BOM::Backoffice::Request::template->error();
+    }) || die BOM::Backoffice::Request::template()->error();
 
 # display log differences for untrusted client section
 print "<hr><b>View changes to this untrusted client section.</b><br />"

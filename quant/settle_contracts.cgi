@@ -92,7 +92,7 @@ if (request()->param('perform_actions')) {
 my $cancel_info = {};
 $cancel_info->{unsettled}   = current_unsaleable($broker_db);
 $cancel_info->{broker_code} = request()->param('broker');
-BOM::Backoffice::Request::template->process('backoffice/settle_contracts.html.tt', $cancel_info);
+BOM::Backoffice::Request::template()->process('backoffice/settle_contracts.html.tt', $cancel_info);
 
 code_exit_BO();
 

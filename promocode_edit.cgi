@@ -83,8 +83,8 @@ my $stash = {
     countries_instance => $countries_instance,
     is_valid_promocode => is_valid_promocode(\%input),
 };
-BOM::Backoffice::Request::template->process('backoffice/promocode_edit.html.tt', $stash)
-    || die("in promocode_edit: " . BOM::Backoffice::Request::template->error());
+BOM::Backoffice::Request::template()->process('backoffice/promocode_edit.html.tt', $stash)
+    || die("in promocode_edit: " . BOM::Backoffice::Request::template()->error());
 
 code_exit_BO();
 

@@ -45,11 +45,11 @@ my $ua = Mojo::UserAgent->new;
 my $response;
 
 try {
-    my $uri = URI->new(BOM::Config::third_party->{desk}->{api_uri} . 'cases/search');
+    my $uri = URI->new(BOM::Config::third_party()->{desk}->{api_uri} . 'cases/search');
     $uri->query_param(q              => 'custom_loginid:' . $loginid . ' created:' . $created);
     $uri->query_param(sort_field     => 'created_at');
     $uri->query_param(sort_direction => 'asc');
-    $uri->userinfo(BOM::Config::third_party->{desk}->{username} . ":" . BOM::Config::third_party->{desk}->{password});
+    $uri->userinfo(BOM::Config::third_party()->{desk}->{username} . ":" . BOM::Config::third_party()->{desk}->{password});
     my $res = $ua->get(
         "$uri",
         => {
