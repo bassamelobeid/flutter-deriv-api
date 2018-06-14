@@ -41,7 +41,7 @@ initialize_realtime_ticks_db();
             bid    => $i + 1,
             ohlc   => $ohlc_sample,
         };
-        BOM::Config::RedisReplicated::redis_write->publish("FEED::$symbol", Encode::encode_utf8(JSON::MaybeXS->new->encode($payload)));
+        BOM::Config::RedisReplicated::redis_write()->publish("FEED::$symbol", Encode::encode_utf8(JSON::MaybeXS->new->encode($payload)));
     }
 
     my $t = build_wsapi_test();

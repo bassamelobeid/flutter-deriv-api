@@ -42,7 +42,7 @@ sub _create_tick {    #creates R_50 tick in redis channel FEED::R_50
         bid    => $i + 1,
         ohlc   => $ohlc_sample,
     };
-    BOM::Config::RedisReplicated::redis_write->publish("FEED::$symbol", Encode::encode_utf8($json->encode($payload)));
+    BOM::Config::RedisReplicated::redis_write()->publish("FEED::$symbol", Encode::encode_utf8($json->encode($payload)));
 }
 
 my ($t, $test_name, $response) = (build_wsapi_test());
