@@ -214,7 +214,7 @@ sub get_turnover_limit_parameters {
 
             $params = {
                 name  => $_->{name},
-                limit => BOM::Config::quants->{risk_profile}->{$_->{risk_profile}}{turnover}{$self->currency},
+                limit => BOM::Config::quants()->{risk_profile}->{$_->{risk_profile}}{turnover}{$self->currency},
             };
 
             if (my $exp = $_->{expiry_type}) {
@@ -304,7 +304,7 @@ sub get_current_profile_definitions {
     my $offerings_obj = _offerings_obj($landing_company, $country_code);
     my @markets =
         map { Finance::Asset::Market::Registry->get($_) } $offerings_obj->values_for_key('market');
-    my $limit_ref = BOM::Config::quants->{risk_profile};
+    my $limit_ref = BOM::Config::quants()->{risk_profile};
 
     my %limits;
     foreach my $market (@markets) {

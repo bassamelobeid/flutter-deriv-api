@@ -75,8 +75,8 @@ sub send_email {
         if ($language eq 'JA') {
             $vars->{japan_footer_text} = localize('{JAPAN ONLY}footer text of email template for Japan');
         }
-        BOM::Platform::Context::template->process('common_email.html.tt', $vars, \$mail_message)
-            || die BOM::Platform::Context::template->error();
+        BOM::Platform::Context::template()->process('common_email.html.tt', $vars, \$mail_message)
+            || die BOM::Platform::Context::template()->error();
     }
 
     my $email_stuffer = Email::Stuffer->from($fromemail)->to($email)->subject($subject);

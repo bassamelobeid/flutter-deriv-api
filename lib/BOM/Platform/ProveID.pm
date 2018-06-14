@@ -62,8 +62,8 @@ sub defaults {
 
     return (
         $self->SUPER::defaults,
-        username      => BOM::Config::third_party->{proveid}->{username},
-        password      => BOM::Config::third_party->{proveid}->{password},
+        username      => BOM::Config::third_party()->{proveid}->{username},
+        password      => BOM::Config::third_party()->{proveid}->{password},
         folder        => $folder,
         residence     => $client->residence,
         postcode      => $client->postcode || '',

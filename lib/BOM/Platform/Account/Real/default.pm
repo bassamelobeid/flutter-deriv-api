@@ -171,11 +171,11 @@ sub add_details_to_desk {
     if (BOM::Config::on_production()) {
         try {
             my $desk_api = BOM::User::Client::Desk->new({
-                desk_url     => BOM::Config::third_party->{desk}->{api_uri},
-                api_key      => BOM::Config::third_party->{desk}->{api_key},
-                secret_key   => BOM::Config::third_party->{desk}->{api_key_secret},
-                token        => BOM::Config::third_party->{desk}->{access_token},
-                token_secret => BOM::Config::third_party->{desk}->{access_token_secret},
+                desk_url     => BOM::Config::third_party()->{desk}->{api_uri},
+                api_key      => BOM::Config::third_party()->{desk}->{api_key},
+                secret_key   => BOM::Config::third_party()->{desk}->{api_key_secret},
+                token        => BOM::Config::third_party()->{desk}->{access_token},
+                token_secret => BOM::Config::third_party()->{desk}->{access_token_secret},
             });
 
             # we don't want to modify original details hence create
