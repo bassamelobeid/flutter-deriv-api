@@ -293,7 +293,7 @@ sub _get_pricing_parameter_from_IH_pricer {
     };
 
     $pricing_parameters->{intraday_vega_correction} = {
-        historical_vol_mean_reversion => BOM::Config::quants->{commission}->{intraday}->{historical_vol_meanrev},
+        historical_vol_mean_reversion => BOM::Config::quants()->{commission}->{intraday}->{historical_vol_meanrev},
         long_term_prediction          => $pe->long_term_prediction->amount,
         intraday_vega                 => $pe->base_probability->peek_amount('intraday_vega'),
     };
