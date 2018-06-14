@@ -15,7 +15,6 @@ use Format::Util::Numbers qw/financialrounding/;
 use BOM::Config::Runtime;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Payment::DoughFlow;
-use BOM::Platform::Client::Utility;
 use BOM::Platform::Client::IDAuthentication;
 
 # one of deposit, withdrawal
