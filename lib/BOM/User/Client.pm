@@ -366,7 +366,7 @@ sub set_authentication {
         }
 }
 
-sub aml_risk {
+sub aml_risk_level {
     my $self = shift;
 
     my $risk = $self->aml_risk_classification // '';
@@ -381,7 +381,7 @@ sub is_financial_assessment_complete {
     my $self = shift;
 
     my $sc  = $self->landing_company->short;
-    my $aml = $self->aml_risk();
+    my $aml = $self->aml_risk_level();
 
     my $is_FI = $self->is_financial_information_complete();
     my $is_TE = $self->is_trading_experience_complete();
