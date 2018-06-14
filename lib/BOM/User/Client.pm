@@ -474,7 +474,7 @@ sub get_limit_for_account_balance {
     my $self = shift;
 
     my @maxbalances = ();
-    my $max_bal     = BOM::Config::client_limits->{max_balance};
+    my $max_bal     = BOM::Config::client_limits()->{max_balance};
     my $curr        = $self->currency;
     push @maxbalances, $self->is_virtual ? $max_bal->{virtual}->{$curr} : $max_bal->{real}->{$curr};
 
@@ -493,7 +493,7 @@ sub get_limit_for_daily_turnover {
     my $self = shift;
 
     # turnover maxed at 500K of any currency.
-    my @limits = (BOM::Config::client_limits->{maximum_daily_turnover}{$self->currency});
+    my @limits = (BOM::Config::client_limits()->{maximum_daily_turnover}{$self->currency});
     if ($self->get_self_exclusion && $self->get_self_exclusion->max_turnover) {
         push @limits, $self->get_self_exclusion->max_turnover;
     }
@@ -558,7 +558,7 @@ sub get_limit_for_30day_losses {
 sub get_limit_for_open_positions {
     my $self = shift;
 
-    my @limits = BOM::Config::client_limits->{max_open_bets_default};
+    my @limits = BOM::Config::client_limits()->{max_open_bets_default};
 
     my $excl = $self->get_self_exclusion;
     if ($excl && $excl->max_open_bets) {
@@ -614,7 +614,7 @@ sub get_limit_for_payout {
     my $val = $self->custom_max_payout;
     return amount_from_to_currency($val, USD => $self->currency) if defined $val;
 
-    my $max_payout = BOM::Config::client_limits->{max_payout_open_positions};
+    my $max_payout = BOM::Config::client_limits()->{max_payout_open_positions};
 
     return $max_payout->{$self->currency};
 }
