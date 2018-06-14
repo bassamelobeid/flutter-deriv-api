@@ -677,7 +677,6 @@ sub payment_arbitrary_markup {
         staff_loginid        => $staff,
         remark               => $remark,
     });
-    $payment->arbitrary_markup({});
     my ($trx) = $payment->add_transaction({
         account_id    => $account->id,
         amount        => $amount,
