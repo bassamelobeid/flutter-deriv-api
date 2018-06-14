@@ -12,7 +12,7 @@ sub market_pricing_limits {
     $lc ||= "default_landing_company";
     $markets ||= ["default_market"];
 
-    my $bet_limits = BOM::Config::quants->{bet_limits};
+    my $bet_limits = BOM::Config::quants()->{bet_limits};
     my $lc_min     = $bet_limits->{min_stake}->{$lc} || $bet_limits->{min_stake}->{default_landing_company};
     my $lc_max     = $bet_limits->{max_payout}->{$lc} || $bet_limits->{max_payout}->{default_landing_company};
 
