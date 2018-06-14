@@ -15,9 +15,9 @@ sub new {
     my $class = shift;
     my %args = @_ % 2 ? %{$_[0]} : @_;
 
-    $args{user} = BOM::Config::third_party->{myaffiliates}->{user};
-    $args{pass} = BOM::Config::third_party->{myaffiliates}->{pass};
-    $args{host} = BOM::Config::third_party->{myaffiliates}->{host};
+    $args{user} = BOM::Config::third_party()->{myaffiliates}->{user};
+    $args{pass} = BOM::Config::third_party()->{myaffiliates}->{pass};
+    $args{host} = BOM::Config::third_party()->{myaffiliates}->{host};
 
     return $class->SUPER::new(%args);
 }

@@ -48,9 +48,9 @@ my $myaffiliates_tokens = $connection_builder->db->dbic->run(
     });
 my $i    = 0;
 my $ua   = LWP::UserAgent->new(ssl_opts => {verify_hostname => 0});
-my $user = BOM::Platform::Config::third_party->{myaffiliates}->{user};
-my $pass = BOM::Platform::Config::third_party->{myaffiliates}->{pass};
-my $host = BOM::Platform::Config::third_party->{myaffiliates}->{host};
+my $user = BOM::Platform::Config::third_party()->{myaffiliates}->{user};
+my $pass = BOM::Platform::Config::third_party()->{myaffiliates}->{pass};
+my $host = BOM::Platform::Config::third_party()->{myaffiliates}->{host};
 $host =~ s/(https?:\/\/)(.*)/$1$user:$pass\@$2/g;
 
 for my $row (@$myaffiliates_tokens) {
