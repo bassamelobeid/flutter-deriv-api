@@ -394,25 +394,26 @@ sub is_financial_assessment_complete {
 sub is_trading_experience_complete {
     my $self = shift;
 
-    my $fa = $self->_decode_financial_assessment();
-    return 0 unless $fa;
-    my $im = BOM::Platform::Account::Real::default::get_financial_input_mapping();
-    my $is_trading_exp_complete =
-        all { $fa->{$_} and $fa->{$_}->{answer} } keys %{$im->{trading_experience}};
-
-    return $is_trading_exp_complete || 0;
+    return $self->_is_fa_section_complete('trading_experience');
 }
 
 sub is_financial_information_complete {
     my $self = shift;
 
+    return $self->_is_fa_section_complete('financial_information');
+}
+
+sub _is_fa_section_complete {
+	my $self = shift;
+	my $key = shift;
+
     my $fa = $self->_decode_financial_assessment();
     return 0 unless $fa;
     my $im = BOM::Platform::Account::Real::default::get_financial_input_mapping();
-    my $is_financial_info_complete =
-        all { $fa->{$_} and $fa->{$_}->{answer} } keys %{$im->{financial_information}};
+    my $is_complete =
+        all { $fa->{$_} and $fa->{$_}->{answer} } keys %{$im->{$key}};
 
-    return $is_financial_info_complete || 0;
+    return $is_complete || 0;
 }
 
 sub _decode_financial_assessment {
