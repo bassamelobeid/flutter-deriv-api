@@ -404,8 +404,8 @@ sub is_financial_information_complete {
 }
 
 sub _is_fa_section_complete {
-	my $self = shift;
-	my $key = shift;
+    my $self = shift;
+    my $key  = shift;
 
     my $fa = $self->_decode_financial_assessment();
     return 0 unless $fa;
