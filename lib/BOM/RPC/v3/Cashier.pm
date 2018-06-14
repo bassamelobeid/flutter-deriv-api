@@ -113,8 +113,8 @@ rpc "cashier", sub {
         SSL_verify_mode => SSL_VERIFY_NONE
     );    #temporarily disable host verification as full ssl certificate chain is not available in doughflow.
 
-    my $doughflow_loc     = BOM::Config::third_party->{doughflow}->{$brand->name};
-    my $doughflow_pass    = BOM::Config::third_party->{doughflow}->{passcode};
+    my $doughflow_loc     = BOM::Config::third_party()->{doughflow}->{$brand->name};
+    my $doughflow_pass    = BOM::Config::third_party()->{doughflow}->{passcode};
     my $url               = $doughflow_loc . '/CreateCustomer.asp';
     my $sportsbook        = get_sportsbook($df_client->broker, $currency);
     my $handoff_token_key = _get_handoff_token_key($df_client->loginid);

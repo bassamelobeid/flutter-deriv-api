@@ -59,14 +59,14 @@ my $expected = {
     minutely   => $limits->{websocket_call_pricing}{'1m'},
     hourly     => $limits->{websocket_call_pricing}{'1h'},
 };
-cmp_deeply(BOM::RPC::v3::Utility::site_limits->{max_requests_pricing}, $expected, 'rate limits match');
+cmp_deeply(BOM::RPC::v3::Utility::site_limits()->{max_requests_pricing}, $expected, 'rate limits match');
 ++$limits->{websocket_call_pricing}{'1m'};
 DumpFile($rate_file, $limits);
-cmp_deeply(BOM::RPC::v3::Utility::site_limits->{max_requests_pricing}, $expected, 'rate limits still match old values');
+cmp_deeply(BOM::RPC::v3::Utility::site_limits()->{max_requests_pricing}, $expected, 'rate limits still match old values');
 set_relative_time(1 + BOM::RPC::v3::Utility->RATES_FILE_CACHE_TIME);
 
 $expected->{minutely} = $limits->{websocket_call_pricing}{'1m'};
-cmp_deeply(BOM::RPC::v3::Utility::site_limits->{max_requests_pricing}, $expected, 'rate limits have picked up new values after timeout');
+cmp_deeply(BOM::RPC::v3::Utility::site_limits()->{max_requests_pricing}, $expected, 'rate limits have picked up new values after timeout');
 
 done_testing;
 

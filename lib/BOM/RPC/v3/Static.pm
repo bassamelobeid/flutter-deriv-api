@@ -136,7 +136,7 @@ rpc states_list => sub {
 
 sub _currencies_config {
     my $amt_precision  = Format::Util::Numbers::get_precision_config()->{price};
-    my $default_stakes = BOM::Config::quants->{default_stake};
+    my $default_stakes = BOM::Config::quants()->{default_stake};
     # As a stake_default (amount, which will be pre-populated for this currency on our website,
     # if there were no amount entered by client), we get max out of two minimal possible stakes.
     # Logic is copied from _build_staking_limits

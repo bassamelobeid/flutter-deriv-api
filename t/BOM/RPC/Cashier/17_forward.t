@@ -274,7 +274,8 @@ subtest 'landing_companies_specific' => sub {
 subtest 'all status are covered' => sub {
     my $all_status = BOM::User::Client->status_codes();
     # Flags that can affect cashier should be seen
-    my $can_affect_cashier = qr/age_verification|cashier_locked|crs_tin_information|disabled|financial_risk_approval|jp_activation_pending|jp_knowledge_test_fail|jp_knowledge_test_pending|ukgc_funds_protection|ukrts_max_turnover_limit_not_set|unwelcome|withdrawal_locked/;
+    my $can_affect_cashier =
+        qr/age_verification|cashier_locked|crs_tin_information|disabled|financial_risk_approval|jp_activation_pending|jp_knowledge_test_fail|jp_knowledge_test_pending|ukgc_funds_protection|ukrts_max_turnover_limit_not_set|unwelcome|withdrawal_locked/;
     my @temp_status = grep { /^($can_affect_cashier)$/ } keys %$all_status;
     fail("missing status $_") for sort grep !exists $seen{$_}, @temp_status;
     pass("ok to prevent warning 'no tests run");

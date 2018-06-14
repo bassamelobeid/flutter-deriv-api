@@ -1214,7 +1214,7 @@ sub _get_self_exclusion_details {
 
         if (my $until = $self_exclusion->exclude_until) {
             $until = Date::Utility->new($until);
-            if (Date::Utility::today->days_between($until) < 0) {
+            if (Date::Utility::today()->days_between($until) < 0) {
                 $get_self_exclusion->{exclude_until} = $until->date;
             }
         }

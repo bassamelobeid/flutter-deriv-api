@@ -192,7 +192,7 @@ sub reset_throttler {
     my $loginid = shift;
     my $key     = MT5_ACCOUNT_THROTTLE_KEY_PREFIX . $loginid;
 
-    return BOM::Config::RedisReplicated::redis_write->del($key);
+    return BOM::Config::RedisReplicated::redis_write()->del($key);
 }
 
 async_rpc mt5_new_account => sub {
@@ -1351,9 +1351,9 @@ sub _get_mt5_account_from_affiliate_token {
 
     if ($token) {
         my $aff = WebService::MyAffiliates->new(
-            user    => BOM::Config::third_party->{myaffiliates}->{user},
-            pass    => BOM::Config::third_party->{myaffiliates}->{pass},
-            host    => BOM::Config::third_party->{myaffiliates}->{host},
+            user    => BOM::Config::third_party()->{myaffiliates}->{user},
+            pass    => BOM::Config::third_party()->{myaffiliates}->{pass},
+            host    => BOM::Config::third_party()->{myaffiliates}->{host},
             timeout => 10
         ) or return;
 
