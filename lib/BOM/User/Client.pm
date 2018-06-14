@@ -12,7 +12,7 @@ use Date::Utility;
 use List::Util qw/all/;
 use Format::Util::Numbers qw(roundcommon);
 use Try::Tiny;
-use JSON::MaybeXS;
+use JSON::MaybeUTF8 qw(decode_json_utf8);
 
 use Rose::DB::Object::Util qw(:all);
 use Rose::Object::MakeMethods::Generic scalar => ['self_exclusion_cache'];
@@ -386,8 +386,8 @@ sub is_financial_assessment_complete {
     my $is_FI = $self->is_financial_information_complete();
     my $is_TE = $self->is_trading_experience_complete();
 
-    return 0 if ($sc eq 'maltainvest' and ($is_FI == 0 or $is_TE == 0));
-    return 0 if ($sc =~ /^iom|malta|costarica$/ and $aml eq 'high' and $is_FI == 0);
+    return 0 if ($sc eq 'maltainvest' and not($is_FI and $is_TE));
+    return 0 if ($sc =~ /^iom|malta|costarica$/ and $aml eq 'high' and not $is_FI);
     return 1;
 }
 
@@ -400,7 +400,7 @@ sub is_trading_experience_complete {
     my $is_trading_exp_complete =
         all { $fa->{$_} and $fa->{$_}->{answer} } keys %{$im->{trading_experience}};
 
-    return $is_trading_exp_complete;
+    return $is_trading_exp_complete || 0;
 }
 
 sub is_financial_information_complete {
@@ -412,14 +412,14 @@ sub is_financial_information_complete {
     my $is_financial_info_complete =
         all { $fa->{$_} and $fa->{$_}->{answer} } keys %{$im->{financial_information}};
 
-    return $is_financial_info_complete;
+    return $is_financial_info_complete || 0;
 }
 
 sub _decode_financial_assessment {
     my $self = shift;
 
     my $fa = $self->financial_assessment();
-    $fa = ref($fa) ? JSON::MaybeXS->new->decode($fa->data || '{}') : {};
+    $fa = $fa ? decode_json_utf8($fa->data || '{}') : undef;
 
     return $fa;
 }
