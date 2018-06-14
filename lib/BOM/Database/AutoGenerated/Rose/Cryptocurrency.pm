@@ -26,6 +26,8 @@ __PACKAGE__->meta->setup(
         txn_fee          => { type => 'numeric' },
         estimated_fee    => { type => 'numeric' },
         authorisers      => { type => 'array' },
+        last_checked     => { type => 'timestamp' },
+        check_count      => { type => 'integer', default => '0', not_null => 1 },
     ],
 
     primary_key_columns => [ 'address', 'currency_code' ],
