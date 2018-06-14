@@ -168,7 +168,7 @@ sub _get_predefined_highlow {
     }
 
     my $highlow_key = join '_', ('highlow', $underlying->symbol, $period->{date_start}->{epoch}, $period->{date_expiry}->{epoch});
-    my $cache = BOM::Config::RedisReplicated::redis_read->get($cache_namespace . '::' . $highlow_key);
+    my $cache = BOM::Config::RedisReplicated::redis_read()->get($cache_namespace . '::' . $highlow_key);
 
     return @{$json->decode($cache)} if ($cache);
     return ();

@@ -108,11 +108,11 @@ subtest 'barrier reset is correct' => sub {
     is $c->reset_time, 1404986406, 'reset time is correct';
 
     # Let's test even no of tick as well
-    $args->{duration} = '6t';
+    $args->{duration}     = '6t';
     $args->{date_pricing} = $one_day->plus_time_interval('3s');
-    $c = produce_contract($args);
+    $c                    = produce_contract($args);
     is $c->barrier->as_absolute, '101.00', 'prior to barrier reset 3secs';
-    
+
     $args->{date_pricing} = $one_day->plus_time_interval('5s');
     $c = produce_contract($args);
     is $c->barrier->as_absolute, '101.00', 'prior to barrier reset 5secs';
@@ -127,6 +127,6 @@ subtest 'barrier reset is correct' => sub {
 
     $args->{date_pricing} = $one_day->plus_time_interval('8s');
     $c = produce_contract($args);
-    is $c->barrier->as_absolute, '104.00', 'barrier resets as expected';    
+    is $c->barrier->as_absolute, '104.00', 'barrier resets as expected';
 };
 

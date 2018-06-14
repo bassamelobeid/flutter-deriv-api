@@ -137,12 +137,12 @@ subtest 'tick highlow hit tick' => sub {
     ok $c->hit_tick, 'now we have a hit tick';
 
 # Next case is where we have max before the selected tick
-    $args->{date_start} = $one_day->plus_time_interval('4s');
+    $args->{date_start}   = $one_day->plus_time_interval('4s');
     $args->{date_pricing} = $one_day->plus_time_interval(($index * 2) . 's');
 
     # Before next tick is available
     $index = 5;
-    $c = produce_contract($args);
+    $c     = produce_contract($args);
     ok !$c->is_expired, 'contract did not expired';
     ok !$c->hit_tick,   'no hit tick';
 
