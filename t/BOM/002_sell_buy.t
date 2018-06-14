@@ -154,7 +154,7 @@ subtest 'check duplicate sell with legacy line' => sub {
             });
         $financial_market_bet->sell_price(10);
         $financial_market_bet_helper->bet_data->{quantity}  = 1;
-        $financial_market_bet_helper->bet_data->{sell_time} = Date::Utility::today->db_timestamp;
+        $financial_market_bet_helper->bet_data->{sell_time} = Date::Utility::today()->db_timestamp;
         $financial_market_bet_helper->sell_bet // die "Bet not sold";
     }
     'Successfully sold the bet with Model';

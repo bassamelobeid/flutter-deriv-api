@@ -586,7 +586,7 @@ sub _validate_payout_limit {
             );
         }
 
-        my $custom_limit = BOM::Config::quants->{risk_profile}{$custom_profile}{payout}{$contract->currency};
+        my $custom_limit = BOM::Config::quants()->{risk_profile}{$custom_profile}{payout}{$contract->currency};
         if (defined $custom_limit and (my $payout = $self->transaction->payout) > $custom_limit) {
             return Error::Base->cuss(
                 -type              => 'PayoutLimitExceeded',
