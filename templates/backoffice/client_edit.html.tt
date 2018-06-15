@@ -555,14 +555,20 @@ IF client_for_prove
         </tr>
     [% END %]
     <tr>
-        <td class="small_header" colspan="2">#Client Professional</td>
+        <td class="small_header" colspan="2">#Client Categorization</td>
     </tr>
     [% IF show_allow_professional_client %]
         <tr>
             <td class="label">
-                <input type="checkbox" value="1" name="professional_client" [% IF client_professional_status %]checked[% END %]/>
+                <input type="checkbox" name="professional_client" value="1" [% IF client_professional_status %]checked[% END %] disabled=true/>
             </td>
-            <td>Mark client as a professional investor</td>
+            <td>Mark client as a Professional investor</td>
+        </tr>
+        <tr>
+            <td class="label">
+                <input type="checkbox" checked/>
+            </td>
+            <td> Mark client as a Retail </td>
         </tr>
     [% ELSE %]
         <tr>
