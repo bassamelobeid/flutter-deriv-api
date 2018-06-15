@@ -277,7 +277,8 @@ sub get_payments {
     my $sql = q{
         SELECT
             t.*,
-            p.remark AS payment_remark
+            p.remark AS payment_remark,
+            p.payment_type_code AS payment_type
         FROM
             (
                 SELECT * FROM transaction.transaction
