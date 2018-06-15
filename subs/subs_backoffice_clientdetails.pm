@@ -531,7 +531,7 @@ sub client_statement_summary {
 
     foreach my $transaction (@{$transactions}) {
         my $k = $transaction->{action_type} eq 'deposit' ? 'deposits' : 'withdrawals';
-        my $payment_system = '(unknown)';
+        my $payment_system = $transaction->{payment_type} // '(unknown)';
 
         # DoughFlow
         $payment_system = $1 if $transaction->{payment_remark} =~ /payment_processor=(\S+)/;
@@ -539,9 +539,6 @@ sub client_statement_summary {
         # bank wire
         $payment_system = $1 if $transaction->{payment_remark} =~ /Wire\s+payment\s+from\s+([\S]+\s[\d\-]+) on/;
         $payment_system = $1 if $transaction->{payment_remark} =~ /Wire\s+deposit\s+.+\s+Recieved\s+by\s+([\S]+\s[\d\-]+)/;
-
-        # transfer between accounts
-        $payment_system = "internal_transfer" if $transaction->{payment_remark} =~ /Account transfer from /;
 
         $summary->{$k}{$payment_system} += $transaction->{amount};
     }
