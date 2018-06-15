@@ -148,7 +148,7 @@ sub _build_params {
     my $params = {};
     if (my $request = $self->cgi) {
         foreach my $param ($request->param) {
-            my @p = $request->param($param);
+            my @p = $request->multi_param($param);
             if (scalar @p > 1) {
                 $params->{$param} = \@p;
             } else {
