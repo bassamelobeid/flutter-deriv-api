@@ -744,15 +744,20 @@ sub compliance_checks {
     return if $client->is_virtual;
     return if $client->landing_company->short =~ /^(?:costarica|champion)$/;
 
-    # as per compliance for high risk client we need to check
-    # if financial assessment details are completed or not
-    if (($client->aml_risk_classification // '') eq 'high' and not $client->financial_assessment()) {
-        return Error::Base->cuss(
-            -type              => 'FinancialAssessmentRequired',
-            -mesg              => 'Please complete the financial assessment form to lift your withdrawal and trading limits.',
-            -message_to_client => localize('Please complete the financial assessment form to lift your withdrawal and trading limits.'),
-        );
-    }
+    my $error = Error::Base->cuss(
+        -type              => 'FinancialAssessmentRequired',
+        -mesg              => 'Please complete the financial assessment form to lift your withdrawal and trading limits.',
+        -message_to_client => localize('Please complete the financial assessment form to lift your withdrawal and trading limits.'),
+    );
+
+    my $financial_assessment = $client->financial_assessment();
+    # as per compliance - for maltainvest we need to check
+    # only for financial assessment
+    return $error if ($client->landing_company->short eq 'maltainvest' and not $financial_assessment);
+
+    # as per compliance - for other landing companies
+    # we need to check financial assessment only for high risk clients
+    return $error if (($client->aml_risk_classification // '') eq 'high' and not $financial_assessment);
 
     return;
 }
