@@ -1274,6 +1274,65 @@ subtest $method => sub {
     is $res->{education_level}, 'Secondary', 'Got correct answer for assessment key';
 };
 
+# Second set financial assessment test to test for changes only. (in this case forex_trading_experience went from "Over 3 years" to "1-2 years")
+$method = 'set_financial_assessment';
+subtest $method => sub {
+    my $args = {
+        "set_financial_assessment"             => 1,
+        "forex_trading_experience"             => "1-2 years",                                        # +1
+        "forex_trading_frequency"              => "0-5 transactions in the past 12 months",           # +0
+        "binary_options_trading_experience"    => "1-2 years",                                        # +1
+        "binary_options_trading_frequency"     => "40 transactions or more in the past 12 months",    # +2
+        "cfd_trading_experience"               => "1-2 years",                                        # +1
+        "cfd_trading_frequency"                => "0-5 transactions in the past 12 months",           # +0
+        "other_instruments_trading_experience" => "Over 3 years",                                     # +2
+        "other_instruments_trading_frequency"  => "6-10 transactions in the past 12 months",          # +1
+        "employment_industry"                  => "Finance",                                          # +15
+        "education_level"                      => "Secondary",                                        # +1
+        "income_source"                        => "Self-Employed",                                    # +0
+        "net_income"                           => '$25,000 - $50,000',                                # +1
+        "estimated_worth"                      => '$100,000 - $250,000',                              # +1
+        "occupation"                           => 'Managers',                                         # +0
+        "employment_status"                    => "Self-Employed",                                    # +0
+        "source_of_wealth"                     => "Company Ownership",                                # +0
+    };
+
+    $mailbox->clear;
+
+    $c->tcall(
+        $method,
+        {
+            args  => $args,
+            token => $token1
+        });
+
+    is($c->tcall('get_financial_assessment', {token => $token1})->{forex_trading_experience}, "1-2 years", "forex_trading_experience changed");
+
+    my @msgs = $mailbox->search(
+        email   => 'compliance@binary.com',
+        subject => qr/assessment test details have been updated/
+    );
+    ok(@msgs, 'send a email to compliance after changing financial assessment');
+
+    # make call again but with same arguments
+
+    $mailbox->clear;
+
+    $c->tcall(
+        $method,
+        {
+            args  => $args,
+            token => $token1
+        });
+
+    @msgs = $mailbox->search(
+        email   => 'compliance@binary.com',
+        subject => qr/assessment test details have been updated/
+    );
+
+    ok(!@msgs, 'no email sent when no change');
+};
+
 $method = 'set_settings';
 subtest $method => sub {
     is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
