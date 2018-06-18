@@ -1649,36 +1649,76 @@ rpc set_financial_assessment => sub {
     return BOM::RPC::v3::Utility::permission_error() if ($client->is_virtual or $client->landing_company->short eq 'japan');
 
     my ($response, $subject, $message);
+
     try {
         my $input_mappings       = BOM::Platform::Account::Real::default::get_financial_input_mapping();
         my %financial_data       = map { $_ => $params->{args}->{$_} } BOM::RPC::v3::Utility::keys_of_values $input_mappings;
         my $financial_evaluation = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
+        my %previous             = %{get_financial_assessment($params)};
 
         BOM::RPC::v3::Utility::_update_existing_financial_assessment($client->user, %$financial_evaluation);
 
+        my %diffs;
+        delete $params->{args}->{set_financial_assessment};
+
+        if (keys %previous) {
+            %diffs = _get_fa_diff(\%previous, $params->{args});
+        }
+
+        if (%diffs) {
+            foreach my $key (keys %diffs) {
+                $message .= "$key : " . $diffs{$key}->[0] . "  ->  " . $diffs{$key}->[1] . "\n";
+            }
+
+            # Scores are only relevant to MF clients
+            if ($client->landing_company->short eq 'maltainvest') {
+                $message .= "\nTotal Score :  " . $financial_evaluation->{total_score} . "\n";
+                $message .= "Trading Score :  " . $financial_evaluation->{trading_score} . "\n";
+                $message .= "CFD Score :  " . $financial_evaluation->{cfd_score} . "\n";
+                $message .= "Financial Information Score :  " . $financial_evaluation->{financial_information_score};
+            }
+        }
+
         $response = {map { $_ => $financial_evaluation->{$_} } qw(total_score cfd_score trading_score financial_information_score)};
-        $subject  = $client_loginid . ' assessment test details have been updated';
-        $message  = ["$client_loginid score is " . $financial_evaluation->{total_score}];
+        $subject = $client_loginid . ' assessment test details have been updated';
     }
     catch {
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'UpdateAssessmentError',
                 message_to_client => localize("Sorry, an error occurred while processing your request.")});
         $subject = "$client_loginid - assessment test details error";
-        $message = ["An error occurred while updating assessment test details for $client_loginid. Please handle accordingly."];
+        $message = "An error occurred while updating assessment test details for $client_loginid. Please handle accordingly.";
     };
 
     my $brand = Brands->new(name => request()->brand);
-    #only send email for MF-client
+
     send_email({
             from    => $brand->emails('support'),
             to      => $brand->emails('compliance'),
             subject => $subject,
-            message => $message,
-        }) if $client->landing_company->short eq 'maltainvest';
+            message => [$message],
+        }) if $message;
 
     return $response;
 };
+
+sub _get_fa_diff {
+    my ($previous, $new) = @_;
+
+    my %result;
+    foreach my $key (keys %$new) {
+        #our API calls allow null values to be passed in as arguments so this needs to be checked first and foremost.
+        if ($new->{$key}) {
+            if (!$previous->{$key}) {
+                $result{$key} = ["N/A", $new->{$key}];
+            } elsif ($previous->{$key} ne $new->{$key}) {
+                $result{$key} = [$previous->{$key}, $new->{$key}];
+            }
+        }
+    }
+
+    return %result;
+}
 
 rpc get_financial_assessment => sub {
     my $params = shift;
