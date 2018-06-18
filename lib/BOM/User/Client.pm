@@ -153,15 +153,11 @@ sub save {
     return $r;
 }
 
-sub register_and_return_new_client {
-    my $class = shift;
-    my $args  = shift;
+sub store_details {
+    my ($self, $args) = @_;
 
-    my $broker = $args->{broker_code} || die "can't register a new client without a broker_code";
-    # assert broker before setting other properties so that correct write-handle will be cascaded!
-    my $self = $class->rnew(broker => $broker);
+    $self->aml_risk_classification('low') unless $self->is_virtual;
 
-    $self->set_db('write');
     $self->$_($args->{$_}) for sort keys %$args;
 
     # special cases.. force empty string if necessary in these not-nullable cols.  They oughta be nullable in the db!
@@ -169,14 +165,27 @@ sub register_and_return_new_client {
         $self->$_ || $self->$_('');
     }
 
-    $self->aml_risk_classification('low') unless $self->is_virtual;
-
     # resolve Gender from Salutation
     if ($self->salutation and not $self->gender) {
         my $gender = (uc $self->salutation eq 'MR') ? 'm' : 'f';
         $self->gender($gender);
     }
+
     $self->gender('m') unless $self->gender;
+
+    return undef;
+}
+
+sub register_and_return_new_client {
+    my $class = shift;
+    my $args  = shift;
+
+    my $broker = $args->{broker_code} || die "can't register a new client without a broker_code";
+    my $self = $class->rnew(broker => $broker);
+
+    store_details($self, $args);
+
+    $self->set_db('write');
 
     my $sql    = "SELECT nextval('sequences.loginid_sequence_$broker')";
     my $dbic   = $self->db->dbic;
@@ -186,11 +195,9 @@ sub register_and_return_new_client {
             $sth->execute();
             return $sth->fetchrow_array();
         });
-    $self->loginid("$broker$seqnum[0]");
-    $self->save;
-    $self->load;
 
-    return $self;
+    $self->loginid("$broker$seqnum[0]");
+    return $self->save;
 }
 
 sub full_name {
