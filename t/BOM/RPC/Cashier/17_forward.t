@@ -190,18 +190,31 @@ subtest 'landing_companies_specific' => sub {
     $client_mf->set_default_account('EUR');
     $client_mf->save;
 
-    my $assessment = $client_mf->financial_assessment();
     $client_mf->aml_risk_classification('high');
     $client_mf->save;
 
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('FinancialAssessmentRequired',
-        'MF client with High risk should have completed financial assessment')
-        ->error_message_is('Please complete the financial assessment form to lift your withdrawal and trading limits.',
-        'MF client with High risk should have completed financial assessment');
+        'MF client have to complete financial assessment irrespective of risk classification')->error_message_is(
+        'Please complete the financial assessment form to lift your withdrawal and trading limits.',
+        'MF client have to complete financial assessment irrespective of risk classification'
+        );
 
     $client_mf->aml_risk_classification('low');
     $client_mf->save;
+
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('FinancialAssessmentRequired',
+        'MF client have to complete financial assessment irrespective of risk classification')->error_message_is(
+        'Please complete the financial assessment form to lift your withdrawal and trading limits.',
+        'MF client have to complete financial assessment irrespective of risk classification'
+        );
+
+    $client_mocked->mock(
+        'financial_assessment',
+        sub {
+            return {};
+        });
 
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('ASK_AUTHENTICATE', 'MF client needs to be fully authenticated')
@@ -222,11 +235,29 @@ subtest 'landing_companies_specific' => sub {
         ->error_message_is('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.',
         'tax information is required for malatainvest');
 
+    $client_mocked->unmock('financial_assessment');
+
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mx->loginid, 'test token');
 
     $client_mx->set_default_account('GBP');
     $client_mx->residence('gb');
     $client_mx->save;
+
+    $client_mx->aml_risk_classification('high');
+    $client_mx->save;
+
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('FinancialAssessmentRequired',
+        'MX client have to complete financial assessment if they are categorized as high risk')->error_message_is(
+        'Please complete the financial assessment form to lift your withdrawal and trading limits.',
+        'MX client have to complete financial assessment if they are categorized as high risk'
+        );
+
+    $client_mocked->mock(
+        'financial_assessment',
+        sub {
+            return {};
+        });
 
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('ASK_UK_FUNDS_PROTECTION', 'GB residence needs to accept fund protection')
@@ -237,6 +268,8 @@ subtest 'landing_companies_specific' => sub {
         ->has_no_system_error->has_error->error_code_is('ASK_SELF_EXCLUSION_MAX_TURNOVER_SET', 'GB residence needs to set 30-Day turnover')
         ->error_message_is('Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.',
         'GB residence needs to set 30-Day turnover');
+
+    $client_mocked->unmock('financial_assessment');
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_jp->loginid, 'test token');
     $client_jp->set_default_account('JPY');
