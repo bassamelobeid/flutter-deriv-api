@@ -48,7 +48,12 @@ sub create_account {
 
     $financial_assessment->{agreement} = $agreement;
 
-    my $register = BOM::Platform::Account::Real::default::register_client($details);
+    my $register = BOM::Platform::Account::Real::default::create_account({
+        user        => $user,
+        from_client => $from_client,
+        details     => $details
+    });
+
     return $register if ($register->{error});
 
     my $client = $register->{client};

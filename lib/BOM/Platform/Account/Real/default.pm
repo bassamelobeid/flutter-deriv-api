@@ -80,46 +80,34 @@ sub validate {
             return {error => 'too young'};
         }
     }
-    return;
+    return undef;
 }
 
 sub create_account {
     my $args = shift;
-    my ($user, $details, $from_client) = @{$args}{'user', 'details', 'from_client'};
+    my ($user, $details) = @{$args}{'user', 'details'};
 
-    if (my $error = validate($args)) {
-        return $error;
-    }
-    my $register = register_client($details);
-    return $register if ($register->{error});
+    my $error = validate($args);
+    return $error if $error;
 
-    my $response = after_register_client({
-        client      => $register->{client},
-        user        => $user,
-        details     => $details,
-        from_client => $from_client,
-        ip          => $args->{ip},
-        country     => $args->{country},
-    });
+    my $client = eval { BOM::User::Client->register_and_return_new_client($details) };
 
-    add_details_to_desk($register->{client}, $details);
-
-    return $response;
-}
-
-sub register_client {
-    my $details = shift;
-
-    my ($client, $error);
-    try { $client = BOM::User::Client->register_and_return_new_client($details); }
-    catch {
-        $error = $_;
-    };
-    if ($error) {
-        warn "Real: register_and_return_new_client exception [$error]";
+    unless ($client) {
+        warn "Real: register_and_return_new_client exception [$@]";
         return {error => 'invalid'};
     }
-    return {client => $client};
+
+    my $response = after_register_client({
+        client  => $client,
+        user    => $user,
+        details => $details,
+        ip      => $args->{ip},
+        country => $args->{country},
+    });
+
+    add_details_to_desk($client, $details);
+
+    return $response;
 }
 
 sub after_register_client {

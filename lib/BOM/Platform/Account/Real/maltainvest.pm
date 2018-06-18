@@ -43,7 +43,11 @@ sub create_account {
     # show Risk disclosure warning if client haven't accepted risk yet and FA score matches warning conditions
     return {error => 'show risk disclaimer'} if !$accept_risk && $should_warn;
 
-    my $register = BOM::Platform::Account::Real::default::register_client($details);
+    my $register = BOM::Platform::Account::Real::default::create_account({
+        user        => $user,
+        details     => $details,
+        from_client => $from_client
+    });
     return $register if ($register->{error});
 
     my $client = $register->{client};
