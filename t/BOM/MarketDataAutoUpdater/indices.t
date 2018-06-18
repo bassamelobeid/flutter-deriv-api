@@ -150,7 +150,7 @@ SKIP: {
     subtest 'updated hurray!' => sub {
         my $tmp = File::Temp->newdir;
         # get the real deal because we check date
-        my $url = 'https://www.dropbox.com/s/yjl5jqe6f71stf5/auto_upload.xls?dl=1';
+        my $url = 'https://www.dropbox.com/s/yjl5jqe6f71stf5/auto_upload.xls?raw=1';
         my $ua  = Mojo::UserAgent->new->max_redirects(5);
         $ua->get($url)->result->content->asset->move_to("$tmp/auto_upload.xls");
 

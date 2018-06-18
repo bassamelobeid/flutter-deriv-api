@@ -53,7 +53,7 @@ has uses_binary_spot => (
 sub _build_file {
     my $self     = shift;
     my $filename = $self->filename;
-    my $url      = 'https://www.dropbox.com/s/yjl5jqe6f71stf5/auto_upload.xls?dl=1';
+    my $url      = 'https://www.dropbox.com/s/yjl5jqe6f71stf5/auto_upload.xls?raw=1';
     my $file     = '/tmp/' . $filename;
 
     my $ua = Mojo::UserAgent->new->max_redirects(5);
