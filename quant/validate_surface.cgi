@@ -28,12 +28,12 @@ BOM::Backoffice::Sysinit::init();
 # Our very own %input processing logic seems to strip
 # out characters from my URL encoded JSON, breaking it.
 my $cgi           = CGI->new;
-my $underlying    = create_underlying($cgi->param('symbol'));
-my $creation_date = Date::Utility->new($cgi->param('recorded_epoch'));
+my $underlying    = create_underlying($cgi->param('symbol') . '');
+my $creation_date = Date::Utility->new($cgi->param('recorded_epoch') . '');
 my $type          = $cgi->param('type');
 my $spot          = $cgi->param('spot');
 
-my $surface_string = url_decode($cgi->param('surface'));
+my $surface_string = url_decode($cgi->param('surface') . '');
 $surface_string =~ s/point/./g;
 my $surface_data = JSON::MaybeXS->new->decode($surface_string);
 

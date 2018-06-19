@@ -20,12 +20,12 @@ my $json = JSON::MaybeXS->new;
 # Our very own %input processing logic seems to strip
 # out characters from my URL encoded JSON, breaking it.
 my $cgi           = CGI->new;
-my $underlying    = create_underlying($cgi->param('symbol'));
+my $underlying    = create_underlying($cgi->param('symbol') . '');
 my $which         = $cgi->param('which');
 my $spot          = $cgi->param('spot');
-my $creation_date = Date::Utility->new($cgi->param('recorded_epoch'));
+my $creation_date = Date::Utility->new($cgi->param('recorded_epoch') . '');
 
-my $surface_string = url_decode($cgi->param('surface'));
+my $surface_string = url_decode($cgi->param('surface') . '');
 $surface_string =~ s/point/./g;
 my $surface_data = $json->decode($surface_string);
 

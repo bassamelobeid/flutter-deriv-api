@@ -203,8 +203,8 @@ if ($input{whattodo} eq 'uploadID') {
         my $filetoupload    = $cgi->upload('FILE_' . $i);
         my $page_type       = $cgi->param('page_type_' . $i);
         my $expiration_date = $cgi->param('expiration_date_' . $i);
-        my $document_id     = substr(encode_entities($cgi->param('document_id_' . $i)), 0, 30);
-        my $comments        = substr(encode_entities($cgi->param('comments_' . $i)), 0, 255);
+        my $document_id     = substr(encode_entities($cgi->param('document_id_' . $i) . ''), 0, 30);
+        my $comments        = substr(encode_entities($cgi->param('comments_' . $i) . ''), 0, 255);
 
         if (not $filetoupload) {
             $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: You did not browse for a file to upload.</p><br />"

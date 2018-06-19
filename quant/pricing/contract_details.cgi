@@ -70,7 +70,7 @@ if ($cgi->param('upload_file')) {
         BOM::JapanContractDetailsOutput::single_output_as_excel($pricing_parameters, $id . '.xlsx');
 
     } else {
-        load_template($cgi->param('broker'), $pricing_parameters);
+        load_template($cgi->param('broker') . '', $pricing_parameters);
 
     }
 } elsif ($params{'load_template'}) {
