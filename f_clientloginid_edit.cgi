@@ -280,7 +280,7 @@ if ($input{whattodo} eq 'uploadID') {
         }
         my $file_checksum         = Digest::MD5->new->addfile($filetoupload)->hexdigest;
         my $abs_path_to_temp_file = $cgi->tmpFileName($filetoupload);
-        my $docformat             = extensions(mimetype($abs_path_to_temp_file));
+        my ($docformat)           = extensions(mimetype($abs_path_to_temp_file));
         my $query_result          = BOM::Platform::Client::DocumentUpload::start_document_upload(
             client          => $client,
             doctype         => $doctype,
