@@ -302,6 +302,7 @@ subtest 'User Login' => sub {
 
         $user->login(%args, password => 'wednesday') for 1 .. 6;
         $failed_login = $user->failed_login;
+        $failed_login->load;
         is $failed_login->fail_count, 6, 'failed login attempts';
 
         $status = $user->login(%args);
@@ -310,6 +311,7 @@ subtest 'User Login' => sub {
 
         $failed_login = $user->failed_login;
         $failed_login->last_attempt(Date::Utility->new->minus_time_interval('1d')->datetime_yyyymmdd_hhmmss);
+        $failed_login->save;
         ok $user->login(%args)->{success}, 'clear failed login attempts; can now login';
     };
 };
