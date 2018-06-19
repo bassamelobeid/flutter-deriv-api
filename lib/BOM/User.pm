@@ -3,6 +3,7 @@ package BOM::User;
 use strict;
 use warnings;
 
+use feature 'state';
 use Try::Tiny;
 use Date::Utility;
 use List::Util qw(first);
@@ -92,47 +93,45 @@ sub login {
     my $password        = $args{password}        || die "requires password argument";
     my $environment     = $args{environment}     || '';
     my $is_social_login = $args{is_social_login} || 0;
-
-    my $error_mapping = BOM::User::Static::get_error_mapping();
-    my ($error, $cfl);
-    if ($cfl = $self->failed_login and $cfl->fail_count > 5 and $cfl->last_attempt->epoch > time - 300) {
-        $error = $error_mapping->{LoginTooManyAttempts};
-        BOM::User::AuditLog::log('failed login > 5 times', $self->email);
-    } elsif (not $is_social_login and not BOM::User::Password::checkpw($password, $self->password)) {
-        my $fail_count = $cfl ? $cfl->fail_count : 0;
-        $self->failed_login({
-            fail_count   => ++$fail_count,
-            last_attempt => Date::Utility->new->datetime_yyyymmdd_hhmmss,
+    use constant {
+        MAX_FAIL_TIMES   => 5,
+        ATTEMPT_INTERVAL => '5 minutes'
+    };
+    my @clients;
+    my ($error, $log_as_failed) = (undef, 1);
+    my $too_many_attempts = $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_arrayref('select users.too_many_login_attempts(?::BIGINT, ?::SMALLINT, ?::INTERVAL)',
+                undef, $self->id, MAX_FAIL_TIMES, ATTEMPT_INTERVAL)->[0];
         });
-        $self->save;
-        $error = $error_mapping->{IncorrectEmailPassword};
-        BOM::User::AuditLog::log('incorrect email or password', $self->email);
-    }
-
-    my @clients = $self->clients;
-    unless (@clients) {
-        $error = $error_mapping->{AccountUnavailable};
-        BOM::User::AuditLog::log('Account disabled', $self->email);
-    }
-
-    $self->add_login_history({
-        action      => 'login',
-        environment => $environment,
-        successful  => ($error) ? 'f' : 't'
-    });
-    $self->save;
-
-    if ($error) {
-        return {error => $error};
+    if ($too_many_attempts) {
+        $error         = 'LoginTooManyAttempts';
+        $log_as_failed = 0;
+    } elsif (!$is_social_login && !BOM::User::Password::checkpw($password, $self->password)) {
+        $error = 'IncorrectEmailPassword';
+    } elsif (!(@clients = $self->clients)) {
+        $error = 'AccountUnavailable';
     } else {
-        $cfl->delete if $cfl;    # delete client failed login
-        BOM::User::AuditLog::log('successful login', $self->email);
-
-        # gamstop is applicable for UK residence only
-        my $gamstop_client = first { $_->residence eq 'gb' and $_->landing_company->short =~ /^(?:malta|iom)$/ } @clients;
-        BOM::User::Utility::set_gamstop_self_exclusion($gamstop_client) if $gamstop_client;
+        $log_as_failed = 0;
     }
 
+    state $error_mapping  = BOM::User::Static::get_error_mapping();
+    state $error_log_msgs = {
+        LoginTooManyAttempts   => "failed login > " . MAX_FAIL_TIMES . " times",
+        IncorrectEmailPassword => 'incorrect email or password',
+        AccountUnavailable     => 'Account disabled',
+        Success                => 'successful login',
+    };
+    BOM::User::AuditLog::log($error_log_msgs->{$error || 'Success'}, $self->email);
+    $self->db->dbic->run(
+        fixup => sub {
+            $_->do('select users.record_login_history(?,?,?,?)', undef, $self->id, $error ? 'f' : 't', $log_as_failed, $environment);
+        });
+    return {error => $error_mapping->{$error}} if $error;
+
+    # gamstop is applicable for UK residence only
+    my $gamstop_client = first { $_->residence eq 'gb' and $_->landing_company->short =~ /^(?:malta|iom)$/ } @clients;
+    BOM::User::Utility::set_gamstop_self_exclusion($gamstop_client) if $gamstop_client;
     return {success => 1};
 }
 
