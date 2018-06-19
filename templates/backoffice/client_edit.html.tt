@@ -566,7 +566,7 @@ IF client_for_prove
         </tr>
         <tr>
             <td class="label">
-                <input type="checkbox" checked/>
+                <input type="checkbox" [% IF !client_professional_status %]checked[% END %]/>
             </td>
             <td> Mark client as a Retail </td>
         </tr>
