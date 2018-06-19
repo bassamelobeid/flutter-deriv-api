@@ -3,6 +3,7 @@ package BOM::Platform::Client::IDAuthentication;
 use Moose;
 use namespace::autoclean;
 use Try::Tiny;
+use List::Util qw( first );
 
 use Brands;
 use BOM::User::Client;
@@ -27,7 +28,6 @@ sub run_authentication {
     my $client = $self->client;
 
     return if $client->is_virtual;
-
     # Binary Investment clients should already be fully_authenticated by the time this code runs following an intial deposit.
     # Binary Investment accounts are set to "unwelcome" when they are first created.  Document
     # submission is REQUIRED before the account is enabled for use
@@ -65,6 +65,7 @@ sub do_proveid {
     };
 
     my $prove_id_result = $self->_fetch_proveid;
+    my @matches = @{$prove_id_result->{matches} // []};
     my $skip_request_for_id;
 
     # Do not send ID Authentication email if Experian request has failed, setting the user to unwelcome status
@@ -85,22 +86,15 @@ sub do_proveid {
         $skip_request_for_id = 1;
     }
     # we have a match, handle it
-    elsif (defined $prove_id_result->{matches}
-        and (scalar @{$prove_id_result->{matches}} > 0))
-    {
+    elsif (@matches) {
         my $type;
-        # Office of Foreign Assets Control, HM Treasury => disable the client
-        if (($type) = grep { /(OFAC|BOE)/ } @{$prove_id_result->{matches}}) {
+        # Credit Reference Check
+        # Office of Foreign Assets Control, HM Treasury, Politically Exposed Person, presence in Sanction List => disable the client
+        if ($type = first { /(OFAC|BOE|PEP|OFSI)/ } @matches) {
             $set_status->('disabled', "$type match");
         }
         # Director is ok, no unwelcome, no documents request
-        elsif (grep { /Directors/ } @{$prove_id_result->{matches}}) {
-        }
-        # Politically Exposed => unwelcome client
-        elsif ((($type) = grep { /(PEP)/ } @{$prove_id_result->{matches}})) {
-            $set_status->('unwelcome', "$type match");
-        } else {
-            $set_status->('unwelcome', 'EXPERIAN PROVE ID RETURNED MATCH', join(', ', @{$prove_id_result->{matches}}));
+        elsif (grep { /Directors/ } @matches) {
         }
         $skip_request_for_id = 1;
     }
@@ -108,9 +102,11 @@ sub do_proveid {
     elsif ($prove_id_result->{CCJ}) {
         $skip_request_for_id = 1;
     }
-    # result is AGE VERIFIED ONLY
-    if ($prove_id_result->{age_verified}) {
-        $set_status->('age_verification', 'EXPERIAN PROVE ID KYC PASSED AGE VERIFICATION', 'could get enough score for age verification.');
+    # KYC Summary check
+    if ($prove_id_result->{kyc_summary_score} <= 2) {
+        $set_status->('unwelcome', 'INSUFFICIENT EXPERIAN KYC SUMMARY SCORE');
+    } else {
+        $set_status->('age_verification', 'EXPERIAN SUMMARY SCORE ENOUGH FOR AGE VERIFICATION');
         $skip_request_for_id = 1;
     }
 

@@ -128,6 +128,13 @@ subtest 'When auth not required' => sub {
 
             my $v = IDAuthentication->new(client => $c);
             Test::MockObject::Extends->new($v);
+
+            $v->mock(
+                -_fetch_proveid,
+                sub {
+                    return {kyc_summary_score => 1};
+                });
+
             do {
                 local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
                 $v->run_authentication;
@@ -169,11 +176,75 @@ subtest 'proveid' => sub {
             sub {
                 return {
                     fully_authenticated => 1,
-                    age_verified        => 1
+                    kyc_summary_score   => 3
                 };
             });
         $v->run_authentication;
         is $v->notified, undef, 'sent zero notification';
+        ok $v->client->get_status('age_verification'), 'client is age verified';
+        ok !$v->client->get_status('cashier_locked'), 'cashier not locked';
+    };
+
+    subtest 'actual response from experian' => sub {
+        my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'MX',
+            residence   => 'ar',
+        });
+
+        my $v = IDAuthentication->new(client => $c);
+        Test::MockObject::Extends->new($v);
+
+        $v->mock(
+            -_fetch_proveid,
+            sub {
+                return {
+                    kyc_summary_score   => 4,
+                    num_verifications   => '2',
+                    matches             => [],
+                    fully_authenticated => 1
+                };
+            });
+
+        $v->run_authentication;
+        ok $v->client->get_status('age_verification'), 'client is age verified';
+        ok !$v->client->get_status('cashier_locked'), 'cashier not locked';
+    };
+
+    subtest 'kyc 2 or less' => sub {
+        my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'MX',
+            residence   => 'ar',
+        });
+
+        my $v = IDAuthentication->new(client => $c);
+        Test::MockObject::Extends->new($v);
+
+        $v->mock(
+            -_fetch_proveid,
+            sub {
+                return {kyc_summary_score => 1};
+            });
+
+        $v->run_authentication;
+        ok $v->client->get_status('unwelcome'), 'client is unwelcome';
+        ok !$v->client->get_status('cashier_locked'), 'cashier not locked';
+    };
+
+    subtest 'kyc more than 2' => sub {
+        my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'MX',
+            residence   => 'ar',
+        });
+
+        my $v = IDAuthentication->new(client => $c);
+        Test::MockObject::Extends->new($v);
+
+        $v->mock(
+            -_fetch_proveid,
+            sub {
+                return {kyc_summary_score => 3};
+            });
+        $v->run_authentication;
         ok $v->client->get_status('age_verification'), 'client is age verified';
         ok !$v->client->get_status('cashier_locked'), 'cashier not locked';
     };
@@ -187,14 +258,14 @@ subtest 'proveid' => sub {
         my $v = IDAuthentication->new(client => $c);
 
         Test::MockObject::Extends->new($v);
-        $v->mock(-_fetch_proveid, sub { return {age_verified => 1, matches => ['PEP']} });
+
+        $v->mock(-_fetch_proveid, sub { return {kyc_summary_score => 3, matches => ['PEP']} });
+
         $v->run_authentication;
         my @notif = @{$v->notified};
         is @notif, 1, 'sent two notifications';
         like $notif[0][0], qr/PEP match/, 'notification is correct';
-        ok !$v->client->fully_authenticated, 'client not fully authenticated';
-        ok $v->client->get_status('age_verification'), 'client is age verified';
-        ok $v->client->get_status('unwelcome'),        'client is now unwelcome';
+        ok $v->client->get_status('disabled'), 'client is disabled';
     };
 
     subtest 'deny' => sub {
@@ -206,7 +277,14 @@ subtest 'proveid' => sub {
         my $v = IDAuthentication->new(client => $c);
         Test::MockObject::Extends->new($v);
 
-        $v->mock(-_fetch_proveid, sub { return {deny => 1} });
+        $v->mock(
+            -_fetch_proveid,
+            sub {
+                return {
+                    deny              => 1,
+                    kyc_summary_score => 0
+                };
+            });
         do {
             local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
             $v->run_authentication;
@@ -230,14 +308,21 @@ subtest 'proveid' => sub {
             my $v = IDAuthentication->new(client => $c);
             Test::MockObject::Extends->new($v);
 
-            $v->mock(-_fetch_proveid, sub { return $types->{$type} });
+            $v->mock(
+                -_fetch_proveid,
+                sub {
+                    return {
+                        matches           => [qw/Directors/],
+                        CCJ               => 1,
+                        kyc_summary_score => 0
+                    };
+                });
             do {
                 local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
                 $v->run_authentication;
             };
             ok !$v->client->fully_authenticated, 'client not fully authenticated: ' . $type;
             ok !$v->client->get_status('age_verification'), 'client not age verified: ' . $type;
-            ok !$v->client->get_status('unwelcome'),        'client is not unwelcome: ' . $type;
         }
     };
 
@@ -249,7 +334,7 @@ subtest 'proveid' => sub {
 
         my $v = IDAuthentication->new(client => $c);
         Test::MockObject::Extends->new($v);
-        $v->mock(-_fetch_proveid, sub { return {age_verified => 1} });
+        $v->mock(-_fetch_proveid, sub { return {kyc_summary_score => 3} });
         $v->run_authentication;
         is $v->notified, undef, 'sent zero notification';
         ok !$v->client->fully_authenticated, 'client not fully authenticated';
@@ -266,7 +351,7 @@ subtest 'proveid' => sub {
         my $v = IDAuthentication->new(client => $c);
         Test::MockObject::Extends->new($v);
 
-        $v->mock(-_fetch_proveid, sub { return undef });
+        $v->mock(-_fetch_proveid, sub { return {kyc_summary_score => 0} });
         do {
             local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
             $v->run_authentication;

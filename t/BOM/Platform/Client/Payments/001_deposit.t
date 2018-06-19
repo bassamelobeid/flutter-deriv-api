@@ -6,6 +6,7 @@ use warnings;
 
 use Test::More;
 use Test::Exception;
+use Test::MockObject::Extends;
 
 use BOM::User::Client;
 use BOM::User::Client::Payments;
@@ -55,8 +56,14 @@ $mx_client->set_default_account('USD');
 
 ok(!$mx_client->get_status('unwelcome'), 'MX client not unwelcome prior to first-deposit');
 $mx_client->payment_free_gift(%deposit, currency => 'USD');
-BOM::Platform::Client::IDAuthentication->new(client => $mx_client)->run_authentication;
+my $v = BOM::Platform::Client::IDAuthentication->new(client => $mx_client);
+Test::MockObject::Extends->new($v);
+$v->mock(
+    -_fetch_proveid,
+    sub {
+        return {kyc_summary_score => 1};
+    });
+$v->run_authentication;
 ok($mx_client->get_status('unwelcome'), 'MX client now unwelcome after first-deposit');
 
 done_testing();
-
