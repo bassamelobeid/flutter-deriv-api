@@ -97,7 +97,7 @@ sub generate {
                         my $bet = produce_contract($bet_params);
                         $cached_underlyings{$symbol} ||= $bet->underlying;
 
-                        my $current_value = $bet->theo_price;
+                        my $current_value = $bet->is_binary ? $bet->theo_price : $bet->theo_price * $bet->multiplier;
                         my $value = $self->amount_in_usd($current_value, $open_fmb->{currency_code});
                         $totals{value} += $value;
 
