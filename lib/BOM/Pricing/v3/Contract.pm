@@ -648,7 +648,7 @@ sub contracts_for {
     if (not $contracts_for or $contracts_for->{hit_count} == 0) {
         return BOM::Pricing::v3::Utility::create_error({
                 code              => 'InvalidSymbol',
-                message_to_client => BOM::Platform::Context::localize('The symbol is invalid.')});
+                message_to_client => BOM::Platform::Context::localize('Offering is unavailable on this symbol.')});
     } else {
         $contracts_for->{'spot'} = create_underlying($symbol)->spot();
         return $contracts_for;
