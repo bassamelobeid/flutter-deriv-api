@@ -394,7 +394,7 @@ sub is_financial_assessment_complete {
     my $is_TE = $self->is_trading_experience_complete();
 
     return 0 if ($sc eq 'maltainvest' and not($is_FI and $is_TE));
-    return 0 if ($sc =~ /^iom|malta|costarica$/ and $aml eq 'high' and not $is_FI);
+    return 0 if ($sc =~ /^iom|malta$/ and $aml eq 'high' and not $is_FI);
     return 1;
 }
 
