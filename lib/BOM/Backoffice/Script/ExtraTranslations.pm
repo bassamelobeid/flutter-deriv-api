@@ -19,6 +19,7 @@ use BOM::MarketData qw(create_underlying create_underlying_db);
 use BOM::MarketData::Types;
 use BOM::Product::Static;
 use BOM::User::Static;
+use BOM::OAuth::Static;
 use Finance::Contract::Longcode;
 use BOM::Config::Runtime;
 
@@ -74,8 +75,7 @@ sub script_run {
     $self->add_contract_types;
     $self->add_japan_settings;
     $self->add_longcodes;
-    $self->add_generic_texts;
-    $self->add_error_messages;
+    $self->add_messages;
 
     return 0;
 }
@@ -293,33 +293,17 @@ sub add_longcodes {
     return;
 }
 
-sub add_generic_texts {
+sub add_messages {
     my $self = shift;
 
-    my $fh       = $self->pot_append_fh;
-    my $messages = BOM::Product::Static::get_generic_mapping();
+    my $fh               = $self->pot_append_fh;
+    my @message_mappings = (
+        BOM::Product::Static::get_error_mapping(), BOM::Product::Static::get_generic_mapping(),
+        BOM::User::Static::get_error_mapping(),    BOM::OAuth::Static::get_message_mapping());
 
-    foreach my $key (keys %$messages) {
-        my $msgid = $self->msg_id($messages->{$key});
-        if ($self->is_id_unique($msgid)) {
-            print $fh "\n";
-            print $fh $msgid . "\n";
-            print $fh "msgstr \"\"\n";
-        }
-    }
-
-    return;
-}
-
-sub add_error_messages {
-    my $self = shift;
-
-    my $fh = $self->pot_append_fh;
-    my @error_mappings = (BOM::Product::Static::get_error_mapping(), BOM::User::Static::get_error_mapping());
-
-    foreach my $error_mapping (@error_mappings) {
-        foreach my $err (keys %$error_mapping) {
-            my $msgid = $self->msg_id($error_mapping->{$err});
+    foreach my $message_mapping (@message_mappings) {
+        foreach my $message (keys %$message_mapping) {
+            my $msgid = $self->msg_id($message_mapping->{$message});
             if ($self->is_id_unique($msgid)) {
                 print $fh "\n";
                 print $fh $msgid . "\n";
