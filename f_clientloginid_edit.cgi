@@ -844,13 +844,20 @@ if (not $client->is_virtual) {
 
 if (my $financial_assessment = $client->financial_assessment()) {
     Bar("Financial Assessment");
-    my $user_data_json = $financial_assessment->data;
-    print qq{<table class="collapsed">
+    if (my $TE = $client->trading_experience()) {
+        print qq{<table class="collapsed">
         <tr><td>User Data</td><td><textarea rows=10 cols=150 id="financial_assessment_score">}
-        . encode_entities($user_data_json) . qq{</textarea></td></tr>
+            . $TE . qq{</textarea></td></tr>
         <tr><td></td><td><input id="format_financial_assessment_score" type="button" value="Format"/></td></tr>
-        </table>
-    };
+        </table>};
+    }
+    if (my $FI = $client->financial_information()) {
+        print qq{<table class="collapsed">
+        <tr><td>User Data</td><td><textarea rows=10 cols=150 id="financial_assessment_score">}
+            . $FI . qq{</textarea></td></tr>
+        <tr><td></td><td><input id="format_financial_assessment_score" type="button" value="Format"/></td></tr>
+        </table>};
+    }
 }
 
 Bar($user->email . " Login history");
