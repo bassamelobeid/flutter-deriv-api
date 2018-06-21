@@ -19,13 +19,15 @@ use LandingCompany::Registry;
 use Brands;
 
 use BOM::Config::Runtime;
-use BOM::Platform::Context qw(localize);
 use BOM::User;
 use BOM::User::TOTP;
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
 use BOM::OAuth::Helper;
 use BOM::User::AuditLog;
+use BOM::Platform::Context qw(localize);
+use DataDog::DogStatsd::Helper qw(stats_inc);
+use BOM::OAuth::Static qw(get_message_mapping);
 
 sub authorize {
     my $c = shift;
@@ -80,7 +82,6 @@ sub authorize {
             $c->session('_loginid',    $client->loginid);
 
         }
-
     }
 
     my %template_params = (
@@ -98,12 +99,14 @@ sub authorize {
     if (my $method = $c->param('social_signup')) {
         if (!$c->param('email') and !$c->param('password')) {
             if (_is_social_login_suspended()) {
-                $template_params{error} =
-                    localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
+                stats_inc_error($brand_name, "TEMP_DISABLED");
+                $template_params{error} = localize(get_message_mapping()->{TEMP_DISABLED});
                 return $c->render(%template_params);
             }
-            return $c->_bad_request('the request was missing valid social login method')
-                unless grep { $method eq $_ } @{$c->stash('login_providers')};
+            if (not grep { $method eq $_ } @{$c->stash('login_providers')}) {
+                stats_inc_error($brand_name, "INVALID_SOCIAL");
+                return $c->_bad_request('the request was missing valid social login method');
+            }
             $template_params{login_method} = $method;
             return $c->render(%template_params);
         }
@@ -127,7 +130,8 @@ sub authorize {
         my $otp = defang($c->param('otp'));
         $is_verified = BOM::User::TOTP->verify_totp($user->secret_key, $otp);
         $c->session('_otp_verified', $is_verified);
-        $otp_error = 'Verification failed';
+        $otp_error = localize(get_message_mapping->{TFA_FAILURE});
+        stats_inc_error($brand_name, "TFA_FAILURE");
     }
 
     # Check if user has enabled 2FA authentication and this is not a scope request
@@ -211,6 +215,8 @@ sub authorize {
     my $uri = Mojo::URL->new($redirect_uri);
     $uri->query(\@params);
 
+    stats_inc('login.authorizer.success', {tags => ["brand:$brand_name", "two_factor_auth:$is_verified"]});
+
     # clear login session
     delete $c->session->{_is_logined};
     delete $c->session->{_loginid};
@@ -239,26 +245,25 @@ sub _login {
 
             $user = BOM::User->new({id => $oneall_user_id});
             unless ($user) {
-                $err = localize('Invalid user.');
+                $err = "INVALID_USER";
                 last;
             }
 
         } else {
-
             if (not $email or not Email::Valid->address($email)) {
-                $err = localize('Email not given.');
+                $err = "INVALID_EMAIL";
                 last;
             }
 
             if (not $password) {
-                $err = localize('Password not given.');
+                $err = "INVALID_PASSWORD";
                 last;
             }
 
             $user = BOM::User->new({email => $email});
 
             unless ($user) {
-                $err = localize('Incorrect email or password.');
+                $err = "USER_NOT_FOUND";
                 last;
             }
 
@@ -266,14 +271,14 @@ sub _login {
             # As the main purpose of this controller is to serve
             # clients with email/password only.
             if ($user->has_social_signup) {
-                $err = localize('Invalid login attempt. Please log in with a social network instead.');
+                $err = "NO_SOCIAL_SIGNUP";
                 last;
             }
 
         }
 
         if (BOM::Config::Runtime->instance->app_config->system->suspend->all_logins) {
-            $err = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
+            $err = "TEMP_DISABLED";
             BOM::User::AuditLog::log('system suspend all login', $user->email);
             last;
         }
@@ -293,19 +298,21 @@ sub _login {
         $client = $clients[0];
 
         if (grep { $client->loginid =~ /^$_/ } @{BOM::Config::Runtime->instance->app_config->system->suspend->logins}) {
-            $err = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
+            $err = "TEMP_DISABLED";
         } elsif ($client->get_status('disabled')) {
-            $err = localize('This account has been disabled.');
+            $err = "DISABLED";
         }
     }
 
     if ($err) {
 
+        stats_inc_error($brand_name, $err);
+
         $c->render(
             template         => _get_login_template_name($brand_name),
             layout           => $brand_name,
             app              => $app,
-            error            => $err,
+            error            => localize(get_message_mapping()->{$err} // $err),
             r                => $c->stash('request'),
             csrf_token       => $c->csrf_token,
             use_social_login => $c->_is_social_login_available(),
@@ -362,21 +369,21 @@ sub _login {
                     my $message;
                     if ($app->{id} eq '1') {
                         $message = localize(
-                            'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3] and browser: [_4]. If this additional sign-in was not performed by you, please contact our Customer Support team.',
-                            $client->email,
-                            $r->client_ip,
+                            get_message_mapping()->{ADDITIONAL_SIGNIN},
+                            $client->email, $r->client_ip,
                             $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
                             encode_entities($user_agent));
                     } else {
                         $message = localize(
-                            'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3], browser: [_4] and app: [_5]. If this additional sign-in was not performed by you, please contact our Customer Support team.',
-                            $client->email, $r->client_ip, $country_code, encode_entities($user_agent), $app->{name});
+                            get_message_mapping()->{ADDITIONAL_SIGNIN_THIRD_PARTY},
+                            $client->email, $r->client_ip, $country_code, encode_entities($user_agent),
+                            $app->{name});
                     }
 
                     send_email({
                         from                  => $brand->emails('support'),
                         to                    => $client->email,
-                        subject               => localize('New Sign-In Activity Detected'),
+                        subject               => localize(get_message_mapping()->{NEW_SIGNIN_ACTIVITY}),
                         message               => [$message],
                         use_email_template    => 1,
                         email_content_is_html => 1,
@@ -389,7 +396,6 @@ sub _login {
 
     # reset csrf_token
     delete $c->session->{csrf_token};
-
     return $client;
 }
 
@@ -485,6 +491,11 @@ sub _get_login_template_name {
     my $brand_name = shift;
 
     return $brand_name . '/login';
+}
+
+sub stats_inc_error {
+    my ($brand_name, $failure_message) = @_;
+    stats_inc('login.authorizer.validation_failure', {tags => ["brand:$brand_name", "error:$failure_message"]});
 }
 
 1;

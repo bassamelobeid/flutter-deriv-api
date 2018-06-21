@@ -4,14 +4,15 @@ use v5.10;
 use Mojo::Base 'Mojolicious::Controller';
 use WWW::OneAll;
 use BOM::Config;
-use BOM::Platform::Context qw(localize);
 use BOM::Database::Model::UserConnect;
 use BOM::User;
 use BOM::Platform::Account::Virtual;
 use Try::Tiny;
 use URI::QueryParam;
-use DataDog::DogStatsd::Helper qw(stats_inc);
 use BOM::OAuth::Helper;
+use BOM::Platform::Context qw(localize);
+use DataDog::DogStatsd::Helper qw(stats_inc);
+use BOM::OAuth::Static qw(get_message_mapping);
 
 sub callback {
     my $c = shift;
@@ -45,7 +46,7 @@ sub callback {
     # wrong pub/private keys might be a reason of bad status code
     my $status_code = $data->{response}->{request}->{status}->{code};
     if ($status_code != 200) {
-        $c->session(error => localize('Failed to get user identity.'));
+        $c->session(error => localize(get_message_mapping()->{NO_USER_IDENTITY}));
         stats_inc('login.oneall.connection_failure', {tags => ["brand:$brand_name", "status_code:$status_code"]});
         return $c->redirect_to($redirect_uri);
     }
@@ -66,7 +67,7 @@ sub callback {
         # Redirect client to login page if social signup flag is not found.
         # As the main purpose of this package is to serve
         # clients with social login only.
-        $c->session('error', localize("Invalid login attempt. Please log in with your email and password instead."));
+        $c->session('error', localize(get_message_mapping()->{NO_LOGIN_SIGNUP}));
         return $c->redirect_to($redirect_uri);
     }
     # Create virtual client if user not found
@@ -83,6 +84,7 @@ sub callback {
 
     # login client to the system
     $c->session(_oneall_user_id => $user_id);
+    stats_inc('login.oneall.success', {tags => ["brand:$brand_name"]});
     return $c->redirect_to($redirect_uri);
 }
 
