@@ -873,13 +873,17 @@ if (my $FI = $client->financial_information()) {
 
 sub print_fa_table {
     my $section = shift;
+
     my @hdr = ('Question', 'Answer', 'Score');
+
     print '<br/><table style="width:100%;" border="1" class="sortable"><thead><tr>';
     print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
     print '</thead><tbody>';
     print '<tr><td>' . $section->{$_}->{label} . '</td><td>' . $section->{$_}->{answer} . '</td><td>' . $section->{$_}->{score} . '</td></tr>'
         for keys $section;
     print '</tbody></table>';
+
+    return undef;
 }
 
 Bar($user->email . " Login history");
