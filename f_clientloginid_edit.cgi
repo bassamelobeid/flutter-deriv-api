@@ -851,8 +851,8 @@ if (my $financial_assessment = $client->financial_assessment()) {
         print '</thead><tbody>';
         print '<tr><td>' . $TE->{$_}->{label} . '</td><td>' . $TE->{$_}->{answer} . '</td><td>' . $TE->{$_}->{score} . '</td></tr>' for keys $TE;
         print '</tbody></table>';
-        print '<br><p>CFD Score: ' . $fa_score->{cfd_score} . '</p>';
         print '<p>Trading experience score: ' . $fa_score->{trading_score} . '</p><br>';
+        print '<br><p>CFD Score: ' . $fa_score->{cfd_score} . '</p>';
     }
     if (my $FI = $client->financial_information()) {
         Bar("Financial Information");
