@@ -880,7 +880,7 @@ sub print_fa_table {
     print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
     print '</thead><tbody>';
     print '<tr><td>' . $section->{$_}->{label} . '</td><td>' . $section->{$_}->{answer} . '</td><td>' . $section->{$_}->{score} . '</td></tr>'
-        for keys $section;
+        for keys %{$section};
     print '</tbody></table>';
 
     return undef;
