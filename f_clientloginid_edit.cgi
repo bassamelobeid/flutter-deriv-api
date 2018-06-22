@@ -37,7 +37,7 @@ use BOM::Backoffice::Config;
 use BOM::Backoffice::Script::DocumentUpload;
 use Finance::MIFIR::CONCAT qw(mifir_concat);
 use BOM::Platform::Client::DocumentUpload;
-use File::MimeInfo::Magic qw/extensions mimetype/;
+use Media::Type::Simple;
 
 use constant MAX_FILE_SIZE => 8 * 2**20;
 
@@ -46,6 +46,17 @@ BOM::Backoffice::Sysinit::init();
 my %input = %{request()->params};
 
 PrintContentType();
+
+# /etc/mime.types should exist but just in case...
+my $mts;
+if (open my $mime_defs, '<', '/etc/mime.types') {
+    $mts = Media::Type::Simple->new($mime_defs);
+    close $mime_defs;
+} else {
+    warn "Can't open MIME types definition file: $!";
+    $mts = Media::Type::Simple->new();
+}
+
 my $dbloc   = BOM::Config::Runtime->instance->app_config->system->directory->db;
 my $loginid = $input{loginID};
 if (not $loginid) { print "<p> Empty loginID.</p>"; code_exit_BO(); }
@@ -277,10 +288,16 @@ if ($input{whattodo} eq 'uploadID') {
                 "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Exceeds maximum file size (" . MAX_FILE_SIZE . " bytes).</p><br />";
             next;
         }
+
         my $file_checksum         = Digest::MD5->new->addfile($filetoupload)->hexdigest;
         my $abs_path_to_temp_file = $cgi->tmpFileName($filetoupload);
-        my ($docformat)           = extensions(mimetype($abs_path_to_temp_file));
-        my $query_result          = BOM::Platform::Client::DocumentUpload::start_document_upload(
+        my $mime_type             = $cgi->uploadInfo($filetoupload)->{'Content-Type'};
+        my ($file_ext)            = $cgi->param('FILE_' . $i) =~ /\.([^.]+)$/;
+
+        # try to get file extension from mime type, else get it from filename
+        my $docformat = lc($mts->ext_from_type($mime_type) // $file_ext);
+
+        my $query_result = BOM::Platform::Client::DocumentUpload::start_document_upload(
             client          => $client,
             doctype         => $doctype,
             docformat       => $docformat,
