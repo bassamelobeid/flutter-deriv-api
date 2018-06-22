@@ -410,6 +410,17 @@ sub is_financial_information_complete {
     return $self->_is_fa_section_complete('financial_information');
 }
 
+sub financial_assessment_score {
+    my $self = shift;
+
+    my $fa = $self->_decode_financial_assessment();
+    return undef unless $fa;
+
+    my %scores = map { $_ => $fa->{$_} } qw/total_score financial_information_score trading_score cfd_score/;
+
+    return \%scores;
+}
+
 sub trading_experience {
     my $self = shift;
 
