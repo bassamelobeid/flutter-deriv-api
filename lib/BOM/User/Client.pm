@@ -415,7 +415,7 @@ sub financial_assessment_score {
     my $fa = $self->_decode_financial_assessment();
     return undef unless $fa;
 
-    return +{ map { $_ => $fa->{$_} } qw/total_score financial_information_score trading_score cfd_score/ };
+    return +{map { $_ => $fa->{$_} } qw/total_score financial_information_score trading_score cfd_score/};
 }
 
 sub trading_experience {
@@ -439,7 +439,7 @@ sub _decode_fa_section {
 
     my $im = BOM::Platform::Account::Real::default::get_financial_input_mapping();
 
-    return +{ map { $_ => $fa->{$_} } grep { $fa->{$_} } keys %{$im->{$key}} };
+    return +{map { $_ => $fa->{$_} } grep { $fa->{$_} } keys %{$im->{$key}}};
 }
 
 sub _is_fa_section_complete {
@@ -458,7 +458,7 @@ sub _decode_financial_assessment {
 
     my $fa = $self->financial_assessment();
 
-    return $fa ? decode_json_utf8($fa->data || '{}') : undef;;
+    return $fa ? decode_json_utf8($fa->data || '{}') : undef;
 }
 
 sub documents_expired {
