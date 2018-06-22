@@ -377,7 +377,6 @@ sub aml_risk_level {
     my $self = shift;
 
     my $risk = $self->aml_risk_classification // '';
-
     # use `low`, `standard`, `high` as prepending `manual override` string is for internal purpose
     $risk =~ s/manual override - //;
 
@@ -416,9 +415,7 @@ sub financial_assessment_score {
     my $fa = $self->_decode_financial_assessment();
     return undef unless $fa;
 
-    my %scores = map { $_ => $fa->{$_} } qw/total_score financial_information_score trading_score cfd_score/;
-
-    return \%scores;
+    return +{ map { $_ => $fa->{$_} } qw/total_score financial_information_score trading_score cfd_score/ };
 }
 
 sub trading_experience {
@@ -441,9 +438,8 @@ sub _decode_fa_section {
     return undef unless $fa;
 
     my $im = BOM::Platform::Account::Real::default::get_financial_input_mapping();
-    my %section = map { $_ => $fa->{$_} } grep { $fa->{$_} } keys %{$im->{$key}};
 
-    return \%section;
+    return +{ map { $_ => $fa->{$_} } grep { $fa->{$_} } keys %{$im->{$key}} };
 }
 
 sub _is_fa_section_complete {
@@ -453,19 +449,16 @@ sub _is_fa_section_complete {
     my $fa = $self->_decode_financial_assessment();
     return 0 unless $fa;
     my $im = BOM::Platform::Account::Real::default::get_financial_input_mapping();
-    my $is_complete =
-        all { $fa->{$_} and $fa->{$_}->{answer} } keys %{$im->{$key}};
 
-    return $is_complete || 0;
+    return 0 + all { $fa->{$_} and $fa->{$_}->{answer} } keys %{$im->{$key}};
 }
 
 sub _decode_financial_assessment {
     my $self = shift;
 
     my $fa = $self->financial_assessment();
-    $fa = $fa ? decode_json_utf8($fa->data || '{}') : undef;
 
-    return $fa;
+    return $fa ? decode_json_utf8($fa->data || '{}') : undef;;
 }
 
 sub documents_expired {
