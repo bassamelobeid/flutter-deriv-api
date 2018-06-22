@@ -7,7 +7,6 @@ use open qw[ :encoding(UTF-8) ];
 use LWP::UserAgent;
 use Text::Trim;
 use File::Copy;
-use Data::Dumper;
 use HTML::Entities;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use Try::Tiny;
@@ -843,20 +842,26 @@ if (not $client->is_virtual) {
 }
 
 if (my $financial_assessment = $client->financial_assessment()) {
-    Bar("Financial Assessment");
+    my @hdr = ('Question', 'Answer', 'Score');
+    my $fa_score = $client->financial_assessment_score();
     if (my $TE = $client->trading_experience()) {
-        print qq{<table class="collapsed">
-        <tr><td>User Data</td><td><textarea rows=10 cols=150 id="financial_assessment_score">}
-            . $TE . qq{</textarea></td></tr>
-        <tr><td></td><td><input id="format_financial_assessment_score" type="button" value="Format"/></td></tr>
-        </table>};
+        Bar("Trading Experience");
+        print '<br><table id="trading_experience" style="width:100%;" border="1" class="sortable"><thead><tr>';
+        print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
+        print '</thead><tbody>';
+        print '<tr><td>' . $TE->{$_}->{label} . '</td><td>' . $TE->{$_}->{answer} . '</td><td>' . $TE->{$_}->{score} . '</td></tr>' for keys $TE;
+        print '</tbody></table>';
+        print '<br><p>CFD Score: ' . $fa_score->{cfd_score} . '</p>';
+        print '<p>Trading experience score: ' . $fa_score->{trading_score} . '</p><br>';
     }
     if (my $FI = $client->financial_information()) {
-        print qq{<table class="collapsed">
-        <tr><td>User Data</td><td><textarea rows=10 cols=150 id="financial_assessment_score">}
-            . $FI . qq{</textarea></td></tr>
-        <tr><td></td><td><input id="format_financial_assessment_score" type="button" value="Format"/></td></tr>
-        </table>};
+        Bar("Financial Information");
+        print '<br><table id="financial_information" style="width:100%;" border="1" class="sortable"><thead><tr>';
+        print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
+        print '</thead><tbody>';
+        print '<tr><td>' . $FI->{$_}->{label} . '</td><td>' . $FI->{$_}->{answer} . '</td><td>' . $FI->{$_}->{score} . '</td></tr>' for keys $FI;
+        print '</tbody></table>';
+        print '<br><p>Financial information score: ' . $fa_score->{financial_information_score} . '</p><br>';
     }
 }
 
