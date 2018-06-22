@@ -841,28 +841,26 @@ if (not $client->is_virtual) {
         });
 }
 
-if (my $financial_assessment = $client->financial_assessment()) {
-    my @hdr = ('Question', 'Answer', 'Score');
-    my $fa_score = $client->financial_assessment_score();
-    if (my $TE = $client->trading_experience()) {
-        Bar("Trading Experience");
-        print '<br><table id="trading_experience" style="width:100%;" border="1" class="sortable"><thead><tr>';
-        print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
-        print '</thead><tbody>';
-        print '<tr><td>' . $TE->{$_}->{label} . '</td><td>' . $TE->{$_}->{answer} . '</td><td>' . $TE->{$_}->{score} . '</td></tr>' for keys $TE;
-        print '</tbody></table>';
-        print '<p>Trading experience score: ' . $fa_score->{trading_score} . '</p><br>';
-        print '<br><p>CFD Score: ' . $fa_score->{cfd_score} . '</p>';
-    }
-    if (my $FI = $client->financial_information()) {
-        Bar("Financial Information");
-        print '<br><table id="financial_information" style="width:100%;" border="1" class="sortable"><thead><tr>';
-        print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
-        print '</thead><tbody>';
-        print '<tr><td>' . $FI->{$_}->{label} . '</td><td>' . $FI->{$_}->{answer} . '</td><td>' . $FI->{$_}->{score} . '</td></tr>' for keys $FI;
-        print '</tbody></table>';
-        print '<br><p>Financial information score: ' . $fa_score->{financial_information_score} . '</p><br>';
-    }
+my @hdr = ('Question', 'Answer', 'Score');
+my $fa_score = $client->financial_assessment_score();
+if (my $TE = $client->trading_experience()) {
+    Bar("Trading Experience");
+    print '<br><table id="trading_experience" style="width:100%;" border="1" class="sortable"><thead><tr>';
+    print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
+    print '</thead><tbody>';
+    print '<tr><td>' . $TE->{$_}->{label} . '</td><td>' . $TE->{$_}->{answer} . '</td><td>' . $TE->{$_}->{score} . '</td></tr>' for keys $TE;
+    print '</tbody></table>';
+    print '<p>Trading experience score: ' . $fa_score->{trading_score} . '</p><br>';
+    print '<br><p>CFD Score: ' . $fa_score->{cfd_score} . '</p>';
+}
+if (my $FI = $client->financial_information()) {
+    Bar("Financial Information");
+    print '<br><table id="financial_information" style="width:100%;" border="1" class="sortable"><thead><tr>';
+    print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
+    print '</thead><tbody>';
+    print '<tr><td>' . $FI->{$_}->{label} . '</td><td>' . $FI->{$_}->{answer} . '</td><td>' . $FI->{$_}->{score} . '</td></tr>' for keys $FI;
+    print '</tbody></table>';
+    print '<br><p>Financial information score: ' . $fa_score->{financial_information_score} . '</p><br>';
 }
 
 Bar($user->email . " Login history");
