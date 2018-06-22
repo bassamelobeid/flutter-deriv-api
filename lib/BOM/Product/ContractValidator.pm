@@ -88,13 +88,13 @@ sub _confirm_validity {
     # Add any new validation methods here.
     # Looking them up can be too slow for pricing speed constraints.
     # This is the default list of validations.
-    my @validation_methods = qw(_validate_input_parameters _validate_offerings);
-    push @validation_methods, qw(_validate_trading_times _validate_start_and_expiry_date) unless $self->underlying->always_available;
-    push @validation_methods, '_validate_barrier'                                         unless $args->{skip_barrier_validation};
-    push @validation_methods, '_validate_barrier_type'                                    unless $self->for_sale;
+    my @validation_methods = qw(_validate_input_parameters _validate_offerings _validate_start_and_expiry_date);
+    push @validation_methods, qw(_validate_trading_times) unless $self->underlying->always_available;
+    push @validation_methods, '_validate_barrier'         unless $args->{skip_barrier_validation};
+    push @validation_methods, '_validate_barrier_type'    unless $self->for_sale;
     push @validation_methods, '_validate_feed';
-    push @validation_methods, '_validate_price'                                           unless $self->skips_price_validation;
-    push @validation_methods, '_validate_volsurface'                                      unless $self->volsurface->type eq 'flat';
+    push @validation_methods, '_validate_price'           unless $self->skips_price_validation;
+    push @validation_methods, '_validate_volsurface'      unless $self->volsurface->type eq 'flat';
 
     foreach my $method (@validation_methods) {
         if (my $err = $self->$method($args)) {
@@ -539,6 +539,16 @@ sub _build_forward_blackouts {
 
 sub _validate_start_and_expiry_date {
     my $self = shift;
+
+    # Currently, there's a bug in our system for contract ending at the start of day (00 GMT). We made the fix for offical OHLC handling
+    # that causes this bug. Since we are removing indices and OTC indices do not settle on official OHLC anymore, we will disable
+    # contracts expiring at the start of day for now. We will re-enable it again once we remove indices from our offerings.
+    if ($self->date_expiry->epoch % 86400 == 0) {
+        return {
+            message           => 'Cannot expire at end of day',
+            message_to_client => [$ERROR_MAPPING->{InvalidExpiryTime}],
+        };
+    }
 
     my $start_epoch = $self->effective_start->epoch;
     my $end_epoch   = $self->date_expiry->epoch;
