@@ -771,13 +771,19 @@ if ($user) {
         # show all BOM loginids for user, include disabled acc
         foreach my $lid (sort keys %$siblings) {
             next if ($lid eq $client->loginid);
+
+            # get BOM loginids for the user, and get instance of each loginid's currency
+            my $client = BOM::User::Client->new({loginid => $siblings->{$lid}->{loginid}});
+            my $currency = $client->default_account ? $client->default_account->currency_code : 'No currency selected';
+
             my $link_href = request()->url_for(
                 'backoffice/f_clientloginid_edit.cgi',
                 {
                     broker  => $siblings->{$lid}->{broker_code},
                     loginID => $lid,
                 });
-            print "<li><a href='$link_href'>" . encode_entities($lid) . "</a></li>";
+            print "<li><a href='$link_href'>" . encode_entities($lid) . " (" . $currency . ") </a></li>";
+
         }
 
         # show MT5 a/c
