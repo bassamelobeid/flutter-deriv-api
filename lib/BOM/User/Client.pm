@@ -441,8 +441,9 @@ sub _decode_fa_section {
     return undef unless $fa;
 
     my $im = BOM::Platform::Account::Real::default::get_financial_input_mapping();
+    my %section = map { $_ => $fa->{$_} } grep { $fa->{$_} } keys %{$im->{$key}};
 
-    return grep { $fa->{$_} } keys %{$im->{$key}};
+    return \%section;
 }
 
 sub _is_fa_section_complete {
