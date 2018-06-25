@@ -60,7 +60,7 @@ sub validate_trx_sell {
 
         return $res if $res;
     }
-    return;
+    return undef;
 }
 
 sub validate_trx_buy {
@@ -157,7 +157,7 @@ sub _validate_offerings {
         -mesg              => $err->{message},
         -message_to_client => localize(@{$err->{message_to_client}})) if $err;
 
-    return;
+    return undef;
 }
 
 sub _validate_available_currency {
@@ -170,7 +170,7 @@ sub _validate_available_currency {
         -message_to_client => localize("The provided currency [_1] is invalid.", $currency),
     ) unless $client->landing_company->is_currency_legal($currency);
 
-    return;
+    return undef;
 }
 
 sub _validate_currency {
@@ -194,7 +194,7 @@ sub _validate_currency {
             -message_to_client => localize("[_1] transactions may not be performed with this account.", $currency),
         );
     }
-    return;
+    return undef;
 }
 
 sub _validate_sell_pricing_adjustment {
@@ -204,7 +204,7 @@ sub _validate_sell_pricing_adjustment {
 
     if (not defined $self->transaction->price) {
         $self->transaction->price($contract->bid_price);
-        return;
+        return undef;
     }
 
     if ($contract->is_expired) {
@@ -258,7 +258,7 @@ sub _validate_sell_pricing_adjustment {
 
     $self->transaction->price($final_value);
 
-    return;
+    return undef;
 }
 
 sub _validate_trade_pricing_adjustment {
@@ -335,7 +335,7 @@ sub _validate_trade_pricing_adjustment {
         $self->transaction->contract($new_contract);
     }
 
-    return;
+    return undef;
 }
 
 sub _slippage {
@@ -451,7 +451,7 @@ sub _is_valid_to_buy {
         });
     }
 
-    return;
+    return undef;
 }
 
 sub _is_valid_to_sell {
@@ -465,7 +465,7 @@ sub _is_valid_to_sell {
         });
     }
 
-    return;
+    return undef;
 }
 
 sub _validate_date_pricing {
@@ -480,7 +480,7 @@ sub _validate_date_pricing {
             -mesg              => 'Bet was validated for a time [' . $contract->date_pricing->epoch . '] too far from now[' . time . ']',
             -message_to_client => localize('This contract cannot be properly validated at this time.'));
     }
-    return;
+    return undef;
 }
 
 =head2 $self->_validate_iom_withdrawal_limit
@@ -531,7 +531,7 @@ sub _validate_iom_withdrawal_limit {
                 localize("Due to regulatory requirements, you are required to authenticate your account in order to continue trading."),
         );
     }
-    return;
+    return undef;
 }
 
 # This validation should always come after _validate_trade_pricing_adjustment
@@ -558,7 +558,7 @@ sub _validate_stake_limit {
             ),
         );
     }
-    return;
+    return undef;
 }
 
 =head2 $self->_validate_payout_limit
@@ -600,7 +600,7 @@ sub _validate_payout_limit {
         }
     }
 
-    return;
+    return undef;
 }
 
 =head2 $self->_validate_jurisdictional_restrictions
@@ -675,7 +675,7 @@ sub _validate_jurisdictional_restrictions {
         );
     }
 
-    return;
+    return undef;
 }
 
 =head2 $self->_validate_client_status
@@ -696,7 +696,7 @@ sub _validate_client_status {
         );
     }
 
-    return;
+    return undef;
 }
 
 =head2 $self->_validate_client_self_exclusion
@@ -720,7 +720,7 @@ sub _validate_client_self_exclusion {
         );
     }
 
-    return;
+    return undef;
 }
 
 ################ Client only validation ########################
@@ -734,32 +734,25 @@ sub validate_tnc {
         -message_to_client => localize('Terms and conditions approval is required.'),
     ) if $client->is_tnc_approval_required;
 
-    return;
+    return undef;
 }
 
 sub compliance_checks {
     my ($self, $client) = (shift, shift);
 
     # checks are not applicable for virtual, costarica and champion clients
-    return if $client->is_virtual;
-    return if $client->landing_company->short =~ /^(?:costarica|champion)$/;
+    return undef if $client->is_virtual;
+    return undef if $client->landing_company->short eq 'champion';
 
-    my $error = Error::Base->cuss(
-        -type              => 'FinancialAssessmentRequired',
-        -mesg              => 'Please complete the financial assessment form to lift your withdrawal and trading limits.',
-        -message_to_client => localize('Please complete the financial assessment form to lift your withdrawal and trading limits.'),
-    );
+    if (!$client->is_financial_assessment_complete()) {
+        return Error::Base->cuss(
+            -type              => 'FinancialAssessmentRequired',
+            -mesg              => 'Please complete the financial assessment form to lift your withdrawal and trading limits.',
+            -message_to_client => localize('Please complete the financial assessment form to lift your withdrawal and trading limits.'),
+        );
+    }
 
-    my $financial_assessment = $client->financial_assessment();
-    # as per compliance - for maltainvest we need to check
-    # only for financial assessment
-    return $error if ($client->landing_company->short eq 'maltainvest' and not $financial_assessment);
-
-    # as per compliance - for other landing companies
-    # we need to check financial assessment only for high risk clients
-    return $error if (($client->aml_risk_classification // '') eq 'high' and not $financial_assessment);
-
-    return;
+    return undef;
 }
 
 sub check_tax_information {
@@ -772,7 +765,7 @@ sub check_tax_information {
             -message_to_client =>
                 localize('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.'));
     }
-    return;
+    return undef;
 }
 
 =head2 check_trade_status
@@ -807,7 +800,7 @@ sub check_trade_status {
             -message_to_client => localize('Please authenticate your account to continue.'),
         );
     }
-    return;
+    return undef;
 }
 
 =head2 allow_paymentagent_withdrawal
@@ -829,7 +822,7 @@ sub allow_paymentagent_withdrawal {
         my $doughflow_count = $payment_mapper->get_client_payment_count_by({payment_gateway_code => 'doughflow'});
         return 1 if $doughflow_count == 0;
     }
-    return;
+    return undef;
 }
 
 1;
