@@ -9,15 +9,18 @@ our $VERSION = '0.145';
 use feature qw(state);
 use Email::Stuffer;
 use Date::Utility;
+use List::Util qw/all/;
 use Format::Util::Numbers qw(roundcommon);
 use Try::Tiny;
-use JSON::MaybeXS;
+use JSON::MaybeUTF8 qw(decode_json_utf8);
 
 use Rose::DB::Object::Util qw(:all);
 use Rose::Object::MakeMethods::Generic scalar => ['self_exclusion_cache'];
 
 use LandingCompany::Registry;
 use BOM::User::Client::Payments;
+
+use BOM::Platform::Account::Real::default;
 
 use BOM::User::Client::PaymentAgent;
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
@@ -368,6 +371,66 @@ sub set_authentication {
         });
         $self->get_authentication($method);
         }
+}
+
+sub aml_risk_level {
+    my $self = shift;
+
+    my $risk = $self->aml_risk_classification // '';
+
+    # use `low`, `standard`, `high` as prepending `manual override` string is for internal purpose
+    $risk =~ s/manual override - //;
+
+    return $risk;
+}
+
+sub is_financial_assessment_complete {
+    my $self = shift;
+
+    my $sc  = $self->landing_company->short;
+    my $aml = $self->aml_risk_level();
+
+    my $is_FI = $self->is_financial_information_complete();
+    my $is_TE = $self->is_trading_experience_complete();
+
+    return 0 if ($sc eq 'costarica' and $aml eq 'high' and not $is_FI);
+    return 0 if ($sc eq 'maltainvest' and not($is_FI and $is_TE));
+    return 0 if ($sc =~ /^iom|malta$/ and $aml eq 'high' and not $is_FI);
+    return 1;
+}
+
+sub is_trading_experience_complete {
+    my $self = shift;
+
+    return $self->_is_fa_section_complete('trading_experience');
+}
+
+sub is_financial_information_complete {
+    my $self = shift;
+
+    return $self->_is_fa_section_complete('financial_information');
+}
+
+sub _is_fa_section_complete {
+    my $self = shift;
+    my $key  = shift;
+
+    my $fa = $self->_decode_financial_assessment();
+    return 0 unless $fa;
+    my $im = BOM::Platform::Account::Real::default::get_financial_input_mapping();
+    my $is_complete =
+        all { $fa->{$_} and $fa->{$_}->{answer} } keys %{$im->{$key}};
+
+    return $is_complete || 0;
+}
+
+sub _decode_financial_assessment {
+    my $self = shift;
+
+    my $fa = $self->financial_assessment();
+    $fa = $fa ? decode_json_utf8($fa->data || '{}') : undef;
+
+    return $fa;
 }
 
 sub documents_expired {
