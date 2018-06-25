@@ -868,13 +868,17 @@ my $fa_score = $client->financial_assessment_score();
 if (my $TE = $client->trading_experience()) {
     Bar("Trading Experience");
     print_fa_table($TE);
-    print '<p>Trading experience score: ' . $fa_score->{trading_score} . '</p><br/>';
-    print '<br/><p>CFD Score: ' . $fa_score->{cfd_score} . '</p>';
+    print '<p>Trading experience score: ' . $fa_score->{trading_score} . '</p>';
+    print '<p>CFD Score: ' . $fa_score->{cfd_score} . '</p>';
 }
 if (my $FI = $client->financial_information()) {
     Bar("Financial Information");
     print_fa_table($FI);
-    print '<br/><p>Financial information score: ' . $fa_score->{financial_information_score} . '</p><br/>';
+    print '<p>Financial information score: ' . $fa_score->{financial_information_score} . '</p><br/>';
+}
+if (my $OD = $client->outdated_financial_assessment()) {
+    Bar("Outdated Financial Assessment Answers");
+    print_fa_table($OD);
 }
 
 sub print_fa_table {
@@ -887,7 +891,7 @@ sub print_fa_table {
     print '</thead><tbody>';
     print '<tr><td>' . $section->{$_}->{label} . '</td><td>' . $section->{$_}->{answer} . '</td><td>' . $section->{$_}->{score} . '</td></tr>'
         for keys %{$section};
-    print '</tbody></table>';
+    print '</tbody></table></br>';
 
     return undef;
 }
