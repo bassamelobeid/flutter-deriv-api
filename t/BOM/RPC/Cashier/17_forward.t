@@ -5,12 +5,14 @@ use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
 use Test::FailWarnings;
+use Test::Warnings qw(warning);
 use BOM::Test::RPC::Client;
 
 use MojoX::JSON::RPC::Client;
 
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::Helper::FinancialAssessment;
 use BOM::RPC::v3::Cashier;
 use BOM::RPC::v3::Accounts;
 use BOM::User::Password;
@@ -44,8 +46,9 @@ my $params = {
     args     => {},
 };
 
-my $email     = 'dummy' . rand(999) . '@binary.com';
-my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+my $current_tnc_version = BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version;
+my $email               = 'dummy' . rand(999) . '@binary.com';
+my $client_vr           = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
     email       => $email
 });
@@ -59,6 +62,10 @@ my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
+    email       => $email
+});
+my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MLT',
     email       => $email
 });
 my $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -87,8 +94,6 @@ subtest 'common' => sub {
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mx->loginid, 'test token');
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_TNC_APPROVAL', 'Client needs to approve tnc before')
         ->error_message_is('Terms and conditions approval is required.', 'Correct error message for terms and conditions');
-
-    my $current_tnc_version = BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version;
 
     $client_mf->set_status('tnc_approval', 'system', $current_tnc_version);
     $client_mf->save;
@@ -185,36 +190,46 @@ subtest 'landing_companies_specific' => sub {
     $params->{args}->{cashier} = 'deposit';
     delete $params->{args}->{verification_code};
 
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mlt->loginid, 'test token');
+
+    $client_mlt->set_default_account('EUR');
+    $client_mlt->set_status('tnc_approval', 'system', $current_tnc_version);
+    $client_mlt->save;
+
+    $client_mlt->aml_risk_classification('high');
+    $client_mlt->save;
+
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('FinancialAssessmentRequired',
+        'MLT client with High risk should have completed financial assessment')
+        ->error_message_is('Please complete the financial assessment form to lift your withdrawal and trading limits.',
+        'MLT client with High risk should have completed financial assessment');
+
+    $client_mlt->aml_risk_classification('low');
+    $client_mlt->save;
+
+    warning {
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('CashierForwardError',
+            'MLT client deposit request was forwarded to cashier after AML had been changed to low')
+            ->error_message_is('Sorry, an error occurred. Please try accessing our cashier again.',
+            'Attempted to forward request to the cashier after validation');
+    };
+
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mf->loginid, 'test token');
 
     $client_mf->set_default_account('EUR');
     $client_mf->save;
 
-    $client_mf->aml_risk_classification('high');
-    $client_mf->save;
-
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('FinancialAssessmentRequired',
-        'MF client have to complete financial assessment irrespective of risk classification')->error_message_is(
+        'MF client has to complete financial assessment irrespective of risk classification')->error_message_is(
         'Please complete the financial assessment form to lift your withdrawal and trading limits.',
-        'MF client have to complete financial assessment irrespective of risk classification'
+        'MF client has to complete financial assessment irrespective of risk classification'
         );
 
-    $client_mf->aml_risk_classification('low');
-    $client_mf->save;
-
-    $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_error->error_code_is('FinancialAssessmentRequired',
-        'MF client have to complete financial assessment irrespective of risk classification')->error_message_is(
-        'Please complete the financial assessment form to lift your withdrawal and trading limits.',
-        'MF client have to complete financial assessment irrespective of risk classification'
-        );
-
-    $client_mocked->mock(
-        'financial_assessment',
-        sub {
-            return {};
-        });
+    $client_mf->financial_assessment({data => BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa()});
+    $client_mf->save();
 
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('ASK_AUTHENTICATE', 'MF client needs to be fully authenticated')
@@ -235,8 +250,6 @@ subtest 'landing_companies_specific' => sub {
         ->error_message_is('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.',
         'tax information is required for malatainvest');
 
-    $client_mocked->unmock('financial_assessment');
-
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mx->loginid, 'test token');
 
     $client_mx->set_default_account('GBP');
@@ -253,11 +266,8 @@ subtest 'landing_companies_specific' => sub {
         'MX client have to complete financial assessment if they are categorized as high risk'
         );
 
-    $client_mocked->mock(
-        'financial_assessment',
-        sub {
-            return {};
-        });
+    $client_mx->aml_risk_classification('low');
+    $client_mx->save;
 
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('ASK_UK_FUNDS_PROTECTION', 'GB residence needs to accept fund protection')
@@ -269,12 +279,9 @@ subtest 'landing_companies_specific' => sub {
         ->error_message_is('Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.',
         'GB residence needs to set 30-Day turnover');
 
-    $client_mocked->unmock('financial_assessment');
-
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_jp->loginid, 'test token');
     $client_jp->set_default_account('JPY');
     $client_jp->residence('jp');
-    my $current_tnc_version = BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version;
     $client_jp->set_status('tnc_approval',              'system', $current_tnc_version);
     $client_jp->set_status('jp_knowledge_test_pending', 'system', 'set for test');
     $client_jp->save;
@@ -308,7 +315,7 @@ subtest 'all status are covered' => sub {
     my $all_status = BOM::User::Client->status_codes();
     # Flags that can affect cashier should be seen
     my $can_affect_cashier =
-        qr/age_verification|cashier_locked|crs_tin_information|disabled|financial_risk_approval|jp_activation_pending|jp_knowledge_test_fail|jp_knowledge_test_pending|ukgc_funds_protection|ukrts_max_turnover_limit_not_set|unwelcome|withdrawal_locked/;
+        qr/age_verification|crs_tin_information|cashier_locked|disabled|financial_risk_approval|jp_activation_pending|jp_knowledge_test_fail|jp_knowledge_test_pending|ukgc_funds_protection|ukrts_max_turnover_limit_not_set|unwelcome|withdrawal_locked/;
     my @temp_status = grep { /^($can_affect_cashier)$/ } keys %$all_status;
     fail("missing status $_") for sort grep !exists $seen{$_}, @temp_status;
     pass("ok to prevent warning 'no tests run");

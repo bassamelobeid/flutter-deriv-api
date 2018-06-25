@@ -8,7 +8,7 @@ use Test::MockModule;
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use Encode;
-use JSON::MaybeXS;
+use JSON::MaybeUTF8 qw(encode_json_utf8);
 use Encode qw(encode);
 use Email::Folder::Search;
 use Email::Stuffer::TestLinks;
@@ -694,7 +694,7 @@ subtest $method => sub {
     sub test_financial_assessment {
         my ($data, $is_present, $msg) = @_;
         $test_client->financial_assessment({
-            data => Encode::encode_utf8(JSON::MaybeXS->new->encode($data)),
+            data => encode_json_utf8($data),
         });
         $test_client->save();
         my $res = ((grep { $_ eq 'financial_assessment_not_complete' } @{$c->tcall($method, {token => $token1})->{status}}) == $is_present);

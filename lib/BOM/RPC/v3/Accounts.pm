@@ -501,10 +501,8 @@ rpc get_account_status => sub {
     push @status, 'document_' . $id_auth_status if $authentication_in_progress;
 
     push @status, 'authenticated' if ($client->fully_authenticated);
-    my $risk_classification = $client->aml_risk_classification // '';
 
-    # we need to send only low, standard, high as manual override is for internal purpose
-    $risk_classification =~ s/manual override - //;
+    my $aml_level = $client->aml_risk_level();
 
     # differentiate between social and password based accounts
     my $user = $client->user;
@@ -513,32 +511,11 @@ rpc get_account_status => sub {
     push @status, 'social_signup' if $user->has_social_signup;
 
     # check whether the user need to perform financial assessment
-    my $financial_assessment = $client->financial_assessment();
-    $financial_assessment = ref($financial_assessment) ? $json->decode($financial_assessment->data || '{}') : {};
-    my $input_mappings = BOM::Platform::Account::Real::default::get_financial_input_mapping();
-    my %financial_data = map { $_ => $params->{args}->{$_} } BOM::RPC::v3::Utility::keys_of_values $input_mappings;
+    push(@status, 'financial_information_not_complete') unless $client->is_financial_information_complete();
+    push(@status, 'trading_experience_not_complete')    unless $client->is_trading_experience_complete();
+    push(@status, 'financial_assessment_not_complete')  unless $client->is_financial_assessment_complete();
 
-    my $is_financial_info_incomplete =
-        any { not $financial_assessment->{$_} or not $financial_assessment->{$_}->{answer} } keys %{$input_mappings->{financial_information}};
-    my $is_trading_exp_incomplete =
-        any { not $financial_assessment->{$_} or not $financial_assessment->{$_}->{answer} } keys %{$input_mappings->{trading_experience}};
-
-    push(@status, 'financial_information_not_complete') if $is_financial_info_incomplete;
-    push(@status, 'trading_experience_not_complete')    if $is_trading_exp_incomplete;
-
-    my $shortcode = $client->landing_company->short;
-
-    if ($shortcode eq 'maltainvest'
-        and ($is_financial_info_incomplete or $is_trading_exp_incomplete))
-    {
-        push(@status, 'financial_assessment_not_complete');
-    } elsif ($shortcode =~ /^iom|malta|costarica$/
-        and $risk_classification eq 'high'
-        and $is_financial_info_incomplete)
-    {
-        push(@status, 'financial_assessment_not_complete');
-    }
-
+    my $shortcode                     = $client->landing_company->short;
     my $prompt_client_to_authenticate = 0;
     if ($client->fully_authenticated) {
         # Authenticated clients still need to go through age verification checks for IOM/MF/MLT
@@ -569,7 +546,7 @@ rpc get_account_status => sub {
     return {
         status                        => \@status,
         prompt_client_to_authenticate => $prompt_client_to_authenticate,
-        risk_classification           => $risk_classification
+        risk_classification           => $aml_level
     };
 };
 
@@ -1728,14 +1705,15 @@ rpc get_financial_assessment => sub {
 
     my $response = {};
     if (my $financial_assessment = $client->financial_assessment()) {
-        my $data = $json->decode($financial_assessment->data);
-        if ($data) {
-            my %score_keys = map { $_ => 1 } qw(total_score financial_information_score trading_score cfd_score);
-            foreach my $key (keys %$data) {
-                $response->{$key} = $data->{$key}->{answer} if not exists $score_keys{$key};
-            }
+        if (my $data = $financial_assessment->data) {
+            if (my $data = $json->decode($data)) {
+                my %score_keys = map { $_ => 1 } qw(total_score financial_information_score trading_score cfd_score);
+                foreach my $key (keys %$data) {
+                    $response->{$key} = $data->{$key}->{answer} if not exists $score_keys{$key};
+                }
 
-            $response->{$_} = $data->{$_} // 0 for keys %score_keys;
+                $response->{$_} = $data->{$_} // 0 for keys %score_keys;
+            }
         }
     }
 
