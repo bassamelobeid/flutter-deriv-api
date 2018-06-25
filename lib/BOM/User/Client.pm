@@ -464,7 +464,7 @@ sub _decode_fa_section {
         my @score_mapping = BOM::Platform::Account::Real::default::get_financial_score_mapping();
         push(@active_keys, @score_mapping);
         my @fa_keys = keys $fa;
-        # Get outdated keys by substructing set of active keys from FA answers
+        # Get outdated keys by substructing set of active keys from set of user's answers
         my @outdated_keys = array_minus(@fa_keys, @active_keys);
         my %outdated_fa;
         @outdated_fa{@outdated_keys} = @{$fa}{@outdated_keys};
