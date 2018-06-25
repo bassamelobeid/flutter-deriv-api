@@ -71,13 +71,14 @@ my $self_href       = request()->url_for('backoffice/f_clientloginid_edit.cgi', 
 eval { BrokerPresentation("$encoded_loginid CLIENT DETAILS") };    ## no critic (RequireCheckingReturnValueOfEval)
 
 my $well_formatted = $loginid =~ m/^[A-Z]{2,4}[\d]{4,10}$/;
-my $client = try { return BOM::User::Client->new({loginid => $loginid}) } if $well_formatted;
-my $error_message = $well_formatted? "Client [$encoded_loginid] not found.": "Invalid loginid provided.";
+my $client         = try { return BOM::User::Client->new({loginid => $loginid}) } if $well_formatted;
+my $error_message  = $well_formatted ? "Client [$encoded_loginid] not found." : "Invalid loginid provided.";
 code_exit_BO(
-        qq[<p>ERROR: $error_message </p>
+    qq[<p>ERROR: $error_message </p>
             <form action="$self_post" method="get">
                 Try Again: <input type="text" name="loginID" value="$encoded_loginid"></input>
-            </form>]) unless $client;
+            </form>]
+) unless $client;
 
 my $user = $client->user;
 
