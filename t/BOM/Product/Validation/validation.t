@@ -1214,6 +1214,32 @@ subtest 'entry tick validation' => sub {
 
 };
 
+subtest 'validate tick expiry barrier type' => sub {
+    my $starting = Date::Utility->new('2014-10-08 13:00:00');
+    my $tick     = Postgres::FeedDB::Spot::Tick->new({
+        underlying => 'R_100',
+        epoch      => $starting->epoch,
+        quote      => 100,
+    });
+    my $bet_params = {
+        underlying   => 'R_100',
+        bet_type     => 'CALL',
+        currency     => 'USD',
+        payout       => 100,
+        date_start   => $starting,
+        date_pricing => $starting,
+        duration     => '2d',
+        barrier      => 'S0P',
+        current_tick => $tick,
+    };
+
+    my $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy with relative barrier';
+    $bet_params->{barrier} = 101;
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy with absolute barrier';
+};
+
 # Let's not surprise anyone else
 ok(BOM::Config::Runtime->instance->app_config->quants->features->suspend_contract_types($orig_suspended),
     'Switched RANGE bets back on, if they were.');

@@ -41,7 +41,9 @@ sub make_barrier {
         });
     }
 
-    if ($self->tick_expiry and $self->pricing_new and $string_version !~ /^S-?\d+P|[-+]\d+(\.\d+)?$/i) {
+    # for volatlity indices, we allow absolute and relative barriers for tick expiry contracts
+    if ($self->tick_expiry and $self->pricing_new and $string_version !~ /^S-?\d+P|[-+]\d+(\.\d+)?$/i and $self->underlying->market->name ne 'volidx')
+    {
         $self->_add_error({
             severity          => 100,
             message           => 'Intend to buy tick expiry contract with absolute barrier.',

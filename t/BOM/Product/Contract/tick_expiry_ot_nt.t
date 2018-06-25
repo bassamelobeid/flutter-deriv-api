@@ -135,8 +135,6 @@ subtest 'tick expiry one touch no touch' => sub {
 
         is $c->date_expiry->epoch, 1404986410, 'checking date expiry';
         is $c->bid_price, $expected_bid_price{$index}, 'checking bid price';
-
-        is $c->is_valid_to_sell, 0, 'is_valid_to_sell';
     }
 
     #Here we are at right before the last tick
@@ -147,8 +145,6 @@ subtest 'tick expiry one touch no touch' => sub {
     ok !$c->is_expired, 'contract did not touch barrier and not expired, this is right before our last tick';
     ok !$c->hit_tick,   'no hit tick';
     is $c->current_tick->quote, 106, 'correct current tick';
-
-    is $c->is_valid_to_sell, 0, 'is_valid_to_sell';
 
     # And here is the last tick
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({

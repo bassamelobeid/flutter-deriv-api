@@ -189,20 +189,29 @@ subtest 'invalid barrier for tick expiry' => sub {
         current_tick => $fake_tick,
     };
     my $c = produce_contract($bet_params);
-    ok !$c->is_valid_to_buy, 'not valid to buy';
-    like($c->primary_validation_error->{message}, qr/Intend to buy tick expiry contract/, 'tick expiry barrier check');
+    ok $c->is_valid_to_buy, 'valid to buy';
     $bet_params->{barrier} = 'S10P';
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
     $bet_params->{barrier}  = 100;
     $bet_params->{bet_type} = 'ASIANU';
     $c                      = produce_contract($bet_params);
-    ok !$c->is_valid_to_buy, 'invalid to buy for asian';
+    ok $c->is_valid_to_buy, 'valid to buy for asian';
     delete $bet_params->{date_pricing};
     $bet_params->{entry_tick} = $fake_tick;
     $bet_params->{exit_tick}  = $fake_tick;
     $c                        = produce_contract($bet_params);
     ok $c->is_valid_to_sell, 'valid to sell for asian';
+
+    $bet_params->{underlying}   = 'frxUSDJPY';
+    $bet_params->{barrier}      = 100;
+    $bet_params->{date_pricing} = $now;
+    $bet_params->{date_start}   = $now;
+    delete $bet_params->{exit_tick};
+    $c = produce_contract($bet_params);
+    ok $c->tick_expiry, 'tick expiry';
+    ok !$c->is_valid_to_buy, 'invalid to buy for frxUSDJPY';
+    like($c->primary_validation_error->{message}, qr/Intend to buy tick expiry contract/, 'tick expiry barrier check');
 };
 
 subtest 'invalid barrier type' => sub {
