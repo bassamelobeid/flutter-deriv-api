@@ -3,6 +3,7 @@ package BOM::Test::Helper::FinancialAssessment;
 use warnings;
 use strict;
 
+use JSON::MaybeUTF8 qw(encode_json_utf8);
 use BOM::Platform::Account::Real::default;
 
 sub _get_by_index {
@@ -46,6 +47,30 @@ sub _get_with_selector {
     } values %$h;
 
     return \%r;
+}
+
+sub mock_maltainvest_fa {
+    my %data = (
+        "forex_trading_experience"             => "Over 3 years",                                     # +2
+        "forex_trading_frequency"              => "0-5 transactions in the past 12 months",           # +0
+        "binary_options_trading_experience"    => "1-2 years",                                        # +1
+        "binary_options_trading_frequency"     => "40 transactions or more in the past 12 months",    # +2
+        "cfd_trading_experience"               => "1-2 years",                                        # +1
+        "cfd_trading_frequency"                => "0-5 transactions in the past 12 months",           # +0
+        "other_instruments_trading_experience" => "Over 3 years",                                     # +2
+        "other_instruments_trading_frequency"  => "6-10 transactions in the past 12 months",          # +1
+        "employment_industry"                  => "Finance",                                          # +15
+        "education_level"                      => "Secondary",                                        # +1
+        "income_source"                        => "Self-Employed",                                    # +0
+        "net_income"                           => '$25,000 - $50,000',                                # +1
+        "estimated_worth"                      => '$100,000 - $250,000',                              # +1
+        "occupation"                           => 'Managers',                                         # +0
+        "employment_status"                    => "Self-Employed",                                    # +0
+        "source_of_wealth"                     => "Company Ownership",                                # +0
+        "account_turnover"                     => 'Less than $25,000',
+    );
+
+    return encode_json_utf8(BOM::Platform::Account::Real::default::get_financial_assessment_score(\%data));
 }
 
 1;
