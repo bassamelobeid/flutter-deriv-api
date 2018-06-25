@@ -7,6 +7,7 @@ no indirect;
 
 use Guard;
 use YAML::XS;
+use Date::Utility;
 use List::Util qw(any first);
 use Try::Tiny;
 use File::ShareDir;
@@ -50,6 +51,11 @@ use constant CURRENCY_CONVERSION_MAX_AGE => 3600;
 
 # Fees percentage for deposit and withdrawal within in different currencies
 use constant CONVERSION_FEES_PERCENTAGE => 1;
+
+# Days left to remind MT5 accounts to submit required documents
+use constant REMINDER_DAYS => 5;
+# Days left to send email to disable MT5 accounts
+use constant DISABLE_DAYS => 10;
 
 # TODO(leonerd):
 #   These helpers exist mostly to coördinate the idea of error management in
@@ -449,16 +455,21 @@ Binary.com
     };
 
     try {
+
+        my @msg = split /\n/, <<EOM;
+${\$client->loginid} created MT5 Financial Account MT$mt5_login, type $group.
+If this client has not submitted authentication documents by ${\Date::Utility->new(time() + 86400 * REMINDER_DAYS)->date_ddmmmyy()}, please disable Web API Connections and send a reminder email to the client.
+If the client has still not sent in all necessary documents by ${\Date::Utility->new(time() + 86400 * DISABLE_DAYS)->date_ddmmmyy()}, please disable the financial MT5 account and inform Compliance.
+EOM
+
         send_email({
-                from    => $brand->emails('system'),
-                to      => $brand->emails('support'),
-                subject => 'Asked for authentication documents',
-                message => [
-                    "${\$client->loginid} created MT5 Financial Account MT$mt5_login, type $group.\nIf client has not submitted document within five days please disable account and inform compliance"
-                ],
-                use_email_template    => 0,
-                email_content_is_html => 0,
-            });
+            from                  => $brand->emails('system'),
+            to                    => $brand->emails('support'),
+            subject               => 'Asked for authentication documents',
+            message               => \@msg,
+            use_email_template    => 0,
+            email_content_is_html => 0,
+        });
     }
     catch {
         warn "Failed to notify cs team about new CR Financial account MT$mt5_login";
