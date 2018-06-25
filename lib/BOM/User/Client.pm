@@ -411,6 +411,17 @@ sub is_financial_information_complete {
     return $self->_is_fa_section_complete('financial_information');
 }
 
+sub _is_fa_section_complete {
+    my $self = shift;
+    my $key  = shift;
+
+    my $fa = $self->_decode_financial_assessment();
+    return 0 unless $fa;
+    my $im = BOM::Platform::Account::Real::default::get_financial_input_mapping();
+
+    return 0 + all { $fa->{$_} and $fa->{$_}->{answer} } keys %{$im->{$key}};
+}
+
 sub financial_assessment_score {
     my $self = shift;
 
@@ -432,6 +443,12 @@ sub financial_information {
     return $self->_decode_fa_section('financial_information');
 }
 
+sub outdated_financial_assessment {
+    my $self = shift;
+
+    return $self->_decode_fa_section();
+}
+
 sub _decode_fa_section {
     my $self = shift;
     my $key  = shift;
@@ -441,18 +458,8 @@ sub _decode_fa_section {
 
     my $im = BOM::Platform::Account::Real::default::get_financial_input_mapping();
 
+    return +{grep { !$fa->{$_} } map { keys %{$im->{$_}} } keys %{$im}} unless $key;
     return +{map { $_ => $fa->{$_} } grep { $fa->{$_} } keys %{$im->{$key}}};
-}
-
-sub _is_fa_section_complete {
-    my $self = shift;
-    my $key  = shift;
-
-    my $fa = $self->_decode_financial_assessment();
-    return 0 unless $fa;
-    my $im = BOM::Platform::Account::Real::default::get_financial_input_mapping();
-
-    return 0 + all { $fa->{$_} and $fa->{$_}->{answer} } keys %{$im->{$key}};
 }
 
 sub _decode_financial_assessment {
