@@ -377,6 +377,7 @@ sub aml_risk_level {
     my $self = shift;
 
     my $risk = $self->aml_risk_classification // '';
+
     # use `low`, `standard`, `high` as prepending `manual override` string is for internal purpose
     $risk =~ s/manual override - //;
 
@@ -392,6 +393,7 @@ sub is_financial_assessment_complete {
     my $is_FI = $self->is_financial_information_complete();
     my $is_TE = $self->is_trading_experience_complete();
 
+    return 0 if ($sc eq 'costarica' and $aml eq 'high' and not $is_FI);
     return 0 if ($sc eq 'maltainvest' and not($is_FI and $is_TE));
     return 0 if ($sc =~ /^iom|malta$/ and $aml eq 'high' and not $is_FI);
     return 1;
