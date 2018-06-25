@@ -865,32 +865,32 @@ if (not $client->is_virtual) {
 }
 
 my $fa_score = $client->financial_assessment_score();
-if (my $TE = $client->trading_experience()) {
+if (my %TE = %{$client->trading_experience()}) {
     Bar("Trading Experience");
-    print_fa_table($TE);
+    print_fa_table(%TE);
     print '<p>Trading experience score: ' . $fa_score->{trading_score} . '</p>';
-    print '<p>CFD Score: ' . $fa_score->{cfd_score} . '</p>';
+    print '<p>CFD Score: ' . $fa_score->{cfd_score} . '</p><br/>';
 }
-if (my $FI = $client->financial_information()) {
+if (my %FI = %{$client->financial_information()}) {
     Bar("Financial Information");
-    print_fa_table($FI);
+    print_fa_table(%FI);
     print '<p>Financial information score: ' . $fa_score->{financial_information_score} . '</p><br/>';
 }
-if (my $OD = $client->outdated_financial_assessment()) {
+if (my %OD = %{$client->outdated_financial_assessment()}) {
     Bar("Outdated Financial Assessment Answers");
-    print_fa_table($OD);
+    print_fa_table(%OD);
 }
 
 sub print_fa_table {
-    my $section = shift;
+    my %section = @_;
 
     my @hdr = ('Question', 'Answer', 'Score');
 
     print '<br/><table style="width:100%;" border="1" class="sortable"><thead><tr>';
     print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
     print '</thead><tbody>';
-    print '<tr><td>' . $section->{$_}->{label} . '</td><td>' . $section->{$_}->{answer} . '</td><td>' . $section->{$_}->{score} . '</td></tr>'
-        for keys %{$section};
+    print '<tr><td>' . $section{$_}->{label} . '</td><td>' . $section{$_}->{answer} . '</td><td>' . $section{$_}->{score} . '</td></tr>'
+        for keys %section;
     print '</tbody></table></br>';
 
     return undef;
