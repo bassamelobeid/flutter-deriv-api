@@ -10,6 +10,7 @@ use feature qw(state);
 use Email::Stuffer;
 use Date::Utility;
 use List::Util qw/all/;
+use Array::Utils qw/array_minus/;
 use Format::Util::Numbers qw(roundcommon);
 use Try::Tiny;
 use JSON::MaybeUTF8 qw(decode_json_utf8);
@@ -418,19 +419,66 @@ sub _is_fa_section_complete {
     my $fa = $self->_decode_financial_assessment();
     return 0 unless $fa;
     my $im = BOM::Platform::Account::Real::default::get_financial_input_mapping();
-    my $is_complete =
-        all { $fa->{$_} and $fa->{$_}->{answer} } keys %{$im->{$key}};
 
-    return $is_complete || 0;
+    return 0 + all { $fa->{$_} and $fa->{$_}->{answer} } keys %{$im->{$key}};
+}
+
+sub financial_assessment_score {
+    my $self = shift;
+
+    my $fa = $self->_decode_financial_assessment();
+    return undef unless $fa;
+
+    return +{map { $_ => $fa->{$_} } qw/total_score financial_information_score trading_score cfd_score/};
+}
+
+sub trading_experience {
+    my $self = shift;
+
+    return $self->_decode_fa_section('trading_experience');
+}
+
+sub financial_information {
+    my $self = shift;
+
+    return $self->_decode_fa_section('financial_information');
+}
+
+sub outdated_financial_assessment {
+    my $self = shift;
+
+    return $self->_decode_fa_section();
+}
+
+sub _decode_fa_section {
+    my $self = shift;
+    my $key  = shift;
+
+    my $fa = $self->_decode_financial_assessment();
+    return {} unless $fa;
+
+    my $im = BOM::Platform::Account::Real::default::get_financial_input_mapping();
+
+    unless ($key) {
+        my @active_keys = map { keys %{$im->{$_}} } keys %{$im};
+        my @score_mapping = BOM::Platform::Account::Real::default::get_financial_score_mapping();
+        push(@active_keys, @score_mapping);
+        # Get outdated keys by substructing set of active keys from set of user's answers
+        my @fa_keys = keys %{$fa};
+        my @outdated_keys = array_minus(@fa_keys, @active_keys);
+        my %outdated_fa;
+        @outdated_fa{@outdated_keys} = @{$fa}{@outdated_keys};
+        return \%outdated_fa;
+    }
+    return +{map { $_ => $fa->{$_} } grep { $fa->{$_} } keys %{$im->{$key}}};
 }
 
 sub _decode_financial_assessment {
     my $self = shift;
 
     my $fa = $self->financial_assessment();
-    $fa = $fa ? decode_json_utf8($fa->data || '{}') : undef;
 
-    return $fa;
+    return $fa ? decode_json_utf8($fa->data || '{}') : undef;
 }
 
 sub documents_expired {
