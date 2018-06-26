@@ -455,7 +455,7 @@ sub _decode_fa_section {
     my $key  = shift;
 
     my $fa = $self->_decode_financial_assessment();
-    return undef unless $fa;
+    return {} unless $fa;
 
     my $im = BOM::Platform::Account::Real::default::get_financial_input_mapping();
 
