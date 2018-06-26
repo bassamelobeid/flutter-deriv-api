@@ -70,19 +70,16 @@ my $self_href       = request()->url_for('backoffice/f_clientloginid_edit.cgi', 
 # let the client-check offer a chance to retry.
 eval { BrokerPresentation("$encoded_loginid CLIENT DETAILS") };    ## no critic (RequireCheckingReturnValueOfEval)
 
-my $client = eval { BOM::User::Client->new({loginid => $loginid}) } || do {
-    my $err = $@;
-    print "<p>ERROR: Client [$encoded_loginid] not found.</p>";
-    if ($err) {
-        warn("Error: $err");
-        print "<p>(Support: details in errorlog)</p>";
-    }
-    code_exit_BO(
-        qq[<form action="$self_post" method="get">
+my $well_formatted = $loginid =~ m/^[A-Z]{2,4}[\d]{4,10}$/;
+my $client;
+$client = try { return BOM::User::Client->new({loginid => $loginid}) } if $well_formatted;
+my $error_message = $well_formatted ? "Client [$encoded_loginid] not found." : "Invalid loginid provided.";
+code_exit_BO(
+    qq[<p>ERROR: $error_message </p>
+            <form action="$self_post" method="get">
                 Try Again: <input type="text" name="loginID" value="$encoded_loginid"></input>
-              </form>]
-    );
-};
+            </form>]
+) unless $client;
 
 my $user = $client->user;
 
