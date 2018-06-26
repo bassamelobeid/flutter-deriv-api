@@ -181,6 +181,10 @@ sub add_details_to_desk {
     return;
 }
 
+sub get_financial_score_mapping {
+    return ("trading_score", "financial_information_score", "cfd_score", "total_score");
+}
+
 sub get_financial_input_mapping {
     my $experience_possible_answer = {
         '0-1 year'     => 0,
