@@ -54,14 +54,16 @@ if (not $user) {
     code_exit_BO();
 }
 
+my @all_loginids = map { $_->loginid } $user->loginid;
 if (not $input{email_edit}) {
     # list loginids with email
     BOM::Backoffice::Request::template()->process(
         'backoffice/client_email.html.tt',
         {
-            list     => 1,
-            email    => $email,
-            loginids => [map { $_->loginid } $user->loginid],
+            list         => 1,
+            email        => $email,
+            bom_loginids => [grep { $_ !~ /^MT\d+$/ } @all_loginids],
+            mt5_loginids => [grep { $_ =~ /^MT\d+$/ } @all_loginids],
         },
     ) || die BOM::Backoffice::Request::template()->error();
 
@@ -127,10 +129,11 @@ if ($email ne $new_email) {
     BOM::Backoffice::Request::template()->process(
         'backoffice/client_email.html.tt',
         {
-            updated   => 1,
-            old_email => $email,
-            new_email => $new_email,
-            loginids  => [map { $_->loginid } $user->loginid],
+            updated      => 1,
+            old_email    => $email,
+            new_email    => $new_email,
+            bom_loginids => [grep { $_ !~ /^MT\d+$/ } @all_loginids],
+            mt5_loginids => [grep { $_ =~ /^MT\d+$/ } @all_loginids],
         },
     ) || die BOM::Backoffice::Request::template()->error();
 } else {

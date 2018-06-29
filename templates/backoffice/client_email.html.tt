@@ -9,8 +9,11 @@
         [% END %]
     </span>
     <ul>
-        [% FOREACH loginid IN loginids %]
+        [% FOREACH loginid IN bom_loginids %]
             <li><a href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', {loginID => loginid }) %]">[% loginid %]</a></li>
+        [% END %]
+        [% FOREACH mt5_loginid IN mt5_loginids %]
+            <li>[% mt5_loginid %]</li>
         [% END %]
     </ul>
 
