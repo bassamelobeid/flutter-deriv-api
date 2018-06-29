@@ -151,7 +151,6 @@ sub _candles {
                         end_time           => $end_time,
                         aggregation_period => $granularity,
                     })});
-
     } else {
         my $first_stop = $start_time + ($granularity - $start_time % $granularity);
         my $last_stop = $first_stop + $granularity * int(($end_time - $first_stop) / $granularity);
@@ -163,6 +162,7 @@ sub _candles {
             $first_ohlc->{epoch} = $start_time;
             push @all_ohlc, $first_ohlc;
         }
+
         if ($last_stop > $first_stop) {
             push @all_ohlc,
                 (
@@ -248,7 +248,8 @@ sub _validate_start_end {
     }
     unless ($end
         and $end =~ /^[0-9]+$/
-        and $end > $start)
+        and $end > $start
+        and $end < time())
     {
         $end = time();
     }
@@ -259,6 +260,7 @@ sub _validate_start_end {
     {
         $count = 5000;
     }
+
     if ($ul->feed_license ne 'realtime') {
         # if feed doesn't have realtime license, we should adjust end_time in such a way
         # as not to break license conditions

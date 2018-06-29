@@ -217,6 +217,35 @@ subtest '_validate_start_end' => sub {
         'If exchange close at end time and sent adjust_start_time then it should shift back start time';
 };
 
+subtest 'start/end date boundary checks' => sub {
+    # Test - When start is before 3 years
+    my $start = time() - (365 * 86400 * 4);    # 4 years from now
+    my $end   = $start + (86400 * 2);          # 2 day after start
+
+    my $symbol         = 'frxUSDJPY';
+    my $ul             = create_underlying($symbol);
+    my $licensed_epoch = $ul->last_licensed_display_epoch;
+    my $start_failsafe = $licensed_epoch - 86400;
+
+    $params->{args}                  = {};
+    $params->{args}->{start}         = $start;
+    $params->{args}->{end}           = $end;
+    $params->{args}->{granularity}   = '86400';
+    $params->{args}->{count}         = '10000';
+    $params->{args}->{ticks_history} = $symbol;
+
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    is $result->{data}->{candles}->[0]->{epoch}, $start_failsafe, 'When start time is less than 3 years, reset it to licensed epoch - 86400';
+
+    # Test - When end is after now
+    $start                   = $now->minus_time_interval('7h');                                                 # 7 hours before now
+    $end                     = $now->plus_time_interval('10m');                                                 # 10 minute in future from now
+    $params->{args}->{start} = $start->epoch;
+    $params->{args}->{end}   = $end->epoch;
+    $result                  = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    is $result->{data}->{candles}->[0]->{epoch} <= $now->epoch, 1, 'When end time is in future, reset it to now';
+};
+
 subtest 'history data style' => sub {
     my $start = $now->minus_time_interval('5h');
     my $end   = $start->plus_time_interval('2h');
