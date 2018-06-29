@@ -34,9 +34,9 @@ use BOM::Config;
 use BOM::Backoffice::FormAccounts;
 use BOM::Database::Model::AccessToken;
 use BOM::Backoffice::Config;
-use BOM::Backoffice::Script::DocumentUpload;
 use Finance::MIFIR::CONCAT qw(mifir_concat);
 use BOM::Platform::Client::DocumentUpload;
+use BOM::Platform::S3Client;
 use Media::Type::Simple;
 
 use constant MAX_FILE_SIZE => 8 * 2**20;
@@ -205,6 +205,8 @@ if ($input{whattodo} eq 'uploadID') {
     my $docnationality = $cgi->param('docnationality');
     my $result         = "";
 
+    my @futures;
+    my $s3_client = BOM::Platform::S3Client->new(BOM::Backoffice::Config::config()->{document_auth_s3});
     foreach my $i (1 .. 4) {
         my $doctype         = $cgi->param('doctype_' . $i);
         my $filetoupload    = $cgi->upload('FILE_' . $i);
@@ -313,23 +315,34 @@ if ($input{whattodo} eq 'uploadID') {
         my $new_file_name = "$loginid.$doctype.$file_id";
         $new_file_name .= $page_type eq '' ? ".$docformat" : "_$page_type.$docformat";
 
-        my $document_upload = BOM::Backoffice::Script::DocumentUpload->new(config => BOM::Backoffice::Config::config()->{document_auth_s3});
+        my $future = $s3_client->upload($new_file_name, $abs_path_to_temp_file, $file_checksum)->then(
+            sub {
+                $query_result = BOM::Platform::Client::DocumentUpload::finish_document_upload(
+                    client    => $client,
+                    file_id   => $file_id,
+                    comments  => $comments,
+                    page_type => $page_type,
+                );
 
-        my $checksum = $document_upload->upload($new_file_name, $abs_path_to_temp_file, $file_checksum)
-            or die "Upload failed for $filetoupload";
+                if ($query_result->{file_id}) {
+                    return Future->done;
+                } else {
+                    return Future->fail($query_result->{error}->{msg});
+                }
+            });
+        $future->set_label($new_file_name);
+        push @futures, $future;
+    }
 
-        $query_result = BOM::Platform::Client::DocumentUpload::finish_document_upload(
-            client    => $client,
-            file_id   => $file_id,
-            comments  => $comments,
-            page_type => $page_type,
-        );
-
-        unless ($query_result->{file_id}) {
-            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: $query_result->{error}->{msg}</p><br />";
-            next;
-        } else {
-            $result .= "<br /><p style=\"color:#eeee00; font-weight:bold;\">Ok! File $i: $new_file_name is uploaded.</p><br />";
+    Future->wait_all(@futures)->get;
+    for my $f (@futures) {
+        my $file_name = $f->label;
+        if ($f->is_done) {
+            $result .= "<br /><p style=\"color:#eeee00; font-weight:bold;\">Successfully uploaded $file_name</p><br />";
+        } elsif ($f->is_failed) {
+            my $failure = $f->failure;
+            $failure = $failure =~ /already exists/ ? "Document already exists: $file_name" : $failure;
+            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: $failure </p><br />";
         }
     }
     print $result;

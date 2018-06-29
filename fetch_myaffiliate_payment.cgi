@@ -15,7 +15,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::Config qw/get_tmp_path_or_die/;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Backoffice::Script::DocumentUpload;
+use BOM::Platform::S3Client;
 use BOM::Backoffice::Sysinit ();
 use f_brokerincludeall;
 
@@ -57,9 +57,13 @@ try {
     );
     my $csum = Digest::MD5->new->addfile($zip->openr)->hexdigest;
 
-    my $document_upload = BOM::Backoffice::Script::DocumentUpload->new(config => BOM::Config::third_party()->{myaffiliates});
-
-    $document_upload->upload($zip->basename, $zip, $csum) or die "Upload failed for @{[ $zip->basename ]}: $!";
+    my $s3_client = BOM::Platform::S3Client->new(BOM::Config::third_party()->{myaffiliates});
+    try {
+        $s3_client->upload($zip->basename, $zip, $csum)->get;
+    }
+    catch {
+        die "Upload failed for @{[ $zip->basename ]}: $!";
+    };
 
     my @message =
         ('"To BOM Account" affiliate payment CSVs zip archive is linked below for review and upload into the affiliate payment backoffice tool.');
@@ -71,7 +75,7 @@ try {
     push @message, 'Please find the generated payment reports archive at the link below:';
     push @message, 'NOTE: The link below is valid for 1 hour from the time of request, please download it immediately before this link expires.';
     push @message, '';
-    push @message, $document_upload->get_s3_url($zip->basename, $expiry);
+    push @message, $s3_client->get_s3_url($zip->basename, $expiry);
 
     my $brand = Brands->new(name => request()->brand);
     send_email({
