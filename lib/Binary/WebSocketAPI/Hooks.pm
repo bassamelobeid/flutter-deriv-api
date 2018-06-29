@@ -250,11 +250,14 @@ sub assign_rpc_url {
 
 sub get_doc_auth_s3_conf {
     my $c = shift;
-
+    my $access_key = $ENV{DOCUMENT_AUTH_S3_ACCESS} || $c->app->config->{document_auth_s3}->{aws_access_key_id} || die 'S3 Configuration Unavailable';
+    my $secret_key =
+        $ENV{DOCUMENT_AUTH_S3_SECRET} || $c->app->config->{document_auth_s3}->{aws_secret_access_key} || die 'S3 Configuration Unavailable';
+    my $bucket = $ENV{DOCUMENT_AUTH_S3_BUCKET} || $c->app->config->{document_auth_s3}->{aws_bucket} || die 'S3 Configuration Unavailable';
     return {
-        access_key => $ENV{DOCUMENT_AUTH_S3_ACCESS} || $c->app->config->{document_auth_s3_access},
-        secret_key => $ENV{DOCUMENT_AUTH_S3_SECRET} || $c->app->config->{document_auth_s3_secret},
-        bucket     => $ENV{DOCUMENT_AUTH_S3_BUCKET} || $c->app->config->{document_auth_s3_bucket},
+        access_key => $access_key,
+        secret_key => $secret_key,
+        bucket     => $bucket,
     };
 }
 

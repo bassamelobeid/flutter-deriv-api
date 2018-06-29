@@ -258,7 +258,6 @@ sub clean_up_on_finish {
 
 sub wait_for_chunks_and_upload_to_s3 {
     my ($c, $upload_info) = @_;
-
     my $s3 = create_s3_instance($c, $upload_info);
 
     my $pending_futures = $upload_info->{pending_futures};
