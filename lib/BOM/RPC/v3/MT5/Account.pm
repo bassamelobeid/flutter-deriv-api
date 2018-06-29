@@ -420,21 +420,14 @@ sub _send_notification_email {
     $language = lc $language;
     my $client_email_template = localize(
         "\
-Dear [_1],
-
-Thank you for registering your MetaTrader 5 account.
-
-We are legally required to verify each client's identity and address. Therefore, we kindly request that you authenticate your account by submitting the following documents:
-
-Valid driving licence, identity card, or passport
-Utility bill or bank statement issued within the past six months
-
-Please <a href=\"https://www.binary.com/[_2]/user/authenticate.html\">upload scanned copies</a> of the above documents, or email them to support\@binary.com within five days of receipt of this email to keep your account active.
-
-We look forward to hearing from you soon.
-
-Regards,
-
+<p>Dear [_1],</p>
+<p>Thank you for registering your MetaTrader 5 account.</p>
+<p>We are legally required to verify each client's identity and address. Therefore, we kindly request that you authenticate your account by submitting the following documents:
+<ul><li>Valid driving licence, identity card, or passport</li><li>Utility bill or bank statement issued within the past six months</li></ul>
+</p>
+<p>Please <a href=\"https://www.binary.com/[_2]/user/authenticate.html\">upload scanned copies</a> of the above documents, or email them to support\@binary.com within five days of receipt of this email to keep your account active.</p>
+<p>We look forward to hearing from you soon.</p>
+<p>Regards,<p>
 Binary.com
 ", $client->full_name, $language
     );
@@ -1110,30 +1103,38 @@ async_rpc mt5_deposit => sub {
             my $fees          = $response->{fees};
             my $fees_currency = $response->{fees_currency};
 
-            my $comment = "Transfer from $fm_loginid to MT5 account $to_mt5.";
-            $comment .=
-                " Includes $fees_currency " . formatnumber('amount', $fees_currency, $fees) . " (" . CONVERSION_FEES_PERCENTAGE . "%) as fees."
-                if $fees;
-            my $account = $fm_client->set_default_account($fm_client->currency);
-            my ($payment) = $account->add_payment({
-                amount               => -$amount,
-                payment_gateway_code => 'account_transfer',
-                payment_type_code    => 'internal_transfer',
-                status               => 'OK',
-                staff_loginid        => $fm_loginid,
-                remark               => $comment,
-            });
-            my ($txn) = $payment->add_transaction({
-                account_id    => $account->id,
-                amount        => -$amount,
-                staff_loginid => $fm_loginid,
-                referrer_type => 'payment',
-                action_type   => 'withdrawal',
-                quantity      => 1,
-                source        => $source,
-            });
-            $account->save(cascade => 1);
-            $payment->save(cascade => 1);
+            my ($account, $payment, $txn, $comment, $error);
+            try {
+                $comment = "Transfer from $fm_loginid to MT5 account $to_mt5.";
+                $comment .=
+                    " Includes $fees_currency " . formatnumber('amount', $fees_currency, $fees) . " (" . CONVERSION_FEES_PERCENTAGE . "%) as fees."
+                    if $fees;
+                $account = $fm_client->set_default_account($fm_client->currency);
+                ($payment) = $account->add_payment({
+                    amount               => -$amount,
+                    payment_gateway_code => 'account_transfer',
+                    payment_type_code    => 'internal_transfer',
+                    status               => 'OK',
+                    staff_loginid        => $fm_loginid,
+                    remark               => $comment,
+                });
+                ($txn) = $payment->add_transaction({
+                    account_id    => $account->id,
+                    amount        => -$amount,
+                    staff_loginid => $fm_loginid,
+                    referrer_type => 'payment',
+                    action_type   => 'withdrawal',
+                    quantity      => 1,
+                    source        => $source,
+                });
+                $account->save(cascade => 1);
+                $payment->save(cascade => 1);
+            }
+            catch {
+                $error = BOM::Transaction->format_error(err => $_);
+            };
+
+            return _make_error($error_code, $error->{-message_to_client}) if $error;
 
             # deposit to MT5 a/c
             return BOM::MT5::User::Async::deposit({
