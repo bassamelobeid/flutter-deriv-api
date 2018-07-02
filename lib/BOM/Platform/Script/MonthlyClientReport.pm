@@ -2,10 +2,13 @@ package BOM::Platform::Script::MonthlyClientReport;
 use strict;
 use warnings;
 
+use File::Path qw(make_path);
 use Text::CSV;
 use BOM::Config::Runtime;
 use BOM::Database::ClientDB;
 use Date::Utility;
+
+my $PREFIX_OUTPUT_PATH = '/db/f_broker';
 
 sub go {
     my %params = @_;
@@ -37,7 +40,10 @@ sub go {
     my $Buy_Sell = ucfirst $buy_sell;
     my $CrDr     = ucfirst $crdr;
 
-    my $csv_name = "/db/f_broker/$broker/monthly_client_report/${yyyymm}_${crdr}.csv";
+    my $csv_dir  = $PREFIX_OUTPUT_PATH . "/$broker/monthly_client_report";
+    my $csv_name = $csv_dir . "/${yyyymm}_${crdr}.csv";
+
+    make_path($csv_dir);
 
     my $sql = <<HERE;
 
@@ -122,7 +128,6 @@ HERE
             );
 
             $sth->execute(@binds);
-
             my @headers = qw/Date Loginid Description CrDr_Amount Amount Currency Broker Type/;
             my $csv = Text::CSV->new({eol => "\n"});
             my $fh;
@@ -141,7 +146,6 @@ HERE
 sub run {
 
     STDOUT->autoflush(1);    # flushes stdout progress report faster
-
     for my $broker (qw/ MLT MX MF CR JP CH /) {
         for my $crdr ('debit', 'credit') {
             printf "%5s / %6s: %s.. ", $broker, $crdr, scalar(localtime);
@@ -149,8 +153,10 @@ sub run {
                 broker => $broker,
                 crdr   => $crdr;
             printf "%7d records\n", $rows;
+
         }
     }
+
     printf "%s: done\n", scalar(localtime);
     return;
 }
