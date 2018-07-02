@@ -22,7 +22,7 @@ use Brands;
 use BOM::User::Client;
 use LandingCompany::Registry;
 use BOM::User::Client::PaymentAgent;
-use Postgres::FeedDB::CurrencyConverter qw/amount_from_to_currency/;
+use Postgres::FeedDB::CurrencyConverter qw ( amount_from_to_currency in_USD );
 
 use BOM::RPC::Registry '-dsl';
 
@@ -46,7 +46,6 @@ use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::ClientDB;
 use Quant::Framework;
-use BOM::Config;
 
 requires_auth();
 
@@ -547,17 +546,21 @@ rpc paymentagent_transfer => sub {
                 }));
     }
 
-    # check that there's no identical transaction
-    my ($amount_transferred, $count) = _get_amount_and_count($loginid_fm);
+    # normalized all amount to USD for comparing payment agent limits
+    my ($amount_transferred_in_usd, $count) = _get_amount_and_count($loginid_fm);
+    $amount_transferred_in_usd = in_USD($amount_transferred_in_usd, $currency);
 
-    # maximum amount USD 100000 per day
-    if (($amount_transferred + $amount) >= 100000) {
+    my $amount_in_usd = in_USD($amount, $currency);
+
+    my $pa_transfer_limit = BOM::Config::payment_agent()->{transaction_limits}->{transfer};
+
+    # maximum number of allowable transfer in usd in a day
+    if (($amount_transferred_in_usd + $amount_in_usd) > $pa_transfer_limit->{amount_in_usd_per_day}) {
         return $error_sub->(
             localize('Payment agent transfers are not allowed, as you have exceeded the maximum allowable transfer amount for today.'));
     }
 
-    # do not allow more than 1000 transactions per day
-    if ($count > 1000) {
+    if ($count >= $pa_transfer_limit->{transactions_per_day}) {
         return $error_sub->(localize('Payment agent transfers are not allowed, as you have exceeded the maximum allowable transactions for today.'));
     }
 
@@ -732,6 +735,7 @@ rpc paymentagent_withdraw => sub {
         if ($pa_client->currency ne $currency or not $pa_client->default_account);
 
     my $min_max = BOM::Config::payment_agent()->{payment_limits}->{LandingCompany::Registry::get_currency_type($currency)};
+
     return $error_sub->(localize('Invalid amount. Minimum is [_1], maximum is [_2].', $min_max->{minimum}, $min_max->{maximum}))
         if ($amount < $min_max->{minimum} || $amount > $min_max->{maximum});
 
@@ -814,18 +818,24 @@ rpc paymentagent_withdraw => sub {
                 }));
     }
 
-    # check that there's no identical transaction
-    my ($amount_transferred, $count) = _get_amount_and_count($client_loginid);
+    my $day = Date::Utility->new->is_a_weekend ? 'weekend' : 'weekday';
+    my $withdrawal_limit = BOM::Config::payment_agent()->{transaction_limits}->{withdraw};
 
-    # max withdrawal daily limit: weekday = $5000, weekend = $1500
-    my $daily_limit = (Date::Utility->new->is_a_weekend) ? 1500 : 5000;
+    my ($amount_transferred_in_usd, $count) = _get_amount_and_count($client_loginid);
+    $amount_transferred_in_usd = in_USD($amount_transferred_in_usd, $currency);
 
-    if (($amount_transferred + $amount) > $daily_limit) {
-        return $error_sub->(localize('Sorry, you have exceeded the maximum allowable transfer amount [_1] for today.', $currency . $daily_limit));
+    my $amount_in_usd = in_USD($amount, $currency);
+
+    my $daily_limit = $withdrawal_limit->{$day}->{amount_in_usd_per_day};
+
+    if (($amount_transferred_in_usd + $amount_in_usd) > $daily_limit) {
+        return $error_sub->(
+            localize(
+                'Sorry, you have exceeded the maximum allowable transfer amount [_1] for today.',
+                $currency . formatnumber('price', $currency, amount_from_to_currency($daily_limit, 'USD', $currency))));
     }
 
-    # do not allowed more than 20 transactions per day
-    if ($count > 20) {
+    if ($count >= $withdrawal_limit->{$day}->{transactions_per_day}) {
         return $error_sub->(localize('Sorry, you have exceeded the maximum allowable transactions for today.'));
     }
 
@@ -903,6 +913,7 @@ rpc paymentagent_withdraw => sub {
         '',
         localize('The [_1] team.', $website_name),
     ];
+
     send_email({
         from                  => Brands->new(name => request()->brand)->emails('support'),
         to                    => $paymentagent->email,
@@ -1191,8 +1202,9 @@ rpc topup_virtual => sub {
         return $error_sub->(localize('Sorry, this feature is available to virtual accounts only'));
     }
 
-    my $currency = $client->default_account->currency_code;
-    my $minimum_topup_balance = $currency eq 'JPY' ? 100000 : 1000;
+    my $currency              = $client->default_account->currency_code;
+    my $min_topup_bal         = BOM::Config::payment_agent()->{minimum_topup_balance};
+    my $minimum_topup_balance = $min_topup_bal->{$currency} // $min_topup_bal->{DEFAULT};
 
     if ($client->default_account->balance > $minimum_topup_balance) {
         return $error_sub->(

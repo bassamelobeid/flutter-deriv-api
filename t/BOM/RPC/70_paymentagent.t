@@ -7,6 +7,7 @@ use warnings;
 use Test::More;
 use Test::MockModule;
 use Data::Dumper;
+use YAML::XS;
 
 use Format::Util::Numbers qw( formatnumber );
 
@@ -25,21 +26,20 @@ my $long_description = 300;
 
 my $agent_name = 'Joe';
 
-my $WEEKEND_MAX      = 1500;
-my $WEEKDAY_MAX      = 5000;
-my $MAX_TXNS_PER_DAY = 20;
-my %MAX_WITHDRAW     = (
-    USD => 2000,
-    BTC => 5
-);
+my $WEEKEND_MAX               = BOM::Config::payment_agent()->{transaction_limits}->{withdraw}->{weekend}->{amount_in_usd_per_day};
+my $WEEKDAY_MAX               = BOM::Config::payment_agent()->{transaction_limits}->{withdraw}->{weekday}->{amount_in_usd_per_day};
+my $AGENT_TOPUP_AMOUNT_IN_USD = BOM::Config::payment_agent()->{transaction_limits}->{transfer}->{amount_in_usd_per_day};
+my $MAX_TXNS_PER_DAY          = 20;
+
+my %MAX_WITHDRAW = (
+    USD => BOM::Config::payment_agent()->{payment_limits}->{fiat}->{maximum},
+    BTC => BOM::Config::payment_agent()->{payment_limits}->{crypto}->{maximum});
 my %MIN_AGENT_WITHDRAW = (
-    USD => 10,
-    BTC => 0.002
-);
+    USD => BOM::Config::payment_agent()->{payment_limits}->{fiat}->{minimum},
+    BTC => BOM::Config::payment_agent()->{payment_limits}->{crypto}->{minimum});
 my %MAX_AGENT_WITHDRAW = (
-    USD => 2000,
-    BTC => 5
-);
+    USD => BOM::Config::payment_agent()->{payment_limits}->{fiat}->{maximum},
+    BTC => BOM::Config::payment_agent()->{payment_limits}->{crypto}->{maximum});
 
 ## Create the accounts we will use for testing
 
@@ -77,14 +77,12 @@ $payment_agent_args->{currency_code} = 'BTC';
 $crypto_pa_client->payment_agent($payment_agent_args);
 $crypto_pa_client->save;
 
-my $mock_utility           = Test::MockModule->new('BOM::RPC::v3::Utility');
-my $mock_clientaccount     = Test::MockModule->new('BOM::User::Client');
-my $mock_landingcompany    = Test::MockModule->new('LandingCompany');
-my $mock_clientdb          = Test::MockModule->new('BOM::Database::ClientDB');
-my $mock_cashier           = Test::MockModule->new('BOM::RPC::v3::Cashier');
-my $mock_date              = Test::MockModule->new('Date::Utility');
-my $mock_currencyconverter = Test::MockModule->new('Postgres::FeedDB::CurrencyConverter');
-$mock_currencyconverter->mock('in_USD', sub { return $_[1] eq 'USD' ? $_[0] : 5000 * $_[0]; });
+my $mock_utility        = Test::MockModule->new('BOM::RPC::v3::Utility');
+my $mock_clientaccount  = Test::MockModule->new('BOM::User::Client');
+my $mock_landingcompany = Test::MockModule->new('LandingCompany');
+my $mock_clientdb       = Test::MockModule->new('BOM::Database::ClientDB');
+my $mock_cashier        = Test::MockModule->new('BOM::RPC::v3::Cashier');
+my $mock_date           = Test::MockModule->new('Date::Utility');
 
 my $runtime_system = BOM::Config::Runtime->instance->app_config->system;
 
@@ -120,6 +118,11 @@ sub reset_transfer_testargs {
             dry_run     => 1,
         }};
 }
+
+my $mock_cc         = Test::MockModule->new('Postgres::FeedDB::CurrencyConverter');
+my $mock_cashier_cc = Test::MockModule->new('BOM::RPC::v3::Cashier');
+$mock_cc->mock('in_USD', sub { return $_[1] eq 'USD' ? $_[0] : 5000 * $_[0]; });
+$mock_cashier_cc->mock('in_USD', sub { return $_[1] eq 'USD' ? $_[0] : 5000 * $_[0]; });
 
 for my $transfer_currency ('USD', 'BTC') {
 
@@ -434,6 +437,103 @@ for my $transfer_currency ('USD', 'BTC') {
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         like($res->{error}{message_to_client}, qr/includes frozen bonus/, $test);
         $mock_clientaccount->unmock('get_promocode_dependent_limit');
+
+        subtest "paymentagent_transfer allowance $test_currency" => sub {
+
+            reset_transfer_testargs();
+
+            my $value_per_usd = Postgres::FeedDB::CurrencyConverter::in_USD(1, $test_currency);
+
+            # test withdrawl amount in usd
+            my $test_wd_amt_in_usd = 1000;
+
+            # payment agent
+            my $pa = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/paymentagent_config.yml');
+
+            # transaction limit amount per day
+            my $tl_amt_per_day = $pa->{transaction_limits}->{transfer}->{amount_in_usd_per_day} / $value_per_usd;
+            $pa->{payment_limits}->{fiat}->{maximum}   = $tl_amt_per_day;
+            $pa->{payment_limits}->{crypto}->{maximum} = $tl_amt_per_day;
+
+            # set the payment limit per transaction to the max allowable transfer in a day
+            my $pl = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/payment_limits.yml');
+            # costarica and champion both are in the currency of USD, so no conversion is needed
+            $pl->{withdrawal_limits}->{costarica}->{lifetime_limit} =
+                $pa->{transaction_limits}->{transfer}->{amount_in_usd_per_day} + $test_wd_amt_in_usd;
+            $pl->{withdrawal_limits}->{champion}->{lifetime_limit} =
+                $pa->{transaction_limits}->{transfer}->{amount_in_usd_per_day} + $test_wd_amt_in_usd;
+
+            my $mock_config = Test::MockModule->new('BOM::Config');
+            $mock_config->mock('payment_agent',  sub { return $pa; });
+            $mock_config->mock('payment_limits', sub { return $pl; });
+
+            # make sure topup amount is worth the same in different currencies
+            my $topup_amount = $AGENT_TOPUP_AMOUNT_IN_USD / $value_per_usd;
+
+            # get the previously transferred amount by other test cases
+            my ($prev_transfer_amt, $prev_transfer_cnt) = BOM::RPC::v3::Cashier::_get_amount_and_count($agent_id);
+
+            # amount to be transferred to the payee to hit the transfer limit
+            $test_amount = $topup_amount - $prev_transfer_amt;
+
+            # store previous agent and client balance before top up
+            my $prev_agent_balance  = BOM::User::Client->new({loginid => $agent_id})->default_account->balance;
+            my $prev_client_balance = BOM::User::Client->new({loginid => $payee_id})->default_account->balance;
+
+            # topup agent
+            top_up $agent, $test_currency, $topup_amount;
+
+            ## run payment transfer tests
+            # transfer the money from agent to payee until it reaches the maximum it can deposit
+            $test = "Amount: $test_amount has been successful transferred to the client";
+            $testargs->{args}{dry_run} = 0;
+            # set the amount to be transferred for each iteration
+            $testargs->{args}->{amount}   = $test_amount;
+            $testargs->{args}->{currency} = $test_currency;
+
+            $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+            my ($amt, $tmp) = BOM::RPC::v3::Cashier::_get_amount_and_count($agent_id);
+            is($res->{status}, 1, $test);
+
+            # make sure that the amount before the transfer and after the transfer matches
+            $test = "Transfer amount in usd per day matches the maximum transaction limit";
+            my ($transfer_amt, $transfer_cnt) = BOM::RPC::v3::Cashier::_get_amount_and_count($agent_id);
+            is($transfer_amt, $tl_amt_per_day, $test);
+
+            # make sure right amount has been deducted from agent
+            $test = 'After transfer, agent account has correct balance';
+            $agent_balance = BOM::User::Client->new({loginid => $agent_id})->default_account->balance;
+            # the agent balance should be maximum amount allowable after the test
+            is($agent_balance, formatnumber('amount', $test_currency, $prev_agent_balance + $prev_transfer_amt), $test);
+
+            # make sure right amount has been deposited to the payee
+            $test = 'After transfer, payee account has correct balance';
+            $payee_balance = BOM::User::Client->new({loginid => $payee_id})->default_account->balance;
+            is($payee_balance, formatnumber('amount', $test_currency, $prev_client_balance + $test_amount), $test);
+
+            # testcase for transferring to another client should be disabled, as the agent hits the maximum transfer amount
+            top_up $agent, $test_currency, $topup_amount;
+            # set the amount to be transferred for each iteration
+            $testargs->{args}->{amount} = $test_wd_amt_in_usd / $value_per_usd;
+            $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+            like($res->{error}{message_to_client}, qr/exceeded the maximum allowable transfer amount for today/, $test);
+
+            # unmock
+            $mock_config->unmock('payment_agent');
+            $mock_config->unmock('payment_limits');
+
+            # reset client back to its previous balance
+            if ($test_currency eq 'USD') {
+                $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+                $client->set_default_account('USD');
+                top_up $client, $test_currency, $prev_client_balance;
+            } elsif ($test_currency eq 'BTC') {
+                $crypto_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+                $crypto_client->set_default_account('BTC');
+                top_up $crypto_client, $test_currency, $prev_client_balance;
+            }
+
+        };
 
         $test = 'Transfer fails if we go above the lifetime limit for the client';
         ## Hard to mock: limits are pulled from external file by Payments.pm
@@ -769,6 +869,7 @@ for my $withdraw_currency ('USD', 'BTC') {
         like($res->{error}{message}, qr/stuck in previous transaction $agent_id/, $test);
         $mock_clientdb->unmock('freeze');
 
+        ## Withdrawal fails if amount is above maximum for current
         ## Checking validate_payment(), but errors come from __client_withdrawal_notes()
         $test                     = 'Withdrawal fails if client has insufficient funds';
         $testargs->{args}{amount} = $MAX_WITHDRAW{$test_currency} * 0.99;
@@ -813,7 +914,7 @@ for my $withdraw_currency ('USD', 'BTC') {
             ## Balance should be 9075. Going to withdraw max which should trigger weekend limit
             $testargs->{args}{amount} = $MAX_WITHDRAW{$test_currency};
             $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-            like($res->{error}{message_to_client}, qr/transfer amount USD$WEEKEND_MAX for today/, "$test (weekend)");
+            like($res->{error}{message_to_client}, qr/transfer amount USD$WEEKEND_MAX.00 for today/, "$test (weekend)");
 
             ## For weekday, we need two more withdrawals in a row
             $mock_date->mock('is_a_weekend', sub { return 0 });
@@ -824,7 +925,7 @@ for my $withdraw_currency ('USD', 'BTC') {
             diag 'Sleeping for 2 seconds to get around the frequency check';
             sleep 2;
             $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-            like($res->{error}{message_to_client}, qr/transfer amount USD$WEEKDAY_MAX for today/, "$test (weekday)");
+            like($res->{error}{message_to_client}, qr/transfer amount USD$WEEKDAY_MAX.00 for today/, "$test (weekday)");
         }
 
         $test = "Withdrawal fails if over maximum transactions per day ($MAX_TXNS_PER_DAY)";
@@ -838,5 +939,8 @@ for my $withdraw_currency ('USD', 'BTC') {
     };
 
 } ## end of each test_currency type
+
+$mock_cc->unmock('in_USD');
+$mock_cashier_cc->unmock('in_USD');
 
 done_testing();
