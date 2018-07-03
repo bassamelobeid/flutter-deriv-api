@@ -109,7 +109,7 @@ sub mkapp {
             # in many cases the HTTP status seen by the client cannot
             # be changed anymore. But we still can set it for our own
             # accounting in case we write a log.
-            $Plack::App::CGIBin::Streaming::R->status(500);
+            ${Plack::App::CGIBin::Streaming::R}->status(500);
         };
     };
 
