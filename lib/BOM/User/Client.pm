@@ -965,12 +965,12 @@ sub user {
     my $user;
 
     # Use binary_user_id to get the user
-    $user = BOM::User->new({id => $id}) if $id;
+    $user = BOM::User->new(id => $id) if $id;
     # Fall back to loginid if binary_user_id does not work
-    $user ||= BOM::User->new({loginid => $self->loginid});
+    $user ||= BOM::User->new(loginid => $self->loginid);
     # Fall back to email if loginid does not work
     # in case that the user object is created but the client has not been registered into it.
-    $user ||= BOM::User->new({email => $self->email});
+    $user ||= BOM::User->new(email => $self->email);
 
     return $user;
 }
@@ -1037,6 +1037,11 @@ sub is_tnc_approval_required {
     return 1 if (not $client_tnc_status or ($client_tnc_status->reason ne $current_tnc_version));
 
     return 0;
+}
+
+sub user_id {
+    my $self = shift;
+    return $self->binary_user_id // $self->user->{id};
 }
 
 sub _is_status_hidden {

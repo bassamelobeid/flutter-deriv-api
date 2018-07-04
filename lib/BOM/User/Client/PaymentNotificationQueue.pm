@@ -65,7 +65,7 @@ sub add {
                 db_operation => 'replica'
             }) or die 'client not found';
         my $user = $client->user or die 'user not found';
-        $args{$_} = $user->$_ for qw(utm_source utm_medium utm_campaign);
+        $args{$_} = $user->{$_} for qw(utm_source utm_medium utm_campaign);
     }
     catch {
         stats_inc('payment.' . $args{type} . '.user_lookup.failure', {tag => ['source:' . $args{source}]});

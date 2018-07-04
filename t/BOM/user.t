@@ -7,13 +7,12 @@ use strict;
 use warnings;
 
 use Test::MockTime;
-use Test::More tests => 13;
+use Test::More;
 use Test::Exception;
 use Test::Deep qw(cmp_deeply);
 use Test::Warnings qw(warning);
 use Test::MockModule;
-
-use Cache::RedisDB;
+use Path::Tiny;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
@@ -57,23 +56,19 @@ lives_ok {
         email    => $email,
         password => $hash_pwd
     );
-    $user->save;
 
-    $user->add_loginid({loginid => $vr_1});
-    $user->save;
+    cmp_deeply([], [$user->loginids], 'no loginid at first');
+    $user->add_client($client_vr);
 }
 'create user with loginid';
 
 subtest 'test attributes' => sub {
-    throws_ok { BOM::User->new } qr/BOM::User->new called without args/, 'new without args';
-    throws_ok {
-        like(warning { BOM::User->new({badkey => 1234}) }, qr/deprecated/, ' a warning');
-    }
-    qr/no email/, 'new without valid args';
-    throws_ok { BOM::User->new({badkey => 1234}) } qr/no email/, 'new without email';
+    throws_ok { BOM::User->create } qr/email and password are mandatory/, 'new without args';
+    throws_ok { BOM::User->create(badkey => 1234) } qr/email and password are mandatory/, 'new without email';
 
-    is $user->email,    $email,    'email ok';
-    is $user->password, $hash_pwd, 'password ok';
+    is $user->{email},    $email,    'email ok';
+    is $user->{password}, $hash_pwd, 'password ok';
+    ok !$user->{email_verified}, 'email not verified';
 };
 
 my @loginids;
@@ -81,7 +76,7 @@ my $cr_2;
 subtest 'default loginid & cookie' => sub {
     subtest 'only VR acc' => sub {
         @loginids = ($vr_1);
-        cmp_deeply(\@loginids, [map { $_->loginid } $user->loginid], 'loginid match');
+        cmp_deeply(\@loginids, [$user->loginids], 'loginid match');
 
         my $def_client = ($user->clients)[0];
         is $def_client->loginid, $vr_1, 'no real acc, VR as default';
@@ -91,11 +86,11 @@ subtest 'default loginid & cookie' => sub {
     };
 
     subtest 'with real acc' => sub {
-        $user->add_loginid({loginid => $cr_1});
-        $user->save;
-
+        $user->add_client($client_cr);
         push @loginids, $cr_1;
-        cmp_deeply([sort @loginids], [sort map { $_->loginid } $user->loginid], 'loginids array match');
+        cmp_deeply([sort @loginids], [sort $user->loginids], 'loginids array match');
+        $user->add_client($client_cr);
+        cmp_deeply([sort @loginids], [sort @{$user->{loginids}}], 'loginids still match even we tried to add same loginid twice');
 
         my $def_client = ($user->clients)[0];
         is $def_client->loginid, $cr_1, 'real acc as default';
@@ -112,11 +107,10 @@ subtest 'default loginid & cookie' => sub {
         $client_cr_new->save;
         $cr_2 = $client_cr_new->loginid;
 
-        $user->add_loginid({loginid => $cr_2});
-        $user->save;
+        $user->add_client($client_cr_new);
 
         push @loginids, $cr_2;
-        cmp_deeply([sort @loginids], [sort map { $_->loginid } $user->loginid], 'loginids array match');
+        cmp_deeply([sort @loginids], [sort $user->loginids], 'loginids array match');
 
         my $def_client = ($user->clients)[0];
         is $def_client->loginid, $cr_1, 'still first real acc as default';
@@ -133,7 +127,7 @@ subtest 'default loginid & cookie' => sub {
             }
             'disable';
 
-            cmp_deeply([sort @loginids], [sort map { $_->loginid } $user->loginid], 'loginids array match');
+            cmp_deeply([sort @loginids], [sort $user->loginids], 'loginids array match');
 
             my $def_client = ($user->clients)[0];
             is $def_client->loginid, $cr_2, '2nd real acc as default';
@@ -149,7 +143,7 @@ subtest 'default loginid & cookie' => sub {
             }
             'disable';
 
-            cmp_deeply([sort @loginids], [sort map { $_->loginid } $user->loginid], 'loginids array match');
+            cmp_deeply([sort @loginids], [sort $user->loginids], 'loginids array match');
 
             my $def_client = ($user->clients)[0];
             is $def_client->loginid, $vr_1, 'VR acc as default';
@@ -165,7 +159,7 @@ subtest 'default loginid & cookie' => sub {
             }
             'disable';
 
-            cmp_deeply([sort @loginids], [sort map { $_->loginid } $user->loginid], 'loginids array match');
+            cmp_deeply([sort @loginids], [sort $user->loginids], 'loginids array match');
 
             my $def_client = ($user->clients)[0];
             is $def_client, undef, 'all acc disabled, no default';
@@ -176,22 +170,17 @@ subtest 'default loginid & cookie' => sub {
     };
 };
 
-subtest 'user / email from loginid not allowed' => sub {
-    my $user_2 = BOM::User->new({
-        email => $vr_1,
-    });
-    isnt($user_2, "BOM::User", "Cannot create User using loginid");
-};
+# test load without password
 
-subtest 'create user by loginid' => sub {
+subtest 'load user by loginid' => sub {
     lives_ok {
-        my $user_2 = BOM::User->new({
+        my $user_2 = BOM::User->new(
             loginid => $vr_1,
-        });
-        is $user_2->id, $user->id, 'found correct user by loginid';
-        $user_2 = BOM::User->new({
+        );
+        is $user_2->{id}, $user->{id}, 'found correct user by loginid';
+        $user_2 = BOM::User->new(
             loginid => 'does not exist',
-        });
+        );
         is $user_2, undef, 'looking up non-existent loginid results in undef';
     }
     'survived user lookup by loginid';
@@ -230,9 +219,8 @@ subtest 'User Login' => sub {
                 email    => $new_email,
                 password => $hash_pwd
             );
-            $user3->add_loginid({loginid => $cr_3->loginid});
-            $user3->add_loginid({loginid => $cr_31->loginid});
-            $user3->save;
+            $user3->add_client($cr_3);
+            $user3->add_client($cr_31);
         }
         'create user with cr accounts only';
 
@@ -266,8 +254,7 @@ subtest 'User Login' => sub {
         };
 
         subtest 'if user has vr account and other accounts is self excluded' => sub {
-            $user3->add_loginid({loginid => $vr_3->loginid});
-            $user3->save;
+            $user3->add_client($vr_3);
 
             $status = $user3->login(%args);
             is $status->{success}, 1, 'it should use vr account to login';
@@ -295,25 +282,54 @@ subtest 'User Login' => sub {
 
     subtest 'Too Many Failed Logins' => sub {
         my $failed_login = $user->failed_login;
-        is $failed_login->fail_count, 1, '1 bad attempt';
+        is $failed_login->{fail_count}, 1, '1 bad attempt';
 
         $status = $user->login(%args);
         ok $status->{success}, 'logged in succesfully, it deletes the failed login count';
 
         $user->login(%args, password => 'wednesday') for 1 .. 6;
         $failed_login = $user->failed_login;
-        $failed_login->load;
-        is $failed_login->fail_count, 6, 'failed login attempts';
+        is $failed_login->{fail_count}, 6, 'failed login attempts';
 
         $status = $user->login(%args);
         ok !$status->{success}, 'Too many bad login attempts, cannot login';
         ok $status->{error} =~ 'Sorry, you have already had too many unsuccessful', "Correct error for too many wrong attempts";
 
-        $failed_login = $user->failed_login;
-        $failed_login->last_attempt(Date::Utility->new->minus_time_interval('1d')->datetime_yyyymmdd_hhmmss);
-        $failed_login->save;
+        $user->dbic->run(
+            fixup => sub {
+                $_->do(
+                    'update users.failed_login set last_attempt = ? where id = ?',           undef,
+                    Date::Utility->new->minus_time_interval('1d')->datetime_yyyymmdd_hhmmss, $user->{id});
+            });
         ok $user->login(%args)->{success}, 'clear failed login attempts; can now login';
     };
+};
+
+subtest 'login_history' => sub {
+    my $login_history = $user->login_history(
+        order => 'desc',
+        limit => 5
+    );
+    is(scalar @$login_history, 5, 'login_history limit ok');
+
+    $login_history = $user->login_history;
+    is(scalar @$login_history, 12, 'login_history limit ok');
+
+    my $args = {
+        action      => 'login',
+        environment => 'test environment',
+        successful  => 't',
+        ip          => '1.2.3.4',
+        country     => 'earth'
+    };
+    lives_ok { $user->add_login_history(%$args); } 'add login history';
+    $login_history = $user->login_history(order => 'desc');
+    is(scalar @$login_history, 13, 'login_history ok');
+    my $last_login_history = $user->dbic->run(
+        sub {
+            $_->selectrow_hashref('select * from users.login_history where binary_user_id = ? order by id desc limit 1', undef, $user->{id});
+        });
+    is($last_login_history->{environment}, $args->{environment}, 'correct record');
 };
 
 subtest 'MT5 logins' => sub {
@@ -335,13 +351,11 @@ subtest 'MT5 logins' => sub {
     my $loginid_real = 'MT' . $DETAILS_REAL{login};
     my $loginid_demo = 'MT' . $DETAILS_DEMO{login};
 
-    $user->add_loginid({loginid => $loginid_real});
-    $user->save;
+    $user->add_loginid($loginid_real);
     my @mt5_logins = $user->mt5_logins;
     cmp_deeply(\@mt5_logins, [$loginid_real], 'MT5 logins match');
 
-    $user->add_loginid({loginid => $loginid_demo});
-    $user->save;
+    $user->add_loginid($loginid_demo);
     @mt5_logins = $user->mt5_logins;
     cmp_deeply(\@mt5_logins, [$loginid_real, $loginid_demo], 'MT5 logins match');
 
@@ -382,16 +396,14 @@ subtest 'Champion fx users' => sub {
             email    => $email_ch,
             password => $hash_pwd
         );
-        $user_ch->save;
 
-        $user_ch->add_loginid({loginid => $vrch_loginid});
-        $user_ch->save;
+        $user_ch->add_client($client_vrch);
     }
     'create user with loginid';
 
     subtest 'test attributes' => sub {
-        is $user_ch->email,    $email_ch, 'email ok';
-        is $user_ch->password, $hash_pwd, 'password ok';
+        is $user_ch->{email},    $email_ch, 'email ok';
+        is $user_ch->{password}, $hash_pwd, 'password ok';
     };
 };
 
@@ -431,12 +443,10 @@ subtest 'GAMSTOP' => sub {
             email    => $email_gamstop,
             password => $hash_pwd
         );
-        $user_gamstop->save;
 
-        $user_gamstop->add_loginid({loginid => $vrgamstop_loginid});
-        $user_gamstop->add_loginid({loginid => $gamstop_loginid});
-        $user_gamstop->add_loginid({loginid => $client_gamstop_mx->loginid});
-        $user_gamstop->save;
+        $user_gamstop->add_client($client_vrgamstop);
+        $user_gamstop->add_client($client_gamstop);
+        $user_gamstop->add_client($client_gamstop_mx);
     }
     'create user with loginid';
 
@@ -478,15 +488,6 @@ subtest 'GAMSTOP' => sub {
     };
 };
 
-sub write_file {
-    my ($name, $content) = @_;
-
-    open my $f, '>', $name or die "Cannot open $name for write: $!";
-    print $f $content or die "Cannot write $name: $!";
-    close $f or die "Cannot write/close $name: $!";
-    return;
-}
-
 subtest 'MirrorBinaryUserId' => sub {
     plan tests => 15;
     use YAML::XS qw/LoadFile/;
@@ -499,7 +500,7 @@ subtest 'MirrorBinaryUserId' => sub {
     my $dbh;
     my $t = $ENV{DB_POSTFIX} // '';
     lives_ok {
-        write_file $pgservice_conf, <<"CONF";
+        path($pgservice_conf)->append(<<"CONF");
 [user01]
 host=$cfg->{ip}
 port=5436
@@ -507,7 +508,7 @@ user=write
 dbname=users$t
 CONF
 
-        write_file $pgpass_conf, <<"CONF";
+        path($pgpass_conf)->append(<<"CONF");
 $cfg->{ip}:5436:users$t:write:$cfg->{password}
 CONF
         chmod 0400, $pgpass_conf;
@@ -537,12 +538,76 @@ CONF
 };
 
 subtest 'clients_for_landing_company' => sub {
-    $user = BOM::User->new({
-            email => $email,
-        },
+    $user = BOM::User->new(
+        email => $email,
     );
     my @clients = $user->clients_for_landing_company('costarica');
     is(scalar @clients, 2, "one cr account");
     is_deeply([map { $_->landing_company->short } @clients], [('costarica') x 2], 'lc correct');
     is_deeply([map { $_->loginid } @clients], [qw/CR10000 CR10001/], "clients are correct");
 };
+
+subtest 'test load' => sub {
+    $user = BOM::User->new(
+        email => $email,
+    );
+    throws_ok { BOM::User->new(hello => 'world'); } qr/no email nor id or loginid/;
+    is_deeply(BOM::User->new(id      => $user->{id}), $user, 'load from id ok');
+    is_deeply(BOM::User->new(loginid => $vr_1),       $user, 'load from loginid ok');
+    is(BOM::User->new(id => -1), undef, 'return undefine if the user not exist');
+};
+
+subtest 'test update email' => sub {
+    my $old_email = $user->{email};
+    ok(!defined($user->{email_consent}), 'email consent is not defined');
+    my $new_email = $old_email . '.test';
+    lives_ok { $user->update_email_fields(email => $new_email, email_consent => 1) } 'do update';
+    my $new_user = BOM::User->new(email => $new_email);
+    is_deeply($new_user, $user, 'get same object after updated');
+    is($user->{email},         $new_email, 'email updated');
+    is($user->{email_consent}, 1,          'email_consent was updated');
+    lives_ok { $new_user->update_email_fields(email => $old_email, email_consent => 0) } 'update back to old email';
+    lives_ok { $user = BOM::User->new(id => $user->{id}); } 'reload user ok';
+    is($user->{email},         $old_email, 'old email come back');
+    is($user->{email_consent}, 0,          'email_consent is false now');
+};
+
+subtest 'test update totp' => sub {
+    my $old_secret_key = $user->{secret_key};
+    ok(!defined($user->{is_totp_enabled}), 'is_totp_enabled is not defined');
+    ok(!defined($user->{secret_key}),      'secret_key is not defined');
+    my $new_secret_key = 'test';
+    lives_ok { $user->update_totp_fields(is_totp_enabled => 1, secret_key => $new_secret_key) } 'do update';
+    my $new_user = BOM::User->new(id => $user->{id});
+    is_deeply($new_user, $user, 'get same object after updated');
+    is($user->{secret_key}, $new_secret_key, 'secret_key updated');
+    is($user->{is_totp_enabled}, 1, 'is_totp_enabled was updated');
+    lives_ok { $new_user->update_totp_fields(secret_key => $old_secret_key, is_totp_enabled => 0) } 'update back to old email';
+    lives_ok { $user = BOM::User->new(id => $user->{id}); } 'reload user ok';
+    is($user->{is_totp_enabled}, 0, 'is_totp_enabled is false now');
+};
+
+subtest 'test update password' => sub {
+    my $old_password = $user->{password};
+    my $new_password = 'test';
+    lives_ok { $user->update_password($new_password) } 'do update';
+    my $new_user = BOM::User->new(id => $user->{id});
+    is_deeply($new_user, $user, 'get same object after updated');
+    is($user->{password}, $new_password, 'password updated');
+    lives_ok { $new_user->update_password($old_password) } 'update back to old password';
+    lives_ok { $user = BOM::User->new(id => $user->{id}); } 'reload user ok';
+    is($user->{password}, $old_password, 'password restored now');
+};
+
+subtest 'test update social signup' => sub {
+    ok(!defined($user->{has_social_signup}), 'has_social_signup is not defined');
+    lives_ok { $user->update_has_social_signup(1) } 'do update';
+    my $new_user = BOM::User->new(id => $user->{id});
+    is_deeply($new_user, $user, 'get same object after updated');
+    is($user->{has_social_signup}, 1, 'has_social_signup updated');
+    lives_ok { $new_user->update_has_social_signup(0) } 'update back to old value of has_social_signup';
+    lives_ok { $user = BOM::User->new(id => $user->{id}); } 'reload user ok';
+    is($user->{has_social_signup}, 0, 'has_social_signup is false now');
+};
+
+done_testing;
