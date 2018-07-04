@@ -128,14 +128,14 @@ sub authorize {
         and defang($c->param('totp_proceed')))
     {
         my $otp = defang($c->param('otp'));
-        $is_verified = BOM::User::TOTP->verify_totp($user->secret_key, $otp);
+        $is_verified = BOM::User::TOTP->verify_totp($user->{secret_key}, $otp);
         $c->session('_otp_verified', $is_verified);
         $otp_error = localize(get_message_mapping->{TFA_FAILURE});
         stats_inc_error($brand_name, "TFA_FAILURE");
     }
 
     # Check if user has enabled 2FA authentication and this is not a scope request
-    if ($user->is_totp_enabled && !$is_verified) {
+    if ($user->{is_totp_enabled} && !$is_verified) {
         return $c->render(
             template   => $brand_name . '/totp',
             layout     => $brand_name,
@@ -243,7 +243,7 @@ sub _login {
         if ($oneall_user_id) {
             $password = '**SOCIAL-LOGIN-ONEALL**';
 
-            $user = BOM::User->new({id => $oneall_user_id});
+            $user = BOM::User->new(id => $oneall_user_id);
             unless ($user) {
                 $err = "INVALID_USER";
                 last;
@@ -260,7 +260,7 @@ sub _login {
                 last;
             }
 
-            $user = BOM::User->new({email => $email});
+            $user = BOM::User->new(email => $email);
 
             unless ($user) {
                 $err = "USER_NOT_FOUND";
@@ -270,7 +270,8 @@ sub _login {
             # Prevent login if social signup flag is found.
             # As the main purpose of this controller is to serve
             # clients with email/password only.
-            if ($user->has_social_signup) {
+
+            if ($user->{has_social_signup}) {
                 $err = "NO_SOCIAL_SIGNUP";
                 last;
             }
@@ -278,8 +279,9 @@ sub _login {
         }
 
         if (BOM::Config::Runtime->instance->app_config->system->suspend->all_logins) {
+
             $err = "TEMP_DISABLED";
-            BOM::User::AuditLog::log('system suspend all login', $user->email);
+            BOM::User::AuditLog::log('system suspend all login', $user->{email});
             last;
         }
 
@@ -333,7 +335,7 @@ sub _login {
     };
 
     $c->cookie(
-        email => url_escape($user->email),
+        email => url_escape($user->{email}),
         $options
     );
     $c->cookie(

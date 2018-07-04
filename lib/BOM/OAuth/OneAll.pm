@@ -58,12 +58,12 @@ sub callback {
 
     my $email = _get_email($provider_data);
     my $user  = try {
-        BOM::User->new({email => $email})
+        BOM::User->new(email => $email)
     };
     # Registered users who have email/password based account are forbidden
     # from social signin. As only one login method
     # is allowed (either email/password or social login).
-    if ($user and not $user->has_social_signup) {
+    if ($user and not $user->{has_social_signup}) {
         # Redirect client to login page if social signup flag is not found.
         # As the main purpose of this package is to serve
         # clients with social login only.
@@ -76,8 +76,8 @@ sub callback {
         # create user based on email by fly if account does not exist yet
         $user = $c->__create_virtual_user($email, $brand_name) unless $user;
         # connect oneall provider data to user identity
-        $user_connect->insert_connect($user->id, $provider_data);
-        $user_id = $user->id;
+        $user_connect->insert_connect($user->{id}, $provider_data);
+        $user_id = $user->{id};
         my $provider_name = $provider_data->{user}->{identity}->{provider};
         stats_inc('login.oneall.new_user_created', {tags => ["brand:$brand_name", "provider:$provider_name"]});
     }

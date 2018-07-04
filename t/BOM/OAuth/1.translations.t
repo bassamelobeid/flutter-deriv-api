@@ -44,11 +44,8 @@ my $user       = BOM::User->create(
     email    => $email,
     password => $hash_pwd
 );
-$user->save;
-$user->add_loginid({loginid => $cr_loginid});
-$user->secret_key($secret_key);
-$user->is_totp_enabled(1);
-$user->save;
+$user->add_client($client_cr);
+$user->update_totp_fields(secret_key => $secret_key, is_totp_enabled => 1);
 
 my $t = Test::Mojo->new('BOM::OAuth');
 
@@ -76,16 +73,14 @@ $t = $t->content_like(qr/Contraseña o email incorrecto./, "invalid login or pas
 $t = callPost($t, $email . "invalid", $password, $csrf_token, "PT");
 $t = $t->content_like(qr/E-mail ou senha incorreta./, "invalid login or password PT");
 
-$user->has_social_signup(1);
-$user->save;
+$user->update_has_social_signup(1);
 
 $t = callPost($t, $email, $password, $csrf_token, "ES");
 $t = $t->content_like(qr/Intento de inicio de sesión inválido. Conéctese a través de una red social en su lugar./, "invalid social login ES");
 $t = callPost($t, $email, $password, $csrf_token, "PT");
 $t = $t->content_like(qr/Tentativa de login inválida. Conecte-se antes através de uma rede./, "invalid social login PT");
 
-$user->has_social_signup(0);
-$user->save;
+$user->update_has_social_signup(0);
 
 BOM::Config::Runtime->instance->app_config->system->suspend->all_logins(1);
 

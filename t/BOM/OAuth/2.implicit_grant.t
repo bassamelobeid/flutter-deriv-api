@@ -41,16 +41,12 @@ my $password = 'jskjd8292922';
     $client_vr->save;
     $client_cr->email($email);
     $client_cr->save;
-    my $vr_1 = $client_vr->loginid;
-    my $cr_1 = $client_cr->loginid;
     my $user = BOM::User->create(
         email    => $email,
         password => $hash_pwd
     );
-    $user->save;
-    $user->add_loginid({loginid => $vr_1});
-    $user->add_loginid({loginid => $cr_1});
-    $user->save;
+    $user->add_client($client_vr);
+    $user->add_client($client_cr);
 }
 
 # mock domain_name to suppress warnings

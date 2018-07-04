@@ -37,16 +37,12 @@ my $secret_key = BOM::User::TOTP->generate_key();
     });
     $client_cr->email($email);
     $client_cr->save;
-    my $cr_loginid = $client_cr->loginid;
     my $user       = BOM::User->create(
         email    => $email,
         password => $hash_pwd
     );
-    $user->save;
-    $user->add_loginid({loginid => $cr_loginid});
-    $user->secret_key($secret_key);
-    $user->is_totp_enabled(1);
-    $user->save;
+    $user->add_client($client_cr);
+    $user->update_totp_fields(secret_key => $secret_key, is_totp_enabled => 1);
 }
 
 # mock domain_name to suppress warnings
