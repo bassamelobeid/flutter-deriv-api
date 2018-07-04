@@ -54,9 +54,7 @@ my $user     = BOM::User->create(
     email    => $test_client->email,
     password => $hash_pwd
 );
-$user->save;
-$user->add_loginid({loginid => $test_client->loginid});
-$user->save;
+$user->add_client($test_client);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',

@@ -31,8 +31,7 @@ my $user    = BOM::User->create(
     email    => $email,
     password => '1234',
 );
-$user->add_loginid({loginid => $loginid});
-$user->save;
+$user->add_client($client);
 
 subtest 'validate_oauth_token' => sub {
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);

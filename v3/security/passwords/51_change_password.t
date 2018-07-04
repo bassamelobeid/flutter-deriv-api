@@ -40,11 +40,9 @@ my $user = BOM::User->create(
     email    => $email,
     password => $hash_pwd
 );
-$user->save;
 
-$user->add_loginid({loginid => $vr_1});
-$user->add_loginid({loginid => $cr_1});
-$user->save;
+$user->add_client($client_vr);
+$user->add_client($client_cr);
 
 my $status = $user->login(password => $password);
 is $status->{success}, 1, 'login with correct password OK';
@@ -98,9 +96,9 @@ is($change_password->{change_password}, 1);
 test_schema('change_password', $change_password);
 
 # refetch user
-$user = BOM::User->new({
+$user = BOM::User->new(
     email => $email,
-});
+);
 $status = $user->login(password => $password);
 ok !$status->{success}, 'old password; cannot login';
 $status = $user->login(password => $new_password);
@@ -108,7 +106,7 @@ is $status->{success}, 1, 'login with new password OK';
 
 ## client passwd should be changed as well
 foreach my $client ($user->clients) {
-    is $client->password, $user->password;
+    is $client->password, $user->{password};
 }
 
 ## for api token, it's not allowed to change password

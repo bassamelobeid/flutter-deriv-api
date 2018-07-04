@@ -29,14 +29,12 @@ my $user         = BOM::User->create(
     email    => $email,
     password => $hash_pwd
 );
-$user->save;
-$user->add_loginid({loginid => $test_loginid});
-$user->add_login_history({
+$user->add_client($test_client);
+$user->add_login_history(
     environment => 'dummy environment',
     successful  => 't',
     action      => 'logout',
-});
-$user->save;
+);
 
 my $t = build_wsapi_test();
 

@@ -33,8 +33,7 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     email       => $email
 });
 
-$user->add_loginid({loginid => $client->loginid});
-$user->save;
+$user->add_client($client);
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
 my $authorize = $t->await::authorize({authorize => $token});
@@ -49,8 +48,7 @@ $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     email       => $email
 });
 
-$user->add_loginid({loginid => $client->loginid});
-$user->save;
+$user->add_client($client);
 
 ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
 $authorize = $t->await::authorize({authorize => $token});
@@ -65,8 +63,7 @@ $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     email       => $email
 });
 
-$user->add_loginid({loginid => $client->loginid});
-$user->save;
+$user->add_client($client);
 
 ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
 $authorize = $t->await::authorize({authorize => $token});
@@ -91,8 +88,7 @@ $user = BOM::User->create(
     email    => $email,
     password => '1234',
 );
-$user->add_loginid({loginid => $loginid});
-$user->save;
+$user->add_client($client);
 
 ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 

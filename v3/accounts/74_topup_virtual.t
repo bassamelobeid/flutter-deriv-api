@@ -42,11 +42,9 @@ my $user = BOM::User->create(
     email    => $email,
     password => $hash_pwd
 );
-$user->save;
 
-$user->add_loginid({loginid => $vr_1});
-$user->add_loginid({loginid => $cr_1});
-$user->save;
+$user->add_client($client_vr);
+$user->add_client($client_cr);
 
 # non-virtual account is not allowed
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $cr_1);

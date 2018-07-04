@@ -46,8 +46,7 @@ my $user    = BOM::User->create(
     email    => $email,
     password => '1234',
 );
-$user->add_loginid({loginid => $loginid});
-$user->save;
+$user->add_client($client);
 
 $client->set_default_account('USD');
 $client->smart_payment(

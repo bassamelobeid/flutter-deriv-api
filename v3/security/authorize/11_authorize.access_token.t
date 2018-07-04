@@ -26,8 +26,7 @@ my $user    = BOM::User->create(
     email    => $email,
     password => '1234',
 );
-$user->add_loginid({loginid => $loginid});
-$user->save;
+$user->add_client($client);
 
 my $token = BOM::Database::Model::AccessToken->new->create_token($loginid, 'Test', ['read']);
 

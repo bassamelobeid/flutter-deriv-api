@@ -160,8 +160,7 @@ subtest 'create account failed' => sub {
     };
 
     subtest 'email unverified' => sub {
-        $user->email_verified(0);
-        $user->save;
+        $user->update_email_fields(email_verified => 'f');
 
         # create real acc
         my %details = %client_details;
@@ -174,8 +173,7 @@ subtest 'create account failed' => sub {
         is($res->{new_account_real}, undef, 'NO account created');
     };
 
-    $user->email_verified(1);
-    $user->save;
+    $user->update_email_fields(email_verified => 't');
 
     $vr_client->residence('id');
     $vr_client->save;

@@ -29,8 +29,7 @@ my $user = BOM::User->create(
     email    => $email,
     password => $password,
 );
-$user->add_loginid({loginid => $test_client->loginid});
-$user->save;
+$user->add_client($test_client);
 
 is $test_client->default_account, undef, 'new client has no default account';
 
