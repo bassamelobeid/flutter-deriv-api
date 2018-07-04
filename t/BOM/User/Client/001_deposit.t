@@ -11,6 +11,18 @@ use BOM::User::Client;
 use BOM::User::Client::Payments;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
+use BOM::User;
+use BOM::User::Password;
+
+my $password = 'jskjd8292922';
+my $email    = 'test' . rand(999) . '@binary.com';
+my $hash_pwd = BOM::User::Password::hashpw($password);
+
+my $user = BOM::User->create(
+    email    => $email,
+    password => $hash_pwd
+);
+
 my $client_details = {
     broker_code     => 'CR',
     residence       => 'au',
@@ -33,7 +45,7 @@ my %deposit = (
     payment_type => 'free_gift'
 );
 
-my $client = BOM::User::Client->register_and_return_new_client($client_details);
+my $client = $user->create_client(%$client_details);
 $client->set_default_account('USD');
 
 $client->cashier_setting_password('12345');

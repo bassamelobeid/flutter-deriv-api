@@ -73,7 +73,6 @@ Takes one or more named parameters:
 
 sub create_client {
     my ($self, %args) = @_;
-    $args{broker_code} = LandingCompany::Registry::get(delete $args{landing_company} or die 'Need a valid landing company')->broker_codes->[0];
     $args{binary_user_id} = $self->id;
     my $client = BOM::User::Client->register_and_return_new_client(\%args);
     $self->add_loginid({loginid => $client->loginid});

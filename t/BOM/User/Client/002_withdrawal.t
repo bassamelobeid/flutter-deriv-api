@@ -19,6 +19,18 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 use Future;
 
+use BOM::User;
+use BOM::User::Password;
+
+my $password = 'jskjd8292922';
+my $email    = 'test' . rand(999) . '@binary.com';
+my $hash_pwd = BOM::User::Password::hashpw($password);
+
+my $user = BOM::User->create(
+    email    => $email,
+    password => $hash_pwd
+);
+
 # Mocked currency converter to imitate currency conversions
 my $mocked_payment_notification = Test::MockModule->new('BOM::User::Client::PaymentNotificationQueue');
 $mocked_payment_notification->mock(
@@ -47,7 +59,7 @@ my %new_client_details = (
 
 sub new_client {
     my $currency = shift;
-    my $c = BOM::User::Client->register_and_return_new_client({%new_client_details, @_});
+    my $c = $user->create_client(%new_client_details, @_);
     $c->set_default_account($currency);
     $c;
 }

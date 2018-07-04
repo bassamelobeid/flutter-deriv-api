@@ -12,6 +12,18 @@ use Test::More qw(no_plan);
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
+use BOM::User;
+use BOM::User::Password;
+
+my $password = 'jskjd8292922';
+my $email    = 'test' . rand(999) . '@binary.com';
+my $hash_pwd = BOM::User::Password::hashpw($password);
+
+my $user = BOM::User->create(
+    email    => $email,
+    password => $hash_pwd
+);
+
 use Crypt::NamedKeys;
 Crypt::NamedKeys->keyfile('/etc/rmg/aes_keys.yml');
 
@@ -124,7 +136,7 @@ my $open_account_details = {
 
 my $client;
 subtest 'create client' => sub {
-    Test::Exception::lives_ok { $client = BOM::User::Client->register_and_return_new_client($open_account_details) } "create new client success";
+    Test::Exception::lives_ok { $client = $user->create_client(%$open_account_details) } "create new client success";
     my $new_loginid = $client->loginid;
 
     # Test save method
@@ -162,7 +174,7 @@ subtest 'Gender based on Salutation' => sub {
         $details{email}      = 'test+' . $salutation . '@binary.com';
         $details{first_name} = 'first-name-' . $salutation;
 
-        $client = BOM::User::Client->register_and_return_new_client(\%details);
+        $client = $user->create_client(%details);
 
         is($client->salutation, $salutation, 'Salutation: ' . $client->salutation);
         is($client->gender, $gender_map{$salutation}, 'gender: ' . $client->gender);
@@ -183,7 +195,7 @@ subtest 'no salutation, default Gender: m' => sub {
 
         $details{email}      = 'test++' . $i . '@binary.com';
         $details{first_name} = 'first-name-' . $i;
-        $client              = BOM::User::Client->register_and_return_new_client(\%details);
+        $client              = $user->create_client(%details);
 
         is($client->salutation, '',  'Salutation: ' . $client->salutation);
         is($client->gender,     'm', 'default gender: m');
@@ -197,7 +209,7 @@ subtest 'no salutation, set Gender explicitly' => sub {
     $details{gender}     = 'f';
     $details{email}      = 'test++ff@binary.com';
     $details{first_name} = 'first-name-ff';
-    $client              = BOM::User::Client->register_and_return_new_client(\%details);
+    $client              = $user->create_client(%details);
 
     is($client->salutation, '',  'Salutation: ' . $client->salutation);
     is($client->gender,     'f', 'gender: ' . $client->gender);
