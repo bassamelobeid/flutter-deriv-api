@@ -23,7 +23,7 @@ sub create_account {
 
     if (BOM::Config::Runtime->instance->app_config->system->suspend->new_accounts) {
         return {error => 'invalid'};
-    } elsif (BOM::User->new({email => $email})) {
+    } elsif (BOM::User->new(email => $email)) {
         return {error => 'duplicate email'};
     } elsif ($residence && Brands->new(name => request()->brand)->countries_instance->restricted_country($residence)) {
         return {error => 'invalid residence'};

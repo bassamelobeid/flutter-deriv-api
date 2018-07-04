@@ -35,7 +35,7 @@ sub validate {
         warn $msg . ' - new account opening suspended';
         return {error => 'invalid'};
     }
-    unless ($user->email_verified) {
+    unless ($user->{email_verified}) {
         return {error => 'email unverified'};
     }
     unless ($from_client->residence) {

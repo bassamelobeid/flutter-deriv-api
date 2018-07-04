@@ -234,7 +234,7 @@ subtest 'create account' => sub {
         }
         'create VR account';
 
-        is($social_login_user->has_social_signup, 1, 'social login user has social signup flag');
+        is($social_login_user->{has_social_signup}, 1, 'social login user has social signup flag');
 
         my %details = (
             %real_client_details,
