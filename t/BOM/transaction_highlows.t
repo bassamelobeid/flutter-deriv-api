@@ -17,6 +17,18 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
+use BOM::User;
+use BOM::User::Password;
+
+my $password = 'jskjd8292922';
+my $email    = 'test' . rand(999) . '@binary.com';
+my $hash_pwd = BOM::User::Password::hashpw($password);
+
+my $user = BOM::User->create(
+    email    => $email,
+    password => $hash_pwd
+);
+
 initialize_realtime_ticks_db();
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
@@ -109,7 +121,7 @@ sub db {
 }
 
 sub create_client {
-    return BOM::User::Client->register_and_return_new_client({
+    return $user->create_client(
         broker_code      => 'VRTC',
         client_password  => BOM::User::Password::hashpw('12345678'),
         salutation       => 'Ms',
@@ -126,7 +138,7 @@ sub create_client {
         secret_question  => 'What the f***?',
         secret_answer    => BOM::User::Utility::encrypt_secret_answer('is that'),
         date_of_birth    => '1945-08-06',
-    });
+    );
 }
 
 sub top_up {

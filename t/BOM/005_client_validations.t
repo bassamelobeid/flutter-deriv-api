@@ -15,6 +15,18 @@ my $rose_client = BOM::User::Client->new({loginid => 'CR2002'});
 my $loginid     = $rose_client->loginid;
 my $account     = $rose_client->default_account;
 
+use BOM::User;
+use BOM::User::Password;
+
+my $password = 'jskjd8292922';
+my $email    = 'test' . rand(999) . '@binary.com';
+my $hash_pwd = BOM::User::Password::hashpw($password);
+
+my $user = BOM::User->create(
+    email    => $email,
+    password => $hash_pwd
+);
+
 my $client;
 lives_ok { $client = BOM::User::Client->new({loginid => $loginid}) } 'Can create client object.';
 
@@ -98,7 +110,7 @@ my %deposit = (
     payment_type => 'free_gift'
 );
 
-my $client_new = BOM::User::Client->register_and_return_new_client($client_details);
+my $client_new = $user->create_client(%$client_details);
 $validation_obj = BOM::Transaction::Validation->new({clients => [$client_new]});
 $client_new->set_default_account('USD');
 
