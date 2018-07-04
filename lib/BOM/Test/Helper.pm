@@ -181,9 +181,7 @@ sub create_test_user {
         email    => $email,
         password => $hash_pwd
     );
-    $user->save;
-    $user->add_loginid({loginid => $cr_1});
-    $user->save;
+    $user->add_client($client_cr);
 
     return $cr_1;
 }
