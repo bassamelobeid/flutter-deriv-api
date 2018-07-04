@@ -30,9 +30,7 @@ my $user_vr = BOM::User->create(
     email    => $email_vr,
     password => $hash_pwd
 );
-$user_vr->save;
-$user_vr->add_loginid({loginid => $test_loginid_vr});
-$user_vr->save;
+$user_vr->add_client($test_client_vr);
 my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
 $mailbox->init;
 
@@ -92,9 +90,7 @@ my $user_cr = BOM::User->create(
     email    => $email_cr,
     password => $hash_pwd
 );
-$user_cr->save;
-$user_cr->add_loginid({loginid => $test_loginid_cr});
-$user_cr->save;
+$user_cr->add_client($test_client_cr);
 
 # check login of cr client
 subtest 'check_login_cr' => sub {

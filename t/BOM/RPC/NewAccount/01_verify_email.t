@@ -49,14 +49,12 @@ subtest 'Initialization' => sub {
             email    => $email,
             password => $hash_pwd
         );
-        $user->save;
 
         $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'CR',
         });
 
-        $user->add_loginid({loginid => $client->loginid});
-        $user->save;
+        $user->add_client($client);
     }
     'Initial user and client';
 

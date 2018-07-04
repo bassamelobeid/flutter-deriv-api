@@ -46,11 +46,10 @@ my $user = BOM::User->create(
     email    => $email,
     password => '1234',
 );
-$user->add_loginid({loginid => $test_client->loginid});
-$user->add_loginid({loginid => $self_excluded_client->loginid});
-$user->add_loginid({loginid => $test_client_disabled->loginid});
-$user->add_loginid({loginid => $test_client_duplicated->loginid});
-$user->save;
+$user->add_client($test_client);
+$user->add_client($self_excluded_client);
+$user->add_client($test_client_disabled);
+$user->add_client($test_client_duplicated);
 $test_client->load;
 
 my $oauth = BOM::Database::Model::OAuth->new;
@@ -80,8 +79,7 @@ my $user_mx = BOM::User->create(
     email    => $email_mx,
     password => '1234',
 );
-$user_mx->add_loginid({loginid => $test_client_mx->loginid});
-$user_mx->save;
+$user_mx->add_client($test_client_mx);
 $test_client_mx->load;
 my ($token_mx) = $oauth->store_access_token_only(1, $test_client_mx->loginid);
 
@@ -233,8 +231,7 @@ subtest 'upgradeable_landing_companies' => sub {
         email       => $email
     });
 
-    $user->add_loginid({loginid => $client->loginid});
-    $user->save;
+    $user->add_client($client);
 
     $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
 
@@ -249,8 +246,7 @@ subtest 'upgradeable_landing_companies' => sub {
         email       => $email
     });
 
-    $user->add_loginid({loginid => $client->loginid});
-    $user->save;
+    $user->add_client($client);
 
     $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
 
@@ -265,8 +261,7 @@ subtest 'upgradeable_landing_companies' => sub {
         email       => $email
     });
 
-    $user->add_loginid({loginid => $client->loginid});
-    $user->save;
+    $user->add_client($client);
 
     $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
 

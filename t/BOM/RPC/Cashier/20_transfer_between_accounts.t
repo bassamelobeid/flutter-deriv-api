@@ -96,15 +96,14 @@ subtest 'call params validation' => sub {
     });
 
     $user = BOM::User->create(
-        email    => $email,
-        password => BOM::User::Password::hashpw('jskjd8292922'));
-    $user->email_verified(1);
-    $user->save;
+        email          => $email,
+        password       => BOM::User::Password::hashpw('jskjd8292922'),
+        email_verified => 1,
+    );
 
-    $user->add_loginid({loginid => $client_cr->loginid});
-    $user->add_loginid({loginid => $client_mlt->loginid});
-    $user->add_loginid({loginid => $client_mf->loginid});
-    $user->save;
+    $user->add_client($client_cr);
+    $user->add_client($client_mlt);
+    $user->add_client($client_mf);
 
     $token = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
     $params->{token} = $token;
@@ -267,19 +266,18 @@ subtest 'validation' => sub {
     });
 
     $user = BOM::User->create(
-        email    => $email,
-        password => BOM::User::Password::hashpw('jskjd8292922'));
-    $user->email_verified(1);
-    $user->save;
+        email          => $email,
+        password       => BOM::User::Password::hashpw('jskjd8292922'),
+        email_verified => 1,
+    );
 
     $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         email       => $email,
     });
 
-    $user->add_loginid({loginid => $cr_dummy->loginid});
-    $user->add_loginid({loginid => $client_cr->loginid});
-    $user->save;
+    $user->add_client($cr_dummy);
+    $user->add_client($client_cr);
 
     $client_cr->set_default_account('BTC');
     $cr_dummy->set_default_account('BTC');
@@ -321,19 +319,18 @@ subtest $method => sub {
             });
 
             $user = BOM::User->create(
-                email    => $email,
-                password => BOM::User::Password::hashpw('jskjd8292922'));
-            $user->email_verified(1);
-            $user->save;
+                email          => $email,
+                password       => BOM::User::Password::hashpw('jskjd8292922'),
+                email_verified => 1,
+            );
 
             $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                 broker_code => 'MF',
                 email       => $email,
             });
 
-            $user->add_loginid({loginid => $client_mlt->loginid});
-            $user->add_loginid({loginid => $client_mf->loginid});
-            $user->save;
+            $user->add_client($client_mlt);
+            $user->add_client($client_mf);
         }
         'Initial users and clients setup';
     };
@@ -456,13 +453,13 @@ subtest 'transfer with fees' => sub {
     $client_cr1->set_default_account('BTC');
 
     $user = BOM::User->create(
-        email    => $email,
-        password => BOM::User::Password::hashpw('jskjd8292922'));
-    $user->email_verified(1);
+        email          => $email,
+        password       => BOM::User::Password::hashpw('jskjd8292922'),
+        email_verified => 1,
+    );
 
-    $user->add_loginid({loginid => $client_cr->loginid});
-    $user->add_loginid({loginid => $client_cr1->loginid});
-    $user->save;
+    $user->add_client($client_cr);
+    $user->add_client($client_cr1);
 
     $client_cr->payment_free_gift(
         currency => 'USD',
@@ -544,13 +541,13 @@ subtest 'paymentagent transfer' => sub {
     $client_cr1->set_default_account('USD');
 
     $user = BOM::User->create(
-        email    => $email,
-        password => BOM::User::Password::hashpw('jskjd8292922'));
-    $user->email_verified(1);
+        email          => $email,
+        password       => BOM::User::Password::hashpw('jskjd8292922'),
+        email_verified => 1,
+    );
 
-    $user->add_loginid({loginid => $client_cr->loginid});
-    $user->add_loginid({loginid => $client_cr1->loginid});
-    $user->save;
+    $user->add_client($client_cr);
+    $user->add_client($client_cr1);
 
     $client_cr->payment_free_gift(
         currency => 'BTC',

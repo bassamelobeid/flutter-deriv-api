@@ -33,14 +33,12 @@ my $user         = BOM::User->create(
     email    => $email,
     password => $hash_pwd
 );
-$user->save;
-$user->add_loginid({loginid => $test_loginid});
-$user->add_login_history({
+$user->add_client($test_client);
+$user->add_login_history(
     environment => 'dummy environment',
     successful  => 't',
     action      => 'logout',
-});
-$user->save;
+);
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_loginid);
 
@@ -69,13 +67,12 @@ ok $res->{records}->[0]->{time},        'login history record has time key';
 
 #create 100 history items for testing the limit
 for (1 .. 100) {
-    $user->add_login_history({
+    $user->add_login_history(
         environment => 'dummy environment',
         successful  => 't',
         action      => 'logout',
-    });
+    );
 }
-$user->save;
 
 $res = $c->call_ok($method, $params)->result;
 is scalar(@{$res->{records}}), 10, 'default limit 10';

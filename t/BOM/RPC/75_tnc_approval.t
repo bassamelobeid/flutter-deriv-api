@@ -27,9 +27,7 @@ my $test_loginid = $test_client->loginid;
 my $user         = BOM::User->create(
     email    => $test_client->email,
     password => BOM::User::Password::hashpw('jskjd8292922'));
-$user->save;
-$user->add_loginid({loginid => $test_loginid});
-$user->save;
+$user->add_client($test_client);
 
 my $res = BOM::RPC::v3::Static::website_status({country_code => ''});
 is $res->{terms_conditions_version}, 'version 1', 'version 1';

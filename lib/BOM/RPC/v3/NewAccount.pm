@@ -84,12 +84,11 @@ rpc "new_account_virtual",
     my $client  = $acc->{client};
     my $account = $client->default_account->load;
     my $user    = $acc->{user};
-    $user->add_login_history({
+    $user->add_login_history(
         action      => 'login',
         environment => BOM::RPC::v3::Utility::login_env($params),
         successful  => 't'
-    });
-    $user->save;
+    );
 
     BOM::User::AuditLog::log("successful login", "$email");
     BOM::User::Client::PaymentNotificationQueue->add(
@@ -155,9 +154,9 @@ rpc "verify_email",
         language         => $params->{language},
     });
 
-    my $email_already_exist = BOM::User->new({
+    my $email_already_exist = BOM::User->new(
         email => $email,
-    });
+    );
     my $payment_sub = sub {
         my $type_call = shift;
 
@@ -184,7 +183,7 @@ rpc "verify_email",
         return BOM::RPC::v3::Utility::create_error({
                 code              => "SocialBased",
                 message_to_client => localize("Sorry, you cannot reset your password because you logged in using a social network.")}
-        ) if $email_already_exist->has_social_signup;
+        ) if $email_already_exist->{has_social_signup};
         request_email($email, $verification->{reset_password}->());
     } elsif ($type eq 'account_opening') {
         unless ($email_already_exist) {
@@ -303,12 +302,11 @@ rpc new_account_real => sub {
         return $currency_set_result if $currency_set_result->{error};
     }
 
-    $user->add_login_history({
+    $user->add_login_history(
         action      => 'login',
         environment => BOM::RPC::v3::Utility::login_env($params),
         successful  => 't'
-    });
-    $user->save;
+    );
 
     if ($new_client->residence eq 'gb') {    # RTS 12 - Financial Limits - UK Clients
         $new_client->set_status('ukrts_max_turnover_limit_not_set', 'system', 'new GB client - have to set turnover limit');
@@ -426,12 +424,11 @@ rpc new_account_maltainvest => sub {
 
     return $error if $error;
 
-    $user->add_login_history({
+    $user->add_login_history(
         action      => 'login',
         environment => BOM::RPC::v3::Utility::login_env($params),
         successful  => 't'
-    });
-    $user->save;
+    );
 
     BOM::User::AuditLog::log("successful login", "$client->email");
     BOM::User::Client::PaymentNotificationQueue->add(
@@ -502,12 +499,11 @@ rpc new_account_japan => sub {
     my $landing_company = $new_client->landing_company;
     my $user            = $acc->{user};
 
-    $user->add_login_history({
+    $user->add_login_history(
         action      => 'login',
         environment => BOM::RPC::v3::Utility::login_env($params),
         successful  => 't'
-    });
-    $user->save;
+    );
 
     BOM::User::AuditLog::log("successful login", "$client->email");
     BOM::User::Client::PaymentNotificationQueue->add(

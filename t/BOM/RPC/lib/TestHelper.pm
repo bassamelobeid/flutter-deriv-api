@@ -21,15 +21,11 @@ sub create_test_user {
     $client_cr->set_default_account('USD');
     $client_cr->email($email);
     $client_cr->save;
-    my $cr_1 = $client_cr->loginid;
     my $user = BOM::User->create(
         email    => $email,
         password => $hash_pwd
     );
-    $user->save;
-    $user->add_loginid({loginid => $cr_1});
-    $user->save;
-
+    $user->add_client($client_cr);
     return $client_cr;
 }
 

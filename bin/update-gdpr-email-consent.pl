@@ -102,10 +102,9 @@ for my $broker (qw(MX MF MLT VRTC CH VRCH)) {
                         };
                         if(not $european_country) {
                             $log->infof('Seems that user [%s] for client account [%s] has no European links, skipping', $user_id, $login_id);
-                        } elsif($user->email_consent) {
+                        } elsif($user->{email_consent}) {
                             $log->infof('Clearing consented status for user [%s] due to client account [%s]', $user_id, $login_id);
-                            $user->email_consent(0);
-                            $user->save;
+                            $user->update_email_fields(email_consent => 0);
                             ++$updated_user_count;
                         } else {
                             $log->infof('No previous consent from user [%s] for client account [%s], ignoring', $user_id, $login_id);

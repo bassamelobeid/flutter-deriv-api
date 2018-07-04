@@ -8,16 +8,15 @@ use List::MoreUtils qw(any);
 use Convert::Base32;
 use Format::Util::Numbers qw/formatnumber/;
 
-use BOM::User::Client;
 use Brands;
 
 use BOM::RPC::Registry '-dsl';
-use BOM::User::AuditLog;
 use BOM::RPC::v3::Utility;
-use BOM::User;
 use BOM::Platform::Context qw (localize request);
 use BOM::RPC::v3::Utility;
 use BOM::User;
+use BOM::User::AuditLog;
+use BOM::User::Client;
 use BOM::User::TOTP;
 
 use LandingCompany::Registry;
@@ -124,12 +123,11 @@ rpc authorize => sub {
         $token_type = 'api_token';
         # add to login history for api token only as oauth login already creates an entry
         if ($params->{args}->{add_to_login_history} && $user) {
-            $user->add_login_history({
+            $user->add_login_history(
                 environment => BOM::RPC::v3::Utility::login_env($params),
                 successful  => 't',
                 action      => 'login',
-            });
-            $user->save;
+            );
         }
     } elsif (length $token == 32 && $token =~ /^a1-/) {
         $token_type = 'oauth_token';
@@ -149,7 +147,7 @@ rpc authorize => sub {
             $exclude_until ? (excluded_until => Date::Utility->new($exclude_until)->epoch) : ()};
     };
 
-    my $client_list = $user->get_clients_in_sorted_order([$user->bom_loginids]);
+    my $client_list = $user->get_clients_in_sorted_order;
 
     my @account_list;
     my $currency;
@@ -194,7 +192,7 @@ rpc logout => sub {
         my $token_details = $params->{token_details};
         my ($loginid, $scopes) = ($token_details and exists $token_details->{loginid}) ? @{$token_details}{qw/loginid scopes/} : ();
 
-        if (my $user = BOM::User->new({email => $email})) {
+        if (my $user = BOM::User->new(email => $email)) {
             my $skip_login_history;
 
             if ($params->{token_type} eq 'oauth_token') {
@@ -210,12 +208,11 @@ rpc logout => sub {
                 }
 
                 unless ($skip_login_history) {
-                    $user->add_login_history({
+                    $user->add_login_history(
                         environment => BOM::RPC::v3::Utility::login_env($params),
                         successful  => 't',
                         action      => 'logout',
-                    });
-                    $user->save;
+                    );
                     BOM::User::AuditLog::log("user logout", join(',', $email, $loginid // ''));
                 }
             }
@@ -231,9 +228,9 @@ rpc account_security => sub {
     my $totp_action   = $params->{args}->{totp_action};
 
     my $client = BOM::User::Client->new({loginid => $loginid});
-    my $user = BOM::User->new({email => $client->email});
+    my $user = BOM::User->new(email => $client->email);
 
-    my $status = $user->is_totp_enabled // 0;
+    my $status = $user->{is_totp_enabled} // 0;
 
     # Get the Status of TOTP Activation
     if ($totp_action eq 'status') {
@@ -244,12 +241,11 @@ rpc account_security => sub {
         # return error if already enabled
         return _create_error('InvalidRequest', BOM::Platform::Context::localize('TOTP based 2FA is already enabled.')) if $status;
         # generate new secret key if it doesn't exits
-        unless ($user->secret_key) {
-            $user->{secret_key} = BOM::User::TOTP->generate_key();
-            $user->save();
+        unless ($user->{secret_key}) {
+            $user->update_totp_fields(secret_key => BOM::User::TOTP->generate_key);
         }
         # convert the key into base32 before sending
-        return {totp => {secret_key => encode_base32($user->secret_key)}};
+        return {totp => {secret_key => encode_base32($user->{secret_key})}};
     }
     # Enable or Disable 2FA
     elsif ($totp_action eq 'enable' || $totp_action eq 'disable') {
@@ -262,20 +258,21 @@ rpc account_security => sub {
 
         # verify the provided OTP with secret key from user
         my $otp = $params->{args}->{otp};
-        my $verify = BOM::User::TOTP->verify_totp($user->secret_key, $otp);
+        my $verify = BOM::User::TOTP->verify_totp($user->{secret_key}, $otp);
         return _create_error('InvalidOTP', BOM::Platform::Context::localize('OTP verification failed')) unless ($otp and $verify);
 
         if ($totp_action eq 'enable') {
             # enable 2FA
-            $user->is_totp_enabled(1);
+            $user->update_totp_fields(is_totp_enabled => 1);
         } elsif ($totp_action eq 'disable') {
             # disable 2FA and reset secret key. Next time a new secret key should be generated
-            $user->is_totp_enabled(0);
-            $user->secret_key('');
+            $user->update_totp_fields(
+                is_totp_enabled => 0,
+                secret_key      => ''
+            );
         }
-        $user->save();
 
-        return {totp => {is_enabled => $user->is_totp_enabled}};
+        return {totp => {is_enabled => $user->{is_totp_enabled}}};
     }
 };
 

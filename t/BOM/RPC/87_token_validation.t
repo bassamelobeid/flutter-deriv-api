@@ -26,9 +26,7 @@ $client_cr->save;
 my $user_cr = BOM::User->create(
     email    => $email_cr,
     password => BOM::User::Password::hashpw('jskjd8292922'));
-$user_cr->save;
-$user_cr->add_loginid({loginid => $client_cr->loginid});
-$user_cr->save;
+$user_cr->add_client($client_cr);
 
 my $code = BOM::Platform::Token->new({
         email       => $email_cr,

@@ -290,14 +290,12 @@ sub sell_one_bet {
 sub set_allow_copiers {
     my $client = shift;
 
-    my $email   = $client->email;
-    my $loginid = $client->loginid;
-    my $user    = BOM::User->create(
+    my $email = $client->email;
+    my $user  = BOM::User->create(
         email    => $email,
         password => '1234',
     );
-    $user->add_loginid({loginid => $loginid});
-    $user->save;
+    $user->add_client($client);
 
     my $args = {
         set_settings  => 1,

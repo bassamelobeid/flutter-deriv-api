@@ -28,9 +28,8 @@ my $user = BOM::User->create(
     email    => $email,
     password => '1234',
 );
-$user->add_loginid({loginid => $test_client->loginid});
-$user->add_loginid({loginid => $test_client_cr->loginid});
-$user->save;
+$user->add_client($test_client);
+$user->add_client($test_client_cr);
 
 my $oauth = BOM::Database::Model::OAuth->new;
 my ($token)    = $oauth->store_access_token_only(1, $test_client->loginid);

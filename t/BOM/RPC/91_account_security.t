@@ -36,11 +36,11 @@ subtest 'Initialization' => sub {
         });
 
         $user = BOM::User->create(
-            email    => $email,
-            password => BOM::User::Password::hashpw('a1b2c3D4'));
-        $user->email_verified(1);
-        $user->add_loginid({loginid => $client_cr->loginid});
-        $user->save();
+            email          => $email,
+            password       => BOM::User::Password::hashpw('a1b2c3D4'),
+            email_verified => 1
+        );
+        $user->add_client($client_cr);
 
         $token = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
 

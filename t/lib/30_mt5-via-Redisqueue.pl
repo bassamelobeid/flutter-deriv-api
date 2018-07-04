@@ -73,9 +73,7 @@ my $user = BOM::User->create(
     email    => $DETAILS{email},
     password => 's3kr1t',
 );
-$user->save;
-$user->add_loginid({loginid => $test_client->loginid});
-$user->save;
+$user->add_client($test_client);
 
 my $m = BOM::Database::Model::AccessToken->new;
 my $token = $m->create_token($test_client->loginid, 'test token');

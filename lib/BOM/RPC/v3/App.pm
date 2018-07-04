@@ -21,8 +21,7 @@ rpc app_register => sub {
     my $params = shift;
 
     my $client  = $params->{client};
-    my $user    = $client->user;
-    my $user_id = $user->id;
+    my $user_id = $client->user_id;
 
     my $args                  = $params->{args};
     my $name                  = $args->{name};
@@ -71,8 +70,7 @@ rpc app_update => sub {
     my $params = shift;
 
     my $client  = $params->{client};
-    my $user    = $client->user;
-    my $user_id = $user->id;
+    my $user_id = $client->user_id;
 
     my $args                  = $params->{args};
     my $app_id                = $args->{app_update};
@@ -143,8 +141,7 @@ rpc app_list => sub {
     my $params = shift;
 
     my $client  = $params->{client};
-    my $user    = $client->user;
-    my $user_id = $user->id;
+    my $user_id = $client->user_id;
 
     my $oauth = BOM::Database::Model::OAuth->new;
     return $oauth->get_apps_by_user_id($user_id);
@@ -154,8 +151,7 @@ rpc app_get => sub {
     my $params = shift;
 
     my $client  = $params->{client};
-    my $user    = $client->user;
-    my $user_id = $user->id;
+    my $user_id = $client->user_id;
 
     my $oauth  = BOM::Database::Model::OAuth->new;
     my $app_id = $params->{args}->{app_get};
@@ -173,8 +169,7 @@ rpc app_delete => sub {
     my $params = shift;
 
     my $client  = $params->{client};
-    my $user    = $client->user;
-    my $user_id = $user->id;
+    my $user_id = $client->user_id;
 
     my $oauth  = BOM::Database::Model::OAuth->new;
     my $app_id = $params->{args}->{app_delete};
@@ -236,12 +231,12 @@ rpc app_markup_details => sub {
     my $args    = $params->{args};
     my $client  = $params->{client};
     my $oauth   = BOM::Database::Model::OAuth->new;
-    my $user    = $client->user;
+    my $user_id = $client->user_id;
     my $app_ids = ();
 
     # If the app_id they have submitted is not in the list we have associated with them, then...
     if ($args->{app_id}) {
-        unless ($oauth->user_has_app_id($user->id, $args->{app_id})) {
+        unless ($oauth->user_has_app_id($user_id, $args->{app_id})) {
             return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidAppID',
                 message_to_client => localize('Your app_id is invalid.'),
@@ -250,7 +245,7 @@ rpc app_markup_details => sub {
             $app_ids = [$args->{app_id}];
         }
     } else {
-        $app_ids = $oauth->get_app_ids_by_user_id($user->id);
+        $app_ids = $oauth->get_app_ids_by_user_id($user_id);
     }
 
     my ($time_from, $time_to, $date_format_error);

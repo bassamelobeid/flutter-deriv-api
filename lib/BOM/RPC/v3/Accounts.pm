@@ -508,7 +508,7 @@ rpc get_account_status => sub {
     my $user = $client->user;
     push @status, 'unwelcome' if not $already_unwelcomed and BOM::Transaction::Validation->new({clients => [$client]})->check_trade_status($client);
 
-    push @status, 'social_signup' if $user->has_social_signup;
+    push @status, 'social_signup' if $user->{has_social_signup};
 
     # check whether the user need to perform financial assessment
     push(@status, 'financial_information_not_complete') unless $client->is_financial_information_complete();
@@ -573,21 +573,19 @@ rpc change_password => sub {
     return BOM::RPC::v3::Utility::create_error({
             code              => "SocialBased",
             message_to_client => localize("Sorry, your account does not allow passwords because you use social media to log in.")}
-    ) if $user->has_social_signup;
+    ) if $user->{has_social_signup};
 
     if (
         my $pass_error = BOM::RPC::v3::Utility::_check_password({
                 old_password => $args->{old_password},
                 new_password => $args->{new_password},
-                user_pass    => $user->password
-            }))
+                user_pass    => $user->{password}}))
     {
         return $pass_error;
     }
 
     my $new_password = BOM::User::Password::hashpw($args->{new_password});
-    $user->password($new_password);
-    $user->save;
+    $user->update_password($new_password);
 
     my $oauth = BOM::Database::Model::OAuth->new;
     for my $obj (@clients) {
@@ -650,7 +648,7 @@ rpc cashier_password => sub {
         }
 
         my $user = $client->user;
-        if (BOM::User::Password::checkpw($lock_password, $user->password)) {
+        if (BOM::User::Password::checkpw($lock_password, $user->{password})) {
             return $error_sub->(localize('Please use a different password than your login password.'));
         }
 
@@ -744,9 +742,9 @@ rpc "reset_password",
                 message_to_client => $err->{message_to_client}});
     }
 
-    my $user = BOM::User->new({
+    my $user = BOM::User->new(
         email => $email,
-    });
+    );
     my @clients = ();
     if (not $user or not @clients = $user->clients) {
         return BOM::RPC::v3::Utility::client_error();
@@ -759,7 +757,7 @@ rpc "reset_password",
     return BOM::RPC::v3::Utility::create_error({
             code              => "SocialBased",
             message_to_client => localize('Sorry, you cannot reset your password because you logged in using a social network.'),
-        }) if $user->has_social_signup;
+        }) if $user->{has_social_signup};
 
     unless ($client->is_virtual) {
         unless ($args->{date_of_birth}) {
@@ -780,8 +778,7 @@ rpc "reset_password",
     }
 
     my $new_password = BOM::User::Password::hashpw($args->{new_password});
-    $user->password($new_password);
-    $user->save;
+    $user->update_password($new_password);
 
     my $oauth = BOM::Database::Model::OAuth->new;
     for my $obj (@clients) {
@@ -836,7 +833,7 @@ rpc get_settings => sub {
         email         => $client->email,
         country       => $country,
         country_code  => $country_code,
-        email_consent => do { my $user = $client->user; ($user && $user->email_consent) ? 1 : 0 },
+        email_consent => do { my $user = $client->user; ($user && $user->{email_consent}) ? 1 : 0 },
         (
             $client->is_virtual
             ? ()
@@ -967,8 +964,7 @@ rpc set_settings => sub {
     # so need to save it separately
     if (defined $args->{email_consent}) {
         my $user = $client->user;
-        $user->email_consent($args->{email_consent});
-        $user->save;
+        $user->update_email_fields(email_consent => $args->{email_consent});
     }
 
     # need to handle for $jp_status->{status} as that come from japan settings
@@ -1117,7 +1113,7 @@ rpc set_settings => sub {
         [localize("Tax residence"), $tr_tax_residence],
         [localize('Tax identification number'), ($client->tax_identification_number || '')],
         );
-    push @updated_fields, [localize('Receive news and special offers'), $client->user->email_consent ? localize("Yes") : localize("No")]
+    push @updated_fields, [localize('Receive news and special offers'), $client->user->{email_consent} ? localize("Yes") : localize("No")]
         if exists $args->{email_consent};
     push @updated_fields, [localize('Allow copiers'), $client->allow_copiers ? localize("Yes") : localize("No")]
         if defined $allow_copiers;
@@ -1563,20 +1559,19 @@ rpc login_history => sub {
     }
 
     my $user          = $client->user;
-    my $login_history = $user->find_login_history(
-        sort_by => 'history_date desc',
-        limit   => $limit
+    my $login_history = $user->login_history(
+        order => 'desc',
+        limit => $limit
     );
 
     my @history = ();
     foreach my $record (@{$login_history}) {
         push @history,
             {
-            time        => Date::Utility->new($record->history_date)->epoch,
-            action      => $record->action,
-            status      => $record->successful ? 1 : 0,
-            environment => $record->environment
-            };
+            time        => Date::Utility->new($record->{history_date})->epoch,
+            action      => $record->{action},
+            status      => $record->{successful} ? 1 : 0,
+            environment => $record->{environment}};
     }
 
     return {records => [@history]};

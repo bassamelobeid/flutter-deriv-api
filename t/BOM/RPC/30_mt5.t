@@ -7,6 +7,7 @@ use Test::MockModule;
 
 use Postgres::FeedDB::CurrencyConverter qw(in_USD amount_from_to_currency);
 
+use List::Util qw();
 use JSON::MaybeXS;
 use Email::Folder::Search;
 use BOM::Test::RPC::Client;
@@ -49,10 +50,8 @@ my $user = BOM::User->create(
     email    => $DETAILS{email},
     password => 's3kr1t',
 );
-$user->save;
-$user->add_loginid({loginid => $test_client->loginid});
-$user->add_loginid({loginid => $test_client_vr->loginid});
-$user->save;
+$user->add_client($test_client);
+$user->add_client($test_client_vr);
 
 #since we are trying to open a new financial mt5 account we should do the financial assessment first
 my %financial_data = (

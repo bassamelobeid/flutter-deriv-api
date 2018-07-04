@@ -41,11 +41,9 @@ my $user = BOM::User->create(
     email    => $email,
     password => $hash_pwd
 );
-$user->save;
-$user->add_loginid({loginid => $test_client_vr->loginid});
-$user->add_loginid({loginid => $test_client_mlt->loginid});
-$user->add_loginid({loginid => $test_client_mf->loginid});
-$user->save;
+$user->add_client($test_client_vr);
+$user->add_client($test_client_mlt);
+$user->add_client($test_client_mf);
 
 my $method = 'reality_check';
 $c->call_ok($method, {token => 12345})->has_error->error_message_is('The token is invalid.', 'check invalid token');

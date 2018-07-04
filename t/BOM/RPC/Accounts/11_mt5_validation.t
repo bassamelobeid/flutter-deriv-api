@@ -93,9 +93,7 @@ subtest 'new account' => sub {
             email    => 'test.account@binary.com',
             password => 'jskjd8292922',
         );
-        $user->save;
-        $user->add_loginid({loginid => $test_client->loginid});
-        $user->save;
+        $user->add_client($test_client);
 
         $c     = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
         $m     = BOM::Database::Model::AccessToken->new;

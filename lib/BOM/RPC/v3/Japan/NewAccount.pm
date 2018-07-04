@@ -284,8 +284,8 @@ sub set_jp_settings {
     push @updated,
         [
         localize('Receive news and special offers'),
-        $client->user->email_consent ? localize("Yes") : localize("No"),
-        $args->{email_consent}       ? localize("Yes") : localize("No")]
+        $client->user->{email_consent} ? localize("Yes") : localize("No"),
+        $args->{email_consent}         ? localize("Yes") : localize("No")]
         if exists $args->{email_consent};
 
     $args = $args->{jp_settings};

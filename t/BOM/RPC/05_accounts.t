@@ -84,10 +84,8 @@ my $user         = BOM::User->create(
     email    => $email,
     password => $hash_pwd
 );
-$user->save;
-$user->add_loginid({loginid => $test_loginid});
-$user->add_loginid({loginid => $test_client_vr->loginid});
-$user->save;
+$user->add_client($test_client);
+$user->add_client($test_client_vr);
 my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
 $mailbox->init;
 
@@ -108,10 +106,8 @@ my $user_cr = BOM::User->create(
     email    => 'sample@binary.com',
     password => $hash_pwd
 );
-$user_cr->save;
-$user_cr->add_loginid({loginid => $test_client_cr->loginid});
-$user_cr->add_loginid({loginid => $test_client_cr_2->loginid});
-$user_cr->save;
+$user_cr->add_client($test_client_cr);
+$user_cr->add_client($test_client_cr_2);
 
 my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
@@ -158,11 +154,9 @@ my $user_mlt_mf = BOM::User->create(
     email    => $email_mlt_mf,
     password => $hash_pwd
 );
-$user_mlt_mf->save;
-$user_mlt_mf->add_loginid({loginid => $test_client_vr_2->loginid});
-$user_mlt_mf->add_loginid({loginid => $test_client_mlt->loginid});
-$user_mlt_mf->add_loginid({loginid => $test_client_mf->loginid});
-$user_mlt_mf->save;
+$user_mlt_mf->add_client($test_client_vr_2);
+$user_mlt_mf->add_client($test_client_mlt);
+$user_mlt_mf->add_client($test_client_mf);
 
 my $m              = BOM::Database::Model::AccessToken->new;
 my $token1         = $m->create_token($test_loginid, 'test token');
@@ -945,10 +939,10 @@ subtest $method => sub {
         subject => qr/\Q$subject\E/
     );
     ok(@msgs, "email received");
-    $user->load;
-    isnt($user->password, $hash_pwd, 'user password updated');
+    $user = BOM::User->new( id => $user->{id} );
+    isnt($user->{password}, $hash_pwd, 'user password updated');
     $test_client->load;
-    isnt($user->password, $hash_pwd, 'client password updated');
+    isnt($user->{password}, $hash_pwd, 'client password updated');
     $password = $new_password;
 };
 

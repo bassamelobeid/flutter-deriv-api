@@ -342,8 +342,7 @@ async_rpc mt5_new_account => sub {
                     my $mt5_login = $status->{login};
 
                     # eg: MT5 login: 1000, we store MT1000
-                    $user->add_loginid({loginid => 'MT' . $mt5_login});
-                    $user->save;
+                    $user->add_loginid('MT' . $mt5_login);
 
                     # Compliance team must be notified if a client under Binary (Europe) Limited
                     #   opens an MT5 account while having limitations on their account.
@@ -408,7 +407,7 @@ sub _check_logins {
     my $user = $client->user;
 
     foreach my $login (@{$logins}) {
-        return unless (any { $login eq $_->loginid } ($user->loginid));
+        return unless (any { $login eq $_ } ($user->loginids));
     }
     return 1;
 }

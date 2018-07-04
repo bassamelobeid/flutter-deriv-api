@@ -88,13 +88,13 @@ subtest $method => sub {
 
     my $new_loginid = $rpc_ct->result->{client_id};
     ok $new_loginid =~ /^VRTC\d+/, 'new VR loginid';
-    my $user = BOM::User->new({
+    my $user = BOM::User->new(
         email => $email,
-    });
+    );
 
-    ok $user->utm_source =~ '^google\.com$',               'utm registered as expected';
-    ok $user->gclid_url =~ '^FQdb3wodOkkGBgCMrlnPq42q8C$', 'gclid value returned as expected';
-    is $user->email_consent, 1, 'email consent for new account is 1 for residence under costarica';
+    ok $user->{utm_source} =~ '^google\.com$',               'utm registered as expected';
+    ok $user->{gclid_url} =~ '^FQdb3wodOkkGBgCMrlnPq42q8C$', 'gclid value returned as expected';
+    is $user->{email_consent}, 1, 'email consent for new account is 1 for residence under costarica';
 
     my ($resp_loginid, $t, $uaf) =
         @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
@@ -112,10 +112,10 @@ subtest $method => sub {
             ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
             ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
 
-        $user = BOM::User->new({
+        $user = BOM::User->new(
             email => $vr_email,
-        });
-        is $user->email_consent, 0, 'email consent for new account is 0 for european clients - de';
+        );
+        is $user->{email_consent}, 0, 'email consent for new account is 0 for european clients - de';
     };
 
     subtest 'European client - gb' => sub {
@@ -130,10 +130,10 @@ subtest $method => sub {
             ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
             ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
 
-        $user = BOM::User->new({
+        $user = BOM::User->new(
             email => $vr_email,
-        });
-        is $user->email_consent, 0, 'email consent for new account is 0 for european clients - gb';
+        );
+        is $user->{email_consent}, 0, 'email consent for new account is 0 for european clients - gb';
     };
 };
 
@@ -165,15 +165,13 @@ subtest $method => sub {
                 email    => $email,
                 password => $hash_pwd
             );
-            $user->save;
 
             $vclient = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                 broker_code => 'VRTC',
                 email       => $email,
             });
 
-            $user->add_loginid({loginid => $vclient->loginid});
-            $user->save;
+            $user->add_client($vclient);
         }
         'Initial users and clients';
     };
@@ -215,8 +213,7 @@ subtest $method => sub {
             ->has_no_system_error->has_error->error_code_is('email unverified', 'It should return error if email unverified')
             ->error_message_is('Your email address is unverified.', 'It should return error if email unverified');
 
-        $user->email_verified(1);
-        $user->save;
+        $user->update_email_fields(email_verified => 1);
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
             sub { shift->{landing_company} },
@@ -259,19 +256,17 @@ subtest $method => sub {
         my $hash_pwd = BOM::User::Password::hashpw($password);
         $email = 'new_email' . rand(999) . '@binary.com';
         $user  = BOM::User->create(
-            email    => $email,
-            password => $hash_pwd
+            email          => $email,
+            password       => $hash_pwd,
+            email_verified => 1,
         );
-        $user->save;
         $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'VRTC',
             email       => $email,
         });
         $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
 
-        $user->add_loginid({loginid => $client->loginid});
-        $user->email_verified(1);
-        $user->save;
+        $user->add_client($client);
 
         $params->{args}->{currency} = 'USD';
 
@@ -331,15 +326,13 @@ subtest $method => sub {
                 email    => $email,
                 password => $hash_pwd
             );
-            $user->save;
             $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                 broker_code => 'VRTC',
                 email       => $email,
             });
             $auth_token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
 
-            $user->add_loginid({loginid => $client->loginid});
-            $user->save;
+            $user->add_client($client);
         }
         'Initial users and clients';
     };
@@ -402,8 +395,7 @@ subtest $method => sub {
             ->has_no_system_error->has_error->error_code_is('email unverified', 'It should return error if email unverified')
             ->error_message_is('Your email address is unverified.', 'It should return error if email unverified');
 
-        $user->email_verified(1);
-        $user->save;
+        $user->update_email_fields(email_verified => 1);
 
         $params->{args}->{residence} = 'id';
 
@@ -442,10 +434,10 @@ subtest $method => sub {
             my $hash_pwd = BOM::User::Password::hashpw($password);
             $email = 'new_email' . rand(999) . '@binary.com';
             $user  = BOM::User->create(
-                email    => $email,
-                password => $hash_pwd
+                email          => $email,
+                password       => $hash_pwd,
+                email_verified => 1,
             );
-            $user->save;
             $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                 broker_code => 'VRTC',
                 email       => $email,
@@ -458,10 +450,8 @@ subtest $method => sub {
             });
             $auth_token = BOM::Database::Model::AccessToken->new->create_token($client_mlt->loginid, 'test token');
 
-            $user->add_loginid({loginid => $client->loginid});
-            $user->add_loginid({loginid => $client_mlt->loginid});
-            $user->email_verified(1);
-            $user->save;
+            $user->add_client($client);
+            $user->add_client($client_mlt);
         }
         'Initial users and clients';
     };
@@ -506,10 +496,10 @@ subtest $method => sub {
             my $hash_pwd = BOM::User::Password::hashpw($password);
             $email = 'mx_email' . rand(999) . '@binary.com';
             $user  = BOM::User->create(
-                email    => $email,
-                password => $hash_pwd
+                email          => $email,
+                password       => $hash_pwd,
+                email_verified => 1,
             );
-            $user->save;
             $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                 broker_code => 'VRTC',
                 email       => $email,
@@ -522,10 +512,8 @@ subtest $method => sub {
             });
             $auth_token = BOM::Database::Model::AccessToken->new->create_token($client_mx->loginid, 'test token');
 
-            $user->add_loginid({loginid => $client->loginid});
-            $user->add_loginid({loginid => $client_mx->loginid});
-            $user->email_verified(1);
-            $user->save;
+            $user->add_client($client);
+            $user->add_client($client_mx);
         }
         'Initial users and clients';
     };
@@ -586,30 +574,27 @@ subtest $method => sub {
                 email    => $email,
                 password => $hash_pwd
             );
-            $user->save;
+
             $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                 broker_code => 'VRTJ',
                 email       => $email,
             });
             $auth_token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
 
-            $user->add_loginid({loginid => $client->loginid});
-            $user->save;
+            $user->add_client($client);
 
             $email       = 'new_email' . rand(999) . '@binary.com';
             $normal_user = BOM::User->create(
                 email    => $email,
                 password => $hash_pwd
             );
-            $normal_user->save;
             $normal_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                 broker_code => 'VRTC',
                 email       => $email,
             });
             $normal_auth_token = BOM::Database::Model::AccessToken->new->create_token($normal_vr->loginid, 'test token');
 
-            $normal_user->add_loginid({loginid => $normal_vr->loginid});
-            $normal_user->save;
+            $normal_user->add_client($normal_vr);
         }
         'Initial users and clients';
     };
@@ -662,8 +647,7 @@ subtest $method => sub {
             ->has_no_system_error->has_error->error_code_is('email unverified', 'It should return error if email unverified')
             ->error_message_is('Your email address is unverified.', 'It should return error if email unverified');
 
-        $user->email_verified(1);
-        $user->save;
+        $user->update_email_fields(email_verified => 1);
 
         $params->{args}->{annual_income}                  = '1-3 million JPY';
         $params->{args}->{financial_asset}                = '1-3 million JPY';
