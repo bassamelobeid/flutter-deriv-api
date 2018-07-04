@@ -1,0 +1,15 @@
+btc:
+    withdrawal:
+        timeout: "3d"
+ltc:
+    withdrawal:
+        timeout: "3d"
+bch:
+    withdrawal:
+        timeout: "3d"
+eth:
+    withdrawal:
+        timeout: "5d"
+dai:
+    withdrawal:
+        timeout: "5d"

@@ -60,6 +60,11 @@ sub client_status {
     return $config;
 }
 
+sub crypto {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/crypto_config.yml');
+    return $config;
+}
+
 sub sanction_file {
     return "/var/lib/binary/sanctions.yml";
 }
