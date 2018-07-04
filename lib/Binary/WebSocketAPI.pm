@@ -297,7 +297,7 @@ sub startup {
             }
         ],
         ['set_financial_assessment', {require_auth => 'admin'}],
-        ['get_financial_assessment', {require_auth => 'admin'}],
+        ['get_financial_assessment', {require_auth => 'read'}],
         ['reality_check',            {require_auth => 'read'}],
         ['verify_email',             {stash_params => [qw/ server_name token /]}],
         ['new_account_virtual',      {stash_params => [qw/ server_name client_ip user_agent /]}],
@@ -355,8 +355,8 @@ sub startup {
         ],
 
         ['app_register',     {require_auth => 'admin'}],
-        ['app_list',         {require_auth => 'admin'}],
-        ['app_get',          {require_auth => 'admin'}],
+        ['app_list',         {require_auth => 'read'}],
+        ['app_get',          {require_auth => 'read'}],
         ['app_update',       {require_auth => 'admin'}],
         ['app_delete',       {require_auth => 'admin'}],
         ['oauth_apps',       {require_auth => 'read'}],
@@ -419,7 +419,7 @@ sub startup {
         [
             'mt5_login_list',
             {
-                require_auth => 'admin',
+                require_auth => 'read',
                 stash_params => [qw/ server_name client_ip user_agent /]}
         ],
         [
@@ -466,7 +466,7 @@ sub startup {
         ],
         ['copy_start',         {require_auth => 'trade'}],
         ['copy_stop',          {require_auth => 'trade'}],
-        ['app_markup_details', {require_auth => 'admin'}],
+        ['app_markup_details', {require_auth => 'read'}],
         ['account_security',   {require_auth => 'admin'}],
         [
             'exchange_rates',
