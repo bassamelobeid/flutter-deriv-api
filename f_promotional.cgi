@@ -231,13 +231,13 @@ foreach my $client (@clients) {
     my $datetime             = $client->promo_code_apply_date;
 
     my $user          = $client->user;
-    my $login_history = $user->find_login_history(
-        sort_by => 'history_date desc',
-        limit   => 1,
+    my $login_history = $user->login_history(
+        order => 'desc',
+        limit => 1,
     );
     my $client_ip = 'no ip';
     if (@$login_history > 0) {
-        if ($login_history->[0]->environment =~ /(\d+\.\d+\.\d+\.\d+)/) {
+        if ($login_history->[0]->{environment} =~ /(\d+\.\d+\.\d+\.\d+)/) {
             $client_ip = $1;
         }
     }

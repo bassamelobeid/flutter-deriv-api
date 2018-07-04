@@ -48,13 +48,13 @@ if ($input{new_email}) {
     }
 }
 
-my $user = BOM::User->new({email => $email});
+my $user = BOM::User->new(email => $email);
 if (not $user) {
     print "<p>ERROR: Clients with email <b>$encoded_email</b> not found.</p>";
     code_exit_BO();
 }
 
-my @all_loginids = map { $_->loginid } $user->loginid;
+my @all_loginids = $user->loginids;
 if (not $input{email_edit}) {
     # list loginids with email
     BOM::Backoffice::Request::template()->process(
@@ -76,14 +76,14 @@ unless ($input{transtype}) {
 }
 my $error = BOM::DualControl->new({
         staff           => $clerk,
-        transactiontype => $input{transtype}})->validate_client_control_code($input{DCcode}, $new_email, $user->id);
+        transactiontype => $input{transtype}})->validate_client_control_code($input{DCcode}, $new_email, $user->{id});
 if ($error) {
     print $error->get_mesg();
     code_exit_BO();
 }
 
 if ($email ne $new_email) {
-    if (BOM::User->new({email => $new_email})) {
+    if (BOM::User->new(email => $new_email)) {
         print "Email update not allowed, as same email [$encoded_new_email] already exists in system";
         code_exit_BO();
     }
@@ -92,21 +92,20 @@ if ($email ne $new_email) {
 
     try {
         # remove social signup flag also add note to audit log.
-        if ($user->has_social_signup) {
-            $user->has_social_signup(undef);
+        if ($user->{has_social_signup}) {
+            $user->update_has_social_signup(0);
             #remove all other social accounts
             my $user_connect = BOM::Database::Model::UserConnect->new;
-            my @providers    = $user_connect->get_connects_by_user_id($user->id);
-            $user_connect->remove_connect($user->id, $_) for @providers;
+            my @providers    = $user_connect->get_connects_by_user_id($user->{id});
+            $user_connect->remove_connect($user->{id}, $_) for @providers;
             $had_social_signup = "(from social signup)";
         }
 
-        $user->email($new_email);
-        $user->save;
+        $user->update_email_fields(email => $new_email);
 
-        foreach my $lid ($user->loginid) {
-            next unless $lid->loginid !~ /^MT\d+$/;
-            my $client_obj = BOM::User::Client->new({loginid => $lid->loginid});
+        foreach my $lid ($user->loginids) {
+            next unless $lid !~ /^MT\d+$/;
+            my $client_obj = BOM::User::Client->new({loginid => $lid});
             $client_obj->email($new_email);
             $client_obj->save;
         }

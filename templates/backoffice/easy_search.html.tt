@@ -62,7 +62,7 @@
             <br/>
             [%binary_user.failed_login || '(no failed logins pending)'%]
             <ul>
-            [% FOR loginid IN binary_user.loginid %]
+            [% FOR loginid IN binary_user.loginids %]
                 <li><a href="?loginid=$loginid">$loginid</a></li>
             [% END %]
             </ul>

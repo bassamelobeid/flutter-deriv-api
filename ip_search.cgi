@@ -8,7 +8,6 @@ use HTML::Entities;
 
 use f_brokerincludeall;
 use BOM::User;
-use BOM::Database::UserDB;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -34,7 +33,7 @@ if ($search_type eq 'ip') {
         print "Invalid IP $encoded_ip";
         code_exit_BO();
     }
-    $logins = BOM::Database::UserDB::rose_db()->dbic->run(
+    $logins = BOM::User->dbic->run(
         sub {
             $_->selectall_arrayref(
                 "SELECT history_date, action, email FROM users.login_history_by_ip(?::INET, 'today'::TIMESTAMP - ?::INTERVAL)",
@@ -54,7 +53,7 @@ if ($search_type eq 'ip') {
     }
 
     # for some reason we have historically passed in an email address on 'loginid'... but now we will consider either one
-    $suspected_logins = BOM::Database::UserDB::rose_db()->dbic->run(
+    $suspected_logins = BOM::User->dbic->run(
         sub {
             $_->selectall_arrayref('
                 SELECT history_date, logins

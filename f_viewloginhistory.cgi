@@ -18,13 +18,13 @@ if (my $email_list = request()->param('email')) {
 
     foreach my $email (split(/\s+/, lc($email_list))) {
         Bar($email . " Login History");
-        my $user = BOM::User->new({email => $email});
+        my $user = BOM::User->new(email => $email);
         no warnings 'numeric';    ## no critic (ProhibitNoWarnings)
         my $limit = int(request()->param('limit')) // 100;
         my $history;
         if ($user) {
-            $history = $user->find_login_history(
-                sort_by => 'history_date desc',
+            $history = $user->login_history(
+                order => 'desc',
                 $limit > 0 ? (limit => $limit) : (),
             );
         }

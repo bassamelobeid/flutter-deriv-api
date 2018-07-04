@@ -75,12 +75,10 @@ sub _change_of_country {
     my $self = shift;
 
     my $user          = $self->client->user;
-    my $login_history = $user->find_login_history(
-        sort_by => 'history_date',
-    );
-    my $count        = 0;
-    my $last_country = '';
-    my $data         = [];
+    my $login_history = $user->login_history;
+    my $count         = 0;
+    my $last_country  = '';
+    my $data          = [];
     for my $h (@$login_history) {
         if ($h->environment =~ /IP=([0-9a-z\.:]+) IP_COUNTRY=([A-Z]{1,3})/ and $last_country ne $2) {
             $data->[$count]->{country}          = $2;

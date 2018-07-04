@@ -138,7 +138,7 @@ sub print_client_details {
         # If client is under Binary Investments (Europe) Ltd and there is no ProveID_KYC,
         # check whether there is ProveID_KYC under Binary (IOM) Ltd.
         if ($client->landing_company->short eq 'maltainvest' && !$proveID->has_done_request) {
-            for my $client_iom ($client->user->clients_for_landing_company('iom')) {
+            for my $client_iom ($user->clients_for_landing_company('iom')) {
                 my $prove = BOM::Platform::ProveID->new(
                     client        => $client_iom,
                     search_option => 'ProveID_KYC'
@@ -153,7 +153,7 @@ sub print_client_details {
     }
 
     unless ($client->is_virtual) {
-        my $siblings = $user->loginid;
+        my $siblings = $user->{loginid};
 
         $show_uploaded_documents .= show_client_id_docs($_->loginid, show_delete => 1) for $client;
 
@@ -217,7 +217,7 @@ sub print_client_details {
         dob_month_options     => $dob_month_options,
         dob_year_options      => $dob_year_options,
         financial_risk_status => $client->get_status('financial_risk_approval'),
-        has_social_signup     => $user->has_social_signup,
+        has_social_signup     => $user->{has_social_signup},
         is_vip                => $client->is_vip,
         lang                  => request()->language,
         language_options      => \@language_options,

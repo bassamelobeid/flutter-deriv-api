@@ -772,7 +772,7 @@ if ($link_acc) {
 my $siblings;
 if ($user) {
     $siblings = $user->bom_loginid_details;
-    my @mt_logins = sort map { $_->loginid } grep { $_->loginid =~ /^MT\d+$/ } $user->loginid;
+    my @mt_logins = sort grep { /^MT\d+$/ } $user->loginids;
 
     if (%$siblings or @mt_logins > 0) {
         print "<p>Corresponding accounts: </p><ul>";
@@ -858,7 +858,7 @@ foreach my $l (sort keys %$siblings) {
 
 Bar("Email Consent");
 print '<br/>';
-print 'Email consent for marketing: ' . ($user->email_consent ? 'Yes' : 'No');
+print 'Email consent for marketing: ' . ($user->{email_consent} ? 'Yes' : 'No');
 print '<br/><br/>';
 
 if (not $client->is_virtual) {
@@ -906,12 +906,12 @@ sub print_fa_table {
     return undef;
 }
 
-Bar($user->email . " Login history");
+Bar($user->{email} . " Login history");
 print '<div><br/>';
 my $limit         = 200;
-my $login_history = $user->find_login_history(
-    sort_by => 'history_date desc',
-    limit   => $limit
+my $login_history = $user->login_history(
+    order => 'desc',
+    limit => $limit
 );
 
 BOM::Backoffice::Request::template()->process(

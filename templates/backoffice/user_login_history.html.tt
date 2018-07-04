@@ -13,7 +13,7 @@
         [% END %]
         <table class="collapsed">
 [%       FOREACH l IN history.reverse;
-            date = l.history_date.strftime('%F %T');
+            date = l.history_date;
             status = l.successful ? 'ok' : 'failed';
             env = l.environment;
             matches = env.match('IP=([0-9a-z\.:]+) IP_COUNTRY=([A-Z]{1,3}) ')
