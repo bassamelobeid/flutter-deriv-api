@@ -90,10 +90,10 @@ sub create_account {
     my $error = validate($args);
     return $error if $error;
 
-    my $client = eval { BOM::User::Client->register_and_return_new_client($details) };
+    my $client = eval { $user->create_client(%$details) };
 
     unless ($client) {
-        warn "Real: register_and_return_new_client exception [$@]";
+        warn "Real: create_client exception [$@]";
         return {error => 'invalid'};
     }
 
@@ -113,13 +113,11 @@ sub create_account {
 sub after_register_client {
     my $args = shift;
     my ($client, $user, $details, $ip, $country) = @{$args}{qw(client user details ip country)};
-    if (not $client->is_virtual) {
+
+    unless ($client->is_virtual) {
         $client->set_status('tnc_approval', 'system', BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version);
         $client->save;
     }
-
-    $user->add_loginid({loginid => $client->loginid});
-    $user->save;
 
     BOM::Platform::Client::Sanctions->new({
             client => $client,
@@ -149,7 +147,7 @@ sub after_register_client {
 
     return {
         client => $client,
-        user   => $user,
+        user   => $user
     };
 }
 

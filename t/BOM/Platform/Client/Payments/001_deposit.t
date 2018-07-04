@@ -12,6 +12,18 @@ use BOM::User::Client;
 use BOM::User::Client::Payments;
 use BOM::Platform::Client::IDAuthentication;
 
+use BOM::User;
+use BOM::User::Password;
+
+my $password = 'jskjd8292922';
+my $email    = 'test' . rand(999) . '@binary.com';
+my $hash_pwd = BOM::User::Password::hashpw($password);
+
+my $user = BOM::User->create(
+    email    => $email,
+    password => $hash_pwd
+);
+
 my $client_details = {
     broker_code     => 'CR',
     residence       => 'au',
@@ -34,11 +46,12 @@ my %deposit = (
     payment_type => 'free_gift'
 );
 
-my $mlt_client = BOM::User::Client->register_and_return_new_client({
+my $mlt_client = $user->create_client(
     %$client_details,
     broker_code => 'MLT',
     residence   => 'it'
-});
+);
+
 $mlt_client->set_default_account('EUR');
 
 ok(!$mlt_client->get_status('unwelcome'), 'MLT client not unwelcome prior to first-deposit');
@@ -47,11 +60,12 @@ BOM::Platform::Client::IDAuthentication->new(client => $mlt_client)->run_authent
 ok(!$mlt_client->get_status('unwelcome'),     'MLT client not unwelcome after first-deposit');
 ok($mlt_client->get_status('cashier_locked'), 'MLT client cashier_locked after first-deposit');
 
-my $mx_client = BOM::User::Client->register_and_return_new_client({
+my $mx_client = $user->create_client(
     %$client_details,
     broker_code => 'MX',
     residence   => 'gb'
-});
+);
+
 $mx_client->set_default_account('USD');
 
 ok(!$mx_client->get_status('unwelcome'), 'MX client not unwelcome prior to first-deposit');

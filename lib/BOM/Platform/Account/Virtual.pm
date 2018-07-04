@@ -64,9 +64,10 @@ sub create_account {
             $gclid_url    ? (gclid_url    => $gclid_url)    : ());
 
         my $landing_company = $residence ? $brand_country_instance->virtual_company_for_country($residence) : $default_virtual;
+        my $broker_code = LandingCompany::Registry::get($landing_company)->broker_codes->[0];
 
         $client = $user->create_client(
-            landing_company  => $landing_company,
+            broker_code      => $broker_code,
             client_password  => $password,
             first_name       => '',
             last_name        => '',
