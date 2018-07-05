@@ -153,7 +153,7 @@ sub print_client_details {
     }
 
     unless ($client->is_virtual) {
-        my $siblings = $user->{loginid};
+        my @siblings = $user->loginids;
 
         $show_uploaded_documents .= show_client_id_docs($_->loginid, show_delete => 1) for $client;
 
@@ -162,7 +162,7 @@ sub print_client_details {
             $_->loginid,
             show_delete => 1,
             no_edit     => 1
-        ) for grep { $_->loginid ne $client->loginid } @$siblings;
+        ) for grep { $_->loginid ne $client->loginid } @siblings;
 
         $show_uploaded_documents .= 'To edit following documents please select corresponding user<br>' . $siblings_docs
             if $siblings_docs;
