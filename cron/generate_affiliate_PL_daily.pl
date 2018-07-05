@@ -14,14 +14,11 @@ use Amazon::S3::SignedURLGenerator;
 
 use Brands;
 
-use BOM::Config::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::MyAffiliates::ActivityReporter;
 
 local $SIG{ALRM} = sub { die "alarm\n" };
 alarm 1800;
-
-my $cpa_type = $ARGV[0] // undef;
 
 my $to_date = Date::Utility->new(time - 86400);
 #Alway start to regenerate the files from start of the month.
@@ -30,24 +27,15 @@ my $from_date = Date::Utility->new('01-' . $to_date->month_as_string . '-' . $to
 my $reporter        = BOM::MyAffiliates::ActivityReporter->new();
 my $processing_date = Date::Utility->new($from_date->epoch);
 
-my $output_dir = BOM::Config::Runtime->instance->app_config->system->directory->db . '/myaffiliates/';
+my $output_dir = BOM::Platform::Runtime->instance->app_config->system->directory->db . '/myaffiliates/';
 path($output_dir)->mkpath if (not -d $output_dir);
 
-my $output_zip = $cpa_type ? "${cpa_type}_" : "myaffiliates_";
-$output_zip .= $from_date->date_yyyymmdd . "-" . $to_date->date_yyyymmdd . ".zip";
-
+my $output_zip      = "myaffiliates_" . $from_date->date_yyyymmdd . "-" . $to_date->date_yyyymmdd . ".zip";
 my $output_zip_path = path("/tmp/$output_zip");
 my $zip             = Archive::Zip->new();
 
 while ($to_date->days_between($processing_date) >= 0) {
-    my $output_filename = $output_dir;
-    if ($cpa_type) {
-        $output_filename .= "${cpa_type}_";
-    } else {
-        $output_filename .= "pl_";
-    }
-
-    $output_filename .= $processing_date->date_yyyymmdd . '.csv';
+    my $output_filename = $output_dir . 'pl_' . $processing_date->date_yyyymmdd . '.csv';
 
     # check if file exist and is not of size 0
     if (-e $output_filename and stat($output_filename)->size > 0) {
@@ -55,7 +43,7 @@ while ($to_date->days_between($processing_date) >= 0) {
         next;
     }
 
-    my @csv = $reporter->activity_for_date_as_csv($processing_date->date_ddmmmyy, $cpa_type);
+    my @csv = $reporter->activity_for_date_as_csv($processing_date->date_ddmmmyy);
 
     # Date, Player, P&L, Deposits, Runbet Turnover, Intraday Turnover, Other Turnover
     my @lines;

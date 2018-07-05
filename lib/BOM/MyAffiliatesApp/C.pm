@@ -18,10 +18,6 @@ sub turnover_report {
     return shift->__send_file('turnover_report');
 }
 
-sub cost_per_acquisition {
-    return shift->__send_file('cpa_report');
-}
-
 sub __send_file {
     my ($c, $type) = @_;
 
@@ -41,8 +37,6 @@ sub __send_file {
         $filename = 'registrations_';
     } elsif ($type eq 'turnover_report') {
         $filename = 'turnover_';
-    } elsif ($type eq 'cpa_report') {
-        $filename = 'cpa_';
     } else {
         return $c->__bad_request("Invalid request");
     }

@@ -97,7 +97,7 @@ for my $row (@$myaffiliates_tokens) {
         $affiliate_record->username($affiliate->{'TOKEN'}->{'USER'}->{'USERNAME'});
         $affiliate_record->status($affiliate->{'TOKEN'}->{'USER'}->{'STATUS'});
         $affiliate_record->email($affiliate->{'TOKEN'}->{'USER'}->{'EMAIL'});
-        
+
         if ($affiliate->{'TOKEN'}->{'USER_ID'}) {
             # Considering what may end up in 'USER_ID', we can stop here if there is anything besides digits
             die "Invalid token user_id: $affiliate->{'TOKEN'}->{'USER_ID'}" if $affiliate->{'TOKEN'}->{'USER_ID'} !~ /^[0-9]+$/;
