@@ -70,19 +70,15 @@ foreach my $key (keys %$supported_config) {
     }
 }
 
-my $output_ref = BOM::Backoffice::QuantsConfigHelper::get_config_input('contract_group');
-my $contract_groups = [uniq map { $_->[1] } @$output_ref];
-my %group;
-foreach my $ref (@$output_ref) {
-    my ($contract_type, $contract_group) = @$ref;
-    unless ($group{$contract_group}) {
-        $group{$contract_group} = $contract_type;
-        next;
-    }
-    $group{$contract_group} = join ',', ($group{$contract_group}, $contract_type);
-}
+my $output_ref               = BOM::Backoffice::QuantsConfigHelper::get_config_input('contract_group');
+my $contract_groups          = [uniq map { $_->[1] } @$output_ref];
+my $contract_group_data      = _format_output($output_ref);
+my @existing_contract_groups = map { {key => $_, list => $contract_group_data->{$_}} } keys %$contract_group_data;
 
-my @existing_contract_groups = map { {key => $_, list => $group{$_}} } keys %group;
+my $market_ref             = BOM::Backoffice::QuantsConfigHelper::get_config_input('market');
+my $markets                = [uniq map { $_->[1] } @$market_ref];
+my $market_group_data      = _format_output($market_ref);
+my @existing_market_groups = map { {key => $_, list => $market_group_data->{$_}} } keys %$market_group_data;
 
 BOM::Backoffice::Request::template()->process(
     'backoffice/quants_config_form.html.tt',
@@ -90,8 +86,9 @@ BOM::Backoffice::Request::template()->process(
         upload_url               => request()->url_for('backoffice/quant/update_quants_config.cgi'),
         existing_landing_company => \%lc_limits,
         existing_contract_groups => \@existing_contract_groups,
+        existing_market_groups   => \@existing_market_groups,
         data                     => {
-            markets           => $json->encode(BOM::Backoffice::QuantsConfigHelper::get_config_input('market')),
+            markets           => $json->encode($markets),
             expiry_types      => $json->encode(BOM::Backoffice::QuantsConfigHelper::get_config_input('expiry_type')),
             contract_groups   => $json->encode([uniq(@$contract_groups, 'new_category')]),
             barrier_types     => $json->encode(BOM::Backoffice::QuantsConfigHelper::get_config_input('barrier_type')),
@@ -103,6 +100,13 @@ BOM::Backoffice::Request::template()->process(
 Bar('Update Contract Group');
 BOM::Backoffice::Request::template()->process(
     'backoffice/quants_contract_group_form.html.tt',
+    {
+        upload_url => request()->url_for('backoffice/quant/update_quants_config.cgi'),
+    }) || die BOM::Backoffice::Request::template()->error;
+
+Bar('Update Market Group');
+BOM::Backoffice::Request::template()->process(
+    'backoffice/quants_market_group_form.html.tt',
     {
         upload_url => request()->url_for('backoffice/quant/update_quants_config.cgi'),
     }) || die BOM::Backoffice::Request::template()->error;
@@ -126,4 +130,22 @@ BOM::Backoffice::Request::template()->process(
             current_limits => \%current_global_limits,
         },
     }) || die BOM::Backoffice::Request::template()->error;
+
+## PRIVATE ##
+
+sub _format_output {
+    my $data = shift;
+
+    my %groups;
+    foreach my $ref (@$data) {
+        my ($key, $group) = @$ref;
+        unless ($groups{$group}) {
+            $groups{$group} = $key;
+            next;
+        }
+        $groups{$group} = join ',', ($groups{$group}, $key);
+    }
+
+    return \%groups;
+}
 

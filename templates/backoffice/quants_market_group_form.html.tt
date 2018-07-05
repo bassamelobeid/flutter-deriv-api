@@ -1,0 +1,50 @@
+<p>Please update market group of an underlying with the tool below:</p>
+
+<ul>
+    <li>default: use market information for the specific underlying symbol defined in yaml configuration. (share/underlyings.yml in perl-Finance-Underlying repository)</li>
+    <li>new category: set contract type's group as 'new category'. This is used to limit new product.</li>
+</ul>
+
+<table id="market_group_form">
+    <tr>
+        <td>Underlying symbol: </td>
+        <td> <input type="text" name="underlying_symbol"></input></td>
+        <td> (accepts comma separated values)</td>
+    </tr>
+    <tr>
+        <td>Market group: </td>
+        <td> <input type="text" name="market_group"></input></td>
+    </tr>
+    <tr>
+        <td>Submarket group: </td>
+        <td> <input type="text" name="submarket_group"></input></td>
+    </tr>
+    <tr>
+        <td><button onClick="UpdateMarketGroup()" type="button">Update</button></td><td class="result"></td>
+    </tr>
+</table>
+
+<script>
+    function UpdateMarketGroup() {
+        var el = \$('table#market_group_form');
+        var result = el.find('td.result');
+        result.text('processing...');
+        \$.ajax({
+            url: upload_url,
+            data: {
+                update_market_group: 1,
+                underlying_symbol: el.find('input[name="underlying_symbol"]').val(),
+                market_group: el.find('input[name="market_group"]').val(),
+                submarket_group: el.find('input[name="submarket_group"]').val(),
+            },
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'red');
+                } else {
+                    result.text('successfully updated').css('color', 'green');
+                }
+            }
+        });
+    }
+</script>

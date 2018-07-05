@@ -1,4 +1,4 @@
-<p>Please update contract group of an underlying with the tool below:</p>
+<p>Please update contract group of an contract type with the tool below:</p>
 
 <ul>
     <li>default: contract group will use contract category definition in yaml configuration. (share/contract_types.yml in perl-Finance-Contract repository)</li>

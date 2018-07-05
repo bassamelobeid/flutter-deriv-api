@@ -35,6 +35,11 @@ if (request()->param('update_contract_group')) {
     print $json->encode(BOM::Backoffice::QuantsConfigHelper::update_contract_group(\%args));
 }
 
+if (request()->param('update_market_group')) {
+    my %args = map { $_ => request()->param($_) } qw(underlying_symbol market_group submarket_group);
+    print $json->encode(BOM::Backoffice::QuantsConfigHelper::update_market_group(\%args));
+}
+
 if (request()->param('save_threshold')) {
     my %args = map { $_ => request()->param($_) } qw(limit_type threshold_amount);
     print $json->encode(BOM::Backoffice::QuantsConfigHelper::save_threshold(\%args));

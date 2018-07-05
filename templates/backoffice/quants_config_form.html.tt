@@ -26,6 +26,15 @@
     [% END %]
 </ul>
 
+<br/>
+<p>Existing market groups:</p>
+
+<ul>
+    [% FOREACH group IN existing_market_groups %]
+        <li>[% group.key %]: [% group.list %]</li>
+    [% END %]
+</ul>
+
 <br/><br/>
 <table class="pretty">
     <tr>

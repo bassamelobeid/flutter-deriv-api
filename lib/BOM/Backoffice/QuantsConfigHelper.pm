@@ -7,6 +7,7 @@ use BOM::Database::QuantsConfig;
 use BOM::Database::ClientDB;
 use BOM::Config::Runtime;
 
+use Finance::Underlying;
 use LandingCompany::Registry;
 use Finance::Contract::Category;
 use Try::Tiny;
@@ -118,8 +119,16 @@ sub rebuild_aggregate_tables {
 sub decorate_for_display {
     my $records = shift;
 
-    my @market_order = qw(forex indices commodities volidx default);
-    my @type_order   = qw(market symbol_default symbol);
+    # We could have custom defined market group that's not in our offerings.
+    # Hence, we should be fetch the market group information from the database.
+    # market group specification is applied to all databases, we're picking CR here.
+    my $db = BOM::Database::ClientDB->new({broker_code => 'CR'})->db;
+    my $output = $db->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref("SELECT market from bet.market group by market");
+        });
+    my @market_order = uniq(qw(forex indices commodities volidx default), (map { @$_ } @$output));
+    my @type_order = qw(market symbol_default symbol);
 
     my @sorted_records = ();
     foreach my $market (@market_order) {
@@ -240,18 +249,78 @@ sub get_config_input {
         return [map { $lc->{$_}->{short} } grep { $lc->{$_}->{short} !~ /virtual|vanuatu|champion/i } keys %$lc];
     }
 
-    if ($key eq 'contract_group') {
-        my $db = BOM::Database::ClientDB->new({broker_code => 'CR'})->db;
-        return $db->dbic->run(
-            fixup => sub {
-                $_->selectall_arrayref('SELECT * from bet.contract_group');
-            });
-    }
-
     my $lc       = LandingCompany::Registry::get('virtual');                 # to get everything in the offerings list.
     my $o_config = BOM::Config::Runtime->instance->get_offerings_config();
 
+    if ($key eq 'contract_group' or $key eq 'market') {
+        my $db = BOM::Database::ClientDB->new({broker_code => 'CR'})->db;
+        my $output = $db->dbic->run(
+            fixup => sub {
+                $_->selectall_arrayref("SELECT * from bet.$key");
+            });
+
+        if ($key eq 'contract_group') {
+            my %supported_contract_types =
+                map { $_ => 1 }
+                map { $_->values_for_key('contract_type') } ($lc->basic_offerings($o_config), $lc->multi_barrier_offerings($o_config));
+            return [grep { $supported_contract_types{$_->[0]} } @$output];
+        }
+
+        if ($key eq 'market') {
+            my %supported_underlying_symbols =
+                map { $_ => 1 }
+                map { $_->values_for_key('underlying_symbol') } ($lc->basic_offerings($o_config), $lc->multi_barrier_offerings($o_config));
+            return [grep { $supported_underlying_symbols{$_->[0]} } @$output];
+        }
+    }
+
     return [uniq(map { $_->values_for_key($key) } ($lc->basic_offerings($o_config), $lc->multi_barrier_offerings($o_config)))];
+}
+
+sub update_market_group {
+    my $args = shift;
+
+    unless ($args->{underlying_symbol} and $args->{market_group}) {
+        return {error => 'underlying_symbol and market_group must be defined.'};
+    }
+
+    # remove all whitespace
+    $args->{$_} =~ s/\s+//g for (grep { $args->{$_} } qw(underlying_symbol market_group submarket_group));
+
+    if ($args->{market_group} and $args->{market_group} =~ /,/) {
+        return {error => 'do not allow more than one market_group.'};
+    }
+
+    if ($args->{submarket_group} and $args->{submarket_group} =~ /,/) {
+        return {error => 'do not allow more than one submarket_group.'};
+    }
+
+    my $output = try {
+        my $dbs = BOM::Database::QuantsConfig->new->_db_list('default');
+        foreach my $db (@$dbs) {
+            my $dbic = $db->dbic;
+            foreach my $underlying_symbol (split ',', $args->{underlying_symbol}) {
+                my $u_config = Finance::Underlying->by_symbol($underlying_symbol);
+                $args->{submarket_group} ||= $u_config->{submarket};
+                $args->{market_group} = $u_config->{market} if $args->{market_group} eq 'default';
+                $dbic->run(
+                    fixup => sub {
+                        $_->do(qq{SELECT bet.update_underlying_symbol_group(?,?,?)},
+                            undef, $underlying_symbol, $args->{market_group}, $args->{submarket_group});
+                    },
+                );
+
+            }
+        }
+        +{success => 1};
+    }
+    catch {
+        my $error = {error => 'Error while updating market group'};
+        warn 'Exception thrown while updating market group: ' . $_;
+        $error;
+    };
+
+    return $output;
 }
 
 1;
