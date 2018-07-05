@@ -351,9 +351,10 @@ if ($input{whattodo} eq 'uploadID') {
 
 # Disabe 2FA if theres is a request for that.
 if ($input{whattodo} eq 'disable_2fa' and $user->is_totp_enabled) {
-    $user->is_totp_enabled(0);
-    $user->secret_key('');
-    $user->save;
+    $user->update_totp_fields(
+        is_totp_enabled => 0,
+        secret_key      => ''
+    );
 
     print "<p style=\"color:#eeee00; font-weight:bold;\">2FA Disabled</p>";
     code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
