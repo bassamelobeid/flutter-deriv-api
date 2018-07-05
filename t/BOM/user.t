@@ -66,9 +66,9 @@ subtest 'test attributes' => sub {
     throws_ok { BOM::User->create } qr/email and password are mandatory/, 'new without args';
     throws_ok { BOM::User->create(badkey => 1234) } qr/email and password are mandatory/, 'new without email';
 
-    is $user->{email},    $email,    'email ok';
-    is $user->{password}, $hash_pwd, 'password ok';
-    ok !$user->{email_verified}, 'email not verified';
+    is $user->email,    $email,    'email ok';
+    is $user->password, $hash_pwd, 'password ok';
+    ok !$user->email_verified, 'email not verified';
 };
 
 my @loginids;
@@ -177,7 +177,7 @@ subtest 'load user by loginid' => sub {
         my $user_2 = BOM::User->new(
             loginid => $vr_1,
         );
-        is $user_2->{id}, $user->{id}, 'found correct user by loginid';
+        is $user_2->id, $user->id, 'found correct user by loginid';
         $user_2 = BOM::User->new(
             loginid => 'does not exist',
         );
@@ -299,7 +299,7 @@ subtest 'User Login' => sub {
             fixup => sub {
                 $_->do(
                     'update users.failed_login set last_attempt = ? where id = ?',           undef,
-                    Date::Utility->new->minus_time_interval('1d')->datetime_yyyymmdd_hhmmss, $user->{id});
+                    Date::Utility->new->minus_time_interval('1d')->datetime_yyyymmdd_hhmmss, $user->id);
             });
         ok $user->login(%args)->{success}, 'clear failed login attempts; can now login';
     };
@@ -327,7 +327,7 @@ subtest 'login_history' => sub {
     is(scalar @$login_history, 13, 'login_history ok');
     my $last_login_history = $user->dbic->run(
         sub {
-            $_->selectrow_hashref('select * from users.login_history where binary_user_id = ? order by id desc limit 1', undef, $user->{id});
+            $_->selectrow_hashref('select * from users.login_history where binary_user_id = ? order by id desc limit 1', undef, $user->id);
         });
     is($last_login_history->{environment}, $args->{environment}, 'correct record');
 };
@@ -552,62 +552,62 @@ subtest 'test load' => sub {
         email => $email,
     );
     throws_ok { BOM::User->new(hello => 'world'); } qr/no email nor id or loginid/;
-    is_deeply(BOM::User->new(id      => $user->{id}), $user, 'load from id ok');
+    is_deeply(BOM::User->new(id      => $user->id), $user, 'load from id ok');
     is_deeply(BOM::User->new(loginid => $vr_1),       $user, 'load from loginid ok');
     is(BOM::User->new(id => -1), undef, 'return undefine if the user not exist');
 };
 
 subtest 'test update email' => sub {
-    my $old_email = $user->{email};
-    ok(!defined($user->{email_consent}), 'email consent is not defined');
+    my $old_email = $user->email;
+    ok(!defined($user->email_consent), 'email consent is not defined');
     my $new_email = $old_email . '.test';
     lives_ok { $user->update_email_fields(email => $new_email, email_consent => 1) } 'do update';
     my $new_user = BOM::User->new(email => $new_email);
     is_deeply($new_user, $user, 'get same object after updated');
-    is($user->{email},         $new_email, 'email updated');
-    is($user->{email_consent}, 1,          'email_consent was updated');
+    is($user->email,         $new_email, 'email updated');
+    is($user->email_consent, 1,          'email_consent was updated');
     lives_ok { $new_user->update_email_fields(email => $old_email, email_consent => 0) } 'update back to old email';
-    lives_ok { $user = BOM::User->new(id => $user->{id}); } 'reload user ok';
-    is($user->{email},         $old_email, 'old email come back');
-    is($user->{email_consent}, 0,          'email_consent is false now');
+    lives_ok { $user = BOM::User->new(id => $user->id); } 'reload user ok';
+    is($user->email,         $old_email, 'old email come back');
+    is($user->email_consent, 0,          'email_consent is false now');
 };
 
 subtest 'test update totp' => sub {
-    my $old_secret_key = $user->{secret_key};
-    ok(!defined($user->{is_totp_enabled}), 'is_totp_enabled is not defined');
-    ok(!defined($user->{secret_key}),      'secret_key is not defined');
+    my $old_secret_key = $user->secret_key;
+    ok(!defined($user->is_totp_enabled), 'is_totp_enabled is not defined');
+    ok(!defined($user->secret_key),      'secret_key is not defined');
     my $new_secret_key = 'test';
     lives_ok { $user->update_totp_fields(is_totp_enabled => 1, secret_key => $new_secret_key) } 'do update';
-    my $new_user = BOM::User->new(id => $user->{id});
+    my $new_user = BOM::User->new(id => $user->id);
     is_deeply($new_user, $user, 'get same object after updated');
-    is($user->{secret_key}, $new_secret_key, 'secret_key updated');
-    is($user->{is_totp_enabled}, 1, 'is_totp_enabled was updated');
+    is($user->secret_key, $new_secret_key, 'secret_key updated');
+    is($user->is_totp_enabled, 1, 'is_totp_enabled was updated');
     lives_ok { $new_user->update_totp_fields(secret_key => $old_secret_key, is_totp_enabled => 0) } 'update back to old email';
-    lives_ok { $user = BOM::User->new(id => $user->{id}); } 'reload user ok';
-    is($user->{is_totp_enabled}, 0, 'is_totp_enabled is false now');
+    lives_ok { $user = BOM::User->new(id => $user->id); } 'reload user ok';
+    is($user->is_totp_enabled, 0, 'is_totp_enabled is false now');
 };
 
 subtest 'test update password' => sub {
-    my $old_password = $user->{password};
+    my $old_password = $user->password;
     my $new_password = 'test';
     lives_ok { $user->update_password($new_password) } 'do update';
-    my $new_user = BOM::User->new(id => $user->{id});
+    my $new_user = BOM::User->new(id => $user->id);
     is_deeply($new_user, $user, 'get same object after updated');
-    is($user->{password}, $new_password, 'password updated');
+    is($user->password, $new_password, 'password updated');
     lives_ok { $new_user->update_password($old_password) } 'update back to old password';
-    lives_ok { $user = BOM::User->new(id => $user->{id}); } 'reload user ok';
-    is($user->{password}, $old_password, 'password restored now');
+    lives_ok { $user = BOM::User->new(id => $user->id); } 'reload user ok';
+    is($user->password, $old_password, 'password restored now');
 };
 
 subtest 'test update social signup' => sub {
-    ok(!defined($user->{has_social_signup}), 'has_social_signup is not defined');
+    ok(!defined($user->has_social_signup), 'has_social_signup is not defined');
     lives_ok { $user->update_has_social_signup(1) } 'do update';
-    my $new_user = BOM::User->new(id => $user->{id});
+    my $new_user = BOM::User->new(id => $user->id);
     is_deeply($new_user, $user, 'get same object after updated');
-    is($user->{has_social_signup}, 1, 'has_social_signup updated');
+    is($user->has_social_signup, 1, 'has_social_signup updated');
     lives_ok { $new_user->update_has_social_signup(0) } 'update back to old value of has_social_signup';
-    lives_ok { $user = BOM::User->new(id => $user->{id}); } 'reload user ok';
-    is($user->{has_social_signup}, 0, 'has_social_signup is false now');
+    lives_ok { $user = BOM::User->new(id => $user->id); } 'reload user ok';
+    is($user->has_social_signup, 0, 'has_social_signup is false now');
 };
 
 done_testing;

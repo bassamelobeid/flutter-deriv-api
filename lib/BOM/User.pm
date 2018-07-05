@@ -33,6 +33,13 @@ Create new record in table users.binary_user
 my @fields =
     qw(id email password email_verified utm_source utm_medium utm_campaign app_id email_consent gclid_url has_social_signup secret_key is_totp_enabled);
 
+# generate attribute accessor
+for my $k (@fields) {
+    no strict 'refs';
+    *{__PACKAGE__ . '::' . $k} = sub { shift->{$k} }
+        unless __PACKAGE__->can($k);
+}
+
 sub create {
     my ($class, %args) = @_;
     croak "email and password are mandatory" unless (exists($args{email}) && exists($args{password}));
