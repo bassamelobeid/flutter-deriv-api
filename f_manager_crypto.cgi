@@ -26,6 +26,7 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::Script::ValidateStaffPaymentLimit;
 use BOM::CTC::Reconciliation;
+use BOM::CTC::Utility;
 use BOM::Database::ClientDB;
 use BOM::DualControl;
 use f_brokerincludeall;
@@ -585,13 +586,18 @@ EOF
         my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
         my $dbic = $clientdb->db->dbic;
 
-        my ($error) = $dbic->run(
-            ping => sub {
-                $_->selectrow_array('SELECT * FROM payment.ctc_set_address_priority(?, ?)', undef, $prioritize_address, $currency);
-            });
+        $prioritize_address =~ s/^\s+|\s+$//g;
+        if (BOM::CTC::Utility::is_valid_address($prioritize_address, $currency)) {
+            my ($error) = $dbic->run(
+                ping => sub {
+                    $_->selectrow_array('SELECT * FROM payment.ctc_set_address_priority(?, ?)', undef, $prioritize_address, $currency);
+                });
 
-        print "<p style='color:red'><strong>ERROR: $error</strong></p>" if $error;
-        print "<p style='color:green'><strong>SUCCESS: Requested priority</strong></p>" if not $error;
+            print "<p style='color:red'><strong>ERROR: $error</strong></p>" if $error;
+            print "<p style='color:green'><strong>SUCCESS: Requested priority</strong></p>" unless $error;
+        } else {
+            print "<p style='color:red'><strong>ERROR: invalid address format</strong></p>";
+        }
     } else {
         print "<p style=\"color:red\"><strong>ERROR: Address not found</strong></p>";
     }
