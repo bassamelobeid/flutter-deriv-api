@@ -272,7 +272,7 @@ subtest $method => sub {
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('create fiat currency account')
             ->result_value_is(sub { shift->{currency} }, 'USD', 'fiat currency account currency is USD');
-            
+
         my $cl_usd = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
 
         my $new_loginid = $rpc_ct->result->{client_id};
@@ -290,10 +290,9 @@ subtest $method => sub {
         my $cl_bch = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
         #print $client_cr->{$_}."\n" for keys %$client_cr;
         is $client_cr->{$_}, $cl_bch->$_, "$_ is correct on created account" for keys %$client_cr;
-        
-        
-        ok(defined ($cl_bch->binary_user_id), 'BCH client has a binary user id');
-        ok(defined ($cl_usd->binary_user_id), 'USD client has a binary_user_id');
+
+        ok(defined($cl_bch->binary_user_id), 'BCH client has a binary user id');
+        ok(defined($cl_usd->binary_user_id), 'USD client has a binary_user_id');
         is $cl_bch->binary_user_id, $cl_usd->binary_user_id, 'Both BCH and USD clients have the same binary user id';
 
         $params->{args}->{currency} = 'BCH';

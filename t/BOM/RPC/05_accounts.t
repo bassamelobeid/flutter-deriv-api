@@ -939,7 +939,7 @@ subtest $method => sub {
         subject => qr/\Q$subject\E/
     );
     ok(@msgs, "email received");
-    $user = BOM::User->new( id => $user->{id} );
+    $user = BOM::User->new(id => $user->{id});
     isnt($user->{password}, $hash_pwd, 'user password updated');
     $test_client->load;
     isnt($user->{password}, $hash_pwd, 'client password updated');

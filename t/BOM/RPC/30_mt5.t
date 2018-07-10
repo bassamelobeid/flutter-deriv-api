@@ -297,6 +297,7 @@ subtest 'password check' => sub {
 };
 
 subtest 'password change' => sub {
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     my $method = 'mt5_password_change';
     my $params = {
         language => 'EN',
@@ -315,6 +316,17 @@ subtest 'password change' => sub {
     $params->{args}{login} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_password_change wrong login')
         ->error_code_is('PermissionDenied', 'error code for mt5_password_change wrong login');
+
+    # reset throller, test for password limit
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $params->{args}->{login}        = $DETAILS{login};
+    $params->{args}->{old_password} = $DETAILS{password};
+    $params->{args}->{new_password} = 'Ijkl6789';
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_password_change');
+    is($c->result, 1, 'result');
+
+    $c->call_ok($method, $params)->has_error('error for mt5_password_change wrong login');
+    is($c->result->{error}->{message_to_client}, 'Request too frequent. Please try again later.', 'change password hits rate limit');
 };
 
 subtest 'password reset' => sub {

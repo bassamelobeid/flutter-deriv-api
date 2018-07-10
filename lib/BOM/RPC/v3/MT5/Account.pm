@@ -876,6 +876,10 @@ async_rpc mt5_password_change => sub {
     # MT5 login not belongs to user
     return permission_error_future() unless _check_logins($client, ['MT' . $login]);
 
+    return create_error_future({
+            code              => 'MT5PasswordChangeError',
+            message_to_client => localize('Request too frequent. Please try again later.')}) if _throttle($client->loginid);
+
     return BOM::MT5::User::Async::password_check({
             login    => $login,
             password => $args->{old_password},
