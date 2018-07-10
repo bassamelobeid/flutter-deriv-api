@@ -29,6 +29,7 @@ HO:
 - HKF
 HS:
 - HKSE
+- HKSE_OTC
 I1:
 - BIS
 IE:
@@ -55,6 +56,7 @@ MS:
 N7:
 - NASDAQ
 - NASDAQ_INDEX
+- NASDAQ_OTC
 ND:
 - NZSE
 NT:
@@ -80,6 +82,7 @@ R7:
 S5:
 - EUREX_SWISS
 - SWX
+- SWX_OTC
 SE:
 - KRX
 SF:
