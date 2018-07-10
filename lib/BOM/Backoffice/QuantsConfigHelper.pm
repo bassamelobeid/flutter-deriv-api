@@ -25,7 +25,7 @@ sub save_limit {
             : ($_ =~ /underlying_symbol/) ? ($_ => [split ',', $args->{$_}])
             : ($_ => [$args->{$_} =~ /$_=(\w+)/g])
         } grep {
-        $args->{$_}
+        defined $args->{$_} and $args->{$_} ne ''
         } keys %$args;
 
     my $limits = try {

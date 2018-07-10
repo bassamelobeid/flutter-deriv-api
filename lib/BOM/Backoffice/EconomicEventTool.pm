@@ -12,9 +12,13 @@ use Volatility::Seasonality;
 use LandingCompany::Registry;
 
 use BOM::Backoffice::Request;
-use BOM::MarketData qw(create_underlying_db);
+use BOM::MarketData qw(create_underlying_db create_underlying);
 use BOM::Config::Chronicle;
 use BOM::Config::Runtime;
+use Quant::Framework::VolSurface::Delta;
+use Quant::Framework;
+use Finance::Exchange;
+use Math::Business::BlackScholesMerton::NonBinaries;
 
 my $json = JSON::MaybeXS->new;
 

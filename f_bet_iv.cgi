@@ -22,6 +22,7 @@ use BOM::Backoffice::Utility qw(master_live_server_error);
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::CustomCommissionTool;
+use BOM::Backoffice::PricePreview;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -130,6 +131,9 @@ print generate_correlations_upload_form({
     broker     => $broker,
     upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
 });
+
+Bar('Price Preview');
+print BOM::Backoffice::PricePreview::generate_form(request()->url_for('backoffice/quant/market_data_mgmt/update_price_preview.cgi'));
 
 Bar("Update the news events database");
 print BOM::Backoffice::EconomicEventTool::generate_economic_event_tool(

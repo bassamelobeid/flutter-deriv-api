@@ -9,6 +9,7 @@ use lib qw(/home/git/regentmarkets/bom-backoffice /home/git/regentmarkets/bom/cg
 use JSON::MaybeXS;
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::EconomicEventTool;
+use BOM::Backoffice::PricePreview;
 BOM::Backoffice::Sysinit::init();
 my $json = JSON::MaybeXS->new;
 ## Updates economic event list
@@ -42,4 +43,13 @@ if (request()->param('save_event')) {
         release_date => request()->param('release_date'),
     };
     print $json->encode(BOM::Backoffice::EconomicEventTool::save_new_event($param));
+}
+
+if (request()->param('compare_price_preview')) {
+    my $args->{event} =
+        {map { $_ => request()->param($_) } qw/id vol_change duration decay_factor vol_change_before duration_before decay_factor_before underlying/};
+    $args->{symbol}        = request()->param('compare_symbol');
+    $args->{pricing_date}  = request()->param('compare_date');
+    $args->{expiry_option} = request()->param('compare_expiry_option');
+    print $json->encode(BOM::Backoffice::PricePreview::update_price_preview($args));
 }

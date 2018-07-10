@@ -172,7 +172,7 @@
         if (table_id === 'deleted_event_list') {
             to_append += '<td><button onclick="restoreEvent(\'' + event.id + '\')">Restore</button></td> <td style="display:none;" class="update_result"></td>';
         } else {
-            to_append += '<td> <button onclick="update( \'' + event.id + '\' )">Update</button> </br></br> <button onclick="deleteEvent( \'' + event.id + '\' )">Delete</button> </td> <td style="display:none;" class="update_result"></td>';
+            to_append += '<td> <button onclick="comparePricePreview(\''+event.id+'\')">Preview</button> </br></br> <button onclick="update( \'' + event.id + '\' )">Update</button> </br></br> <button onclick="deleteEvent( \'' + event.id + '\' )">Delete</button> </td> <td style="display:none;" class="update_result"></td>';
         }
         to_append += '</tr>';
         table.append(to_append);
@@ -249,3 +249,90 @@
             });
         }
     }
+
+    function updatePricePreview() {
+        var table = \$('table#price_preview_form');
+        var symbol = table.find('input[name="symbol"]').val();
+        var p_date = table.find('input[name="pricing_date"]').val();
+        var p_expiry_option = table.find('select[name="expiry_option"]').val();
+        var result = table.find('td.result');
+        result.text('processing ...');
+
+        \$.ajax({
+            url: pp_upload_url,
+            data: {
+                update_price_preview: "1",
+                symbol: symbol,
+                pricing_date: p_date,
+                expiry_option: p_expiry_option,
+            },
+            success: function(data) {
+                var event = \$.parseJSON(data);
+                if (event.error) {
+                    result.text(event.error).css('color', 'red');
+                } else {
+                    result.text('Price updated for '+symbol).css('color', 'green');
+                    createPriceTable(event.headers, event.prices, 'price_preview_original');
+                }
+            }
+        });
+    }
+
+    function createPriceTable(headers, prices, id) {
+        var el = \$('div#'+id);
+        // use back the same style for table
+        var table = '<table class="economic_event_table"><tr><th>Symbol</th>';
+        for (var i=0; i<headers.length; i++) {
+            table += '<th>'+headers[i]+'</th>';
+        }
+        table += '</tr>';
+
+        Object.keys(prices).forEach(function (key) {
+            var data = prices[key];
+            table += '<tr><td>'+key+'</td>';
+            for (var i=0; i<headers.length; i++) {
+                table += '<td>Mid: '+prices[key][headers[i]]["mid_price"]+' Vol: '+prices[key][headers[i]]["vol"]+'</td>';
+            }
+            table += '</tr>';
+        });
+
+        table += '</table>';
+        el.html(table);
+    }
+
+    function comparePricePreview(id) {
+        if (id) {
+            var preview_el = \$('table#price_preview_form');
+            var el = \$('tr#'+id);
+            var result = el.find('td.update_result');
+            result.text('processing ...').show();
+
+            \$.ajax({
+                url: ee_upload_url,
+                data: {
+                    compare_price_preview: "1",
+                    underlying: el.find('select[name="ul_dropdown"]').val(),
+                    vol_change: el.find('input[name="vol_change"]').val(),
+                    duration: el.find('input[name="duration"]').val(),
+                    decay_factor: el.find('select[name="decay_factor"]').val(),
+                    vol_change_before: el.find('input[name="vol_change_before"]').val(),
+                    duration_before: el.find('input[name="duration_before"]').val(),
+                    decay_factor_before: el.find('select[name="decay_factor_before"]').val(),
+                    id: id,
+                    compare_symbol: preview_el.find('input[name="symbol"]').val(),
+                    compare_date: preview_el.find('input[name="pricing_date"]').val(),
+                    compare_expiry_option: preview_el.find('select[name="expiry_option"]').val(),
+                },
+                success: function(data) {
+                    var r = \$.parseJSON(data);
+                    if (r.error) {
+                        result.text(r.error).css('color', 'red');
+                    } else {
+                        result.text("ok").css('color', 'green');
+                        createPriceTable(r.headers, r.prices, 'price_preview_compare');
+                    }
+                }
+            });
+        }
+    }
+

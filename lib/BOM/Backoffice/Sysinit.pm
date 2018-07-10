@@ -94,6 +94,7 @@ my $permissions = {
     'f_bbdl_upload.cgi'                                                       => ['Quants'],
     'f_bbdl_upload_request_files.cgi'                                         => ['Quants'],
     'quant/market_data_mgmt/update_economic_events.cgi'                       => ['Quants'],
+    'quant/market_data_mgmt/update_price_preview.cgi'                         => ['Quants'],
     'quant/market_data_mgmt/update_custom_commission.cgi'                     => ['Quants'],
     'quant/market_data_mgmt/update_tentative_events.cgi'                      => ['Quants'],
     'quant/market_data_mgmt/update_used_interest_rates.cgi'                   => ['Quants'],

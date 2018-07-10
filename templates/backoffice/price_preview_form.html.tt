@@ -1,0 +1,41 @@
+<p>Price table will calculate the Mid price ((vanilla call + vanilla put)/2) of the next 7 days. If you need to check prices for more than one week, please use the provided *Pricing From* field.</p>
+<p>*Pricing From* will only support forward pricing. For back pricing, please use BPOT.</p>
+<table id='price_preview_form'>
+    <tr>
+        <td>Symbol Filter: </td><td><input type='text' name='symbol'></input></td>
+    </tr>
+    <tr>
+        <td>Pricing From: </td><td><input type='text' name='pricing_date'</td><td> * defaults to current date if left empty (e.g. 2018-02-28)</td>
+    </tr>
+    <tr>
+        <td>
+            Expiry: 
+        </td>
+        <td>
+            <select name='expiry_option'>
+                <option selected="selected" value='end_of_day'>Binary's end of day</option>
+                <option value='new_york_10'>New York 10</option>
+            </select>
+        </td>
+    </tr>
+    <tr>
+        <td><button onclick="updatePricePreview()">Price</button></td>
+        <td class='result'></td>
+    </tr>
+</table>
+
+<p><b>Price Table:</b> * defaults to showing USD pairs</p>
+<div id='price_preview_original'></div>
+
+<p><b>To Compare:</b></p>
+<div id='price_preview_compare'>
+<p>empty</p>
+</div>
+
+<script>
+
+    var pp_upload_url = "[% upload_url | none %]";
+    [% PROCESS backoffice/economic_event_forms.js %];
+    createPriceTable([% headers | none %], [% prices | none %], 'price_preview_original');
+
+</script>
