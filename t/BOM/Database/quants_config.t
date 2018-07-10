@@ -226,30 +226,33 @@ subtest 'get all global limit' => sub {
         '_get_all',
         sub {
             my ($self, $landing_company) = @_;
-            my $test_data = {
-                costarica => {
-                    '1fbade408efc3d8b' => {
-                        'barrier_type'          => 'default',
-                        'contract_group'        => 'default',
-                        'expiry_type'           => 'default',
-                        'global_potential_loss' => 201,
-                        'global_realized_loss'  => 100000,
-                        'market'                => 'forex',
-                        'type'                  => 'market',
-                        'underlying_symbol'     => '-',
-                    },
-                    '30e1a394a193b321' => {
-                        'barrier_type'          => 'default',
-                        'contract_group'        => 'default',
-                        'expiry_type'           => 'default',
-                        'global_potential_loss' => 20000,
-                        'global_realized_loss'  => 10000,
-                        'market'                => 'commodities',
-                        'type'                  => 'symbol_default',
-                        'underlying_symbol'     => 'default',
-                    }
+            my $common = {
+                '1fbade408efc3d8b' => {
+                    'barrier_type'          => 'default',
+                    'contract_group'        => 'default',
+                    'expiry_type'           => 'default',
+                    'global_potential_loss' => 201,
+                    'global_realized_loss'  => 100000,
+                    'market'                => 'forex',
+                    'type'                  => 'market',
+                    'underlying_symbol'     => '-',
                 },
-                virtual => {
+                '30e1a394a193b321' => {
+                    'barrier_type'          => 'default',
+                    'contract_group'        => 'default',
+                    'expiry_type'           => 'default',
+                    'global_potential_loss' => 20000,
+                    'global_realized_loss'  => 10000,
+                    'market'                => 'commodities',
+                    'type'                  => 'symbol_default',
+                    'underlying_symbol'     => 'default',
+                }};
+            my $test_data = {
+                costarica   => $common,
+                malta       => $common,
+                maltainvest => $common,
+                japan       => $common,
+                iom         => {
                     '1fbade408efc3d8b' => {
                         'barrier_type'          => 'default',
                         'contract_group'        => 'default',
@@ -285,7 +288,7 @@ subtest 'get all global limit' => sub {
             return $test_data->{$landing_company};
         });
     my $qc       = BOM::Database::QuantsConfig->new;
-    my $config   = $qc->get_all_global_limit(['costarica', 'virtual']);
+    my $config   = $qc->get_all_global_limit(['default']);
     my $expected = [{
             'barrier_type'          => 'default',
             'contract_group'        => 'default',
@@ -317,7 +320,7 @@ subtest 'get all global limit' => sub {
             'market'                => 'volidx',
             'type'                  => 'market',
             'underlying_symbol'     => '-',
-            'landing_company'       => 'virtual',
+            'landing_company'       => 'iom',
         },
     ];
     cmp_bag($config, $expected, 'get all config in the correct format');

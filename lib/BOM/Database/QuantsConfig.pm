@@ -69,13 +69,25 @@ A landing company to broker code mapper.
 
 =cut
 
+has active_landing_company => (
+    is      => 'ro',
+    default => sub {
+        {
+            costarica   => 1,
+            iom         => 1,
+            malta       => 1,
+            maltainvest => 1,
+            japan       => 1,
+        };
+    });
+
 has broker_code_mapper => (is => 'lazy');
 
 sub _build_broker_code_mapper {
     my $self = shift;
 
     my %list_by_dbname;
-    foreach my $short (grep { $_ ne 'password' } keys %$clientdb_config) {
+    foreach my $short (grep { $self->active_landing_company->{$_} } keys %$clientdb_config) {
         my $write_info = $clientdb_config->{$short}{write};
         push @{$list_by_dbname{$write_info->{name}}}, $short;
     }
@@ -271,7 +283,7 @@ sub get_all_global_limit {
         $landing_company = [keys %{$self->broker_code_mapper}];
     }
 
-    my %limits = map { $_ => $self->_get_all($_) } @$landing_company;
+    my %limits = map { my $l = $self->_get_all($_); defined $l ? ($_ => $l) : () } @$landing_company;
 
     my @all_ids = uniq map { keys %{$limits{$_}} } keys %limits;
     # fill the landing_company field for each record.
