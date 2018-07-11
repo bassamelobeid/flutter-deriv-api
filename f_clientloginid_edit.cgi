@@ -797,7 +797,12 @@ if ($user) {
                     broker  => $siblings->{$lid}->{broker_code},
                     loginID => $lid,
                 });
-            print "<li><a href='$link_href'>" . encode_entities($lid) . " (" . $currency . ") </a></li>";
+
+            print "<li><a href='$link_href'"
+                . ($client->get_status('disabled') ? ' style="color:red"' : '') . ">"
+                . encode_entities($lid) . " ("
+                . $currency
+                . ") </a></li>";
 
         }
 

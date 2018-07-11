@@ -7,6 +7,7 @@ use Locale::Country;
 use f_brokerincludeall;
 use HTML::Entities;
 use BOM::User::Client;
+use Date::Utility;
 
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -21,11 +22,18 @@ PrintContentType();
 
 my $loginID = uc(request()->param('loginID') // '');
 $loginID =~ s/\s//g;
-my $encoded_loginID         = encode_entities($loginID);
+my $encoded_loginID = encode_entities($loginID);
 my $depositswithdrawalsonly = request()->param('depositswithdrawalsonly') // '';
-my $startdate               = request()->param('startdate');
-my $enddate                 = request()->param('enddate');
-my $months                  = request()->param('months') // 6;
+
+my $summary_from_date =
+    defined(request()->param('summary_fm_date')) ? Date::Utility->new(request()->param('summary_fm_date')) : Date::Utility->new()->_minus_months(6);
+my $summary_to_date = defined(request()->param('summary_to_date')) ? Date::Utility->new(request()->param('summary_to_date')) : Date::Utility->new();
+
+my $overview_from_date =
+    defined(request()->param('overview_fm_date')) ? Date::Utility->new(request()->param('overview_fm_date')) : Date::Utility->new()->_minus_months(6);
+my $overview_to_date =
+    defined(request()->param('overview_to_date')) ? Date::Utility->new(request()->param('overview_to_date')) : Date::Utility->new();
+
 my $broker;
 
 if ($loginID =~ /^([A-Z]+)/) {
@@ -52,7 +60,6 @@ if (not $client) {
     print "Error : wrong loginID ($encoded_loginID) could not get client instance";
     code_exit_BO();
 }
-
 my $currency = request()->param('currency');
 if (not $currency or $currency eq 'default') {
     $currency = $client->currency;
@@ -69,17 +76,16 @@ my $client_email = $client->email;
 
 my $statement = client_statement_for_backoffice({
     client   => $client,
-    before   => $enddate,
-    after    => $startdate,
+    before   => $summary_to_date->plus_time_interval('24h')->date_yyyymmdd(),
+    after    => $summary_from_date->minus_time_interval('24h')->date_yyyymmdd(),
     currency => $currency,
 });
 
 my $summary = client_statement_summary({
-    client   => $client,
-    currency => $currency,
-    after    => Date::Utility->new(time - $months * 31 * 86400)->datetime,
-    before   => Date::Utility->new()->datetime,
-});
+        client   => $client,
+        currency => $currency,
+        after    => $overview_from_date->minus_time_interval('24h')->datetime(),
+        before   => $overview_to_date->plus_time_interval('24h')->datetime()});
 
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
 my $dbic = $clientdb->db->dbic;
@@ -94,6 +100,10 @@ my ($deposits_to_date, $withdrawals_to_date) = $dbic->run(
 BOM::Backoffice::Request::template()->process(
     'backoffice/account/statement.html.tt',
     {
+        client_summary_ranges => {
+            from => $overview_from_date->date_yyyymmdd(),
+            to   => $overview_to_date->date_yyyymmdd()
+        },
         transactions            => $statement->{transactions},
         withdrawals_to_date     => formatnumber('amount', $currency, $withdrawals_to_date),
         deposits_to_date        => formatnumber('amount', $currency, $deposits_to_date),
@@ -106,7 +116,6 @@ BOM::Backoffice::Request::template()->process(
         clientedit_url          => request()->url_for('backoffice/f_clientloginid_edit.cgi'),
         self_post               => request()->url_for('backoffice/f_manager_history.cgi'),
         summary                 => $summary,
-        months                  => $months,
         client                  => {
             name      => $client_name,
             email     => $client_email,
@@ -114,8 +123,8 @@ BOM::Backoffice::Request::template()->process(
             residence => $residence,
             tel       => $tel
         },
-        startdate => $startdate,
-        enddate   => $enddate,
+        startdate => $summary_from_date->date_yyyymmdd(),
+        enddate   => $summary_to_date->date_yyyymmdd(),
     },
 ) || die BOM::Backoffice::Request::template()->error();
 

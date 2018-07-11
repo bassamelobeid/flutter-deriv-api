@@ -54,7 +54,19 @@ if (not $user) {
     code_exit_BO();
 }
 
-my @all_loginids = $user->loginids;
+my @mt_logins_ids = sort grep { /^MT\d+$/ } $user->loginids;
+my @bom_login_ids = $user->bom_loginids();
+my @bom_logins;
+
+foreach my $lid (sort @bom_login_ids) {
+    my $client = BOM::User::Client->new({loginid => $lid});
+    push @bom_logins,
+        {
+        text     => encode_entities($lid),
+        currency => ' (' . ($client->default_account ? $client->default_account->currency_code : 'No currency selected') . ')',
+        style => ($client->get_status('disabled') ? ' style=color:red' : '')};
+}
+
 if (not $input{email_edit}) {
     # list loginids with email
     BOM::Backoffice::Request::template()->process(
@@ -62,8 +74,8 @@ if (not $input{email_edit}) {
         {
             list         => 1,
             email        => $email,
-            bom_loginids => [grep { $_ !~ /^MT\d+$/ } @all_loginids],
-            mt5_loginids => [grep { $_ =~ /^MT\d+$/ } @all_loginids],
+            bom_logins   => [@bom_logins],
+            mt5_loginids => [@mt_logins_ids]
         },
     ) || die BOM::Backoffice::Request::template()->error();
 
@@ -131,8 +143,8 @@ if ($email ne $new_email) {
             updated      => 1,
             old_email    => $email,
             new_email    => $new_email,
-            bom_loginids => [grep { $_ !~ /^MT\d+$/ } @all_loginids],
-            mt5_loginids => [grep { $_ =~ /^MT\d+$/ } @all_loginids],
+            bom_logins   => [@bom_logins],
+            mt5_loginids => [@mt_logins_ids]
         },
     ) || die BOM::Backoffice::Request::template()->error();
 } else {
