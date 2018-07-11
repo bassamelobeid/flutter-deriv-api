@@ -14,6 +14,7 @@ use Amazon::S3::SignedURLGenerator;
 
 use Brands;
 
+use BOM::Config::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::MyAffiliates::ActivityReporter;
 
@@ -27,7 +28,7 @@ my $from_date = Date::Utility->new('01-' . $to_date->month_as_string . '-' . $to
 my $reporter        = BOM::MyAffiliates::ActivityReporter->new();
 my $processing_date = Date::Utility->new($from_date->epoch);
 
-my $output_dir = BOM::Platform::Runtime->instance->app_config->system->directory->db . '/myaffiliates/';
+my $output_dir = BOM::Config::Runtime->instance->app_config->system->directory->db . '/myaffiliates/';
 path($output_dir)->mkpath if (not -d $output_dir);
 
 my $output_zip      = "myaffiliates_" . $from_date->date_yyyymmdd . "-" . $to_date->date_yyyymmdd . ".zip";
