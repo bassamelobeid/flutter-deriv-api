@@ -16,7 +16,7 @@ use BOM::JavascriptConfig;
 BOM::Backoffice::Sysinit::init();
 PrintContentType();
 
-my $access_token = request()->param('token');
+my $access_token = request()->param('access_token');
 my $staff        = BOM::Backoffice::Auth0::user_by_access_token($access_token);
 
 if (not $staff) {
