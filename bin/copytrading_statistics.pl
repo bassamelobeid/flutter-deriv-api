@@ -4,4 +4,4 @@ use warnings;
 
 use BOM::Backoffice::Script::CopyTradingStatistics;
 
-exit BOM::Backoffice::Script::CopyTradingStatistics::run;
+exit BOM::Backoffice::Script::CopyTradingStatistics::run();
