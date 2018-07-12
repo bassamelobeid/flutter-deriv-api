@@ -28,17 +28,17 @@ sub login {
     <title>Binary.com BackOffice System</title>
     <html>
     <div id="root"></div>
-    <form id='auth-form' name='second_step_auth' action='$params->{submit}'>
-    <input type='hidden' id='auth0-token' name='token' />
-    </form>
     <script src="https://cdn.auth0.com/js/lock/11.7.2/lock.min.js"></script>
     <script>
-    var lock = new Auth0Lock('$clientId', 'binary.auth0.com');
-      lock.show(function onLogin(err, profile, id_token, access_token) {
-        document.getElementById("auth-form").method = "post";
-        document.getElementById("auth0-token").value = access_token;
-        document.second_step_auth.submit();
-      });
+    var lock = new Auth0Lock('$clientId', 'binary.auth0.com', {
+      auth: {
+        redirectUrl: '$params->{submit}',
+        responseMode: 'form_post',
+        responseType: 'token',
+        sso: false,
+      }
+    });
+    lock.show();
     </script>
     </html>
     ~;
