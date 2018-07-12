@@ -873,6 +873,11 @@ async_rpc mt5_password_change => sub {
     my $args   = $params->{args};
     my $login  = $args->{login};
 
+    return create_error_future({
+            code              => 'MT5PasswordChangeError',
+            message_to_client => localize('Current password and New password cannot be the same.')}
+    ) if ($args->{new_password} eq $args->{old_password});
+
     # MT5 login not belongs to user
     return permission_error_future() unless _check_logins($client, ['MT' . $login]);
 
