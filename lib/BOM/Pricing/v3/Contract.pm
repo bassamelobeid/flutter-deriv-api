@@ -381,8 +381,8 @@ sub get_bid {
 
         if ($is_sold and $is_expired) {
             # here sell_price is used to parse the status of contracts that settled from bo
-            # For non binary , there is no concept of won or lost, hence will return status of sold if it is already expired and sold
-            $response->{status} = !$contract->is_binary ? 'sold' : ($sell_price == $contract->payout ? "won" : "lost");
+            # For non binary , there is no concept of won or lost, hence will return empty status if it is already expired and sold
+            $response->{status} = !$contract->is_binary ? undef : ($sell_price == $contract->payout ? "won" : "lost");
         } elsif ($is_sold and not $is_expired) {
             $response->{status} = 'sold';
         } else {    # not sold
