@@ -47,25 +47,29 @@ my $vr_details = {
         client_password => 'foobar',
         residence       => 'id',                  # Indonesia
         salutation      => 'Ms',
+        myaffiliates_token => 'this is token',
     },
     MLT => {
         email           => 'foo+nl@binary.com',
         client_password => 'foobar',
         residence       => 'nl',                  # Netherlands
         salutation      => 'Mr',
-    },
+            myaffiliates_token => 'this is token',
+           },
     MX => {
         email           => 'foo+gb@binary.com',
         client_password => 'foobar',
         residence       => 'gb',                  # UK
         salutation      => 'Mrs',
-    },
+           myaffiliates_token => 'this is token',
+          },
     JP => {
         email           => 'foo+jp@binary.com',
         client_password => 'foobar',
         residence       => 'jp',                  # JAPAN
         salutation      => 'Ms',
-    },
+        myaffiliates_token => 'this is token',
+        },
 };
 
 my %real_client_details = (
@@ -142,6 +146,7 @@ subtest 'create account' => sub {
         lives_ok {
             my $vr_acc = create_vr_acc($vr_details->{$broker});
             ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
+            is($vr_client->myaffiliates_token, 'this is token', 'myaffiliates token ok');
         }
         'create VR acc';
 
@@ -301,6 +306,7 @@ sub create_vr_acc {
                 client_password   => $args->{client_password},
                 residence         => $args->{residence},
                 has_social_signup => $args->{social_signup},
+                myaffiliates_token => $args->{myaffiliates_token},
             }});
 }
 

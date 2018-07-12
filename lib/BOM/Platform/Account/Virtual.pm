@@ -67,20 +67,21 @@ sub create_account {
         my $broker_code = LandingCompany::Registry::get($landing_company)->broker_codes->[0];
 
         $client = $user->create_client(
-            broker_code      => $broker_code,
-            client_password  => $password,
-            first_name       => '',
-            last_name        => '',
-            email            => $email,
-            residence        => $residence || '',
-            address_line_1   => '',
-            address_line_2   => '',
-            address_city     => '',
-            address_state    => '',
-            address_postcode => '',
-            phone            => '',
-            secret_question  => '',
-            secret_answer    => ''
+            broker_code        => $broker_code,
+            client_password    => $password,
+            first_name         => '',
+            last_name          => '',
+            myaffiliates_token => $details->{myaffiliates_token} // '',
+            email              => $email,
+            residence          => $residence || '',
+            address_line_1     => '',
+            address_line_2     => '',
+            address_city       => '',
+            address_state      => '',
+            address_postcode   => '',
+            phone              => '',
+            secret_question    => '',
+            secret_answer      => ''
         );
     }
     catch {
