@@ -31,7 +31,7 @@ sub login {
     <form id='auth-form' name='second_step_auth' action='$params->{submit}'>
     <input type='hidden' id='auth0-token' name='token' />
     </form>
-    <script src="https://cdn.auth0.com/js/lock-9.1.min.js"></script>
+    <script src="https://cdn.auth0.com/js/lock/11.7.2/lock.min.js"></script>
     <script>
     var lock = new Auth0Lock('$clientId', 'binary.auth0.com');
       lock.show(function onLogin(err, profile, id_token, access_token) {
