@@ -11,6 +11,25 @@ use BOM::Config::RedisReplicated;
 
 my $json = JSON::MaybeXS->new;
 
+sub exchange_code_for_token {
+    my $code = shift;
+
+    return unless $code;
+
+    my $ua  = Mojo::UserAgent->new;
+    my $url = BOM::Config::third_party()->{auth0}->{api_uri} . "/oauth/token";
+    my $tx  = $ua->post(
+        $url => form => {
+            client_id     => BOM::Config::third_party()->{auth0}->{client_id},
+            client_secret => BOM::Config::third_party()->{auth0}->{client_secret},
+            redirect_uri  => BOM::Backoffice::Request::request()->url_for('backoffice/second_step_auth.cgi'),
+            code          => $code,
+            grant_type    => 'authorization_code',
+        });
+    return undef if $tx->error;
+    return $tx->result->json->{access_token};
+}
+
 sub user_by_access_token {
     my $access_token = shift;
 
