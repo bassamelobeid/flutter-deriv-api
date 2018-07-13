@@ -33,18 +33,15 @@ sub exchange_code_for_token {
 sub user_by_access_token {
     my $access_token = shift;
 
-    return unless $access_token;
+    return undef unless $access_token;
 
     my $ua              = Mojo::UserAgent->new;
     my $default_headers = {
         'authorization' => 'Bearer ' . $access_token,
     };
     my $tx = $ua->get(BOM::Config::third_party()->{auth0}->{api_uri} . "/userinfo" => $default_headers);
-    my $error = $tx->error;
-    if ($error) {
-        return;
-    }
-    return $json->decode($tx->success->body);
+    return undef if $tx->error;
+    return $tx->result->json;
 }
 
 sub login {
