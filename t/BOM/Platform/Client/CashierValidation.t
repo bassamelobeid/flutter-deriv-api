@@ -231,6 +231,14 @@ subtest 'Cashier validation landing company and country specific' => sub {
         $mf_client->save;
 
         $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
+        is $res->{error}->{code}, 'CashierForwardError', 'Correct error code for non MF professional clients';
+        is $res->{error}->{message_to_client}, 'Your account is restricted to withdrawals only.',
+            'Correct error message for non MF professional clients';
+
+        $mf_client->set_status("professional");
+        $mf_client->save();
+
+        $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
         is $res, undef, 'Validation passed';
 
         $mf_client->tax_residence(undef);
