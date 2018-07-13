@@ -777,9 +777,9 @@ Here we have any uncommon business logic check.
 Common checks (unwelcome & disabled) are done _validate_client_status.
 
 Don't allow to trade for:
-- MLT, MX and MF without confirmed age
+- MLT, MX and MF without confirmed age after the first deposit
 - MF without fully_authentication
-
+- MF without professional status
 =cut
 
 sub check_trade_status {
@@ -787,12 +787,10 @@ sub check_trade_status {
 
     return if $client->is_virtual;
 
-    if ((
-                ($client->landing_company->short =~ /^(?:maltainvest|malta|iom)$/)
-            and not $client->get_status('age_verification')
-            and $client->has_deposits
-        )
-        or ($client->landing_company->short eq 'maltainvest' and not $client->fully_authenticated))
+    my $landing = $client->landing_company->short;
+
+    if (   ($landing =~ /^(?:maltainvest|malta|iom)$/ and not $client->get_status('age_verification') and $client->has_deposits)
+        or ($landing eq 'maltainvest' and not $client->fully_authenticated))
     {
         return Error::Base->cuss(
             -type              => 'PleaseAuthenticate',
@@ -800,6 +798,13 @@ sub check_trade_status {
             -message_to_client => localize('Please authenticate your account to continue.'),
         );
     }
+
+    return Error::Base->cuss(
+        -type              => 'NoMFProfessionalClient',
+        -mesg              => 'your account is not authorised for any further contract purchases.',
+        -message_to_client => localize('Sorry, your account is not authorised for any further contract purchases.'),
+    ) if $landing eq 'maltainvest' and not $client->get_status("professional");
+
     return undef;
 }
 

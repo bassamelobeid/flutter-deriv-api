@@ -150,13 +150,18 @@ sub check_one_result {
 
     subtest $title, sub {
         my $err = 0;
+        if (not $cl->get_status("professional") and $cl->landing_company->short eq 'maltainvest') {
+            $err++
+                unless is $m->{error}, "Sorry, your account is not authorised for any further contract purchases.",
+                "correct error for non professional MF client";
+            return $err;
+        }
         $err++ unless is $m->{error}, undef, "no error should be provided";
-        $err++ unless is $m->{loginid}, $cl->loginid, 'loginid';
         $err++ unless is $m->{txn}->{account_id}, $acc->id, 'txn account_id';
         $err++ unless is $m->{fmb}->{account_id}, $acc->id, 'fmb account_id';
         $err++ unless is $m->{txn}->{financial_market_bet_id}, $m->{fmb}->{id}, 'txn financial_market_bet_id';
         $err++ unless is $m->{txn}->{balance_after}, sprintf('%.2f', $balance_after), 'balance_after';
-#        note explain $m if $err;
+        $err++ unless is $m->{loginid}, $cl->loginid, 'loginid';
     };
 }
 
@@ -499,9 +504,11 @@ subtest 'single contract fails in database', sub {
 };
 
 subtest 'batch-buy multiple databases and datadog', sub {
-    plan tests => 23;
+    plan tests => 27;
     lives_ok {
-        my $clm = create_client 'VRTC';    # manager
+        my $clm              = create_client 'VRTC';    # manager
+        my $mf_professional1 = create_client 'MF';
+        my $mf_professional2 = create_client 'MF';
         my @cl;
         push @cl, create_client;
         push @cl, create_client;
@@ -511,6 +518,15 @@ subtest 'batch-buy multiple databases and datadog', sub {
 
         $clm->set_default_account('USD');
         $clm->save;
+
+        $mf_professional1->set_status("professional");
+        $mf_professional2->set_status("professional");
+
+        $mf_professional1->save();
+        $mf_professional2->save();
+
+        push @cl, $mf_professional1;
+        push @cl, $mf_professional2;
 
         top_up $_, 'USD', 5000 for (@cl);
 

@@ -1081,6 +1081,8 @@ subtest 'max_payout_open_bets validation', sub {
     'survived';
     lives_ok {
         my $cl = create_client('MF');
+        $cl->set_status("professional");
+        $cl->save();
         top_up $cl, 'USD', 100;
 
         isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
