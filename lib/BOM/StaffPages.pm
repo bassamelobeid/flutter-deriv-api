@@ -34,7 +34,7 @@ sub login {
       auth: {
         redirectUrl: '$params->{submit}',
         responseMode: 'form_post',
-        responseType: 'token',
+        responseType: 'code',
         sso: false,
       }
     });
