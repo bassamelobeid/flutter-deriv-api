@@ -1,31 +1,44 @@
 package BOM::Backoffice::Auth0;
 use warnings;
 use strict;
-use Encode;
 use Mojo::UserAgent;
-use JSON::MaybeXS;
+use JSON::MaybeUTF8 qw(:v1);
 use BOM::Config::Runtime;
 use BOM::Config;
 use BOM::User::AuditLog;
 use BOM::Config::RedisReplicated;
 
-my $json = JSON::MaybeXS->new;
+sub exchange_code_for_token {
+    my $code = shift;
+
+    return undef unless $code;
+
+    my $ua  = Mojo::UserAgent->new;
+    my $url = BOM::Config::third_party()->{auth0}->{api_uri} . "/oauth/token";
+    my $tx  = $ua->post(
+        $url => form => {
+            client_id     => BOM::Config::third_party()->{auth0}->{client_id},
+            client_secret => BOM::Config::third_party()->{auth0}->{client_secret},
+            redirect_uri  => BOM::Backoffice::Request::request()->url_for('backoffice/second_step_auth.cgi'),
+            code          => $code,
+            grant_type    => 'authorization_code',
+        });
+    return undef if $tx->error;
+    return $tx->result->json->{access_token};
+}
 
 sub user_by_access_token {
     my $access_token = shift;
 
-    return unless $access_token;
+    return undef unless $access_token;
 
     my $ua              = Mojo::UserAgent->new;
     my $default_headers = {
         'authorization' => 'Bearer ' . $access_token,
     };
     my $tx = $ua->get(BOM::Config::third_party()->{auth0}->{api_uri} . "/userinfo" => $default_headers);
-    my $error = $tx->error;
-    if ($error) {
-        return;
-    }
-    return $json->decode($tx->success->body);
+    return undef if $tx->error;
+    return $tx->result->json;
 }
 
 sub login {
@@ -34,7 +47,7 @@ sub login {
     my $user = BOM::Backoffice::Auth0::user_by_access_token($access_token);
     if ($user) {
         $user->{token} = $access_token;
-        BOM::Config::RedisReplicated::redis_write()->set("BINARYBOLOGIN::" . $user->{nickname}, Encode::encode_utf8($json->encode($user)));
+        BOM::Config::RedisReplicated::redis_write()->set("BINARYBOLOGIN::" . $user->{nickname}, encode_json_utf8($user));
         BOM::Config::RedisReplicated::redis_write()->expire("BINARYBOLOGIN::" . $user->{nickname}, 24 * 3600);
 
         return $user;
@@ -47,7 +60,7 @@ sub from_cookie {
 
     my $user;
     if ($staff and $user = BOM::Config::RedisReplicated::redis_read()->get("BINARYBOLOGIN::" . $staff)) {
-        return $json->decode(Encode::decode_utf8($user));
+        return decode_json_utf8($user);
     }
     return;
 }
@@ -70,7 +83,7 @@ sub has_authorisation {
 
     my $cache = BOM::Config::RedisReplicated::redis_read()->get("BINARYBOLOGIN::" . $staff);
     my $user;
-    if ($cache and $user = $json->decode(Encode::decode_utf8($cache)) and $user->{token} = $auth_token) {
+    if ($cache and $user = decode_json_utf8($cache) and $user->{token} = $auth_token) {
         BOM::Config::RedisReplicated::redis_write()->expire("BINARYBOLOGIN::" . $staff, 24 * 3600);
         if (not $groups or not BOM::Config::on_production()) {
             return 1;
