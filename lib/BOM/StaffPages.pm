@@ -3,46 +3,25 @@ use strict;
 use warnings;
 
 use MooseX::Singleton;
-use Data::Dumper;
+use URI;
+
 use BOM::Backoffice::Request;
+use BOM::Backoffice::PlackHelpers 'http_redirect';
 use BOM::Config;
 
 sub login {
     my $self     = shift;
-    my $bet      = shift;
-    my $params   = {};
     my $clientId = BOM::Config::third_party()->{auth0}->{client_id};
+    my $redirect = BOM::Backoffice::Request::request()->url_for('backoffice/second_step_auth.cgi');
 
-    $params->{submit}   = BOM::Backoffice::Request::request()->url_for('backoffice/second_step_auth.cgi');
-    $params->{bet}      = $bet;
-    $params->{redirect} = '';
-    if ($main::ENV{'SCRIPT_NAME'} =~ /.*\/(.*)$/) {
-        my $script = $1;
-        unless ($script eq 'f_broker_login.cgi') {
-            $params->{redirect} = '';
-        }
-    }
+    my $auth = URI->new(BOM::Config::third_party()->{auth0}->{api_uri} . '/authorize');
+    $auth->query_form(
+        response_type => 'code',
+        client_id     => $clientId,
+        redirect_uri  => $redirect
+    );
 
-    print qq~
-    <!doctype html>
-    <title>Binary.com BackOffice System</title>
-    <html>
-    <div id="root"></div>
-    <script src="https://cdn.auth0.com/js/lock/11.7.2/lock.min.js"></script>
-    <script>
-    var lock = new Auth0Lock('$clientId', 'binary.auth0.com', {
-      auth: {
-        redirectUrl: '$params->{submit}',
-        responseMode: 'form_post',
-        responseType: 'code',
-        sso: false,
-      }
-    });
-    lock.show();
-    </script>
-    </html>
-    ~;
-
+    http_redirect $auth->as_string;
     return;
 }
 
