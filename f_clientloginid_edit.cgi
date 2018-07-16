@@ -87,11 +87,11 @@ my $encoded_broker = encode_entities($broker);
 my $clerk          = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 if ($broker eq 'MF') {
-    if ($input{mifir_reset}) {
+    if ($input{view_action} eq "mifir_reset") {
         $client->mifir_id('');
         $client->save;
     }
-    if ($input{mifir_set_concat}) {
+    if ($input{view_action} eq "mifir_set_concat") {
         use POSIX qw(locale_h);
         use locale;
         my $old_locale = setlocale(LC_CTYPE);

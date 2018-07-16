@@ -10,12 +10,12 @@
             so if its not in mifir countries list it means its non EU
         -->
         [% IF !data.country and citizenship %]
-            <input type="submit" name="mifir_set_concat" value="CONCAT">
+            <button type="submit" name="view_action" value="mifir_set_concat">CONCAT</button>
         [% END %]
         [% FOREACH i IN data.keys %]
             [% NEXT IF i == 'country' %]
             [% IF i == 'CONCAT' %]
-                    <input type="submit" name="mifir_set_concat" value="CONCAT">
+                    <button type="submit" name="view_action" value="mifir_set_concat">CONCAT</button> 
                     <br>
                     [% NEXT %]
             [% END %]
@@ -40,7 +40,7 @@
         <td><table><tr><td valign="top" style="padding-top: 0px; border-right: 1px solid #888888; padding-right: 10px">:
         [% IF client.mifir_id %]
             <span>[% client.mifir_id %]</span>
-            <input type="submit" name="mifir_reset" value="DELETE">
+            <button type="submit" name="view_action" value="mifir_reset" value="DELETE">DELETE</button>
         [% ELSE %]
             <input type="text" name="mifir_id" value=""><br>
             up to 35 alphanumerical characters
