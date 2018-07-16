@@ -11,7 +11,7 @@ use BOM::Config::RedisReplicated;
 sub exchange_code_for_token {
     my $code = shift;
 
-    return unless $code;
+    return undef unless $code;
 
     my $ua  = Mojo::UserAgent->new;
     my $url = BOM::Config::third_party()->{auth0}->{api_uri} . "/oauth/token";
