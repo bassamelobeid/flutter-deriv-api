@@ -487,17 +487,23 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         }
     }
 
+    if (my @dob_keys = grep { /dob_/ } keys %input) {
+        my @dob_fields = map { 'dob_' . $_ } qw/year month day/;
+        my @dob_values = ($client->date_of_birth // '') =~ /(\d+)-(\d+)-(\d+)/;
+        my %current_dob = map { $dob_fields[$_] => $dob_values[$_] } 0 .. $#dob_fields;
+
+        $current_dob{$_} = $input{$_} for @dob_keys;
+
+        if (grep { !$_ } values %current_dob) {
+            print qq{<p style="color:red">Error: Date of birth cannot be empty.</p>};
+            code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
+        } else {
+            $client->date_of_birth(sprintf "%04d-%02d-%02d", $current_dob{'dob_year'}, $current_dob{'dob_month'}, $current_dob{'dob_day'});
+        }
+    }
+
     CLIENT_KEY:
     foreach my $key (keys %input) {
-        if ($key eq 'dob_day') {
-            my $date_of_birth;
-            $date_of_birth = sprintf "%04d-%02d-%02d", $input{'dob_year'}, $input{'dob_month'}, $input{'dob_day'}
-                if $input{'dob_day'} && $input{'dob_month'} && $input{'dob_year'};
-
-            $client->date_of_birth($date_of_birth);
-            next CLIENT_KEY;
-        }
-
         if (my ($document_field, $id) = $key =~ /^(expiration_date|comments|document_id)_([0-9]+)$/) {
             my $val = encode_entities($input{$key} // '') || next CLIENT_KEY;
             my ($doc) = grep { $_->id eq $id } $client->client_authentication_document;    # Rose
