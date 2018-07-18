@@ -271,15 +271,10 @@ if ($input{whattodo} eq 'uploadID') {
             $client->set_db('write');
         }
 
-        my $error_occured;
-        try {
-            $client->_set_staff;
+        if (not $client->save) {
+            print "<p style=\"color:red; font-weight:bold;\">Failed to save client citizenship.</p>";
+            code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
         }
-        catch {
-            $error_occured = $_;
-        };
-
-        die "Unable to set staff info, with error: $error_occured" if $error_occured;
 
         my $file_size = (stat($filetoupload))[7];
         if ($file_size > MAX_FILE_SIZE) {
