@@ -1190,7 +1190,7 @@ subtest 'max_payout_open_bets validation', sub {
 };
 
 subtest 'max_turnover validation', sub {
-    plan tests => 19;
+    plan tests => 17;
     lives_ok {
         my $cl = create_client;
 
@@ -1257,15 +1257,13 @@ subtest 'max_turnover validation', sub {
             $txn->buy;
         };
         SKIP: {
-            skip 'no error', 6
+            skip 'no error', 5
                 if not defined $error
                 or ref $error ne 'Error::Base';
 
             is $error->get_type, 'DailyTurnoverLimitExceeded', 'error is DailyTurnoverLimitExceeded';
 
             like $error->{-message_to_client}, qr/daily turnover limit of USD15\.59/, 'message_to_client contains limit';
-            like $error->{-message_to_client}, qr/Please authenticate your account to increase your daily turnover limit\./,
-                'message_to_client contains authentication notice';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
@@ -1281,15 +1279,13 @@ subtest 'max_turnover validation', sub {
             $txn->buy;
         };
         SKIP: {
-            skip 'no error', 6
+            skip 'no error', 5
                 if not defined $error
                 or ref $error ne 'Error::Base';
 
             is $error->get_type, 'DailyTurnoverLimitExceeded', 'error is DailyTurnoverLimitExceeded';
 
             like $error->{-message_to_client}, qr/daily turnover limit of USD15\.59/, 'message_to_client contains limit';
-            unlike $error->{-message_to_client}, qr/Please authenticate your account to increase your daily turnover limit/,
-                'message_to_client does not contain authentication notice if the client is already authenticated';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
