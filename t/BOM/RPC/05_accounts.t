@@ -787,12 +787,12 @@ subtest $method => sub {
 
     $test_client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
     $test_client->save;
-    
+
     cmp_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status              => bag(qw(financial_assessment_not_complete financial_information_not_complete age_verification authenticated professional)),
-            risk_classification => 'low',
+            status => bag(qw(financial_assessment_not_complete financial_information_not_complete age_verification authenticated professional)),
+            risk_classification           => 'low',
             prompt_client_to_authenticate => '0',
         },
         'ok, authenticated and age verified'

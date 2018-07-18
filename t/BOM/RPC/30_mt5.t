@@ -164,6 +164,13 @@ subtest 'authenticated CR client should not receive authentication request when 
             leverage         => 500,
         },
     };
+    $c->call_ok($method, $params)->has_error('error for financial mt5_new_account')
+        ->error_code_is('TINDetailsMandatory', 'tax information is mandatory for financial account');
+
+    $test_client->tax_residence('mt');
+    $test_client->tax_identification_number('111222333');
+    $test_client->save;
+
     $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account');
     #check inbox for emails
     my $cli_subject  = 'Authenticate your account to continue trading on MT5';

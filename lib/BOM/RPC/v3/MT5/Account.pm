@@ -219,8 +219,9 @@ async_rpc mt5_new_account => sub {
             code              => 'NoResidence',
             message_to_client => localize('Please set your country of residence.')}) unless $residence;
 
-    my $brand = Brands->new(name => request()->brand);
-    my $countries_list = $brand->countries_instance->countries_list;
+    my $brand              = Brands->new(name => request()->brand);
+    my $countries_instance = $brand->countries_instance;
+    my $countries_list     = $countries_instance->countries_list;
     return permission_error_future()
         unless $countries_list->{$residence};
 
@@ -278,6 +279,7 @@ async_rpc mt5_new_account => sub {
 
         if ($account_type eq 'financial') {
             return Future->done($invalid_sub_type_error) unless $mt5_account_type;
+
             my $input_mappings = BOM::Platform::Account::Real::default::get_financial_input_mapping();
 
             my $json = JSON::MaybeXS->new;
@@ -289,6 +291,15 @@ async_rpc mt5_new_account => sub {
                 if not $fa_json_data
                 or any { !$fa_json_data->{$_} } (keys %{$input_mappings->{financial_information}}, keys %{$input_mappings->{trading_experience}});
 
+            # As per the following document: Automatic Exchange of Information,
+            # Guide for Reporting Financial Institutions by the Vanuatu Competent Authority
+            # we need to ask for tax details for selected countries
+            # if client wants to open financial account
+            return create_error_future({
+                    code              => 'TINDetailsMandatory',
+                    message_to_client => localize(
+                        'Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.'),
+                }) if ($countries_instance->is_tax_detail_mandatory($residence) and not $client->get_status('crs_tin_information'));
         }
 
         # populate mt5 agent account from manager id if applicable
