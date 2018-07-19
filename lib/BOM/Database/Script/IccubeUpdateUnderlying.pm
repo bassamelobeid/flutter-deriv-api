@@ -5,10 +5,11 @@ use warnings;
 use YAML::XS qw(LoadFile);
 use Finance::Asset;
 use BOM::Database::ClientDB;
+use File::ShareDir;
 
 sub run {
     my $u_file = Finance::Asset->instance->all_parameters;
-    my $u_subm = LoadFile('/home/git/regentmarkets/bom-market/config/files/submarkets.yml');
+    my $u_subm = LoadFile(File::ShareDir::dist_file('Finance-Asset', 'submarkets.yml'));
 
     my $dbic = BOM::Database::ClientDB->new({
             broker_code => 'FOG',
