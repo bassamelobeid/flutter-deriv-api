@@ -128,23 +128,37 @@ subtest 'binary frame should be sent correctly' => sub {
     ok((not exists($res->{echo_req}->{status})), 'status should not be present');
 };
 
-subtest 'sending two files concurrently' => sub {
-    my @data = ('Some tex1', 'Some tex2');
+subtest 'sending two files concurrently on a single connection' => sub {
+    send_two_docs_at_once('Some tex1', 'Some tex2', $t, $t);
+};
+
+subtest 'sending two files concurrently on separate connections' => sub {
+    my $t2 = build_wsapi_test();
+    $t2->await::authorize({authorize => $token});
+    send_two_docs_at_once('Some tex3', 'Some tex4', $t, $t2);
+};
+
+sub send_two_docs_at_once {
+    my @data    = (shift, shift);
+    my @ws_list = (shift, shift);
     # Note: this test is hardcoded to expect data of a certain length
     #   so change the contents of these strings, but not the length
-
     my @requests;
     for my $i (0 .. 1) {
-        my $upload_info = {request_upload($data[$i])};
-        receive_ok($data[$i], %$upload_info);
+        my $ws = $ws_list[$i];
+        my ($conn) = values $ws->app->active_connections;
+        $requests[$i]->{ws} = $ws;
+
+        my $upload_info = {request_upload($data[$i], undef, $ws)};
+        receive_ok($data[$i], $upload_info, $conn);
         $requests[$i]->{upload_info} = $upload_info;
         $requests[$i]->{frames} = [gen_frames($data[$i], %$upload_info)];
     }
 
-    $t->send_ok({binary => $_->{frames}->[0]}) for @requests;
-    $t->send_ok({binary => $_->{frames}->[1]}) for @requests;
+    $_->{ws}->send_ok({binary => $_->{frames}->[0]}) for @requests;
+    $_->{ws}->send_ok({binary => $_->{frames}->[1]}) for @requests;
     @requests = map {
-        { %$_, response => await_binary($_->{frames}->[2]) }
+        { %$_, response => await_binary($_->{frames}->[2], $_->{ws}) }
     } @requests;
 
     for my $request (@requests) {
@@ -153,7 +167,7 @@ subtest 'sending two files concurrently' => sub {
         is $success->{upload_id}, $upload_id, 'upload id is correct';
         is $success->{call_type}, $call_type, 'call_type is correct';
     }
-};
+}
 
 subtest 'Send two files one by one' => sub {
     my %to_send = (
@@ -220,7 +234,7 @@ subtest 'Checksum not matching the etag' => sub {
 
     my %upload_info = request_upload($data);
 
-    receive_ok($data, %upload_info);
+    receive_ok($data, \%upload_info);
     my @frames = gen_frames($data, %upload_info);
 
     my $res;
@@ -246,22 +260,15 @@ subtest 'Duplicate upload rejected' => sub {
     my %upload_info = document_upload_ok($data, file_size => $length);
 
     # Request to upload the same file again
-     my $req = {
+    my $req = {
         %generic_req,
         req_id            => ++$req_id,
         expected_checksum => md5_hex($data),
         file_size         => min(length $data, MAX_FILE_SIZE),
     };
     my $res = $t->await::document_upload($req);
-    is $res->{error}->{code}, 'DuplicateUpload', 'Error code for duplicate document';
+    is $res->{error}->{code},              'DuplicateUpload',            'Error code for duplicate document';
     is $res->{error}->{message_to_client}, 'Document already uploaded.', 'Error msg for duplicate document';
-    
-    #%upload_info = request_upload($data);
-    #my $res = send_chunks($data, %upload_info);
-
-    #my $error = $res->{error};
-    #is $error->{code},    'DuplicateUpload',            'Error code for duplicate document';
-    #is $error->{message}, 'Document already uploaded.', 'Error msg for duplicate document';
 };
 
 subtest 'Document with wrong checksum rejected' => sub {
@@ -272,7 +279,7 @@ subtest 'Document with wrong checksum rejected' => sub {
 
     my %upload_info = request_upload($data);
 
-    receive_ok($other_data, %upload_info);
+    receive_ok($other_data, \%upload_info);
     my @frames = gen_frames($other_data, %upload_info);
 
     my $res;
@@ -300,7 +307,7 @@ subtest 'Attempt to restart a timed out upload' => sub {
 
     my $request     = {};
     my $upload_info = {request_upload($data)};
-    receive_ok($data, %$upload_info);
+    receive_ok($data, $upload_info);
     $request->{upload_info} = $upload_info;
     $request->{frames} = [gen_frames($data, %$upload_info)];
 
@@ -324,7 +331,7 @@ sub gen_frames {
 sub upload_error {
     my ($data, $warning, %metadata) = @_;
 
-    my %upload_info = request_upload($data, %metadata);
+    my %upload_info = request_upload($data, \%metadata);
 
     my $res;
     warning_like {
@@ -358,10 +365,12 @@ sub upload_ok {
 }
 
 sub request_upload {
-    my ($data, %metadata) = @_;
+    my ($data, $metadata, $ws) = @_;
+    $ws //= $t;
+    $metadata //= {};
 
     my $req = {
-        %generic_req, %metadata,
+        %generic_req, %$metadata,
         req_id            => ++$req_id,
         expected_checksum => md5_hex($data),
         file_size         => min(length $data, MAX_FILE_SIZE),
@@ -369,14 +378,14 @@ sub request_upload {
         #   which sends frames in excess of the maximum allowed file size, but needs
         #   to spoof the size so the upload isn't disallowed at the start.
     };
-    my $res = $t->await::document_upload($req);
+    my $res = $ws->await::document_upload($req);
     is $res->{req_id},             $req->{req_id},      'req_id is unchanged';
     is_deeply $res->{passthrough}, $req->{passthrough}, 'passthrough is unchanged';
-    
-    ok $res->{document_upload}, 'Returns document_upload';
 
-    my $upload_id = $res->{document_upload}->{upload_id};
-    my $call_type = $res->{document_upload}->{call_type};
+    ok $res->{document_upload}, 'Returns document_upload (for none-duplicate files)';
+
+    my $upload_id = $res->{document_upload} ? $res->{document_upload}->{upload_id} : undef;
+    my $call_type = $res->{document_upload} ? $res->{document_upload}->{call_type} : undef;
 
     ok $upload_id, 'Returns upload_id';
     ok $call_type, 'Returns call_type';
@@ -388,11 +397,10 @@ sub request_upload {
     );
 }
 
-
 sub upload {
     my ($data, %metadata) = @_;
 
-    my %upload_info = request_upload($data, %metadata);
+    my %upload_info = request_upload($data, \%metadata);
 
     my $res = send_chunks($data, %upload_info);
     my $req = $upload_info{req};
@@ -411,7 +419,7 @@ sub send_chunks {
 
     my $length = length $data;
 
-    receive_ok($data, %upload_info);
+    receive_ok($data, \%upload_info);
     for (gen_frames($data, %upload_info)) {
         $t->send_ok({binary => $_});
     }
@@ -471,22 +479,24 @@ sub override_subs {
 }
 
 sub receive_ok {
-    my ($data, %upload_request_info) = @_;
+    my ($data, $upload_request_info, $conn) = @_;
+    $conn //= $c;
 
-    my $upload_id   = $upload_request_info{upload_id};
-    my $upload_info = $c->stash->{document_upload}->{$upload_id};
+    my $upload_id   = $upload_request_info->{upload_id};
+    my $upload_info = $conn->stash->{document_upload}->{$upload_id};
 
-    receive_loop($data, $upload_info)->retain;
+    receive_loop($data, $upload_info, $conn)->retain;
 }
 
 sub receive_loop {
-    my ($data, $upload_info) = @_;
+    my ($data, $upload_info, $conn) = @_;
+    $conn //= $c;
 
     my $test_digest = $upload_info->{test_digest} //= Digest::MD5->new;
     $upload_info->{test_received_size} //= 0;
     my $pending_futures = $upload_info->{pending_futures};
 
-    return Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::wait_for_chunk($c, $pending_futures)->then(
+    return Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::wait_for_chunk($conn, $pending_futures)->then(
         sub {
             my $msg  = shift;
             my $size = length $data;
@@ -514,7 +524,11 @@ sub send_warning {
     return $res;
 }
 
-sub await_binary { get_response($t->send_ok({binary => shift})) }
+sub await_binary {
+    my ($frame, $ws) = @_;
+    $ws //= $t;
+    get_response($ws->send_ok({binary => $frame}));
+}
 
 sub get_response { decode_json(shift->message_ok->message->[1]) }
 
