@@ -226,7 +226,7 @@ subtest 'create account' => sub {
     };
 
     # mock virtual account with social signup flag
-    foreach my $broker_code (keys $vr_details) {
+    foreach my $broker_code (keys %$vr_details) {
         my %social_login_user_details = (
             %{$vr_details->{$broker_code}},
             email         => 'social+' . $broker_code . '@binary.com',
