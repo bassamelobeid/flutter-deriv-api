@@ -47,7 +47,7 @@ subtest "Born and die" => sub {
         %contractParameters
     });
 
-    my ($c) = values $t->app->active_connections;
+    my ($c) = values %{$t->app->active_connections};
 
     is(scalar keys %{$c->pricing_subscriptions()}, 1, "Subscription created");
     $channel = [keys %{$c->pricing_subscriptions()}]->[0];
@@ -72,7 +72,7 @@ subtest "Create Subscribes" => sub {
     my @connections;
     for my $i (1 .. $subs_count) {
         my $t = $test_server->websocket_ok($url => {});
-        my ($c) = values $t->app->active_connections;
+        my ($c) = values %{$t->app->active_connections};
         push @connections, $t;
 
         $t->tx->req->cookies({

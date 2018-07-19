@@ -36,7 +36,7 @@ $ENV{DOCUMENT_AUTH_S3_SECRET} = 'TestingS3Secret';
 $ENV{DOCUMENT_AUTH_S3_BUCKET} = 'TestingS3Bucket';
 
 my $t = build_wsapi_test();
-my ($c) = values $t->app->active_connections;
+my ($c) = values %{$t->app->active_connections};
 
 my $loginid = create_test_user;
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
