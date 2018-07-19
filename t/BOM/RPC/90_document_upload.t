@@ -287,11 +287,11 @@ sub call_and_check_error {
 sub customise_params {
     my ($params, $custom_params) = @_;
 
-    for my $key (keys $custom_params) {
+    for my $key (keys %$custom_params) {
         $params->{$key} = $custom_params->{$key} unless $key eq 'args';
     }
     if ($custom_params->{args}) {
-        for my $key (keys $custom_params->{args}) {
+        for my $key (keys %{$custom_params->{args}}) {
             $params->{args}->{$key} = $custom_params->{args}->{$key};
         }
     }

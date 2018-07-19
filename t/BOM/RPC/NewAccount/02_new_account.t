@@ -480,7 +480,7 @@ subtest $method => sub {
         $result = $rpc_ct->call_ok('get_settings', {token => $auth_token_mf})->result;
         is($result->{tax_residence}, 'de,nl', 'MF client has tax residence set');
         $result = $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token_mf})->result;
-        isnt(keys $result, 0, 'MF client has financial assessment set');
+        isnt(keys %$result, 0, 'MF client has financial assessment set');
         my @msgs = $mailbox->search(
             email   => 'compliance@binary.com',
             subject => qr/\Q$new_loginid appropriateness test scoring\E/
@@ -549,7 +549,7 @@ subtest $method => sub {
         $result = $rpc_ct->call_ok('get_settings', {token => $auth_token_mf})->result;
         is($result->{tax_residence}, 'de,nl', 'MF client has tax residence set');
         $result = $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token_mf})->result;
-        isnt(keys $result, 0, 'MF client has financial assessment set');
+        isnt(keys %$result, 0, 'MF client has financial assessment set');
     };
 };
 
