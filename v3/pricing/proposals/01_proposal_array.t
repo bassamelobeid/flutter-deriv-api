@@ -248,7 +248,7 @@ SKIP: {
         $response = $t->await::proposal_array($proposal_array_req_tpl);
         test_schema('proposal_array', $response);
 
-        my ($c) = values $t->app->active_connections;
+        my ($c) = values %{$t->app->active_connections};
 
         is(scalar keys %{$c->pricing_subscriptions()}, 1, "Subscription created");
         my $channel = [keys %{$c->pricing_subscriptions()}]->[0];
