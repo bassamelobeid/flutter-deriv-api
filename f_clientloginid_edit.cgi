@@ -830,6 +830,8 @@ print qq[<form action="$self_post?loginID=$encoded_loginid" id="clientInfoForm" 
 
 print_client_details($client);
 
+my $INPUT_SELECTOR = 'input:not([type="hidden"]):not([type="submit"]):not([type="reset"]):not([type="button"])';
+
 print qq[
     <input type=submit value="Save Client Details"></form>
     <style>
@@ -838,11 +840,11 @@ print qq[
         }
     </style>
     <script>
-        clientInfoForm.querySelectorAll('input:not([type=hidden]),select').forEach(input => {
+        clientInfoForm.querySelectorAll('$INPUT_SELECTOR,select').forEach(input => {
             input.addEventListener('change', ev => ev.target.classList.add('data-changed'));
         });
         clientInfoForm.addEventListener('submit', ev => {
-            clientInfoForm.querySelectorAll('input:not(.data-changed):not([type=hidden]),select:not(.data-changed)')
+            clientInfoForm.querySelectorAll('$INPUT_SELECTOR:not(.data-changed),select:not(.data-changed)')
                 .forEach(input => input.setAttribute('disabled', 'disabled'));
         });
     </script>
