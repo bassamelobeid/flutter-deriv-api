@@ -482,15 +482,17 @@ sub _decode_financial_assessment {
 }
 
 sub documents_expired {
-    my $self  = shift;
-    my $today = Date::Utility->today;
-    my @docs  = $self->client_authentication_document or return undef;    # Rose
-    for my $doc (@docs) {
-        my $expires = $doc->expiration_date || next;
-        next if defined $doc->status and $doc->status eq 'uploading';
-        return 1 if Date::Utility->new($expires)->is_before($today);
-    }
-    return 0;
+    my $self = shift;
+
+    my @query_params = ($self->loginid);
+    my $dbic_code    = sub {
+        my $query = $_->prepare('SELECT * FROM betonmarkets.get_expired_documents_loginids($1::TEXT)');
+
+        $query->execute(@query_params);
+        return $query->fetchrow_arrayref();
+    };
+
+    return 0 + !!($self->db->dbic->run(fixup => $dbic_code));
 }
 
 sub has_valid_documents {

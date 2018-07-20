@@ -10,13 +10,13 @@ use Test::Deep;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client qw( create_client );
 
-my $client = create_client();
+my $client = create_client('CR', undef, {binary_user_id => 1});
 $client->set_default_account('USD');
 $client->save();
 my $dbh = $client->db->dbic->dbh;
 
 my $test = 'BOM::User::Client->documents_expired returns undef if there are no documents';
-is($client->documents_expired(), undef, $test);
+is($client->documents_expired(), 0, $test);
 
 $test = q{After call to start_document_upload, client has a single document, with an 'uploading' status};
 my $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?)';

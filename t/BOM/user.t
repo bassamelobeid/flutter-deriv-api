@@ -299,7 +299,8 @@ subtest 'User Login' => sub {
             fixup => sub {
                 $_->do(
                     'update users.failed_login set last_attempt = ? where id = ?',           undef,
-                    Date::Utility->new->minus_time_interval('1d')->datetime_yyyymmdd_hhmmss, $user->id);
+                    Date::Utility->new->minus_time_interval('1d')->datetime_yyyymmdd_hhmmss, $user->id
+                );
             });
         ok $user->login(%args)->{success}, 'clear failed login attempts; can now login';
     };
@@ -553,7 +554,7 @@ subtest 'test load' => sub {
     );
     throws_ok { BOM::User->new(hello => 'world'); } qr/no email nor id or loginid/;
     is_deeply(BOM::User->new(id      => $user->id), $user, 'load from id ok');
-    is_deeply(BOM::User->new(loginid => $vr_1),       $user, 'load from loginid ok');
+    is_deeply(BOM::User->new(loginid => $vr_1),     $user, 'load from loginid ok');
     is(BOM::User->new(id => -1), undef, 'return undefine if the user not exist');
 };
 
