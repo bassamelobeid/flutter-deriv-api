@@ -24,8 +24,9 @@ subtest prepare => sub {
 
     $new_email = 'test' . rand . '@binary.com';
     $cr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => $new_email,
+        broker_code    => 'CR',
+        email          => $new_email,
+        binary_user_id => 1
     });
 
     $new_email     = 'test' . rand . '@binary.com';
@@ -151,10 +152,10 @@ subtest 'Cashier validation common' => sub {
         document_type              => "Passport",
         document_format            => "PDF",
         document_path              => '/tmp/test.pdf',
-        expiration_date            => '2025-10-10',
-        authentication_method_code => 'ID_DOCUMENT'
+        expiration_date            => '2008-03-03',
+        authentication_method_code => 'ID_DOCUMENT',
+        status                     => 'uploaded'
     });
-    $doc->expiration_date('2008-03-03');
     $cr_client->save;
 
     $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
@@ -163,7 +164,8 @@ subtest 'Cashier validation common' => sub {
         'Your identity documents have passed their expiration date. Kindly send a scan of a valid identity document to support@binary.com to unlock your cashier.',
         'Correct error message for expired documents';
 
-    $doc->expiration_date(Date::Utility->new()->plus_time_interval('1d')->date);
+    my $new_expiration_date = Date::Utility->new()->plus_time_interval('1d')->date;
+    $cr_client->client_authentication_document->[0]->expiration_date($new_expiration_date);
     $cr_client->save;
 };
 
