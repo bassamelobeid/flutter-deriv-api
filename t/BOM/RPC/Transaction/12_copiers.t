@@ -5,6 +5,7 @@ use warnings;
 
 use Test::More;
 use Test::MockModule;
+use Test::MockTime qw(set_fixed_time restore_time);
 use Test::Exception;
 use Test::Mojo;
 
@@ -151,6 +152,38 @@ subtest 'Copy trader without allow_copiers set' => sub {
     my $unset_trader = create_client('CR');
 
     start_copy_trade_with_error_code($unset_trader, $copier_CR, 'CopyTradingNotAllowed', 'cannot follow trader without allow_copiers set');
+};
+
+####################################################################
+# Copy Trading Statistics
+####################################################################
+
+subtest 'Copy trading statistics with no deposits for the current month' => sub {
+    my $past       = Date::Utility->new()->_minus_months(1);
+    my $past_month = $past->month();
+    my $past_year  = $past->year();
+
+    set_fixed_time($past->date, "%Y-%m-%d");
+
+    my $client = create_client('CR', 0, {email => 'client@binary.com'});
+    set_allow_copiers($client);
+
+    top_up $client, 'USD', 100;
+
+    restore_time();
+
+    my $account = $client->{account}[0];
+    buy_one_bet($account);
+
+    my $now   = Date::Utility->new();
+    my $month = $now->month();
+    my $year  = $now->year();
+
+    my $statistics_response = copytrading_statistics($client)->{monthly_profitable_trades};
+    is $statistics_response->{"$past_year-$past_month"}, sprintf("%.4f", 0), "deposit ok for past month";
+    isnt $statistics_response->{"$year-$month"}, undef, 'not undef for current month';
+    isnt $statistics_response->{"$year-$month"}, sprintf("%.4f", 0), 'has only trades';
+
 };
 
 ####################################################################
@@ -422,6 +455,24 @@ sub top_up_account_and_check {
 
     my $new_balance = $client_acc_mapper->get_balance;
     is(int($new_balance), int($expected_balance), $currency . ' balance should be ' . $expected_balance . ' got: ' . $new_balance);
+}
+
+sub copytrading_statistics {
+    my ($trader) = @_;
+
+    my ($trader_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $trader->loginid);
+
+    my $res = $c->call_ok(
+        'copytrading_statistics',
+        {
+            args => {
+                copytrading_statistics => 1,
+                trader_id              => $trader->loginid,
+            },
+            token => $trader_token,
+            %default_call_params
+        })->has_no_error->result;
+    return $res;
 }
 
 done_testing;

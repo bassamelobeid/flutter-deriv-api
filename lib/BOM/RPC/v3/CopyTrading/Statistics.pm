@@ -92,11 +92,17 @@ rpc copytrading_statistics => sub {
     my @sorted_monthly_profits;
     for my $date (sort keys %{$result_hash->{monthly_profitable_trades}}) {
         my ($year) = ($date =~ /(\d{4})/);
-        my $D      = $result_hash->{monthly_profitable_trades}->{$date}->{deposit};
-        my $W      = $result_hash->{monthly_profitable_trades}->{$date}->{withdrawal};
-        my $E0     = $result_hash->{monthly_profitable_trades}->{$date}->{E0};
-        my $E1     = $result_hash->{monthly_profitable_trades}->{$date}->{E1};
-        my $current_month_profit = sprintf("%.4f", ((($E1 + $W) - ($E0 + $D)) / ($E0 + $D)));
+        # If we had trades in a month but we didn't had any deposit or withdrawal the
+        # get_monthly_payments_sum list will be empty for this date, in this case the deposit
+        # and withdrawal will be not defined, is that why we setting as 0 if undef.
+        # Since we are inside this loop the get_monthly_payments_sum or get_monthly_balance
+        # calls are not empty so the calculation must be done without problems.
+        my $deposit    = $result_hash->{monthly_profitable_trades}->{$date}->{deposit}    // 0;
+        my $withdrawal = $result_hash->{monthly_profitable_trades}->{$date}->{withdrawal} // 0;
+        # balance_before = balance_after - amount in the trade transaction.
+        my $balance_before = $result_hash->{monthly_profitable_trades}->{$date}->{E0} // 0;
+        my $balance_after  = $result_hash->{monthly_profitable_trades}->{$date}->{E1} // 0;
+        my $current_month_profit = sprintf("%.4f", ((($balance_after + $withdrawal) - ($balance_before + $deposit)) / ($balance_before + $deposit)));
         $result_hash->{monthly_profitable_trades}->{$date} = $current_month_profit;
         push @sorted_monthly_profits, $current_month_profit;
         push @{$result_hash->{yearly_profitable_trades}->{$year}}, $current_month_profit;
