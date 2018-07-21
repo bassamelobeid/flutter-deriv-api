@@ -1582,10 +1582,18 @@ sub _get_params_for_expiryqueue {
             if ($contract->high_barrier->barrier_type eq 'absolute') {
                 $hash->{up_level}   = $contract->high_barrier->as_absolute;
                 $hash->{down_level} = $contract->low_barrier->as_absolute;
+            } else {
+                $hash->{entry_tick_epoch}    = $contract->date_start->epoch + 1;
+                $hash->{relative_up_level}   = $contract->supplied_high_barrier;
+                $hash->{relative_down_level} = $contract->supplied_low_barrier;
             }
         } elsif ($contract->barrier and $contract->barrier->barrier_type eq 'absolute') {
             my $which_level = ($contract->barrier->as_difference > 0) ? 'up_level' : 'down_level';
             $hash->{$which_level} = $contract->barrier->as_absolute;
+        } elsif ($contract->barrier) {
+            $hash->{entry_tick_epoch} = $contract->date_start->epoch + 1;
+            my $which_level = ($contract->barrier->pip_difference > 0) ? 'relative_up_level' : 'relative_down_level';
+            $hash->{$which_level} = $contract->supplied_barrier;
         }
     }
 
