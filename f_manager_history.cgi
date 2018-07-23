@@ -3,12 +3,13 @@ package main;
 use strict;
 use warnings;
 
+use Text::Trim qw(trim);
 use Locale::Country;
 use f_brokerincludeall;
 use HTML::Entities;
-use BOM::User::Client;
 use Date::Utility;
 
+use BOM::User::Client;
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
@@ -22,20 +23,27 @@ PrintContentType();
 
 my $loginID = uc(request()->param('loginID') // '');
 $loginID =~ s/\s//g;
+
 my $encoded_loginID = encode_entities($loginID);
 my $depositswithdrawalsonly = request()->param('depositswithdrawalsonly') // '';
 
-my $summary_from_date =
-    defined(request()->param('summary_fm_date')) ? Date::Utility->new(request()->param('summary_fm_date')) : Date::Utility->new()->_minus_months(6);
-my $summary_to_date = defined(request()->param('summary_to_date')) ? Date::Utility->new(request()->param('summary_to_date')) : Date::Utility->new();
+my $startdate = trim(request()->param('startdate'));
+my $enddate   = trim(request()->param('enddate'));
+
+if ($startdate && $enddate && $startdate =~ m/^\d{4}-\d{2}-\d{2}$/ && $enddate =~ m/^\d{4}-\d{2}-\d{2}$/) {
+    $startdate .= ' 00:00:00';
+    $enddate   .= ' 23:59:59';
+}
 
 my $overview_from_date =
-    defined(request()->param('overview_fm_date')) ? Date::Utility->new(request()->param('overview_fm_date')) : Date::Utility->new()->_minus_months(6);
+    request()->param('overview_fm_date') ? Date::Utility->new(request()->param('overview_fm_date')) : Date::Utility->new()->_minus_months(6);
 my $overview_to_date =
-    defined(request()->param('overview_to_date')) ? Date::Utility->new(request()->param('overview_to_date')) : Date::Utility->new();
+    request()->param('overview_to_date') ? Date::Utility->new(request()->param('overview_to_date')) : Date::Utility->new();
+
+$overview_from_date = Date::Utility->new($overview_from_date->date_yyyymmdd() . " 00:00:00");
+$overview_to_date   = Date::Utility->new($overview_to_date->date_yyyymmdd() . " 23:59:59");
 
 my $broker;
-
 if ($loginID =~ /^([A-Z]+)/) {
     $broker = $1;
 }
@@ -60,6 +68,7 @@ if (not $client) {
     print "Error : wrong loginID ($encoded_loginID) could not get client instance";
     code_exit_BO();
 }
+
 my $currency = request()->param('currency');
 if (not $currency or $currency eq 'default') {
     $currency = $client->currency;
@@ -76,16 +85,16 @@ my $client_email = $client->email;
 
 my $statement = client_statement_for_backoffice({
     client   => $client,
-    before   => $summary_to_date->plus_time_interval('24h')->date_yyyymmdd(),
-    after    => $summary_from_date->minus_time_interval('24h')->date_yyyymmdd(),
+    before   => $enddate,
+    after    => $startdate,
     currency => $currency,
 });
 
 my $summary = client_statement_summary({
         client   => $client,
         currency => $currency,
-        after    => $overview_from_date->minus_time_interval('24h')->datetime(),
-        before   => $overview_to_date->plus_time_interval('24h')->datetime()});
+        after    => $overview_from_date->datetime(),
+        before   => $overview_to_date->datetime()});
 
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
 my $dbic = $clientdb->db->dbic;
@@ -100,6 +109,7 @@ my ($deposits_to_date, $withdrawals_to_date) = $dbic->run(
 BOM::Backoffice::Request::template()->process(
     'backoffice/account/statement.html.tt',
     {
+
         client_summary_ranges => {
             from => $overview_from_date->date_yyyymmdd(),
             to   => $overview_to_date->date_yyyymmdd()
@@ -123,10 +133,9 @@ BOM::Backoffice::Request::template()->process(
             residence => $residence,
             tel       => $tel
         },
-        startdate => $summary_from_date->date_yyyymmdd(),
-        enddate   => $summary_to_date->date_yyyymmdd(),
+        startdate => $startdate,
+        enddate   => $enddate,
     },
 ) || die BOM::Backoffice::Request::template()->error();
 
 code_exit_BO();
-

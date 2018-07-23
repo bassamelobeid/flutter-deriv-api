@@ -14,10 +14,8 @@
 <table width=100%><tr>
 <td align=left> Quick jump to see another statement:
 <input name=loginID type=text size=15 value="[% loginid %]">
-
-<input type="date" name="summary_fm_date" value="[% startdate %]" />
-<input type="date" name="summary_to_date" value="[% enddate %]" />
-
+<input name=startdate type=text size=15 value="[% startdate %]" placeholder="2016-12-20">
+<input name=enddate type=text size=15 value="[% enddate %]" placeholder="2017-01-20">
 <input type=hidden name=broker value="[% broker %]">
 <input type=hidden name=l value=EN>
 <input type=submit value=view>
@@ -42,13 +40,13 @@
 </div>
 <div id="statement_navigation" class="grd-parent grd-grid-12">
         <div class="grd-grid-2 left-aligned">
-            <a class="pjaxload button" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, startdate => transactions.first.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>&laquo;Newer</span></a>
+            <a class="pjaxload button" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, overview_fm_date=>client_summary_ranges.from, overview_to_date=>client_summary_ranges.to, startdate => transactions.first.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>&laquo;Newer</span></a>
         </div>
         <div class="grd-grid-8 center-aligned">
             <b>[% transactions.first.date.datetime %] --- [% transactions.last.date.datetime %]</b>
         </div>
         <div class="grd-grid-2 right-aligned">
-                <a class="pjaxload button" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, enddate => transactions.last.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>Older&raquo;</span></a>
+                <a class="pjaxload button" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, overview_fm_date=>client_summary_ranges.from, overview_to_date=>client_summary_ranges.to, enddate => transactions.last.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>Older&raquo;</span></a>
         </div>
 </div>
 [% IF transactions.size == 0 %]
@@ -111,12 +109,12 @@
 <div>
 <div id="statement_navigation" class="grd-parent grd-grid-12">
         <div class="grd-grid-2 left-aligned">
-            <a class="pjaxload button" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, startdate => transactions.first.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>&laquo;Newer</span></a>
+            <a class="pjaxload button" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, overview_fm_date=>client_summary_ranges.from, overview_to_date=>client_summary_ranges.to,startdate => transactions.first.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>&laquo;Newer</span></a>
         </div>
         <div class="grd-grid-8 center-aligned">
             <b>[% transactions.first.date.datetime %] --- [% transactions.last.date.datetime %]</b>
         </div>
         <div class="grd-grid-2 right-aligned">
-                <a class="pjaxload button" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, enddate => transactions.last.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>Older&raquo;</span></a>
+                <a class="pjaxload button" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, overview_fm_date=>client_summary_ranges.from, overview_to_date=>client_summary_ranges.to, enddate => transactions.last.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>Older&raquo;</span></a>
         </div>
 </div>

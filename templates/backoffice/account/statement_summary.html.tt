@@ -11,7 +11,7 @@
         </td>
 
     </tr>
-    
+
     <tr>
         [% FOR t IN ['deposits', 'withdrawals'] %]
             <td>
