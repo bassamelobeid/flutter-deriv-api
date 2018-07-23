@@ -25,9 +25,11 @@ sub script_run {
 
     my $parser = ForexFactory->new();
 
-    #read economic events for one week (7-days) starting from 4 days back, so in case of a Monday which
-    #has its last Friday as a holiday, we will still have some events in the cache.
-    my $events_received = $parser->extract_economic_events(1, Date::Utility->new()->minus_time_interval('4d'));
+    # reads 3 weeks of economic events data
+    my $starting_date = Date::Utility->today;
+    my @multiweek_events =
+        map { @{$parser->extract_economic_events($_->[1], $starting_date->plus_time_interval($_->[0] * 7 . 'd'))} } ([0, 1], [2, 0]);
+    my $events_received = \@multiweek_events;
 
     stats_gauge('economic_events_updates', scalar(@$events_received));
 
