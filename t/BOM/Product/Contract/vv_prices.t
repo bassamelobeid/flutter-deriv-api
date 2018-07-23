@@ -77,7 +77,7 @@ my $c = produce_contract($params);
 like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';
 
 is roundcommon(0.0001, $c->pricing_engine->bs_probability->amount),    0.1685, 'correct bs probability for FX contract';
-is roundcommon(0.0001, $c->pricing_engine->market_supplement->amount), 0.0187, 'correct market supplement';
+is roundcommon(0.0001, $c->pricing_engine->market_supplement->amount), 0.0185, 'correct market supplement';
 
 $c = produce_contract({
     %$params,
@@ -87,7 +87,7 @@ $c = produce_contract({
 });
 like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';
 is roundcommon(0.0001, $c->pricing_engine->bs_probability->amount),    0.0875, 'correct bs probability for FX contract';
-is roundcommon(0.0001, $c->pricing_engine->market_supplement->amount), 0.0278, 'correct market supplement';
+is roundcommon(0.0001, $c->pricing_engine->market_supplement->amount), 0.0275, 'correct market supplement';
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
