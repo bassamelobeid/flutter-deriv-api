@@ -96,8 +96,8 @@ sub debug_link {
         my $pair_ref = $bet->$pair;
 
         my $events = $EEC->get_latest_events_for_period({
-                from => $bet->date_start->truncate_to_day,
-                to   => $bet->date_start->plus_time_interval('6d'),
+                from => $bet->date_start,
+                to   => $bet->date_start->plus_time_interval('14d'),
             },
             $pair_ref->{underlying}->for_date
         );

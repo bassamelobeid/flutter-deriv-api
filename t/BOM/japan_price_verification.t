@@ -172,7 +172,6 @@ subtest 'verify_with_shortcode_Slope' => sub {
     }
 
     is(roundcommon(1, $ask_prob * 1000), 981, 'Ask price is matching');
-
     check_pricing_parameters($pricing_parameters, $expected_parameters);
 };
 
@@ -201,7 +200,7 @@ subtest 'verify_with_shortcode_VV' => sub {
         $ask_prob += $pricing_parameters->{ask_probability}->{$key};
     }
 
-    is(roundcommon(1, $ask_prob * 1000), 793, 'Ask price is matching');
+    is(roundcommon(1, $ask_prob * 1000), 794, 'Ask price is matching');
 
     check_pricing_parameters($pricing_parameters, $expected_parameters);
 };

@@ -54,7 +54,7 @@ sub generate_economic_event_tool {
 
     my $events = get_economic_events_for_date(Date::Utility->new);
     my $today  = Date::Utility->new->truncate_to_day;
-    my @dates  = map { $today->plus_time_interval($_ . 'd')->date } (0 .. 6);
+    my @dates  = map { $today->plus_time_interval($_ . 'd')->date } (0 .. 14);
 
     return BOM::Backoffice::Request::template()->process(
         'backoffice/economic_event_forms.html.tt',
