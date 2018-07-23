@@ -438,6 +438,11 @@ sub get_bid {
 
         # sell_spot and sell_spot_time are updated if the contract is sold
         # or when the contract is expired.
+        #exit_tick to be returned on these scenario:
+        # - sell back early (tick at sell time)
+        # - hit tick for an american contract
+        # - latest tick at the expiry time of a european contract.
+        # TODO: Planning to phase out sell_spot in the next api version.
         if ($sell_time or $contract->is_expired) {
             # path dependent contracts may have hit tick but not sell time
             my $sell_tick =
@@ -456,6 +461,11 @@ sub get_bid {
             if ($sell_tick) {
                 $response->{sell_spot}      = $contract->underlying->pipsized_value($sell_tick->quote);
                 $response->{sell_spot_time} = $sell_tick->epoch;
+            }
+
+            if ($sell_time and $sell_tick and $sell_time <= $contract->date_expiry->epoch) {
+                $response->{exit_tick}      = $response->{sell_spot};
+                $response->{exit_spot_time} = $response->{sell_spot_time};
             }
         }
 
