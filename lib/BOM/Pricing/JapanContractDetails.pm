@@ -207,8 +207,8 @@ sub verify_with_shortcode {
         action_type => $action_type,
         discounted_probability => $discounted_probability
     });
-    foreach my $key (keys %{$opposite_parameters}) {
-        foreach my $sub_key (keys %{$opposite_parameters->{$key}}) {
+    foreach my $key (sort keys %{$opposite_parameters}) {
+        foreach my $sub_key (sort keys %{$opposite_parameters->{$key}}) {
             my $new_sub_key = 'opposite_contract_' . $sub_key;
             $pricing_parameters->{opposite_contract}->{$new_sub_key} = $opposite_parameters->{$key}->{$sub_key};
 

@@ -249,7 +249,7 @@ sub handle_batch_contract {
             }
         }
     }
-    for my $contract_type (keys %$ask_prices) {
+    for my $contract_type (sort keys %$ask_prices) {
         for my $barrier (@{$p2->{barriers}}) {
             my $key =
                 ref($barrier)
@@ -423,7 +423,7 @@ sub get_bid {
         if ($contract->is_settleable || $contract->is_sold) {
             my $localized_audit_details;
             my $ad = $contract->audit_details;
-            foreach my $key (keys %$ad) {
+            foreach my $key (sort keys %$ad) {
                 $localized_audit_details->{$key} = [
                     map {
                         if ($_->{name}) { $_->{name} = localize($_->{name}) }

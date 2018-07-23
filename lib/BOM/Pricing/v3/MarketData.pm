@@ -426,7 +426,7 @@ sub generate_asset_index {
                 delete $ul->{$_} for (qw/obj parent_obj children parent/);
                 my @category_expiries;
                 for my $contract_category (@{$ul->{contract_categories}}) {
-                    foreach my $barrier_category (keys %{$contract_category->{expiries}}) {
+                    foreach my $barrier_category (sort keys %{$contract_category->{expiries}}) {
                         my $name =
                             $contract_category->{code} eq 'callput'
                             ? localize($barrier_category_mapper{$barrier_category})
