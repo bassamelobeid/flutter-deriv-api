@@ -19,7 +19,7 @@ my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     date_of_birth => '1990-07-09'
 });
 $client_cr->email($email_cr);
-$client_cr->set_status('tnc_approval', 'system', BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version);
+$client_cr->status->set('tnc_approval', 'system', BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version);
 $client_cr->set_default_account('USD');
 $client_cr->save;
 

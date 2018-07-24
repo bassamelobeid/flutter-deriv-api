@@ -23,13 +23,14 @@ use Email::Stuffer::TestLinks;
 
 my ($t, $rpc_ct);
 my $client_mocked = Test::MockModule->new('BOM::User::Client');
+my $status_mocked = Test::MockModule->new('BOM::User::Client::Status');
 my %seen;
-$client_mocked->mock(
-    'get_status',
+$status_mocked->mock(
+    'get',
     sub {
         my $status = $_[1];
         $seen{$status}++;
-        return $client_mocked->original('get_status')->(@_);
+        return $status_mocked->original('get')->(@_);
     });
 
 subtest 'Initialization' => sub {
@@ -72,7 +73,7 @@ my $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MX',
     email       => $email
 });
-$client_mx->set_status('ukrts_max_turnover_limit_not_set', 'tests', 'Newly created GB clients have this status until they set 30Day turnover');
+$client_mx->status->set('ukrts_max_turnover_limit_not_set', 'tests', 'Newly created GB clients have this status until they set 30Day turnover');
 my $client_jp = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'JP',
     email       => $email
@@ -95,13 +96,11 @@ subtest 'common' => sub {
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_TNC_APPROVAL', 'Client needs to approve tnc before')
         ->error_message_is('Terms and conditions approval is required.', 'Correct error message for terms and conditions');
 
-    $client_mf->set_status('tnc_approval', 'system', $current_tnc_version);
-    $client_mf->save;
+    $client_mf->status->set('tnc_approval', 'system', $current_tnc_version);
 
-    $client_mx->set_status('tnc_approval', 'system', $current_tnc_version);
-    $client_mx->save;
+    $client_mx->status->set('tnc_approval', 'system', $current_tnc_version);
 
-    $client_cr1->set_status('tnc_approval', 'system', $current_tnc_version);
+    $client_cr1->status->set('tnc_approval', 'system', $current_tnc_version);
     $client_cr1->set_default_account('JPY');
     $client_cr1->save;
 
@@ -110,8 +109,7 @@ subtest 'common' => sub {
         ->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has wrong default currency for landing_company')
         ->error_message_is('JPY transactions may not be performed with this account.', 'Correct error message for wrong default account');
 
-    $client_cr->set_status('tnc_approval', 'system', $current_tnc_version);
-    $client_cr->save;
+    $client_cr->status->set('tnc_approval', 'system', $current_tnc_version);
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_CURRENCY', 'Client has no default currency')
@@ -129,21 +127,19 @@ subtest 'common' => sub {
         );
 
     $client_mocked->unmock('documents_expired');
-    $client_cr->set_status('cashier_locked', 'system');
-    $client_cr->save;
+    $client_cr->status->set('cashier_locked', 'system');
 
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has cashier lock')
         ->error_message_is('Your cashier is locked.', 'Correct error message for locked cashier');
 
-    $client_cr->clr_status('cashier_locked');
-    $client_cr->set_status('disabled', 'system');
-    $client_cr->save;
+    $client_cr->status->clear('cashier_locked');
+    $client_cr->status->set('disabled', 'system');
 
     # as we check if client is disabled during token verification so it will not go to cashier
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('DisabledClient', 'Client is disabled')
         ->error_message_is('This account is unavailable.', 'Correct error message for disabled client');
 
-    $client_cr->clr_status('disabled');
+    $client_cr->status->clear('disabled');
     $client_cr->cashier_setting_password('abc123');
     $client_cr->save;
 
@@ -155,21 +151,18 @@ subtest 'common' => sub {
 };
 
 subtest 'deposit' => sub {
-    $client_cr->set_status('unwelcome', 'system');
-    $client_cr->save;
+    $client_cr->status->set('unwelcome', 'system');
 
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client marked as unwelcome')
         ->error_message_is('Your account is restricted to withdrawals only.', 'Correct error message for client marked as unwelcome');
 
-    $client_cr->clr_status('unwelcome');
-    $client_cr->save;
+    $client_cr->status->clear('unwelcome');
 };
 
 subtest 'withdraw' => sub {
     $params->{args}->{cashier} = 'withdraw';
 
-    $client_cr->set_status('withdrawal_locked', 'system', 'locked for security reason');
-    $client_cr->save;
+    $client_cr->status->set('withdrawal_locked', 'system', 'locked for security reason');
 
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_EMAIL_VERIFY', 'Withdrawal needs verification token')
         ->error_message_is('Verify your withdraw request.', 'Withdrawal needs verification token');
@@ -182,8 +175,7 @@ subtest 'withdraw' => sub {
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has withdrawal lock')
         ->error_message_is('Your account is locked for withdrawals.', 'Client is withdrawal locked');
 
-    $client_cr->clr_status('withdrawal_locked');
-    $client_cr->save;
+    $client_cr->status->clear('withdrawal_locked');
 };
 
 subtest 'landing_companies_specific' => sub {
@@ -193,7 +185,7 @@ subtest 'landing_companies_specific' => sub {
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mlt->loginid, 'test token');
 
     $client_mlt->set_default_account('EUR');
-    $client_mlt->set_status('tnc_approval', 'system', $current_tnc_version);
+    $client_mlt->status->set('tnc_approval', 'system', $current_tnc_version);
     $client_mlt->save;
 
     $client_mlt->aml_risk_classification('high');
@@ -242,8 +234,7 @@ subtest 'landing_companies_specific' => sub {
         ->has_no_system_error->has_error->error_code_is('ASK_FINANCIAL_RISK_APPROVAL', 'financial risk approval is required')
         ->error_message_is('Financial Risk approval is required.', 'financial risk approval is required');
 
-    $client_mf->set_status('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
-    $client_mf->save;
+    $client_mf->status->set('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
 
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('ASK_TIN_INFORMATION', 'tax information is required for malatainvest')
@@ -272,8 +263,7 @@ subtest 'landing_companies_specific' => sub {
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('ASK_UK_FUNDS_PROTECTION', 'GB residence needs to accept fund protection')
         ->error_message_is('Please accept Funds Protection.', 'GB residence needs to accept fund protection');
-    $client_mx->set_status('ukgc_funds_protection', 'system', 'testing');
-    $client_mx->save;
+    $client_mx->status->set('ukgc_funds_protection', 'system', 'testing');
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('ASK_SELF_EXCLUSION_MAX_TURNOVER_SET', 'GB residence needs to set 30-Day turnover')
         ->error_message_is('Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.',
@@ -282,42 +272,38 @@ subtest 'landing_companies_specific' => sub {
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_jp->loginid, 'test token');
     $client_jp->set_default_account('JPY');
     $client_jp->residence('jp');
-    $client_jp->set_status('tnc_approval',              'system', $current_tnc_version);
-    $client_jp->set_status('jp_knowledge_test_pending', 'system', 'set for test');
+
+    $client_jp->status->set('tnc_approval',              'system', $current_tnc_version);
+    $client_jp->status->set('jp_knowledge_test_pending', 'system', 'set for test');
+
     $client_jp->save;
 
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('ASK_JP_KNOWLEDGE_TEST', 'Japan residence needs a knowledge test')
         ->error_message_is('You must complete the knowledge test to activate this account.', 'Japan residence needs a knowledge test');
-    $client_jp->clr_status('jp_knowledge_test_pending');
-    $client_jp->set_status('jp_knowledge_test_fail', 'system', 'set for test');
-    $client_jp->save;
+    $client_jp->status->clear('jp_knowledge_test_pending');
+    $client_jp->status->set('jp_knowledge_test_fail', 'system', 'set for test');
 
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('ASK_JP_KNOWLEDGE_TEST', 'Japan residence needs a knowledge test')
         ->error_message_is('You must complete the knowledge test to activate this account.', 'Japan residence needs a knowledge test');
 
-    $client_jp->clr_status('jp_knowledge_test_fail');
-    $client_jp->set_status('jp_activation_pending', 'system', 'set for test');
-    $client_jp->save;
+    $client_jp->status->clear('jp_knowledge_test_fail');
+    $client_jp->status->set('jp_activation_pending', 'system', 'set for test');
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('JP_NOT_ACTIVATION', 'Japan residence needs account activation')
         ->error_message_is('Account not activated.', 'Japan residence needs account activation');
 
-    $client_jp->clr_status('jp_activation_pending');
-    $client_jp->save;
+    $client_jp->status->clear('jp_activation_pending');
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_AGE_VERIFICATION', 'need age verification')
         ->error_message_is('Account needs age verification.', 'need verification');
 
 };
 
 subtest 'all status are covered' => sub {
-    my $all_status = BOM::User::Client->status_codes();
     # Flags that can affect cashier should be seen
-    my $can_affect_cashier =
-        qr/age_verification|crs_tin_information|cashier_locked|disabled|financial_risk_approval|jp_activation_pending|jp_knowledge_test_fail|jp_knowledge_test_pending|ukgc_funds_protection|ukrts_max_turnover_limit_not_set|unwelcome|withdrawal_locked/;
-    my @temp_status = grep { /^($can_affect_cashier)$/ } keys %$all_status;
-    fail("missing status $_") for sort grep !exists $seen{$_}, @temp_status;
+    my @can_affect_cashier = ('age_verification','crs_tin_information','cashier_locked','disabled','financial_risk_approval','jp_activation_pending','jp_knowledge_test_fail','jp_knowledge_test_pending','ukgc_funds_protection','ukrts_max_turnover_limit_not_set','unwelcome','withdrawal_locked');
+    fail("missing status $_") for sort grep !exists $seen{$_}, @can_affect_cashier;
     pass("ok to prevent warning 'no tests run");
     done_testing();
 };

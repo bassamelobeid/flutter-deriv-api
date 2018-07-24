@@ -105,13 +105,11 @@ my $params = {
 
 $c->call_ok($method, $params)->has_error->error_code_is('InvalidToken')->error_message_is('The token is invalid.', 'invalid token');
 
-$test_client->set_status('disabled', 1, 'test status');
-$test_client->save;
+$test_client->status->set('disabled', 1, 'test status');
 $params->{token} = $token;
 $c->call_ok($method, $params)->has_error->error_code_is('DisabledClient')->error_message_is('This account is unavailable.', 'invalid token');
 
-$test_client->clr_status('disabled');
-$test_client->save;
+$test_client->status->clear('disabled');
 $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')
     ->error_message_is('Sorry, this feature is available to virtual accounts only', 'topup virtual error');
 

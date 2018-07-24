@@ -53,11 +53,9 @@ my $params = {
 };
 $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'check invalid token');
 $params->{token} = $token;
-$test_client->set_status('disabled', 1, 'test disabled');
-$test_client->save;
+$test_client->status->set('disabled', 1, 'test disabled');
 $c->call_ok($method, $params)->has_error->error_message_is('This account is unavailable.', 'check invalid token');
-$test_client->clr_status('disabled');
-$test_client->save;
+$test_client->status->clear('disabled');
 
 my $res = $c->call_ok($method, $params)->result;
 is scalar(@{$res->{records}}), 1, 'got correct number of login history records';

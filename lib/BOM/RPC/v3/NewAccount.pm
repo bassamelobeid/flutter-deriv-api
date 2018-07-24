@@ -224,9 +224,9 @@ sub _get_professional_details_clients {
     my @clients = map { $user->clients_for_landing_company($_) } qw/costarica maltainvest/;
 
     # Get the professional flags
-    my $professional_status = any { $_->get_status('professional') } @clients;
+    my $professional_status = any { $_->status->get('professional') } @clients;
     my $professional_requested =
-        !$professional_status && (($args->{client_type} eq 'professional') || any { $_->get_status('professional_requested') } @clients);
+        !$professional_status && (($args->{client_type} eq 'professional') || any { $_->status->get('professional_requested') } @clients);
 
     return (\@clients, $professional_status, $professional_requested);
 }
@@ -309,11 +309,9 @@ rpc new_account_real => sub {
     );
 
     if ($new_client->residence eq 'gb') {    # RTS 12 - Financial Limits - UK Clients
-        $new_client->set_status('ukrts_max_turnover_limit_not_set', 'system', 'new GB client - have to set turnover limit');
-
-        if (not $new_client->save) {
-            return BOM::RPC::v3::Utility::client_error();
-        }
+        try { $new_client->status->set('ukrts_max_turnover_limit_not_set', 'system', 'new GB client - have to set turnover limit') }
+        catch { $error = BOM::RPC::v3::Utility::client_error() };
+        return $error if $error;
     }
 
     BOM::User::AuditLog::log("successful login", "$client->email");

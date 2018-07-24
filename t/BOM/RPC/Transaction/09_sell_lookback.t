@@ -48,13 +48,11 @@ subtest 'sell' => sub {
 
     $params->{token} = $token;
 
-    $client->set_status('disabled', 1, 'test');
-    $client->save;
+    $client->status->set('disabled', 1, 'test');
     $c->call_ok('sell', $params)->has_no_system_error->has_error->error_code_is('DisabledClient', 'disabled client')
         ->error_message_is('This account is unavailable.', 'account disabled');
 
-    $client->clr_status('disabled');
-    $client->save;
+    $client->status->clear('disabled');
 
     #sold  contract should be hold 2 minutes and interval should more than 15
     my $now           = time;

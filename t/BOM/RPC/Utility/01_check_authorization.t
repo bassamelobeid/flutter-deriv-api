@@ -35,8 +35,7 @@ lives_ok { $auth_result = BOM::RPC::v3::Utility::check_authorization() } 'Should
 is_deeply $auth_result->{error}->{code}, 'AuthorizationRequired', 'It should return error: AuthorizationRequired';
 
 lives_ok {
-    $client->set_status('disabled', 'test', 'test');
-    $client->save;
+    $client->status->set('disabled', 'test', 'test');
 }
 'Disable client';
 
@@ -45,9 +44,8 @@ lives_ok { $auth_result = BOM::RPC::v3::Utility::check_authorization($client) } 
 is $auth_result->{error}->{code}, 'DisabledClient', 'It should return error: DisabledClient';
 
 lives_ok {
-    $client->clr_status('disabled');
-    $client->set_status('duplicate_account', 'test', 'test');
-    $client->save;
+    $client->status->clear('disabled');
+    $client->status->set('duplicate_account', 'test', 'test');
 }
 'Duplicate client';
 
@@ -58,7 +56,7 @@ is $auth_result->{error}->{code}, 'DisabledClient', 'It should return error: Dis
 my $timeout_until      = Date::Utility->new->plus_time_interval('1d');
 my $timeout_until_date = $timeout_until->date;
 lives_ok {
-    $client->clr_status('duplicate_account');
+    $client->status->clear('duplicate_account');
     $client->set_exclusion->timeout_until($timeout_until->epoch);
     $client->save;
 }
@@ -68,7 +66,7 @@ is $auth_result, undef, 'Self excluded client should not throw error';
 
 my $date_until = Date::Utility->new->plus_time_interval('2d')->date_yyyymmdd;
 lives_ok {
-    $client->clr_status('disabled');
+    $client->status->clear('disabled');
     $client->set_exclusion->timeout_until(0);
     $client->set_exclusion->exclude_until($date_until);
     $client->save;

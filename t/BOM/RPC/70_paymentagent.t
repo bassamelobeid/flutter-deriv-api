@@ -293,16 +293,16 @@ for my $transfer_currency ('USD', 'BTC') {
         reset_transfer_testargs();
 
         $test = 'Transfer fails if payment agent account is disabled';
-        $agent->set_status('disabled', 'Testy McTestington', 'Just running some tests');
+        $agent->status->set('disabled', 'Testy McTestington', 'Just running some tests');
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         like($res->{error}{message_to_client}, qr/your account is currently disabled/, $test);
-        $agent->clr_status('disabled');
+        $agent->status->clear('disabled');
 
         $test = 'Transfer fails if payment agent account is cashier locked';
-        $agent->set_status('cashier_locked', 'Testy McTestington', 'Just running some tests');
+        $agent->status->set('cashier_locked', 'Testy McTestington', 'Just running some tests');
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         like($res->{error}{message_to_client}, qr/your account is cashier locked/, $test);
-        $agent->clr_status('cashier_locked');
+        $agent->status->clear('cashier_locked');
 
         $test = 'Transfer fails if payment agent documents have expired';
         $mock_clientaccount->mock('documents_expired', sub { return 1; });
@@ -332,28 +332,22 @@ for my $transfer_currency ('USD', 'BTC') {
         reset_transfer_testargs();
 
         $test = 'Transfer fails if payee account is disabled';
-        $payee->set_status('disabled', 'Testy McTestington', 'Just running some tests');
-        $payee->save;
+        $payee->status->set('disabled', 'Testy McTestington', 'Just running some tests');
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         like($res->{error}{message_to_client}, qr/their account is currently disabled/, $test);
-        $payee->clr_status('disabled');
-        $payee->save;
+        $payee->status->clear('disabled');
 
         $test = 'Transfer fails if payee account is unwelcome';
-        $payee->set_status('unwelcome', 'Testy McTestington', 'Just running some tests');
-        $payee->save;
+        $payee->status->set('unwelcome', 'Testy McTestington', 'Just running some tests');
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         like($res->{error}{message_to_client}, qr/their account is marked as unwelcome/, $test);
-        $payee->clr_status('unwelcome');
-        $payee->save;
+        $payee->status->clear('unwelcome');
 
         $test = 'Transfer fails if payee account is cashier locked';
-        $payee->set_status('cashier_locked', 'Testy McTestington', 'Just running some tests');
-        $payee->save;
+        $payee->status->set('cashier_locked', 'Testy McTestington', 'Just running some tests');
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         like($res->{error}{message_to_client}, qr/their cashier is locked/, $test);
-        $payee->clr_status('cashier_locked');
-        $payee->save;
+        $payee->status->clear('cashier_locked');
 
         $test = 'Transfer fails if payee account has a cashier password set';
         $payee->cashier_setting_password('bob');
@@ -699,8 +693,7 @@ for my $withdraw_currency ('USD', 'BTC') {
         $testargs->{client}    = $malta_client;
         $res                   = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/Terms and conditions approval is required/, $test);
-        $malta_client->set_status('tnc_approval', 'system', BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version);
-        $malta_client->save;
+        $malta_client->status->set('tnc_approval', 'system', BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version);
 
         $test = 'Withdrawal fails if payment agent facility not available/';
         ## Right now only CR offers payment agents according to:
@@ -729,10 +722,10 @@ for my $withdraw_currency ('USD', 'BTC') {
         $payer->residence($oldresidence);
 
         $test = 'Withdrawal fails if client account is disabled';
-        $payer->set_status('disabled', 'Testy McTestington', 'Just running some tests');
+        $payer->status->set('disabled', 'Testy McTestington', 'Just running some tests');
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/account is currently disabled/, $test);
-        $payer->clr_status('disabled');
+        $payer->status->clear('disabled');
 
         $test = 'Withdrawal fails if the payment agent does not exist';
         $testargs->{args}{paymentagent_loginid} .= '12345';
@@ -743,7 +736,7 @@ for my $withdraw_currency ('USD', 'BTC') {
         $test = 'Withdrawal fails if client and payment agent have different brokers';
         ## Problem: Only CR currently allows payment agents, so we have to use a little trickery
         $payer->broker('MLT');
-        $payer->set_status('tnc_approval', 'system', BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version);
+        $payer->status->set('tnc_approval', 'system', BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version);
         $payer->save;
         $mock_landingcompany->mock('allows_payment_agents', sub { return 1; });
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
@@ -800,16 +793,16 @@ for my $withdraw_currency ('USD', 'BTC') {
         $testargs->{args}{description} = 'good';
 
         $test = 'Withdrawal fails if client account is cashier locked';
-        $payer->set_status('cashier_locked', 'Testy McTestington', 'Just running some tests');
+        $payer->status->set('cashier_locked', 'Testy McTestington', 'Just running some tests');
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/your account is cashier locked/, $test);
-        $payer->clr_status('cashier_locked');
+        $payer->status->clear('cashier_locked');
 
         $test = 'Withdrawal fails if client account is withdrawal locked';
-        $payer->set_status('withdrawal_locked', 'Testy McTestington', 'Just running some tests');
+        $payer->status->set('withdrawal_locked', 'Testy McTestington', 'Just running some tests');
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/your account is withdrawal locked/, $test);
-        $payer->clr_status('withdrawal_locked');
+        $payer->status->clear('withdrawal_locked');
 
         $test = 'Withdrawal fails if client documents have expired';
         $mock_clientaccount->mock('documents_expired', sub { return 1; });
@@ -818,29 +811,24 @@ for my $withdraw_currency ('USD', 'BTC') {
         $mock_clientaccount->unmock('documents_expired');
 
         $test = 'Withdrawal fails if payment agent account is disabled';
-        $agent->set_status('disabled', 'Testy McTestington', 'Just running some tests');
+        $agent->status->set('disabled', 'Testy McTestington', 'Just running some tests');
         ## We need 'save' here because Cashier uses the pa_loginid to generate a fresh client account object
         $agent->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/agent's account is disabled/, $test);
-        $agent->clr_status('disabled');
-        $agent->save;
+        $agent->status->clear('disabled');
 
         $test = 'Withdrawal fails if payment agent account is marked as unwelcome';
-        $agent->set_status('unwelcome', 'Testy McTestington', 'Just running some tests');
-        $agent->save;
+        $agent->status->set('unwelcome', 'Testy McTestington', 'Just running some tests');
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/agent's account is marked as unwelcome/, $test);
-        $agent->clr_status('unwelcome');
-        $agent->save;
+        $agent->status->clear('unwelcome');
 
         $test = 'Withdrawal fails if payment agent account is cashier locked';
-        $agent->set_status('cashier_locked', 'Testy McTestington', 'Just running some tests');
-        $agent->save;
+        $agent->status->set('cashier_locked', 'Testy McTestington', 'Just running some tests');
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/agent's cashier is locked/, $test);
-        $agent->clr_status('cashier_locked');
-        $agent->save;
+        $agent->status->clear('cashier_locked');
 
         $test = 'Withdrawal fails if payment agent account has cashier password';
         $agent->cashier_setting_password('alice');

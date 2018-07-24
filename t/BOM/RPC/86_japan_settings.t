@@ -80,9 +80,8 @@ subtest 'create VRTJ & JP client' => sub {
 
     # activate JP real money a/c
     $jp_client = BOM::User::Client->new({loginid => $res->{client_id}});
-    $jp_client->clr_status('disabled');
-    $jp_client->set_status('jp_activation_pending', 'test', 'for test');
-    $jp_client->save;
+    $jp_client->status->clear('disabled');
+    $jp_client->status->set('jp_activation_pending', 'test', 'for test');
 };
 
 my @jp_only = qw(

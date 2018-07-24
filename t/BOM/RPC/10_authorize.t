@@ -24,7 +24,7 @@ my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_cl
     broker_code => 'CR',
 });
 $test_client_disabled->email($email);
-$test_client_disabled->set_status('disabled', 'system', 'reason');
+$test_client_disabled->status->set('disabled', 'system', 'reason');
 $test_client_disabled->save;
 
 my $self_excluded_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -39,7 +39,7 @@ my $test_client_duplicated = BOM::Test::Data::Utility::UnitTestDatabase::create_
     broker_code => 'CR',
 });
 $test_client_duplicated->email($email);
-$test_client_duplicated->set_status('duplicate_account', 'system', 'reason');
+$test_client_duplicated->status->set('duplicate_account', 'system', 'reason');
 $test_client_duplicated->save;
 
 my $user = BOM::User->create(
@@ -391,7 +391,7 @@ subtest 'self_exclusion_mx - exclude_until date set in past' => sub {
 };
 
 $self_excluded_client->set_exclusion->timeout_until(Date::Utility->new->epoch - 2 * 86400);
-$self_excluded_client->clr_status('disabled');
+$self_excluded_client->status->clear('disabled');
 $self_excluded_client->save;
 
 done_testing();

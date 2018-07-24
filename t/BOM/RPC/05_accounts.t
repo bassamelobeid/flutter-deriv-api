@@ -117,8 +117,7 @@ my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
 });
 
-$test_client_disabled->set_status('disabled', 1, 'test disabled');
-$test_client_disabled->save();
+$test_client_disabled->status->set('disabled', 1, 'test disabled');
 
 my $japan_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'JP',
@@ -712,8 +711,7 @@ subtest $method => sub {
     test_financial_assessment($data, 1, "financial_assessment_not_complete should present regardless of the client's risk classification");
 
     # duplicate_account is not supposed to be shown to the users
-    $test_client->set_status('duplicate_account');
-    $test_client->save();
+    $test_client->status->set('duplicate_account');
     cmp_deeply(
         $c->tcall($method, {token => $token_21}),
         {
@@ -724,10 +722,9 @@ subtest $method => sub {
         'duplicate_account is not in the status'
     );
 
-    $test_client->clr_status('duplicate_account');
-    $test_client->save;
+    $test_client->status->clear('duplicate_account');
 
-    # $test_client->set_status('tnc_approval', 'test staff', 1);
+    # $test_client->status->set('tnc_approval', 'test staff', 1);
 
     # reset the risk classification for the following test
     $test_client->aml_risk_classification('low');
@@ -772,7 +769,7 @@ subtest $method => sub {
     );
 
     $test_client->set_authentication('ID_DOCUMENT')->status('pass');
-    $test_client->set_status("professional");
+    $test_client->status->set("professional");
     $test_client->save;
     # We are authenticated, but MF still has flag set until age_verification has been completed
     cmp_deeply(
@@ -785,8 +782,7 @@ subtest $method => sub {
         'ok, authenticated'
     );
 
-    $test_client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
-    $test_client->save;
+    $test_client->status->set('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
 
     cmp_deeply(
         $c->tcall($method, {token => $token1}),
@@ -798,7 +794,7 @@ subtest $method => sub {
         'ok, authenticated and age verified'
     );
 
-    $test_client->clr_status("professional");
+    $test_client->status->clear("professional");
     $test_client->save;
 
 };
@@ -1149,8 +1145,7 @@ subtest $method => sub {
         });
 
     $params->{token} = $token1;
-    $test_client->set_status('tnc_approval', 'system', 1);
-    $test_client->save;
+    $test_client->status->set('tnc_approval', 'system', 1);
     is($c->tcall($method, $params)->{client_tnc_status}, 1, 'tnc status set');
     $params->{token} = $token_vr;
     is_deeply(

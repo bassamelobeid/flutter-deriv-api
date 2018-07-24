@@ -76,17 +76,14 @@ subtest 'CR - USD' => sub {
     # Test for expected errors, such as invalid tokens
     subtest 'expected errors' => sub {
         $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'invalid token');
-        $client->set_status('disabled', 1, 'test');
-        $client->save;
+        $client->status->set('disabled', 1, 'test');
         $params->{token} = $token;
         $c->call_ok($method, $params)->has_error->error_message_is('This account is unavailable.', 'invalid token');
-        $client->clr_status('disabled');
-        $client->set_status('cashier_locked', 1, 'test');
-        $client->save;
+        $client->status->clear('disabled');
+        $client->status->set('cashier_locked', 1, 'test');
         ok $c->call_ok($method, $params)->has_no_error->result->{account_balance}, "Got limits for cashier locked clients";
 
-        $client->clr_status('cashier_locked');
-        $client->save;
+        $client->status->clear('cashier_locked');
     };
 
     # Test for unauthenticated accounts
@@ -201,8 +198,7 @@ subtest 'CR-EUR' => sub {
 
         # Deposit EUR 11000
         $client->smart_payment(%deposit, currency => 'EUR');
-        $client->clr_status('cashier_locked');    # first-deposit will cause this in non-CR clients!
-        $client->save;
+        $client->status->clear('cashier_locked');    # first-deposit will cause this in non-CR clients!
 
         # Withdraw EUR 1000
         my $withdraw_amount = 1000;
@@ -287,8 +283,7 @@ subtest 'CR-BTC' => sub {
             currency => 'BTC',
             amount   => 2
         );
-        $client->clr_status('cashier_locked');    # first-deposit will cause this in non-CR clients!
-        $client->save;
+        $client->status->clear('cashier_locked');    # first-deposit will cause this in non-CR clients!
 
         # Withdraw BTC 1.00000000
         my $withdraw_amount = 1;
@@ -374,8 +369,7 @@ subtest 'JP' => sub {
 
         # Deposit JPY 11000
         $client->smart_payment(%deposit, currency => 'JPY');
-        $client->clr_status('cashier_locked');    # first-deposit will cause this in non-CR clients!
-        $client->save;
+        $client->status->clear('cashier_locked');    # first-deposit will cause this in non-CR clients!
 
         # Withdraw JPY 1000
         my $withdraw_amount = 1000;
@@ -450,8 +444,7 @@ subtest 'MLT' => sub {
 
         # Deposit EUR 11000
         $client->smart_payment(%deposit, currency => 'EUR');
-        $client->clr_status('cashier_locked');    # first-deposit will cause this in non-CR clients!
-        $client->save;
+        $client->status->clear('cashier_locked');    # first-deposit will cause this in non-CR clients!
 
         # Withdraw EUR 1000
         my $withdraw_amount = 1000;
@@ -526,8 +519,7 @@ subtest 'MX' => sub {
 
         # Deposit EUR 11000
         $client->smart_payment(%deposit, currency => 'EUR');
-        $client->clr_status('cashier_locked');    # first-deposit will cause this in non-CR clients!
-        $client->save;
+        $client->status->clear('cashier_locked');    # first-deposit will cause this in non-CR clients!
 
         # Withdraw EUR 1000
         my $withdraw_amount = 1000;

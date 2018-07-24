@@ -40,11 +40,11 @@ sub get_jp_account_status {
         and LandingCompany::Registry->get_by_broker($client->broker)->short eq 'japan-virtual'
         and LandingCompany::Registry->get_by_broker($jp_client->broker)->short eq 'japan')
     {
-        if ($jp_client->get_status('disabled')) {
+        if ($jp_client->status->get('disabled')) {
             $jp_account_status->{status} = 'disabled';
 
             foreach my $status ('jp_knowledge_test_pending', 'jp_knowledge_test_fail', 'jp_activation_pending') {
-                if ($jp_client->get_status($status)) {
+                if ($jp_client->status->get($status)) {
                     $jp_account_status->{status} = $status;
 
                     if ($status eq 'jp_knowledge_test_pending') {
@@ -133,11 +133,11 @@ rpc jp_knowledge_test => sub {
 
     my $next_dt;
 
-    if ($jp_client->get_status('jp_knowledge_test_pending')) {
+    if ($jp_client->status->get('jp_knowledge_test_pending')) {
         # client haven't taken any test before
 
         $next_dt = _knowledge_test_available_date();
-    } elsif ($jp_client->get_status('jp_knowledge_test_fail')) {
+    } elsif ($jp_client->status->get('jp_knowledge_test_fail')) {
         # can't take test > 1 within same business day
 
         my $tests      = $json->decode($jp_client->financial_assessment->data)->{jp_knowledge_test};
@@ -162,11 +162,20 @@ rpc jp_knowledge_test => sub {
     my $args = $params->{args};
     my ($score, $status, $questions) = @{$args}{'score', 'status', 'questions'};
 
-    $jp_client->clr_status($_) for ('jp_knowledge_test_pending', 'jp_knowledge_test_fail');
     if ($status eq 'pass') {
-        $jp_client->set_status('jp_activation_pending', 'system', 'pending verification documents from client');
+        $jp_client->status->multi_set_clear({
+            set        => ['jp_activation_pending'],
+            clear      => ['jp_knowledge_test_pending', 'jp_knowledge_test_fail'],
+            staff_name => 'system',
+            reason     => 'pending verification documents from client',
+        });
     } else {
-        $jp_client->set_status('jp_knowledge_test_fail', 'system', "Failed test with score: $score");
+        $jp_client->status->multi_set_clear({
+            set        => ['jp_knowledge_test_fail'],
+            clear      => ['jp_knowledge_test_pending'],
+            staff_name => 'system',
+            reason     => "Failed test with score: $score",
+        });
     }
 
     # append result in financial_assessment record

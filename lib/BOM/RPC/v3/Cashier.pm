@@ -465,10 +465,10 @@ rpc paymentagent_transfer => sub {
         return $error_sub->(localize('Invalid amount. Minimum is [_1].', $min_max->{minimum}));
     }
 
-    return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.')) if $client_fm->get_status('disabled');
+    return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.')) if $client_fm->status->get('disabled');
 
     return $error_sub->(localize('You cannot perform this action, as your account is cashier locked.'))
-        if $client_fm->get_status('cashier_locked');
+        if $client_fm->status->get('cashier_locked');
 
     return $error_sub->(localize('You cannot perform this action, as your verification documents have expired.'))
         if $client_fm->documents_expired;
@@ -479,13 +479,13 @@ rpc paymentagent_transfer => sub {
     return $error_sub->(localize('Payment agent transfers are not allowed within the same account.')) if $loginid_to eq $loginid_fm;
 
     return $error_sub->(localize('You cannot transfer to account [_1], as their account is currently disabled.', $loginid_to))
-        if $client_to->get_status('disabled');
+        if $client_to->status->get('disabled');
 
     return $error_sub->(localize('You cannot transfer to account [_1], as their account is marked as unwelcome.', $loginid_to))
-        if $client_to->get_status('unwelcome');
+        if $client_to->status->get('unwelcome');
 
     return $error_sub->(localize('You cannot transfer to account [_1], as their cashier is locked.', $loginid_to))
-        if ($client_to->get_status('cashier_locked') or $client_to->cashier_setting_password);
+        if ($client_to->status->get('cashier_locked') or $client_to->cashier_setting_password);
 
     return $error_sub->(localize('You cannot transfer to account [_1], as their verification documents have expired.', $loginid_to))
         if $client_to->documents_expired;
@@ -716,7 +716,7 @@ rpc paymentagent_withdraw => sub {
     return $error_sub->(localize('The payment agent facility is currently not available in your country.'))
         if (not $client->residence or scalar keys %{$authenticated_pa} == 0);
 
-    return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.')) if $client->get_status('disabled');
+    return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.')) if $client->status->get('disabled');
 
     my $paymentagent = BOM::User::Client::PaymentAgent->new({
             'loginid'    => $paymentagent_loginid,
@@ -742,23 +742,23 @@ rpc paymentagent_withdraw => sub {
     return $error_sub->(localize('Further instructions must not exceed [_1] characters.', 300)) if (length($further_instruction) > 300);
 
     # check that both the client payment agent cashier is not locked
-    return $error_sub->(localize('You cannot perform this action, as your account is cashier locked.')) if $client->get_status('cashier_locked');
+    return $error_sub->(localize('You cannot perform this action, as your account is cashier locked.')) if $client->status->get('cashier_locked');
 
     return $error_sub->(localize('You cannot perform this action, as your account is withdrawal locked.'))
-        if $client->get_status('withdrawal_locked');
+        if $client->status->get('withdrawal_locked');
 
     return $error_sub->(localize('You cannot perform this action, as your verification documents have expired.')) if $client->documents_expired;
 
     return $error_sub->(
         localize("You cannot perform the withdrawal to account [_1], as the payment agent's account is disabled.", $pa_client->loginid))
-        if $pa_client->get_status('disabled');
+        if $pa_client->status->get('disabled');
 
     return $error_sub->(
         localize("You cannot perform the withdrawal to account [_1], as the payment agent's account is marked as unwelcome.", $pa_client->loginid))
-        if $pa_client->get_status('unwelcome');
+        if $pa_client->status->get('unwelcome');
 
     return $error_sub->(localize("You cannot perform the withdrawal to account [_1], as the payment agent's cashier is locked.", $pa_client->loginid))
-        if ($pa_client->get_status('cashier_locked') or $pa_client->cashier_setting_password);
+        if ($pa_client->status->get('cashier_locked') or $pa_client->cashier_setting_password);
 
     return $error_sub->(localize("You cannot perform withdrawal to account [_1], as payment agent's verification documents have expired."))
         if $pa_client->documents_expired;
@@ -994,12 +994,12 @@ rpc transfer_between_accounts => sub {
     return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
 
     return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is currently disabled.'))
-        if $client->get_status('disabled');
+        if $client->status->get('disabled');
     return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is cashier locked.'))
-        if $client->get_status('cashier_locked');
+        if $client->status->get('cashier_locked');
 
     return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is withdrawal locked.'))
-        if $client->get_status('withdrawal_locked');
+        if $client->status->get('withdrawal_locked');
     return _transfer_between_accounts_error(localize('Your cashier is locked as per your request.')) if $client->cashier_setting_password;
 
     my $args = $params->{args};
@@ -1278,11 +1278,11 @@ sub _validate_transfer_between_accounts {
 
     return _transfer_between_accounts_error(
         localize('You cannot perform this action, as your account [_1] is currently disabled.', $client_to->loginid))
-        if $client_to->get_status('disabled');
+        if $client_to->status->get('disabled');
 
     return _transfer_between_accounts_error(
         localize('You cannot perform this action, as your account [_1] is marked as unwelcome.', $client_to->loginid))
-        if $client_to->get_status('unwelcome');
+        if $client_to->status->get('unwelcome');
 
     return _transfer_between_accounts_error(
         localize('Your cannot perform this action, as your account [_1] cashier is locked as per request.', $client_to->loginid))

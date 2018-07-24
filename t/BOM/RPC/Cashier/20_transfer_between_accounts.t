@@ -152,25 +152,22 @@ subtest 'call params validation' => sub {
     $params->{token} = $token;
     $params->{args}->{account_from} = $client_cr->loginid;
 
-    $client_cr->set_status('cashier_locked', 'system', 'testing something');
-    $client_cr->save;
+    $client_cr->status->set('cashier_locked', 'system', 'testing something');
 
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for cashier locked';
     is $result->{error}->{message_to_client}, 'You cannot perform this action, as your account is cashier locked.',
         'Correct error message for cashier locked';
 
-    $client_cr->clr_status('cashier_locked');
-    $client_cr->set_status('withdrawal_locked', 'system', 'testing something');
-    $client_cr->save;
+    $client_cr->status->clear('cashier_locked');
+    $client_cr->status->set('withdrawal_locked', 'system', 'testing something');
 
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for withdrawal locked';
     is $result->{error}->{message_to_client}, 'You cannot perform this action, as your account is withdrawal locked.',
         'Correct error message for withdrawal locked';
 
-    $client_cr->clr_status('withdrawal_locked');
-    $client_cr->save;
+    $client_cr->status->clear('withdrawal_locked');
 };
 
 subtest 'validation' => sub {
@@ -391,8 +388,7 @@ subtest $method => sub {
             remark   => 'free gift',
         );
 
-        $client_mlt->clr_status('cashier_locked');    # clear locked
-        $client_mlt->save();
+        $client_mlt->status->clear('cashier_locked');    # clear locked
 
         $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
         is scalar(@{$result->{accounts}}), 2, 'two accounts';

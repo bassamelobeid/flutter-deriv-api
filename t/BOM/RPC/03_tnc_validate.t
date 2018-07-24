@@ -66,8 +66,7 @@ subtest 'no tnc yet' => sub {
     done_testing();
 };
 
-$test_client->set_status('tnc_approval', 'system', 'test');
-$test_client->save;
+$test_client->status->set('tnc_approval', 'system', 'test');
 
 subtest 'tnc not correct yet' => sub {
     for my $method (@methods) {

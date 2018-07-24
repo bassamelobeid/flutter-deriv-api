@@ -299,7 +299,7 @@ async_rpc mt5_new_account => sub {
                     code              => 'TINDetailsMandatory',
                     message_to_client => localize(
                         'Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.'),
-                }) if ($countries_instance->is_tax_detail_mandatory($residence) and not $client->get_status('crs_tin_information'));
+                }) if ($countries_instance->is_tax_detail_mandatory($residence) and not $client->status->get('crs_tin_information'));
         }
 
         # populate mt5 agent account from manager id if applicable
@@ -1430,10 +1430,10 @@ sub _mt5_validate_and_get_amount {
     return permission_error_future() if ($client_obj->is_virtual);
 
     return _make_error($error_code, localize('Your account [_1] is disabled.', $loginid))
-        if ($client_obj->get_status('disabled'));
+        if ($client_obj->status->get('disabled'));
 
     return _make_error($error_code, localize('Your account [_1] cashier section is locked.', $loginid))
-        if ($client_obj->get_status('cashier_locked') || $client_obj->documents_expired);
+        if ($client_obj->status->get('cashier_locked') || $client_obj->documents_expired);
 
     my $client_currency = $client_obj->default_account ? $client_obj->default_account->currency_code : undef;
     return _make_error($error_code, localize('Please set currency for existsing account [_1].', $loginid))

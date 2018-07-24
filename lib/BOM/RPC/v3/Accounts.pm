@@ -487,13 +487,9 @@ rpc get_account_status => sub {
 
     my $client = $params->{client};
     my $already_unwelcomed;
-    my @status;
-    foreach my $s (sort keys %{BOM::User::Client->status_codes()}) {
-        if ($client->get_status($s)) {
-            push @status, $s;
-            $already_unwelcomed = 1 if $s eq 'unwelcome';
-        }
-    }
+
+    my @status = $client->status->visible();
+    $already_unwelcomed = grep { /^unwelcome$/ } @status;
 
     my $id_auth_status             = $client->authentication_status;
     my $authentication_in_progress = $id_auth_status =~ /under_review|needs_action/;
@@ -520,7 +516,7 @@ rpc get_account_status => sub {
     if ($client->fully_authenticated) {
         # Authenticated clients still need to go through age verification checks for IOM/MF/MLT
         if (any { $shortcode eq $_ } qw(iom malta maltainvest)) {
-            $prompt_client_to_authenticate = 1 unless $client->get_status('age_verification');
+            $prompt_client_to_authenticate = 1 unless $client->status->get('age_verification');
         }
     } elsif ($authentication_in_progress) {
         $prompt_client_to_authenticate = 1;
@@ -819,7 +815,7 @@ rpc get_settings => sub {
             Brands->new(name => request()->brand)->countries_instance->countries->localized_code2country($client->residence, $params->{language});
     }
 
-    my $client_tnc_status = $client->get_status('tnc_approval');
+    my $client_tnc_status = $client->status->get('tnc_approval');
 
     # get JP real a/c status, for Japan Virtual a/c client
     my $jp_account_status;
@@ -850,12 +846,12 @@ rpc get_settings => sub {
                 phone                          => $client->phone,
                 allow_copiers                  => $client->allow_copiers // 0,
                 is_authenticated_payment_agent => ($client->payment_agent and $client->payment_agent->is_authenticated) ? 1 : 0,
-                client_tnc_status => $client_tnc_status ? $client_tnc_status->reason : '',
+                client_tnc_status => $client_tnc_status ? $client_tnc_status->{reason} : '',
                 place_of_birth    => $client->place_of_birth,
                 tax_residence     => $client->tax_residence,
                 tax_identification_number   => $client->tax_identification_number,
                 account_opening_reason      => $client->account_opening_reason,
-                request_professional_status => $client->get_status('professional_requested') ? 1 : 0,
+                request_professional_status => $client->status->get('professional_requested') ? 1 : 0,
             )
         ),
         $jp_account_status ? (jp_account_status => $jp_account_status) : (),
@@ -1028,9 +1024,9 @@ rpc set_settings => sub {
         my ($client_obj) = @_;
         if (    $args->{request_professional_status}
             and $client_obj->landing_company->short =~ /^(?:costarica|maltainvest)$/
-            and not($client_obj->get_status('professional') or $client_obj->get_status('professional_requested')))
+            and not($client_obj->status->get('professional') or $client_obj->status->get('professional_requested')))
         {
-            $client_obj->set_status('professional_requested', 'SYSTEM', 'Professional account requested');
+            $client_obj->status->set('professional_requested', 'SYSTEM', 'Professional account requested');
             return 1;
         }
         return undef;
@@ -1122,7 +1118,7 @@ rpc set_settings => sub {
         localize('Requested professional status'),
         (
                    $args->{request_professional_status}
-                or $client->get_status('professional_requested')
+                or $client->status->get('professional_requested')
         ) ? localize("Yes") : localize("No")];
 
     $message .= "<table>";
@@ -1374,8 +1370,7 @@ rpc set_self_exclusion => sub {
     if ($args{max_30day_turnover}) {
         $client->set_exclusion->max_30day_turnover($args{max_30day_turnover});
         if ($client->residence eq 'gb') {    # RTS 12 - Financial Limits - UK Clients
-            $client->clr_status('ukrts_max_turnover_limit_not_set');
-            $client->save;
+            $client->status->clear('ukrts_max_turnover_limit_not_set');
         }
     }
     if ($args{max_30day_losses}) {
@@ -1425,7 +1420,7 @@ sub send_self_exclusion_notification {
 
     if (@fields_to_email) {
         my $name = ($client->first_name ? $client->first_name . ' ' : '') . $client->last_name;
-        my $statuses = join '/', map { uc $_->status_code } $client->client_status;
+        my $statuses = join '/', map { uc $_ } $client->status->all();
         my $client_title = join ', ', $client->loginid, $client->email, ($name || '?'), ($statuses ? "current status: [$statuses]" : '');
 
         my $brand = Brands->new(name => request()->brand);
@@ -1518,26 +1513,24 @@ rpc api_token => sub {
 
 rpc tnc_approval => sub {
     my $params = shift;
+    my $error;
 
     my $client = $params->{client};
     return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
 
     if ($params->{args}->{ukgc_funds_protection}) {
-        $client->set_status('ukgc_funds_protection', 'system', 'Client acknowledges the protection level of funds');
-        if (not $client->save()) {
+        if (not eval { $client->status->set('ukgc_funds_protection', 'system', 'Client acknowledges the protection level of funds') }) {
             return BOM::RPC::v3::Utility::client_error();
         }
     } else {
         my $current_tnc_version = BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version;
-        my $client_tnc_status   = $client->get_status('tnc_approval');
+        my $client_tnc_status   = $client->status->get('tnc_approval');
 
         if (not $client_tnc_status
-            or ($client_tnc_status->reason ne $current_tnc_version))
+            or ($client_tnc_status->{reason} ne $current_tnc_version))
         {
-            $client->set_status('tnc_approval', 'system', $current_tnc_version);
-            if (not $client->save()) {
-                return BOM::RPC::v3::Utility::client_error();
-            }
+            try { $client->status->set('tnc_approval', 'system', $current_tnc_version) } catch { $error = BOM::RPC::v3::Utility::client_error() };
+            return $error if $error;
         }
     }
 
