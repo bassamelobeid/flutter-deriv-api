@@ -124,11 +124,13 @@ sub create_client {
     for (keys %$client_data) {
         $client->$_($client_data->{$_});
     }
-    if ($auth && $broker_code =~ /(?:MF|MLT|MX)/) {
-        $client->set_status('age_verification');
-        $client->set_authentication('ID_DOCUMENT')->status('pass') if $broker_code eq 'MF';
-    }
     $client->save;
+
+    if ($auth && $broker_code =~ /(?:MF|MLT|MX)/) {
+        $client->status->set('age_verification');
+        $client->set_authentication('ID_DOCUMENT')->status('pass') if $broker_code eq 'MF';
+        $client->save;
+    }
 
     return $client;
 }

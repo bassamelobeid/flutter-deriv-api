@@ -340,11 +340,10 @@ sub _change_status {
     my ($loginid, $action, $status) = @_;
     my $client = BOM::User::Client->new({loginid => $loginid});
     if ($action eq 'set') {
-        $client->set_status($status, 'system', 'for test');
+        $client->status->set($status, 'system', 'for test');
     } else {
-        $client->clr_status($status);
+        $client->status->clear($status);
     }
-    $client->save;
     return;
 }
 
