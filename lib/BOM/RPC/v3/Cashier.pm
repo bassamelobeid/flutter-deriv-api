@@ -1034,11 +1034,11 @@ rpc transfer_between_accounts => sub {
     return _transfer_between_accounts_error(localize('Please provide valid currency.')) unless $currency;
     return _transfer_between_accounts_error(localize('Please provide valid amount.'))
         if (not looks_like_number($amount) or $amount <= 0);
-
     # create client from siblings so that we are sure that from and to loginid
     # provided are for same user
     my ($client_from, $client_to, $res);
     try {
+
         $client_from = BOM::User::Client->new({loginid => $siblings->{$loginid_from}->{loginid}});
         $client_to   = BOM::User::Client->new({loginid => $siblings->{$loginid_to}->{loginid}});
     }
@@ -1062,10 +1062,9 @@ rpc transfer_between_accounts => sub {
     return $res if $res;
 
     my ($to_amount, $fees, $fees_percent) =
-        BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($client_from->loginid, $amount, $from_currency, $to_currency);
+        BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($client_from, $client_to, $amount, $from_currency, $to_currency);
 
     BOM::User::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
-
     my $error_audit_sub = sub {
         my ($err, $client_message) = @_;
 
@@ -1106,6 +1105,7 @@ rpc transfer_between_accounts => sub {
     catch {
         $err = $_;
     };
+
     if ($err) {
         my $limit;
         if ($err =~ /exceeds client balance/) {
@@ -1145,7 +1145,6 @@ rpc transfer_between_accounts => sub {
         }
         return $error_audit_sub->("$err_msg validate_payment failed for $loginid_to [$err]", $msg);
     }
-
     my $response;
     try {
         my $remark = 'Account transfer from ' . $loginid_from . ' to ' . $loginid_to . '.';
@@ -1171,7 +1170,6 @@ rpc transfer_between_accounts => sub {
     if ($err) {
         return $error_audit_sub->($err);
     }
-
     BOM::User::AuditLog::log("Account Transfer SUCCESS, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
 
     return {
@@ -1267,13 +1265,14 @@ sub _validate_transfer_between_accounts {
     return _transfer_between_accounts_error(localize('Please provide valid currency.')) unless $from_currency_type;
 
     my ($lc_from, $lc_to) = ($client_from->landing_company, $client_to->landing_company);
+
     # error if landing companies are different with exception
     # of maltainvest and malta as we allow transfer between them
     return _transfer_between_accounts_error()
         if (($lc_from->short ne $lc_to->short)
         and ($lc_from->short !~ /^(?:malta|maltainvest)$/ or $lc_to->short !~ /^(?:malta|maltainvest)$/));
 
-    # error if currency is not legal for landing company
+# error if currency is not legal for landing company
     return _transfer_between_accounts_error(localize('Currency provided is not valid for your account.'))
         if (not $lc_from->is_currency_legal($currency) or not $lc_to->is_currency_legal($currency));
 
@@ -1318,7 +1317,8 @@ sub _validate_transfer_between_accounts {
 
     my $to_currency_type = LandingCompany::Registry::get_currency_type($to_currency);
 
-    # we don't allow fiat to fiat if they are different
+    # we don't allow fiat to fiat if they are different currency
+    # this only happens when there is an internal transfer between MLT to MF, we only allow same currency transfer
     return _transfer_between_accounts_error(localize('Account transfers are not available for accounts with different currencies.'))
         if (($from_currency_type eq $to_currency_type) and ($from_currency_type eq 'fiat') and ($currency ne $to_currency));
 

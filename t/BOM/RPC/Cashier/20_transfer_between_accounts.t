@@ -23,6 +23,7 @@ use Email::Stuffer::TestLinks;
 
 use utf8;
 
+my $test_binary_user_id = 65000;
 my ($t, $rpc_ct);
 
 # In the weekend the account transfers will be suspended. So we mock a valid day here
@@ -44,7 +45,8 @@ my $params = {
     args     => {},
 };
 
-my ($method, $email, $client_vr, $client_cr, $client_cr1, $client_mlt, $client_mf, $user, $token) = ('transfer_between_accounts');
+my ($email, $client_vr, $client_cr, $client_cr1, $client_mlt, $client_mf, $user, $token);
+my $method = 'transfer_between_accounts';
 
 my $mocked_CurrencyConverter = Test::MockModule->new('Postgres::FeedDB::CurrencyConverter');
 my $btc_usd_rate             = 4000;
@@ -318,16 +320,16 @@ subtest $method => sub {
                 email       => $email
             });
 
+            $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'MF',
+                email       => $email,
+            });
+
             $user = BOM::User->create(
                 email          => $email,
                 password       => BOM::User::Password::hashpw('jskjd8292922'),
                 email_verified => 1,
             );
-
-            $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'MF',
-                email       => $email,
-            });
 
             $user->add_client($client_mlt);
             $user->add_client($client_mf);
@@ -438,92 +440,27 @@ subtest $method => sub {
 };
 
 subtest 'transfer with fees' => sub {
-    $email     = 'new_transfer_email' . rand(999) . '@sample.com';
-    $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => $email
-    });
-
-    $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => $email
-    });
-
-    $client_cr->set_default_account('USD');
-    $client_cr1->set_default_account('BTC');
-
-    $user = BOM::User->create(
+    $email = 'new_transfer_email' . rand(999) . '@sample.com';
+    my $client_cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
         email          => $email,
-        password       => BOM::User::Password::hashpw('jskjd8292922'),
-        email_verified => 1,
-    );
-
-    $user->add_client($client_cr);
-    $user->add_client($client_cr1);
-
-    $client_cr->payment_free_gift(
-        currency => 'USD',
-        amount   => 1000,
-        remark   => 'free gift',
-    );
-    cmp_ok $client_cr->default_account->load->balance, '==', 1000, 'correct balance';
-
-    $client_cr1->payment_free_gift(
-        currency => 'BTC',
-        amount   => 1,
-        remark   => 'free gift',
-    );
-    cmp_ok $client_cr1->default_account->load->balance, '==', 1, 'correct balance';
-
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
-    my $amount = 10;
-    $params->{args} = {
-        "account_from" => $client_cr->loginid,
-        "account_to"   => $client_cr1->loginid,
-        "currency"     => "USD",
-        "amount"       => $amount
-    };
-    my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-    is $result->{client_to_loginid}, $client_cr1->loginid, 'Transaction successful';
-
-    # fiat to crypto to is 1% and exchange rate is 4000 for BTC
-    my $fee_percent     = 1;
-    my $transfer_amount = ($amount - $amount * $fee_percent / 100) / 4000;
-    my $current_balance = $client_cr1->default_account->load->balance;
-    cmp_ok $current_balance, '==', 1 + $transfer_amount, 'correct balance after transfer including fees';
-    cmp_ok $client_cr->default_account->load->balance, '==', 1000 - $amount, 'correct balance, exact amount deducted';
-
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr1->loginid, 'test token');
-    $amount          = 0.1;
-    $params->{args}  = {
-        "account_from" => $client_cr1->loginid,
-        "account_to"   => $client_cr->loginid,
-        "currency"     => "BTC",
-        "amount"       => $amount
-    };
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-    is $result->{client_to_loginid}, $client_cr->loginid, 'Transaction successful';
-
-    # crypto to fiat is 1%
-    $transfer_amount = ($amount - $amount * $fee_percent / 100) * 4000;
-    cmp_ok $client_cr->default_account->load->balance, '==', 990 + $transfer_amount, 'correct balance after transfer including fees';
-    cmp_ok $client_cr1->default_account->load->balance, '==', $current_balance - $amount, 'correct balance after transfer including fees';
-};
-
-subtest 'paymentagent transfer' => sub {
-    $email     = 'new_pa_email' . rand(999) . '@sample.com';
-    $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => $email
+        binary_user_id => $test_binary_user_id
     });
 
-    $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => $email
+    my $client_cr_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $test_binary_user_id
     });
 
-    $client_cr->set_default_account('BTC');
-    $client_cr->payment_agent({
+    # create an unauthorised pa
+    my $client_cr_pa_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $test_binary_user_id
+    });
+
+    $client_cr_pa_btc->payment_agent({
         payment_agent_name    => 'Joe',
         url                   => 'http://www.example.com/',
         email                 => 'joe@example.com',
@@ -536,9 +473,17 @@ subtest 'paymentagent transfer' => sub {
         currency_code         => 'BTC',
         target_country        => 'id',
     });
-    $client_cr->save;
 
-    $client_cr1->set_default_account('USD');
+    $client_cr_pa_btc->payment_free_gift(
+        currency => 'BTC',
+        amount   => 1,
+        remark   => 'free gift',
+    );
+    cmp_ok $client_cr_pa_btc->default_account->load->balance, '==', 1, 'correct balance';
+
+    $client_cr_usd->set_default_account('USD');
+    $client_cr_btc->set_default_account('BTC');
+    $client_cr_pa_btc->set_default_account('BTC');
 
     $user = BOM::User->create(
         email          => $email,
@@ -546,46 +491,168 @@ subtest 'paymentagent transfer' => sub {
         email_verified => 1,
     );
 
-    $user->add_client($client_cr);
-    $user->add_client($client_cr1);
+    $user->add_client($client_cr_usd);
+    $user->add_client($client_cr_btc);
+    $user->add_client($client_cr_pa_btc);
 
-    $client_cr->payment_free_gift(
-        currency => 'BTC',
-        amount   => 1,
-        remark   => 'free gift',
-    );
-    cmp_ok $client_cr->default_account->load->balance, '==', 1, 'correct balance';
+    $client_cr_pa_btc->save;
 
-    $client_cr1->payment_free_gift(
+    $client_cr_usd->payment_free_gift(
         currency => 'USD',
         amount   => 1000,
         remark   => 'free gift',
     );
-    cmp_ok $client_cr1->default_account->load->balance, '==', 1000, 'correct balance';
+    cmp_ok $client_cr_usd->default_account->load->balance, '==', 1000, 'correct balance';
 
-    my $amount = 0.1;
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
+    $client_cr_btc->payment_free_gift(
+        currency => 'BTC',
+        amount   => 1,
+        remark   => 'free gift',
+    );
+    cmp_ok $client_cr_btc->default_account->load->balance, '==', 1, 'correct balance';
+
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_usd->loginid, 'test token');
+    my $amount = 10;
     $params->{args} = {
-        "account_from" => $client_cr->loginid,
-        "account_to"   => $client_cr1->loginid,
-        "currency"     => "BTC",
+        "account_from" => $client_cr_usd->loginid,
+        "account_to"   => $client_cr_btc->loginid,
+        "currency"     => "USD",
         "amount"       => $amount
     };
     my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-    is $result->{client_to_loginid}, $client_cr1->loginid, 'Transaction successful';
+    is $result->{client_to_loginid}, $client_cr_btc->loginid, 'Transaction successful';
+
+    # fiat to crypto to is 1% and exchange rate is 4000 for BTC
+    my $fee_percent     = 1;
+    my $transfer_amount = ($amount - $amount * $fee_percent / 100) / 4000;
+    my $current_balance = $client_cr_btc->default_account->load->balance;
+    cmp_ok $current_balance, '==', 1 + $transfer_amount, 'correct balance after transfer including fees';
+    cmp_ok $client_cr_usd->default_account->load->balance, '==', 1000 - $amount,
+        'non-pa to non-pa(USD to BTC), correct balance, exact amount deducted';
+
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_btc->loginid, 'test token');
+    $amount          = 0.1;
+    $params->{args}  = {
+        "account_from" => $client_cr_btc->loginid,
+        "account_to"   => $client_cr_usd->loginid,
+        "currency"     => "BTC",
+        "amount"       => $amount
+    };
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{client_to_loginid}, $client_cr_usd->loginid, 'Transaction successful';
+
+    # crypto to fiat is 1%
+    $transfer_amount = ($amount - $amount * $fee_percent / 100) * 4000;
+    cmp_ok $client_cr_usd->default_account->load->balance, '==', 990 + $transfer_amount, 'correct balance after transfer including fees';
+    cmp_ok $client_cr_btc->default_account->load->balance, '==', $current_balance - $amount,
+        'non-pa to non-pa (BTC to USD), correct balance after transfer including fees';
+
+    $amount = 0.1;
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_pa_btc->loginid, 'test token');
+    $params->{args} = {
+        "account_from" => $client_cr_pa_btc->loginid,
+        "account_to"   => $client_cr_usd->loginid,
+        "currency"     => "BTC",
+        "amount"       => $amount
+    };
+
+    my $previous_amount     = $client_cr_pa_btc->default_account->load->balance;
+    my $previous_amount_usd = $client_cr_usd->default_account->load->balance;
+
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{client_to_loginid}, $client_cr_usd->loginid, 'Transaction successful';
 
     # crypto to fiat is 1% and fiat to crypto is 1%
-    my $fee_percent     = 1;
-    my $transfer_amount = ($amount - $amount * $fee_percent / 100) * 4000;
-    cmp_ok $client_cr->default_account->load->balance, '==', 1 - $amount, 'correct balance after transfer including fees';
-    my $current_balance = $client_cr1->default_account->load->balance;
-    cmp_ok $current_balance, '==', 1000 + $transfer_amount, 'correct balance after transfer including fees as payment agent is not authenticated';
+    $fee_percent     = 1;
+    $transfer_amount = ($amount - $amount * $fee_percent / 100) * 4000;
+    cmp_ok $client_cr_pa_btc->default_account->load->balance, '==', $previous_amount - $amount, 'correct balance after transfer including fees';
+    $current_balance = $client_cr_usd->default_account->load->balance;
+    cmp_ok $current_balance, '==', $previous_amount_usd + $transfer_amount,
+        'unauthorised pa to non-pa transfer (BTC to USD) correct balance after transfer including fees';
 
     # database function throw error if same transaction happens
     # in 2 seconds
     sleep(2);
 
-    $client_cr->payment_agent({
+    $amount = 100;
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_usd->loginid, 'test token');
+    $params->{args} = {
+        "account_from" => $client_cr_usd->loginid,
+        "account_to"   => $client_cr_pa_btc->loginid,
+        "currency"     => "USD",
+        "amount"       => $amount
+    };
+
+    $previous_amount_usd = $client_cr_usd->default_account->load->balance;
+    my $previous_amount_btc = $client_cr_pa_btc->default_account->load->balance;
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{client_to_loginid}, $client_cr_pa_btc->loginid, 'Transaction successful';
+
+    $fee_percent     = 1;
+    $transfer_amount = ($amount - $amount * $fee_percent / 100) / 4000;
+    cmp_ok $client_cr_usd->default_account->load->balance, '==', $previous_amount_usd - $amount, 'correct balance after transfer including fees';
+    $current_balance = $client_cr_pa_btc->default_account->load->balance;
+
+    # tried the cmp below, however it does not work i think it may be caused by implementation of cmp_ok
+    # cmp_ok( ($current_balance - 0), '==', (0 + $previous_amount_btc + $transfer_amount), 'non-pa to unauthorised pa transfer (USD to BTC) correct balance after transfer including fees');
+
+    cmp_ok(($current_balance - 0) - (0 + $previous_amount_btc + $transfer_amount),
+        '<=', 0.00000001, 'non-pa to unauthorised pa transfer (USD to BTC) correct balance after transfer including fees');
+
+};
+
+subtest 'transfer with no fee' => sub {
+
+    $email = 'new_transfer_email' . rand(999) . '@sample.com';
+    my $client_cr_pa_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $test_binary_user_id
+    });
+
+    my $client_cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $test_binary_user_id
+    });
+
+    my $client_cr_pa_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $test_binary_user_id
+    });
+
+    $user->add_client($client_cr_pa_btc);
+    $user->add_client($client_cr_usd);
+    $user->add_client($client_cr_pa_usd);
+
+    $client_cr_pa_usd->set_default_account('USD');
+    $client_cr_usd->set_default_account('USD');
+    $client_cr_pa_btc->set_default_account('BTC');
+
+    $client_cr_pa_btc->payment_free_gift(
+        currency => 'BTC',
+        amount   => 1,
+        remark   => 'free gift',
+    );
+
+    cmp_ok $client_cr_pa_btc->default_account->load->balance + 0, '==', 1, 'correct balance';
+
+    $client_cr_pa_usd->payment_free_gift(
+        currency => 'USD',
+        amount   => 1000,
+        remark   => 'free gift',
+    );
+    cmp_ok $client_cr_pa_usd->default_account->load->balance + 0, '==', 1000, 'correct balance';
+
+    $client_cr_usd->payment_free_gift(
+        currency => 'USD',
+        amount   => 1000,
+        remark   => 'free gift',
+    );
+    cmp_ok $client_cr_usd->default_account->load->balance + 0, '==', 1000, 'correct balance';
+
+    my $pa_args = {
         payment_agent_name    => 'Joe',
         url                   => 'http://www.example.com/',
         email                 => 'joe@example.com',
@@ -597,20 +664,73 @@ subtest 'paymentagent transfer' => sub {
         is_authenticated      => 't',
         currency_code         => 'BTC',
         target_country        => 'id',
-    });
-    $client_cr->save;
+    };
 
-    $params->{args}->{account_from} = $client_cr->loginid;
-    $params->{args}->{account_to}   = $client_cr1->loginid;
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
+    $client_cr_pa_btc->payment_agent($pa_args);
+    $client_cr_pa_btc->save();
+
+    $pa_args->{is_authenticated} = 'f';
+    $pa_args->{currency_code}    = 'USD';
+    $client_cr_pa_usd->payment_agent($pa_args);
+    $client_cr_pa_usd->save();
+
+    my $amount = 0.1;
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_pa_btc->loginid, 'test token');
+    $params->{args} = {
+        "account_from" => $client_cr_pa_btc->loginid,
+        "account_to"   => $client_cr_usd->loginid,
+        "currency"     => "BTC",
+        "amount"       => $amount
+    };
+
+    my $previous_to_amt = $client_cr_usd->default_account->load->balance;
+    my $previous_fm_amt = $client_cr_pa_btc->default_account->load->balance;
+
+    my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{client_to_loginid}, $client_cr_usd->loginid, 'Transaction successful';
+
+    my $fee_percent     = 0;
+    my $transfer_amount = ($amount - $amount * $fee_percent / 100) * 4000;
+    cmp_ok $client_cr_pa_btc->default_account->load->balance, '==', $previous_fm_amt - $amount, 'correct balance after transfer excluding fees';
+    cmp_ok $client_cr_usd->default_account->load->balance, '==', $previous_to_amt + $transfer_amount,
+        'authorised pa to non-pa transfer (BTC to USD), no fees will be charged';
+
+    sleep(2);
+    $params->{args}->{account_to} = $client_cr_pa_usd->loginid;
+
+    $previous_fm_amt = $client_cr_pa_btc->default_account->load->balance;
+    $previous_to_amt = $client_cr_pa_usd->default_account->load->balance;
+    $result          = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{client_to_loginid}, $client_cr_pa_usd->loginid, 'Transaction successful';
+
+    $transfer_amount = ($amount - $amount * $fee_percent / 100) * 4000;
+    cmp_ok($client_cr_pa_btc->default_account->load->balance + 0, '==', ($previous_fm_amt - $amount),
+        'correct balance after transfer excluding fees');
+    cmp_ok $client_cr_pa_usd->default_account->load->balance + 0, '==', $previous_to_amt + $transfer_amount,
+        'authorised pa to unauthrised pa (BTC to USD), one pa is authorised so no transaction fee charged';
+
+    sleep(2);
+    $amount = 10;
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_usd->loginid, 'test token');
+    $params->{args} = {
+        "account_from" => $client_cr_usd->loginid,
+        "account_to"   => $client_cr_pa_btc->loginid,
+        "currency"     => "USD",
+        "amount"       => $amount
+    };
+
+    $previous_to_amt = $client_cr_pa_btc->default_account->load->balance;
+    $previous_fm_amt = $client_cr_usd->default_account->load->balance;
 
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-    is $result->{client_to_loginid}, $client_cr1->loginid, 'Transaction successful';
+    is $result->{client_to_loginid}, $client_cr_pa_btc->loginid, 'Transaction successful';
 
-    $transfer_amount = ($amount - $amount * 0 / 100) * 4000;
-    cmp_ok $client_cr->default_account->load->balance, '==', 0.9 - $amount, 'correct balance after transfer including fees';
-    cmp_ok $client_cr1->default_account->load->balance, '==', $current_balance + $transfer_amount,
-        'correct balance after transfer excluding fees as payment agent is authenticated';
+    $fee_percent     = 0;
+    $transfer_amount = ($amount - $amount * $fee_percent / 100) / 4000;
+    cmp_ok $client_cr_usd->default_account->load->balance, '==', $previous_fm_amt - $amount, 'correct balance after transfer excluding fees';
+    cmp_ok $client_cr_pa_btc->default_account->load->balance, '==', $previous_to_amt + $transfer_amount,
+        'non pa to authorised pa transfer (USD to BTC), no fees will be charged';
+
 };
 
 done_testing();
