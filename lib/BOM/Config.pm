@@ -55,11 +55,6 @@ sub client_limits {
     return $config;
 }
 
-sub client_status {
-    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/client_status.yml');
-    return $config;
-}
-
 sub crypto {
     state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/crypto_config.yml');
     return $config;
