@@ -1056,4 +1056,15 @@ sub _is_status_hidden {
     return $client_status_config->{$status_code} && $client_status_config->{$status_code}->{hide};
 }
 
+sub is_pa_and_authenticated {
+    my $self = shift;
+    return 0 unless my $pa = $self->get_payment_agent();
+    return $pa->is_authenticated ? 1 : 0;
+}
+
+sub is_same_user_as {
+    my ($self, $other_client) = @_;
+    return $self->binary_user_id == $other_client->binary_user_id ? 1 : 0;
+}
+
 1;
