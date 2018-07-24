@@ -1081,7 +1081,7 @@ subtest 'max_payout_open_bets validation', sub {
     'survived';
     lives_ok {
         my $cl = create_client('MF');
-        $cl->set_status("professional");
+        $cl->status->set("professional");
         $cl->save();
         top_up $cl, 'USD', 100;
 

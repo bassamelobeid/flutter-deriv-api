@@ -150,7 +150,7 @@ sub check_one_result {
 
     subtest $title, sub {
         my $err = 0;
-        if (not $cl->get_status("professional") and $cl->landing_company->short eq 'maltainvest') {
+        if (not $cl->status->get("professional") and $cl->landing_company->short eq 'maltainvest') {
             $err++
                 unless is $m->{error}, "Sorry, your account is not authorised for any further contract purchases.",
                 "correct error for non professional MF client";
@@ -519,8 +519,8 @@ subtest 'batch-buy multiple databases and datadog', sub {
         $clm->set_default_account('USD');
         $clm->save;
 
-        $mf_professional1->set_status("professional");
-        $mf_professional2->set_status("professional");
+        $mf_professional1->status->set("professional");
+        $mf_professional2->status->set("professional");
 
         $mf_professional1->save();
         $mf_professional2->save();

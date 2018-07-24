@@ -80,7 +80,7 @@ my $reason = "test to set unwelcome login";
 my $clerk  = 'shuwnyuan';
 
 # lock client cashier
-Test::Exception::lives_ok { $client->set_status('unwelcome', $clerk, $reason) } "set client unwelcome login";
+Test::Exception::lives_ok { $client->status->set('unwelcome', $clerk, $reason) } "set client unwelcome login";
 
 # save changes to CR.lockcashierlogins
 Test::Exception::lives_ok { $client->save() } "can save to unwelcome login file";

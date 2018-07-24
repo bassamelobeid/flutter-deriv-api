@@ -527,10 +527,9 @@ subtest 'Validate Jurisdiction Restriction' => sub {
 };
 
 subtest 'Validate Unwelcome Client' => sub {
-    plan tests => 6;
+    plan tests => 4;
     my $reason = "test to set unwelcome login";
-    lives_ok { $client->set_status('unwelcome', 'raunak', $reason) } "set client unwelcome login";
-    lives_ok { $client->save() } "can save to unwelcome login file";
+    lives_ok { $client->status->set('unwelcome', 'raunak', $reason) } "set client unwelcome login";
 
     my $transaction = BOM::Transaction->new({
         purchase_date => $contract->date_start,
@@ -549,15 +548,13 @@ subtest 'Validate Unwelcome Client' => sub {
         'Client is unwelcome : _validate_client_status - error message'
     );
 
-    lives_ok { $client->clr_status('unwelcome') } "delete client from unwelcome login";
-    lives_ok { $client->save() } "can save to unwelcome login file";
+    lives_ok { $client->status->clear('unwelcome') } "delete client from unwelcome login";
 };
 
 subtest 'Validate Disabled Client' => sub {
-    plan tests => 6;
+    plan tests => 4;
     my $reason = "test to set disabled login";
-    lives_ok { $client->set_status('disabled', 'raunak', $reason) } "set client disabled login";
-    lives_ok { $client->save() } "can save to disabled login file";
+    lives_ok { $client->status->set('disabled', 'raunak', $reason) } "set client disabled login";
 
     my $transaction = BOM::Transaction->new({
         purchase_date => $contract->date_start,
@@ -576,8 +573,7 @@ subtest 'Validate Disabled Client' => sub {
         'Client is unwelcome : _validate_client_status - error message'
     );
 
-    lives_ok { $client->clr_status('disabled') } "delete client from disabled login";
-    lives_ok { $client->save() } "can save to disabled login file";
+    lives_ok { $client->status->clear('disabled') } "delete client from disabled login";
 };
 
 done_testing;

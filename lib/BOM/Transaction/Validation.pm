@@ -688,7 +688,7 @@ is not able to purchase contract
 sub _validate_client_status {
     my ($self, $client) = (shift, shift);
 
-    if ($client->get_status('unwelcome') or $client->get_status('disabled')) {
+    if ($client->status->get('unwelcome') or $client->status->get('disabled')) {
         return Error::Base->cuss(
             -type              => 'ClientUnwelcome',
             -mesg              => 'your account is not authorised for any further contract purchases.',
@@ -758,7 +758,7 @@ sub compliance_checks {
 sub check_tax_information {
     my ($self, $client) = (shift, shift);
 
-    if ($client->landing_company->short eq 'maltainvest' and not $client->get_status('crs_tin_information')) {
+    if ($client->landing_company->short eq 'maltainvest' and not $client->status->get('crs_tin_information')) {
         return Error::Base->cuss(
             -type => 'TINDetailsMandatory',
             -mesg => 'Tax-related information is mandatory for legal and regulatory requirements',
@@ -789,7 +789,7 @@ sub check_trade_status {
 
     my $landing = $client->landing_company->short;
 
-    if (   ($landing =~ /^(?:maltainvest|malta|iom)$/ and not $client->get_status('age_verification') and $client->has_deposits)
+    if (   ($landing =~ /^(?:maltainvest|malta|iom)$/ and not $client->status->get('age_verification') and $client->has_deposits)
         or ($landing eq 'maltainvest' and not $client->fully_authenticated))
     {
         return Error::Base->cuss(
@@ -803,7 +803,7 @@ sub check_trade_status {
         -type              => 'NoMFProfessionalClient',
         -mesg              => 'your account is not authorised for any further contract purchases.',
         -message_to_client => localize('Sorry, your account is not authorised for any further contract purchases.'),
-    ) if $landing eq 'maltainvest' and not $client->get_status("professional");
+    ) if $landing eq 'maltainvest' and not $client->status->get("professional");
 
     return undef;
 }
