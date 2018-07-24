@@ -219,9 +219,9 @@ foreach my $client (@clients) {
     next
         if ((LandingCompany::Registry::get_currency_type($client->currency) // '') eq 'crypto');
     my $dodgy =
-           $client->get_status('disabled')
-        || $client->get_status('cashier_locked')
-        || $client->get_status('unwelcome')
+           $client->status->get('disabled')
+        || $client->status->get('cashier_locked')
+        || $client->status->get('unwelcome')
         || $client->documents_expired;
     my $color = $dodgy ? 'red' : '';
     my $disabled = $dodgy ? 'disabled="disabled"' : '';
@@ -302,11 +302,11 @@ foreach my $client (@clients) {
         }) . '" target=_blank>statement</a>';
 
     my $check_account =
-          $client->get_status('disabled')       ? 'account disabled'
-        : $client->get_status('cashier_locked') ? 'cashier locked'
-        : $client->get_status('unwelcome')      ? 'unwelcome login'
-        : $client->documents_expired            ? 'documents expired'
-        :                                         '';
+          $client->status->get('disabled')       ? 'account disabled'
+        : $client->status->get('cashier_locked') ? 'cashier locked'
+        : $client->status->get('unwelcome')      ? 'unwelcome login'
+        : $client->documents_expired             ? 'documents expired'
+        :                                          '';
 
     $table_elements .= qq[
         <tr>

@@ -82,8 +82,8 @@ for my $broker (@brokers) {
             });
 
             # Skip any inactive clients
-            return $log->infof('Skipping %s due to unwelcome status', $loginid) if $client->get_status('unwelcome');
-            return $log->infof('Skipping %s due to disabled status',  $loginid) if $client->get_status('disabled');
+            return $log->infof('Skipping %s due to unwelcome status', $loginid) if $client->status->get('unwelcome');
+            return $log->infof('Skipping %s due to disabled status',  $loginid) if $client->status->get('disabled');
 
             my $summary = $client->db->dbic->run(
                 fixup => sub {
@@ -163,7 +163,7 @@ for my $broker (@brokers) {
                     payments        => $payments,
                     name            => $client->first_name . ' ' . $client->last_name,
                     account_number  => $client->loginid,
-                    classification  => $client->get_status('professional') ? 'Professional' : 'Retail',
+                    classification  => $client->status->get('professional') ? 'Professional' : 'Retail',
                     currency        => $client->currency,
                 },
                 date      => Date::Utility->new->date_yyyymmdd,

@@ -64,7 +64,7 @@ foreach my $lid (sort @bom_login_ids) {
         {
         text     => encode_entities($lid),
         currency => ' (' . ($client->default_account ? $client->default_account->currency_code : 'No currency selected') . ')',
-        style => ($client->get_status('disabled') ? ' style=color:red' : '')};
+        style => ($client->status->get('disabled') ? ' style=color:red' : '')};
 }
 
 if (not $input{email_edit}) {

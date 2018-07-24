@@ -196,8 +196,8 @@ sub print_client_details {
         $stateoptions .= qq|<option value="$_->{value}">$_->{text}</option>|;
     }
 
-    my $tnc_status                     = $client->get_status('tnc_approval');
-    my $crs_tin_status                 = $client->get_status('crs_tin_information');
+    my $tnc_status                     = $client->status->get('tnc_approval');
+    my $crs_tin_status                 = $client->status->get('crs_tin_information');
     my $show_allow_professional_client = $client->landing_company->short =~ /^(?:costarica|maltainvest)$/ ? 1 : 0;
 
     my @tax_residences = $client->tax_residence ? split ',', $client->tax_residence : ();
@@ -209,14 +209,14 @@ sub print_client_details {
     my $template_param = {
         client                => $client,
         client_phone_country  => $client_phone_country,
-        client_tnc_version    => $tnc_status ? $tnc_status->reason : '',
+        client_tnc_version    => $tnc_status ? $tnc_status->{reason} : '',
         countries             => \@countries,
         country_codes         => $country_codes,
-        crs_tin_information   => $crs_tin_status ? $crs_tin_status->last_modified_date : '',
+        crs_tin_information   => $crs_tin_status ? $crs_tin_status->{last_modified_date} : '',
         dob_day_options       => $dob_day_options,
         dob_month_options     => $dob_month_options,
         dob_year_options      => $dob_year_options,
-        financial_risk_status => $client->get_status('financial_risk_approval'),
+        financial_risk_status => $client->status->get('financial_risk_approval'),
         has_social_signup     => $user->{has_social_signup},
         is_vip                => $client->is_vip,
         lang                  => request()->language,
@@ -229,7 +229,7 @@ sub print_client_details {
         salutation_options             => \@salutation_options,
         secret_answer                  => $secret_answer,
         self_exclusion_enabled         => $self_exclusion_enabled,
-        client_professional_status     => $client->get_status('professional'),
+        client_professional_status     => $client->status->get('professional'),
         show_allow_professional_client => $show_allow_professional_client,
         show_funds_message             => ($client->residence eq 'gb' and not $client->is_virtual) ? 1 : 0,
         show_risk_approval => ($client->landing_company->short eq 'maltainvest') ? 1 : 0,
@@ -238,7 +238,7 @@ sub print_client_details {
         state_options                 => set_selected_item($client->state, $stateoptions),
         client_state                  => $state_name,
         tnc_approval_status           => $tnc_status,
-        ukgc_funds_status             => $client->get_status('ukgc_funds_protection'),
+        ukgc_funds_status             => $client->status->get('ukgc_funds_protection'),
         vip_since                     => $client->vip_since,
         tax_residence                 => \@tax_residences,
         tax_residences_countries_name => $tax_residences_countries_name
@@ -310,15 +310,15 @@ sub build_client_warning_message {
     ###############################################
     ## UNTRUSTED SECTION
     ###############################################
-    my %client_status = map { $_->status_code => $_ } @{$client->client_status || []};
+    my %client_status = map { $_ => $client->status->get($_) } $client->status->all();
     foreach my $type (@{get_untrusted_types()}) {
-        if (my $disabled = $client->get_status($type->{code})) {
+        if (my $disabled = $client->status->get($type->{code})) {
             delete $client_status{$type->{code}};
             push(
                 @output,
                 {
-                    clerk      => $disabled->staff_name,
-                    reason     => $disabled->reason,
+                    clerk      => $disabled->{staff_name},
+                    reason     => $disabled->{reason},
                     warning    => 'red',
                     section    => $type->{comments},
                     editlink   => $edit_client_with_status->($type->{linktype}),
@@ -371,10 +371,10 @@ sub build_client_warning_message {
             . '<td align="left">'
             . $status . '</td>'
             . '<td><b>'
-            . $info->reason
+            . $info->{reason}
             . '</b></td>'
             . '<td><b>'
-            . $info->staff_name
+            . $info->{staff_name}
             . '</b></td>'
             . '<td colspan="2">&nbsp;</td>' . '</tr>';
     }

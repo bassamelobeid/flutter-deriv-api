@@ -92,7 +92,7 @@ if ($ttype eq 'TRANSFER') {
 
 for my $c ($client, $toClient) {
     $c || next;
-    if ($client->get_status('disabled')) {
+    if ($client->status->get('disabled')) {
         print build_client_warning_message($loginID);
     }
     if (!$c->is_first_deposit_pending && $c->currency && $c->currency ne $curr) {

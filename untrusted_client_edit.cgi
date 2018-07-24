@@ -83,71 +83,58 @@ foreach my $login_id (split(/\s+/, $clientID)) {
             if (@{get_open_contracts($client)}) {
                 $printline = $open_trades_error_msg;
             } else {
-                $client->set_status('disabled', $clerk, $reason);
-                $printline = $client->save ? $insert_success_msg : $insert_error_msg;
+                $printline = try { $client->status->set('disabled', $clerk, $reason); $insert_success_msg } catch { $insert_error_msg };
             }
         }
         # remove client from $broker.disabledlogins
         elsif ($action eq 'remove_data') {
-            $client->clr_status('disabled');
-            $printline = $client->save ? $remove_success_msg : $remove_error_msg;
+            $printline = try { $client->status->clear('disabled'); $remove_success_msg } catch { $remove_error_msg };
         }
     }
     # LOCK CASHIER LOGIN
     elsif ($client_status_type eq 'lockcashierlogins') {
         if ($action eq 'insert_data') {
-            $client->set_status('cashier_locked', $clerk, $reason);
-            $printline = $client->save ? $insert_success_msg : $insert_error_msg;
+            $printline = try { $client->status->set('cashier_locked', $clerk, $reason); $insert_success_msg } catch { $insert_error_msg };
         } elsif ($action eq 'remove_data') {
-            $client->clr_status('cashier_locked');
-            $printline = $client->save ? $remove_success_msg : $remove_error_msg;
+            $printline = try { $client->status->clear('cashier_locked'); $remove_success_msg } catch { $remove_error_msg };
         }
     }
     # UNWELCOME LOGIN
     elsif ($client_status_type eq 'unwelcomelogins') {
         if ($action eq 'insert_data') {
-            $client->set_status('unwelcome', $clerk, $reason);
-            $printline = $client->save ? $insert_success_msg : $insert_error_msg;
+            $printline = try { $client->status->set('unwelcome', $clerk, $reason); $insert_success_msg } catch { $insert_error_msg };
         } elsif ($action eq 'remove_data') {
-            $client->clr_status('unwelcome');
-            $printline = $client->save ? $remove_success_msg : $remove_error_msg;
+            $printline = try { $client->status->clear('unwelcome'); $remove_success_msg } catch { $remove_error_msg };
         }
     } elsif ($client_status_type eq 'lockwithdrawal') {
         if ($action eq 'insert_data') {
-            $client->set_status('withdrawal_locked', $clerk, $reason);
-            $printline = $client->save ? $insert_success_msg : $insert_error_msg;
+            $printline = try { $client->status->set('withdrawal_locked', $clerk, $reason); $insert_success_msg } catch { $insert_error_msg };
         } elsif ($action eq 'remove_data') {
-            $client->clr_status('withdrawal_locked');
-            $printline = $client->save ? $remove_success_msg : $remove_error_msg;
+            $printline = try { $client->status->clear('withdrawal_locked'); $remove_success_msg } catch { $remove_error_msg };
         }
     } elsif ($client_status_type eq 'jpactivationpending') {
         if ($action eq 'insert_data') {
-            $client->set_status('jp_activation_pending', $clerk, $reason);
-            $printline = $client->save ? $insert_success_msg : $insert_error_msg;
+            $printline = try { $client->status->set('jp_activation_pending', $clerk, $reason); $insert_success_msg } catch { $insert_error_msg };
         } elsif ($action eq 'remove_data') {
-            $client->clr_status('jp_activation_pending');
-            $printline = $client->save ? $remove_success_msg : $remove_error_msg;
+            $printline = try { $client->status->clear('jp_activation_pending'); $remove_success_msg } catch { $remove_error_msg };
         }
     } elsif ($client_status_type eq 'jptransactiondetail') {
         if ($action eq 'insert_data') {
             $printline = 'Adding new status not allowed for this, only system can add one.';
         } elsif ($action eq 'remove_data') {
-            $client->clr_status('jp_transaction_detail');
-            $printline = $client->save ? $remove_success_msg : $remove_error_msg;
+            $printline = try { $client->status->clear('jp_transaction_detail'); $remove_success_msg } catch { $remove_error_msg };
         }
     } elsif ($client_status_type eq 'duplicateaccount') {
         if ($action eq 'insert_data') {
-            $client->set_status('duplicate_account', $clerk, $reason);
-            if ($client->save) {
-                $printline = $insert_success_msg;
+            $printline = try {
+                $client->status->set('duplicate_account', $clerk, $reason);
                 my $m = BOM::Database::Model::AccessToken->new;
                 $m->remove_by_loginid($client->loginid);
-            } else {
-                $printline = $insert_error_msg;
+                $insert_success_msg;
             }
+            catch { $insert_error_msg };
         } elsif ($action eq 'remove_data') {
-            $client->clr_status('duplicate_account');
-            $printline = $client->save ? $remove_success_msg : $remove_error_msg;
+            $printline = try { $client->status->clear('duplicate_account'); $remove_success_msg } catch { $remove_error_msg };
         }
     }
 

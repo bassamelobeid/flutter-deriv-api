@@ -445,13 +445,19 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         foreach my $existing_client (map { $user->clients_for_landing_company($_) } qw/costarica maltainvest/) {
             my $existing_client_loginid = encode_entities($existing_client->loginid);
 
-            if ($input{professional_client}) {
-                $existing_client->set_status('professional', $clerk, 'Mark as professional as requested');
-                $existing_client->clr_status('professional_requested');
-            } else {
-                $existing_client->clr_status('professional');
+            try {
+                if ($input{professional_client}) {
+                    $existing_client->status->multi_set_clear({
+                        set        => ['professional'],
+                        clear      => ['professional_requested'],
+                        staff_name => $clerk,
+                        reason     => 'Mark as professional as requested',
+                    });
+                } else {
+                    $existing_client->status->clear('professional');
+                }
             }
-            if (not $existing_client->save) {
+            catch {
                 $result .= "<p>Failed to update professional status of client: $existing_client_loginid</p>";
             }
         }
@@ -545,10 +551,10 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
         if ($key eq 'age_verification') {
             if ($input{$key} eq 'yes') {
-                $client->set_status('age_verification', $clerk, 'No specific reason.')
-                    unless $client->get_status('age_verification');
+                $client->status->set('age_verification', $clerk, 'No specific reason.')
+                    unless $client->status->get('age_verification');
             } else {
-                $client->clr_status('age_verification');
+                $client->status->clear('age_verification');
             }
         }
 
@@ -748,7 +754,7 @@ if ($client->landing_company->allows_payment_agents) {
     print '<p>Payment Agents are not available for this account.</p>';
 }
 
-my $statuses = join '/', map { uc $_->status_code } $client->client_status;
+my $statuses = join '/', map { uc $_ } $client->status->all();
 my $name = $client->first_name;
 $name .= ' ' if $name;
 $name .= $client->last_name;
@@ -800,7 +806,7 @@ if ($user) {
                 });
 
             print "<li><a href='$link_href'"
-                . ($client->get_status('disabled') ? ' style="color:red"' : '') . ">"
+                . ($client->status->get('disabled') ? ' style="color:red"' : '') . ">"
                 . encode_entities($lid) . " ("
                 . $currency
                 . ") </a></li>";

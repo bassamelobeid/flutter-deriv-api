@@ -69,7 +69,6 @@ my $permissions = {
     'f_viewloginhistory.cgi'          => ['CS'],
     'ip_search.cgi'                   => ['CS'],
     'show_audit_trail.cgi'            => ['CS'],
-    'trusted_client_edit.cgi'         => ['CS'],
     'untrusted_client_edit.cgi'       => ['CS'],
     'view_192_raw_response.cgi'       => ['CS'],
     'f_client_deskcom.cgi'            => ['CS'],

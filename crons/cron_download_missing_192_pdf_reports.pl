@@ -123,8 +123,7 @@ sub remove_pending_status {
 
     my $client = get_client($loginid);
 
-    $client->clr_status('proveid_pending');
-    return $client->save || die 'Unable to clear proveid_pending status';
+    return $client->status->clear('proveid_pending');
 }
 
 sub get_client {
