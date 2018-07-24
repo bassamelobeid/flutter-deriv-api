@@ -43,33 +43,33 @@ $client_mocked->mock('add_note', sub { return 1 });
 
 my $vr_details = {
     CR => {
-        email           => 'foo+id@binary.com',
-        client_password => 'foobar',
-        residence       => 'id',                  # Indonesia
-        salutation      => 'Ms',
+        email              => 'foo+id@binary.com',
+        client_password    => 'foobar',
+        residence          => 'id',                  # Indonesia
+        salutation         => 'Ms',
         myaffiliates_token => 'this is token',
     },
     MLT => {
-        email           => 'foo+nl@binary.com',
-        client_password => 'foobar',
-        residence       => 'nl',                  # Netherlands
-        salutation      => 'Mr',
-            myaffiliates_token => 'this is token',
-           },
-    MX => {
-        email           => 'foo+gb@binary.com',
-        client_password => 'foobar',
-        residence       => 'gb',                  # UK
-        salutation      => 'Mrs',
-           myaffiliates_token => 'this is token',
-          },
-    JP => {
-        email           => 'foo+jp@binary.com',
-        client_password => 'foobar',
-        residence       => 'jp',                  # JAPAN
-        salutation      => 'Ms',
+        email              => 'foo+nl@binary.com',
+        client_password    => 'foobar',
+        residence          => 'nl',                  # Netherlands
+        salutation         => 'Mr',
         myaffiliates_token => 'this is token',
-        },
+    },
+    MX => {
+        email              => 'foo+gb@binary.com',
+        client_password    => 'foobar',
+        residence          => 'gb',                  # UK
+        salutation         => 'Mrs',
+        myaffiliates_token => 'this is token',
+    },
+    JP => {
+        email              => 'foo+jp@binary.com',
+        client_password    => 'foobar',
+        residence          => 'jp',                  # JAPAN
+        salutation         => 'Ms',
+        myaffiliates_token => 'this is token',
+    },
 };
 
 my %real_client_details = (
@@ -302,10 +302,10 @@ sub create_vr_acc {
     my $args = shift;
     return BOM::Platform::Account::Virtual::create_account({
             details => {
-                email             => $args->{email},
-                client_password   => $args->{client_password},
-                residence         => $args->{residence},
-                has_social_signup => $args->{social_signup},
+                email              => $args->{email},
+                client_password    => $args->{client_password},
+                residence          => $args->{residence},
+                has_social_signup  => $args->{social_signup},
                 myaffiliates_token => $args->{myaffiliates_token},
             }});
 }

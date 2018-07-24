@@ -201,31 +201,27 @@ sub pre_withdrawal_validation {
     return;
 }
 
-# From fiat currency to cryptocurrency: 1% fee
-# From cryptocurrency to fiat currency: 0.5% fee
-# for an approved PA, we don't need to charge any
-# % fee for converting BTC to USD only
 sub calculate_to_amount_with_fees {
-    my ($loginid, $amount, $from_currency, $to_currency) = @_;
+    my ($fm_client, $to_client, $amount, $from_currency, $to_currency) = @_;
+
+    # need to calculate fees only when currency type are different
+    my ($fees, $fees_percent) = (0, 0);
 
     my $from_currency_type = LandingCompany::Registry::get_currency_type($from_currency);
     my $to_currency_type   = LandingCompany::Registry::get_currency_type($to_currency);
 
-    # need to calculate fees only when currency type are different and
-    # currencies are different, we don't allow transfer between same
-    # currency type
-    my ($fees, $fees_percent) = (0, 0);
+    # need to calculate fees only when currency type are different
+    # as MF (USD) to MLT (USD) is posssible, we charges zero when that happens
     if (($from_currency_type ne $to_currency_type) and ($from_currency ne $to_currency)) {
-        my $client = BOM::User::Client->new({
-                loginid      => $loginid,
-                db_operation => 'replica'
-            }) or return ();
 
-        if ($from_currency_type eq 'crypto' and $client->payment_agent and $client->payment_agent->is_authenticated) {
+        # contains a pa agent account, and has no unauthorized payment agent account and it is the same user
+        if ($fm_client->is_same_user_as($to_client) && ($fm_client->is_pa_and_authenticated() || $to_client->is_pa_and_authenticated())) {
             # no fees for authenticate payment agent
             $fees = 0;
         } else {
-            $fees_percent = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->fees->$from_currency_type;
+            my $transfer_config = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts;
+            my $landing_company = LandingCompany::Registry::get_currency_type($from_currency);
+            $fees_percent = $transfer_config->fees->$landing_company;
             $fees = ($amount) * ($fees_percent / 100);
         }
 
