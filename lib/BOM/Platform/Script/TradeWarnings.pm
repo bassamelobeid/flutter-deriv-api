@@ -10,19 +10,51 @@ use IO::Select;
 use Try::Tiny;
 use RedisDB;
 use JSON::MaybeXS;
+use BOM::Platform::Email qw(send_email);
 
 my $json = JSON::MaybeXS->new;
+my %notification_cache;
+my $cache_epoch = Date::Utility->today->epoch;
 
 sub _publish {
     my $redis = shift;
     my $msg   = shift;
 
-    # Quants, this is example code. Please modify it according to your needs.
-    # If you want to convert these events to emails, please avoid sending an
-    # email for every single notification. This will certainly overload the
-    # email system. Alternative ways of alerting could be to send every single
-    # event to datadog and have DD generate alerts.
-    return $redis->publish('TRADEWARNING', $json->encode($msg));
+    my ($subject, $email_list, $status);
+    # trading is suspended. So sound the alarm!
+    if ($msg->{current_amount} >= $msg->{limit_amount}) {
+        $status     = 'disabled';
+        $subject    = "TRADING SUSPENDED! $msg->{type} LIMIT is crossed for landing company $msg->{landing_company}.";
+        $email_list = 'x-quants@binary.com,x-marketing@binary.com,compliance@binary.com,x-cs@binary.com';
+    } else {
+        $status     = 'threshold_crossed';
+        $subject    = "$msg->{type} THRESHOLD is crossed for landing company $msg->{landing_company}.";
+        $email_list = 'x-quants@binary.com';
+    }
+
+    # cache for a day
+    _refresh_notification_cache() if (time - $cache_epoch > 86400);
+
+    my $warning_key = join '_', ($status, $msg->{type}, $msg->{landing_company}, $msg->{limit_amount});
+    unless ($notification_cache{$warning_key}) {
+        # it is JSON::PP::Boolean, so converting it to 1 or 0 for json->encode to work properly
+        $msg->{rank}->{is_market_default} = $msg->{rank}->{is_market_default} ? 1 : 0;
+        send_email({
+            from    => 'system@binary.com',
+            to      => $email_list,
+            subject => $subject . " Limit set: $msg->{limit_amount}. Current amount: $msg->{current_amount}",
+            message => [$json->encode($msg->{rank})],
+        });
+        $notification_cache{$warning_key} = 1;
+    }
+
+    return;
+}
+
+sub _refresh_notification_cache {
+    %notification_cache = ();
+    $cache_epoch        = Date::Utility->today->epoch;
+    return;
 }
 
 sub _master_db_connections {
