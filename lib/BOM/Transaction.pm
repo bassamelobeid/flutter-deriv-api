@@ -352,7 +352,7 @@ sub calculate_limits {
     $limits{max_balance} = $client->get_limit_for_account_balance;
     my $lim = $self->calculate_max_open_bets($client);
     $limits{max_open_bets} = $lim if defined $lim;
-    $limits{max_payout_open_bets} = $client->get_limit_for_payout unless $contract->tick_expiry;
+    $limits{max_payout_open_bets} = $client->get_limit_for_payout;
 
     unless ($client->is_virtual) {
         # only pass true values if global limit checks are enabled.
