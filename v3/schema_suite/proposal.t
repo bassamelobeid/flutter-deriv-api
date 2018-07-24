@@ -116,7 +116,7 @@ test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_re
     'CALL', 'FCHI', '7', 'd', '3564', 'Win payout if French Index is strictly higher than 3564.00 at close on 2016-08-16.', '51.12', '51.12',
     '3563.07';
 test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
-    'ONETOUCH', 'FCHI', '7', 'd', '3624', 'Win payout if French Index touches 3624.00 through close on 2016-08-16.', '40.90', '40.90', '3563.07';
+    'ONETOUCH', 'FCHI', '7', 'd', '3624', 'Win payout if French Index touches 3624.00 through close on 2016-08-16.', '40.89', '40.89', '3563.07';
 test_sendrecv_params 'proposal/test_send_double_barrier.json', 'proposal/test_receive_double_barrier.json',
     'EXPIRYMISS', 'FCHI', '7', 'd', '3600', '3490', 'Win payout if French Index ends outside 3490.00 to 3600.00 at close on 2016-08-16.', '45.24',
     '45.24', '3563.07';

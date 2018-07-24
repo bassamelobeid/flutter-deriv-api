@@ -70,8 +70,7 @@ is_deeply $profit_table->{profit_table}->{transactions}, [];
 test_schema('profit_table', $profit_table);
 
 ## test disabled
-$client_vr->set_status('disabled', 'test.t', "just for test");
-$client_vr->save();
+$client_vr->status->set('disabled', 'test.t', "just for test");
 my $res = $t->await::profit_table({
     profit_table => 1,
     limit        => 1
