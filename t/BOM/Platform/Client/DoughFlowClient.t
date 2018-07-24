@@ -97,13 +97,15 @@ subtest 'Profile mapped correctly to DF levels' => sub {
     $df_client = BOM::Platform::Client::DoughFlowClient->register_and_return_new_client($client_details2);
 
     my $mock_client = Test::MockObject::Extends->new($df_client);
+    my $mock_status = Test::MockObject::Extends->new($df_client->status);
+    $mock_client->set_always('status', ($mock_status));
 
     my $disabled = Test::MockObject->new();
     $disabled->set_always('status_code', 'disabled');
 
-    $mock_client->set_always('client_status', ($disabled));
+    $mock_status->set_always('get', ($disabled));
     is $mock_client->Profile, 0, 'Disabled client => 0';
-    $mock_client->unmock('client_status');
+    $mock_status->unmock('get');
 
     $mock_client->set_true(-is_vip);
     is $mock_client->Profile, 5, 'VIP client => 5';
@@ -111,7 +113,7 @@ subtest 'Profile mapped correctly to DF levels' => sub {
 
     is $mock_client->Profile, 1, 'Regular user => 1';
 
-    $mock_client->set_status('age_verification');
+    $mock_client->status->set('age_verification');
     is $mock_client->Profile, 2, '.. and age verified => 2';
 
     $mock_client->set_true(-fully_authenticated);

@@ -222,10 +222,10 @@ sub Gender { return uc shift->gender }
 sub Profile {
     my $self = shift;
 
-    return 0 if $self->get_status('disabled');
+    return 0 if $self->status->get('disabled');
     return 5 if $self->is_vip;
 
-    if ($self->get_status('age_verification') || $self->has_valid_documents) {
+    if ($self->status->get('age_verification') || $self->has_valid_documents) {
         if ($self->fully_authenticated) {
             if ($self->_days_since_joined > 180) {
                 return 4;

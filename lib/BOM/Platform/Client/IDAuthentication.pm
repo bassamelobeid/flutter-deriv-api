@@ -40,7 +40,7 @@ sub run_authentication {
     if ($landing_company eq 'iom') {
         $envelope = $self->do_proveid;
     } elsif ($landing_company eq 'malta'
-        && !$client->get_status('age_verification')
+        && !$client->status->get('age_verification')
         && !$client->has_valid_documents)
     {
         $envelope = $self->_request_id_authentication;
@@ -61,7 +61,7 @@ sub do_proveid {
         my ($status, $reason, $description) = @_;
         $description //= $reason;
         $self->_notify($reason, $description) if $status ne 'age_verification';
-        return $client->set_status($status, 'system', $reason);
+        return $client->status->set($status, 'system', $reason);
     };
 
     my $prove_id_result = $self->_fetch_proveid;
@@ -70,14 +70,14 @@ sub do_proveid {
 
     # Do not send ID Authentication email if Experian request has failed, setting the user to unwelcome status
     unless ($prove_id_result) {
-        $client->set_status('unwelcome', 'system', 'FailedExperian - Unable to fetch the Experian results')->save;
+        $client->status->set('unwelcome', 'system', 'FailedExperian - Unable to fetch the Experian results');
         return undef;
     }
 
-    my $unwelcome_status = $client->get_status('unwelcome');
+    my $unwelcome_status = $client->status->get('unwelcome');
 
-    $client->clr_status('unwelcome', 'system', 'Experian result is now available')
-        if ($unwelcome_status and $unwelcome_status->reason =~ /FailedExperian/);
+    $client->status->clear('unwelcome', 'system', 'Experian result is now available')
+        if ($unwelcome_status and $unwelcome_status->{reason} =~ /FailedExperian/);
 
     # deceased or fraud => disable the client
     if ($prove_id_result->{deceased} or $prove_id_result->{fraud}) {
@@ -127,8 +127,7 @@ sub _request_id_authentication {
     # special case for MX: forbid them to trade before age_verified. cashier_locked enables to trade
     $status = "unwelcome" if $client->landing_company->short eq 'iom';
 
-    $client->set_status($status, 'system', 'Experian id authentication failed on first deposit');
-    $client->save;
+    $client->status->set($status, 'system', 'Experian id authentication failed on first deposit');
 
     my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);
     my $brand         = Brands->new(name => request()->brand);
@@ -183,8 +182,9 @@ sub _fetch_proveid {
     }
     my $result;
     try {
-        $client->set_status('proveid_requested');
-        $client->set_status('proveid_pending');
+        $client->status->multi_set_clear({
+            set => ['proveid_requested', 'proveid_pending'],
+        });
         $result = BOM::Platform::ProveID->new(
             client        => $self->client,
             search_option => 'ProveID_KYC',
@@ -194,7 +194,7 @@ sub _fetch_proveid {
         # Workaround to distinguish failed search from failed request
         # Failed search = user not found, failed request = error contacting Experian
         $result //= {};
-        $client->clr_status('proveid_pending');
+        $client->status->clear('proveid_pending');
     }
     catch {
         my $brand    = Brands->new(name => request()->brand);

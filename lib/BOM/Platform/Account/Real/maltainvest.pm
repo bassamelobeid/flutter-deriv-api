@@ -55,11 +55,11 @@ sub create_account {
         data => Encode::encode_utf8(JSON::MaybeXS->new->encode($financial_assessment)),
     });
     # after_register_client sub save client so no need to call it here
-    $client->set_status('unwelcome', 'SYSTEM', 'Trading disabled for investment Europe ltd');
+    $client->status->set('unwelcome', 'SYSTEM', 'Trading disabled for investment Europe ltd');
     if ($accept_risk) {
-        $client->set_status('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
+        $client->status->set('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
     } elsif (not $should_warn) {
-        $client->set_status('financial_risk_approval', 'SYSTEM', 'Financial risk approved based on financial assessment score');
+        $client->status->set('financial_risk_approval', 'SYSTEM', 'Financial risk approved based on financial assessment score');
     }
 
     my $status = BOM::Platform::Account::Real::default::after_register_client({

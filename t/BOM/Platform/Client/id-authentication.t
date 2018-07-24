@@ -52,7 +52,7 @@ subtest "No authentication for CR clients" => sub {
             ok $v->client->is_first_deposit_pending, 'real client awaiting first deposit';
             ok !$v->requires_authentication, '.. no authentication required';
             $v->run_authentication;
-            ok !$v->client->get_status('cashier_locked');
+            ok !$v->client->status->get('cashier_locked');
         };
     }
 };
@@ -116,9 +116,9 @@ subtest 'When auth not required' => sub {
                 $v->run_authentication;
             };
             ok !$v->client->fully_authenticated, 'client should not be fully authenticated';
-            ok !$v->client->get_status('age_verification'), 'client should not be age verified';
-            ok !$v->client->get_status('unwelcome'),        'client is not unwelcome';
-            ok $v->client->get_status('cashier_locked'), 'client is now cashier_locked';
+            ok !$v->client->status->get('age_verification'), 'client should not be age verified';
+            ok !$v->client->status->get('unwelcome'),        'client is not unwelcome';
+            ok $v->client->status->get('cashier_locked'), 'client is now cashier_locked';
         };
         subtest 'for MX' => sub {
             my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -140,8 +140,8 @@ subtest 'When auth not required' => sub {
                 $v->run_authentication;
             };
             ok !$v->client->fully_authenticated, 'client should not be fully authenticated';
-            ok !$v->client->get_status('age_verification'), 'client should not be age verified';
-            ok $v->client->get_status('unwelcome'), 'client is now unwelcome';
+            ok !$v->client->status->get('age_verification'), 'client should not be age verified';
+            ok $v->client->status->get('unwelcome'), 'client is now unwelcome';
             }
 
     };
@@ -156,8 +156,8 @@ subtest 'When auth not required' => sub {
         $v->run_authentication;
 
         ok !$v->client->fully_authenticated, 'client should not be fully authenticated';
-        ok !$v->client->get_status('age_verification'), 'client should not be age verified';
-        ok !$v->client->get_status('cashier_locked'),   'cashier not locked';
+        ok !$v->client->status->get('age_verification'), 'client should not be age verified';
+        ok !$v->client->status->get('cashier_locked'),   'cashier not locked';
     };
 };
 
@@ -181,8 +181,8 @@ subtest 'proveid' => sub {
             });
         $v->run_authentication;
         is $v->notified, undef, 'sent zero notification';
-        ok $v->client->get_status('age_verification'), 'client is age verified';
-        ok !$v->client->get_status('cashier_locked'), 'cashier not locked';
+        ok $v->client->status->get('age_verification'), 'client is age verified';
+        ok !$v->client->status->get('cashier_locked'), 'cashier not locked';
     };
 
     subtest 'actual response from experian' => sub {
@@ -206,8 +206,8 @@ subtest 'proveid' => sub {
             });
 
         $v->run_authentication;
-        ok $v->client->get_status('age_verification'), 'client is age verified';
-        ok !$v->client->get_status('cashier_locked'), 'cashier not locked';
+        ok $v->client->status->get('age_verification'), 'client is age verified';
+        ok !$v->client->status->get('cashier_locked'), 'cashier not locked';
     };
 
     subtest 'kyc 2 or less' => sub {
@@ -226,8 +226,8 @@ subtest 'proveid' => sub {
             });
 
         $v->run_authentication;
-        ok $v->client->get_status('unwelcome'), 'client is unwelcome';
-        ok !$v->client->get_status('cashier_locked'), 'cashier not locked';
+        ok $v->client->status->get('unwelcome'), 'client is unwelcome';
+        ok !$v->client->status->get('cashier_locked'), 'cashier not locked';
     };
 
     subtest 'kyc more than 2' => sub {
@@ -245,8 +245,8 @@ subtest 'proveid' => sub {
                 return {kyc_summary_score => 3};
             });
         $v->run_authentication;
-        ok $v->client->get_status('age_verification'), 'client is age verified';
-        ok !$v->client->get_status('cashier_locked'), 'cashier not locked';
+        ok $v->client->status->get('age_verification'), 'client is age verified';
+        ok !$v->client->status->get('cashier_locked'), 'cashier not locked';
     };
 
     subtest 'flagged' => sub {
@@ -265,7 +265,7 @@ subtest 'proveid' => sub {
         my @notif = @{$v->notified};
         is @notif, 1, 'sent two notifications';
         like $notif[0][0], qr/PEP match/, 'notification is correct';
-        ok $v->client->get_status('disabled'), 'client is disabled';
+        ok $v->client->status->get('disabled'), 'client is disabled';
     };
 
     subtest 'deny' => sub {
@@ -290,8 +290,8 @@ subtest 'proveid' => sub {
             $v->run_authentication;
         };
         ok !$v->client->fully_authenticated, 'client not fully authenticated';
-        ok !$v->client->get_status('age_verification'), 'client not age verified';
-        ok $v->client->get_status('unwelcome'), 'client now unwelcome';
+        ok !$v->client->status->get('age_verification'), 'client not age verified';
+        ok $v->client->status->get('unwelcome'), 'client now unwelcome';
     };
 
     subtest 'Director/CCJ' => sub {
@@ -322,7 +322,7 @@ subtest 'proveid' => sub {
                 $v->run_authentication;
             };
             ok !$v->client->fully_authenticated, 'client not fully authenticated: ' . $type;
-            ok !$v->client->get_status('age_verification'), 'client not age verified: ' . $type;
+            ok !$v->client->status->get('age_verification'), 'client not age verified: ' . $type;
         }
     };
 
@@ -338,8 +338,8 @@ subtest 'proveid' => sub {
         $v->run_authentication;
         is $v->notified, undef, 'sent zero notification';
         ok !$v->client->fully_authenticated, 'client not fully authenticated';
-        ok $v->client->get_status('age_verification'), 'client is age verified';
-        ok !$v->client->get_status('cashier_locked'), 'cashier not locked';
+        ok $v->client->status->get('age_verification'), 'client is age verified';
+        ok !$v->client->status->get('cashier_locked'), 'cashier not locked';
     };
 
     subtest 'failed authentication' => sub {
@@ -357,8 +357,8 @@ subtest 'proveid' => sub {
             $v->run_authentication;
         };
         ok !$v->client->fully_authenticated, 'client not fully authenticated';
-        ok !$v->client->get_status('age_verification'), 'client not age verified';
-        ok $v->client->get_status('unwelcome'), 'client now unwelcome';
+        ok !$v->client->status->get('age_verification'), 'client not age verified';
+        ok $v->client->status->get('unwelcome'), 'client now unwelcome';
     };
 };
 

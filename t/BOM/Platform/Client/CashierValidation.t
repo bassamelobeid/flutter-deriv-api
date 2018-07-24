@@ -113,22 +113,21 @@ subtest 'Cashier validation common' => sub {
     is $res->{error}->{message_to_client}, 'Please set your country of residence.', 'Correct error message for no residence';
 
     $cr_client->residence($country);
-    $cr_client->set_status('cashier_locked', 'system', 'pending investigations');
+    $cr_client->status->set('cashier_locked', 'system', 'pending investigations');
     $cr_client->save();
 
     $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
     is $res->{error}->{code}, $generic_err_code, 'Correct error code if client is cashier locked';
     is $res->{error}->{message_to_client}, 'Your cashier is locked.', 'Correct error message if client is cashier locked';
 
-    $cr_client->clr_status('cashier_locked');
-    $cr_client->set_status('disabled', 'system', 'pending investigations');
-    $cr_client->save();
+    $cr_client->status->clear('cashier_locked');
+    $cr_client->status->set('disabled', 'system', 'pending investigations');
 
     $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
     is $res->{error}->{code}, $generic_err_code, 'Correct error code as its disabled';
     is $res->{error}->{message_to_client}, 'Your account is disabled.', 'Correct error message as its disabled';
 
-    $cr_client->clr_status('disabled');
+    $cr_client->status->clear('disabled');
     $cr_client->cashier_setting_password('abc123');
     $cr_client->save();
 
@@ -170,27 +169,23 @@ subtest 'Cashier validation common' => sub {
 };
 
 subtest 'Cashier validation deposit' => sub {
-    $cr_client->set_status('unwelcome', 'system', 'pending investigations');
-    $cr_client->save();
+    $cr_client->status->set('unwelcome', 'system', 'pending investigations');
 
     my $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
     is $res->{error}->{code}, $generic_err_code, 'Correct error code for unwelcome client';
     is $res->{error}->{message_to_client}, 'Your account is restricted to withdrawals only.', 'Correct error message for unwelcome client';
 
-    $cr_client->clr_status('unwelcome');
-    $cr_client->save();
+    $cr_client->status->clear('unwelcome');
 };
 
 subtest 'Cashier validation withdraw' => sub {
-    $cr_client->set_status('withdrawal_locked', 'system', 'pending investigations');
-    $cr_client->save();
+    $cr_client->status->set('withdrawal_locked', 'system', 'pending investigations');
 
     my $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'withdraw');
     is $res->{error}->{code}, $generic_err_code, 'Correct error code for withdrawal locked';
     is $res->{error}->{message_to_client}, 'Your account is locked for withdrawals.', 'Correct error message for withdrawal locked';
 
-    $cr_client->clr_status('withdrawal_locked');
-    $cr_client->save();
+    $cr_client->status->clear('withdrawal_locked');
 };
 
 subtest 'Cashier validation landing company and country specific' => sub {
@@ -213,8 +208,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
         is $res->{error}->{code},              'ASK_FINANCIAL_RISK_APPROVAL',          'Correct error code';
         is $res->{error}->{message_to_client}, 'Financial Risk approval is required.', 'Correct error message';
 
-        $mf_client->set_status('financial_risk_approval', 'system', 'Accepted approval');
-        $mf_client->save();
+        $mf_client->status->set('financial_risk_approval', 'system', 'Accepted approval');
 
         $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
         is $res->{error}->{code}, 'ASK_TIN_INFORMATION', 'Correct error code';
@@ -237,8 +231,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
         is $res->{error}->{message_to_client}, 'Your account is restricted to withdrawals only.',
             'Correct error message for non MF professional clients';
 
-        $mf_client->set_status("professional");
-        $mf_client->save();
+        $mf_client->status->set("professional");
 
         $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
         is $res, undef, 'Validation passed';
@@ -266,17 +259,15 @@ subtest 'Cashier validation landing company and country specific' => sub {
         is $res->{error}->{code},              'ASK_UK_FUNDS_PROTECTION',         'Correct error code';
         is $res->{error}->{message_to_client}, 'Please accept Funds Protection.', 'Correct error message';
 
-        $mx_client->set_status('ukgc_funds_protection',            'system', '1');
-        $mx_client->set_status('ukrts_max_turnover_limit_not_set', 'system', '1');
-        $mx_client->save;
+        $mx_client->status->set('ukgc_funds_protection',            'system', '1');
+        $mx_client->status->set('ukrts_max_turnover_limit_not_set', 'system', '1');
 
         $res = BOM::Platform::Client::CashierValidation::validate($mx_client->loginid, 'deposit');
         is $res->{error}->{code}, 'ASK_SELF_EXCLUSION_MAX_TURNOVER_SET', 'Correct error code';
         is $res->{error}->{message_to_client}, 'Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.',
             'Correct error message';
 
-        $mx_client->clr_status('ukrts_max_turnover_limit_not_set');
-        $mx_client->save;
+        $mx_client->status->clear('ukrts_max_turnover_limit_not_set');
 
         is BOM::Platform::Client::CashierValidation::validate($mx_client->loginid, 'deposit'), undef, 'Validation passed';
     };
@@ -293,42 +284,38 @@ subtest 'Cashier validation landing company and country specific' => sub {
             'Validation passed as its per residence not per landing company';
 
         $jp_client->residence('jp');
-        $jp_client->set_status('jp_knowledge_test_pending', 'system', 'pending test');
+        $jp_client->status->set('jp_knowledge_test_pending', 'system', 'pending test');
         $jp_client->save;
 
         $res = BOM::Platform::Client::CashierValidation::validate($jp_client->loginid, 'deposit');
         is $res->{error}->{code}, 'ASK_JP_KNOWLEDGE_TEST', 'Correct error code';
         is $res->{error}->{message_to_client}, 'You must complete the knowledge test to activate this account.', 'Correct error message';
 
-        $jp_client->clr_status('jp_knowledge_test_pending');
-        $jp_client->set_status('jp_knowledge_test_fail', 'system', 'pending test');
-        $jp_client->save;
+        $jp_client->status->clear('jp_knowledge_test_pending');
+        $jp_client->status->set('jp_knowledge_test_fail', 'system', 'pending test');
 
         $res = BOM::Platform::Client::CashierValidation::validate($jp_client->loginid, 'deposit');
         is $res->{error}->{code}, 'ASK_JP_KNOWLEDGE_TEST', 'Correct error code';
         is $res->{error}->{message_to_client}, 'You must complete the knowledge test to activate this account.', 'Correct error message';
 
-        $jp_client->clr_status('jp_knowledge_test_fail');
-        $jp_client->set_status('jp_activation_pending', 'system', 'pending test');
-        $jp_client->save;
+        $jp_client->status->clear('jp_knowledge_test_fail');
+        $jp_client->status->set('jp_activation_pending', 'system', 'pending test');
 
         $res = BOM::Platform::Client::CashierValidation::validate($jp_client->loginid, 'deposit');
         is $res->{error}->{code},              'JP_NOT_ACTIVATION',      'Correct error code';
         is $res->{error}->{message_to_client}, 'Account not activated.', 'Correct error message';
 
-        $jp_client->clr_status('jp_activation_pending');
-        $jp_client->save;
+        $jp_client->status->clear('jp_activation_pending');
 
         $res = BOM::Platform::Client::CashierValidation::validate($jp_client->loginid, 'deposit');
         is $res->{error}->{code},              'ASK_AGE_VERIFICATION',            'Correct error code';
         is $res->{error}->{message_to_client}, 'Account needs age verification.', 'Correct error message';
 
-        $jp_client->set_status('age_verification', 'system', 1);
-        $jp_client->save;
+        $jp_client->status->set('age_verification', 'system', 1);
 
         is BOM::Platform::Client::CashierValidation::validate($jp_client->loginid, 'deposit'), undef, 'Validation passed as age verified';
 
-        $jp_client->clr_status('age_verification');
+        $jp_client->status->clear('age_verification');
         my ($doc) = $jp_client->add_client_authentication_document({
             document_type              => "Passport",
             document_format            => "PDF",
@@ -356,8 +343,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
         is $res->{error}->{code}, $generic_err_code, 'Correct error code';
         is $res->{error}->{message_to_client}, 'Account needs age verification.', 'Correct error message';
 
-        $mlt_client->set_status('age_verification', 'system', 1);
-        $mlt_client->save;
+        $mlt_client->status->set('age_verification', 'system', 1);
 
         $res = BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($mlt_client->loginid, 2000);
         is $res->{error}->{code}, $generic_err_code, 'Correct error code';
@@ -369,8 +355,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
         is $res->{error}->{code}, $generic_err_code, 'Correct error code';
         is $res->{error}->{message_to_client}, 'Account needs age verification.', 'Correct error message';
 
-        $mx_client->set_status('age_verification', 'system', 1);
-        $mx_client->save;
+        $mx_client->status->set('age_verification', 'system', 1);
 
         $res = BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($mx_client->loginid, 3000);
         is $res->{error}->{code}, $generic_err_code, 'Correct error code';

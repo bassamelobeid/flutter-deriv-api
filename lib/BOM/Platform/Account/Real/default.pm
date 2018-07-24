@@ -115,8 +115,7 @@ sub after_register_client {
     my ($client, $user, $details, $ip, $country) = @{$args}{qw(client user details ip country)};
 
     unless ($client->is_virtual) {
-        $client->set_status('tnc_approval', 'system', BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version);
-        $client->save;
+        $client->status->set('tnc_approval', 'system', BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version);
     }
 
     BOM::Platform::Client::Sanctions->new({
