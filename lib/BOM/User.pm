@@ -189,7 +189,7 @@ sub clients {
     $self->{_cookie_val} = join('+', @parts);
 
     # todo should be refactor
-    @clients = grep { not $_->get_status('disabled') } @clients unless $args{include_disabled};
+    @clients = grep { not $_->status->get('disabled') } @clients unless $args{include_disabled};
 
     return @clients;
 }
@@ -311,15 +311,11 @@ sub accounts_by_category {
 
         next unless $cl;
 
-        my $all_status = BOM::User::Client->status_codes(hidden => 1);
-        my @do_not_display_status = grep { $all_status->{$_}->{disallow_login} } keys %$all_status;
-
-        # don't include clients that we don't want to show
-        next if grep { $cl->get_status($_) } @do_not_display_status;
+        next if $cl->status->is_login_disallowed();
 
         # we store the first suitable client to _disabled_real_client/_self_excluded_client/_virtual_client/_first_enabled_real_client.
         # which will be used in get_default_client
-        if ($cl->get_status('disabled')) {
+        if ($cl->status->get('disabled')) {
             push @disabled_accounts, $cl;
             next;
         }

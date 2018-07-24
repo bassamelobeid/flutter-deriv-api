@@ -20,6 +20,7 @@ use Rose::Object::MakeMethods::Generic scalar => ['self_exclusion_cache'];
 
 use LandingCompany::Registry;
 use BOM::User::Client::Payments;
+use BOM::User::Client::Status;
 
 use BOM::Platform::Account::Real::default;
 
@@ -53,37 +54,8 @@ sub new {
     $self->set_db($operation) if $operation;
 
     $self->load(speculative => 1) || return undef;    # must exist in db
+
     return $self;
-}
-
-=head2 status_codes
-
-    # Hash of client status codes to show to client
-    BOM::User::Client->status_codes()
-
-    # client status codes, including the hidden ones
-    BOM::User::Client->status_codes(hidden => 1)
-
-Returns a hashref with these keys:
-
-=over 4
-
-=item * hide: indicates that the status code is for internal use only, and never shown through the public API
-
-=item * disallow_login: removes the loginid from token list (won't allow login)
-
-=back
-
-=cut
-
-sub status_codes {
-    my ($package, %args) = @_;
-
-    my $client_status_config = BOM::Config::client_status();
-
-    my @status_codes = grep { $args{hidden} || !_is_status_hidden($_) } keys %$client_status_config;
-
-    return {map { $_ => $client_status_config->{$_} // {} } @status_codes};
 }
 
 sub get_instance {
@@ -144,13 +116,6 @@ sub save {
 
     $self->set_db('write');
     my $r = $self->SUPER::save(cascade => 1);    # Rose
-    my $reset_statuses;
-    for (values %{$self->{_clr_status}}) {       # see clr_status.
-        $_->db($self->db);
-        $_->delete;
-        $reset_statuses++;
-    }
-    $self->client_status(undef) if $reset_statuses;
     return $r;
 }
 
@@ -315,39 +280,6 @@ sub is_vip {
 sub is_virtual { return shift->broker =~ /^VR/ }
 
 sub has_funded { return shift->first_funded_date ? 1 : 0 }
-
-sub get_status {
-    my ($self, $status_code) = @_;
-    die "unknown status_code [$status_code]" unless exists __PACKAGE__->status_codes(hidden => 1)->{$status_code};
-    return List::Util::first {
-        $_->status_code eq $status_code and not $self->{_clr_status}->{$status_code};
-    }
-    $self->client_status;
-}
-
-sub set_status {
-    my ($self, $status_code, $staff_name, $reason) = @_;
-    unless ($self->get_db eq 'write') {
-        $self->set_db('write');
-        $self->client_status(undef);    # throw out my read-only versions..
-    }
-    delete $self->{_clr_status}->{$status_code};
-    my $obj = $self->get_status($status_code) || do {
-        $self->add_client_status({status_code => $status_code});
-        $self->get_status($status_code);
-    };
-    $obj->staff_name($staff_name || '');
-    $obj->reason($reason         || '');
-    $obj->db($self->db);
-    return $obj;
-}
-
-sub clr_status {
-    my ($self, $status_code) = @_;
-    my $obj = $self->get_status($status_code) || return undef;
-    $self->{_clr_status}->{$status_code} = $obj;
-    return $obj;
-}
 
 sub get_authentication {
     my $self            = shift;
@@ -986,7 +918,7 @@ return false if client is disabled or is duplicated account
 sub is_available {
     my $self = shift;
     foreach my $status (qw(disabled duplicate_account)) {
-        return 0 if $self->get_status($status);
+        return 0 if $self->status->get($status);
     }
     return 1;
 }
@@ -994,7 +926,7 @@ sub is_available {
 sub cookie_string {
     my $self = shift;
 
-    my $str = join(':', $self->loginid, $self->is_virtual ? 'V' : 'R', $self->get_status('disabled') ? 'D' : 'E');
+    my $str = join(':', $self->loginid, $self->is_virtual ? 'V' : 'R', $self->status->get('disabled') ? 'D' : 'E');
 
     return $str;
 }
@@ -1035,8 +967,9 @@ sub is_tnc_approval_required {
     return 0 unless $self->landing_company->tnc_required;
 
     my $current_tnc_version = BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version;
-    my $client_tnc_status   = $self->get_status('tnc_approval');
-    return 1 if (not $client_tnc_status or ($client_tnc_status->reason ne $current_tnc_version));
+    my $client_tnc_status   = $self->status->get('tnc_approval');
+
+    return 1 if (not $client_tnc_status or ($client_tnc_status->{reason} ne $current_tnc_version));
 
     return 0;
 }
@@ -1046,14 +979,17 @@ sub user_id {
     return $self->binary_user_id // $self->user->{id};
 }
 
-sub _is_status_hidden {
-    my ($status_code) = @_;
+sub status {
+    my $self = shift;
+    if (not $self->{status}) {
+        $self->set_db('write') unless $self->get_db eq 'write';
+        $self->{status} = BOM::User::Client::Status->new({
+            client_loginid => $self->loginid,
+            dbic           => $self->db->dbic
+        });
+    }
 
-    my $client_status_config = BOM::Config::client_status();
-
-    return 0 unless exists $client_status_config->{$status_code};
-
-    return $client_status_config->{$status_code} && $client_status_config->{$status_code}->{hide};
+    return $self->{status};
 }
 
 sub is_pa_and_authenticated {

@@ -102,22 +102,21 @@ subtest 'Client-specific' => sub {
     plan tests => 5;
     my $client = new_client('USD');
 
-    $client->set_status('withdrawal_locked', 'calum', 'reason?');
+    $client->status->set('withdrawal_locked', 'calum', 'reason?');
     throws_ok { $client->validate_payment(%withdrawal) } qr/disabled/, 'Client withdrawals have been locked.';
-    $client->clr_status('withdrawal_locked');
+    $client->status->clear('withdrawal_locked');
 
-    $client->clr_status('unwelcome');
-    $client->set_status('disabled', 'a-payments-clerk', '..dont like you, sorry.');
-    $client->save;
+    $client->status->clear('unwelcome');
+    $client->status->set('disabled', 'a-payments-clerk', '..dont like you, sorry.');
     throws_ok { $client->validate_payment(%withdrawal) } qr/disabled/, 'Client disabled.';
 
-    $client->set_status('cashier_locked', 'calum', 'reason?');
+    $client->status->set('cashier_locked', 'calum', 'reason?');
     throws_ok { $client->validate_payment(%withdrawal) } qr/Client's cashier is locked/, 'Client withdrawals have been locked.';
-    $client->clr_status('cashier_locked');
+    $client->status->clear('cashier_locked');
 
-    $client->set_status('disabled', 'calum', 'reason?');
+    $client->status->set('disabled', 'calum', 'reason?');
     throws_ok { $client->validate_payment(%withdrawal) } qr/Client is disabled/, 'Client withdrawals have been locked.';
-    $client->clr_status('disabled');
+    $client->status->clear('disabled');
 
     $client->cashier_setting_password('12345');
     throws_ok { $client->validate_payment(%withdrawal) } qr/Client has set the cashier password/, 'Client cashier is locked by himself.';
@@ -216,9 +215,8 @@ subtest 'CR withdrawal' => sub {
     # Fully authenticated CR withdrawals - No more limit
     subtest 'fully authenticated' => sub {
         my $client = new_client('USD');
-        $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
+        $client->status->set('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
         $client->set_authentication('ID_DOCUMENT')->status('pass');
-        $client->save;
         $client->smart_payment(%deposit, amount => 20000);
         lives_ok { $client->validate_payment(%withdrawal, amount => -10000) } 'Authed CR withdrawal no more than USD10K';
         lives_ok { $client->validate_payment(%withdrawal, amount => -10001) } 'Authed CR withdrawal more than USD10K';
@@ -244,8 +242,7 @@ subtest 'JP withdrawal' => sub {
             residence   => 'jp'
         );
         $client->smart_payment(%deposit_jpy, amount => 2000000);
-        $client->clr_status('cashier_locked');    # first-deposit will cause this in non-CR clients!
-        $client->save;
+        $client->status->clear('cashier_locked');    # first-deposit will cause this in non-CR clients!
 
         throws_ok { $client->validate_payment(%withdrawal_jpy, amount => -1000001) } qr/exceeds withdrawal limit/,
             'Non-Authed JP withdrawal greater than JPY 1,000,000';
@@ -267,9 +264,8 @@ subtest 'JP withdrawal' => sub {
             residence   => 'jp'
         );
 
-        $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
+        $client->status->set('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
         $client->set_authentication('ID_DOCUMENT')->status('pass');
-        $client->save;
         $client->smart_payment(%deposit_jpy, amount => 2000000);
         lives_ok { $client->validate_payment(%withdrawal_jpy, amount => -999999) } 'Authed JP withdrawal no more than JPY 1,000,000';
         lives_ok { $client->validate_payment(%withdrawal_jpy, amount => -1000001) } 'Authed JP withdrawal more than JPY 1,000,000';
@@ -299,8 +295,7 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
         amount   => $gbp_amount,
         currency => 'GBP'
     );
-    $client->clr_status('cashier_locked');    # first-deposit will cause this in non-CR clients!
-    $client->save;
+    $client->status->clear('cashier_locked');    # first-deposit will cause this in non-CR clients!
 
     ok $client->default_account->load->balance == $gbp_amount,
         'Successfully credited client; no other amount has been credited to GBP account segment.';
@@ -321,12 +316,12 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
     # Test that the client cannot withdraw the equivalent of EUR 3001
     throws_ok { $client->validate_payment(%wd3001) } qr/exceeds withdrawal limit \[EUR/, 'Unauthed, not allowed to withdraw GBP equiv of EUR3001.';
     # mx client should be cashier locked and unwelcome
-    ok $client->get_status('unwelcome'),      'MX client is unwelcome after wihtdrawal limit is reached';
-    ok $client->get_status('cashier_locked'), 'MX client is cashier_locked after wihtdrawal limit is reached';
+    ok $client->status->get('unwelcome'),      'MX client is unwelcome after wihtdrawal limit is reached';
+    ok $client->status->get('cashier_locked'), 'MX client is cashier_locked after wihtdrawal limit is reached';
 
     # remove for further testing
-    $client->clr_status('unwelcome');
-    $client->clr_status('cashier_locked');
+    $client->status->clear('unwelcome');
+    $client->status->clear('cashier_locked');
 
     ok $client->validate_payment(%wd3000), 'Unauthed, allowed to withdraw GBP equiv of EUR3000.';
 
@@ -342,8 +337,8 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
         'Unauthed, not allowed to withdraw equiv EUR2500 then 501 making total over 3000.';
 
     # remove for further testing
-    $client->clr_status('unwelcome');
-    $client->clr_status('cashier_locked');
+    $client->status->clear('unwelcome');
+    $client->status->clear('cashier_locked');
 
     ok $client->validate_payment(%wd0500), 'Unauthed, allowed to withdraw equiv EUR2500 then 500 making total 3000.';
 
@@ -354,8 +349,8 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
         'Unauthed, not allowed to withdraw equiv EUR3000 then 1 more 29 days later';
 
     # remove for further testing
-    $client->clr_status('unwelcome');
-    $client->clr_status('cashier_locked');
+    $client->status->clear('unwelcome');
+    $client->status->clear('cashier_locked');
 
     # move forward 1 day
     set_fixed_time(time + 86400 + 1);
@@ -376,8 +371,7 @@ subtest 'Total EUR2000 MLT limitation.' => sub {
         ok(!$client->fully_authenticated, 'client has not authenticated identity.');
 
         $client->smart_payment(%deposit_eur, amount => 10000);
-        $client->clr_status('cashier_locked');    # first-deposit will cause this in non-CR clients!
-        $client->save;
+        $client->status->clear('cashier_locked');    # first-deposit will cause this in non-CR clients!
         ok $client->default_account->load->balance == 10000, 'Correct balance';
     };
 
@@ -386,8 +380,8 @@ subtest 'Total EUR2000 MLT limitation.' => sub {
         throws_ok { $client->validate_payment(%withdrawal_eur, amount => -2001) } qr/exceeds withdrawal limit \[EUR/,
             'Unauthed, not allowed to withdraw EUR2001.';
 
-        is $client->get_status('unwelcome'),      undef, 'Only MX client is unwelcome after it exceeds limit';
-        is $client->get_status('cashier_locked'), undef, 'Only MX client is cashier_locked after it exceeds limit';
+        is $client->status->get('unwelcome'),      undef, 'Only MX client is unwelcome after it exceeds limit';
+        is $client->status->get('cashier_locked'), undef, 'Only MX client is cashier_locked after it exceeds limit';
 
         ok $client->validate_payment(%withdrawal_eur, amount => -2000), 'Unauthed, allowed to withdraw EUR2000.';
 

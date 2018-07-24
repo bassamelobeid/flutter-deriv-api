@@ -52,41 +52,35 @@ $client->cashier_setting_password('12345');
 throws_ok { $client->validate_payment(%deposit) } qr/Client has set the cashier password/, 'Client cashier is locked by himself.';
 $client->cashier_setting_password('');
 
-$client->set_status('unwelcome', 'calum', '..dont like you, sorry.');
-$client->save;
+$client->status->set('unwelcome', 'calum', '..dont like you, sorry.');
 
 throws_ok { $client->validate_payment(%deposit) } qr/Deposits blocked/, 'cannot deposit when unwelcome.';
 
-$client->clr_status('unwelcome');
-$client->save;
+$client->status->clear('unwelcome');
 
 ok $client->validate_payment(%deposit), 'can deposit when not unwelcome.';
 
-$client->set_status('disabled', 'calum', '..dont like you, sorry.');
-$client->save;
+$client->status->set('disabled', 'calum', '..dont like you, sorry.');
 
 throws_ok { $client->validate_payment(%deposit) } qr/Client is disabled/, 'cannot deposit when disabled.';
 
-$client->clr_status('disabled');
-$client->save;
+$client->status->clear('disabled');
 
 ok $client->validate_payment(%deposit), 'can deposit when not disabled.';
 
-$client->set_status('cashier_locked', 'calum', '..dont like you, sorry.');
-$client->save;
+$client->status->set('cashier_locked', 'calum', '..dont like you, sorry.');
 
 throws_ok { $client->validate_payment(%deposit) } qr/Client's cashier is locked/, 'cannot deposit when cashier is locked.';
 
-$client->clr_status('cashier_locked');
-$client->save;
+$client->status->clear('cashier_locked');
 
 ok $client->validate_payment(%deposit), 'can deposit when not cashier locked.';
 
 throws_ok { $client->validate_payment(%deposit, amount => 1_000_000) } qr/Balance would exceed/,
     'cannot deposit an amount that puts client over maximum balance.';
 
-ok(!$client->get_status('unwelcome'), 'CR client not unwelcome prior to first-deposit');
+ok(!$client->status->get('unwelcome'), 'CR client not unwelcome prior to first-deposit');
 $client->payment_free_gift(%deposit);
-ok(!$client->get_status('unwelcome'), 'CR client still not unwelcome after first-deposit');
+ok(!$client->status->get('unwelcome'), 'CR client still not unwelcome after first-deposit');
 
 done_testing();

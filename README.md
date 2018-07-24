@@ -41,7 +41,7 @@ $c->set_default_account('USD');
 $c = BOM::User::Client->new({loginid => 'CR1234'});
 
 # get client's status and various info
-my $status = $c->get_status;
+my $status = $c->status->get;
 my $email  = $u->email;
 
 # produce some payments

@@ -79,23 +79,20 @@ subtest 'Almost all accessor/modifiers' => sub {
 
     my $return;
 
-    $client->set_status('disabled', 'fuguo wei', "I don't like him");
-    $client->save;
+    $client->status->set('disabled', 'fuguo wei', "I don't like him");
 
-    $return = $client->get_status('disabled');
-    is($return && $return->reason, "I don't like him", "the client is disabled and the reason is: I don not like him");
-    is($return->staff_name, 'fuguo wei', "The disabled operation clerk is fuguo wei");
+    $return = $client->status->get('disabled');
+    is($return && $return->{reason}, "I don't like him", "the client is disabled and the reason is: I don not like him");
+    is($return->{staff_name}, 'fuguo wei', "The disabled operation clerk is fuguo wei");
 
-    $client->set_status('disabled', 'fuguo wei', 'He is hacker');
-    $client->save;
+    $client->status->set('disabled', 'fuguo wei', 'He is hacker');
 
-    $return = $client->get_status('disabled');
-    is($return->reason,     'He is hacker', "the client is disabled update the reason to: He is hacker");
-    is($return->staff_name, 'fuguo wei',    "The disabled operation clerk is fuguo wei");
+    $return = $client->status->get('disabled');
+    is($return->{reason},     'He is hacker', "the client is disabled update the reason to: He is hacker");
+    is($return->{staff_name}, 'fuguo wei',    "The disabled operation clerk is fuguo wei");
 
-    $client->clr_status('disabled');
-    $client->save;
-    is($client->get_status('disabled'), undef, "the client is enabled");
+    $client->status->clear('disabled');
+    is($client->status->get('disabled'), undef, "the client is enabled");
 
     is($client->payment_agent_withdrawal_expiration_date, undef, "payment_agent_withdrawal_expiration_date is undef");
     $client->payment_agent_withdrawal_expiration_date('2013-01-01');

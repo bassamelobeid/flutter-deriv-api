@@ -122,8 +122,7 @@ subtest 'default loginid & cookie' => sub {
     subtest 'with disabled acc' => sub {
         subtest 'disable first real acc' => sub {
             lives_ok {
-                $client_cr->set_status('disabled', 'system', 'testing');
-                $client_cr->save;
+                $client_cr->status->set('disabled', 'system', 'testing');
             }
             'disable';
 
@@ -138,8 +137,7 @@ subtest 'default loginid & cookie' => sub {
 
         subtest 'disable second real acc' => sub {
             lives_ok {
-                $client_cr_new->set_status('disabled', 'system', 'testing');
-                $client_cr_new->save;
+                $client_cr_new->status->set('disabled', 'system', 'testing');
             }
             'disable';
 
@@ -154,8 +152,7 @@ subtest 'default loginid & cookie' => sub {
 
         subtest 'disable VR acc' => sub {
             lives_ok {
-                $client_vr->set_status('disabled', 'system', 'testing');
-                $client_vr->save;
+                $client_vr->status->set('disabled', 'system', 'testing');
             }
             'disable';
 
@@ -191,8 +188,7 @@ subtest 'User Login' => sub {
         throws_ok { $status = $user->login(); } qr/requires password argument/;
     };
     subtest 'cannot login if disabled' => sub {
-        $client_vr->set_status('disabled', 'system', 'testing');
-        $client_vr->save;
+        $client_vr->status->set('disabled', 'system', 'testing');
         $status = $user->login(%args);
         ok !$status->{success}, 'All account disabled, user cannot login';
         ok $status->{error} =~ /account is unavailable/;
@@ -262,8 +258,7 @@ subtest 'User Login' => sub {
     };
 
     subtest 'can login' => sub {
-        $client_vr->clr_status('disabled');
-        $client_vr->save;
+        $client_vr->status->clear('disabled');
         $status = $user->login(%args);
         is $status->{success}, 1, 'login successfully';
         my $login_history = $user->get_last_successful_login_history();
