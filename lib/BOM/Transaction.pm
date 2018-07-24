@@ -362,10 +362,12 @@ sub calculate_limits {
             my $method       = 'enable_' . $check_name;
             my $alert_method = $check_name . '_alert_threshold';
             if ($app_config->quants->$method) {
+                my $threshold = $app_config->quants->$alert_method;
                 $limits{$check_name} = {
-                    per_market => 1,
-                    per_symbol => 1,
-                    threshold  => $app_config->quants->$alert_method,
+                    per_market                   => 1,
+                    per_symbol                   => 1,
+                    per_market_warning_threshold => $threshold,
+                    per_symbol_warning_threshold => $threshold,
                 };
             }
         }
