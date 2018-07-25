@@ -9,7 +9,6 @@ use Test::Warn;
 
 use Date::Utility;
 use MojoX::JSON::RPC::Client;
-use Data::Dumper;
 use POSIX qw/ ceil /;
 
 use BOM::Test::RPC::Client;
@@ -243,6 +242,26 @@ subtest $method => sub {
 
     subtest 'Create multiple accounts in CR' => sub {
 
+        $email = 'new_email' . rand(999) . '@binary.com';
+
+        $params->{args}->{client_password} = 'verylongandhardpasswordDDD1!';
+
+        $params->{args}->{residence}    = 'id';
+        $params->{args}->{utm_source}   = 'google.com';
+        $params->{args}->{utm_medium}   = 'email';
+        $params->{args}->{utm_campaign} = 'spring sale';
+        $params->{args}->{gclid_url}    = 'FQdb3wodOkkGBgCMrlnPq42q8C';
+
+        $params->{args}->{verification_code} = BOM::Platform::Token->new(
+            email       => $email,
+            created_for => 'account_opening'
+        )->token;
+
+        $rpc_ct->call_ok('new_account_virtual', $params)
+            ->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
+            ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
+            ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
+
         my $client_cr = {
             first_name    => 'James' . rand(999),
             last_name     => 'Brown' . rand(999),
@@ -251,21 +270,7 @@ subtest $method => sub {
 
         @{$params->{args}}{keys %$client_cr} = values %$client_cr;
 
-        my $password = 'jskjd8292922';
-        my $hash_pwd = BOM::User::Password::hashpw($password);
-        $email = 'new_email' . rand(999) . '@binary.com';
-        $user  = BOM::User->create(
-            email          => $email,
-            password       => $hash_pwd,
-            email_verified => 1,
-        );
-        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRTC',
-            email       => $email,
-        });
-        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
-
-        $user->add_client($client);
+        $params->{token} = $rpc_ct->result->{oauth_token};
 
         $params->{args}->{currency} = 'USD';
 
@@ -274,8 +279,13 @@ subtest $method => sub {
 
         my $cl_usd = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
 
-        my $new_loginid = $rpc_ct->result->{client_id};
-        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($new_loginid, 'test token');
+        $params->{token} = $rpc_ct->result->{oauth_token};
+
+        is $cl_usd->authentication_status, 'no', 'Client is not authenticated yet';
+
+        $cl_usd->set_authentication('ID_DOCUMENT')->status('pass');
+        $cl_usd->save;
+        is $cl_usd->authentication_status, 'scans', 'Client is fully authenticated with scans';
 
         $params->{args}->{currency} = 'EUR';
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error('cannot create second fiat currency account')
@@ -286,8 +296,18 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('create crypto currency account, reusing info')
             ->result_value_is(sub { shift->{currency} }, 'BCH', 'crypto account currency is BCH');
 
-        my $cl_bch = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
-        #print $client_cr->{$_}."\n" for keys %$client_cr;
+        sleep 2;
+
+        my $loginid = $rpc_ct->result->{client_id};
+
+        $rpc_ct->call_ok('get_account_status', {token => $params->{token}});
+
+        my $is_authenticated = grep { $_ eq 'authenticated' } @{$rpc_ct->result->{status}};
+
+        is $is_authenticated, 1, 'New client is also authenticated';
+
+        my $cl_bch = BOM::User::Client->new({loginid => $loginid});
+
         is $client_cr->{$_}, $cl_bch->$_, "$_ is correct on created account" for keys %$client_cr;
 
         ok(defined($cl_bch->binary_user_id), 'BCH client has a binary user id');
@@ -301,7 +321,7 @@ subtest $method => sub {
         $params->{args}->{currency} = 'LTC';
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('create second crypto currency account')
             ->result_value_is(sub { shift->{currency} }, 'LTC', 'crypto account currency is LTC');
-        }
+    };
 };
 
 $method = 'new_account_maltainvest';
