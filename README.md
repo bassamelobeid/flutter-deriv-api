@@ -1,5 +1,6 @@
 # bom-postgres
-Postgres library
+
+Core lowest-level database interaction for Perl.
 
 ## CR Replication Schema
 

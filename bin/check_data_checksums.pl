@@ -4,5 +4,7 @@ use strict;
 use warnings;
 use BOM::Database::Script::CheckDataChecksums;
 
-exit BOM::Database::Script::CheckDataChecksums::run();
+local $| = 1;
+
+exit BOM::Database::Script::CheckDataChecksums::run(@ARGV);
 

@@ -1,5 +1,7 @@
 package BOM::Database::Script::DBMigration;
 
+# See also https://github.com/regentmarkets/devops-docs/wiki/DB-schema-and-function-application-procedure
+
 use Moose;
 use DBIx::Migration;
 use Term::ReadKey;
@@ -21,7 +23,7 @@ This script will apply the SQL patched from a speicfied diretory to database.
 Patch files names must be like:
 schema_1_up.sql
 
-Note: We dont support the downgrading.
+Note: We don't support the downgrading.
 
 Current version of database schema will be stored inside database in "dbix_migration" table. This table is used by Migration packge to keep the state of database.
 

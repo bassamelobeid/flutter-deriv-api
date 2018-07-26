@@ -2,8 +2,27 @@ package BOM::Database::Script::CheckDataChecksums;
 
 use strict;
 use warnings;
+
+=head1 NAME
+
+BOM::Database::Script::CheckDataChecksums - verifies the PostgreSQL checksums against the actual data on disk
+
+=head1 DESCRIPTION
+
+This script scans data on disk and verifies that the calculated checksums in
+the PostgreSQL metadata tables matches what we're expecting.
+
+It's designed to be relatively low-impact: it'll scan in chunks of (default) 100
+blocks (less than 1 MByte at a time), and can be run at any time.
+
+Call this with an optional table pattern (simple regex, e.g. `users.*`) and an optional
+verbose flag (to print `.` characters on output while running).
+
+=cut
+
 use DBIx::Connector::Pg;
 use Time::HiRes qw(sleep);
+use Log::Any qw($log);
 
 sub run {
 # use environment variables to connect to the database
@@ -17,7 +36,8 @@ sub run {
 # PGPASSFILE
 # https://www.postgresql.org/docs/9.3/static/libpq-envars.html
 
-    my $table_pattern = shift;
+    my ($table_pattern, $verbose) = @_;
+    die 'invalid table pattern, limited set of regex features allowed' if defined($table_pattern) and $table_pattern =~ /^[a-z0-9_.+*]+$/;
 
     my $chunk = 100;    # how many blocks at once 1block=8kbyte
 
@@ -66,34 +86,36 @@ SELECT $2::text, i, page_header(get_raw_page($1::oid::regclass::text, $2, ser.i)
  WHERE sz.sz > 0
 EOF
 
-    local $| = 1;
-
     my $datadir = $dbic->run(fixup => sub { $_->selectall_arrayref($sql_datadir)->[0]->[0] });
 
     for (
         my ($oid, $tname, $path) = @{$dbic->run(fixup => sub { $_->selectall_arrayref($sql_first_oid, undef, $table_pattern)->[0] }) // []};
         defined($oid);
-        ($oid, $tname, $path) = @{$dbic->run(fixup => sub {->selectall_arrayref($sql_next_oid, undef, $oid, $table_pattern)->[0] }) // []})
+        ($oid, $tname, $path) = @{$dbic->run(fixup => sub { $_->selectall_arrayref($sql_next_oid, undef, $oid, $table_pattern)->[0] }) // []})
     {
-        print "$oid: $tname ($datadir/$path)\n";
+        $log->debugf("%s: %s (%s)", $oid, $tname, "($datadir/$path)");
         for my $fork (qw/main fsm vm/) {    # skipping init fork
             my $n = 0;
             for (my $curr_block = 0;; $curr_block += $chunk) {
                 my $l = $dbic->run(fixup => sub { $_->selectall_arrayref($sql_pages, undef, $oid, $fork, $curr_block, $chunk) });
                 if (@$l < $chunk) {
-                    print "." unless @$l == 0;
-                    print "\n" unless $n == 0 and @$l == 0;
+                    if ($verbose) {
+                        print "." unless @$l == 0;
+                        print "\n" unless $n == 0 and @$l == 0;
+                    }
                     last;
                 } else {
-                    $n = ($n + 1) % 80;
-                    print "*";
-                    print "\n" if $n == 0;
-                    sleep 0.1  if @$l;
+                    if ($verbose) {
+                        $n = ($n + 1) % 80;
+                        print "*";
+                        print "\n" if $n == 0;
+                    }
+                    sleep 0.1 if @$l;
                 }
             }
         }
     }
-    return;
+    return 0;
 }
 
 1;

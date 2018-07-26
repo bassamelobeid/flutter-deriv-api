@@ -1,7 +1,8 @@
 #!/etc/rmg/bin/perl
 
-# this is supposed to be used by SRP when the underlyings.yml has changed.
-# 1. make sure the Finance::Underlying (cpan repo) module is up-to-date
+# This is supposed to be used by SRP when underlyings.yml has changed.
+#
+# 1. make sure the Finance::Underlying (public CPAN repo) module is up-to-date
 # 2. call
 #      bin/extract-markets-from-underlyings_yml.pl @psql-connection-params
 #
