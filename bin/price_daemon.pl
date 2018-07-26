@@ -18,7 +18,6 @@ use Volatility::LinearCache;
 
 use BOM::Pricing::PriceDaemon;
 
-
 my $internal_ip = get("http://169.254.169.254/latest/meta-data/local-ipv4");
 GetOptions(
     "workers=i"   => \my $workers,
@@ -50,6 +49,8 @@ sigtrap->import(
     handler => 'signal_handler',
     'normal-signals'
 );
+
+$SIG{TERM} = sub { exit 1 };
 
 # tune cache: up to 2s
 $ENV{QUANT_FRAMEWORK_HOLIDAY_CACHE} = $ENV{QUANT_FRAMEWORK_PATRIALTRADING_CACHE} = 2;    ## nocritic
