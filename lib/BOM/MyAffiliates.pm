@@ -136,7 +136,7 @@ sub get_token {
         ($args_ref->{media_id}) ? (MEDIA_ID => $args_ref->{media_id}) : (),
     ) or croak $self->errstr;
 
-    my $token = $token_info->{TOKEN} or croak "Could not extract token from response.";
+    my $token = $token_info->{USER}{TOKEN} or croak "Could not extract token from response.";
     return $token;
 }
 
