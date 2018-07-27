@@ -349,6 +349,94 @@ subtest 'ATM and non ATM switches on sellback' => sub {
     ok !$c->opposite_contract_for_sale->is_atm_bet, 'non atm bet';
 };
 
+subtest 'expiry condition for range' => sub {
+    my $now = Date::Utility->new;
+    create_ticks(
+        [100, $now->epoch,      'R_100'],
+        [101, $now->epoch + 1,  'R_100'],
+        [103, $now->epoch + 3,  'R_100'],
+        [102, $now->epoch + 5,  'R_100'],
+        [102, $now->epoch + 10, 'R_100'],
+        [100, $now->epoch + 11, 'R_100']);
+    note('first tick touches the high barrier for a range contract.');
+    my $params = {
+        bet_type     => 'RANGE',
+        underlying   => 'R_100',
+        date_start   => $now,
+        date_pricing => $now->epoch + 2,
+        duration     => '10s',
+        high_barrier => 101,
+        low_barrier  => 89,
+        payout       => 100,
+        currency     => 'USD',
+    };
+    my $c = produce_contract($params);
+    ok $c->is_expired, 'expired';
+    is $c->value, 0, 'zero payout';
+
+    note('first tick higher than high barrier for a range contract');
+    $params->{high_barrier} = 100.9;
+    $c = produce_contract($params);
+    ok $c->is_expired, 'expired';
+    is $c->value, 0, 'zero payout';
+
+    note('did not touch high or low barrier one second before expiry');
+    $params->{high_barrier} = 104;
+    $params->{date_pricing} = $now->epoch + 9;
+    $c                      = produce_contract($params);
+    ok !$c->is_expired, 'not expired';
+
+    note('did not touch high or low barrier through expiry');
+    $params->{date_pricing} = $now->epoch + 10;
+    $c = produce_contract($params);
+    ok $c->is_expired, 'expired';
+    is $c->value, $c->payout, 'full payout';
+};
+
+subtest 'expiry condition for upordown' => sub {
+    my $now = Date::Utility->new;
+    create_ticks(
+        [100, $now->epoch,      'R_100'],
+        [101, $now->epoch + 1,  'R_100'],
+        [103, $now->epoch + 3,  'R_100'],
+        [102, $now->epoch + 5,  'R_100'],
+        [102, $now->epoch + 10, 'R_100'],
+        [100, $now->epoch + 11, 'R_100']);
+    note('first tick touches the high barrier for a range contract.');
+    my $params = {
+        bet_type     => 'UPORDOWN',
+        underlying   => 'R_100',
+        date_start   => $now,
+        date_pricing => $now->epoch + 2,
+        duration     => '10s',
+        high_barrier => 101,
+        low_barrier  => 89,
+        payout       => 100,
+        currency     => 'USD',
+    };
+    my $c = produce_contract($params);
+    ok $c->is_expired, 'expired';
+    is $c->value, $c->payout, 'full payout';
+
+    note('first tick higher than high barrier for a range contract');
+    $params->{high_barrier} = 100.9;
+    $c = produce_contract($params);
+    ok $c->is_expired, 'expired';
+    is $c->value, $c->payout, 'full payout';
+
+    note('did not touch high or low barrier one second before expiry');
+    $params->{high_barrier} = 104;
+    $params->{date_pricing} = $now->epoch + 9;
+    $c                      = produce_contract($params);
+    ok !$c->is_expired, 'not expired';
+
+    note('did not touch high or low barrier through expiry');
+    $params->{date_pricing} = $now->epoch + 10;
+    $c = produce_contract($params);
+    ok $c->is_expired, 'expired';
+    is $c->value, 0, 'zero payout';
+};
+
 done_testing;
 
 sub create_ticks {

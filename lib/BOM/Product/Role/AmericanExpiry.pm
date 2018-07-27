@@ -4,16 +4,15 @@ use Moose::Role;
 use BOM::Product::Static;
 
 use List::Util qw/any first/;
+use Scalar::Util qw/looks_like_number/;
 
 override is_expired => sub {
     my $self       = shift;
     my $is_expired = $self->check_expiry_conditions;
 
     if ($self->has_user_defined_barrier) {
-        my ($barrier, $barrier2) =
-            $self->two_barriers ? ($self->high_barrier->as_absolute, $self->low_barrier->as_absolute) : ($self->barrier->as_absolute);
-        my $spot = $self->entry_spot;
-        if ($spot and ($spot == $barrier or ($barrier2 and $spot == $barrier2))) {
+        my @barriers = $self->two_barriers ? ($self->supplied_high_barrier, $self->supplied_low_barrier) : ($self->supplied_barrier);
+        if (grep { (looks_like_number($_) and $_ == 0) or $_ eq 'S0P' } @barriers) {
             $self->_add_error({
                 alert             => 1,
                 severity          => 100,

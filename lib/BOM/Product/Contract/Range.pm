@@ -23,7 +23,7 @@ sub check_expiry_conditions {
         my $value        = 0;
         my $high_barrier = $self->high_barrier->as_absolute;
         my $low_barrier  = $self->low_barrier->as_absolute;
-        if (($high >= $high_barrier && $low <= $high_barrier) || ($high >= $low_barrier && $low <= $low_barrier)) {
+        if ($high >= $high_barrier or $low <= $low_barrier) {
             $expired = 1;
             $value   = 0;
         } elsif ($expired) {

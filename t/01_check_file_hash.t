@@ -8,7 +8,7 @@ use Digest::SHA1;
 my %file_details = (
     risefall => {
         filename => module_path('BOM::Product::Contract::Upordown'),
-        hash     => '90891247609f2840767a236cc33e48c7bcb956a5'
+        hash     => '018a7db139fa86d7009dbfb539d5e5b3f1231ce5'
     },
     higherlower => {
         filename => module_path('BOM::Product::Contract::Call'),
@@ -20,7 +20,7 @@ my %file_details = (
     },
     staysbetweengoesout => {
         filename => module_path('BOM::Product::Contract::Range'),
-        hash     => '92c7e3ee01a82cac1fd0a653c30abf3af0b83eb4'
+        hash     => '17f60d52c307c5071064f59dc15dc40fd4da68e7'
     },
     endsbetweenout => {
         filename => module_path('BOM::Product::Contract::Expirymisse'),
