@@ -92,6 +92,9 @@
                     "type": "string",
                     "pattern": "^Speculative",
                     "required": "1"
+                },
+                "citizen": {
+                    "type": "string"
                 }
             },
             "required": "1"
