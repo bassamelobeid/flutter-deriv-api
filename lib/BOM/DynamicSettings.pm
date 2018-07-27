@@ -10,8 +10,10 @@ use JSON::MaybeXS;
 use Text::CSV;
 use Try::Tiny;
 use feature 'state';
-
+use BOM::Platform::Email qw(send_email);
 use BOM::Config::Runtime;
+use Array::Utils qw(:all);
+use Date::Utility;
 
 sub get_all_settings_list {
     my $setting = shift;
@@ -76,7 +78,7 @@ sub save_settings {
                         if (not $compare->Cmp) {
                             my $extra_validation = get_extra_validation($s);
                             $extra_validation->($new_value, $old_value) if $extra_validation;
-
+                            send_email_notification($new_value, $old_value, $s) if ($s =~ /quants/ and ($s =~ /suspend/ or $s =~ /disabled/));
                             $data_set->{global}->set($s, $new_value);
                             $message .= join('', '<div id="saved">Set ', encode_entities($s), ' to ', encode_entities($display_value), '</div>');
                         }
@@ -348,4 +350,33 @@ sub validate_tnc_string {
     return;
 }
 
+sub send_email_notification {
+    my $new_value = shift;
+    my $old_value = shift;
+    my $for       = shift;
+
+    my $enable_disable = scalar(@$new_value) > scalar(@$old_value) ? 'Disable' : 'Enable';
+
+    my $subject = "$enable_disable Asset/Product Notification. ";
+
+    my @different = array_diff(@$new_value, @$old_value);
+
+    my $disable_type =
+        $for eq 'quants.features.suspend_contract_types' ? 'Contract_type' : $for eq 'quants.markets.disabled' ? 'Market' : 'Underlying';
+    my $staff   = BOM::Backoffice::Cookie::get_staff();
+    my @message = "$enable_disable the following offering:";
+    push @message, "$disable_type: " . join(",", @different);
+    push @message, "By $staff on " . Date::Utility->new->datetime;
+
+    my $email_list = 'x-quants@binary.com, compliance@binary.com, x-cs@binary.com,x-marketing@binary.com';
+
+    send_email({
+        from    => 'system@binary.com',
+        to      => $email_list,
+        subject => $subject,
+        message => \@message,
+    });
+
+    return;
+}
 1;

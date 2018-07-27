@@ -20,9 +20,8 @@ use BOM::Backoffice::Sysinit ();
 use BOM::DynamicSettings;
 use BOM::Config;
 use BOM::Platform::RiskProfile;
-use BOM::Platform::RiskProfile;
 use BOM::Config::Runtime;
-
+use BOM::Platform::Email qw(send_email);
 BOM::Backoffice::Sysinit::init();
 my $json = JSON::MaybeXS->new;
 
@@ -108,6 +107,7 @@ if ($r->param('update_limit')) {
         $ref{updated_by}      = $staff;
         $ref{updated_on}      = Date::Utility->new->date;
         $current->{$uniq_key} = \%ref;
+        send_notification_email(\%ref, 'Disable') if ($profile and $profile eq 'no_business');
         $quants_config->custom_product_profiles($json->encode($current));
     }
 
@@ -124,6 +124,7 @@ if ($r->param('delete_limit')) {
         $quants_config->custom_client_profiles($json->encode($current));
     } else {
         my $current = $json->decode($quants_config->custom_product_profiles);
+        send_notification_email($current->{$id}, 'Enable') if $current->{$id}->{risk_profile} eq 'no_business';
         delete $current->{$id};
         $quants_config->custom_product_profiles($json->encode($current));
     }
@@ -259,5 +260,47 @@ BOM::Backoffice::Request::template()->process(
         url           => request()->url_for('backoffice/quant/product_management.cgi'),
         existing_klfb => BOM::Config::QuantsConfig->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader())->get_config('klfb')->[0],
     }) || die BOM::Backoffice::Request::template()->error;
+
+sub send_notification_email {
+    my $limit = shift;
+    my $for   = shift;
+
+    my $subject           = "$for Asset/Product Notification. ";
+    my $contract_category = $limit->{contract_category} // "Not specified";
+    my $market            = $limit->{market} // "Not specified";
+    my $submarket         = $limit->{submarket} // "Not specified";
+    my $underlying        = $limit->{underlying_symbol} // "Not specified";
+    my $expiry_type       = $limit->{expiry_type} // "Not specified";
+    my $landing_company   = $limit->{landing_company} // "Not specified";
+    my $barrier_category  = $limit->{barrier_category} // "Not specified";
+    my $start_type        = $limit->{start_type} // "Not specified";
+
+    my @message = "$for the following offering: ";
+    push @message,
+        (
+        "Contract Category: $contract_category",
+        "Expiry Type: $expiry_type",
+        "Market: $market",
+        "Submarket: $submarket",
+        "Underlying: $underlying",
+        "Barrier category: $barrier_category",
+        "Start type: $start_type",
+        "Landing_company: $landing_company",
+        "Reason: " . $limit->{name},
+        );
+    push @message, ("By " . $limit->{updated_by} . " on " . $limit->{updated_on});
+
+    my $email_list = 'x-quants@binary.com, compliance@binary.com, x-cs@binary.com,x-marketing@binary.com';
+
+    send_email({
+            from    => 'system@binary.com',
+            to      => $email_list,
+            subject => $subject,
+            message => \@message,
+
+    });
+    return;
+
+}
 
 code_exit_BO();
