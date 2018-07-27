@@ -302,7 +302,11 @@ subtest 'landing_companies_specific' => sub {
 
 subtest 'all status are covered' => sub {
     # Flags that can affect cashier should be seen
-    my @can_affect_cashier = ('age_verification','crs_tin_information','cashier_locked','disabled','financial_risk_approval','jp_activation_pending','jp_knowledge_test_fail','jp_knowledge_test_pending','ukgc_funds_protection','ukrts_max_turnover_limit_not_set','unwelcome','withdrawal_locked');
+    my @can_affect_cashier = (
+        'age_verification',        'crs_tin_information',              'cashier_locked',         'disabled',
+        'financial_risk_approval', 'jp_activation_pending',            'jp_knowledge_test_fail', 'jp_knowledge_test_pending',
+        'ukgc_funds_protection',   'ukrts_max_turnover_limit_not_set', 'unwelcome',              'withdrawal_locked'
+    );
     fail("missing status $_") for sort grep !exists $seen{$_}, @can_affect_cashier;
     pass("ok to prevent warning 'no tests run");
     done_testing();

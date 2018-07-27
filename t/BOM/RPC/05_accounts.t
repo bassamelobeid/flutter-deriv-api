@@ -91,6 +91,7 @@ $mailbox->init;
 
 my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
+    citizen     => 'at',
 });
 $test_client_cr->email('sample@binary.com');
 $test_client_cr->set_default_account('USD');
@@ -1141,7 +1142,8 @@ subtest $method => sub {
             'tax_residence'                  => undef,
             'tax_identification_number'      => undef,
             'account_opening_reason'         => undef,
-            'request_professional_status'    => 0
+            'request_professional_status'    => 0,
+            'citizen'                        => 'at'
         });
 
     $params->{token} = $token1;

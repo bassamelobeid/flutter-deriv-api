@@ -845,13 +845,14 @@ rpc get_settings => sub {
                 address_postcode               => $client->postcode,
                 phone                          => $client->phone,
                 allow_copiers                  => $client->allow_copiers // 0,
+                citizen                        => $client->citizen // '',
                 is_authenticated_payment_agent => ($client->payment_agent and $client->payment_agent->is_authenticated) ? 1 : 0,
                 client_tnc_status => $client_tnc_status ? $client_tnc_status->{reason} : '',
                 place_of_birth    => $client->place_of_birth,
                 tax_residence     => $client->tax_residence,
                 tax_identification_number   => $client->tax_identification_number,
                 account_opening_reason      => $client->account_opening_reason,
-                request_professional_status => $client->status->get('professional_requested') ? 1 : 0,
+                request_professional_status => $client->status->get('professional_requested') ? 1 : 0
             )
         ),
         $jp_account_status ? (jp_account_status => $jp_account_status) : (),
@@ -999,8 +1000,9 @@ rpc set_settings => sub {
     my $addressPostcode = $args->{'address_postcode'} // $client->postcode;
     my $phone           = ($args->{'phone'} // $client->phone) // '';
     my $birth_place     = $args->{place_of_birth} // $client->place_of_birth;
-
+    my $citizen         = ($args->{'citizen'} // $client->citizen) // '';
     my $cil_message;
+
     if (   ($address1 and $address1 ne $client->address_1)
         or $address2 ne $client->address_2
         or $addressTown ne $client->city
@@ -1042,6 +1044,7 @@ rpc set_settings => sub {
         $cli->state($addressState) if defined $addressState;                       # FIXME validate
         $cli->postcode($addressPostcode) if defined $args->{'address_postcode'};
         $cli->phone($phone);
+        $cli->citizen($citizen);
         $cli->place_of_birth($birth_place);
         $cli->account_opening_reason($args->{account_opening_reason}) unless $cli->account_opening_reason;
 
@@ -1099,8 +1102,8 @@ rpc set_settings => sub {
         [localize('Email address'),        $client->email],
         [localize('Country of Residence'), $residence_country],
         [localize('Address'),              $full_address],
-        [localize('Telephone'),            $client->phone]);
-
+        [localize('Telephone'),            $client->phone],
+        [localize('Citizen'),              $client->citizen]);
     my $tr_tax_residence = join ', ', map { Locale::Country::code2country($_) } split /,/, ($client->tax_residence || '');
 
     push @updated_fields,
