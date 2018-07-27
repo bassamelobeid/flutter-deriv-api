@@ -448,6 +448,7 @@ sub validate_account_details {
             $details->{$field} = $args->{$field};
         }
     }
+    $details->{citizen} = $args->{citizen} // '';
     return {details => $details};
 }
 
