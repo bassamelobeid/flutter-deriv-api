@@ -93,7 +93,12 @@ override _build_ask_price => sub {
     # Ensure theo_probability exists before computing ask_probability/ask_price
     $self->theo_probability;
 
-    return $self->_price_from_prob('ask_probability');
+    my $ask_price = $self->_price_from_prob('ask_probability');
+
+    # publish ask price to pricing server
+    $self->_publish({ask_price => $ask_price});
+
+    return $ask_price;
 };
 
 override _build_theo_price => sub {

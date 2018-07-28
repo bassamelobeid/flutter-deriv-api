@@ -38,7 +38,12 @@ override '_build_ask_price' => sub {
 
     # for lookbacks, we are setting a minimum_ask_price_per_unit and a minimum_commission_per_unit.
     # hence, the ask price is a simple price per unit multiplied by number of units.
-    return financialrounding('price', $self->currency, $self->_ask_price_per_unit) * $self->multiplier;
+    my $ask_price = financialrounding('price', $self->currency, $self->_ask_price_per_unit) * $self->multiplier;
+
+    # publish ask price to pricing server
+    $self->_publish({ask_price => $ask_price});
+
+    return $ask_price;
 };
 
 override _build_theo_price => sub {

@@ -45,6 +45,9 @@ use Date::Utility;
 use Time::Duration::Concise;
 use Format::Util::Numbers qw/formatnumber/;
 use POSIX qw(ceil);
+use IO::Socket::IP;
+use Try::Tiny;
+use Encode;
 
 use Quant::Framework;
 use Quant::Framework::VolSurface::Utils;
@@ -1210,6 +1213,43 @@ sub allowed_amount_type {
         stake  => 1,
         payout => 1,
     };
+}
+
+my $socket;
+my $pricing_service_config = {};
+
+sub _socket {
+    my $self = shift;
+
+    if (not defined $socket and %$pricing_service_config) {
+        $socket = IO::Socket::IP->new(
+            Proto    => 'udp',
+            PeerAddr => $pricing_service_config->{host},
+            PeerPort => $pricing_service_config->{port},
+        ) or die "can't connect to pricing service";
+
+        $socket->blocking(0);
+    }
+
+    return $socket;
+}
+
+sub _publish {
+    my ($self, $price_ref) = @_;
+
+    # if no connection is established, then ignore.
+    return unless $self->_socket;
+
+    try {
+        my $csv = join ',',
+            ($self->shortcode, $self->currency, $self->date_pricing->epoch, ($price_ref->{ask_price} // 0), ($price_ref->{bid_price} // 0));
+        $self->_socket->send($csv);
+    }
+    catch {
+        warn "Failed to publish price for " . $self->shortcode . ': ' . $_;
+    };
+
+    return;
 }
 
 # Don't mind me, I just need to make sure my attibutes are available.

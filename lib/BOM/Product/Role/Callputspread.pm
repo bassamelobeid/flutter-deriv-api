@@ -51,9 +51,12 @@ override '_build_ask_price' => sub {
         $ask_price = $ask_price - $commission_charged + $self->minimum_commission_per_contract;
     }
 
-    $ask_price = min($self->maximum_ask_price, $ask_price);
+    $ask_price = financialrounding('price', $self->currency, min($self->maximum_ask_price, $ask_price));
 
-    return financialrounding('price', $self->currency, $ask_price);
+    # publish ask price to pricing server
+    $self->_publish({ask_price => $ask_price});
+
+    return $ask_price;
 };
 
 =head2 theo_price
