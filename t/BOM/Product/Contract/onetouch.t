@@ -104,6 +104,40 @@ subtest 'touch' => sub {
         cmp_ok $c->value, '==', 0.00, 'zero payout';
     }
     'expiry checks';
+
+    lives_ok {
+        my $args_err = {
+          bet_type     => 'ONETOUCH',
+          underlying   => 'frxUSDJPY',
+          date_start   => $now,
+          date_pricing => $now->plus_time_interval('1m'),
+          duration     => '1h',
+          currency     => 'USD',
+          amount       => 10,
+          amount_type  => 'stake',
+          barrier      => '0',
+        };
+
+        my $c = produce_contract($args_err);
+        isa_ok $c, 'BOM::Product::Contract::Onetouch';
+        is $c->payout, 0;
+
+        $c->is_valid_to_sell;#just to trigger validation
+        like($c->primary_validation_error->message, qr/Path-dependent barrier at spot at start/, 'throws error');
+
+        delete $args_err->{amount};
+        delete $args_err->{amount_type};
+
+        $args_err->{payout} = 13;
+
+        $c = produce_contract($args_err);
+        isa_ok $c, 'BOM::Product::Contract::Onetouch';
+        is $c->payout, 13;
+
+        $c->is_valid_to_sell;#just to trigger validation
+        like($c->primary_validation_error->message, qr/Path-dependent barrier at spot at start/, 'throws error');
+    }
+    'zero barrier error';
 };
 
 subtest 'notouch' => sub {

@@ -10,6 +10,7 @@ use List::Util qw(min);
 use Scalar::Util qw(looks_like_number);
 use Format::Util::Numbers qw(formatnumber);
 use Format::Util::Numbers qw/financialrounding/;
+use Try::Tiny;
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
@@ -75,10 +76,22 @@ sub _build_discounted_probability {
 sub _build_payout {
     my ($self) = @_;
 
-    # payout needs theo_probability and commission_from_stake
-    $self->price_calculator->theo_probability($self->theo_probability);
-    $self->price_calculator->commission_from_stake($self->commission_from_stake);
-    return $self->price_calculator->payout;
+    my $payout;
+    try {
+        # payout needs theo_probability and commission_from_stake
+        $self->price_calculator->theo_probability($self->theo_probability);
+        $self->price_calculator->commission_from_stake($self->commission_from_stake);
+        #return $self->price_calculator->payout;
+        $payout = $self->price_calculator->payout;
+    }
+    catch {
+        if ($_ =~ /Illegal division by zero/ and defined $self->supplied_barrier and $self->supplied_barrier == 0) {
+            $payout = 0;
+        }
+
+    };
+
+    return $payout;
 }
 
 override _build_bid_price => sub {
