@@ -35,7 +35,6 @@ use BOM::Backoffice::FormAccounts;
 use BOM::Database::Model::AccessToken;
 use BOM::Backoffice::Config;
 use Finance::MIFIR::CONCAT qw(mifir_concat);
-use BOM::Platform::Client::DocumentUpload;
 use BOM::Platform::S3Client;
 use Media::Type::Simple;
 
@@ -212,11 +211,19 @@ if ($input{whattodo} eq 'uploadID') {
         my $filetoupload    = $cgi->upload('FILE_' . $i);
         my $page_type       = $cgi->param('page_type_' . $i);
         my $expiration_date = $cgi->param('expiration_date_' . $i);
-        my $document_id     = substr(encode_entities($cgi->param('document_id_' . $i) . ''), 0, 30);
-        my $comments        = substr(encode_entities($cgi->param('comments_' . $i) . ''), 0, 255);
+        my $document_id     = encode_entities($cgi->param('document_id_' . $i) // '');
+        my $comments        = encode_entities($cgi->param('comments_' . $i) // '');
+        if (length($document_id) > 30) {
+            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Document id is too long.</p><br />";
+            next;
+        }
+        if (length($comments) > 255) {
+            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Comments are too long.</p><br />";
+            next;
+        }
 
         if (not $filetoupload) {
-            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: You did not browse for a file to upload.</p><br />"
+            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: No file is selected for uploading.</p><br />"
                 if ($i == 1);
             next;
         }
@@ -291,39 +298,46 @@ if ($input{whattodo} eq 'uploadID') {
         # try to get file extension from mime type, else get it from filename
         my $docformat = lc($mts->ext_from_type($mime_type) // $file_ext);
 
-        my $query_result = BOM::Platform::Client::DocumentUpload::start_document_upload(
-            client          => $client,
-            doctype         => $doctype,
-            docformat       => $docformat,
-            file_checksum   => $file_checksum,
-            expiration_date => $expiration_date,
-            document_id     => $document_id
-        );
+        my $err;
+        my $upload_info;
+        try {
+            $upload_info = $client->db->dbic->run(
+                ping => sub {
+                    $_->selectrow_hashref(
+                        'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?)',
+                        undef, $loginid, $doctype, $docformat, $expiration_date || undef,
+                        $document_id, $file_checksum, $comments, $page_type || '',
+                    );
+                });
+            $err = 'Document already exists.' unless $upload_info;
+        }
+        catch {
+            $err = $_;
+        };
 
-        unless ($query_result->{file_id}) {
-            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: $query_result->{error}->{msg}</p><br />";
+        if ($err) {
+            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error Uploading File $i: $err</p><br />";
             next;
         }
 
-        my $file_id = $query_result->{file_id};
-
-        my $new_file_name = "$loginid.$doctype.$file_id";
-        $new_file_name .= $page_type eq '' ? ".$docformat" : "_$page_type.$docformat";
+        my ($file_id, $new_file_name) = @{$upload_info}{qw/file_id file_name/};
 
         my $future = $s3_client->upload($new_file_name, $abs_path_to_temp_file, $file_checksum)->then(
             sub {
-                $query_result = BOM::Platform::Client::DocumentUpload::finish_document_upload(
-                    client    => $client,
-                    file_id   => $file_id,
-                    comments  => $comments,
-                    page_type => $page_type,
-                );
-
-                if ($query_result->{file_id}) {
-                    return Future->done;
-                } else {
-                    return Future->fail($query_result->{error}->{msg});
+                my $err;
+                try {
+                    my $finish_upload_result = $client->db->dbic->run(
+                        ping => sub {
+                            $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $file_id);
+                        });
+                    $err = 'Db returned unexpected file id on finish' unless $finish_upload_result == $file_id;
                 }
+                catch {
+                    $err = 'Document upload failed on finish';
+                    warn $err . $_;
+                };
+                return Future->fail("Database Falure: " . $err) if $err;
+                return Future->done();
             });
         $future->set_label($new_file_name);
         push @futures, $future;
@@ -333,11 +347,10 @@ if ($input{whattodo} eq 'uploadID') {
     for my $f (@futures) {
         my $file_name = $f->label;
         if ($f->is_done) {
-            $result .= "<br /><p style=\"color:#eeee00; font-weight:bold;\">Successfully uploaded $file_name</p><br />";
+            $result .= "<br/><p style=\"color:#eeee00; font-weight:bold;\">Successfully uploaded $file_name</p><br/>";
         } elsif ($f->is_failed) {
             my $failure = $f->failure;
-            $failure = $failure =~ /already exists/ ? "Document already exists: $file_name" : $failure;
-            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: $failure </p><br />";
+            $result .= "<br/><p style=\"color:red; font-weight:bold;\">Error Uploading Document $file_name: $failure. </p><br/>";
         }
     }
     print $result;
@@ -519,10 +532,13 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                     print qq{<p style="color:red">ERROR: Could not parse $document_field for doc $id with $val: $err</p>};
                     next CLIENT_KEY;
                 };
-            } elsif ($document_field eq 'comments') {
-                $new_value = substr($val, 0, 255);
-            } elsif ($document_field eq 'document_id') {
-                $new_value = substr($val, 0, 30);
+            } else {
+                my $maxLength = ($document_field eq 'document_id') ? 30 : ($document_field eq 'comments') ? 255 : 0;
+                if (length($val) > $maxLength) {
+                    print qq{<p style="color:red">ERROR: $document_field is too long. </p>};
+                    next CLIENT_KEY;
+                }
+                $new_value = $val;
             }
             next CLIENT_KEY if $new_value eq $doc->$document_field();
             my $set_success = try {

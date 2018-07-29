@@ -486,8 +486,8 @@ SQL
         }
 
         my $input = qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date" $extra>};
-        $input .= qq{comments <input type="text" style="width:100px" maxlength="20" name="comments_$id" value="$comments" $extra>};
-        $input .= qq{document id <input type="text" style="width:100px" maxlength="20" name="document_id_$id" value="$document_id" $extra>};
+        $input .= qq{document id <input type="text" style="width:100px" maxlength="30" name="document_id_$id" value="$document_id" $extra>};
+        $input .= qq{comments <input type="text" style="width:100px" maxlength="255" name="comments_$id" value="$comments" $extra>};
 
         my $s3_client = BOM::Platform::S3Client->new(BOM::Backoffice::Config::config()->{document_auth_s3});
         my $url       = $s3_client->get_s3_url($file_name);
