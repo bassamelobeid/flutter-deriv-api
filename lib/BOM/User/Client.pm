@@ -697,9 +697,13 @@ sub currency {
 }
 
 sub has_deposits {
-    my $self           = shift;
-    my $args           = shift;
-    my $payment_mapper = BOM::Database::DataMapper::Payment->new({'client_loginid' => $self->loginid});
+    my $self = shift;
+    my $args = shift;
+    ## This query can be expensive, so we force it to use the replica
+    my $payment_mapper = BOM::Database::DataMapper::Payment->new({
+        'client_loginid' => $self->loginid,
+        operation        => 'replica'
+    });
     return $payment_mapper->get_payment_count_exclude_gateway($args);
 }
 
