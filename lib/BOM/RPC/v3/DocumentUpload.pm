@@ -4,10 +4,9 @@ use strict;
 use warnings;
 use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (localize);
-use BOM::Platform::Client::DocumentUpload;
 use Date::Utility;
 use BOM::Platform::Email qw(send_email);
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use feature 'state';
 use base qw(Exporter);
 
@@ -34,32 +33,35 @@ rpc document_upload => sub {
 };
 
 sub start_document_upload {
-    my $params  = shift;
-    my $client  = $params->{client};
-    my $args    = $params->{args};
-    my $loginid = $client->loginid;
-    my ($document_type, $document_format, $expected_checksum) =
-        @{$args}{qw/document_type document_format expected_checksum/};
+    my $params = shift;
+    my $client = $params->{client};
+    my $args   = $params->{args};
     unless ($client->get_db eq 'write') {
         $client->set_db('write');
     }
 
-    _set_staff($client);
+    my $upload_info;
+    try {
+        $upload_info = $client->db->dbic->run(
+            ping => sub {
+                $_->selectrow_hashref(
+                    'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?)', undef,
+                    $client->loginid,                                                           $args->{document_type},
+                    $args->{document_format}, $args->{expiration_date} || undef,
+                    $args->{document_id} || '', $args->{expected_checksum},
+                    '', $args->{page_type} || '',
+                );
+            });
+        return create_upload_error('duplicate_document') unless ($upload_info);
+    }
+    catch {
+        warn 'Document upload db query failed.' . $_;
+        return create_upload_error();
+    };
 
-    my $query_result = BOM::Platform::Client::DocumentUpload::start_document_upload(
-        client          => $client,
-        doctype         => $document_type,
-        docformat       => $document_format,
-        file_checksum   => $expected_checksum,
-        expiration_date => $args->{expiration_date},
-        document_id     => ($args->{document_id} || ''));
-
-    my $err = check_for_query_error($query_result);
-    return $err if $err;
-
-    return {
-        file_name => join('.', $loginid, $document_type, $query_result->{file_id}, $document_format),
-        file_id   => $query_result->{file_id},
+    return return {
+        file_name => $upload_info->{file_name},
+        file_id   => $upload_info->{file_id},
         call_type => 1,
     };
 }
@@ -72,20 +74,21 @@ sub successful_upload {
         $client->set_db('write');
     }
 
-    _set_staff($client);
-
-    my $query_result = BOM::Platform::Client::DocumentUpload::finish_document_upload(
-        client    => $client,
-        file_id   => $args->{file_id},
-        page_type => ($args->{page_type} || ''));
-
-    my $err = check_for_query_error($query_result);
-    return $err if $err;
+    try {
+        my $finish_upload_result = $client->db->dbic->run(
+            ping => sub {
+                $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $args->{file_id});
+            });
+        return create_upload_error() unless $finish_upload_result and ($args->{file_id} == $finish_upload_result);
+    }
+    catch {
+        warn 'Document upload db query failed.';
+        return create_upload_error();
+    };
 
     my $client_id = $client->loginid;
 
     my $status_changed;
-    my $error_occured;
     try {
         ($status_changed) = $client->db->dbic->run(
             ping => sub {
@@ -93,13 +96,9 @@ sub successful_upload {
             });
     }
     catch {
-        $error_occured = 1;
-    };
-
-    if ($error_occured) {
         warn 'Unable to change client status in the db';
         return create_upload_error();
-    }
+    };
 
     return $args unless $status_changed;
 
@@ -115,16 +114,6 @@ sub successful_upload {
     });
 
     return $args;
-}
-
-sub check_for_query_error {
-    my $query_result = shift;
-
-    unless ($query_result->{file_id}) {
-        warn 'Document upload db query failed' unless ($query_result->{error}->{type} && $query_result->{error}->{type} eq 'duplicate_document');
-        return create_upload_error($query_result->{error}->{type});
-    }
-    return;
 }
 
 sub validate_input {

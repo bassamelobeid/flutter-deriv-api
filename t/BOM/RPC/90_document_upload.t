@@ -73,7 +73,7 @@ my %default_args = (
 
 use constant {
     EXP_DATE_PAST   => '2017-08-09',
-    INVALID_FILE_ID => 1231531,
+    INVALID_FILE_ID => -1,
 };
 
 #########################################################
@@ -145,10 +145,7 @@ subtest 'Error for calling success with non-existent file ID' => sub {
             document_type   => '',
             document_format => ''
         }};
-    warning_like {
-        call_and_check_error($custom_params, 'Sorry, an error occurred while processing your request.', 'error if document is not present');
-    }
-    [qr/Document upload db query failed/], "Expected warning is thrown";
+    call_and_check_error($custom_params, 'Sorry, an error occurred while processing your request.', 'error if document is not present');
 };
 
 #########################################################
@@ -178,18 +175,7 @@ subtest 'Basic upload test sequence' => sub {
 #########################################################
 
 subtest 'Attempt to upload file with same checksum as "Basic upload test sequence"' => sub {
-    my $file_id = start_successful_upload($real_client);
-
-    # Upload will commence and be blocked at finish
-    my $custom_params = {
-        args => {
-            status  => 'success',
-            file_id => $file_id,
-            # These need to be blanked or RPC will try to start an upload
-            document_type   => '',
-            document_format => ''
-        }};
-    call_and_check_error($custom_params, 'Document already uploaded.', 'error if same document is uploaded twice');
+    call_and_check_error({}, 'Document already uploaded.', 'error if same document is uploaded twice');
 };
 
 #########################################################
