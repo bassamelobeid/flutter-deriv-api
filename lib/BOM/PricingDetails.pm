@@ -16,6 +16,7 @@ use namespace::autoclean;
 use POSIX qw( floor );
 use namespace::autoclean;
 use List::MoreUtils qw(uniq);
+use List::Util qw(max);
 use Try::Tiny;
 
 use BOM::Config::Runtime;
@@ -32,7 +33,6 @@ use BOM::Config::Chronicle;
 use Volatility::EconomicEvents;
 
 use BOM::MarketData::Display::VolatilitySurface;
-use Try::Tiny;
 
 =head1 ATTRIBUTES
 
@@ -112,17 +112,17 @@ sub debug_link {
 
     my $attr_content = $self->_get_overview();
 
-    my ($ask_price_content, $bid_price_content);
+    my $ask_price_content = $self->_get_price({
+        id       => 'buildask' . $bet->id,
+        contract => $bet,
+        type     => $bet->is_binary ? 'ask_probability' : 'ask_price',
+    });
 
-    $ask_price_content = $self->_get_price({
-            id   => 'buildask' . $bet->id,
-            prob => $bet->ask_probability,
-        }) if $bet->is_binary;
-
-    $bid_price_content = $self->_get_price({
-            id   => 'buildbid' . $bet->id,
-            prob => $bet->bid_probability,
-        }) if $bet->is_binary;
+    my $bid_price_content = $self->_get_price({
+        id       => 'buildbid' . $bet->id,
+        contract => $bet,
+        type     => $bet->is_binary ? 'bid_probability' : 'bid_price',
+    });
 
     my $tabs_content = [{
             label   => 'Overview',
@@ -303,15 +303,19 @@ sub _get_volsurface {
 
 sub _get_price {
     my ($self, $args) = @_;
-    my $id          = $args->{id};
-    my $probability = $args->{prob};
+    my $id = $args->{id};
+
+    my $contract = $args->{contract};
+    my $type     = $args->{type};
 
     my $price_content;
+    my $content = $contract->is_binary ? $self->_debug_prob(['reset', $contract->$type]) : $self->_debug_price([$contract, $type]);
+
     BOM::Backoffice::Request::template()->process(
         'backoffice/container/tree_builder.html.tt',
         {
             id      => $id,
-            content => $self->_debug_prob(['reset', $probability])
+            content => $content,
         },
         \$price_content
     ) || die BOM::Backoffice::Request::template()->error;
@@ -490,6 +494,45 @@ sub _get_overview {
     ) || die BOM::Backoffice::Request::template()->error;
 
     return $overview;
+}
+
+#debug_price is for the non binary products as we do not have
+#probability concept
+sub _debug_price {
+    my ($self, $args) = @_;
+
+    my ($contract, $type) = @{$args};
+
+    my $price_per_unit;
+    if ($type eq 'ask_price') {
+        $price_per_unit = $contract->_ask_price_per_unit;
+    } else {
+        $price_per_unit = max($contract->minimum_bid_price, $contract->_ask_price_per_unit - 2 * $contract->commission_per_unit);
+    }
+
+    my $table = '<ul>';
+
+    $table .=
+          '<li><a>'
+        . 'commission per unit' . ' '
+        . $contract->commission_per_unit
+        . '</a></li><li><a>'
+        . 'app markup per unit' . ' '
+        . $contract->app_markup_per_unit
+        . '</a></li><li><a>'
+        . 'multiplier' . ' '
+        . $contract->multiplier
+        . '</a></li><li><a>'
+        . $type
+        . ' per unit' . ' '
+        . $price_per_unit
+        . '</a></li><li><a>'
+        . $type . ' '
+        . $contract->$type . '</a>';
+
+    $table .= '</li></ul>';
+
+    return $table;
 }
 
 sub _debug_prob {

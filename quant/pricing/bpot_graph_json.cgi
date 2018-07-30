@@ -80,9 +80,9 @@ while ($graph_more) {
         $graph_more = 0;
     } else {
         if ($bet->is_expired) {
-            $expired    = 1;                             # One we know we've expired once, we can presume it stays expired.
-            $value      = $bet->value / $bet->payout;    # Should go to 0 or 1 probability
-            $graph_more = 0 if ($bet->tick_expiry);      # Don't know when it ends, so when it expires, stop.
+            $expired = 1;                                                           # One we know we've expired once, we can presume it stays expired.
+            $value = $bet->is_binary ? $bet->value / $bet->payout : $bet->value;    # Should go to 0 or 1 probability
+            $graph_more = 0 if ($bet->tick_expiry);                                 # Don't know when it ends, so when it expires, stop.
         }
         my $date_string = $when->time_hhmmss;
         $date_string .= ' ' . $when->date_ddmmmyy if ($show_date);
@@ -96,6 +96,7 @@ while ($graph_more) {
                 $amount = $expired ? 0 : $bet->_pricing_args->{$attr};
                 warn "$attr is not defined in \$bet->_pricing_args" unless defined $amount;
             } else {
+                next if not $bet->is_binary;
                 $amount = ($expired) ? $value : $bet->$attr->amount;
             }
             push @{$prices{$attr}}, financialrounding('amount', $bet->currency, (abs $amount > 3) ? $amount : $amount * 100);
