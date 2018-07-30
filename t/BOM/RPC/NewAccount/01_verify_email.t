@@ -95,7 +95,7 @@ subtest 'Account opening request with email does not exist' => sub {
 
 subtest 'Account opening request with email exists' => sub {
     $mailbox->clear;
-    $params[1]->{args}->{verify_email} = $email;
+    $params[1]->{args}->{verify_email} = uc $email;
     $params[1]->{args}->{type}         = 'account_opening';
     $params[1]->{server_name}          = 'binary.com';
     $params[1]->{link}                 = 'binary.com/some_url';
@@ -104,7 +104,7 @@ subtest 'Account opening request with email exists' => sub {
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
 
     my @msgs = $mailbox->search(
-        email   => $params[1]->{args}->{verify_email},
+        email   => lc($params[1]->{args}->{verify_email}),
         subject => qr/Duplicate email address submitted/
     );
     ok @msgs, 'Email sent successfully';
@@ -112,7 +112,7 @@ subtest 'Account opening request with email exists' => sub {
 
 subtest 'Reset password for exists user' => sub {
     $mailbox->clear;
-    $params[1]->{args}->{verify_email} = $email;
+    $params[1]->{args}->{verify_email} = uc $email;
     $params[1]->{args}->{type}         = 'reset_password';
     $params[1]->{server_name}          = 'binary.com';
     $params[1]->{link}                 = 'binary.com/some_url';
@@ -121,7 +121,7 @@ subtest 'Reset password for exists user' => sub {
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
 
     my @msgs = $mailbox->search(
-        email   => $params[1]->{args}->{verify_email},
+        email   => lc($params[1]->{args}->{verify_email}),
         subject => qr/New Password Request/
     );
     ok @msgs, 'Email sent successfully';

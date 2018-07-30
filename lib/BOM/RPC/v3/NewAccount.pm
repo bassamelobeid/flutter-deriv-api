@@ -135,8 +135,8 @@ rpc "verify_email",
     sub {
     my $params = shift;
 
-    my $email = $params->{args}->{verify_email};
-    return BOM::RPC::v3::Utility::invalid_email() if !Email::Valid->address($email);
+    my $email = lc $params->{args}->{verify_email};
+    return BOM::RPC::v3::Utility::invalid_email() unless Email::Valid->address($email);
 
     my $type = $params->{args}->{type};
     my $code = BOM::Platform::Token->new({
@@ -157,6 +157,7 @@ rpc "verify_email",
     my $email_already_exist = BOM::User->new(
         email => $email,
     );
+
     my $payment_sub = sub {
         my $type_call = shift;
 
