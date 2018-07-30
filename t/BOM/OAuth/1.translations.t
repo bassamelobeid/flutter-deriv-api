@@ -45,7 +45,10 @@ my $user       = BOM::User->create(
     password => $hash_pwd
 );
 $user->add_client($client_cr);
-$user->update_totp_fields(secret_key => $secret_key, is_totp_enabled => 1);
+$user->update_totp_fields(
+    secret_key      => $secret_key,
+    is_totp_enabled => 1
+);
 
 my $t = Test::Mojo->new('BOM::OAuth');
 
