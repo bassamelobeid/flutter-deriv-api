@@ -349,43 +349,6 @@ if ($view_action eq 'withdrawals') {
             code_exit_BO('<p style="color:red;">Unable to request deposits from RPC</p>');
         }
 
-        # depending the amount that we have in our main account
-        # we need to sweep from all our accounts to the main account
-        # these transactions are not listed in our list of transactions
-        # in database, but we pay some fee to send these transactions, and
-        # this fee must be included in the report.
-        # what we doing here:
-        # - from the last block we check all the blocks inside the date range
-        # - for all these blocks if we have a transaction with `to` equals our main address we add the fee value
-
-        my $has_dataitem = sub {
-            my $txn = shift;
-            return 0 + scalar grep { $_->{blockchain_txn} and $txn->{hash} eq $_->{blockchain_txn} } @{$database_items};
-        };
-
-        my $accounts = $rpc_client->eth_accounts();
-        for (my $block_number = Math::BigInt->from_hex($rpc_client->eth_blockNumber("latest")); 1; $block_number->bsub(1)) {
-            # get the entire block, with the transaction objects
-            my $block = $rpc_client->eth_getBlockByNumber($block_number->as_hex(), JSON->true);
-            my $block_date = Date::Utility->new(Date::Utility->new(Math::BigInt->from_hex($block->{timestamp})->bstr()));
-
-            # we read only the newer blocks outside the date range, this will finish the loop when we start to read older blocks
-            last if $block_date->is_before($start_date) or $block_number->ble(0);
-
-            # we want all transactions sent or received from our main address
-            for my $transaction (@{$block->{transactions}}) {
-                my $transaction_to = grep { $transaction->{to} and $transaction->{to} eq $_ } @$accounts;
-                my $transaction_from = grep { $transaction->{from} eq $_ } @$accounts;
-
-                if (($transaction_to or $transaction_from) and $has_dataitem->($transaction) == 0) {
-                    $transaction->{value} = "0x0" if $transaction_from and $transaction_to;
-                    $transaction->{timestamp} = $block_date;
-                    push(@sweep_transactions, $transaction);
-                }
-            }
-
-        }
-
     } else {
         # Apply date filtering. Note that this is currently BTC/BCH/LTC-specific, but
         # once we have the information in the database we should pass the date range
@@ -464,28 +427,6 @@ EOF
         print '<td style="color:red;">' . (join '<br>', map { encode_entities($_) } @{$db_tran->{comments} || []}) . '</td>';
         print '</tr>';
         $total_balance += $amount + $fee;
-    }
-
-    # Internal transactions
-    for my $block_tran (@sweep_transactions) {
-        print '<tr>';
-        print '<td>manual</td><td>sweep</td>';
-        print '<td><a href="' . $address_uri . $_ . '" target="_blank">' . encode_entities($block_tran->{to} // $block_tran->{from}) . '</a></td>';
-        # we don't want show the amount, because for these transactions we just will sum the fee
-        # but the admin team need of the transactions listed so better set as 0.
-        my $amount        = Math::BigFloat->from_hex($block_tran->{value})->bdiv(1E18)->bmul(-1);
-        my $format_amount = formatnumber('amount', $currency, financialrounding('price', $currency, $amount->bstr()));
-        my $usd_amount    = formatnumber('amount', 'USD', financialrounding('price', 'USD', in_USD($amount, $currency)));
-        my $fee           = Math::BigFloat->from_hex($block_tran->{gas})->bmul(Math::BigFloat->from_hex($block_tran->{gasPrice}));
-        my $format_fee    = formatnumber('amount', $currency, financialrounding('price', $currency, $fee->bdiv(1E18)->bmul(-1)->bstr()));
-        print '<td style="text-align:right;">' . encode_entities($_) . '</td>' for ($format_amount, '$' . $usd_amount, $format_fee);
-        print '<td>sweep</td>';
-        print '<td>' . encode_entities($block_tran->{timestamp}->datetime_yyyymmdd_hhmmss) . '</td>' for 0 .. 2;
-        print '<td>0</td><td>0</td>';
-        print '<td>' . '<a target="_blank" href="' . ($transaction_uri . $block_tran->{hash}) . '">' . encode_entities($block_tran->{hash}) . "</td>";
-        print '<td>&nbsp;</td><td>&nbsp;</td>';
-        print '</tr>';
-        $total_balance += $format_amount + $format_fee;
     }
 
     print "<tr><td>Balance:</td><td>$total_balance</td></tr>";
