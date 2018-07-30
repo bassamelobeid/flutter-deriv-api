@@ -19,9 +19,9 @@ my $test = 'BOM::User::Client->documents_expired returns undef if there are no d
 is($client->documents_expired(), 0, $test);
 
 $test = q{After call to start_document_upload, client has a single document, with an 'uploading' status};
-my $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?)';
+my $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?)';
 my $sth_doc_new = $dbh->prepare($SQL);
-$sth_doc_new->execute($client->loginid, 'testing1', 'PNG', 'yesterday', 55555, undef);
+$sth_doc_new->execute($client->loginid, 'testing1', 'PNG', 'yesterday', 55555, undef, 'none', 'front');
 my $id1 = $sth_doc_new->fetch()->[0];
 $SQL = 'SELECT id,status FROM betonmarkets.client_authentication_document WHERE client_loginid = ?';
 my $sth_doc_info = $dbh->prepare($SQL);
@@ -40,9 +40,9 @@ $client->client_authentication_document(undef);
 is($client->documents_expired(), 0, $test);
 
 $test = q{After call to finish_document_upload, document status changed to 'uploaded'};
-$SQL  = 'SELECT * FROM betonmarkets.finish_document_upload(?,?,?)';
+$SQL  = 'SELECT * FROM betonmarkets.finish_document_upload(?)';
 my $sth_doc_finish = $dbh->prepare($SQL);
-$sth_doc_finish->execute($id1, 'Test 1', '');
+$sth_doc_finish->execute($id1);
 $sth_doc_info->execute($client->loginid);
 $actual = $sth_doc_info->fetchall_arrayref({});
 $expected->[0]{status} = 'uploaded';
@@ -81,9 +81,9 @@ is($client->documents_expired(), 1, $test);
 
 $test = q{BOM::User::Client->documents_expired returns 0 if all documents have no expiration date};
 ## Create a second document
-$sth_doc_new->execute($client->loginid, 'testing2', 'PNG', undef, 66666, undef);
+$sth_doc_new->execute($client->loginid, 'testing2', 'PNG', undef, 66666, undef, 'none', 'front');
 my $id2 = $sth_doc_new->fetch()->[0];
-$sth_doc_finish->execute($id2, 'Test 2', '');
+$sth_doc_finish->execute($id2);
 $SQL = 'UPDATE betonmarkets.client_authentication_document SET expiration_date = null WHERE client_loginid = ?';
 $dbh->do($SQL, undef, $client->loginid);
 $client->client_authentication_document(undef);
