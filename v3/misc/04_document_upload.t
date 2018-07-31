@@ -268,7 +268,7 @@ subtest 'Duplicate upload rejected' => sub {
     };
     my $res = $t->await::document_upload($req);
     is $res->{error}->{code},              'DuplicateUpload',            'Error code for duplicate document';
-    is $res->{error}->{message_to_client}, 'Document already uploaded.', 'Error msg for duplicate document';
+    is $res->{error}->{message}, 'Document already uploaded.', 'Error msg for duplicate document';
 };
 
 subtest 'Document with wrong checksum rejected' => sub {
