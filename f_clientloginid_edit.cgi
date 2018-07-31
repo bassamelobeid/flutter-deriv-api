@@ -427,6 +427,11 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         }
     }
 
+    # status change for existing promo code
+    if (exists $input{promo_code_status} & !exists $input{promo_code}) {
+        $client->promo_code_status($input{promo_code_status});
+    }
+
     if (exists $input{payment_agent_withdrawal_expiration_date}) {
         $client->payment_agent_withdrawal_expiration_date($input{payment_agent_withdrawal_expiration_date} || undef);
     }
