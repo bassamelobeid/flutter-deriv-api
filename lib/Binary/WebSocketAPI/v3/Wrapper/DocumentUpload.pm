@@ -10,6 +10,7 @@ use Future;
 use JSON::MaybeXS qw/decode_json/;
 use List::Util qw/first/;
 
+use Mojo::WebSocketProxy::CallingEngine;
 use Binary::WebSocketAPI::Hooks;
 
 use constant {
@@ -22,7 +23,8 @@ sub add_upload_info {
     my ($c, $rpc_response, $req_storage) = @_;
     my $args = $req_storage->{origin_args};
 
-    return create_error($args, $rpc_response) if $rpc_response->{error};
+    return Mojo::WebSocketProxy::CallingEngine::error_api_response($c, create_error($args, $rpc_response, $req_storage), $req_storage)
+        if $rpc_response->{error};
 
     my $current_stash = $c->stash->{document_upload} || {};
     my $upload_id     = generate_upload_id($current_stash);
@@ -67,7 +69,6 @@ sub document_upload {
 
     try {
         $upload_info = get_upload_info($c, $frame);
-
         upload_chunk($c, $upload_info);
     }
     catch {
@@ -124,7 +125,7 @@ sub send_upload_failure {
 
                 replace_echo_req($upload_info, $req_storage);
 
-                return create_error($upload_info, $api_response);
+                return create_error($upload_info, $api_response, $req_storage);
             },
         });
 
@@ -156,10 +157,9 @@ sub send_upload_successful {
             },
             response => sub {
                 my (undef, $api_response, $req_storage) = @_;
-
                 replace_echo_req($upload_info, $req_storage);
 
-                return create_error($upload_info, $api_response) if exists($api_response->{error});
+                return create_error($upload_info, $api_response, $req_storage) if exists($api_response->{error});
 
                 my $call_params = create_call_params($upload_info);
 
@@ -195,8 +195,9 @@ sub upload_chunk {
 }
 
 sub create_error {
-    my ($call_params, $rpc_response) = @_;
-    return {%{create_call_params($call_params)}, error => $rpc_response->{error}};
+    my ($upload_info, $rpc_response, $req_storage) = @_;
+    replace_echo_req($upload_info, $req_storage);
+    return {%{create_call_params($upload_info)}, error => $rpc_response->{error}};
 }
 
 sub create_call_params {
