@@ -192,20 +192,4 @@ sub create_upload_error {
     });
 }
 
-sub _set_staff {
-    my ($client) = @_;
-
-    my $error_occured;
-    try {
-        $client->_set_staff;
-    }
-    catch {
-        $error_occured = $_;
-    };
-
-    warn "Unable to set staff for saving the upload information, error: $error_occured" if $error_occured;
-
-    return undef;
-}
-
 1;
