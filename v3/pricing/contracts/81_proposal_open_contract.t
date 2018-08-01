@@ -10,6 +10,7 @@ use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data call_mocked_client build_mojo_test/;
 use Net::EmptyPort qw(empty_port);
 use Test::MockModule;
+use Test::MockObject;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
@@ -238,10 +239,8 @@ subtest 'rpc error' => sub {
                 }};
         });
     $fake_rpc_response->mock('error_message', sub { 'error' });
-    $fake_rpc_client = Test::MockObject->new();
-    $fake_rpc_client->mock('call', sub { shift; return $_[2]->($fake_rpc_response) });
     $rpc_client_mock = Test::MockModule->new('MojoX::JSON::RPC::Client');
-    $rpc_client_mock->mock('new', sub { return $fake_rpc_client });
+    $rpc_client_mock->mock('call', sub { shift; return $_[2]->($fake_rpc_response) });
 
     $data = $t->await::proposal_open_contract({
         proposal_open_contract => 1,

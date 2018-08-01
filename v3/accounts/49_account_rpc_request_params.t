@@ -6,6 +6,7 @@ use lib "$Bin/../lib";
 
 use Date::Utility;
 use Test::MockModule;
+use Test::MockObject;
 use Test::More;
 
 $ENV{CLIENTIP_PLUGGABLE_ALLOW_LOOPBACK} = 1;
@@ -103,11 +104,8 @@ my $fake_res = Test::MockObject->new();
 $fake_res->mock('result',   sub { $rpc_response });
 $fake_res->mock('is_error', sub { '' });
 
-my $fake_rpc_client = Test::MockObject->new();
-$fake_rpc_client->mock('call', sub { shift; $call_params = $_[1]->{params}; return $_[2]->($fake_res) });
-
 my $module = Test::MockModule->new('MojoX::JSON::RPC::Client');
-$module->mock('new', sub { return $fake_rpc_client });
+$module->mock('call', sub { shift; $call_params = $_[1]->{params}; return $_[2]->($fake_res) });
 
 $res = $t->await::landing_company({landing_company => 'de'});
 is($res->{msg_type}, 'landing_company');

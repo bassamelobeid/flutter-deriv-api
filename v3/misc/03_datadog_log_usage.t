@@ -6,6 +6,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use Test::MockModule;
+use Test::MockObject;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::AccessToken;
 use BOM::User;
@@ -98,10 +99,8 @@ $fake_rpc_response = Test::MockObject->new();
 $fake_rpc_response->mock('is_error',      sub { 1 });
 $fake_rpc_response->mock('result',        sub { +{} });
 $fake_rpc_response->mock('error_message', sub { 'error' });
-$fake_rpc_client = Test::MockObject->new();
-$fake_rpc_client->mock('call', sub { shift; return $_[2]->($fake_rpc_response) });
 $rpc_client_mock = Test::MockModule->new('MojoX::JSON::RPC::Client');
-$rpc_client_mock->mock('new', sub { return $fake_rpc_client });
+$rpc_client_mock->mock('call', sub { shift; return $_[2]->($fake_rpc_response) });
 
 my $warn_string;
 {
@@ -126,8 +125,8 @@ my $fake_tx  = Test::MockObject->new();
 $fake_req->mock('url', sub { return "fake req url" });
 $fake_tx->mock('error', sub { return +{} });
 $fake_tx->mock('req',   sub { return $fake_req });
-$fake_rpc_client->mock('tx', sub { return $fake_tx });
-$fake_rpc_client->mock('call', sub { shift; return $_[2]->('') });
+$rpc_client_mock->mock('tx', sub { return $fake_tx });
+$rpc_client_mock->mock('call', sub { shift; return $_[2]->('') });
 {
     local $SIG{'__WARN__'} = sub { $warn_string = shift; };
     $res = $t->await::website_status({website_status => 1});
