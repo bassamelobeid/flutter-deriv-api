@@ -10,7 +10,6 @@ use Future;
 use JSON::MaybeXS qw/decode_json/;
 use List::Util qw/first/;
 
-use Mojo::WebSocketProxy::CallingEngine;
 use Binary::WebSocketAPI::Hooks;
 
 use constant {
@@ -23,8 +22,11 @@ sub add_upload_info {
     my ($c, $rpc_response, $req_storage) = @_;
     my $args = $req_storage->{origin_args};
 
-    return Mojo::WebSocketProxy::CallingEngine::error_api_response($c, create_error($args, $rpc_response, $req_storage), $req_storage)
-        if $rpc_response->{error};
+    return $c->wsp_error(
+        $req_storage->{msg_type},
+        $rpc_response->{error}->{code},
+        $rpc_response->{error}->{message_to_client},
+        create_error($args, $rpc_response, $req_storage)) if $rpc_response->{error};
 
     my $current_stash = $c->stash->{document_upload} || {};
     my $upload_id     = generate_upload_id($current_stash);
@@ -62,8 +64,10 @@ sub add_upload_info {
 sub document_upload {
     my ($c, $frame) = @_;
 
-    # Ignore valid json frames;
-    return if eval { decode_json($frame) };
+    # Handle decoded JSON frames as text frames
+    if (eval { decode_json($frame) }) {
+        return $c->tx->emit(text => $frame);
+    }
 
     my $upload_info;
 
