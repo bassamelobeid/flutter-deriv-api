@@ -232,7 +232,7 @@ sub _login {
 
     my ($user, $last_login, $err, $client);
 
-    my $email      = defang(lc $c->param('email'));
+    my $email      = lc defang($c->param('email'));
     my $password   = $c->param('password');
     my $brand      = $c->stash('brand');
     my $brand_name = BOM::OAuth::Helper->extract_brand_from_params($c->stash('request')->params) // $brand->name;
