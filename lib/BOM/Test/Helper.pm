@@ -32,7 +32,6 @@ use File::Temp qw/ tempdir /;
 use Path::Tiny;
 
 use Test::MockModule;
-use Test::MockObject;
 use MojoX::JSON::RPC::Client;
 
 use RedisDB;
@@ -189,12 +188,9 @@ sub create_test_user {
 sub call_mocked_client {
     my ($t, $json) = @_;
     my $call_params;
-    my $fake_rpc_client = Test::MockObject->new();
-    my $real_rpc_client = MojoX::JSON::RPC::Client->new();
-    $fake_rpc_client->mock('call', sub { shift; $call_params = $_[1]->{params}; return $real_rpc_client->call(@_) });
 
     my $module = Test::MockModule->new('MojoX::JSON::RPC::Client');
-    $module->mock('new', sub { return $fake_rpc_client });
+    $module->mock('call', sub { my $self = shift; $call_params = $_[1]->{params}; return $module->original('call')->($self, @_) });
 
     $t = $t->send_ok({json => $json})->message_ok;
     my $res = JSON::MaybeXS->new->decode(Encode::decode_utf8($t->message->[1]));
