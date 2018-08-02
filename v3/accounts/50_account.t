@@ -18,6 +18,7 @@ use BOM::MarketData::Types;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::FinancialAssessment;
+use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 
 use BOM::User::Password;
 use BOM::User;
@@ -38,16 +39,14 @@ $test_client->payment_free_gift(
     remark   => 'free gift',
 );
 
-# Mock exchange rates and populate in redis
-my $rates = {
+# Mock exchange rates
+populate_exchange_rates({
     USD => 1,
     EUR => 1.1888,
     GBP => 1.3333,
     JPY => 0.0089,
     BTC => 6000,
-};
-
-Cache::RedisDB->set('QUOTE', "frx${_}USD", {quote => $rates->{$_}}) for keys %$rates;
+});
 
 my $hash_pwd = BOM::User::Password::hashpw('jskjd8292922');
 my $user     = BOM::User->create(
