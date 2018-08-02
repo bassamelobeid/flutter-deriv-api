@@ -77,12 +77,16 @@ $payment_agent_args->{currency_code} = 'BTC';
 $crypto_pa_client->payment_agent($payment_agent_args);
 $crypto_pa_client->save;
 
+
 my $mock_utility        = Test::MockModule->new('BOM::RPC::v3::Utility');
 my $mock_clientaccount  = Test::MockModule->new('BOM::User::Client');
 my $mock_landingcompany = Test::MockModule->new('LandingCompany');
 my $mock_clientdb       = Test::MockModule->new('BOM::Database::ClientDB');
 my $mock_cashier        = Test::MockModule->new('BOM::RPC::v3::Cashier');
 my $mock_date           = Test::MockModule->new('Date::Utility');
+my $mock_currencyconverter = Test::MockModule->new('ExchangeRates::CurrencyConverter');
+$mock_currencyconverter->mock('in_usd', sub { return $_[1] eq 'USD' ? $_[0] : 5000 * $_[0]; });
+
 
 my $runtime_system = BOM::Config::Runtime->instance->app_config->system;
 
@@ -119,10 +123,10 @@ sub reset_transfer_testargs {
         }};
 }
 
-my $mock_cc         = Test::MockModule->new('Postgres::FeedDB::CurrencyConverter');
+my $mock_cc         = Test::MockModule->new('ExchangeRates::CurrencyConverter');
 my $mock_cashier_cc = Test::MockModule->new('BOM::RPC::v3::Cashier');
-$mock_cc->mock('in_USD', sub { return $_[1] eq 'USD' ? $_[0] : 5000 * $_[0]; });
-$mock_cashier_cc->mock('in_USD', sub { return $_[1] eq 'USD' ? $_[0] : 5000 * $_[0]; });
+$mock_cc->mock('in_usd', sub { return $_[1] eq 'USD' ? $_[0] : 5000 * $_[0]; });
+$mock_cashier_cc->mock('in_usd', sub { return $_[1] eq 'USD' ? $_[0] : 5000 * $_[0]; });
 
 for my $transfer_currency ('USD', 'BTC') {
 
@@ -436,7 +440,7 @@ for my $transfer_currency ('USD', 'BTC') {
 
             reset_transfer_testargs();
 
-            my $value_per_usd = Postgres::FeedDB::CurrencyConverter::in_USD(1, $test_currency);
+            my $value_per_usd = ExchangeRates::CurrencyConverter::in_usd(1, $test_currency);
 
             # test withdrawl amount in usd
             my $test_wd_amt_in_usd = 1000;
@@ -928,7 +932,7 @@ for my $withdraw_currency ('USD', 'BTC') {
 
 } ## end of each test_currency type
 
-$mock_cc->unmock('in_USD');
-$mock_cashier_cc->unmock('in_USD');
+$mock_cc->unmock('in_usd');
+$mock_cashier_cc->unmock('in_usd');
 
 done_testing();

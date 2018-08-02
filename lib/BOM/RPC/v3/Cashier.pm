@@ -22,7 +22,7 @@ use Brands;
 use BOM::User::Client;
 use LandingCompany::Registry;
 use BOM::User::Client::PaymentAgent;
-use Postgres::FeedDB::CurrencyConverter qw ( amount_from_to_currency in_USD );
+use ExchangeRates::CurrencyConverter qw/convert_currency in_usd/;
 
 use BOM::RPC::Registry '-dsl';
 
@@ -300,8 +300,8 @@ rpc get_limits => sub {
 
     $limit->{num_of_days} = $numdays;
 
-    $limit->{num_of_days_limit} = formatnumber('price', $currency, amount_from_to_currency($numdayslimit,  $withdrawal_limit_curr, $currency));
-    $limit->{lifetime_limit}    = formatnumber('price', $currency, amount_from_to_currency($lifetimelimit, $withdrawal_limit_curr, $currency));
+    $limit->{num_of_days_limit} = formatnumber('price', $currency, convert_currency($numdayslimit,  $withdrawal_limit_curr, $currency));
+    $limit->{lifetime_limit}    = formatnumber('price', $currency, convert_currency($lifetimelimit, $withdrawal_limit_curr, $currency));
 
     # Withdrawal since $numdays
     my $payment_mapper = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});
@@ -309,11 +309,11 @@ rpc get_limits => sub {
         start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * $numdays),
         exclude    => ['currency_conversion_transfer'],
     });
-    $withdrawal_for_x_days = amount_from_to_currency($withdrawal_for_x_days, $currency, $withdrawal_limit_curr);
+    $withdrawal_for_x_days = convert_currency($withdrawal_for_x_days, $currency, $withdrawal_limit_curr);
 
     # withdrawal since inception
-    my $withdrawal_since_inception = amount_from_to_currency($payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer']}),
-        $currency, $withdrawal_limit_curr);
+    my $withdrawal_since_inception =
+        convert_currency($payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer']}), $currency, $withdrawal_limit_curr);
 
     my $remainder = min(($numdayslimit - $withdrawal_for_x_days), ($lifetimelimit - $withdrawal_since_inception));
     if ($remainder < 0) {
@@ -321,10 +321,10 @@ rpc get_limits => sub {
     }
 
     $limit->{withdrawal_since_inception_monetary} =
-        formatnumber('price', $currency, amount_from_to_currency($withdrawal_since_inception, $withdrawal_limit_curr, $currency));
+        formatnumber('price', $currency, convert_currency($withdrawal_since_inception, $withdrawal_limit_curr, $currency));
     $limit->{withdrawal_for_x_days_monetary} =
-        formatnumber('price', $currency, amount_from_to_currency($withdrawal_for_x_days, $withdrawal_limit_curr, $currency));
-    $limit->{remainder} = formatnumber('price', $currency, amount_from_to_currency($remainder, $withdrawal_limit_curr, $currency));
+        formatnumber('price', $currency, convert_currency($withdrawal_for_x_days, $withdrawal_limit_curr, $currency));
+    $limit->{remainder} = formatnumber('price', $currency, convert_currency($remainder, $withdrawal_limit_curr, $currency));
 
     return $limit;
 };
@@ -547,9 +547,9 @@ rpc paymentagent_transfer => sub {
 
     # normalized all amount to USD for comparing payment agent limits
     my ($amount_transferred_in_usd, $count) = _get_amount_and_count($loginid_fm);
-    $amount_transferred_in_usd = in_USD($amount_transferred_in_usd, $currency);
+    $amount_transferred_in_usd = in_usd($amount_transferred_in_usd, $currency);
 
-    my $amount_in_usd = in_USD($amount, $currency);
+    my $amount_in_usd = in_usd($amount, $currency);
 
     my $pa_transfer_limit = BOM::Config::payment_agent()->{transaction_limits}->{transfer};
 
@@ -821,9 +821,9 @@ rpc paymentagent_withdraw => sub {
     my $withdrawal_limit = BOM::Config::payment_agent()->{transaction_limits}->{withdraw};
 
     my ($amount_transferred_in_usd, $count) = _get_amount_and_count($client_loginid);
-    $amount_transferred_in_usd = in_USD($amount_transferred_in_usd, $currency);
+    $amount_transferred_in_usd = in_usd($amount_transferred_in_usd, $currency);
 
-    my $amount_in_usd = in_USD($amount, $currency);
+    my $amount_in_usd = in_usd($amount, $currency);
 
     my $daily_limit = $withdrawal_limit->{$day}->{amount_in_usd_per_day};
 
@@ -831,7 +831,7 @@ rpc paymentagent_withdraw => sub {
         return $error_sub->(
             localize(
                 'Sorry, you have exceeded the maximum allowable transfer amount [_1] for today.',
-                $currency . formatnumber('price', $currency, amount_from_to_currency($daily_limit, 'USD', $currency))));
+                $currency . formatnumber('price', $currency, convert_currency($daily_limit, 'USD', $currency))));
     }
 
     if ($count >= $withdrawal_limit->{$day}->{transactions_per_day}) {

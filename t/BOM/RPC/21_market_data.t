@@ -28,9 +28,9 @@ subtest 'invalid currency' => sub {
 
 subtest 'exchange rates' => sub {
     $base = 'USD';
-    my $mocked_CurrencyConverter = Test::MockModule->new('Postgres::FeedDB::CurrencyConverter');
+    my $mocked_CurrencyConverter = Test::MockModule->new('ExchangeRates::CurrencyConverter');
     $mocked_CurrencyConverter->mock(
-        'in_USD',
+        'in_usd',
         sub {
             my $price         = shift;
             my $from_currency = shift;

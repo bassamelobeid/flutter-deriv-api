@@ -23,7 +23,7 @@ use Brands;
 use BOM::User::Client;
 use LandingCompany::Registry;
 use Format::Util::Numbers qw/formatnumber financialrounding/;
-use Postgres::FeedDB::CurrencyConverter qw(in_USD);
+use ExchangeRates::CurrencyConverter qw(in_usd);
 
 use BOM::RPC::Registry '-dsl';
 
@@ -524,7 +524,7 @@ rpc get_account_status => sub {
         if ($shortcode eq 'costarica' or $shortcode eq 'champion') {
             # Our threshold is 4000 USD, but we want to include total across all the user's currencies
             my $total = sum0(
-                map { in_USD($_->default_account->balance, $_->currency) }
+                map { in_usd($_->default_account->balance, $_->currency) }
                 grep { $_->default_account && $_->landing_company->short eq $shortcode } $user->clients
             );
             if ($total > 4000) {

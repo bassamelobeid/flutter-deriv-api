@@ -16,7 +16,7 @@ use Brands;
 use WebService::MyAffiliates;
 use Future::Utils qw(fmap1);
 use Format::Util::Numbers qw/financialrounding formatnumber/;
-use Postgres::FeedDB::CurrencyConverter qw/amount_from_to_currency/;
+use ExchangeRates::CurrencyConverter qw/convert_currency/;
 use JSON::MaybeXS;
 
 use BOM::RPC::Registry '-dsl';
@@ -1502,13 +1502,13 @@ sub _mt5_validate_and_get_amount {
                 # between currencies - we do not apply for USD -> USD transfers for example.
             } elsif ($action eq 'deposit') {
                 try {
-                    $min = amount_from_to_currency(1,     'USD', $client_currency);
-                    $max = amount_from_to_currency(20000, 'USD', $client_currency);
+                    $min = convert_currency(1,     'USD', $client_currency);
+                    $max = convert_currency(20000, 'USD', $client_currency);
 
                     $fees = $amount * (CONVERSION_FEES_PERCENTAGE / 100);
                     $mt5_amount =
                         financialrounding('amount', $mt5_currency,
-                        amount_from_to_currency(($amount - $fees), $client_currency, $mt5_currency, CURRENCY_CONVERSION_MAX_AGE));
+                        convert_currency(($amount - $fees), $client_currency, $mt5_currency, CURRENCY_CONVERSION_MAX_AGE));
                 }
                 catch {
                     warn "Conversion failed for mt5_$action: $_";
@@ -1516,13 +1516,13 @@ sub _mt5_validate_and_get_amount {
                 };
             } elsif ($action eq 'withdrawal') {
                 try {
-                    $min = amount_from_to_currency(1,     'USD', $mt5_currency);
-                    $max = amount_from_to_currency(20000, 'USD', $mt5_currency);
+                    $min = convert_currency(1,     'USD', $mt5_currency);
+                    $max = convert_currency(20000, 'USD', $mt5_currency);
 
                     $fees = $amount * (CONVERSION_FEES_PERCENTAGE / 100);
                     $mt5_amount =
                         financialrounding('amount', $client_currency,
-                        amount_from_to_currency(($amount - $fees), $mt5_currency, $client_currency, CURRENCY_CONVERSION_MAX_AGE));
+                        convert_currency(($amount - $fees), $mt5_currency, $client_currency, CURRENCY_CONVERSION_MAX_AGE));
 
                     $source_currency = $mt5_currency;
                 }

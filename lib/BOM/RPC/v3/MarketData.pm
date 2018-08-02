@@ -19,7 +19,7 @@ use Scalar::Util qw(looks_like_number);
 use List::Util qw(any);
 
 use LandingCompany::Registry;
-use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
+use ExchangeRates::CurrencyConverter qw(convert_currency);
 
 use BOM::RPC::Registry '-dsl';
 use BOM::Platform::Context qw (localize);
@@ -62,7 +62,7 @@ rpc exchange_rates => sub {
     foreach my $target (@all_currencies) {
         next if $target eq $base_currency;
         try {
-            $rates_hash{$target} = formatnumber('amount', $target, amount_from_to_currency(1, $base_currency, $target));
+            $rates_hash{$target} = formatnumber('amount', $target, convert_currency(1, $base_currency, $target));
         };
     }
 

@@ -17,7 +17,7 @@ use BOM::Platform::RiskProfile;
 use Email::Stuffer::TestLinks;
 use BOM::Config;
 
-use Postgres::FeedDB::CurrencyConverter qw/in_USD amount_from_to_currency/;
+use ExchangeRates::CurrencyConverter qw/in_usd convert_currency/;
 
 my $c              = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 my $payment_limits = BOM::Config::payment_limits();
@@ -25,9 +25,9 @@ my $method         = 'get_limits';
 my $params         = {token => '12345'};
 
 # Mocked currency converter to imitate currency conversion for CR accounts
-my $mocked_CurrencyConverter = Test::MockModule->new('Postgres::FeedDB::CurrencyConverter');
+my $mocked_CurrencyConverter = Test::MockModule->new('ExchangeRates::CurrencyConverter');
 $mocked_CurrencyConverter->mock(
-    'in_USD',
+    'in_usd',
     sub {
         my $price         = shift;
         my $from_currency = shift;
@@ -176,8 +176,8 @@ subtest 'CR-EUR' => sub {
 
     # Load limits for CR, which is in USD, then convert to EUR
     my $limits         = $payment_limits->{withdrawal_limits}->{costarica};
-    my $limit_for_days = formatnumber('price', 'EUR', amount_from_to_currency($limits->{limit_for_days}, 'USD', 'EUR'));
-    my $lifetime_limit = formatnumber('price', 'EUR', amount_from_to_currency($limits->{lifetime_limit}, 'USD', 'EUR'));
+    my $limit_for_days = formatnumber('price', 'EUR', convert_currency($limits->{limit_for_days}, 'USD', 'EUR'));
+    my $lifetime_limit = formatnumber('price', 'EUR', convert_currency($limits->{lifetime_limit}, 'USD', 'EUR'));
 
     # Test for unauthenticated accounts
     subtest 'unauthenticated' => sub {
@@ -213,8 +213,8 @@ subtest 'CR-EUR' => sub {
     };
 
     # Convert limits from 99999999 USD to EUR
-    $limit_for_days = formatnumber('price', 'EUR', amount_from_to_currency(99999999, 'USD', 'EUR'));
-    $lifetime_limit = formatnumber('price', 'EUR', amount_from_to_currency(99999999, 'USD', 'EUR'));
+    $limit_for_days = formatnumber('price', 'EUR', convert_currency(99999999, 'USD', 'EUR'));
+    $lifetime_limit = formatnumber('price', 'EUR', convert_currency(99999999, 'USD', 'EUR'));
 
     # Test for authenticated accounts
     subtest 'authenticated' => sub {
@@ -257,8 +257,8 @@ subtest 'CR-BTC' => sub {
 
     # Load limits for CR, which is in USD, then convert to BTC
     my $limits         = $payment_limits->{withdrawal_limits}->{costarica};
-    my $limit_for_days = formatnumber('price', 'BTC', amount_from_to_currency($limits->{limit_for_days}, 'USD', 'BTC'));
-    my $lifetime_limit = formatnumber('price', 'BTC', amount_from_to_currency($limits->{lifetime_limit}, 'USD', 'BTC'));
+    my $limit_for_days = formatnumber('price', 'BTC', convert_currency($limits->{limit_for_days}, 'USD', 'BTC'));
+    my $lifetime_limit = formatnumber('price', 'BTC', convert_currency($limits->{lifetime_limit}, 'USD', 'BTC'));
 
     # Test for unauthenticated accounts
     subtest 'unauthenticated' => sub {
@@ -302,8 +302,8 @@ subtest 'CR-BTC' => sub {
     };
 
     # Convert limits from 99999999 USD to BTC
-    $limit_for_days = formatnumber('price', 'BTC', amount_from_to_currency(99999999, 'USD', 'BTC'));
-    $lifetime_limit = formatnumber('price', 'BTC', amount_from_to_currency(99999999, 'USD', 'BTC'));
+    $limit_for_days = formatnumber('price', 'BTC', convert_currency(99999999, 'USD', 'BTC'));
+    $lifetime_limit = formatnumber('price', 'BTC', convert_currency(99999999, 'USD', 'BTC'));
 
     # Test for authenticated accounts
     subtest 'authenticated' => sub {

@@ -5,8 +5,6 @@ use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
 
-use Postgres::FeedDB::CurrencyConverter qw(in_USD amount_from_to_currency);
-
 use List::Util qw();
 use JSON::MaybeXS;
 use Email::Folder::Search;

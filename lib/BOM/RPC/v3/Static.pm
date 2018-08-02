@@ -23,7 +23,6 @@ use Time::HiRes ();
 use Brands;
 use LandingCompany::Registry;
 use Format::Util::Numbers qw/financialrounding/;
-use Postgres::FeedDB::CurrencyConverter qw(in_USD amount_from_to_currency);
 use DataDog::DogStatsd::Helper qw(stats_timing stats_gauge);
 use Unicode::UTF8 qw(decode_utf8);
 use JSON::MaybeXS;

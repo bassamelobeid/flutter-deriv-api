@@ -11,13 +11,14 @@ use Test::Warn;
 
 use MojoX::JSON::RPC::Client;
 use POSIX qw/ ceil /;
-use Postgres::FeedDB::CurrencyConverter qw(in_USD amount_from_to_currency);
+use ExchangeRates::CurrencyConverter qw(in_usd convert_currency);
 
 use BOM::User::Client;
 
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 use BOM::Platform::Token;
 use Email::Stuffer::TestLinks;
 
@@ -48,19 +49,9 @@ my $params = {
 my ($email, $client_vr, $client_cr, $client_cr1, $client_mlt, $client_mf, $user, $token);
 my $method = 'transfer_between_accounts';
 
-my $mocked_CurrencyConverter = Test::MockModule->new('Postgres::FeedDB::CurrencyConverter');
-my $btc_usd_rate             = 4000;
-$mocked_CurrencyConverter->mock(
-    'in_USD',
-    sub {
-        my $price         = shift;
-        my $from_currency = shift;
+my $btc_usd_rate = 4000;
 
-        $from_currency eq 'BTC' and return $btc_usd_rate * $price;
-        $from_currency eq 'USD' and return 1 * $price;
-
-        return 0;
-    });
+populate_exchange_rates({'BTC' => $btc_usd_rate});
 
 my $tmp_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
@@ -69,9 +60,9 @@ my $tmp_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 
 $tmp_client->db->dbic->run(
     ping => sub {
-        my $date = Date::Utility->new->db_timestamp;
         $_->do(
-            "insert into data_collection.exchange_rate (source_currency, target_currency,date, rate) values('BTC','USD', '$date','$btc_usd_rate')");
+            "insert into data_collection.exchange_rate (source_currency, target_currency,date, rate) values('BTC','USD', current_timestamp, '$btc_usd_rate')"
+        );
     });
 
 subtest 'call params validation' => sub {
@@ -498,6 +489,7 @@ subtest 'transfer with fees' => sub {
         amount   => 1000,
         remark   => 'free gift',
     );
+
     cmp_ok $client_cr_usd->default_account->load->balance, '==', 1000, 'correct balance';
 
     $client_cr_btc->payment_free_gift(
@@ -505,6 +497,7 @@ subtest 'transfer with fees' => sub {
         amount   => 1,
         remark   => 'free gift',
     );
+
     cmp_ok $client_cr_btc->default_account->load->balance, '==', 1, 'correct balance';
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_usd->loginid, 'test token');
@@ -515,6 +508,7 @@ subtest 'transfer with fees' => sub {
         "currency"     => "USD",
         "amount"       => $amount
     };
+
     my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{client_to_loginid}, $client_cr_btc->loginid, 'Transaction successful';
 
