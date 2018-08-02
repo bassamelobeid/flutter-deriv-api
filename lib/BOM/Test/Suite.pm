@@ -71,7 +71,7 @@ sub new {
             # the time our code is run all these ticks should be in the recent past.
             my $count     = 10;
             my $tick_time = time;
-            for my $i (1 .. $count) {
+            for (1 .. $count) {
                 for my $symbol (qw/R_50 R_100/) {
                     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
                         underlying => $symbol,
