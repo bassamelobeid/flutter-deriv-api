@@ -54,18 +54,18 @@ Test::Exception::lives_ok { $client = BOM::User::Client->new({'loginid' => 'CR00
         GBP => 1.4,
         EUR => 1.2,
     );
-    my $mock = Test::MockModule->new('Postgres::FeedDB::CurrencyConverter');
+    my $mock = Test::MockModule->new('ExchangeRates::CurrencyConverter');
     $mock->mock(
-        in_USD => sub {
+        in_usd => sub {
             my $price         = shift;
             my $from_currency = shift;
 
-            die "mocked in_USD lacks exchange rate for $from_currency"
+            die "mocked in_usd lacks exchange rate for $from_currency"
                 unless exists $rates{$from_currency};
 
             my $res = $price * $rates{$from_currency};
 
-            note "mocked in_USD($price, $from_currency) returns $res";
+            note "mocked in_usd($price, $from_currency) returns $res";
             return $res;
         });
 

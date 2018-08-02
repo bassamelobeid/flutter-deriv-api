@@ -26,7 +26,7 @@ use BOM::User::Client;
 use BOM::User;
 
 use DataDog::DogStatsd::Helper qw(stats_timing stats_gauge stats_inc);
-use Postgres::FeedDB::CurrencyConverter qw(in_USD);
+use ExchangeRates::CurrencyConverter qw(in_usd);
 
 my $sock;
 
@@ -76,7 +76,7 @@ sub add {
 
     # If we don't have rates, that's not worth causing anything else to fail: just tell datadog and bail out.
     return unless try {
-        $args{amount_usd} //= $args{amount} ? in_USD($args{amount} => $args{currency}) : 0.0;
+        $args{amount_usd} //= $args{amount} ? in_usd($args{amount} => $args{currency}) : 0.0;
         1
     }
     catch {

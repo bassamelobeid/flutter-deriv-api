@@ -13,7 +13,7 @@ use JSON::MaybeXS;
 use Date::Utility;
 use Cache::RedisDB;
 
-use Postgres::FeedDB::CurrencyConverter qw/in_USD amount_from_to_currency/;
+use ExchangeRates::CurrencyConverter qw/in_usd convert_currency/;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
@@ -481,7 +481,7 @@ sub _apply_promo_amount {
 }
 
 # Subroutine to get the GBP equivalent of EUR
-sub _GBP_equiv { sprintf '%.2f', amount_from_to_currency($_[0], 'EUR', 'GBP') }
+sub _GBP_equiv { sprintf '%.2f', convert_currency($_[0], 'EUR', 'GBP') }
 
 done_testing();
 

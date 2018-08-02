@@ -12,7 +12,7 @@ use YAML::XS qw(LoadFile);
 use Path::Tiny;
 use Format::Util::Numbers qw/financialrounding formatnumber/;
 use Date::Utility;
-use Postgres::FeedDB::CurrencyConverter qw/amount_from_to_currency/;
+use ExchangeRates::CurrencyConverter qw/convert_currency/;
 
 use BOM::User::Client::PaymentNotificationQueue;
 use BOM::Database::ClientDB;
@@ -97,8 +97,8 @@ sub validate_payment {
 
             # If currency is not the same as the lc's currency, convert withdrawals so far and withdrawal amount
             if ($currency ne $lc_currency) {
-                $wd_epoch = amount_from_to_currency($wd_epoch, $currency, $lc_currency) if $wd_epoch > 0;
-                $absamt   = amount_from_to_currency($absamt,   $currency, $lc_currency) if $absamt > 0;
+                $wd_epoch = convert_currency($wd_epoch, $currency, $lc_currency) if $wd_epoch > 0;
+                $absamt   = convert_currency($absamt,   $currency, $lc_currency) if $absamt > 0;
             }
 
             my $wd_left = financialrounding('amount', $currency, $lc_limits->{lifetime_limit} - $wd_epoch);
@@ -106,8 +106,8 @@ sub validate_payment {
             if ($absamt > $wd_left) {
                 if ($currency ne $lc_currency) {
                     die sprintf "Withdrawal amount [%s %s] exceeds withdrawal limit [%s %s].\n", $currency,
-                        formatnumber('amount', $currency, amount_from_to_currency($absamt, $lc_currency, $currency)),
-                        $currency, formatnumber('amount', $currency, amount_from_to_currency($wd_left, $lc_currency, $currency));
+                        formatnumber('amount', $currency, convert_currency($absamt, $lc_currency, $currency)),
+                        $currency, formatnumber('amount', $currency, convert_currency($wd_left, $lc_currency, $currency));
                 } else {
                     die sprintf "Withdrawal amount [%s %s] exceeds withdrawal limit [%s %s].\n", $currency,
                         formatnumber('amount', $currency, $absamt),
@@ -141,8 +141,8 @@ sub validate_payment {
                 || 0;
 
             # Converts payments over lifetime of the account and the last x days into EUR
-            my $wd_eur_since = amount_from_to_currency($wd_since, $currency, 'EUR');
-            my $wd_eur_epoch = amount_from_to_currency($wd_epoch, $currency, 'EUR');
+            my $wd_eur_since = convert_currency($wd_since, $currency, 'EUR');
+            my $wd_eur_epoch = convert_currency($wd_epoch, $currency, 'EUR');
 
             # Amount withdrawable over the last x days in EUR
             my $wd_eur_since_left = $wd_eur_since_limit - $wd_eur_since;
@@ -154,7 +154,7 @@ sub validate_payment {
             my $wd_eur_left = List::Util::min($wd_eur_since_left, $wd_eur_epoch_left);
 
             # Withdrawable amount is converted from EUR to clients' currency and rounded
-            my $wd_left = financialrounding('amount', $currency, amount_from_to_currency($wd_eur_left, 'EUR', $currency));
+            my $wd_left = financialrounding('amount', $currency, convert_currency($wd_eur_left, 'EUR', $currency));
 
             if ($absamt > $wd_left) {
                 # lock cashier and unwelcome if its MX (as per compliance, check with compliance if you want to remove it)
