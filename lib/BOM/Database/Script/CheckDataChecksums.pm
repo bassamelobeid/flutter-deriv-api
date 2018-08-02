@@ -39,6 +39,7 @@ sub run {
     my ($table_pattern, $verbose) = @_;
     die 'invalid table pattern, limited set of regex features allowed' if defined($table_pattern) and $table_pattern =~ /^[a-z0-9_.+*]+$/;
 
+    my $start = time;
     my $chunk = 100;    # how many blocks at once 1block=8kbyte
 
     my $dbic = DBIx::Connector::Pg->new(
@@ -115,6 +116,8 @@ EOF
             }
         }
     }
+    my $elapsed = time - $start;
+    printf "Checksum verification complete for %s in %d seconds\n", $ENV{PGSERVICE}, $elapsed;
     return 0;
 }
 
