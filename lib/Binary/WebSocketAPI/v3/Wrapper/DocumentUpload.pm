@@ -38,6 +38,7 @@ sub add_upload_info {
         call_type         => $rpc_response->{call_type},
         file_name         => $rpc_response->{file_name},
         file_size         => $args->{file_size},
+        page_type         => $args->{page_type},
         md5               => Digest::MD5->new,
         received_bytes    => 0,
         pending_futures   => [],
@@ -157,6 +158,7 @@ sub send_upload_successful {
                 req_id      => $upload_info->{req_id},
                 passthrough => $upload_info->{passthrough},
                 file_id     => $upload_info->{file_id},
+                page_type   => $upload_info->{page_type},
                 %{$upload_finished},
             },
             response => sub {
