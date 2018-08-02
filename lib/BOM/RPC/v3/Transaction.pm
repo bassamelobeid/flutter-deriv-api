@@ -117,10 +117,14 @@ rpc buy => sub {
 
     my $client = $params->{client} // die "Client should have been authenticated at this stage.";
 
+    my ($source, $contract_parameters, $args, $payout) = @{$params}{qw/source contract_parameters args payout/};
+
+    my $args_error = BOM::RPC::v3::Utility::contract_args_check($args);
+    return $args_error if $args_error;
+
     my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($client, @validation_checks);
     return $validation_error if $validation_error;
 
-    my ($source, $contract_parameters, $args, $payout) = @{$params}{qw/source contract_parameters args payout/};
     my $trading_period_start = $contract_parameters->{trading_period_start};
     my $purchase_date        = time;                                           # Purchase is considered to have happened at the point of request.
 
@@ -227,11 +231,14 @@ rpc buy_contract_for_multiple_accounts => sub {
 
     my $client = $params->{client} // die "Client should have been authenticated at this stage.";
 
-    my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($client, @validation_checks);
-    return $validation_error if $validation_error;
-
     my $args = $params->{args};
     my $tokens = $args->{tokens} // [];
+
+    my $args_error = BOM::RPC::v3::Utility::contract_args_check($args);
+    return $args_error if $args_error;
+
+    my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($client, @validation_checks);
+    return $validation_error if $validation_error;
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'TooManyTokens',
