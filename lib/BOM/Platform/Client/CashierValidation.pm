@@ -15,7 +15,7 @@ use warnings;
 
 use Date::Utility;
 use Scalar::Util qw(looks_like_number);
-use Postgres::FeedDB::CurrencyConverter qw/amount_from_to_currency/;
+use ExchangeRates::CurrencyConverter qw/convert_currency/;
 
 use Brands;
 use BOM::User::Client;
@@ -226,7 +226,7 @@ sub calculate_to_amount_with_fees {
         }
 
         $amount -= $fees;
-        $amount = amount_from_to_currency($amount, $from_currency, $to_currency);
+        $amount = convert_currency($amount, $from_currency, $to_currency);
     }
 
     return ($amount, $fees, $fees_percent);
