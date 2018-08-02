@@ -24,6 +24,7 @@ use Try::Tiny;
 my $config = {
     replicated => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-replicated.yml'),
     pricer     => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml'),
+    exchangerates => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-exchangerates.yml'),
 };
 my $connections = {};
 
@@ -66,5 +67,15 @@ sub redis_pricer {
     my %args = @_;
     return _redis('pricer', 'write', $args{timeout} // 3600);
 }
+
+sub redis_exchangerates {
+    return _redis('exchangerates', 'read');
+}
+
+sub redis_exchangerates_write {
+    return _redis('exchangerates', 'write');
+}
+
+1;
 
 1;
