@@ -25,7 +25,7 @@ use Text::CSV;
 use Date::Utility;
 use File::SortedSeek qw(numeric get_between);
 use Format::Util::Numbers qw(formatnumber);
-use Postgres::FeedDB::CurrencyConverter qw(in_USD);
+use ExchangeRates::CurrencyConverter qw(in_usd);
 
 use BOM::Database::DataMapper::MyAffiliates;
 
@@ -71,9 +71,9 @@ sub _generate_csv_output {
     foreach my $loginid (sort keys %{$activity}) {
         my $currency = $activity->{$loginid}->{currency};
 
-        # this is for optimization else we would need to call in_USD for each record
+        # this is for optimization else we would need to call in_usd for each record
         # this only calls if currency is not in hash
-        $conversion_hash{$currency} = in_USD(1, $currency) unless exists $conversion_hash{$currency};
+        $conversion_hash{$currency} = in_usd(1, $currency) unless exists $conversion_hash{$currency};
 
         my $csv = Text::CSV->new;
 
