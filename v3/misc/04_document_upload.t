@@ -169,6 +169,26 @@ sub send_two_docs_at_once {
     }
 }
 
+subtest 'Checking filename' => sub {
+    my %upload_info = request_upload(
+        '',
+        {
+            document_type   => 'bankstatement',
+            document_format => 'JPG',
+            page_type       => 'back',
+        });
+    my $upload_id = $upload_info{upload_id};
+
+    my $stashed_upload_info = $c->stash('document_upload')->{$upload_id};
+
+    my ($file_id, $file_name) = @$stashed_upload_info{qw/file_id file_name/};
+
+    my $expected_file_name = "$loginid.bankstatement.${file_id}_back.JPG";
+
+    is $file_name, $expected_file_name, 'file name is correct';
+};
+
+
 subtest 'Send two files one by one' => sub {
     my %to_send = (
         'Hello world!' => {
@@ -267,7 +287,8 @@ subtest 'Duplicate upload rejected' => sub {
         file_size         => min(length $data, MAX_FILE_SIZE),
     };
     my $res = $t->await::document_upload($req);
-    is $res->{error}->{code},              'DuplicateUpload',            'Error code for duplicate document';
+
+    is $res->{error}->{code},    'DuplicateUpload',            'Error code for duplicate document';
     is $res->{error}->{message}, 'Document already uploaded.', 'Error msg for duplicate document';
 };
 
@@ -368,7 +389,6 @@ sub request_upload {
     my ($data, $metadata, $ws) = @_;
     $ws //= $t;
     $metadata //= {};
-
     my $req = {
         %generic_req, %$metadata,
         req_id            => ++$req_id,
@@ -389,7 +409,6 @@ sub request_upload {
 
     ok $upload_id, 'Returns upload_id';
     ok $call_type, 'Returns call_type';
-
     return (
         call_type => $call_type,
         upload_id => $upload_id,
