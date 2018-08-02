@@ -22,6 +22,20 @@ use Email::Stuffer::TestLinks;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 my $json = JSON::MaybeXS->new;
+
+my $manager_module = Test::MockModule->new('BOM::MT5::User::Async');
+$manager_module->mock(
+    'deposit',
+    sub {
+        return Future->done({success => 1});
+    });
+
+$manager_module->mock(
+    'withdrawal',
+    sub {
+        return Future->done({success => 1});
+    });
+
 # Mocked account details
 # This hash shared between three files, and should be kept in-sync to avoid test failures
 #   t/BOM/RPC/30_mt5.t

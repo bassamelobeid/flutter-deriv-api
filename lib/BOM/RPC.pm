@@ -53,9 +53,15 @@ my $json = JSON::MaybeXS->new;
 # This has a side-effect of setting the IO::Async::Loop singleton.
 # Once we drop Mojolicious, this line can be removed.
 my $loop = IO::Async::Loop::Mojo->new;
-die 'Unexpected event loop class: had ' . ref($loop) . ', expected a subclass of IO::Async::Loop::Mojo'
-    unless $loop->isa('IO::Async::Loop::Mojo')
-    and IO::Async::Loop->new->isa('IO::Async::Loop::Mojo');
+{
+    my $loop_check = IO::Async::Loop->new;
+    die 'Unexpected event loop class: had '
+        . ref($loop) . ' and '
+        . ref($loop_check)
+        . ' from magic constructor for IO::Async, expected a subclass of IO::Async::Loop::Mojo'
+        unless $loop->isa('IO::Async::Loop::Mojo')
+        and $loop_check->isa('IO::Async::Loop::Mojo');
+}
 
 sub apply_usergroup {
     my ($cf, $log) = @_;

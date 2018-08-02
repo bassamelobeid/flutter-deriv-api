@@ -1192,6 +1192,9 @@ async_rpc mt5_withdrawal => sub {
         @{$args}{qw/from_mt5 to_binary amount/};
 
     my $error_code = 'MT5WithdrawalError';
+
+    return _make_error($error_code, localize('MT5 account is locked'), 'MT5 account is locked') if $client->status->get('mt5_withdrawal_locked');
+
     return _mt5_validate_and_get_amount($client, $to_loginid, $fm_mt5, $amount, $error_code)->then(
         sub {
             my ($response) = @_;
@@ -1219,7 +1222,7 @@ async_rpc mt5_withdrawal => sub {
             # withdraw from MT5 a/c
             return BOM::MT5::User::Async::withdrawal({
                     login   => $fm_mt5,
-                    amount  => $amount,
+                    amount  => $amount < 0 ? $amount : $amount * -1,    #MT5 expect this value to be negative.
                     comment => $comment
                 }
                 )->then(
@@ -1227,6 +1230,15 @@ async_rpc mt5_withdrawal => sub {
                     my ($status) = @_;
 
                     if ($status->{error}) {
+                        # check for insufficient funds specific error codes.
+                        $status->{error} = 'Insufficient funds' if ($status->{error_code} == 3100);
+                        if ($status->{error_code} == 3101) {
+                            # we should lock MT5 withdrawal now
+                            $client->status->set('mt5_withdrawal_locked', 'system', 'balance mismatch while withdrawing');
+                            $client->save;
+                            $status->{error} = 'Insufficient funds';
+                            _notify_for_locked_mt5($client, $fm_mt5);
+                        }
                         return _make_error($error_code, $status->{error});
                     }
 
@@ -1551,6 +1563,27 @@ sub _mt5_has_open_positions {
 
             return Future->done($response->{total} ? 1 : 0);
         });
+}
+
+sub _notify_for_locked_mt5 {
+    my ($client, $mt5_login) = @_;
+    my $brand = Brands->new(name => request()->brand);
+    my $msg = "${\$client->loginid} MT5 Account MT$mt5_login is locked, balance is below 0.";
+
+    try {
+        send_email({
+            from                  => $brand->emails('system'),
+            to                    => $brand->emails('support'),
+            subject               => 'MT5 Withdrawal Locked',
+            message               => [$msg],
+            use_email_template    => 0,
+            email_content_is_html => 0,
+        });
+    }
+    catch {
+        warn "Failed to notify cs team about MT5 locked account MT$mt5_login";
+    };
+    return 1;
 }
 
 1;
