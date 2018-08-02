@@ -640,6 +640,11 @@ sub get_untrusted_types {
             'code'     => 'withdrawal_locked'
         },
         {
+            'linktype' => 'lockmt5withdrawal',
+            'comments' => 'MT5 Withdrawal Locked',
+            'code'     => 'mt5_withdrawal_locked'
+        },
+        {
             'linktype' => 'jpactivationpending',
             'comments' => 'jp activation pending',
             'code'     => 'jp_activation_pending'
