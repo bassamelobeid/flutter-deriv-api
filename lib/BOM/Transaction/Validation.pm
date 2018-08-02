@@ -10,7 +10,7 @@ use YAML::XS qw(LoadFile);
 use JSON::MaybeXS;
 
 use Format::Util::Numbers qw/formatnumber/;
-use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
+use ExchangeRates::CurrencyConverter qw(convert_currency);
 use BOM::Database::Helper::RejectedTrade;
 use BOM::Platform::Context qw(localize request);
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
@@ -514,11 +514,11 @@ sub _validate_iom_withdrawal_limit {
         start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * $numdays),
         exclude    => ['currency_conversion_transfer'],
     });
-    $withdrawal_in_days = formatnumber('amount', 'EUR', amount_from_to_currency($withdrawal_in_days, $client->currency, 'EUR'));
+    $withdrawal_in_days = formatnumber('amount', 'EUR', convert_currency($withdrawal_in_days, $client->currency, 'EUR'));
 
     # withdrawal since inception
     my $withdrawal_since_inception = $payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer']});
-    $withdrawal_since_inception = formatnumber('amount', 'EUR', amount_from_to_currency($withdrawal_since_inception, $client->currency, 'EUR'));
+    $withdrawal_since_inception = formatnumber('amount', 'EUR', convert_currency($withdrawal_since_inception, $client->currency, 'EUR'));
 
     my $remaining_withdrawal_eur =
         formatnumber('amount', 'EUR', min(($numdayslimit - $withdrawal_in_days), ($lifetimelimit - $withdrawal_since_inception)));

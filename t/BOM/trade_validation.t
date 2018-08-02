@@ -19,6 +19,7 @@ use BOM::Transaction;
 use BOM::Transaction::Validation;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 use Math::Util::CalculatedValue::Validatable;
 use BOM::Config;
 
@@ -82,10 +83,7 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
 });
 
-$underlying->set_combined_realtime({
-    epoch => $now->epoch,
-    quote => '97.14'
-});
+populate_exchange_rates();
 
 my $contract = produce_contract({
     underlying  => $underlying,
