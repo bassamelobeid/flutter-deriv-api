@@ -2,16 +2,18 @@ package BOM::MT5::User::Async;
 
 use strict;
 use warnings;
-
 no indirect;
+
 use JSON;
 use IPC::Run3;
 use Try::Tiny;
+use BOM::MT5::User::Manager;
 
 use IO::Async::Loop;
-
 # Overrideable in unit tests
 our @MT5_WRAPPER_COMMAND = ('php', '/home/git/regentmarkets/php-mt5-webapi/lib/binary_mt5.php');
+
+my $manager;
 
 my @common_fields = qw(
     email
@@ -85,6 +87,12 @@ sub _invoke_mt5 {
     );
 
     return $f;
+}
+
+sub _mt5_manager {
+    return $manager if defined $manager;
+    IO::Async::Loop->new->add($manager = BOM::MT5::User::Manager->new);
+    return $manager;
 }
 
 sub create_user {
@@ -212,47 +220,49 @@ sub password_change {
 }
 
 sub deposit {
-    my $args  = shift;
-    my $param = {
-        login       => $args->{login},
-        new_deposit => $args->{amount},
-        comment     => $args->{comment},
-        type        => '2'                 # enum DEAL_BALANCE = 2
-    };
-
-    return _invoke_mt5('UserDepositChange', $param)->then(
+    my $args = shift;
+    return _mt5_manager->adjust_balance($args->{login}, $args->{amount}, $args->{comment})->then(
         sub {
             my ($hash) = @_;
 
-            if ($hash->{error}) {
-                return Future->done({error => $hash->{error}});
+            if ($hash->{success}) {
+                return Future->done({status => 1});
             }
 
-            return Future->done({status => 1});
+            return Future->done($hash);
+        }
+        )->catch(
+        sub {
+            return Future->done({    # usually it should be fail but since RPC interface right now work like this...
+                error      => 'timeout',
+                error_code => 1,
+            });
         });
 }
 
 sub withdrawal {
     my $args   = shift;
     my $amount = $args->{amount};
-    $amount = -$amount if ($amount > 0);
-
-    my $param = {
-        login       => $args->{login},
-        new_deposit => $amount,
-        comment     => $args->{comment},
-        type        => '2'                 # enum DEAL_BALANCE = 2
-    };
-
-    return _invoke_mt5('UserDepositChange', $param)->then(
+    if ($amount >= 0) {
+        warn "Amount should be < 0";
+        return Future->done({error => 'internal error'});
+    }
+    return _mt5_manager->adjust_balance($args->{login}, $amount, $args->{comment})->then(
         sub {
             my ($hash) = @_;
 
-            if ($hash->{error}) {
-                return Future->done({error => $hash->{error}});
+            if ($hash->{success}) {
+                return Future->done({status => 1});
             }
 
-            return Future->done({status => 1});
+            return Future->done($hash);
+        }
+        )->catch(
+        sub {
+            return Future->done({    # usually it should be fail but since RPC interface right now work like this...
+                error      => 'timeout',
+                error_code => 0
+            });
         });
 }
 
