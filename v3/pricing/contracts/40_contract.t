@@ -257,6 +257,22 @@ $res         = $t->await::buy({
 });
 is $res->{buy}->{buy_price}, '1.00';
 
+$contractParameters{duration} = 100000000;
+$res = $t->await::buy({
+    buy        => 1,
+    price      => 0,
+    parameters => \%contractParameters,
+});
+is $res->{error}->{code}, 'InputValidationFailed', 'Schema validation fails with huge duration';
+
+$contractParameters{duration} = -10;
+$res = $t->await::buy({
+    buy        => 1,
+    price      => 0,
+    parameters => \%contractParameters,
+});
+is $res->{error}->{code}, 'InputValidationFailed', 'Schema validation fails with negative duration';
+
 $t->finish_ok;
 
 done_testing();

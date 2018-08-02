@@ -48,4 +48,13 @@ $req->{amount} = "+100";
 $res = $t->await::proposal($req);
 is $res->{error}->{code}, 'InputValidationFailed', 'Correct failed due to + sign in number, not allowed as per json schema';
 
+$req->{amount} = "100";
+$req->{duration} = "100000000";
+$res = $t->await::proposal($req);
+is $res->{error}->{code}, 'InputValidationFailed', 'Schema validation fails with huge duration';
+
+$req->{duration} = "-10";
+$res = $t->await::proposal($req);
+is $res->{error}->{code}, 'InputValidationFailed', 'Schema validation fails with negative duration';
+
 done_testing;

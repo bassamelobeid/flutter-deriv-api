@@ -65,16 +65,18 @@ is $authorize->{authorize}{loginid}, $loginid, 'login result: loginid';
 
 my ($price, $proposal_id);
 
+my %contractParameters = (
+    "amount"        => "5",
+    "basis"         => "payout",
+    "contract_type" => "CALL",
+    "currency"      => "USD",
+    "symbol"        => "R_50",
+    "duration"      => "2",
+    "duration_unit" => "m",
+);
+
 sub get_proposal {
-    my %contractParameters = (
-        "amount"        => "5",
-        "basis"         => "payout",
-        "contract_type" => "CALL",
-        "currency"      => "USD",
-        "symbol"        => "R_50",
-        "duration"      => "2",
-        "duration_unit" => "m",
-    );
+
     my $proposal = $t->await::proposal({
         proposal  => 1,
         subscribe => 1,
@@ -249,6 +251,28 @@ subtest "sell_contract_for_multiple_accounts => successful", sub {
         ok(defined $r->{reference_id} && defined $trx_ids->{$r->{reference_id}}, "Check transaction ID");
     }
     test_schema('sell_contract_for_multiple_accounts', $res);
+};
+
+subtest "invalid durations", sub {
+    
+    $contractParameters{duration} = 100000000;
+    $res = $t->await::buy_contract_for_multiple_accounts({
+        buy_contract_for_multiple_accounts => 1,
+        price                              => 0,
+        tokens                             => \@tokens,
+        parameters => \%contractParameters
+    });
+    is $res->{error}->{code}, 'InputValidationFailed', 'Schema validation fails with huge duration';    
+
+    $contractParameters{duration} = -1;
+    $res = $t->await::buy_contract_for_multiple_accounts({
+        buy_contract_for_multiple_accounts => 1,
+        price                              => 0,
+        tokens                             => \@tokens,
+        parameters => \%contractParameters
+    });
+    is $res->{error}->{code}, 'InputValidationFailed', 'Schema validation fails with negative duration'; 
+    
 };
 
 $t->finish_ok;

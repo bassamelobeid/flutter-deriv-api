@@ -258,8 +258,28 @@ SKIP: {
         $response = $t->await::forget_all({forget_all => "proposal_array"});
         is($c->pricing_subscriptions()->{$channel}, undef, "Forgotten");
     };
+    
+    subtest 'using durations' => sub {
+        delete $proposal_array_req_tpl->{date_expiry};
+        
+        $proposal_array_req_tpl->{duration} = 1;
+        $proposal_array_req_tpl->{duration_unit} = 'd';
+        $response = $t->await::proposal_array($proposal_array_req_tpl);
+        test_schema('proposal_array', $response);
+        
+        $proposal_array_req_tpl->{duration} = 100000000;
+        $response = $t->await::proposal_array($proposal_array_req_tpl);
+        is $response->{error}->{code}, 'InputValidationFailed', 'Schema validation fails with huge duration';    
+
+        $proposal_array_req_tpl->{duration} = -10;
+        $response = $t->await::proposal_array($proposal_array_req_tpl);
+        is $response->{error}->{code}, 'InputValidationFailed', 'Schema validation fails with huge duration';  
+    };
 }
 
+
+#use Data::Dumper;
+#print Dumper $proposal_array_req_tpl;
 $t->finish_ok;
 
 done_testing();
