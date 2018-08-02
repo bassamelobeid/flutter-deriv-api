@@ -17,7 +17,8 @@ use strict;
 use warnings;
 
 use BOM::Config;
-use Postgres::FeedDB::CurrencyConverter qw(in_USD);
+use ExchangeRates::CurrencyConverter qw(in_usd);
+
 use LandingCompany::Registry;
 use Format::Util::Numbers qw/financialrounding/;
 
@@ -62,7 +63,7 @@ has _usd_rates => (
 );
 
 sub _build__usd_rates {
-    return {map { $_ => in_USD(1, $_) } grep { $_ ne 'ETC' } LandingCompany::Registry->new()->all_currencies};
+    return {map { $_ => in_usd(1, $_) } grep { $_ ne 'ETC' } LandingCompany::Registry->new()->all_currencies};
 }
 
 sub amount_in_usd {

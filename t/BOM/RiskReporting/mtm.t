@@ -14,8 +14,8 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 use Date::Utility;
-use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::RiskReporting::MarkedToModel;
 use BOM::Config::Runtime;
@@ -47,35 +47,8 @@ my %date_string = (
 
 initialize_realtime_ticks_db();
 
-create_underlying('frxBTCUSD')->set_combined_realtime({
-    epoch => time,
-    quote => 100
-});
-
-create_underlying('frxBCHUSD')->set_combined_realtime({
-    epoch => time,
-    quote => 100
-});
-
-create_underlying('frxLTCUSD')->set_combined_realtime({
-    epoch => time,
-    quote => 100
-});
-
-create_underlying('frxETHUSD')->set_combined_realtime({
-    epoch => time,
-    quote => 100
-});
-
-create_underlying('frxETCUSD')->set_combined_realtime({
-    epoch => time,
-    quote => 100
-});
-
-create_underlying('frxDAIUSD')->set_combined_realtime({
-    epoch => time,
-    quote => 100
-});
+my %rates = map { $_ => 100 } ('BCH', 'EUR', 'BTC', 'GBP', 'LTC', 'ETH', 'AUD', 'JPY', 'DAI');
+populate_exchange_rates(\%rates);
 
 foreach my $symbol (keys %date_string) {
     my @dates = @{$date_string{$symbol}};

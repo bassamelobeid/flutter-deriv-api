@@ -9,7 +9,7 @@ use JSON::MaybeXS;
 use HTML::Entities;
 use List::UtilsBy qw(rev_nsort_by sort_by);
 use POSIX ();
-use Postgres::FeedDB::CurrencyConverter qw(in_USD);
+use ExchangeRates::CurrencyConverter qw(in_usd);
 use YAML::XS;
 use Math::BigFloat;
 use Math::BigInt;
@@ -112,7 +112,7 @@ my $rpc_client_builders = {
 my $rpc_client = ($rpc_client_builders->{$currency} // code_exit_BO("no RPC client found for currency " . $currency))->();
 # Exchange rate should be populated according to supported cryptocurrencies.
 
-my $exchange_rate = eval { in_USD(1.0, $currency) } or code_exit_BO("no exchange rate found for currency " . $currency . ". Please contact IT.")->();
+my $exchange_rate = eval { in_usd(1.0, $currency) } or code_exit_BO("no exchange rate found for currency " . $currency . ". Please contact IT.")->();
 
 my $display_transactions = sub {
     my $trxns = shift;
@@ -173,7 +173,7 @@ if ($view_action eq 'withdrawals') {
         code_exit_BO("Please enter a remark explaining reason for rejection") if ($action eq 'Reject' && $set_remark eq '');
 
         # Check payment limit
-        my $over_limit = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($staff, in_USD($amount, $currency));
+        my $over_limit = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($staff, in_usd($amount, $currency));
         code_exit_BO($over_limit->get_mesg()) if $over_limit;
 
         my $error;
@@ -401,9 +401,10 @@ EOF
         print '<tr>';
         print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(loginid type)};
         print '<td><a href="' . $address_uri . $_ . '" target="_blank">' . encode_entities($_) . '</a></td>' for $db_tran->{address};
+
         my $bmul = $db_tran->type eq "withdrawal" ? -1 : 1;
         my $amount = formatnumber('amount', $currency, financialrounding('price', $currency, ($db_tran->{amount} // 0) * $bmul));
-        my $usd_amount = formatnumber('amount', 'USD', financialrounding('price', 'USD', in_USD(($db_tran->{amount} // 0) * $bmul, $currency)));
+        my $usd_amount = formatnumber('amount', 'USD', financialrounding('price', 'USD', in_usd(($db_tran->{amount} // 0) * $bmul, $currency)));
         my $fee = formatnumber('amount', $currency, financialrounding('price', $currency, ($db_tran->{fee} // 0) * $bmul));
 
         if (defined $db_tran->{amount}) {

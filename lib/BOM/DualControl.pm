@@ -23,7 +23,7 @@ use Error::Base;
 use Cache::RedisDB;
 use Crypt::NamedKeys;
 
-use Postgres::FeedDB::CurrencyConverter qw(in_USD);
+use ExchangeRates::CurrencyConverter qw(in_usd);
 
 use BOM::Config;
 use BOM::Backoffice::Script::ValidateStaffPaymentLimit;
@@ -132,7 +132,7 @@ sub validate_payment_control_code {
     return $error_status if $error_status;
     $error_status = $self->_validate_payment_amount($code, $amount);
     return $error_status if $error_status;
-    $error_status = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($self->staff, in_USD($amount, $currency));
+    $error_status = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($self->staff, in_usd($amount, $currency));
     return $error_status if $error_status;
     $error_status = $self->_validate_payment_code_already_used($incode);
     return $error_status if $error_status;

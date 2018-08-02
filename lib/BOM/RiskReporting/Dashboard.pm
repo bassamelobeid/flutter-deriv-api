@@ -38,7 +38,7 @@ use BOM::Backoffice::Request;
 use List::MoreUtils qw(uniq);
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::Contract::PredefinedParameters;
-use Postgres::FeedDB::CurrencyConverter qw(in_USD);
+use ExchangeRates::CurrencyConverter qw(in_usd);
 use BOM::MarketData qw(create_underlying);
 my $json = JSON::MaybeXS->new;
 
@@ -408,7 +408,7 @@ sub multibarrierreport {
             map { $_->{barrier} } sort { $a->{diff} <=> $b->{diff} } map { {barrier => $_, diff => abs($spot - $_)} } @available_barrier;
         my $spot_index = $reindex_barrier_list{$closest_barrier_to_spot};
         $multibarrier->{$contract->date_expiry->datetime}->{$contract->bet_type}->{barrier}->{$barrier_index}->{$contract->underlying->symbol} +=
-            financialrounding('price', 'USD', in_USD($open_contract->{payout_price}, $open_contract->{currency_code}));
+            financialrounding('price', 'USD', in_usd($open_contract->{payout_price}, $open_contract->{currency_code}));
         push @{$symbol->{$contract->date_expiry->datetime}}, $contract->underlying->symbol;
 
         $multibarrier->{$contract->date_expiry->datetime}->{spot}->{$contract->underlying->symbol} = $spot_index;
@@ -461,8 +461,9 @@ sub open_contract_exposures {
             $broker = $1;
         }
         my $contract = produce_contract($open_contract->{short_code}, $open_contract->{currency_code});
-        my $purchase_price = financialrounding('price', 'USD', in_USD($open_contract->{buy_price},    $open_contract->{currency_code}));
-        my $payout_price   = financialrounding('price', 'USD', in_USD($open_contract->{payout_price}, $open_contract->{currency_code}));
+
+        my $purchase_price = financialrounding('price', 'USD', in_usd($open_contract->{buy_price},    $open_contract->{currency_code}));
+        my $payout_price   = financialrounding('price', 'USD', in_usd($open_contract->{payout_price}, $open_contract->{currency_code}));
         my $expiry_type = $contract->is_intraday  ? 'intraday' : 'daily';
         my $category    = ($contract->is_atm_bet) ? 'atm'      : 'non_atm';
 

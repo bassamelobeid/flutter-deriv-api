@@ -39,7 +39,7 @@ use BOM::Database::Model::Constants;
 use DataDog::DogStatsd::Helper qw (stats_inc stats_timing stats_count);
 use BOM::User::Client;
 use BOM::Backoffice::Request;
-use Postgres::FeedDB::CurrencyConverter qw (in_USD);
+use ExchangeRates::CurrencyConverter qw (in_usd);
 use BOM::Transaction;
 
 # This report will only be run on the MLS.

@@ -8,7 +8,7 @@ use Guard;
 use BOM::Backoffice::Sysinit ();
 use f_brokerincludeall;
 use BOM::Database::ClientDB;
-use Postgres::FeedDB::CurrencyConverter qw(in_USD);
+use ExchangeRates::CurrencyConverter qw(in_usd);
 use BOM::Transaction;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 
@@ -80,7 +80,7 @@ foreach my $loginID (split(/,/, $listaccounts)) {
     } else {
         print "<br>[Simulate] $encoded_loginID ($encoded_name $encoded_email) <b>$encoded_curr$balance</b>";
     }
-    $grandtotal += in_USD($balance, $curr);
+    $grandtotal += in_usd($balance, $curr);
 }
 
 print "<hr>Grand total recovered (converted to USD): USD $grandtotal<P>";
