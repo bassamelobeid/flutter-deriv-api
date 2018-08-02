@@ -59,7 +59,7 @@ sub start_document_upload {
         return create_upload_error();
     };
 
-    return return {
+    return {
         file_name => $upload_info->{file_name},
         file_id   => $upload_info->{file_id},
         call_type => 1,
