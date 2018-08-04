@@ -83,10 +83,8 @@ subtest 'prepare_ask' => sub {
         "symbol"        => "R_50",
         "duration"      => "15",
         "duration_unit" => "m",
-        'barrier'       => 'S0P',
     };
     my $expected = {
-        'barrier'     => 'S0P',
         'subscribe'   => 1,
         'duration'    => '15m',
         'multiplier'  => '5',
@@ -102,7 +100,6 @@ subtest 'prepare_ask' => sub {
     $params = {
         %$params,
         date_expiry => '2015-01-01',
-        barrier     => 'S20P',
     };
     $expected = {
         %$expected,
@@ -110,7 +107,6 @@ subtest 'prepare_ask' => sub {
         date_expiry   => '2015-01-01',
         duration_unit => 'm',
         duration      => '15',
-        barrier       => 'S20P',
     };
     delete $expected->{barrier};
 
@@ -286,7 +282,6 @@ subtest 'get_ask' => sub {
         'payout'              => '0',
         'contract_parameters' => {
             'deep_otm_threshold'             => '0.025',
-            'barrier'                        => 'S0P',
             'duration'                       => '15m',
             'bet_type'                       => 'LBFLOATCALL',
             'underlying'                     => 'R_50',
@@ -376,7 +371,6 @@ sub _create_contract {
         amount_type           => 'multiplier',
         date_start            => $args{date_start} // $date_start,
         date_expiry           => $args{date_expiry} // $date_expiry,
-        barrier               => $args{barrier} // 'S20P',
         app_markup_percentage => $args{app_markup_percentage} // 0,
 
         # this is not what we want to test here.
