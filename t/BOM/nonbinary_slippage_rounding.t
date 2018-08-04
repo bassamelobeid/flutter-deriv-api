@@ -383,7 +383,6 @@ subtest 'test slippage', sub {
             multiplier   => 1.499,
             duration     => '30m',
             current_tick => $tick,
-            barrier      => 'S0P',
             amount_type  => 'multiplier',
         });
 

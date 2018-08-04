@@ -390,7 +390,6 @@ subtest 'buy a bet', sub {
             multiplier   => 5.0,
             duration     => '30m',
             current_tick => $tick,
-            barrier      => 'S20P',
             amount_type  => 'multiplier',
         });
 
@@ -511,7 +510,6 @@ subtest 'sell a bet', sub {
             current_tick => $tick,
             entry_tick   => $tick,
             exit_tick    => $tick,
-            barrier      => 'S0P',
         });
         my $txn;
         #note 'bid price: ' . $contract->bid_price;
