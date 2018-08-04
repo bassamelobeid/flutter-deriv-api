@@ -79,7 +79,7 @@ sub produce_contract {
     my $params_ref = {%{_args_to_ref($build_arg, $maybe_currency, $maybe_sold)}};
 
     _validate_contract_specific_parameters($params_ref)
-        if (not $params_ref->{for_sale} and $params_ref->{bet_type} and $params_ref->{bet_type} =~ /^(TICKHIGH|TICKLOW)/);
+        if (not $params_ref->{for_sale});
 
     unless ($params_ref->{processed}) {
         # Categorizer's process always returns ARRAYREF, and here we will have and need only one element in this array
@@ -165,11 +165,13 @@ sub _validate_contract_specific_parameters {
 
     my $product_name = $params->{bet_type};    # TICKHIGH or TICKLOW
 
-    my $product_class = "BOM::Product::Contract::" . ucfirst lc $product_name;
+    my $product_class;
+    $product_class = "BOM::Product::Contract::" . ucfirst lc $product_name if defined $product_name;
 
-    my $allowed_inputs = $product_class->get_permissible_inputs();
-
-    BOM::Product::Contract->validate_inputs($params, $allowed_inputs);
+    if ($product_class and $product_class->can('get_impermissible_inputs')) {
+        my $impermissible_inputs = $product_class->get_impermissible_inputs();
+        BOM::Product::Contract->validate_inputs($params, $impermissible_inputs);
+    }
 
     return undef;
 }

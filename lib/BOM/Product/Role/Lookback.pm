@@ -208,4 +208,12 @@ override allowed_amount_type => sub {
     };
 };
 
+sub get_impermissible_inputs {
+    return {
+        # Contract-irrelevant inputs
+        'barrier'  => 1,
+        'barrier2' => 1,
+    };
+}
+
 1;

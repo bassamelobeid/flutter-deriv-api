@@ -1197,12 +1197,12 @@ sub _build_priced_with_intraday_model {
 
 # Subroutine to validate that keys are valid
 sub validate_inputs {
-    my ($self, $inputs, $valid_inputs) = @_;
+    my ($self, $inputs, $invalid_inputs) = @_;
 
     foreach my $param (keys %$inputs) {
         return BOM::Product::Exception->throw(
             error_code => 'InvalidInput',
-            error_args => [$param, $inputs->{bet_type}]) unless exists $valid_inputs->{$param};
+            error_args => [$param, $inputs->{bet_type}]) if exists $invalid_inputs->{$param};
     }
 
     return undef;

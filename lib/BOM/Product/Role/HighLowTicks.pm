@@ -94,4 +94,12 @@ override shortcode => sub {
         ($self->code, $self->underlying->symbol, $self->payout + 0, $self->date_start->epoch, $self->tick_count . 't', $self->selected_tick);
 };
 
+sub get_impermissible_inputs {
+    return {
+        # Contract-irrelevant inputs
+        'barrier'  => 1,
+        'barrier2' => 1,
+    };
+}
+
 1;
