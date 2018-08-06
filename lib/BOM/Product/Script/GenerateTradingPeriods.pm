@@ -8,8 +8,9 @@ use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods nex
 use BOM::Config::Runtime;
 use Time::HiRes qw(clock_nanosleep TIMER_ABSTIME CLOCK_REALTIME);
 use Date::Utility;
+use POSIX qw(ceil);
 use List::Util qw(max min);
-use Scalar::Util qw(looks_like_number);
+use Sys::Info;
 use Parallel::ForkManager;
 use Quant::Framework;
 use BOM::Config::Chronicle;
@@ -29,11 +30,9 @@ sub run {
     my @selected_symbols = $offerings_obj->values_for_key('underlying_symbol');
     my $chronicle_writer = BOM::Config::Chronicle::get_chronicle_writer();
     my $finder           = BOM::Product::ContractFinder->new;
-    my $cpu_info         = `/usr/bin/env nproc`;
-    chomp $cpu_info;
-    $cpu_info = looks_like_number($cpu_info) ? $cpu_info / 2 : 4;    # we should have 4 cores?
-    my $processes = min($cpu_info, scalar @selected_symbols);
-    my $fm = Parallel::ForkManager->new($processes);
+    my $cpu_count        = Sys::Info->new->device("CPU")->count || 4;
+    my $processes        = min(ceil($cpu_count / 2), 0 + @selected_symbols);
+    my $fm               = Parallel::ForkManager->new($processes);
 
     $fm->run_on_start(
         sub {
