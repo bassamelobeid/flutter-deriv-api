@@ -97,7 +97,7 @@ sub run {
     local $SIG{TERM} = $SIG{INT};
 
     foreach my $cf (_master_db_connections()) {
-        say "$$: setting up config @$cf";
+        say "$$: setting up config $cf->[0]";
         my $pid;
         # yes, this `select` emulates `sleep`. But the built-in `sleep` can only
         # sleep for entire seconds. There is no point in loading an external module
