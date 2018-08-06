@@ -8,6 +8,9 @@ PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
 test: $(TESTS)
 
+unit_test_syntax:
+	@$(PROVE) -r t/syntax/
+
 unit_test_initial:
 	@$(PROVE) t/01_check_file_hash.t
 

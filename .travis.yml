@@ -6,33 +6,72 @@ perl:
     - "5.14.2-thr"
 matrix:
     fast_finish: true
-env:
-    - TEST_SUITE=unit_test_initial
-    - TEST_SUITE=unit_test_product_contract
-    - TEST_SUITE=unit_test_product_contract_extended
-    - TEST_SUITE=unit_test_product_all
-    - TEST_SUITE=unit_test_validation
-    - TEST_SUITE=unit_test_pricing
-    - TEST_SUITE=unit_test_intraday
-    - TEST_SUITE=merlin_benchmark
-    - TEST_SUITE=SDFX_benchmark_major
-    - TEST_SUITE=SDFX_benchmark_minor
-    - TEST_SUITE=SDEQ_benchmark_DJI
-    - TEST_SUITE=SDEQ_benchmark_FCHI
-    - TEST_SUITE=SDEQ_benchmark_SPC
-    - TEST_SUITE=SDEQ_benchmark_N225
-    - TEST_SUITE=SDEQ_benchmark_SSECOMP
-    - TEST_SUITE=SDEQ_benchmark_FTSE
-    - TEST_SUITE=OVRA_benchmark
-    - TEST_SUITE=perl-Pricing-Engine-European-Digital-Slope
-    - TEST_SUITE=perl-Pricing-Engine-BlackScholes
-    - TEST_SUITE=perl-Pricing-Engine-Digits
-    - TEST_SUITE=perl-Pricing-Engine-HighLow-Ticks
-    - TEST_SUITE=perl-Pricing-Engine-Intraday-Forex-Base
-    - TEST_SUITE=perl-Pricing-Engine-Lookback
-    - TEST_SUITE=perl-Pricing-Engine-Markup
-    - TEST_SUITE=perl-Pricing-Engine-Reset
-    - TEST_SUITE=perl-Pricing-Engine-TickExpiry
+jobs:
+    include:
+        - stage: syntax
+          script: make unit_test_syntax
+        - stage: pricing
+          name: unit_test_initial
+          script: make unit_test_initial
+        - name: unit_test_product_contract
+          script: make unit_test_product_contract
+        - name: unit_test_product_contract_extended
+          script: make unit_test_product_contract_extended
+        - name: unit_test_product_all
+          script: make unit_test_product_all
+        - name: unit_test_validation
+          script: make unit_test_validation
+        - name: unit_test_pricing
+          script: make unit_test_pricing
+        - name: unit_test_intraday
+          script: make unit_test_intraday
+        - stage: merlin
+          name: merlin_benchmark
+          script: cd /home/git/regentmarkets/bom-quant-benchmark && make merlin_benchmark
+        - name: SDFX_benchmark_major
+          script: cd /home/git/regentmarkets/bom-quant-benchmark && make SDFX_benchmark_major
+        - name: SDFX_benchmark_minor
+          script: cd /home/git/regentmarkets/bom-quant-benchmark && make SDFX_benchmark_minor
+        - name: SDEQ_benchmark_DJI
+          script: cd /home/git/regentmarkets/bom-quant-benchmark && make SDEQ_benchmark_DJI
+        - name: SDEQ_benchmark_FCHI
+          script: cd /home/git/regentmarkets/bom-quant-benchmark && make SDEQ_benchmark_FCHI
+        - name: SDEQ_benchmark_SPC
+          script: cd /home/git/regentmarkets/bom-quant-benchmark && make SDEQ_benchmark_SPC
+        - name: SDEQ_benchmark_N225
+          script: cd /home/git/regentmarkets/bom-quant-benchmark && make SDEQ_benchmark_N225
+        - name: SDEQ_benchmark_SSECOMP
+          script: cd /home/git/regentmarkets/bom-quant-benchmark && make SDEQ_benchmark_SSECOMP
+        - name: SDEQ_benchmark_FTSE
+          script: cd /home/git/regentmarkets/bom-quant-benchmark && make SDEQ_benchmark_FTSE
+        - name: OVRA_benchmark
+          script: cd /home/git/regentmarkets/bom-quant-benchmark && make OVRA_benchmark
+        - stage: engines
+          name: perl-Pricing-Engine-European-Digital-Slope
+          script: cd /home/git/regentmarkets/perl-Pricing-Engine-European-Digital-Slope && make test
+        - name: perl-Pricing-Engine-BlackScholes
+          script: cd /home/git/regentmarkets/perl-Pricing-Engine-BlackScholes && make test
+        - name: perl-Pricing-Engine-Digits
+          script: cd /home/git/regentmarkets/perl-Pricing-Engine-Digits && make test
+        - name: perl-Pricing-Engine-HighLow-Ticks
+          script: cd /home/git/regentmarkets/perl-Pricing-Engine-HighLow-Ticks && make test
+        - name: perl-Pricing-Engine-Intraday-Forex-Base
+          script: cd /home/git/regentmarkets/perl-Pricing-Engine-Intraday-Forex-Base && make test
+        - name: perl-Pricing-Engine-Lookback
+          script: cd /home/git/regentmarkets/perl-Pricing-Engine-Lookback && make test
+        - name: perl-Pricing-Engine-Markup
+          script: cd /home/git/regentmarkets/perl-Pricing-Engine-Markup && make test
+        - name: perl-Pricing-Engine-Reset
+          script: cd /home/git/regentmarkets/perl-Pricing-Engine-Reset && make test
+        - name: perl-Pricing-Engine-TickExpiry
+          script: cd /home/git/regentmarkets/perl-Pricing-Engine-TickExpiry && make test
+
+stages:
+    - syntax
+    - pricing
+    - name: merlin
+      if: not type in (pull_request)
+    - engines
 
 notifications:
     slack:
@@ -86,10 +125,6 @@ install:
 
     - /tmp/travis-scripts/setup_logs.sh
     - . /tmp/travis-scripts/setup_perl5lib.sh
-
-script:
-    - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
-    - if [[ $TEST_SUITE == *"benchmark"* ]]; then ( cd /home/git/regentmarkets/bom-quant-benchmark && make $TEST_SUITE ); elif [[ $TEST_SUITE == *"Engine"* ]]; then (cd /home/git/regentmarkets/$TEST_SUITE && make test); else make $TEST_SUITE; fi
 
 after_script:
     - /tmp/travis-scripts/wait_for_ssh.sh
