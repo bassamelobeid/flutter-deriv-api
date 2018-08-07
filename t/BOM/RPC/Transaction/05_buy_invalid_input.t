@@ -68,8 +68,7 @@ subtest 'buy with invalid duration using contract_parameters' => sub {
 };
 
 subtest 'get proposal with invalid days duration' => sub {
-    my $ask_params = {
-        args      => $params->{contract_parameters}};
+    my $ask_params = {args => $params->{contract_parameters}};
 
     $c->call_ok('send_ask', $ask_params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError', 'correct error code');
 };
@@ -93,8 +92,7 @@ subtest 'buy_contract_for_multiple_accounts with invalid days duration' => sub {
 $params->{contract_parameters}{duration_unit} = 'h';
 
 subtest 'get proposal with invalid hours duration' => sub {
-    my $ask_params = {
-        args      => $params->{contract_parameters}};
+    my $ask_params = {args => $params->{contract_parameters}};
 
     $c->call_ok('send_ask', $ask_params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError', 'correct error code');
 };
@@ -110,8 +108,7 @@ subtest 'buy with invalid hours duration' => sub {
 $params->{contract_parameters}{duration_unit} = 'm';
 
 subtest 'get proposal with invalid minutes duration' => sub {
-    my $ask_params = {
-        args      => $params->{contract_parameters}};
+    my $ask_params = {args => $params->{contract_parameters}};
 
     $c->call_ok('send_ask', $ask_params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError', 'correct error code');
 };
@@ -127,8 +124,7 @@ subtest 'buy with invalid minutes duration' => sub {
 $params->{contract_parameters}{duration_unit} = 's';
 
 subtest 'get proposal with invalid seconds duration' => sub {
-    my $ask_params = {
-        args      => $params->{contract_parameters}};
+    my $ask_params = {args => $params->{contract_parameters}};
 
     $c->call_ok('send_ask', $ask_params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError');
 };
@@ -144,8 +140,7 @@ subtest 'buy with invalid seconds duration' => sub {
 $params->{contract_parameters}{duration_unit} = 't';
 
 subtest 'get proposal with invalid ticks duration' => sub {
-    my $ask_params = {
-        args      => $params->{contract_parameters}};
+    my $ask_params = {args => $params->{contract_parameters}};
 
     $c->call_ok('send_ask', $ask_params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError', 'correct error code');
 };
@@ -166,8 +161,7 @@ subtest 'buy with invalid expiry date' => sub {
 };
 
 subtest 'get proposal with invalid expiry date' => sub {
-    my $ask_params = {
-        args      => $params->{contract_parameters}};
+    my $ask_params = {args => $params->{contract_parameters}};
 
     $c->call_ok('send_ask', $ask_params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError', 'correct error code');
 };

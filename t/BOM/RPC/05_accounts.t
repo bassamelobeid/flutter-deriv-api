@@ -139,13 +139,16 @@ $test_client_vr_2->save;
 my $email_mlt_mf    = 'mltmf@binary.com';
 my $test_client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MLT',
+    residence   => 'at',
 });
 $test_client_mlt->email($email_mlt_mf);
+$test_client_mlt->set_default_account('EUR');
 $test_client_mlt->save;
 my $test_client_mlt_loginid = $test_client_mlt->loginid;
 
 my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
+    residence   => 'at',
 });
 $test_client_mf->email($email_mlt_mf);
 $test_client_mf->save;
@@ -1845,6 +1848,7 @@ subtest 'get and set self_exclusion' => sub {
             leverage       => 100,
         },
     };
+
     my $mt5_loginid = $c->tcall('mt5_new_account', $mt5_params)->{login};
     is($mt5_loginid, $DETAILS{login}, 'MT5 loginid is correct: ' . $mt5_loginid);
 

@@ -13,10 +13,18 @@ use BOM::Database::Model::OAuth;
 use BOM::User::Password;
 use Email::Stuffer::TestLinks;
 
+my $user = BOM::User->create(
+    email    => 'test.account@binary.com',
+    password => 'jskjd8292922',
+);
+
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
+$test_client->set_default_account('USD');
+$test_client->save();
+$user->add_client($test_client);
 
 my $m = BOM::Database::Model::AccessToken->new;
 my $token = $m->create_token($test_client->loginid, 'test token');
@@ -25,7 +33,11 @@ subtest 'new account' => sub {
     my $method = 'mt5_new_account';
     my $params = {
         language => 'EN',
-        token    => 12345
+        token    => 12345,
+        args     => {
+            mainPassword   => 'Abc123',
+            investPassword => 'dummy',
+        },
     };
     $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'check invalid token');
 
@@ -66,19 +78,26 @@ subtest 'new account' => sub {
     $c->call_ok($method, $params)->has_error->error_message_is('Invalid sub account type.', 'Sub account mandatory for financial');
 
     $params->{args}->{mt5_account_type} = 'advanced';
+    $test_client->aml_risk_classification('high');
+    $test_client->save();
     $c->call_ok($method, $params)
         ->has_error->error_message_is('Please complete financial assessment.', 'Financial assessment mandatory for financial account');
 
     # Non-MLT/CR client
     $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MX',
+        residence   => 'fr',
     });
+    $test_client->set_default_account('EUR');
+    $test_client->save();
+    $user->add_client($test_client);
 
     $m               = BOM::Database::Model::AccessToken->new;
     $token           = $m->create_token($test_client->loginid, 'test token');
     $params->{token} = $token;
 
-    $c->call_ok($method, $params)->has_error->error_message_is('Permission denied.', 'Only costarica, malta and champion fx clients allowed.');
+    $c->call_ok($method, $params)
+        ->has_error->error_message_is('Permission denied.', 'Only costarica, malta, maltainvest and champion fx clients allowed.');
 
     SKIP: {
         skip "Unable to Retrieve files from PHP MT5 Server Yet";

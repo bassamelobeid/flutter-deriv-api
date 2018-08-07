@@ -53,7 +53,9 @@ my %DETAILS = (
 my $test_client    = create_client('CR');
 my $test_client_vr = create_client('VRTC');
 $test_client->email($DETAILS{email});
+$test_client->set_default_account('USD');
 $test_client_vr->email($DETAILS{email});
+$test_client_vr->set_default_account('USD');
 $test_client->set_authentication('ID_DOCUMENT')->status('pass');
 $test_client->save;
 $test_client_vr->save;
@@ -223,6 +225,157 @@ subtest 'new CR financial accounts should receive identity verification request 
     );
 
     ok(@client_email, "identity verification request email received");
+};
+
+subtest 'MF should be allowed' => sub {
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    my $mf_client = create_client('MF');
+    $mf_client->set_default_account('EUR');
+    $mf_client->save();
+    $user->add_client($mf_client);
+
+    my $method = 'mt5_new_account';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type     => 'financial',
+            mt5_account_type => 'standard',
+            country          => 'es',
+            email            => $DETAILS{email},
+            name             => $DETAILS{name},
+            investPassword   => 'Abcd1234',
+            mainPassword     => $DETAILS{password},
+        },
+    };
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account');
+};
+
+subtest 'MF to MLT account switching' => sub {
+    my $mf_switch_client = create_client('MF');
+    $mf_switch_client->set_default_account('EUR');
+    $mf_switch_client->residence('at');
+
+    my $mlt_switch_client = create_client('MLT');
+    $mlt_switch_client->set_default_account('EUR');
+    $mlt_switch_client->residence('at');
+
+    $mf_switch_client->financial_assessment({
+        data => Encode::encode_utf8($json->encode($financial_evaluation)),
+    });
+
+    $mf_switch_client->save();
+    $mlt_switch_client->save();
+
+    my $switch_user = BOM::User->create(
+        email    => 'switch@binary.com',
+        password => 's3kr1t',
+    );
+
+    $switch_user->add_client($mf_switch_client);
+
+    my $mf_switch_token = $m->create_token($mf_switch_client->loginid, 'test token');
+
+    # we should get an error if we are trying to open a gaming account
+
+    my $method = 'mt5_new_account';
+    my $params = {
+        language => 'EN',
+        token    => $mf_switch_token,
+        args     => {
+            account_type   => 'gaming',
+            country        => 'es',
+            email          => $DETAILS{email},
+            name           => $DETAILS{name},
+            investPassword => 'Abcd1234',
+            mainPassword   => $DETAILS{password},
+        },
+    };
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($mf_switch_client->loginid);
+    $c->call_ok($method, $params)->has_error('cannot create gaming account for MF only users')
+        ->error_code_is('PermissionDenied', 'error should be permission denied');
+
+    # add MLT client
+    $switch_user->add_client($mlt_switch_client);
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($mlt_switch_client->loginid);
+    $c->call_ok($method, $params)->has_no_error('gaming account should be created');
+    is($c->result->{account_type}, 'gaming', 'account type should be gaming');
+
+    # MF client should be allowed to open financial account as well
+    $params->{args}->{account_type}     = 'financial';
+    $params->{args}->{mt5_account_type} = 'standard';
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($mf_switch_client->loginid);
+    BOM::RPC::v3::MT5::Account::reset_throttler($mlt_switch_client->loginid);
+
+    $c->call_ok($method, $params)->has_no_error('standard account should be created');
+    is($c->result->{account_type}, 'financial', 'account type should be financial');
+};
+
+subtest 'MLT to MF account switching' => sub {
+    my $mf_switch_client = create_client('MF');
+    $mf_switch_client->set_default_account('EUR');
+    $mf_switch_client->residence('at');
+
+    my $mlt_switch_client = create_client('MLT');
+    $mlt_switch_client->set_default_account('EUR');
+    $mlt_switch_client->residence('at');
+
+    $mf_switch_client->financial_assessment({
+        data => Encode::encode_utf8($json->encode($financial_evaluation)),
+    });
+
+    $mf_switch_client->save();
+    $mlt_switch_client->save();
+
+    my $switch_user = BOM::User->create(
+        email    => 'switch2@binary.com',
+        password => 's3kr1t',
+    );
+
+    $switch_user->add_client($mlt_switch_client);
+
+    my $mlt_switch_token = $m->create_token($mlt_switch_client->loginid, 'test token');
+
+    # we should get an error if we are trying to open a financial account
+
+    my $method = 'mt5_new_account';
+    my $params = {
+        language => 'EN',
+        token    => $mlt_switch_token,
+        args     => {
+            account_type     => 'financial',
+            mt5_account_type => 'standard',
+            country          => 'es',
+            email            => $DETAILS{email},
+            name             => $DETAILS{name},
+            investPassword   => 'Abcd1234',
+            mainPassword     => $DETAILS{password},
+        },
+    };
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($mf_switch_client->loginid);
+    $c->call_ok($method, $params)->has_error('cannot create financial account for MLT only users')
+        ->error_code_is('PermissionDenied', 'error should be permission denied');
+
+    # add MF client
+    $switch_user->add_client($mf_switch_client);
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($mf_switch_client->loginid);
+    $c->call_ok($method, $params)->has_no_error('financial account should be created');
+    is($c->result->{account_type}, 'financial', 'account type should be financial');
+
+    # MLT client should be allowed to open gaming account as well
+    $params->{args}->{account_type}     = 'gaming';
+    $params->{args}->{mt5_account_type} = undef;
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($mf_switch_client->loginid);
+    BOM::RPC::v3::MT5::Account::reset_throttler($mlt_switch_client->loginid);
+
+    $c->call_ok($method, $params)->has_no_error('gaming account should be created');
+    is($c->result->{account_type}, 'gaming', 'account type should be gaming');
 };
 
 subtest 'get settings' => sub {

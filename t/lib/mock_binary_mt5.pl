@@ -57,13 +57,15 @@ sub cmd_UserAdd {
     $input->{email} eq $DETAILS{email}
         or die "TODO: mock UserAdd on unknown email\n";
 
+    # Spain as MF country
     $input->{country} eq $DETAILS{country}
+        or $input->{country} eq 'Spain'
         or die "UserAdd with unexpected country=$input->{country}\n";
 
     $input->{mainPassword} eq $DETAILS{password}->{main}
         or die "UserAdd with unexpected mainPassword=$input->{mainPassword}\n";
     # allow another group to pass in order to create new real (standard & advanced) MT5 financial account
-    $input->{group} eq $DETAILS{group} || $input->{group} =~ /real\\vanuatu_.*/
+    $input->{group} eq $DETAILS{group} || $input->{group} =~ /real\\vanuatu|malta.*/
         or die "UserAdd with unexpected group=$input->{group}\n";
 
     $input->{investPassword} eq $DETAILS{password}->{investor}

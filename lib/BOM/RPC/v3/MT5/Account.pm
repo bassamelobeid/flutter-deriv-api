@@ -201,29 +201,52 @@ sub reset_throttler {
     return BOM::Config::RedisReplicated::redis_write()->del($key);
 }
 
+sub _mt5_group {
+    # account_type:     demo|gaming|financial
+    # sub_account_type: standard|advanced
+    my ($company_name, $account_type, $sub_account_type, $manager_id, $currency) = @_;
+
+    # for Maltainvest if the client uses GBP as currency we should add this to the group name
+    my $GBP = ($currency eq 'GBP' and $company_name eq 'maltainvest') ? '_GBP' : '';
+
+    # for demo accounts we recognize company type if sub_account_type is available or not
+    if ($account_type eq 'demo') {
+
+        return "demo\\${company_name}_$sub_account_type${GBP}" if length $sub_account_type;
+        return "demo\\$company_name";
+
+    } else {
+        $sub_account_type = "_${sub_account_type}" if $account_type eq 'financial';
+
+        return "real\\${company_name}${sub_account_type}${GBP}" unless $manager_id;
+        return "real\\${company_name}_mamm${sub_account_type}${GBP}_${manager_id}";
+
+    }
+}
+
 async_rpc mt5_new_account => sub {
     my $params        = shift;
     my $mt5_suspended = _is_mt5_suspended();
     return Future->done($mt5_suspended) if $mt5_suspended;
 
     my ($client, $args) = @{$params}{qw/client args/};
-    my $account_type = delete $args->{account_type};
+
+    # extract request parameters
+    my $account_type     = delete $args->{account_type};
+    my $mt5_account_type = delete $args->{mt5_account_type} // '';
+    my $manager_id       = delete $args->{manager_id};
+
+    # input validation
+    return create_error_future({
+            code              => 'SetExistingAccountCurrency',
+            message_to_client => localize('Please set the currency for your existing account')}) unless $client->default_account;
 
     my $invalid_account_type_error = create_error_future({
             code              => 'InvalidAccountType',
             message_to_client => localize('Invalid account type.')});
     return $invalid_account_type_error if (not $account_type or $account_type !~ /^demo|gaming|financial$/);
 
-    my $residence = $client->residence;
-    return create_error_future({
-            code              => 'NoResidence',
-            message_to_client => localize('Please set your country of residence.')}) unless $residence;
-
-    my $brand              = Brands->new(name => request()->brand);
-    my $countries_instance = $brand->countries_instance;
-    my $countries_list     = $countries_instance->countries_list;
-    return permission_error_future()
-        unless $countries_list->{$residence};
+    $mt5_account_type = '' if $account_type eq 'gaming';
 
     return create_error_future({
             code              => 'MT5SamePassword',
@@ -234,85 +257,62 @@ async_rpc mt5_new_account => sub {
             code              => 'InvalidSubAccountType',
             message_to_client => localize('Invalid sub account type.')});
 
-    my $mt5_account_type = delete $args->{mt5_account_type} // '';
     return Future->done($invalid_sub_type_error) if ($mt5_account_type and $mt5_account_type !~ /^standard|advanced$/);
+    return Future->done($invalid_sub_type_error) if $account_type eq 'financial' and $mt5_account_type eq '';
 
-    my $manager_id = delete $args->{manager_id};
+    # legal validation
+    my $residence = $client->residence;
+    return create_error_future({
+            code              => 'NoResidence',
+            message_to_client => localize('Please set your country of residence.')}) unless $residence;
+
+    my $brand              = Brands->new(name => request()->brand);
+    my $countries_instance = $brand->countries_instance;
+    my $countries_list     = $countries_instance->countries_list;
+
+    return permission_error_future() unless $countries_list->{$residence};
+
     # demo account is not allowed for mamm account
     return $invalid_account_type_error if $manager_id and $account_type eq 'demo';
 
-    my $get_company_name = sub {
-        my $type = shift;
-
-        $type = 'mt_' . $type . '_company';
-        # get MT company from countries.yml
-        return $countries_list->{$residence}->{$type} if (defined $countries_list->{$residence}->{$type});
-
-        return 'none';
-    };
-
-    my ($mt_company, $group);
     my $user = $client->user;
-    if ($account_type eq 'demo') {
-        # demo will have demo for financial and demo for gaming
-        if ($mt5_account_type) {
-            return permission_error_future() if (($mt_company = $get_company_name->('financial')) eq 'none');
+    # demo accounts type determined if this parameter exists or not
+    my $company_type        = $mt5_account_type eq '' ? 'gaming' : 'financial';
+    my $company_name        = $countries_list->{$residence}->{"mt_${company_type}_company"};
+    my $binary_company_name = $countries_list->{$residence}->{"${company_type}_company"};
 
-            $group = 'demo\\' . $mt_company . '_' . $mt5_account_type;
-        } else {
-            return permission_error_future() if (($mt_company = $get_company_name->('gaming')) eq 'none');
-            $group = 'demo\\' . $mt_company;
-        }
-    } elsif ($account_type eq 'gaming' or $account_type eq 'financial') {
-        # 4 Jan 2018: only CR, MLT, and Champion can open MT real a/c
-        my $eligible_lcs = qr/^costarica|champion|malta$/;
-        if ($client->landing_company->short !~ $eligible_lcs && $user) {
-            # Binary.com front-end will pass whichever client is currently selected
-            #   in the top-right corner, so check if this user has a qualifying
-            #   account and switch if they do.
-            $client = (first { $_->landing_company->short =~ $eligible_lcs } $user->clients) // $client;
-        }
+    # MT5 is not allowed in client country
+    return permission_error_future() if $company_name eq 'none';
 
-        return permission_error_future() unless ($client->landing_company->short =~ $eligible_lcs);
-
-        return permission_error_future() if (($mt_company = $get_company_name->($account_type)) eq 'none');
-
-        if ($account_type eq 'financial') {
-            return Future->done($invalid_sub_type_error) unless $mt5_account_type;
-
-            my $input_mappings = BOM::Platform::Account::Real::default::get_financial_input_mapping();
-
-            my $json = JSON::MaybeXS->new;
-            my $fa_json_data;
-            $fa_json_data = $json->decode($client->financial_assessment->{data}) if $client->financial_assessment();
-            return create_error_future({
-                    code              => 'FinancialAssessmentMandatory',
-                    message_to_client => localize('Please complete financial assessment.')})
-                if not $fa_json_data
-                or any { !$fa_json_data->{$_} } (keys %{$input_mappings->{financial_information}}, keys %{$input_mappings->{trading_experience}});
-
-            # As per the following document: Automatic Exchange of Information,
-            # Guide for Reporting Financial Institutions by the Vanuatu Competent Authority
-            # we need to ask for tax details for selected countries
-            # if client wants to open financial account
-            return create_error_future({
-                    code              => 'TINDetailsMandatory',
-                    message_to_client => localize(
-                        'Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.'),
-                }) if ($countries_instance->is_tax_detail_mandatory($residence) and not $client->status->get('crs_tin_information'));
-        }
-
-        # populate mt5 agent account from manager id if applicable
-        # else get one associated with affiliate token
-        $args->{agent} = $manager_id // _get_mt5_account_from_affiliate_token($client->myaffiliates_token);
-
-        $group = 'real\\' . $mt_company;
-        $group .= '_mamm' if $manager_id;
-
-        $group .= "_$mt5_account_type" if $account_type eq 'financial';
-        $group .= "_$manager_id" if $manager_id;
+    # Binary.com front-end will pass whichever client is currently selected
+    # in the top-right corner, so check if this user has a qualifying account and switch if they do.
+    if ($client->landing_company->short ne 'virtual' and $client->landing_company->short ne $binary_company_name) {
+        my @clients = $user->clients_for_landing_company($binary_company_name);
+        $client = (@clients > 0) ? $clients[0] : undef;
     }
 
+    return permission_error_future() unless $client;
+
+    my $group = _mt5_group($company_name, $account_type, $mt5_account_type, $manager_id, $client->currency);
+    return permission_error_future() if $group eq '';
+
+    if ($account_type eq 'financial') {
+        return create_error_future({
+                code              => 'FinancialAssessmentMandatory',
+                message_to_client => localize('Please complete financial assessment.')}) unless $client->is_financial_assessment_complete();
+
+        # As per the following document: Automatic Exchange of Information,
+        # Guide for Reporting Financial Institutions by the Vanuatu Competent Authority
+        # we need to ask for tax details for selected countries
+        # if client wants to open financial account
+        return create_error_future({
+                code              => 'TINDetailsMandatory',
+                message_to_client => localize(
+                    'Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.'),
+            }) if ($countries_instance->is_tax_detail_mandatory($residence) and not $client->status->get('crs_tin_information'));
+    }
+
+    # Check if client is throttled before sending MT5 request
     return create_error_future({
             code              => 'MT5CreateUserError',
             message_to_client => localize('Request too frequent. Please try again later.')}) if _throttle($client->loginid);
@@ -331,12 +331,17 @@ async_rpc mt5_new_account => sub {
                 }
             }
 
+            # prepare $args for MT5#create_user
             $args->{group} = $group;
 
             if ($args->{country}) {
                 my $country_name = Locale::Country::Extra->new()->country_from_code($args->{country});
                 $args->{country} = $country_name if ($country_name);
             }
+
+            # populate mt5 agent account from manager id if applicable
+            # else get one associated with affiliate token
+            $args->{agent} = $manager_id // _get_mt5_account_from_affiliate_token($client->myaffiliates_token);
 
             # TODO(leonerd): This has to nest because of the `Future->done` in the
             #   foreach loop above. A better use of errors-as-failures might avoid
@@ -346,6 +351,7 @@ async_rpc mt5_new_account => sub {
                     my ($status) = @_;
 
                     if ($status->{error}) {
+                        return permission_error_future() if $status->{error} =~ /Not enough permissions/;
                         return create_error_future({
                                 code              => 'MT5CreateUserError',
                                 message_to_client => $status->{error}});
@@ -363,6 +369,8 @@ async_rpc mt5_new_account => sub {
                             warn 'Compliance email regarding Binary (Europe) Limited user with MT5 account(s) failed to send.'
                                 unless BOM::RPC::v3::Accounts::send_self_exclusion_notification($client, 'malta_with_mt5', $self_exclusion);
                         }
+                    } elsif ($account_type eq 'financial' && $client->landing_company->short eq 'costarica' && !$client->fully_authenticated) {
+                        _send_notification_email($client, $mt5_login, $brand, $params->{language}, $group);
                     }
 
                     my $balance = 0;
@@ -392,20 +400,26 @@ async_rpc mt5_new_account => sub {
                                             $balance = 0;
                                         }
                                     });
-                            } elsif ($account_type eq 'financial' && $client->landing_company->short eq 'costarica') {
-                                _send_notification_email($client, $mt5_login, $brand, $params->{language}, $group)
-                                    unless $client->fully_authenticated;
-                                Future->done;
                             } else {
                                 Future->done;
                             }
                             }
                         )->then(
                         sub {
+                            # Get currency from MT5 group
+                            return BOM::MT5::User::Async::get_group($group);
+                        }
+                        )->then(
+                        sub {
+                            my ($group_details) = @_;
+                            return create_error_future({
+                                    code              => 'MT5CreateUserError',
+                                    message_to_client => $group_details->{error}}) if ref $group_details eq 'HASH' and $group_details->{error};
+
                             return Future->done({
                                     login        => $mt5_login,
                                     balance      => $balance,
-                                    currency     => ($mt_company =~ /champion|vanuatu|costarica|demo/ ? 'USD' : 'EUR'),
+                                    currency     => $group_details->{currency},
                                     account_type => $account_type,
                                     ($mt5_account_type) ? (mt5_account_type => $mt5_account_type) : ()});
                         });
@@ -580,7 +594,8 @@ async_rpc mt5_get_settings => sub {
             return BOM::MT5::User::Async::get_group($settings->{group})->then(
                 sub {
                     my ($group_details) = @_;
-                    return Future->fail('MT5GetGroupError', $group_details->{error}) if (ref $group_details eq 'HASH' and $group_details->{error});
+                    return Future->fail('MT5GetGroupError', $group_details->{error})
+                        if (ref $group_details eq 'HASH' and $group_details->{error});
                     $settings->{currency} = $group_details->{currency};
                     $settings = _filter_settings($settings,
                         qw/address balance city company country currency email group leverage login name phone phonePassword state zipCode/);
@@ -1488,8 +1503,6 @@ sub _mt5_validate_and_get_amount {
                 and not $authorized_client->fully_authenticated);
 
             my $mt5_currency = $setting->{currency};
-            return _make_error($error_code, localize('Invalid MT5 currency - had [_1] and should be USD or EUR.', $mt5_currency))
-                unless $mt5_currency =~ /^USD|EUR$/;
 
             my $mt5_amount = undef;
             my ($min, $max) = (1, 20000);
