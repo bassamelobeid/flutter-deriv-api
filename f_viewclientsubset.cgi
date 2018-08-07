@@ -10,6 +10,7 @@ use Date::Utility;
 use Path::Tiny;
 use HTML::Entities;
 use Format::Util::Numbers qw/roundcommon/;
+use ExchangeRates::CurrencyConverter qw/in_usd/;
 use Text::CSV;
 
 use Brands;
@@ -252,7 +253,7 @@ sub get_client_by_status {
                 # loginid,account_balance,total_open_bets_value,total_open_bets_profit,
                 # total_equity,aggregate_deposit_withdrawals,portfolio
                 next if $row->[0] !~ /^([A-Z]+)\d+$/;
-                $SUMMARYFILE{$row->[0] . "-TOTALEQUITY"} += roundcommon(0.01, in_USD($row->[4], $curr)) if $row->[4];
+                $SUMMARYFILE{$row->[0] . "-TOTALEQUITY"} += roundcommon(0.01, in_usd($row->[4], $curr)) if $row->[4];
             }
             $csv->eof or $csv->error_diag();
             close $fh;

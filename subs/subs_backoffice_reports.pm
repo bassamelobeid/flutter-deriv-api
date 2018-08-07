@@ -8,6 +8,7 @@ use JSON::MaybeXS;
 use List::Util qw( min max );
 use Cache::RedisDB;
 use Format::Util::Numbers qw/roundcommon financialrounding/;
+use ExchangeRates::CurrencyConverter qw/in_usd/;
 
 use LandingCompany::Registry;
 use BOM::Config::Runtime;
@@ -21,7 +22,7 @@ sub DailyTurnOverReport {
 
     my $initial_note   = '(BUY-SELL represents the company profit)';
     my @all_currencies = LandingCompany::Registry->new()->all_currencies;
-    my %rates          = map { $_ => in_USD(1, $_) } grep { $_ !~ /^(?:ETC|BCH)$/ } @all_currencies;
+    my %rates          = map { $_ => in_usd(1, $_) } grep { $_ !~ /^(?:ETC|BCH)$/ } @all_currencies;
 
     my %template = (
         initial_note => $initial_note,
