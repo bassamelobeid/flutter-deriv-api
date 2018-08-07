@@ -43,20 +43,23 @@ use Log::Any::Adapter qw(Stdout), log_level => 'info';
 use Getopt::Long qw(GetOptions);
 
 GetOptions(
-    'interval|i=i' => \my $interval,
-    'redis|r=s'    => \my $redis_uri,
-    'name|n=s'     => \my $name,
+    'interval|i=i'   => \my $interval,
+    'redis|r=s'      => \my $redis_uri,
+    'name|n=s'       => \my $name,
+    'redis-auth|a=s' => \my $redis_auth,
 );
 
 ($name) = Sys::Hostname::hostname() =~ /^([^.]+)/ unless $name;
 $interval //= 60;
 $redis_uri //= 'redis://localhost';
+$redis_auth //= '';
 
 # Prepare and connect to Redis
 my $loop = IO::Async::Loop->new;
 $loop->add(
     my $redis = Net::Async::Redis->new(
-        uri => $redis_uri 
+	 uri => $redis_uri,
+	 auth => $redis_auth,
     )
 );
 $loop->add(
