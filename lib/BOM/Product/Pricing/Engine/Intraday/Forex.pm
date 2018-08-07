@@ -19,6 +19,7 @@ use BOM::Config::Chronicle;
 use Pricing::Engine::Intraday::Forex::Base;
 use Pricing::Engine::Markup::EconomicEventsSpotRisk;
 use Pricing::Engine::Markup::EqualTie;
+use Pricing::Engine::Markup::CustomCommission;
 
 =head2 tick_source
 
@@ -31,6 +32,11 @@ has tick_source => (
     default => sub {
         BOM::Market::DataDecimate->new({market => 'forex'});
     },
+);
+
+has custom_commission => (
+    is      => 'ro',
+    default => sub { [] },
 );
 
 has inefficient_period => (
@@ -335,42 +341,13 @@ sub _build_risk_markup {
 sub event_markup {
     my $self = shift;
 
-    my $for_date = $self->bet->underlying->for_date;
-    my $qc       = BOM::Config::QuantsConfig->new(
-        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader($for_date),
-        for_date         => $for_date
-    );
-    my $event_markup = $qc->get_config(
-        'commission',
-        +{
-            contract_type     => $self->bet->code,
-            underlying_symbol => $self->bet->underlying->symbol
-        });
-
-    my $barrier_tier     = $self->bet->barrier_tier;
-    my $c_start          = $self->bet->effective_start->epoch;
-    my $c_end            = $self->bet->date_expiry->epoch;
-    my $base_probability = $self->base_probability->amount;
-
-    my @markups = (0);
-    foreach my $c (@$event_markup) {
-        my $start_epoch     = Date::Utility->new($c->{start_time})->epoch;
-        my $end_epoch       = Date::Utility->new($c->{end_time})->epoch;
-        my $valid_timeframe = ($c_start >= $start_epoch && $c_start <= $end_epoch)
-            || ($c_end >= $start_epoch && $c_end <= $end_epoch || ($c_start < $start_epoch && $c_end > $end_epoch));
-        if ($valid_timeframe and exists $c->{$barrier_tier}) {
-            #Note: flooring prices at $OTM_max does not guarantee an increasing ask price with moneyness on extreme settings (e.g. sharp drop in commission for near the money OTM barriers)
-            my $OTM_max = $c->{OTM_max} // 0;
-            push @markups, max($OTM_max - $base_probability, $c->{$barrier_tier});
-        }
-    }
-
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'event_markup',
-        description => 'markup to account for volatility risk of economic events',
-        set_by      => __PACKAGE__,
-        base_amount => max(@markups),
-    });
+    return Pricing::Engine::Markup::CustomCommission->new(
+        custom_commission => $self->custom_commission,
+        effective_start   => $self->bet->effective_start,
+        date_expiry       => $self->bet->date_expiry,
+        base_probability  => $self->base_probability->amount,
+        barrier_tier      => $self->bet->barrier_tier,
+    )->markup;
 }
 
 sub economic_events_spot_risk_markup {

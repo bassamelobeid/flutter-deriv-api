@@ -24,6 +24,7 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::Product::Pricing::Greeks;
 use BOM::Config::Chronicle;
+use BOM::Config::QuantsConfig;
 use BOM::Product::Pricing::Greeks::BlackScholes;
 use BOM::Config::Runtime;
 use BOM::Product::ContractVol;
@@ -289,7 +290,9 @@ sub _create_new_interface_engine {
             economic_events => _generate_market_data(
                 $self->underlying,
                 $self->date_start
-            )->{economic_events},
+                )->{economic_events},
+            custom_commission => $self->_custom_commission,
+            barrier_tier      => $self->barrier_tier,
         );
     } else {
 
@@ -724,10 +727,15 @@ sub _build_pricing_engine {
     return $self->_create_new_interface_engine if $self->new_interface_engine;
 
     my $pricing_engine = $self->pricing_engine_name->new({
-        bet                => $self,
-        inefficient_period => $self->market_is_inefficient,
-        $self->priced_with_intraday_model ? (economic_events => $self->economic_events_for_volatility_calculation) : (),
-    });
+            bet                => $self,
+            inefficient_period => $self->market_is_inefficient,
+            $self->priced_with_intraday_model
+            ? (
+                economic_events   => $self->economic_events_for_volatility_calculation,
+                custom_commission => $self->_custom_commission
+                )
+            : (),
+        });
 
     return $pricing_engine;
 }
@@ -777,6 +785,28 @@ sub _build_min_commission_amount {
     my $static = BOM::Config::quants;
 
     return $static->{bet_limits}->{min_commission_amount}->{$self->currency} // 0;
+}
+
+has _custom_commission => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build__custom_commission {
+    my $self = shift;
+
+    my $for_date = $self->underlying->for_date;
+    my $qc       = BOM::Config::QuantsConfig->new(
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader($for_date),
+        for_date         => $for_date
+    );
+
+    return $qc->get_config(
+        'commission',
+        +{
+            contract_type     => $self->code,
+            underlying_symbol => $self->underlying->symbol
+        });
 }
 
 1;
