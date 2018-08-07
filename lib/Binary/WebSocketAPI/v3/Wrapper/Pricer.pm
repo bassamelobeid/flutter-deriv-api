@@ -16,7 +16,7 @@ use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Price::Calculator;
 use Clone::PP qw(clone);
 use List::UtilsBy qw(bundle_by);
-use List::Util qw(min);
+use List::Util qw(min none);
 use Format::Util::Numbers qw/formatnumber roundcommon/;
 
 use Future::Mojo          ();
@@ -362,7 +362,8 @@ sub proposal_open_contract {
         Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'subscribe', $c->stash('account_id'), 'poc', $args)
             if $c->stash('account_id');
         ### we need stream only in subscribed workers
-        $c->stash(proposal_open_contracts_subscribed => $args);
+        # we should not overwrite the previous subscriber.
+        $c->stash(proposal_open_contracts_subscribed => $args) unless $c->stash('proposal_open_contracts_subscribed');
     }
 
     my $empty_answer = {
@@ -510,7 +511,7 @@ sub _serialized_args {
     foreach my $k (sort keys %$copy) {
         push @arr, ($k, $copy->{$k});
     }
-    return 'PRICER_KEYS::' . Encode::encode_utf8($json->encode(\@arr));
+    return 'PRICER_KEYS::' . Encode::encode_utf8($json->encode([map { !defined($_) ? $_ : ref($_) ? $_ : "$_" } @arr]));
 }
 
 sub _pricing_channel_for_ask {
@@ -566,7 +567,7 @@ sub _create_pricer_channel {
     my ($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache, $skip_redis_subscr) = @_;
     my $pricing_channel = $c->stash('pricing_channel') || {};
 
-    # already subscribed
+    # channel already generated
     if (exists $pricing_channel->{$redis_channel} and exists $pricing_channel->{$redis_channel}->{$subchannel}) {
         return $pricing_channel->{$redis_channel}->{$subchannel}->{uuid}
             if not(exists $args->{subscribe} and $args->{subscribe} == 1)
@@ -576,16 +577,22 @@ sub _create_pricer_channel {
 
     my $uuid = Binary::WebSocketAPI::v3::Wrapper::Streamer::_generate_uuid_string();
 
+    my $channel_not_subscribed = sub {
+        return 1 if not exists $pricing_channel->{$redis_channel};
+        my @all_uuids = map { $_->{uuid} } values %{$pricing_channel->{$redis_channel}};
+        return none { exists $pricing_channel->{uuid}{$_}{subscription} } @all_uuids;
+    };
     # subscribe if it is not already subscribed
     if (    exists $args->{subscribe}
         and $args->{subscribe} == 1
-        and not exists $pricing_channel->{$redis_channel}
+        and $channel_not_subscribed->()
         and not $skip_redis_subscr)
     {
         $pricing_channel->{uuid}{$uuid}{subscription} =
             $c->pricing_subscriptions($redis_channel)->subscribe($c);
     }
 
+    # TODO I think here should be refactored. here redis_channel exists in this hash doesn't mean this channel already subscribed.
     $pricing_channel->{$redis_channel}->{$subchannel}->{uuid}          = $uuid;
     $pricing_channel->{$redis_channel}->{$subchannel}->{args}          = $args;
     $pricing_channel->{$redis_channel}->{$subchannel}->{cache}         = $cache;
@@ -595,7 +602,6 @@ sub _create_pricer_channel {
     $pricing_channel->{uuid}->{$uuid}->{args}                          = $args;               # for buy rpc call
     $pricing_channel->{uuid}->{$uuid}->{cache}                         = $cache;
     $pricing_channel->{price_daemon_cmd}->{$price_daemon_cmd}->{$uuid} = 1;                   # for forget_all
-
     $c->stash('pricing_channel' => $pricing_channel);
     return $uuid;
 }
@@ -883,6 +889,9 @@ sub send_proposal_open_contract_last_time {
     Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $args->{uuid});
     # we don't want to end up with new subscribtion
     delete $stash_data->{subscribe} if exists $stash_data->{subscribe};
+    # We should also clear stash data, otherwise the args in stash data will become 'not subscribe' (deleted by previous line) and will block the future subscribe
+    $c->stash('proposal_open_contracts_subscribed' => 0)
+        if $c->stash('proposal_open_contracts_subscribed') && $c->stash('proposal_open_contracts_subscribed')->{req_id} == $stash_data->{req_id};
 
     $c->call_rpc({
             args        => $stash_data,
