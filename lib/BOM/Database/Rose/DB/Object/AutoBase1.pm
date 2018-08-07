@@ -23,6 +23,22 @@ Rose::DB::Object::Metadata::Relationship::OneToMany->default_auto_method_types(q
 
 use overload '""' => sub { shift->safe_stringify };    ## no critic (OverloadOptions)
 
+# We want to provide some hints in the database logs to show where the
+# Rose-generated queries are coming from
+{
+    my $original_get_objects = \&Rose::DB::Object::Manager::get_objects;
+    no warnings 'redefine';                            ## no critic (ProhibitNoWarnings)
+    *Rose::DB::Object::Manager::get_objects = sub {
+        my ($class, %args) = shift->normalize_get_objects_args(@_);
+        my (undef, $file, $line) = caller(2);
+        if (defined $file) {
+            $file =~ s{^/home/git/regentmarkets/}{};
+            $args{hints} = {comment => "RoseDB:$file:$line"};
+        }
+        return $original_get_objects->($class, %args);
+    };
+}
+
 sub safe_stringify {
     my $self = shift;
     return is_in_db($self) ? $self->stringify : $self;
