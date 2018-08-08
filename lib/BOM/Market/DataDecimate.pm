@@ -394,6 +394,9 @@ sub data_cache_insert_decimate {
         $single_data->{decimate_epoch} = $boundary;
         $single_data->{count}          = 0;
         my $time_diff = $boundary - $single_data->{epoch};
+
+        stats_gauge('feed_decimate.time_diff.' . $decimate_key, $time_diff);
+
         my $update = ($time_diff > $self->raw_retention_interval->seconds) ? 0 : 1;
         $self->_update($self->redis_write, $decimate_key, $single_data->{decimate_epoch}, $self->encoder->encode($single_data)) if $update;
     }
