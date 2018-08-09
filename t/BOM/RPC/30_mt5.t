@@ -595,11 +595,14 @@ subtest 'deposit' => sub {
             amount      => 180,
         },
     };
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_no_error('no error for mt5_deposit');
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
 
     # assert that account balance is now 1000-180 = 820
     cmp_ok $test_client->default_account->load->balance, '==', 820, "Correct balance after deposited to mt5 account";
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
     $params->{args}{to_mt5} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_deposit wrong login')
@@ -619,10 +622,13 @@ subtest 'withdrawal' => sub {
             amount    => 150,
         },
     };
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_no_error('no error for mt5_withdrawal');
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
 
     cmp_ok $test_client->default_account->load->balance, '==', 820 + 150, "Correct balance after withdrawal";
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
     $params->{args}{from_mt5} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_withdrawal wrong login')

@@ -313,9 +313,11 @@ async_rpc mt5_new_account => sub {
     }
 
     # Check if client is throttled before sending MT5 request
-    return create_error_future({
-            code              => 'MT5CreateUserError',
-            message_to_client => localize('Request too frequent. Please try again later.')}) if _throttle($client->loginid);
+    if (_throttle($client->loginid)) {
+        return create_error_future({
+                code              => 'MT5CreateUserError',
+                message_to_client => localize('Request too frequent. Please try again later.')});
+    }
 
     return get_mt5_logins($client, $user)->then(
         sub {
@@ -907,9 +909,11 @@ async_rpc mt5_password_change => sub {
     # MT5 login not belongs to user
     return permission_error_future() unless _check_logins($client, ['MT' . $login]);
 
-    return create_error_future({
-            code              => 'MT5PasswordChangeError',
-            message_to_client => localize('Request too frequent. Please try again later.')}) if _throttle($client->loginid);
+    if (_throttle($client->loginid)) {
+        return create_error_future({
+                code              => 'MT5PasswordChangeError',
+                message_to_client => localize('Request too frequent. Please try again later.')});
+    }
 
     return BOM::MT5::User::Async::password_check({
             login    => $login,
@@ -1092,6 +1096,12 @@ async_rpc mt5_deposit => sub {
 
     my $error_code = 'MT5DepositError';
 
+    if (_throttle($client->loginid)) {
+        return create_error_future({
+                code              => $error_code,
+                message_to_client => localize('Request too frequent. Please try again later.')});
+    }
+
     return _mt5_validate_and_get_amount($client, $fm_loginid, $to_mt5, $amount, $error_code)->then(
         sub {
             my ($response) = @_;
@@ -1207,6 +1217,12 @@ async_rpc mt5_withdrawal => sub {
         @{$args}{qw/from_mt5 to_binary amount/};
 
     my $error_code = 'MT5WithdrawalError';
+
+    if (_throttle($client->loginid)) {
+        return create_error_future({
+                code              => $error_code,
+                message_to_client => localize('Request too frequent. Please try again later.')});
+    }
 
     return _make_error($error_code, localize('MT5 account is locked'), 'MT5 account is locked') if $client->status->get('mt5_withdrawal_locked');
 
