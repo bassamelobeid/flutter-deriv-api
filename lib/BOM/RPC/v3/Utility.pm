@@ -576,13 +576,13 @@ sub _is_currency_allowed {
     return $result if ($type eq 'crypto' and grep { $currency eq ($siblings->{$_}->{currency} // '') } keys %$siblings);
     # if currency is experimental and client is not allowed to use such currencies we don't allow
 
-    my $allowed_accounts = BOM::Config::Runtime->instance->app_config->payments->experimental_currencies_allowed;
-    my $client_email     = $client->email;
+    my $allowed_emails = BOM::Config::Runtime->instance->app_config->payments->experimental_currencies_allowed;
+    my $client_email   = $client->email;
     $result->{message} = 'Please note that the selected currency is allowed for limited accounts only';
 
     return $result
         if (LandingCompany::Registry::is_currency_experimental($currency)
-        and not any { /\Q$client_email\E/i } @$allowed_accounts);
+        and not any { $_ eq $client_email } @$allowed_emails);
 
     $result->{allowed} = 1;
 
