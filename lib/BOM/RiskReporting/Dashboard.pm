@@ -491,8 +491,8 @@ sub open_contract_exposures {
 
 sub closed_contract_exposures {
     my $self   = shift;
-    my $today  = Date::Utility->new;
-    my $closed = $self->closed_PL_by_underlying($today->truncate_to_day->db_timestamp);
+    my $date   = shift;
+    my $closed = $self->closed_PL_by_underlying($date->truncate_to_day->db_timestamp);
     my $summary;
     foreach my $i (keys @{$closed}) {
         my $broker      = $closed->[$i][0];
@@ -511,7 +511,7 @@ sub closed_contract_exposures {
     }
     my $report;
     $report->{pl} = sorting_data($summary, 'closed_pl');
-    $report->{generated_time} = $today->datetime;
+    $report->{generated_time} = Date::Utility->new->datetime;
     return $report;
 
 }
@@ -588,9 +588,10 @@ sub sorting_data {
 sub exposures_report {
     my $self = shift;
     my $report;
-
-    $report->{open_bet}  = $self->open_contract_exposures();
-    $report->{closed_pl} = $self->closed_contract_exposures();
+    my $date = Date::Utility->new;
+    $report->{open_bet}           = $self->open_contract_exposures();
+    $report->{closed_pl}          = $self->closed_contract_exposures($date);
+    $report->{previous_closed_pl} = $self->closed_contract_exposures($date->minus_time_interval('1d'));
     return $report;
 }
 
