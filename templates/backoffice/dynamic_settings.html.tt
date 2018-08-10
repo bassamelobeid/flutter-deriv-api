@@ -130,7 +130,7 @@
                 <strong>[X] </strong> 
             [% END %]
             [% IF item.disabled %]
-                <strong>Set in app_settings_overrides.yml</strong>
+                <strong>Field is static and cannot be changed.</strong>
             [% END %]
        </div>
         <cite>

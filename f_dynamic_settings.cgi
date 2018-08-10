@@ -22,7 +22,7 @@ PrintContentType();
 
 BrokerPresentation('DYNAMIC SETTINGS MANAGEMENT');
 
-my @global_settings = BOM::DynamicSettings::get_all_settings_list('global');
+my @all_settings = BOM::Config::Runtime->instance->app_config->all_keys();
 
 my $settings_list = [];
 if (request()->param('page') eq 'global') {
@@ -69,7 +69,7 @@ my @send_to_template = ();
 
 my ($all_settings, $title);
 if (request()->param('page') eq 'global') {
-    $all_settings = \@global_settings;
+    $all_settings = \@all_settings;
     my $sub_title = request()->param('group');
     $sub_title =~ s/\_/\ /g;
     $title = "GLOBAL DYNAMIC SETTINGS - " . $sub_title;

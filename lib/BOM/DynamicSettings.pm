@@ -15,23 +15,10 @@ use BOM::Config::Runtime;
 use Array::Utils qw(:all);
 use Date::Utility;
 
-sub get_all_settings_list {
-    my $setting = shift;
-    my $ds      = BOM::Config::Runtime->instance->app_config->dynamic_settings_info;
-    if ($setting eq 'global') {
-        return keys %{$ds->{global}};
-    }
-}
-
 sub textify_obj {
     my $type  = shift;
     my $value = shift;
     return ($type eq 'ArrayRef') ? join(',', @$value) : $value;
-}
-
-sub dynamic_save {
-    return 0 unless BOM::Config::Runtime->instance->app_config->save_dynamic;
-    return 1;
 }
 
 sub save_settings {
@@ -42,9 +29,9 @@ sub save_settings {
 
     my $message = "";
     if ($submitted) {
-        my $data_set = BOM::Config::Runtime->instance->app_config->data_set;
+        my $app_config = BOM::Config::Runtime->instance->app_config;
 
-        my $setting_revision   = $data_set->{version};
+        my $setting_revision   = $app_config->global_revision();
         my $submitted_revision = $settings->{'revision'};
         if ($setting_revision ne $submitted_revision) {
             $message .=
@@ -57,48 +44,45 @@ sub save_settings {
                 . '</div>';
         } elsif ($submitted eq 'global') {
 
-            my $global;
-            my @settings;
-            if ($submitted eq 'global') {
-                @settings = (get_all_settings_list('global'));
-                $global   = 1;
-            }
+            my @settings = $app_config->dynamic_keys();
 
-            my $has_errors       = 0;
-            my $dynamic_settings = BOM::Config::Runtime->instance->app_config->dynamic_settings_info;
+            my $has_errors    = 0;
+            my $values_to_set = {};
 
             SAVESETTING:
             foreach my $s (@settings) {
                 next SAVESETTING unless grep { $s eq $_ } @{$settings_in_group};
-                if ($global) {
-                    my ($new_value, $display_value) = parse_and_refine_setting($settings->{$s}, $dynamic_settings->{global}->{$s}->{type});
-                    my $old_value = $data_set->{global}->get($s);
-                    my $compare = Data::Compare->new($new_value, $old_value);
-                    try {
-                        if (not $compare->Cmp) {
-                            my $extra_validation = get_extra_validation($s);
-                            $extra_validation->($new_value, $old_value) if $extra_validation;
-                            send_email_notification($new_value, $old_value, $s) if ($s =~ /quants/ and ($s =~ /suspend/ or $s =~ /disabled/));
-                            $data_set->{global}->set($s, $new_value);
-                            $message .= join('', '<div id="saved">Set ', encode_entities($s), ' to ', encode_entities($display_value), '</div>');
-                        }
+                my ($new_value, $display_value) = parse_and_refine_setting($settings->{$s}, $app_config->get_data_type($s));
+                my $old_value = $app_config->get($s);
+                my $compare = Data::Compare->new($new_value, $old_value);
+                try {
+                    if (not $compare->Cmp) {
+                        my $extra_validation = get_extra_validation($s);
+                        $extra_validation->($new_value, $old_value) if $extra_validation;
+                        send_email_notification($new_value, $old_value, $s) if ($s =~ /quants/ and ($s =~ /suspend/ or $s =~ /disabled/));
+                        $values_to_set->{$s} = $new_value;
+                        $message .= join('', '<div id="saved">Set ', encode_entities($s), ' to ', encode_entities($display_value), '</div>');
                     }
-                    catch {
-                        $message .= join('',
-                            '<div id="error">Invalid value, could not set ',
-                            encode_entities($s), ' to ', encode_entities($display_value),
-                            ' because ', encode_entities($_), '</div>');
-                        $has_errors = 1;
-                    };
                 }
+                catch {
+                    $message .= join('',
+                        '<div id="error">Invalid value, could not set ',
+                        encode_entities($s), ' to ', encode_entities($display_value),
+                        ' because ', encode_entities($_), '</div>');
+                    $has_errors = 1;
+                };
             }
 
             if ($has_errors) {
                 $message .= '<div id="error">NOT saving global settings due to data problems.</div>';
-            } elsif (not dynamic_save()) {
-                $message .= '<div id="error">Could not save global settings to environment</div>';
             } else {
-                $message .= '<div id="saved">Saved global settings to environment, offerings updated</div>';
+                try {
+                    $app_config->set($values_to_set);
+                    $message .= '<div id="saved">Saved global settings to environment, offerings updated</div>';
+                }
+                catch {
+                    $message .= '<div id="error">Could not save global settings to environment</div>';
+                };
             }
         } else {
             $message .= "<div id=\"error\">Invalid 'submitted' value " . encode_entities($submitted) . "</div>";
@@ -118,31 +102,23 @@ sub generate_settings_branch {
     my $title             = $args->{title};
     my $submitted         = $args->{submitted};
 
-    my $data_set         = BOM::Config::Runtime->instance->app_config->data_set;
-    my $setting_revision = $data_set->{version};
+    my $app_config       = BOM::Config::Runtime->instance->app_config;
+    my $setting_revision = $app_config->global_revision();
     my $categories       = {};
 
     SETTINGS:
-    foreach my $ds (sort { scalar split(/\./, $a) >= scalar split(/\./, $b) } @{$settings;}) {
-        next SETTINGS unless grep { $ds eq $_ } @{$settings_in_group;};
-        my $ds_ref = BOM::Config::Runtime->instance->app_config->dynamic_settings_info->{$submitted}->{$ds};
+    foreach my $ds (sort { scalar split(/\./, $a) >= scalar split(/\./, $b) } @$settings) {
+        next SETTINGS unless grep { $ds eq $_ } @$settings_in_group;
 
-        my $value;
-        if ($submitted eq 'global') {
-            $value = $data_set->{global}->get($ds);
-        }
+        my $description = $app_config->get_description($ds);
+        my $data_type   = $app_config->get_data_type($ds);
+        my $default     = $app_config->get_default($ds);
+        my $value       = $app_config->get($ds);
+        my $key_type    = $app_config->get_key_type($ds);
 
-        my $overridden;
-        if ($data_set->{app_settings_overrides} and defined $data_set->{app_settings_overrides}->get($ds)) {
-            $value      = $data_set->{app_settings_overrides}->get($ds);
-            $overridden = 1;
-        }
+        my $default_text = textify_obj($data_type, $default);
+        my $value_text   = textify_obj($data_type, $value);
 
-        my $default;
-        unless (defined $value) {
-            $value   = $ds_ref->{default};
-            $default = 1;
-        }
         #push it in right namespace
         my $space      = $categories;
         my @namespaces = split(/\./, $ds);
@@ -157,12 +133,12 @@ sub generate_settings_branch {
         }
         my $ds_leaf = {};
         $ds_leaf->{name}          = $ds;
-        $ds_leaf->{description}   = $ds_ref->{description};
-        $ds_leaf->{type}          = $ds_ref->{type};
-        $ds_leaf->{value}         = textify_obj($ds_ref->{type}, $value);
-        $ds_leaf->{default}       = $default;
-        $ds_leaf->{default_value} = textify_obj($ds_ref->{type}, $ds_ref->{default});
-        $ds_leaf->{disabled}      = 1 if ($overridden);
+        $ds_leaf->{description}   = $description;
+        $ds_leaf->{type}          = $data_type;
+        $ds_leaf->{value}         = $value_text;
+        $ds_leaf->{default}       = $value_text eq $default_text;
+        $ds_leaf->{default_value} = $default_text;
+        $ds_leaf->{disabled}      = $key_type ne 'dynamic' ? 1 : 0;
         $space->{leaf}            = $ds_leaf;
     }
     return {
@@ -224,16 +200,13 @@ sub get_settings_by_group {
     my $settings;
 
     if ($group eq 'others') {
+        my @grouped_settings = map { @{$group_settings->{$_}} } keys %$group_settings;
+        my @all_settings = BOM::Config::Runtime->instance->app_config->all_keys();
+
         my @filtered_settings;
-        my @all;
-        push @all, @{$group_settings->{$_}} for (keys %$group_settings);
-
-        my @global_settings = get_all_settings_list('global');
-
         #find other settings that are not in groups
-        foreach my $s (@global_settings) {
-            my $setting_name = $s;
-            push @filtered_settings, $s unless (grep { /^$setting_name$/ } @all);
+        foreach my $s (@all_settings) {
+            push @filtered_settings, $s unless (grep { /^$s$/ } @grouped_settings);
         }
 
         $settings = \@filtered_settings;
