@@ -435,7 +435,7 @@ IF client_for_prove
         <td>: <input type="text" name="restricted_ip_address" value="[% client.restricted_ip_address %]" size="50" /></td>
     </tr>
     <tr>
-        <td class="label">Cashier lock passowrd</td>
+        <td class="label">Cashier lock password</td>
         <td>: <input type="text" name="cashier_setting_password" value="[% client.cashier_setting_password %]" size="50" /></td>
     </tr>
     <tr>
