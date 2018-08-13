@@ -443,29 +443,24 @@ sub get_bid {
         # - hit tick for an american contract
         # - latest tick at the expiry time of a european contract.
         # TODO: Planning to phase out sell_spot in the next api version.
-        if ($sell_time or $contract->is_expired) {
-            # path dependent contracts may have hit tick but not sell time
-            my $sell_tick =
-                  $sell_time
-                ? $contract->underlying->tick_at($sell_time, {allow_inconsistent => 1})
-                : undef;
 
-            my $hit_tick;
-            if (    $contract->is_path_dependent
-                and $hit_tick = $contract->hit_tick
-                and (not $sell_time or $hit_tick->epoch <= $sell_time))
-            {
-                $sell_tick = $hit_tick;
+        my $contract_close_tick;
+        # contract expire before the expiry time
+        if ($sell_time and $sell_time < $contract->date_expiry->epoch) {
+            if ($contract->is_path_dependent and $contract->hit_tick and $contract->hit_tick->epoch <= $contract->date_expiry->epoch) {
+                $contract_close_tick = $contract->hit_tick;
             }
+            # client sold early
+            $contract_close_tick = $contract->underlying->tick_at($sell_time, {allow_inconsistent => 1}) unless defined $contract_close_tick;
+        } elsif ($contract->is_expired and $contract->exit_tick) {
+            $contract_close_tick = $contract->exit_tick;
+        }
 
-            if ($sell_tick) {
-                $response->{sell_spot}      = $contract->underlying->pipsized_value($sell_tick->quote);
-                $response->{sell_spot_time} = $sell_tick->epoch;
-            }
-
-            if ($sell_time and $sell_tick and $sell_time <= $contract->date_expiry->epoch) {
-                $response->{exit_tick}      = $response->{sell_spot};
-                $response->{exit_spot_time} = $response->{sell_spot_time};
+        # if the contract is still open, $contract_close_tick will be undefined
+        if (defined $contract_close_tick) {
+            for ($is_sold ? qw(sell_spot exit_tick) : qw(exit_tick)) {
+                $response->{$_} = $contract->underlying->pipsized_value($contract_close_tick->quote);
+                $response->{$_ . '_time'} = $contract_close_tick->epoch;
             }
         }
 
