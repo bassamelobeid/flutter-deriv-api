@@ -4,7 +4,7 @@ use Test::More;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_wsapi_test/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test reconnect/;
 use Test::MockObject;
 use Test::MockModule;
 
@@ -16,9 +16,9 @@ $system->mock('server_time', sub { +{msg_type => 'time', time => ('1' x 600000)}
 my $t = build_wsapi_test();
 
 {
-    my $res = $t->await::error('notjson');
-    is $res->{error}->{code}, 'BadRequest';
-    ok ref($res->{echo_req}) eq 'HASH' && !keys %{$res->{echo_req}};
+    # malformed inputs now close the WebSocket connection
+    my $res = $t->send_ok({json => 'notjson'})->finished_ok(1007);
+    reconnect($t);
 }
 
 {
