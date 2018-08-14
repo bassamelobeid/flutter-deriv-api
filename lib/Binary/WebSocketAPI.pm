@@ -237,12 +237,6 @@ sub startup {
                 stash_params => [qw/ server_name client_ip user_agent /]}
         ],
         [
-            'mt5_set_settings',
-            {
-                require_auth => 'admin',
-                stash_params => [qw/ server_name client_ip user_agent /]}
-        ],
-        [
             'mt5_password_check',
             {
                 require_auth => 'admin',
