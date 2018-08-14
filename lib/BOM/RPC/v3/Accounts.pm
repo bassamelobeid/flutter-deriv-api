@@ -1076,7 +1076,6 @@ rpc set_settings => sub {
     }
     # update client value after latest changes
     $client = BOM::User::Client->new({loginid => $client->loginid});
-
     if ($cil_message) {
         $client->add_note('Update Address Notification', $cil_message);
     }

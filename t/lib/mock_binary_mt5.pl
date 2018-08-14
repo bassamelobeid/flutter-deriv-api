@@ -33,6 +33,7 @@ my %DETAILS = (
 my %GROUP_DETAILS = (
     currency => 'USD',
     group    => 'real\costarica',
+    leverage => 300
 );
 
 my $json = JSON::MaybeXS->new;
@@ -53,14 +54,6 @@ if (my $code = main->can("cmd_$cmd")) {
 
 sub cmd_UserAdd {
     my ($input) = @_;
-
-    $input->{email} eq $DETAILS{email}
-        or die "TODO: mock UserAdd on unknown email\n";
-
-    # Spain as MF country
-    $input->{country} eq $DETAILS{country}
-        or $input->{country} eq 'Spain'
-        or die "UserAdd with unexpected country=$input->{country}\n";
 
     $input->{mainPassword} eq $DETAILS{password}->{main}
         or die "UserAdd with unexpected mainPassword=$input->{mainPassword}\n";
@@ -127,8 +120,6 @@ sub cmd_UserUpdate {
 
     $input->{name} eq "Test2"
         or die "UserUpdate with unexpected name$input->{name}\n";
-    $input->{country} eq $DETAILS{country}
-        or die "UserUpdate with unexpected country=$input->{country}\n";
 
     return {
         ret_code => MT_RET_OK,

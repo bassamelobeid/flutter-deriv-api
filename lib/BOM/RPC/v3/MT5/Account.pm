@@ -40,6 +40,12 @@ requires_auth();
 
 use constant MT5_ACCOUNT_THROTTLE_KEY_PREFIX => 'MT5ACCOUNT::THROTTLE::';
 
+use constant MT5_MALTAINVEST_MOCK_LEVERAGE => 33;
+use constant MT5_MALTAINVEST_REAL_LEVERAGE => 30;
+
+use constant MT5_VANUATU_STANDARD_MOCK_LEVERAGE => 100;
+use constant MT5_VANUATU_STANDARD_REAL_LEVERAGE => 1000;
+
 # Defines mt5 account rights combination when trading is enabled
 use constant MT5_ACCOUNT_TRADING_ENABLED_RIGHTS_ENUM => qw(
     483 1503 2527 3555
@@ -333,22 +339,45 @@ async_rpc mt5_new_account => sub {
                 }
             }
 
-            # prepare $args for MT5#create_user
-            $args->{group} = $group;
-
-            if ($args->{country}) {
-                my $country_name = Locale::Country::Extra->new()->country_from_code($args->{country});
-                $args->{country} = $country_name if ($country_name);
-            }
-
-            # populate mt5 agent account from manager id if applicable
-            # else get one associated with affiliate token
-            $args->{agent} = $manager_id // _get_mt5_account_from_affiliate_token($client->myaffiliates_token);
-
             # TODO(leonerd): This has to nest because of the `Future->done` in the
             #   foreach loop above. A better use of errors-as-failures might avoid
             #   this.
-            return BOM::MT5::User::Async::create_user($args)->then(
+            return BOM::MT5::User::Async::get_group($group)->then(
+                sub {
+                    my ($group_details) = @_;
+                    return create_error_future({
+                            code              => 'MT5CreateUserError',
+                            message_to_client => $group_details->{error}}) if ref $group_details eq 'HASH' and $group_details->{error};
+
+                    # some MT5 groups should have leverage as 30
+                    # but MT5 only support 33
+                    if ($group_details->{leverage} == MT5_MALTAINVEST_MOCK_LEVERAGE) {
+                        $group_details->{leverage} = MT5_MALTAINVEST_REAL_LEVERAGE;
+                    } elsif ($group_details->{leverage} == MT5_VANUATU_STANDARD_MOCK_LEVERAGE) {
+                        # MT5 bug it should be solved by MetaQuote
+                        $group_details->{leverage} = MT5_VANUATU_STANDARD_REAL_LEVERAGE;
+                    }
+
+                    my $client_name = $client->first_name . ' ' . $client->last_name;
+
+                    $args->{name}     = $client->is_virtual ? $args->{name} : $client_name;
+                    $args->{group}    = $group;
+                    $args->{email}    = $client->email;
+                    $args->{address}  = $client->address_1;
+                    $args->{state}    = $client->state;
+                    $args->{city}     = $client->city;
+                    $args->{country}  = Locale::Country::Extra->new()->country_from_code($client->residence);
+                    $args->{zipCode}  = $client->postcode;
+                    $args->{phone}    = $client->phone;
+                    $args->{leverage} = $group_details->{leverage};
+                    $args->{currency} = $group_details->{currency};
+
+                    # populate mt5 agent account from manager id if applicable
+                    # else get one associated with affiliate token
+                    $args->{agent} = $manager_id // _get_mt5_account_from_affiliate_token($client->myaffiliates_token);
+                    return BOM::MT5::User::Async::create_user($args);
+                }
+                )->then(
                 sub {
                     my ($status) = @_;
 
@@ -421,7 +450,7 @@ async_rpc mt5_new_account => sub {
                             return Future->done({
                                     login        => $mt5_login,
                                     balance      => $balance,
-                                    currency     => $group_details->{currency},
+                                    currency     => $args->{currency},
                                     account_type => $account_type,
                                     ($mt5_account_type) ? (mt5_account_type => $mt5_account_type) : ()});
                         });
@@ -612,110 +641,6 @@ sub _filter_settings {
     @{$filtered_settings}{@allowed_keys} = @{$settings}{@allowed_keys};
     return $filtered_settings;
 }
-
-=head2 mt5_set_settings
-
-$user_mt5_settings = mt5_set_settings({
-        client  => $client,
-        args    => $args
-    })
-
-Takes a client object and a hash reference as inputs and returns the updated
-details of the MT5 user, based on the MT5 login id passed, upon success.
-
-Takes the following (named) parameters as inputs:
-
-=over 4
-
-=item * C<params> hashref that contains:
-
-=over 4
-
-=item * A BOM::User::Client object under the key C<client>.
-
-=item * A hash reference under the key C<args> that contains some of the following keys:
-
-=over 4
-
-=item * C<login> that contains the MT5 login id.
-
-=item * C<country> that contains the country code.
-
-=back
-
-=back
-
-=back
-
-Returns any of the following:
-
-=over 4
-
-=item * A hashref error message that contains the following keys, based on the given error:
-
-=over 4
-
-=item * MT5 suspended
-
-=over 4
-
-=item * C<code> stating C<MT5APISuspendedError>.
-
-=back
-
-=item * Permission denied
-
-=over 4
-
-=item * C<code> stating C<PermissionDenied>.
-
-=back
-
-=item * Update Error
-
-=over 4
-
-=item * C<code> stating C<MT5UpdateUserError>.
-
-=back
-
-=back
-
-=item * A hashref that contains the updated details of the user's MT5 account.
-
-=back
-
-=cut
-
-async_rpc mt5_set_settings => sub {
-    my $params = shift;
-
-    my $mt5_suspended = _is_mt5_suspended();
-    return Future->done($mt5_suspended) if $mt5_suspended;
-
-    my $client = $params->{client};
-    my $args   = $params->{args};
-    my $login  = $args->{login};
-
-    # MT5 login not belongs to user
-    return permission_error_future() unless _check_logins($client, ['MT' . $login]);
-
-    my $country_code = $args->{country};
-    my $country_name = Locale::Country::Extra->new()->country_from_code($country_code);
-    $args->{country} = $country_name if ($country_name);
-
-    return BOM::MT5::User::Async::update_user($args)->then(
-        sub {
-            my ($settings) = @_;
-
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => 'MT5UpdateUserError',
-                    message_to_client => $settings->{error}}) if (ref $settings eq 'HASH' and $settings->{error});
-
-            $settings->{country} = $country_code;
-            return Future->done($settings);
-        });
-};
 
 =head2 mt5_password_check
 
