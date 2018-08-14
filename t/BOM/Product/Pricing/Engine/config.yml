@@ -1277,7 +1277,7 @@ expected_result:
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
       risk_markup: 0.0632
       spot: 9518.2
-      theo_prob: 0.6246
+      theo_prob: 0.6242
       total_markup: 0.0726
     RANGE:
       ask_prob: 0.457
@@ -1288,7 +1288,7 @@ expected_result:
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
       risk_markup: 0.0063
       spot: 9518.2
-      theo_prob: 0.4134
+      theo_prob: 0.4119
       total_markup: 0.0464
   frxEURUSD:
     CALL:
@@ -1331,7 +1331,7 @@ expected_result:
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
       risk_markup: 0.0131
       spot: 1.3803
-      theo_prob: 0.2476
+      theo_prob: 0.242
       total_markup: 0.0385
   frxUSDJPY:
     CALL:
@@ -1363,7 +1363,7 @@ expected_result:
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
       risk_markup: 0.0204
       spot: 102.454
-      theo_prob: 0.3399
+      theo_prob: 0.3398
       total_markup: 0.0425
     RANGE:
       ask_prob: 0.2724
@@ -1374,5 +1374,5 @@ expected_result:
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
       risk_markup: 0.0525
       spot: 102.454
-      theo_prob: 0.2734
+      theo_prob: 0.2724
       total_markup: 0.0784
