@@ -111,11 +111,12 @@ subtest 'check hit tick' => sub {
         language    => 'EN',
         token       => $token,
         source      => 1,
-        contract_id => $contract_id
+        contract_id => $contract_id,
     };
 
     my $result = $app->call_ok('proposal_open_contract', $params)->has_no_system_error->has_no_error->result;
-    cmp_ok $result->{$contract_id}->{sell_spot}, '==', '100.030', 'got correct sell spot';
+    ok !$result->{$contract_id}->{is_sold}, 'contract is not sold';
+    ok !$result->{$contract_id}->{sell_spot}, 'no sell spot';
 };
 
 done_testing();
