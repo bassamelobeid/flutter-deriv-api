@@ -291,6 +291,7 @@ sub handle_batch_contract {
 
 sub get_bid {
     my $params = shift;
+
     my (
         $short_code, $contract_id, $currency,              $is_sold,         $is_expired,
         $sell_time,  $sell_price,  $app_markup_percentage, $landing_company, $country_code
@@ -452,8 +453,10 @@ sub get_bid {
             }
             # client sold early
             $contract_close_tick = $contract->underlying->tick_at($sell_time, {allow_inconsistent => 1}) unless defined $contract_close_tick;
-        } elsif ($contract->is_expired and $contract->exit_tick) {
-            $contract_close_tick = $contract->exit_tick;
+        } elsif ($contract->is_expired) {
+            # it could be that the contract is not sold until/after expiry for path dependent
+            $contract_close_tick = $contract->hit_tick if $contract->is_path_dependent;
+            $contract_close_tick = $contract->exit_tick if not $contract_close_tick and $contract->exit_tick;
         }
 
         # if the contract is still open, $contract_close_tick will be undefined
