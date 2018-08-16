@@ -1,4 +1,4 @@
-package BOM::Platform::Event::Register;
+package BOM::Platform::Event::Emitter;
 
 use strict;
 use warnings;
@@ -13,35 +13,34 @@ use YAML::XS qw(LoadFile);
 
 =head1 NAME
 
-BOM::Platform::Event::Register - Register events to storage
+BOM::Platform::Event::Emitter - Emitter events to storage
 
 =head1 SYNOPSIS
 
-    # register an event
-    BOM::Platform::Event::Register::register('register_details', {
+    # emit an event
+    BOM::Platform::Event::Emitter::emit('emit_details', {
         loginid => 'CR123',
         email   => 'abc@binary.com',
     });
 
-    # get registered event
-    BOM::Platform::Event::Register::get()
+    # get emit event
+    BOM::Platform::Event::Emitter::get()
 
 =head1 DESCRIPTION
 
-This class is generic event register class, as of now underlying mechanism
+This class is generic event emit class, as of now underlying mechanism
 use redis to store events as FIFO queue
 
 =cut
 
-use constant TIMEOUT    => 5;
-use constant QUEUE_NAME => 'GENERIC_EVENTS_QUEUE';
+use constant TIMEOUT => 5;
 
 my $config = LoadFile($ENV{BINARY_EVENT_REDIS_CONFIG} // '/etc/rmg/ws-redis.yml');
 my $connections = {};
 
 =head1 METHODS
 
-=head2 register
+=head2 emit
 
 Given type and data corresponding for an event, it stores that event
 
@@ -49,9 +48,9 @@ Given type and data corresponding for an event, it stores that event
 
 =over 4
 
-=item * type : type of event to be registered
+=item * type : type of event to be emitted
 
-=item * data : data for event to be registered
+=item * data : data for event to be emitted
 
 =back
 
@@ -59,13 +58,13 @@ Given type and data corresponding for an event, it stores that event
 
 =over 4
 
-Positive number on successful register of event, zero otherwise
+Positive number on successful emit of event, zero otherwise
 
 =back
 
 =cut
 
-sub register {
+sub emit {
     my ($type, $data) = @_;
 
     die "Missing required parameter: type." unless $type;
@@ -83,8 +82,9 @@ sub register {
     };
 
     if ($event_data) {
-        my $queue_size = _write_connection()->lpush(QUEUE_NAME, $event_data);
-        stats_gauge('generic_event.queue.size', $queue_size) if $queue_size;
+        my $queue_name = _queue_name($type);
+        my $queue_size = _write_connection()->lpush($queue_name, $event_data);
+        stats_gauge(lc "$queue_name.size", $queue_size) if $queue_size;
         return $queue_size;
     }
 
@@ -93,7 +93,7 @@ sub register {
 
 =head2 get
 
-Get registered event
+Get emitted event
 
 =head3 Return value
 
@@ -103,23 +103,26 @@ If any event is present then return an event object as hash else return undef
 
 Event hash is in form of:
 
-    {type => 'register_details', details => { loginid => 'CR123', email => 'abc@binary.com' }}
+    {type => 'emit_details', details => { loginid => 'CR123', email => 'abc@binary.com' }}
 
 =back
 
 =cut
 
 sub get {
-    my $event_data = _read_connection()->brpop(QUEUE_NAME, 1);
+    my $queue_name = shift;
+
+    my $event_data = _read_connection()->brpop($queue_name, 1);
+
     my $decoded_data;
 
     if ($event_data) {
         try {
             $decoded_data = decode_json_utf8($event_data->[1]);
-            stats_inc('generic_event.queue.read');
+            stats_inc(lc "$queue_name.read");
         }
         catch {
-            stats_inc('generic_event.queue.invalid_data');
+            stats_inc(lc "$queue_name.invalid_data");
         };
     }
 
@@ -153,6 +156,22 @@ sub _get_connection_by_type {
         ($config->{$type}->{password} ? (password => $config->{$type}->{password}) : ()));
 
     return $connections->{$type};
+}
+
+=head2 get
+
+Bind event name to its queue
+
+=head3 Return function name
+
+=over 4
+
+=cut
+
+sub _queue_name {
+    my $event = shift;
+    return 'STATEMENTS_QUEUE' if $event =~ /^quarterly_statement|client_statement$/;
+    return 'GENERIC_EVENTS_QUEUE';
 }
 
 1;
