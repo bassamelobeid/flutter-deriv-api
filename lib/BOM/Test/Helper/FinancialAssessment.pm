@@ -4,7 +4,7 @@ use warnings;
 use strict;
 
 use JSON::MaybeUTF8 qw(encode_json_utf8);
-use BOM::Platform::Account::Real::default;
+use BOM::User::FinancialAssessment;
 
 sub _get_by_index {
     my $h = shift;
@@ -40,7 +40,7 @@ sub get_fulfilled_hash {
 
 sub _get_with_selector {
     my $func = shift;
-    my $h    = BOM::Platform::Account::Real::default::get_financial_input_mapping();
+    my $h    = BOM::User::FinancialAssessment::get_config();
     my %r    = map {
         my $inner = $_;
         map { $_ => $func->($inner->{$_}->{possible_answer}) } keys %$inner
@@ -67,10 +67,10 @@ sub mock_maltainvest_fa {
         "occupation"                           => 'Managers',                                         # +0
         "employment_status"                    => "Self-Employed",                                    # +0
         "source_of_wealth"                     => "Company Ownership",                                # +0
-        "account_turnover"                     => 'Less than $25,000',
+        "account_turnover"                     => 'Less than $25,000',                                # +0
     );
 
-    return encode_json_utf8(BOM::Platform::Account::Real::default::get_financial_assessment_score(\%data));
+    return encode_json_utf8(\%data);
 }
 
 1;
