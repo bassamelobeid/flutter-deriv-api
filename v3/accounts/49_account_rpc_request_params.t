@@ -158,8 +158,10 @@ is $call_params->{token}, $token;
 $res = $t->await::reality_check({reality_check => 1});
 ok(ref $res->{reality_check});
 is $call_params->{token}, $token;
+
 $res = $t->await::set_financial_assessment({%{BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash()}, set_financial_assessment => 1});
 ok(ref $res->{set_financial_assessment});
+
 is $call_params->{token}, $token;
 
 $rpc_response = [qw/ test /];
@@ -209,7 +211,6 @@ $res = $t->await::reset_password({
     new_password      => '123456'
 });
 is($res->{reset_password}, 1);
-
 $res = $t->await::set_settings({
     set_settings     => 1,
     address_line_1   => "Test Address Line 1",
@@ -269,7 +270,6 @@ $t->await::get_financial_assessment({get_financial_assessment => 1});
 $t->await::reality_check({reality_check => 1});
 $t->await::set_financial_assessment({
         set_financial_assessment => 1,
-        account_opening_reason   => "Speculative",
         %{BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash()}});
 $t->await::login_history({login_history => 1});
 $t->await::get_account_status({get_account_status => 1});

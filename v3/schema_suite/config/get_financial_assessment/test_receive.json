@@ -8,23 +8,6 @@
     "get_financial_assessment": {
       "type": "object",
       "properties": {
-        "total_score": {
-          "type": "integer",
-          "pattern": "^[_1]$",
-          "required": "1"
-        },
-        "cfd_score": {
-          "type": "integer",
-          "required": "1"
-        },
-        "financial_information_score": {
-          "type": "integer",
-          "required": "1"
-        },
-        "trading_score": {
-          "type": "integer",
-          "required": "1"
-        },
         "account_turnover": {
           "type": "string",
           "pattern": "^Less than \\$25\\,000$"
@@ -95,6 +78,26 @@
           "type": "string",
           "pattern": "^Company Ownership$",
           "required": "1"
+        },
+        "total_score": {
+          "type": "integer",
+          "description": "Total Score",
+          "pattern": "^[_1]$"
+        },
+        "cfd_score": {
+          "type": "integer",
+          "description": "CFD Score",
+          "pattern": "^[_2]$"
+        },
+        "trading_score": {
+          "type": "integer",
+          "description": "Trading Experience Score",
+          "pattern": "^[_3]$"
+        },
+        "financial_information_score": {
+          "type": "integer",
+          "description": "Financial Information Score",
+          "pattern": "^[_4]$"
         }
       },
       "required": "1"

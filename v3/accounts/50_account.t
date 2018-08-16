@@ -178,9 +178,12 @@ is($res->{error}->{code}, 'InputValidationFailed', 'Missing required field: esti
 
 $args->{estimated_worth} = $val;
 $res = $t->await::set_financial_assessment($args);
-cmp_ok($res->{set_financial_assessment}->{total_score}, "<", 60, "Correct score");
+is($res->{set_financial_assessment}->{total_score}, 8, "Total score for set ok");
 note("set_financial_assessment json :: ");
 note explain $res;
+
+$res = $t->await::get_financial_assessment({get_financial_assessment => 1});
+is($res->{get_financial_assessment}->{total_score}, 8, "Total score for get ok");
 
 $t->finish_ok;
 

@@ -179,9 +179,12 @@ test_sendrecv_params 'payout_currencies/test_send.json',      'payout_currencies
 fail_test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', '(USD|EUR|JPY)', 3;
 
 # ADMIN SCOPE CALLS (MF)
-test_sendrecv 'set_financial_assessment/test_send.json',        'set_financial_assessment/test_receive.json';
+test_sendrecv 'set_financial_assessment/test_send.json', 'set_financial_assessment/test_receive.json';
 test_sendrecv_params 'get_financial_assessment/test_send.json', 'get_financial_assessment/test_receive.json',
-    $suite->get_stashed('set_financial_assessment/set_financial_assessment/total_score');
+    $suite->get_stashed('set_financial_assessment/set_financial_assessment/total_score'),
+    $suite->get_stashed('set_financial_assessment/set_financial_assessment/cfd_score'),
+    $suite->get_stashed('set_financial_assessment/set_financial_assessment/trading_score'),
+    $suite->get_stashed('set_financial_assessment/set_financial_assessment/financial_information_score');
 
 fail_test_sendrecv 'logout/test_send_to_fail.json', 'logout/test_receive.json';
 test_sendrecv 'logout/test_send.json',              'logout/test_receive.json';

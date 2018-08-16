@@ -7,25 +7,26 @@
     },
     "set_financial_assessment": {
       "type": "object",
+      "title": "Financial Assessment Scores",
+      "description": "The financial assessment score assigned to the submitted financial assessment",
       "properties": {
         "total_score": {
           "type": "integer",
-          "required": "1"
+          "required" : 1
         },
         "cfd_score": {
           "type": "integer",
-          "required": "1"
+          "required" : 1
         },
         "financial_information_score": {
           "type": "integer",
-          "required": "1"
+          "required" : 1
         },
         "trading_score": {
           "type": "integer",
-          "required": "1"
+          "required" : 1
         }
-      },
-      "required": "1"
+      }
     },
     "msg_type": {
       "type": "string",
