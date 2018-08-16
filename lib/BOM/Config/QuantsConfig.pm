@@ -59,25 +59,6 @@ sub save_config {
     return $config->{$args->{name}};
 }
 
-sub _klfb {
-    my ($self, $args) = @_;
-
-    die 'limit is not a number' unless (exists $args->{limit} and looks_like_number($args->{limit}));
-    die 'date is undefined' unless defined $args->{date};
-    try {
-        Date::Utility->new($args->{date});
-    }
-    catch {
-        die 'invalid date format, please use YYYY-MM-DD format in the example';
-    };
-
-    $args->{recorded_date} = $self->recorded_date->date_yyyymmdd;
-
-    return {
-        xxx => $args    # for format consistency (key => config).
-    };
-}
-
 sub _commission {
     my ($self, $args) = @_;
 
