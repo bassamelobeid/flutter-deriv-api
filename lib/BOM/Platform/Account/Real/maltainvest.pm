@@ -11,6 +11,7 @@ use Brands;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(request);
+use BOM::User::FinancialAssessment qw(should_warn update_financial_assessment);
 
 sub _validate {
     my $args = shift;
@@ -29,16 +30,16 @@ sub _validate {
 
 sub create_account {
     my $args = shift;
-    my ($from_client, $user, $country, $details, $financial_data, $accept_risk) =
-        @{$args}{'from_client', 'user', 'country', 'details', 'financial_data', 'accept_risk'};
+    my ($from_client, $user, $country, $details, $params) =
+        @{$args}{'from_client', 'user', 'country', 'details', 'params'};
+
+    my $accept_risk = $params->{accept_risk};
 
     if (my $error = _validate($args)) {
         return $error;
     }
 
-    my $financial_assessment = BOM::Platform::Account::Real::default::get_financial_assessment_score($financial_data);
-
-    my $should_warn = _should_warn($financial_assessment);
+    my $should_warn = should_warn($params);
 
     # show Risk disclosure warning if client haven't accepted risk yet and FA score matches warning conditions
     return {error => 'show risk disclaimer'} if !$accept_risk && $should_warn;
@@ -51,9 +52,8 @@ sub create_account {
     return $register if ($register->{error});
 
     my $client = $register->{client};
-    $client->financial_assessment({
-        data => Encode::encode_utf8(JSON::MaybeXS->new->encode($financial_assessment)),
-    });
+    update_financial_assessment($client->user, $params, new_mf_client => 1);
+
     # after_register_client sub save client so no need to call it here
     $client->status->set('unwelcome', 'SYSTEM', 'Trading disabled for investment Europe ltd');
     if ($accept_risk) {
@@ -73,35 +73,7 @@ sub create_account {
 
     BOM::Platform::Account::Real::default::add_details_to_desk($client, $details);
 
-    my $brand = Brands->new(name => request()->brand);
-    send_email({
-            from    => $brand->emails('support'),
-            to      => $brand->emails('compliance'),
-            subject => $client->loginid . ' appropriateness test scoring',
-            message => [
-                      $client->loginid
-                    . ' scored '
-                    . $financial_assessment->{trading_score}
-                    . ' in trading experience and '
-                    . $financial_assessment->{cfd_score}
-                    . ' in CFD assessments, and therefore risk disclosure was '
-                    . ($should_warn ? 'shown and client accepted the disclosure.' : 'not shown.')
-            ],
-        });
     return $status;
-}
-
-# Show the Risk Disclosure warning message when the trading score is less than 8 or CFD score is less than 4
-sub _should_warn {
-    my $fa = shift or die;
-
-    # No warning when CFD score is 4
-    return 0 if $fa->{cfd_score} == 4;
-
-    # No warning when trading score is from 8 to 16
-    return 0 if ($fa->{trading_score} >= 8 and $fa->{trading_score} <= 16);
-
-    return 1;
 }
 
 1;

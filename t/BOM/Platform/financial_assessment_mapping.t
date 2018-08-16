@@ -2,50 +2,65 @@ use strict;
 use warnings;
 
 use Test::More;
-use BOM::Platform::Account::Real::default;
+use BOM::User::FinancialAssessment;
 
-my @all_keys = qw/
-    forex_trading_experience
-    forex_trading_frequency
-    other_instruments_trading_experience
-    other_instruments_trading_frequency
-    cfd_trading_experience
-    cfd_trading_frequency
-    binary_options_trading_experience
-    binary_options_trading_frequency
-    education_level
-    employment_industry
-    income_source
+my @financial_information_keys = qw/
     occupation
+    education_level
+    source_of_wealth
     estimated_worth
     account_turnover
+    employment_industry
+    income_source
     net_income
-    employment_status
-    source_of_wealth/;
+    employment_status/;
 
-my $input_mapping = BOM::Platform::Account::Real::default::get_financial_input_mapping();
-$input_mapping = {%{$input_mapping->{financial_information}}, %{$input_mapping->{trading_experience}}};
+my @trading_experience_keys = qw/
+    other_instruments_trading_frequency
+    other_instruments_trading_experience
+    binary_options_trading_frequency
+    binary_options_trading_experience
+    forex_trading_frequency
+    forex_trading_experience
+    cfd_trading_frequency
+    cfd_trading_experience/;
+
+my $input_mapping = BOM::User::FinancialAssessment::get_config();
+
 subtest "check for all keys" => sub {
-    is_deeply([sort keys %{$input_mapping}], [sort @all_keys], 'correct keys for financial input mapping');
+    is_deeply([sort keys %{$input_mapping->{financial_information}}], [sort @financial_information_keys], 'correct keys for financial information');
+    is_deeply([sort keys %{$input_mapping->{trading_experience}}],    [sort @trading_experience_keys],    'correct keys for trading experience');
 };
 
 subtest "check if keys are valid" => sub {
-    foreach my $key (@all_keys) {
-        ok exists $input_mapping->{$key}->{label},           "label key exists for $key";
-        ok exists $input_mapping->{$key}->{possible_answer}, "possible_answer key exists for $key";
+    foreach my $key (@financial_information_keys) {
+        ok exists $input_mapping->{financial_information}->{$key}->{label},           "label key exists for $key in financial_information";
+        ok exists $input_mapping->{financial_information}->{$key}->{possible_answer}, "possible_answer key exists for $key in financial_information";
+    }
+
+    foreach my $key (@trading_experience_keys) {
+        ok exists $input_mapping->{trading_experience}->{$key}->{label},           "label key exists for $key in trading_experience";
+        ok exists $input_mapping->{trading_experience}->{$key}->{possible_answer}, "possible_answer key exists for $key in trading_experience";
     }
 };
 
-subtest "check total score is less than or equal to 60" => sub {
+subtest "check total score is 67" => sub {
     my $total_score = 0;
-    foreach my $key (@all_keys) {
-        my $answer_hash = $input_mapping->{$key}->{possible_answer};
-        foreach my $score (sort { $answer_hash->{$b} <=> $answer_hash->{$a} } keys %$answer_hash) {
-            $total_score += $answer_hash->{$score};
-            last;
+
+    foreach my $key (@financial_information_keys) {
+        my $answer_hash = $input_mapping->{financial_information}->{$key}->{possible_answer};
+        foreach my $answer (keys %{$answer_hash}) {
+            $total_score += $answer_hash->{$answer};
         }
     }
-    cmp_ok($total_score, '<=', 60, "total score should be less than equal to 60");
+
+    foreach my $key (@trading_experience_keys) {
+        my $answer_hash = $input_mapping->{trading_experience}->{$key}->{possible_answer};
+        foreach my $answer (keys %{$answer_hash}) {
+            $total_score += $answer_hash->{$answer};
+        }
+    }
+    is($total_score, 67, "total score is 67");
 };
 
 done_testing;

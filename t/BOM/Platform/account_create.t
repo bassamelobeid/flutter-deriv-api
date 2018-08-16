@@ -11,6 +11,7 @@ use Test::MockModule;
 use Test::Warnings;
 
 use BOM::User::Client;
+use BOM::User::FinancialAssessment qw(decode_fa);
 
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
@@ -107,6 +108,7 @@ my %financial_data = (
     occupation                           => 'Managers',
     employment_status                    => "Self-Employed",
     source_of_wealth                     => "Company Ownership",
+    account_turnover                     => '$50,001 - $100,000',
 );
 
 my %jp_acc_financial_data = (
@@ -165,8 +167,8 @@ subtest 'create account' => sub {
             lives_ok { $real_acc = create_mf_acc($real_client, $user); } "create MF acc";
             is($real_acc->{client}->broker, 'MF', "Successfully create " . $real_acc->{client}->loginid);
             my $cl = BOM::User::Client->new({loginid => $real_acc->{client}->loginid});
-            my $data = JSON::MaybeXS->new->decode($cl->financial_assessment()->data);
-            is $data->{total_score}, 20, "got the total score";
+            my $data = decode_fa($cl->financial_assessment());
+            is $data->{forex_trading_experience}, '0-1 year', "got the forex trading experience";
         } else {
             warning_like { $real_acc = create_mf_acc($real_client, $user); } qr/maltainvest acc opening err/, "failed to create MF acc";
             is($real_acc->{error}, 'invalid', "$broker client can't open MF acc");
@@ -250,20 +252,20 @@ subtest 'create account' => sub {
             email           => $social_login_user_details{email},
         );
         # real acc
-        # MLT social login user is able to create client account
-        if ($broker_code eq 'MLT') {
+        # MF social login user is able to create client account
+        if ($broker_code eq 'MF') {
             lives_ok {
+                my $params = \%financial_data;
+                $params->{accept_risk} = 1;
                 $real_acc = BOM::Platform::Account::Real::maltainvest::create_account({
-                    from_client    => $vr_client,
-                    user           => $social_login_user,
-                    details        => \%details,
-                    country        => $vr_client->residence,
-                    financial_data => \%financial_data,
-                    accept_risk    => 1,
+                    from_client => $vr_client,
+                    user        => $social_login_user,
+                    details     => \%details,
+                    country     => $vr_client->residence,
+                    params      => $params,
                 });
             }
             "create $broker_code account OK, after verify email";
-
             my ($client, $user) = @{$real_acc}{qw/client user/};
             is(defined $user,   1,            "Social login user with residence $user->residence has been created");
             is($client->broker, $broker_code, "Successfully created real account $client->loginid");
@@ -335,13 +337,15 @@ sub create_mf_acc {
     $details{first_name}      = 'MF_' . $from_client->broker;
     $details{client_password} = $from_client->password;
 
+    my $params = \%financial_data;
+    $params->{accept_risk} = 1;
+
     return BOM::Platform::Account::Real::maltainvest::create_account({
-        from_client    => $from_client,
-        user           => $user,
-        details        => \%details,
-        country        => $from_client->residence,
-        financial_data => \%financial_data,
-        accept_risk    => 1,
+        from_client => $from_client,
+        user        => $user,
+        details     => \%details,
+        country     => $from_client->residence,
+        params      => $params
     });
 }
 
