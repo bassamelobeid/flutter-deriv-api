@@ -22,6 +22,7 @@ use BOM::User::Client;
 use BOM::Config::Runtime;
 use BOM::Backoffice::Request qw(request);
 use BOM::User;
+use BOM::User::FinancialAssessment;
 use BOM::Platform::Client::IDAuthentication;
 use BOM::User::Utility;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -930,21 +931,20 @@ if (not $client->is_virtual) {
         });
 }
 
-my $fa_score = $client->financial_assessment_score();
-if (my %TE = %{$client->trading_experience()}) {
+my $built_fa = BOM::User::FinancialAssessment::build_financial_assessment(BOM::User::FinancialAssessment::decode_fa($client->financial_assessment()));
+my $fa_score = $built_fa->{scores};
+my $trading_experience    = $built_fa->{trading_experience};
+my $financial_information = $built_fa->{financial_information};
+if ($trading_experience) {
     Bar("Trading Experience");
-    print_fa_table(%TE);
+    print_fa_table(%$trading_experience);
     print '<p>Trading experience score: ' . $fa_score->{trading_score} . '</p>';
     print '<p>CFD Score: ' . $fa_score->{cfd_score} . '</p><br/>';
 }
-if (my %FI = %{$client->financial_information()}) {
+if ($financial_information) {
     Bar("Financial Information");
-    print_fa_table(%FI);
+    print_fa_table(%$financial_information);
     print '<p>Financial information score: ' . $fa_score->{financial_information_score} . '</p><br/>';
-}
-if (my %OD = %{$client->outdated_financial_assessment()}) {
-    Bar("Outdated Financial Assessment Answers");
-    print_fa_table(%OD);
 }
 
 sub print_fa_table {
@@ -955,8 +955,10 @@ sub print_fa_table {
     print '<br/><table style="width:100%;" border="1" class="sortable"><thead><tr>';
     print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
     print '</thead><tbody>';
-    print '<tr><td>' . $section{$_}->{label} . '</td><td>' . $section{$_}->{answer} . '</td><td>' . $section{$_}->{score} . '</td></tr>'
-        for keys %section;
+    for my $key (keys %section) {
+        my $answer = $section{$key}->{answer} // 'N/A';
+        print '<tr><td>' . $section{$key}->{label} . '</td><td>' . $answer . '</td><td>' . $section{$key}->{score} . '</td></tr>';
+    }
     print '</tbody></table></br>';
 
     return undef;
