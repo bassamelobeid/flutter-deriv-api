@@ -175,9 +175,10 @@ sub set_global_limit {
         foreach my $db (@{$self->_db_list($lc)}) {
             foreach my $market (@{$args->{market}}) {
                 foreach my $expiry_type (@{$args->{expiry_type}}) {
-                    foreach my $barrier_type (@{$args->{barrier_type}}) {
-                        if ($barrier_type) {
-                            $barrier_type = $barrier_type eq 'atm' ? 1 : 0;
+                    foreach my $bt (@{$args->{barrier_type}}) {
+                        my $barrier_type;
+                        if ($bt) {
+                            $barrier_type = $bt eq 'atm' ? 1 : 0;
                         }
                         foreach my $contract_group (@{$args->{contract_group}}) {
                             if (@{$args->{underlying_symbol}}) {
