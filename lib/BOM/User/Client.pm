@@ -10,16 +10,14 @@ use feature qw(state);
 use Email::Stuffer;
 use Date::Utility;
 use List::Util qw/all/;
-use Array::Utils qw/array_minus/;
 use Format::Util::Numbers qw(roundcommon);
-use Try::Tiny;
-use JSON::MaybeUTF8 qw(decode_json_utf8);
 
 use Rose::DB::Object::Util qw(:all);
 use Rose::Object::MakeMethods::Generic scalar => ['self_exclusion_cache'];
 
 use LandingCompany::Registry;
 use BOM::User::Client::Payments;
+use BOM::User::FinancialAssessment qw(is_section_complete decode_fa);
 use BOM::User::Client::Status;
 
 use BOM::Platform::Account::Real::default;
@@ -317,100 +315,19 @@ sub aml_risk_level {
     return $risk;
 }
 
+# This function should be renamed to something more fitting, like passed_compliance checks, or something else. However, this is not done as this function is used to set a flag in the get_account_status call and we don't want to change the name of that flag right now. This should be changed alongside the release of the v4 api.
 sub is_financial_assessment_complete {
     my $self = shift;
 
-    my $sc  = $self->landing_company->short;
-    my $aml = $self->aml_risk_level();
-
-    my $is_FI = $self->is_financial_information_complete();
-    my $is_TE = $self->is_trading_experience_complete();
-
+    my $sc    = $self->landing_company->short;
+    my $aml   = $self->aml_risk_level();
+    my $is_FI = is_section_complete(decode_fa($self->financial_assessment()), 'financial_information');
+    my $is_TE = is_section_complete(decode_fa($self->financial_assessment()), 'trading_experience');
     return 0 if ($sc eq 'costarica' and $aml eq 'high' and not $is_FI);
     return 0 if ($sc eq 'maltainvest' and not($is_FI and $is_TE));
     return 0 if ($sc =~ /^iom|malta$/ and $aml eq 'high' and not $is_FI);
+
     return 1;
-}
-
-sub is_trading_experience_complete {
-    my $self = shift;
-
-    return $self->_is_fa_section_complete('trading_experience');
-}
-
-sub is_financial_information_complete {
-    my $self = shift;
-
-    return $self->_is_fa_section_complete('financial_information');
-}
-
-sub _is_fa_section_complete {
-    my $self = shift;
-    my $key  = shift;
-
-    my $fa = $self->_decode_financial_assessment();
-    return 0 unless $fa;
-    my $im = BOM::Platform::Account::Real::default::get_financial_input_mapping();
-
-    return 0 + all { $fa->{$_} and $fa->{$_}->{answer} } keys %{$im->{$key}};
-}
-
-sub financial_assessment_score {
-    my $self = shift;
-
-    my $fa = $self->_decode_financial_assessment();
-    return undef unless $fa;
-
-    return +{map { $_ => $fa->{$_} } qw/total_score financial_information_score trading_score cfd_score/};
-}
-
-sub trading_experience {
-    my $self = shift;
-
-    return $self->_decode_fa_section('trading_experience');
-}
-
-sub financial_information {
-    my $self = shift;
-
-    return $self->_decode_fa_section('financial_information');
-}
-
-sub outdated_financial_assessment {
-    my $self = shift;
-
-    return $self->_decode_fa_section();
-}
-
-sub _decode_fa_section {
-    my $self = shift;
-    my $key  = shift;
-
-    my $fa = $self->_decode_financial_assessment();
-    return {} unless $fa;
-
-    my $im = BOM::Platform::Account::Real::default::get_financial_input_mapping();
-
-    unless ($key) {
-        my @active_keys = map { keys %{$im->{$_}} } keys %{$im};
-        my @score_mapping = BOM::Platform::Account::Real::default::get_financial_score_mapping();
-        push(@active_keys, @score_mapping);
-        # Get outdated keys by substructing set of active keys from set of user's answers
-        my @fa_keys = keys %{$fa};
-        my @outdated_keys = array_minus(@fa_keys, @active_keys);
-        my %outdated_fa;
-        @outdated_fa{@outdated_keys} = @{$fa}{@outdated_keys};
-        return \%outdated_fa;
-    }
-    return +{map { $_ => $fa->{$_} } grep { $fa->{$_} } keys %{$im->{$key}}};
-}
-
-sub _decode_financial_assessment {
-    my $self = shift;
-
-    my $fa = $self->financial_assessment();
-
-    return $fa ? decode_json_utf8($fa->data || '{}') : undef;
 }
 
 sub documents_expired {
