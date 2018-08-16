@@ -31,7 +31,6 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
 package MojoX::JSON::RPC::Client;
-use Data::Dumper;
 use Test::Most;
 
 sub tcall {
@@ -684,8 +683,7 @@ subtest $method => sub {
     );
 
     # test 'financial_assessment_not_complete'
-    my $temp = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
-    my $data = {map { $_ => {answer => $temp->{$_}} } keys %$temp};
+    my $data = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
 
     # function to repeatedly test financial assessment
     sub test_financial_assessment {
@@ -695,6 +693,7 @@ subtest $method => sub {
         });
         $test_client->save();
         my $res = ((grep { $_ eq 'financial_assessment_not_complete' } @{$c->tcall($method, {token => $token1})->{status}}) == $is_present);
+
         ok($res, $msg);
     }
 
@@ -702,7 +701,7 @@ subtest $method => sub {
     test_financial_assessment($data, 0, 'financial_assessment_not_complete should not present when questions are answered properly');
 
     # When some answers are empty
-    $data->{account_turnover}->{answer} = "";
+    $data->{account_turnover} = "";
     test_financial_assessment($data, 1, 'financial_assessment_not_complete should present when some answers are empty');
 
     # When some questions are not answered
@@ -1185,6 +1184,7 @@ subtest $method => sub {
         "occupation"                           => 'Managers',                                         # +0
         "employment_status"                    => "Self-Employed",                                    # +0
         "source_of_wealth"                     => "Company Ownership",                                # +0
+        "account_turnover"                     => 'Less than $25,000',                                # +0
     };
 
     my $res = $c->tcall(
@@ -1209,20 +1209,19 @@ subtest $method => sub {
             args  => $args,
             token => $token1
         });
-    cmp_ok($res->{total_score},                 "==", 27, "Got correct total score");
-    cmp_ok($res->{financial_information_score}, "==", 18, "Got correct financial information score");
-    cmp_ok($res->{trading_score},               "==", 9,  "Got correct trading score");
-    cmp_ok($res->{cfd_score},                   "==", 1,  "Got correct CFD score");
+    is($res->{total_score}, 27, "Got correct total score");
 
     # test that setting this for one client also sets it for client with different landing company
     is($c->tcall('get_financial_assessment', {token => $token_mlt})->{source_of_wealth}, undef, "Financial assessment not set for MLT client");
     is($c->tcall('get_financial_assessment', {token => $token_mf})->{source_of_wealth},  undef, "Financial assessment not set for MF clinet");
+
     $c->tcall(
         $method,
         {
             args  => $args,
             token => $token_mf
         });
+
     is($c->tcall('get_financial_assessment', {token => $token_mf})->{source_of_wealth}, "Company Ownership",
         "Financial assessment set for MF client");
     is(
@@ -1234,6 +1233,8 @@ subtest $method => sub {
     # test that setting this for one client sets it for clients with same landing company
     is($c->tcall('get_financial_assessment', {token => $token_21})->{source_of_wealth},   undef, "Financial assessment not set for CR client");
     is($c->tcall('get_financial_assessment', {token => $token_cr_2})->{source_of_wealth}, undef, "Financial assessment not set for second CR clinet");
+    $mailbox->clear;
+
     $c->tcall(
         $method,
         {
@@ -1247,6 +1248,12 @@ subtest $method => sub {
         "Company Ownership",
         "Financial assessment set for second CR client"
     );
+
+    my @msgs = $mailbox->search(
+        email   => 'compliance@binary.com',
+        subject => qr/has submitted the assessment test/
+    );
+    ok(!@msgs, 'no email for CR submitting FA');
 
 };
 
@@ -1268,10 +1275,6 @@ subtest $method => sub {
             args  => $args,
             token => $token1
         });
-    cmp_ok($res->{total_score},                 "==", 27, "Got correct total score");
-    cmp_ok($res->{financial_information_score}, "==", 18, "Got correct financial information score");
-    cmp_ok($res->{trading_score},               "==", 9,  "Got correct trading score");
-    cmp_ok($res->{cfd_score},                   "==", 1,  "Got correct CFD score");
     is $res->{education_level}, 'Secondary', 'Got correct answer for assessment key';
 };
 
@@ -1296,25 +1299,23 @@ subtest $method => sub {
         "occupation"                           => 'Managers',                                         # +0
         "employment_status"                    => "Self-Employed",                                    # +0
         "source_of_wealth"                     => "Company Ownership",                                # +0
+        "account_turnover"                     => 'Less than $25,000',                                # +0
     };
 
     $mailbox->clear;
-
     $c->tcall(
         $method,
         {
             args  => $args,
             token => $token1
         });
-
     is($c->tcall('get_financial_assessment', {token => $token1})->{forex_trading_experience}, "1-2 years", "forex_trading_experience changed");
 
     my @msgs = $mailbox->search(
         email   => 'compliance@binary.com',
         subject => qr/assessment test details have been updated/
     );
-    ok(@msgs, 'send a email to compliance after changing financial assessment');
-
+    ok(@msgs, 'send a email to compliance for MF after changing financial assessment');
     # make call again but with same arguments
 
     $mailbox->clear;

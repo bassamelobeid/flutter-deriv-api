@@ -21,6 +21,7 @@ use List::Util qw(any none sum0 first);
 
 use Brands;
 use BOM::User::Client;
+use BOM::User::FinancialAssessment qw(is_section_complete update_financial_assessment decode_fa build_financial_assessment);
 use LandingCompany::Registry;
 use Format::Util::Numbers qw/formatnumber financialrounding/;
 use ExchangeRates::CurrencyConverter qw(in_usd);
@@ -507,9 +508,11 @@ rpc get_account_status => sub {
     push @status, 'social_signup' if $user->{has_social_signup};
 
     # check whether the user need to perform financial assessment
-    push(@status, 'financial_information_not_complete') unless $client->is_financial_information_complete();
-    push(@status, 'trading_experience_not_complete')    unless $client->is_trading_experience_complete();
-    push(@status, 'financial_assessment_not_complete')  unless $client->is_financial_assessment_complete();
+    push(@status, 'financial_information_not_complete')
+        unless is_section_complete(decode_fa($client->financial_assessment()), "financial_information");
+    push(@status, 'trading_experience_not_complete')
+        unless is_section_complete(decode_fa($client->financial_assessment()), "trading_experience");
+    push(@status, 'financial_assessment_not_complete') unless $client->is_financial_assessment_complete();
 
     my $shortcode                     = $client->landing_company->short;
     my $prompt_client_to_authenticate = 0;
@@ -1615,77 +1618,21 @@ rpc set_financial_assessment => sub {
 
     return BOM::RPC::v3::Utility::permission_error() if ($client->is_virtual or $client->landing_company->short eq 'japan');
 
-    my ($response, $subject, $message);
+    my $is_FI_complete = is_section_complete($params->{args}, "financial_information");
+    my $is_TE_complete = is_section_complete($params->{args}, "trading_experience");
 
-    try {
-        my $input_mappings       = BOM::Platform::Account::Real::default::get_financial_input_mapping();
-        my %financial_data       = map { $_ => $params->{args}->{$_} } BOM::RPC::v3::Utility::keys_of_values $input_mappings;
-        my $financial_evaluation = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
-        my %previous             = %{get_financial_assessment($params)};
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'IncompleteFinancialAssessment',
+            message_to_client => localize("The financial assessment is not complete")}
+    ) unless ($client->landing_company->short eq "maltainvest" ? $is_TE_complete && $is_FI_complete : $is_FI_complete);
 
-        BOM::RPC::v3::Utility::_update_existing_financial_assessment($client->user, %$financial_evaluation);
+    update_financial_assessment($client->user, $params->{args});
 
-        my %diffs;
-        delete $params->{args}->{set_financial_assessment};
-
-        if (keys %previous) {
-            %diffs = _get_fa_diff(\%previous, $params->{args});
-        }
-
-        if (%diffs) {
-            foreach my $key (keys %diffs) {
-                $message .= "$key : " . $diffs{$key}->[0] . "  ->  " . $diffs{$key}->[1] . "\n";
-            }
-
-            # Scores are only relevant to MF clients
-            if ($client->landing_company->short eq 'maltainvest') {
-                $message .= "\nTotal Score :  " . $financial_evaluation->{total_score} . "\n";
-                $message .= "Trading Score :  " . $financial_evaluation->{trading_score} . "\n";
-                $message .= "CFD Score :  " . $financial_evaluation->{cfd_score} . "\n";
-                $message .= "Financial Information Score :  " . $financial_evaluation->{financial_information_score};
-            }
-        }
-
-        $response = {map { $_ => $financial_evaluation->{$_} } qw(total_score cfd_score trading_score financial_information_score)};
-        $subject = $client_loginid . ' assessment test details have been updated';
-    }
-    catch {
-        $response = BOM::RPC::v3::Utility::create_error({
-                code              => 'UpdateAssessmentError',
-                message_to_client => localize("Sorry, an error occurred while processing your request.")});
-        $subject = "$client_loginid - assessment test details error";
-        $message = "An error occurred while updating assessment test details for $client_loginid. Please handle accordingly.";
-    };
-
-    my $brand = Brands->new(name => request()->brand);
-
-    send_email({
-            from    => $brand->emails('support'),
-            to      => $brand->emails('compliance'),
-            subject => $subject,
-            message => [$message],
-        }) if $message;
+    # This is here to continue sending scores through our api as we cannot change the output of our calls. However, this should be removed with v4 as this is not used by front-end at all
+    my $response = build_financial_assessment($params->{args})->{scores};
 
     return $response;
 };
-
-sub _get_fa_diff {
-    my ($previous, $new) = @_;
-
-    my %result;
-    foreach my $key (keys %$new) {
-        #our API calls allow null values to be passed in as arguments so this needs to be checked first and foremost.
-        if ($new->{$key}) {
-            if (!$previous->{$key}) {
-                $result{$key} = ["N/A", $new->{$key}];
-            } elsif ($previous->{$key} ne $new->{$key}) {
-                $result{$key} = [$previous->{$key}, $new->{$key}];
-            }
-        }
-    }
-
-    return %result;
-}
 
 rpc get_financial_assessment => sub {
     my $params = shift;
@@ -1693,18 +1640,12 @@ rpc get_financial_assessment => sub {
     my $client = $params->{client};
     return BOM::RPC::v3::Utility::permission_error() if ($client->is_virtual or $client->landing_company->short eq 'japan');
 
-    my $response = {};
-    if (my $financial_assessment = $client->financial_assessment()) {
-        if (my $data = $financial_assessment->data) {
-            if (my $data = $json->decode($data)) {
-                my %score_keys = map { $_ => 1 } qw(total_score financial_information_score trading_score cfd_score);
-                foreach my $key (keys %$data) {
-                    $response->{$key} = $data->{$key}->{answer} if not exists $score_keys{$key};
-                }
+    my $response = decode_fa($client->financial_assessment());
 
-                $response->{$_} = $data->{$_} // 0 for keys %score_keys;
-            }
-        }
+    # This is here to continue sending scores through our api as we cannot change the output of our calls. However, this should be removed with v4 as this is not used by front-end at all
+    if (keys %$response) {
+        my $scores = build_financial_assessment($response)->{scores};
+        $response = {%$response, %$scores};
     }
 
     return $response;

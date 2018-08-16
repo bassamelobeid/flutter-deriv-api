@@ -623,11 +623,6 @@ sub validate_uri {
     return undef;
 }
 
-sub keys_of_values {
-    my $href = shift;
-    return map { keys %$_ } values %$href;
-}
-
 sub set_professional_status {
     my ($client, $professional, $professional_requested) = @_;
     my $error;
@@ -761,30 +756,6 @@ sub filter_out_suspended_cryptocurrencies {
     my @valid_payout_currencies =
         sort grep { !exists $suspended_currencies->{$_} } @currencies;
     return \@valid_payout_currencies;
-}
-
-sub _update_existing_financial_assessment {
-    my ($user, %new_financial_assessment) = @_;
-
-    my $json = JSON::MaybeXS->new;
-
-    foreach my $cli ($user->clients) {
-        my %data = ();
-        if (my $fa = $cli->financial_assessment) {
-            %data = %{$json->decode($fa->data)};
-        }
-        delete @new_financial_assessment{grep { not defined $new_financial_assessment{$_} } %new_financial_assessment};
-        # Merge and override previous answers
-        @data{keys %new_financial_assessment} = values %new_financial_assessment;
-
-        $cli->financial_assessment({
-            data => Encode::encode_utf8($json->encode(\%data)),
-        });
-        $cli->save;
-    }
-
-    return undef;
-
 }
 
 1;

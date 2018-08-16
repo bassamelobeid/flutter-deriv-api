@@ -85,7 +85,6 @@ test_sendrecv_params 'buy/test_send.json', 'buy/test_receive_nobalance.json', _g
 # TEMPORARY: Need to call this before sub account as sub account return all crypto currencies as well
 test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json',
     _get_stashed('authorize/stash/token'), '(USD|EUR|GBP|AUD|BTC|LTC|BCH|DAI|ETH)', 9;
-
 # ADMIN SCOPE CALLS (CR)
 test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json',
     _get_stashed('new_account_real/oauth_token'), 'USD';

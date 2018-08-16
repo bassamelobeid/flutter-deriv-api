@@ -2,26 +2,6 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
-    "total_score": {
-      "type": "integer",
-      "pattern": "^[_2]$",
-      "required": "1"
-    },
-    "cfd_score": {
-      "type": "integer",
-      "pattern": "^[_3]$",
-      "required": "1"
-    },
-    "financial_information_score": {
-      "type": "integer",
-      "pattern": "^[_4]$",
-      "required": "1"
-    },
-    "trading_score": {
-      "type": "integer",
-      "pattern": "^[_5]$",
-      "required": "1"
-    },
     "forex_trading_frequency": {
       "type": "string",
       "pattern": "^40 transactions or more in the past 12 months$"
@@ -93,6 +73,26 @@
       "type": "string",
       "pattern": "^Company Ownership$",
       "required": 0
+    },
+    "total_score": {
+      "type": "integer",
+      "pattern": "^[_2]$",
+      "required": 1
+    },
+    "cfd_score": {
+      "type": "integer",
+      "pattern": "^[_3]$",
+      "required": 1
+    },
+    "trading_score": {
+      "type": "integer",
+      "pattern": "^[_5]$",
+      "required": 1
+    },
+    "financial_information_score": {
+      "type": "integer",
+      "pattern": "^[_4]$",
+      "required": 1
     }
   }
 }

@@ -33,6 +33,7 @@ use BOM::Config;
 use BOM::Platform::Context qw (request);
 use BOM::Database::Model::OAuth;
 use BOM::User::Client::PaymentNotificationQueue;
+use BOM::User::FinancialAssessment qw(update_financial_assessment decode_fa);
 
 requires_auth();
 
@@ -284,6 +285,10 @@ rpc new_account_real => sub {
                 message_to_client => $error_map->{$err_code}});
     }
 
+    # Updates the financial assessment for the new client, will be removed when financial assessment is moved to the user level
+
+    update_financial_assessment($client->user, decode_fa($client->financial_assessment())) if $client->financial_assessment();
+
     my $new_client      = $acc->{client};
     my $landing_company = $new_client->landing_company;
 
@@ -337,6 +342,7 @@ rpc new_account_maltainvest => sub {
     my $params = shift;
 
     my ($client, $args) = @{$params}{qw/client args/};
+    my $user = $client->user;
 
     $args->{client_type} //= 'retail';
 
@@ -356,14 +362,6 @@ rpc new_account_maltainvest => sub {
                 code              => $err,
                 message_to_client => $error_map->{$err}});
     }
-
-    my $input_mappings       = BOM::Platform::Account::Real::default::get_financial_input_mapping();
-    my %financial_data       = map { $_ => $params->{args}->{$_} } BOM::RPC::v3::Utility::keys_of_values $input_mappings;
-    my $financial_evaluation = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
-
-    my $user = $client->user;
-
-    BOM::RPC::v3::Utility::_update_existing_financial_assessment($user, %$financial_evaluation);
 
     # When a Binary (Europe) Ltd/Binary (IOM) Ltd account is created,
     # the 'place of birth' field is not present.
@@ -390,11 +388,10 @@ rpc new_account_maltainvest => sub {
     my $acc = BOM::Platform::Account::Real::maltainvest::create_account({
         ip => $params->{client_ip} // '',
         country => uc($params->{country_code} // ''),
-        from_client    => $client,
-        user           => $user,
-        details        => $details_ref->{details},
-        accept_risk    => $args->{accept_risk},
-        financial_data => \%financial_data,
+        from_client => $client,
+        user        => $user,
+        details     => $details_ref->{details},
+        params      => $args
     });
 
     if (my $err_code = $acc->{error}) {

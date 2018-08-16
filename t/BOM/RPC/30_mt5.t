@@ -6,7 +6,6 @@ use Test::Mojo;
 use Test::MockModule;
 
 use List::Util qw();
-use JSON::MaybeXS;
 use Email::Folder::Search;
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -17,6 +16,7 @@ use BOM::MT5::User::Async;
 use BOM::Platform::Token;
 use BOM::User;
 use Email::Stuffer::TestLinks;
+use JSON::MaybeUTF8;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 my $json = JSON::MaybeXS->new;
@@ -88,10 +88,7 @@ my %financial_data = (
     "source_of_wealth"                     => "Company Ownership",
 );
 
-my $financial_evaluation = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
-$test_client->financial_assessment({
-    data => Encode::encode_utf8($json->encode($financial_evaluation)),
-});
+$test_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
 $test_client->save;
 
 my $m        = BOM::Database::Model::AccessToken->new;
@@ -260,9 +257,7 @@ subtest 'MF to MLT account switching' => sub {
     $mlt_switch_client->set_default_account('EUR');
     $mlt_switch_client->residence('at');
 
-    $mf_switch_client->financial_assessment({
-        data => Encode::encode_utf8($json->encode($financial_evaluation)),
-    });
+    $mf_switch_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
 
     $mf_switch_client->save();
     $mlt_switch_client->save();
@@ -323,9 +318,7 @@ subtest 'MLT to MF account switching' => sub {
     $mlt_switch_client->set_default_account('EUR');
     $mlt_switch_client->residence('at');
 
-    $mf_switch_client->financial_assessment({
-        data => Encode::encode_utf8($json->encode($financial_evaluation)),
-    });
+    $mf_switch_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
 
     $mf_switch_client->save();
     $mlt_switch_client->save();

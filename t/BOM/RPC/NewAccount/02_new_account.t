@@ -18,6 +18,8 @@ use BOM::Platform::Token;
 use BOM::User::Client;
 use Email::Stuffer::TestLinks;
 use Email::Folder::Search;
+use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
+use BOM::Test::Helper::FinancialAssessment;
 
 use utf8;
 
@@ -308,6 +310,8 @@ subtest $method => sub {
 
         my $cl_bch = BOM::User::Client->new({loginid => $loginid});
 
+        is($cl_bch->financial_assessment(), undef, 'new client has no financial assessment if previous client has none as well');
+
         is $client_cr->{$_}, $cl_bch->$_, "$_ is correct on created account" for keys %$client_cr;
 
         ok(defined($cl_bch->binary_user_id), 'BCH client has a binary user id');
@@ -318,9 +322,24 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error('cannot create another crypto currency account with same currency')
             ->error_code_is('CurrencyTypeNotAllowed', 'error code is CurrencyTypeNotAllowed');
 
+        # Set financial assessment for default client before making a new account to check if new account inherits the financial assessment data
+        my $data = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
+        $cl_usd->financial_assessment({
+            data => encode_json_utf8($data),
+        });
+        $cl_usd->save();
+
         $params->{args}->{currency} = 'LTC';
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('create second crypto currency account')
             ->result_value_is(sub { shift->{currency} }, 'LTC', 'crypto account currency is LTC');
+
+        my $cl_ltc = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
+
+        cmp_deeply(
+            decode_json_utf8($cl_ltc->financial_assessment->{data}),
+            decode_json_utf8($cl_usd->financial_assessment->{data}),
+            "new client financial assessment is the same as old client financial_assessment"
+        );
     };
 };
 
@@ -329,7 +348,26 @@ $params = {
     language => 'EN',
     source   => 1,
     country  => 'ru',
-    args     => {},
+    args     => {
+        'other_instruments_trading_frequency'  => '6-10 transactions in the past 12 months',
+        'forex_trading_frequency'              => '0-5 transactions in the past 12 months',
+        'education_level'                      => 'Secondary',
+        'forex_trading_experience'             => '1-2 years',
+        'binary_options_trading_experience'    => '1-2 years',
+        'cfd_trading_experience'               => '1-2 years',
+        'employment_industry'                  => 'Finance',
+        'income_source'                        => 'Self-Employed',
+        'other_instruments_trading_experience' => 'Over 3 years',
+        'binary_options_trading_frequency'     => '40 transactions or more in the past 12 months',
+        'set_financial_assessment'             => 1,
+        'occupation'                           => 'Managers',
+        'cfd_trading_frequency'                => '0-5 transactions in the past 12 months',
+        'source_of_wealth'                     => 'Company Ownership',
+        'estimated_worth'                      => '$100,000 - $250,000',
+        'employment_status'                    => 'Self-Employed',
+        'net_income'                           => '$25,000 - $50,000',
+        'account_turnover'                     => '$50,001 - $100,000'
+    },
 };
 
 subtest $method => sub {
@@ -502,7 +540,7 @@ subtest $method => sub {
         isnt(keys %$result, 0, 'MF client has financial assessment set');
         my @msgs = $mailbox->search(
             email   => 'compliance@binary.com',
-            subject => qr/\Q$new_loginid appropriateness test scoring\E/
+            subject => qr/\Qhas submitted the assessment test\E/
         );
         ok(@msgs, "Risk disclosure email received");
     };

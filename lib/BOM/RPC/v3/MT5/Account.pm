@@ -27,7 +27,6 @@ use BOM::RPC::v3::Accounts;
 use BOM::Config;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Account::Real::default;
 use BOM::User;
 use BOM::User::Client;
 use BOM::MT5::User::Async;
@@ -303,6 +302,7 @@ async_rpc mt5_new_account => sub {
     return permission_error_future() if $group eq '';
 
     if ($account_type eq 'financial') {
+
         return create_error_future({
                 code              => 'FinancialAssessmentMandatory',
                 message_to_client => localize('Please complete financial assessment.')}) unless $client->is_financial_assessment_complete();
