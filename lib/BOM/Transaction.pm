@@ -401,15 +401,6 @@ sub calculate_limits {
         $limits{lookback_open_position_limit} = $custom_limit if defined $custom_limit;
     }
 
-    if ($client->landing_company->short eq 'japan') {
-        my $qc = BOM::Config::QuantsConfig->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader());
-        my $klfb_config = $qc->get_config('klfb')->[0];
-        $limits{klfb_risk_limit} = {
-            limit => $klfb_config->{limit},
-            tstmp => $klfb_config->{date},
-        } if $klfb_config;
-    }
-
     return \%limits;
 }
 
@@ -601,12 +592,6 @@ sub buy {
 
     enqueue_new_transaction(_get_params_for_expiryqueue($self));    # For soft realtime expiration notification.
 
-    # Japan's regulator required us to keep monitor on our risk level and alert the team if the risk level is reaching the limit
-    # Hence we have this piece of code which will calculate them and update datalog
-    if ($self->client->landing_company->short eq 'japan' and BOM::Config::RedisReplicated::redis_read()->exists('klfb_risk::JP')) {
-        my $new_klfb_risk = $fmb->{payout_price} - $fmb->{buy_price};
-        BOM::Config::RedisReplicated::redis_write()->incrbyfloat('klfb_risk::JP', $new_klfb_risk);
-    }
     return;
 }
 
@@ -865,10 +850,6 @@ sub sell {
     $self->transaction_id($txn->{id});
     $self->reference_id($buy_txn_id);
 
-    if ($self->client->landing_company->short eq 'japan' and BOM::Config::RedisReplicated::redis_read()->exists('klfb_risk::JP')) {
-        my $new_klfb_risk = ($fmb->{sell_price} - $fmb->{buy_price}) - ($fmb->{payout_price} - $fmb->{buy_price});
-        BOM::Config::RedisReplicated::redis_write()->incrbyfloat('klfb_risk::JP', $new_klfb_risk);
-    }
     return;
 }
 
@@ -1227,11 +1208,6 @@ In case of an unexpected error, the exception is re-thrown unmodified.
                 BOM::Platform::Context::localize('No further trading is allowed on this contract type for the current trading session.'),
         );
     },
-    BI052 => Error::Base->cuss(
-        -type              => 'KLFBLimitExceeded',
-        -mesg              => 'KLFB risk limit exceeded',
-        -message_to_client => BOM::Platform::Context::localize('No further trading is allowed at this moment.'),
-    ),
     BI054 => Error::Base->cuss(
         -type              => 'SymbolMissingInBetMarketTable',
         -mesg              => 'Symbol missing in bet.market table',
