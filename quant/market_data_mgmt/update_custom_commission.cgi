@@ -9,10 +9,13 @@ use lib qw(/home/git/regentmarkets/bom-backoffice /home/git/regentmarkets/bom/cg
 use JSON::MaybeXS;
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::CustomCommissionTool;
+use BOM::Backoffice::Auth0;
 BOM::Backoffice::Sysinit::init();
-my $json = JSON::MaybeXS->new;
+my $json  = JSON::MaybeXS->new;
+my $staff = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 my $args = {
+    staff             => $staff,
     name              => request()->param('name'),
     currency_symbol   => request()->param('currency_symbol'),
     underlying_symbol => request()->param('underlying_symbol'),

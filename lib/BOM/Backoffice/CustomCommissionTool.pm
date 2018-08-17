@@ -96,6 +96,7 @@ sub _get_info {
 
     return {
         name       => $config->{name},
+        staff      => ($config->{staff} // 'unknown'),
         start_time => Date::Utility->new($config->{start_time})->datetime,
         end_time   => Date::Utility->new($config->{end_time})->datetime,
         (bias => $config->{bias} ? $config->{bias} : 'none'),
