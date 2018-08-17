@@ -124,6 +124,7 @@ sub _perform_checks {
                 'commission',
                 +{
                     name              => "feed jump $tick->{symbol} $tick->{epoch}",
+                    staff             => 'feed daemon',
                     underlying_symbol => $tick->{symbol},
                     start_time        => $tick->{epoch},
                     # each jump triggers a commission for 10 minutes, also this is handled in historical volatility
