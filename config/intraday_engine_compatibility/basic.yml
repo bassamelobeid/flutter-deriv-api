@@ -24,6 +24,25 @@ SSMI: *equities
 BFX: *equities
 STI: *equities
 ISEQ: *equities
+OTC_AEX: &30min_equities
+  callput:
+    intraday:
+      spot:
+        euro_atm:
+          max: 1h
+          min: 30m
+OTC_AS51: *equities
+OTC_DJI: *equities
+OTC_FCHI: *equities
+OTC_FTSE: *equities
+OTC_GDAXI: *equities
+OTC_HSI: *equities
+OTC_IBEX35: *equities
+OTC_N225: *30min_equities
+OTC_NDX: *equities
+OTC_SSMI: *equities
+OTC_SPC: *equities
+OTC_SX5E: *30min_equities
 WLDAUD: &smart_fx
   callput:
     intraday:
