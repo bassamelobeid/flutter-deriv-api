@@ -384,7 +384,6 @@ rpc new_account_maltainvest => sub {
     my $val = _update_professional_existing_clients($clients, $professional_status, $professional_requested);
 
     return $val if $val;
-
     my $acc = BOM::Platform::Account::Real::maltainvest::create_account({
         ip => $params->{client_ip} // '',
         country => uc($params->{country_code} // ''),

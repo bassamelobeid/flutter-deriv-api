@@ -350,6 +350,7 @@ sub error_map {
         ),
         'InvalidDateOfBirth'         => localize('Date of birth is invalid'),
         'InsufficientAccountDetails' => localize('Please provide complete details for account opening.')};
+
 }
 
 =head2 filter_siblings_by_landing_company

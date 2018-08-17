@@ -41,6 +41,7 @@ $client_details = {
     secret_question        => 'test',
     secret_answer          => 'test',
     account_opening_reason => 'Speculative',
+    citizen                => 'de',
 };
 
 $params = {
@@ -202,6 +203,7 @@ subtest $method => sub {
 
         $params->{token} = BOM::Database::Model::AccessToken->new->create_token($vclient->loginid, 'test token');
         $params->{args}->{residence} = 'id';
+
         @{$params->{args}}{keys %$client_details} = values %$client_details;
         delete $params->{args}->{first_name};
 
@@ -385,6 +387,7 @@ subtest $method => sub {
             $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                 broker_code => 'VRTC',
                 email       => $email,
+                citizen => '',
             });
             $auth_token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
 
@@ -428,6 +431,7 @@ subtest $method => sub {
             ->error_message_is('Please provide complete details for account opening.', 'It should return error if client does not accept risk');
 
         $params->{args}->{residence} = 'de';
+
         @{$params->{args}}{keys %$client_details} = values %$client_details;
         delete $params->{args}->{first_name};
 
@@ -446,6 +450,16 @@ subtest $method => sub {
         $params->{args}->{place_of_birth}            = "de";
         $params->{args}->{tax_residence}             = "de,nl";
         $params->{args}->{tax_identification_number} = "111222";
+
+        delete $params->{args}->{citizen};
+
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
+            ->error_message_is('Please provide complete details for account opening.', 'It should return error if missing any details');
+
+        $client->citizen('at');
+        $client->save;
+        $params->{args}->{citizen} = $client_details->{citizen};
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('email unverified', 'It should return error if email unverified')

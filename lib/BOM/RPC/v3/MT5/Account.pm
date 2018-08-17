@@ -251,6 +251,12 @@ async_rpc mt5_new_account => sub {
             message_to_client => localize('Invalid account type.')});
     return $invalid_account_type_error if (not $account_type or $account_type !~ /^demo|gaming|financial$/);
 
+    return create_error_future({
+            code              => 'NoCitizen',
+            message_to_client => localize('Please set citizenship for your account.')})
+        if not $client->is_virtual()
+        and not $client->citizen();
+
     $mt5_account_type = '' if $account_type eq 'gaming';
 
     return create_error_future({
@@ -281,6 +287,7 @@ async_rpc mt5_new_account => sub {
     return $invalid_account_type_error if $manager_id and $account_type eq 'demo';
 
     my $user = $client->user;
+
     # demo accounts type determined if this parameter exists or not
     my $company_type        = $mt5_account_type eq '' ? 'gaming' : 'financial';
     my $company_name        = $countries_list->{$residence}->{"mt_${company_type}_company"};

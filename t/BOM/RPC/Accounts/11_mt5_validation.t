@@ -21,6 +21,7 @@ my $user = BOM::User->create(
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
+    citizen     => 'at',
 });
 $test_client->set_default_account('USD');
 $test_client->save();
@@ -64,6 +65,16 @@ subtest 'new account' => sub {
     $test_client->residence($residence);
     $test_client->save;
 
+    my $citizen = $test_client->citizen;
+
+    $test_client->citizen('');
+    $test_client->save;
+
+    $c->call_ok($method, $params)->has_error->error_message_is('Please set citizenship for your account.', 'Citizen not set');
+
+    $test_client->citizen($citizen);
+    $test_client->save;
+
     $params->{args}->{mainPassword}   = 'Abc123';
     $params->{args}->{investPassword} = 'Abc123';
     $c->call_ok($method, $params)
@@ -86,6 +97,7 @@ subtest 'new account' => sub {
     # Non-MLT/CR client
     $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MX',
+        citizen     => 'de',
         residence   => 'fr',
     });
     $test_client->set_default_account('EUR');

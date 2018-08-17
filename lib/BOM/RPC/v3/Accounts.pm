@@ -988,13 +988,11 @@ rpc set_settings => sub {
                 code              => 'RestrictedCountry',
                 message_to_client => localize('The supplied tax residence "[_1]" is in a restricted country.', uc $bad_residence)});
     }
-
     return BOM::RPC::v3::Utility::create_error({
             code => 'TINDetailsMandatory',
             message_to_client =>
                 localize('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.')}
     ) if ($client->landing_company->short eq 'maltainvest' and (not $tax_residence or not $tax_identification_number));
-
     my $now             = Date::Utility->new;
     my $address1        = $args->{'address_line_1'} // $client->address_1;
     my $address2        = ($args->{'address_line_2'} // $client->address_2) // '';
@@ -1004,7 +1002,13 @@ rpc set_settings => sub {
     my $phone           = ($args->{'phone'} // $client->phone) // '';
     my $birth_place     = $args->{place_of_birth} // $client->place_of_birth;
     my $citizen         = ($args->{'citizen'} // $client->citizen) // '';
+
     my $cil_message;
+    #citizenship is mandatory for some clients,so we shouldnt let them to remove it
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'PermissionDenied',
+            message_to_client => localize('Citizenship is required')}
+    ) if ($client->landing_company->citizen_required && (!defined $citizen || $citizen eq ''));
 
     if (   ($address1 and $address1 ne $client->address_1)
         or $address2 ne $client->address_2
@@ -1106,6 +1110,7 @@ rpc set_settings => sub {
         [localize('Address'),              $full_address],
         [localize('Telephone'),            $client->phone],
         [localize('Citizen'),              $client->citizen]);
+
     my $tr_tax_residence = join ', ', map { Locale::Country::code2country($_) } split /,/, ($client->tax_residence || '');
 
     push @updated_fields,

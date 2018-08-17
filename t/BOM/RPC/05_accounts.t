@@ -143,6 +143,7 @@ my $test_client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client(
 $test_client_mlt->email($email_mlt_mf);
 $test_client_mlt->set_default_account('EUR');
 $test_client_mlt->save;
+
 my $test_client_mlt_loginid = $test_client_mlt->loginid;
 
 my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -171,7 +172,6 @@ my $token_japan    = $m->create_token($japan_client->loginid, 'test token');
 my $token_mx       = $m->create_token($test_client_mx->loginid, 'test token');
 my $token_mlt      = $m->create_token($test_client_mlt->loginid, 'test token');
 my $token_mf       = $m->create_token($test_client_mf->loginid, 'test token');
-
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
@@ -242,9 +242,8 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 # test begin
-my $t = Test::Mojo->new('BOM::RPC');
-my $c = MojoX::JSON::RPC::Client->new(ua => $t->app->ua);
-
+my $t      = Test::Mojo->new('BOM::RPC');
+my $c      = MojoX::JSON::RPC::Client->new(ua => $t->app->ua);
 my $method = 'payout_currencies';
 subtest $method => sub {
     # we shouldn't care about order of currencies
@@ -1401,6 +1400,7 @@ subtest $method => sub {
         address_state  => 'BA',
         phone          => '2345678',
         place_of_birth => 'au',
+        citizen        => 'at',
     );
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
@@ -1413,7 +1413,6 @@ subtest $method => sub {
 
     $params->{args} = {%{$params->{args}}, %full_args};
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', 'real account cannot update residence');
-
     $params->{args} = {%full_args};
 
     is(
@@ -1432,7 +1431,6 @@ subtest $method => sub {
     is($c->tcall($method, $params)->{status}, 1, 'can send account_opening_reason with same value');
 
     is($c->tcall($method, $params)->{status}, 1, 'can send place_of_birth with same value');
-
     {
         local $full_args{place_of_birth} = 'at';
         $params->{args} = {%full_args};
@@ -1443,6 +1441,18 @@ subtest $method => sub {
             'cannot send place_of_birth with a different value'
         );
     }
+
+#send empty citizen value for maltanaviest client should through an error
+    {
+        local $full_args{citizen} = '';
+        $params->{args} = {%full_args};
+        is(
+            $c->tcall($method, $params)->{error}{message_to_client},
+            'Citizenship is required',
+            'cannot send empty value for citizenship when its required'
+        );
+    }
+
     for my $restricted_country (qw(us ir hk my)) {
         local $params->{args} = {
             tax_residence             => $restricted_country,
@@ -1476,7 +1486,6 @@ subtest $method => sub {
         my $res = $c->tcall($method, $params);
         is($res->{status}, 1, 'unrestricted country ' . $unrestricted_country . ' for tax residence is allowed') or note explain $res;
     }
-
     {
         local $full_args{account_opening_reason} = 'Hedging';
         $params->{args} = {%full_args};
@@ -1811,7 +1820,6 @@ subtest 'get and set self_exclusion' => sub {
         max_open_bets          => 50,
         session_duration_limit => 1440,
     };
-
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
     @msgs = $mailbox->search(
         email   => 'compliance@binary.com,marketing@binary.com,x-acc@binary.com',
