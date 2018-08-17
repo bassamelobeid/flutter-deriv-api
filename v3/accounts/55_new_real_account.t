@@ -93,6 +93,7 @@ subtest 'new MX real account' => sub {
     # create real acc
     my %details = %client_details;
     $details{residence} = 'gb';
+    $details{citizen}   = 'gb';
     $details{first_name} .= '-gb';
 
     subtest 'UK client - invalid postcode' => sub {
@@ -127,7 +128,7 @@ subtest 'new MLT real account' => sub {
     my %details = %client_details;
     $details{residence} = 'nl';
     $details{first_name} .= '-nl';
-
+    $details{citizen} = 'nl';
     my $res = $t->await::new_account_real(\%details);
     ok($res->{new_account_real});
     test_schema('new_account_real', $res);

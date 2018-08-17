@@ -42,6 +42,7 @@ my %client_details = (
     tax_residence             => 'de,nl',
     tax_identification_number => '111-222-333',
     account_opening_reason    => 'Speculative',
+    citizen                   => 'at',
 );
 
 my $mf_details = {
@@ -79,7 +80,9 @@ subtest 'MLT upgrade to MF account' => sub {
 
         $res = $t->await::get_settings({get_settings => 1});
         ok($res->{get_settings});
-        is($res->{get_settings}->{address_line_1}, 'Jalan Usahawan', 'address line 1 set as expexted');
+        is($res->{get_settings}->{address_line_1}, 'Jalan Usahawan', 'address line 1 set as expected');
+        is($res->{get_settings}->{citizen}, 'at', 'citizen set as expected');
+
     };
 
     subtest 'upgrade to MF' => sub {
