@@ -43,8 +43,9 @@ sub validate {
     }
 
     if ($details) {
-        if (Brands->new(name => request()->brand)->countries_instance->restricted_country($residence)
-            or $from_client->residence ne $residence)
+        if (   Brands->new(name => request()->brand)->countries_instance->restricted_country($residence)
+            or $from_client->residence ne $residence
+            or not defined Locale::Country::code2country($residence))
         {
             return {error => 'invalid residence'};
         }
@@ -206,9 +207,8 @@ sub validate_account_details {
         return $dob_error if $dob_error;
     }
 
-    my $acc_type = LandingCompany::Registry->get_by_broker($broker)->short;
-
-    foreach my $key (get_account_fields($acc_type)) {
+    my $lc = LandingCompany::Registry->get_by_broker($broker);
+    foreach my $key (get_account_fields($lc->short)) {
         my $value = $args->{$key};
         # as we are going to support multiple accounts per landing company
         # so we need to copy secret question and answer from old clients
@@ -248,6 +248,8 @@ sub validate_account_details {
             $details->{$field} = $args->{$field};
         }
     }
+    return {error => 'InsufficientAccountDetails'}
+        if $lc->citizen_required && !$client->citizen && (!$args->{citizen} || !defined Locale::Country::code2country($args->{citizen}));
     $details->{citizen} = $args->{citizen} // '';
     return {details => $details};
 }
