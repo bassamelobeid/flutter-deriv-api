@@ -427,7 +427,11 @@ sub get_bid {
             foreach my $key (sort keys %$ad) {
                 $localized_audit_details->{$key} = [
                     map {
-                        if ($_->{name}) { $_->{name} = localize($_->{name}) }
+                        if ($_->{name}) {
+                            my $name = $_->{name};
+                            localize_template_params($name);
+                            $_->{name} = localize($name);
+                        }
                         $_
                     } @{$ad->{$key}}];
             }
@@ -484,6 +488,18 @@ sub get_bid {
     };
 
     return $response;
+}
+
+sub localize_template_params {
+    my $name = shift;
+    if (ref $name eq 'ARRAY') {
+        #Parms should be manually localized; otherwose they will be inserted into the template without localization.
+        for (my $i = 1; $i <= $#$name; $i++) {
+            localize_template_params($name->[$i]);
+            $name->[$i] = localize($name->[$i]);
+        }
+    }
+    return $name;
 }
 
 sub send_bid {
