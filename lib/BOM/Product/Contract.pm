@@ -1068,9 +1068,9 @@ sub _get_tick_details {
         #Extra logic to highlight highlowticks
         if ($self->category_code eq 'highlowticks') {
             if ($t->epoch == $selected_epoch) {
-                my $tick_name = ($self->bet_type eq 'TICKHIGH') ? 'Highest Spot' : 'Lowest Spot';
+                my $tick_name = ($self->bet_type eq 'TICKHIGH') ? $GENERIC_MAPPING->{highest_spot} : $GENERIC_MAPPING->{lowest_spot};
                 if ($t_details->{name}) {
-                    $t_details->{name}[0] = $t_details->{name}[0] . " and " . $tick_name;
+                    $t_details->{name} = [$GENERIC_MAPPING->{time_and_spot}, $t_details->{name}, $tick_name];
                 } else {
                     $t_details->{name} = [$tick_name];
                     $t_details->{flag} = "highlight_tick";

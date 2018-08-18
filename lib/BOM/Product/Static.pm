@@ -117,6 +117,8 @@ my $config = {
         exit_spot      => 'Exit Spot',
         entry_spot_cap => 'Entry Spot',
         closing_spot   => 'Closing Spot',
+        highest_spot   => 'Highest Spot',
+        lowest_spot    => 'Lowest Spot',
         time_and_spot  => '[_1] and [_2]',
         # sub-categories in trading page
         risefall       => 'Rise/Fall',
