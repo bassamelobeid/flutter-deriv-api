@@ -48,7 +48,7 @@ $redis->zadd('DECIMATE_frxUSDJPY_15s_DEC', $_->{epoch}, $encoder->encode($_)) fo
 my $response;
 
 my $currency = "USD";
-my $lc       = 'japan';
+my $lc       = 'costarica';
 my $pt       = 'multi_barrier';
 my $symbol   = "frxUSDJPY";
 

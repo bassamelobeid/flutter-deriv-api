@@ -34,7 +34,7 @@ my $placeholder;    # a variable to store temporary results in for reuse later o
 ######
 
 # CR specific rules
-# - CR client not allowed to open maltainvest or japan account
+# - CR client not allowed to open maltainvest account
 
 # VIRTUAL ACCOUNT OPENING
 test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'testmultiple@binary.com', 'account_opening';
@@ -46,8 +46,6 @@ test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.js
 fail_test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
     $suite->get_token('testmultiple@binary.com'), 'testmultiple@binary.com', 'id';
 
-# VRTC not allowed to open japan real account, only VRTJ allowed
-fail_test_sendrecv_params 'new_account_japan/test_send.json', 'new_account_japan/test_receive.json', 'Susan';
 # REAL ACCOUNT OPENING
 test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_cr.json', 'Howdee', 'id';
 
@@ -91,8 +89,6 @@ fail_test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_cu
 
 # not allowed to make maltainvest as new sibling
 fail_test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive.json', '1', 'Howdee', 'dk';
-# not allowed to make japan as new sibling
-fail_test_sendrecv_params 'new_account_japan/test_send.json', 'new_account_japan/test_receive.json', 'Susan';
 
 test_sendrecv_params 'logout/test_send.json', 'logout/test_receive.json';
 
@@ -227,31 +223,5 @@ test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test
 
 # will fail as exhausted
 fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mx.json', 'Johny', 'gb';
-
-reset_app;
-
-#####
-# JP
-#####
-
-test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test-multiple-jp2@binary.com', 'account_opening';
-test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive_vrtj.json',
-    $suite->get_token('test-multiple-jp2@binary.com'), 'test-multiple-jp2@binary.com', 'jp';
-test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtj.json',
-    $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test-multiple-jp2@binary.com';
-
-# REAL ACCOUNT OPENING (JP)
-# this will be disabled account as for japan cs needs to remove
-# activation pending so should still come as siblings
-test_sendrecv_params 'new_account_japan/test_send.json', 'new_account_japan/test_receive.json', 'Julie';
-$placeholder = $suite->get_stashed('new_account_japan/new_account_japan/oauth_token');
-
-# not allowed to create real from virtual again and already created one
-# even though its disabled
-fail_test_sendrecv_params 'new_account_japan/test_send.json', 'new_account_japan/test_receive.json', 'Julie';
-
-test_sendrecv_params 'jp_knowledge_test/test_send.json', 'jp_knowledge_test/test_receive.json', '12', 'pass';
-
-test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_jp_error.json', $placeholder, 'test-multiple-jp2@binary.com', 'Julie';
 
 finish;

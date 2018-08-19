@@ -192,45 +192,6 @@ test_sendrecv 'logout/test_send.json',              'logout/test_receive.json';
 # have to restart the websocket connection because rate limit of verify_email call is reached
 reset_app;
 
-# VIRTUAL ACCOUNT OPENING (VRTJ TO FAIL KNOWLEDGE TEST)
-test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test-jp@binary.com', 'account_opening';
-test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive_vrtj.json',
-    $suite->get_token('test-jp@binary.com'), 'test-jp@binary.com', 'jp';
-test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtj.json',
-    $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test-jp@binary.com';
-
-# READ SCOPE CALLS (VRTJ)
-test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json',
-    '1000000\\\\.00', 'JPY', $suite->get_stashed('authorize/authorize/loginid');
-test_sendrecv_params 'payout_currencies/test_send.json',      'payout_currencies/test_receive_vrt.json', 'JPY', 1;
-fail_test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', 'USD', 1;
-test_sendrecv 'get_settings/test_send.json',                  'get_settings/test_receive_vrtj_before.json';
-test_sendrecv 'get_account_status/test_send.json',            'get_account_status/test_receive.json';
-
-# TESTS TO RETURN ERROR (VRTJ)
-test_sendrecv 'get_limits/test_send.json',               'get_limits/test_receive_error.json';
-test_sendrecv 'get_financial_assessment/test_send.json', 'get_financial_assessment/test_receive_vrt.json';
-
-# REAL ACCOUNT OPENING (JP)
-test_sendrecv_params 'new_account_japan/test_send.json', 'new_account_japan/test_receive.json', 'Susan';
-test_sendrecv_params 'get_settings/test_send.json', 'get_settings/test_receive_vrtj_after.json', 'jp_knowledge_test_pending', 'test-jp@binary.com';
-test_sendrecv_params 'jp_knowledge_test/test_send.json',      'jp_knowledge_test/test_receive.json',       '8',   'fail';
-fail_test_sendrecv_params 'jp_knowledge_test/test_send.json', 'jp_knowledge_test/test_receive_error.json', '230', 'succeed';
-test_sendrecv 'get_settings/test_send.json',                  'get_settings/test_receive_vrtj_fail.json';
-
-# VIRTUAL ACCOUNT OPENING (VRTJ TO PASS KNOWLEDGE TEST)
-test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test-jp2@binary.com', 'account_opening';
-test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive_vrtj.json',
-    $suite->get_token('test-jp2@binary.com'), 'test-jp2@binary.com', 'jp';
-test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtj.json',
-    $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test-jp2@binary.com';
-
-# REAL ACCOUNT OPENING (JP)
-test_sendrecv_params 'new_account_japan/test_send.json', 'new_account_japan/test_receive_error.json', 'Susan';
-test_sendrecv_params 'new_account_japan/test_send.json', 'new_account_japan/test_receive.json',       'Julie';
-test_sendrecv_params 'jp_knowledge_test/test_send.json', 'jp_knowledge_test/test_receive.json',       '12', 'pass';
-test_sendrecv_params 'get_settings/test_send.json',      'get_settings/test_receive_vrtj_after.json', 'jp_activation_pending', 'test-jp2@binary.com';
-
 # VIRTUAL ACCOUNT OPENING FOR (MX)
 test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test-mx@binary.com', 'account_opening';
 test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',

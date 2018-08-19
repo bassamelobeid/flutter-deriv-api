@@ -221,6 +221,7 @@ subtest 'create account failed' => sub {
             is($res->{error}->{code},    'InvalidAccount', 'restricted country - US');
             is($res->{new_account_real}, undef,            'NO account created');
         };
+        
         subtest 'invalid - xx' => sub {
             $vr_client->residence('xx');
             $vr_client->save;
@@ -235,31 +236,17 @@ subtest 'create account failed' => sub {
         };
     };
 
-    subtest 'no MF or JP' => sub {
-        subtest 'Maltainvest' => sub {
-            $vr_client->residence('de');
-            $vr_client->save;
+    subtest 'no MF' => sub {
+        $vr_client->residence('de');
+        $vr_client->save;
 
-            my %details = %client_details;
-            $details{residence} = 'de';
+        my %details = %client_details;
+        $details{residence} = 'de';
 
-            my $res = $t->await::new_account_real(\%details);
+        my $res = $t->await::new_account_real(\%details);
 
-            is($res->{error}->{code},    'InvalidAccount', 'wrong acc opening - MF');
-            is($res->{new_account_real}, undef,            'NO account created');
-        };
-        subtest 'Japan' => sub {
-            $vr_client->residence('jp');
-            $vr_client->save;
-
-            my %details = %client_details;
-            $details{residence} = 'jp';
-
-            my $res = $t->await::new_account_real(\%details);
-
-            is($res->{error}->{code},    'InvalidAccount', 'wrong acc opening - JP');
-            is($res->{new_account_real}, undef,            'NO account created');
-        };
+        is($res->{error}->{code},    'InvalidAccount', 'wrong acc opening - MF');
+        is($res->{new_account_real}, undef,            'NO account created');
     };
 };
 

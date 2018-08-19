@@ -72,15 +72,15 @@ ok($contracts_for->{contracts_for}->{available});
 is($contracts_for->{contracts_for}->{feed_license}, 'realtime', 'Correct license for contracts_for');
 test_schema('contracts_for', $contracts_for);
 if (not $now->is_a_weekend) {
-# test contracts_for japan
-    my $contracts_for_japan = $t->await::contracts_for({
+# test contracts_for multi_barrier
+    my $contracts_for_mb = $t->await::contracts_for({
         contracts_for => 'frxUSDJPY',
         product_type  => 'multi_barrier'
     });
-    ok($contracts_for_japan->{contracts_for});
-    ok($contracts_for_japan->{contracts_for}->{available});
-    is($contracts_for->{contracts_for}->{feed_license}, 'realtime', 'Correct license for contracts_for');
-    test_schema('contracts_for', $contracts_for_japan);
+    ok($contracts_for_mb->{contracts_for});
+    ok($contracts_for_mb->{contracts_for}->{available});
+    is($contracts_for_mb->{contracts_for}->{feed_license}, 'realtime', 'Correct license for contracts_for');
+    test_schema('contracts_for', $contracts_for_mb);
 
 # test contracts_for EURUSD for forward_starting_options
     my $expected_blackouts = [['11:00:00', '13:00:00'], ['20:00:00', '23:59:59']];

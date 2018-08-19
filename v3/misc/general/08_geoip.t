@@ -34,16 +34,5 @@ subtest 'country code Malaysia' => sub {
     $t->finish_ok;
     done_testing;
 };
-subtest 'country code Japan' => sub {
-    my $t = build_wsapi_test(
-        undef,
-        {
-            'CF-IPCOUNTRY' => 'jp',
-        });
-    my $res = $t->await::payout_currencies({payout_currencies => 1});
-    cmp_deeply($res->{payout_currencies}, bag(qw(JPY)), 'payout currencies are correct') or note explain $res;
-    $t->finish_ok;
-    done_testing;
-};
 
 done_testing();

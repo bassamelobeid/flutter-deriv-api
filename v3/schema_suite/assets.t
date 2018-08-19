@@ -29,13 +29,12 @@ set_language 'EN';
 test_sendrecv 'ping/test_send.json', 'ping/test_receive.json';
 test_sendrecv 'time/test_send.json', 'time/test_receive.json';
 
-test_sendrecv_params 'landing_company/test_send.json', "landing_company/test_receive_$_.json", $_ foreach qw( de id jp );
+test_sendrecv_params 'landing_company/test_send.json', "landing_company/test_receive_$_.json", $_ foreach qw( de id );
 
 test_sendrecv_params 'landing_company_details/test_send.json', "landing_company_details/test_receive_$_.json", $_
-    foreach qw( costarica virtual iom japan malta maltainvest );
+    foreach qw( costarica virtual iom malta maltainvest );
 
-# These files don't follow the same naming pattern
-test_sendrecv_params 'landing_company_details/test_send.json', "landing_company_details/test_receive_japan_virtual.json", 'japan-virtual';
+# This file doesn't follow the same naming pattern
 test_sendrecv_params 'landing_company_details/test_send.json', "landing_company_details/test_receive_error.json",         'unknown';
 
 test_sendrecv 'website_status/test_send.json',    'website_status/test_receive.json';
@@ -46,8 +45,6 @@ test_sendrecv_params 'active_symbols/test_send.json', 'active_symbols/test_recei
 # test_sendrecv_params 'active_symbols/test_send.json', 'active_symbols/test_receive_full.json',
 #     'full';
 
-test_sendrecv_params 'active_symbols/test_product_type_send_lc.json', 'active_symbols/test_receive_lc.json', 'japan', 'forex', 'major_pairs',
-    "multi_barrier";
 test_sendrecv_params 'active_symbols/test_send_lc.json', 'active_symbols/test_receive_lc.json', 'malta',       'volidx',             '.*';
 test_sendrecv_params 'active_symbols/test_send_lc.json', 'active_symbols/test_receive_lc.json', 'maltainvest', '(?!^volidx$)(^.*$)', '.*';
 
