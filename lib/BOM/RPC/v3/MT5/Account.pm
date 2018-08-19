@@ -1034,6 +1034,11 @@ async_rpc mt5_deposit => sub {
                 message_to_client => localize('Request too frequent. Please try again later.')});
     }
 
+    return create_error_future({
+            code              => $error_code,
+            message_to_client => localize('Deposits for this currency are suspended due to exchange rates. Please try again when market is open.')}
+    ) unless BOM::RPC::v3::Utility::can_make_transfer();
+
     return _mt5_validate_and_get_amount($client, $fm_loginid, $to_mt5, $amount, $error_code)->then(
         sub {
             my ($response) = @_;
@@ -1149,6 +1154,11 @@ async_rpc mt5_withdrawal => sub {
         @{$args}{qw/from_mt5 to_binary amount/};
 
     my $error_code = 'MT5WithdrawalError';
+
+    return create_error_future({
+            code              => $error_code,
+            message_to_client => localize('Withdrawal for this currency are suspended due to exchange rates. Please try again when market is open.')}
+    ) unless BOM::RPC::v3::Utility::can_make_transfer();
 
     if (_throttle($client->loginid)) {
         return create_error_future({

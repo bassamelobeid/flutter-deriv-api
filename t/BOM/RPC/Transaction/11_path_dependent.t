@@ -115,7 +115,7 @@ subtest 'check hit tick' => sub {
     };
 
     my $result = $app->call_ok('proposal_open_contract', $params)->has_no_system_error->has_no_error->result;
-    ok !$result->{$contract_id}->{is_sold}, 'contract is not sold';
+    ok !$result->{$contract_id}->{is_sold},   'contract is not sold';
     ok !$result->{$contract_id}->{sell_spot}, 'no sell spot';
 };
 

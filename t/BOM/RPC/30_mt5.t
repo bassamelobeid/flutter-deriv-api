@@ -1,12 +1,16 @@
 use strict;
 use warnings;
 
+use Guard;
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
-
+use Test::MockTime qw(:all);
+use JSON::MaybeUTF8;
 use List::Util qw();
 use Email::Folder::Search;
+use Email::Stuffer::TestLinks;
+
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -15,11 +19,11 @@ use BOM::Test::Helper::Client qw(create_client top_up);
 use BOM::MT5::User::Async;
 use BOM::Platform::Token;
 use BOM::User;
-use Email::Stuffer::TestLinks;
-use JSON::MaybeUTF8;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 my $json = JSON::MaybeXS->new;
+
+scope_guard { restore_time() };
 
 my $manager_module = Test::MockModule->new('BOM::MT5::User::Async');
 $manager_module->mock(
@@ -567,6 +571,15 @@ subtest 'deposit' => sub {
             amount      => 180,
         },
     };
+
+    # set to weekend
+    set_absolute_time(Date::Utility->new('2018-02-17')->epoch);
+
+    $c->call_ok($method, $params)->has_error('error as mt5 deposit is suspended over weekend')
+        ->error_code_is('MT5DepositError', 'error as mt5 deposit is suspended over weekend');
+
+    set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
+
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_no_error('no error for mt5_deposit');
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
@@ -594,6 +607,15 @@ subtest 'withdrawal' => sub {
             amount    => 150,
         },
     };
+
+    # set to weekend
+    set_absolute_time(Date::Utility->new('2018-02-17')->epoch);
+
+    $c->call_ok($method, $params)->has_error('error as mt5 withdrawal is suspended over weekend')
+        ->error_code_is('MT5WithdrawalError', 'error as mt5 withdrawal is suspended over weekend');
+
+    set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
+
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_no_error('no error for mt5_withdrawal');
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');

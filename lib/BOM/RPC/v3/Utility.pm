@@ -27,19 +27,22 @@ use Time::Duration::Concise::Localize;
 use Format::Util::Numbers qw/formatnumber/;
 
 use Brands;
+use Quant::Framework;
 use LandingCompany::Registry;
+use Finance::Contract::Longcode qw(shortcode_to_longcode);
 
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::ProveID;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Config::RedisReplicated;
+use BOM::Config::Chronicle;
+use BOM::Config::Runtime;
 use BOM::Database::Model::AccessToken;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::Context qw (localize request);
-use BOM::Config::Runtime;
 use BOM::Platform::Token;
-use Finance::Contract::Longcode qw(shortcode_to_longcode);
 use BOM::Platform::Email qw(send_email);
+use BOM::MarketData qw(create_underlying);
 
 use feature "state";
 
@@ -757,6 +760,27 @@ sub filter_out_suspended_cryptocurrencies {
     my @valid_payout_currencies =
         sort grep { !exists $suspended_currencies->{$_} } @currencies;
     return \@valid_payout_currencies;
+}
+
+=head2 can_make_transfer
+
+This sub checks if we are allowed to make transfer during weekend
+
+=cut
+
+sub can_make_transfer {
+    # Although this is hardcoded as BTC, the intention is that any risky
+    # transfer should be blocked at weekends and holidays.
+    # Currently, this implies crypto to fiat or vice versa, and BTC is our most
+    # volatile (and popular) crypto currency. If the exchange is updated to
+    # something other than forex, this check should start allowin transfers at
+    # weekends again. Reject all transfers when forex markets are closed
+    if (my $ul = create_underlying('frxBTCUSD')) {
+        return 1
+            if Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader)->is_open_at($ul->exchange, Date::Utility->new);
+    }
+
+    return 0;
 }
 
 1;

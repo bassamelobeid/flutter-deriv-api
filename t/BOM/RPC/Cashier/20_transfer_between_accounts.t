@@ -109,6 +109,18 @@ subtest 'call params validation' => sub {
         "account_to"   => $client_mlt->loginid,
     };
 
+    # set it to weekend to test error
+    set_absolute_time(Date::Utility->new('2018-02-17')->epoch);
+
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for no currency';
+    is $result->{error}->{message_to_client},
+        'Account transfers for this currency are suspended due to exchange rates. Please try again when market is open.',
+        'Correct error message for weekend';
+
+    # In the weekend the account transfers will be suspended. So we mock a valid day here
+    set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
+
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{error}->{code},              'TransferBetweenAccountsError',   'Correct error code for no currency';
     is $result->{error}->{message_to_client}, 'Please provide valid currency.', 'Correct error message for no currency';

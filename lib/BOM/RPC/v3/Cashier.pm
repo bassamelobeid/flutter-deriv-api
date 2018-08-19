@@ -26,13 +26,12 @@ use ExchangeRates::CurrencyConverter qw/convert_currency in_usd/;
 
 use BOM::RPC::Registry '-dsl';
 
-use BOM::MarketData qw(create_underlying);
 use BOM::Platform::Client::DoughFlowClient;
 use BOM::Platform::Doughflow qw( get_sportsbook get_doughflow_language_code_for );
+use BOM::Config;
 use BOM::Config::Runtime;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Email qw(send_email);
-use BOM::Config;
 use BOM::User::AuditLog;
 use BOM::Platform::RiskProfile;
 use BOM::Platform::Client::CashierValidation;
@@ -44,7 +43,6 @@ use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::ClientDB;
-use Quant::Framework;
 
 requires_auth();
 
@@ -977,19 +975,9 @@ rpc transfer_between_accounts => sub {
         return _transfer_between_accounts_error(localize('Payments are suspended.'));
     }
 
-    {    # Reject all transfers when forex markets are closed
-        my $can_transfer = 0;
-        # Although this is hardcoded as BTC, the intention is that any risky transfer should be blocked at weekends.
-        # Currently, this implies crypto to fiat or vice versa, and BTC is our most volatile (and popular) crypto
-        # currency. If the exchange is updated to something other than forex, this check should start allowing
-        # transfers at weekends again.
-        if (my $ul = create_underlying('frxBTCUSD')) {
-            $can_transfer = 1
-                if Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader)
-                ->is_open_at($ul->exchange, Date::Utility->new);
-        }
-        return _transfer_between_accounts_error(localize('Account transfers are currently suspended.')) unless $can_transfer;
-    }
+    return _transfer_between_accounts_error(
+        localize('Account transfers for this currency are suspended due to exchange rates. Please try again when market is open.'))
+        unless BOM::RPC::v3::Utility::can_make_transfer();
 
     return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
 

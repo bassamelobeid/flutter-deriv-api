@@ -387,7 +387,7 @@ subtest $method => sub {
             $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                 broker_code => 'VRTC',
                 email       => $email,
-                citizen => '',
+                citizen     => '',
             });
             $auth_token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
 
