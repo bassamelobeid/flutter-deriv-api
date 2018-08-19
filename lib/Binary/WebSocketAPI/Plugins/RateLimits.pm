@@ -13,9 +13,7 @@ sub register {
     my ($self, $app) = @_;
 
     ### rate-limitation plugin
-    my %rates_files = (
-        binary => LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/perl_rate_limitations.yml'),
-        japan  => LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/japan_perl_rate_limitations.yml'));
+    my %rates_files = (binary => LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/perl_rate_limitations.yml'));
 
     my %rates_config;
     # convert configuration

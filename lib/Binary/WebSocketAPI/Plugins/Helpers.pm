@@ -94,12 +94,6 @@ sub register {
         landing_company_name => sub {
             my $c = shift;
 
-            # JP users have a different trading page, and default to Japanese translations.
-            # Eventually we would handle this through branding, but for now we have a specific
-            # override - the landing_company_name here should match the $landing_company->short
-            # string.
-            $c->stash->{landing_company_name} ||= 'japan' if $c->country_code eq 'jp';
-
             return $c->stash->{landing_company_name};
         });
 

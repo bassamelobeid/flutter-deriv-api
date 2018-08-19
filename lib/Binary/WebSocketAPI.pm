@@ -399,12 +399,6 @@ sub startup {
                 stash_params => [qw/ server_name client_ip user_agent /]}
         ],
         [
-            'new_account_japan',
-            {
-                require_auth => 'admin',
-                stash_params => [qw/ server_name client_ip user_agent /]}
-        ],
-        [
             'new_account_maltainvest',
             {
                 require_auth => 'admin',
@@ -442,13 +436,6 @@ sub startup {
                 require_auth => 'admin',
                 stash_params => [qw/ server_name client_ip user_agent /]}
         ],
-        [
-            'jp_knowledge_test',
-            {
-                require_auth => 'admin',
-                stash_params => [qw/ server_name client_ip user_agent /]}
-        ],
-
         ['copytrading_statistics'],
         [
             'document_upload',
