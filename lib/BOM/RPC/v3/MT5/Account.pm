@@ -1200,20 +1200,8 @@ async_rpc mt5_withdrawal => sub {
                 }
                 )->then(
                 sub {
-                    my ($status) = @_;
-
-                    if ($status->{error}) {
-                        # check for insufficient funds specific error codes.
-                        $status->{error} = 'Insufficient funds' if ($status->{error_code} == 3100);
-                        if ($status->{error_code} == 3101) {
-                            # we should lock MT5 withdrawal now
-                            $client->status->set('mt5_withdrawal_locked', 'system', 'balance mismatch while withdrawing');
-                            $client->save;
-                            $status->{error} = 'Insufficient funds';
-                            _notify_for_locked_mt5($client, $fm_mt5);
-                        }
-                        return _make_error($error_code, $status->{error});
-                    }
+                    my ($response) = @_;
+                    return Future->done($response) if (ref $response eq 'HASH' and $response->{error});
 
                     my $to_client = BOM::User::Client->new({loginid => $to_loginid});
 
