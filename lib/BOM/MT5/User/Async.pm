@@ -220,6 +220,51 @@ sub password_change {
 }
 
 sub deposit {
+    my $args  = shift;
+    my $param = {
+        login       => $args->{login},
+        new_deposit => $args->{amount},
+        comment     => $args->{comment},
+        type        => '2'                 # enum DEAL_BALANCE = 2
+    };
+
+    return _invoke_mt5('UserDepositChange', $param)->then(
+        sub {
+            my ($hash) = @_;
+
+            if ($hash->{error}) {
+                return Future->done({error => $hash->{error}});
+            }
+
+            return Future->done({status => 1});
+        });
+}
+
+sub withdrawal {
+    my $args   = shift;
+    my $amount = $args->{amount};
+    $amount = -$amount if ($amount > 0);
+
+    my $param = {
+        login       => $args->{login},
+        new_deposit => $amount,
+        comment     => $args->{comment},
+        type        => '2'                 # enum DEAL_BALANCE = 2
+    };
+
+    return _invoke_mt5('UserDepositChange', $param)->then(
+        sub {
+            my ($hash) = @_;
+
+            if ($hash->{error}) {
+                return Future->done({error => $hash->{error}});
+            }
+
+            return Future->done({status => 1});
+        });
+}
+
+sub manager_api_deposit {
     my $args = shift;
     return _mt5_manager->adjust_balance($args->{login}, $args->{amount}, $args->{comment})->then(
         sub {
@@ -240,7 +285,7 @@ sub deposit {
         });
 }
 
-sub withdrawal {
+sub manager_api_withdrawal {
     my $args   = shift;
     my $amount = $args->{amount};
     if ($amount >= 0) {
