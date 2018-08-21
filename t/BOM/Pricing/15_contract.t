@@ -765,14 +765,13 @@ subtest 'send_ask - country validation' => sub {
     $c->call_ok('send_ask', $params)->has_no_system_error->has_no_error;
 
     $args->{country_code} = 'ca';    # canada
-    $c->call_ok('send_ask', $params)->has_no_system_error->has_no_error;
+    $c->call_ok('send_ask', $params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError')
+        ->error_message_is('Trading is not offered for this asset.');
     $args->{symbol}        = 'frxUSDJPY';
-    $args->{duration}      = 29;
+    $args->{duration}      = 30;
     $args->{duration_unit} = 'd';
     $c->call_ok('send_ask', $params)->has_error->error_code_is('OfferingsValidationError')
-        ->error_message_is('Trading is not offered for this duration.');
-    $args->{duration} = 30;
-    $c->call_ok('send_ask', $params)->has_no_system_error->has_no_error;
+        ->error_message_is('Trading is not offered for this asset.');
 };
 
 subtest 'get_bid - expired contract' => sub {
