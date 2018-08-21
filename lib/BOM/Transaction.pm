@@ -1011,18 +1011,6 @@ In case of an unexpected error, the exception is re-thrown unmodified.
                 formatnumber('amount', $currency, $account->get_balance()),
                 formatnumber('price',  $currency, $self->price)));
     },
-    BI007 => sub {
-        my $self   = shift;
-        my $client = shift;
-
-        return Error::Base->cuss(
-            -type              => 'PotentialPayoutLimitForSameContractExceeded',
-            -mesg              => "Client has exceeded potential payout limit for open contracts with the same symbol and bet_type",
-            -message_to_client => BOM::Platform::Context::localize(
-                'Purchasing this contract will cause you to exceed our payout limit for open contracts of this type. To continue, please sell some of your open contracts or trade in different contract types.'
-            ),
-        );
-    },
     BI008 => sub {
         my $self   = shift;
         my $client = shift;
