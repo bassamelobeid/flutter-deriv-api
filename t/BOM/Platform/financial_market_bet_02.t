@@ -368,21 +368,6 @@ subtest 'more validation', sub {
         ],
         'maximum net payout for open positions reached';
 
-    dies_ok {
-        my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-            +{
-            limits => {
-                max_payout_per_symbol_and_bet_type => 400 - 0.01,
-            },
-            };
-    }
-    'cannot buy due to max_payout_per_symbol_and_bet_type';
-    is_deeply $@,
-        [
-        BI007 => 'ERROR:  maximum summary payout for open bets per symbol and bet_type reached',
-        ],
-        'maximum summary payout for open bets per symbol and bet_type reached';
-
     lives_ok {
         my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
             +{
@@ -396,52 +381,11 @@ subtest 'more validation', sub {
     }
     'can buy when summary open payout is exactly at max_payout_open_bets';
 
-    lives_ok {
-        my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-            +{
-            limits => {
-                max_payout_per_symbol_and_bet_type => 600,
-            },
-            };
-        $bal -= 20;
-        push @usd_bets, $fmbid;
-        is $balance_after + 0, $bal, 'correct balance_after';
-    }
-    'can buy when summary open payout is exactly at max_payout_per_symbol_and_bet_type';
-
-    lives_ok {
-        my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-            +{
-            underlying_symbol => 'frxUSDAUD',
-            limits            => {
-                max_payout_per_symbol_and_bet_type => 800 - 0.01,
-            },
-            };
-        $bal -= 20;
-        push @usd_bets, $fmbid;
-        is $balance_after + 0, $bal, 'correct balance_after';
-    }
-    'can buy for different symbol';
-
-    lives_ok {
-        my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-            +{
-            bet_type => 'PUT',
-            limits   => {
-                max_payout_per_symbol_and_bet_type => 1000 - 0.01,
-            },
-            };
-        $bal -= 20;
-        push @usd_bets, $fmbid;
-        is $balance_after + 0, $bal, 'correct balance_after';
-    }
-    'can buy for different bet_type';
-
     dies_ok {
         my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
             +{
             limits => {
-                max_payout_open_bets => 1200 - 0.01,
+                max_payout_open_bets => 400 - 0.01,
             },
             };
     }
@@ -452,7 +396,10 @@ subtest 'more validation', sub {
         ],
         'maximum net payout for open positions reached';
 
-    # the USD account has 6 bets here, 5 of which are unsold. Let's sell them all.
+    # the USD account has 3 bets here, 2 of which are unsold. Let's sell them all.
+    my $total_bets = 3;
+    my $unsold_bets = 2;
+    my $sold_bets = $total_bets - $unsold_bets;
     lives_ok {
         my @bets_to_sell =
             map { {id => $_, quantity => 1, sell_price => 30, sell_time => Date::Utility->new->plus_time_interval('1s')->db_timestamp,} } @usd_bets;
@@ -475,11 +422,11 @@ subtest 'more validation', sub {
         my $res = $fmb->batch_sell_bet;
 
         # note explain $res;
-        $bal += 5 * 30;
-        is 0 + @$res, 5, 'sold 5 out of 6 bets (1 was already sold)';
+        $bal += $unsold_bets * 30;
+        is 0 + @$res, $unsold_bets, "sold $unsold_bets out of $total_bets bets ($sold_bets was already sold)";
         is $res->[0]->{txn}->{balance_after} + 0, $bal, 'balance_after';
     }
-    'batch-sell 5 bets';
+    "batch-sell $unsold_bets bets";
 };
 
 SKIP: {
