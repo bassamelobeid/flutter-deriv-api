@@ -371,10 +371,17 @@ sub _match_conditions {
 
 sub _offerings_obj {
     my $landing_company_short = shift // 'costarica';
+    my $country_code = shift;
 
     my $landing_company = LandingCompany::Registry::get($landing_company_short);
-    my $method = $landing_company->default_offerings eq 'basic' ? 'basic_offerings' : 'multi_barrier_offerings';
-    return $landing_company->$method(BOM::Config::Runtime->instance->get_offerings_config);
+
+    if ($country_code) {
+        my $method = $landing_company->default_offerings eq 'basic' ? 'basic_offerings_for_country' : 'multi_barrier_offerings_for_country';
+        return $landing_company->$method($country_code, BOM::Config::Runtime->instance->get_offerings_config);
+    } else {
+        my $method = $landing_company->default_offerings eq 'basic' ? 'basic_offerings' : 'multi_barrier_offerings';
+        return $landing_company->$method(BOM::Config::Runtime->instance->get_offerings_config);
+    }
 }
 
 no Moose;
