@@ -2,6 +2,8 @@
 
 <form action="[%request.url_for('backoffice/f_manager_confodeposit.cgi') | none %]" method="POST" class="bo_form_with_files">
 
+<input type="hidden" name="payment_type" value="transfer_between_account">
+
 <table>
 <tr>
     <th>FROM Login ID</th>
@@ -9,8 +11,8 @@
     <th>Currency</th>
     <th>Amount</th>
     <th>Amount Range</th>
-    <th>Control Code</th> 
-    <th><label for="skip_validation2">Override Status Checks?</label></th> 
+    <th>Control Code</th>
+    <th><label for="skip_validation2">Override Status Checks?</label></th>
 </tr>
 <tr>
     <td><input type="text" name="account" placeholder="required"/></td>

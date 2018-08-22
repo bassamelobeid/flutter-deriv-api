@@ -90,13 +90,19 @@ if ($ttype eq 'TRANSFER') {
     }
 }
 
+if ($client->is_same_user_as($toClient)) {
+    print "ERROR: you cannot perform internal transfer between accounts under the same user!";
+    code_exit_BO();
+}
+
 for my $c ($client, $toClient) {
     $c || next;
     if ($client->status->get('disabled')) {
         print build_client_warning_message($loginID);
     }
-    if (!$c->is_first_deposit_pending && $c->currency && $c->currency ne $curr) {
-        printf "ERROR: Invalid currency [%s], default for [%s] is [%s]", encode_entities($curr), $c->loginid, $c->currency;
+    if ($c->currency && $c->currency ne $curr) {
+        printf "ERROR: Invalid currency [%s], client id: [%s] currency is [%s].You cannot have transfer to a client with different currency!",
+            encode_entities($curr), $c->loginid, $c->currency;
         code_exit_BO();
     }
 }
