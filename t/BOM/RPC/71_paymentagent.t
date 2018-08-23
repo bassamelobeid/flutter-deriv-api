@@ -259,12 +259,6 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         is($res->{error}{message_to_client}, $disabled_message, $test);
         $runtime_system->suspend->payment_agents(0);
 
-        $test = 'Transfer fails if the entire system is suspended';
-        $runtime_system->suspend->system(1);
-        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client}, $disabled_message, $test);
-        $runtime_system->suspend->system(0);
-
         $test = 'Transfer fails if client landing company does not allow payment agents';
         ## This check relies on a local YAML file (e.g. 'landing_companies.yml')
         ## Only CR allows payment agents currently, so we mock the result here
@@ -855,12 +849,6 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/due to system maintenance/, $test);
         $runtime_system->suspend->payment_agents(0);
-
-        $test = 'Withdraw fails if the entire system is suspended';
-        $runtime_system->suspend->system(1);
-        $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        like($res->{error}{message_to_client}, qr/due to system maintenance/, $test);
-        $runtime_system->suspend->system(0);
 
         $test = 'Withdraw fails if payment agent facility not available';
         ## Right now only CR offers payment agents according to:

@@ -1398,7 +1398,7 @@ sub _mt5_validate_and_get_amount {
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
     return _make_error($error_code, localize('Payments are suspended.'))
-        if ($app_config->system->suspend->payments or $app_config->system->suspend->system);
+        if ($app_config->system->suspend->payments);
 
     return _make_error($error_code, localize("Amount must be greater than zero.")) if ($amount <= 0);
 

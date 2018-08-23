@@ -10,6 +10,7 @@ use BOM::Database::Model::OAuth;
 use Email::Stuffer::TestLinks;
 use utf8;
 use Data::Dumper;
+use BOM::Config::Runtime;
 
 my $email       = 'dummy@binary.com';
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -38,12 +39,19 @@ $test_client->status->clear('disabled');
 $params->{currency} = 'not_allowed';
 $c->call_ok($method, $params)
     ->has_error->error_message_is('The provided currency not_allowed is not applicable for this account.', 'currency not applicable for this client')
-    ->error_code_is('InvalidCurrency', 'error code is correct');
+    ->error_code_is('CurrencyTypeNotAllowed', 'error code is correct');
 
 $params->{currency} = 'JPY';
 $c->call_ok($method, $params)
     ->has_error->error_message_is('The provided currency JPY is not applicable for this account.', 'currency not applicable for this client')
-    ->error_code_is('InvalidCurrency', 'error code is correct');
+    ->error_code_is('CurrencyTypeNotAllowed', 'error code is correct');
+
+BOM::Config::Runtime->instance->app_config->system->suspend->cryptocashier(1);
+$params->{currency} = 'BTC';
+$c->call_ok($method, $params)
+    ->has_error->error_message_is('The provided currency BTC is not selectable at the moment.', 'currency not applicable for this client')
+    ->error_code_is('CurrencyTypeNotAllowed', 'error code is correct');
+BOM::Config::Runtime->instance->app_config->system->suspend->cryptocashier(0);
 
 $params->{currency} = 'EUR';
 $c->call_ok($method, $params)->has_no_error;

@@ -1576,13 +1576,6 @@ rpc set_account_currency => sub {
 
     my ($client, $currency) = @{$params}{qw/client currency/};
 
-    # Return an error if the currency is a suspended currency or if the currency chosen is not a legal currency
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'InvalidCurrency',
-            message_to_client => localize("The provided currency [_1] is not applicable for this account.", $currency)})
-        if (not $client->landing_company->is_currency_legal($currency)
-        or BOM::Platform::Client::CashierValidation::is_crypto_currency_suspended($currency));
-
     # bail out if default account is already set
     return {status => 0} if $client->default_account;
 
@@ -1592,17 +1585,16 @@ rpc set_account_currency => sub {
     # - client can have multiple crypto currency
     #   but only with single type of crypto currency
     #   for example BTC => ETH is allowed but BTC => BTC is not
-    if (not $client->is_virtual) {
-        my $error = BOM::RPC::v3::Utility::validate_set_currency($client, $currency);
-        return $error if $error;
-    }
+    # - currency is not legal in the landing company
+    # - currency is crypto and crytocurrency is suspended in system config
+    my $error = BOM::RPC::v3::Utility::validate_set_currency($client, $currency);
+    return $error if $error;
 
     # no change in default account currency if default account is already set
     my $status = 0;
     try {
         $status = 1 if $client->set_default_account($currency);
     };
-
     return {status => $status};
 };
 

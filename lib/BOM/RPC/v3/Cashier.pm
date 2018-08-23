@@ -423,8 +423,7 @@ rpc paymentagent_transfer => sub {
     my $app_config = BOM::Config::Runtime->instance->app_config;
 
     if (   $app_config->system->suspend->payments
-        or $app_config->system->suspend->payment_agents
-        or $app_config->system->suspend->system)
+        or $app_config->system->suspend->payment_agents)
     {
         return $error_sub->(localize('Sorry, this facility is temporarily disabled due to system maintenance.'));
     }
@@ -689,8 +688,7 @@ rpc paymentagent_withdraw => sub {
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
     if (   $app_config->system->suspend->payments
-        or $app_config->system->suspend->payment_agents
-        or $app_config->system->suspend->system)
+        or $app_config->system->suspend->payment_agents)
     {
         return $error_sub->(localize('Sorry, this facility is temporarily disabled due to system maintenance.'));
     }
@@ -971,7 +969,7 @@ rpc transfer_between_accounts => sub {
 
     my ($client, $source) = @{$params}{qw/client source/};
 
-    if (BOM::Platform::Client::CashierValidation::is_system_suspended() or BOM::Platform::Client::CashierValidation::is_payment_suspended()) {
+    if (BOM::Platform::Client::CashierValidation::is_payment_suspended()) {
         return _transfer_between_accounts_error(localize('Payments are suspended.'));
     }
 

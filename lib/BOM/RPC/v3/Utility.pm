@@ -42,6 +42,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Token;
 use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Client::CashierValidation;
 use BOM::MarketData qw(create_underlying);
 
 use Exporter qw(import export_to_level);
@@ -541,12 +542,7 @@ sub validate_make_new_account {
 sub validate_set_currency {
     my ($client, $currency) = @_;
 
-    my $siblings = $client->real_account_siblings_information;
-    # is virtual check is already done in set account currency
-    # but better to have it here as well so that this sub can
-    # be pluggable
-    return undef if (scalar(keys %$siblings) == 0);
-
+    my $siblings = $client->real_account_siblings_information();
     $siblings = filter_siblings_by_landing_company($client->landing_company->short, $siblings);
 
     my $is_currency_allowed = _is_currency_allowed($client, $siblings, $currency);
@@ -567,25 +563,45 @@ sub _is_currency_allowed {
     my $siblings = shift;
     my $currency = shift;
 
-    my $result = {
-        allowed => 0,
-        message => 'Please note that you are limited to one account per currency type.'
-    };
-
-    # check if currency is fiat or crypto
     my $type = LandingCompany::Registry::get_currency_type($currency);
 
+    my $result = {
+        allowed => 0,
+        message => localize("The provided currency [_1] is not applicable for this account.", $currency),
+    };
+
+    return $result unless $client->landing_company->is_currency_legal($currency);
+
+    my $error;
+    $error = try {
+        return localize("The provided currency [_1] is not selectable at the moment.", $currency)
+            if ($type eq 'crypto' and BOM::Platform::Client::CashierValidation::is_crypto_currency_suspended($currency));
+    }
+    catch {
+        return localize("The provided currency [_1] is not a valid cryptocurrency.", $currency);
+    };
+    if ($error) {
+        $result->{message} = $error;
+        return $result;
+    }
+
+    #that's enough for virtual accounts or empty siblings
+    return {allowed => 1} if ($client->is_virtual or scalar(keys %$siblings) == 0);
+
     # if fiat then check if client has already any fiat, if yes then don't allow
+    $result->{message} = localize('Please note that you are limited to one fiat currency account.');
     return $result
         if ($type eq 'fiat'
         and grep { (LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) // '') eq 'fiat' } keys %$siblings);
-    # if crypto check if client has same crypto, if yes then don't allow
-    return $result if ($type eq 'crypto' and grep { $currency eq ($siblings->{$_}->{currency} // '') } keys %$siblings);
-    # if currency is experimental and client is not allowed to use such currencies we don't allow
 
+    # if crypto check if client has same crypto, if yes then don't allow
+    $result->{message} = localize("Please note that you are limited to only one [_1] account.", $currency);
+    return $result if ($type eq 'crypto' and grep { $currency eq ($siblings->{$_}->{currency} // '') } keys %$siblings);
+
+    # if currency is experimental and client is not allowed to use such currencies we don't allow
     my $allowed_emails = BOM::Config::Runtime->instance->app_config->payments->experimental_currencies_allowed;
     my $client_email   = $client->email;
-    $result->{message} = 'Please note that the selected currency is allowed for limited accounts only';
+    $result->{message} = localize('Please note that the selected currency is allowed for limited accounts only');
 
     return $result
         if (LandingCompany::Registry::is_currency_experimental($currency)
