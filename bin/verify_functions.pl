@@ -251,9 +251,9 @@ sub get_db_hashes {
     ## Build and return a hashref of function checksums from a live database
 
     my $sqlfile = path($repodir, 'tools', 'manifest.sql');
-    if (! $sqlfile->exists) {
-	$log->fatal("Could not find SQL file at $sqlfile");
-	exit 1;
+    if (!$sqlfile->exists) {
+        $log->fatal("Could not find SQL file at $sqlfile");
+        exit 1;
     }
     my $SQL = $sqlfile->slurp;
 
