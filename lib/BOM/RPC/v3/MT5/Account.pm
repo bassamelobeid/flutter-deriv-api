@@ -1027,6 +1027,7 @@ async_rpc mt5_deposit => sub {
         @{$args}{qw/from_binary to_mt5 amount/};
 
     my $error_code = 'MT5DepositError';
+    my $app_config = BOM::Config::Runtime->instance->app_config;
 
     if (_throttle($client->loginid)) {
         return create_error_future({
@@ -1038,6 +1039,12 @@ async_rpc mt5_deposit => sub {
             code              => $error_code,
             message_to_client => localize('Deposits for this currency are suspended due to exchange rates. Please try again when market is open.')}
     ) unless BOM::RPC::v3::Utility::can_make_transfer();
+
+    if ($app_config->system->suspend->mt5_deposits) {
+        return create_error_future({
+                code              => $error_code,
+                message_to_client => localize('Deposits are suspended.')});
+    }
 
     return _mt5_validate_and_get_amount($client, $fm_loginid, $to_mt5, $amount, $error_code)->then(
         sub {
@@ -1154,6 +1161,7 @@ async_rpc mt5_withdrawal => sub {
         @{$args}{qw/from_mt5 to_binary amount/};
 
     my $error_code = 'MT5WithdrawalError';
+    my $app_config = BOM::Config::Runtime->instance->app_config;
 
     return create_error_future({
             code              => $error_code,
@@ -1164,6 +1172,12 @@ async_rpc mt5_withdrawal => sub {
         return create_error_future({
                 code              => $error_code,
                 message_to_client => localize('Request too frequent. Please try again later.')});
+    }
+
+    if ($app_config->system->suspend->mt5_withdrawals) {
+        return create_error_future({
+                code              => $error_code,
+                message_to_client => localize('Withdrawals are suspended.')});
     }
 
     return _make_error($error_code, localize('MT5 account is locked'), 'MT5 account is locked') if $client->status->get('mt5_withdrawal_locked');

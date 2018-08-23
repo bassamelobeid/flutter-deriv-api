@@ -19,9 +19,12 @@ use BOM::Test::Helper::Client qw(create_client top_up);
 use BOM::MT5::User::Async;
 use BOM::Platform::Token;
 use BOM::User;
+use BOM::Config::Runtime;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 my $json = JSON::MaybeXS->new;
+
+my $runtime_system = BOM::Config::Runtime->instance->app_config->system;
 
 scope_guard { restore_time() };
 
@@ -589,6 +592,13 @@ subtest 'deposit' => sub {
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
+    $runtime_system->suspend->mt5_deposits(1);
+    $c->call_ok($method, $params)->has_error('error as mt5_deposits are suspended in system config')
+        ->error_code_is('MT5DepositError', 'error code is MT5DepositError')->error_message_is('Deposits are suspended.');
+    $runtime_system->suspend->mt5_deposits(0);
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+
     $params->{args}{to_mt5} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_deposit wrong login')
         ->error_code_is('PermissionDenied', 'error code for mt5_deposit wrong login');
@@ -621,6 +631,13 @@ subtest 'withdrawal' => sub {
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
 
     cmp_ok $test_client->default_account->load->balance, '==', 820 + 150, "Correct balance after withdrawal";
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+
+    $runtime_system->suspend->mt5_withdrawals(1);
+    $c->call_ok($method, $params)->has_error('error as mt5_withdrawals are suspended in system config')
+        ->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')->error_message_is('Withdrawals are suspended.');
+    $runtime_system->suspend->mt5_withdrawals(0);
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
