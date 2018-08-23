@@ -49,7 +49,7 @@ is $res->{error}->{code}, 'InputValidationFailed', 'Not in allowed list of curre
 
 $t = $t->send_ok({json => {set_account_currency => 'JPY'}})->message_ok;
 $res = $json->decode(Encode::decode_utf8($t->message->[1]));
-is $res->{error}->{code}, 'InvalidCurrency', 'Currency not applicable for this client';
+is $res->{error}->{code}, 'CurrencyTypeNotAllowed', 'Currency not applicable for this client';
 is $res->{error}->{message}, 'The provided currency JPY is not applicable for this account.', 'Correct error message for invalid currency';
 
 $t = $t->send_ok({json => {set_account_currency => 'EUR'}})->message_ok;
