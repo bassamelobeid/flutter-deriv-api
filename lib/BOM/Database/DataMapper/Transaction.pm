@@ -331,8 +331,13 @@ sub get_transactions_ws {
             SELECT
                 t.*,
                 b.short_code,
+                b.buy_price,
                 b.purchase_time,
+                b.expiry_time,
+                b.start_time,
                 b.sell_time,
+                b.sell_price,
+                b.is_sold,
                 b.payout_price,
                 p.payment_time,
                 p.remark AS payment_remark,
@@ -600,39 +605,6 @@ sub get_bet_transactions_for_broker {
             my $sth = $_->prepare($sql);
             $sth->execute($broker_code, $action_type, $start, $end);
             return $sth->fetchall_hashref('id');
-        });
-}
-
-sub get_profit_for_days {
-    my ($self, $args) = @_;
-
-    my $before = $args->{before} || Date::Utility->new()->datetime_yyyymmdd_hhmmss;
-    my $after  = $args->{after}  || '1970-01-01 00:00:00';
-
-    my $sql = q{
-            SELECT
-                sum(amount)
-            FROM
-                TRANSACTION.TRANSACTION
-            WHERE
-                account_id = $1
-                AND transaction_time <= $2
-                AND transaction_time > $3
-                AND action_type IN ('buy', 'sell')
-        };
-
-    my $dbic = $self->db->dbic;
-    return $dbic->run(
-        fixup => sub {
-            my $sth = $_->prepare($sql);
-
-            $sth->bind_param(1, $self->account->id);
-            $sth->bind_param(2, $before);
-            $sth->bind_param(3, $after);
-
-            $sth->execute();
-            my $result = $sth->fetchrow_arrayref() || [0];
-            return $result->[0];
         });
 }
 

@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::Most (tests => 37);
+use Test::Most (tests => 36);
 use Test::MockTime qw( set_absolute_time restore_time );
 use Test::Exception;
 use Test::Warnings;
@@ -369,20 +369,3 @@ subtest 'get_payments' => sub {
     };
 };
 
-subtest 'get_profit_for_days' => sub {
-    my $txn_data_mapper = BOM::Database::DataMapper::Transaction->new({
-        client_loginid => 'CR0021',
-        currency_code  => 'USD'
-    });
-
-    is($txn_data_mapper->get_profit_for_days(), '585.00', 'Lifetime Profit of CR0021 for all days');
-    is(
-        $txn_data_mapper->get_profit_for_days({
-                before => '2005-09-21 06:40:00',
-                after  => '2005-09-21 06:30:00'
-            }
-        ),
-        '62.00',
-        'Profit for CR0021 between 2005-09-21 06:30:00 and 2005-09-21 06:40:00'
-    );
-};
