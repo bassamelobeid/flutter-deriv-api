@@ -35,7 +35,7 @@ sub validate {
     my ($loginid, $action) = @_;
 
     return _create_error(localize('Sorry, cashier is temporarily unavailable due to system maintenance.'))
-        if (is_system_suspended() or is_payment_suspended());
+        if (is_payment_suspended());
 
     my $client = BOM::User::Client->new({
             loginid      => $loginid,
@@ -117,16 +117,6 @@ sub validate {
     return;
 }
 
-=head2 is_system_suspended
-
-Returns whether system is currently suspended or not
-
-=cut
-
-sub is_system_suspended {
-    return BOM::Config::Runtime->instance->app_config->system->suspend->system;
-}
-
 =head2 is_payment_suspended
 
 Returns whether payment is currently suspended or not
@@ -150,12 +140,14 @@ sub is_crypto_cashier_suspended {
 =head2 is_crypto_currency_suspended {
 
 Returns true if the given currency is suspended in the crypto cashier. Only works for crypto currencies,
-this will return false for currencies such as USD / GBP.
+this will die for fiat currencies such as USD / GBP.
 
 =cut
 
 sub is_crypto_currency_suspended {
     my $currency = shift or die "expected currency parameter";
+
+    die "Failed to accept $currency as a cryptocurrency." if (LandingCompany::Registry::get_currency_type($currency) // '') ne 'crypto';
 
     return 1 if BOM::Config::Runtime->instance->app_config->system->suspend->cryptocashier;
 

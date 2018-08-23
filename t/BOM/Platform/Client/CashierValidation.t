@@ -63,23 +63,8 @@ subtest prepare => sub {
 };
 
 subtest 'Check cashier suspended' => sub {
-    BOM::Config::Runtime->instance->app_config->system->suspend->system(1);
-    my $res = BOM::Platform::Client::CashierValidation::validate($vr_client->loginid, 'deposit');
-    is_deeply({
-            error => {
-                code              => $generic_err_code,
-                message_to_client => 'Sorry, cashier is temporarily unavailable due to system maintenance.'
-            }
-        },
-        $res,
-        'Correct structure for error response'
-    );
-    is $res->{error}->{code}, $generic_err_code, 'Correct error code';
-    is $res->{error}->{message_to_client}, 'Sorry, cashier is temporarily unavailable due to system maintenance.', 'Correct error message';
-    BOM::Config::Runtime->instance->app_config->system->suspend->system(0);
-
     BOM::Config::Runtime->instance->app_config->system->suspend->payments(1);
-    $res = BOM::Platform::Client::CashierValidation::validate($vr_client->loginid, 'deposit');
+    my $res = BOM::Platform::Client::CashierValidation::validate($vr_client->loginid, 'deposit');
     is $res->{error}->{code}, $generic_err_code, 'Correct error code';
     is $res->{error}->{message_to_client}, 'Sorry, cashier is temporarily unavailable due to system maintenance.', 'Correct error message';
     BOM::Config::Runtime->instance->app_config->system->suspend->payments(0);
