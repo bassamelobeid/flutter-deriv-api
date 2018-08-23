@@ -331,8 +331,13 @@ sub get_transactions_ws {
             SELECT
                 t.*,
                 b.short_code,
+                b.buy_price,
                 b.purchase_time,
+                b.expiry_time,
+                b.start_time,
                 b.sell_time,
+                b.sell_price,
+                b.is_sold,
                 b.payout_price,
                 p.payment_time,
                 p.remark AS payment_remark,
