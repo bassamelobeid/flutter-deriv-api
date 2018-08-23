@@ -19,6 +19,7 @@ sub populate_exchange_rates {
         BTC => 5500,
         BCH => 320,
         LTC => 50,
+        ETH => 490,
         DAI => 1,
         };
 
