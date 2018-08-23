@@ -114,9 +114,6 @@ sub validate {
     return _create_error(localize('Your account is locked for withdrawals.'))
         if ($action eq 'withdraw' and $client->status->get('withdrawal_locked'));
 
-    return _create_error(localize('Your account is restricted to withdrawals only.'))
-        if ($action eq 'deposit' and $landing_company->short eq 'maltainvest' and not $client->status->get('professional'));
-
     return;
 }
 
