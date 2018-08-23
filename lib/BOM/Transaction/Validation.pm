@@ -780,17 +780,41 @@ Don't allow to trade for:
 - MLT, MX and MF without confirmed age after the first deposit
 - MF without fully_authentication
 - MF without professional status
+
 =cut
 
 sub check_trade_status {
     my ($self, $client) = (shift, shift);
 
-    return if $client->is_virtual;
+    return undef if $client->is_virtual;
 
-    my $landing = $client->landing_company->short;
+    my $validation_result = check_authentication_required($self, $client);
+    return $validation_result if $validation_result;
 
-    if (   ($landing =~ /^(?:maltainvest|malta|iom)$/ and not $client->status->get('age_verification') and $client->has_deposits)
-        or ($landing eq 'maltainvest' and not $client->fully_authenticated))
+    $validation_result = check_client_professional($self, $client);
+    return $validation_result if $validation_result;
+
+    return undef;
+}
+
+=head2 check_authentication_required
+
+Check if client is age verified for
+
+- MLT, MX and MF without confirmed age after the first deposit
+- MF without fully_authentication
+
+=cut
+
+sub check_authentication_required {
+    my ($self, $client) = (shift, shift);
+
+    return undef if $client->is_virtual;
+
+    my $landing_company_name = $client->landing_company->short;
+
+    if (   ($landing_company_name =~ /^(?:maltainvest|malta|iom)$/ and not $client->status->get('age_verification') and $client->has_deposits)
+        or ($landing_company_name eq 'maltainvest' and not $client->fully_authenticated))
     {
         return Error::Base->cuss(
             -type              => 'PleaseAuthenticate',
@@ -799,11 +823,25 @@ sub check_trade_status {
         );
     }
 
+    return undef;
+}
+
+=head2 check_client_professional
+
+Check if client is professional for maltainvest landing company
+
+=cut
+
+sub check_client_professional {
+    my ($self, $client) = (shift, shift);
+
+    return undef if $client->is_virtual;
+
     return Error::Base->cuss(
         -type              => 'NoMFProfessionalClient',
         -mesg              => 'your account is not authorised for any further contract purchases.',
         -message_to_client => localize('Sorry, your account is not authorised for any further contract purchases.'),
-    ) if $landing eq 'maltainvest' and not $client->status->get("professional");
+    ) if $client->landing_company->short eq 'maltainvest' and not $client->status->get("professional");
 
     return undef;
 }
