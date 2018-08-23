@@ -12,7 +12,7 @@ use Log::Any qw($log), default_adapter => 'Stdout';
 
 my (%opt, $verbose, $quiet, $repo, $repodir, $db);
 
-our $VERSION = '1.4';
+our $VERSION = '1.5';
 
 my $USAGE = "Usage: $0 --repo=<repo name> --db=<service file name>";
 
@@ -250,22 +250,12 @@ sub get_db_hashes {
 
     ## Build and return a hashref of function checksums from a live database
 
-    ## Taken from bom-postgres-clientdb/tools/manifest.sql:
-    my $SQL = <<EOF;
-WITH excl(nsp, proc) AS (VALUES
-    ('public', 'heap_page_item_attrs')
-)
-SELECT md5(pg_get_functiondef(p.oid)) AS md5, p.oid::regproc::text
-  FROM pg_proc p
-  JOIN pg_namespace n ON n.oid=p.pronamespace
-  JOIN pg_language l ON l.oid=p.prolang
-  LEFT JOIN excl ON excl.nsp=n.nspname AND excl.proc=p.proname
- WHERE n.nspname NOT IN ('sequences', 'information_schema', 'pg_catalog')
-   AND p.probin IS NULL
-   AND l.lanname NOT IN ('internal', 'c')
-   AND excl.proc IS NULL AND excl.nsp IS NULL
- ORDER BY n.nspname, 2, 1
-EOF
+    my $sqlfile = path($repodir, 'tools', 'manifest.sql');
+    if (! $sqlfile->exists) {
+	$log->fatal("Could not find SQL file at $sqlfile");
+	exit 1;
+    }
+    my $SQL = $sqlfile->slurp;
 
     my %db_func_hash;
     my $command = qq{psql service="$db" -AX -qt -c "$SQL"};
