@@ -484,10 +484,8 @@ rpc get_account_status => sub {
     my $params = shift;
 
     my $client = $params->{client};
-    my $already_unwelcomed;
 
     my @status = $client->status->visible();
-    $already_unwelcomed = grep { /^unwelcome$/ } @status;
 
     my $id_auth_status             = $client->authentication_status;
     my $authentication_in_progress = $id_auth_status =~ /under_review|needs_action/;
@@ -498,10 +496,9 @@ rpc get_account_status => sub {
 
     my $aml_level = $client->aml_risk_level();
 
-    # differentiate between social and password based accounts
     my $user = $client->user;
-    push @status, 'unwelcome' if not $already_unwelcomed and BOM::Transaction::Validation->new({clients => [$client]})->check_trade_status($client);
 
+    # differentiate between social and password based accounts
     push @status, 'social_signup' if $user->{has_social_signup};
 
     # check whether the user need to perform financial assessment
@@ -514,10 +511,7 @@ rpc get_account_status => sub {
     my $shortcode                     = $client->landing_company->short;
     my $prompt_client_to_authenticate = 0;
     if ($client->fully_authenticated) {
-        # Authenticated clients still need to go through age verification checks for IOM/MF/MLT
-        if (any { $shortcode eq $_ } qw(iom malta maltainvest)) {
-            $prompt_client_to_authenticate = 1 unless $client->status->get('age_verification');
-        }
+        $prompt_client_to_authenticate = 1 if BOM::Transaction::Validation->new({clients => [$client]})->check_authentication_required($client);
     } elsif ($authentication_in_progress) {
         $prompt_client_to_authenticate = 1;
     } else {

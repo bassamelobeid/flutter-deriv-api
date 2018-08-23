@@ -770,10 +770,34 @@ subtest $method => sub {
         'authentication should not be shown if neither needs action nor under review is set if balance is < 4k'
     );
 
+    cmp_deeply(
+        $c->tcall($method, {token => $token1}),
+        {
+            status                        => bag(qw(financial_assessment_not_complete financial_information_not_complete)),
+            risk_classification           => 'low',
+            prompt_client_to_authenticate => '1',
+        },
+        'prompt for non authenticated MF client'
+    );
+
     $test_client->set_authentication('ID_DOCUMENT')->status('pass');
     $test_client->status->set("professional");
     $test_client->save;
-    # We are authenticated, but MF still has flag set until age_verification has been completed
+
+    my $mocked_client = Test::MockModule->new(ref($test_client));
+    $mocked_client->mock('has_deposits', sub { return 0 });
+
+    cmp_deeply(
+        $c->tcall($method, {token => $token1}),
+        {
+            status                        => bag(qw(financial_assessment_not_complete financial_information_not_complete authenticated professional)),
+            risk_classification           => 'low',
+            prompt_client_to_authenticate => '0',
+        },
+        'authenticated, no deposits so it will not prompt for authentication'
+    );
+
+    $mocked_client->mock('has_deposits', sub { return 1 });
     cmp_deeply(
         $c->tcall($method, {token => $token1}),
         {
@@ -781,7 +805,7 @@ subtest $method => sub {
             risk_classification           => 'low',
             prompt_client_to_authenticate => '1',
         },
-        'ok, authenticated'
+        'authenticated, has deposits but no age verified status so validation triggered and generated an exception so it will ask to authenticate'
     );
 
     $test_client->status->set('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
@@ -793,8 +817,9 @@ subtest $method => sub {
             risk_classification           => 'low',
             prompt_client_to_authenticate => '0',
         },
-        'ok, authenticated and age verified'
+        'authenticated, has deposits and age verified so no need to prompt '
     );
+    $mocked_client->unmock('has_deposits');
 
     $test_client->status->clear("professional");
     $test_client->save;
