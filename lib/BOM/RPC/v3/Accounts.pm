@@ -28,9 +28,10 @@ use ExchangeRates::CurrencyConverter qw(in_usd);
 
 use BOM::RPC::Registry '-dsl';
 
-use BOM::RPC::v3::Utility;
+use BOM::RPC::v3::Utility qw(longcode);
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::RPC::v3::Japan::NewAccount;
+use BOM::Transaction::History qw(get_transaction_history);
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Client::CashierValidation;
 use BOM::Config::Runtime;
@@ -293,65 +294,61 @@ rpc statement => sub {
                 message_to_client => localize(
                     'The system is currently under heavy load, and this call has been suspended temporarily. Please try again in a few minutes.')});
     }
-    my $client  = $params->{client};
-    my $account = $client->default_account;
-    return {
-        transactions => [],
-        count        => 0
-    } unless ($account);
 
+    my $client = $params->{client};
     BOM::RPC::v3::PortfolioManagement::_sell_expired_contracts($client, $params->{source});
 
-    my $results = BOM::Database::DataMapper::Transaction->new({db => $account->db})->get_transactions_ws($params->{args}, $account);
+    my $transaction_res = get_transaction_history($params);
     return {
         transactions => [],
         count        => 0
-    } unless (scalar @{$results});
+    } unless (keys %$transaction_res);
 
-    my @short_codes = map { $_->{short_code} } grep { defined $_->{short_code} } @{$results};
+    my $currency_code = $client->default_account->currency_code;
+    # combine all trades, and sort by transaction_id
+    my @transactions = reverse sort { 0 + $a->{transaction_id} <=> 0 + $b->{transaction_id} }
+        (@{$transaction_res->{open_trade}}, @{$transaction_res->{close_trade}}, @{$transaction_res->{payment}});
 
+    my @short_codes = map { $_->{short_code} || () } @transactions;
     my $longcodes;
-    $longcodes = BOM::RPC::v3::Utility::longcode({
+    $longcodes = longcode({
             short_codes => \@short_codes,
-            currency    => $account->currency_code,
-            language    => $params->{language},
-            source      => $params->{source},
-        }) if $params->{args}->{description} and @short_codes;
+            currency    => $currency_code,
+        }) if scalar @short_codes;
 
     my @txns;
-    for my $txn (@$results) {
+    for my $txn (@transactions) {
+
         my $struct = {
-            transaction_id => $txn->{id},
-            reference_id   => $txn->{buy_tr_id},
-            amount         => $txn->{amount},
-            action_type    => $txn->{action_type},
-            balance_after  => formatnumber('amount', $account->currency_code, $txn->{balance_after}),
-            contract_id    => $txn->{financial_market_bet_id},
-            payout         => $txn->{payout_price},
+            balance_after    => formatnumber('amount', $currency_code, $txn->{balance_after}),
+            transaction_id   => $txn->{id},
+            reference_id     => $txn->{buy_tr_id},
+            contract_id      => $txn->{financial_market_bet_id},
+            transaction_time => $txn->{transaction_time},
+            action_type      => $txn->{action_type},
+            amount           => $txn->{amount},
+            payout           => $txn->{payout_price},
         };
 
-        my $txn_time;
-        if (exists $txn->{financial_market_bet_id} and $txn->{financial_market_bet_id}) {
+        if ($txn->{financial_market_bet_id}) {
             if ($txn->{action_type} eq 'sell') {
                 $struct->{purchase_time} = Date::Utility->new($txn->{purchase_time})->epoch;
-                $txn_time = $txn->{sell_time};
-            } else {
-                $txn_time = $txn->{purchase_time};
             }
-        } else {
-            $txn_time = $txn->{payment_time};
         }
-        $struct->{transaction_time} = Date::Utility->new($txn_time)->epoch;
-        $struct->{app_id} = BOM::RPC::v3::Utility::mask_app_id($txn->{source}, $txn_time);
 
         if ($params->{args}->{description}) {
-            $struct->{shortcode} = $txn->{short_code} // '';
-            if ($struct->{shortcode}) {
-                $struct->{longcode} = $longcodes->{longcodes}->{$struct->{shortcode}} // localize('Could not retrieve contract details');
+            if ($txn->{short_code}) {
+                $struct->{longcode} = $longcodes->{longcodes}->{$txn->{short_code}} // localize('Could not retrieve contract details');
             } else {
-                $struct->{longcode} //= $txn->{payment_remark} // '';
+                # withdrawal/deposit
+                $struct->{longcode} = localize($txn->{payment_remark} // '');
             }
+
+            $struct->{shortcode} = $txn->{short_code};
         }
+
+        $struct->{app_id} = BOM::RPC::v3::Utility::mask_app_id($txn->{source}, $txn->{transaction_time});
+
         push @txns, $struct;
     }
 
@@ -407,7 +404,7 @@ rpc profit_table => sub {
     my @short_codes = map { $_->{short_code} } @{$data};
 
     my $res;
-    $res = BOM::RPC::v3::Utility::longcode({
+    $res = longcode({
             short_codes => \@short_codes,
             currency    => $client->currency,
             language    => $params->{language},
@@ -462,7 +459,7 @@ Returns a hashref with following items
 =item * C<currency> - Currency in which the balance is being represented. E.g. : BTC
 
 =item * C<balance> - Balance for the default account. E.g. : 100.00
- 
+
 =cut
 
 rpc balance => sub {

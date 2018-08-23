@@ -9,7 +9,7 @@ use Format::Util::Numbers qw/formatnumber roundcommon/;
 
 use BOM::RPC::Registry '-dsl';
 
-use BOM::RPC::v3::Utility;
+use BOM::RPC::v3::Utility qw(longcode);
 use BOM::RPC::v3::Accounts;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
@@ -42,7 +42,7 @@ rpc portfolio => sub {
 
     my @short_codes = map { $_->{short_code} } @rows;
 
-    my $res = BOM::RPC::v3::Utility::longcode({
+    my $res = longcode({
         short_codes => \@short_codes,
         currency    => $client->currency,
         language    => $params->{language},

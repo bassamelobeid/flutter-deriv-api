@@ -44,6 +44,9 @@ use BOM::Platform::Token;
 use BOM::Platform::Email qw(send_email);
 use BOM::MarketData qw(create_underlying);
 
+use Exporter qw(import export_to_level);
+our @EXPORT_OK = qw(longcode);
+
 use feature "state";
 
 # Number of keys to get/set per batch in Redis
@@ -716,13 +719,11 @@ Returns a hashref which contains a single key with the shortcode to longcode map
 
 sub longcode {    ## no critic(Subroutines::RequireArgUnpacking)
     my $params = shift;
-
-    die 'Invalid currency: ' . $params->{currency} unless (my $currency = uc $params->{currency}) =~ /^[A-Z]{3}$/;
+    die 'Invalid currency: ' . $params->{currency} unless ((uc $params->{currency}) =~ /^[A-Z]{3}$/);
 
     # We generate a hash, so we only need each shortcode once
-    my @short_codes = uniqstr @{$params->{short_codes}};
+    my @short_codes = uniqstr(@{$params->{short_codes}});
     my %longcodes;
-
     foreach my $shortcode (@short_codes) {
         try {
             $longcodes{$shortcode} = localize(shortcode_to_longcode($shortcode, $params->{currency}));
@@ -743,7 +744,7 @@ sub longcode {    ## no critic(Subroutines::RequireArgUnpacking)
 
     @valid_payout_currencies = filter_out_suspended_cryptocurrencies($landing_company);
 
-This subroutine checks for suspended cryptocurrencies 
+This subroutine checks for suspended cryptocurrencies
 
 Accepts: Landing company name
 

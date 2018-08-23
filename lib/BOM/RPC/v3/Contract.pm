@@ -121,17 +121,4 @@ sub validate_barrier {
 
     return undef;
 }
-
-=head2 longcode
-
-Perform a longcode lookup - this is entirely handled by our
-utility function of the same name in L<BOM::RPC::v3::Utility/longcode>.
-
-=cut
-
-sub longcode {
-    my ($params) = @_;
-    return BOM::RPC::v3::Utility::longcode($params);
-}
-
 1;

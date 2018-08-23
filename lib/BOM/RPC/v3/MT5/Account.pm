@@ -775,7 +775,7 @@ Takes the following (named) parameters as inputs:
 
 =item * C<old_password> that contains the user's current password.
 
-=item * C<new_password> that contains the user's new password. 
+=item * C<new_password> that contains the user's new password.
 
 =back
 
@@ -896,7 +896,7 @@ Takes the following (named) parameters as inputs:
 
 =item * C<login> that contains the MT5 login id.
 
-=item * C<new_password> that contains the user's new password. 
+=item * C<new_password> that contains the user's new password.
 
 =back
 
