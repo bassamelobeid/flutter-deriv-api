@@ -165,7 +165,6 @@ sub get_settings_by_group {
                 system.suspend.all_logins
                 system.suspend.social_logins
                 system.suspend.logins
-                system.suspend.system
                 system.suspend.mt5
                 system.suspend.mt5_deposits
                 system.suspend.mt5_withdrawals

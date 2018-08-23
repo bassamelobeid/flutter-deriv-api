@@ -125,19 +125,12 @@ sub ServerWarningBar {
         $ipmessage .= qq{, backprice config: <a href="$h">$c</a>};
     }
 
-    my $topbarbackground;
-    my $systemisoff;
-    if (BOM::Config::Runtime->instance->app_config->system->suspend->system) {
-        $topbarbackground = '#FF0000';
-        $systemisoff      = " <font size=3>*** SYSTEM IS OFF ***</font> ";
-    } else {
-        $topbarbackground = '#0000BB';
-    }
+    my $topbarbackground = '#0000BB';
 
     print qq~
  <table width="100%" cellpadding="4" cellspacing="0" border="0">
  <tr><td width="100%" bgcolor="$topbarbackground" align="center"><font class="whitetop">
- <b>$systemisoff $ipmessage $systemisoff</b></font>
+ <b>$ipmessage</b></font>
  </td></tr></table>
  </td></tr><tr>
  <td colspan="2" style="background-repeat: repeat-x;" background="~

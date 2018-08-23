@@ -40,8 +40,8 @@ for (qw/account amount currency ttype range/) {
     code_exit_BO();
 }
 
-if (BOM::Config::Runtime->instance->app_config->system->suspend->system) {
-    print "ERROR: Sytem is suspended";
+if (BOM::Config::Runtime->instance->app_config->system->suspend->payments) {
+    print "ERROR: Payments are suspended";
     code_exit_BO();
 }
 
