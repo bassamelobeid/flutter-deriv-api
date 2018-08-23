@@ -23,16 +23,15 @@ my ($taginfo, $commitinfo, $git_hashes) = get_git_hashes();
 my ($dbinfo, $db_hashes) = get_db_hashes();
 
 if (!$quiet) {
-    my $message = sprintf 
-"Repo: %s at commit %s, created on %s
+    my $message = sprintf "Repo: %s at commit %s, created on %s
 Author: %s Title: %s
 Latest tag: %s, created on %s, points to commit %s
 Database service: %s (%sport=%s user=%s database=%s)",
 
-$repo, $commitinfo->{hash}, $commitinfo->{date},
-    $commitinfo->{author}, $commitinfo->{title},
-    $taginfo->{name}, $taginfo->{tagdate}, $taginfo->{shortcommit},
-        $dbinfo->{service}, $dbinfo->{host} ? "host=$dbinfo->{host} " : '',
+        $repo, $commitinfo->{hash}, $commitinfo->{date},
+        $commitinfo->{author}, $commitinfo->{title},
+        $taginfo->{name},      $taginfo->{tagdate}, $taginfo->{shortcommit},
+        $dbinfo->{service},    $dbinfo->{host} ? "host=$dbinfo->{host} " : '',
         $dbinfo->{port}, $dbinfo->{user}, $dbinfo->{dbname};
 
     $log->notice($message);
@@ -49,10 +48,10 @@ for my $gitfunc (keys %{$git_hashes}) {
 }
 if (@onlyrepo) {
     for my $func (sort @onlyrepo) {
-         $log->notice("${prefix}Function in the repo but not in database $db: $func");
+        $log->notice("${prefix}Function in the repo but not in database $db: $func");
     }
 } elsif ($verbose) {
-     $log->notice("${prefix}All functions in the repo are also in database $db");
+    $log->notice("${prefix}All functions in the repo are also in database $db");
 }
 
 ## Any functions that exist in the database but not in the repo?
@@ -92,7 +91,6 @@ $verbose and $log->notice("Total identical functions for db $db: $identical");
 
 $log->notice("\n");
 
-
 exit;
 
 sub debug {
@@ -114,20 +112,20 @@ sub get_git_hashes {
     ## 3. function names and their hash values
 
     if (!$repodir->exists) {
-	$log->fatal( "Cannot proceed: directory does not exist: $repodir");
-	exit 1;
+        $log->fatal("Cannot proceed: directory does not exist: $repodir");
+        exit 1;
     }
 
     ## We rely on other people leaving the repo in our desired state
 
     ## Grab the latest "V" tag
-    my $command = "tag -l | grep '^V' | sort -k1.2 -g | tail -1";
+    my $command    = "tag -l | grep '^V' | sort -k1.2 -g | tail -1";
     my $latest_tag = run_git_command($command);
     chomp $latest_tag;
-    $verbose and $log->notice( "Latest git tag: $latest_tag");
+    $verbose and $log->notice("Latest git tag: $latest_tag");
 
     ## Gather information about this tag
-    my $taginfo = get_tag_info( $latest_tag);
+    my $taginfo = get_tag_info($latest_tag);
 
     ## Gather information about the latest commit
     my $commitinfo = get_latest_commit_info();
@@ -135,8 +133,8 @@ sub get_git_hashes {
     ## Open the manifest file and read in the checksums
     my $manifest = path($repodir, 'manifest');
     if (!$manifest->exists) {
-	$log->fatal("Could not find $manifest!");
-	exit 1;
+        $log->fatal("Could not find $manifest!");
+        exit 1;
     }
     my @lines = $manifest->lines;
     my %git_func_hash;
@@ -157,7 +155,6 @@ sub get_git_hashes {
     return $taginfo, $commitinfo, \%git_func_hash;
 }
 
-
 sub get_tag_info {
 
     ## Given a tag, return a hashref of information about it
@@ -165,68 +162,67 @@ sub get_tag_info {
     my $tagname = shift;
 
     my $command = qq{git show "$tagname"};
-    my $result = run_git_command($command);
+    my $result  = run_git_command($command);
 
-    debug substr($result,0,400) . "\n\n";
+    debug substr($result, 0, 400) . "\n\n";
 
     ## Sanity check
     if ($result !~ /^tag $tagname$/m) {
-	$log->fatal("Invalid tag information returned from $command");
-	exit 1;
+        $log->fatal("Invalid tag information returned from $command");
+        exit 1;
     }
 
     my %taginfo = (
-	name => $tagname,
-	);
+        name => $tagname,
+    );
 
     if ($result =~ /^Tagger:\s+(.+)/m) {
-	$taginfo{tagger} = $1;
+        $taginfo{tagger} = $1;
     }
     if ($result =~ s/^Date:\s+(.+)//m) {
-	$taginfo{tagdate} = $1;
+        $taginfo{tagdate} = $1;
     }
     if ($result =~ /^commit ([a-f0-9]+)/m) {
-	$taginfo{commit} = $1;
-	$taginfo{shortcommit} = substr($1,0,8);
+        $taginfo{commit} = $1;
+        $taginfo{shortcommit} = substr($1, 0, 8);
     }
     if ($result =~ /^Author:\s+(.+)/m) {
-	$taginfo{author} = $1;
+        $taginfo{author} = $1;
     }
     if ($result =~ /^Date:\s+(.+)/m) {
-	$taginfo{commitdate} = $1;
+        $taginfo{commitdate} = $1;
     }
 
     return \%taginfo;
 }
-
 
 sub get_latest_commit_info {
 
     ## Return information about the latest commit
 
     my $command = qq{git log -1 --format="Commit: %h%nAuthor: %an%nDate: %aD%nTitle: %s%n"};
-    my $result = run_git_command($command);
+    my $result  = run_git_command($command);
 
     debug $result;
 
     ## Sanity check
     if ($result !~ /^Commit: ([a-f0-9]+)/) {
         $log->fatal("Invalid log information returned from $command");
-	exit 1;
+        exit 1;
     }
 
     my %commitinfo = (
-	hash => $1,
-	);
+        hash => $1,
+    );
 
     if ($result =~ /^Author:\s+(.+)/m) {
-	$commitinfo{author} = $1;
+        $commitinfo{author} = $1;
     }
     if ($result =~ /^Date:\s+(.+)/m) {
-	$commitinfo{date} = $1;
+        $commitinfo{date} = $1;
     }
     if ($result =~ /^Title:\s+(.+)/m) {
-	$commitinfo{title} = $1;
+        $commitinfo{title} = $1;
     }
 
     return \%commitinfo;
@@ -249,9 +245,6 @@ sub run_git_command {
     return $output;
 
 }
-
-
-
 
 sub get_db_hashes {
 
@@ -282,30 +275,30 @@ EOF
         $db_func_hash{$2} = $1;
     }
 
-    if (! keys %db_func_hash) {
-	$log->fatal("Could not get database function checksums from $db");
-	exit 1;
+    if (!keys %db_func_hash) {
+        $log->fatal("Could not get database function checksums from $db");
+        exit 1;
     }
 
     if ($verbose) {
         my $count = keys %db_func_hash;
-        $log->notice( "Entries found in database $db: $count");
+        $log->notice("Entries found in database $db: $count");
     }
 
-    $SQL = "SELECT current_database(), setting, user, inet_server_addr() FROM pg_settings WHERE name = 'port'";
+    $SQL     = "SELECT current_database(), setting, user, inet_server_addr() FROM pg_settings WHERE name = 'port'";
     $command = qq{psql service="$db" -AX -qt -c "$SQL"};
     debug "Running: $command";
     my $result = qx{ $command };
     chomp $result;
     debug "Result: $result";
-    my ($dbname,$dbport,$dbuser,$dbhost) = split /\|/ => $result;
+    my ($dbname, $dbport, $dbuser, $dbhost) = split /\|/ => $result;
     my $dbinfo = {
-	service => $db,
-	dbname => $dbname,
-	host => $dbhost,
-	port => $dbport,
-	user => $dbuser,
-	};
+        service => $db,
+        dbname  => $dbname,
+        host    => $dbhost,
+        port    => $dbport,
+        user    => $dbuser,
+    };
 
     return $dbinfo, \%db_func_hash;
 
@@ -315,11 +308,11 @@ sub get_token {
 
     ## Attempt to get a token for github
 
-    my $tokenfile = path( $opt{tokenfile} // ($ENV{HOME}, '.config', 'git') );
+    my $tokenfile = path($opt{tokenfile} // ($ENV{HOME}, '.config', 'git'));
 
     if (!$tokenfile->exists) {
         $log->fatal("Could not find token file: $tokenfile");
-	exit 1;
+        exit 1;
     }
 
     my $data = $tokenfile->slurp_utf8;
@@ -338,34 +331,24 @@ sub get_all_options {
 
     ## Set some default options
     %opt = (
-	verbose => 0,
+        verbose => 0,
         debug   => 0,
-	quiet => 0,
+        quiet   => 0,
         githome => '/home/git/regentmarkets',
     );
 
-    GetOptions(
-        \%opt,
-        'verbose',
-        'debug+',
-        'quiet|q',
-        'database|db=s',
-        'repo|repository=s',
-        'githome=s',
-	'tokenfile=s',
-        'help|h',
-    ) or die;
+    GetOptions(\%opt, 'verbose', 'debug+', 'quiet|q', 'database|db=s', 'repo|repository=s', 'githome=s', 'tokenfile=s', 'help|h',) or die;
 
     if ($opt{help} or !$opt{repo} or !$opt{database}) {    ## no critic
         $log->fatal("$USAGE");
-	exit 1;
+        exit 1;
     }
 
     $verbose = $opt{verbose};
-    $quiet = $opt{quiet};
-    $repo = $opt{repo};
+    $quiet   = $opt{quiet};
+    $repo    = $opt{repo};
     $repodir = path($opt{githome}, $repo);
-    $db = $opt{database};
+    $db      = $opt{database};
 
     return \%opt;
 
