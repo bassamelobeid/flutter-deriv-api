@@ -286,88 +286,41 @@ if ($view_action eq 'withdrawals') {
     # reconciliation will be gone, as of now we want to release
     # this and we will enhance later
     if ($currency eq 'ETH') {
-        my $filter = sub {
-            my ($transactions) = @_;
-            my $res = {};
-            my %address_hashes = map { $_->{address} => $_ } @$database_items;
-            for my $tran (@$transactions) {
-                my $loginid = $address_hashes{$tran->{to_address}}->{client_loginid};
-
-                # if it already exists then it means multiple transactions
-                # were performed, so just update amount and add transaction ids
-                if (my $record = $res->{$tran->{to_address}}) {
-                    if ($tran->{transaction_type} eq 'deposit') {
-                        $res->{$tran->{to_address}}->{amount} += $tran->{amount};
-                    } else {
-                        # for withdrawal recon expect negative amount
-                        $res->{$tran->{to_address}}->{amount} -= $tran->{amount};
-                    }
-                    push @{$res->{$tran->{to_address}}->{txids}}, $tran->{transaction_hash};
-                } else {
-                    $res->{$tran->{to_address}} = {
-                        account       => $loginid,
-                        label         => $loginid,
-                        confirmations => 3,
-                        address       => $tran->{to_address},
-                        amount        => ($tran->{transaction_type} eq 'deposit' ? $tran->{amount} : -$tran->{amount}),
-                        time          => $tran->{tmstmp},
-                        txids         => [$tran->{transaction_hash}],
-                    };
-                }
-            }
-            return [values %$res];
-        };
-
         my $collectordb = BOM::Database::ClientDB->new({
                 broker_code => 'FOG',
                 operation   => 'collector',
             })->db->dbh;
 
         if (
-            my $deposits = $collectordb->selectall_arrayref(
-                q{SELECT * FROM cryptocurrency.get_bookkeeping_records(?, ?, ?, ?)},
+            my $transactions = $collectordb->selectall_arrayref(
+                q{SELECT * FROM cryptocurrency.get_bookkeeping_records(?, ?, ?)},
                 {Slice => {}},
-                $currency, 'deposit', $start_date->date_yyyymmdd,
+                $currency, $start_date->date_yyyymmdd,
                 $end_date->date_yyyymmdd
             ))
         {
-            $recon->from_blockchain_deposits($filter->($deposits));
+            $recon->from_blockchain_transactions($transactions);
         } else {
-            code_exit_BO('<p style="color:red;">Unable to request deposits from RPC</p>');
-        }
-
-        if (
-            my $withdrawals = $collectordb->selectall_arrayref(
-                q{SELECT * FROM cryptocurrency.get_bookkeeping_records(?, ?, ?, ?)},
-                {Slice => {}},
-                $currency, 'withdrawal', $start_date->date_yyyymmdd,
-                $end_date->date_yyyymmdd
-            ))
-        {
-            $recon->from_blockchain_withdrawals($filter->($withdrawals));
-        } else {
-            code_exit_BO('<p style="color:red;">Unable to request deposits from RPC</p>');
+            code_exit_BO('<p style="color:red;">Unable to request transactions from RPC</p>');
         }
 
     } else {
         # Apply date filtering. Note that this is currently BTC/BCH/LTC-specific, but
         # once we have the information in the database we should pass the date range
         # as a parameter instead.
+
         my $filter = sub {
             my ($transactions) = @_;
             my $start_epoch    = $start_date->epoch;
             my $end_epoch      = $end_date->epoch;
-            return [grep { (not exists $_->{time}) or ($_->{time} >= $start_epoch and $_->{time} <= $end_epoch) } @$transactions];
+            return [grep { (not exists $_->{time}) or ($_->{time} >= $start_epoch and $_->{time} <= $end_epoch and $_->{confirmations} >= -1) }
+                    @$transactions];
         };
-        if (my $deposits = $rpc_client->listreceivedbyaddress(0)) {
-            $recon->from_blockchain_deposits($filter->($deposits));
+
+        if (my $withdrawals = $rpc_client->listtransactions('*', 10_000)) {
+            $recon->from_blockchain_transactions($filter->($withdrawals));
         } else {
-            code_exit_BO('<p style="color:red;">Unable to request deposits from RPC</p>');
-        }
-        if (my $withdrawals = $rpc_client->listtransactions('', 10_000)) {
-            $recon->from_blockchain_withdrawals($filter->($withdrawals));
-        } else {
-            code_exit_BO('<p style="color:red;">Unable to request withdrawals from RPC</p>');
+            code_exit_BO('<p style="color:red;">Unable to request transactions from RPC</p>');
         }
     }
 
@@ -375,11 +328,9 @@ if ($view_action eq 'withdrawals') {
     # things are consistent.
     my @recon_list = $recon->reconcile;
     my @hdr        = (
-        'Client ID', 'Type', $currency . ' Address',
-        'Amount', 'Amount USD', 'Fee', 'Status', 'Payment date', 'Blockchain date',
-        'Status date', 'Confirmations', 'Transactions',
-        'Blockchain transaction ID',
-        'DB Payment ID', 'Errors'
+        'Client ID',        'Type',        'Address',      'Amount',          'Amount USD',    'Fee',
+        'Status',           'Status date', 'Payment date', 'Blockchain date', 'Confirmations', 'Transactions',
+        'Transaction Hash', 'Errors'
     );
     my $filename = join '-', $start_date->date_yyyymmdd, $end_date->date_yyyymmdd, $currency;
 
@@ -399,13 +350,19 @@ EOF
     for my $db_tran (@recon_list) {
         next TRAN if $db_tran->is_status_in(qw(NEW MIGRATED)) and not $show_new_addresses;
         print '<tr>';
-        print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(loginid type)};
-        print '<td><a href="' . $address_uri . $_ . '" target="_blank">' . encode_entities($_) . '</a></td>' for $db_tran->{address};
+        print '<td>' . encode_entities($_) . '</td>' for map { $_ ne '' ? $_ : 'sweep' } @{$db_tran}{qw(account category)};
 
-        my $bmul = $db_tran->type eq "withdrawal" ? -1 : 1;
-        my $amount = formatnumber('amount', $currency, financialrounding('price', $currency, ($db_tran->{amount} // 0) * $bmul));
-        my $usd_amount = formatnumber('amount', 'USD', financialrounding('price', 'USD', in_usd(($db_tran->{amount} // 0) * $bmul, $currency)));
-        my $fee = formatnumber('amount', $currency, financialrounding('price', $currency, ($db_tran->{fee} // 0) * $bmul));
+        my $address = BOM::CTC::Utility::is_valid_address($db_tran->{to_address}, $currency) ? $db_tran->{to_address} : $db_tran->{from_address};
+        my $encoded_address = encode_entities($address);
+        print '<td><a href="' . $address_uri . $encoded_address . '" target="_blank">' . $encoded_address . '</a></td>';
+
+        my $amount = formatnumber('amount', $currency, financialrounding('price', $currency, $db_tran->{amount}));
+        my $usd_amount = formatnumber('amount', 'USD', financialrounding('price', 'USD', in_usd($db_tran->{amount}, $currency)));
+        # for recon only, we can't consider fee as a 8 decimal places value
+        # for ethereum the fees values has more than that, and since we can't
+        # get any difference in the recon report, better show the correct value
+        # for amount we have a limit for each coin, so we don't need to show the entire value like in the fee
+        my $fee = Math::BigFloat->new($db_tran->{fee} // 0)->bstr;
 
         if (defined $db_tran->{amount}) {
             print '<td style="text-align:right;">' . encode_entities($_) . '</td>' for ($amount, '$' . $usd_amount, $fee // '');
@@ -414,18 +371,16 @@ EOF
         }
         print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(status)};
         print '<td sorttable_customkey="' . (sprintf "%012d", $_ ? Date::Utility->new($_)->epoch : 0) . '">' . encode_entities($_) . '</td>'
-            for map { $_ // '' } @{$db_tran}{qw(transaction_date blockchain_date status_date)};
-        print '<td><span style="color: ' . ($_ >= 3 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
-            for map { $_ // '' } @{$db_tran}{qw(confirmations)};
-        print '<td><span style="color: ' . ($_ > 1 ? 'red' : $_ == 1 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
-            for map { $_ // 0 } @{$db_tran}{qw(transactions)};
-        print '<td>'
-            . ($_ ? '<a target="_blank" href="' . ($transaction_uri . $_) . '">' : '')
-            . encode_entities(substr $_, 0, 6)
-            . ($_ ? '</a>' : '') . '</td>'
-            for map { $_ // '' } @{$db_tran}{qw(transaction_id)};
-        print '<td>' . ($db_tran->{payment_id} ? encode_entities($db_tran->{payment_id}) : '&nbsp;') . '</td>';
-        print '<td style="color:red;">' . (join '<br>', map { encode_entities($_) } @{$db_tran->{comments} || []}) . '</td>';
+            for map { $_ // '' } @{$db_tran}{qw(status_date database_date blockchain_date)};
+        print '<td><span style="color: ' . ($_ + 0 >= 3 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
+            for map { $_ // 0 } @{$db_tran}{qw(confirmations)};
+        print '<td><span style="color: ' . ($_ + 0 > 1 ? 'red' : $_ == 1 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
+            for map { $_ // 0 } @{$db_tran}{qw(transaction_count)};
+        print '<td>';
+        print '<a target="_blank" href="' . ($transaction_uri . $_) . '">' . encode_entities($_) . '</a><br>'
+            for grep { $_ } @{$db_tran->{transactions}};
+        print '</td>';
+        print '<td style="color:red;">' . (join '<br><br>', map { encode_entities($_) } @{$db_tran->{comments} || []}) . '</td>';
         print '</tr>';
         $total_balance += $amount + $fee;
     }
