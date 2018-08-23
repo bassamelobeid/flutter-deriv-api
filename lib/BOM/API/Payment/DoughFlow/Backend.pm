@@ -117,10 +117,6 @@ sub validate_as_payment {
         return $c->status_bad_request($err);
     }
 
-    if (BOM::Config::Runtime->instance->app_config->system->suspend->system) {
-        return $c->throw(403, 'Client activity disabled at this time');
-    }
-
     if (BOM::Config::Runtime->instance->app_config->system->suspend->payments) {
         return $c->throw(403, 'Payments are suspended.');
     }
