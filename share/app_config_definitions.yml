@@ -299,6 +299,16 @@ system:
           isa: Bool
           default: 0
           global: 1
+        mt5_deposits:
+          description: "Suspend MT5 deposits"
+          isa: Bool
+          default: 0
+          global: 1
+        mt5_withdrawals:
+          description: "Suspend MT5 withdrawals"
+          isa: Bool
+          default: 0
+          global: 1
     directory:
       description: "Configuration for system wide directories"
       isa: section
