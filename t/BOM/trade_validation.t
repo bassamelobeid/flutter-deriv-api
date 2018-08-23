@@ -1178,73 +1178,140 @@ subtest 'validate stake limit' => sub {
 };
 
 subtest 'country offerings validation' => sub {
-    foreach my $test_data (['ca', '29d', 'canada', '1d'], ['cn', '29m59s', 'china', '1s']) {
-        subtest "$test_data->[2] offerings validation" => sub {
-            my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                    broker_code => 'CR',
-                    residence   => $test_data->[0]});
-            my $unpermitted_duration = $now->plus_time_interval($test_data->[1]);
-            my $permitted_duration   = $unpermitted_duration->plus_time_interval($test_data->[3]);
-            my $contract_args        = {
-                underlying   => create_underlying('R_100'),
-                bet_type     => 'CALL',
-                currency     => 'USD',
-                payout       => 100,
-                date_start   => $now,
-                date_expiry  => $unpermitted_duration,
-                date_pricing => $now,
-                current_tick => $tick,
-                barrier      => 'S0P',
-            };
-            my $contract    = produce_contract($contract_args);
-            my $transaction = BOM::Transaction->new({
-                client        => $client,
-                contract      => $contract,
-                action        => 'BUY',
-                price         => 5,
-                payout        => 100,
-                amount_type   => 'stake',
-                purchase_date => $contract->date_start,
-            });
-            ok !BOM::Transaction::Validation->new({
-                    transaction => $transaction,
-                    clients     => [$client]})->_validate_offerings_buy($client), 'can buy if instrument is non-financial';
-
-            $contract_args->{underlying} = 'frxUSDJPY';
-            $contract = produce_contract($contract_args);
-
-            $transaction = BOM::Transaction->new({
-                client        => $client,
-                contract      => $contract,
-                action        => 'BUY',
-                price         => 5,
-                payout        => 100,
-                amount_type   => 'stake',
-                purchase_date => $contract->date_start,
-            });
-            my $err = BOM::Transaction::Validation->new({
-                    transaction => $transaction,
-                    clients     => [$client]})->_validate_offerings_buy($client);
-            is $err->{'-message_to_client'}, 'Trading is not offered for this duration.',
-                'cannot buy financial instrument less than ' . $test_data->[1];
-
-            $contract_args->{date_expiry} = $permitted_duration;
-            $contract = produce_contract($contract_args);
-
-            $transaction = BOM::Transaction->new({
-                client        => $client,
-                contract      => $contract,
-                action        => 'BUY',
-                price         => 5,
-                payout        => 100,
-                amount_type   => 'stake',
-                purchase_date => $contract->date_start,
-            });
-            ok !BOM::Transaction::Validation->new({
-                    transaction => $transaction,
-                    clients     => [$client]})->_validate_offerings_buy($client), 'can buy financial instrment with duration ' . $test_data->[1];
+    subtest "china offerings validation" => sub {
+        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+            residence   => 'cn'
+        });
+        my $unpermitted_duration = $now->plus_time_interval('29m59s');
+        my $permitted_duration   = $unpermitted_duration->plus_time_interval('1s');
+        my $contract_args        = {
+            underlying   => create_underlying('R_100'),
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            date_start   => $now,
+            date_expiry  => $unpermitted_duration,
+            date_pricing => $now,
+            current_tick => $tick,
+            barrier      => 'S0P',
         };
-    }
+        my $contract    = produce_contract($contract_args);
+        my $transaction = BOM::Transaction->new({
+            client        => $client,
+            contract      => $contract,
+            action        => 'BUY',
+            price         => 5,
+            payout        => 100,
+            amount_type   => 'stake',
+            purchase_date => $contract->date_start,
+        });
+        ok !BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                clients     => [$client]})->_validate_offerings_buy($client), 'can buy if instrument is non-financial';
+
+        $contract_args->{underlying} = 'frxUSDJPY';
+        $contract = produce_contract($contract_args);
+
+        $transaction = BOM::Transaction->new({
+            client        => $client,
+            contract      => $contract,
+            action        => 'BUY',
+            price         => 5,
+            payout        => 100,
+            amount_type   => 'stake',
+            purchase_date => $contract->date_start,
+        });
+        my $err = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                clients     => [$client]})->_validate_offerings_buy($client);
+        is $err->{'-message_to_client'}, 'Trading is not offered for this duration.', 'cannot buy financial instrument less than 29m59s';
+
+        $contract_args->{date_expiry} = $permitted_duration;
+        $contract = produce_contract($contract_args);
+
+        $transaction = BOM::Transaction->new({
+            client        => $client,
+            contract      => $contract,
+            action        => 'BUY',
+            price         => 5,
+            payout        => 100,
+            amount_type   => 'stake',
+            purchase_date => $contract->date_start,
+        });
+        ok !BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                clients     => [$client]})->_validate_offerings_buy($client), 'can buy financial instrment with duration 29m59s';
+    };
+
+    # no offerings for canada.
+    subtest "canada offerings validation" => sub {
+        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+            residence   => 'ca'
+        });
+        my $unpermitted_duration = $now->plus_time_interval('29d');
+        my $permitted_duration   = $unpermitted_duration->plus_time_interval('1d');
+        my $contract_args        = {
+            underlying   => create_underlying('R_100'),
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            date_start   => $now,
+            date_expiry  => $unpermitted_duration,
+            date_pricing => $now,
+            current_tick => $tick,
+            barrier      => 'S0P',
+        };
+        my $contract    = produce_contract($contract_args);
+        my $transaction = BOM::Transaction->new({
+            client        => $client,
+            contract      => $contract,
+            action        => 'BUY',
+            price         => 5,
+            payout        => 100,
+            amount_type   => 'stake',
+            purchase_date => $contract->date_start,
+        });
+        my $err = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                clients     => [$client]})->_validate_offerings_buy($client);
+        is $err->{'-message_to_client'}, 'Trading is not offered for this asset.', 'cannot buy volatility indices';
+
+        $contract_args->{underlying} = 'frxUSDJPY';
+        $contract = produce_contract($contract_args);
+
+        $transaction = BOM::Transaction->new({
+            client        => $client,
+            contract      => $contract,
+            action        => 'BUY',
+            price         => 5,
+            payout        => 100,
+            amount_type   => 'stake',
+            purchase_date => $contract->date_start,
+        });
+        $err = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                clients     => [$client]})->_validate_offerings_buy($client);
+        is $err->{'-message_to_client'}, 'Trading is not offered for this asset.', 'cannot buy financial instrument with 1d duration';
+
+        $contract_args->{date_expiry} = $permitted_duration;
+        $contract = produce_contract($contract_args);
+
+        $transaction = BOM::Transaction->new({
+            client        => $client,
+            contract      => $contract,
+            action        => 'BUY',
+            price         => 5,
+            payout        => 100,
+            amount_type   => 'stake',
+            purchase_date => $contract->date_start,
+        });
+        $err = BOM::Transaction::Validation->new({
+                transaction => $transaction,
+                clients     => [$client]})->_validate_offerings_buy($client);
+        is $err->{'-message_to_client'}, 'Trading is not offered for this asset.', 'cannot buy financial intrument with 29d duration';
+    };
 };
 
 done_testing();
