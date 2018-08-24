@@ -147,7 +147,7 @@ this will die for fiat currencies such as USD / GBP.
 sub is_crypto_currency_suspended {
     my $currency = shift or die "expected currency parameter";
 
-    die "Failed to accept $currency as a cryptocurrency." if (LandingCompany::Registry::get_currency_type($currency) // '') ne 'crypto';
+    die "Failed to accept $currency as a cryptocurrency." if (LandingCompany::Registry::get_currency_type(uc $currency) // '') ne 'crypto';
 
     return 1 if BOM::Config::Runtime->instance->app_config->system->suspend->cryptocashier;
 
