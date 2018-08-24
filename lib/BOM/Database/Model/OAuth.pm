@@ -3,7 +3,6 @@ package BOM::Database::Model::OAuth;
 use Moose;
 use Date::Utility;
 use Try::Tiny;
-use List::MoreUtils qw(uniq);
 use BOM::Database::AuthDB;
 
 has 'dbic' => (
@@ -43,6 +42,31 @@ sub verify_app {
     return unless $app;
 
     $app->{scopes} = __parse_array($app->{scopes});
+    return $app;
+}
+
+=head2
+
+Get Names by App ID
+
+Takes in either an arrayref or a single integer and returns a hash of the ID(s) passed in and their respective names.
+
+=cut
+
+sub get_names_by_app_id {
+    my ($self, $app_id) = @_;
+
+    $app_id = [$app_id] unless ref $app_id eq 'ARRAY';
+    # We may be called with a large number of duplicates by code that maps transactions to the app_id source. We filter those out here to reduce a tiny bit of database load and also keep debugging output more readable when tracing the SQL queries.
+    $app_id = [List::Util::uniq(@$app_id)];
+
+    my $app = $self->dbic->run(
+        fixup => sub {
+            $_->selectall_hashref("SELECT * FROM oauth.get_app_names(?)", "id", undef, $app_id);
+        });
+
+    $app = {map { $_ => $app->{$_}->{name} } keys %$app};
+
     return $app;
 }
 

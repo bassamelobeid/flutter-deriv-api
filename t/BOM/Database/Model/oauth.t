@@ -33,6 +33,10 @@ is $app1->{verification_uri}, 'https://www.example.com/verify', 'verification_ur
 my $verification_uri = $m->get_verification_uri_by_app_id($test_appid);
 is $app1->{verification_uri}, $verification_uri, 'get_verification_uri_by_app_id';
 
+my $names = $m->get_names_by_app_id($app1->{app_id});
+my $expected_names = {$app1->{app_id} => $app1->{name}};
+is_deeply $names, $expected_names, "got correct name for single app";
+
 ## it's in test db
 my $app = $m->verify_app($test_appid);
 is $app->{id}, $test_appid;
@@ -88,6 +92,12 @@ is $get_apps, $app1->{app_id}, 'user_has_app_id yes';
 
 $get_apps = $m->user_has_app_id($test_user_id, -1);
 is $get_apps, undef, 'user_has_app_id no';
+
+$names = $m->get_names_by_app_id([$app1->{app_id}, $app2->{app_id}]);
+$expected_names = {
+    $app1->{app_id} => $app1->{name},
+    $app2->{app_id} => $app2->{name}};
+is_deeply $names, $expected_names, "got correct name for multiple apps";
 
 my $delete_st = $m->delete_app($test_user_id, $app2->{app_id});
 ok $delete_st;
