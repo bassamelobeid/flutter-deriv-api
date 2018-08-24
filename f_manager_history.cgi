@@ -98,7 +98,6 @@ my $summary = client_statement_summary({
 
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
 my $dbic = $clientdb->db->dbic;
-
 my ($deposits_to_date, $withdrawals_to_date) = $dbic->run(
     fixup => sub {
         my $sth = $_->prepare("SELECT * FROM betonmarkets.get_total_deposits_and_withdrawals(?, ?)");
@@ -106,6 +105,9 @@ my ($deposits_to_date, $withdrawals_to_date) = $dbic->run(
         return @{$sth->fetchall_arrayref->[0]};
     });
 
+my $appdb = BOM::Database::Model::OAuth->new();
+my @ids   = map { $_->{source} || () } @{$statement->{transactions}};
+my $apps  = $appdb->get_names_by_app_id(\@ids);
 BOM::Backoffice::Request::template()->process(
     'backoffice/account/statement.html.tt',
     {
@@ -115,6 +117,7 @@ BOM::Backoffice::Request::template()->process(
             to   => $overview_to_date->date_yyyymmdd()
         },
         transactions            => $statement->{transactions},
+        apps                    => $apps,
         withdrawals_to_date     => formatnumber('amount', $currency, $withdrawals_to_date),
         deposits_to_date        => formatnumber('amount', $currency, $deposits_to_date),
         balance                 => $statement->{balance},
