@@ -12,7 +12,7 @@ use Log::Any qw($log), default_adapter => 'Stdout';
 
 my (%opt, $verbose, $quiet, $repo, $repodir, $db);
 
-our $VERSION = '1.5';
+our $VERSION = '1.6';
 
 my $USAGE = "Usage: $0 --repo=<repo name> --db=<service file name>";
 
@@ -88,6 +88,10 @@ if (@mismatch) {
 }
 
 $verbose and $log->notice("Total identical functions for db $db: $identical");
+
+if (!@onlyrepo and !@onlydb and !@mismatch) {
+    $log->notice(' Everything is identical!');
+}
 
 $log->notice("\n");
 
