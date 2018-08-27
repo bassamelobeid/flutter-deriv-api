@@ -921,6 +921,11 @@ sub is_pa_and_authenticated {
 
 sub is_same_user_as {
     my ($self, $other_client) = @_;
+
+    return 0 unless $self;
+
+    return 0 unless $other_client;
+
     return $self->binary_user_id == $other_client->binary_user_id ? 1 : 0;
 }
 
