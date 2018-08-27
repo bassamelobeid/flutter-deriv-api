@@ -33,7 +33,7 @@ EOF
 
     my @uls = map { create_underlying($_) } create_underlying_db->symbols_for_intraday_fx;
 
-#back populate
+    # back populate
     my $interval = $decimate_cache->sampling_frequency->seconds;
 
     my $end   = time;
@@ -48,6 +48,12 @@ EOF
 
         my $last_non_zero_decimated_tick = $decimate_cache->get_latest_tick_epoch($ul->symbol, 1, $start, $end);
         my $last_decimate_epoch = max($start, $last_non_zero_decimated_tick + 1);
+
+        # If we restart the service when this service is
+        # already running the start date will be after the end date
+        # this check will ignore this cases and they will be
+        # verified in the next run.
+        next if $last_decimate_epoch > $end;
 
         my $ticks = $ul->ticks_in_between_start_end({
             start_time => $last_decimate_epoch,

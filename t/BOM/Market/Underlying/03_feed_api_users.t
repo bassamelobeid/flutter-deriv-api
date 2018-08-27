@@ -34,7 +34,7 @@ subtest 'get_combined_realtime' => sub {
         $cache = Cache::RedisDB->get('QUOTE', 'frxUSDJPY');
         ok !$cache, 'QUOTE is now empty';
     };
-    
+
     subtest 'Empty redis cache for frxJPYUSD' => sub {
         my $cache = Cache::RedisDB->get('QUOTE', 'frxJPYUSD');
         $orig_cache = $cache;
@@ -46,7 +46,6 @@ subtest 'get_combined_realtime' => sub {
         $cache = Cache::RedisDB->get('QUOTE', 'frxJPYUSD');
         ok !$cache, 'QUOTE is now empty';
     };
-       
 
     my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'frxUSDJPY'}]);
     subtest 'Fetch from empty cache' => sub {

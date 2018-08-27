@@ -20,7 +20,7 @@ use Text::CSV;
 my $data = data_from_csv('t/BOM/Market/DecimateCache/sampledata.csv');
 
 subtest "decimate_cache_insert_and_retrieve" => sub {
-    my $decimate_cache = BOM::Market::DataDecimate->new( {market => 'forex'} );
+    my $decimate_cache = BOM::Market::DataDecimate->new({market => 'forex'});
 
     ok $decimate_cache, "Instance has been created";
 
@@ -72,7 +72,7 @@ subtest "decimate_cache_insert_and_retrieve" => sub {
 my $data2 = data_from_csv('t/BOM/Market/DecimateCache/sampledata2.csv');
 
 subtest "decimate_cache_insert_and_retrieve_with_missing_data" => sub {
-    my $decimate_cache = BOM::Market::DataDecimate->new({market=>'forex'});
+    my $decimate_cache = BOM::Market::DataDecimate->new({market => 'forex'});
 
     ok $decimate_cache, "Instance has been created";
 

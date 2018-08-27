@@ -31,7 +31,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         date   => Date::Utility->new,
     }) for (qw/AUD EUR GBP HKD IDR JPY NZD SGD USD XAU ZAR/);
 
-
 initialize_realtime_ticks_db();
 
 # INCORRECT DATA in support of in_quiet_period testing, only.
@@ -118,7 +117,7 @@ subtest 'display_decimals' => sub {
             is $underlying->display_decimals, $decimals, $symbol . ' display_decimals';
         }
     };
-    
+
 };
 
 subtest 'all attributes on a variety of underlyings' => sub {
@@ -529,7 +528,7 @@ subtest 'daily close crossing intradays' => sub {
     my %expectations = (
         'frxEURUSD' => 0,
         'frxBROUSD' => 1,
-        'AS51'      => 1, 
+        'AS51'      => 1,
         'R_100'     => 0,
         'RDBULL'    => 1,
     );
@@ -591,12 +590,11 @@ subtest 'risk type' => sub {
 };
 
 subtest 'feed failover' => sub {
-    is(create_underlying('frxUSDJPY')->feed_failover, '300', "USDJPY's feed failover is 300s");
-    is(create_underlying('AEX')->feed_failover, '300', "AEX's feed failover is 300s");
-    is(create_underlying('frxXAUUSD')->feed_failover, '300', "XAUUSD's feed failover is 300s");
-    is(create_underlying('OTC_AEX')->feed_failover, '1200', "OTC_AEX's feed failover is 1200s");
-    is(create_underlying('OTC_N225')->feed_failover, '1800', "OTC_N225's feed failover is 1800s");
+    is(create_underlying('frxUSDJPY')->feed_failover, '300',  "USDJPY's feed failover is 300s");
+    is(create_underlying('AEX')->feed_failover,       '300',  "AEX's feed failover is 300s");
+    is(create_underlying('frxXAUUSD')->feed_failover, '300',  "XAUUSD's feed failover is 300s");
+    is(create_underlying('OTC_AEX')->feed_failover,   '1200', "OTC_AEX's feed failover is 1200s");
+    is(create_underlying('OTC_N225')->feed_failover,  '1800', "OTC_N225's feed failover is 1800s");
 };
-
 
 done_testing;
