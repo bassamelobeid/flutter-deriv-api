@@ -143,7 +143,7 @@ subtest 'payout' => sub {
         trading_period_start => time,
     });
 
-    cmp_ok $c->ask_price, '==', 0.05 * 1000, 'Forex intraday non atm contract for japan is floored to 5%';
+    cmp_ok $c->ask_price, '==', 0.05 * 1000, 'Forex intraday non atm contract for multibarrier is floored to 5%';
 
     $c = produce_contract({
         bet_type             => 'CALL',
@@ -155,7 +155,7 @@ subtest 'payout' => sub {
         product_type         => 'multi_barrier',
         trading_period_start => time,
     });
-    cmp_ok $c->ask_price, '==', 0.05 * 1000, 'Forex daily non atm contract for japan is floored to 5%';
+    cmp_ok $c->ask_price, '==', 0.05 * 1000, 'Forex daily non atm contract for multibarrier is floored to 5%';
 
     $c = produce_contract({
         bet_type   => 'CALL',
@@ -400,7 +400,7 @@ subtest 'new commission structure' => sub {
     }
 };
 
-subtest 'commission for japan' => sub {
+subtest 'commission for multibarrier' => sub {
     my $fake_theo = Math::Util::CalculatedValue::Validatable->new({
         name        => 'theo_probability',
         description => 'test theo',

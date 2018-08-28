@@ -130,7 +130,7 @@ $defaults{epoch} = $now->epoch + 1;
 $defaults{quote} = 114.5;
 $redis->zadd($undec_key, $defaults{epoch}, $encoder->encode(\%defaults));
 
-subtest 'put_call_parity_IH_non_japan' => sub {
+subtest 'put_call_parity_IH_basic' => sub {
 
     my @shortcode = (
         "CALL_FRXUSDJPY_10_1488326400_1488327300_S0P_0",  "CALL_FRXUSDJPY_10_1488326400_1488327300_S2P_0",
@@ -155,7 +155,7 @@ subtest 'put_call_parity_IH_non_japan' => sub {
     }
 };
 
-subtest 'put_call_parity_IH_japan' => sub {
+subtest 'put_call_parity_IH_multi_barrier' => sub {
 
     my @shortcode = (
         "CALLE_FRXUSDJPY_1000_1488326400_1488326520F_114000000_0", "CALLE_FRXUSDJPY_10_1488326400_1488327300F_114000000_0",
@@ -183,7 +183,7 @@ subtest 'put_call_parity_IH_japan' => sub {
     }
 };
 
-subtest 'put_call_parity_slope_non_japan' => sub {
+subtest 'put_call_parity_slope_basic' => sub {
 
     my @shortcode = (
         "CALL_FRXUSDJPY_10_1488326400_1489017599_S0P_0",                      "CALL_FRXUSDJPY_10_1488326400_1489017599_S2P_0",
@@ -215,7 +215,7 @@ subtest 'put_call_parity_slope_non_japan' => sub {
     }
 };
 
-subtest 'put_call_parity_slope_japan' => sub {
+subtest 'put_call_parity_slope_multi_barrier' => sub {
 
     my @shortcode = (
         "CALLE_FRXUSDJPY_1000_1488326400_1519938000F_114000000_0",
@@ -245,7 +245,7 @@ subtest 'put_call_parity_slope_japan' => sub {
     }
 };
 
-subtest 'put_call_parity_vv_non_japan' => sub {
+subtest 'put_call_parity_vv_basic' => sub {
     # For vv, the theo_prob are not sum up to the discounted probability because one is price with pay out at hit[one touch] and another one is pay out at end [notouch]
     my @shortcode = (
         "ONETOUCH_FRXUSDJPY_10_1488326400_1489017599_114500000_0",      "ONETOUCH_FRXUSDJPY_10_1488326400_1491263999_115000000_0",
@@ -271,7 +271,7 @@ subtest 'put_call_parity_vv_non_japan' => sub {
     }
 };
 
-subtest 'put_call_parity_vv_japan' => sub {
+subtest 'put_call_parity_vv_multi_barrier' => sub {
 
     my @shortcode = (
         "ONETOUCH_FRXUSDJPY_1000_1488326400_1519938000F_114500000_0",      "ONETOUCH_FRXUSDJPY_1000_1488326400_1491091199F_115000000_0",

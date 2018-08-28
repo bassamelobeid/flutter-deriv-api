@@ -90,7 +90,7 @@ sub _get_contracts {
 sub _get_multi_barrier_offerings {
     my ($symbol, $landing_company_short, $country_code) = @_;
 
-    $landing_company_short //= 'japan';
+    $landing_company_short //= 'costarica';
     my $landing_company = LandingCompany::Registry::get($landing_company_short);
     my $offerings_obj = $landing_company->multi_barrier_offerings_for_country($country_code, BOM::Config::Runtime->instance->get_offerings_config);
 

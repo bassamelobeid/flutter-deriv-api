@@ -124,7 +124,7 @@ Ratio of slippage we allow for this contract, where 0.01 is 1%.
 
 ## extra\_info
 
-get the extra pricing information of the contract. Is it necessary for Japan but let's do it for everyone.
+get the extra pricing information of the contract.
 
 \->extra\_info('string'); # returns a string of information separated by underscore
 \->extra\_info('arrayref'); # returns an array reference of information

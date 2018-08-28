@@ -851,7 +851,7 @@ sub _build_risk_profile {
 
 =head2 extra_info
 
-get the extra pricing information of the contract. Is it necessary for Japan but let's do it for everyone.
+get the extra pricing information of the contract.
 
 ->extra_info('string'); # returns a string of information separated by underscore
 ->extra_info('arrayref'); # returns an array reference of information
@@ -879,8 +879,6 @@ sub extra_info {
         push @extra, [iv => $self->pricing_vol];
     }
 
-    # We are logging quote too old validation error for japan for the regulators.
-    # But no harm doing it for binary.
     if (!$self->is_valid_to_buy && $self->primary_validation_error->message =~ /Quote too old/) {
         push @extra, [error => $self->primary_validation_error->message];
     }

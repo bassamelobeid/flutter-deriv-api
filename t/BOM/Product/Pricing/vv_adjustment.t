@@ -66,7 +66,7 @@ subtest 'touch notouch' => sub {
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Onetouch';
 
-        is $c->ask_price, 100;
+        is $c->ask_price,  100;
         is $c->theo_price, 99.95;
     }
     'touch barrier too close';
@@ -76,18 +76,18 @@ subtest 'touch notouch' => sub {
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Onetouch';
 
-        is $c->ask_price, 17.29;
+        is $c->ask_price,  17.29;
         is $c->theo_price, 13.79;
     }
     'touch barrier too far';
 
-    $args->{barrier} = '100.001';
+    $args->{barrier}  = '100.001';
     $args->{bet_type} = 'NOTOUCH';
     lives_ok {
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Notouch';
 
-        is $c->ask_price, 5;
+        is $c->ask_price,  5;
         is $c->theo_price, 0.12;
     }
     'no touch barrier too close';
@@ -97,7 +97,7 @@ subtest 'touch notouch' => sub {
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Notouch';
 
-        is $c->ask_price, 90.02;
+        is $c->ask_price,  90.02;
         is $c->theo_price, 86.52;
     }
     'no touch barrier too far';
@@ -105,16 +105,16 @@ subtest 'touch notouch' => sub {
 };
 
 subtest 'range upordown' => sub {
-    
+
     delete $args->{barriere};
-    $args->{bet_type} = 'RANGE';
+    $args->{bet_type}     = 'RANGE';
     $args->{high_barrier} = '100.001';
     $args->{low_barrier}  = '99.999';
     lives_ok {
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Range';
 
-        is $c->ask_price, 5;
+        is $c->ask_price,  5;
         is $c->theo_price, 0;
     }
     'range both barrier too close';
@@ -125,7 +125,7 @@ subtest 'range upordown' => sub {
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Range';
 
-        is $c->ask_price, 84.79;
+        is $c->ask_price,  84.79;
         is $c->theo_price, 81.29;
     }
     'range both barrier too far';
@@ -136,21 +136,21 @@ subtest 'range upordown' => sub {
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Range';
 
-        is $c->ask_price, 5;
+        is $c->ask_price,  5;
         is $c->theo_price, 0.11;
     }
     'range one barrier too far and one barrier too close';
 
     #UPORDOWN
 
-    $args->{bet_type} = 'UPORDOWN';
+    $args->{bet_type}     = 'UPORDOWN';
     $args->{high_barrier} = '100.001';
     $args->{low_barrier}  = '99.999';
     lives_ok {
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Upordown';
 
-        is $c->ask_price, 100;
+        is $c->ask_price,  100;
         is $c->theo_price, 100;
     }
     'upordown both barrier too close';
@@ -161,7 +161,7 @@ subtest 'range upordown' => sub {
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Upordown';
 
-        is $c->ask_price, 22.82;
+        is $c->ask_price,  22.82;
         is $c->theo_price, 19.32;
     }
     'upordown both barrier too far';
@@ -172,7 +172,7 @@ subtest 'range upordown' => sub {
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Upordown';
 
-        is $c->ask_price, 100;
+        is $c->ask_price,  100;
         is $c->theo_price, 99.9;
     }
     'uprodown one barrier too far and one barrier too close';

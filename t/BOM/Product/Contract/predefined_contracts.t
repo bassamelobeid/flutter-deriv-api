@@ -49,7 +49,7 @@ subtest 'predefined_contracts' => sub {
         date_start   => $now,
         date_pricing => $now,
         barrier      => 'S0P',
-        currency     => 'JPY',
+        currency     => 'USD',
         payout       => 1000,
         duration     => '15m',
     };
@@ -62,7 +62,7 @@ subtest 'predefined_contracts' => sub {
     $bet_params->{bet_type}             = 'CALLE';
     $bet_params->{barrier}              = '100.010';
     $c                                  = produce_contract($bet_params);
-    ok !%{$c->predefined_contracts}, 'has predefined_contracts for japan';
+    ok !%{$c->predefined_contracts}, 'has predefined_contracts for multi_barrier';
     ok !$c->is_valid_to_buy, 'not valid to buy';
     is_deeply($c->primary_validation_error->message_to_client, ['Invalid expiry time.']);
     note('sets predefined_contracts with valid expiry time.');

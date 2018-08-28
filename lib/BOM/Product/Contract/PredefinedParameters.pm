@@ -436,7 +436,7 @@ sub _get_strike_from_call_bs_price {
     return $strike;
 }
 
-# Japan's intraday predefined trading window are as follow:
+# Intraday predefined trading window are as follow:
 #
 # Intraday trading period is from 00 GMT to 18 GMT. We offer two intraday windows at any given time:
 # - 2-hour window

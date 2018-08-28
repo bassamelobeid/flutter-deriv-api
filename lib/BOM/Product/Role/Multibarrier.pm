@@ -19,10 +19,10 @@ override disable_trading_at_quiet_period => sub {
 };
 
 override _build_otm_threshold => sub {
-    return 0.05;    # a fixed 5% for japan regardless of market though we only offer forex now.
+    return 0.05;    # a fixed 5% regardless of market though we only offer forex now.
 };
 
-# we do not want to apply this for Japan.
+# we do not want to apply this for MultiBarrier.
 override apply_market_inefficient_limit => sub {
     return 0;
 };
@@ -35,7 +35,7 @@ has trading_period_start => (
 =head2 predefined_contracts
 
 Some landing company requires script contract offerings in which we will have pre-set
-contract barriers, start and expiry time. As of now, this is only applicable for japan.
+contract barriers, start and expiry time. As of now, this is only applicable to multibarrier.
 
 =cut
 
@@ -177,19 +177,6 @@ sub _subvalidate_double_barrier {
     }
 
     return;
-}
-
-# Compose a string containing all the pricing info that needed to be log for Japan
-sub japan_pricing_info {
-    my ($self, $trading_period_start, $opposite_contract) = @_;
-
-    my $bid_price = $self->payout - $opposite_contract->ask_price;
-    my @pricing_info = ($self->shortcode, $trading_period_start, $self->ask_price, $bid_price, $self->_date_pricing_milliseconds);
-
-    my $extra = $self->extra_info('string');
-    my $pricing_info = join ',', @pricing_info, $extra;
-
-    return "[JPLOG]," . $pricing_info . "\n";
 }
 
 override '_check_intraday_engine_compatibility' => sub {

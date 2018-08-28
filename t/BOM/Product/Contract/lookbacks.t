@@ -96,12 +96,13 @@ subtest 'lbfloatcall' => sub {
     $args->{barrier} = '+100';
     try {
         $c = produce_contract($args);
-    } catch {
+    }
+    catch {
         isa_ok $_, 'BOM::Product::Exception';
         is $_->error_code, "InvalidInput";
     };
 
-    delete $args->{barrier}; 
+    delete $args->{barrier};
 };
 
 subtest 'lbfloatput' => sub {
@@ -167,7 +168,6 @@ subtest 'lbhighlow' => sub {
     cmp_ok $c->date_pricing->epoch, '>', $c->date_expiry->epoch, 'after expiry';
     ok $c->is_expired, 'expired';
 };
-
 
 subtest 'invalid amount_type' => sub {
     $args->{amount_type} = 'unkown';

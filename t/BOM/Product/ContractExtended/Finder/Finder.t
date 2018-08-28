@@ -67,16 +67,13 @@ subtest "predefined contracts for symbol" => sub {
         }) for qw(frxUSDJPY frxAUDCAD frxUSDCAD frxAUDUSD);
 
     my %expected = (
-        # japan, japan
-        'frxUSDJPY-japan-jp' => {
+        # costarica, japan
+        'frxUSDJPY-costarica-jp' => {
             contract_count => {
-                callputequal => 6,
-                callput      => 6,
-                touchnotouch => 8,
-                staysinout   => 8,
-                endsinout    => 8,
+                callputequal => 2,
+                callput      => 2
             },
-            hit_count => 36,
+            hit_count => 4,
         },
         # costarica, canada
         'frxUSDJPY-costarica-ca' => {
@@ -115,11 +112,13 @@ subtest "predefined contracts for symbol" => sub {
 
 subtest "predefined trading_period" => sub {
     my %expected_count = (
-        offering_with_predefined_trading_period => 36,
-        trading_period                          => {
-            call_intraday => 2,
-            call_daily    => 4,
-            range_daily   => 4,
+        offering_with_predefined_trading_period => 4,
+        # call_daily, range_intraday, and range_daily were used in Japan but are no longer used
+        trading_period => {
+            call_intraday  => 2,
+            call_daily     => 0,
+            range_intraday => 0,
+            range_daily    => 0,
         });
 
     my %expected_trading_period = (
@@ -127,22 +126,14 @@ subtest "predefined trading_period" => sub {
             duration => ['2h', '6h'],
             date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-09-04 18:15:00', '2015-09-04 18:15:00',)],
             date_start  => [map { Date::Utility->new($_)->epoch } ('2015-09-04 16:15:00', '2015-09-04 12:15:00',)],
-        },
-        range_daily => {
-            duration => ['1W', '1M', '3M', '1Y'],
-            date_expiry =>
-                [map { Date::Utility->new($_)->epoch } ('2015-09-04 21:00:00', '2015-09-30 23:59:59', '2015-09-30 23:59:59', '2015-12-31 23:59:59')],
-            date_start =>
-                [map { Date::Utility->new($_)->epoch } ('2015-08-31 00:00:00', '2015-09-01 00:00:00', '2015-07-01 00:00:00', '2015-01-02 00:00:00')],
-        },
-    );
+        });
 
     my $now = Date::Utility->new('2015-09-04 17:00:00');
     my $underlying = create_underlying('frxUSDJPY', $now);
     BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($underlying->symbol, $now);
     my @new = @{BOM::Product::ContractFinder->new(for_date => $now)->multi_barrier_contracts_for({symbol => $underlying->symbol})->{available}};
 
-    my %got;
+    my %got = map { $_ => [] } keys $expected_count{trading_period};
     foreach my $d (@new) {
         $d->{contract_type} eq 'CALLE'
             and $d->{expiry_type} eq 'intraday' ? push @{$got{call_intraday}}, $d->{trading_period} : push @{$got{call_daily}},
@@ -151,12 +142,14 @@ subtest "predefined trading_period" => sub {
             and $d->{expiry_type} eq 'intraday' ? push @{$got{range_intraday}}, $d->{trading_period} : push @{$got{range_daily}},
             $d->{trading_period};
     }
+
     is(
         scalar(keys @new),
         $expected_count{'offering_with_predefined_trading_period'},
         'Expected total contract after included predefined trading period'
     );
     is(scalar(@{$got{$_}}), $expected_count{trading_period}{$_}, "Expected total trading period on $_") for (keys %{$expected_count{trading_period}});
+
     foreach my $bet_type (keys %expected_trading_period) {
 
         my @got_duration = map { $_->{duration} } @{$got{$bet_type}};

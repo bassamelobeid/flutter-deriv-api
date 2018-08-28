@@ -39,7 +39,7 @@ subtest 'non trading day' => sub {
             symbol => $supported_symbol,
             date   => $monday
         })->{available};
-    ok @$offerings, 'generates predefined offerings on a trading day';
+    ok !@$offerings, 'no offerings were generated on a trading day';
 };
 
 subtest 'intraday trading period' => sub {
@@ -159,59 +159,25 @@ subtest 'predefined barriers' => sub {
             match => {
                 contract_category => 'touchnotouch',
                 duration          => '1W',
-                expiry_type       => 'daily'
-            },
-            ticks => [
-                [$date->minus_time_interval('400d')],
-                [$date,                            1.1521],
-                [$date->plus_time_interval(1),     1.14621],
-                [$date->plus_time_interval(3),     1.15799],
-                [$date->plus_time_interval('10m'), 1.15591]
-            ],
-            available_barriers => [1.13005, 1.13495, 1.13985, 1.14622, 1.15798, 1.16435, 1.16925, 1.17415,],
-            expired_barriers   => [1.14622, 1.15798],
+                expiry_type       => 'daily',
+                not_offered       => 1
+            }
         },
         {
             match => {
                 contract_category => 'staysinout',
                 duration          => '1W',
-                expiry_type       => 'daily'
-            },
-            ticks => [
-                [$date->minus_time_interval('400d')],
-                [$date,                            1.1521],
-                [$date->plus_time_interval(1),     1.13984],
-                [$date->plus_time_interval(3),     1.15667],
-                [$date->plus_time_interval('10m'), 1.15591]
-            ],
-            available_barriers => [[1.13985, 1.16435], [1.13495, 1.16925], [1.13005, 1.17415]],
-            expired_barriers => [[1.13985, 1.16435]],
+                expiry_type       => 'daily',
+                not_offered       => 1
+            }
         },
         {
             match => {
                 contract_category => 'endsinout',
                 duration          => '1W',
-                expiry_type       => 'daily'
-            },
-            ticks => [
-                [$date->minus_time_interval('400d')],
-                [$date,                            1.1521],
-                [$date->plus_time_interval(1),     1.1520],
-                [$date->plus_time_interval(3),     1.15667],
-                [$date->plus_time_interval('10m'), 1.15591]
-            ],
-            available_barriers => [
-                [1.16435,   1.17415],
-                [1.15798,   1.16925],
-                ["1.15210", 1.16435],
-                [1.14622,   1.15798],
-                [1.13985,   "1.15210"],
-                [1.13495,   1.14622],
-                [1.13005,   1.13985],
-            ],
-            expired_barriers => [],
-        },
-    );
+                expiry_type       => 'daily',
+                not_offered       => 1
+            }});
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
@@ -224,8 +190,10 @@ subtest 'predefined barriers' => sub {
     my $tp = BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, $generation_date);
 
     foreach my $test (@inputs) {
+
         setup_ticks($symbol, $test->{ticks});
         BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_barriers($symbol, $_, $generation_date) for @$tp;
+
         my $offerings = BOM::Product::ContractFinder->new(for_date => $generation_date)->multi_barrier_contracts_for({
                 symbol => $symbol,
             })->{available};
@@ -237,9 +205,17 @@ subtest 'predefined barriers' => sub {
                 and $_->{trading_period}->{duration} eq $m->{duration}
         }
         @$offerings;
+
         my $testname = join '_', map { $m->{$_} } qw(contract_category expiry_type duration);
-        cmp_bag($offering->{available_barriers}, $test->{available_barriers}, 'available barriers for ' . $testname);
-        cmp_bag($offering->{expired_barriers},   $test->{expired_barriers},   'expired barriers for ' . $testname);
+        if ($m->{not_offered}) {
+            ok !$offering, "$testname not offered";
+            next;
+        } else {
+
+            my $testname = join '_', map { $m->{$_} } qw(contract_category expiry_type duration);
+            cmp_bag($offering->{available_barriers}, $test->{available_barriers}, 'available barriers for ' . $testname);
+            cmp_bag($offering->{expired_barriers},   $test->{expired_barriers},   'expired barriers for ' . $testname);
+        }
     }
 };
 
@@ -260,6 +236,7 @@ subtest 'update_predefined_highlow' => sub {
         ok update_predefined_highlow($new_tick), 'updated highlow';
         my $offering = BOM::Product::ContractFinder->new->multi_barrier_contracts_for({symbol => $symbol})->{available};
         my $touch = first { $_->{contract_category} eq 'touchnotouch' and $_->{trading_period}->{duration} eq '3M' } @$offering;
+        skip 'touchnotouch not offered', unless $touch;
         ok !scalar(@{$touch->{expired_barriers}}), 'no expired barrier detected';
         $new_tick->{epoch} += 1;
         $new_tick->{quote} = 125;

@@ -235,7 +235,7 @@ sub _build_empirical_volsurface {
 # should be removed once we verified that intraday vega correction is not useful
 # in our intraday FX pricing model.
 #
-# These are kept as attributes because it will be over-written by japan back pricing.
+# These are kept as attributes so they can be over-written.
 has [qw(long_term_prediction)] => (
     is         => 'ro',
     lazy_build => 1,
