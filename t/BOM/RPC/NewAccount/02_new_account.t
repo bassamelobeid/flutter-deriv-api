@@ -198,10 +198,11 @@ subtest $method => sub {
     };
 
     subtest 'Create new account' => sub {
+        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($vclient->loginid, 'test token');
+
         my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
         isnt $result->{error}->{code}, 'InvalidAccount', 'No error with duplicate details but residence not provided so it errors out';
 
-        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($vclient->loginid, 'test token');
         $params->{args}->{residence} = 'id';
 
         @{$params->{args}}{keys %$client_details} = values %$client_details;
@@ -619,142 +620,6 @@ subtest $method => sub {
         is($result->{tax_residence}, 'de,nl', 'MF client has tax residence set');
         $result = $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token_mf})->result;
         isnt(keys %$result, 0, 'MF client has financial assessment set');
-    };
-};
-
-$method = 'new_account_japan';
-$params = {
-    language => 'EN',
-    source   => 1,
-    country  => 'ru',
-    args     => {},
-};
-
-subtest $method => sub {
-    my ($user, $client, $auth_token, $normal_vr, $normal_user, $normal_auth_token, $normal_params);
-
-    subtest 'Initialization' => sub {
-        lives_ok {
-            my $password = 'jskjd8292922';
-            my $hash_pwd = BOM::User::Password::hashpw($password);
-            $email = 'new_email' . rand(999) . '@binary.com';
-            $user  = BOM::User->create(
-                email    => $email,
-                password => $hash_pwd
-            );
-
-            $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'VRTJ',
-                email       => $email,
-            });
-            $auth_token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
-
-            $user->add_client($client);
-
-            $email       = 'new_email' . rand(999) . '@binary.com';
-            $normal_user = BOM::User->create(
-                email    => $email,
-                password => $hash_pwd
-            );
-            $normal_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'VRTC',
-                email       => $email,
-            });
-            $normal_auth_token = BOM::Database::Model::AccessToken->new->create_token($normal_vr->loginid, 'test token');
-
-            $normal_user->add_client($normal_vr);
-        }
-        'Initial users and clients';
-    };
-
-    subtest 'Auth client' => sub {
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->error_code_is('InvalidToken', 'It should return error: InvalidToken');
-
-        $params->{token} = 'wrong token';
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->error_code_is('InvalidToken', 'It should return error: InvalidToken');
-
-        delete $params->{token};
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->error_code_is('InvalidToken', 'It should return error: InvalidToken');
-
-        $params->{token} = $auth_token;
-
-        {
-            my $module = Test::MockModule->new('BOM::User::Client');
-            $module->mock('new', sub { });
-
-            $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('AuthorizationRequired', 'It should check auth');
-        }
-    };
-
-    subtest 'Create new account japan' => sub {
-        $normal_params = $params;
-        $normal_params->{token} = $normal_auth_token;
-
-        my $result = $rpc_ct->call_ok($method, $normal_params)->has_no_system_error->has_error->result;
-        is $result->{error}->{code}, 'PermissionDenied',
-            'It should return an error if normal virtual client tried to make japan real account call, only japan-virtual is allowed';
-
-        $params->{token} = $auth_token;
-
-        $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
-        is $result->{error}->{code}, 'InvalidAccount', 'It should return error if client residense does not fit for japan';
-
-        $client->residence('jp');
-        $client->save;
-
-        $params->{args}->{residence} = 'jp';
-        @{$params->{args}}{keys %$client_details} = values %$client_details;
-        delete $params->{args}->{first_name};
-
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
-            ->error_message_is('Please provide complete details for account opening.', 'It should return error if missing any details');
-
-        $params->{args}->{first_name} = $client_details->{first_name};
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('email unverified', 'It should return error if email unverified')
-            ->error_message_is('Your email address is unverified.', 'It should return error if email unverified');
-
-        $user->update_email_fields(email_verified => 1);
-
-        $params->{args}->{annual_income}                  = '1-3 million JPY';
-        $params->{args}->{financial_asset}                = '1-3 million JPY';
-        $params->{args}->{trading_experience_public_bond} = 'Less than 6 months';
-        $params->{args}->{trading_experience_margin_fx}   = '6 months to 1 year';
-
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('insufficient score', 'It should return error if client has insufficient score')
-            ->error_message_is(
-            'Unfortunately your answers to the questions above indicate that you do not have sufficient financial resources or trading experience to be eligible to open a trading account at this time.',
-            'It should return error if client has insufficient score'
-            );
-
-        $params->{args}->{annual_income}                  = '50-100 million JPY';
-        $params->{args}->{trading_experience_public_bond} = 'Over 5 years';
-        $params->{args}->{trading_experience_margin_fx}   = 'Over 5 years';
-
-        $params->{args}->{agree_use_electronic_doc}             = 1;
-        $params->{args}->{agree_warnings_and_policies}          = 1;
-        $params->{args}->{confirm_understand_own_judgment}      = 1;
-        $params->{args}->{confirm_understand_trading_mechanism} = 1;
-        $params->{args}->{confirm_understand_total_loss}        = 1;
-        $params->{args}->{confirm_understand_judgment_time}     = 1;
-        $params->{args}->{confirm_understand_sellback_loss}     = 1;
-        $params->{args}->{confirm_understand_shortsell_loss}    = 1;
-        $params->{args}->{confirm_understand_company_profit}    = 1;
-        $params->{args}->{confirm_understand_expert_knowledge}  = 1;
-        $params->{args}->{declare_not_fatca}                    = 1;
-
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_no_error->result_value_is(sub { shift->{landing_company} }, 'Binary KK', 'It should return new account data')
-            ->result_value_is(sub { shift->{landing_company_shortcode} }, 'japan', 'It should return new account data');
-
-        my $new_loginid = $rpc_ct->result->{client_id};
-        ok $new_loginid =~ /^JP\d+/, 'new JP loginid';
-
-        my ($resp_loginid, $t, $uaf) =
-            @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
-        is $resp_loginid, $new_loginid, 'correct oauth token';
     };
 };
 

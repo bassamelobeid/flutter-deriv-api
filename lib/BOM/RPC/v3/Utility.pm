@@ -419,7 +419,7 @@ sub get_available_currencies {
 sub validate_make_new_account {
     my ($client, $account_type, $request_data) = @_;
 
-    return permission_error() if (not $account_type and $account_type !~ /^(?:real|financial|japan)$/);
+    return permission_error() if (not $account_type and $account_type !~ /^(?:real|financial)$/);
 
     my $residence = $client->residence;
     return create_error({
@@ -446,15 +446,11 @@ sub validate_make_new_account {
     if (scalar(keys %$siblings) == 0) {
         if ($account_type eq 'real') {
             return undef if $gaming_company;
-            # send error as account opening for maltainvest and japan has separate call
+            # send error as account opening for maltainvest has separate call
             return create_error({
                     code              => 'InvalidAccount',
-                    message_to_client => $error_map->{'invalid'}}) if ($financial_company and any { $_ eq $financial_company } qw(maltainvest japan));
+                    message_to_client => $error_map->{'invalid'}}) if ($financial_company and any { $_ eq $financial_company } qw(maltainvest));
         } elsif ($account_type eq 'financial' and ($financial_company and $financial_company ne 'maltainvest')) {
-            return create_error({
-                    code              => 'InvalidAccount',
-                    message_to_client => $error_map->{'invalid'}});
-        } elsif ($account_type eq 'japan' and ($financial_company and $financial_company ne 'japan')) {
             return create_error({
                     code              => 'InvalidAccount',
                     message_to_client => $error_map->{'invalid'}});

@@ -20,14 +20,12 @@ set_language 'EN';
 
 test_sendrecv_params 'landing_company/test_send.json', "landing_company/test_receive_$_.json", $_ foreach qw( ua fr br );
 
-test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_costarica.json',     'costarica';
-test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_virtual.json',       'virtual';
-test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_iom.json',           'iom';
-test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_japan.json',         'japan';
-test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_japan_virtual.json', 'japan-virtual';
-test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_malta.json',         'malta';
-test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_maltainvest.json',   'maltainvest';
-test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_error.json',         'unknown';
+test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_costarica.json',   'costarica';
+test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_virtual.json',     'virtual';
+test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_iom.json',         'iom';
+test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_malta.json',       'malta';
+test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_maltainvest.json', 'maltainvest';
+test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_error.json',       'unknown';
 test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json', '', '(USD|EUR|GBP|AUD|BTC|LTC|BCH|DAI|ETH)', 9;
 test_sendrecv_params 'residence_list/test_send.json', 'residence_list/test_receive.json';
 test_sendrecv_params 'states_list/test_send.json',    'states_list/test_receive.json';

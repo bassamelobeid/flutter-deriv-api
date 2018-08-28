@@ -26,7 +26,6 @@ use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Account::Real::default;
-use BOM::Platform::Account::Real::japan;
 use BOM::Platform::Email qw(send_email);
 use BOM::User;
 use BOM::Config;
@@ -240,10 +239,10 @@ rpc new_account_real => sub {
 
     $args->{client_type} //= 'retail';
 
-    # send error if maltainvest and japan client tried to make this call
+    # send error if maltainvest client tried to make this call
     # as they have their own separate api call for account opening
     return BOM::RPC::v3::Utility::permission_error()
-        if $client->landing_company->short =~ /^(?:maltainvest|japan)$/;
+        if $client->landing_company->short eq 'maltainvest';
 
     $client->residence($args->{residence}) unless $client->residence;
 
@@ -418,81 +417,6 @@ rpc new_account_maltainvest => sub {
     $error = BOM::RPC::v3::Utility::set_professional_status($new_client, $professional_status, $professional_requested);
 
     return $error if $error;
-
-    $user->add_login_history(
-        action      => 'login',
-        environment => BOM::RPC::v3::Utility::login_env($params),
-        successful  => 't'
-    );
-
-    BOM::User::AuditLog::log("successful login", "$client->email");
-    BOM::User::Client::PaymentNotificationQueue->add(
-        source        => 'real',
-        currency      => 'USD',
-        loginid       => $new_client->loginid,
-        type          => 'newaccount',
-        amount        => 0,
-        payment_agent => 0,
-    );
-    return {
-        client_id                 => $new_client->loginid,
-        landing_company           => $landing_company->name,
-        landing_company_shortcode => $landing_company->short,
-        oauth_token               => _create_oauth_token($new_client->loginid),
-    };
-};
-
-rpc new_account_japan => sub {
-    my $params = shift;
-
-    my ($client, $args) = @{$params}{qw/client args/};
-
-    # send error if anyone other than japan, japan-virtual
-    # tried to make this call
-    return BOM::RPC::v3::Utility::permission_error()
-        if ($client->landing_company->short !~ /^(?:japan-virtual|japan)$/);
-
-    my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'japan', $args);
-    return $error if $error;
-
-    my $company     = Brands->new(name => request()->brand)->countries_instance->countries_list->{'jp'}->{financial_company};
-    my $broker      = LandingCompany::Registry->new->get($company)->broker_codes->[0];
-    my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, $broker, $params->{source});
-    my $error_map   = BOM::RPC::v3::Utility::error_map();
-    if (my $err = $details_ref->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => $err,
-                message_to_client => $error_map->{$err}});
-    }
-
-    my $details = $details_ref->{details};
-    $details->{$_} = $args->{$_} for ('gender', 'occupation', 'daily_loss_limit');
-
-    my %financial_data = map { $_ => $args->{$_} } (
-        keys %{BOM::Platform::Account::Real::japan::get_financial_input_mapping()},
-        keys %{BOM::Platform::Account::Real::japan::get_other_input_mapping()});
-
-    my %agreement = map { $_ => $args->{$_} } (BOM::Platform::Account::Real::japan::agreement_fields());
-
-    my $acc = BOM::Platform::Account::Real::japan::create_account({
-        ip => $params->{client_ip} // '',
-        country => uc($params->{country_code} // ''),
-        from_client    => $client,
-        user           => $client->user,
-        details        => $details,
-        financial_data => \%financial_data,
-        agreement      => \%agreement,
-    });
-
-    if (my $err_code = $acc->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => $err_code,
-                message_to_client => $error_map->{$err_code}});
-    }
-
-    my $new_client      = $acc->{client};
-    my $landing_company = $new_client->landing_company;
-    my $user            = $acc->{user};
 
     $user->add_login_history(
         action      => 'login',

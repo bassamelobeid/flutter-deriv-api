@@ -33,7 +33,6 @@ use BOM::RPC::v3::NewAccount;
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::RPC::v3::App;
-use BOM::RPC::v3::Japan::NewAccount;
 use BOM::RPC::v3::MT5::Account;
 use BOM::RPC::v3::CopyTrading::Statistics;
 use BOM::RPC::v3::CopyTrading;

@@ -30,7 +30,6 @@ use BOM::RPC::Registry '-dsl';
 
 use BOM::RPC::v3::Utility qw(longcode);
 use BOM::RPC::v3::PortfolioManagement;
-use BOM::RPC::v3::Japan::NewAccount;
 use BOM::Transaction::History qw(get_transaction_history);
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Client::CashierValidation;
@@ -528,7 +527,7 @@ rpc get_account_status => sub {
             # No authentication for virtual accounts - set this explicitly in case we change the default above
             $prompt_client_to_authenticate = 0;
         } else {
-            # Authentication required for all regulated companies, including JP - we'll handle this on the frontend
+            # Authentication required for all regulated companies - we'll handle this on the frontend
             $prompt_client_to_authenticate = 1;
         }
     }
@@ -811,14 +810,6 @@ rpc get_settings => sub {
 
     my $client_tnc_status = $client->status->get('tnc_approval');
 
-    # get JP real a/c status, for Japan Virtual a/c client
-    my $jp_account_status;
-    $jp_account_status = BOM::RPC::v3::Japan::NewAccount::get_jp_account_status($client) if ($client->landing_company->short eq 'japan-virtual');
-
-    # get Japan specific a/c details (eg: daily loss, occupation, trading experience), for Japan real a/c client
-    my $jp_real_settings;
-    $jp_real_settings = BOM::RPC::v3::Japan::NewAccount::get_jp_settings($client) if ($client->landing_company->short eq 'japan');
-
     return {
         email         => $client->email,
         country       => $country,
@@ -847,11 +838,7 @@ rpc get_settings => sub {
                 tax_identification_number   => $client->tax_identification_number,
                 account_opening_reason      => $client->account_opening_reason,
                 request_professional_status => $client->status->get('professional_requested') ? 1 : 0
-            )
-        ),
-        $jp_account_status ? (jp_account_status => $jp_account_status) : (),
-        $jp_real_settings  ? (jp_settings       => $jp_real_settings)  : (),
-    };
+            ))};
 };
 
 rpc set_settings => sub {
@@ -863,12 +850,12 @@ rpc set_settings => sub {
         @{$params}{qw/website_name client_ip user_agent language args/};
 
     my $brand = Brands->new(name => request()->brand);
-    my ($residence, $allow_copiers, $jp_status) = ($args->{residence}, $args->{allow_copiers});
+    my ($residence, $allow_copiers) = ($args->{residence}, $args->{allow_copiers});
     if ($client->is_virtual) {
         # Virtual client can update
-        # - residence, if residence not set. But not for Japan
+        # - residence, if residence not set.
         # - email_consent (common to real account as well)
-        if (not $client->residence and $residence and $residence ne 'jp') {
+        if (not $client->residence and $residence) {
 
             if ($brand->countries_instance->restricted_country($residence)) {
                 return BOM::RPC::v3::Utility::create_error({
@@ -893,12 +880,7 @@ rpc set_settings => sub {
         # real client is not allowed to update residence
         return BOM::RPC::v3::Utility::permission_error() if $residence;
 
-        # handle Japan settings update separately
-        if ($client->residence eq 'jp') {
-            # this may return error or {status => 1}
-            $jp_status = BOM::RPC::v3::Japan::NewAccount::set_jp_settings($params);
-            return $jp_status if $jp_status->{error};
-        } elsif ($client->account_opening_reason
+        if (    $client->account_opening_reason
             and $args->{account_opening_reason}
             and $args->{account_opening_reason} ne $client->account_opening_reason)
         {
@@ -957,9 +939,6 @@ rpc set_settings => sub {
         my $user = $client->user;
         $user->update_email_fields(email_consent => $args->{email_consent});
     }
-
-    # need to handle for $jp_status->{status} as that come from japan settings
-    return {status => 1} if $jp_status->{status};
 
     # only allow current client to set allow_copiers
     if (defined $allow_copiers) {
@@ -1604,7 +1583,7 @@ rpc set_financial_assessment => sub {
     my $client         = $params->{client};
     my $client_loginid = $client->loginid;
 
-    return BOM::RPC::v3::Utility::permission_error() if ($client->is_virtual or $client->landing_company->short eq 'japan');
+    return BOM::RPC::v3::Utility::permission_error() if ($client->is_virtual);
 
     my $is_FI_complete = is_section_complete($params->{args}, "financial_information");
     my $is_TE_complete = is_section_complete($params->{args}, "trading_experience");
@@ -1626,7 +1605,7 @@ rpc get_financial_assessment => sub {
     my $params = shift;
 
     my $client = $params->{client};
-    return BOM::RPC::v3::Utility::permission_error() if ($client->is_virtual or $client->landing_company->short eq 'japan');
+    return BOM::RPC::v3::Utility::permission_error() if ($client->is_virtual);
 
     my $response = decode_fa($client->financial_assessment());
 

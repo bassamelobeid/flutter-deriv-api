@@ -119,10 +119,6 @@ my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 
 $test_client_disabled->status->set('disabled', 1, 'test disabled');
 
-my $japan_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'JP',
-});
-
 my $test_client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MX',
     residence   => 'gb',
@@ -168,7 +164,6 @@ my $token_cr_2     = $m->create_token($test_client_cr_2->loginid, 'test token');
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
 my $token_vr       = $m->create_token($test_client_vr->loginid, 'test token');
 my $token_with_txn = $m->create_token($test_client2->loginid, 'test token');
-my $token_japan    = $m->create_token($japan_client->loginid, 'test token');
 my $token_mx       = $m->create_token($test_client_mx->loginid, 'test token');
 my $token_mlt      = $m->create_token($test_client_mlt->loginid, 'test token');
 my $token_mf       = $m->create_token($test_client_mf->loginid, 'test token');
@@ -629,14 +624,6 @@ subtest $method => sub {
             args  => $args
         });
     is($res->{error}->{code}, 'PermissionDenied', "Not allowed for virtual account");
-
-    $res = $c->tcall(
-        $method,
-        {
-            args  => $args,
-            token => $token_japan
-        });
-    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for japan account");
 
     $res = $c->tcall(
         $method,
@@ -1218,14 +1205,6 @@ subtest $method => sub {
             args  => $args
         });
     is($res->{error}->{code}, 'PermissionDenied', "Not allowed for virtual account");
-
-    $res = $c->tcall(
-        $method,
-        {
-            args  => $args,
-            token => $token_japan
-        });
-    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for japan account");
 
     $res = $c->tcall(
         $method,

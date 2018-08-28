@@ -226,12 +226,6 @@ subtest 'validation' => sub {
     is $result->{error}->{message_to_client}, 'Please deposit to your account.', 'Correct error message for no default currency';
 
     $client_mf->set_default_account('EUR');
-    $params->{args}->{currency} = 'JPY';
-
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for invalid currency for landing company';
-    is $result->{error}->{message_to_client}, 'Currency provided is not valid for your account.',
-        'Correct error message for invalid currency for landing company';
 
     $params->{args}->{currency} = 'BTC';
 

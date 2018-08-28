@@ -61,29 +61,11 @@ fail_test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_mf
 
 reset_app;
 
-# VIRTUAL ACCOUNT OPENING FOR (JP)
-test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test+jp@binary.com', 'account_opening';
-test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive_vrtj.json',
-    _get_token('test+jp@binary.com'), 'jp', 'test\\\\+jp@binary.com';
-test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtj.json',
-    _get_stashed('new_account_virtual/oauth_token'), 'jp', 'test\\\\+jp@binary.com';
-test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json', _get_stashed('authorize/stash/token'), 'JPY', 1;
-
-reset_app;
-
 test_sendrecv_params 'ticks/test_send.json', 'ticks/test_receive.json',       'R_50';
 test_sendrecv_params 'ticks/test_send.json', 'ticks/test_receive_error.json', 'invalid_symbol';
 
 test_sendrecv_params 'ticks_history/test_send_ticks_style.json', 'ticks_history/test_receive_ticks_style.json',
     'R_50', '10', '1478625842', '1478710431';
-
-# JAPAN ACCOUNT OPENING (JP)
-test_sendrecv_params 'new_account_japan/test_send.json', 'new_account_japan/test_receive.json',
-    _get_stashed('authorize/stash/token'), 'Example First Name JP', 'jp';
-test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_jp.json',
-    _get_stashed('new_account_japan/oauth_token'), 'jp', 'test\\\\+jp@binary.com';
-test_sendrecv_params 'jp_knowledge_test/test_send.json', 'jp_knowledge_test/test_receive.json',
-    _get_stashed('new_account_virtual/oauth_token'), '17', 'succeed';
 
 # VIRTUAL ACCOUNT OPENING (VRTC)
 test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test+reset@binary.com', 'account_opening';

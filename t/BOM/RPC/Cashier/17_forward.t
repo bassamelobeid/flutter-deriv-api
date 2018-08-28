@@ -74,10 +74,6 @@ my $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     email       => $email
 });
 $client_mx->status->set('ukrts_max_turnover_limit_not_set', 'tests', 'Newly created GB clients have this status until they set 30Day turnover');
-my $client_jp = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'JP',
-    email       => $email
-});
 
 my $method = 'cashier';
 subtest 'common' => sub {
@@ -268,44 +264,14 @@ subtest 'landing_companies_specific' => sub {
         ->has_no_system_error->has_error->error_code_is('ASK_SELF_EXCLUSION_MAX_TURNOVER_SET', 'GB residence needs to set 30-Day turnover')
         ->error_message_is('Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.',
         'GB residence needs to set 30-Day turnover');
-
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_jp->loginid, 'test token');
-    $client_jp->set_default_account('JPY');
-    $client_jp->residence('jp');
-
-    $client_jp->status->set('tnc_approval',              'system', $current_tnc_version);
-    $client_jp->status->set('jp_knowledge_test_pending', 'system', 'set for test');
-
-    $client_jp->save;
-
-    $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_error->error_code_is('ASK_JP_KNOWLEDGE_TEST', 'Japan residence needs a knowledge test')
-        ->error_message_is('You must complete the knowledge test to activate this account.', 'Japan residence needs a knowledge test');
-    $client_jp->status->clear('jp_knowledge_test_pending');
-    $client_jp->status->set('jp_knowledge_test_fail', 'system', 'set for test');
-
-    $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_error->error_code_is('ASK_JP_KNOWLEDGE_TEST', 'Japan residence needs a knowledge test')
-        ->error_message_is('You must complete the knowledge test to activate this account.', 'Japan residence needs a knowledge test');
-
-    $client_jp->status->clear('jp_knowledge_test_fail');
-    $client_jp->status->set('jp_activation_pending', 'system', 'set for test');
-    $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_error->error_code_is('JP_NOT_ACTIVATION', 'Japan residence needs account activation')
-        ->error_message_is('Account not activated.', 'Japan residence needs account activation');
-
-    $client_jp->status->clear('jp_activation_pending');
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_AGE_VERIFICATION', 'need age verification')
-        ->error_message_is('Account needs age verification.', 'need verification');
-
 };
 
 subtest 'all status are covered' => sub {
     # Flags that can affect cashier should be seen
     my @can_affect_cashier = (
-        'age_verification',        'crs_tin_information',              'cashier_locked',         'disabled',
-        'financial_risk_approval', 'jp_activation_pending',            'jp_knowledge_test_fail', 'jp_knowledge_test_pending',
-        'ukgc_funds_protection',   'ukrts_max_turnover_limit_not_set', 'unwelcome',              'withdrawal_locked'
+        'age_verification',        'crs_tin_information',   'cashier_locked',                   'disabled',
+        'financial_risk_approval', 'ukgc_funds_protection', 'ukrts_max_turnover_limit_not_set', 'unwelcome',
+        'withdrawal_locked'
     );
     fail("missing status $_") for sort grep !exists $seen{$_}, @can_affect_cashier;
     pass("ok to prevent warning 'no tests run");
