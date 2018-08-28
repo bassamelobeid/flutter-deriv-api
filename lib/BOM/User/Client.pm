@@ -600,8 +600,6 @@ sub get_limit {
 sub currency {
     my $self = shift;
 
-    # for Japan, both Virtual & Real a/c use JPY
-    return 'JPY' if ($self->residence eq 'jp');
     return 'USD' if $self->is_virtual;
 
     if (my $account = $self->default_account) {

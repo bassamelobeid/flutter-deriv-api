@@ -82,8 +82,8 @@ sub validate_payment {
         $lc_limits = $withdrawal_limits->{$lc};
         die "Invalid landing company - $lc\n" unless $lc_limits;
 
-        # for CR,JP & CH only check for lifetime limits (in client's currency)
-        if ($lc =~ /^(?:costarica|japan|champion)$/) {
+        # for CR & CH only check for lifetime limits (in client's currency)
+        if ($lc =~ /^(?:costarica|champion)$/) {
             # Withdrawals to date
             my $wd_epoch = $account->find_payment(
                 select => '-sum(amount) as amount',
@@ -183,10 +183,9 @@ sub deposit_virtual_funds {
     my ($self, $source, $remark) = @_;
     $self->is_virtual || die "not a virtual client\n";
 
-    my $currency = (($self->default_account and $self->default_account->currency_code eq 'JPY') or $self->residence eq 'jp') ? 'JPY' : 'USD';
-    my $amount;
-    if   ($currency eq 'JPY') { $amount = 1000000; }
-    else                      { $amount = 10000; }
+    my $currency = 'USD';
+    my $amount   = 10000;
+
     my $trx = $self->payment_legacy_payment(
         currency     => $currency,
         amount       => $amount,

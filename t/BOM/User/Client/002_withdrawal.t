@@ -228,55 +228,6 @@ subtest 'CR withdrawal' => sub {
     };
 };
 
-# Test for JP withdrawal limits
-subtest 'JP withdrawal' => sub {
-    plan tests => 2;
-    my %deposit_jpy    = (%deposit,    currency => 'JPY');
-    my %withdrawal_jpy = (%withdrawal, currency => 'JPY');
-
-    # Test for unauthenticated limits
-    subtest 'unauthenticated' => sub {
-        my $client = new_client(
-            'JPY',
-            broker_code => 'JP',
-            residence   => 'jp'
-        );
-        $client->smart_payment(%deposit_jpy, amount => 2000000);
-        $client->status->clear('cashier_locked');    # first-deposit will cause this in non-CR clients!
-
-        throws_ok { $client->validate_payment(%withdrawal_jpy, amount => -1000001) } qr/exceeds withdrawal limit/,
-            'Non-Authed JP withdrawal greater than JPY 1,000,000';
-        lives_ok { $client->validate_payment(%withdrawal_jpy, amount => -1000000) } 'Non-Authed JP withdrawal JPY 1,000,000';
-        lives_ok { $client->validate_payment(%withdrawal_jpy, amount => -999999) } 'Non-Authed JP withdrawal JPY 999,999';
-
-        subtest 'perform withdraw' => sub {
-            lives_ok { $client->smart_payment(%withdrawal_jpy, amount => -500000) } 'first 500k withdrawal';
-            throws_ok { $client->smart_payment(%withdrawal_jpy, amount => -500001) } qr/exceeds withdrawal limit \[JPY 500000.00\]/,
-                'total withdraw cannot > 10M';
-        };
-    };
-
-    # Test for fully authenticated limits - No limit
-    subtest 'fully authenticated' => sub {
-        my $client = new_client(
-            'JPY',
-            broker_code => 'JP',
-            residence   => 'jp'
-        );
-
-        $client->status->set('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
-        $client->set_authentication('ID_DOCUMENT')->status('pass');
-        $client->smart_payment(%deposit_jpy, amount => 2000000);
-        lives_ok { $client->validate_payment(%withdrawal_jpy, amount => -999999) } 'Authed JP withdrawal no more than JPY 1,000,000';
-        lives_ok { $client->validate_payment(%withdrawal_jpy, amount => -1000001) } 'Authed JP withdrawal more than JPY 1,000,000';
-
-        subtest 'perform withdraw' => sub {
-            lives_ok { $client->smart_payment(%withdrawal_jpy, amount => -500000) } 'first 500k withdrawal';
-            lives_ok { $client->smart_payment(%withdrawal_jpy, amount => -600000) } 'subsequent 600k withdrawal';
-        };
-    };
-};
-
 # Test for MX withdrawal limits
 subtest 'EUR3k over 30 days MX limitation.' => sub {
     plan tests => 11;
