@@ -72,9 +72,7 @@ sub send_email {
         };
         $vars->{text_email_template_loginid} = localize('Your Login ID: [_1]', $template_loginid)
             if $template_loginid;
-        if ($language eq 'JA') {
-            $vars->{japan_footer_text} = localize('{JAPAN ONLY}footer text of email template for Japan');
-        }
+
         BOM::Platform::Context::template()->process('common_email.html.tt', $vars, \$mail_message)
             || die BOM::Platform::Context::template()->error();
     }

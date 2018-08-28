@@ -73,20 +73,6 @@ subtest 'get_risk_profile' => sub {
     is $limit->[0]->{risk_profile}, 'no_business',                'risk_profile is no business';
     is $limit->[0]->{market},       'forex',                      'market specific';
 
-    note("set custom_product_profiles to no_business for landing_company japan");
-    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
-        '{"xxx": {"landing_company": "japan", "risk_profile": "no_business", "name": "test japan"}}');
-    $rp = BOM::Platform::RiskProfile->new(%args);
-    is $rp->get_risk_profile, 'medium_risk', 'default medium_risk profile received because mismatch of landing_company';
-    $limit = $rp->custom_profiles;
-    is scalar(@$limit), 1, 'only one profile';
-    $rp = BOM::Platform::RiskProfile->new(%args, landing_company => 'japan');
-    my @cp = $rp->get_client_profiles('JP1110', 'japan');
-    is $rp->get_risk_profile(\@cp), 'no_business', 'no_business overrides default medium_risk profile when landing_company matches';
-    $limit = $rp->custom_profiles;
-    is scalar(@$limit), 1, 'only one profile from custom';
-    is scalar(@cp),     1, 'one from client';
-
     $ul   = Quant::Framework::Underlying->new('R_100');
     %args = (
         contract_category              => 'callput',
@@ -235,15 +221,7 @@ subtest 'get_current_profile_definitions' => sub {
                 }
             ],
         },
-        'JP' => {
-            'forex' => [{
-                    'turnover_limit' => "500000.00",
-                    'payout_limit'   => "100000.00",
-                    'name'           => 'Major Pairs',
-                    'profile_name'   => 'medium_risk',
-                }
-            ],
-        }};
+    };
     foreach my $broker (keys %$expected) {
         my $client  = create_client($broker);
         my $general = BOM::Platform::RiskProfile::get_current_profile_definitions($client);

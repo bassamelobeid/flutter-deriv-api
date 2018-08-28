@@ -229,9 +229,8 @@ sub validate_account_details {
         # we need to store null for these fields not blank if not defined
         $details->{$key} = (grep { $key eq $_ } qw /place_of_birth tax_residence tax_identification_number/) ? $value : $value // '';
 
-        # Japan real a/c has NO salutation
         # account fields place_of_birth tax_residence tax_identification_number
-        # are optional for others except financial account
+        # are optional for all except financial account
         next
             if (any { $key eq $_ }
             qw(address_line_2 address_state address_postcode salutation place_of_birth tax_residence tax_identification_number));
@@ -257,8 +256,7 @@ sub validate_account_details {
 sub get_account_fields {
     my @account_fields = qw(salutation first_name last_name date_of_birth residence address_line_1 address_line_2
         address_city address_state address_postcode phone secret_question secret_answer place_of_birth
-        tax_residence tax_identification_number);
-    push @account_fields, 'account_opening_reason' if (!$_[0] || $_[0] ne 'japan');
+        tax_residence tax_identification_number account_opening_reason);
     return @account_fields;
 }
 

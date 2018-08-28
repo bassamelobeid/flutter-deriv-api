@@ -16,7 +16,6 @@ use BOM::User::FinancialAssessment qw(decode_fa);
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
-use BOM::Platform::Account::Real::japan;
 use BOM::Config::Runtime;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -64,13 +63,6 @@ my $vr_details = {
         salutation         => 'Mrs',
         myaffiliates_token => 'this is token',
     },
-    JP => {
-        email              => 'foo+jp@binary.com',
-        client_password    => 'foobar',
-        residence          => 'jp',                  # JAPAN
-        salutation         => 'Ms',
-        myaffiliates_token => 'this is token',
-    },
 };
 
 my %real_client_details = (
@@ -109,37 +101,6 @@ my %financial_data = (
     employment_status                    => "Self-Employed",
     source_of_wealth                     => "Company Ownership",
     account_turnover                     => '$50,001 - $100,000',
-);
-
-my %jp_acc_financial_data = (
-    annual_income                               => '50-100 million JPY',
-    financial_asset                             => 'Over 100 million JPY',
-    daily_loss_limit                            => 100_000,
-    trading_experience_public_bond              => 'Over 5 years',
-    trading_experience_margin_fx                => 'Over 5 years',
-    trading_experience_equities                 => 'Over 5 years',
-    trading_experience_commodities              => 'Over 5 years',
-    trading_experience_foreign_currency_deposit => '3-5 years',
-    trading_experience_investment_trust         => '3-5 years',
-    trading_experience_option_trading           => 'Over 5 years',
-    trading_purpose                             => 'Hedging',
-    hedge_asset                                 => 'Foreign currency deposit',
-    hedge_asset_amount                          => 1_000_000,
-    motivation_circumstances                    => 'Web Advertisement',
-);
-
-my %jp_agreement = (
-    agree_use_electronic_doc             => 1,
-    agree_warnings_and_policies          => 1,
-    confirm_understand_own_judgment      => 1,
-    confirm_understand_trading_mechanism => 1,
-    confirm_understand_total_loss        => 1,
-    confirm_understand_judgment_time     => 1,
-    confirm_understand_sellback_loss     => 1,
-    confirm_understand_shortsell_loss    => 1,
-    confirm_understand_company_profit    => 1,
-    confirm_understand_expert_knowledge  => 1,
-    declare_not_fatca                    => 1,
 );
 
 subtest 'create account' => sub {
@@ -269,19 +230,8 @@ subtest 'create account' => sub {
             my ($client, $user) = @{$real_acc}{qw/client user/};
             is(defined $user,   1,            "Social login user with residence $user->residence has been created");
             is($client->broker, $broker_code, "Successfully created real account $client->loginid");
-        } elsif ($broker_code eq 'JP') {
-            #Social login user isn't able to create JP account
-            $real_acc = BOM::Platform::Account::Real::japan::create_account({
-                from_client    => $vr_client,
-                user           => $social_login_user,
-                details        => \%details,
-                country        => $vr_client->residence,
-                financial_data => \%jp_acc_financial_data,
-                agreement      => \%jp_agreement,
-            });
-            my ($client, $user) = @{$real_acc}{qw/client user/};
-            is($real_acc->{error}, 'social login user is prohibited', 'Social login user cannot create JP account');
-        } else {
+        }
+        else {
             # Social login user may create default account
             lives_ok {
                 $real_acc = BOM::Platform::Account::Real::default::create_account({

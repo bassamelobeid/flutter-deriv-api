@@ -97,16 +97,6 @@ sub validate {
             if $client->status->get('ukrts_max_turnover_limit_not_set');
     }
 
-    if ($client->residence eq 'jp') {
-        return _create_error(localize('You must complete the knowledge test to activate this account.'), 'ASK_JP_KNOWLEDGE_TEST')
-            if ($client->status->get('jp_knowledge_test_pending') or $client->status->get('jp_knowledge_test_fail'));
-
-        return _create_error(localize('Account not activated.'), 'JP_NOT_ACTIVATION') if $client->status->get('jp_activation_pending');
-
-        return _create_error(localize('Account needs age verification.'), 'ASK_AGE_VERIFICATION')
-            if (not $client->status->get('age_verification') and not $client->has_valid_documents);
-    }
-
     # action specific validation should be last to be validated
     return _create_error(localize('Your account is restricted to withdrawals only.'))
         if ($action eq 'deposit' and $client->status->get('unwelcome'));

@@ -13,7 +13,7 @@ use BOM::Config::Runtime;
 use BOM::Platform::Client::CashierValidation;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
-my ($generic_err_code, $new_email, $vr_client, $cr_client, $cr_client_jpy, $mlt_client, $mf_client, $mx_client, $jp_client) = ('CashierForwardError');
+my ($generic_err_code, $new_email, $vr_client, $cr_client, $cr_client_jpy, $mlt_client, $mf_client, $mx_client) = ('CashierForwardError');
 
 subtest prepare => sub {
     $new_email = 'test' . rand . '@binary.com';
@@ -27,12 +27,6 @@ subtest prepare => sub {
         broker_code    => 'CR',
         email          => $new_email,
         binary_user_id => 1
-    });
-
-    $new_email     = 'test' . rand . '@binary.com';
-    $cr_client_jpy = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => $new_email,
     });
 
     $new_email  = 'test' . rand . '@binary.com';
@@ -50,12 +44,6 @@ subtest prepare => sub {
     $new_email = 'test' . rand . '@binary.com';
     $mx_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MX',
-        email       => $new_email,
-    });
-
-    $new_email = 'test' . rand . '@binary.com';
-    $jp_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'JP',
         email       => $new_email,
     });
 
@@ -122,14 +110,6 @@ subtest 'Cashier validation common' => sub {
 
     $cr_client->cashier_setting_password('');
     $cr_client->save();
-
-    $cr_client_jpy->set_default_account('JPY');
-    $cr_client_jpy->save();
-
-    $res = BOM::Platform::Client::CashierValidation::validate($cr_client_jpy->loginid, 'deposit');
-    is $res->{error}->{code}, $generic_err_code, 'Correct error code for invalid account currency';
-    is $res->{error}->{message_to_client}, 'JPY transactions may not be performed with this account.',
-        'Correct error message for invalid account currency';
 
     ok !$cr_client->documents_expired, "No documents so nothing to expire";
     my ($doc) = $cr_client->add_client_authentication_document({
@@ -254,64 +234,6 @@ subtest 'Cashier validation landing company and country specific' => sub {
         $mx_client->status->clear('ukrts_max_turnover_limit_not_set');
 
         is BOM::Platform::Client::CashierValidation::validate($mx_client->loginid, 'deposit'), undef, 'Validation passed';
-    };
-
-    subtest 'jp as residence' => sub {
-        my $res = BOM::Platform::Client::CashierValidation::validate($jp_client->loginid, 'deposit');
-        is $res->{error}->{code},              'ASK_CURRENCY',             'Correct error code for account currency not set';
-        is $res->{error}->{message_to_client}, 'Please set the currency.', 'Correct error message for account currency not set';
-
-        $jp_client->set_default_account('JPY');
-        $jp_client->save;
-
-        is BOM::Platform::Client::CashierValidation::validate($jp_client->loginid, 'deposit'), undef,
-            'Validation passed as its per residence not per landing company';
-
-        $jp_client->residence('jp');
-        $jp_client->status->set('jp_knowledge_test_pending', 'system', 'pending test');
-        $jp_client->save;
-
-        $res = BOM::Platform::Client::CashierValidation::validate($jp_client->loginid, 'deposit');
-        is $res->{error}->{code}, 'ASK_JP_KNOWLEDGE_TEST', 'Correct error code';
-        is $res->{error}->{message_to_client}, 'You must complete the knowledge test to activate this account.', 'Correct error message';
-
-        $jp_client->status->clear('jp_knowledge_test_pending');
-        $jp_client->status->set('jp_knowledge_test_fail', 'system', 'pending test');
-
-        $res = BOM::Platform::Client::CashierValidation::validate($jp_client->loginid, 'deposit');
-        is $res->{error}->{code}, 'ASK_JP_KNOWLEDGE_TEST', 'Correct error code';
-        is $res->{error}->{message_to_client}, 'You must complete the knowledge test to activate this account.', 'Correct error message';
-
-        $jp_client->status->clear('jp_knowledge_test_fail');
-        $jp_client->status->set('jp_activation_pending', 'system', 'pending test');
-
-        $res = BOM::Platform::Client::CashierValidation::validate($jp_client->loginid, 'deposit');
-        is $res->{error}->{code},              'JP_NOT_ACTIVATION',      'Correct error code';
-        is $res->{error}->{message_to_client}, 'Account not activated.', 'Correct error message';
-
-        $jp_client->status->clear('jp_activation_pending');
-
-        $res = BOM::Platform::Client::CashierValidation::validate($jp_client->loginid, 'deposit');
-        is $res->{error}->{code},              'ASK_AGE_VERIFICATION',            'Correct error code';
-        is $res->{error}->{message_to_client}, 'Account needs age verification.', 'Correct error message';
-
-        $jp_client->status->set('age_verification', 'system', 1);
-
-        is BOM::Platform::Client::CashierValidation::validate($jp_client->loginid, 'deposit'), undef, 'Validation passed as age verified';
-
-        $jp_client->status->clear('age_verification');
-        my ($doc) = $jp_client->add_client_authentication_document({
-            document_type              => "Passport",
-            document_format            => "PDF",
-            document_path              => '/tmp/test.pdf',
-            expiration_date            => '2025-10-10',
-            authentication_method_code => 'ID_DOCUMENT'
-        });
-        $doc->expiration_date(Date::Utility->new()->plus_time_interval('1d')->date);
-        $jp_client->save;
-
-        is BOM::Platform::Client::CashierValidation::validate($jp_client->loginid, 'deposit'), undef,
-            'Validation passed as not age verified but has valid documents';
     };
 
     subtest 'pre withdrawal validation' => sub {
