@@ -60,8 +60,8 @@ subtest "Request $method" => sub {
     $result                         = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
     is_deeply [sort keys %{$result}],
         [sort qw/ available close open hit_count spot feed_license /],
-        'It should return contracts_for object for japan region';
-    ok @{$result->{available}}, 'It should return available contracts only for japan region';
+        'It should return contracts_for object for multi_barrier contracts';
+    ok @{$result->{available}}, 'It should return available multi_barrier contracts';
     ok !grep { $_->{contract_type} =~ /^(CALL|PUTE|EXPIRYMISSE|EXPIRYRANGE)$/ } @{$result->{available}};
 
     $params[1]{args}{contracts_for} = 'invalid symbol';

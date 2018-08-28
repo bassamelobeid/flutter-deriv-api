@@ -37,7 +37,7 @@ my @params = (
 
 $t = Test::Mojo->new('BOM::RPC');
 $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
-set_absolute_time(Date::Utility->new('2017-11-20 00:00:00')->epoch);
+set_absolute_time(Date::Utility->new('2017-11-20 00:15:00')->epoch);
 
 subtest "Request $method" => sub {
     my (%got_landing_company, $result);
@@ -74,15 +74,16 @@ subtest "Request $method" => sub {
 
     $params[1]{args}{product_type}    = 'multi_barrier';
     $params[1]{args}{contracts_for}   = 'frxUSDJPY';
-    $params[1]{args}{landing_company} = 'japan';
+    $params[1]{args}{landing_company} = 'costarica';
 
     $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
     is_deeply [sort keys %{$result}],
         [sort qw/ available close open hit_count spot feed_license /],
-        'It should return contracts_for object for japan region';
-    ok @{$result->{available}}, 'It should return available contracts only for japan region';
+        'It should return contracts_for object for costarica';
+    ok @{$result->{available}}, 'It should return available contracts only for costarica';
     ok !grep { $_->{contract_type} =~ /^(CALL|PUTE|EXPIRYMISSE|EXPIRYRANGE)$/ } @{$result->{available}};
-    is $result->{available}->[0]->{available_barriers}->[2]->[0], '500.000';
+
+    is $result->{available}->[0]->{available_barriers}->[3], '500.000';
 
     $params[1]{args}{contracts_for} = 'invalid symbol';
     $rpc_ct->call_ok(@params)->has_no_system_error->has_error->error_code_is('InvalidSymbol', 'It should return error if symbol does not exist')

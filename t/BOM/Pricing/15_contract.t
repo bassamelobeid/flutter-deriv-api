@@ -801,48 +801,6 @@ subtest 'get_bid - expired contract' => sub {
     ok $result->{is_expired}, 'contract expired';
 };
 
-subtest 'send_ask - landing company japan' => sub {
-    my $now = Date::Utility->new;
-    BOM::Test::Data::Utility::FeedTestDatabase::create_historical_ticks();
-    my ($trading_period) = BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_parameters_for('frxUSDJPY', $now);
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'volsurface_delta',
-        {
-            symbol        => 'frxUSDJPY',
-            recorded_date => $now,
-        });
-    my $params = {
-        client_ip => '127.0.0.1',
-        args      => {
-            "proposal"           => 1,
-            "amount"             => "100",
-            "basis"              => "payout",
-            "contract_type"      => "CALL",
-            "currency"           => "USD",
-            "duration"           => "60",
-            "duration_unit"      => "s",
-            "symbol"             => "R_50",
-            product_type         => 'multi_barrier',
-            landing_company      => 'japan',
-            barrier              => 100,
-            "streaming_params"   => {add_theo_probability => 1},
-            trading_period_start => $trading_period->[0]->{date_start}{epoch},
-        }};
-    my $result = $c->call_ok('send_ask', $params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError')->result;
-    is $result->{error}->{message_to_client}, 'Trading is not offered for this asset.', 'error message is correct';
-
-    sleep(1);    #needed to sleep prevent race condition
-    $params->{args}{contract_type} = 'CALLE';
-    $params->{args}{symbol}        = 'frxUSDJPY';
-    $result = $c->call_ok('send_ask', $params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError')->result;
-    is $result->{error}->{message_to_client}, 'Trading is not offered for this duration.', 'error message is correct';
-
-    delete $params->{args}{duration};
-    delete $params->{args}{duration_unit};
-    $params->{args}{date_expiry} = $trading_period->[0]->{date_expiry}{epoch};
-    $c->call_ok('send_ask', $params)->has_no_system_error->has_no_error;
-};
-
 done_testing();
 
 sub create_ticks {

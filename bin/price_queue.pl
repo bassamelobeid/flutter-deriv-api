@@ -115,12 +115,6 @@ sub _process_price_queue {
             COUNT => 20000
         )};
 
-    # Separate out JP prices, they're handled by different servers and we expect a near-constant load for them
-    my @jp_keys = extract_by {
-        /"landing_company","japan/
-    }
-    @keys;
-
     my $not_processed = $redis->llen('pricer_jobs');
     $log->debugf('got pricer_jobs not processed: %s', $not_processed) if $not_processed;
 
@@ -129,17 +123,6 @@ sub _process_price_queue {
     $redis->lpush('pricer_jobs', @keys) if @keys;
     $log->debug('pricer_jobs queue updated.');
 
-    # For JP pricing we're using a 3-second interval by default: we refresh the queue once for every 3 cycles on the main
-    # queue. Note that this means the actual time we start the JP pricing could be on odd seconds, even seconds, or we may even
-    # update once every 4 seconds when the system is under particularly heavy load.
-    unless ($iteration++ % 2) {
-        $log->trace('pricer_jobs_jp queue updating...');
-        stats_gauge('pricer_daemon.queue_jp.size', 0 + @jp_keys, {tags => ['tag:' . $internal_ip]});
-        stats_gauge('pricer_daemon.queue_jp.not_processed', $redis->llen('pricer_jobs_jp'), {tags => ['tag:' . $internal_ip]});
-        $redis->del('pricer_jobs_jp');
-        $redis->lpush('pricer_jobs_jp', @jp_keys) if @jp_keys;
-        $log->debug('pricer_jobs_jp queue updated.');
-    }
     stats_gauge('pricer_daemon.queue.overflow',      $overflow,      {tags => ['tag:' . $internal_ip]});
     stats_gauge('pricer_daemon.queue.size',          0 + @keys,      {tags => ['tag:' . $internal_ip]});
     stats_gauge('pricer_daemon.queue.not_processed', $not_processed, {tags => ['tag:' . $internal_ip]});

@@ -221,34 +221,7 @@ sub handle_batch_contract {
     my $offerings_error = _validate_offerings($batch_contract->_contracts->[0], $p2);
 
     my $ask_prices = $batch_contract->ask_prices;
-    my $trading_window_start = $p2->{trading_period_start} // '';
 
-    # Log full pricing data for Japan contracts. This is a regulatory requirement
-    # with strict rules about accuracy.
-    if ($p2->{currency} && $p2->{currency} eq 'JPY') {
-        my %contracts_to_log;
-        CONTRACT:
-        for my $contract (@{$batch_contract->_contracts}) {
-            next CONTRACT unless $contract->can('japan_pricing_info');
-
-            my $barrier_key =
-                $contract->two_barriers
-                ? ($contract->high_barrier->as_absolute) . '-' . ($contract->low_barrier->as_absolute)
-                : ($contract->barrier->as_absolute);
-
-            push @{$contracts_to_log{$barrier_key}}, $contract;
-        }
-        BARRIER:
-        for my $contracts (values %contracts_to_log) {
-            if (@$contracts == 2) {
-                # For each contract, we pass the opposite contract to the logging function
-                warn $contracts->[0]->japan_pricing_info($trading_window_start, $contracts->[1]);
-                warn $contracts->[1]->japan_pricing_info($trading_window_start, $contracts->[0]);
-            } else {
-                warn "Had unexpected number of contracts for ->japan_pricing_info calls - types are " . join ',', map { $_->bet_type } @$contracts;
-            }
-        }
-    }
     for my $contract_type (sort keys %$ask_prices) {
         for my $barrier (@{$p2->{barriers}}) {
             my $key =
