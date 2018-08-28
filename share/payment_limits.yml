@@ -19,11 +19,6 @@ withdrawal_limits:
     currency: USD
     limit_for_days: 10000
     lifetime_limit: 10000
-  japan:                        # JPY
-    for_days: 30
-    currency: JPY
-    limit_for_days: 1000000
-    lifetime_limit: 1000000
   champion:                     # USD
     for_days: 30
     currency: USD

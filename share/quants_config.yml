@@ -12,7 +12,6 @@ default_stake:
   EUR: 10
   AUD: 10
   GBP: 10
-  JPY: 1000
   BTC: 0.003
   BCH: 0.03
   ETH: 0.05
@@ -28,7 +27,6 @@ bet_limits:
     EUR: 200
     AUD: 200
     GBP: 200
-    JPY: 20000
     BTC: 0.05
     BCH: 0.25
     ETH: 0.5
@@ -42,7 +40,6 @@ bet_limits:
         EUR: 50000
         AUD: 50000
         GBP: 50000
-        JPY: 5000000
         BTC: 5
         BCH: 5
         ETH: 10
@@ -56,7 +53,6 @@ bet_limits:
         EUR: 0.5
         AUD: 0.5
         GBP: 0.5
-        JPY: 35
         BTC: 0.0002
         BCH: 0.001
         ETH: 0.002
@@ -68,7 +64,6 @@ bet_limits:
         EUR: 0.35
         AUD: 0.35
         GBP: 0.35
-        JPY: 35
         BTC: 0.0002
         BCH: 0.001
         ETH: 0.002
@@ -92,7 +87,6 @@ bet_limits:
     EUR: 0.02
     AUD: 0.02
     GBP: 0.02
-    JPY: 2 # two yen
     BTC: 0.000015
     BCH: 0.000075
     ETH: 0.00015
@@ -130,7 +124,6 @@ lookback_limits:
     EUR: 300
     AUD: 300
     GBP: 300
-    JPY: 30000
     BTC: 3
     BCH: 3
     ETH: 3
@@ -145,7 +138,6 @@ risk_profile:
           EUR: 0
           AUD: 0
           GBP: 0
-          JPY: 0
           BTC: 0
           BCH: 0
           ETH: 0
@@ -157,7 +149,6 @@ risk_profile:
           EUR: 0
           AUD: 0
           GBP: 0
-          JPY: 0
           BTC: 0
           BCH: 0
           ETH: 0
@@ -170,7 +161,6 @@ risk_profile:
           EUR: 1000
           AUD: 1000
           GBP: 1000
-          JPY: 100000
           BTC: 0.2
           BCH: 1
           ETH: 2
@@ -182,7 +172,6 @@ risk_profile:
           EUR: 100
           AUD: 100
           GBP: 100
-          JPY: 10000
           BTC: 0.02
           BCH: 0.1
           ETH: 0.2
@@ -195,7 +184,6 @@ risk_profile:
           EUR: 50000
           AUD: 50000
           GBP: 50000
-          JPY: 5000000
           BTC: 5
           BCH: 10
           ETH: 50
@@ -207,7 +195,6 @@ risk_profile:
           EUR: 5000
           AUD: 5000
           GBP: 5000
-          JPY: 500000
           BTC: 0.5
           BCH: 2.5
           ETH: 5
@@ -220,7 +207,6 @@ risk_profile:
           EUR: 100000
           AUD: 100000
           GBP: 100000
-          JPY: 500000
           BTC: 15
           BCH: 10
           ETH: 50
@@ -232,7 +218,6 @@ risk_profile:
           EUR: 20000
           AUD: 20000
           GBP: 20000
-          JPY: 100000
           BTC: 2.5
           BCH: 2.5
           ETH: 5
@@ -245,7 +230,6 @@ risk_profile:
           EUR: 500000
           AUD: 500000
           GBP: 500000
-          JPY: 50000000
           BTC: 30
           BCH: 20
           ETH: 100
@@ -257,7 +241,6 @@ risk_profile:
           EUR: 50000
           AUD: 50000
           GBP: 50000
-          JPY: 5000000
           BTC: 5
           BCH: 5
           ETH: 10

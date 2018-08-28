@@ -6,7 +6,6 @@ payment_limits:
       minimum: 0.002
       maximum: 5
 minimum_topup_balance:
-  JPY: 100000
   DEFAULT: 1000
 transaction_limits:
   transfer:
