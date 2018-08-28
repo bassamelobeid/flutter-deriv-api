@@ -24,10 +24,7 @@ sub callback {
     my $connection_token = $c->param('connection_token') // $c->_get_provider_token() // '';
     my $redirect_uri = $c->req->url->path('/oauth2/authorize')->to_abs;
     # Redirect client to authorize subroutine if there is no connection token provided
-    # or request came from Japan.
-    return $c->redirect_to($redirect_uri)
-        if $c->{stash}->{request}->{country_code} eq 'jp'
-        or not $connection_token;
+    return $c->redirect_to($redirect_uri) unless $connection_token;
 
     my $brand_name = BOM::OAuth::Helper->extract_brand_from_params($c->stash('request')->params) // $c->stash('brand')->name;
 

@@ -72,16 +72,11 @@ sub authorize {
 
     } elsif ($c->session('_oneall_user_id')) {
 
-        # Prevent Japan IP access social login feature.
-        if ($c->stash('request')->country_code ne 'jp') {
-
-            # Get client from Oneall Social Login.
-            my $oneall_user_id = $c->session('_oneall_user_id');
-            $client = $c->_login($app, $oneall_user_id) or return;
-            $c->session('_is_logined', 1);
-            $c->session('_loginid',    $client->loginid);
-
-        }
+        # Get client from Oneall Social Login.
+        my $oneall_user_id = $c->session('_oneall_user_id');
+        $client = $c->_login($app, $oneall_user_id) or return;
+        $c->session('_is_logined', 1);
+        $c->session('_loginid',    $client->loginid);
     }
 
     my %template_params = (
@@ -407,13 +402,10 @@ sub _is_social_login_suspended {
 }
 
 # determine availability status of social login feature
-# disable feature for Japanese language and for Japan IP
 sub _is_social_login_available {
     my $c = shift;
 
-    return (
-        not _is_social_login_suspended() and scalar @{$c->stash('login_providers')} > 0 and ($c->stash('request')->country_code ne 'jp'
-            and $c->stash('request')->language ne 'JA'));
+    return (not _is_social_login_suspended() and scalar @{$c->stash('login_providers')} > 0);
 }
 
 sub _oauth_model {
