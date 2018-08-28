@@ -190,11 +190,12 @@ sub ticks_history {
     }
 
     my $publish;
-    my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
+    my $style = $args->{style};
+    $style //= $args->{granularity} ? 'candles' : 'ticks';
     if ($style eq 'ticks') {
         $publish = 'tick';
     } elsif ($style eq 'candles') {
-        $args->{granularity} = $args->{granularity} || 60;
+        $args->{granularity} //= 60;    # $args->{granularity} will never be zero here
         $publish = $args->{granularity};
     } else {
         return $c->new_error('ticks_history', "InvalidStyle", $c->l('Style [_1] invalid', $style));
@@ -244,8 +245,10 @@ sub ticks_history {
                             my $candles = $rpc_response->{data}->{candles};
 
                             # delete all cache value that have epoch lower than last candle epoch
-                            my @matches = grep { $_ < $candles->[-1]->{epoch} } keys %$cache;
-                            delete @$cache{@matches};
+                            if (@$candles) {
+                                my @matches = grep { $_ < $candles->[-1]->{epoch} } keys %$cache;
+                                delete @$cache{@matches};
+                            }
 
                             foreach my $epoch (sort { $a <=> $b } keys %$cache) {
                                 my $window = $epoch - $epoch % $publish;
