@@ -33,9 +33,7 @@ use BOM::Database::DataMapper::MyAffiliates;
 
     $reporter->activity_for_date_as_csv('8-Sep-10');
 
-    Produce a nicely formatted CSV output adjusted to USD
-    for all other landing companies except Japan.
-    (For Japan we need to send back in YEN only)
+    Produce a nicely formatted CSV output adjusted to USD.
 
     Result is formatted to this form:
 
@@ -81,7 +79,7 @@ sub _generate_csv_output {
             $activity->{$loginid}->{'first_funded_date'} ? Date::Utility->new($activity->{$loginid}->{'first_funded_date'})->date_yyyymmdd : '';
         my @output_fields = ($when->date_yyyymmdd, $loginid);
 
-        if ($currency =~ /^(JPY|USD)$/) {
+        if ($currency eq 'USD') {
             push @output_fields, formatnumber('amount', $currency, $activity->{$loginid}->{pnl});
             push @output_fields, formatnumber('amount', $currency, $activity->{$loginid}->{deposits});
             push @output_fields, formatnumber('amount', $currency, $activity->{$loginid}->{turnover_runbets});
