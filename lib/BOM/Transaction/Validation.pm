@@ -368,8 +368,6 @@ sub _slippage {
                         slippage         => $self->transaction->price - $contract->ask_price,
                         option_type      => $contract->code,
                         currency_pair    => $contract->underlying->symbol,
-                        ($self->transaction->trading_period_start) ? (trading_period_start => $self->transaction->trading_period_start->db_timestamp)
-                        : (),
                         ($contract->two_barriers) ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
                         : $contract->barrier      ? (barriers => $contract->barrier->as_absolute)
                         : (),
@@ -411,8 +409,6 @@ sub _invalid_contract {
                         pricing_epoch      => $contract->date_pricing->epoch,
                         option_type        => $contract->code,
                         currency_pair      => $contract->underlying->symbol,
-                        ($self->transaction->trading_period_start) ? (trading_period_start => $self->transaction->trading_period_start->db_timestamp)
-                        : (),
                         ($contract->two_barriers) ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
                         : ($contract->barrier)    ? (barriers => $contract->barrier->as_absolute)
                         : (barriers => ''),

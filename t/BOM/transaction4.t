@@ -69,49 +69,21 @@ my $contract   = produce_contract({
 });
 
 subtest 'Validate legal_allowed_underlyings' => sub {
-    my $jp = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'JP'});
 
-    my $loginid       = $jp->loginid;
-    my $account       = $jp->default_account;
     my $contract_args = {
         underlying => 'frxUSDJPY',
-        bet_type   => 'CALLE',
-        currency   => 'JPY',
+        bet_type   => 'CALL',
+        currency   => 'USD',
         date_start => $now,
         duration   => '5h',
         payout     => 10,
         barrier    => 'S0P',
     };
-    my $c           = produce_contract($contract_args);
-    my $transaction = BOM::Transaction->new({
-        purchase_date => $contract->date_start,
-        client        => $jp,
-        contract      => $c,
-    });
-    ok !BOM::Transaction::Validation->new({
-            clients     => [$jp],
-            transaction => $transaction
-        })->_validate_jurisdictional_restrictions($jp), 'no error for frxUSDJPY for JP account';
-
-    $contract_args->{underlying} = 'frxAUDCAD';
-    $c                           = produce_contract($contract_args);
-    $transaction                 = BOM::Transaction->new({
-        purchase_date => $contract->date_start,
-        client        => $jp,
-        contract      => $c,
-    });
-    my $error = BOM::Transaction::Validation->new({
-            clients     => [$jp],
-            transaction => $transaction
-        })->_validate_jurisdictional_restrictions($jp);
-    is $error->{'-type'}, 'NotLegalUnderlying', 'error for frxAUDCAD for JP account';
 
     my $cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
     $cr->default_account;
-    $contract_args->{currency} = 'USD';
-    $contract_args->{bet_type} = 'CALL';
-    $c                         = produce_contract($contract_args);
-    $transaction               = BOM::Transaction->new({
+    my $c           = produce_contract($contract_args);
+    my $transaction = BOM::Transaction->new({
         client        => $cr,
         contract      => $c,
         purchase_date => $contract->date_start,
@@ -123,48 +95,21 @@ subtest 'Validate legal_allowed_underlyings' => sub {
 };
 
 subtest 'Validate legal allowed contract types' => sub {
-    my $jp = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'JP'});
 
-    my $loginid       = $jp->loginid;
-    my $account       = $jp->default_account;
     my $contract_args = {
         underlying => 'frxUSDJPY',
-        bet_type   => 'CALLE',
-        currency   => 'JPY',
+        bet_type   => 'CALL',
+        currency   => 'USD',
         date_start => $now,
         duration   => '5h',
         payout     => 10,
         barrier    => 'S0P',
     };
-    my $c           = produce_contract($contract_args);
-    my $transaction = BOM::Transaction->new({
-        purchase_date => $contract->date_start,
-        client        => $jp,
-        contract      => $c,
-    });
-    ok !BOM::Transaction::Validation->new({
-            clients     => [$jp],
-            transaction => $transaction
-        })->_validate_jurisdictional_restrictions($jp), 'no error for CALLE for JP account';
-
-    $contract_args->{bet_type} = 'CALL';
-    $c                         = produce_contract($contract_args);
-    $transaction               = BOM::Transaction->new({
-        client        => $jp,
-        purchase_date => $contract->date_start,
-        contract      => $c,
-    });
-    my $error = BOM::Transaction::Validation->new({
-            clients     => [$jp],
-            transaction => $transaction
-        })->_validate_jurisdictional_restrictions($jp);
-    is $error->{'-type'}, 'NotLegalContractCategory', 'error for CALL for JP account';
 
     my $cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
     $cr->default_account;
-    $contract_args->{currency} = 'USD';
-    $c                         = produce_contract($contract_args);
-    $transaction               = BOM::Transaction->new({
+    my $c           = produce_contract($contract_args);
+    my $transaction = BOM::Transaction->new({
         purchase_date => $contract->date_start,
         client        => $cr,
         contract      => $c,
@@ -188,7 +133,7 @@ subtest 'Validate legal allowed contract types' => sub {
 };
 
 subtest 'Validate Jurisdiction Restriction' => sub {
-    plan tests => 35;
+    plan tests => 33;
     lives_ok { $client->residence('') } 'set residence to null to test jurisdiction validation';
     lives_ok { $client->save({'log' => 0, 'clerk' => 'raunak'}); } "Can save residence changes back to the client";
 
@@ -491,37 +436,6 @@ subtest 'Validate Jurisdiction Restriction' => sub {
         $error->{-message_to_client},
         qr/Sorry, contracts on Financial Products are not available in your country of residence/,
         'Belgium clients are not allowed to place commodities contracts as their country is restricted due to vat regulations'
-    );
-
-    # check if market name is allowed for landing company
-    $new_underlying = create_underlying('R_50');
-    my $new_client = create_client('JP');
-    $new_contract = produce_contract({
-        underlying   => $new_underlying,
-        bet_type     => 'CALLE',
-        currency     => $currency,
-        payout       => 1000,
-        date_start   => $now,
-        date_expiry  => $now->epoch + 300,
-        current_tick => $tick,
-        barrier      => 'S0P',
-    });
-
-    $new_transaction = BOM::Transaction->new({
-        purchase_date => $contract->date_start,
-        client        => $new_client,
-        contract      => $new_contract,
-    });
-
-    $error = BOM::Transaction::Validation->new({
-            clients     => [$new_client],
-            transaction => $new_transaction
-        })->_validate_jurisdictional_restrictions($new_client);
-    is($error->get_type, 'NotLegalMarket', 'Market name is not in the list of legal allowed markets.');
-    like(
-        $error->{-message_to_client},
-        qr/Please switch accounts to trade this market./,
-        'Market name is not in the list of legal allowed markets. Please switch accounts'
     );
 
 };

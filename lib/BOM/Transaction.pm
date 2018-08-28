@@ -92,13 +92,6 @@ has price_slippage => (
     default => 0,
 );
 
-# trading period of a contract
-has trading_period_start => (
-    is     => 'rw',
-    isa    => 'date_object',
-    coerce => 1,
-);
-
 # This is the requested buy or sell price
 has requested_price => (
     is  => 'rw',
@@ -534,10 +527,9 @@ sub prepare_buy {
         _build_pricing_comment({
                 contract => $self->contract,
                 price    => $self->price,
-                ($self->requested_price)      ? (requested_price      => $self->requested_price)                    : (),
-                ($self->recomputed_price)     ? (recomputed_price     => $self->recomputed_price)                   : (),
-                ($self->price_slippage)       ? (price_slippage       => $self->price_slippage)                     : (),
-                ($self->trading_period_start) ? (trading_period_start => $self->trading_period_start->db_timestamp) : (),
+                ($self->requested_price)  ? (requested_price  => $self->requested_price)  : (),
+                ($self->recomputed_price) ? (recomputed_price => $self->recomputed_price) : (),
+                ($self->price_slippage)   ? (price_slippage   => $self->price_slippage)   : (),
                 action => 'buy'
             })) unless (@{$self->comment});
 
@@ -784,10 +776,9 @@ sub prepare_sell {
         _build_pricing_comment({
                 contract => $self->contract,
                 price    => $self->price,
-                ($self->requested_price)      ? (requested_price      => $self->requested_price)                    : (),
-                ($self->recomputed_price)     ? (recomputed_price     => $self->recomputed_price)                   : (),
-                ($self->price_slippage)       ? (price_slippage       => $self->price_slippage)                     : (),
-                ($self->trading_period_start) ? (trading_period_start => $self->trading_period_start->db_timestamp) : (),
+                ($self->requested_price)  ? (requested_price  => $self->requested_price)  : (),
+                ($self->recomputed_price) ? (recomputed_price => $self->recomputed_price) : (),
+                ($self->price_slippage)   ? (price_slippage   => $self->price_slippage)   : (),
                 action => 'sell'
             })) unless @{$self->comment};
 
@@ -1265,8 +1256,6 @@ sub _build_pricing_comment {
     push @comment_fields, map { defined $args->{$_} ? ($_ => $args->{$_}) : () } qw/price_slippage requested_price recomputed_price/;
 
     my $comment_str = sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
-
-    push @comment_fields, map { defined $args->{$_} ? ($_ => $args->{$_}) : () } qw/trading_period_start/;
 
     return [$comment_str, {@comment_fields}];
 }
