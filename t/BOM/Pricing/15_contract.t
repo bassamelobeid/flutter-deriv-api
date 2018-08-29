@@ -286,7 +286,7 @@ subtest 'send_ask' => sub {
                         ->error_message_is('Missing required contract parameters (bet_type).');
                 }
             ],
-            bag(re('Use of uninitialized value')),
+            bag(re('Use of uninitialized value'), re('Use of uninitialized value')),
             'missing bet_type when checking contract_type'
         );
 
@@ -298,7 +298,7 @@ subtest 'send_ask' => sub {
                         ->error_message_is('Unable to price the contract.');
                 }
             ],
-            bag(re('mock _get_ask dying'), re('Use of uninitialized value'),),
+            bag(re('mock _get_ask dying'), re('Use of uninitialized value'),re('Use of uninitialized value')),
             'have expected warnings when _get_ask dies'
         );
     }

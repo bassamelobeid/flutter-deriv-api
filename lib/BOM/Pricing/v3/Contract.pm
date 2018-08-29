@@ -29,7 +29,7 @@ use Finance::Contract::Longcode qw( shortcode_to_parameters);
 use BOM::Product::ContractFinder;
 use LandingCompany::Registry;
 use BOM::Pricing::v3::Utility;
-
+use Scalar::Util qw(looks_like_number);
 use feature "state";
 
 my $json = JSON::MaybeXS->new->allow_blessed;
@@ -69,6 +69,14 @@ sub prepare_ask {
     {
         $p2{barrier} //= 'S0P';
         delete $p2{barrier2};
+
+        if (    grep { /^(CALL|PUT)E?$/ } @contract_types
+            and looks_like_number($p2{barrier})
+            and $p2{barrier} == 0)
+        {
+            $p2{barrier} = 'S0P';
+        }
+
     }
 
     $p2{underlying} = delete $p2{symbol};
@@ -699,7 +707,6 @@ sub _validate_offerings {
         my $offerings_obj = $landing_company->$method(delete $args_copy->{country_code} // '', BOM::Config::Runtime->instance->get_offerings_config);
 
         die 'Could not find offerings for ' . $args_copy->{country_code} unless $offerings_obj;
-
         if (my $error = $offerings_obj->validate_offerings($contract->metadata($args_copy->{action}))) {
             $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'OfferingsValidationError',
