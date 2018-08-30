@@ -105,6 +105,9 @@ my $mock_landingcompany = Test::MockModule->new('LandingCompany');
 ## Used to make sure verification tokens always pass:
 my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
 
+## Used to make sure that there is always an authenticated agent in client's country
+my $mock_payment_agent = Test::MockModule->new('BOM::Database::DataMapper::PaymentAgent');
+
 ## Used to set global statuses:
 my $runtime_system = BOM::Config::Runtime->instance->app_config->system;
 
@@ -317,12 +320,20 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
             sub {
                 return LandingCompany::Registry->get_by_broker($_[0]->loginid eq $Alice_id ? 'MLT' : 'CR');
             });
+
         ## Then we need to declare that Malta can have payment agents too
         $mock_landingcompany->mock('allows_payment_agents', sub { return 1; });
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{error}{message_to_client}, 'Payment agent transfers are not allowed for the specified accounts.', $test);
         $mock_landingcompany->unmock('allows_payment_agents');
         $mock_user_client->unmock('landing_company');
+
+        $test = q{You cannot transfer to client of different residence};
+        my $old_residence = $Alice->residence;
+        $Alice->residence('in the Wonder Land');
+        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        like($res->{error}{message_to_client}, qr/You cannot transfer to a client in a different country of residence./, $test);
+        $Alice->residence($old_residence);
 
         $test = 'Transfer returns a status of 2 when dry_run is set';
         $res  = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
@@ -1040,6 +1051,16 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message}, qr/stuck in previous transaction $Bob_id/, $test);
         $mock_clientdb->unmock('freeze');
+
+        # mock to make sure that there is authenticated pa in Alice's country
+        $mock_payment_agent->mock('get_authenticated_payment_agents', sub { return {pa1 => 'dummy'}; });
+        $test          = q{You cannot withdraw from payment agent of different residence};
+        $old_residence = $Alice->residence;
+        $Alice->residence('in');
+        $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
+        like($res->{error}{message_to_client}, qr/You cannot withdraw from a payment agent in a different country of residence./, $test);
+        $Alice->residence($old_residence);
+        $mock_payment_agent->unmock('get_authenticated_payment_agents');
 
         ## (validate_payment)
 

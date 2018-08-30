@@ -454,6 +454,9 @@ rpc paymentagent_transfer => sub {
     return $error_sub->(localize('Payment agent transfers are not allowed for the specified accounts.'))
         if ($client_fm->landing_company->short ne $client_to->landing_company->short);
 
+    return $error_sub->(localize('You cannot transfer to a client in a different country of residence.'))
+        if $client_fm->residence ne $client_to->residence;
+
     if ($args->{dry_run}) {
         return {
             status              => 2,
@@ -761,6 +764,9 @@ rpc paymentagent_withdraw => sub {
     return $error_sub->(
         localize("You cannot perform withdrawal to account [_1], as payment agent's verification documents have expired.", $pa_client->loginid))
         if $pa_client->documents_expired;
+
+    return $error_sub->(localize('You cannot withdraw from a payment agent in a different country of residence.'))
+        if $client->residence ne $pa_client->residence;
 
     if ($args->{dry_run}) {
         return {
