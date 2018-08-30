@@ -22,7 +22,7 @@ my ($taginfo, $commitinfo, $git_hashes) = get_git_hashes();
 
 my ($dbinfo, $db_hashes) = get_db_hashes();
 
-if (!$quiet) {
+unless ($quiet) {
     my $message = sprintf "Repo: %s at commit %s, created on %s
 Author: %s Title: %s
 Latest tag: %s, created on %s, points to commit %s
