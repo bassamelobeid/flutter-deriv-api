@@ -29,6 +29,7 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Client::DoughFlowClient;
 use BOM::Platform::Doughflow qw( get_sportsbook );
+use BOM::Platform::Event::Emitter;
 use BOM::Database::Model::HandoffToken;
 use BOM::Database::ClientDB;
 use BOM::Config;
@@ -189,6 +190,22 @@ if ($input{whattodo} eq 'sync_to_DF') {
         'backoffice/client_edit_msg.tt',
         {
             message  => "Successfully syncing client authentication status to Doughflow",
+            self_url => $self_href,
+        },
+    ) || die BOM::Backoffice::Request::template()->error();
+    code_exit_BO();
+}
+
+# sync authentication status to MT5
+if ($input{whattodo} eq 'sync_to_MT5') {
+    BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $loginid});
+    my $msg = Date::Utility->new->datetime . " sync client information to MT5 is requested by clerk=$clerk $ENV{REMOTE_ADDR}";
+    BOM::User::AuditLog::log($msg, $loginid, $clerk);
+
+    BOM::Backoffice::Request::template()->process(
+        'backoffice/client_edit_msg.tt',
+        {
+            message  => "Successfully requested syncing client information to MT5",
             self_url => $self_href,
         },
     ) || die BOM::Backoffice::Request::template()->error();
@@ -624,6 +641,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     }
 
     print "<p style=\"color:#eeee00; font-weight:bold;\">Client details saved</p>";
+    BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $client->loginid});
     code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
 }
 
@@ -887,6 +905,15 @@ if (not $client->is_virtual) {
             <input type="hidden" name="broker" value="$encoded_broker">
             <input type="hidden" name="loginID" value="$encoded_loginid">
             <input type="submit" value="Sync now !!">
+        </form>
+    };
+    Bar("Sync Client Information to MT5");
+    print qq{
+        <p>Click to sync client information to MT5: </p>
+        <form action="$self_post" method="get">
+            <input type="hidden" name="whattodo" value="sync_to_MT5">
+            <input type="hidden" name="loginID" value="$encoded_loginid">
+            <input type="submit" value="Sync to MT5">
         </form>
     };
 }

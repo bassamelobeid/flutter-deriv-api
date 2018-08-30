@@ -16,6 +16,7 @@ use BOM::User::Client;
 use BOM::User;
 use BOM::Database::Model::UserConnect;
 use BOM::Config::Runtime;
+use BOM::Platform::Event::Emitter;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
@@ -137,6 +138,7 @@ if ($email ne $new_email) {
         . ") $ENV{REMOTE_ADDR}";
     BOM::User::AuditLog::log($msg, $new_email, $clerk);
 
+    BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $user->get_default_client->loginid});
     BOM::Backoffice::Request::template()->process(
         'backoffice/client_email.html.tt',
         {
