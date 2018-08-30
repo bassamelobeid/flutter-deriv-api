@@ -849,6 +849,10 @@ sub _price_stream_results_adjustment {
                 my ($details) = @_;
                 return ('Payout can not have more than [_1] decimal places.', $details->[0]);
             },
+            stake_too_many_places => sub {
+                my ($details) = @_;
+                return ('Stake can not have more than [_1] decimal places.', $details->[0]);
+            },
             stake_same_as_payout => sub {
                 'This contract offers no return.';
             },
