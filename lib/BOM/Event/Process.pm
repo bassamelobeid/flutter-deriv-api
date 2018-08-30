@@ -10,6 +10,7 @@ use JSON::MaybeUTF8 qw(:v1);
 use Try::Tiny;
 
 use BOM::Event::Actions::Customerio;
+use BOM::Event::Actions::MT5;
 
 =head1 NAME
 
@@ -29,6 +30,7 @@ Based on type of event its associated method is invoked.
 my $action_mapping = {
     register_details => \&BOM::Event::Actions::Customerio::register_details,
     email_consent    => \&BOM::Event::Actions::Customerio::email_consent,
+    sync_user_to_MT5 => \&BOM::Event::Actions::MT5::sync_info
 };
 
 =head1 METHODS

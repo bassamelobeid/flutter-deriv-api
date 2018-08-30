@@ -44,6 +44,7 @@ sub run {
 
     while (1) {
         run_once($queue_name);
+        sleep QUEUE_WAIT_DURATION;
     }
 
     return;
@@ -69,7 +70,6 @@ sub run_once {
     my $event_to_be_processed = BOM::Platform::Event::Emitter::get($queue_name);
 
     return undef unless $event_to_be_processed;
-
     BOM::Event::Process::process($event_to_be_processed, $queue_name);
 
     return undef;

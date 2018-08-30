@@ -119,7 +119,7 @@ subtest 'process' => sub {
 
     is_deeply(
         [sort keys %{BOM::Event::Process::get_action_mappings()}],
-        [sort qw/email_consent register_details/],
+        [sort qw/email_consent register_details sync_user_to_MT5/],
         'Correct number of actions that can be emitted'
     );
 
