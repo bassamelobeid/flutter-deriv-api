@@ -51,6 +51,7 @@ my $config = {
         ForwardStartTime              => 'Start time on forward-starting contracts must be more than 5 minutes from now.',
         FutureStartTime               => 'Start time is in the future.',
         IncorrectPayoutDecimals       => 'Payout can not have more than [_1] decimal places.',
+        IncorrectStakeDecimals        => 'Stake can not have more than [_1] decimal places.',
         IntegerBarrierRequired        => 'Barrier must be an integer.',
         IntegerSelectedTickRequired   => 'Selected tick must be an integer.',
         InvalidBarrier                => 'Invalid barrier.',
