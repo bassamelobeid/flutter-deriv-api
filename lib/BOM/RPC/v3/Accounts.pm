@@ -39,6 +39,7 @@ use BOM::Platform::Locale qw/get_state_by_id/;
 use BOM::User;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
+use BOM::Platform::Event::Emitter;
 use BOM::Platform::Token;
 use BOM::Transaction;
 use BOM::Config;
@@ -1123,7 +1124,7 @@ rpc set_settings => sub {
         template_loginid      => $client->loginid,
     });
     BOM::User::AuditLog::log('Your settings have been updated successfully', $client->loginid);
-
+    BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $client->loginid});
     return {status => 1};
 };
 

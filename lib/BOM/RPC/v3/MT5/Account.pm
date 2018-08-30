@@ -365,17 +365,12 @@ async_rpc mt5_new_account => sub {
                         $group_details->{leverage} = MT5_VANUATU_STANDARD_REAL_LEVERAGE;
                     }
 
-                    my $client_name = $client->first_name . ' ' . $client->last_name;
+                    my $client_info = $client->get_mt5_details();
+                    $client_info->{name} = $args->{name} if $client->is_virtual;
 
-                    $args->{name}     = $client->is_virtual ? $args->{name} : $client_name;
+                    @{$args}{keys %$client_info} = values %$client_info;
+
                     $args->{group}    = $group;
-                    $args->{email}    = $client->email;
-                    $args->{address}  = $client->address_1;
-                    $args->{state}    = $client->state;
-                    $args->{city}     = $client->city;
-                    $args->{country}  = Locale::Country::Extra->new()->country_from_code($client->residence);
-                    $args->{zipCode}  = $client->postcode;
-                    $args->{phone}    = $client->phone;
                     $args->{leverage} = $group_details->{leverage};
                     $args->{currency} = $group_details->{currency};
 
