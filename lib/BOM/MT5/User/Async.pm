@@ -340,4 +340,19 @@ sub get_group {
         });
 }
 
+sub get_users_logins {
+    my $group_name = shift;
+
+    return _invoke_mt5('UserLogins', {group => $group_name})->then(
+        sub {
+            my ($hash) = @_;
+            if ($hash->{error}) {
+                return Future->done({error => $hash->{error}});
+            }
+
+            my $ret = $hash->{logins};
+            return Future->done($ret);
+        });
+}
+
 1;

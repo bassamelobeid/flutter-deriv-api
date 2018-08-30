@@ -10,6 +10,7 @@ use feature qw(state);
 use Email::Stuffer;
 use Date::Utility;
 use List::Util qw/all/;
+use Locale::Country::Extra;
 use Format::Util::Numbers qw(roundcommon);
 
 use Rose::DB::Object::Util qw(:all);
@@ -925,6 +926,26 @@ sub is_same_user_as {
     return 0 unless $other_client;
 
     return $self->binary_user_id == $other_client->binary_user_id ? 1 : 0;
+}
+
+=head2 get_mt5_details
+
+returns hashref contains information we need for MT5 clients
+
+=cut
+
+sub get_mt5_details {
+    my $self = shift;
+    return {
+        name    => $self->first_name . ' ' . $self->last_name,
+        email   => $self->email,
+        address => $self->address_1,
+        phone   => $self->phone,
+        state   => $self->state,
+        city    => $self->city,
+        zipCode => $self->postcode,
+        country => Locale::Country::Extra->new()->country_from_code($self->residence),
+    };
 }
 
 1;
