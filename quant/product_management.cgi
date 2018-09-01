@@ -124,7 +124,8 @@ if ($r->param('delete_limit')) {
         $quants_config->custom_client_profiles($json->encode($current));
     } else {
         my $current = $json->decode($quants_config->custom_product_profiles);
-        send_notification_email($current->{$id}, 'Enable') if $current->{$id}->{risk_profile} eq 'no_business';
+        send_notification_email($current->{$id}, 'Enable')
+            if exists $current->{$id}->{risk_profile} and $current->{$id}->{risk_profile} eq 'no_business';
         delete $current->{$id};
         $quants_config->custom_product_profiles($json->encode($current));
     }
@@ -139,7 +140,7 @@ if ($r->param('delete_client')) {
     $need_to_save = 1;
 }
 
-BOM::DynamicSettings::dynamic_save() if $need_to_save;
+BOM::Config::Runtime->instance->app_config->save_dynamic() if $need_to_save;
 
 Bar("Limit Definitions");
 

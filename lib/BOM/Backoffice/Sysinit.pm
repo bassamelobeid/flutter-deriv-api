@@ -107,7 +107,6 @@ my $permissions = {
     'quant/edit_interest_rate.cgi'                                            => ['Quants'],
     'quant/market_data_mgmt/quant_market_tools_backoffice.cgi'                => ['Quants'],
     'quant/pricing/bpot.cgi'                                                  => ['Quants'],
-    'quant/pricing/contract_details.cgi'                                      => ['Quants'],
     'quant/pricing/f_dealer.cgi'                                              => ['Quants'],
     'quant/product_management.cgi'                                            => ['Quants'],
     'quant/settle_contracts.cgi'                                              => ['Quants'],
