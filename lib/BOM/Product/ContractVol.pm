@@ -244,7 +244,7 @@ has [qw(long_term_prediction)] => (
 sub _build_long_term_prediction {
     my $self = shift;
 
-    # long_term_prediction is set in VolSurface::IntradayFX. For contracts with duration less than 15 minutes,
+    # long_term_prediction is set in VolSurface::Empirical. For contracts with duration less than 15 minutes,
     # we are only use historical volatility model hence taking a 10% volatility for it.
     return $self->empirical_volsurface->long_term_prediction // 0.1;
 }
