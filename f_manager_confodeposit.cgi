@@ -132,9 +132,6 @@ unless ($client->landing_company->is_currency_legal($curr)) {
     code_exit_BO();
 }
 
-code_exit_BO("Payment reference id is required for Japan clients")
-    if ($informclient and $client->landing_company->short eq 'japan' and (not $reference_id or $reference_id !~ /^\w+$/));
-
 my $salutation = $client->salutation;
 my $first_name = $client->first_name;
 my $last_name  = $client->last_name;
@@ -350,30 +347,13 @@ print "</form>";
 if ($informclient) {
     my $subject = $ttype eq 'CREDIT' ? localize('Deposit') : localize('Withdrawal');
 
-    my $email_body;
-    if ($client->landing_company->short eq 'japan') {
-        BOM::Backoffice::Request::template()->process(
-            'email/japan/payment_notification.html.tt',
-            {
-                last_name    => $client->last_name,
-                action_type  => $subject,
-                payment_date => $transaction_date,
-                currency     => $client->default_account->currency_code,
-                amount       => $amount,
-                reference_id => $reference_id,
-            },
-            \$email_body
-        ) || die "payment notification email for $loginID " . BOM::Backoffice::Request::template()->error;
-        $subject .= ' ' . localize('of funds');
-    } else {
-        $email_body =
-              localize('Dear') . " "
-            . BOM::Platform::Locale::translate_salutation($salutation)
-            . " $first_name $last_name,\n\n"
-            . localize('We would like to inform you that your [_1] has been processed.', $subject) . "\n\n"
-            . localize('Kind Regards') . "\n\n"
-            . 'Binary.com';
-    }
+    my $email_body =
+          localize('Dear') . " "
+        . BOM::Platform::Locale::translate_salutation($salutation)
+        . " $first_name $last_name,\n\n"
+        . localize('We would like to inform you that your [_1] has been processed.', $subject) . "\n\n"
+        . localize('Kind Regards') . "\n\n"
+        . 'Binary.com';
 
     try {
         send_email({

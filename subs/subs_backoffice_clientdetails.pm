@@ -70,9 +70,9 @@ sub allow_uplift_self_exclusion {
     # If exclude_until date has expired, Customer Support and Compliance team can remove the exclude_until date
     return 1 if ($after_exclusion_date and not $form_exclude_until_date);
 
-    # If exclude_until date has not expired and client is under Binary (CR) S.A. or Binary K.K.,
+    # If exclude_until date has not expired and client is under Binary (CR) S.A.,
     # then Customer Support and Compliance team can amend or remove the exclude_until date
-    return 1 if ($client->landing_company->short =~ /^(?:costarica|japan)$/);
+    return 1 if ($client->landing_company->short eq 'costarica');
 
     # If exclude_until date has not expired and client is under Binary (Europe) Ltd, Binary (IOM) Ltd,
     # or Binary Investments (Europe) Ltd, then only Compliance team can amend or remove the exclude_until date
@@ -643,16 +643,6 @@ sub get_untrusted_types {
             'linktype' => 'lockmt5withdrawal',
             'comments' => 'MT5 Withdrawal Locked',
             'code'     => 'mt5_withdrawal_locked'
-        },
-        {
-            'linktype' => 'jpactivationpending',
-            'comments' => 'jp activation pending',
-            'code'     => 'jp_activation_pending'
-        },
-        {
-            'linktype' => 'jptransactiondetail',
-            'comments' => 'jp bank details stored',
-            'code'     => 'jp_transaction_detail'
         },
         {
             'linktype' => 'duplicateaccount',

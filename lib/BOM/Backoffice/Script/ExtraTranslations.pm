@@ -73,72 +73,10 @@ sub script_run {
     $self->add_underlyings;
     $self->add_contract_categories;
     $self->add_contract_types;
-    $self->add_japan_settings;
     $self->add_longcodes;
     $self->add_messages;
 
     return 0;
-}
-
-sub add_japan_settings {
-    my $self = shift;
-
-    # After client settings update, system email client & CS for changes. These translate old & new settings in email
-    # use in BOM::RPC::v3::Japan::NewAccount::set_jp_settings
-
-    my @texts = (
-        # Occupation
-        '{JAPAN ONLY}Office worker',
-        '{JAPAN ONLY}Director',
-        '{JAPAN ONLY}Public worker',
-        '{JAPAN ONLY}Self-employed',
-        '{JAPAN ONLY}Housewife / Househusband',
-        '{JAPAN ONLY}Contract / Temporary / Part Time',
-        '{JAPAN ONLY}Student',
-        '{JAPAN ONLY}Unemployed',
-        '{JAPAN ONLY}Others',
-
-        # Income
-        '{JAPAN ONLY}Less than 1 million JPY',
-        '{JAPAN ONLY}1-3 million JPY',
-        '{JAPAN ONLY}3-5 million JPY',
-        '{JAPAN ONLY}5-10 million JPY',
-        '{JAPAN ONLY}10-30 million JPY',
-        '{JAPAN ONLY}30-50 million JPY',
-        '{JAPAN ONLY}50-100 million JPY',
-        '{JAPAN ONLY}Over 100 million JPY',
-
-        # Trading Experience
-        '{JAPAN ONLY}No experience',
-        '{JAPAN ONLY}Less than 6 months',
-        '{JAPAN ONLY}6 months to 1 year',
-        '{JAPAN ONLY}1-3 years',
-        '{JAPAN ONLY}3-5 years',
-        '{JAPAN ONLY}Over 5 years',
-
-        # purpose of trading
-        '{JAPAN ONLY}Targeting short-term profits',
-        '{JAPAN ONLY}Targeting medium-term / long-term profits',
-        '{JAPAN ONLY}Both the above',
-        '{JAPAN ONLY}Hedging',
-
-        # asset hedge
-        '{JAPAN ONLY}Foreign currency deposit',
-        '{JAPAN ONLY}Margin FX',
-        '{JAPAN ONLY}Other'
-    );
-
-    my $fh = $self->pot_append_fh;
-    foreach my $txt (@texts) {
-        my $msgid = $self->msg_id($txt);
-        if ($self->is_id_unique($msgid)) {
-            print $fh "\n";
-            print $fh $msgid . "\n";
-            print $fh "msgstr \"\"\n";
-        }
-    }
-
-    return;
 }
 
 sub add_underlyings {

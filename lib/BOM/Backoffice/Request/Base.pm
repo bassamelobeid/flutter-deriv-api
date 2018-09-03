@@ -71,7 +71,7 @@ has 'brand' => (
 );
 
 {
-    my %known_codes = map { ; $_ => 1 } qw(CR MLT MF MX VRTC FOG JP VRTJ CH VRCH);
+    my %known_codes = map { ; $_ => 1 } qw(CR MLT MF MX VRTC FOG CH VRCH);
     has 'broker_code' => (
         is  => 'ro',
         isa => subtype(

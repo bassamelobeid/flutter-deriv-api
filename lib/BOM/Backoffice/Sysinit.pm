@@ -76,9 +76,8 @@ my $permissions = {
     'send_emails.cgi'                 => ['CS'],
     'send_emails.cgi'                 => ['CS'],
 
-    'download_document.cgi'       => ['CS',       'Compliance', 'Quants', 'IT'],
-    'f_client_combined_audit.cgi' => ['CS',       'Compliance'],
-    'open_contracts_report.cgi'   => ['Accounts', 'Quants'],
+    'download_document.cgi'       => ['CS', 'Compliance', 'Quants', 'IT'],
+    'f_client_combined_audit.cgi' => ['CS', 'Compliance'],
     'f_dailyturnoverreport.cgi' => ['Accounts', 'Quants', 'IT'],
     'f_quant_query.cgi'         => ['Quants',   'CS'],
     'f_dynamic_settings.cgi'    => ['Quants',   'IT'],    # it has extra internal logic inside
@@ -123,7 +122,7 @@ sub init {
     build_request();
 
     if (BOM::Config::on_qa()) {
-        # Sometimes it is needed to do some stuff on QA's backoffice with production databases (backpricing for Quants/Japan checking/etc)
+        # Sometimes it is needed to do some stuff on QA's backoffice with production databases (backpricing for Quants checking/etc)
         # here we implemenet an easy way of selection of needed database
         my $needed_service =
             BOM::Backoffice::Cookie::get_cookie('backprice') ? '/home/nobody/.pg_service_backprice.conf' : '/home/nobody/.pg_service.conf';

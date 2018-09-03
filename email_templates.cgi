@@ -19,8 +19,4 @@ Bar('ACCOUNT RECOVERY EMAIL');
 
 $tt->process('backoffice/newpassword_email.html.tt', {languages => BOM::Backoffice::Utility::get_languages()}) || die $tt->error();
 
-Bar('JAPAN SPECIFIC EMAILS');
-
-$tt->process('backoffice/japan/payment_email_form.html.tt') || die $tt->error();
-
 code_exit_BO();

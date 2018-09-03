@@ -118,18 +118,6 @@ foreach my $login_id (split(/\s+/, $clientID)) {
         } elsif ($action eq 'remove_data') {
             $printline = try { $client->status->clear('mt5_withdrawal_locked'); $remove_success_msg } catch { $remove_error_msg };
         }
-    } elsif ($client_status_type eq 'jpactivationpending') {
-        if ($action eq 'insert_data') {
-            $printline = try { $client->status->set('jp_activation_pending', $clerk, $reason); $insert_success_msg } catch { $insert_error_msg };
-        } elsif ($action eq 'remove_data') {
-            $printline = try { $client->status->clear('jp_activation_pending'); $remove_success_msg } catch { $remove_error_msg };
-        }
-    } elsif ($client_status_type eq 'jptransactiondetail') {
-        if ($action eq 'insert_data') {
-            $printline = 'Adding new status not allowed for this, only system can add one.';
-        } elsif ($action eq 'remove_data') {
-            $printline = try { $client->status->clear('jp_transaction_detail'); $remove_success_msg } catch { $remove_error_msg };
-        }
     } elsif ($client_status_type eq 'duplicateaccount') {
         if ($action eq 'insert_data') {
             $printline = try {
