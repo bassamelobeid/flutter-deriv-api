@@ -79,8 +79,7 @@ rpc residence_list => sub {
             text  => $country_name,
             $phone_idd ? (phone_idd => $phone_idd) : ()};
 
-        # to be removed later - JP
-        if ($countries_instance->restricted_country($country_code) or $country_code eq 'jp') {
+        if ($countries_instance->restricted_country($country_code)) {
             $option->{disabled} = 'DISABLED';
         } elsif (request()->country_code eq $country_code) {
             $option->{selected} = 'selected';
