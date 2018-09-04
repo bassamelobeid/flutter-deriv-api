@@ -22,7 +22,7 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Locale;
 use BOM::Config::Runtime;
 
-sub validate_symbol {
+sub is_invalid_symbol {
     my $symbol = shift;
     my @offerings =
         LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config)
@@ -40,10 +40,10 @@ sub validate_symbol {
             message_to_client => localize("Symbol [_1] invalid.", $symbol),
         });
     }
-    return;
+    return undef;
 }
 
-sub validate_license {
+sub is_invalid_license {
     my $ul = shift;
 
     if ($ul->feed_license ne 'realtime') {
@@ -53,10 +53,10 @@ sub validate_license {
         });
     }
 
-    return;
+    return undef;
 }
 
-sub validate_is_open {
+sub is_invalid_market_time {
     my $ul = shift;
 
     unless (Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader())->is_open($ul->exchange)) {
@@ -66,22 +66,22 @@ sub validate_is_open {
         });
     }
 
-    return;
+    return undef;
 }
 
 sub validate_underlying {
     my $symbol = shift;
 
-    my $response = validate_symbol($symbol);
-    return $response if $response;
+    my $error = is_invalid_symbol($symbol);
+    return $error if $error;
 
     my $ul = create_underlying($symbol);
 
-    $response = validate_license($ul);
-    return $response if $response;
+    $error = is_invalid_license($ul);
+    return $error if $error;
 
-    $response = validate_is_open($ul);
-    return $response if $response;
+    $error = is_invalid_market_time($ul);
+    return $error if $error;
 
     return $ul;
 }

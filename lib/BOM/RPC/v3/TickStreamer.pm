@@ -12,9 +12,15 @@ use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Contract;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use BOM::Platform::Context qw (localize request);
+use BOM::Platform::Context qw (localize);
 use Quant::Framework;
 use BOM::Config::Chronicle;
+
+use constant MAX_TICK_COUNT => 5000;
+# limiter for trade days
+use constant TRADING_DAY_CHECK_LIMIT => 5;
+use constant SECONDS_IN_DAY          => 86400;
+use constant EPOCH_VALUE_THREE_YEARS => 365 * SECONDS_IN_DAY * 3;
 
 rpc ticks => sub {
     my $params = shift;
@@ -34,29 +40,24 @@ rpc ticks_history => sub {
     my $args   = $params->{args};
     my $symbol = $args->{ticks_history};
 
-    my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
-    if ($response and exists $response->{error}) {
-        return $response;
-    }
+    my $error = BOM::RPC::v3::Contract::is_invalid_symbol($symbol);
+    return $error if $error;
 
     my $ul = create_underlying($symbol);
     unless ($ul->feed_license =~ /^(realtime|delayed|daily)$/) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'StreamingNotAllowed',
-                message_to_client => BOM::Platform::Context::localize("Streaming for this symbol is not available due to license restrictions.")});
+                message_to_client => localize("Streaming for this symbol is not available due to license restrictions.")});
     }
 
-    if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
-        $response = BOM::RPC::v3::Contract::validate_license($ul);
+    if ($args->{subscribe}) {
 
-        if ($response and exists $response->{error}) {
-            return $response;
-        }
+        $error = BOM::RPC::v3::Contract::is_invalid_license($ul);
+        return $error if $error;
 
-        $response = BOM::RPC::v3::Contract::validate_is_open($ul);
-        if ($response and exists $response->{error}) {
-            return $response;
-        }
+        $error = BOM::RPC::v3::Contract::is_invalid_market_time($ul);
+        return $error if $error;
+
     }
 
     my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
@@ -64,21 +65,32 @@ rpc ticks_history => sub {
     # default to 60 if not defined or send as 0 for candles
     $args->{granularity} = $args->{granularity} || 60 if $style eq 'candles';
 
-    $response = _validate_start_end({%$args, ul => $ul});    ## no critic (ProhibitCommaSeparatedStatements)
-    if ($response and exists $response->{error}) {
-        return $response;
-    } else {
-        $args = $response;
-    }
+    # This either returns an error, or gives us a new set of arguments
+    # we should not modify existing args
+    $args = _validate_start_end({%$args, ul => $ul});    ## no critic (ProhibitCommaSeparatedStatements)
+    return $args if exists $args->{error};
 
     my ($publish, $result, $type);
     if ($style eq 'ticks') {
-        my $ticks   = _ticks($args);
-        my $history = {
-            prices => [map { $ul->pipsized_value($_->{price}) } @$ticks],
-            times  => [map { $_->{time} } @$ticks],
-        };
-        $result  = {history => $history};
+
+        my $ticks = $ul->feed_api->ticks_start_end_with_limit_for_charting({
+            start_time => $args->{start},
+            end_time   => $args->{end},
+            limit      => $args->{count},
+        });
+
+        my @prices;
+        my @times;
+        for (reverse @$ticks) {
+            push @prices, $ul->pipsized_value($_->quote);
+            push @times,  $_->epoch;
+        }
+        $result = {
+            history => {
+                prices => \@prices,
+                times  => \@times,
+            }};
+
         $type    = "history";
         $publish = 'tick';
     } elsif ($style eq 'candles') {
@@ -91,7 +103,7 @@ rpc ticks_history => sub {
     } else {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidStyle',
-                message_to_client => BOM::Platform::Context::localize("Style [_1] invalid", $style)});
+                message_to_client => localize("Style [_1] invalid", $style)});
     }
 
     return {
@@ -206,7 +218,7 @@ sub _validate_start_end {
 
     my $ul = $args->{ul} || return BOM::RPC::v3::Utility::create_error({
             code              => 'NoSymbolProvided',
-            message_to_client => BOM::Platform::Context::localize("Please provide an underlying symbol.")});
+            message_to_client => localize("Please provide an underlying symbol.")});
 
     my $start            = $args->{start};
     my $end              = $args->{end} !~ /^[0-9]+$/ ? time() : $args->{end};
@@ -220,45 +232,48 @@ sub _validate_start_end {
     if ($start and $end and $start =~ /^[0-9]+$/ and $end =~ /^[0-9]+$/ and $start > $end) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidStartEnd',
-                message_to_client => BOM::Platform::Context::localize("Start time [_1] must be before end time [_2]", $start, $end)});
+                message_to_client => localize("Start time [_1] must be before end time [_2]", $start, $end)});
     }
 
     # if no start but there is count and granularity, use count and granularity to calculate the start time to look back
     if (not $start and $count and $granularity) {
+        $count = MAX_TICK_COUNT if $count <= 0 || $count > MAX_TICK_COUNT;
         my $expected_start = Date::Utility->new($end - ($count * $granularity));
+
+        my $trial_count = 0;
         # handle for non trading day as well
-        unless ($trading_calendar->trades_on($exchange, $expected_start)) {
-            my $count = 0;
-            do {
-                $expected_start = $expected_start->minus_time_interval('1d');
-                $count++;
-            } while ($count < 5 and not $trading_calendar->trades_on($exchange, $expected_start));
+        while ($trial_count < TRADING_DAY_CHECK_LIMIT and not $trading_calendar->trades_on($exchange, $expected_start)) {
+            $expected_start = $expected_start->minus_time_interval('1d');
+            $trial_count++;
         }
+
         $start = $expected_start->epoch;
     }
-    # we must not return to the client any ticks/candles after this epoch
+
     my $licensed_epoch = $ul->last_licensed_display_epoch;
-    # max allow 3 years
-    unless ($start
-        and $start =~ /^[0-9]+$/
-        and $start > time() - 365 * 86400 * 3
-        and $start < $licensed_epoch)
+    # we must not return to the client any ticks/candles after this epoch
+    if (   not $start
+        or $start !~ /^[0-9]+$/
+        or $start <= time() - EPOCH_VALUE_THREE_YEARS
+        or $start >= $licensed_epoch)
     {
-        $start = $licensed_epoch - 86400;
+        $start = $licensed_epoch - SECONDS_IN_DAY;
     }
-    unless ($end
-        and $end =~ /^[0-9]+$/
-        and $end > $start
-        and $end < time())
+
+    if (   not $end
+        or $end !~ /^[0-9]+$/
+        or $end <= $start
+        or $end >= time())
     {
         $end = time();
     }
-    unless ($count
-        and $count =~ /^[0-9]+$/
-        and $count > 0
-        and $count < 5001)
+
+    if (   not $count
+        or $count !~ /^[0-9]+$/
+        or $count <= 0
+        or $count > MAX_TICK_COUNT)
     {
-        $count = 5000;
+        $count = MAX_TICK_COUNT;
     }
 
     if ($ul->feed_license ne 'realtime') {
@@ -274,6 +289,7 @@ sub _validate_start_end {
             }
         }
     }
+
     if ($args->{adjust_start_time}) {
         unless ($trading_calendar->is_open_at($exchange, Date::Utility->new($end))) {
             my $shift_back = $trading_calendar->seconds_since_close_at($exchange, Date::Utility->new($end));
@@ -297,7 +313,7 @@ sub _validate_start_end {
     if ($start > $end) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidStartEnd',
-                message_to_client => BOM::Platform::Context::localize("Start time [_1] must be before end time [_2]", $start, $end)});
+                message_to_client => localize("Start time [_1] must be before end time [_2]", $start, $end)});
     }
 
     return $args;
