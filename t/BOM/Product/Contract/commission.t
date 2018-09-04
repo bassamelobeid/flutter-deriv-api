@@ -165,6 +165,7 @@ subtest 'payout' => sub {
         currency   => 'USD',
         payout     => $payout,
     });
+
     cmp_ok $c->ask_price, '>', 0.2 * $payout, 'VolIdx intraday non atm contract price is not floor 20%.';
 
     $c = produce_contract({
@@ -412,16 +413,16 @@ subtest 'commission for multibarrier' => sub {
         underlying       => 'frxUSDJPY',
         barrier          => 'S0P',
         duration         => '1d',
-        amount           => 100000,
+        amount           => 1000,
         amount_type      => 'payout',
-        currency         => 'JPY',
+        currency         => 'USD',
         theo_probability => $fake_theo,
     };
     my $c = produce_contract($args);
-    is $c->commission_markup->amount, $c->base_commission, 'at 100,000 yen commission markup is base commission';
-    $args->{amount} = 100001;
+    is $c->commission_markup->amount, $c->base_commission, 'at 1000 USD commission markup is base commission';
+    $args->{amount} = 1001;
     $c = produce_contract($args);
-    ok $c->commission_markup->amount > $c->base_commission, 'at 100,000 yen commission markup is more than base commission';
+    ok $c->commission_markup->amount > $c->base_commission, 'at 1001 USD commission markup is more than base commission';
 };
 
 sub test_flexible_commission {
