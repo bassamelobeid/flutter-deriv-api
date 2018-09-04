@@ -9,7 +9,6 @@ sub get_languages {
         DE    => 'Deutsch',
         FR    => 'French',
         ID    => 'Indonesian',
-        JA    => 'Japanese',
         PL    => 'Polish',
         PT    => 'Portuguese',
         RU    => 'Russian',
