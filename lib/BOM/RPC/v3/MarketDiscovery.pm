@@ -73,6 +73,7 @@ rpc active_symbols => sub {
         }
 
         @{$active_symbols} =
+            map { $_->{display_name} = localize($_->{display_name}); $_ }
             sort_by { $_->{display_name} =~ s{([0-9]+)}{sprintf "%-09.09d", $1}ger } @{$active_symbols};
 
         Cache::RedisDB->set($namespace, $key, $active_symbols, 30 - time % 30);
