@@ -218,12 +218,10 @@ sub Gender { return uc shift->gender }
 #    2 - Bronze           => Age verified
 #    3 - Silver           => Identity authenticated
 #    4 - Gold             => Been with us for more than 6 months
-#    5 - Platinum         => VIP clients
 sub Profile {
     my $self = shift;
 
     return 0 if $self->status->get('disabled');
-    return 5 if $self->is_vip;
 
     if ($self->status->get('age_verification') || $self->has_valid_documents) {
         if ($self->fully_authenticated) {

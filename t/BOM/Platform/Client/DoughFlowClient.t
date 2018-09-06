@@ -107,10 +107,6 @@ subtest 'Profile mapped correctly to DF levels' => sub {
     is $mock_client->Profile, 0, 'Disabled client => 0';
     $mock_status->unmock('get');
 
-    $mock_client->set_true(-is_vip);
-    is $mock_client->Profile, 5, 'VIP client => 5';
-    $mock_client->unmock('is_vip');
-
     is $mock_client->Profile, 1, 'Regular user => 1';
 
     $mock_client->status->set('age_verification');
