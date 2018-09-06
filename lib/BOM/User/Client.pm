@@ -262,22 +262,6 @@ sub get_objects_from_sql {
     return [map { bless $_, $class } @$clients];
 }
 
-sub _change_vip_status {
-    my $self = shift;
-    my $new_status = (shift) ? 1 : 0;
-    if ($new_status != $self->is_vip) {
-        my $v = $new_status ? (Date::Utility->new->db_timestamp) : undef;
-        $self->vip_since($v);
-    }
-    return undef;
-}
-
-sub is_vip {
-    my $self = shift;
-    $self->_change_vip_status($_[0]) if @_;    # note $_[0] might be zero or undef
-    return $self->vip_since ? 1 : 0;
-}
-
 sub is_virtual { return shift->broker =~ /^VR/ }
 
 sub has_funded { return shift->first_funded_date ? 1 : 0 }
