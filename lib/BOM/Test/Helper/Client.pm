@@ -36,26 +36,7 @@ sub top_up {
     $payment_type //= 'ewallet';
 
     my $fdp = $c->is_first_deposit_pending;
-    my @acc = $c->account;
-
-    if (@acc) {
-        @acc = grep { $_->currency_code eq $cur } @acc;
-        @acc = $c->add_account({
-                currency_code => $cur,
-                is_default    => 0
-            }) unless @acc;
-    } else {
-        @acc = $c->add_account({
-            currency_code => $cur,
-            is_default    => 1
-        });
-    }
-
-    my $acc = $acc[0];
-    unless (defined $acc->id) {
-        $acc->save;
-        note 'Created account ' . $acc->id . ' for ' . $c->loginid . ' segment ' . $cur;
-    }
+    my $acc = $c->account($cur);
 
     # Define the transaction date here instead of use the now() as default in
     # postgres so we can mock the date.
@@ -81,7 +62,7 @@ sub top_up {
         quantity         => 1,
         transaction_time => $date
     });
-    $acc->save(cascade => 1);
+    $pm->save(cascade => 1);
     $trx->load;    # to re-read (get balance_after)
 
     BOM::Platform::Client::IDAuthentication->new(client => $c)->run_authentication
