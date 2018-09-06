@@ -35,10 +35,11 @@ sub record_GET {
         unless $account->currency_code eq $currency_code;
 
     # Search within account to ensure that this trx_id really belongs to this account.
-    my $trx = $account->find_transaction({
+    my $trx = $account->find_transaction(
+        query => [
             id            => $reference_number,
             referrer_type => 'payment'
-        }
+        ]
         )->[0]
         || do {
         return $c->status_bad_request("Unknown payment transaction number $reference_number");

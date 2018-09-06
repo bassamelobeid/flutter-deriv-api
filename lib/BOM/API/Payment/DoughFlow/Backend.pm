@@ -213,7 +213,7 @@ sub write_transaction_line {
         $trx = $client->payment_doughflow(%payment_args);
     } elsif ($c->type eq 'withdrawal') {
         # Don't allow balances to ever go negative! Include any fee in this test.
-        my $balance = $client->default_account->load->balance;
+        my $balance = $client->default_account->balance;
         if ($amount + $fee > $balance) {
             my $plusfee = $fee ? " plus fee $fee" : '';
             return $c->status_bad_request(

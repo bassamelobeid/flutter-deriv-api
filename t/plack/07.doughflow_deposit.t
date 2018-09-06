@@ -6,7 +6,6 @@ use Test::More;
 use APIHelper qw(balance deposit request decode_json);
 
 my $loginid = 'CR0012';
-
 my $starting_balance = balance($loginid);
 my $r = deposit(loginid => $loginid);
 is($r->code,    201,       'correct status code');
