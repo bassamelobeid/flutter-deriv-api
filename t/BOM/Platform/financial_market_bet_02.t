@@ -154,7 +154,7 @@ lives_ok {
     $cl = create_client;
 
     top_up $cl, 'USD', 15000;
-    isnt + ($acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+    isnt + ($acc_usd = $cl->account), undef, 'got USD account';
 
     is + ($bal = $acc_usd->balance + 0), 15000, 'USD balance is 15000 got: ' . $bal;
 }
@@ -303,7 +303,7 @@ subtest 'more validation', sub {
         $cl = create_client;
 
         top_up $cl, 'USD', 10000;
-        isnt + ($acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+        isnt + ($acc_usd = $cl->account), undef, 'got USD account';
         is + ($bal = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
     }
     'setup new client';
@@ -439,7 +439,7 @@ SKIP: {
             $cl = create_client;
 
             top_up $cl, 'USD', 10000;
-            isnt + ($acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+            isnt + ($acc_usd = $cl->account), undef, 'got USD account';
             is + ($bal = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
         }
         'setup new client';
@@ -777,7 +777,7 @@ SKIP: {
             $cl = create_client;
 
             top_up $cl, 'USD', 10000;
-            isnt + ($acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+            isnt + ($acc_usd = $cl->account), undef, 'got USD account';
             is + ($bal = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
         }
         'setup new client';
@@ -959,7 +959,7 @@ SKIP: {
             $cl = create_client;
 
             top_up $cl, 'USD', 10000;
-            isnt + ($acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+            isnt + ($acc_usd = $cl->account), undef, 'got USD account';
             is + ($bal = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
         }
         'setup new client';
@@ -1141,7 +1141,7 @@ SKIP: {
             $cl = create_client;
 
             top_up $cl, 'USD', 10000;
-            isnt + ($acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+            isnt + ($acc_usd = $cl->account), undef, 'got USD account';
             is + ($bal = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
         }
         'setup new client';
@@ -1350,10 +1350,10 @@ subtest 'batch_buy', sub {
         top_up $cl3, 'USD', 10000;
         top_up $cl4, 'AUD', 10000;
 
-        isnt + ($acc1 = $cl1->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got 1st account';
-        isnt + ($acc2 = $cl2->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got 2nd account';
-        isnt + ($acc3 = $cl3->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got 3rd account';
-        isnt + ($acc4 = $cl4->find_account(query => [currency_code => 'AUD'])->[0]), undef, 'got 4th account';
+        isnt + ($acc1 = $cl1->account), undef, 'got 1st account';
+        isnt + ($acc2 = $cl2->account), undef, 'got 2nd account';
+        isnt + ($acc3 = $cl3->account), undef, 'got 3rd account';
+        isnt + ($acc4 = $cl4->account), undef, 'got 4th account';
     }
     'setup clients';
 
