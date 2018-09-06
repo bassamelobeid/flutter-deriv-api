@@ -218,7 +218,6 @@ sub print_client_details {
         dob_year_options      => $dob_year_options,
         financial_risk_status => $client->status->get('financial_risk_approval'),
         has_social_signup     => $user->{has_social_signup},
-        is_vip                => $client->is_vip,
         lang                  => request()->language,
         language_options      => \@language_options,
         mifir_config          => $Finance::MIFIR::CONCAT::config,
@@ -239,7 +238,6 @@ sub print_client_details {
         client_state                  => $state_name,
         tnc_approval_status           => $tnc_status,
         ukgc_funds_status             => $client->status->get('ukgc_funds_protection'),
-        vip_since                     => $client->vip_since,
         tax_residence                 => \@tax_residences,
         tax_residences_countries_name => $tax_residences_countries_name
     };

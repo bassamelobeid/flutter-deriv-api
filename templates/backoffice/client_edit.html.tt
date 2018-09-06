@@ -20,10 +20,6 @@ table#client_edit td{
     font-size:14px;
     color:red;
 }
-.vip_notice {
-    font-size:14px;
-    color:red;
-}
 .lspace {
     width: 80px;
     margin-left: 6px;
@@ -39,10 +35,6 @@ table#client_edit td{
 </style>
 
 [% yes_no_options = [{value => 1, text => 'yes'} {value => 0, text => 'no'}] %]
-
-[% IF is_vip %]
-    <h1 class="vip_notice">This is a VIP CLIENT since [% vip_since %]</h1>
-[% END %]
 
 <table border="0" width="100%" id="client_edit">
     <tr>
@@ -131,16 +123,6 @@ table#client_edit td{
                    <option value="[% country_codes.$country %]">[% country %]</option>
                 [% END %]
             [% END %]
-            </select>
-        </td>
-    </tr>
-    <tr>
-        <td class="label">VIP Client?</td>
-        <td>:
-            <select name="is_vip">
-                [% IF is_vip; yes_selected = 'selected="selected"'; ELSE; no_selected = 'selected="selected"'; END; %]
-                <option value="1" [% yes_selected %]>YES</option>
-                <option value="0" [% no_selected %]>NO</option>
             </select>
         </td>
     </tr>

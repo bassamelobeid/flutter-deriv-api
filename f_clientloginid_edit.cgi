@@ -456,7 +456,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         first_name
         phone
         secret_question
-        is_vip
         citizen
         address_1
         address_2
