@@ -247,11 +247,6 @@ subtest 'sub market' => sub {
 
 subtest 'is_OTC' => sub {
     my @OTC_symbols = create_underlying_db->get_symbols_for(market => ['forex', 'commodities', 'voldix']);
-    push @OTC_symbols,
-        create_underlying_db->get_symbols_for(
-        market    => 'indices',
-        submarket => ['otc_index', 'smart_index'],
-        );
     foreach my $symbol (@OTC_symbols) {
         my $underlying = create_underlying($symbol);
 
