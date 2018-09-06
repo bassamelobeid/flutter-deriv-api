@@ -113,7 +113,7 @@ has transaction_record => (
 sub _build_transaction_record {
     my $self = shift;
     my $id = $self->transaction_id || die 'transaction not written yet';
-    return $self->client->default_account->find_transaction({id => $id})->[0];
+    return $self->client->default_account->find_transaction(query => [id => $id])->[0];
 }
 
 has balance_after => (

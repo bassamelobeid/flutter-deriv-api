@@ -126,27 +126,8 @@ sub db {
 sub top_up {
     my ($c, $cur, $amount) = @_;
 
-    my $fdp = $c->is_first_deposit_pending;
-    my @acc = $c->account;
-    if (@acc) {
-        @acc = grep { $_->currency_code eq $cur } @acc;
-        @acc = $c->add_account({
-                currency_code => $cur,
-                is_default    => 0
-            }) unless @acc;
-    } else {
-        @acc = $c->add_account({
-            currency_code => $cur,
-            is_default    => 1
-        });
-    }
-
-    my $acc = $acc[0];
-    unless (defined $acc->id) {
-        $acc->save;
-        note 'Created account ' . $acc->id . ' for ' . $c->loginid . ' segment ' . $cur;
-    }
-
+    my $fdp  = $c->is_first_deposit_pending;
+    my $acc  = $c->account($cur);
     my ($pm) = $acc->add_payment({
         amount               => $amount,
         payment_gateway_code => "legacy_payment",
@@ -165,7 +146,7 @@ sub top_up {
         action_type   => ($amount > 0 ? "deposit" : "withdrawal"),
         quantity      => 1,
     });
-    $acc->save(cascade => 1);
+    $pm->save(cascade => 1);
     $trx->load;    # to re-read (get balance_after)
 
     BOM::Platform::Client::IDAuthentication->new(client => $c)->run_authentication
@@ -242,7 +223,7 @@ lives_ok {
 
     top_up $cl, 'USD', 5000;
 
-    isnt + ($acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+    isnt + ($acc_usd = $cl->account), 'USD', 'got USD account';
 
     my $bal;
     is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
@@ -253,7 +234,7 @@ my ($trx, $fmb, $chld, $qv1, $qv2);
 
 my $new_client = create_client;
 top_up $new_client, 'USD', 5000;
-my $new_acc_usd = $new_client->find_account(query => [currency_code => 'USD'])->[0];
+my $new_acc_usd = $new_client->account;
 
 subtest 'buy a bet', sub {
     plan tests => 11;
@@ -496,7 +477,6 @@ subtest 'insufficient balance: buy bet for 100.01 with a balance of 100', sub {
     plan tests => 7;
     lives_ok {
         top_up $cl, 'USD', 100 - $trx->{balance_after};
-        $acc_usd->load;
         is $acc_usd->balance + 0, 100, 'USD balance is now 100';
 
         my $now      = Date::Utility->new;
@@ -532,7 +512,6 @@ subtest 'insufficient balance: buy bet for 100.01 with a balance of 100', sub {
 
             subtest 'try again with an expired bet worth 100', sub {
                 top_up $cl, 'USD', 100;
-                $acc_usd->load;
                 is $acc_usd->balance + 0, 200, 'USD balance is now 200';
 
                 my $contract_expired = produce_contract({
@@ -559,7 +538,6 @@ subtest 'insufficient balance: buy bet for 100.01 with a balance of 100', sub {
                 my $error = $txn->buy(skip_validation => 1);
 
                 is $error, undef, 'no error';
-                $acc_usd->load;
                 is $acc_usd->balance + 0, 100, 'USD balance is now 100 again';
 
                 # here our balance wouldn't allow us to buy a bet for 100.01.
@@ -595,10 +573,8 @@ subtest 'insufficient balance: buy bet for 100.01 with a balance of 100', sub {
 subtest 'exactly sufficient balance: buy bet for 100 with balance of 100', sub {
     plan tests => 9;
     lives_ok {
-        $acc_usd->load;
         unless ($acc_usd->balance + 0 == 100) {
             top_up $cl, 'USD', 100 - $acc_usd->balance;
-            $acc_usd->load;
         }
         is $acc_usd->balance + 0, 100, 'USD balance is now 100';
 
@@ -638,10 +614,8 @@ subtest 'exactly sufficient balance: buy bet for 100 with balance of 100', sub {
 subtest 'max_balance validation: try to buy a bet with a balance of 100 and max_balance 99.99', sub {
     plan tests => 8;
     lives_ok {
-        $acc_usd->load;
         unless ($acc_usd->balance + 0 == 100) {
             top_up $cl, 'USD', 100 - $acc_usd->balance;
-            $acc_usd->load;
         }
         is $acc_usd->balance + 0, 100, 'USD balance is now 100';
 
@@ -692,10 +666,8 @@ subtest 'max_balance validation: try to buy a bet with a balance of 100 and max_
 subtest 'max_balance validation: try to buy a bet with a balance of 100 and max_balance 100', sub {
     plan tests => 9;
     lives_ok {
-        $acc_usd->load;
         unless ($acc_usd->balance + 0 == 100) {
             top_up $cl, 'USD', 100 - $acc_usd->balance;
-            $acc_usd->load;
         }
         is $acc_usd->balance + 0, 100, 'USD balance is now 100';
 
@@ -745,7 +717,7 @@ subtest 'max_open_bets validation', sub {
 
         top_up $cl, 'USD', 100;
 
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
@@ -820,7 +792,7 @@ subtest 'max_open_bets validation in presence of expired bets', sub {
 
         top_up $cl, 'USD', 100;
 
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
@@ -885,7 +857,6 @@ subtest 'max_open_bets validation in presence of expired bets', sub {
 
             is $exp_txn->buy(skip_validation => 1), undef, '2nd, expired bet bought';
 
-            $acc_usd->load;
             is $acc_usd->balance + 0, 98, 'USD balance is now 98';
 
             # here we have 2 open bets. One of them is expired.
@@ -913,7 +884,7 @@ subtest 'max_payout_open_bets validation', sub {
 
         top_up $cl, 'USD', 100;
 
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
@@ -993,7 +964,7 @@ subtest 'max_payout_open_bets validation', sub {
         $cl->save();
         top_up $cl, 'USD', 100;
 
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
@@ -1104,7 +1075,7 @@ subtest 'max_turnover validation', sub {
 
         top_up $cl, 'USD', 100;
 
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
@@ -1252,7 +1223,7 @@ subtest 'max_7day_turnover validation', sub {
 
         top_up $cl, 'USD', 100;
 
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
@@ -1349,7 +1320,7 @@ subtest 'max_30day_turnover validation', sub {
 
         top_up $cl, 'USD', 100;
 
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
@@ -1443,7 +1414,7 @@ subtest 'max_losses validation', sub {
 
         top_up $cl, 'USD', 100;
 
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
@@ -1575,7 +1546,7 @@ subtest 'max_7day_losses validation', sub {
 
         top_up $cl, 'USD', 100;
 
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
@@ -1707,7 +1678,7 @@ subtest 'max_30day_losses validation', sub {
 
         top_up $cl, 'USD', 100;
 
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
@@ -1840,7 +1811,7 @@ subtest 'sell_expired_contracts', sub {
 
         top_up $cl, 'USD', 1000;
 
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 1000, 'USD balance is 1000 got: ' . $bal;
@@ -1907,7 +1878,6 @@ subtest 'sell_expired_contracts', sub {
             push @unexpired_fmbids, $txn->contract_id;
         }
 
-        $acc_usd->load;
         is $acc_usd->balance + 0, 0, 'USD balance is down to 0';
 
         # First sell some particular ones by id.
@@ -1941,7 +1911,6 @@ subtest 'sell_expired_contracts', sub {
             },
             'sold 3 out of 8 remaining bets';
 
-        $acc_usd->load;
         is $acc_usd->balance + 0, 500, 'USD balance 500';
 
         for (@expired_txnids) {
@@ -1962,7 +1931,7 @@ subtest 'sell_expired_contracts', sub {
 subtest 'transaction slippage' => sub {
     my $cl = create_client;
     top_up $cl, 'USD', 1000;
-    isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+    isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
     my $bal;
     is + ($bal = $acc_usd->balance + 0), 1000, 'USD balance is 1000 got: ' . $bal;
 
@@ -2124,7 +2093,7 @@ subtest 'buy on suspend_trading|suspend_trades|suspend_buy|disabled_market|suspe
 
         top_up $cl, 'USD', 100;
 
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;

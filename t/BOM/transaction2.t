@@ -145,27 +145,8 @@ sub db {
 sub top_up {
     my ($c, $cur, $amount) = @_;
 
-    my $fdp = $c->is_first_deposit_pending;
-    my @acc = $c->account;
-    if (@acc) {
-        @acc = grep { $_->currency_code eq $cur } @acc;
-        @acc = $c->add_account({
-                currency_code => $cur,
-                is_default    => 0
-            }) unless @acc;
-    } else {
-        @acc = $c->add_account({
-            currency_code => $cur,
-            is_default    => 1
-        });
-    }
-
-    my $acc = $acc[0];
-    unless (defined $acc->id) {
-        $acc->save;
-        note 'Created account ' . $acc->id . ' for ' . $c->loginid . ' segment ' . $cur;
-    }
-
+    my $fdp  = $c->is_first_deposit_pending;
+    my $acc  = $c->account($cur);
     my ($pm) = $acc->add_payment({
         amount               => $amount,
         payment_gateway_code => "legacy_payment",
@@ -184,7 +165,7 @@ sub top_up {
         action_type   => ($amount > 0 ? "deposit" : "withdrawal"),
         quantity      => 1,
     });
-    $acc->save(cascade => 1);
+    $pm->save(cascade => 1);
     $trx->load;    # to re-read (get balance_after)
 
     BOM::Platform::Client::IDAuthentication->new(client => $c)->run_authentication
@@ -204,7 +185,7 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
 
         top_up $cl, 'USD', 5000;
 
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
@@ -328,7 +309,7 @@ subtest 'asian_daily_turnover_limit', sub {
 
         top_up $cl, 'USD', 5000;
 
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
@@ -452,7 +433,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
 
         top_up $cl, 'USD', 5000;
 
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
@@ -629,7 +610,7 @@ subtest 'smartfx_turnover_limit', sub {
 
         top_up $cl, 'USD', 5000;
 
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
@@ -740,7 +721,7 @@ subtest 'custom client limit' => sub {
 
         top_up $cl, 'USD', 5000;
 
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
@@ -831,7 +812,7 @@ subtest 'non atm turnover checks' => sub {
 
         top_up $cl, 'USD', 5000;
 
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;

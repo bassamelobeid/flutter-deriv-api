@@ -54,7 +54,7 @@ my $client = BOM::User::Client->new({loginid => 'CR2002'});
 
 my $loginid  = $client->loginid;
 my $currency = 'USD';
-my $account  = $client->default_account;
+my $account  = $client->account($currency);
 
 my $underlying = create_underlying('frxUSDJPY');
 my $contract   = produce_contract({
@@ -81,7 +81,7 @@ subtest 'Validate legal_allowed_underlyings' => sub {
     };
 
     my $cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
-    $cr->default_account;
+    $cr->account('USD');
     my $c           = produce_contract($contract_args);
     my $transaction = BOM::Transaction->new({
         client        => $cr,
@@ -107,7 +107,7 @@ subtest 'Validate legal allowed contract types' => sub {
     };
 
     my $cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
-    $cr->default_account;
+    $cr->account('USD');
     my $c           = produce_contract($contract_args);
     my $transaction = BOM::Transaction->new({
         purchase_date => $contract->date_start,

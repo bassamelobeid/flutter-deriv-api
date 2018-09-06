@@ -201,25 +201,7 @@ sub top_up {
     my ($c, $cur, $amount) = @_;
 
     my $fdp = $c->is_first_deposit_pending;
-    my @acc = $c->account;
-    if (@acc) {
-        @acc = grep { $_->currency_code eq $cur } @acc;
-        @acc = $c->add_account({
-                currency_code => $cur,
-                is_default    => 0
-            }) unless @acc;
-    } else {
-        @acc = $c->add_account({
-            currency_code => $cur,
-            is_default    => 1
-        });
-    }
-
-    my $acc = $acc[0];
-    unless (defined $acc->id) {
-        $acc->save;
-        note 'Created account ' . $acc->id . ' for ' . $c->loginid . ' segment ' . $cur;
-    }
+    my $acc = $c->account($cur);
 
     my ($pm) = $acc->add_payment({
         amount               => $amount,
@@ -239,7 +221,7 @@ sub top_up {
         action_type   => ($amount > 0 ? "deposit" : "withdrawal"),
         quantity      => 1,
     });
-    $acc->save(cascade => 1);
+    $pm->save(cascade => 1);
     $trx->load;    # to re-read (get balance_after)
 
     BOM::Platform::Client::IDAuthentication->new(client => $c)->run_authentication
@@ -252,25 +234,7 @@ sub free_gift {
     my ($c, $cur, $amount) = @_;
 
     my $fdp = $c->is_first_deposit_pending;
-    my @acc = $c->account;
-    if (@acc) {
-        @acc = grep { $_->currency_code eq $cur } @acc;
-        @acc = $c->add_account({
-                currency_code => $cur,
-                is_default    => 0
-            }) unless @acc;
-    } else {
-        @acc = $c->add_account({
-            currency_code => $cur,
-            is_default    => 1
-        });
-    }
-
-    my $acc = $acc[0];
-    unless (defined $acc->id) {
-        $acc->save;
-        note 'Created account ' . $acc->id . ' for ' . $c->loginid . ' segment ' . $cur;
-    }
+    my $acc = $c->account($cur);
 
     my ($pm) = $acc->add_payment({
         amount               => $amount,
@@ -290,7 +254,7 @@ sub free_gift {
         action_type   => ($amount > 0 ? "deposit" : "withdrawal"),
         quantity      => 1,
     });
-    $acc->save(cascade => 1);
+    $pm->save(cascade => 1);
     $trx->load;    # to re-read (get balance_after)
 
     BOM::Platform::Client::IDAuthentication->new(client => $c)->run_authentication
@@ -367,7 +331,7 @@ lives_ok {
 
     top_up $cl, 'USD', 5000;
 
-    isnt + ($acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+    isnt + ($acc_usd = $cl->account), 'USD', 'got USD account';
 
     my $bal;
     is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
@@ -378,7 +342,7 @@ my ($trx, $fmb, $chld, $qv1, $qv2);
 
 my $new_client = create_client;
 top_up $new_client, 'USD', 5000;
-my $new_acc_usd = $new_client->find_account(query => [currency_code => 'USD'])->[0];
+my $new_acc_usd = $new_client->account;
 
 subtest 'buy a bet', sub {
     plan tests => 11;
@@ -618,7 +582,7 @@ subtest 'sell_expired_contracts', sub {
 
         top_up $cl, 'USD', 1000;
 
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 1000, 'USD balance is 1000 got: ' . $bal;
@@ -655,7 +619,6 @@ subtest 'sell_expired_contracts', sub {
             push @expired_fmbids, $txn->contract_id;
         }
 
-        $acc_usd->load;
         is $acc_usd->balance + 0, 995, 'USD balance is down to 900 plus';
 
         # First sell some particular ones by id.

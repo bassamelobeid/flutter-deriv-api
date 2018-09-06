@@ -177,13 +177,16 @@ subtest 'batch-buy success + multisell', sub {
         my $cl2 = create_client;
         my $cl3 = create_client;
 
-        $clm->set_default_account('USD');
+        $clm->account('USD');
+        $cl1->account('USD');
+        $cl2->account('USD');
+        $cl3->account('USD');
         $clm->save;
         top_up $cl1, 'USD', 5000;
         top_up $cl2, 'USD', 5000;
 
-        isnt + (my $acc1 = $cl1->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account #1';
-        isnt + (my $acc2 = $cl2->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account #2';
+        isnt + (my $acc1 = $cl1->account), 'USD', 'got USD account #1';
+        isnt + (my $acc2 = $cl2->account), 'USD', 'got USD account #2';
 
         my $bal;
         is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;
@@ -435,8 +438,8 @@ subtest 'single contract fails in database', sub {
         top_up $cl1, 'USD', 5000;
         top_up $cl2, 'USD', 90;
 
-        isnt + (my $acc1 = $cl1->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account #1';
-        isnt + (my $acc2 = $cl2->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account #2';
+        isnt + (my $acc1 = $cl1->account), 'USD', 'got USD account #1';
+        isnt + (my $acc2 = $cl2->account), 'USD', 'got USD account #2';
 
         my $bal;
         is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;
@@ -531,7 +534,7 @@ subtest 'batch-buy multiple databases and datadog', sub {
         top_up $_, 'USD', 5000 for (@cl);
 
         my @acc;
-        isnt + (push @acc, $_->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account #' . @acc for (@cl);
+        isnt + (push @acc, $_->account), 'USD', 'got USD account #' . @acc for (@cl);
 
         my $contract = produce_contract({
             underlying   => $underlying,

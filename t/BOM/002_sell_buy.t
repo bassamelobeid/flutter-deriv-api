@@ -94,7 +94,6 @@ subtest 'check duplicate sell with Model' => sub {
         $txn_id = $txn->transaction_id;
     }
     'Successfully sell the bet';
-
     my $txn = $account->find_transaction(query => [id => $txn_id])->[0];
 
     my $financial_market_bet = BOM::Database::Model::FinancialMarketBet->new({

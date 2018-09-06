@@ -59,7 +59,7 @@ $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction
 my $cl = create_client('CR');
 top_up $cl, 'USD', 5000;
 my $acc_usd;
-isnt + ($acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+isnt + ($acc_usd = $cl->account), 'USD', 'got USD account';
 
 subtest 'buy CALLSPREAD' => sub {
     my $contract = produce_contract({
