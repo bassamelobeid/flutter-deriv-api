@@ -138,10 +138,12 @@ subtest 'CR withdrawal' => sub {
     # CR withdrawals in USD
     subtest 'in USD, unauthenticated' => sub {
         my $client = new_client('USD');
+        my $dbh    = $client->dbh;
         $client->smart_payment(%deposit, amount => 10500);
         throws_ok { $client->validate_payment(%withdrawal, amount => -10001) } qr/exceeds withdrawal limit/,
             'Non-Authed CR withdrawal greater than USD10K';
         lives_ok { $client->validate_payment(%withdrawal, amount => -10000) } 'Non-Authed CR withdrawal USD10K';
+
         lives_ok { $client->validate_payment(%withdrawal, amount => -9999) } 'Non-Authed CR withdrawal USD9999';
 
         subtest 'perform withdraw' => sub {
@@ -154,7 +156,7 @@ subtest 'CR withdrawal' => sub {
     # CR withdrawals in EUR
     subtest 'in EUR, unauthenticated' => sub {
         my $client = new_client('EUR');
-        $client->smart_payment(%deposit_eur, amount => 10500);
+        my $var = $client->smart_payment(%deposit_eur, amount => 10500);
         throws_ok { $client->validate_payment(%withdrawal_eur, amount => -10001) } qr/exceeds withdrawal limit/,
             'Non-Authed CR withdrawal greater than USD 10K';
         lives_ok { $client->validate_payment(%withdrawal_eur, amount => -8411.84) } 'Non-Authed CR withdrawal USD 10K';
@@ -169,7 +171,7 @@ subtest 'CR withdrawal' => sub {
     # CR withdrawals in BTC
     subtest 'in BTC, unauthenticated' => sub {
         my $client = new_client('BTC');
-        $client->smart_payment(%deposit_btc, amount => 3.00000000);
+        my $var = $client->smart_payment(%deposit_btc, amount => 3.00000000);
         throws_ok { $client->validate_payment(%withdrawal_btc, amount => -2) } qr/exceeds withdrawal limit/,
             'Non-Authed CR withdrawal greater than USD 10K';
         lives_ok { $client->validate_payment(%withdrawal_btc, amount => -1.81818181) } 'Non-Authed CR withdrawal USD 10K';
@@ -248,8 +250,7 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
     );
     $client->status->clear('cashier_locked');    # first-deposit will cause this in non-CR clients!
 
-    ok $client->default_account->load->balance == $gbp_amount,
-        'Successfully credited client; no other amount has been credited to GBP account segment.';
+    ok $client->default_account->balance == $gbp_amount, 'Successfully credited client; no other amount has been credited to GBP account segment.';
 
     my %wd_gbp = (
         %withdrawal,
@@ -323,7 +324,7 @@ subtest 'Total EUR2000 MLT limitation.' => sub {
 
         $client->smart_payment(%deposit_eur, amount => 10000);
         $client->status->clear('cashier_locked');    # first-deposit will cause this in non-CR clients!
-        ok $client->default_account->load->balance == 10000, 'Correct balance';
+        ok $client->default_account->balance == 10000, 'Correct balance';
     };
 
     # Test for unauthenticated withdrawals
@@ -370,14 +371,14 @@ subtest 'Frozen bonus.' => sub {
     _apply_promo_amount($client, 1);
 
     my $account = $client->default_account;
-    cmp_ok($account->load->balance, '==', 20, 'client\'s balance is USD20 initially.');
+    cmp_ok($account->balance, '==', 20, 'client\'s balance is USD20 initially.');
 
     my %wd_bonus = (%withdrawal, amount => -$account->balance);
     throws_ok { $client->validate_payment(%wd_bonus) } qr/includes frozen/, 'client not allowed to withdraw frozen bonus.';
 
     $client->smart_payment(%deposit, amount => 300);
 
-    cmp_ok($account->load->balance, '==', 320, 'client\'s balance is USD320 after promo plus 300 credit.');
+    cmp_ok($account->balance, '==', 320, 'client\'s balance is USD320 after promo plus 300 credit.');
 
     ok $client->validate_payment(%withdrawal, amount => -300), 'client is allowed to withdraw entire non-frozen part of balance';
 
@@ -392,17 +393,16 @@ subtest 'Frozen bonus.' => sub {
 
     # gift was rescinded:
     _apply_promo_amount($client, -1);
-    cmp_ok($account->load->balance, '==', 200, 'Bonus has been rescinded.');
+    cmp_ok($account->balance, '==', 200, 'Bonus has been rescinded.');
 
-    lives_ok { $client->validate_payment(%withdrawal, amount => -$account->load->balance) }
-    'Full balance can be withdrawn after bonus has been rescinded.';
+    lives_ok { $client->validate_payment(%withdrawal, amount => -$account->balance) } 'Full balance can be withdrawn after bonus has been rescinded.';
 
     # check that there are no rounding errors (SWAT-2078)
     ok 3.2 > 23.2 - 20, "Decimal arithmetic error is possible";
     ($client = new_client('USD'))->promo_code('BOM2009');
     _apply_promo_amount($client, 1);
     $account = $client->default_account;
-    cmp_ok($account->load->balance, '==', 20, 'Client\'s balance is USD20 initially again.');
+    cmp_ok($account->balance, '==', 20, 'Client\'s balance is USD20 initially again.');
 
     $client->smart_payment(%deposit, amount => 3.2);
     ok $client->validate_payment(%withdrawal, amount => -3.2), 'Can withdraw an unfrozen amount that may raise a decimal arithmetic error';
@@ -414,7 +414,7 @@ sub _apply_promo_amount {
     my $direction = shift;
 
     my $account     = $client->default_account;
-    my $pre_balance = $account->load->balance;
+    my $pre_balance = $account->balance;
 
     $client->promo_code_status('CLAIM');
     my $pc = $client->client_promo_code->promotion;
@@ -427,7 +427,7 @@ sub _apply_promo_amount {
         remark       => 'promo',
         payment_type => 'free_gift'
     );
-    my $post_balance = $account->load->balance;
+    my $post_balance = $account->balance;
     cmp_ok $post_balance, '==', $pre_balance + $amount, "balance $post_balance after promo code credit";
 }
 

@@ -29,7 +29,7 @@ sub validate_payment {
 
     my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
     my $account = $self->default_account || die "no account\n";
-    my $accbal  = $account->load->balance;                        # forces db-read to get very latest
+    my $accbal  = $account->balance;
     my $acccur  = $account->currency_code;
     my $absamt  = abs($amount);
 
@@ -85,14 +85,7 @@ sub validate_payment {
         # for CR & CH only check for lifetime limits (in client's currency)
         if ($lc =~ /^(?:costarica|champion)$/) {
             # Withdrawals to date
-            my $wd_epoch = $account->find_payment(
-                select => '-sum(amount) as amount',
-                query  => [
-                    amount               => {lt => 0},
-                    payment_gateway_code => {ne => 'currency_conversion_transfer'}
-                ],
-                )->[0]->amount
-                || 0;
+            my $wd_epoch    = $account->total_withdrawals();
             my $lc_currency = $lc_limits->{currency};
 
             # If currency is not the same as the lc's currency, convert withdrawals so far and withdrawal amount
@@ -116,7 +109,7 @@ sub validate_payment {
             }
         } else {
             my $for_days = $lc_limits->{for_days};
-            my $since    = Date::Utility->new->minus_time_interval("${for_days}d")->datetime_yyyymmdd_hhmmss;
+            my $since    = Date::Utility->new->minus_time_interval("${for_days}d");
 
             # Obtains limit in EUR
             my $wd_eur_since_limit = $lc_limits->{limit_for_days};
@@ -127,18 +120,10 @@ sub validate_payment {
                 payment_gateway_code => {ne => 'currency_conversion_transfer'});
 
             # Obtains payments over the lifetime of the account
-            my $wd_epoch = $account->find_payment(
-                select => '-sum(amount) as amount',
-                query  => [%wd_query],
-                )->[0]->amount
-                || 0;
+            my $wd_epoch = $account->total_withdrawals();
 
             # Obtains payments over the last x days
-            my $wd_since = $account->find_payment(
-                select => '-sum(amount) as amount',
-                query  => [%wd_query, payment_time => {gt => $since}],
-                )->[0]->amount
-                || 0;
+            my $wd_since = $account->total_withdrawals($since);
 
             # Converts payments over lifetime of the account and the last x days into EUR
             my $wd_eur_since = convert_currency($wd_since, $currency, 'EUR');
@@ -254,6 +239,7 @@ sub payment_legacy_payment {
     my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
     my $account = $self->set_default_account($currency);
 
+    die "cannot deal in $currency; clients currency is " . $account->currency_code if $account->currency_code ne $currency;
     my ($payment) = $account->add_payment({
         amount               => $amount,
         payment_gateway_code => 'legacy_payment',
@@ -274,7 +260,7 @@ sub payment_legacy_payment {
         source        => $source,
         ($transaction_time ? (transaction_time => $transaction_time) : ()),
     });
-    $account->save(cascade => 1);
+    $payment->save(cascade => 1);
     BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'legacy',
         currency      => $currency,
@@ -381,10 +367,8 @@ sub payment_account_transfer {
         source        => $source,
     });
 
-    $fmAccount->save(cascade => 1);
     $fmPayment->save(cascade => 1);
 
-    $toAccount->save(cascade => 1);
     $toPayment->save(cascade => 1);
 
     return {transaction_id => $fmTrx->id};
@@ -429,7 +413,7 @@ sub payment_doughflow {
         quantity      => 1,
         source        => $source,
     });
-    $account->save(cascade => 1);
+    $payment->save(cascade => 1);
 
     BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'doughflow',
@@ -456,7 +440,7 @@ sub payment_free_gift {
     my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
     my $account = $self->set_default_account($currency);
 
-    my ($payment) = $account->add_payment({
+    my $payment = $account->add_payment({
         amount               => $amount,
         payment_gateway_code => 'free_gift',
         payment_type_code    => $payment_type,
@@ -474,7 +458,7 @@ sub payment_free_gift {
         quantity      => 1,
         source        => $source,
     });
-    $account->save(cascade => 1);
+    $payment->save(cascade => 1);
     $trx->load;    # to re-read 'now' timestamps
 
     return $trx;
@@ -511,7 +495,7 @@ sub payment_payment_fee {
         quantity      => 1,
         source        => $source,
     });
-    $account->save(cascade => 1);
+    $payment->save(cascade => 1);
     $trx->load;    # to re-read 'now' timestamps
 
     return $trx;
@@ -551,7 +535,7 @@ sub payment_bank_wire {
         quantity      => 1,
         source        => $source,
     });
-    $account->save(cascade => 1);
+    $payment->save(cascade => 1);
     BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'bankwire',
         currency      => $currency,
@@ -596,7 +580,7 @@ sub payment_affiliate_reward {
         quantity      => 1,
         source        => $source,
     });
-    $account->save(cascade => 1);
+    $payment->save(cascade => 1);
     $trx->load;    # to re-read 'now' timestamps
 
     if (exists $self->{mlt_affiliate_first_deposit} and $self->{mlt_affiliate_first_deposit}) {
@@ -647,7 +631,7 @@ sub payment_western_union {
         quantity      => 1,
         source        => $source,
     });
-    $account->save(cascade => 1);
+    $payment->save(cascade => 1);
     BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'westernunion',
         currency      => $currency,
@@ -691,7 +675,7 @@ sub payment_arbitrary_markup {
         quantity      => 1,
         source        => $source,
     });
-    $account->save(cascade => 1);
+    $payment->save(cascade => 1);
     $trx->load;    # to re-read 'now' timestamps
 
     return $trx;

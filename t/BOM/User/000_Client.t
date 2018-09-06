@@ -94,7 +94,7 @@ subtest 'prepare' => sub {
 
     lives_ok {
         my $client_CR = BOM::User::Client->new({loginid => 'CR656234'});
-        my $account = $client_CR->set_default_account('USD');
+        my $account = $client_CR->account('USD');
     }
     'New client and account created ok';
 
@@ -145,6 +145,32 @@ subtest 'Login to self timeouted client' => sub {
         $client->save;
     }
     'create client';
+};
+
+subtest 'account ' => sub {
+
+    my $new_email = 'test' . rand . '@binary.com';
+    my $client    = ClientAccountTestHelper::create_client({
+        broker_code => 'CR',
+        email       => $new_email,
+    });
+
+    is($client->account, undef, ' No account set so should return undef');
+
+    $client->account('JYN');
+    is($client->account->currency_code, 'JYN', 'Correct Currency Code on Account');
+
+    #set it again shouldn't cause any changes or errors even with a different currency
+    $client->account('USD');
+    is($client->account->currency_code, 'JYN', 'Correct Currency Code on Account');
+
+    #Account is already set
+    my $loginid = $client->loginid;
+    $client = undef;
+    my $existing_client = BOM::User::Client->new({loginid => $loginid});
+
+    is($existing_client->account->currency_code, 'JYN', 'Existing client has account');
+
 };
 
 done_testing;
