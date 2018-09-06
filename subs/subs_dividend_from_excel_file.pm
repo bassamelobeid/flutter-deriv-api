@@ -34,11 +34,12 @@ sub process_dividend {
 sub save_dividends {
     my ($data) = @_;
 
-    my %otc_indices = map { $_ => 1 } create_underlying_db()->get_symbols_for(
+    # This will be complete remove once we have all the cash indices closed
+    my %otc_indices =
+        map { $_ => 1 } grep { create_underlying($_)->submarket->is_OTC } create_underlying_db->get_symbols_for(
         market            => 'indices',
-        submarket         => 'otc_index',
         contract_category => 'ANY'
-    );
+        );
 
     foreach my $symbol (keys %{$data}) {
         my $rates = $data->{$symbol}->{dividend_yields};
