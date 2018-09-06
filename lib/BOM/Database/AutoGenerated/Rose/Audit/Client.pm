@@ -46,7 +46,6 @@ __PACKAGE__->meta->setup(
         custom_max_acbal                         => { type => 'integer' },
         custom_max_daily_turnover                => { type => 'integer' },
         custom_max_payout                        => { type => 'integer' },
-        vip_since                                => { type => 'timestamp' },
         payment_agent_withdrawal_expiration_date => { type => 'date' },
         first_time_login                         => { type => 'boolean', default => 'true' },
         source                                   => { type => 'varchar', length => 50 },
