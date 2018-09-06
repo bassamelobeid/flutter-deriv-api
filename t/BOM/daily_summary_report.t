@@ -48,7 +48,7 @@ foreach my $date ($today, $next_day) {
 
 my $cr = create_client('CR');
 top_up($cr, 'USD', 5000);
-my $acc_usd = $cr->find_account(query => [currency_code => 'USD'])->[0];
+my $acc_usd    = $cr->account;
 my $mocked_dsr = Test::MockModule->new('BOM::DailySummaryReport');
 $mocked_dsr->mock(
     'get_client_details',

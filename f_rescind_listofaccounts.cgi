@@ -64,7 +64,7 @@ foreach my $loginID (split(/,/, $listaccounts)) {
                 next CLIENT;
             }
             # recalc balance
-            $balance = $client->default_account->load->balance;
+            $balance = $client->default_account->balance;
         }
 
         if ($balance > 0) {

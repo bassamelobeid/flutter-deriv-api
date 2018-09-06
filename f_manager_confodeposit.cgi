@@ -300,9 +300,9 @@ Path::Tiny::path(BOM::Backoffice::Config::config()->{log}->{deposit})->append_ut
 # Print confirmation
 Bar("$ttype confirmed");
 my $success_message;
-my $new_bal = $acc->load && $acc->balance;
+my $new_bal = $acc->balance;
 if ($ttype eq 'TRANSFER') {
-    my $toAcc = $toClient->default_account->load;
+    my $toAcc = $toClient->default_account;
     my $toBal = $toAcc->balance;
     $success_message = qq[Transfer $curr$amount from $encoded_loginID to $encoded_toLoginID confirmed.<br/>
                         For $encoded_loginID new account balance is $curr$new_bal.<br/>
