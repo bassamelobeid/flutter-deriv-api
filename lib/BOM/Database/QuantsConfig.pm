@@ -77,7 +77,6 @@ has active_landing_company => (
             iom         => 1,
             malta       => 1,
             maltainvest => 1,
-            japan       => 1,
         };
     });
 
@@ -96,10 +95,12 @@ sub _build_broker_code_mapper {
     foreach my $lc_list (values %list_by_dbname) {
         # the idea is to map the first broker code from the first landing company list which connect to the same client database.
         my $broker_code;
-        foreach my $lc (@$lc_list) {
-            $broker_code = LandingCompany::Registry::get($lc)->{broker_codes}->[0] unless (defined $broker_code);
-            $map{$lc} = $broker_code;
+        foreach my $lc_name (@$lc_list) {
+            my $lc = LandingCompany::Registry::get($lc_name) or next;
+            $broker_code //= $lc->{broker_codes}->[0];
+            last if $broker_code;
         }
+        $map{$_} = $broker_code for @$lc_list;
     }
 
     return \%map;
