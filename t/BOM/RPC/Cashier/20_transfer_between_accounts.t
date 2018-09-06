@@ -418,7 +418,7 @@ subtest $method => sub {
             amount   => -2000,
             remark   => 'free gift',
         );
-        ok $client_mlt->default_account->load->balance == 2990, '-2000';
+        ok $client_mlt->default_account->balance == 2990, '-2000';
 
         $params->{args} = {
             "account_from" => $client_mlt->loginid,
@@ -472,7 +472,7 @@ subtest 'transfer with fees' => sub {
         amount   => 1,
         remark   => 'free gift',
     );
-    cmp_ok $client_cr_pa_btc->default_account->load->balance, '==', 1, 'correct balance';
+    cmp_ok $client_cr_pa_btc->default_account->balance, '==', 1, 'correct balance';
 
     $client_cr_usd->set_default_account('USD');
     $client_cr_btc->set_default_account('BTC');
@@ -496,7 +496,7 @@ subtest 'transfer with fees' => sub {
         remark   => 'free gift',
     );
 
-    cmp_ok $client_cr_usd->default_account->load->balance, '==', 1000, 'correct balance';
+    cmp_ok $client_cr_usd->default_account->balance, '==', 1000, 'correct balance';
 
     $client_cr_btc->payment_free_gift(
         currency => 'BTC',
@@ -504,7 +504,7 @@ subtest 'transfer with fees' => sub {
         remark   => 'free gift',
     );
 
-    cmp_ok $client_cr_btc->default_account->load->balance, '==', 1, 'correct balance';
+    cmp_ok $client_cr_btc->default_account->balance, '==', 1, 'correct balance';
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_usd->loginid, 'test token');
     my $amount = 10;
@@ -521,10 +521,9 @@ subtest 'transfer with fees' => sub {
     # fiat to crypto to is 1% and exchange rate is 4000 for BTC
     my $fee_percent     = 1;
     my $transfer_amount = ($amount - $amount * $fee_percent / 100) / 4000;
-    my $current_balance = $client_cr_btc->default_account->load->balance;
+    my $current_balance = $client_cr_btc->default_account->balance;
     cmp_ok $current_balance, '==', 1 + $transfer_amount, 'correct balance after transfer including fees';
-    cmp_ok $client_cr_usd->default_account->load->balance, '==', 1000 - $amount,
-        'non-pa to non-pa(USD to BTC), correct balance, exact amount deducted';
+    cmp_ok $client_cr_usd->default_account->balance, '==', 1000 - $amount, 'non-pa to non-pa(USD to BTC), correct balance, exact amount deducted';
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_btc->loginid, 'test token');
     $amount          = 0.1;
@@ -539,8 +538,8 @@ subtest 'transfer with fees' => sub {
 
     # crypto to fiat is 1%
     $transfer_amount = ($amount - $amount * $fee_percent / 100) * 4000;
-    cmp_ok $client_cr_usd->default_account->load->balance, '==', 990 + $transfer_amount, 'correct balance after transfer including fees';
-    cmp_ok $client_cr_btc->default_account->load->balance, '==', $current_balance - $amount,
+    cmp_ok $client_cr_usd->default_account->balance, '==', 990 + $transfer_amount, 'correct balance after transfer including fees';
+    cmp_ok $client_cr_btc->default_account->balance, '==', $current_balance - $amount,
         'non-pa to non-pa (BTC to USD), correct balance after transfer including fees';
 
     $amount = 0.1;
@@ -552,8 +551,8 @@ subtest 'transfer with fees' => sub {
         "amount"       => $amount
     };
 
-    my $previous_amount     = $client_cr_pa_btc->default_account->load->balance;
-    my $previous_amount_usd = $client_cr_usd->default_account->load->balance;
+    my $previous_amount     = $client_cr_pa_btc->default_account->balance;
+    my $previous_amount_usd = $client_cr_usd->default_account->balance;
 
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{client_to_loginid}, $client_cr_usd->loginid, 'Transaction successful';
@@ -561,8 +560,8 @@ subtest 'transfer with fees' => sub {
     # crypto to fiat is 1% and fiat to crypto is 1%
     $fee_percent     = 1;
     $transfer_amount = ($amount - $amount * $fee_percent / 100) * 4000;
-    cmp_ok $client_cr_pa_btc->default_account->load->balance, '==', $previous_amount - $amount, 'correct balance after transfer including fees';
-    $current_balance = $client_cr_usd->default_account->load->balance;
+    cmp_ok $client_cr_pa_btc->default_account->balance, '==', $previous_amount - $amount, 'correct balance after transfer including fees';
+    $current_balance = $client_cr_usd->default_account->balance;
     cmp_ok $current_balance, '==', $previous_amount_usd + $transfer_amount,
         'unauthorised pa to non-pa transfer (BTC to USD) correct balance after transfer including fees';
 
@@ -579,15 +578,15 @@ subtest 'transfer with fees' => sub {
         "amount"       => $amount
     };
 
-    $previous_amount_usd = $client_cr_usd->default_account->load->balance;
-    my $previous_amount_btc = $client_cr_pa_btc->default_account->load->balance;
+    $previous_amount_usd = $client_cr_usd->default_account->balance;
+    my $previous_amount_btc = $client_cr_pa_btc->default_account->balance;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{client_to_loginid}, $client_cr_pa_btc->loginid, 'Transaction successful';
 
     $fee_percent     = 1;
     $transfer_amount = ($amount - $amount * $fee_percent / 100) / 4000;
-    cmp_ok $client_cr_usd->default_account->load->balance, '==', $previous_amount_usd - $amount, 'correct balance after transfer including fees';
-    $current_balance = $client_cr_pa_btc->default_account->load->balance;
+    cmp_ok $client_cr_usd->default_account->balance, '==', $previous_amount_usd - $amount, 'correct balance after transfer including fees';
+    $current_balance = $client_cr_pa_btc->default_account->balance;
 
     # tried the cmp below, however it does not work i think it may be caused by implementation of cmp_ok
     # cmp_ok( ($current_balance - 0), '==', (0 + $previous_amount_btc + $transfer_amount), 'non-pa to unauthorised pa transfer (USD to BTC) correct balance after transfer including fees');
@@ -632,21 +631,21 @@ subtest 'transfer with no fee' => sub {
         remark   => 'free gift',
     );
 
-    cmp_ok $client_cr_pa_btc->default_account->load->balance + 0, '==', 1, 'correct balance';
+    cmp_ok $client_cr_pa_btc->default_account->balance + 0, '==', 1, 'correct balance';
 
     $client_cr_pa_usd->payment_free_gift(
         currency => 'USD',
         amount   => 1000,
         remark   => 'free gift',
     );
-    cmp_ok $client_cr_pa_usd->default_account->load->balance + 0, '==', 1000, 'correct balance';
+    cmp_ok $client_cr_pa_usd->default_account->balance + 0, '==', 1000, 'correct balance';
 
     $client_cr_usd->payment_free_gift(
         currency => 'USD',
         amount   => 1000,
         remark   => 'free gift',
     );
-    cmp_ok $client_cr_usd->default_account->load->balance + 0, '==', 1000, 'correct balance';
+    cmp_ok $client_cr_usd->default_account->balance + 0, '==', 1000, 'correct balance';
 
     my $pa_args = {
         payment_agent_name    => 'Joe',
@@ -679,30 +678,29 @@ subtest 'transfer with no fee' => sub {
         "amount"       => $amount
     };
 
-    my $previous_to_amt = $client_cr_usd->default_account->load->balance;
-    my $previous_fm_amt = $client_cr_pa_btc->default_account->load->balance;
+    my $previous_to_amt = $client_cr_usd->default_account->balance;
+    my $previous_fm_amt = $client_cr_pa_btc->default_account->balance;
 
     my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{client_to_loginid}, $client_cr_usd->loginid, 'Transaction successful';
 
     my $fee_percent     = 0;
     my $transfer_amount = ($amount - $amount * $fee_percent / 100) * 4000;
-    cmp_ok $client_cr_pa_btc->default_account->load->balance, '==', $previous_fm_amt - $amount, 'correct balance after transfer excluding fees';
-    cmp_ok $client_cr_usd->default_account->load->balance, '==', $previous_to_amt + $transfer_amount,
+    cmp_ok $client_cr_pa_btc->default_account->balance, '==', $previous_fm_amt - $amount, 'correct balance after transfer excluding fees';
+    cmp_ok $client_cr_usd->default_account->balance, '==', $previous_to_amt + $transfer_amount,
         'authorised pa to non-pa transfer (BTC to USD), no fees will be charged';
 
     sleep(2);
     $params->{args}->{account_to} = $client_cr_pa_usd->loginid;
 
-    $previous_fm_amt = $client_cr_pa_btc->default_account->load->balance;
-    $previous_to_amt = $client_cr_pa_usd->default_account->load->balance;
+    $previous_fm_amt = $client_cr_pa_btc->default_account->balance;
+    $previous_to_amt = $client_cr_pa_usd->default_account->balance;
     $result          = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{client_to_loginid}, $client_cr_pa_usd->loginid, 'Transaction successful';
 
     $transfer_amount = ($amount - $amount * $fee_percent / 100) * 4000;
-    cmp_ok($client_cr_pa_btc->default_account->load->balance + 0, '==', ($previous_fm_amt - $amount),
-        'correct balance after transfer excluding fees');
-    cmp_ok $client_cr_pa_usd->default_account->load->balance + 0, '==', $previous_to_amt + $transfer_amount,
+    cmp_ok($client_cr_pa_btc->default_account->balance + 0, '==', ($previous_fm_amt - $amount), 'correct balance after transfer excluding fees');
+    cmp_ok $client_cr_pa_usd->default_account->balance + 0, '==', $previous_to_amt + $transfer_amount,
         'authorised pa to unauthrised pa (BTC to USD), one pa is authorised so no transaction fee charged';
 
     sleep(2);
@@ -715,16 +713,16 @@ subtest 'transfer with no fee' => sub {
         "amount"       => $amount
     };
 
-    $previous_to_amt = $client_cr_pa_btc->default_account->load->balance;
-    $previous_fm_amt = $client_cr_usd->default_account->load->balance;
+    $previous_to_amt = $client_cr_pa_btc->default_account->balance;
+    $previous_fm_amt = $client_cr_usd->default_account->balance;
 
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{client_to_loginid}, $client_cr_pa_btc->loginid, 'Transaction successful';
 
     $fee_percent     = 0;
     $transfer_amount = ($amount - $amount * $fee_percent / 100) / 4000;
-    cmp_ok $client_cr_usd->default_account->load->balance, '==', $previous_fm_amt - $amount, 'correct balance after transfer excluding fees';
-    cmp_ok $client_cr_pa_btc->default_account->load->balance, '==', $previous_to_amt + $transfer_amount,
+    cmp_ok $client_cr_usd->default_account->balance, '==', $previous_fm_amt - $amount, 'correct balance after transfer excluding fees';
+    cmp_ok $client_cr_pa_btc->default_account->balance, '==', $previous_to_amt + $transfer_amount,
         'non pa to authorised pa transfer (USD to BTC), no fees will be charged';
 
 };

@@ -1,6 +1,5 @@
 use strict;
 use warnings;
-
 use Guard;
 use Test::Most;
 use Test::Mojo;
@@ -588,7 +587,7 @@ subtest 'deposit' => sub {
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
 
     # assert that account balance is now 1000-180 = 820
-    cmp_ok $test_client->default_account->load->balance, '==', 820, "Correct balance after deposited to mt5 account";
+    cmp_ok $test_client->default_account->balance, '==', 820, "Correct balance after deposited to mt5 account";
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
@@ -630,7 +629,7 @@ subtest 'withdrawal' => sub {
     $c->call_ok($method, $params)->has_no_error('no error for mt5_withdrawal');
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
 
-    cmp_ok $test_client->default_account->load->balance, '==', 820 + 150, "Correct balance after withdrawal";
+    cmp_ok $test_client->default_account->balance, '==', 820 + 150, "Correct balance after withdrawal";
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 

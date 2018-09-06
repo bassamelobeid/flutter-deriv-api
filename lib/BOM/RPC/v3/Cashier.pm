@@ -1176,7 +1176,6 @@ rpc topup_virtual => sub {
     my $params = shift;
 
     my ($client, $source) = @{$params}{qw/client source/};
-
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;
         BOM::RPC::v3::Utility::create_error({
@@ -1185,12 +1184,10 @@ rpc topup_virtual => sub {
             ($message) ? (message => $message) : (),
         });
     };
-
     # ERROR CHECKS
     if (!$client->is_virtual) {
         return $error_sub->(localize('Sorry, this feature is available to virtual accounts only'));
     }
-
     my $currency              = $client->default_account->currency_code;
     my $min_topup_bal         = BOM::Config::payment_agent()->{minimum_topup_balance};
     my $minimum_topup_balance = $min_topup_bal->{$currency} // $min_topup_bal->{DEFAULT};
@@ -1201,11 +1198,9 @@ rpc topup_virtual => sub {
                 'You can only request additional funds if your virtual account balance falls below [_1] [_2].',
                 $currency, formatnumber('amount', $currency, $minimum_topup_balance)));
     }
-
     if (scalar($client->open_bets)) {
         return $error_sub->(localize('Please close out all open positions before requesting additional funds.'));
     }
-
     # CREDIT HIM WITH THE MONEY
     my ($curr, $amount) = $client->deposit_virtual_funds($source, localize('Virtual money credit to account'));
 

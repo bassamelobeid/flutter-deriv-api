@@ -95,7 +95,6 @@ my $tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 my $amount = 10000;
-
 # start test topup_virtual
 my $method = 'topup_virtual';
 my $params = {
@@ -104,7 +103,6 @@ my $params = {
 };
 
 $c->call_ok($method, $params)->has_error->error_code_is('InvalidToken')->error_message_is('The token is invalid.', 'invalid token');
-
 $test_client->status->set('disabled', 1, 'test status');
 $params->{token} = $token;
 $c->call_ok($method, $params)->has_error->error_code_is('DisabledClient')->error_message_is('This account is unavailable.', 'invalid token');
@@ -120,7 +118,6 @@ $c->call_ok($method, $params)->has_no_error->result_is_deeply({
     },
     'topup account successfully'
 );
-$account->load;
 my $balance = $account->balance + 0;
 is($old_balance + $amount, $balance, 'balance is right');
 $old_balance = $balance;
@@ -135,7 +132,6 @@ $test_client_vr->payment_legacy_payment(
     payment_type => 'virtual_credit',
     remark       => 'virtual money withdrawal'
 );
-$account->load;
 $balance = $account->balance + 0;
 is($balance, $limit + 1, 'balance is a little less than the value of limit');
 $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')
@@ -147,7 +143,6 @@ $test_client_vr->payment_legacy_payment(
     payment_type => 'virtual_credit',
     remark       => 'virtual money withdrawal'
 );
-$account->load;
 $balance = $account->balance + 0;
 is($balance, $limit, 'balance is equal to limit');
 $c->call_ok($method, $params)->has_no_error->result_is_deeply({
@@ -156,7 +151,6 @@ $c->call_ok($method, $params)->has_no_error->result_is_deeply({
     },
     'topup account successfully'
 );
-$account->load;
 $balance = $account->balance + 0;
 is($balance, $limit + $amount, 'balance is topuped');
 
@@ -167,7 +161,6 @@ $test_client_vr->payment_legacy_payment(
     payment_type => 'virtual_credit',
     remark       => 'virtual money withdrawal'
 );
-$account->load;
 $balance = $account->balance + 0;
 is($balance, $limit, 'balance is equal to limit');
 my $price         = 100;
@@ -192,7 +185,6 @@ my $txn_data = {
 };
 my $txn = BOM::Transaction->new($txn_data);
 is($txn->buy(skip_validation => 1), undef, 'buy contract without error');
-$account->load;
 $balance = $account->balance + 0;
 is($balance, $limit - $price, 'balance is reduced for buying contract');
 $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')

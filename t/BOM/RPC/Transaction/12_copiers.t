@@ -172,7 +172,7 @@ subtest 'Copy trading statistics with no deposits for the current month' => sub 
 
     restore_time();
 
-    my $account = $client->{account}[0];
+    my $account = $client->account;
     buy_one_bet($account);
 
     my $now   = Date::Utility->new();
@@ -212,7 +212,7 @@ sub copy_trading_test_routine {
         top_up_account_and_check($trader, $trader_acc_mapper, 'USD', $opening_balance);
         top_up_account_and_check($copier, $copier_acc_mapper, 'USD', 1);
 
-        isnt($trader_acc = $trader->find_account(query => [currency_code => 'USD'])->[0], undef, 'got USD account');
+        isnt($trader_acc = $trader->account(), undef, 'got USD account');
 
         start_copy_trade($trader, $copier);
     };

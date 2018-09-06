@@ -82,7 +82,7 @@ rpc "new_account_virtual",
             message_to_client => BOM::RPC::v3::Utility::error_map()->{$acc->{error}}}) if $acc->{error};
 
     my $client  = $acc->{client};
-    my $account = $client->default_account->load;
+    my $account = $client->default_account;
     my $user    = $acc->{user};
     $user->add_login_history(
         action      => 'login',

@@ -190,10 +190,10 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
     subtest "paymentagent_transfer $test_currency" => sub {
 
         $test = 'Client account starts with a zero balance';
-        is($Alice->default_account->load->balance, 0, $test) or BAIL_OUT $test;
+        is($Alice->default_account->balance, 0, $test) or BAIL_OUT $test;
 
         $test = 'Transfer_to account starts with a zero balance';
-        is($Bob->default_account->load->balance, 0, $test) or BAIL_OUT $test;
+        is($Bob->default_account->balance, 0, $test) or BAIL_OUT $test;
 
         ## In rough order of the code in Cashier.pm
 
@@ -346,10 +346,10 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         is($res->{client_to_loginid}, $Bob_id, $test);
 
         $test = 'After transfer with dry_run, client account has an unchanged balance';
-        is($Alice->default_account->load->balance, 0, $test);
+        is($Alice->default_account->balance, 0, $test);
 
         $test = 'After transfer with dry_run, transfer_to client account has an unchanged balance';
-        is($Bob->default_account->load->balance, 0, $test);
+        is($Bob->default_account->balance, 0, $test);
 
         $test = "Transfer fails if over maximum amount per day (USD $MAX_DAILY_TRANSFER_AMOUNT_USD)";
         ## From this point on, we cannot have dry run enabled
@@ -380,7 +380,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         top_up $Alice, $test_currency => $Alice_balance;
         ## This is used to keep a running tab of amount transferred:
         my $Alice_transferred = 0;
-        is($Alice->default_account->load->balance, $Alice_balance, "$test ($test_currency $Alice_balance)");
+        is($Alice->default_account->balance, $Alice_balance, "$test ($test_currency $Alice_balance)");
 
         $test = 'Transfer fails if argument not passed to payment_account_transfer';
         for my $arg (qw/ toClient currency amount Alice Bob /) {
@@ -578,7 +578,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         my $sth_insert_client_promo = $clientdbh->prepare($SQL);
         $sth_insert_client_promo->execute($Alice_id, 'TEST1234', 'NOT CLAIMED', 'PA6-5000');
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        my $bal = $Alice->default_account->load->balance;
+        my $bal = $Alice->default_account->balance;
         is($res->{error}{message_to_client}, "Withdrawal is $test_currency $test_amount but balance $bal includes frozen bonus $bal.", $test);
         $SQL = 'DELETE FROM betonmarkets.client_promo_code WHERE client_loginid = ?';
         $clientdbh->do($SQL, undef, $Alice_id);
@@ -1065,7 +1065,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         ## (validate_payment)
 
         $test = 'Withdrawal fails if amount exceeds client balance';
-        my $Alice_balance = $Alice->default_account->load->balance;
+        my $Alice_balance = $Alice->default_account->balance;
         my $alt_amount    = $test_amount * 2;
         $testargs->{args}{amount} = $alt_amount;
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);

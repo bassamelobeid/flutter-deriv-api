@@ -1110,7 +1110,6 @@ async_rpc mt5_deposit => sub {
                     quantity      => 1,
                     source        => $source,
                 });
-                $account->save(cascade => 1);
                 $payment->save(cascade => 1);
             }
             catch {
@@ -1236,7 +1235,6 @@ async_rpc mt5_withdrawal => sub {
                             quantity      => 1,
                             source        => $source,
                         });
-                        $account->save(cascade => 1);
                         $payment->save(cascade => 1);
 
                         return Future->done({

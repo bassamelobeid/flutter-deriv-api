@@ -98,7 +98,7 @@ subtest 'buy' => sub {
 
     delete $params->{contract_parameters}{barrier};
 
-    my $old_balance = $client->default_account->load->balance;
+    my $old_balance = $client->default_account->balance;
     $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
     my @expected_keys = (qw(
             transaction_id
@@ -113,7 +113,7 @@ subtest 'buy' => sub {
             stash
     ));
     is_deeply([sort keys %$result], [sort @expected_keys], 'result keys is ok');
-    my $new_balance = formatnumber('amount', 'USD', $client->default_account->load->balance);
+    my $new_balance = formatnumber('amount', 'USD', $client->default_account->balance);
     is($new_balance, $result->{balance_after}, 'balance is changed');
     ok($old_balance - $new_balance - $result->{buy_price} < 0.0001, 'balance reduced');
     like($result->{shortcode}, qr/RESETCALL_R_50_100_\d{10}_\d{10}_S0P_0/, 'shortcode is correct');
