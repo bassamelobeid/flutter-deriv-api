@@ -67,21 +67,15 @@ has symbols_to_update => (
 );
 
 sub _build_symbols_to_update {
-    my $self      = shift;
-    my $market    = $self->input_market;
-    my %skip_list = map { $_ => 1 } (@{BOM::Config::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol});
+    my $self   = shift;
+    my $market = $self->input_market;
 
     my @symbols_to_update;
     if ($market eq 'indices') {
-        @symbols_to_update = grep { not $skip_list{$_} and $_ !~ /^OTC_/ } create_underlying_db->get_symbols_for(
-            market            => 'indices',
-            contract_category => 'ANY',
-        );
-        # forcing it here since we don't have offerings for the index.
-        push @symbols_to_update, qw(FTSE DJI OTC_IBEX35 OTC_SX5E OTC_NDX);
-
+        # These are the cash indices that being disabled
+        @symbols_to_update = grep { create_underlying($_)->market->name eq 'indices' }
+            (@{BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_buy});
     }
-
     return \@symbols_to_update;
 }
 
@@ -98,14 +92,15 @@ sub _build_surfaces_from_file {
 sub run {
     my $self               = shift;
     my $surfaces_from_file = $self->surfaces_from_file;
-    my %otc_list           = map { $_ => 1 } create_underlying_db->get_symbols_for(
+    my %otc_list =
+        map { $_ => 1 } grep { create_underlying($_)->submarket->is_OTC } create_underlying_db->get_symbols_for(
         market            => 'indices',
-        submarket         => 'otc_index',
         contract_category => 'ANY',
-    );
+        );
 
     foreach my $symbol (@{$self->symbols_to_update}) {
-        if (not $surfaces_from_file->{$symbol}) {
+        unless ($surfaces_from_file->{$symbol}) {
+
             $self->report->{$symbol} = {
                 success => 0,
                 reason  => 'Surface Information missing from datasource for ' . $symbol,
@@ -138,6 +133,7 @@ sub run {
                     }
                     $volsurface->save;
                     $self->report->{$symbol}->{success} = 1;
+
                 } else {
 
                     $self->report->{$symbol} = {
@@ -147,7 +143,6 @@ sub run {
                 }
             } else {
                 my $calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
-
                 if ($calendar->is_open($underlying->exchange)) {
                     # Ignore all error when exchange is closed.
                     $self->report->{$symbol} = {
@@ -156,6 +151,7 @@ sub run {
                     };
                 }
             }
+
         }
         catch {
             # if it dies, catch it here.
