@@ -60,12 +60,11 @@ sub one_to_one {
 }
 
 #            Class                 Table                   Key    =>  Class                 Table                   Key
-one_to_many('Payment',            'payment',              'id',      'Transaction',        'transaction',          'payment_id');
-one_to_many('Client',             'client',               'loginid', 'Account',            'account',              'client_loginid');
-one_to_many('Account',            'account',              'id',      'Payment',            'payment',              'account_id');
-one_to_many('Account',            'account',              'id',      'FinancialMarketBet', 'financial_market_bet', 'account_id');
-one_to_many('FinancialMarketBet', 'financial_market_bet', 'id',      'Transaction',        'transaction',          'financial_market_bet_id');
-one_to_many('FinancialMarketBet', 'financial_market_bet', 'id',      'QuantsBetVariable',  'quants_bet_variables', 'financial_market_bet_id');
+one_to_many('Payment',            'payment',              'id', 'Transaction',        'transaction',          'payment_id');
+one_to_many('Account',            'account',              'id', 'Payment',            'payment',              'account_id');
+one_to_many('Account',            'account',              'id', 'FinancialMarketBet', 'financial_market_bet', 'account_id');
+one_to_many('FinancialMarketBet', 'financial_market_bet', 'id', 'Transaction',        'transaction',          'financial_market_bet_id');
+one_to_many('FinancialMarketBet', 'financial_market_bet', 'id', 'QuantsBetVariable',  'quants_bet_variables', 'financial_market_bet_id');
 
 one_to_one('Transaction', 'transaction', 'id', 'QuantsBetVariable', 'quants_bet_variables', 'transaction_id');
 
