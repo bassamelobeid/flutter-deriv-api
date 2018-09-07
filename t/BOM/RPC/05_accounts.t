@@ -1445,18 +1445,6 @@ subtest $method => sub {
             'cannot send place_of_birth with a different value'
         );
     }
-
-#send empty citizen value for maltanaviest client should through an error
-    {
-        local $full_args{citizen} = '';
-        $params->{args} = {%full_args};
-        is(
-            $c->tcall($method, $params)->{error}{message_to_client},
-            'Citizenship is required',
-            'cannot send empty value for citizenship when its required'
-        );
-    }
-
     for my $restricted_country (qw(us ir hk my)) {
         local $params->{args} = {
             tax_residence             => $restricted_country,
@@ -1513,18 +1501,40 @@ subtest $method => sub {
     # but it is disabled when the test is running on travis-ci
     # so I mocked this function to check it is called.
     my $add_note_called;
-    $mocked_client->mock('add_note', sub { $add_note_called = 1 });
+    $mocked_client->mock('add_note', sub { $add_note_called = 1; });
     my $old_latest_environment = $test_client->latest_environment;
     $mailbox->clear;
     $params->{args}->{email_consent} = 1;
 
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
-
     my $res = $c->tcall('get_settings', {token => $token1});
     is($res->{tax_identification_number}, $params->{args}{tax_identification_number}, "Check tax information");
     is($res->{tax_residence},             $params->{args}{tax_residence},             "Check tax information");
+
     ok($add_note_called, 'add_note is called, so the email should be sent to support address');
 
+    subtest 'Check for citizenship value' => sub {
+        subtest 'empty/unspecified' => sub {
+            $params->{args} = {%full_args, citizen => ''};
+            is($c->tcall($method, $params)->{error}{message_to_client}, 'Citizenship is required', 'empty value for citizenship');
+        };
+        subtest 'invalid' => sub {
+            $params->{args} = {%full_args, citizen => 'ss'};
+            is(
+                $c->tcall($method, $params)->{error}{message_to_client},
+                'Sorry, our service is not available for your country of citizenship.',
+                'invalid value for citizenship'
+            );
+        };
+        subtest 'restricted countries' => sub {
+            for my $restricted_country (qw(us ir hk my)) {
+                $params->{args} = {%full_args, citizen => $restricted_country};
+                is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+                is($c->tcall('get_settings', {token => $token1})->{citizen}, $restricted_country, "Restricted country value for citizenship");
+
+            }
+        };
+    };
     $test_client->load();
 
     isnt($test_client->latest_environment, $old_latest_environment, "latest environment updated");
@@ -1813,6 +1823,12 @@ subtest 'get and set self_exclusion' => sub {
     ## Section: Check self-exclusion notification emails for compliance, related to
     ##  clients under Binary (Europe) Limited, are sent under correct circumstances.
     $mailbox->clear;
+
+    ## Set some limits, and no email should be sent, because no MT5 account has
+    ##   been opened yet.
+    $params->{token} = $token_mlt;
+    ##  clients under Binary (Europe) Limited, are sent under correct circumstances.
+
 
     ## Set some limits, and no email should be sent, because no MT5 account has
     ##   been opened yet.

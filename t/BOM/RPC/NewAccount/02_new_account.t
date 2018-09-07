@@ -460,8 +460,6 @@ subtest $method => sub {
 
         $client->citizen('at');
         $client->save;
-        $params->{args}->{citizen} = $client_details->{citizen};
-
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('email unverified', 'It should return error if email unverified')
             ->error_message_is('Your email address is unverified.', 'It should return error if email unverified');
@@ -478,6 +476,16 @@ subtest $method => sub {
             );
 
         $params->{args}->{residence} = 'de';
+
+        $params->{args}->{citizen} = 'ss';
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('InvalidCitizenship', 'Correct error code for invalid citizenship for maltainvest')
+            ->error_message_is(
+            'Sorry, our service is not available for your country of citizenship.',
+            'Correct error message for invalid citizenship for maltainvest'
+            );
+        #if citizenship is from restricted country but residence is valid,it shouldn't throw any error
+        $params->{args}->{citizen} = 'ir';
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
             sub { shift->{landing_company} },

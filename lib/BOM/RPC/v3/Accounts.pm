@@ -981,6 +981,14 @@ rpc set_settings => sub {
             message_to_client => localize('Citizenship is required')}
     ) if ($client->landing_company->citizen_required && (!defined $citizen || $citizen eq ''));
 
+    if ($args->{'citizen'}
+        && !defined $brand->countries_instance->countries->country_from_code($args->{'citizen'}))
+    {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidCitizen',
+                message_to_client => localize('Sorry, our service is not available for your country of citizenship.')});
+    }
+
     if (   ($address1 and $address1 ne $client->address_1)
         or $address2 ne $client->address_2
         or $addressTown ne $client->city

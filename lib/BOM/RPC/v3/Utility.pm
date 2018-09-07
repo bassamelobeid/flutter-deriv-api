@@ -356,8 +356,8 @@ sub error_map {
             'Unfortunately your answers to the questions above indicate that you do not have sufficient financial resources or trading experience to be eligible to open a trading account at this time.'
         ),
         'InvalidDateOfBirth'         => localize('Date of birth is invalid'),
-        'InsufficientAccountDetails' => localize('Please provide complete details for account opening.')};
-
+        'InsufficientAccountDetails' => localize('Please provide complete details for account opening.'),
+        'InvalidCitizenship'         => localize('Sorry, our service is not available for your country of citizenship.')};
 }
 
 =head2 filter_siblings_by_landing_company
