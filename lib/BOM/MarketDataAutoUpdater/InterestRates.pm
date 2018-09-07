@@ -76,7 +76,7 @@ sub run {
             );
             $rates->save;
             $report->{$currency_symbol}->{success} = 1;
-            $self->_update_related_currency($data, qw /DAI/) if $currency_symbol eq 'USD';
+            $self->_update_related_currency($data, qw(DAI UST)) if $currency_symbol eq 'USD';
         }
     }
 
