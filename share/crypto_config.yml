@@ -13,3 +13,6 @@ eth:
 dai:
     withdrawal:
         timeout: "5d"
+ust:
+    withdrawal:
+        timeout: "3d"
