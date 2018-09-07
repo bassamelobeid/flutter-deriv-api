@@ -43,9 +43,15 @@ sub validate {
     }
 
     if ($details) {
-        if (   Brands->new(name => request()->brand)->countries_instance->restricted_country($residence)
+        my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
+        if ($details->{citizen}
+            && !defined $countries_instance->countries->country_from_code($details->{citizen}))
+        {
+            return {error => 'InvalidCitizenship'};
+        }
+        if (   $countries_instance->restricted_country($residence)
             or $from_client->residence ne $residence
-            or not defined Locale::Country::code2country($residence))
+            or not defined $countries_instance->countries->country_from_code($residence))
         {
             return {error => 'invalid residence'};
         }
@@ -247,8 +253,7 @@ sub validate_account_details {
             $details->{$field} = $args->{$field};
         }
     }
-    return {error => 'InsufficientAccountDetails'}
-        if $lc->citizen_required && !$client->citizen && (!$args->{citizen} || !defined Locale::Country::code2country($args->{citizen}));
+    return {error => 'InsufficientAccountDetails'} if ($lc->citizen_required && !$client->citizen && !$args->{citizen});
     $details->{citizen} = $args->{citizen} // '';
     return {details => $details};
 }

@@ -230,8 +230,7 @@ subtest 'create account' => sub {
             my ($client, $user) = @{$real_acc}{qw/client user/};
             is(defined $user,   1,            "Social login user with residence $user->residence has been created");
             is($client->broker, $broker_code, "Successfully created real account $client->loginid");
-        }
-        else {
+        } else {
             # Social login user may create default account
             lives_ok {
                 $real_acc = BOM::Platform::Account::Real::default::create_account({

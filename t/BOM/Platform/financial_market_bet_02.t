@@ -397,9 +397,9 @@ subtest 'more validation', sub {
         'maximum net payout for open positions reached';
 
     # the USD account has 3 bets here, 2 of which are unsold. Let's sell them all.
-    my $total_bets = 3;
+    my $total_bets  = 3;
     my $unsold_bets = 2;
-    my $sold_bets = $total_bets - $unsold_bets;
+    my $sold_bets   = $total_bets - $unsold_bets;
     lives_ok {
         my @bets_to_sell =
             map { {id => $_, quantity => 1, sell_price => 30, sell_time => Date::Utility->new->plus_time_interval('1s')->db_timestamp,} } @usd_bets;
