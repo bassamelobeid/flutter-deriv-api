@@ -1213,6 +1213,21 @@ sub allowed_amount_type {
     };
 }
 
+=head2 invalid_user_input
+
+Validation error could be caused by a lot of reasons. We stored all rejected trades into
+the database but some invalid contract will fail to provide information to be stored hence it causes
+an exception to be thrown.
+
+If this flag is set to true then it will not be stored in rejected table.
+
+=cut
+
+has invalid_user_input => (
+    is      => 'rw',
+    default => 0
+);
+
 my $socket;
 my $pricing_service_config = {};
 

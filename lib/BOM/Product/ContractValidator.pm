@@ -7,6 +7,7 @@ use Time::HiRes;
 use Date::Utility;
 use List::Util qw(any first);
 use Scalar::Util::Numeric qw(isint);
+use Format::Util::Numbers;
 
 use LandingCompany::Registry;
 
@@ -14,7 +15,8 @@ use BOM::Config::Runtime;
 use BOM::Config;
 use BOM::Product::Static;
 
-my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
+my $supported_payout_currencies = Format::Util::Numbers::get_precision_config()->{amount};
+my $ERROR_MAPPING               = BOM::Product::Static::get_error_mapping();
 
 has disable_trading_at_quiet_period => (
     is      => 'ro',
@@ -432,6 +434,14 @@ sub _validate_input_parameters {
                 message_to_client => [$ERROR_MAPPING->{ResetFixedExpiryError}],
             };
         }
+    }
+
+    unless ($supported_payout_currencies->{$self->currency}) {
+        $self->invalid_user_input(1);
+        return {
+            message           => 'payout currency not supported',
+            message_to_client => [$ERROR_MAPPING->{InvalidPayoutCurrency}],
+        };
     }
 
     return;

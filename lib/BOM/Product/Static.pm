@@ -23,6 +23,7 @@ my $config = {
         # kept camel case because RPC/WS/Pricing follow this convention
         # it will be consistent in case in future we want to send
         # these as error codes to RPC/Pricing
+        InvalidPayoutCurrency         => 'Invalid payout currency',
         InvalidInputAsset             => 'Trading is not offered for this asset.',
         InvalidTickExpiry             => 'Invalid duration (tick) for contract type ([_1]).',
         InvalidBarrierMixedBarrier    => 'Invalid barrier (Contract can have only one type of barrier).',

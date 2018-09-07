@@ -242,4 +242,26 @@ subtest 'invalid barrier type' => sub {
     ok $c->is_valid_to_buy, 'valid intraday non ATM contract with absolute barrier.';
 };
 
+subtest 'invalid payout currency' => sub {
+    my $bet_params = {
+        date_start   => $now,
+        date_pricing => $now,
+        underlying   => 'R_100',
+        bet_type     => 'CALL',
+        duration     => '1d',
+        barrier      => 'S0P',
+        currency     => 'USD',
+        payout       => 10,
+        current_tick => $fake_tick,
+    };
+    my $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid multi-day ATM contract with relative barrier.';
+    ok !$c->invalid_user_input;
+    $bet_params->{currency} = 'BDT';
+    $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    ok $c->invalid_user_input, 'invalid input set to true';
+    like($c->primary_validation_error->{message}, qr/payout currency not supported/, 'payout currency not supported');
+};
+
 done_testing();
