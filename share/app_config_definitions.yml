@@ -69,6 +69,11 @@ payments:
   description: "Control parameters for cashier and other payment systems"
   isa: section
   contains:
+    payment_agent_residence_check_exclusion:
+      description: 'Email(s) of payment agents who are allowed to perform inter-country transfers and withdrawals.'
+      default: []
+      isa: ArrayRef
+      global: 1
     payment_limits:
       description: 'Staff limit for payment'
       isa: json_string
