@@ -1829,7 +1829,6 @@ subtest 'get and set self_exclusion' => sub {
     $params->{token} = $token_mlt;
     ##  clients under Binary (Europe) Limited, are sent under correct circumstances.
 
-
     ## Set some limits, and no email should be sent, because no MT5 account has
     ##   been opened yet.
     $params->{token} = $token_mlt;

@@ -583,13 +583,27 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $SQL = 'DELETE FROM betonmarkets.client_promo_code WHERE client_loginid = ?';
         $clientdbh->do($SQL, undef, $Alice_id);
 
+        # push payment agent's email into exclusion list
+        push BOM::Config::Runtime->instance->app_config()->payments()->payment_agent_residence_check_exclusion(), $Alice->email;
+        $test          = q{payment agent is in exclusion list, transfer is allowed even if country of residence is different.};
+        $old_residence = $Alice->residence;
+        $Alice->residence('in the Wonder Land');
+        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        is($res->{status}, 1, $test) or diag Dumper $res;
+        $Alice_transferred += $test_amount;
+        $Alice->residence($old_residence);
+        pop BOM::Config::Runtime->instance->app_config()->payments()->payment_agent_residence_check_exclusion();
+
+        # sleep 2 seconds to allow next pa transfer
+        sleep 2;
+
         $test              = 'Transfer works when min_turnover overrides the frozen free gift limit check';
         $promo_code_config = qq!{"min_turnover":"100","amount":"$promo_amount"}!;
         $sth_insert_promo->execute('TEST1234', 'Test only', 'FREE_BET', $promo_code_config);
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{status}, 1, $test);
         $Alice_transferred += $test_amount;
-        $Alice_balance = sprintf('%0.*f', $precision, $Alice_balance - $test_amount);
+        $Alice_balance = sprintf('%0.*f', $precision, $Alice_balance - $test_amount * 2);    # * 2 because we performed 2 pa transfer
         $Bob_balance   = sprintf('%0.*f', $precision, $Bob_balance + $test_amount);
         $test_amount   = sprintf('%0.*f', $precision, $test_amount + $amount_boost);
         reset_transfer_testargs();
@@ -1105,6 +1119,22 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/allowable transactions for today/, $test);
         $mock_cashier->unmock('_get_amount_and_count');
+
+        # mock to make sure that there is authenticated pa in Alice's country
+        $mock_payment_agent->mock('get_authenticated_payment_agents', sub { return {pa1 => 'dummy'}; });
+        # push payment agent's email into exclusion list
+        push BOM::Config::Runtime->instance->app_config()->payments()->payment_agent_residence_check_exclusion(), $Alice->email;
+        $test          = q{payment agent is in exclusion list, withdraw is allowed even if country of residence is different.};
+        $old_residence = $Alice->residence;
+        $Alice->residence('in the Wonder Land');
+        $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
+        is($res->{status}, 1, $test);
+        $Alice->residence($old_residence);
+        pop BOM::Config::Runtime->instance->app_config()->payments()->payment_agent_residence_check_exclusion();
+        $mock_payment_agent->unmock('get_authenticated_payment_agents');
+
+        # to avoid request too frequent rest for 2 seconds
+        sleep 2;
 
         $test = 'Withdraw returns correct paymentagent_name when dry_run is off';
         $res  = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);

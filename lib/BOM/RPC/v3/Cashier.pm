@@ -434,6 +434,7 @@ rpc paymentagent_transfer => sub {
 
     # Reads fiat/crypto from landing_companies.yml, then gets min/max from paymentagent_config.yml
     my $payment_agent = $client_fm->payment_agent;
+
     return $error_sub->(localize('You are not authorized for transfers via payment agents.')) unless $payment_agent;
 
     my $max_withdrawal = $payment_agent->max_withdrawal;
@@ -455,7 +456,7 @@ rpc paymentagent_transfer => sub {
         if ($client_fm->landing_company->short ne $client_to->landing_company->short);
 
     return $error_sub->(localize('You cannot transfer to a client in a different country of residence.'))
-        if $client_fm->residence ne $client_to->residence;
+        if $client_fm->residence ne $client_to->residence and not _is_pa_residence_exclusion($client_fm);
 
     if ($args->{dry_run}) {
         return {
@@ -645,6 +646,12 @@ The [_4] team.', $currency, $amount, encode_entities($payment_agent->payment_age
         transaction_id      => $response->{transaction_id}};
 };
 
+sub _is_pa_residence_exclusion {
+    my $client               = shift;
+    my $residence_exclusions = BOM::Config::Runtime->instance->app_config->payments->payment_agent_residence_check_exclusion;
+    return ($client && (grep { $_ eq $client->email } @$residence_exclusions)) ? 1 : 0;
+}
+
 rpc paymentagent_withdraw => sub {
     my $params = shift;
 
@@ -766,7 +773,7 @@ rpc paymentagent_withdraw => sub {
         if $pa_client->documents_expired;
 
     return $error_sub->(localize('You cannot withdraw from a payment agent in a different country of residence.'))
-        if $client->residence ne $pa_client->residence;
+        if $client->residence ne $pa_client->residence and not _is_pa_residence_exclusion($pa_client);
 
     if ($args->{dry_run}) {
         return {
