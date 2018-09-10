@@ -564,6 +564,7 @@ sub buy {
     catch {
         # if $error_status is defined, return it
         # otherwise the function re-throws the exception
+        stats_inc('database.consistency.inverted_transaction', {tags => ['broker_code:' . $self->client->broker_code]});
         $error_status = $self->_recover($_);
     };
     return $self->stats_stop($stats_data, $error_status) if $error_status;

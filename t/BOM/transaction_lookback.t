@@ -503,7 +503,7 @@ subtest 'sell a bet', sub {
             cmp_ok $trx->{id}, '>', 0, 'id';
             is $trx->{account_id}, $acc_usd->id, 'account_id';
             is $trx->{action_type}, 'sell', 'action_type';
-            is $trx->{amount} + 0, $contract->bid_price, 'amount';
+            is $trx->{amount} + 0, $contract->bid_price + 0, 'amount';
             is $trx->{balance_after} + 0, 5000 - 2.5 + $contract->bid_price, 'balance_after';
             is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $trx->{payment_id},    undef,                  'payment_id';
@@ -531,7 +531,7 @@ subtest 'sell a bet', sub {
             is !$fmb->{is_sold}, !1, 'is_sold';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
             like $fmb->{remark}, qr/\btrade\[2\.50000\]/, 'remark';
-            is $fmb->{sell_price} + 0, $contract->bid_price, 'sell_price';
+            is $fmb->{sell_price} + 0, $contract->bid_price + 0, 'sell_price';
             cmp_ok +Date::Utility->new($fmb->{sell_time})->epoch,       '<=', time, 'sell_time';
             cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>',  time, 'settlement_time';
             like $fmb->{short_code}, qr/CALL/, 'short_code';
@@ -556,7 +556,7 @@ subtest 'sell a bet', sub {
             plan tests => 3;
             is $qv1->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $qv1->{transaction_id},          $trx->{id}, 'transaction_id';
-            is $qv1->{trade} + 0, $contract->bid_price, 'trade';
+            is $qv1->{trade} + 0, $contract->bid_price + 0, 'trade';
         };
 
         # note explain $qv2;
