@@ -289,7 +289,7 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FCHI', 'GDAXI') {
             roundcommon(1e-4, $expectations->{theo_prob}),
             'Theo probability is correct for ' . $bet->pricing_engine_name
         );
-        is(roundcommon(1e-4, $bet->commission_markup->amount), $expectations->{commission_markup}, 'Commission markup is correct.');
+        cmp_ok(roundcommon(1e-4, $bet->commission_markup->amount), '==', $expectations->{commission_markup}, 'Commission markup is correct.');
         is(
             roundcommon(1e-4, $bet->risk_markup->amount),
             roundcommon(1e-4, $expectations->{risk_markup}),
@@ -365,13 +365,13 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol => 'DFMGI',
     });
 my $middle_east_intraday = produce_contract('CALL_DFMGI_10_1447921800F_1447929000_S0P_0', 'USD');
-is(roundcommon(1e-4, $middle_east_intraday->commission_markup->amount), 0.025, 'Commission markup for middle east is 5%');
+cmp_ok(roundcommon(1e-4, $middle_east_intraday->commission_markup->amount), '==', 0.025, 'Commission markup for middle east is 5%');
 
 my $middle_east_daily = produce_contract('CALL_DFMGI_10_1447921800_1448022600F_S0P_0', 'USD');
-is(roundcommon(1e-4, $middle_east_daily->commission_markup->amount), 0.025, 'Commission markup for middle east is 5%');
+cmp_ok(roundcommon(1e-4, $middle_east_daily->commission_markup->amount), '==', 0.025, 'Commission markup for middle east is 5%');
 
 my $GDAXI_intraday = produce_contract('CALL_GDAXI_10_1448013600F_1448020800_S0P_0', 'USD');
 my $GDAXI_intraday_ask = $GDAXI_intraday->ask_probability;
-is(roundcommon(1e-4, $GDAXI_intraday->commission_markup->amount), 0.025, 'Commission markup for indices is 3%');
+cmp_ok(roundcommon(1e-4, $GDAXI_intraday->commission_markup->amount), '==', 0.025, 'Commission markup for indices is 3%');
 
 1;

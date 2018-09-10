@@ -121,7 +121,7 @@ subtest 'tick expiry one touch no touch' => sub {
         ok $c->hit_tick->quote == $c->barrier->as_absolute;
 
         is $c->date_expiry->epoch, 1404986410, 'checking date expiry';
-        is $c->bid_price, 100, 'checking bid price, and should be equal to payout';
+        cmp_ok $c->bid_price, '==', 100, 'checking bid price, and should be equal to payout';
 
         is $c->is_valid_to_sell, 1, 'is_valid_to_sell';
 
@@ -163,7 +163,7 @@ subtest 'tick expiry one touch no touch' => sub {
 
     is $c->date_expiry->epoch, 1404986412, 'checking date expiry --';
 
-    is $c->bid_price, 100, 'Correct bid price at expiry';
+    cmp_ok $c->bid_price, '==', 100.00, 'Correct bid price at expiry';
 
     is $c->is_valid_to_sell, 1, 'is_valid_to_sell';
 
@@ -173,7 +173,7 @@ subtest 'tick expiry one touch no touch' => sub {
     ok !$c->hit_tick, 'no hit tick';
     is $c->current_tick->quote, 108, 'correct current tick';
 
-    is $c->bid_price, 0, 'Correct bid price at expiry in case of no hit';
+    cmp_ok $c->bid_price, '==', 0, 'Correct bid price at expiry in case of no hit';
 
     is $c->is_valid_to_sell, 1, 'is_valid_to_sell';
 

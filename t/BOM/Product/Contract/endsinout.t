@@ -61,10 +61,12 @@ subtest 'expiry miss' => sub {
         $c->ask_probability;
         my $call = $c->debug_information->{CALL}{base_probability};
         my $put  = $c->debug_information->{PUT}{base_probability};
-        is roundcommon(0.001, $call->{amount}), 0.585, 'correct tv for CALL';
-        is roundcommon(0.001, $call->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.183, 'correct vol for call';
-        is roundcommon(0.001, $put->{amount}), 0.057, 'correct tv for PUT';
-        is roundcommon(0.001, $put->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.25, 'correct vol for put';
+        cmp_ok roundcommon(0.001, $call->{amount}), '==', 0.585, 'correct tv for CALL';
+        cmp_ok roundcommon(0.001, $call->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), '==', 0.183,
+            'correct vol for call';
+        cmp_ok roundcommon(0.001, $put->{amount}), '==', 0.057, 'correct tv for PUT';
+        cmp_ok roundcommon(0.001, $put->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), '==', 0.25,
+            'correct vol for put';
     }
     'generic';
 
@@ -121,10 +123,12 @@ subtest 'expiry range' => sub {
         $c->ask_probability;
         my $call = $c->debug_information->{CALL}{base_probability};
         my $put  = $c->debug_information->{PUT}{base_probability};
-        is roundcommon(0.001, $call->{amount}), 0.567, 'correct tv for CALL';
-        is roundcommon(0.001, $call->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.182, 'correct vol for call';
-        is roundcommon(0.001, $put->{amount}), 0.057, 'correct tv for PUT';
-        is roundcommon(0.001, $put->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), 0.25, 'correct vol for put';
+        cmp_ok roundcommon(0.001, $call->{amount}), '==', 0.567, 'correct tv for CALL';
+        cmp_ok roundcommon(0.001, $call->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), '==', 0.182,
+            'correct vol for call';
+        cmp_ok roundcommon(0.001, $put->{amount}), '==', 0.057, 'correct tv for PUT';
+        cmp_ok roundcommon(0.001, $put->{parameters}{numeraire_probability}{parameters}{bs_probability}{parameters}{vol}), '==', 0.25,
+            'correct vol for put';
 
     }
     'generic';
