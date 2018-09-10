@@ -181,7 +181,7 @@ sub pre_withdrawal_validation {
 }
 
 sub calculate_to_amount_with_fees {
-    my ($fm_client, $to_client, $amount, $from_currency, $to_currency) = @_;
+    my ($fm_client, $to_client, $amount, $from_currency, $to_currency, $rate_expiry) = @_;
 
     # need to calculate fees only when currency type are different
     my ($fees, $fees_percent) = (0, 0);
@@ -205,7 +205,7 @@ sub calculate_to_amount_with_fees {
         }
 
         $amount -= $fees;
-        $amount = convert_currency($amount, $from_currency, $to_currency);
+        $amount = convert_currency($amount, $from_currency, $to_currency, $rate_expiry);
     }
 
     return ($amount, $fees, $fees_percent);
