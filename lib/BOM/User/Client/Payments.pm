@@ -26,7 +26,6 @@ sub validate_payment {
     my ($self, %args) = @_;
     my $currency = $args{currency} || die "no currency\n";
     my $amount   = $args{amount}   || die "no amount\n";
-
     my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
     my $account = $self->default_account || die "no account\n";
     my $accbal  = $account->balance;
@@ -302,10 +301,10 @@ sub payment_account_transfer {
     $inter_db_transfer = delete $args{inter_db_transfer} if (exists $args{inter_db_transfer});
     my $gateway_code = delete $args{gateway_code} || 'account_transfer';
 
+    my $dbic = $fmClient->db->dbic;
     unless ($inter_db_transfer) {
         # here we rely on ->set_default_account above
         # which makes sure the `write` database is used.
-        my $dbic = $fmClient->db->dbic;
         my $response;
         try {
             my $records = $dbic->run(
@@ -332,6 +331,32 @@ sub payment_account_transfer {
         return $response;
     }
 
+    # Even though at the moment we do not allow the transfer of different currencies to different
+    # landing companies we will add a conversion here in case this rule changes in the future.
+    #
+
+    my $to_amount = $amount;
+    my $from_curr = $fmClient->default_account->currency_code;
+    my $to_curr   = $toClient->default_account->currency_code;
+    my $result;
+    if ($to_curr ne $from_curr) {
+        #use the same currency conversion routines as the DB functions
+        try {
+            $result = $dbic->run(
+                fixup => sub {
+                    $_->selectrow_hashref("SELECT amount_from_to_currency as amount FROM payment.amount_from_to_currency(?,?,?)",
+                        undef, $amount, $from_curr, $to_curr);
+                });
+            $to_amount = $result->{amount};
+        }
+        catch {
+            if (ref eq 'ARRAY') {
+                die "@$_";
+            } else {
+                die $_;
+            }
+        };
+    }
     my ($fmPayment) = $fmAccount->add_payment({
         amount               => -$amount,
         payment_gateway_code => $gateway_code,
@@ -350,7 +375,7 @@ sub payment_account_transfer {
         source        => $source,
     });
     my ($toPayment) = $toAccount->add_payment({
-        amount               => $amount,
+        amount               => $to_amount,
         payment_gateway_code => $gateway_code,
         payment_type_code    => 'internal_transfer',
         status               => 'OK',
@@ -359,7 +384,7 @@ sub payment_account_transfer {
     });
     my ($toTrx) = $toPayment->add_transaction({
         account_id    => $toAccount->id,
-        amount        => $amount,
+        amount        => $to_amount,
         staff_loginid => $toStaff,
         referrer_type => 'payment',
         action_type   => 'deposit',
