@@ -30,6 +30,7 @@ use Brands;
 use Quant::Framework;
 use LandingCompany::Registry;
 use Finance::Contract::Longcode qw(shortcode_to_longcode);
+use LandingCompany::Registry;
 
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::ProveID;
@@ -66,6 +67,10 @@ my %DURATION_LIMITS = (
     s => 3600,    # 1 hour
     t => 10
 );
+
+# For transfers, defines the oldest rates allowed for currency conversion per currency type
+use constant CURRENCY_CONVERSION_MAX_AGE_FIAT   => 3600 * 24;    # 1 day
+use constant CURRENCY_CONVERSION_MAX_AGE_CRYPTO => 3600;
 
 =head2 transaction_validation_checks
 
@@ -775,25 +780,20 @@ sub filter_out_suspended_cryptocurrencies {
     return \@valid_payout_currencies;
 }
 
-=head2 can_make_transfer
+=head2 get_rate_expiry
 
-This sub checks if we are allowed to make transfer during weekend
+Gets the maximum allowed age of the exchange rate for a currency pair used in a transfer
+
+Accepts: two currency symbols in any order
+
+Returns: time in seconds
 
 =cut
 
-sub can_make_transfer {
-    # Although this is hardcoded as BTC, the intention is that any risky
-    # transfer should be blocked at weekends and holidays.
-    # Currently, this implies crypto to fiat or vice versa, and BTC is our most
-    # volatile (and popular) crypto currency. If the exchange is updated to
-    # something other than forex, this check should start allowin transfers at
-    # weekends again. Reject all transfers when forex markets are closed
-    if (my $ul = create_underlying('frxBTCUSD')) {
-        return 1
-            if Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader)->is_open_at($ul->exchange, Date::Utility->new);
-    }
-
-    return 0;
+sub get_rate_expiry {
+    my @currency_types = map { LandingCompany::Registry::get_currency_type($_) } @_;
+    # If crypto is involved, it takes precedence over fiat->fiat
+    return (any { $_ eq 'crypto' } @currency_types) ? CURRENCY_CONVERSION_MAX_AGE_CRYPTO : CURRENCY_CONVERSION_MAX_AGE_FIAT;
 }
 
 1;

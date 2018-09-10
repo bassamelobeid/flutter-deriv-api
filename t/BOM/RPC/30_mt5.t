@@ -19,11 +19,14 @@ use BOM::MT5::User::Async;
 use BOM::Platform::Token;
 use BOM::User;
 use BOM::Config::Runtime;
+use BOM::Config::RedisReplicated;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 my $json = JSON::MaybeXS->new;
 
 my $runtime_system = BOM::Config::Runtime->instance->app_config->system;
+
+my $redis = BOM::Config::RedisReplicated::redis_exchangerates_write();
 
 scope_guard { restore_time() };
 
@@ -574,12 +577,6 @@ subtest 'deposit' => sub {
         },
     };
 
-    # set to weekend
-    set_absolute_time(Date::Utility->new('2018-02-17')->epoch);
-
-    $c->call_ok($method, $params)->has_error('error as mt5 deposit is suspended over weekend')
-        ->error_code_is('MT5DepositError', 'error as mt5 deposit is suspended over weekend');
-
     set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
@@ -617,12 +614,6 @@ subtest 'withdrawal' => sub {
         },
     };
 
-    # set to weekend
-    set_absolute_time(Date::Utility->new('2018-02-17')->epoch);
-
-    $c->call_ok($method, $params)->has_error('error as mt5 withdrawal is suspended over weekend')
-        ->error_code_is('MT5WithdrawalError', 'error as mt5 withdrawal is suspended over weekend');
-
     set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
@@ -643,6 +634,123 @@ subtest 'withdrawal' => sub {
     $params->{args}{from_mt5} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_withdrawal wrong login')
         ->error_code_is('PermissionDenied', 'error code for mt5_withdrawal wrong login');
+};
+
+subtest 'multi currency transfers' => sub {
+    my $client_eur = create_client('CR');
+    my $client_btc = create_client('CR');
+    $client_eur->set_default_account('EUR');
+    $client_btc->set_default_account('BTC');
+    top_up $client_eur, EUR => 1000;
+    top_up $client_btc, BTC => 1;
+    $user->add_client($client_eur);
+    $user->add_client($client_btc);
+
+    my $deposit_params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            from_binary => $client_eur->loginid,
+            to_mt5      => $DETAILS{login},
+            amount      => 100,
+        },
+    };
+
+    my $withdraw_params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            from_mt5  => $DETAILS{login},
+            to_binary => $client_eur->loginid,
+            amount    => 100,
+        },
+    };
+
+    $redis->hmset(
+        'exchange_rates::EUR_USD',
+        quote => 1.1,
+        epoch => time
+    );
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit EUR->USD with current rate - no error');
+    ok(defined $c->result->{binary_transaction_id}, 'deposit EUR->USD with current rate - has transaction id');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->EUR with current rate - no error');
+    ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->EUR with current rate - has transaction id');
+
+    $redis->hmset(
+        'exchange_rates::EUR_USD',
+        quote => 1.1,
+        epoch => time - (3600 * 12));
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit EUR->USD with 12hr old rate - no error');
+    ok(defined $c->result->{binary_transaction_id}, 'deposit EUR->USD with 12hr old rate - has transaction id');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->EUR with current rate - no error');
+    ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->EUR with 12hr old rate - has transaction id');
+
+    $redis->hmset(
+        'exchange_rates::EUR_USD',
+        quote => 1.1,
+        epoch => time - (3600 * 25));
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $c->call_ok('mt5_deposit', $deposit_params)->has_error('deposit EUR->USD with >1 day old rate - has error')
+        ->error_code_is('MT5DepositError', 'deposit EUR->USD with >1 day old rate - correct error code');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error('withdraw USD->EUR with >1 day old rate - has error')
+        ->error_code_is('MT5WithdrawalError', 'withdraw USD->EUR with >1 day old rate - correct error code');
+
+    $deposit_params->{args}->{from_binary} = $withdraw_params->{args}->{to_binary} = $client_btc->loginid;
+    $deposit_params->{args}->{amount} = 0.1;
+
+    $redis->hmset(
+        'exchange_rates::BTC_USD',
+        quote => 5000,
+        epoch => time
+    );
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit BTC->USD with current rate - no error');
+    ok(defined $c->result->{binary_transaction_id}, 'deposit BTC->USD with current rate - has transaction id');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->BTC with current rate - no error');
+    ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->BTC with current rate - has transaction id');
+
+    $redis->hmset(
+        'exchange_rates::BTC_USD',
+        quote => 5000,
+        epoch => time - 3595
+    );
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit BTC->USD with older rate <1 hour - no error');
+    ok(defined $c->result->{binary_transaction_id}, 'deposit BTC->USD with older rate <1 hour - has transaction id');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->BTC with older rate <1 hour - no error');
+    ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->BTC with older rate <1 hour - has transaction id');
+
+    $redis->hmset(
+        'exchange_rates::BTC_USD',
+        quote => 5000,
+        epoch => time - 3605
+    );
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $c->call_ok('mt5_deposit', $deposit_params)->has_error('deposit BTC->USD with rate >1 hour old - has error')
+        ->error_code_is('MT5DepositError', 'deposit BTC->USD with rate >1 hour old - correct error code');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error('withdraw USD->BTC with rate >1 hour old - has error')
+        ->error_code_is('MT5WithdrawalError', 'withdraw USD->BTC with rate >1 hour old - correct error code');
+
 };
 
 done_testing();

@@ -50,10 +50,6 @@ use constant MT5_ACCOUNT_TRADING_ENABLED_RIGHTS_ENUM => qw(
     483 1503 2527 3555
 );
 
-# Defines the oldest data we'll allow for conversion rates, anything past this
-# (including when markets are closed) will be rejected.
-use constant CURRENCY_CONVERSION_MAX_AGE => 3600;
-
 # Fees percentage for deposit and withdrawal within in different currencies
 use constant CONVERSION_FEES_PERCENTAGE => 1;
 
@@ -1030,11 +1026,6 @@ async_rpc mt5_deposit => sub {
                 message_to_client => localize('Request too frequent. Please try again later.')});
     }
 
-    return create_error_future({
-            code              => $error_code,
-            message_to_client => localize('Deposits for this currency are suspended due to exchange rates. Please try again when market is open.')}
-    ) unless BOM::RPC::v3::Utility::can_make_transfer();
-
     if ($app_config->system->suspend->mt5_deposits) {
         return create_error_future({
                 code              => $error_code,
@@ -1156,11 +1147,6 @@ async_rpc mt5_withdrawal => sub {
 
     my $error_code = 'MT5WithdrawalError';
     my $app_config = BOM::Config::Runtime->instance->app_config;
-
-    return create_error_future({
-            code              => $error_code,
-            message_to_client => localize('Withdrawal for this currency are suspended due to exchange rates. Please try again when market is open.')}
-    ) unless BOM::RPC::v3::Utility::can_make_transfer();
 
     if (_throttle($client->loginid)) {
         return create_error_future({
@@ -1457,45 +1443,49 @@ sub _mt5_validate_and_get_amount {
 
             my $mt5_currency = $setting->{currency};
 
+            # Actual USD or EUR amount that will be deposited into the MT5 account.
+            # We have a fixed 1% fees on all conversions, but this is only ever applied when converting
+            # between currencies - we do not apply for USD -> USD transfers for example.
             my $mt5_amount = undef;
             my ($min, $max) = (1, 20000);
             my $source_currency = $client_currency;
             my $fees            = 0;
+
             if ($client_currency eq $mt5_currency) {
                 $mt5_amount = $amount;
-                # Actual USD or EUR amount that will be deposited into the MT5 account. We have
-                # a fixed 1% fees on all conversions, but this is only ever applied when converting
-                # between currencies - we do not apply for USD -> USD transfers for example.
-            } elsif ($action eq 'deposit') {
-                try {
-                    $min = convert_currency(1,     'USD', $client_currency);
-                    $max = convert_currency(20000, 'USD', $client_currency);
+            } else {
+                my $rate_expiry = BOM::RPC::v3::Utility::get_rate_expiry($client_currency, $mt5_currency);
+                if ($action eq 'deposit') {
+                    try {
+                        $min = convert_currency(1,     'USD', $client_currency);
+                        $max = convert_currency(20000, 'USD', $client_currency);
 
-                    $fees = $amount * (CONVERSION_FEES_PERCENTAGE / 100);
-                    $mt5_amount =
-                        financialrounding('amount', $mt5_currency,
-                        convert_currency(($amount - $fees), $client_currency, $mt5_currency, CURRENCY_CONVERSION_MAX_AGE));
+                        $fees = $amount * (CONVERSION_FEES_PERCENTAGE / 100);
+                        $mt5_amount =
+                            financialrounding('amount', $mt5_currency,
+                            convert_currency(($amount - $fees), $client_currency, $mt5_currency, $rate_expiry));
+                    }
+                    catch {
+                        # usually we get here when convert_currency() fails to find a rate within $rate_expiry
+                        $mt5_amount = undef;
+                    };
+                } elsif ($action eq 'withdrawal') {
+                    try {
+                        $min = convert_currency(1,     'USD', $mt5_currency);
+                        $max = convert_currency(20000, 'USD', $mt5_currency);
+
+                        $fees = $amount * (CONVERSION_FEES_PERCENTAGE / 100);
+                        $mt5_amount =
+                            financialrounding('amount', $client_currency,
+                            convert_currency(($amount - $fees), $mt5_currency, $client_currency, $rate_expiry));
+
+                        $source_currency = $mt5_currency;
+                    }
+                    catch {
+                        # same as previous catch
+                        $mt5_amount = undef;
+                    };
                 }
-                catch {
-                    warn "Conversion failed for mt5_$action: $_";
-                    $mt5_amount = undef;
-                };
-            } elsif ($action eq 'withdrawal') {
-                try {
-                    $min = convert_currency(1,     'USD', $mt5_currency);
-                    $max = convert_currency(20000, 'USD', $mt5_currency);
-
-                    $fees = $amount * (CONVERSION_FEES_PERCENTAGE / 100);
-                    $mt5_amount =
-                        financialrounding('amount', $client_currency,
-                        convert_currency(($amount - $fees), $mt5_currency, $client_currency, CURRENCY_CONVERSION_MAX_AGE));
-
-                    $source_currency = $mt5_currency;
-                }
-                catch {
-                    warn "Conversion failed for mt5_$action: $_";
-                    $mt5_amount = undef;
-                };
             }
 
             return _make_error($error_code, localize("Conversion rate not available for this currency."))

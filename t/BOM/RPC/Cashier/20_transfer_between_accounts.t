@@ -21,11 +21,14 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 use BOM::Platform::Token;
 use Email::Stuffer::TestLinks;
+use BOM::Config::RedisReplicated;
 
 use utf8;
 
 my $test_binary_user_id = 65000;
 my ($t, $rpc_ct);
+
+my $redis = BOM::Config::RedisReplicated::redis_exchangerates_write();
 
 # In the weekend the account transfers will be suspended. So we mock a valid day here
 set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
@@ -46,7 +49,10 @@ my $params = {
     args     => {},
 };
 
-my ($email, $client_vr, $client_cr, $client_cr1, $client_mlt, $client_mf, $user, $token);
+my (
+    $email,         $client_vr,     $client_cr,        $cr_dummy,         $client_mlt, $client_mf, $client_cr_usd,
+    $client_cr_btc, $client_cr_eur, $client_cr_pa_usd, $client_cr_pa_btc, $user,       $token
+);
 my $method = 'transfer_between_accounts';
 
 my $btc_usd_rate = 4000;
@@ -109,18 +115,6 @@ subtest 'call params validation' => sub {
         "account_to"   => $client_mlt->loginid,
     };
 
-    # set it to weekend to test error
-    set_absolute_time(Date::Utility->new('2018-02-17')->epoch);
-
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for no currency';
-    is $result->{error}->{message_to_client},
-        'Account transfers for this currency are suspended due to exchange rates. Please try again when market is open.',
-        'Correct error message for weekend';
-
-    # In the weekend the account transfers will be suspended. So we mock a valid day here
-    set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
-
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{error}->{code},              'TransferBetweenAccountsError',   'Correct error code for no currency';
     is $result->{error}->{message_to_client}, 'Please provide valid currency.', 'Correct error message for no currency';
@@ -182,7 +176,7 @@ subtest 'validation' => sub {
     is $result->{error}->{message_to_client}, 'Transfers between accounts are not available for your account.',
         'Correct error message for loginid that does not exists';
 
-    my $cr_dummy = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    $cr_dummy = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         email       => $email
     });
@@ -433,21 +427,21 @@ subtest $method => sub {
 };
 
 subtest 'transfer with fees' => sub {
-    $email = 'new_transfer_email' . rand(999) . '@sample.com';
-    my $client_cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    $email         = 'new_transfer_email' . rand(999) . '@sample.com';
+    $client_cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
         email          => $email,
         binary_user_id => $test_binary_user_id
     });
 
-    my $client_cr_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    $client_cr_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
         email          => $email,
         binary_user_id => $test_binary_user_id
     });
 
     # create an unauthorised pa
-    my $client_cr_pa_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    $client_cr_pa_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
         email          => $email,
         binary_user_id => $test_binary_user_id
@@ -598,20 +592,20 @@ subtest 'transfer with fees' => sub {
 
 subtest 'transfer with no fee' => sub {
 
-    $email = 'new_transfer_email' . rand(999) . '@sample.com';
-    my $client_cr_pa_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    $email            = 'new_transfer_email' . rand(999) . '@sample.com';
+    $client_cr_pa_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
         email          => $email,
         binary_user_id => $test_binary_user_id
     });
 
-    my $client_cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    $client_cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
         email          => $email,
         binary_user_id => $test_binary_user_id
     });
 
-    my $client_cr_pa_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    $client_cr_pa_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
         email          => $email,
         binary_user_id => $test_binary_user_id
@@ -725,6 +719,68 @@ subtest 'transfer with no fee' => sub {
     cmp_ok $client_cr_pa_btc->default_account->balance, '==', $previous_to_amt + $transfer_amount,
         'non pa to authorised pa transfer (USD to BTC), no fees will be charged';
 
+};
+
+subtest 'multi currency transfers' => sub {
+    $client_cr_eur = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $test_binary_user_id
+    });
+    $user->add_client($client_cr_eur);
+    $client_cr_eur->set_default_account('EUR');
+
+    $client_cr_eur->payment_free_gift(
+        currency => 'EUR',
+        amount   => 1000,
+        remark   => 'free gift',
+    );
+
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_eur->loginid, 'test token');
+    $params->{args} = {
+        "account_from" => $client_cr_eur->loginid,
+        "account_to"   => $client_cr_usd->loginid,
+        "currency"     => "EUR",
+        "amount"       => 10
+    };
+
+    my $result =
+        $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "fiat->fiat not allowed - correct error code")
+        ->error_message_is('Account transfers are not available for accounts with different currencies.',
+        'fiat->fiat not allowed - correct error message');
+
+    $params->{args}->{account_to} = $client_cr_btc->loginid;
+
+    # currency conversion is always via USD, so EUR->BTC needs to use the EUR->USD pair
+    $redis->hmset(
+        'exchange_rates::EUR_USD',
+        quote => 1.1,
+        epoch => time
+    );
+
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{client_to_loginid}, $client_cr_btc->loginid, 'fiat->cryto allowed';
+
+    sleep 2;
+    $redis->hmset(
+        'exchange_rates::EUR_USD',
+        quote => 1.1,
+        epoch => time - 3595
+    );
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{client_to_loginid}, $client_cr_btc->loginid, 'fiat->cryto allowed with a slightly old rate (<1 hour)';
+
+    sleep 2;
+    $redis->hmset(
+        'exchange_rates::EUR_USD',
+        quote => 1.1,
+        epoch => time - 3605
+    );
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError',
+        "fiat->cryto when rate older than 1 hour - correct error code")
+        ->error_message_is('Account transfers for this currency are suspended due to exchange rates. Please try again when market is open.',
+        'fiat->cryto when rate older than 1 hour - correct error message');
 };
 
 done_testing();

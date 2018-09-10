@@ -979,16 +979,13 @@ sub __client_withdrawal_notes {
 
 rpc transfer_between_accounts => sub {
     my $params = shift;
+    my $err;
 
     my ($client, $source) = @{$params}{qw/client source/};
 
     if (BOM::Platform::Client::CashierValidation::is_payment_suspended()) {
         return _transfer_between_accounts_error(localize('Payments are suspended.'));
     }
-
-    return _transfer_between_accounts_error(
-        localize('Account transfers for this currency are suspended due to exchange rates. Please try again when market is open.'))
-        unless BOM::RPC::v3::Utility::can_make_transfer();
 
     return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
 
@@ -1060,9 +1057,6 @@ rpc transfer_between_accounts => sub {
         });
     return $res if $res;
 
-    my ($to_amount, $fees, $fees_percent) =
-        BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($client_from, $client_to, $amount, $from_currency, $to_currency);
-
     BOM::User::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
     my $error_audit_sub = sub {
         my ($err, $client_message) = @_;
@@ -1072,6 +1066,25 @@ rpc transfer_between_accounts => sub {
         $client_message ||= localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.');
         return _transfer_between_accounts_error($client_message);
     };
+
+    my $rate_expiry = BOM::RPC::v3::Utility::get_rate_expiry($from_currency, $to_currency);
+    my ($to_amount, $fees, $fees_percent);
+    try {
+        ($to_amount, $fees, $fees_percent) =
+            BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($client_from, $client_to, $amount, $from_currency, $to_currency,
+            $rate_expiry);
+    }
+    catch {
+        $err = $_;
+    };
+
+    if ($err) {
+        return $error_audit_sub->(
+            $err, localize('Account transfers for this currency are suspended due to exchange rates. Please try again when market is open.')
+        ) if ($err =~ /No rate available to convert/);
+
+        return $error_audit_sub->($err);
+    }
 
     my $fm_client_db = BOM::Database::ClientDB->new({
         client_loginid => $loginid_from,
@@ -1094,7 +1107,6 @@ rpc transfer_between_accounts => sub {
         return $error_audit_sub->("$err_msg error[Account stuck in previous transaction " . $loginid_to . ']');
     }
 
-    my $err;
     try {
         $client_from->validate_payment(
             currency => $currency,
