@@ -23,6 +23,12 @@ use Locale::Maketext::ManyPluralForms {
     '_decode' => 1,
 };
 
+# List of all country codes supported as VPN address overrides. Anything in
+# this list can be passed as `X-Client-Country` by the Electron application
+# and we will honour that country in preference to the Cloudflare country
+# headers.
+use constant ELECTRON_SUPPORTED_COUNTRIES => qw(id);
+
 sub register {
     my ($self, $app) = @_;
 
@@ -77,13 +83,18 @@ sub register {
             return $handles{$language}->maketext(@texts);
         });
 
+    # Indicates which country codes we allow our Electron app to
+    # request. Extend this if you want to provide desktop app
+    # services in other areas.
+    my %allowed_app_countries = map { ; $_ => $_ } ELECTRON_SUPPORTED_COUNTRIES;
     $app->helper(
         country_code => sub {
             my $c = shift;
 
             return $c->stash->{country_code} if $c->stash->{country_code};
 
-            my $client_country = lc($c->req->headers->header('CF-IPCOUNTRY') || 'aq');
+            my $client_country =
+                lc($allowed_app_countries{$c->req->headers->header('X-Client-Country') // ''} || $c->req->headers->header('CF-IPCOUNTRY') || 'aq');
             # Note: xx means there is no country data
             $client_country = 'aq' if ($client_country eq 'xx');
 
