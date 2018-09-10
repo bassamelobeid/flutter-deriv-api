@@ -21,6 +21,28 @@ subtest 'country information is returned in website_status' => sub {
         is($res->{website_status}{clients_country}, $country, 'have correct country for ' . $country);
         $t->finish_ok;
     }
+    for my $country ('', qw(my xx invalid)) {
+        my $t = build_wsapi_test(
+            undef,
+            {
+                'CF-IPCOUNTRY' => 'fr',
+                'X-Client-Country' => $country,
+            });
+        my $res = $t->await::website_status({website_status => 1});
+        is($res->{website_status}{clients_country}, 'fr', 'use CF country when Binary app header is ' . $country);
+        $t->finish_ok;
+    }
+    for my $country (qw(id)) {
+        my $t = build_wsapi_test(
+            undef,
+            {
+                'CF-IPCOUNTRY' => 'fr',
+                'X-Client-Country' => $country,
+            });
+        my $res = $t->await::website_status({website_status => 1});
+        is($res->{website_status}{clients_country}, $country, 'use Binary app header when country is ' . $country);
+        $t->finish_ok;
+    }
     done_testing;
 };
 subtest 'country code Malaysia' => sub {
