@@ -236,7 +236,7 @@ subtest 'app_markup_transaction' => sub {
         amount_type         => 'payout',
     });
     is $txn->buy(skip_validation => 1), undef, "no error in transaction buy";
-    is $txn->contract->app_markup_dollar_amount, 0, "no app markup";
+    cmp_ok $txn->contract->app_markup_dollar_amount(), '==', 0, "no app markup";
 
     my $app_markup_percentage = 1;
     ($contract_details, $txn_con) = Test::BOM::RPC::Contract::prepare_contract(
@@ -253,7 +253,7 @@ subtest 'app_markup_transaction' => sub {
         amount_type         => 'payout',
     });
     is $txn->buy(skip_validation => 1), undef, "no error in transaction buy";
-    is $txn->contract->app_markup_dollar_amount, $app_markup_percentage / 100 * $txn_con->contract->payout,
+    cmp_ok $txn->contract->app_markup_dollar_amount(), '==', $app_markup_percentage / 100 * $txn_con->contract->payout,
         "transaction app_markup is app_markup_percentage of contract payout for payout amount_type";
 
     ($contract_details, $txn_con) = Test::BOM::RPC::Contract::prepare_contract(
@@ -271,7 +271,7 @@ subtest 'app_markup_transaction' => sub {
         amount_type         => 'payout',
     });
     is $txn->buy(skip_validation => 1), undef, "no error in transaction buy for stake";
-    is $txn->contract->app_markup_dollar_amount, 0, "no app markup for stake";
+    cmp_ok $txn->contract->app_markup_dollar_amount(), '==', 0, "no app markup for stake";
 
     $app_markup_percentage = 2;
     ($contract_details, $txn_con) = Test::BOM::RPC::Contract::prepare_contract(
@@ -288,7 +288,7 @@ subtest 'app_markup_transaction' => sub {
         amount_type         => 'payout',
     });
     is $txn->buy(skip_validation => 1), undef, "no error in transaction buy for stake";
-    is $txn->contract->app_markup_dollar_amount, formatnumber('amount', 'USD', $txn->payout * $app_markup_percentage / 100),
+    cmp_ok $txn->contract->app_markup_dollar_amount(), '==', formatnumber('amount', 'USD', $txn->payout * $app_markup_percentage / 100),
         "in case of stake contract, app_markup is app_markup_percentage of final payout i.e transaction payout";
     cmp_ok $txn->payout, "<", $payout, "payout after app_markup_percentage is less than actual payout";
 };
