@@ -166,5 +166,24 @@ subtest 'get proposal with invalid expiry date' => sub {
     $c->call_ok('send_ask', $ask_params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError', 'correct error code');
 };
 
+subtest 'get digitmatch proposal with invalid input' => sub {
+    $params->{contract_parameters}{contract_type} = 'DIGITMATCH';
+    $params->{contract_parameters}{duration}      = '5';
+    $params->{contract_parameters}{duration_unit} = 't';
+    $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'correct error code')->error_message_is(
+        'Missing required contract parameters (last digit prediction for digit contracts).',
+        'Missing required contract parameters (last digit prediction for digit contracts).'
+    );
+};
+
+subtest 'get digitmatch proposal with invalid duration' => sub {
+    $params->{contract_parameters}{duration}      = '5';
+    $params->{contract_parameters}{duration_unit} = 'd';
+    $params->{contract_parameters}{barrier}       = '1';
+    $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('InvalidOfferings', 'correct error code')
+        ->error_message_is('Trading is not offered for this duration.', 'Trading is not offered for this duration.');
+
+};
+
 had_no_warnings();
 done_testing();
