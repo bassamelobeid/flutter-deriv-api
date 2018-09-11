@@ -35,6 +35,7 @@ my $config = {
         MissingRequiredStart          => 'Missing required contract parameters (date_start).',
         MissingRequiredBetType        => 'Missing required contract parameters (bet_type).',
         MissingRequiredCurrency       => 'Missing required contract parameters (currency).',
+        MissingRequiredDigit          => 'Missing required contract parameters (last digit prediction for digit contracts).',
         MissingRequiredMultiplier     => 'Missing required contract parameters (multiplier).',
         MissingRequiredSelectedTick   => 'Missing required contract parameters (selected tick).',
         MinimumMultiplier             => 'Minimum multiplier of',

@@ -32,7 +32,7 @@ my %file_details = (
     },
     digitsmatchdiffers => {
         filename => module_path('BOM::Product::Contract::Digitmatch'),
-        hash     => '042ad01b23b211c7271a27e9625a0b550d115265'
+        hash     => 'cf9f4b3a847a8055c0f69ff4dc0f2758be439ab6'
     },
     digitsevenodd => {
         filename => module_path('BOM::Product::Contract::Digiteven'),
@@ -40,7 +40,7 @@ my %file_details = (
     },
     digitsoverunder => {
         filename => module_path('BOM::Product::Contract::Digitover'),
-        hash     => 'efe9d26335cc4001c9f286ae152ebf8f51342bd8'
+        hash     => 'f55b758fc8e17ac4bdb69471f0e717fb2bee4e54'
     },
 );
 

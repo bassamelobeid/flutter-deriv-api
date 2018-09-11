@@ -1163,8 +1163,14 @@ subtest 'invalid digits barrier' => sub {
         payout       => 10,
     };
     my $c = produce_contract($params);
-    ok !$c->is_valid_to_buy, 'not valid to buy';
-    like($c->primary_validation_error->{message}, qr/invalid supplied barrier format for digits/, 'throws error');
+    try {
+        $c->is_valid_to_buy;
+    }
+    catch {
+        isa_ok $_, 'BOM::Product::Exception';
+        like($_->message_to_client->[0], qr/Missing required contract parameters/, "correct error message");
+        like($_->error_code, qr/MissingRequiredDigit/, "correct error code");
+    };
     $params->{barrier} = 0;
     $c = produce_contract($params);
     ok $c->is_valid_to_buy, 'valid to buy';

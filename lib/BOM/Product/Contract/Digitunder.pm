@@ -5,7 +5,7 @@ extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
 use Pricing::Engine::Digits;
-
+use Scalar::Util qw(looks_like_number);
 use BOM::Product::Contract::Strike::Digit;
 use BOM::Product::Pricing::Greeks::ZeroGreek;
 
@@ -23,6 +23,11 @@ sub _build_greek_engine {
 
 sub _build_barrier {
     my $self = shift;
+
+    return BOM::Product::Exception->throw(
+        error_code => 'MissingRequiredDigit',
+    ) if (not looks_like_number($self->supplied_barrier));
+
     return BOM::Product::Contract::Strike::Digit->new(supplied_barrier => $self->supplied_barrier);
 }
 
