@@ -188,7 +188,6 @@ subtest 'Checking filename' => sub {
     is $file_name, $expected_file_name, 'file name is correct';
 };
 
-
 subtest 'Send two files one by one' => sub {
     my %to_send = (
         'Hello world!' => {

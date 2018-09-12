@@ -35,7 +35,7 @@ test_sendrecv_params 'landing_company_details/test_send.json', "landing_company_
     foreach qw( costarica virtual iom malta maltainvest );
 
 # This file doesn't follow the same naming pattern
-test_sendrecv_params 'landing_company_details/test_send.json', "landing_company_details/test_receive_error.json",         'unknown';
+test_sendrecv_params 'landing_company_details/test_send.json', "landing_company_details/test_receive_error.json", 'unknown';
 
 test_sendrecv 'website_status/test_send.json',    'website_status/test_receive.json';
 test_sendrecv 'payout_currencies/test_send.json', 'payout_currencies/test_receive_no_login.json';

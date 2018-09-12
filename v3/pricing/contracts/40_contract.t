@@ -1,5 +1,8 @@
 #!perl
 
+use strict;
+use warnings;
+
 use Test::Most;
 
 use FindBin qw/$Bin/;
@@ -16,6 +19,8 @@ use BOM::Config::Runtime;
 use BOM::Test::Data::Utility::FeedTestDatabase;
 use Date::Utility;
 use await;
+
+use JSON::MaybeXS;
 
 build_test_R_50_data();
 my $t = build_wsapi_test();
@@ -272,6 +277,43 @@ $res = $t->await::buy({
     parameters => \%contractParameters,
 });
 is $res->{error}->{code}, 'InputValidationFailed', 'Schema validation fails with negative duration';
+
+subtest 'buy and subscribe' => sub {
+
+    my $proposal_3 = $t->await::proposal({
+        proposal => 1,
+        %notouch_2
+    });
+
+    $proposal_id = $proposal_3->{proposal}->{id};
+    $res         = $t->await::buy({
+        buy         => $proposal_id,
+        price       => 10000,
+        "subscribe" => "1"
+    });
+
+    my $contract_id;
+    diag explain $res unless ok($contract_id = $res->{buy}->{contract_id}, "got contract_id");
+
+    my $msg = {
+        %$res,
+        action_type             => 'buy',
+        account_id              => $client->default_account->id,
+        financial_market_bet_id => $res->{buy}{contract_id},
+        amount                  => $res->{buy}{buy_price},
+        short_code              => $res->{buy}{shortcode},
+        currency_code           => 'USD',
+
+    };
+
+    my $json = JSON::MaybeXS->new;
+    BOM::Config::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, Encode::encode_utf8($json->encode($msg)));
+
+    sleep 2;
+
+    my $data = $t->await::forget_all({forget_all => 'proposal_open_contract'});
+    diag explain $res if not is(scalar @{$data->{forget_all}}, 1, 'Correct number of subscription forget');
+};
 
 $t->finish_ok;
 

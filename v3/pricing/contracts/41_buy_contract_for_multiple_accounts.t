@@ -254,25 +254,25 @@ subtest "sell_contract_for_multiple_accounts => successful", sub {
 };
 
 subtest "invalid durations", sub {
-    
+
     $contractParameters{duration} = 100000000;
     $res = $t->await::buy_contract_for_multiple_accounts({
         buy_contract_for_multiple_accounts => 1,
         price                              => 0,
         tokens                             => \@tokens,
-        parameters => \%contractParameters
+        parameters                         => \%contractParameters
     });
-    is $res->{error}->{code}, 'InputValidationFailed', 'Schema validation fails with huge duration';    
+    is $res->{error}->{code}, 'InputValidationFailed', 'Schema validation fails with huge duration';
 
     $contractParameters{duration} = -1;
     $res = $t->await::buy_contract_for_multiple_accounts({
         buy_contract_for_multiple_accounts => 1,
         price                              => 0,
         tokens                             => \@tokens,
-        parameters => \%contractParameters
+        parameters                         => \%contractParameters
     });
-    is $res->{error}->{code}, 'InputValidationFailed', 'Schema validation fails with negative duration'; 
-    
+    is $res->{error}->{code}, 'InputValidationFailed', 'Schema validation fails with negative duration';
+
 };
 
 $t->finish_ok;

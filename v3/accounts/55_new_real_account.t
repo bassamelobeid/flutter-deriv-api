@@ -221,7 +221,7 @@ subtest 'create account failed' => sub {
             is($res->{error}->{code},    'InvalidAccount', 'restricted country - US');
             is($res->{new_account_real}, undef,            'NO account created');
         };
-        
+
         subtest 'invalid - xx' => sub {
             $vr_client->residence('xx');
             $vr_client->save;
