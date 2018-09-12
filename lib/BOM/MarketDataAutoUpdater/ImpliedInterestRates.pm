@@ -196,10 +196,14 @@ sub run {
         $report->{$implied_symbol}->{success} = 1;
     }
 
-    foreach my $sym (
-        qw/BTC-USD BTC-EUR BTC-AUD BTC-JPY BTC-NZD BTC-CAD BTC-CHF BTC-GBP BTC-PLN BTC-NOK BTC-MXN BTC-SEK BCH-USD BCH-EUR BCH-AUD BCH-JPY BCH-NZD BCH-CAD BCH-CHF BCH-GBP BCH-PLN BCH-NOK BCH-MXN BCH-SEK ETH-USD ETH-EUR ETH-AUD ETH-JPY ETH-NZD ETH-CAD ETH-CHF ETH-GBP ETH-PLN ETH-NOK ETH-MXN ETH-SEK LTC-USD LTC-EUR LTC-AUD LTC-JPY LTC-NZD LTC-CAD LTC-CHF LTC-GBP LTC-PLN LTC-NOK LTC-MXN LTC-SEK ETC-USD ETC-EUR ETC-AUD ETC-JPY ETC-NZD ETC-CAD ETC-CHF ETC-GBP ETC-PLN ETC-NOK ETC-MXN ETC-SEK DAI-USD DAI-EUR DAI-AUD DAI-JPY DAI-NZD DAI-CAD DAI-CHF DAI-GBP DAI-PLN DAI-NOK DAI-MXN DAI-SEK UST-USD UST-EUR UST-AUD UST-JPY UST-NZD UST-CAD UST-CHF UST-GBP UST-PLN UST-NOK UST-MXN UST-SEK/
-        )
-    {
+    my @crypto = qw(BTC BCH ETH ETC LTC DAI UST USB);
+    my @fiat   = qw(USD EUR AUD JPY NZD CAD CHF GBP PLN NOK MXN SEK);
+    my @pairs;
+    for my $crypto (@crypto) {
+        push @pairs, join '-', $crypto, $_ for @fiat;
+    }
+
+    foreach my $sym (@pairs) {
         Quant::Framework::ImpliedRate->new(
             symbol => $sym,
             rates  => {
