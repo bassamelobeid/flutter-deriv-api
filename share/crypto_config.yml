@@ -16,3 +16,7 @@ dai:
 ust:
     withdrawal:
         timeout: "3d"
+
+usb:
+    withdrawal:
+        timeout: "3d"

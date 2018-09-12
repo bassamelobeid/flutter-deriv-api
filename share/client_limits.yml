@@ -10,6 +10,7 @@ maximum_daily_turnover:
   ETC: 500
   DAI: 500000
   UST: 500000
+  USB: 500000
 max_balance:
   virtual:
     USD: 1000000
@@ -23,6 +24,7 @@ max_balance:
     ETC: 1000
     DAI: 1000000
     UST: 1000000
+    USB: 1000000
   real:
     USD: 300000
     EUR: 300000
@@ -35,6 +37,7 @@ max_balance:
     ETC: 500
     DAI: 3000000
     UST: 3000000
+    USB: 3000000
 max_payout_open_positions:
     USD: 50000
     EUR: 50000
@@ -47,4 +50,5 @@ max_payout_open_positions:
     ETC: 50
     DAI: 50000
     UST: 50000
+    USB: 50000
 max_open_bets_default: 60
