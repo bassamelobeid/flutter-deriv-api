@@ -9,6 +9,42 @@ use List::Util qw(first);
 use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 
+sub buy_get_single_contract {
+    my ($c, $api_response, $req_storage) = @_;
+
+    _subscribe_to_contract($c, $api_response) if $req_storage->{call_params}->{args}->{subscribe};
+    buy_store_last_contract_id($c, $api_response);
+
+    return undef;
+}
+
+sub _subscribe_to_contract {
+    my ($c, $api_response) = @_;
+
+    my @contract_keys = keys %{$api_response->{contract_details}};
+    # don't show contract details in buy response
+    my $contract_detail = (delete $api_response->{contract_details})->{$contract_keys[0]};
+
+    my $contract = {map { $_ => $contract_detail->{$_} }
+            qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode)};
+
+    my $account_id  = $contract->{account_id};
+    my $contract_id = $contract->{contract_id};
+    my $args        = {
+        subscribe              => 1,
+        contract_id            => $contract_id,
+        proposal_open_contract => 1
+    };
+
+    my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::pricing_channel_for_bid($c, $args, $contract);
+    # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
+    Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel(
+        $c, 'subscribe', $account_id,    # should not go to client
+        $uuid, $args, $contract_id
+    );
+    return undef;
+}
+
 sub buy_store_last_contract_id {
     my ($c, $api_response) = @_;
 
@@ -24,12 +60,14 @@ sub buy_store_last_contract_id {
     @{$last_contracts}{@contracts_ids} = ($now) x @contracts_ids;
 
     $c->stash(last_contracts => $last_contracts);
-    return;
+
+    return undef;
 }
 
 sub buy_get_contract_params {
     my ($c, $req_storage) = @_;
     my $args = $req_storage->{args};
+
     # Take parameters from args if $args->{parameters} is defined instead ot taking it from proposal
     if ($args->{parameters}) {
         $req_storage->{call_params}->{contract_parameters} = $args->{parameters};
@@ -43,6 +81,7 @@ sub buy_get_contract_params {
             $req_storage->{call_params}->{contract_parameters}                          = $ch->{args};
             $req_storage->{call_params}->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
             Binary::WebSocketAPI::v3::Wrapper::System::_forget_pricing_subscription($c, $proposal_id);
+
             return;
         }
     }

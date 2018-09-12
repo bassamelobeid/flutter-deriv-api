@@ -631,7 +631,7 @@ sub _create_poc_stream {
         }
         )->then(
         sub {
-            my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::_pricing_channel_for_bid(
+            my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::pricing_channel_for_bid(
                 $c,
                 $poc_args,
                 {

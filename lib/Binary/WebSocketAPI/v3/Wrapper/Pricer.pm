@@ -469,7 +469,7 @@ sub _process_proposal_open_contract_response {
                 my $cache = {map { $_ => $contract->{$_} }
                         qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode)};
 
-                if (not $uuid = _pricing_channel_for_bid($c, $args, $cache)) {
+                if (not $uuid = pricing_channel_for_bid($c, $args, $cache)) {
                     my $error =
                         $c->new_error('proposal_open_contract', 'AlreadySubscribed', $c->l('You are already subscribed to proposal_open_contract.'));
                     $c->send({json => $error}, $req_storage);
@@ -541,7 +541,7 @@ sub _pricing_channel_for_ask {
     return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache, $skip);
 }
 
-sub _pricing_channel_for_bid {
+sub pricing_channel_for_bid {
     my ($c, $args, $cache) = @_;
     my $price_daemon_cmd = 'bid';
 
