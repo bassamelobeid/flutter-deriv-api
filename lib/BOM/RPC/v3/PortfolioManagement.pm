@@ -127,7 +127,7 @@ rpc proposal_open_contract => sub {
     my @fmbs = ();
     my $contract_id = $params->{contract_id} || $params->{args}->{contract_id};
     if ($contract_id) {
-        @fmbs = @{__get_contract_details_by_id($client, $contract_id)};
+        @fmbs = @{get_contract_details_by_id($client, $contract_id)};
         if (not $client->default_account or scalar @fmbs and $fmbs[0]->{account_id} ne $client->default_account->id) {
             @fmbs = ();
         }
@@ -135,21 +135,36 @@ rpc proposal_open_contract => sub {
         @fmbs = @{__get_open_contracts($client)};
     }
 
-    my ($response, $currency, $lc_name) = ({}, $client->currency, $client->landing_company->short);
-    foreach my $fmb (@fmbs) {
+    return populate_response_proposal_contract($client, $params, \@fmbs);
+};
+
+=head2 populate_response_proposal_contract
+
+Will populate a new `proposal_open_contract` response for
+each of the contracts (contract_id or all the open contracts for this account id)
+and return an object with the contract_id as key and the details of the contract as
+response.
+
+=cut
+
+sub populate_response_proposal_contract {
+    my ($client, $params, $contract_details) = @_;
+
+    my $response = {};
+    foreach my $fmb (@{$contract_details}) {
         my $id = $fmb->{id};
         my $sell_time;
         $sell_time = Date::Utility->new($fmb->{sell_time})->epoch if $fmb->{sell_time};
         my $contract = {
             short_code            => $fmb->{short_code},
             contract_id           => $id,
-            currency              => $currency,
+            currency              => $client->currency,
             is_expired            => $fmb->{is_expired},
             is_sold               => $fmb->{is_sold},
             sell_price            => $fmb->{sell_price},
             buy_price             => $fmb->{buy_price},
             app_markup_percentage => $params->{app_markup_percentage},
-            landing_company       => $lc_name,
+            landing_company       => $client->landing_company->short,
             account_id            => $fmb->{account_id},
             country_code          => $client->residence,
         };
@@ -168,24 +183,32 @@ rpc proposal_open_contract => sub {
             $contract->{account_id}      = $fmb->{account_id};
             $contract->{is_sold}         = $fmb->{is_sold};
             $contract->{sell_time}       = $sell_time if $sell_time;
-            $contract->{sell_price}      = formatnumber('price', $currency, $fmb->{sell_price}) if defined $fmb->{sell_price};
+            $contract->{sell_price}      = formatnumber('price', $client->currency, $fmb->{sell_price}) if defined $fmb->{sell_price};
 
             if (defined $contract->{buy_price} and (defined $contract->{bid_price} or defined $contract->{sell_price})) {
                 $contract->{profit} =
                     (defined $contract->{sell_price})
-                    ? formatnumber('price', $currency, $contract->{sell_price} - $contract->{buy_price})
-                    : formatnumber('price', $currency, $contract->{bid_price} - $contract->{buy_price});
+                    ? formatnumber('price', $client->currency, $contract->{sell_price} - $contract->{buy_price})
+                    : formatnumber('price', $client->currency, $contract->{bid_price} - $contract->{buy_price});
                 $contract->{profit_percentage} = roundcommon(0.01, $contract->{profit} / $contract->{buy_price} * 100);
             }
             $response->{$id} = $contract;
         }
     }
-    return $response;
-};
 
-sub __get_contract_details_by_id {
-    my $client      = shift;
-    my $contract_id = shift;
+    return $response;
+
+}
+
+=head2 get_contract_details_by_id
+
+With the contract_id will retrieve from clientdb `bet.financial_market_bet`
+what are the transactions and details of this contract.
+
+=cut
+
+sub get_contract_details_by_id {
+    my ($client, $contract_id) = @_;
 
     my $mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
         broker_code => $client->broker_code,

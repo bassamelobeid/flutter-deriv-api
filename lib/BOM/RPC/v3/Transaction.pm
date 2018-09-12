@@ -213,16 +213,23 @@ rpc buy => sub {
         warn "Copiers trade error: " . $_;
     };
 
+    # to subscribe to this contract after buy, we need to have the same information that we pass to
+    # proposal_open_contract call, so we are giving this information as part of the response here
+    # but this will be removed at the websocket api logic before we show the response to the client.
+    my $contract_details = BOM::RPC::v3::PortfolioManagement::get_contract_details_by_id($client, $trx->contract_id);
+    my $populated_contract = BOM::RPC::v3::PortfolioManagement::populate_response_proposal_contract($client, {}, $contract_details);
+
     return {
-        transaction_id => $trx->transaction_id,
-        contract_id    => $trx->contract_id,
-        balance_after  => formatnumber('amount', $client->currency, $trx->balance_after),
-        purchase_time  => $trx->purchase_date->epoch,
-        buy_price      => formatnumber('amount', $client->currency, $trx->price),
-        start_time     => $trx->contract->date_start->epoch,
-        longcode       => localize($trx->contract->longcode),
-        shortcode      => $trx->contract->shortcode,
-        payout         => $trx->payout
+        transaction_id   => $trx->transaction_id,
+        contract_id      => $trx->contract_id,
+        contract_details => $populated_contract,
+        balance_after    => formatnumber('amount', $client->currency, $trx->balance_after),
+        purchase_time    => $trx->purchase_date->epoch,
+        buy_price        => formatnumber('amount', $client->currency, $trx->price),
+        start_time       => $trx->contract->date_start->epoch,
+        longcode         => localize($trx->contract->longcode),
+        shortcode        => $trx->contract->shortcode,
+        payout           => $trx->payout
     };
 };
 
