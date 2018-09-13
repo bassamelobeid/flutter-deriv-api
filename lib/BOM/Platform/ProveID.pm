@@ -73,6 +73,8 @@ sub defaults {
         phone         => $client->phone || '',
         email         => $client->email || '',
         client_id     => $client->loginid,
+        private_key   => BOM::Config::third_party()->{proveid}->{private_key},
+        public_key    => BOM::Config::third_party()->{proveid}->{public_key},
     );
 }
 
