@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 9;
+use Test::More tests => 10;
 use Test::Exception;
 use Test::Deep;
 use Test::Warn;
@@ -72,6 +72,7 @@ subtest 'total_withdrawals' => sub {
         client_loginid => $client_two->loginid,
         currency_code  => 'USD'
     );
+
     is($account->total_withdrawals(), 0, "No payments have been made");
 
     ok(
@@ -143,5 +144,29 @@ subtest find_transaction => sub {
     is($trx->amount * 1, 100, 'Returned the correct transaction');
     my $testPayment = $trx->payment;
     is($testPayment->amount, 100, 'Test getting Payment from Transaction OK');
+};
+
+subtest default_account => sub {
+
+    my $client = create_client();
+
+    $client->db->dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare("INSERT INTO transaction.account (client_loginid, currency_code, is_default) VALUES (?,?,?)");
+            $sth->execute($client->loginid, 'AUD', 'FALSE');
+        });
+
+    my $account1 = BOM::User::Client::Account->new(
+        db             => $client->db,
+        client_loginid => $client->loginid,
+        currency_code  => 'USD'
+    );
+
+    $client->db->dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare("INSERT INTO transaction.account (client_loginid, currency_code, is_default) VALUES (?,?,?)");
+            $sth->execute($client->loginid, 'GBP', 'FALSE');
+        });
+    is($client->account->currency_code, 'USD', 'Correct account returned');
 };
 done_testing();

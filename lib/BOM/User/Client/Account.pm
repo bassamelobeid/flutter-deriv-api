@@ -74,7 +74,8 @@ sub _refresh_object {
     my $self             = shift;
     my $existing_account = $self->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref("SELECT * FROM transaction.account WHERE client_loginid = ? ", undef, $self->{client_loginid});
+            $_->selectrow_hashref("SELECT * FROM transaction.account WHERE client_loginid = ? AND  is_default = TRUE", undef,
+                $self->{client_loginid});
         });
 
     if (defined $existing_account) {
