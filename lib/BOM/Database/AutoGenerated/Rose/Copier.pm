@@ -15,6 +15,7 @@ __PACKAGE__->meta->setup(
         trade_type      => { type => 'varchar', length => 50 },
         min_trade_stake => { type => 'numeric' },
         max_trade_stake => { type => 'numeric' },
+        trader_token    => { type => 'text' },
     ],
 
     primary_key_columns => [ 'copier_id' ],
