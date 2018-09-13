@@ -49,6 +49,7 @@ sub update_or_create {
             my $self = $class->rnew(
                 broker          => $args->{broker},
                 trader_id       => $args->{trader_id},
+                trader_token    => $args->{trader_token},
                 copier_id       => $args->{copier_id},
                 min_trade_stake => $args->{min_trade_stake},
                 max_trade_stake => $args->{max_trade_stake},
