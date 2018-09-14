@@ -3,31 +3,34 @@ package BOM::OAuth::O;
 use strict;
 use warnings;
 
+no indirect;
+
 use Mojo::Base 'Mojolicious::Controller';
 use Date::Utility;
 use Try::Tiny;
 use Digest::MD5 qw(md5_hex);
 use Email::Valid;
 use Mojo::Util qw(url_escape);
-use List::MoreUtils qw(any firstval);
+use List::Util qw(any first);
 use HTML::Entities;
 use Format::Util::Strings qw( defang );
-use List::MoreUtils qw(none);
+use DataDog::DogStatsd::Helper qw(stats_inc);
 
-use BOM::User::Client;
 use LandingCompany::Registry;
 use Brands;
 
 use BOM::Config::Runtime;
 use BOM::User;
+use BOM::User::Client;
 use BOM::User::TOTP;
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
 use BOM::OAuth::Helper;
 use BOM::User::AuditLog;
 use BOM::Platform::Context qw(localize);
-use DataDog::DogStatsd::Helper qw(stats_inc);
 use BOM::OAuth::Static qw(get_message_mapping);
+
+use constant APP_ALLOWED_TO_RESET_PASSWORD => qw(1 14473);
 
 sub authorize {
     my $c = shift;
@@ -80,26 +83,27 @@ sub authorize {
     }
 
     my %template_params = (
-        template         => _get_login_template_name($brand_name),
-        layout           => $brand_name,
-        app              => $app,
-        r                => $c->stash('request'),
-        csrf_token       => $c->csrf_token,
-        use_social_login => $c->_is_social_login_available(),
-        login_providers  => $c->stash('login_providers'),
-        login_method     => undef,
+        template                  => _get_login_template_name($brand_name),
+        layout                    => $brand_name,
+        app                       => $app,
+        r                         => $c->stash('request'),
+        csrf_token                => $c->csrf_token,
+        use_social_login          => $c->_is_social_login_available(),
+        login_providers           => $c->stash('login_providers'),
+        login_method              => undef,
+        is_reset_password_allowed => _is_reset_password_allowed($app->{id}),
     );
 
     # detect and validate social_login param if provided
     if (my $method = $c->param('social_signup')) {
         if (!$c->param('email') and !$c->param('password')) {
             if (_is_social_login_suspended()) {
-                stats_inc_error($brand_name, "TEMP_DISABLED");
+                _stats_inc_error($brand_name, "TEMP_DISABLED");
                 $template_params{error} = localize(get_message_mapping()->{TEMP_DISABLED});
                 return $c->render(%template_params);
             }
             if (not grep { $method eq $_ } @{$c->stash('login_providers')}) {
-                stats_inc_error($brand_name, "INVALID_SOCIAL");
+                _stats_inc_error($brand_name, "INVALID_SOCIAL");
                 return $c->_bad_request('the request was missing valid social login method');
             }
             $template_params{login_method} = $method;
@@ -126,7 +130,7 @@ sub authorize {
         $is_verified = BOM::User::TOTP->verify_totp($user->{secret_key}, $otp);
         $c->session('_otp_verified', $is_verified);
         $otp_error = localize(get_message_mapping->{TFA_FAILURE});
-        stats_inc_error($brand_name, "TFA_FAILURE");
+        _stats_inc_error($brand_name, "TFA_FAILURE");
     }
 
     # Check if user has enabled 2FA authentication and this is not a scope request
@@ -303,18 +307,19 @@ sub _login {
 
     if ($err) {
 
-        stats_inc_error($brand_name, $err);
+        _stats_inc_error($brand_name, $err);
 
         $c->render(
-            template         => _get_login_template_name($brand_name),
-            layout           => $brand_name,
-            app              => $app,
-            error            => localize(get_message_mapping()->{$err} // $err),
-            r                => $c->stash('request'),
-            csrf_token       => $c->csrf_token,
-            use_social_login => $c->_is_social_login_available(),
-            login_providers  => $c->stash('login_providers'),
-            login_method     => undef,
+            template                  => _get_login_template_name($brand_name),
+            layout                    => $brand_name,
+            app                       => $app,
+            error                     => localize(get_message_mapping()->{$err} // $err),
+            r                         => $c->stash('request'),
+            csrf_token                => $c->csrf_token,
+            use_social_login          => $c->_is_social_login_available(),
+            login_providers           => $c->stash('login_providers'),
+            login_method              => undef,
+            is_reset_password_allowed => _is_reset_password_allowed($app->{id}),
         );
 
         return;
@@ -482,14 +487,21 @@ sub _get_details_from_environment {
 }
 
 sub _get_login_template_name {
-    my $brand_name = shift;
-
+    my $brand_name = shift // 'binary';
     return $brand_name . '/login';
 }
 
-sub stats_inc_error {
+sub _stats_inc_error {
     my ($brand_name, $failure_message) = @_;
     stats_inc('login.authorizer.validation_failure', {tags => ["brand:$brand_name", "error:$failure_message"]});
+}
+
+sub _is_reset_password_allowed {
+    my $app_id = shift;
+
+    die "Invalid application id." unless $app_id;
+
+    return first { $_ == $app_id } APP_ALLOWED_TO_RESET_PASSWORD;
 }
 
 1;
