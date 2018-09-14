@@ -17,7 +17,7 @@ use Date::Utility;
 
 BOM::Backoffice::Sysinit::init();
 
-my @all_currencies = ('USD', 'GBP', 'EUR', 'AUD', 'JPY', 'BTC', 'BCH', 'LTC', 'ETH', 'DAI');
+my @exchange_rate_symbol = ('frxGBPUSD', 'frxEURUSD', 'frxAUDUSD', 'frxJPYUSD', 'cryBTCUSD', 'cryBCHUSD', 'cryLTCUSD', 'cryETHUSD', 'cryDAIUSD');
 
 my $update_time = Date::Utility->new($ARGV[0] || time());
 
@@ -32,10 +32,8 @@ foreach my $broker ('FOG') {
 }
 
 CURRENCY:
-foreach my $currency (@all_currencies) {
-    next CURRENCY if $currency eq 'USD';
-
-    my $symbol = 'frx' . $currency . 'USD';
+foreach my $symbol (@exchange_rate_symbol) {
+    my ($source_currency) = $symbol =~ /^(?:frx|cry)(\w{3})USD$/;
 
     my $underlying = create_underlying($symbol);
     my $price      = $underlying->spot;
@@ -46,7 +44,7 @@ foreach my $currency (@all_currencies) {
     foreach my $broker (keys %{$dbs}) {
         my $exchange_rate = BOM::Database::Model::ExchangeRate->new({
                 data_object_params => {
-                    source_currency => $currency,
+                    source_currency => $source_currency,
                     target_currency => 'USD',
                     date            => $update_time->db_timestamp,
                 },

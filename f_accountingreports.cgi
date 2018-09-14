@@ -132,14 +132,14 @@ Bar("USEFUL EXCHANGE RATES");
 
 print "The following exchange rates are from our live data feed. They are live rates as of right now (" . Date::Utility->new->datetime . ")" . "<ul>";
 
-foreach my $curr (qw(GBPUSD EURUSD USDHKD AUDUSD GBPHKD AUDHKD EURHKD BTCUSD)) {
+foreach my $curr (qw(frxGBPUSD frxEURUSD frxUSDHKD frxAUDUSD frxGBPHKD frxAUDHKD frxEURHKD cryBTCUSD)) {
+    my $underlying = create_underlying($curr);
     try {
-        my $underlying = create_underlying('frx' . $curr);
-        print "<li>$curr: " . $underlying->spot . "</li>";
+        print "<li>" . $underlying->display_name . " : " . $underlying->spot . "</li>";
     }
     catch {
         warn "Failed to get exchange rate for $curr - $_\n";
-        print '<li>' . $curr . ': <span style="color:red;">ERROR</span></li>';
+        print '<li>' . $underlying->display_name . ': <span style="color:red;">ERROR</span></li>';
     }
 }
 print "</ul>";
