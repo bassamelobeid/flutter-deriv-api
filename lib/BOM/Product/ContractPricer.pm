@@ -602,7 +602,8 @@ sub _build_priced_with {
         $priced_with = 'quanto';
     }
 
-    if ($underlying->submarket->name eq 'smart_fx') {
+    # price with numeraire if payout currency is crypto. We are only skipping for non_stable_coins
+    if ($underlying->submarket->name eq 'smart_fx' or $self->currency =~ /(?:BTC|BCH|ETH|ETC|LTC)/) {
         $priced_with = 'numeraire';
     }
 
