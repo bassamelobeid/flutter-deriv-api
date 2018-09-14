@@ -43,11 +43,12 @@ if (not $client) {
     code_exit_BO();
 }
 
-my $startdate = request()->param('startdate');
-my $enddate   = request()->param('enddate');
+my $from_date = request()->param('startdate');
+my $to_date   = request()->param('enddate');
 
-if ($enddate) {
-    $enddate = Date::Utility->new($enddate)->plus_time_interval('1d')->date_yyyymmdd;
+if ($from_date && $to_date && $from_date =~ m/^\d{4}-\d{2}-\d{2}$/ && $to_date =~ m/^\d{4}-\d{2}-\d{2}$/) {
+    $from_date .= ' 00:00:00';
+    $to_date   .= ' 23:59:59';
 }
 
 my $clientdb = BOM::Database::ClientDB->new({
@@ -61,10 +62,15 @@ my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
     db             => $clientdb->db,
 });
 
+# since get_sold uses after (> sign) and before (< sign)
+# we want the time to be inclusive of from_date (>= sign) and to_date (<= sign)
+# so we add and minus 1 second to make it same as >= or <=
+# underlying of client_statement_for_backoffice uses get_transactions and get_payments
+# which handles undef accordingly.
 my $sold_contracts = $fmb_dm->get_sold({
-    after  => $startdate,
-    before => $enddate,
-    limit  => (request()->param('all') ? 99999 : 50),
+    after  => $from_date ? Date::Utility->new($from_date)->minus_time_interval('1s')->datetime_yyyymmdd_hhmmss() : undef,
+    before => $to_date   ? Date::Utility->new($to_date)->plus_time_interval('1s')->datetime_yyyymmdd_hhmmss()    : undef,
+    limit  => 50
 });
 
 #Performance probability
@@ -125,17 +131,17 @@ foreach my $contract (@$open_contracts) {
 BOM::Backoffice::Request::template()->process(
     'backoffice/account/profit_table.html.tt',
     {
-        sold_contracts              => $sold_contracts,
-        open_contracts              => $open_contracts,
-        markets                     => [Finance::Asset::Market::Registry->instance->display_markets],
-        email                       => $client->email,
-        full_name                   => $client->full_name,
-        loginid                     => $client->loginid,
-        posted_startdate            => $startdate,
-        posted_enddate              => $enddate,
-        currency                    => $client->currency,
-        residence                   => Brands->new(name => request()->brand)->countries_instance->countries->country_from_code($client->residence),
-        contract_details            => \&BOM::ContractInfo::get_info,
+        sold_contracts   => $sold_contracts,
+        open_contracts   => $open_contracts,
+        markets          => [Finance::Asset::Market::Registry->instance->display_markets],
+        email            => $client->email,
+        full_name        => $client->full_name,
+        loginid          => $client->loginid,
+        posted_startdate => $from_date ? Date::Utility->new($from_date)->datetime_yyyymmdd_hhmmss() : undef,
+        posted_enddate   => $to_date ? Date::Utility->new($to_date)->datetime_yyyymmdd_hhmmss() : undef,
+        currency         => $client->currency,
+        residence        => Brands->new(name => request()->brand)->countries_instance->countries->country_from_code($client->residence),
+        contract_details => \&BOM::ContractInfo::get_info,
         performance_probability     => $performance_probability,
         inv_performance_probability => $inv_performance_probability,
     }) || die BOM::Backoffice::Request::template()->error();

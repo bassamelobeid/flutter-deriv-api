@@ -51,7 +51,7 @@
 [%- MACRO navigator BLOCK -%]
 <div id="statement-table" class="grd-parent grd-grid-12 grd-row-padding">
     <div class="grd-grid-6 left-aligned">
-        <FORM ACTION="[% request.url_for('backoffice/f_profit_table.cgi') | none %]" METHOD="POST">
+        <FORM ACTION="[% request.url_for('backoffice/f_profit_table.cgi') | none %]" METHOD="GET">
                 <INPUT name=enddate type=hidden value="[% startdate %]" />
                 <INPUT type=hidden name="loginID" value="[% loginid %]" />
                 <INPUT type=hidden name="broker" value="[% request.broker_code %]" />
@@ -60,7 +60,7 @@
         </FORM>
     </div>
     <div class="grd-grid-6 right-aligned">
-        <FORM ACTION="[% request.url_for('backoffice/f_profit_table.cgi') | none %]" METHOD="POST">
+        <FORM ACTION="[% request.url_for('backoffice/f_profit_table.cgi') | none %]" METHOD="GET">
                 <INPUT name=startdate type=hidden value="[% enddate %]" />
                 <INPUT type=hidden name="loginID" value="[% loginid %]" />
                 <INPUT type=hidden name="broker" value="[% request.broker_code %]" />
@@ -84,7 +84,6 @@
         <INPUT type=hidden name="loginID" value="[% loginid %]" />
         <INPUT type=hidden name="broker" value="[% request.broker_code %]" />
         <INPUT type=hidden name="l" value="EN" />
-        <INPUT type=checkbox name="all">All (No pagination) </INPUT>
         <INPUT type="submit" value="Update" />
         <input type="submit" name="calc_performance_probability" value="Calculate Performance Probability" />
 </FORM>

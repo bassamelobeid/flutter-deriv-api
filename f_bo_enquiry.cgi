@@ -43,7 +43,6 @@ if ($broker ne 'FOG') {
     print "To : <input name=enddate type=text size=10 value='" . Date::Utility->today()->date . "'/>";
     print "<INPUT type=hidden name=\"broker\" value=\"$encoded_broker\">";
     print "<INPUT type=hidden name=\"l\" value=\"EN\">";
-    print "<INPUT type=checkbox name=\"all\">All (No pagination) </INPUT>";
     print "<INPUT type=\"submit\" value=\"Client Profit Table\">";
     print "</FORM>";
 

@@ -30,20 +30,20 @@ sub get_currency_options {
 
 =head2 allow_uplift_self_exclusion
 
-Takes a client object, client's current exclude_until date, and new exclude_until date from the form. 
+Takes a client object, client's current exclude_until date, and new exclude_until date from the form.
 Validation is then performed to either allow or restrict the staff to amend the exclude_until date
 by returning 1 or 0, respectively. [Section 3.5.4 (5a,5f)
-of the United Kingdom Gambling Commission licence conditions and codes of practice 
+of the United Kingdom Gambling Commission licence conditions and codes of practice
 (effective 6 April 2017)].
 
 - Only Compliance team is allowed to uplift exclude_until date before expiry.
 - exclude_until period must not be less than SIX months [Section 3.5.4 (5a)
-of the United Kingdom Gambling Commission licence conditions and codes of practice 
+of the United Kingdom Gambling Commission licence conditions and codes of practice
 (effective 6 April 2017)].
 
 - After the exclude_until date expires, clients' exclusion still remains in place.
 
-At this point, client must email Customer Support/Compliance team for their exclusion 
+At this point, client must email Customer Support/Compliance team for their exclusion
 to be uplifted (exclude_until date removed).
 
 United Kingdom Gambling Commission licence conditions and codes of practice is
@@ -252,20 +252,25 @@ sub print_client_details {
 ######################################################################
 sub build_client_statement_form {
     my $broker = shift @_;
-
     return
-          "<hr><FORM ACTION=\""
-        . request()->url_for("backoffice/f_manager_history.cgi")
-        . "\" METHOD=\"POST\">"
-        . "Check Statement of LoginID : <input id='statement_loginID' name=loginID type=text size=10 value='$broker'>"
-        . "<INPUT type=hidden name=\"broker\" value=\"$broker\">"
-        . "<SELECT name=\"currency\"><option value=\"default\">client's default currency</option>"
+          '<hr><FORM ACTION="'
+        . request()->url_for('backoffice/f_manager_history.cgi')
+        . '" METHOD="POST">'
+        . 'Check Statement of LoginID : <input id="statement_loginID" name="loginID" type="text" size="10" value="'
+        . $broker . '"/>'
+        . 'From : <input name="startdate" type="text" size="10" value="'
+        . Date::Utility->today()->_minus_months(1)->date . ' "/>'
+        . 'To : <input name="enddate" type="text" size="10" value="'
+        . Date::Utility->today()->date . ' "/>'
+        . '<input type="hidden" name="broker" value="'
+        . $broker . '">'
+        . '<SELECT name="currency"><option value="default">client\'s default currency</option>'
         . get_currency_options()
-        . "</SELECT>"
-        . "<INPUT type=hidden name=\"l\" value=\"EN\">"
-        . "&nbsp; <INPUT type=\"submit\" value='Client Statement'>"
-        . "&nbsp; <input type=checkbox value=yes name=depositswithdrawalsonly>Deposits and Withdrawals only "
-        . "</FORM>";
+        . '</SELECT>'
+        . '<input type="hidden" name="l" value="EN">'
+        . '&nbsp; <input type="submit" value="Client Statement">'
+        . '&nbsp; <input type="checkbox" value="yes" name="depositswithdrawalsonly">Deposits and Withdrawals only '
+        . '</FORM>';
 }
 
 ## build_client_warning_message #######################################

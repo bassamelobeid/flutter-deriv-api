@@ -27,12 +27,12 @@ $loginID =~ s/\s//g;
 my $encoded_loginID = encode_entities($loginID);
 my $depositswithdrawalsonly = request()->param('depositswithdrawalsonly') // '';
 
-my $startdate = trim(request()->param('startdate'));
-my $enddate   = trim(request()->param('enddate'));
+my $from_date = trim(request()->param('startdate'));
+my $to_date   = trim(request()->param('enddate'));
 
-if ($startdate && $enddate && $startdate =~ m/^\d{4}-\d{2}-\d{2}$/ && $enddate =~ m/^\d{4}-\d{2}-\d{2}$/) {
-    $startdate .= ' 00:00:00';
-    $enddate   .= ' 23:59:59';
+if ($from_date && $to_date && $from_date =~ m/^\d{4}-\d{2}-\d{2}$/ && $to_date =~ m/^\d{4}-\d{2}-\d{2}$/) {
+    $from_date .= ' 00:00:00';
+    $to_date   .= ' 23:59:59';
 }
 
 my $overview_from_date =
@@ -83,10 +83,15 @@ my $residence    = Locale::Country::code2country($client->residence);
 my $client_name  = $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
 my $client_email = $client->email;
 
+# since client_statement_for_backoffice uses after (> sign) and before (< sign)
+# we want the time to be inclusive of from_date (>= sign) and to_date (<= sign)
+# so we add and minus 1 second to make it same as >= or <=
+# underlying of client_statement_for_backoffice uses get_transactions and get_payments
+# which handles undef accordingly.
 my $statement = client_statement_for_backoffice({
     client   => $client,
-    before   => $enddate,
-    after    => $startdate,
+    after    => $from_date ? Date::Utility->new($from_date)->minus_time_interval('1s')->datetime_yyyymmdd_hhmmss() : undef,
+    before   => $to_date ? Date::Utility->new($to_date)->plus_time_interval('1s')->datetime_yyyymmdd_hhmmss() : undef,
     currency => $currency,
 });
 
@@ -136,8 +141,8 @@ BOM::Backoffice::Request::template()->process(
             residence => $residence,
             tel       => $tel
         },
-        startdate => $startdate,
-        enddate   => $enddate,
+        startdate => $from_date ? Date::Utility->new($from_date)->datetime_yyyymmdd_hhmmss() : undef,
+        enddate   => $to_date   ? Date::Utility->new($to_date)->datetime_yyyymmdd_hhmmss()   : undef,
     },
 ) || die BOM::Backoffice::Request::template()->error();
 
