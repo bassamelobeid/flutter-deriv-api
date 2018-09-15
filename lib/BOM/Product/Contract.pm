@@ -1228,6 +1228,17 @@ has invalid_user_input => (
     default => 0
 );
 
+=head2 payout_currency_type
+
+payout currency can be fiat or cryptocurrency
+
+=cut
+
+has payout_currency_type => (
+    is      => 'ro',
+    default => undef,
+);
+
 my $socket;
 my $pricing_service_config = {};
 

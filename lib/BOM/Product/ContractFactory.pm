@@ -86,6 +86,7 @@ sub produce_contract {
         $params_ref = BOM::Product::Categorizer->new(parameters => $params_ref)->process()->[0];
     }
 
+    $params_ref->{payout_currency_type} //= LandingCompany::Registry::get_currency_type($params_ref->{currency});
     _validate_input_parameters($params_ref);
 
     my $product_type = $params_ref->{product_type} // 'basic';

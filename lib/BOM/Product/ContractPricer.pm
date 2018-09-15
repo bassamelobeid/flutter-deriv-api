@@ -438,8 +438,9 @@ sub _build_domqqq {
     my $result = {};
 
     if ($self->priced_with eq 'quanto') {
+        my $prefix = $self->payout_currency_type eq 'crypto' ? 'cry' : 'frx';
         $result->{underlying} = create_underlying({
-            symbol   => 'frx' . $self->underlying->quoted_currency_symbol . $self->currency,
+            symbol   => $prefix . $self->underlying->quoted_currency_symbol . $self->currency,
             for_date => $self->underlying->for_date
         });
         $result->{volsurface} = $self->_volsurface_fetcher->fetch_surface({
@@ -458,8 +459,9 @@ sub _build_forqqq {
     my $result = {};
 
     if ($self->priced_with eq 'quanto' and ($self->underlying->market->name eq 'forex' or $self->underlying->market->name eq 'commodities')) {
+        my $prefix = $self->payout_currency_type eq 'crypto' ? 'cry' : 'frx';
         $result->{underlying} = create_underlying({
-            symbol   => 'frx' . $self->underlying->asset_symbol . $self->currency,
+            symbol   => $prefix . $self->underlying->asset_symbol . $self->currency,
             for_date => $self->underlying->for_date
         });
 

@@ -1,6 +1,7 @@
 #!/etc/rmg/bin/perl
 
 use Test::More;
+use Test::Exception;
 use Test::Warnings;
 use Test::Fatal;
 
@@ -24,9 +25,9 @@ my $now = Date::Utility->new('2016-03-18 01:00:00');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol        => 'USD',
+        symbol        => $_,
         recorded_date => $now
-    });
+    }) for qw(USD DAI);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
@@ -262,6 +263,24 @@ subtest 'invalid payout currency' => sub {
     ok !$c->is_valid_to_buy, 'invalid to buy';
     ok $c->invalid_user_input, 'invalid input set to true';
     like($c->primary_validation_error->{message}, qr/payout currency not supported/, 'payout currency not supported');
+};
+
+subtest 'stable crypto as payout currency' => sub {
+    my $now = Date::Utility->new($fake_tick->epoch);
+    my $bet_params = {
+        date_start   => $now,
+        date_pricing => $now,
+        underlying   => 'frxUSDJPY',
+        bet_type     => 'CALL',
+        duration     => '3d',
+        barrier      => 'S0P',
+        currency     => 'DAI',
+        payout       => 10,
+        current_tick => $fake_tick,
+    };
+    my $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid multi-day ATM contract with relative barrier.';
+    lives_ok {$c->ask_price} 'ask price without exception';
 };
 
 done_testing();
