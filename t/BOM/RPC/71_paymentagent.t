@@ -111,6 +111,9 @@ my $mock_payment_agent = Test::MockModule->new('BOM::Database::DataMapper::Payme
 ## Used to set global statuses:
 my $runtime_system = BOM::Config::Runtime->instance->app_config->system;
 
+## Used to check for special cases on the payment agent exclusion list
+my $payment_agent_exclusion_list = BOM::Config::Runtime->instance->app_config->payments->payment_agent_residence_check_exclusion;
+
 ## Cannot test if we do not know some edge cases:
 my $payment_withdrawal_limits = BOM::Config->payment_limits()->{withdrawal_limits};
 my $payment_transfer_limits   = BOM::Config::payment_agent()->{transaction_limits}->{transfer};
@@ -584,7 +587,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $clientdbh->do($SQL, undef, $Alice_id);
 
         # push payment agent's email into exclusion list
-        push BOM::Config::Runtime->instance->app_config()->payments()->payment_agent_residence_check_exclusion(), $Alice->email;
+        push @$payment_agent_exclusion_list, $Alice->email;
         $test          = q{payment agent is in exclusion list, transfer is allowed even if country of residence is different.};
         $old_residence = $Alice->residence;
         $Alice->residence('in the Wonder Land');
@@ -592,7 +595,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         is($res->{status}, 1, $test) or diag Dumper $res;
         $Alice_transferred += $test_amount;
         $Alice->residence($old_residence);
-        pop BOM::Config::Runtime->instance->app_config()->payments()->payment_agent_residence_check_exclusion();
+        pop @$payment_agent_exclusion_list;
 
         # sleep 2 seconds to allow next pa transfer
         sleep 2;
@@ -1123,14 +1126,14 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         # mock to make sure that there is authenticated pa in Alice's country
         $mock_payment_agent->mock('get_authenticated_payment_agents', sub { return {pa1 => 'dummy'}; });
         # push payment agent's email into exclusion list
-        push BOM::Config::Runtime->instance->app_config()->payments()->payment_agent_residence_check_exclusion(), $Alice->email;
+        push @$payment_agent_exclusion_list, $Alice->email;
         $test          = q{payment agent is in exclusion list, withdraw is allowed even if country of residence is different.};
         $old_residence = $Alice->residence;
         $Alice->residence('in the Wonder Land');
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         is($res->{status}, 1, $test);
         $Alice->residence($old_residence);
-        pop BOM::Config::Runtime->instance->app_config()->payments()->payment_agent_residence_check_exclusion();
+        pop @$payment_agent_exclusion_list;
         $mock_payment_agent->unmock('get_authenticated_payment_agents');
 
         # to avoid request too frequent rest for 2 seconds

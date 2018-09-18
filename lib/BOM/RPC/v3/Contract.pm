@@ -94,8 +94,7 @@ sub validate_barrier {
     return undef if (defined $contract_parameters->{barrier} && $contract_parameters->{barrier} eq 'S0P');
 
     # Get the number of digits of the underlying pipsize.
-    my $pipsize = create_underlying($contract_parameters->{underlying})->pip_size;
-    $pipsize =~ /\.([0-9]+)/;
+    create_underlying($contract_parameters->{underlying})->pip_size =~ /\.([0-9]+)/;
     my $pipsize_decimal_places = length $1;
 
     my @barrier_keys = grep { /barrier/ } keys %{$contract_parameters};
