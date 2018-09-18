@@ -1195,7 +1195,7 @@ async_rpc mt5_withdrawal => sub {
                 )->then(
                 sub {
                     my ($response) = @_;
-                    return Future->done($response) if (ref $response eq 'HASH' and $response->{error});
+                    return _make_error($error_code, $response->{error}) if (ref $response eq 'HASH' and $response->{error});
 
                     my $to_client = BOM::User::Client->new({loginid => $to_loginid});
 
