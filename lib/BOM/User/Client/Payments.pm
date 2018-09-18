@@ -150,11 +150,12 @@ sub validate_payment {
                     });
                 }
                 my $msg = "Withdrawal amount [%s %s] exceeds withdrawal limit [EUR %s]";
+                my @values = ($currency, formatnumber('amount', $currency, $absamt), formatnumber('amount', $currency, $wd_eur_left));
                 if ($currency ne 'EUR') {
                     $msg = "$msg (equivalent to %s %s)";
+                    push @values, $currency, formatnumber('amount', $currency, $wd_left);
                 }
-                die sprintf "$msg.\n", $currency, formatnumber('amount', $currency, $absamt), formatnumber('amount', $currency, $wd_eur_left),
-                    $currency, formatnumber('amount', $currency, $wd_left);
+                die sprintf "$msg.\n", @values;
             }
         }
 
