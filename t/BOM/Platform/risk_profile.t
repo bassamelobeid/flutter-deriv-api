@@ -6,6 +6,7 @@ use warnings;
 use Test::More;
 use Test::Exception;
 use Test::Warnings;
+use Test::Deep;
 
 use Quant::Framework::Underlying;
 
@@ -225,7 +226,9 @@ subtest 'get_current_profile_definitions' => sub {
     foreach my $broker (keys %$expected) {
         my $client  = create_client($broker);
         my $general = BOM::Platform::RiskProfile::get_current_profile_definitions($client);
-        is_deeply($general, $expected->{$broker}, $broker);
+        foreach my $profile (keys %$general) {
+            cmp_deeply($general->{$profile}, bag(@{$expected->{$broker}->{$profile}}), "$broker $profile");
+        }
     }
 };
 
