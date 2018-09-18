@@ -133,7 +133,7 @@ subtest "predefined trading_period" => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($underlying->symbol, $now);
     my @new = @{BOM::Product::ContractFinder->new(for_date => $now)->multi_barrier_contracts_for({symbol => $underlying->symbol})->{available}};
 
-    my %got = map { $_ => [] } keys $expected_count{trading_period};
+    my %got = map { $_ => [] } keys %{$expected_count{trading_period}};
     foreach my $d (@new) {
         $d->{contract_type} eq 'CALLE'
             and $d->{expiry_type} eq 'intraday' ? push @{$got{call_intraday}}, $d->{trading_period} : push @{$got{call_daily}},

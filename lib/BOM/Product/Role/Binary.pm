@@ -97,6 +97,10 @@ sub _build_payout {
 override _build_bid_price => sub {
     my $self = shift;
 
+    # Ensure bid_probability and other probabilities exist before computing bid_price
+    # For some reason, $self->bid_probability is not enough to trigger lazy build
+    $self->_build_bid_probability;
+
     return $self->_price_from_prob('bid_probability');
 };
 
