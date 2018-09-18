@@ -58,6 +58,8 @@
         _oneall.push(['social_login', 'set_force_re_authentication', true]);
         _oneall.push(['social_login', 'set_providers', providers]);
         _oneall.push(['social_login', 'set_callback_uri', cb]);
+        _oneall.push(['social_login', 'set_popup_usage', 'never']);
+        /* push all configs before this as once rendered it not possible to hook*/
         _oneall.push(['social_login', 'do_render_ui', 'oa_social_login_container']);
 
         if (login_method) {
