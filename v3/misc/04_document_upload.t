@@ -146,7 +146,7 @@ sub send_two_docs_at_once {
     my @requests;
     for my $i (0 .. 1) {
         my $ws = $ws_list[$i];
-        my ($conn) = values $ws->app->active_connections;
+        my ($conn) = values %{$ws->app->active_connections};
         $requests[$i]->{ws} = $ws;
 
         my $upload_info = {request_upload($data[$i], undef, $ws)};
