@@ -895,7 +895,8 @@ sub send_proposal_open_contract_last_time {
     delete $stash_data->{subscribe} if exists $stash_data->{subscribe};
     # We should also clear stash data, otherwise the args in stash data will become 'not subscribe' (deleted by previous line) and will block the future subscribe
     $c->stash('proposal_open_contracts_subscribed' => 0)
-        if $c->stash('proposal_open_contracts_subscribed') && $c->stash('proposal_open_contracts_subscribed')->{req_id} == $stash_data->{req_id};
+        if $c->stash('proposal_open_contracts_subscribed')
+        && ($c->stash('proposal_open_contracts_subscribed')->{req_id} // 0) == ($stash_data->{req_id} // 0);
 
     $c->call_rpc({
             args        => $stash_data,
