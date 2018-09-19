@@ -18,6 +18,7 @@ my $rates = {
     LTC => 50,
     ETH => 490,
     DAI => 1,
+    UST => 1,
 };
 
 sub populate_exchange_rates {
