@@ -38,18 +38,29 @@ sub callback {
         public_key  => BOM::Config::third_party()->{"oneall"}->{public_key},
         private_key => BOM::Config::third_party()->{"oneall"}->{private_key},
     );
-    my $data = $oneall->connection($connection_token) or die $oneall->errstr;
-    # redirect client to auth page when recieving bad status code from oneall
-    # wrong pub/private keys might be a reason of bad status code
-    my $status_code = $data->{response}->{request}->{status}->{code};
-    if ($status_code != 200) {
+
+    my $data = try {
+        return $oneall->connection($connection_token);
+    };
+
+    # redirect client to auth page for connection error or when we receive
+    # bad status code from oneall, wrong pub/private keys can be a reason
+    # for bad status code
+    if (not $data or $data->{response}->{request}->{status}->{code} != 200) {
         $c->session(error => localize(get_message_mapping()->{NO_USER_IDENTITY}));
-        stats_inc('login.oneall.connection_failure', {tags => ["brand:$brand_name", "status_code:$status_code"]});
+        stats_inc('login.oneall.connection_failure',
+            {tags => ["brand:$brand_name", "status_code:" . $data->{response}->{request}->{status}->{code}]});
+        return $c->redirect_to($redirect_uri);
+    }
+
+    my $provider_result = $data->{response}->{result};
+    if ($provider_result->{status}->{code} != 200 or $provider_result->{status}->{flag} eq 'error') {
+        $c->session(error => localize(get_message_mapping()->{NO_AUTHENTICATION}));
         return $c->redirect_to($redirect_uri);
     }
 
     # retrieve user identity from provider data
-    my $provider_data = $data->{response}->{result}->{data};
+    my $provider_data = $provider_result->{data};
     my $user_connect  = BOM::Database::Model::UserConnect->new;
     my $user_id       = $user_connect->get_user_id_by_connect($provider_data);
 

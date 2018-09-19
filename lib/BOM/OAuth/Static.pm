@@ -34,7 +34,8 @@ my $config = {
         ADDITIONAL_SIGNIN_THIRD_PARTY =>
             "An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3], browser: [_4] and app: [_5]. If this additional sign-in was not performed by you, please contact our Customer Support team.",
         NEW_SIGNIN_ACTIVITY => "New Sign-In Activity Detected",
-        TFA_FAILURE         => "OTP verification failed"
+        TFA_FAILURE         => "OTP verification failed",
+        NO_AUTHENTICATION   => "The user did not authenticate successfully.",
     },
 };
 
