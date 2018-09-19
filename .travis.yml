@@ -22,7 +22,7 @@ before_install:
     - git clone ssh://git@github.com/regentmarkets/travis-scripts /tmp/travis-scripts-init
     - /tmp/travis-scripts-init/clone_branch.sh regentmarkets/travis-scripts
     - /tmp/travis-scripts/setup_ssh.sh
-    - sudo mkdir -p /home/git/regentmarkets
+    - sudo mkdir -p /home/git/regentmarkets /home/git/binary-com
     - . /tmp/travis-scripts/setup_perl.sh
     - /tmp/travis-scripts/setup_cpan.sh
     - /tmp/travis-scripts/fixHostName.sh
