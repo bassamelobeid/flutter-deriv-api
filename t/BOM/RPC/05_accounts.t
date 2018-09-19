@@ -15,6 +15,7 @@ use Email::Stuffer::TestLinks;
 
 use Format::Util::Numbers qw/formatnumber/;
 use Scalar::Util qw/looks_like_number/;
+use LandingCompany::Registry;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -243,7 +244,7 @@ my $method = 'payout_currencies';
 subtest $method => sub {
     # we shouldn't care about order of currencies
     # we just need to send array back
-    cmp_bag($c->tcall($method, {token => '12345'}), [qw(USD EUR GBP AUD BTC BCH LTC ETH DAI)], 'invalid token will get all currencies');
+    cmp_bag($c->tcall($method, {token => '12345'}), [LandingCompany::Registry->new()->all_currencies()], 'invalid token will get all currencies');
     cmp_bag(
         $c->tcall(
             $method,
@@ -251,12 +252,12 @@ subtest $method => sub {
                 token => undef,
             }
         ),
-        [qw(USD EUR GBP AUD BTC BCH LTC ETH DAI)],
+        [LandingCompany::Registry->new()->all_currencies()],
         'undefined token will get all currencies'
     );
 
     cmp_bag($c->tcall($method, {token => $token_21}), ['USD'], "will return client's currency");
-    cmp_bag($c->tcall($method, {}), [qw(USD EUR GBP AUD BTC BCH LTC ETH DAI)], "will return legal currencies if no token");
+    cmp_bag($c->tcall($method, {}), [LandingCompany::Registry->new()->all_currencies()], "will return legal currencies if no token");
 };
 
 $method = 'landing_company';
@@ -297,7 +298,7 @@ subtest $method => sub {
     );
     my $result = $c->tcall($method, {args => {landing_company_details => 'costarica'}});
     is($result->{name}, 'Binary (C.R.) S.A.', "details result ok");
-    cmp_bag([keys %{$result->{currency_config}->{volidx}}], ['USD', 'AUD', 'BCH', 'BTC', 'ETH', 'EUR', 'GBP', 'LTC', 'DAI'], "currency config ok");
+    cmp_bag([keys %{$result->{currency_config}->{volidx}}], [LandingCompany::Registry->new()->all_currencies()], "currency config ok");
     ok(!(grep { !looks_like_number($_) } get_values($result->{currency_config})), 'limits for costarica are all numeric');
 
     $result = $c->tcall($method, {args => {landing_company_details => 'maltainvest'}});
