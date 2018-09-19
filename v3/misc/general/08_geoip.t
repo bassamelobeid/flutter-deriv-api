@@ -8,6 +8,8 @@ use lib "$Bin/../lib";
 use BOM::Test::Helper qw/build_wsapi_test/;
 use Encode;
 
+use LandingCompany::Registry;
+
 use await;
 
 subtest 'country information is returned in website_status' => sub {
@@ -25,7 +27,7 @@ subtest 'country information is returned in website_status' => sub {
         my $t = build_wsapi_test(
             undef,
             {
-                'CF-IPCOUNTRY' => 'fr',
+                'CF-IPCOUNTRY'     => 'fr',
                 'X-Client-Country' => $country,
             });
         my $res = $t->await::website_status({website_status => 1});
@@ -36,7 +38,7 @@ subtest 'country information is returned in website_status' => sub {
         my $t = build_wsapi_test(
             undef,
             {
-                'CF-IPCOUNTRY' => 'fr',
+                'CF-IPCOUNTRY'     => 'fr',
                 'X-Client-Country' => $country,
             });
         my $res = $t->await::website_status({website_status => 1});
@@ -52,7 +54,8 @@ subtest 'country code Malaysia' => sub {
             'CF-IPCOUNTRY' => 'my',
         });
     my $res = $t->await::payout_currencies({payout_currencies => 1});
-    cmp_deeply($res->{payout_currencies}, bag(qw(USD EUR GBP AUD BTC LTC BCH DAI ETH)), 'payout currencies are correct') or note explain $res;
+    cmp_deeply($res->{payout_currencies}, bag(LandingCompany::Registry->new()->all_currencies()), 'payout currencies are correct')
+        or note explain $res;
     $t->finish_ok;
     done_testing;
 };
