@@ -35,9 +35,9 @@ max_balance:
     ETH: 100
     LTC: 500
     ETC: 500
-    DAI: 3000000
-    UST: 3000000
-    USB: 3000000
+    DAI: 300000
+    UST: 300000
+    USB: 300000
 max_payout_open_positions:
     USD: 50000
     EUR: 50000
