@@ -17,7 +17,8 @@ use Date::Utility;
 
 BOM::Backoffice::Sysinit::init();
 
-my @exchange_rate_symbol = ('frxGBPUSD', 'frxEURUSD', 'frxAUDUSD', 'frxJPYUSD', 'cryBTCUSD', 'cryBCHUSD', 'cryLTCUSD', 'cryETHUSD', 'cryDAIUSD');
+my @exchange_rate_symbol =
+    ('frxGBPUSD', 'frxEURUSD', 'frxAUDUSD', 'frxJPYUSD', 'cryBTCUSD', 'cryBCHUSD', 'cryLTCUSD', 'cryETHUSD', 'cryDAIUSD', 'cryUSTUSD');
 
 my $update_time = Date::Utility->new($ARGV[0] || time());
 

@@ -108,6 +108,7 @@ my $rpc_client_builders = {
     LTC => sub { Bitcoin::RPC::Client->new((%{$cfg->{litecoin}},     timeout => 5)) },
     ETH => sub { Ethereum::RPC::Client->new((%{$cfg->{ethereum}},    timeout => 5)) },
     DAI => sub { Ethereum::RPC::Client->new((%{$cfg->{ethereum}},    timeout => 5)) },
+    UST => sub { Bitcoin::RPC::Client->new((%{$cfg->{tether}},       timeout => 5)) },
 };
 my $rpc_client = ($rpc_client_builders->{$currency} // code_exit_BO("no RPC client found for currency " . $currency))->();
 # Exchange rate should be populated according to supported cryptocurrencies.
@@ -407,8 +408,12 @@ EOF
         my $rslt;
         if ($currency eq 'ETH' and $cmd eq 'getbalance') {
             $rslt += Math::BigFloat->from_hex($rpc_client->eth_getBalance($_, 'latest'))->bdiv(1E18) for @{$rpc_client->eth_accounts()};
+        } elsif ($currency eq 'UST' and $cmd eq 'getbalance') {
+            for my $address (@{$rpc_client->omni_getwalletaddressbalances()}) {
+                $rslt += $_->{balance} for grep { $_->{propertyid} eq $cfg->{tether}->{account}->{property_id} } @{$address->{balances}};
+            }
         } elsif ($cmd eq 'getbalance') {
-            foreach my $transaction (@{$rpc_client->listunspent(0)}) {
+            for my $transaction (@{$rpc_client->listunspent(0)}) {
                 $rslt += $transaction->{amount}
                     if ($transaction->{confirmations} >= 3 or grep { $transaction->{address} eq $_ } @{$rpc_client->getaddressesbyaccount('manual')});
             }
