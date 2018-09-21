@@ -11,6 +11,7 @@ use HTML::Entities;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use Try::Tiny;
 use Digest::MD5;
+use Cache::RedisDB;
 
 use Brands;
 use LandingCompany::Registry;
@@ -852,7 +853,19 @@ if ($user) {
 
         # show MT5 a/c
         foreach my $mt_ac (@mt_logins) {
-            print "<li>" . encode_entities($mt_ac) . "</li>";
+            my ($id) = $mt_ac =~ /^MT(\d+)$/;
+            print "<li>" . encode_entities($mt_ac);
+            # If we have group information, display it
+            if (my $group = Cache::RedisDB->get('MT5_USER_GROUP', $id)) {
+                print " (" . encode_entities($group) . ")";
+            } else {
+                # ... and if we don't, queue up the request. This may lead to a few duplicates
+                # in the queue - that's fine, we check each one to see if it's already
+                # been processed.
+                Cache::RedisDB->redis->lpush('MT5_USER_GROUP_PENDING', join(':', $id, time));
+                print ' (<span title="Try refreshing in a minute or so">no group info yet</span>)';
+            }
+            print "</li>";
         }
 
         print "</ul>";
