@@ -344,7 +344,7 @@ sub get_bid {
             current_spot_time   => $contract->current_tick->epoch,
             contract_id         => $contract_id,
             underlying          => $contract->underlying->symbol,
-            display_name        => $contract->underlying->display_name,
+            display_name        => localize($contract->underlying->display_name),
             is_expired          => $contract->is_expired,
             is_forward_starting => $contract->is_forward_starting,
             is_path_dependent   => $contract->is_path_dependent,
