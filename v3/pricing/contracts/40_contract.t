@@ -295,6 +295,12 @@ subtest 'buy and subscribe' => sub {
     my $contract_id;
     diag explain $res unless ok($contract_id = $res->{buy}->{contract_id}, "got contract_id");
 
+    is_deeply(
+        [sort keys %{$res->{buy}}],
+        [sort ('balance_after', 'shortcode', 'contract_id', 'start_time', 'longcode', 'transaction_id', 'buy_price', 'purchase_time', 'payout')],
+        'no unexpected response'
+    );
+
     my $msg = {
         %$res,
         action_type             => 'buy',
