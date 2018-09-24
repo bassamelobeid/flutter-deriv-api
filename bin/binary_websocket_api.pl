@@ -3,6 +3,10 @@
 use strict;
 use warnings;
 use FindBin;
+use Log::Any::Adapter 'Stderr', log_level => 'warn';
+# Mojo will redirect STDERR without autoflush, so we should set autoflush by hand
+*STDERR->autoflush(1);
+
 # load this file to force MOJO::JSON to use JSON::MaybeXS
 use Mojo::JSON::MaybeXS;
 use lib "$FindBin::Bin/../lib";
