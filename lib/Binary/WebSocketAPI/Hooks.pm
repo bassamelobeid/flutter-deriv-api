@@ -66,8 +66,8 @@ sub add_req_data {
     } elsif ($api_response->{echo_req}) {
         $args = $api_response->{echo_req};
     }
-    $api_response->{req_id}      = $args->{req_id}      if $args->{req_id};
-    $api_response->{passthrough} = $args->{passthrough} if $args->{passthrough};
+    $api_response->{req_id}      = $args->{req_id}      if exists $args->{req_id};
+    $api_response->{passthrough} = $args->{passthrough} if exists $args->{passthrough};
     return;
 }
 

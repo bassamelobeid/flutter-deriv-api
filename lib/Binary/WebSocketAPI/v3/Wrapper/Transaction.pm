@@ -12,12 +12,15 @@ use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 sub buy_get_single_contract {
     my ($c, $api_response, $req_storage) = @_;
 
-    my @contract_keys = keys %{$api_response->{contract_details}};
-    # don't show internal contract_details
-    my $contract_detail = (delete $api_response->{contract_details})->{$contract_keys[0]};
+    # don't pass internal object back to client
+    my $contract_details = delete $api_response->{contract_details};
 
-    _subscribe_to_contract($c, $contract_detail) if $req_storage->{call_params}->{args}->{subscribe};
-    buy_store_last_contract_id($c, $contract_detail);
+    if ($req_storage->{call_params}->{args}->{subscribe}) {
+        my @contract_keys = keys %$contract_details;
+        _subscribe_to_contract($c, $contract_details->{$contract_keys[0]}) if @contract_keys;
+    }
+
+    buy_store_last_contract_id($c, $api_response);
 
     return undef;
 }
@@ -46,15 +49,15 @@ sub _subscribe_to_contract {
 }
 
 sub buy_store_last_contract_id {
-    my ($c, $contract_detail) = @_;
+    my ($c, $api_response) = @_;
 
     my $last_contracts = $c->stash('last_contracts') // {};
     # see cleanup at Binary::WebSocketAPI::Hooks::cleanup_stored_contract_ids
     ### For usual buy
-    my @contracts_ids = ($contract_detail->{contract_id});
+    my @contracts_ids = ($api_response->{contract_id});
     ### For buy_contract_for_multiple_accounts
-    @contracts_ids = grep { $_ } map { $_->{contract_id} } @{$contract_detail->{result}}
-        if $contract_detail->{result} && ref $contract_detail->{result} eq 'ARRAY';
+    @contracts_ids = grep { $_ } map { $_->{contract_id} } @{$api_response->{result}}
+        if $api_response->{result} && ref $api_response->{result} eq 'ARRAY';
 
     my $now = time;
     @{$last_contracts}{@contracts_ids} = ($now) x @contracts_ids;
