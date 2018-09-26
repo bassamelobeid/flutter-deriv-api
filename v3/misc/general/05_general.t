@@ -78,6 +78,23 @@ my $t = build_wsapi_test();
     is $res->{req_id}, 4, 'Response contains matching req_id';
 }
 
+{
+    my $res = $t->await::ping({
+        ping   => 1,
+        req_id => 0
+    });
+    is $res->{req_id}, 0, 'Zero req_id is returned';
+}
+
+{
+    my $res = $t->await::ping({
+        ping   => "xyz",
+        req_id => 123
+    });
+    is $res->{error}->{code}, 'InputValidationFailed', 'Schema validation failed';
+    is $res->{req_id}, 123, 'Response contains matching req_id';
+}
+
 $t->finish_ok;
 
 done_testing();
