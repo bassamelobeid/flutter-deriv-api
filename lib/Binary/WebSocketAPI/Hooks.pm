@@ -66,8 +66,8 @@ sub add_req_data {
     } elsif ($api_response->{echo_req}) {
         $args = $api_response->{echo_req};
     }
-    $api_response->{req_id}      = $args->{req_id}      if exists $args->{req_id};
-    $api_response->{passthrough} = $args->{passthrough} if exists $args->{passthrough};
+    $api_response->{req_id}      = $args->{req_id}      if defined $args->{req_id};
+    $api_response->{passthrough} = $args->{passthrough} if defined $args->{passthrough};
     return;
 }
 
@@ -178,9 +178,6 @@ sub before_forward {
                     }
                 }
                 my $message = $c->l('Input validation failed: ') . join(', ', (keys %$details, @general));
-                if ($details->{req_id}) {
-                    delete $args->{req_id};
-                }
                 return Future->fail($c->new_error($req_storage->{name}, 'InputValidationFailed', $message, $details));
             }
 
