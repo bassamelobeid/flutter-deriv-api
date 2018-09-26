@@ -11,7 +11,7 @@ use BOM::MT5::User::Manager;
 
 use IO::Async::Loop;
 # Overrideable in unit tests
-our @MT5_WRAPPER_COMMAND = ('php', '/home/git/regentmarkets/php-mt5-webapi/lib/binary_mt5.php');
+our @MT5_WRAPPER_COMMAND = ('/usr/bin/php', '/home/git/regentmarkets/php-mt5-webapi/lib/binary_mt5.php');
 
 my $manager;
 
