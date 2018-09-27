@@ -6,6 +6,7 @@ use Test::Exception;
 use Test::Warn;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Copier;
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 
 lives_ok {
     BOM::Platform::Copier->update_or_create({
