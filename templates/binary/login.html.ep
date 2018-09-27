@@ -65,6 +65,8 @@
         if (login_method) {
             _oneall.push(['social_login', 'do_login', login_method]);
         }
-        document.getElementById('frmLogin').reset();
+        if (document.getElementById('frmLogin')) {
+            document.getElementById('frmLogin').reset();
+        }
     }
 </script>
