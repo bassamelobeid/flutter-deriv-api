@@ -12,13 +12,9 @@ use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 sub buy_get_single_contract {
     my ($c, $api_response, $req_storage) = @_;
 
-    # don't pass internal object back to client
     my $contract_details = delete $api_response->{contract_details};
 
-    if ($req_storage->{call_params}->{args}->{subscribe}) {
-        my @contract_keys = keys %$contract_details;
-        _subscribe_to_contract($c, $contract_details->{$contract_keys[0]}) if @contract_keys;
-    }
+    _subscribe_to_contract($c, $contract_details) if $req_storage->{call_params}->{args}->{subscribe};
 
     buy_store_last_contract_id($c, $api_response);
 
@@ -26,9 +22,9 @@ sub buy_get_single_contract {
 }
 
 sub _subscribe_to_contract {
-    my ($c, $contract_detail) = @_;
+    my ($c, $contract_details) = @_;
 
-    my $contract = {map { $_ => $contract_detail->{$_} }
+    my $contract = {map { $_ => $contract_details->{$_} }
             qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode)};
 
     my $account_id  = $contract->{account_id};
