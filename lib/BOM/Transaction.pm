@@ -69,6 +69,14 @@ has contract => (
     lazy_build => 1,
 );
 
+has contract_details => (
+    is => 'rw',
+);
+
+has transaction_details => (
+    is => 'rw',
+);
+
 sub _build_contract {
     my $self  = shift;
     my $param = $self->contract_parameters;
@@ -559,6 +567,8 @@ sub buy {
     my ($fmb, $txn);
     try {
         ($fmb, $txn) = $fmb_helper->buy_bet;
+        $self->contract_details($fmb);
+        $self->transaction_details($txn);
         $error = 0;
     }
     catch {
