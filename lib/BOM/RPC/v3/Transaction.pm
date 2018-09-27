@@ -22,6 +22,7 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Copier;
 use BOM::Pricing::v3::Contract;
+use Finance::Contract::Longcode qw(shortcode_to_longcode);
 
 my $json = JSON::MaybeXS->new;
 
@@ -216,13 +217,29 @@ rpc buy => sub {
     # to subscribe to this contract after buy, we need to have the same information that we pass to
     # proposal_open_contract call, so we are giving this information as part of the response here
     # but this will be removed at the websocket api logic before we show the response to the client.
-    my $contract_details = BOM::RPC::v3::PortfolioManagement::get_contract_details_by_id($client, $trx->contract_id);
-    my $populated_contract = BOM::RPC::v3::PortfolioManagement::populate_response_proposal_contract($client, {}, $contract_details);
+    my $transaction_details = $trx->transaction_details;
+    my $contract_details    = $trx->contract_details;
+
+    # this will be passed to proposal_open_contract at websocket level
+    # if subscription flag is turned on
+    my $contract_proposal_details = {
+        account_id      => $transaction_details->{account_id},
+        shortcode       => $contract_details->{short_code},
+        contract_id     => $contract_details->{id},
+        currency        => $currency,
+        buy_price       => $contract_details->{buy_price},
+        sell_price      => $contract_details->{sell_price},
+        sell_time       => $contract_details->{sell_time},
+        purchase_time   => $contract_details->{purchase_time},
+        is_sold         => $contract_details->{is_sold},
+        transaction_ids => {buy => $transaction_details->{id}},
+        longcode        => localize(shortcode_to_longcode($contract_details->{short_code})),
+    };
 
     return {
         transaction_id   => $trx->transaction_id,
         contract_id      => $trx->contract_id,
-        contract_details => $populated_contract,
+        contract_details => $contract_proposal_details,
         balance_after    => formatnumber('amount', $client->currency, $trx->balance_after),
         purchase_time    => $trx->purchase_date->epoch,
         buy_price        => formatnumber('amount', $client->currency, $trx->price),
