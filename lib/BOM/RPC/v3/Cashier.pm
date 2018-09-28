@@ -53,7 +53,7 @@ my $payment_limits = BOM::Config::payment_limits;
 rpc "cashier", sub {
     my $params = shift;
 
-    my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($params->{client});
+    my $validation_error = BOM::RPC::v3::Utility::validation_checks($params->{client}, qw( compliance_checks ));
     return $validation_error if $validation_error;
 
     my $error_sub = sub {
@@ -89,6 +89,9 @@ rpc "cashier", sub {
                 message_to_client => localize('Verify your withdraw request.'),
             });
         }
+    } else {
+        $validation_error = BOM::RPC::v3::Utility::validation_checks($params->{client}, qw( validate_tnc ));
+        return $validation_error if $validation_error;
     }
 
     my $client_loginid = $client->loginid;

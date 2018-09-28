@@ -163,11 +163,40 @@ subtest 'withdraw' => sub {
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_EMAIL_VERIFY', 'Withdrawal needs verification token')
         ->error_message_is('Verify your withdraw request.', 'Withdrawal needs verification token');
 
+    $client_mx->status->set('tnc_approval', 'system', 'some dummy value');
+
+    $params->{args}->{verification_code} = BOM::Platform::Token->new({
+            email       => $client_mx->email,
+            expires_in  => 3600,
+            created_for => 'payment_withdraw',
+        })->token;
+
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mx->loginid, 'test token');
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('ASK_CURRENCY',
+        'Terms and condition check is skipped for withdrawal, currency check comes after that.')
+        ->error_message_is('Please set the currency.', 'Correct error message as terms and condition check is skipped for withdrawal.');
+
+    $client_mx->status->set('tnc_approval', 'system', $current_tnc_version);
+
+    $params->{args}->{verification_code} = BOM::Platform::Token->new({
+            email       => $client_mx->email,
+            expires_in  => 3600,
+            created_for => 'payment_withdraw',
+        })->token;
+
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('ASK_CURRENCY',
+        'Terms and condition check is skipped for withdrawal, even with correct version set same currency error occur.')
+        ->error_message_is('Please set the currency.', 'Correct error message as terms and condition check is skipped for withdrawal.');
+
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
     $params->{args}->{verification_code} = BOM::Platform::Token->new({
             email       => $client_cr->email,
             expires_in  => 3600,
             created_for => 'payment_withdraw',
         })->token;
+
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has withdrawal lock')
         ->error_message_is('Your account is locked for withdrawals.', 'Client is withdrawal locked');
 
