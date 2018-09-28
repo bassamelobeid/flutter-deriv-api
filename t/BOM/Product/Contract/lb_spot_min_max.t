@@ -93,8 +93,8 @@ subtest 'spot min max lbfloatcall' => sub {
     my $c = produce_contract($bet_params);
 
     is $c->pricing_spot, 100, 'pricing spot is available';
-    is $c->spot_min_max->{low},  100, 'spot min is available';
-    is $c->spot_min_max->{high}, 100, 'spot max is available';
+    is $c->spot_min_max($c->date_start_plus_1s)->{low},  100, 'spot min is available';
+    is $c->spot_min_max($c->date_start_plus_1s)->{high}, 100, 'spot max is available';
     ok $c->ask_price, 'can price';
 
     create_ticks(([101, $now->epoch, 'R_100'], [103, $now->epoch + 1, 'R_100']));
@@ -103,9 +103,9 @@ subtest 'spot min max lbfloatcall' => sub {
     $c                          = produce_contract($bet_params);
 
     is $c->pricing_spot, 103, 'pricing spot is available';
-    is $c->spot_min_max->{low}, 101, 'spot min is available';
+    is $c->spot_min_max($c->date_start_plus_1s)->{low}, 101, 'spot min is available';
     is $c->barrier->as_absolute, '101.00', 'barrier is correct';
-    is $c->spot_min_max->{high}, 103, 'spot max is available';
+    is $c->spot_min_max($c->date_start_plus_1s)->{high}, 103, 'spot max is available';
     ok $c->bid_price, 'can price';
 };
 

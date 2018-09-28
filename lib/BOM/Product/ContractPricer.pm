@@ -251,6 +251,45 @@ sub _build_reset_spot {
     return $reset_spot;
 }
 
+sub spot_min_max {
+    my ($self, $from) = @_;
+
+    my $from_epoch = $from->epoch;
+
+    my $to_epoch = $self->date_pricing->is_after($self->date_expiry) ? $self->date_expiry->epoch : $self->date_pricing->epoch;
+    # When price a contract at the date start, the date pricing == date start
+    # However, for price a lookback contract, we always excluded tick at date start (ie from is set to date_start +1)
+    # Hence we need to cap the to epoch as follow
+    $to_epoch = max($from_epoch, $to_epoch);
+    my $duration = $to_epoch - $from_epoch;
+
+    my ($high, $low);
+
+    if ($self->date_pricing->epoch > $from->epoch) {
+        #Let's be more defensive here and use date pricing as well to determine the backprice flag.
+        my $backprice = (defined $self->underlying->for_date or $self->date_pricing->is_after($self->date_expiry)) ? 1 : 0;
+        my $decimate = BOM::Market::DataDecimate->new({market => $self->market->name});
+        my $ticks = $decimate->get({
+            underlying  => $self->underlying,
+            start_epoch => $from_epoch,
+            end_epoch   => $to_epoch,
+            backprice   => $backprice,
+            decimate    => ($duration <= 900 ? 0 : 1),
+        });
+
+        my @quotes = map { $_->{quote} } @$ticks;
+        $low  = min(@quotes);
+        $high = max(@quotes);
+    }
+
+    my $high_low = {
+        high => $high // $self->pricing_spot,
+        low  => $low  // $self->pricing_spot,
+    };
+
+    return $high_low;
+}
+
 sub _create_new_interface_engine {
     my $self = shift;
     return if not $self->new_interface_engine;
@@ -346,6 +385,7 @@ sub _create_new_interface_engine {
                 vol           => $self->pricing_vol,
             );
         } elsif ($self->pricing_engine_name eq 'Pricing::Engine::Lookback') {
+
             %pricing_parameters = (
                 strikes         => [grep { $_ } values %{$self->barriers_for_pricing}],
                 spot            => $self->pricing_spot,
@@ -356,8 +396,8 @@ sub _create_new_interface_engine {
                 payouttime_code => $payouttime_code,
                 payout_type     => 'non-binary',
                 contract_type   => $self->pricing_code,
-                spot_max        => $self->spot_min_max->{high},
-                spot_min        => $self->spot_min_max->{low},
+                spot_max        => $self->spot_min_max($self->date_start_plus_1s)->{high},
+                spot_min        => $self->spot_min_max($self->date_start_plus_1s)->{low},
             );
 
         } else {

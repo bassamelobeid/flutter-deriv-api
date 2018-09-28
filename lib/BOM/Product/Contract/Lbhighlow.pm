@@ -29,13 +29,13 @@ override two_barriers => sub {
 sub _build_low_barrier {
     my $self = shift;
 
-    return $self->make_barrier($self->spot_min_max->{low});
+    return $self->make_barrier($self->spot_min_max($self->date_start_plus_1s)->{low});
 }
 
 sub _build_high_barrier {
     my $self = shift;
 
-    return $self->make_barrier($self->spot_min_max->{high});
+    return $self->make_barrier($self->spot_min_max($self->date_start_plus_1s)->{high});
 }
 
 no Moose;

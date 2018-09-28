@@ -117,51 +117,6 @@ sub _build_minimum_multiplier {
     return $minimum_multiplier // 0;
 }
 
-has [qw(spot_min_max)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_spot_min_max {
-    my $self = shift;
-
-    # date_start + 1 because the first tick of the contract is the next tick.
-    my $start_epoch = $self->date_start->epoch + 1;
-    my $end_epoch = $self->date_pricing->is_after($self->date_expiry) ? $self->date_expiry->epoch : $self->date_pricing->epoch;
-    # During realtime pricing, date_pricing can be equal to date_start
-    # and since start_epoch is date_start + 1, we need to cap end_epoch
-    # as below.
-    $end_epoch = max($start_epoch, $end_epoch);
-
-    my ($high, $low) = ($self->pricing_spot, $self->pricing_spot);
-
-    if ($self->date_pricing->epoch > $self->date_start->epoch) {
-        #Let's be more defensive here and use date pricing as well to determine the backprice flag.
-        my $backprice = (defined $self->underlying->for_date or $self->date_pricing->is_after($self->date_expiry)) ? 1 : 0;
-
-        my $decimate = BOM::Market::DataDecimate->new({market => $self->market->name});
-        my $ticks = $decimate->get({
-            underlying  => $self->underlying,
-            start_epoch => $start_epoch,
-            end_epoch   => $end_epoch,
-            backprice   => $backprice,
-            decimate    => 0,
-        });
-
-        my @quotes = map { $_->{quote} } @$ticks;
-
-        $low  = min(@quotes);
-        $high = max(@quotes);
-    }
-
-    my $high_low = {
-        high => $high // $self->pricing_spot,
-        low  => $low  // $self->pricing_spot,
-    };
-
-    return $high_low;
-}
-
 sub get_ohlc_for_period {
     my $self = shift;
 
@@ -182,6 +137,17 @@ sub _build_pricing_engine_name {
 
 sub _build_payout {
     return 0;
+}
+
+has date_start_plus_1s => (
+    is         => 'rw',
+    lazy_build => 1
+);
+
+# This is because for lookback, we do not want to inlcude tick at the date_start
+sub _build_date_start_plus_1s {
+    my $self = shift;
+    return $self->date_start->plus_time_interval('1s');
 }
 
 override shortcode => sub {

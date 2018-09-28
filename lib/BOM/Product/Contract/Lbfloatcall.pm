@@ -30,7 +30,7 @@ sub check_expiry_conditions {
 sub _build_barrier {
     my $self = shift;
 
-    return $self->make_barrier($self->spot_min_max->{low});
+    return $self->make_barrier($self->spot_min_max($self->date_start_plus_1s)->{low});
 }
 
 no Moose;
