@@ -5,9 +5,9 @@ use lib "$Bin/lib";
 use Test::More;
 use APIHelper qw(balance deposit request decode_json);
 
-my $loginid = 'CR0012';
+my $loginid          = 'CR0012';
 my $starting_balance = balance($loginid);
-my $r = deposit(loginid => $loginid);
+my $r                = deposit(loginid => $loginid);
 is($r->code,    201,       'correct status code');
 is($r->message, 'Created', 'Correct message');
 like($r->content, qr[<opt>\s*<data></data>\s*</opt>], 'Correct content');

@@ -184,8 +184,7 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
                     return [401, [], ['Authorization required']];
                 }
                 my $client = BOM::User::Client->new({
-                        loginid      => $client_loginid,
-                        db_operation => 'replica'
+                        loginid => $client_loginid,
                     })
                     || do {
                     return [401, [], ['Authorization required']];
