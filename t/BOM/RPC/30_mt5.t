@@ -600,6 +600,63 @@ subtest 'deposit' => sub {
         ->error_code_is('PermissionDenied', 'error code for mt5_deposit wrong login');
 };
 
+subtest 'mx_deposit' => sub {
+    my $test_mx_client = create_client('MX');
+    $test_mx_client->account('USD');
+    $test_mx_client->email($DETAILS{email});
+    $test_mx_client->save();
+
+    $user->add_client($test_mx_client);
+
+    my $token_mx = $m->create_token($test_mx_client->loginid, 'test token');
+
+    my $params_mx = {
+        language => 'EN',
+        token    => $token_mx,
+        args     => {
+            from_binary => $test_mx_client->loginid,
+            to_mt5      => $DETAILS{login},
+            amount      => 180,
+        },
+    };
+
+    my $method = "mt5_deposit";
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_mx_client->loginid);
+
+    $c->call_ok($method, $params_mx)->has_error('Cannot access MT5 as MX')
+        ->error_code_is('MT5DepositError', 'Transfers to MT5 not allowed error_code')
+        ->error_message_is('There was an error processing the request. Please switch to your MF account to access MT5.');
+};
+
+subtest 'mx_withdrawal' => sub {
+    my $test_mx_client = create_client('MX');
+    $test_mx_client->account('USD');
+    $test_mx_client->email($DETAILS{email});
+    $test_mx_client->save();
+
+    $user->add_client($test_mx_client);
+
+    my $token_mx = $m->create_token($test_mx_client->loginid, 'test token');
+
+    my $params_mx = {
+        language => 'EN',
+        token    => $token_mx,
+        args     => {
+            from_mt5  => $DETAILS{login},
+            to_binary => $test_mx_client->loginid,
+            amount    => 350,
+        },
+    };
+
+    my $method = "mt5_withdrawal";
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_mx_client->loginid);
+
+    $c->call_ok($method, $params_mx)->has_error('Cannot access MT5 as MX')->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')
+        ->error_message_is('There was an error processing the request. Please switch to your MF account to access MT5.');
+};
+
 subtest 'withdrawal' => sub {
     # TODO(leonerd): assertions in here about balance amounts would be
     #   sensitive to results of the previous test of mt5_deposit.
@@ -634,6 +691,92 @@ subtest 'withdrawal' => sub {
     $params->{args}{from_mt5} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_withdrawal wrong login')
         ->error_code_is('PermissionDenied', 'error code for mt5_withdrawal wrong login');
+};
+
+subtest 'mf_withdrawal' => sub {
+
+    my $test_mf_client = create_client('MF');
+    $test_mf_client->account('USD');
+
+    $test_mf_client->email($DETAILS{email});
+    $test_mf_client->status->clear('age_verification');
+
+    $_->delete for @{$test_mf_client->client_authentication_method};
+    $test_mf_client->save();
+
+    $user->add_client($test_mf_client);
+
+    my $token_mf = $m->create_token($test_mf_client->loginid, 'test token');
+
+    my $params_mf = {
+        language => 'EN',
+        token    => $token_mf,
+        args     => {
+            from_mt5  => $DETAILS{login},
+            to_binary => $test_mf_client->loginid,
+            amount    => 350,
+        },
+    };
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_mf_client->loginid);
+
+    my $method = "mt5_withdrawal";
+
+    $c->call_ok($method, $params_mf)->has_error('Withdrawal request failed.')
+        ->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')
+        ->error_message_is('There was an error processing the request. Please authenticate your account.');
+
+    $test_mf_client->set_authentication('ID_DOCUMENT')->status('pass');
+    $test_mf_client->save();
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_mf_client->loginid);
+
+    $c->call_ok($method, $params_mf)->has_no_error('no error for mt5_withdrawal');
+
+    cmp_ok $test_mf_client->default_account->balance, '==', 350, "Correct balance after withdrawal";
+};
+
+subtest 'mf_deposit' => sub {
+
+    my $test_mf_client = create_client('MF');
+    $test_mf_client->account('USD');
+    top_up $test_mf_client, USD => 1000;
+
+    $test_mf_client->email($DETAILS{email});
+    $test_mf_client->status->clear('age_verification');
+
+    $_->delete for @{$test_mf_client->client_authentication_method};
+    $test_mf_client->save();
+
+    $user->add_client($test_mf_client);
+
+    my $token_mf = $m->create_token($test_mf_client->loginid, 'test token');
+
+    my $params_mf = {
+        language => 'EN',
+        token    => $token_mf,
+        args     => {
+            from_binary => $test_mf_client->loginid,
+            to_mt5      => $DETAILS{login},
+            amount      => 350,
+        },
+    };
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_mf_client->loginid);
+
+    my $method = "mt5_deposit";
+
+    $c->call_ok($method, $params_mf)->has_error('Deposit request failed.')->error_code_is('MT5DepositError', 'error code is MT5DepositError')
+        ->error_message_is('There was an error processing the request. Please authenticate your account.');
+
+    $test_mf_client->set_authentication('ID_DOCUMENT')->status('pass');
+    $test_mf_client->save();
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_mf_client->loginid);
+
+    $c->call_ok($method, $params_mf)->has_no_error('no error for mt5_deposit');
+
+    cmp_ok $test_mf_client->default_account->balance, '==', 650, "Correct balance after deposit";
 };
 
 subtest 'multi currency transfers' => sub {

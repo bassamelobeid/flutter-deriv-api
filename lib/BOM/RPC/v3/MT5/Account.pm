@@ -1395,6 +1395,14 @@ sub _mt5_validate_and_get_amount {
     # only for real money account
     return permission_error_future() if ($client_obj->is_virtual);
 
+    # MX should not be able to deposit to, or withdraw from, MT5
+    return _make_error($error_code, localize('Please switch to your MF account to access MT5.'))
+        if ($client_obj->landing_company->short eq 'iom');
+
+    # Deposits and withdrawals are blocked for non-authenticated MF clients
+    return _make_error($error_code, localize('Please authenticate your account.'))
+        if ($client_obj->landing_company->short eq 'maltainvest' and not $client_obj->fully_authenticated);
+
     return _make_error($error_code, localize('Your account [_1] is disabled.', $loginid))
         if ($client_obj->status->get('disabled'));
 
