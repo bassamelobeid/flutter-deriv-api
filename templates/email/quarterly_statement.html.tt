@@ -39,7 +39,7 @@
       </tr>
       <tr>
        <th scope="row">Statement Cover Period:</th>
-       <td style="text-align:left">[% statement.quarter %]</td>
+       <td style="text-align:left">[% statement.start_date %] to [% statement.end_date %] (inclusive)</td>
       </tr>
      </tbody>
     </table>

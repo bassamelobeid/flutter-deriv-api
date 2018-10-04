@@ -1,4 +1,4 @@
-#!/usr/bin/env perl 
+#!/usr/bin/env perl
 use strict;
 use warnings;
 
@@ -54,8 +54,9 @@ $log->infof('Generating client quarterly statement emails for %s (%s - %s)', $qu
 my $tt = Template->new(ABSOLUTE => 1);
 
 # This is hardcoded to work on European clients only, since it's required for regulatory reasons there.
-my @brokers = qw/MF MLT MX/;
+my @brokers = qw/MF/;
 for my $broker (@brokers) {
+    my @client_list = ();
     # Iterate through all clients - we have few enough that we can pull the entire list into memory
     # (even if we increase userbase by 100x or more). We don't filter out by status at this point:
     # the statement generation may take a few seconds for each client, and there's a chance
@@ -75,6 +76,7 @@ for my $broker (@brokers) {
         try {
 
             $log->infof('Instantiating %s', $loginid);
+            my $start_time = Time::HiRes::time;
 
             my $client = BOM::User::Client->new({
                 loginid      => $loginid,
@@ -168,32 +170,48 @@ for my $broker (@brokers) {
                 },
                 date      => Date::Utility->new->date_yyyymmdd,
                 statement => {
-                    quarter => $quarter,
+                    start_date => $start->date_ddmmmyyyy,
+                    end_date   => $end->minus_time_interval('1d')->date_ddmmmyyyy,
                 }};
 
             $tt->process('/home/git/regentmarkets/bom-backoffice/templates/email/quarterly_statement.html.tt', $data, \my $html)
                 or die 'Template error: ' . $tt->error;
 
             if ($send_emails) {
-                Email::Stuffer->from("support\@binary.com")->to($client->email)->subject("Quarterly Statement")->html_body($html)->send_or_die;
+                Email::Stuffer->from('support@binary.com')->to($client->email)->subject("Quarterly Statement")->html_body($html)->send_or_die;
             }
 
             $log->infof("Statement proccessed for client: %s and email sent for: %s", $loginid, $client->email) if $show_clients;
 
+            my $elapsed = Time::HiRes::time - $start_time;
             $log->infof(
-                "Statement summary for client: %s: starting balance: %d, deposits: %d, withdrawals: %d, total buy price: %d, total fees: %d, ending balance: %d, estimated value: %d\n",
-                $loginid, $result->{starting_balance},
-                $result->{deposits},
-                $result->{withdrawals},
-                $result->{total_buy_price},
-                $result->{total_fees},
-                $result->{ending_balance},
-                $data->{client}->{estimated_value}) if $show_summary;
+                "Statement summary for client: %s: starting balance: %d, deposits: %d, withdrawals: %d, total buy price: %d, total fees: %d, ending balance: %d, estimated value: %d in %.2f seconds\n",
+                $loginid,                  $result->{starting_balance},        $result->{deposits},
+                $result->{withdrawals},    $result->{total_buy_price},         $result->{total_fees},
+                $result->{ending_balance}, $data->{client}->{estimated_value}, $elapsed
+            ) if $show_summary;
+            push @client_list,
+                {
+                %$result,
+                elapsed => $elapsed,
+                loginid => $loginid
+                };
 
         }
         catch {
             $log->errorf('Failed to process quarterly statement for client [%s] - %s', $loginid, $_);
         }
+    }
+
+    {
+        $tt->process(
+            '/home/git/regentmarkets/bom-backoffice/templates/email/quarterly_statement_summary.html.tt',
+            {client_list => \@client_list},
+            \my $summary
+        ) or die 'Template error: ' . $tt->error;
+
+        Email::Stuffer->from('support@binary.com')->to('compliance@binary.com')->subject("Quarterly Statement summary - $broker")
+            ->html_body($summary)->send_or_die;
     }
 }
 
