@@ -60,10 +60,12 @@ has all_symbols => (
 );
 
 sub _build_all_symbols {
-    my $self = shift;
-
-    my @markets = Finance::Asset::Market::Registry->instance->all_market_names();
-    return [grep { $_->flat_smile } map { create_underlying($_) } create_underlying_db->get_symbols_for(market => [@markets])];
+    my $self      = shift;
+    my %skip_list = map { $_ => 1 } (@{BOM::Config::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol});
+    my @markets   = Finance::Asset::Market::Registry->instance->all_market_names();
+    return [
+        grep { $_->flat_smile }
+        map { create_underlying($_) } grep { not $skip_list{$_} } create_underlying_db->get_symbols_for(market => [@markets])];
 }
 
 =head2 run

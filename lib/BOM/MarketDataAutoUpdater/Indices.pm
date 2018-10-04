@@ -67,14 +67,17 @@ has symbols_to_update => (
 );
 
 sub _build_symbols_to_update {
-    my $self   = shift;
-    my $market = $self->input_market;
+    my $self      = shift;
+    my $market    = $self->input_market;
+    my %skip_list = map { $_ => 1 } (@{BOM::Config::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol});
 
     my @symbols_to_update;
     if ($market eq 'indices') {
         # These are the cash indices that being disabled
-        @symbols_to_update = grep { create_underlying($_)->market->name eq 'indices' }
-            (@{BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_buy});
+        @symbols_to_update = grep { not $skip_list{$_} } create_underlying_db->get_symbols_for(
+            market            => 'indices',
+            contract_category => 'ANY',
+        );
     }
     return \@symbols_to_update;
 }
