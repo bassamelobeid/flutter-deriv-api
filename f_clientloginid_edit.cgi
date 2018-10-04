@@ -4,11 +4,9 @@ use strict;
 use warnings;
 no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix these warnings
 use open qw[ :encoding(UTF-8) ];
-use LWP::UserAgent;
 use Text::Trim;
 use File::Copy;
 use HTML::Entities;
-use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use Try::Tiny;
 use Digest::MD5;
 use Cache::RedisDB;
@@ -31,7 +29,6 @@ use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Client::DoughFlowClient;
 use BOM::Platform::Doughflow qw( get_sportsbook );
 use BOM::Platform::Event::Emitter;
-use BOM::Database::Model::HandoffToken;
 use BOM::Database::ClientDB;
 use BOM::Config;
 use BOM::Backoffice::FormAccounts;
@@ -112,89 +109,28 @@ if ($broker eq 'MF') {
 
 # sync authentication status to Doughflow
 if ($input{whattodo} eq 'sync_to_DF') {
-    die "NO Doughflow for Virtual Client !!!" if ($client->is_virtual);
+    my $error = sync_to_doughflow($client, $clerk);
 
-    my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $loginid});
-    my $currency = $df_client->doughflow_currency;
-    if (not $currency) {
+    if ($error) {
         BOM::Backoffice::Request::template()->process(
             'backoffice/client_edit_msg.tt',
             {
-                message  => 'ERROR: Client never deposited before, no sync to Doughflow is allowed !!',
+                message  => $error,
                 error    => 1,
                 self_url => $self_href,
             },
         ) || die BOM::Backoffice::Request::template()->error();
         code_exit_BO();
-    }
-
-    # create handoff token
-    my $client_db = BOM::Database::ClientDB->new({
-            client_loginid => $loginid,
-        })->db;
-
-    my $handoff_token = BOM::Database::Model::HandoffToken->new(
-        db                 => $client_db,
-        data_object_params => {
-            key            => BOM::Database::Model::HandoffToken::generate_session_key,
-            client_loginid => $loginid,
-            expires        => time + 60,
-        },
-    );
-    $handoff_token->save;
-
-    my $doughflow_loc  = BOM::Config::third_party()->{doughflow}->{request()->brand};
-    my $doughflow_pass = BOM::Config::third_party()->{doughflow}->{passcode};
-    my $url            = $doughflow_loc . '/CreateCustomer.asp';
-
-    # hit DF's CreateCustomer API
-    my $ua = LWP::UserAgent->new(timeout => 60);
-    $ua->ssl_opts(
-        verify_hostname => 0,
-        SSL_verify_mode => SSL_VERIFY_NONE
-    );    #temporarily disable host verification as full ssl certificate chain is not available in doughflow.
-
-    my $result = $ua->post(
-        $url,
-        $df_client->create_customer_property_bag({
-                SecurePassCode => $doughflow_pass,
-                Sportsbook     => get_sportsbook($broker, $currency),
-                IP_Address     => '127.0.0.1',
-                Password       => $handoff_token->key,
-            }));
-    if ($result->{'_content'} ne 'OK') {
+    } else {
         BOM::Backoffice::Request::template()->process(
             'backoffice/client_edit_msg.tt',
             {
-                message  => "FAILED syncing client authentication status to Doughflow, ERROR: $result->{_content}",
-                error    => 1,
+                message  => "Successfully syncing client authentication status to Doughflow",
                 self_url => $self_href,
             },
         ) || die BOM::Backoffice::Request::template()->error();
         code_exit_BO();
     }
-
-    my $msg =
-          Date::Utility->new->datetime
-        . " sync client authentication status to Doughflow by clerk=$clerk $ENV{REMOTE_ADDR}, "
-        . 'loginid: '
-        . $df_client->loginid
-        . ', Email: '
-        . $df_client->Email
-        . ', Name: '
-        . $df_client->CustName
-        . ', Profile: '
-        . $df_client->Profile;
-    BOM::User::AuditLog::log($msg, $loginid, $clerk);
-
-    BOM::Backoffice::Request::template()->process(
-        'backoffice/client_edit_msg.tt',
-        {
-            message  => "Successfully syncing client authentication status to Doughflow",
-            self_url => $self_href,
-        },
-    ) || die BOM::Backoffice::Request::template()->error();
-    code_exit_BO();
 }
 
 # sync authentication status to MT5
@@ -537,6 +473,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         }
     }
 
+    my $auth_method = 'dummy';
     CLIENT_KEY:
     foreach my $key (keys %input) {
         if (my ($document_field, $id) = $key =~ /^(expiration_date|comments|document_id)_([0-9]+)$/) {
@@ -600,7 +537,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         }
 
         if ($key eq 'client_authentication' and $input{$key}) {
-            my $auth_method = $input{$key};
+            $auth_method = $input{$key};
 
             # Remove existing status to make the auth methods mutually exclusive
             $_->delete for @{$client->client_authentication_method};
@@ -608,6 +545,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->set_authentication('ID_NOTARIZED')->status('pass')        if $auth_method eq 'ID_NOTARIZED';
             $client->set_authentication('ID_DOCUMENT')->status('pass')         if $auth_method eq 'ID_DOCUMENT';
             $client->set_authentication('ID_DOCUMENT')->status('needs_action') if $auth_method eq 'NEEDS_ACTION';
+
         }
 
         if ($key eq 'myaffiliates_token' and $input{$key}) {
@@ -634,11 +572,17 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         }
     }
 
+    my $sync_error;
     if (not $client->save) {
         code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $encoded_loginid</p></p>");
+    } elsif ($auth_method =~ /^(?:ID_NOTARIZED|ID_DOCUMENT$)/) {
+        # sync to doughflow once we authenticate client
+        # need to do after client save so that all information is upto date
+        $sync_error = sync_to_doughflow($client, $clerk);
     }
 
     print "<p style=\"color:#eeee00; font-weight:bold;\">Client details saved</p>";
+    print "<p style=\"color:#eeee00;\">$sync_error</p>" if $sync_error;
     BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $client->loginid});
     code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
 }

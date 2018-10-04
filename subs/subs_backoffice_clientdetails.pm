@@ -7,18 +7,25 @@ use Date::Utility;
 use Format::Util::Strings qw( set_selected_item );
 use Locale::Country 'code2country';
 use Finance::MIFIR::CONCAT qw(mifir_concat);
+use LWP::UserAgent;
+use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 
 use Brands;
+use LandingCompany::Registry;
 
+use BOM::Config;
+use BOM::User::AuditLog;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
 use BOM::User::Utility;
-use BOM::Backoffice::Request qw(request);
 use BOM::Platform::Locale;
+use BOM::Platform::S3Client;
+use BOM::Platform::Client::DoughFlowClient;
 use BOM::Backoffice::FormAccounts;
 use BOM::Backoffice::Config;
-use BOM::Platform::S3Client;
+use BOM::Backoffice::Request qw(request);
+use BOM::Database::Model::HandoffToken;
 
 sub get_currency_options {
     my $currency_options;
@@ -662,4 +669,78 @@ sub get_open_contracts {
             operation      => 'replica',
         })->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client->loginid, $client->currency, 'false']);
 }
+
+sub sync_to_doughflow {
+    my ($client, $clerk) = @_;
+
+    return "Invalid account." unless $client;
+
+    return "No currency selected for account." unless $client->default_account;
+
+    return "Sync to doughflow is not available for virtual clients." if $client->is_virtual;
+
+    return "Only fiat currency accounts are allowed to sync to doughflow."
+        unless LandingCompany::Registry::get_currency_type($client->default_account->currency_code) eq 'fiat';
+
+    my $loginid = $client->loginid;
+
+    my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $loginid});
+    my $currency = $df_client->doughflow_currency;
+
+    return 'Sync not allowed as the client has never deposited using doughflow.' unless $currency;
+
+    # create handoff token
+    my $client_db = BOM::Database::ClientDB->new({
+            client_loginid => $loginid,
+        })->db;
+
+    my $handoff_token = BOM::Database::Model::HandoffToken->new(
+        db                 => $client_db,
+        data_object_params => {
+            key            => BOM::Database::Model::HandoffToken::generate_session_key,
+            client_loginid => $loginid,
+            expires        => time + 60,
+        },
+    );
+    $handoff_token->save;
+
+    my $doughflow_loc  = BOM::Config::third_party()->{doughflow}->{request()->brand};
+    my $doughflow_pass = BOM::Config::third_party()->{doughflow}->{passcode};
+    my $url            = $doughflow_loc . '/CreateCustomer.asp';
+
+    # hit DF's CreateCustomer API
+    my $ua = LWP::UserAgent->new(timeout => 60);
+    $ua->ssl_opts(
+        verify_hostname => 0,
+        SSL_verify_mode => SSL_VERIFY_NONE
+    );    #temporarily disable host verification as full ssl certificate chain is not available in doughflow.
+
+    my $result = $ua->post(
+        $url,
+        $df_client->create_customer_property_bag({
+                SecurePassCode => $doughflow_pass,
+                Sportsbook     => get_sportsbook($client->broker_code, $currency),
+                IP_Address     => '127.0.0.1',
+                Password       => $handoff_token->key,
+            }));
+
+    return "An error occurred while syncing client authentication status to doughflow. Error is: $result->{_content}"
+        unless ($result->{'_content'} eq 'OK');
+
+    my $msg =
+          Date::Utility->new->datetime
+        . " sync client authentication status to Doughflow by clerk=$clerk $ENV{REMOTE_ADDR}, "
+        . 'loginid: '
+        . $df_client->loginid
+        . ', Email: '
+        . $df_client->Email
+        . ', Name: '
+        . $df_client->CustName
+        . ', Profile: '
+        . $df_client->Profile;
+    BOM::User::AuditLog::log($msg, $loginid, $clerk);
+
+    return undef;
+}
+
 1;
