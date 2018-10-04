@@ -2,13 +2,12 @@ sudo: required
 dist: precise
 group: deprecated-2017Q1
 language: perl
-perl:
-    - "5.14.2-thr"
 matrix:
     fast_finish: true
 env:
     - TEST_SUITE=test
     - TEST_SUITE=syntax
+    - TEST_SUITE=i18n
 services:
     - redis-server
 cache: apt
