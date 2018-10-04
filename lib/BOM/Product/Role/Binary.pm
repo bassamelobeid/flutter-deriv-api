@@ -97,9 +97,12 @@ sub _build_payout {
 override _build_bid_price => sub {
     my $self = shift;
 
-    # Ensure bid_probability and other probabilities exist before computing bid_price
-    # For some reason, $self->bid_probability is not enough to trigger lazy build
-    $self->_build_bid_probability;
+    # - Ensure bid_probability and other probabilities exist before computing bid_price
+    #   For some reason, $self->bid_probability is not enough to trigger lazy build
+    # - We do not calculate price for expired contracts.
+    # - $self->is_expired could be false at the expiry or 1 second after the expiry time
+    #   because we're waiting for exit_tick, so we should avoid calculating bid price for this condition either.
+    $self->_build_bid_probability if $self->date_pricing->is_before($self->date_expiry) and not $self->is_expired;
 
     return $self->_price_from_prob('bid_probability');
 };
