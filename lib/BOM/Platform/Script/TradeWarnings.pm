@@ -23,12 +23,18 @@ sub _publish {
     my ($subject, $email_list, $status);
     # trading is suspended. So sound the alarm!
     if ($msg->{current_amount} >= $msg->{limit_amount}) {
-        $status     = 'disabled';
-        $subject    = "TRADING SUSPENDED! $msg->{type} LIMIT is crossed for landing company $msg->{landing_company}.";
+        $status = 'disabled';
+        $subject =
+            $msg->{type} =~ /^(global)/
+            ? "TRADING SUSPENDED! $msg->{type} LIMIT is crossed for landing company $msg->{landing_company}."
+            : "TRADING SUSPENDED! $msg->{type} LIMIT is crossed for user $msg->{binary_user_id} loginid $msg->{client_loginid}.";
         $email_list = 'x-quants@binary.com,x-marketing@binary.com,compliance@binary.com,x-cs@binary.com';
     } else {
-        $status     = 'threshold_crossed';
-        $subject    = "$msg->{type} THRESHOLD is crossed for landing company $msg->{landing_company}.";
+        $status = 'threshold_crossed';
+        $subject =
+            $msg->{type} =~ /^(global)/
+            ? "$msg->{type} THRESHOLD is crossed for landing company $msg->{landing_company}."
+            : "$msg->{type} THRESHOLD is crossed for user $msg->{binary_user_id}. loginid $msg->{client_loginid}";
         $email_list = 'x-quants@binary.com';
     }
 
@@ -38,7 +44,10 @@ sub _publish {
     my $warning_key = join '_', ($status, $msg->{type}, $msg->{landing_company}, $msg->{limit_amount});
     unless ($notification_cache{$warning_key}) {
         # it is JSON::PP::Boolean, so converting it to 1 or 0 for json->encode to work properly
-        $msg->{rank}->{is_market_default} = $msg->{rank}->{is_market_default} ? 1 : 0;
+        $msg->{rank}->{is_market_default} =
+            $msg->{rank}->{is_market_default}
+            ? 1
+            : 0;
         send_email({
             from    => 'system@binary.com',
             to      => $email_list,
