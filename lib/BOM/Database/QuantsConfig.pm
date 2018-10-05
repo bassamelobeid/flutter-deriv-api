@@ -57,6 +57,10 @@ sub supported_config_type {
             global_potential_loss => 'Global Potential Loss',
             global_realized_loss  => 'Global Realized Loss',
         },
+        per_user => {
+            user_potential_loss => 'User Potential Loss',
+            user_realized_loss  => 'User Realized Loss',
+        },
         # TODO: include per client quants config in the next phase.
         # This would also clean up RiskProfile. Basically, we will remove static profile setting and have profiles listed all in one place
         per_client => {},
