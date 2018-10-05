@@ -17,6 +17,7 @@ use BOM::Backoffice::QuantsConfigHelper;
 use BOM::Database::QuantsConfig;
 use BOM::Config::Chronicle;
 use BOM::Database::ClientDB;
+use BOM::Database::Helper::UserSpecificLimit;
 use List::MoreUtils qw(uniq);
 use BOM::Config::Runtime;
 
@@ -26,8 +27,9 @@ my $json = JSON::MaybeXS->new;
 PrintContentType();
 BrokerPresentation('Quants Risk Management Tool');
 
-my $staff = BOM::Backoffice::Auth0::from_cookie()->{nickname};
-my $r     = request();
+my $staff  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $r      = request();
+my $broker = $r->broker_code;
 
 my $app_config    = BOM::Config::Runtime->instance->app_config;
 my $data_in_redis = $app_config->chronicle_reader->get($app_config->setting_namespace, $app_config->setting_name);
@@ -38,14 +40,16 @@ my $quants_config    = BOM::Database::QuantsConfig->new();
 my $supported_config = $quants_config->supported_config_type;
 
 my @config_status;
-foreach my $config_name (keys %{$supported_config->{per_landing_company}}) {
-    my $method = 'enable_' . $config_name;
-    push @config_status,
-        +{
-        key          => $config_name,
-        display_name => $supported_config->{per_landing_company}{$config_name},
-        status       => $app_config->quants->$method,
-        };
+foreach my $per_type (qw/per_landing_company per_user/) {
+    foreach my $config_name (keys %{$supported_config->{$per_type}}) {
+        my $method = 'enable_' . $config_name;
+        push @config_status,
+            +{
+            key          => $config_name,
+            display_name => $supported_config->{$per_type}{$config_name},
+            status       => $app_config->quants->$method,
+            };
+    }
 }
 
 Bar('Quants Config Switch');
@@ -65,6 +69,7 @@ my %lc_limits = map { $_ => $json->encode($existing_per_landing_company->{$_}) }
 
 my @limit_types;
 foreach my $key (keys %$supported_config) {
+    next if $key ne 'per_landing_company';
     foreach my $type (keys %{$supported_config->{$key}}) {
         push @limit_types, [$type, $supported_config->{$key}{$type}];
     }
@@ -149,3 +154,69 @@ sub _format_output {
     return \%groups;
 }
 
+my $available_user_limits = $quants_config->supported_config_type->{per_user};
+my %current_user_limits   = map {
+    my $limit_name = $_ . '_alert_threshold';
+    $_ => {
+        display_key   => $available_user_limits->{$_},
+        display_value => $app_config->quants->$limit_name
+        }
+} keys %$available_user_limits;
+
+Bar('Update User Limit Alert Threshold');
+BOM::Backoffice::Request::template()->process(
+    'backoffice/quants_user_limit_alert_threshold_form.html.tt',
+    {
+        upload_url => request()->url_for('backoffice/quant/update_quants_config.cgi'),
+        data       => {
+            user_limits    => $available_user_limits,
+            current_limits => \%current_user_limits,
+        },
+    }) || die BOM::Backoffice::Request::template()->error;
+
+my $db = BOM::Database::ClientDB->new({broker_code => $broker})->db;
+
+# Do the insert and delete here
+if ($r->params->{'new_user_limit'}) {
+    BOM::Database::Helper::UserSpecificLimit->new({
+            db             => $db,
+            client_loginid => $r->params->{'client_loginid'},
+            potential_loss => $r->params->{'potential_loss'},
+            realized_loss  => $r->params->{'realized_loss'}})->record_user_specific_limit;
+}
+
+if ($r->params->{'delete_limit'}) {
+    BOM::Database::Helper::UserSpecificLimit->new({
+            db             => $db,
+            client_loginid => $r->params->{'client_loginid'}})->delete_user_specific_limit;
+}
+
+if ($r->params->{'default_user_limit'}) {
+    BOM::Database::Helper::UserSpecificLimit->new({
+            db             => $db,
+            potential_loss => $r->params->{'potential_loss'},
+            realized_loss  => $r->params->{'realized_loss'}})->default_user_specific_limit;
+}
+
+Bar("Update User Specific Limit");
+
+my $default_user_limit = BOM::Database::Helper::UserSpecificLimit->new({
+        db => $db,
+    })->select_default_user_specific_limit;
+
+BOM::Backoffice::Request::template()->process(
+    'backoffice/update_user_specific_limit.html.tt',
+    {
+        url                => request()->url_for('backoffice/quant/quants_config.cgi'),
+        default_user_limit => $default_user_limit,
+    }) || die BOM::Backoffice::Request::template()->error;
+
+Bar("Existing User Specific  Limit");
+
+my @specific_limit_output = BOM::Database::Helper::UserSpecificLimit->new({db => $db})->select_user_specific_limit;
+
+BOM::Backoffice::Request::template()->process(
+    'backoffice/existing_user_specific_limit.html.tt',
+    {
+        output => \@specific_limit_output,
+    }) || die BOM::Backoffice::Request::template()->error;

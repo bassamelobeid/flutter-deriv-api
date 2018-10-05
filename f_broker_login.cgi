@@ -196,7 +196,8 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
                                 <td align="center" width="50%">
                                         <p><b>QUANTS RISK MANAGEMENT TOOL</b></p>
                                         <form action="~ . request()->url_for('backoffice/quant/quants_config.cgi') . qq~" method="post"><font size=2>
-                                                <input type="submit" value="GO">
+                                                <b>$brokerselection</b>
+                                                &nbsp;<input type="submit" value="GO">
                                         </font></form>
                                 </td>
 			</tr>

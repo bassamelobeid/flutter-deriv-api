@@ -1,0 +1,53 @@
+<p>Current alert threshold (e.g. 0.1 is equivalent to 10%):</p>
+
+<table id="user_limits_threshold_display">
+    [% FOREACH key IN data.current_limits.keys %]
+        <tr><td>[% data.current_limits.$key.display_key %]:</td><td id="[% key %]">[% data.current_limits.$key.display_value %]</td>
+    [% END %]
+</table>
+
+<p>Update alert threshold with the tool below:</p>
+
+<table id="user_limits_threshold_form">
+    <tr>
+        <td>
+            <select name='user_limits'>
+                [% FOREACH key IN data.user_limits.keys %]
+                    <option value="[% key %]">[% data.user_limits.$key %]</option>
+                [% END %]
+            </select>
+        </td>
+        <td><input type="text" name="user_threshold_amount"></input></td>
+    </tr>
+    <tr>
+        <td><button onClick="SaveUserThreshold()" type="button">save</button></td>
+        <td class="user_threshold_result"></td>
+    </tr>
+</table>
+
+<script>
+    function SaveUserThreshold() {
+        var el = \$('table#user_limits_threshold_form');
+        var result = el.find('td.user_threshold_result');
+        result.text('processing ...');
+
+        \$.ajax({
+            url: upload_url,
+            data: {
+                save_threshold: 1,
+                limit_type: el.find('select[name="user_limits"]').val(),
+                threshold_amount: el.find('input[name="user_threshold_amount"]').val(),
+            },
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'red');
+                } else {
+                    var el_display = \$('table#user_limits_threshold_display');
+                    el_display.find('td#'+config.id).text(config.amount);
+                    result.text('saved').css('color', 'green');
+                }
+            }
+        });
+    }
+</script>

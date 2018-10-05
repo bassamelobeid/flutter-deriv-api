@@ -1,0 +1,16 @@
+<table>
+    <tr>
+        <td><b>Binary user id &nbsp;</b></td>
+        <td><b>Client login id &nbsp;</b></td>
+        <td><b>Potential loss &nbsp;</b></td>
+        <td><b>Realized loss &nbsp;</b></td>
+    </tr>
+    [% FOREACH data IN output %]
+        <tr>
+            <td>[% data.binary_user_id %]</td>
+            <td>[% data.client_loginid.join() %]</td>
+            <td>[% data.potential_loss %]</td>
+            <td>[% data.realized_loss %]</td>
+        </tr>
+    [% END %]
+</table>
