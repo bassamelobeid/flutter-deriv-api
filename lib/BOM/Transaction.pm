@@ -355,10 +355,11 @@ sub calculate_limits {
     $limits{max_open_bets} = $lim if defined $lim;
     $limits{max_payout_open_bets} = $client->get_limit_for_payout;
 
+    my $app_config = BOM::Config::Runtime->instance->app_config;
     unless ($client->is_virtual) {
         # only pass true values if global limit checks are enabled.
         # actual checks happens in the database
-        my $app_config = BOM::Config::Runtime->instance->app_config;
+
         foreach my $check_name (qw(global_potential_loss global_realized_loss)) {
             my $method       = 'enable_' . $check_name;
             my $alert_method = $check_name . '_alert_threshold';
@@ -370,6 +371,16 @@ sub calculate_limits {
                     per_market_warning_threshold => $threshold,
                     per_symbol_warning_threshold => $threshold,
                 };
+            }
+        }
+
+        foreach my $check_name (qw(user_potential_loss user_realized_loss)) {
+            my $method       = 'enable_' . $check_name;
+            my $alert_method = $check_name . '_alert_threshold';
+            $limits{$check_name}{per_user} = 1;
+            if ($app_config->quants->$method) {
+                my $threshold = $app_config->quants->$alert_method;
+                $limits{$check_name}{warning_threshold} = $threshold;
             }
         }
     }
@@ -1212,6 +1223,16 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         -type              => 'LookbackOpenPositionLimitExceeded',
         -mesg              => 'Lookback open positions limit exceeded',
         -message_to_client => BOM::Platform::Context::localize('Lookback open positions limit exceeded.'),
+    ),
+    BI020 => Error::Base->cuss(
+        -type              => 'PerUserPotentialLossLimitReached',
+        -mesg              => 'per user potential loss limit reached',
+        -message_to_client => BOM::Platform::Context::localize('This contract is currently unavailable due to market conditions'),
+    ),
+    BI022 => Error::Base->cuss(
+        -type              => 'PerUserRealizedLossLimitReached',
+        -mesg              => 'per user realized loss limit reached',
+        -message_to_client => BOM::Platform::Context::localize('This contract is currently unavailable due to market conditions'),
     ),
 );
 
