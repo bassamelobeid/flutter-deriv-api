@@ -235,6 +235,26 @@ quants:
       isa: Bool
       global: 1
       default: 0
+    user_potential_loss_alert_threshold:
+      description: "Alert threshold for user potential loss (in decimal, e.g. 0.5 is equivalent to 50%)"
+      isa: Num
+      global: 1
+      default: 0.5
+    user_realized_loss_alert_threshold:
+      description: "Alert threshold for user realized loss (in decimal, e.g. 0.5 is equivalent to 50%)"
+      isa: Num
+      global: 1
+      default: 0.5
+    enable_user_potential_loss:
+      description: "A switch to turn off user potential loss check."
+      isa: Bool
+      global: 1
+      default: 0
+    enable_user_realized_loss:
+      description: "A switch to turn off user realized loss check."
+      isa: Bool
+      global: 1
+      default: 0
 system:
   description: "Various parameters determining core application functionality"
   isa: section
