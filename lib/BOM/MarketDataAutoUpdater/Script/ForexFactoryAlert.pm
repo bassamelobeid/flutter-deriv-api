@@ -6,6 +6,7 @@ with 'App::Base::Script';
 use BOM::MarketDataAutoUpdater::Script::UpdateEconomicEvents;
 use Digest::MD5 qw(md5_hex);
 use ForexFactory;
+use Email::Address::UseXS;
 use Email::Stuffer;
 use Date::Utility;
 use Cache::RedisDB;

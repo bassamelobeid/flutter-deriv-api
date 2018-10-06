@@ -3,6 +3,7 @@ package BOM::MarketDataAutoUpdater;
 use Moose;
 use Date::Utility;
 use BOM::Config::Runtime;
+use Email::Address::UseXS;
 use Email::Stuffer;
 use Cache::RedisDB;
 
