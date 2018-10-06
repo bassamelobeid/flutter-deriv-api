@@ -7,8 +7,8 @@ use Test::MockModule;
 use Test::MockTime qw(:all);
 use JSON::MaybeUTF8;
 use List::Util qw();
+use Email::Address::UseXS;
 use Email::Folder::Search;
-use Email::Stuffer::TestLinks;
 
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);

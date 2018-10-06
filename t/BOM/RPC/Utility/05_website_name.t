@@ -6,7 +6,6 @@ use Test::MockModule;
 
 use Data::Dumper;
 use Date::Utility;
-use Email::Stuffer::TestLinks;
 
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::RPC::v3::Utility;

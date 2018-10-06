@@ -10,8 +10,8 @@ use Data::Dumper;
 use Encode;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
 use Encode qw(encode);
+use Email::Address::UseXS;
 use Email::Folder::Search;
-use Email::Stuffer::TestLinks;
 
 use Format::Util::Numbers qw/formatnumber/;
 use Scalar::Util qw/looks_like_number/;

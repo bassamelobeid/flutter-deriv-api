@@ -3,11 +3,11 @@ use warnings;
 use BOM::Test::RPC::Client;
 use Test::Most;
 use Test::Mojo;
+use Email::Address::UseXS;
 use Email::Folder::Search;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::User;
-use Email::Stuffer::TestLinks;
 use utf8;
 use BOM::Platform::Token;
 
