@@ -6,6 +6,7 @@ use Test::MockModule;
 use Test::Warnings qw(warning);
 use Brands;
 use BOM::Platform::Context qw(request);
+use Email::Address::UseXS;
 use Email::MIME::Attachment::Stripper;
 use Path::Tiny;
 use File::Basename;
@@ -35,11 +36,11 @@ subtest 'args' => sub {
     like(warning { $result = send_email($args); }, qr/missed/, 'no subject');
     ok(!$result, 'failed because no subject');
     local $ENV{SKIP_EMAIL} = 1;
-    $args->{subject} = "Test subject";
+    $args->{subject} = 'Test subject';
     ok(send_email($args), 'result success but in fact not email not sent');
-    is scalar($transport->deliveries), 0, "not called yet";
+    is scalar($transport->deliveries), 0, 'not called yet';
     local $ENV{SKIP_EMAIL} = 0;
-    $args->{to} = "hello";
+    $args->{to} = 'hello';
     like(warning { $result = send_email($args); }, qr/erroneous email address/, 'bad email address');
     ok(!$result, 'failed because of bad email address');
     done_testing();
@@ -58,13 +59,13 @@ subtest 'support address' => sub {
 };
 
 subtest 'no use template' => sub {
-    $args->{subject} = "hello           world";
+    $args->{subject} = 'hello           world';
     $args->{message} = [qw(line1 line2)];
     ok(send_email($args));
     my @deliveries = $transport->deliveries;
     my $email      = $deliveries[-1]{email};
     is $email->get_body, "line1\r\nline2=\r\n", 'message joined';
-    is $email->get_header('Subject'), "hello world", 'remove continuous spaces';
+    is $email->get_header('Subject'), 'hello world', 'remove continuous spaces';
 };
 
 subtest 'with template' => sub {
@@ -72,18 +73,18 @@ subtest 'with template' => sub {
     ok(send_email($args));
     my @deliveries = $transport->deliveries;
     my $email      = $deliveries[-1]{email};
-    like $email->get_body, qr/line1\r\nline2/s, "text not turn to html";
-    like $email->get_body, qr/<html>/s,         "use template";
+    like $email->get_body, qr/line1\r\nline2/s, 'text not turn to html';
+    like $email->get_body, qr/<html>/s,         'use template';
     $args->{email_content_is_html} = 1;
     ok(send_email($args));
     @deliveries = $transport->deliveries;
     $email      = $deliveries[-1]{email};
-    like $email->get_body, qr/line2<br \/>/s, "text turned to html";
+    like $email->get_body, qr/line2<br \/>/s, 'text turned to html';
     $args->{skip_text2html} = 1;
     ok(send_email($args));
     @deliveries = $transport->deliveries;
     $email      = $deliveries[-1]{email};
-    like $email->get_body, qr/line1\r\nline2/s, "text not turn to html";
+    like $email->get_body, qr/line1\r\nline2/s, 'text not turn to html';
 
 };
 

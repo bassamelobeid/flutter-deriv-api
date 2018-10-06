@@ -3,6 +3,7 @@ package BOM::Platform::Email;
 use strict;
 use warnings;
 
+use Email::Address::UseXS;
 use URL::Encode;
 use Email::Stuffer;
 use Email::Valid;
