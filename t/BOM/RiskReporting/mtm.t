@@ -6,6 +6,7 @@ use Test::More;
 use Test::Exception;
 use Test::MockModule;
 use Test::Warnings qw/warning/;
+use Email::Address::UseXS;
 use Email::Folder::Search;
 use File::Spec;
 use Path::Tiny;

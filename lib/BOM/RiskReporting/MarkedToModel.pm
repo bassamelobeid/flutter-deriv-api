@@ -25,6 +25,7 @@ use File::Temp;
 use POSIX qw(strftime);
 use Try::Tiny;
 
+use Email::Address::UseXS;
 use Email::Stuffer;
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw( produce_contract );

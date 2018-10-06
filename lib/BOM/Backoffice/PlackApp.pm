@@ -5,6 +5,7 @@ use strict;
 use warnings;
 
 use Try::Tiny::Except ();    # preload: see BOM::Backoffice::Sysinit
+use Email::Address::UseXS;   # preload
 use Plack::Builder;
 use Plack::App::CGIBin::Streaming;
 use Time::HiRes ();

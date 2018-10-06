@@ -24,6 +24,7 @@ use IO::Handle;
 use File::Path qw(make_path);
 use File::Temp;
 use List::Util qw(min sum);
+use Email::Address::UseXS;
 use Email::Stuffer;
 use Text::CSV_XS;
 use Time::Duration::Concise::Localize;

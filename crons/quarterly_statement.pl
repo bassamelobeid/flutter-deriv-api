@@ -12,6 +12,7 @@ use Template;
 use Try::Tiny;
 use Path::Tiny;
 use Date::Utility;
+use Email::Address::UseXS;
 use Email::Stuffer;
 use JSON::MaybeXS;
 
