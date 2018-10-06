@@ -133,6 +133,7 @@ rpc states_list => sub {
 };
 
 sub _currencies_config {
+
     my $amt_precision  = Format::Util::Numbers::get_precision_config()->{price};
     my $default_stakes = BOM::Config::quants()->{default_stake};
     # As a stake_default (amount, which will be pre-populated for this currency on our website,
@@ -140,14 +141,19 @@ sub _currencies_config {
     # Logic is copied from _build_staking_limits
 
     # Get available currencies
-    my $payout_currencies = BOM::RPC::v3::Utility::filter_out_suspended_cryptocurrencies('costarica');
+    my @all_currencies = keys %{LandingCompany::Registry::get('costarica')->legal_allowed_currencies};
+
+    my $suspended_currencies = BOM::RPC::v3::Utility::get_suspended_crypto_currencies;
+
     my %currencies_config = map {
         $_ => {
             fractional_digits => $amt_precision->{$_},
             type              => LandingCompany::Registry::get_currency_type($_),
             stake_default     => $default_stakes->{$_},
+            is_suspended      => $suspended_currencies->{$_} ? 1 : 0,
             }
-    } @{$payout_currencies};
+    } @{all_currencies};
+
     return \%currencies_config;
 }
 
