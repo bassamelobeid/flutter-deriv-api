@@ -15,6 +15,7 @@ use Encode;
 use Encode::Detect::Detector;
 use Try::Tiny;
 use Webservice::GAMSTOP;
+use Email::Address::UseXS;
 use Email::Stuffer;
 
 use BOM::Config;
