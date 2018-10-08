@@ -3,7 +3,6 @@ TESTS=unit_test_platform_client \
       unit_test_system
 M=[ -t 1 ] && echo 'making \033[01;33m$@\033[00m' || echo 'making $@'
 D=$(CURDIR)
-export PERL5OPT=-MTest::FailWarnings=-allow_deps,1
 export SKIP_EMAIL=1
 I=-I$D/lib -I$D -I/home/git/regentmarkets/bom/t -I/home/git/regentmarkets/bom-postgres/lib -I/home/git/regentmarkets/bom/lib -I/home/git/regentmarkets/bom-market/lib
 P=/etc/rmg/bin/prove -v --timer $I

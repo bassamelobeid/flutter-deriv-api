@@ -5,6 +5,7 @@ use warnings;
 
 use Test::More;
 use Test::Exception;
+use Test::Warnings 0.005 qw(:all);
 
 use BOM::User::Client;
 use BOM::User::Client::Payments;
@@ -72,14 +73,18 @@ subtest 'PA withdrawal with long further instructions by client' => sub {
         my $remark;
         $remark .= 'x' x 801;
 
-        $client->payment_account_transfer(
-            toClient     => $pa_client,
-            currency     => 'USD',
-            amount       => 999,
-            remark       => $remark,
-            fees         => 0,
-            gateway_code => 'payment_agent_transfer'
-        );
+        # expect DB call here to emit errors as warnings as well as exceptions
+        # https://github.com/regentmarkets/bom-postgres/blob/master/lib/BOM/Database/Rose/DB.pm#L68
+        warning {
+            $client->payment_account_transfer(
+                toClient     => $pa_client,
+                currency     => 'USD',
+                amount       => 999,
+                remark       => $remark,
+                fees         => 0,
+                gateway_code => 'payment_agent_transfer'
+                )
+        };
     }
     qr/value too long for type character varying\(800\)/, 'remark length cannot > 800';
 };
