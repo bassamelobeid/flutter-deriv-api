@@ -212,6 +212,12 @@ sub param {
     return $self->params->{$name};
 }
 
+sub checkbox_param {
+    my $self = shift;
+    my $name = shift;
+    return $self->params->{$name} // 0;
+}
+
 sub cookie {
     my $self = shift;
     my $name = shift;

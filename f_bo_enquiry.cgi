@@ -38,11 +38,14 @@ if ($broker ne 'FOG') {
     print build_client_statement_form($broker);
 
     print "<hr/><FORM ACTION=\"" . request()->url_for('backoffice/f_profit_table.cgi') . "\" METHOD=\"POST\">";
+    print
+        "<span style=\"color:red;\"><b>Show All Transaction</b>, may fail for clients with huge number of transaction, so use this feature only when required.</span><br/>";
     print "Check Profit Table of LoginID : <input id='profit_check_loginID' name=loginID type=text size=10 value='$encoded_broker'>";
     print "From : <input name=startdate type=text size=10 value='" . Date::Utility->today()->minus_time_interval('30d')->date . "'/>";
     print "To : <input name=enddate type=text size=10 value='" . Date::Utility->today()->date . "'/>";
     print "<INPUT type=hidden name=\"broker\" value=\"$encoded_broker\">";
     print "<INPUT type=hidden name=\"l\" value=\"EN\">";
+    print "<INPUT type=checkbox name=\"all_in_one_page\">Show All Transactions</INPUT>";
     print "<INPUT type=\"submit\" value=\"Client Profit Table\">";
     print "</FORM>";
 

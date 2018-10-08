@@ -34,6 +34,8 @@ if ($from_date && $to_date && $from_date =~ m/^\d{4}-\d{2}-\d{2}$/ && $to_date =
     $from_date .= ' 00:00:00';
     $to_date   .= ' 23:59:59';
 }
+$to_date   = ($to_date)   ? Date::Utility->new($to_date)   : undef;
+$from_date = ($from_date) ? Date::Utility->new($from_date) : undef;
 
 my $overview_from_date =
     request()->param('overview_fm_date') ? Date::Utility->new(request()->param('overview_fm_date')) : Date::Utility->new()->_minus_months(6);
@@ -83,17 +85,22 @@ my $residence    = Locale::Country::code2country($client->residence);
 my $client_name  = $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
 my $client_email = $client->email;
 
+my $all_in_one_page = request()->checkbox_param('all_in_one_page');
+
 # since client_statement_for_backoffice uses after (> sign) and before (< sign)
 # we want the time to be inclusive of from_date (>= sign) and to_date (<= sign)
 # so we add and minus 1 second to make it same as >= or <=
 # underlying of client_statement_for_backoffice uses get_transactions and get_payments
 # which handles undef accordingly.
 my $statement = client_statement_for_backoffice({
-    client   => $client,
-    after    => $from_date ? Date::Utility->new($from_date)->minus_time_interval('1s')->datetime_yyyymmdd_hhmmss() : undef,
-    before   => $to_date ? Date::Utility->new($to_date)->plus_time_interval('1s')->datetime_yyyymmdd_hhmmss() : undef,
-    currency => $currency,
-});
+        client => $client,
+        after  => (not $all_in_one_page and $from_date)
+        ? $from_date->minus_time_interval('1s')->datetime_yyyymmdd_hhmmss()
+        : undef,
+        before => (not $all_in_one_page and $to_date) ? $to_date->plus_time_interval('1s')->datetime_yyyymmdd_hhmmss() : undef,
+        currency            => $currency,
+        max_number_of_lines => ($all_in_one_page ? 99999 : 200),
+    });
 
 my $summary = client_statement_summary({
         client   => $client,
@@ -141,8 +148,8 @@ BOM::Backoffice::Request::template()->process(
             residence => $residence,
             tel       => $tel
         },
-        startdate => $from_date ? Date::Utility->new($from_date)->datetime_yyyymmdd_hhmmss() : undef,
-        enddate   => $to_date   ? Date::Utility->new($to_date)->datetime_yyyymmdd_hhmmss()   : undef,
+        startdate => (not $all_in_one_page and $from_date) ? $from_date->datetime_yyyymmdd_hhmmss() : undef,
+        enddate   => (not $all_in_one_page and $to_date)   ? $to_date->datetime_yyyymmdd_hhmmss()   : undef,
     },
 ) || die BOM::Backoffice::Request::template()->error();
 

@@ -55,6 +55,9 @@ my $clientdb = BOM::Database::ClientDB->new({
     client_loginid => $client->loginid,
 });
 
+$from_date = ($from_date) ? Date::Utility->new($from_date) : undef;
+$to_date   = ($to_date)   ? Date::Utility->new($to_date)   : undef;
+
 Bar($loginID . " - Contracts");
 my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
     client_loginid => $client->loginid,
@@ -67,11 +70,14 @@ my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
 # so we add and minus 1 second to make it same as >= or <=
 # underlying of client_statement_for_backoffice uses get_transactions and get_payments
 # which handles undef accordingly.
-my $sold_contracts = $fmb_dm->get_sold({
-    after  => $from_date ? Date::Utility->new($from_date)->minus_time_interval('1s')->datetime_yyyymmdd_hhmmss() : undef,
-    before => $to_date   ? Date::Utility->new($to_date)->plus_time_interval('1s')->datetime_yyyymmdd_hhmmss()    : undef,
-    limit  => 50
-});
+my $all_in_one_page = request()->checkbox_param('all_in_one_page');
+my $sold_contracts  = $fmb_dm->get_sold({
+        after => (not $all_in_one_page and $from_date)
+        ? $from_date->minus_time_interval('1s')->datetime_yyyymmdd_hhmmss()
+        : undef,
+        before => (not $all_in_one_page and $to_date) ? $to_date->plus_time_interval('1s')->datetime_yyyymmdd_hhmmss() : undef,
+        limit => ($all_in_one_page ? 99999 : 50),
+    });
 
 #Performance probability
 my $do_calculation = request()->param('calc_performance_probability');
@@ -137,8 +143,8 @@ BOM::Backoffice::Request::template()->process(
         email            => $client->email,
         full_name        => $client->full_name,
         loginid          => $client->loginid,
-        posted_startdate => $from_date ? Date::Utility->new($from_date)->datetime_yyyymmdd_hhmmss() : undef,
-        posted_enddate   => $to_date ? Date::Utility->new($to_date)->datetime_yyyymmdd_hhmmss() : undef,
+        posted_startdate => $from_date ? $from_date->datetime_yyyymmdd_hhmmss() : undef,
+        posted_enddate   => $to_date ? $to_date->datetime_yyyymmdd_hhmmss() : undef,
         currency         => $client->currency,
         residence        => Brands->new(name => request()->brand)->countries_instance->countries->country_from_code($client->residence),
         contract_details => \&BOM::ContractInfo::get_info,

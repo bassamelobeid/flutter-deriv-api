@@ -263,6 +263,7 @@ sub build_client_statement_form {
           '<hr><FORM ACTION="'
         . request()->url_for('backoffice/f_manager_history.cgi')
         . '" METHOD="POST">'
+        . '<span style="color:red;"><b>Show All Transaction</b>, may fail for clients with huge number of transaction, so use this feature only when required.</span><br/>'
         . 'Check Statement of LoginID : <input id="statement_loginID" name="loginID" type="text" size="10" value="'
         . $broker . '"/>'
         . 'From : <input name="startdate" type="text" size="10" value="'
@@ -275,8 +276,9 @@ sub build_client_statement_form {
         . get_currency_options()
         . '</SELECT>'
         . '<input type="hidden" name="l" value="EN">'
-        . '&nbsp; <input type="submit" value="Client Statement">'
+        . '<input type="checkbox" name="all_in_one_page">Show All Transactions</input>'
         . '&nbsp; <input type="checkbox" value="yes" name="depositswithdrawalsonly">Deposits and Withdrawals only '
+        . '&nbsp; <input type="submit" value="Client Statement">'
         . '</FORM>';
 }
 
@@ -597,6 +599,7 @@ sub client_statement_for_backoffice {
         });
         foreach my $transaction (@{$transactions}) {
             $transaction->{amount} = abs($transaction->{amount});
+
         }
     } else {
         $transactions = $txn_dm->get_transactions({
@@ -624,7 +627,7 @@ sub client_statement_for_backoffice {
 
     return {
         transactions => $transactions,
-        balance      => $balance
+        balance      => $balance,
     };
 }
 

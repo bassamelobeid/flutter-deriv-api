@@ -11,15 +11,20 @@
 <tr><td align=left> Client withdrawals for the lifetime of the account: [% withdrawals_to_date %] [% currency %]</td></tr>
 </tr>
 
-<table width=100%><tr>
+<table width=100%>
+<tr><td align=left>
+<span style="color:red;"><b>Show All Transaction</b>, may fail for clients with huge number of transaction, so use this feature only when required.</span>
+</td></tr>
+<tr>
 <td align=left> Quick jump to see another statement:
 <input name=loginID type=text size=15 value="[% loginid %]">
 <input name=startdate type=text size=15 value="[% startdate %]" placeholder="2016-12-20">
 <input name=enddate type=text size=15 value="[% enddate %]" placeholder="2017-01-20">
 <input type=hidden name=broker value="[% broker %]">
+<input type="checkbox" name="all_in_one_page">Show All Transactions</input>
+<input type=checkbox value=yes name=depositswithdrawalsonly>Deposits and Withdrawals only
 <input type=hidden name=l value=EN>
 <input type=submit value=view>
-<input type=checkbox value=yes name=depositswithdrawalsonly>Deposits and Withdrawals only
 </td>
 </tr>
 </table>
