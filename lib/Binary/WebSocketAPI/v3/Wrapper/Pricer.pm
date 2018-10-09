@@ -60,6 +60,7 @@ sub proposal {
             method      => 'send_ask',
             msg_type    => 'proposal',
             call_params => {
+                token                 => $c->stash('token'),
                 language              => $c->stash('language'),
                 app_markup_percentage => $c->stash('app_markup_percentage'),
                 landing_company       => $c->landing_company_name,
@@ -226,6 +227,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                         method      => 'send_ask',
                         msg_type    => 'proposal',
                         call_params => {
+                            token                 => $c->stash('token'),
                             language              => $c->stash('language'),
                             app_markup_percentage => $c->stash('app_markup_percentage'),
                             landing_company       => $c->landing_company_name,
@@ -527,10 +529,11 @@ sub _pricing_channel_for_ask {
 
     delete $args_hash{passthrough};
 
-    $args_hash{language}               = $c->stash('language') || 'EN';
-    $args_hash{price_daemon_cmd}       = $price_daemon_cmd;
-    $args_hash{landing_company}        = $c->landing_company_name;
-    $args_hash{country_code}           = $c->stash('country_code');
+    $args_hash{language}         = $c->stash('language') || 'EN';
+    $args_hash{price_daemon_cmd} = $price_daemon_cmd;
+    $args_hash{landing_company}  = $c->landing_company_name;
+    # use residence when available, fall back to IP country
+    $args_hash{country_code} = $c->stash('residence') || $c->stash('country_code');
     $args_hash{skips_price_validation} = 1;
     my $redis_channel = _serialized_args(\%args_hash);
     my $subchannel    = $args->{amount};
@@ -552,7 +555,8 @@ sub pricing_channel_for_bid {
     $hash{language}         = $c->stash('language') || 'EN';
     $hash{price_daemon_cmd} = $price_daemon_cmd;
     $hash{landing_company}  = $c->landing_company_name;
-    $hash{country_code}     = $c->stash('country_code');
+    # use residence when available, fall back to IP country
+    $hash{country_code} = $c->stash('residence') || $c->stash('country_code');
     my $redis_channel = _serialized_args(\%hash);
 
     %hash = map { $_ =~ /passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
