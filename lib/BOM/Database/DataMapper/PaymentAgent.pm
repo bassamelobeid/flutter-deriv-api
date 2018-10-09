@@ -71,6 +71,23 @@ sub get_all_authenticated_payment_agent_countries {
         });
 }
 
+=over
+
+=item get_payment_agents_linked_to_client
+
+Returns the loginids of payment agents with any transfer/deposit/withdrawal to/from the client represented by the input loginid.
+
+=cut
+
+sub get_payment_agents_linked_to_client {
+    my ($self, $loginid) = @_;
+
+    return $self->db->dbic->run(
+        fixup => sub {
+            return $_->selectall_arrayref('SELECT * FROM betonmarkets.get_payment_agents_linked_to_client(?)', undef, $loginid);
+        });
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
