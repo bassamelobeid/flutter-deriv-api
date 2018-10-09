@@ -300,7 +300,7 @@ sub _login {
 
         if (grep { $client->loginid =~ /^$_/ } @{BOM::Config::Runtime->instance->app_config->system->suspend->logins}) {
             $err = "TEMP_DISABLED";
-        } elsif ($client->status->get('disabled')) {
+        } elsif ($client->status->disabled) {
             $err = "DISABLED";
         }
     }
@@ -456,7 +456,7 @@ sub _get_client {
         loginid      => $c->session('_loginid'),
         db_operation => 'replica'
     });
-    return undef if $client->status->get('disabled');
+    return undef if $client->status->disabled;
 
     return $client;
 }
