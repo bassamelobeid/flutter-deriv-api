@@ -150,7 +150,7 @@ sub check_one_result {
 
     subtest $title, sub {
         my $err = 0;
-        if (not $cl->status->get("professional") and $cl->landing_company->short eq 'maltainvest') {
+        if (not $cl->status->professional and $cl->landing_company->short eq 'maltainvest') {
             $err++
                 unless is $m->{error}, "Sorry, your account is not authorised for any further contract purchases.",
                 "correct error for non professional MF client";

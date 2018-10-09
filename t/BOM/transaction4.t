@@ -462,7 +462,7 @@ subtest 'Validate Unwelcome Client' => sub {
         'Client is unwelcome : _validate_client_status - error message'
     );
 
-    lives_ok { $client->status->clear('unwelcome') } "delete client from unwelcome login";
+    lives_ok { $client->status->clear_unwelcome } "delete client from unwelcome login";
 };
 
 subtest 'Validate Disabled Client' => sub {
@@ -487,7 +487,7 @@ subtest 'Validate Disabled Client' => sub {
         'Client is unwelcome : _validate_client_status - error message'
     );
 
-    lives_ok { $client->status->clear('disabled') } "delete client from disabled login";
+    lives_ok { $client->status->clear_disabled } "delete client from disabled login";
 };
 
 done_testing;
