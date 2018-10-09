@@ -19,7 +19,7 @@ use DataDog::DogStatsd::Helper qw(stats_inc);
 use Format::Util::Numbers qw/formatnumber financialrounding/;
 use JSON::MaybeXS;
 use Brands;
-use BOM::User::Client;
+use BOM::User qw( is_payment_agents_suspended_in_country );
 use LandingCompany::Registry;
 use BOM::User::Client::PaymentAgent;
 use ExchangeRates::CurrencyConverter qw/convert_currency in_usd/;
@@ -339,32 +339,32 @@ rpc "paymentagent_list",
 
     my ($language, $args, $token_details) = @{$params}{qw/language args token_details/};
 
-    my $client;
-    if ($token_details and exists $token_details->{loginid}) {
-        $client = BOM::User::Client->new({
-            loginid      => $token_details->{loginid},
+    my $target_country = $args->{paymentagent_list};
+
+    my $loginid;
+    my $broker_code = 'CR';
+    if (ref $token_details eq 'HASH') {
+        $loginid = $token_details->{loginid};
+        my $client = BOM::User::Client->new({
+            loginid      => $loginid,
             db_operation => 'replica'
         });
+        $broker_code = $client->broker_code if $client;
     }
-
-    my $broker_code = $client ? $client->broker_code : 'CR';
-
     my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => $broker_code});
-    my $countries = $payment_agent_mapper->get_all_authenticated_payment_agent_countries();
+    my $all_pa_countries     = $payment_agent_mapper->get_all_authenticated_payment_agent_countries();
+    my @available_countries  = grep { !is_payment_agents_suspended_in_country($_->[0]) } @$all_pa_countries;
 
     # add country name plus code
-    foreach (@{$countries}) {
+    foreach (@available_countries) {
         $_->[1] = Brands->new(name => request()->brand)->countries_instance->countries->localized_code2country($_->[0], $language);
     }
 
-    my $query_args = {target_country => $args->{paymentagent_list}};
-    $query_args->{currency_code} = $args->{currency} if $args->{currency};
-
-    my $authenticated_paymentagent_agents = $payment_agent_mapper->get_authenticated_payment_agents($query_args);
+    my $available_payment_agents = _get_available_payment_agents($target_country, $broker_code, $args->{currency}, $loginid);
 
     my $payment_agent_table_row = [];
-    foreach my $loginid (keys %{$authenticated_paymentagent_agents}) {
-        my $payment_agent = $authenticated_paymentagent_agents->{$loginid};
+    foreach my $loginid (keys %{$available_payment_agents}) {
+        my $payment_agent = $available_payment_agents->{$loginid};
         my $min_max =
             BOM::Config::payment_agent()->{payment_limits}->{LandingCompany::Registry::get_currency_type($payment_agent->{currency_code})};
 
@@ -389,7 +389,7 @@ rpc "paymentagent_list",
     @$payment_agent_table_row = sort { lc($a->{name}) cmp lc($b->{name}) } @$payment_agent_table_row;
 
     return {
-        available_countries => $countries,
+        available_countries => \@available_countries,
         list                => $payment_agent_table_row
     };
     };
@@ -437,7 +437,6 @@ rpc paymentagent_transfer => sub {
 
     # Reads fiat/crypto from landing_companies.yml, then gets min/max from paymentagent_config.yml
     my $payment_agent = $client_fm->payment_agent;
-
     return $error_sub->(localize('You are not authorized for transfers via payment agents.')) unless $payment_agent;
 
     my $max_withdrawal = $payment_agent->max_withdrawal;
@@ -460,6 +459,14 @@ rpc paymentagent_transfer => sub {
 
     return $error_sub->(localize('You cannot transfer to a client in a different country of residence.'))
         if $client_fm->residence ne $client_to->residence and not _is_pa_residence_exclusion($client_fm);
+
+    #disable/suspending pa transfers in a country, does not exclude a pa if a previous transfer is recorded in db.
+    if (is_payment_agents_suspended_in_country($client_to->residence)) {
+        my $available_payment_agents_for_client =
+            _get_available_payment_agents($client_to->residence, $client_to->broker_code, $currency, $loginid_to);
+        return $error_sub->(localize("Payment agent transfers are temporarily unavailable in the client's country of residence."))
+            unless $available_payment_agents_for_client->{$client_fm->loginid};
+    }
 
     if ($args->{dry_run}) {
         return {
@@ -510,19 +517,19 @@ rpc paymentagent_transfer => sub {
     my ($error, $response);
     try {
         $response = $client_fm->payment_account_transfer(
-            toClient          => $client_to,
-            currency          => $currency,
-            amount            => $amount,
-            fmStaff           => $loginid_fm,
-            toStaff           => $loginid_to,
-            remark            => $comment,
-            source            => $source,
-            fees              => 0,
-            gateway_code      => 'payment_agent_transfer',
-            validation        => 'paymentagent_transfer',
-            lc_lifetime_limit => $lc_lifetime_limit,
-            lc_for_days       => $lc_for_days,
-            lc_limit_for_days => $lc_limit_for_days,
+            toClient           => $client_to,
+            currency           => $currency,
+            amount             => $amount,
+            fmStaff            => $loginid_fm,
+            toStaff            => $loginid_to,
+            remark             => $comment,
+            source             => $source,
+            fees               => 0,
+            gateway_code       => 'payment_agent_transfer',
+            is_agent_to_client => 1,
+            lc_lifetime_limit  => $lc_lifetime_limit,
+            lc_for_days        => $lc_for_days,
+            lc_limit_for_days  => $lc_limit_for_days,
         );
     }
     catch {
@@ -648,6 +655,53 @@ The [_4] team.', $currency, $amount, encode_entities($payment_agent->payment_age
         client_to_loginid   => $loginid_to,
         transaction_id      => $response->{transaction_id}};
 };
+
+=head2 _get_available_payment_agents 
+
+	my $available_agents = _get_available_payment_agents('id', 'CR', 'USD', 'CR90000');
+	
+Returns a hash reference containing authenticated payment agents available for the input search criteria.
+
+It gets the following args:
+
+=over 4
+
+=item * country
+
+=item * broker_code
+
+=item * currency (optional)
+
+=item * client_loginid (optional), it is used for retrieving payment agents with previous transfer/withdrawal with a C<client> when the feature is suspended in the C<country> of residence. 
+
+=back
+
+=cut
+
+sub _get_available_payment_agents {
+    my ($country, $broker_code, $currency, $loginid) = @_;
+
+    my $query_args = {
+        target_country => $country,
+    };
+    $query_args->{currency_code} = $currency if $currency;
+
+    my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => $broker_code});
+    my $authenticated_paymentagent_agents = $payment_agent_mapper->get_authenticated_payment_agents($query_args);
+    #if payment agents are suspended in client's country, we will keep only those agents that the client has previously transfered money with.
+    if (is_payment_agents_suspended_in_country($country)) {
+        my $linked_pas = $payment_agent_mapper->get_payment_agents_linked_to_client($loginid);
+        my %linked_agents = $loginid ? (map { $_->[0] => 1 } @$linked_pas) : ();
+        foreach my $key (keys %$authenticated_paymentagent_agents) {
+            #TODO: The condition ($key eq $loginid) is included to prevent returning
+            #an empty payemntagent_list, because our FE reads currently logged-in
+            #agent's settings (like min/max transfer limit) from this list. Better to
+            #remove it after moving pa settings into a new section in 'get_settings' API call.
+            delete $authenticated_paymentagent_agents->{$key} unless $linked_agents{$key} or $loginid and ($key eq $loginid);
+        }
+    }
+    return $authenticated_paymentagent_agents;
+}
 
 sub _is_pa_residence_exclusion {
     my $client               = shift;
@@ -778,6 +832,13 @@ rpc paymentagent_withdraw => sub {
     return $error_sub->(localize('You cannot withdraw from a payment agent in a different country of residence.'))
         if $client->residence ne $pa_client->residence and not _is_pa_residence_exclusion($pa_client);
 
+    if (is_payment_agents_suspended_in_country($client->residence)) {
+        my $available_payment_agents_for_client =
+            _get_available_payment_agents($client->residence, $client->broker_code, $currency, $client->loginid);
+        return $error_sub->(localize("Payment agent transfers are temporarily unavailable in the client's country of residence."))
+            unless $available_payment_agents_for_client->{$pa_client->loginid};
+    }
+
     if ($args->{dry_run}) {
         return {
             status            => 2,
@@ -866,15 +927,16 @@ rpc paymentagent_withdraw => sub {
     try {
         # execute the transfer.
         $response = $client->payment_account_transfer(
-            currency     => $currency,
-            amount       => $amount,
-            remark       => $comment,
-            fmStaff      => $client_loginid,
-            toStaff      => $paymentagent_loginid,
-            toClient     => $pa_client,
-            source       => $source,
-            fees         => 0,
-            gateway_code => 'payment_agent_transfer',
+            currency           => $currency,
+            amount             => $amount,
+            remark             => $comment,
+            fmStaff            => $client_loginid,
+            toStaff            => $paymentagent_loginid,
+            toClient           => $pa_client,
+            source             => $source,
+            fees               => 0,
+            is_agent_to_client => 0,
+            gateway_code       => 'payment_agent_transfer',
         );
     }
     catch {
@@ -1198,6 +1260,7 @@ rpc topup_virtual => sub {
     my $params = shift;
 
     my ($client, $source) = @{$params}{qw/client source/};
+
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;
         BOM::RPC::v3::Utility::create_error({
@@ -1206,10 +1269,12 @@ rpc topup_virtual => sub {
             ($message) ? (message => $message) : (),
         });
     };
+
     # ERROR CHECKS
     if (!$client->is_virtual) {
         return $error_sub->(localize('Sorry, this feature is available to virtual accounts only'));
     }
+
     my $currency              = $client->default_account->currency_code;
     my $min_topup_bal         = BOM::Config::payment_agent()->{minimum_topup_balance};
     my $minimum_topup_balance = $min_topup_bal->{$currency} // $min_topup_bal->{DEFAULT};
@@ -1220,9 +1285,11 @@ rpc topup_virtual => sub {
                 'You can only request additional funds if your virtual account balance falls below [_1] [_2].',
                 $currency, formatnumber('amount', $currency, $minimum_topup_balance)));
     }
+
     if (scalar($client->open_bets)) {
         return $error_sub->(localize('Please close out all open positions before requesting additional funds.'));
     }
+
     # CREDIT HIM WITH THE MONEY
     my ($curr, $amount) = $client->deposit_virtual_funds($source, localize('Virtual money credit to account'));
 

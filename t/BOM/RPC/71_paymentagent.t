@@ -338,6 +338,12 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         like($res->{error}{message_to_client}, qr/You cannot transfer to a client in a different country of residence./, $test);
         $Alice->residence($old_residence);
 
+        $test = 'Transfer fails if payment agents are suspended in the target country';
+        BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries([$Alice->residence]);
+        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        is($res->{error}{message_to_client}, "Payment agent transfers are temporarily unavailable in the client's country of residence.", $test);
+        BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries([]);
+
         $test = 'Transfer returns a status of 2 when dry_run is set';
         $res  = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{status}, 2, $test) or diag Dumper $res;
@@ -508,6 +514,15 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         ## Need to boost the test_amount to get around the frequency checks
         $test_amount = sprintf('%0.*f', $precision, $test_amount + $amount_boost);
         reset_transfer_testargs();
+
+        $test =
+            'Transfer works with a previously transfered client, when payment agents are suspended in the target country (dry run to avoid sleeping)';
+        $testargs->{args}->{dry_run} = 1;
+        BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries([$Alice->residence]);
+        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        is($res->{error}, undef, $test) or warn($res->{error});
+        BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries([]);
+        $testargs->{args}->{dry_run} = 0;
 
         $test = 'Transfer fails if transfer_to client authentication documents are expired';
         $auth_document_args->{expiration_date} = '1999-12-31';
@@ -1079,6 +1094,12 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $Alice->residence($old_residence);
         $mock_payment_agent->unmock('get_authenticated_payment_agents');
 
+        $test = 'Withdrawal fails if payment agents are suspended in the target country';
+        BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries([$Alice->residence]);
+        $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
+        is($res->{error}{message_to_client}, "Payment agent transfers are temporarily unavailable in the client's country of residence.", $test);
+        BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries([]);
+
         ## (validate_payment)
 
         $test = 'Withdrawal fails if amount exceeds client balance';
@@ -1149,6 +1170,14 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $test = 'Withdraw fails when request is too frequent';
         $res  = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/Request too frequent/, $test);
+
+        $test = 'Withdrawal works for previously transfered payment agents even in a suspended country (dry run to avoid sleeping)';
+        $testargs->{args}->{dry_run} = 1;
+        BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries([$Alice->residence]);
+        $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
+        is($res->{error}, undef, $test);
+        BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries([]);
+        $testargs->{args}->{dry_run} = 0;
 
         ## Cleanup:
         $mock_utility->unmock('is_verification_token_valid');
