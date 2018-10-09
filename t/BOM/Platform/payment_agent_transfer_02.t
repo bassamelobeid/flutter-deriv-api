@@ -30,24 +30,52 @@ subtest 'get_today_client_payment_agent_transfer_total_amount' => sub {
     $client->set_default_account('USD');
     $pa_client->set_default_account('USD');
     $client->payment_account_transfer(
-        toClient     => $pa_client,
-        currency     => 'USD',
-        amount       => 1000,
-        fees         => 0,
-        gateway_code => 'payment_agent_transfer'
+        toClient           => $pa_client,
+        currency           => 'USD',
+        amount             => 1000,
+        fees               => 0,
+        is_agent_to_client => 0,
+        gateway_code       => 'payment_agent_transfer'
     );
 
     $pa_client->payment_account_transfer(
-        toClient     => $client,
-        currency     => 'USD',
-        amount       => 1000,
-        fees         => 0,
-        gateway_code => 'payment_agent_transfer'
+        toClient           => $client,
+        currency           => 'USD',
+        amount             => 1000,
+        fees               => 0,
+        is_agent_to_client => 1,
+        gateway_code       => 'payment_agent_transfer',
+        verification       => 'paymentagent_transfer',
     );
     $pa_total_amount =
         $clientdb->getall_arrayref('select * from payment_v1.get_today_client_payment_agent_transfer_total_amount(?)', [$pa_client->loginid])->[0]
         ->{amount};
     is($pa_total_amount + 0, 2000, "payment agent transfer total amount is correct");
+};
+
+subtest 'is_agent_to_client params in transfer/withdrawal' => sub {
+    throws_ok {
+        $pa_client->payment_account_transfer(
+            toClient     => $client,
+            currency     => 'USD',
+            amount       => 10,
+            fees         => 0,
+            gateway_code => 'payment_agent_transfer',
+        );
+    }
+    qr/Invalid payment agent loginid./, 'Correct error code with no value (defaults to 0)';
+
+    throws_ok {
+        $pa_client->payment_account_transfer(
+            toClient           => $client,
+            currency           => 'USD',
+            amount             => 10,
+            fees               => 0,
+            gateway_code       => 'payment_agent_transfer',
+            is_agent_to_client => 0
+        );
+    }
+    qr/Invalid payment agent loginid./, 'Correct error code when value is wrong (for payment agent to client)';
 };
 
 subtest 'PA withdrawal with long further instructions by client' => sub {
@@ -58,12 +86,13 @@ subtest 'PA withdrawal with long further instructions by client' => sub {
 
         # note amount must differ from 1000 here to avoid BI102
         $client->payment_account_transfer(
-            toClient     => $pa_client,
-            currency     => 'USD',
-            amount       => 999,
-            remark       => $remark,
-            fees         => 0,
-            gateway_code => 'payment_agent_transfer'
+            toClient           => $pa_client,
+            currency           => 'USD',
+            amount             => 999,
+            remark             => $remark,
+            fees               => 0,
+            is_agent_to_client => 0,
+            gateway_code       => 'payment_agent_transfer'
         );
     }
     "OK with remark length = 800";
@@ -72,7 +101,6 @@ subtest 'PA withdrawal with long further instructions by client' => sub {
     throws_ok {
         my $remark;
         $remark .= 'x' x 801;
-
         # expect DB call here to emit errors as warnings as well as exceptions
         # https://github.com/regentmarkets/bom-postgres/blob/master/lib/BOM/Database/Rose/DB.pm#L68
         warning {
@@ -82,6 +110,7 @@ subtest 'PA withdrawal with long further instructions by client' => sub {
                 amount       => 999,
                 remark       => $remark,
                 fees         => 0,
+                is_agent_to_client => 0,
                 gateway_code => 'payment_agent_transfer'
                 )
         };
