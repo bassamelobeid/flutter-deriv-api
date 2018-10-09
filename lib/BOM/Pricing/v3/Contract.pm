@@ -524,6 +524,9 @@ sub send_ask {
     # copy country_code when it is available.
     $params->{args}->{country_code} = $params->{country_code} if $params->{country_code};
 
+    # copy token_details when it is available.
+    $params->{args}->{token_details} = $params->{token_details} if $params->{token_details};
+
     #Tactical solution, we will sort out api barrier entry validation
     #for all other contract types in a separate card and clean up this part.
     if (defined $params->{args}->{contract_type} and $params->{args}->{contract_type} =~ /RESET/ and defined $params->{args}->{barrier2}) {
@@ -700,6 +703,18 @@ sub _validate_offerings {
     my ($contract, $args_copy) = @_;
 
     my $response;
+
+    my $token_details = $args_copy->{token_details};
+
+    if ($token_details and exists $token_details->{loginid}) {
+        my $client = BOM::User::Client->new({
+            loginid      => $token_details->{loginid},
+            db_operation => 'replica',
+        });
+        # override the details here since we already have a client
+        $args_copy->{landing_company} = $client->landing_company->short;
+        $args_copy->{country_code}    = $client->residence;
+    }
 
     try {
         my $landing_company = LandingCompany::Registry::get($args_copy->{landing_company} // 'costarica');
