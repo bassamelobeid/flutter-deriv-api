@@ -7,9 +7,8 @@ use Try::Tiny;
 use HTML::Entities;
 
 use BOM::User::Client::PaymentAgent;
-
+use BOM::User qw( is_payment_agents_suspended_in_country );
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Config::Runtime;
 use BOM::Backoffice::Form;
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
@@ -34,6 +33,7 @@ if ($whattodo eq 'create') {
     code_exit_BO("Error : wrong loginid ($loginid) could not get client instance")                 unless $client;
     code_exit_BO("Client has not set account currency. Currency is mandatory for payment agent")   unless $client->default_account;
     code_exit_BO("Please note that to become payment agent client has to be fully authenticated.") unless $client->fully_authenticated;
+    code_exit_BO("Payment agents are suspended in client's residence country.") if is_payment_agents_suspended_in_country($client->residence);
 
     my $payment_agent_registration_form = BOM::Backoffice::Form::get_payment_agent_registration_form($loginid, $broker);
     print $payment_agent_registration_form->build();
@@ -70,6 +70,7 @@ if ($whattodo eq 'show') {
     my $client = BOM::User::Client->new({loginid => $loginid});
     code_exit_BO("Error : wrong loginid ($loginid) could not get client instance") unless $client;
     code_exit_BO("Client has not set account currency. Currency is mandatory for payment agent") unless $client->default_account;
+    code_exit_BO("Payment agents are suspended in client's residence country.") if is_payment_agents_suspended_in_country($client->residence);
 
     my $pa = BOM::User::Client::PaymentAgent->new({loginid => $loginid});
     unless ($pa) {

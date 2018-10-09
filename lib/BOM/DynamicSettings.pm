@@ -158,6 +158,7 @@ sub get_settings_by_group {
                 system.suspend.trading
                 system.suspend.payments
                 system.suspend.payment_agents
+                system.suspend.payment_agents_in_countries
                 system.suspend.cryptocashier
                 system.suspend.cryptocurrencies
                 system.suspend.new_accounts
