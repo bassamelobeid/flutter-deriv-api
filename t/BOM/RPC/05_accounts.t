@@ -123,6 +123,7 @@ $test_client_disabled->status->set('disabled', 1, 'test disabled');
 my $test_client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MX',
     residence   => 'gb',
+    citizen     => ''
 });
 $test_client_mx->email($email);
 
@@ -1405,7 +1406,6 @@ subtest $method => sub {
         address_state  => 'BA',
         phone          => '2345678',
         place_of_birth => 'au',
-        citizen        => 'at',
     );
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
@@ -1515,26 +1515,43 @@ subtest $method => sub {
     ok($add_note_called, 'add_note is called, so the email should be sent to support address');
 
     subtest 'Check for citizenship value' => sub {
+
         subtest 'empty/unspecified' => sub {
+            $params->{token} = $token_mx;
             $params->{args} = {%full_args, citizen => ''};
-            is($c->tcall($method, $params)->{error}{message_to_client}, 'Citizenship is required', 'empty value for citizenship');
+            is($c->tcall($method, $params)->{error}{message_to_client}, 'Citizenship is required.', 'empty value for citizenship');
         };
+
+        $params->{token} = $token1;
+
         subtest 'invalid' => sub {
             $params->{args} = {%full_args, citizen => 'ss'};
+            $test_client->citizen('');
+            $test_client->save();
             is(
                 $c->tcall($method, $params)->{error}{message_to_client},
                 'Sorry, our service is not available for your country of citizenship.',
                 'invalid value for citizenship'
             );
         };
+
+        subtest 'different value' => sub {
+            $params->{args} = {%full_args, citizen => 'bt'};
+            $test_client->citizen('at');
+            $test_client->save();
+            is($c->tcall($method, $params)->{error}{message_to_client}, 'Citizenship cannot be changed.', 'different value for citizenship');
+        };
         subtest 'restricted countries' => sub {
             for my $restricted_country (qw(us ir hk my)) {
                 $params->{args} = {%full_args, citizen => $restricted_country};
+                $test_client->citizen('');
+                $test_client->save();
                 is($c->tcall($method, $params)->{status}, 1, 'update successfully');
                 is($c->tcall('get_settings', {token => $token1})->{citizen}, $restricted_country, "Restricted country value for citizenship");
 
             }
         };
+
     };
     $test_client->load();
 

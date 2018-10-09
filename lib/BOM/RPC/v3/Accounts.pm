@@ -964,6 +964,13 @@ rpc set_settings => sub {
             message_to_client =>
                 localize('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.')}
     ) if ($client->landing_company->short eq 'maltainvest' and (not $tax_residence or not $tax_identification_number));
+
+    # can not update citizenship once it is set
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'PermissionDenied',
+            message_to_client => localize('Citizenship cannot be changed.')}
+    ) if (defined $args->{'citizen'} and $client->citizen and ($args->{'citizen'} ne $client->citizen));
+
     my $now             = Date::Utility->new;
     my $address1        = $args->{'address_line_1'} // $client->address_1;
     my $address2        = ($args->{'address_line_2'} // $client->address_2) // '';
@@ -978,7 +985,7 @@ rpc set_settings => sub {
     #citizenship is mandatory for some clients,so we shouldnt let them to remove it
     return BOM::RPC::v3::Utility::create_error({
             code              => 'PermissionDenied',
-            message_to_client => localize('Citizenship is required')}
+            message_to_client => localize('Citizenship is required.')}
     ) if ($client->landing_company->citizen_required && (!defined $citizen || $citizen eq ''));
 
     if ($args->{'citizen'}
@@ -988,7 +995,6 @@ rpc set_settings => sub {
                 code              => 'InvalidCitizen',
                 message_to_client => localize('Sorry, our service is not available for your country of citizenship.')});
     }
-
     if (   ($address1 and $address1 ne $client->address_1)
         or $address2 ne $client->address_2
         or $addressTown ne $client->city
