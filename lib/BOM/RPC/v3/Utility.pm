@@ -482,7 +482,7 @@ sub validate_make_new_account {
         return create_error({
                 code              => 'UnwelcomeAccount',
                 message_to_client => localize('You cannot perform this action, as your account [_1] is marked as unwelcome.', $client->loginid)}
-        ) if $client->status->get('unwelcome');
+        ) if $client->status->unwelcome;
 
         # if from malta and account type is maltainvest, assign
         # maltainvest to landing company as client is upgrading
@@ -497,7 +497,7 @@ sub validate_make_new_account {
             @landing_company_clients = $client->user->clients_for_landing_company($financial_company);
         }
 
-        return permission_error() if (any { not $_->status->get('duplicate_account') } @landing_company_clients);
+        return permission_error() if (any { not $_->status->duplicate_account } @landing_company_clients);
     } else {
         # we have real account, and going to create another one
         # So, lets populate all sensitive data from current client, ignoring provided input
@@ -653,8 +653,8 @@ sub set_professional_status {
 
     # Set checks in variables
     my $cr_mf_valid      = $client->landing_company->short =~ /^(?:costarica|maltainvest)$/;
-    my $set_prof_status  = $professional && !$client->status->get('professional') && $cr_mf_valid;
-    my $set_prof_request = $professional_requested && !$client->status->get('professional_requested') && $cr_mf_valid;
+    my $set_prof_status  = $professional && !$client->status->professional && $cr_mf_valid;
+    my $set_prof_request = $professional_requested && !$client->status->professional_requested && $cr_mf_valid;
 
     try {
         $client->status->set('professional',           'SYSTEM', 'Mark as professional as requested') if $set_prof_status;

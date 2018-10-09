@@ -699,7 +699,7 @@ subtest 'mf_withdrawal' => sub {
     $test_mf_client->account('USD');
 
     $test_mf_client->email($DETAILS{email});
-    $test_mf_client->status->clear('age_verification');
+    $test_mf_client->status->clear_age_verification;
 
     $_->delete for @{$test_mf_client->client_authentication_method};
     $test_mf_client->save();
@@ -743,7 +743,7 @@ subtest 'mf_deposit' => sub {
     top_up $test_mf_client, USD => 1000;
 
     $test_mf_client->email($DETAILS{email});
-    $test_mf_client->status->clear('age_verification');
+    $test_mf_client->status->clear_age_verification;
 
     $_->delete for @{$test_mf_client->client_authentication_method};
     $test_mf_client->save();

@@ -156,7 +156,7 @@ subtest 'call params validation' => sub {
     is $result->{error}->{message_to_client}, 'You cannot perform this action, as your account is cashier locked.',
         'Correct error message for cashier locked';
 
-    $client_cr->status->clear('cashier_locked');
+    $client_cr->status->clear_cashier_locked;
     $client_cr->status->set('withdrawal_locked', 'system', 'testing something');
 
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
@@ -164,7 +164,7 @@ subtest 'call params validation' => sub {
     is $result->{error}->{message_to_client}, 'You cannot perform this action, as your account is withdrawal locked.',
         'Correct error message for withdrawal locked';
 
-    $client_cr->status->clear('withdrawal_locked');
+    $client_cr->status->clear_withdrawal_locked;
 };
 
 subtest 'validation' => sub {
@@ -379,7 +379,7 @@ subtest $method => sub {
             remark   => 'free gift',
         );
 
-        $client_mlt->status->clear('cashier_locked');    # clear locked
+        $client_mlt->status->clear_cashier_locked;    # clear locked
 
         $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
         is scalar(@{$result->{accounts}}), 2, 'two accounts';

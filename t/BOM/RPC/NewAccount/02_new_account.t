@@ -497,9 +497,9 @@ subtest $method => sub {
         ok $new_loginid =~ /^MF\d+/, 'new MF loginid';
 
         my $cl = BOM::User::Client->new({loginid => $new_loginid});
-        ok($cl->status->get('financial_risk_approval'), 'For mf accounts we will set financial risk approval status');
+        ok($cl->status->financial_risk_approval, 'For mf accounts we will set financial risk approval status');
 
-        is $cl->status->get('crs_tin_information')->{reason}, 'Client confirmed tax information', "CRS status is set";
+        is $cl->status->crs_tin_information->{reason}, 'Client confirmed tax information', "CRS status is set";
 
         my ($resp_loginid, $t, $uaf) =
             @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
@@ -612,7 +612,7 @@ subtest $method => sub {
         my $result = $rpc_ct->call_ok($method, $params)->result;
         is $result->{error}->{code}, 'UnwelcomeAccount', 'Client marked as unwelcome';
 
-        $client_mx->status->clear('unwelcome');
+        $client_mx->status->clear_unwelcome;
 
         $result = $rpc_ct->call_ok($method, $params)->result;
         is $result->{error}->{code}, undef, 'Allow to open even if Client KYC is pending';

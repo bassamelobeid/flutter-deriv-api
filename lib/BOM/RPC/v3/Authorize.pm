@@ -142,7 +142,7 @@ rpc authorize => sub {
             loginid              => $clnt->loginid,
             currency             => $curr,
             landing_company_name => $clnt->landing_company->short,
-            is_disabled          => $clnt->status->get('disabled') ? 1 : 0,
+            is_disabled          => $clnt->status->disabled ? 1 : 0,
             is_virtual           => $clnt->is_virtual ? 1 : 0,
             $exclude_until ? (excluded_until => Date::Utility->new($exclude_until)->epoch) : ()};
     };

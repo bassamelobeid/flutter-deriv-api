@@ -485,28 +485,27 @@ rpc get_account_status => sub {
 
     my $client = $params->{client};
 
-    my @status = $client->status->visible();
-
+    my $status                     = $client->status->visible;
     my $id_auth_status             = $client->authentication_status;
     my $authentication_in_progress = $id_auth_status =~ /under_review|needs_action/;
 
-    push @status, 'document_' . $id_auth_status if $authentication_in_progress;
+    push @$status, 'document_' . $id_auth_status if $authentication_in_progress;
 
-    push @status, 'authenticated' if ($client->fully_authenticated);
+    push @$status, 'authenticated' if ($client->fully_authenticated);
 
     my $aml_level = $client->aml_risk_level();
 
     my $user = $client->user;
 
     # differentiate between social and password based accounts
-    push @status, 'social_signup' if $user->{has_social_signup};
+    push @$status, 'social_signup' if $user->{has_social_signup};
 
     # check whether the user need to perform financial assessment
-    push(@status, 'financial_information_not_complete')
+    push(@$status, 'financial_information_not_complete')
         unless is_section_complete(decode_fa($client->financial_assessment()), "financial_information");
-    push(@status, 'trading_experience_not_complete')
+    push(@$status, 'trading_experience_not_complete')
         unless is_section_complete(decode_fa($client->financial_assessment()), "trading_experience");
-    push(@status, 'financial_assessment_not_complete') unless $client->is_financial_assessment_complete();
+    push(@$status, 'financial_assessment_not_complete') unless $client->is_financial_assessment_complete();
 
     my $shortcode                     = $client->landing_company->short;
     my $prompt_client_to_authenticate = 0;
@@ -534,7 +533,7 @@ rpc get_account_status => sub {
     }
 
     return {
-        status                        => \@status,
+        status                        => $status,
         prompt_client_to_authenticate => $prompt_client_to_authenticate,
         risk_classification           => $aml_level
     };
@@ -809,7 +808,7 @@ rpc get_settings => sub {
             Brands->new(name => request()->brand)->countries_instance->countries->localized_code2country($client->residence, $params->{language});
     }
 
-    my $client_tnc_status = $client->status->get('tnc_approval');
+    my $client_tnc_status = $client->status->tnc_approval;
 
     return {
         email         => $client->email,
@@ -838,7 +837,7 @@ rpc get_settings => sub {
                 tax_residence     => $client->tax_residence,
                 tax_identification_number   => $client->tax_identification_number,
                 account_opening_reason      => $client->account_opening_reason,
-                request_professional_status => $client->status->get('professional_requested') ? 1 : 0
+                request_professional_status => $client->status->professional_requested ? 1 : 0
             ))};
 };
 
@@ -1018,7 +1017,7 @@ rpc set_settings => sub {
         my ($client_obj) = @_;
         if (    $args->{request_professional_status}
             and $client_obj->landing_company->short =~ /^(?:costarica|maltainvest)$/
-            and not($client_obj->status->get('professional') or $client_obj->status->get('professional_requested')))
+            and not($client_obj->status->professional or $client_obj->status->professional_requested))
         {
             $client_obj->status->set('professional_requested', 'SYSTEM', 'Professional account requested');
             return 1;
@@ -1113,7 +1112,7 @@ rpc set_settings => sub {
         localize('Requested professional status'),
         (
                    $args->{request_professional_status}
-                or $client->status->get('professional_requested')
+                or $client->status->professional_requested
         ) ? localize("Yes") : localize("No")];
 
     $message .= "<table>";
@@ -1365,7 +1364,7 @@ rpc set_self_exclusion => sub {
     if ($args{max_30day_turnover}) {
         $client->set_exclusion->max_30day_turnover($args{max_30day_turnover});
         if ($client->residence eq 'gb') {    # RTS 12 - Financial Limits - UK Clients
-            $client->status->clear('ukrts_max_turnover_limit_not_set');
+            $client->status->clear_ukrts_max_turnover_limit_not_set;
         }
     }
     if ($args{max_30day_losses}) {
@@ -1415,7 +1414,7 @@ sub send_self_exclusion_notification {
 
     if (@fields_to_email) {
         my $name = ($client->first_name ? $client->first_name . ' ' : '') . $client->last_name;
-        my $statuses = join '/', map { uc $_ } $client->status->all();
+        my $statuses = join '/', map { uc $_ } @{$client->status->all};
         my $client_title = join ', ', $client->loginid, $client->email, ($name || '?'), ($statuses ? "current status: [$statuses]" : '');
 
         my $brand = Brands->new(name => request()->brand);
@@ -1519,7 +1518,7 @@ rpc tnc_approval => sub {
         }
     } else {
         my $current_tnc_version = BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version;
-        my $client_tnc_status   = $client->status->get('tnc_approval');
+        my $client_tnc_status   = $client->status->tnc_approval;
 
         if (not $client_tnc_status
             or ($client_tnc_status->{reason} ne $current_tnc_version))

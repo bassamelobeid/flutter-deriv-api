@@ -391,7 +391,7 @@ subtest 'self_exclusion_mx - exclude_until date set in past' => sub {
 };
 
 $self_excluded_client->set_exclusion->timeout_until(Date::Utility->new->epoch - 2 * 86400);
-$self_excluded_client->status->clear('disabled');
+$self_excluded_client->status->clear_disabled;
 $self_excluded_client->save;
 
 done_testing();

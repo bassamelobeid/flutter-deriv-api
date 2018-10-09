@@ -700,7 +700,6 @@ subtest $method => sub {
     $test_client->aml_risk_classification('high');
     $test_client->save();
     test_financial_assessment($data, 1, "financial_assessment_not_complete should present regardless of the client's risk classification");
-
     # duplicate_account is not supposed to be shown to the users
     $test_client->status->set('duplicate_account');
     cmp_deeply(
@@ -713,7 +712,7 @@ subtest $method => sub {
         'duplicate_account is not in the status'
     );
 
-    $test_client->status->clear('duplicate_account');
+    $test_client->status->clear_duplicate_account;
 
     # $test_client->status->set('tnc_approval', 'test staff', 1);
 
@@ -810,7 +809,7 @@ subtest $method => sub {
     );
     $mocked_client->unmock('has_deposits');
 
-    $test_client->status->clear("professional");
+    $test_client->status->clear_professional;
     $test_client->save;
 
 };

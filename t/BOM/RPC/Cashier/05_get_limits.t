@@ -79,11 +79,11 @@ subtest 'CR - USD' => sub {
         $client->status->set('disabled', 1, 'test');
         $params->{token} = $token;
         $c->call_ok($method, $params)->has_error->error_message_is('This account is unavailable.', 'invalid token');
-        $client->status->clear('disabled');
+        $client->status->clear_disabled;
         $client->status->set('cashier_locked', 1, 'test');
         ok $c->call_ok($method, $params)->has_no_error->result->{account_balance}, "Got limits for cashier locked clients";
 
-        $client->status->clear('cashier_locked');
+        $client->status->clear_cashier_locked;
     };
 
     # Test for unauthenticated accounts
@@ -198,7 +198,7 @@ subtest 'CR-EUR' => sub {
 
         # Deposit EUR 11000
         $client->smart_payment(%deposit, currency => 'EUR');
-        $client->status->clear('cashier_locked');    # first-deposit will cause this in non-CR clients!
+        $client->status->clear_cashier_locked;    # first-deposit will cause this in non-CR clients!
 
         # Withdraw EUR 1000
         my $withdraw_amount = 1000;
@@ -283,7 +283,7 @@ subtest 'CR-BTC' => sub {
             currency => 'BTC',
             amount   => 2
         );
-        $client->status->clear('cashier_locked');    # first-deposit will cause this in non-CR clients!
+        $client->status->clear_cashier_locked;    # first-deposit will cause this in non-CR clients!
 
         # Withdraw BTC 1.00000000
         my $withdraw_amount = 1;
@@ -366,7 +366,7 @@ subtest 'MLT' => sub {
 
         # Deposit EUR 11000
         $client->smart_payment(%deposit, currency => 'EUR');
-        $client->status->clear('cashier_locked');    # first-deposit will cause this in non-CR clients!
+        $client->status->clear_cashier_locked;    # first-deposit will cause this in non-CR clients!
 
         # Withdraw EUR 1000
         my $withdraw_amount = 1000;
@@ -441,7 +441,7 @@ subtest 'MX' => sub {
 
         # Deposit EUR 11000
         $client->smart_payment(%deposit, currency => 'EUR');
-        $client->status->clear('cashier_locked');    # first-deposit will cause this in non-CR clients!
+        $client->status->clear_cashier_locked;    # first-deposit will cause this in non-CR clients!
 
         # Withdraw EUR 1000
         my $withdraw_amount = 1000;

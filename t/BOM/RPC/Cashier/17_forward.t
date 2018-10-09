@@ -22,16 +22,23 @@ use BOM::User::Client;
 use Email::Stuffer::TestLinks;
 
 my ($t, $rpc_ct);
-my $client_mocked = Test::MockModule->new('BOM::User::Client');
-my $status_mocked = Test::MockModule->new('BOM::User::Client::Status');
+my $client_mocked      = Test::MockModule->new('BOM::User::Client');
+my $status_mocked      = Test::MockModule->new('BOM::User::Client::Status');
+my @can_affect_cashier = (
+    'age_verification',        'crs_tin_information',   'cashier_locked',                   'disabled',
+    'financial_risk_approval', 'ukgc_funds_protection', 'ukrts_max_turnover_limit_not_set', 'unwelcome',
+    'withdrawal_locked'
+);
 my %seen;
-$status_mocked->mock(
-    'get',
-    sub {
-        my $status = $_[1];
-        $seen{$status}++;
-        return $status_mocked->original('get')->(@_);
-    });
+
+foreach my $status (@can_affect_cashier) {
+    $status_mocked->mock(
+        $status,
+        sub {
+            $seen{$status} = 1;
+            return $status_mocked->original($status)->(@_);
+        });
+}
 
 subtest 'Initialization' => sub {
     lives_ok {
@@ -128,14 +135,14 @@ subtest 'common' => sub {
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has cashier lock')
         ->error_message_is('Your cashier is locked.', 'Correct error message for locked cashier');
 
-    $client_cr->status->clear('cashier_locked');
+    $client_cr->status->clear_cashier_locked;
     $client_cr->status->set('disabled', 'system');
 
     # as we check if client is disabled during token verification so it will not go to cashier
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('DisabledClient', 'Client is disabled')
         ->error_message_is('This account is unavailable.', 'Correct error message for disabled client');
 
-    $client_cr->status->clear('disabled');
+    $client_cr->status->clear_disabled;
     $client_cr->cashier_setting_password('abc123');
     $client_cr->save;
 
@@ -152,7 +159,7 @@ subtest 'deposit' => sub {
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client marked as unwelcome')
         ->error_message_is('Your account is restricted to withdrawals only.', 'Correct error message for client marked as unwelcome');
 
-    $client_cr->status->clear('unwelcome');
+    $client_cr->status->clear_unwelcome;
 };
 
 subtest 'withdraw' => sub {
@@ -200,7 +207,7 @@ subtest 'withdraw' => sub {
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has withdrawal lock')
         ->error_message_is('Your account is locked for withdrawals.', 'Client is withdrawal locked');
 
-    $client_cr->status->clear('withdrawal_locked');
+    $client_cr->status->clear_withdrawal_locked;
 };
 
 subtest 'landing_companies_specific' => sub {

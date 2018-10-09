@@ -446,7 +446,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{error}{message_to_client}, 'You cannot perform this action, as your account is cashier locked.', $test);
-        $Alice->status->clear('cashier_locked');
+        $Alice->status->clear_cashier_locked;
         $Alice->save;
 
         $test = 'Transfer fails if client status = disabled';
@@ -454,7 +454,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{error}{message_to_client}, 'You cannot perform this action, as your account is currently disabled.', $test);
-        $Alice->status->clear('disabled');
+        $Alice->status->clear_disabled;
         $Alice->save;
 
         $test = 'Transfer fails if client status = withdrawal_locked';
@@ -462,7 +462,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{error}{message_to_client}, 'Withdrawal is disabled.', $test);
-        $Alice->status->clear('withdrawal_locked');
+        $Alice->status->clear_withdrawal_locked;
         $Alice->save;
 
         $test = 'Transfer fails if transfer_to client status = cashier_locked';
@@ -470,7 +470,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Bob->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{error}{message_to_client}, "You cannot transfer to account $Bob_id, as their cashier is locked.", $test);
-        $Bob->status->clear('cashier_locked');
+        $Bob->status->clear_cashier_locked;
         $Bob->save;
 
         $test = 'Transfer fails if transfer_to client status = disabled';
@@ -478,7 +478,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Bob->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{error}{message_to_client}, "You cannot transfer to account $Bob_id, as their account is currently disabled.", $test);
-        $Bob->status->clear('disabled');
+        $Bob->status->clear_disabled;
         $Bob->save;
 
         $test = 'Transfer fails if transfer_to client status = unwelcome';
@@ -486,7 +486,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Bob->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{error}{message_to_client}, "You cannot transfer to account $Bob_id, as their account is marked as unwelcome.", $test);
-        $Bob->status->clear('unwelcome');
+        $Bob->status->clear_unwelcome;
         $Bob->save;
 
         $test = 'Transfer fails if all client authentication documents are expired';
@@ -924,7 +924,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/account is currently disabled/, $test);
-        $Alice->status->clear('disabled');
+        $Alice->status->clear_disabled;
         $Alice->save;
 
         $test = 'Withdraw fails if payment agent does not exist';
@@ -981,7 +981,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/your account is cashier locked/, $test);
-        $Alice->status->clear('cashier_locked');
+        $Alice->status->clear_cashier_locked;
         $Alice->save;
 
         $test = 'Withdraw fails if client status = withdrawal_locked';
@@ -989,7 +989,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/your account is withdrawal locked/, $test);
-        $Alice->status->clear('withdrawal_locked');
+        $Alice->status->clear_withdrawal_locked;
         $Alice->save;
 
         $test = 'Withdraw fails if client authentication documents are expired';
@@ -1010,7 +1010,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $Bob->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/payment agent's account is disabled/, $test);
-        $Bob->status->clear('disabled');
+        $Bob->status->clear_disabled;
         $Bob->save;
 
         $test = 'Withdraw fails if payment agent status = unwelcome';
@@ -1018,7 +1018,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $Bob->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/is marked as unwelcome/, $test);
-        $Bob->status->clear('unwelcome');
+        $Bob->status->clear_unwelcome;
         $Bob->save;
 
         $test = 'Withdraw fails if payment agent cashier has a password';
@@ -1034,7 +1034,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $Bob->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/payment agent's cashier is locked/, $test);
-        $Bob->status->clear('cashier_locked');
+        $Bob->status->clear_cashier_locked;
         $Bob->save;
 
         $test = 'Withdraw fails if payment agent authentication documents are expired';

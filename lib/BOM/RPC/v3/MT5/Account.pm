@@ -318,7 +318,7 @@ async_rpc mt5_new_account => sub {
                 code              => 'TINDetailsMandatory',
                 message_to_client => localize(
                     'Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.'),
-            }) if ($countries_instance->is_tax_detail_mandatory($residence) and not $client->status->get('crs_tin_information'));
+            }) if ($countries_instance->is_tax_detail_mandatory($residence) and not $client->status->crs_tin_information);
     }
 
     # Check if client is throttled before sending MT5 request
@@ -1160,7 +1160,7 @@ async_rpc mt5_withdrawal => sub {
                 message_to_client => localize('Withdrawals are suspended.')});
     }
 
-    return _make_error($error_code, localize('MT5 account is locked'), 'MT5 account is locked') if $client->status->get('mt5_withdrawal_locked');
+    return _make_error($error_code, localize('MT5 account is locked'), 'MT5 account is locked') if $client->status->mt5_withdrawal_locked;
 
     return _mt5_validate_and_get_amount($client, $to_loginid, $fm_mt5, $amount, $error_code)->then(
         sub {
@@ -1404,10 +1404,10 @@ sub _mt5_validate_and_get_amount {
         if ($client_obj->landing_company->short eq 'maltainvest' and not $client_obj->fully_authenticated);
 
     return _make_error($error_code, localize('Your account [_1] is disabled.', $loginid))
-        if ($client_obj->status->get('disabled'));
+        if ($client_obj->status->disabled);
 
     return _make_error($error_code, localize('Your account [_1] cashier section is locked.', $loginid))
-        if ($client_obj->status->get('cashier_locked') || $client_obj->documents_expired);
+        if ($client_obj->status->cashier_locked || $client_obj->documents_expired);
 
     my $client_currency = $client_obj->default_account ? $client_obj->default_account->currency_code : undef;
     return _make_error($error_code, localize('Please set currency for existsing account [_1].', $loginid))

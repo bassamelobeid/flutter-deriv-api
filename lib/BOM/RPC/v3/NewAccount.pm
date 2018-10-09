@@ -48,7 +48,6 @@ rpc "new_account_virtual",
     my $params = shift;
     my $args   = $params->{args};
     my $err_code;
-
     if ($err_code = BOM::RPC::v3::Utility::_check_password({new_password => $args->{client_password}})) {
         return $err_code;
     }
@@ -225,9 +224,9 @@ sub _get_professional_details_clients {
     my @clients = map { $user->clients_for_landing_company($_) } qw/costarica maltainvest/;
 
     # Get the professional flags
-    my $professional_status = any { $_->status->get('professional') } @clients;
+    my $professional_status = any { $_->status->professional } @clients;
     my $professional_requested =
-        !$professional_status && (($args->{client_type} eq 'professional') || any { $_->status->get('professional_requested') } @clients);
+        !$professional_status && (($args->{client_type} eq 'professional') || any { $_->status->professional_requested } @clients);
 
     return (\@clients, $professional_status, $professional_requested);
 }
