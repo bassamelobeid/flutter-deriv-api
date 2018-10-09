@@ -288,11 +288,11 @@ sub payment_account_transfer {
     my $remark   = delete $args{remark};
     my $toRemark = delete $args{toRemark} || $remark || ("Transfer from " . $fmClient->loginid);
     my $fmRemark = delete $args{fmRemark} || $remark || ("Transfer to " . $toClient->loginid);
-    my $source            = delete $args{source};
-    my $validation        = delete $args{validation} // '';
-    my $lc_lifetime_limit = delete $args{lc_lifetime_limit};
-    my $lc_for_days       = delete $args{lc_for_days};
-    my $lc_limit_for_days = delete $args{lc_limit_for_days};
+    my $source             = delete $args{source};
+    my $is_agent_to_client = delete $args{is_agent_to_client} // 0;
+    my $lc_lifetime_limit  = delete $args{lc_lifetime_limit};
+    my $lc_for_days        = delete $args{lc_for_days};
+    my $lc_limit_for_days  = delete $args{lc_limit_for_days};
 
     # if client has no default account then error out
     my $fmAccount = $fmClient->default_account || die "Client does not have a default account\n";
@@ -312,9 +312,9 @@ sub payment_account_transfer {
                 ping => sub {
                     my $sth = $_->prepare('SELECT (v_from_trans).id FROM payment.payment_account_transfer(?,?,?,?,?,?, ?,?,?,?,?,?, ?,?,?)');
                     $sth->execute(
-                        $fmClient->loginid, $toClient->loginid, $currency,          $amount,      $fmStaff,
-                        $toStaff,           $fmRemark,          $toRemark,          $source,      $fees,
-                        $gateway_code,      $validation,        $lc_lifetime_limit, $lc_for_days, $lc_limit_for_days
+                        $fmClient->loginid, $toClient->loginid,  $currency,          $amount,      $fmStaff,
+                        $toStaff,           $fmRemark,           $toRemark,          $source,      $fees,
+                        $gateway_code,      $is_agent_to_client, $lc_lifetime_limit, $lc_for_days, $lc_limit_for_days
                     );
                     return $sth->fetchall_arrayref({});
                 });

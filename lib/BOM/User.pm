@@ -6,18 +6,21 @@ use warnings;
 use feature 'state';
 use Try::Tiny;
 use Date::Utility;
-use List::Util qw(first);
+use List::Util qw(first any);
 use Scalar::Util qw(blessed looks_like_number);
 use Carp qw(croak carp);
 
-use BOM::User::Client;
 use BOM::MT5::User::Async;
 use BOM::Database::UserDB;
 use BOM::User::Password;
 use BOM::User::AuditLog;
 use BOM::User::Static;
 use BOM::User::Utility;
+use BOM::Config::Runtime;
 use LandingCompany::Registry;
+
+use Exporter qw( import );
+our @EXPORT_OK = qw( is_payment_agents_suspended_in_country );
 
 sub dbic {
     state $dbic = BOM::Database::UserDB::rose_db()->dbic;
@@ -446,6 +449,21 @@ sub update_has_social_signup {
             $_->selectrow_array('select * from users.update_has_social_signup(?, ?)', undef, $self->{id}, $has_social_signup);
         });
     return $self;
+}
+
+=head2 is_payment_agents_suspended_in_country
+
+ 	my $suspended = is_payment_agents_suspended_in_country('ru');
+ 	
+ Tells if payment agent transfer is suspended in the input country.
+ 
+=cut
+
+sub is_payment_agents_suspended_in_country {
+    my $country = shift;
+    return 0 unless $country;
+    my $suspended_countries = BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries;
+    return any { $_ eq $country } @$suspended_countries;
 }
 
 1;
