@@ -93,14 +93,14 @@ subtest 'Cashier validation common' => sub {
     is $res->{error}->{code}, $generic_err_code, 'Correct error code if client is cashier locked';
     is $res->{error}->{message_to_client}, 'Your cashier is locked.', 'Correct error message if client is cashier locked';
 
-    $cr_client->status->clear('cashier_locked');
+    $cr_client->status->clear_cashier_locked;
     $cr_client->status->set('disabled', 'system', 'pending investigations');
 
     $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
     is $res->{error}->{code}, $generic_err_code, 'Correct error code as its disabled';
     is $res->{error}->{message_to_client}, 'Your account is disabled.', 'Correct error message as its disabled';
 
-    $cr_client->status->clear('disabled');
+    $cr_client->status->clear_disabled;
     $cr_client->cashier_setting_password('abc123');
     $cr_client->save();
 
@@ -140,7 +140,7 @@ subtest 'Cashier validation deposit' => sub {
     is $res->{error}->{code}, $generic_err_code, 'Correct error code for unwelcome client';
     is $res->{error}->{message_to_client}, 'Your account is restricted to withdrawals only.', 'Correct error message for unwelcome client';
 
-    $cr_client->status->clear('unwelcome');
+    $cr_client->status->clear_unwelcome;
 };
 
 subtest 'Cashier validation withdraw' => sub {
@@ -150,7 +150,7 @@ subtest 'Cashier validation withdraw' => sub {
     is $res->{error}->{code}, $generic_err_code, 'Correct error code for withdrawal locked';
     is $res->{error}->{message_to_client}, 'Your account is locked for withdrawals.', 'Correct error message for withdrawal locked';
 
-    $cr_client->status->clear('withdrawal_locked');
+    $cr_client->status->clear_withdrawal_locked;
 };
 
 subtest 'Cashier validation landing company and country specific' => sub {
@@ -231,7 +231,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
         is $res->{error}->{message_to_client}, 'Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.',
             'Correct error message';
 
-        $mx_client->status->clear('ukrts_max_turnover_limit_not_set');
+        $mx_client->status->clear_ukrts_max_turnover_limit_not_set;
 
         is BOM::Platform::Client::CashierValidation::validate($mx_client->loginid, 'deposit'), undef, 'Validation passed';
     };

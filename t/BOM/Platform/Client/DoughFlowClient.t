@@ -100,12 +100,9 @@ subtest 'Profile mapped correctly to DF levels' => sub {
     my $mock_status = Test::MockObject::Extends->new($df_client->status);
     $mock_client->set_always('status', ($mock_status));
 
-    my $disabled = Test::MockObject->new();
-    $disabled->set_always('status_code', 'disabled');
-
-    $mock_status->set_always('get', ($disabled));
+    $mock_status->set_always('disabled', {});
     is $mock_client->Profile, 0, 'Disabled client => 0';
-    $mock_status->unmock('get');
+    $mock_status->unmock('disabled');
 
     is $mock_client->Profile, 1, 'Regular user => 1';
 

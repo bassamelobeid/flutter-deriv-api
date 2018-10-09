@@ -49,7 +49,7 @@ sub has_done_request {
     my $self   = shift;
     my $client = $self->{client};
 
-    return $client->status->get('proveid_requested') || $self->has_downloaded_xml;
+    return $client->status->proveid_requested || $self->has_downloaded_xml;
 }
 
 sub defaults {

@@ -71,7 +71,7 @@ sub check {
         . Date::Utility->new($sanctions->last_updated($sanctioned_info->{list}))->date . "].";
 
     # do not send notification if client is already disabled
-    if (!$client->status->get('disabled')) {
+    if (!$client->status->disabled) {
         send_email({
                 from    => $self->brand->emails('compliance'),
                 to      => join(',', $self->brand->emails('compliance'), $self->brand->emails('support')),

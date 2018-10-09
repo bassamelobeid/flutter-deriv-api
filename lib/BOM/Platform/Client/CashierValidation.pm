@@ -63,8 +63,8 @@ sub validate {
     return _create_error(localize('Please set your country of residence.')) unless $client->residence;
 
     # better to do generic error validation before landing company or account specific
-    return _create_error(localize('Your cashier is locked.'))                     if ($client->status->get('cashier_locked'));
-    return _create_error(localize('Your account is disabled.'))                   if ($client->status->get('disabled'));
+    return _create_error(localize('Your cashier is locked.'))                     if ($client->status->cashier_locked);
+    return _create_error(localize('Your account is disabled.'))                   if ($client->status->disabled);
     return _create_error(localize('Your cashier is locked as per your request.')) if ($client->cashier_setting_password);
 
     my $landing_company = $client->landing_company;
@@ -81,28 +81,27 @@ sub validate {
         return _create_error(localize('Please authenticate your account.'), 'ASK_AUTHENTICATE') unless $client->fully_authenticated;
 
         return _create_error(localize('Financial Risk approval is required.'), 'ASK_FINANCIAL_RISK_APPROVAL')
-            unless $client->status->get('financial_risk_approval');
+            unless $client->status->financial_risk_approval;
 
         return _create_error(
             localize('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.'),
             'ASK_TIN_INFORMATION')
-            unless $client->status->get('crs_tin_information');
+            unless $client->status->crs_tin_information;
     }
 
     if ($client->landing_company->short ne 'maltainvest' && $client->residence eq 'gb') {
         return _create_error(localize('Please accept Funds Protection.'), 'ASK_UK_FUNDS_PROTECTION')
-            unless $client->status->get('ukgc_funds_protection');
+            unless $client->status->ukgc_funds_protection;
         return _create_error(localize('Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.'),
             'ASK_SELF_EXCLUSION_MAX_TURNOVER_SET')
-            if $client->status->get('ukrts_max_turnover_limit_not_set');
+            if $client->status->ukrts_max_turnover_limit_not_set;
     }
-
     # action specific validation should be last to be validated
     return _create_error(localize('Your account is restricted to withdrawals only.'))
-        if ($action eq 'deposit' and $client->status->get('unwelcome'));
+        if ($action eq 'deposit' and $client->status->unwelcome);
 
     return _create_error(localize('Your account is locked for withdrawals.'))
-        if ($action eq 'withdraw' and $client->status->get('withdrawal_locked'));
+        if ($action eq 'withdraw' and $client->status->withdrawal_locked);
 
     return;
 }
@@ -231,7 +230,7 @@ sub _withdrawal_validation {
 
     my ($lc, $is_authenticated) = ($client->landing_company->short, $client->fully_authenticated);
 
-    return _create_error(localize('Account needs age verification.')) if ($lc =~ /^(?:malta|iom)$/ and not $client->status->get('age_verification'));
+    return _create_error(localize('Account needs age verification.')) if ($lc =~ /^(?:malta|iom)$/ and not $client->status->age_verification);
     return _create_error(localize('Please authenticate your account.')) if ($lc eq 'iom'   and not $is_authenticated and $total >= 3000);
     return _create_error(localize('Please authenticate your account.')) if ($lc eq 'malta' and not $is_authenticated and $total >= 2000);
 

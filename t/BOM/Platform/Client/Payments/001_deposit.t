@@ -54,11 +54,11 @@ my $mlt_client = $user->create_client(
 
 $mlt_client->set_default_account('EUR');
 
-ok(!$mlt_client->status->get('unwelcome'), 'MLT client not unwelcome prior to first-deposit');
+ok(!$mlt_client->status->unwelcome, 'MLT client not unwelcome prior to first-deposit');
 $mlt_client->payment_free_gift(%deposit, currency => 'EUR');
 BOM::Platform::Client::IDAuthentication->new(client => $mlt_client)->run_authentication;
-ok(!$mlt_client->status->get('unwelcome'),     'MLT client not unwelcome after first-deposit');
-ok($mlt_client->status->get('cashier_locked'), 'MLT client cashier_locked after first-deposit');
+ok(!$mlt_client->status->unwelcome,     'MLT client not unwelcome after first-deposit');
+ok($mlt_client->status->cashier_locked, 'MLT client cashier_locked after first-deposit');
 
 my $mx_client = $user->create_client(
     %$client_details,
@@ -68,7 +68,7 @@ my $mx_client = $user->create_client(
 
 $mx_client->set_default_account('USD');
 
-ok(!$mx_client->status->get('unwelcome'), 'MX client not unwelcome prior to first-deposit');
+ok(!$mx_client->status->unwelcome, 'MX client not unwelcome prior to first-deposit');
 $mx_client->payment_free_gift(%deposit, currency => 'USD');
 my $v = BOM::Platform::Client::IDAuthentication->new(client => $mx_client);
 Test::MockObject::Extends->new($v);
@@ -78,6 +78,6 @@ $v->mock(
         return {kyc_summary_score => 1};
     });
 $v->run_authentication;
-ok($mx_client->status->get('unwelcome'), 'MX client now unwelcome after first-deposit');
+ok($mx_client->status->unwelcome, 'MX client now unwelcome after first-deposit');
 
 done_testing();

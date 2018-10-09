@@ -39,7 +39,7 @@ subtest 'Age Verified' => sub {
             my $client = $client{$broker};
 
             $client->status->set('age_verification', 'Darth Vader', 'Test Case');
-            ok $client->status->get('age_verification'), "Age verified by other sources";
+            ok $client->status->age_verification, "Age verified by other sources";
 
             ok !$client->has_valid_documents, "Client Does not have a valid document";
 

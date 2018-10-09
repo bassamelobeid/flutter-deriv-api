@@ -40,7 +40,7 @@ sub run_authentication {
     if ($landing_company eq 'iom') {
         $envelope = $self->do_proveid;
     } elsif ($landing_company eq 'malta'
-        && !$client->status->get('age_verification')
+        && !$client->status->age_verification
         && !$client->has_valid_documents)
     {
         $envelope = $self->_request_id_authentication;
@@ -74,9 +74,9 @@ sub do_proveid {
         return undef;
     }
 
-    my $unwelcome_status = $client->status->get('unwelcome');
+    my $unwelcome_status = $client->status->unwelcome;
 
-    $client->status->clear('unwelcome', 'system', 'Experian result is now available')
+    $client->status->clear_unwelcome
         if ($unwelcome_status and $unwelcome_status->{reason} =~ /FailedExperian/);
 
     # deceased or fraud => disable the client
@@ -194,7 +194,7 @@ sub _fetch_proveid {
         # Workaround to distinguish failed search from failed request
         # Failed search = user not found, failed request = error contacting Experian
         $result //= {};
-        $client->status->clear('proveid_pending');
+        $client->status->clear_proveid_pending;
     }
     catch {
         my $brand    = Brands->new(name => request()->brand);
