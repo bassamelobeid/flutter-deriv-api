@@ -203,8 +203,8 @@ sub print_client_details {
         $stateoptions .= qq|<option value="$_->{value}">$_->{text}</option>|;
     }
 
-    my $tnc_status                     = $client->status->get('tnc_approval');
-    my $crs_tin_status                 = $client->status->get('crs_tin_information');
+    my $tnc_status                     = $client->status->tnc_approval;
+    my $crs_tin_status                 = $client->status->crs_tin_information;
     my $show_allow_professional_client = $client->landing_company->short =~ /^(?:costarica|maltainvest)$/ ? 1 : 0;
 
     my @tax_residences = $client->tax_residence ? split ',', $client->tax_residence : ();
@@ -223,7 +223,7 @@ sub print_client_details {
         dob_day_options       => $dob_day_options,
         dob_month_options     => $dob_month_options,
         dob_year_options      => $dob_year_options,
-        financial_risk_status => $client->status->get('financial_risk_approval'),
+        financial_risk_status => $client->status->financial_risk_approval,
         has_social_signup     => $user->{has_social_signup},
         lang                  => request()->language,
         language_options      => \@language_options,
@@ -235,7 +235,7 @@ sub print_client_details {
         salutation_options             => \@salutation_options,
         secret_answer                  => $secret_answer,
         self_exclusion_enabled         => $self_exclusion_enabled,
-        client_professional_status     => $client->status->get('professional'),
+        client_professional_status     => $client->status->professional,
         show_allow_professional_client => $show_allow_professional_client,
         show_funds_message             => ($client->residence eq 'gb' and not $client->is_virtual) ? 1 : 0,
         show_risk_approval => ($client->landing_company->short eq 'maltainvest') ? 1 : 0,
@@ -244,7 +244,7 @@ sub print_client_details {
         state_options                 => set_selected_item($client->state, $stateoptions),
         client_state                  => $state_name,
         tnc_approval_status           => $tnc_status,
-        ukgc_funds_status             => $client->status->get('ukgc_funds_protection'),
+        ukgc_funds_status             => $client->status->ukgc_funds_protection,
         tax_residence                 => \@tax_residences,
         tax_residences_countries_name => $tax_residences_countries_name
     };
@@ -322,9 +322,10 @@ sub build_client_warning_message {
     ###############################################
     ## UNTRUSTED SECTION
     ###############################################
-    my %client_status = map { $_ => $client->status->get($_) } $client->status->all();
+    my %client_status = map { $_ => $client->status->$_ } @{$client->status->all};
     foreach my $type (@{get_untrusted_types()}) {
-        if (my $disabled = $client->status->get($type->{code})) {
+        my $code = $type->{code};
+        if (my $disabled = $client->status->$code) {
             delete $client_status{$type->{code}};
             push(
                 @output,

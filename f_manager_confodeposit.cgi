@@ -97,7 +97,7 @@ if ($client->is_same_user_as($toClient)) {
 
 for my $c ($client, $toClient) {
     $c || next;
-    if ($client->status->get('disabled')) {
+    if ($client->status->disabled) {
         print build_client_warning_message($loginID);
     }
     if ($c->currency && $c->currency ne $curr) {

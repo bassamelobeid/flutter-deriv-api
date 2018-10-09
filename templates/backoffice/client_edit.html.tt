@@ -336,7 +336,7 @@ IF client_for_prove
     <tr>
         <td class="label">Age Verified</td>
         <td>:
-            [% IF client.status.get('age_verification') %]
+            [% IF client.status.age_verification %]
                 YES
             [% ELSE %]
                 NO
@@ -347,7 +347,7 @@ IF client_for_prove
         <td class="label">Set Status Age Verified</td>
         <td>:
             <select name="age_verification">
-                [% client_age_verified = client.status.get('age_verification') %]
+                [% client_age_verified = client.status.age_verification %]
                 <option value="yes" [% IF client_age_verified %]selected="selected"[% END %]>YES</option>
                 <option value="no" [% UNLESS client_age_verified %]selected="selected"[% END %]>NO</option>
             </select>

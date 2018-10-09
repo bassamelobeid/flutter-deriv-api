@@ -83,40 +83,43 @@ foreach my $login_id (split(/\s+/, $clientID)) {
             if (@{get_open_contracts($client)}) {
                 $printline = $open_trades_error_msg;
             } else {
-                $printline = try { $client->status->set('disabled', $clerk, $reason); $insert_success_msg } catch { $insert_error_msg };
+                $printline =
+                    try { $client->status->set('disabled', $clerk, $reason); $insert_success_msg } catch { $insert_error_msg };
             }
         }
         # remove client from $broker.disabledlogins
         elsif ($action eq 'remove_data') {
-            $printline = try { $client->status->clear('disabled'); $remove_success_msg } catch { $remove_error_msg };
+            $printline = try { $client->status->clear_disabled; $remove_success_msg } catch { $remove_error_msg };
         }
     }
     # LOCK CASHIER LOGIN
     elsif ($client_status_type eq 'lockcashierlogins') {
         if ($action eq 'insert_data') {
-            $printline = try { $client->status->set('cashier_locked', $clerk, $reason); $insert_success_msg } catch { $insert_error_msg };
+            $printline =
+                try { $client->status->set('cashier_locked', $clerk, $reason); $insert_success_msg } catch { $insert_error_msg };
         } elsif ($action eq 'remove_data') {
-            $printline = try { $client->status->clear('cashier_locked'); $remove_success_msg } catch { $remove_error_msg };
+            $printline = try { $client->status->clear_cashier_locked; $remove_success_msg } catch { $remove_error_msg };
         }
     }
     # UNWELCOME LOGIN
     elsif ($client_status_type eq 'unwelcomelogins') {
         if ($action eq 'insert_data') {
-            $printline = try { $client->status->set('unwelcome', $clerk, $reason); $insert_success_msg } catch { $insert_error_msg };
+            $printline =
+                try { $client->status->set('unwelcome', $clerk, $reason); $insert_success_msg } catch { $insert_error_msg };
         } elsif ($action eq 'remove_data') {
-            $printline = try { $client->status->clear('unwelcome'); $remove_success_msg } catch { $remove_error_msg };
+            $printline = try { $client->status->clear_unwelcome; $remove_success_msg } catch { $remove_error_msg };
         }
     } elsif ($client_status_type eq 'lockwithdrawal') {
         if ($action eq 'insert_data') {
             $printline = try { $client->status->set('withdrawal_locked', $clerk, $reason); $insert_success_msg } catch { $insert_error_msg };
         } elsif ($action eq 'remove_data') {
-            $printline = try { $client->status->clear('withdrawal_locked'); $remove_success_msg } catch { $remove_error_msg };
+            $printline = try { $client->status->clear_withdrawal_locked; $remove_success_msg } catch { $remove_error_msg };
         }
     } elsif ($client_status_type eq 'lockmt5withdrawal') {
         if ($action eq 'insert_data') {
             $printline = try { $client->status->set('mt5_withdrawal_locked', $clerk, $reason); $insert_success_msg } catch { $insert_error_msg };
         } elsif ($action eq 'remove_data') {
-            $printline = try { $client->status->clear('mt5_withdrawal_locked'); $remove_success_msg } catch { $remove_error_msg };
+            $printline = try { $client->status->clear_mt5_withdrawal_locked; $remove_success_msg } catch { $remove_error_msg };
         }
     } elsif ($client_status_type eq 'duplicateaccount') {
         if ($action eq 'insert_data') {
@@ -128,7 +131,7 @@ foreach my $login_id (split(/\s+/, $clientID)) {
             }
             catch { $insert_error_msg };
         } elsif ($action eq 'remove_data') {
-            $printline = try { $client->status->clear('duplicate_account'); $remove_success_msg } catch { $remove_error_msg };
+            $printline = try { $client->status->clear_duplicate_account; $remove_success_msg } catch { $remove_error_msg };
         }
     }
 

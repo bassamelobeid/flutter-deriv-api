@@ -424,7 +424,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                         reason     => 'Mark as professional as requested',
                     });
                 } else {
-                    $existing_client->status->clear('professional');
+                    $existing_client->status->clear_professional;
                 }
             }
             catch {
@@ -457,7 +457,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             code_exit_BO(qq{<p style="color:red">ERROR: Invalid $key, minimum value is 1 and it can be integer only</p>});
         }
     }
-
     if (my @dob_keys = grep { /dob_/ } keys %input) {
         my @dob_fields = map { 'dob_' . $_ } qw/year month day/;
         my @dob_values = ($client->date_of_birth // '') =~ /(\d+)-(\d+)-(\d+)/;
@@ -525,10 +524,9 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
         if ($key eq 'age_verification') {
             if ($input{$key} eq 'yes') {
-                $client->status->set('age_verification', $clerk, 'No specific reason.')
-                    unless $client->status->get('age_verification');
+                $client->status->set('age_verification', $clerk, 'No specific reason.') unless $client->status->age_verification;
             } else {
-                $client->status->clear('age_verification');
+                $client->status->clear_age_verification;
             }
         }
 
@@ -736,7 +734,7 @@ if ($client->landing_company->allows_payment_agents) {
     print '<p>Payment Agents are not available for this account.</p>';
 }
 
-my $statuses = join '/', map { uc $_ } $client->status->all();
+my $statuses = join '/', map { uc $_ } @{$client->status->all};
 my $name = $client->first_name;
 $name .= ' ' if $name;
 $name .= $client->last_name;
@@ -788,7 +786,7 @@ if ($user) {
                 });
 
             print "<li><a href='$link_href'"
-                . ($client->status->get('disabled') ? ' style="color:red"' : '') . ">"
+                . ($client->status->disabled ? ' style="color:red"' : '') . ">"
                 . encode_entities($lid) . " ("
                 . $currency
                 . ") </a></li>";
