@@ -274,9 +274,14 @@ system:
           default: 0
           global: 1
         payment_agents:
-          description: "Suspend all payments agent transfers"
+          description: "Suspend all payment agent transfers"
           isa: Bool
           default: 0
+          global: 1
+        payment_agents_in_countries:
+          description: "Suspend all payment agents in the selected countries"
+          isa: ArrayRef
+          default: []
           global: 1
         cryptocashier:
           description: "Suspend crypto cashier only"
