@@ -856,7 +856,7 @@ return false if client is disabled or is duplicated account
 sub is_available {
     my $self = shift;
     foreach my $status (qw(disabled duplicate_account)) {
-        return 0 if $self->status->get($status);
+        return 0 if $self->status->$status();
     }
     return 1;
 }
@@ -864,7 +864,7 @@ sub is_available {
 sub cookie_string {
     my $self = shift;
 
-    my $str = join(':', $self->loginid, $self->is_virtual ? 'V' : 'R', $self->status->get('disabled') ? 'D' : 'E');
+    my $str = join(':', $self->loginid, $self->is_virtual ? 'V' : 'R', $self->status->disabled ? 'D' : 'E');
 
     return $str;
 }
@@ -905,7 +905,7 @@ sub is_tnc_approval_required {
     return 0 unless $self->landing_company->tnc_required;
 
     my $current_tnc_version = BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version;
-    my $client_tnc_status   = $self->status->get('tnc_approval');
+    my $client_tnc_status   = $self->status->tnc_approval;
 
     return 1 if (not $client_tnc_status or ($client_tnc_status->{reason} ne $current_tnc_version));
 

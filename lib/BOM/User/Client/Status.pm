@@ -2,51 +2,87 @@ package BOM::User::Client::Status;
 
 use strict;
 use warnings;
-use Moose;
+use Moo;
 
 use List::Util qw/uniqstr/;
-
+use namespace::clean;
+use Class::Method::Modifiers qw( install_modifier );
 has client_loginid => (
     is       => 'ro',
-    isa      => 'Str',
     required => 1,
 );
 
 has dbic => (
     is       => 'ro',
-    isa      => 'DBIx::Connector',
     required => 1,
 );
 
+my @status_codes = qw(
+    age_verification cashier_locked  disabled  unwelcome  withdrawal_locked
+    mt5_withdrawal_locked  ukgc_funds_protection  financial_risk_approval
+    crs_tin_information  ukrts_max_turnover_limit_not_set
+    jp_knowledge_test_pending  jp_knowledge_test_fail  jp_activation_pending
+    jp_transaction_detail  professional_requested  professional  tnc_approval
+    migrated_single_email  duplicate_account  proveid_pending  proveid_requested
+    require3ds  skip_3ds  ok  ico_only  allowed_other_card  can_authenticate
+    social_signup  trusted
+);
+
+for my $code (@status_codes) {
+    has $code => (
+        is      => 'ro',
+        lazy    => 1,
+        builder => 1,
+        clearer => 1
+    );
+    no strict 'refs';
+    *{__PACKAGE__ . "::_build_$code"} = sub {
+        my $self = shift;
+        $self->_get($code);
+    };
+
+    after "clear_$code" => sub {
+        my $self = shift;
+        return $self->_clear($code);
+    };
+}
+
 =head2 all
 
-Returns a list containing the client statuses currently enabled for this client
+Returns an arrayref containing the client statuses currently enabled for this client
 
-e.g. $client->status->all();
+e.g. $client->status->all;
 
 =cut
 
-sub all {
+has all => (
+    is      => 'lazy',
+    clearer => '_clear_all',
+);
+
+sub _build_all {
     my ($self) = @_;
-    my $loginid = $self->client_loginid;
 
-    my $list = $self->dbic->run(
-        fixup => sub {
-            $_->selectcol_arrayref('SELECT * FROM betonmarkets.get_client_status_list_all(?)', undef, $loginid);
-        });
+    my $records          = $self->_get_all_clients_status();
+    my @status_code_list = sort keys(%$records);
 
-    return @$list;
+    return \@status_code_list;
 }
 
 =head2 visible
 
-Returns a list containing the client statuses currently enabled for this client
-
-e.g. $client->status->visible();
+Returns an arrayref containing the client statuses currently enabled for this client
+B<Note> There is logic in our code that alters the arrayref returned by this method so be careful if caching these results. 
+e.g. $client->status->visible;
 
 =cut
 
-sub visible {
+has visible => (
+    is      => 'lazy',
+    clearer => '_clear_visible',
+);
+
+sub _build_visible {
     my ($self) = @_;
     my $loginid = $self->client_loginid;
 
@@ -55,51 +91,35 @@ sub visible {
             $_->selectcol_arrayref('SELECT * FROM betonmarkets.get_client_status_list_visible(?)', undef, $loginid);
         });
 
-    return @$list;
+    return $list;
 }
 
-=head2 get
+=head2 is_login_disallowed
 
-Get is used to check if a client has a particular status_code assigned.
-Takes one argument:
-
-=over 4
-
-=item * status_code
-
-=back
-
-    If not, undef is returned.
-    If yes, a hashref is returned containing the keys:
-
-=over 4
-
-=item * staff_name
-
-=item * reason
-
-=item * last_modified_date
-
-=back
+e.g. $client->status->is_login_disallowed;
 
 =cut
 
-sub get {
-    my ($self, $status_code) = @_;
-    my $loginid = $self->client_loginid;
-    die 'status_code is required' unless $status_code;
+has is_login_disallowed => (
+    is      => 'lazy',
+    clearer => '_clear_is_login_disallowed',
+);
 
-    my $record = $self->dbic->run(
+sub _build_is_login_disallowed {
+    my ($self) = @_;
+    my $loginid = $self->client_loginid;
+
+    my @res = $self->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM betonmarkets.get_client_status(?,?)', undef, $loginid, $status_code);
+            $_->selectrow_array('SELECT * FROM betonmarkets.get_client_status_is_login_disallowed(?)', undef, $loginid);
         });
 
-    return $record;
+    return $res[0];
 }
 
 =head2 set
 
-Set is used to assign a status_code to the associated client.
+set is used to assign a status_code to the associated client.
 Returns true if successful, or dies.
 
 Takes three arguments:
@@ -126,33 +146,8 @@ sub set {
             $_->do('SELECT betonmarkets.set_client_status(?,?,?,?)', undef, $loginid, $status_code, $staff_name, $reason);
         });
 
-    return 1;
-}
-
-=head2 clear
-
-Clear is used to unassign a status_code from the associated client.
-Returns true if successful, or dies.
-
-Takes one argument:
-
-=over 4
-
-=item * status_code
-
-=back
-
-=cut
-
-sub clear {
-    my ($self, $status_code) = @_;
-    my $loginid = $self->client_loginid;
-    die 'status_code is required' unless $status_code;
-
-    $self->dbic->run(
-        ping => sub {
-            $_->do('SELECT betonmarkets.clear_client_status(?,?)', undef, $loginid, $status_code);
-        });
+    delete $self->{$status_code};
+    $self->_clear_composite_cache_elements();
 
     return 1;
 }
@@ -163,7 +158,7 @@ Multi set/clear is used to do multiple assignments and unassignments on the asso
     all as one single database transaction.
 Returns true if successful, or dies.
 
-Takes one argument, a hashref containg the following keys (all optional)
+Takes one argument, a hashref containing the following keys (all optional)
 
 =over 4
 
@@ -185,42 +180,143 @@ sub multi_set_clear {
     my $codes_to_clear = $args->{clear}      // [];
     my $staff_name     = $args->{staff_name} // '';
     my $reason         = $args->{reason}     // '';
-    my $loginid        = $self->client_loginid;
 
-    my @all = (@$codes_to_set, @$codes_to_clear);
-    die 'status_codes are required' unless @all;
-    die 'All specified status_codes must be unique' if @all != uniqstr @all;
-
+    my @all_codes = (@$codes_to_set, @$codes_to_clear);
+    die 'status_codes are required' unless @all_codes;
+    die 'All specified status_codes must be unique' if @all_codes != uniqstr @all_codes;
     $self->dbic->txn(
-        ping => sub {
-            my $dbh = $_;
-            for (@$codes_to_set) {
-                $dbh->do('SELECT betonmarkets.set_client_status(?,?,?,?)', undef, $loginid, $_, $staff_name, $reason);
+        sub {
+            for my $status_code (@$codes_to_set) {
+                $self->set($status_code, $staff_name, $reason);
             }
-            for (@$codes_to_clear) {
-                $dbh->do('SELECT betonmarkets.clear_client_status(?,?)', undef, $loginid, $_);
+            for my $status_code (@$codes_to_clear) {
+                my $method = "clear_$status_code";
+                $self->$method;
             }
         });
 
     return 1;
 }
 
-=head2 is_login_disallowed
+################################################################################
 
-e.g. $client->status->is_login_disallowed();
+=head1 METHODS - Private
+
+=head2 _clear
+
+_clear is used to unassign a status_code from the associated client in the db table. Intended to be a private
+call from clear_statuscode calls
+Returns true if successful, or dies.
+
+Takes one argument:
+
+=over 4
+
+=item * status_code
+
+=back
 
 =cut
 
-sub is_login_disallowed {
-    my ($self) = @_;
+sub _clear {
+    my ($self, $status_code) = @_;
     my $loginid = $self->client_loginid;
+    die 'status_code is required' unless $status_code;
 
-    my @res = $self->dbic->run(
-        fixup => sub {
-            $_->selectrow_array('SELECT * FROM betonmarkets.get_client_status_is_login_disallowed(?)', undef, $loginid);
+    $self->dbic->run(
+        ping => sub {
+            $_->do('SELECT betonmarkets.clear_client_status(?,?)', undef, $loginid, $status_code);
         });
 
-    return $res[0];
+    $self->_clear_composite_cache_elements();
+
+    return 1;
 }
 
+=head2 _get
+
+_get is used to check if a client has a particular status_code assigned.
+Takes one argument:
+
+=over 4
+
+=item * status_code
+
+=back
+
+    If not, undef is returned.
+    If yes, a hashref is returned containing the keys:
+
+=over 4
+
+=item * staff_name
+
+=item * reason
+
+=item * last_modified_date
+
+=item * status_code
+
+=back
+
+=cut
+
+sub _get {
+    my ($self, $status_code) = @_;
+    die 'status_code is required' unless $status_code;
+    my $records = $self->_get_all_clients_status();
+    return $records->{$status_code};
+}
+
+=head2 _clear_composite_cache_elements
+
+=cut
+
+sub _clear_composite_cache_elements {
+    my ($self) = @_;
+    $self->_clear_all;
+    $self->_clear_visible;
+    $self->_clear_is_login_disallowed;
+    return;
+}
+
+=head2 _get_all_client_statuses 
+
+Gets all the clients set status's from the database. 
+    Takes No arguments
+
+
+Returns a hashref of status's and their properties  keyed by the status name 
+eg. 
+    
+    {
+        age_verification => {
+                staff_name => 'fred', 
+                reason => 'blah blah',
+                last_modified_date => '2018-01-02 10:00:00',
+                status_code => 'age_verification'
+                },
+        disabled => {
+                staff_name => 'fred', 
+                reason => 'blah blah',
+                last_modified_date => '2018-01-02 10:00:00',
+                status_code => 'disabled'
+                }
+    }
+
+
+=cut
+
+sub _get_all_clients_status {
+    my ($self)  = @_;
+    my $loginid = $self->client_loginid;
+    my $list    = $self->dbic->run(
+        fixup => sub {
+            $_->selectall_hashref('SELECT * FROM betonmarkets.get_client_status_all(?)', 'status_code', undef, $loginid);
+        });
+    #populate attributes for object
+    @{$self}{keys %$list} = values %$list;
+    return $list;
+
+}
 1;

@@ -55,15 +55,9 @@ subtest 'Setter' => sub {
 };
 
 subtest 'Getter' => sub {
-    subtest 'Status code is required' => sub {
-        throws_ok {
-            $res = $client->status->get();
-        }
-        qr/status_code is required/, 'Dies without status_code';
-    };
 
     subtest 'Get record' => sub {
-        $res = $client->status->get('age_verification');
+        $res = $client->status->age_verification;
 
         ok(abs(Date::Utility->new($res->{last_modified_date})->{epoch} - Date::Utility->new()->{epoch}) <= 1,
             'date modified is now (1 sec test tolerance)');
@@ -72,44 +66,56 @@ subtest 'Getter' => sub {
     };
 
     subtest 'Get record that does not exist' => sub {
-        $res = $client->status->get('withdrawal_locked');
+        $res = $client->status->withdrawal_locked;
         is($res, undef, 'Non existent record returns undef');
     };
 
     subtest 'Get list of all' => sub {
-        my @list = $client->status->all();
-        cmp_deeply(\@list, ['age_verification', 'cashier_locked'], 'status_code list is correct');
+        my $list = $client->status->all;
+        cmp_deeply($list, ['age_verification', 'cashier_locked'], 'status_code list is correct');
     };
 
     subtest 'Get list of all with hidden' => sub {
         $res = $client->status->set('duplicate_account');
         ok($res, 'Successfully set hidden status_code');
 
-        my @list1 = $client->status->visible();
-        cmp_deeply(\@list1, ['age_verification', 'cashier_locked'], 'status_code list returns without hidden code');
+        my $list1 = $client->status->visible;
+        cmp_deeply($list1, ['age_verification', 'cashier_locked'], 'status_code list returns without hidden code');
 
-        my @list2 = $client->status->all();
-        cmp_deeply(\@list2, ['age_verification', 'cashier_locked', 'duplicate_account'], 'status_code list returns without hidden code');
+        my $list2 = $client->status->all;
+        cmp_deeply($list2, ['age_verification', 'cashier_locked', 'duplicate_account'], 'status_code list returns without hidden code');
     };
 };
 
 subtest 'Clear' => sub {
+
+    subtest 'Ensure age_verification set' => sub {
+        $res = $client->status->age_verification;
+        ok($res, 'Age Verification is Set');
+    };
+
     subtest 'Clear record' => sub {
-        $res = $client->status->clear('age_verification');
-        ok($res, 'Clear succeeds');
+        $client->status->clear_age_verification();
+        $res = $client->status->age_verification;
+        is($res, undef, 'status has been cleared');
+        my $loginid = $client->loginid;
+        my $result  = $client->db->dbic->run(
+            fixup => sub {
+                $_->selectcol_arrayref("
+                    SELECT * FROM betonmarkets.client_status WHERE client_loginid = ?
+                        AND status_code = 'age_verification'",
+                    undef,
+                    $loginid);
+            });
+        is(scalar(@$result), 0, 'record cleared from table');
     };
 
     subtest 'Clear record already cleared' => sub {
-        $res = $client->status->clear('age_verification');
-        ok($res, 'Repeat clear succeeds');
+        $client->status->clear_age_verification();
+        $res = $client->status->age_verification;
+        is($res, undef, 'Repeat clear succeeds');
     };
 
-    subtest 'Status code is required' => sub {
-        throws_ok {
-            $res = $client->status->clear();
-        }
-        qr/status_code is required/, 'Dies without status_code';
-    };
 };
 
 subtest 'Multi setter and clear' => sub {
@@ -122,11 +128,10 @@ subtest 'Multi setter and clear' => sub {
             reason     => 'because',
         });
         ok($res, "Multi-set returns successfully");
+        my $list1 = $client->status->all;
+        cmp_deeply($list1, ['age_verification', 'professional', 'professional_requested'], 'correct status_code list returns');
 
-        my @list1 = $client->status->all();
-        cmp_deeply([sort @list1], ['age_verification', 'professional', 'professional_requested'], 'correct status_code list returns');
-
-        $res = $client->status->get('age_verification');
+        $res = $client->status->age_verification;
         ok(abs(Date::Utility->new($res->{last_modified_date})->{epoch} - Date::Utility->new()->{epoch}) <= 1,
             'date modified is now (1 sec test tolerance)');
         is($res->{staff_name}, 'me',      'staff_name is correct');
@@ -142,8 +147,9 @@ subtest 'Multi setter and clear' => sub {
         });
         ok($res, "Multi-set and multi-clear returns successfully");
 
-        my @list1 = $client->status->all();
-        cmp_deeply([sort @list1], ['disabled', 'professional', 'unwelcome'], 'correct status_code list returns');
+        ok(!$client->status->age_verification, 'age_verification unset');
+        my $list1 = $client->status->all;
+        cmp_deeply($list1, ['disabled', 'professional', 'unwelcome'], 'correct status_code list returns');
     };
 
     subtest 'Multi-clear' => sub {
@@ -152,8 +158,9 @@ subtest 'Multi setter and clear' => sub {
         });
         ok($res, "Multi-clear returns successfully");
 
-        my @list1 = $client->status->all();
-        cmp_deeply(\@list1, ['professional'], 'correct status_code list returns');
+        ok(!$client->status->unwelcome, 'unwelcome unset');
+        my $list1 = $client->status->all;
+        cmp_deeply($list1, ['professional'], 'correct status_code list returns');
     };
 
     subtest 'Unique violation 1' => sub {
@@ -188,19 +195,20 @@ subtest 'Multi setter and clear' => sub {
 subtest 'is_login_disallowed' => sub {
     reset_client_statuses($client);
 
-    $res = $client->status->is_login_disallowed();
+    $res = $client->status->is_login_disallowed;
     is($res, 0, 'login is not disallowed');
 
     $res = $client->status->set('duplicate_account', 'test_name', 'test_reason');
     ok($res, 'Dupliate account set succeeds');
 
-    $res = $client->status->is_login_disallowed();
+    $res = $client->status->is_login_disallowed;
     is($res, 1, 'login is disallowed');
 
-    $res = $client->status->clear('duplicate_account');
-    ok($res, 'Clear succeeds');
+    $client->status->clear_duplicate_account();
+    $res = $client->status->duplicate_account;
+    is($res, undef, 'Clear succeeds');
 
-    $res = $client->status->is_login_disallowed();
+    $res = $client->status->is_login_disallowed;
     is($res, 0, 'login is not disallowed');
 };
 
@@ -208,6 +216,6 @@ done_testing();
 
 sub reset_client_statuses {
     my $client = shift;
-    $client->status->multi_set_clear({clear => [$client->status->all()]});
-    is($client->status->all(), 0, ' client statuses reset successfully ');
+    $client->status->multi_set_clear({clear => $client->status->all});
+    cmp_deeply($client->status->all, [], ' client statuses reset successfully ');
 }

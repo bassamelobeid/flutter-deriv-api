@@ -33,10 +33,10 @@ sub validate_payment {
     my $absamt  = abs($amount);
 
     die "Client\'s cashier is locked.\n"
-        if $self->status->get('cashier_locked');
+        if $self->status->cashier_locked;
 
     die "Client is disabled.\n"
-        if $self->status->get('disabled');
+        if $self->status->disabled;
 
     die "Client has set the cashier password.\n" if $self->cashier_setting_password;
 
@@ -45,7 +45,7 @@ sub validate_payment {
 
     if ($action_type eq 'deposit') {
         die "Deposits blocked for this Client.\n"
-            if $self->status->get('unwelcome');
+            if $self->status->unwelcome;
 
         if (    $self->landing_company->short eq 'malta'
             and $self->is_first_deposit_pending
@@ -61,7 +61,7 @@ sub validate_payment {
 
     if ($action_type eq 'withdrawal') {
         die "Withdrawal is disabled.\n"
-            if $self->status->get('withdrawal_locked');
+            if $self->status->withdrawal_locked;
 
         die "Withdrawal amount [$currency $absamt] exceeds client balance [$currency $accbal].\n"
             if $absamt > $accbal;

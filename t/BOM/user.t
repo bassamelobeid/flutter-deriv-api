@@ -258,7 +258,7 @@ subtest 'User Login' => sub {
     };
 
     subtest 'can login' => sub {
-        $client_vr->status->clear('disabled');
+        $client_vr->status->clear_disabled;
         $status = $user->login(%args);
         is $status->{success}, 1, 'login successfully';
         my $login_history = $user->get_last_successful_login_history();

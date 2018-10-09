@@ -56,7 +56,7 @@ $client->status->set('unwelcome', 'calum', '..dont like you, sorry.');
 
 throws_ok { $client->validate_payment(%deposit) } qr/Deposits blocked/, 'cannot deposit when unwelcome.';
 
-$client->status->clear('unwelcome');
+$client->status->clear_unwelcome;
 
 ok $client->validate_payment(%deposit), 'can deposit when not unwelcome.';
 
@@ -64,7 +64,7 @@ $client->status->set('disabled', 'calum', '..dont like you, sorry.');
 
 throws_ok { $client->validate_payment(%deposit) } qr/Client is disabled/, 'cannot deposit when disabled.';
 
-$client->status->clear('disabled');
+$client->status->clear_disabled;
 
 ok $client->validate_payment(%deposit), 'can deposit when not disabled.';
 
@@ -72,15 +72,15 @@ $client->status->set('cashier_locked', 'calum', '..dont like you, sorry.');
 
 throws_ok { $client->validate_payment(%deposit) } qr/Client's cashier is locked/, 'cannot deposit when cashier is locked.';
 
-$client->status->clear('cashier_locked');
+$client->status->clear_cashier_locked;
 
 ok $client->validate_payment(%deposit), 'can deposit when not cashier locked.';
 
 throws_ok { $client->validate_payment(%deposit, amount => 1_000_000) } qr/Balance would exceed/,
     'cannot deposit an amount that puts client over maximum balance.';
 
-ok(!$client->status->get('unwelcome'), 'CR client not unwelcome prior to first-deposit');
+ok(!$client->status->unwelcome, 'CR client not unwelcome prior to first-deposit');
 $client->payment_free_gift(%deposit);
-ok(!$client->status->get('unwelcome'), 'CR client still not unwelcome after first-deposit');
+ok(!$client->status->unwelcome, 'CR client still not unwelcome after first-deposit');
 
 done_testing();

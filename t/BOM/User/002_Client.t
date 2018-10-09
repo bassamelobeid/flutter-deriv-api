@@ -81,18 +81,18 @@ subtest 'Almost all accessor/modifiers' => sub {
 
     $client->status->set('disabled', 'fuguo wei', "I don't like him");
 
-    $return = $client->status->get('disabled');
+    $return = $client->status->disabled;
     is($return && $return->{reason}, "I don't like him", "the client is disabled and the reason is: I don not like him");
     is($return->{staff_name}, 'fuguo wei', "The disabled operation clerk is fuguo wei");
 
-    $client->status->set('disabled', 'fuguo wei', 'He is hacker');
+    $client->status->set('disabled', 'fuguo wei', "He is hacker");
 
-    $return = $client->status->get('disabled');
+    $return = $client->status->disabled;
     is($return->{reason},     'He is hacker', "the client is disabled update the reason to: He is hacker");
     is($return->{staff_name}, 'fuguo wei',    "The disabled operation clerk is fuguo wei");
 
-    $client->status->clear('disabled');
-    is($client->status->get('disabled'), undef, "the client is enabled");
+    $client->status->clear_disabled;
+    is($client->status->disabled, undef, "the client is enabled");
 
     is($client->payment_agent_withdrawal_expiration_date, undef, "payment_agent_withdrawal_expiration_date is undef");
     $client->payment_agent_withdrawal_expiration_date('2013-01-01');
