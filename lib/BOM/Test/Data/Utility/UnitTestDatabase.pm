@@ -7,6 +7,7 @@ use BOM::User::Client;
 use Date::Utility;
 use MooseX::Singleton;
 use Postgres::FeedDB;
+use Finance::Underlying;
 
 use BOM::Database::ClientDB;
 use BOM::Database::Model::FinancialMarketBet::HigherLowerBet;
@@ -329,6 +330,25 @@ sub create_fmb_with_ticks {
     return $bet;
 }
 
+# since this will populate the bet.market table from underlyings.yml,
+# we only have to do this once when every test database is rebuilt.
+sub setup_bet_market {
+    my $connection_builder = BOM::Database::ClientDB->new({
+        broker_code => 'CR',      # since there's only one clientdb in test environment
+        operation   => 'write',
+    });
+    my $db   = $connection_builder->db;
+    my @uls  = Finance::Underlying::all_underlyings();
+    my @data = map { [$_->{symbol}, $_->{market}, $_->{submarket}, ($_->{financial} ? 'financial' : 'non_financial')] } @uls;
+    $db->dbic->run(
+        ping => sub {
+            my $sth = $_->prepare("INSERT INTO bet.market VALUES(?,?,?,?)");
+            $sth->execute(@$_) foreach @data;
+        });
+
+    return;
+}
+
 with 'BOM::Test::Data::Utility::TestDatabaseSetup';
 
 no Moose;
@@ -341,7 +361,7 @@ sub import {
     if ($init && $init eq ':init') {
 
         __PACKAGE__->instance->prepare_unit_test_database;
-
+        setup_bet_market();
         require BOM::Test::Data::Utility::UserTestDatabase;
         BOM::Test::Data::Utility::UserTestDatabase->import(':init');
     }
