@@ -331,21 +331,13 @@ sub get_used_apps_by_loginid {
             my $dbh  = $_;
             my $apps = $dbh->selectall_arrayref("
         SELECT
-            u.app_id, a.name, a.scopes, a.app_markup_percentage
+            u.app_id, a.name, a.scopes, a.app_markup_percentage, 
+            u.last_login as last_used
         FROM oauth.apps a JOIN oauth.user_scope_confirm u ON a.id=u.app_id
         WHERE u.loginid = ? AND a.active ORDER BY a.name
     ", {Slice => {}}, $loginid);
             return [] unless $apps;
-
             $_->{scopes} = __parse_array($_->{scopes}) for @$apps;
-            my $get_last_used_sth = $dbh->prepare("
-        SELECT MAX(last_used)::timestamp(0) FROM oauth.access_token WHERE app_id = ?
-    ");
-
-            foreach my $app (@$apps) {
-                $get_last_used_sth->execute($app->{app_id});
-                $app->{last_used} = $get_last_used_sth->fetchrow_array;
-            }
             return $apps;
         });
 
@@ -366,13 +358,19 @@ sub revoke_app {
 
 sub revoke_tokens_by_loginid {
     my ($self, $loginid) = @_;
-    $self->dbic->run(ping => sub { $_->do("DELETE FROM oauth.access_token WHERE loginid = ?", undef, $loginid) });
+    $self->dbic->run(
+        ping => sub {
+            $_->do("DELETE FROM oauth.access_token WHERE loginid = ?", undef, $loginid);
+        });
     return 1;
 }
 
 sub revoke_tokens_by_loginid_app {
     my ($self, $loginid, $app_id) = @_;
-    $self->dbic->run(ping => sub { $_->do("DELETE FROM oauth.access_token WHERE loginid = ? AND app_id = ?", undef, $loginid, $app_id) });
+    $self->dbic->run(
+        ping => sub {
+            $_->do("DELETE FROM oauth.access_token WHERE loginid = ? AND app_id = ?", undef, $loginid, $app_id);
+        });
     return 1;
 }
 
