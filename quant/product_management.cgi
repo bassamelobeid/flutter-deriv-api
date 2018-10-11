@@ -23,7 +23,10 @@ use BOM::Platform::RiskProfile;
 use BOM::Config::Runtime;
 use BOM::Platform::Email qw(send_email);
 BOM::Backoffice::Sysinit::init();
-my $json = JSON::MaybeXS->new;
+my $json = JSON::MaybeXS->new(
+    pretty    => 1,
+    canonical => 1
+);
 
 PrintContentType();
 BrokerPresentation('Product Management');
@@ -31,7 +34,7 @@ BrokerPresentation('Product Management');
 my $staff            = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $r                = request();
 my $limit_profile    = BOM::Config::quants()->{risk_profile};
-my $quants_config    = BOM::Config::Runtime->instance->app_config->quants;
+my $app_config       = BOM::Config::Runtime->instance->app_config;
 my %known_profiles   = map { $_ => 1 } keys %$limit_profile;
 my %allowed_multiple = (
     market            => 1,
@@ -40,7 +43,9 @@ my %allowed_multiple = (
     landing_company   => 1,
 );
 
-my $need_to_save = 0;
+my $current_config           = $app_config->get(['quants.custom_client_profiles', 'quants.custom_product_profiles']);
+my $current_client_profiles  = $json->decode($current_config->{'quants.custom_client_profiles'});
+my $current_product_profiles = $json->decode($current_config->{'quants.custom_product_profiles'});
 
 if ($r->param('update_limit')) {
 
@@ -95,23 +100,20 @@ if ($r->param('update_limit')) {
     }
 
     if (my $id = $r->param('client_loginid')) {
-        my $current = $json->decode($quants_config->custom_client_profiles);
         my $comment = $r->param('comment');
-        $current->{$id}->{custom_limits}->{$uniq_key} = \%ref    if $has_custom_conditions;
-        $current->{$id}->{reason}                     = $comment if $comment;
-        $current->{$id}->{updated_by}                 = $staff;
-        $current->{$id}->{updated_on}                 = Date::Utility->new->date;
-        $quants_config->custom_client_profiles($json->encode($current));
+        $current_client_profiles->{$id}->{custom_limits}->{$uniq_key} = \%ref    if $has_custom_conditions;
+        $current_client_profiles->{$id}->{reason}                     = $comment if $comment;
+        $current_client_profiles->{$id}->{updated_by}                 = $staff;
+        $current_client_profiles->{$id}->{updated_on}                 = Date::Utility->new->date;
+        $app_config->set({'quants.custom_client_profiles' => $json->encode($current_client_profiles)});
     } else {
-        my $current = $json->decode($quants_config->custom_product_profiles);
-        $ref{updated_by}      = $staff;
-        $ref{updated_on}      = Date::Utility->new->date;
-        $current->{$uniq_key} = \%ref;
+        $ref{updated_by}                       = $staff;
+        $ref{updated_on}                       = Date::Utility->new->date;
+        $current_product_profiles->{$uniq_key} = \%ref;
         send_notification_email(\%ref, 'Disable') if ($profile and $profile eq 'no_business');
-        $quants_config->custom_product_profiles($json->encode($current));
+        $app_config->set({'quants.custom_product_profiles' => $json->encode($current_product_profiles)});
     }
 
-    $need_to_save = 1;
 }
 
 if ($r->param('delete_limit')) {
@@ -119,28 +121,21 @@ if ($r->param('delete_limit')) {
     code_exit_BO('ID is required. Nothing is deleted.') if not $id;
 
     if (my $client_loginid = $r->param('client_loginid')) {
-        my $current = $json->decode($quants_config->custom_client_profiles);
-        delete $current->{$client_loginid}->{custom_limits}->{$id};
-        $quants_config->custom_client_profiles($json->encode($current));
+        delete $current_client_profiles->{$client_loginid}->{custom_limits}->{$id};
+        $app_config->set({'quants.custom_client_profiles' => $json->encode($current_client_profiles)});
     } else {
-        my $current = $json->decode($quants_config->custom_product_profiles);
-        send_notification_email($current->{$id}, 'Enable')
-            if exists $current->{$id}->{risk_profile} and $current->{$id}->{risk_profile} eq 'no_business';
-        delete $current->{$id};
-        $quants_config->custom_product_profiles($json->encode($current));
+        send_notification_email($current_product_profiles->{$id}, 'Enable')
+            if exists $current_product_profiles->{$id}->{risk_profile} and $current_product_profiles->{$id}->{risk_profile} eq 'no_business';
+        delete $current_product_profiles->{$id};
+        $app_config->set({'quants.custom_product_profiles' => $json->encode($current_product_profiles)});
     }
-    $need_to_save = 1;
 }
 
 if ($r->param('delete_client')) {
     my $client_loginid = $r->param('client_loginid');
-    my $current        = $json->decode($quants_config->custom_client_profiles);
-    delete $current->{$client_loginid};
-    $quants_config->custom_client_profiles($json->encode($current));
-    $need_to_save = 1;
+    delete $current_client_profiles->{$client_loginid};
+    $app_config->set({'quants.custom_client_profiles' => $json->encode($current_client_profiles)});
 }
-
-BOM::Config::Runtime->instance->app_config->save_dynamic() if $need_to_save;
 
 Bar("Limit Definitions");
 
@@ -156,7 +151,7 @@ BOM::Backoffice::Request::template()->process(
 
 Bar("Existing limits");
 
-my $custom_limits = $json->decode($quants_config->custom_product_profiles);
+my $custom_limits = $json->decode($app_config->get('quants.custom_product_profiles'));
 
 my @output;
 foreach my $id (keys %$custom_limits) {
@@ -185,7 +180,7 @@ BOM::Backoffice::Request::template()->process(
 
 Bar("Custom Client Limits");
 
-my $custom_client_limits = $json->decode($quants_config->custom_client_profiles);
+my $custom_client_limits = $json->decode($app_config->get('quants.custom_client_profiles'));
 
 my @client_output;
 foreach my $client_loginid (keys %$custom_client_limits) {

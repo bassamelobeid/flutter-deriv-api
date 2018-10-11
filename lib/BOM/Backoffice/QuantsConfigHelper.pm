@@ -191,11 +191,10 @@ sub save_threshold {
         return {error => 'threshold amount must be between 0 and 1'};
     }
 
-    my $app_config     = BOM::Config::Runtime->instance->app_config;
-    my $threshold_name = $args->{limit_type} . '_alert_threshold';
-    my $output         = try {
-        $app_config->quants->$threshold_name($amount);
-        $app_config->save_dynamic();
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    my $key_name   = 'quants.' . $args->{limit_type} . '_alert_threshold';
+    my $output     = try {
+        $app_config->set({$key_name => $amount});
         +{
             id     => $args->{limit_type},
             amount => $amount,
@@ -219,15 +218,10 @@ sub update_config_switch {
     die 'limit_type is undefined' unless ($type);
     die 'invalid switch input' if (not($switch == 0 or $switch == 1));
 
-    my $method     = 'enable_' . $type;
+    my $key_name   = 'quants.' . 'enable_' . $type;
     my $app_config = BOM::Config::Runtime->instance->app_config;
-    $app_config->check_for_update();
-    my $output = try {
-        my $data_in_redis = $app_config->chronicle_reader->get($app_config->setting_namespace, $app_config->setting_name);
-        # due to app_config data_set cache, config might not be saved.
-        return {error => 'Config not saved. Please refresh the page and try again'} if $data_in_redis->{_rev} ne $app_config->data_set->{version};
-        $app_config->quants->$method($switch);
-        $app_config->save_dynamic();
+    my $output     = try {
+        $app_config->set({$key_name => $switch});
         return +{status => $switch};
     }
     catch {
