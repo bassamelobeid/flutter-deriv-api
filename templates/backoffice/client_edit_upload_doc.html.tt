@@ -26,6 +26,7 @@
     <option value="professional_eu_qualified_investor">EU qualified investor</option>
     <option value="professional_uk_high_net_worth">UK high net worth</option>
     <option value="professional_uk_self_certified_sophisticated">UK self-certified sophisticated</option>
+    <option value="selfie_with_id">Selfie with ID</option>
     <option value="other">Other</option>
   </select>
   <select name="page_type_[% n %]">
