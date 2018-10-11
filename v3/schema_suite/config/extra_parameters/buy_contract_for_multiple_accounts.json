@@ -1,0 +1,17 @@
+{
+  "buy_contract_for_multiple_accounts": 1,
+  "price": 10000,
+  "tokens": [
+    "[_2]"
+  ],
+  "parameters": {
+    "amount": 10,
+    "basis": "payout",
+    "contract_type": "TICKHIGH",
+    "currency": "USD",
+    "symbol": "R_10",
+    "duration": 5,
+    "duration_unit": "t",
+    "price" : 10000
+  }
+}
