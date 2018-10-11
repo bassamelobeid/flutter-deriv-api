@@ -10,6 +10,7 @@ use BOM::User::Client::PaymentAgent;
 use BOM::User qw( is_payment_agents_suspended_in_country );
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Form;
+use BOM::Config::PaymentAgent;
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -80,7 +81,7 @@ if ($whattodo eq 'show') {
 
     my $currency = $pa->currency_code // $client->default_account->currency_code;
 
-    my $min_max = BOM::Config::payment_agent()->{payment_limits}->{LandingCompany::Registry::get_currency_type($currency)};
+    my $min_max = BOM::Config::PaymentAgent::get_transfer_min_max($currency);
 
     my ($max_withdrawal, $min_withdrawal) =
         (request()->param('pa_max_withdrawal') || $min_max->{maximum}, request()->param('pa_min_withdrawal') || $min_max->{minimum});
