@@ -30,6 +30,7 @@ use BOM::Platform::Client::DoughFlowClient;
 use BOM::Platform::Doughflow qw( get_sportsbook get_doughflow_language_code_for );
 use BOM::Config;
 use BOM::Config::Runtime;
+use BOM::Config::PaymentAgent;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Email qw(send_email);
 use BOM::User::AuditLog;
@@ -365,8 +366,7 @@ rpc "paymentagent_list",
     my $payment_agent_table_row = [];
     foreach my $loginid (keys %{$available_payment_agents}) {
         my $payment_agent = $available_payment_agents->{$loginid};
-        my $min_max =
-            BOM::Config::payment_agent()->{payment_limits}->{LandingCompany::Registry::get_currency_type($payment_agent->{currency_code})};
+        my $min_max       = BOM::Config::PaymentAgent::get_transfer_min_max($payment_agent->{currency_code});
 
         push @{$payment_agent_table_row},
             {
@@ -441,7 +441,7 @@ rpc paymentagent_transfer => sub {
 
     my $max_withdrawal = $payment_agent->max_withdrawal;
     my $min_withdrawal = $payment_agent->min_withdrawal;
-    my $min_max        = BOM::Config::payment_agent()->{payment_limits}->{LandingCompany::Registry::get_currency_type($currency)};
+    my $min_max        = BOM::Config::PaymentAgent::get_transfer_min_max($currency);
 
     return $error_sub->(localize("Invalid amount. Maximum is [_1].", $min_max->{maximum})) if ($amount > $min_max->{maximum});
     return $error_sub->(localize("Invalid amount. Maximum withdrawal allowed is [_1].", $max_withdrawal))
@@ -797,7 +797,7 @@ rpc paymentagent_withdraw => sub {
         localize("You cannot perform this action, as [_1] is not default currency for payment agent account [_2].", $currency, $pa_client->loginid))
         if ($pa_client->currency ne $currency or not $pa_client->default_account);
 
-    my $min_max = BOM::Config::payment_agent()->{payment_limits}->{LandingCompany::Registry::get_currency_type($currency)};
+    my $min_max = BOM::Config::PaymentAgent::get_transfer_min_max($currency);
 
     return $error_sub->(localize('Invalid amount. Minimum is [_1], maximum is [_2].', $min_max->{minimum}, $min_max->{maximum}))
         if ($amount < $min_max->{minimum} || $amount > $min_max->{maximum});
