@@ -7,11 +7,9 @@ payment_limits:
       maximum: 5
 currency_specific_limits:
     UST:
-      minimum: 10
-      maximum: 2000
-    DAI:
-      minimum: 10
-      maximum: 2000
+      minimum: 3
+      maximum: 3000
+
 minimum_topup_balance:
   DEFAULT: 1000
 transaction_limits:

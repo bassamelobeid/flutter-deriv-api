@@ -41,7 +41,8 @@ sub quants {
 }
 
 sub payment_agent {
-    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/paymentagent_config.yml');
+    my $subdir = $ENV{BOM_TEST_CONFIG} // '';
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/' . $subdir . 'share/paymentagent_config.yml');
     return $config;
 }
 
