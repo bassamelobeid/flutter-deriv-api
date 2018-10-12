@@ -101,7 +101,7 @@ subtest 'timeframe' => sub {
     $args->{date_start} = $args->{date_pricing} = $now->minus_time_interval('2h1s');
     $args->{duration}   = '3h1s';
     $c                  = produce_contract($args);
-    ok $c->pricing_engine->event_markup->amount > 0, 'has markup if contract spans the timeframe';
+    ok $c->pricing_engine->event_markup->amount == 0, 'has no markup if contract spans the timeframe';
 };
 
 subtest 'barrier tier' => sub {
