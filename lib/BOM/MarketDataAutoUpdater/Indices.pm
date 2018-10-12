@@ -72,12 +72,13 @@ sub _build_symbols_to_update {
     my %skip_list = map { $_ => 1 } (@{BOM::Config::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol});
 
     my @symbols_to_update;
+
+    # We still have some open position on cash indices, hence we need to get the vol update list from the suspend buy list.
+    # We will clean up the code once all the cash indices open positions closed up
     if ($market eq 'indices') {
         # These are the cash indices that being disabled
-        @symbols_to_update = grep { not $skip_list{$_} } create_underlying_db->get_symbols_for(
-            market            => 'indices',
-            contract_category => 'ANY',
-        );
+        @symbols_to_update = grep { not $skip_list{$_} and create_underlying($_)->market->name eq 'indices' }
+            (@{BOM::Config::Runtime->instance->app_config->get('quants.underlyings.suspend_buy')});
     }
     return \@symbols_to_update;
 }
@@ -164,7 +165,6 @@ sub run {
             };
         };
     }
-
     $self->SUPER::run();
     return 1;
 }
