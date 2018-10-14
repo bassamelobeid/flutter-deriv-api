@@ -16,7 +16,7 @@ BEGIN {
 
     *BOM::Platform::Client::CashierValidation::is_crypto_currency_suspended = sub {
         return 0;
-    }
+        }
 }
 
 1;
