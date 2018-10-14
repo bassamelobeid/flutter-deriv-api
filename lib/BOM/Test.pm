@@ -80,6 +80,10 @@ BEGIN {
         $ENV{PGSERVICEFILE} = '/home/nobody/.pg_service_test.conf';
     }
     $ENV{TEST_DATABASE} = 1;    ## no critic (RequireLocalizedPunctuationVars)
+
+    # remove PERL5OPT which could cause confusion when forking to perls
+    # different from our own (e.g. from binary-com/perl to /usr/bin/perl)
+    delete $ENV{PERL5OPT};
 }
 
 1;
