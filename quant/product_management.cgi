@@ -154,7 +154,7 @@ Bar("Existing limits");
 my $custom_limits = $json->decode($app_config->get('quants.custom_product_profiles'));
 
 my @output;
-foreach my $id (keys %$custom_limits) {
+foreach my $id (sort { $custom_limits->{$b}->{updated_on} cmp $custom_limits->{$a}->{updated_on} } keys %$custom_limits) {
     my $data = $custom_limits->{$id};
     my $output_ref;
     my %copy = %$data;
