@@ -742,11 +742,9 @@ rpc "reset_password",
     # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
     my $client = $clients[0];
 
-    # do not allow social based clients to reset password
-    return BOM::RPC::v3::Utility::create_error({
-            code              => "SocialBased",
-            message_to_client => localize('Sorry, you cannot reset your password because you logged in using a social network.'),
-        }) if $user->{has_social_signup};
+    # we do not want to leak out any internal information so always return status of 1
+    # we do not want this call to continue running if user signed up using oneall
+    return {status => 1} if $user->{has_social_signup};
 
     unless ($client->is_virtual) {
         unless ($args->{date_of_birth}) {

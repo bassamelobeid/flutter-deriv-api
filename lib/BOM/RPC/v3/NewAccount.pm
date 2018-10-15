@@ -178,12 +178,7 @@ rpc "verify_email",
         request_email($email, $verification->{payment_withdraw}->($type_call)) unless $skip_email;
     };
 
-    if ($email_already_exist && $type eq 'reset_password') {
-        # do not allow social based clients to reset password
-        return BOM::RPC::v3::Utility::create_error({
-                code              => "SocialBased",
-                message_to_client => localize("Sorry, you cannot reset your password because you logged in using a social network.")}
-        ) if $email_already_exist->{has_social_signup};
+    if ($email_already_exist and $type eq 'reset_password' and not $email_already_exist->{has_social_signup}) {
         request_email($email, $verification->{reset_password}->());
     } elsif ($type eq 'account_opening') {
         unless ($email_already_exist) {
