@@ -50,7 +50,6 @@ __PACKAGE__->meta->setup(
         first_time_login                         => { type => 'boolean', default => 'true' },
         source                                   => { type => 'varchar', length => 50 },
         remote_addr                              => { type => 'scalar' },
-        occupation                               => { type => 'varchar', length => 100 },
         aml_risk_classification                  => { type => 'enum', check_in => [ 'low', 'standard', 'high', 'manual override - low', 'manual override - standard', 'manual override - high' ], db_type => 'aml_risk_type', default => 'low' },
         allow_copiers                            => { type => 'boolean' },
         place_of_birth                           => { type => 'varchar', length => 100 },
