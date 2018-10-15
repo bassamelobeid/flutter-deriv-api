@@ -125,8 +125,9 @@ sub upload {
         ],
 
         custom_fields => {
-            loginid => $customer_info->{loginid},
-            country => $country
+            loginid  => $customer_info->{loginid},
+            currency => $customer_info->{currency},
+            country  => $country
         }};
 
     my $desk_urls = {
@@ -165,18 +166,29 @@ sub upload {
 
             if ($total_entries) {
 
-                my $desk_id          = $tx_data->{_embedded}->{entries}->[0]->{id};
-                my $existing_loginid = $tx_data->{_embedded}->{entries}->[0]->{custom_fields}->{loginid};
+                my $desk_id = $tx_data->{_embedded}->{entries}->[0]->{id};
+
+                my $existing_loginid    = $tx_data->{_embedded}->{entries}->[0]->{custom_fields}->{loginid};
+                my $existing_currencies = $tx_data->{_embedded}->{entries}->[0]->{custom_fields}->{currency};
 
                 $existing_loginid .=
                     $existing_loginid
                     ? ', ' . $customer_info->{loginid}
                     : $customer_info->{loginid};
 
+                $existing_currencies .=
+                    $existing_currencies
+                    ? ', ' . $customer_info->{currency}
+                    : $customer_info->{currency};
+
                 my $update_tx = $desk->call(
                     $desk_urls->{'update'}->{'url_fragment'} . $desk_id,
                     $desk_urls->{'update'}->{'method'},
-                    {custom_fields => {loginid => $existing_loginid}});
+                    {
+                        custom_fields => {
+                            loginid  => $existing_loginid,
+                            currency => $existing_currencies
+                        }});
 
                 my $update_tx_code = $update_tx->{'code'};
                 die 'Caught error ' . $update_tx_code
