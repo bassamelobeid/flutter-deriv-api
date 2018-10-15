@@ -25,20 +25,21 @@ open my $psql, '|-', 'psql', '-X1', '-v', 'ON_ERROR_STOP=on', @ARGV;
 
 print $psql <<'EOF';
 CREATE TEMP TABLE tt(LIKE bet.market) ON COMMIT DROP;
-COPY tt(symbol, market, submarket) FROM stdin;
+COPY tt(symbol, market, submarket, market_type) FROM stdin;
 EOF
 
-print $psql "$_\t$l->{$_}->{market}\t$l->{$_}->{submarket}\n"
+print $psql "$_\t$l->{$_}->{market}\t$l->{$_}->{submarket}\t".(defined $l->{$_}->{market_type} ? $l->{$_}->{market_type} : 'financial')."\n"
     for (sort keys %$l);
 print $psql "\\.\n";
 
 
 print $psql <<'EOF';
-INSERT INTO bet.market AS m(symbol, market, submarket)
-SELECT symbol, market, submarket FROM tt
+INSERT INTO bet.market AS m(symbol, market, submarket, market_type)
+SELECT symbol, market, submarket, market_type FROM tt
     ON CONFLICT(symbol) DO UPDATE
-   SET market=EXCLUDED.market, submarket=EXCLUDED.submarket
+   SET market=EXCLUDED.market, submarket=EXCLUDED.submarket, market_type=EXCLUDED.market_type
  WHERE m.market IS DISTINCT FROM EXCLUDED.market
     OR m.submarket IS DISTINCT FROM EXCLUDED.submarket
+    OR m.market_type IS DISTINCT FROM EXCLUDED.market_type
 RETURNING *;
 EOF
