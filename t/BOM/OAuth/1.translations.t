@@ -61,40 +61,29 @@ $t = $t->get_ok("/authorize?app_id=$app_id")->content_like(qr/login/);
 my $csrf_token = $t->tx->res->dom->at('input[name=csrf_token]')->val;
 ok $csrf_token, 'csrf_token is there';
 
-$t = callPost($t, "", $password, $csrf_token, "ES");
-$t = $t->content_like(qr/No nos ha facilitado su email./, "no email ES");
-$t = callPost($t, "", $password, $csrf_token, "PT");
-$t = $t->content_like(qr/E-mail não fornecido./, "no email PT");
+$t = callPost($t, "", $password, $csrf_token, "ID");
+$t = $t->content_like(qr/Email belum diberikan./, "no email ID");
 
-$t = callPost($t, $email, "", $csrf_token, "ES");
-$t = $t->content_like(qr/No se ha escrito ninguna contraseña./, "no password ES");
-$t = callPost($t, $email, "", $csrf_token, "PT");
-$t = $t->content_like(qr/Senha não dada./, "no password PT");
+$t = callPost($t, $email, "", $csrf_token, "ID");
+$t = $t->content_like(qr/Kata sandi tidak diberikan./, "no password ID");
 
-$t = callPost($t, $email . "invalid", $password, $csrf_token, "ES");
-$t = $t->content_like(qr/Contraseña o email incorrecto./, "invalid login or password iES");
-$t = callPost($t, $email . "invalid", $password, $csrf_token, "PT");
-$t = $t->content_like(qr/E-mail ou senha incorreta./, "invalid login or password PT");
+$t = callPost($t, $email . "invalid", $password, $csrf_token, "ID");
+$t = $t->content_like(qr/Email atau kata sandi salah. Mohon periksa apakah Anda sebelumnya mengakses melalui jejaring sosial./,
+    "invalid login or password iID");
 
 $user->update_has_social_signup(1);
 
-$t = callPost($t, $email, $password, $csrf_token, "ES");
-$t = $t->content_like(qr/Intento de inicio de sesión inválido. Conéctese a través de una red social en su lugar./, "invalid social login ES");
-$t = callPost($t, $email, $password, $csrf_token, "PT");
-$t = $t->content_like(qr/Tentativa de login inválida. Conecte-se antes através de uma rede./, "invalid social login PT");
+$t = callPost($t, $email, $password, $csrf_token, "ID");
+$t = $t->content_like(qr/Email atau kata sandi salah. Mohon periksa apakah Anda sebelumnya mengakses melalui jejaring sosial./,
+    "invalid social login ID");
 
 $user->update_has_social_signup(0);
 
 BOM::Config::Runtime->instance->app_config->system->suspend->all_logins(1);
 
-$t = callPost($t, $email, $password, $csrf_token, "ES");
-$t = $t->content_like(
-    qr/El acceso a esta cuenta está temporalmente desactivado por cuestiones de mantenimiento.  Inténtelo nuevamente dentro de 30 minutos./,
-    "temp disabled ES");
-$t = callPost($t, $email, $password, $csrf_token, "PT");
-$t = $t->content_like(
-    qr/Os acessos às contas estão temporariamente suspensos devido à manutenção do sistema. Por favor, tente novamente em 30 minutos./,
-    "temp disabled PT");
+$t = callPost($t, $email, $password, $csrf_token, "ID");
+$t = $t->content_like(qr/Maaf, Transfer Agen Pembayaran dihentikan untuk sementara berhubung perbaikan sistem. Silahkan coba kembali 30 menit lagi./,
+    "temp disabled ID");
 
 BOM::Config::Runtime->instance->app_config->system->suspend->all_logins(0);
 
@@ -123,11 +112,11 @@ $mocked_stuffer->mock(
         $mocked_stuffer->original('send_or_die')->($self, @_);
     });
 
-$t = callPost($t, $email, $password, $csrf_token, "ES");
+$t = callPost($t, $email, $password, $csrf_token, "ID");
 my @deliveries = $transport->deliveries;
 my $semail     = $deliveries[-1]{email};
-like($semail->get_header('Subject'), qr/Nueva Actividad de Inicio de Sesión Detectada/, "email subject ES validation");
-like($semail->get_body, qr/$email|ES/i, "email ES validation");
+like($semail->get_header('Subject'), qr/Aktivitas Pengaksesan Baru Terdeteksi/, "email subject ID validation");
+like($semail->get_body, qr/$email|ID/i, "email ID validation");
 
 done_testing();
 
