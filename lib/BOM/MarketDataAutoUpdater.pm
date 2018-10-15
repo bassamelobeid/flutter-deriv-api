@@ -33,8 +33,6 @@ sub run {
         $vol_email_frequency = time;
     }
 
-    return if time - $vol_email_frequency <= MIN_TIME_BETWEEN_EMAILS;    #too early to send email for this market
-
     my $report    = $self->report;
     my @successes = ('SUCCESSES');
     my @failures  = ('FAILURES');
@@ -51,6 +49,10 @@ sub run {
             }
         }
     }
+
+    # we want to send email whenever there's update to any symbols or after an hour.
+    return if (scalar(@successes) == 1 or time - $vol_email_frequency < MIN_TIME_BETWEEN_EMAILS);
+
     my $number_failures = scalar @failures - 1;
     my $number_errors   = scalar @errors - 1;
 
