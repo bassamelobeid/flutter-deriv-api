@@ -582,7 +582,10 @@ subtest 'deposit' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_no_error('no error for mt5_deposit');
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
-
+    subtest record_mt5_transfer_deposit => sub {
+        my $mt5_transfer = _get_mt5transfer_from_transaction($test_client->db->dbic, $c->result->{binary_transaction_id});
+        is($mt5_transfer->{mt5_amount}, -180, 'Correct amount recorded');
+    };
     # assert that account balance is now 1000-180 = 820
     cmp_ok $test_client->default_account->balance, '==', 820, "Correct balance after deposited to mt5 account";
 
@@ -679,6 +682,11 @@ subtest 'withdrawal' => sub {
 
     cmp_ok $test_client->default_account->balance, '==', 820 + 150, "Correct balance after withdrawal";
 
+    subtest record_mt5_transfer_withdrawal => sub {
+        my $mt5_transfer = _get_mt5transfer_from_transaction($test_client->db->dbic, $c->result->{binary_transaction_id});
+
+        is($mt5_transfer->{mt5_amount}, 150, 'Correct amount recorded');
+    };
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
     $runtime_system->suspend->mt5_withdrawals(1);
@@ -819,10 +827,20 @@ subtest 'multi currency transfers' => sub {
     $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit EUR->USD with current rate - no error');
     ok(defined $c->result->{binary_transaction_id}, 'deposit EUR->USD with current rate - has transaction id');
 
+    subtest multicurrency_mt5_transfer_deposit => sub {
+        my $mt5_transfer = _get_mt5transfer_from_transaction($test_client->db->dbic, $c->result->{binary_transaction_id});
+        # (100Eur  * 1%(fee)) * 1.1(Exchange Rate) = 108.9
+        is($mt5_transfer->{mt5_amount}, -108.9, 'Correct amount recorded');
+    };
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->EUR with current rate - no error');
     ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->EUR with current rate - has transaction id');
 
+    subtest multicurrency_mt5_transfer_withdrawal => sub {
+        my $mt5_transfer = _get_mt5transfer_from_transaction($test_client->db->dbic, $c->result->{binary_transaction_id});
+
+        is($mt5_transfer->{mt5_amount}, 100, 'Correct amount recorded');
+    };
     $redis->hmset(
         'exchange_rates::EUR_USD',
         quote => 1.1,
@@ -896,4 +914,18 @@ subtest 'multi currency transfers' => sub {
 
 };
 
+sub _get_mt5transfer_from_transaction {
+    my ($dbic, $transaction_id) = @_;
+
+    my $result = $dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref(
+                "Select mt.* FROM payment.mt5_transfer mt JOIN transaction.transaction tt
+                ON mt.payment_id = tt.payment_id where tt.id = ?",
+                undef,
+                $transaction_id,
+            );
+        });
+    return $result;
+}
 done_testing();

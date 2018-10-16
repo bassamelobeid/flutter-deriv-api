@@ -1074,9 +1074,9 @@ async_rpc mt5_deposit => sub {
                         }));
             }
 
-            my $fees          = $response->{fees};
-            my $fees_currency = $response->{fees_currency};
-
+            my $fees              = $response->{fees};
+            my $fees_currency     = $response->{fees_currency};
+            my $mt5_currency_code = $response->{mt5_currency_code};
             my ($account, $payment, $txn, $comment, $error);
             try {
                 $comment = "Transfer from $fm_loginid to MT5 account $to_mt5.";
@@ -1091,6 +1091,7 @@ async_rpc mt5_deposit => sub {
                     status               => 'OK',
                     staff_loginid        => $fm_loginid,
                     remark               => $comment,
+                    transfer_fees        => $fees
                 });
                 ($txn) = $payment->add_transaction({
                     account_id    => $account->id,
@@ -1102,6 +1103,8 @@ async_rpc mt5_deposit => sub {
                     source        => $source,
                 });
                 $payment->save(cascade => 1);
+
+                _record_mt5_transfer($fm_client->db->dbic, $payment->id, -$response->{mt5_amount}, $to_mt5, $response->{mt5_currency_code});
             }
             catch {
                 $error = BOM::Transaction->format_error(err => $_);
@@ -1178,9 +1181,11 @@ async_rpc mt5_withdrawal => sub {
                 $to_client_db->unfreeze;
             };
 
-            my $fees          = $response->{fees};
-            my $fees_currency = $response->{fees_currency};
-            my $mt5_amount    = $response->{mt5_amount};
+            my $fees                    = $response->{fees};
+            my $fees_currency           = $response->{fees_currency};
+            my $fees_in_client_currency = $response->{fees_in_client_currency};
+            my $mt5_amount              = $response->{mt5_amount};
+            my $mt5_currency_code       = $response->{mt5_currency_code};
 
             my $comment = "Transfer from MT5 account $fm_mt5 to $to_loginid.";
             $comment .=
@@ -1211,6 +1216,7 @@ async_rpc mt5_withdrawal => sub {
                             status               => 'OK',
                             staff_loginid        => $to_loginid,
                             remark               => $comment,
+                            transfer_fees        => $fees_in_client_currency
                         });
                         my ($txn) = $payment->add_transaction({
                             account_id    => $account->id,
@@ -1222,7 +1228,7 @@ async_rpc mt5_withdrawal => sub {
                             source        => $source,
                         });
                         $payment->save(cascade => 1);
-
+                        _record_mt5_transfer($to_client->db->dbic, $payment->id, $amount, $fm_mt5, $mt5_currency_code);
                         return Future->done({
                             status                => 1,
                             binary_transaction_id => $txn->id
@@ -1456,9 +1462,9 @@ sub _mt5_validate_and_get_amount {
             # between currencies - we do not apply for USD -> USD transfers for example.
             my $mt5_amount = undef;
             my ($min, $max) = (1, 20000);
-            my $source_currency = $client_currency;
-            my $fees            = 0;
-
+            my $source_currency         = $client_currency;
+            my $fees                    = 0;
+            my $fees_in_client_currency = 0;                  #when a withdrawal is done record the fee in the local amount
             if ($client_currency eq $mt5_currency) {
                 $mt5_amount = $amount;
             } else {
@@ -1486,7 +1492,8 @@ sub _mt5_validate_and_get_amount {
                         $mt5_amount =
                             financialrounding('amount', $client_currency,
                             convert_currency(($amount - $fees), $mt5_currency, $client_currency, $rate_expiry));
-
+                        $fees_in_client_currency =
+                            financialrounding('amount', $client_currency, convert_currency($fees, $mt5_currency, $client_currency, $rate_expiry));
                         $source_currency = $mt5_currency;
                     }
                     catch {
@@ -1508,9 +1515,11 @@ sub _mt5_validate_and_get_amount {
                 if $amount > financialrounding('amount', $source_currency, $max);
 
             return Future->done({
-                mt5_amount    => $mt5_amount,
-                fees          => $fees,
-                fees_currency => $source_currency
+                mt5_amount              => $mt5_amount,
+                fees                    => $fees,
+                fees_currency           => $source_currency,
+                fees_in_client_currency => $fees_in_client_currency,
+                mt5_currency_code       => $mt5_currency
             });
         });
 }
@@ -1547,6 +1556,40 @@ sub _notify_for_locked_mt5 {
     catch {
         warn "Failed to notify cs team about MT5 locked account MT$mt5_login";
     };
+    return 1;
+}
+
+=head2 _record_mt5_transfer 
+
+Writes an entry into the mt5_transfer table
+Takes the following arguments as named parameters
+
+=over 4
+
+=item * DBIC  Database handle
+=item * payment_id Primary key of the payment table entry
+=item * mt5_amount   Amount sent to MT5 in the MT5 currency
+=item * mt5_account_id the clients MT5 account id
+=item * mt5_currency_code  Currency Code of the lcients MT5 account.
+
+=back 
+
+Returns 1
+
+=cut
+
+sub _record_mt5_transfer {
+    my ($dbic, $payment_id, $mt5_amount, $mt5_account_id, $mt5_currency_code) = @_;
+
+    $dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare(
+                'INSERT INTO payment.mt5_transfer 
+            (payment_id, mt5_amount, mt5_account_id, mt5_currency_code)
+            VALUES (?,?,?,?)'
+            );
+            $sth->execute($payment_id, $mt5_amount, $mt5_account_id, $mt5_currency_code);
+        });
     return 1;
 }
 
