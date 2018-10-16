@@ -345,8 +345,11 @@ sub payment_account_transfer {
         try {
             $result = $dbic->run(
                 fixup => sub {
-                    $_->selectrow_hashref("SELECT amount_from_to_currency as amount FROM payment.amount_from_to_currency(?,?,?)",
-                        undef, $amount, $from_curr, $to_curr);
+                    $_->selectrow_hashref(
+                        "SELECT amount_from_to_currency as amount FROM payment.amount_from_to_currency(?,?,?)",
+                        undef, ($amount - $fees),
+                        $from_curr, $to_curr
+                    );
                 });
             $to_amount = $result->{amount};
         }
@@ -365,6 +368,7 @@ sub payment_account_transfer {
         status               => 'OK',
         staff_loginid        => $fmStaff,
         remark               => $fmRemark,
+        transfer_fees        => $fees
     });
     my ($fmTrx) = $fmPayment->add_transaction({
         account_id    => $fmAccount->id,
