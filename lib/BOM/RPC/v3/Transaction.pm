@@ -40,7 +40,8 @@ sub trade_copiers {
             trader_id  => $params->{client}->loginid,
             trade_type => $params->{contract}{bet_type},
             asset      => $params->{contract}->underlying->symbol,
-            price      => ($params->{price} || undef),
+            # copier's min/max price condition is ignored for sell
+            price => $params->{action} eq 'buy' && $params->{price} ? $params->{price} : undef,
         });
 
     return unless $copiers && ref $copiers eq 'ARRAY' && scalar @$copiers;
@@ -50,15 +51,16 @@ sub trade_copiers {
     my $trx = BOM::Transaction->new({
         client   => $params->{client},
         multiple => \@multiple,
-        contract => $params->{contract},
-        price    => ($params->{price} || 0),
-        source   => $params->{source},
+        $params->{action} eq 'buy' ? (contract => $params->{contract}) : (contract_parameters => $params->{contract_parameters}),
+        price => ($params->{price} || 0),
+        source => $params->{source},
         (defined $params->{payout})      ? (payout      => $params->{payout})      : (),
         (defined $params->{amount_type}) ? (amount_type => $params->{amount_type}) : (),
         purchase_date => $params->{purchase_date},
     });
 
-    $params->{action} eq 'buy' ? $trx->batch_buy : $trx->sell_by_shortcode;
+    my $err = $params->{action} eq 'buy' ? $trx->batch_buy : $trx->sell_by_shortcode;
+    die $err->get_type . " - $err->{-message_to_client}: $err->{-mesg}" if $err;
 
     return 1;
 }
@@ -200,18 +202,19 @@ rpc buy => sub {
 
     try {
         trade_copiers({
-                action        => 'buy',
-                client        => $client,
-                contract      => $trx->contract,
-                price         => $price,
-                payout        => $payout,
-                amount_type   => $amount_type,
-                purchase_date => $purchase_date,
-                source        => $source
+                action              => 'buy',
+                client              => $client,
+                contract_parameters => $contract_parameters,
+                contract            => $trx->contract,
+                price               => $price,
+                payout              => $payout,
+                amount_type         => $amount_type,
+                purchase_date       => $purchase_date,
+                source              => $source
             }) if $client->allow_copiers;
     }
     catch {
-        warn "Copiers trade error: " . $_;
+        warn "Copiers trade buy error: " . $_;
     };
 
     # to subscribe to this contract after buy, we need to have the same information that we pass to
@@ -517,16 +520,17 @@ rpc sell => sub {
 
     try {
         trade_copiers({
-                action        => 'sell',
-                client        => $client,
-                contract      => $trx->contract,
-                price         => $args->{price},
-                source        => $source,
-                purchase_date => $purchase_date,
+                action              => 'sell',
+                client              => $client,
+                contract_parameters => $contract_parameters,
+                contract            => $trx->contract,
+                price               => $args->{price},
+                source              => $source,
+                purchase_date       => $purchase_date,
             }) if $client->allow_copiers;
     }
     catch {
-        warn "Copiers trade error: " . $_;
+        warn "Copiers trade sell error: " . $_;
     };
 
     my $trx_rec = $trx->transaction_record;
