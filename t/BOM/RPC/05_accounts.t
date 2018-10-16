@@ -449,6 +449,72 @@ subtest $method => sub {
 
 };
 
+$method = 'account_statistics';
+subtest $method => sub {
+
+    is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
+    is(
+        $c->tcall(
+            $method,
+            {
+                token => undef,
+            }
+            )->{error}{message_to_client},
+        'The token is invalid.',
+        'invalid token error if token undef'
+    );
+    is(
+        $c->tcall(
+            $method,
+            {
+                token => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        'This account is unavailable.',
+        'check authorization'
+    );
+
+    my $res = $c->tcall($method, {token => $token_with_txn});
+    ok($res->{total_deposits} eq '1000.00', 'test_client2 has deposit of 1000.00');
+    ok($res->{total_withdrawals} eq '0.00', 'test_client2 has withdrawals of 0.00');
+    ok($res->{currency} eq 'USD',           'currency is USD');
+
+    $test_client2->payment_free_gift(
+        currency => 'USD',
+        amount   => -200,
+        remark   => 'not so free gift',
+    );
+
+    $test_client2->payment_free_gift(
+        currency => 'USD',
+        amount   => 2000,
+        remark   => 'free gift',
+    );
+
+    $res = $c->tcall($method, {token => $token_with_txn});
+    ok($res->{total_deposits} eq '3000.00',   'total_deposits is 3000.00');
+    ok($res->{total_withdrawals} eq '200.00', 'total_withdrawals is 200.00');
+    ok($res->{currency} eq 'USD',             'currency is USD');
+
+    $test_client2->payment_free_gift(
+        currency => 'USD',
+        amount   => -1800,
+        remark   => 'not so free gift',
+    );
+
+    $res = $c->tcall($method, {token => $token_with_txn});
+    ok($res->{total_deposits} eq '3000.00',    'total_deposits is 3000.00');
+    ok($res->{total_withdrawals} eq '2000.00', 'total_withdrawals is 2000.00');
+    ok($res->{currency} eq 'USD',              'currency is USD');
+
+    # token_cr_2 client does not have a default account, so the currency contain nothing
+    $res = $c->tcall($method, {token => $token_cr_2});
+    ok($res->{total_deposits} eq '0.00',    'total_deposits is 0.00');
+    ok($res->{total_withdrawals} eq '0.00', 'total_withdrawals is 0.00');
+    ok($res->{currency} eq '',              'currency is undef');
+
+};
+
 # profit_table
 $method = 'profit_table';
 subtest $method => sub {

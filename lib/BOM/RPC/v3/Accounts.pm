@@ -358,6 +358,52 @@ rpc statement => sub {
     };
 };
 
+rpc account_statistics => sub {
+    my $params = shift;
+
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    if ($app_config->system->suspend->expensive_api_calls) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'SuspendedDueToLoad',
+                message_to_client => localize(
+                    'The system is currently under heavy load, and this call has been suspended temporarily. Please try again in a few minutes.')});
+    }
+
+    my $client = $params->{client};
+    my $args   = $params->{args};
+
+    my $account = $client->account;
+    return {
+        total_deposits    => '0.00',
+        total_withdrawals => '0.00',
+        currency          => '',
+    } unless $account;
+
+    my ($total_deposits, $total_withdrawals);
+    try {
+        ($total_deposits, $total_withdrawals) = $client->db->dbic->run(
+            fixup => sub {
+                my $sth = $_->prepare("SELECT * FROM betonmarkets.get_total_deposits_and_withdrawals(?)");
+                $sth->execute($account->id);
+                return @{$sth->fetchrow_arrayref};
+            });
+    }
+    catch {
+        warn "Error caught : $_\n";
+        return BOM::RPC::v3::Utility::client_error();
+    };
+
+    my $currency_code = $account->currency_code;
+    $total_deposits    = formatnumber('amount', $currency_code, $total_deposits);
+    $total_withdrawals = formatnumber('amount', $currency_code, $total_withdrawals);
+
+    return {
+        total_deposits    => $total_deposits,
+        total_withdrawals => $total_withdrawals,
+        currency          => $currency_code,
+    };
+};
+
 rpc profit_table => sub {
     my $params = shift;
 
