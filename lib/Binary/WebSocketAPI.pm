@@ -220,6 +220,7 @@ sub startup {
         ],
 
         ['statement',          {require_auth => 'read'}],
+        ['account_statistics', {require_auth => 'read'}],
         ['profit_table',       {require_auth => 'read'}],
         ['get_account_status', {require_auth => 'read'}],
         [
