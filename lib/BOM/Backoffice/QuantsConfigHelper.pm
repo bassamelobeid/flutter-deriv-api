@@ -274,18 +274,22 @@ sub get_config_input {
 sub update_market_group {
     my $args = shift;
 
-    unless ($args->{underlying_symbol} and $args->{market_group}) {
-        return {error => 'underlying_symbol and market_group must be defined.'};
+    unless ($args->{underlying_symbol} and $args->{market_group} and $args->{market_type}) {
+        return {error => 'underlying_symbol, market_group and market_type must be defined.'};
     }
 
     # remove all whitespace
-    $args->{$_} =~ s/\s+//g for (grep { $args->{$_} } qw(underlying_symbol market_group submarket_group));
+    $args->{$_} =~ s/\s+//g for (grep { $args->{$_} } qw(underlying_symbol market_group submarket_group market_type));
 
     if ($args->{market_group} and $args->{market_group} =~ /,/) {
         return {error => 'do not allow more than one market_group.'};
     }
 
     if ($args->{submarket_group} and $args->{submarket_group} =~ /,/) {
+        return {error => 'do not allow more than one submarket_group.'};
+    }
+
+    if ($args->{market_type} =~ /,/) {
         return {error => 'do not allow more than one submarket_group.'};
     }
 
@@ -299,8 +303,10 @@ sub update_market_group {
                 $args->{market_group} = $u_config->{market} if $args->{market_group} eq 'default';
                 $dbic->run(
                     fixup => sub {
-                        $_->do(qq{SELECT bet.update_underlying_symbol_group(?,?,?)},
-                            undef, $underlying_symbol, $args->{market_group}, $args->{submarket_group});
+                        $_->do(
+                            qq{SELECT bet.update_underlying_symbol_group(?,?,?,?)},
+                            undef, $underlying_symbol, $args->{market_group}, $args->{submarket_group},
+                            $args->{market_type});
                     },
                 );
 

@@ -36,7 +36,7 @@ if (request()->param('update_contract_group')) {
 }
 
 if (request()->param('update_market_group')) {
-    my %args = map { $_ => request()->param($_) } qw(underlying_symbol market_group submarket_group);
+    my %args = map { $_ => request()->param($_) } qw(underlying_symbol market_group submarket_group market_type);
     print $json->encode(BOM::Backoffice::QuantsConfigHelper::update_market_group(\%args));
 }
 

@@ -20,6 +20,16 @@
         <td> <input type="text" name="submarket_group"></input></td>
     </tr>
     <tr>
+        <td>Market type: </td>
+        <td>
+            <select name='market_type'>
+                <option value='financial'>Financial</option>
+                <option value='non_financial'>Non-financial</option>
+            </select>
+        </td>
+        <td> (required)</td>
+    </tr>
+    <tr>
         <td><button onClick="UpdateMarketGroup()" type="button">Update</button></td><td class="result"></td>
     </tr>
 </table>
@@ -36,6 +46,7 @@
                 underlying_symbol: el.find('input[name="underlying_symbol"]').val(),
                 market_group: el.find('input[name="market_group"]').val(),
                 submarket_group: el.find('input[name="submarket_group"]').val(),
+                market_type: el.find('select[name="market_type"]').val(),
             },
             success: function(data) {
                 var config = \$.parseJSON(data);
