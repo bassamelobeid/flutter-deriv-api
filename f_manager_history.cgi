@@ -109,13 +109,20 @@ my $summary = client_statement_summary({
         before   => $overview_to_date->datetime()});
 
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
+
+my $account = $client->account;
+die BOM::Backoffice::Request::template()->error() unless $account;
+
 my $dbic = $clientdb->db->dbic;
 my ($deposits_to_date, $withdrawals_to_date) = $dbic->run(
     fixup => sub {
-        my $sth = $_->prepare("SELECT * FROM betonmarkets.get_total_deposits_and_withdrawals(?, ?)");
-        $sth->execute($client->loginid, $currency);
+        my $sth = $_->prepare("SELECT * FROM betonmarkets.get_total_deposits_and_withdrawals(?)");
+        $sth->execute($account->id);
         return @{$sth->fetchall_arrayref->[0]};
     });
+
+$deposits_to_date    = formatnumber('amount', $account->currency_code, $deposits_to_date);
+$withdrawals_to_date = formatnumber('amount', $account->currency_code, $withdrawals_to_date);
 
 my $appdb = BOM::Database::Model::OAuth->new();
 my @ids   = map { $_->{source} || () } @{$statement->{transactions}};
