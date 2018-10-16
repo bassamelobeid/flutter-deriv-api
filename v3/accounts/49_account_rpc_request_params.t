@@ -122,6 +122,12 @@ $res = $t->await::statement({
 ok(ref $res->{statement});
 is $call_params->{token}, $token;
 
+$res = $t->await::account_statistics({
+    "account_statistics" => 1,
+});
+ok(ref $res->{account_statistics});
+is $call_params->{token}, $token;
+
 $res = $t->await::profit_table({
     profit_table => 1,
     limit        => 1,

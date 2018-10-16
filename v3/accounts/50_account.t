@@ -143,6 +143,25 @@ ok($statement->{statement});
 is($statement->{statement}->{count}, 5);
 test_schema('statement', $statement);
 
+subtest 'account_statistics' => sub {
+
+    $test_client->payment_free_gift(
+        currency => 'USD',
+        amount   => -15,
+        remark   => 'not so free gift',
+    );
+
+    my $account_stats = $t->await::account_statistics({
+        account_statistics => 1,
+    });
+    ok($account_stats->{account_statistics});
+    is($account_stats->{account_statistics}->{total_deposits},    '1000.00');
+    is($account_stats->{account_statistics}->{total_withdrawals}, '15.00');
+    is($account_stats->{account_statistics}->{currency},          'USD');
+    test_schema('account_statistics', $account_stats);
+
+};
+
 ## balance
 my $balance = $t->await::balance({balance => 1});
 ok($balance->{balance});
