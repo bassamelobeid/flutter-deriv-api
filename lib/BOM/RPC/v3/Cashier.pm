@@ -290,7 +290,9 @@ rpc get_limits => sub {
         open_positions  => $client->get_limit_for_open_positions,
     };
 
-    $limit->{market_specific} = BOM::Platform::RiskProfile::get_current_profile_definitions($client);
+    my $market_specifics = BOM::Platform::RiskProfile::get_current_profile_definitions($client);
+    map { $_->{name} = localize($_->{name}) } map { @$_ } values %$market_specifics;
+    $limit->{market_specific} = $market_specifics;
 
     my $numdays               = $wl_config->{for_days};
     my $numdayslimit          = $wl_config->{limit_for_days};
