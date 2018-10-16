@@ -55,19 +55,36 @@ PrintContentType_excel($csv_name);
 
 my $sql = <<'START' . ($payment_filter ? <<"FILTER" : '') . <<'END';
 
-    select
+    SELECT
         cli.broker_code,
         acc.client_loginid,
         cli.residence,
         p.payment_time,
-        p.payment_gateway_code,
+        CASE WHEN mt5_amount IS NOT NULL 
+            THEN
+                'mt5_transfer'
+            ELSE
+                p.payment_gateway_code
+        END  as payment_gateway_code,
         p.payment_type_code,
         acc.currency_code,
         p.amount,
-        p.remark
+        (COALESCE (pt.amount, pgtp.amount, mt5_amount))* -1 AS transferred_amount,
+        COALESCE ((SELECT ta.currency_code FROM transaction.account ta WHERE  pgtp.account_id = ta.id OR pt.account_id = ta.id),
+         mt5_currency_code) AS currency_code_to,
+         p.transfer_fees ,
+        TRIM(p.remark)
     from transaction.account acc
     join betonmarkets.client cli on acc.client_loginid = cli.loginid
     join payment.payment p on p.account_id = acc.id
+    -- internal transfer
+    LEFT JOIN payment.account_transfer pat ON p.id = pat.payment_id
+    LEFT JOIN payment.payment pt ON pat.corresponding_payment_id = pt.id
+    --payment agent
+    LEFT JOIN payment.payment_agent_transfer pgt ON p.id = pgt.payment_id
+    LEFT JOIN payment.payment pgtp ON pgt.corresponding_payment_id = pgtp.id
+    --mt5
+    LEFT JOIN payment.mt5_transfer mt ON p.id = mt.payment_id
     where
         p.payment_time >= ?   -- b0
     and p.payment_time <  ?   -- b1
@@ -87,12 +104,12 @@ $dbic->run(
         my $sth = $_->prepare($sql);
         $sth->execute(@binds);
 
-        my @headers = qw/Broker Loginid Residence Timestamp PaymentGateway PaymentType Currency Amount Remark/;
+        my @headers =
+            qw/Broker Loginid Residence Timestamp PaymentGateway PaymentType Currency Amount TransferredAmount TransferedCurrency TransferFee Remark/;
 
         my $csv = Text::CSV->new({eol => "\n"});
         $csv->print(\*STDOUT, \@headers);
         while (my $row = $sth->fetchrow_arrayref) {
-            s/\s*$// for @$row;    # removes some nasty trailing white-space in historical affiliate records
             $csv->print(\*STDOUT, $row);
         }
 
