@@ -202,6 +202,33 @@ risk_profile:
           DAI: 100
           UST: 100
           USB: 100
+  moderate_risk:
+      turnover:
+          USD: 5000
+          EUR: 5000
+          AUD: 5000
+          GBP: 5000
+          BTC: 1
+          BCH: 5
+          ETH: 10
+          LTC: 50
+          ETC: 50
+          DAI: 5000
+          UST: 5000
+          USB: 5000
+      payout:
+          USD: 1000
+          EUR: 1000
+          AUD: 1000
+          GBP: 1000
+          BTC: 0.2
+          BCH: 1
+          ETH: 2
+          LTC: 10
+          ETC: 10
+          DAI: 1000
+          UST: 1000
+          USB: 1000
   high_risk:
       turnover:
           USD: 50000
