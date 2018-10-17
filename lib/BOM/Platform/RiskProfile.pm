@@ -25,7 +25,7 @@ use LandingCompany::Registry;
 use BOM::Config::Runtime;
 use BOM::Config;
 
-use constant RISK_PROFILES => [qw(no_business extreme_risk high_risk medium_risk low_risk)];
+use constant RISK_PROFILES => [qw(no_business extreme_risk high_risk moderate_risk medium_risk low_risk)];
 
 my $json = JSON::MaybeXS->new;
 my %risk_profile_rank;
