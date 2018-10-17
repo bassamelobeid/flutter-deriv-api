@@ -298,6 +298,7 @@ rpc statement => sub {
     my $client = $params->{client};
     BOM::RPC::v3::PortfolioManagement::_sell_expired_contracts($client, $params->{source});
 
+    $params->{args}->{limit} //= 100;
     my $transaction_res = get_transaction_history($params);
     return {
         transactions => [],
