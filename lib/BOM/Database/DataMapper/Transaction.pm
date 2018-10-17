@@ -363,7 +363,7 @@ sub get_transactions_ws {
                 ORDER BY t.transaction_time DESC
     };
 
-    my $limit  = $args->{limit}  || 100;
+    my $limit  = $args->{limit};
     my $offset = $args->{offset} || 0;
     my $dt_fm  = $args->{date_from};
     my $dt_to  = $args->{date_to};
