@@ -9,7 +9,7 @@
         <tr>
             <td>Risk Profile: </td>
             <td><input type="text" name="risk_profile"></input></td>
-            <td> e.g. extreme_risk | no_business | high_risk | medium_risk | low_risk (required only for binary option)</td>
+            <td> e.g. extreme_risk | no_business | high_risk | moderate_risk | medium_risk | low_risk (required only for binary option)</td>
         </tr>
         <tr>
             <td>Commission: </td>
