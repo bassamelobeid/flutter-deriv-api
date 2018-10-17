@@ -356,12 +356,12 @@ __PACKAGE__->meta->make_immutable;
 
 ## no critic (Variables::RequireLocalizedPunctuationVars)
 sub import {
-    my (undef, $init) = @_;
+    my (undef, $init, $exclude_bet_market_setup) = @_;
 
     if ($init && $init eq ':init') {
 
         __PACKAGE__->instance->prepare_unit_test_database;
-        setup_bet_market();
+        setup_bet_market() unless $exclude_bet_market_setup;
         require BOM::Test::Data::Utility::UserTestDatabase;
         BOM::Test::Data::Utility::UserTestDatabase->import(':init');
     }
