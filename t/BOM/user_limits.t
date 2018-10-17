@@ -255,7 +255,7 @@ my $new_acc_usd = $new_client->account;
 
 subtest 'buy a bet', sub {
     plan tests => 3;
-    
+
     my $db = BOM::Database::ClientDB->new({broker_code => 'CR'})->db;
 
 # Do the insert and delete here
@@ -263,18 +263,19 @@ subtest 'buy a bet', sub {
             db             => $db,
             client_loginid => $cl->loginid,
             potential_loss => 50,
-            realized_loss  => 50})->record_user_specific_limit;
+            realized_loss  => 50
+        })->record_user_specific_limit;
 
     #lives_ok {
     my $error = do {
         my $contract = produce_contract({
-                underlying => $underlying,
-                bet_type   => 'CALL',
-                currency   => 'USD',
-                payout     => 1000,
-                duration   => '15m',
-                current_tick => $tick,
-                barrier      => 'S0P',
+            underlying   => $underlying,
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 1000,
+            duration     => '15m',
+            current_tick => $tick,
+            barrier      => 'S0P',
         });
 
         my $txn = BOM::Transaction->new({
