@@ -343,6 +343,11 @@ system:
           isa: Bool
           default: 0
           global: 1
+        transfer_between_accounts:
+          description: "Suspend transfer between accounts be it between binary accounts or between binary and MT5 or vice versa"
+          isa: Bool
+          default: 0
+          global: 1
     directory:
       description: "Configuration for system wide directories"
       isa: section

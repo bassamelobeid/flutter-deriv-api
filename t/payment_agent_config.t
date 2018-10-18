@@ -12,7 +12,7 @@ subtest 'General' => sub {
 subtest 'Transfer_limits Specific Currency' => sub {
     my $min_max = BOM::Config::PaymentAgent::get_transfer_min_max('UST');
     is($min_max->{maximum}, 3000, 'Correct Maximum for specific Currency');
-    is($min_max->{minimum}, 3,   'Correct Minimum for specific Currency');
+    is($min_max->{minimum}, 3,    'Correct Minimum for specific Currency');
 };
 subtest 'Transfer_limits Default' => sub {
     my $min_max = BOM::Config::PaymentAgent::get_transfer_min_max('USD');
