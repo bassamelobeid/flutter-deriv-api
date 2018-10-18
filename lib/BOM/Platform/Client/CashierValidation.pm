@@ -16,6 +16,9 @@ use warnings;
 use Date::Utility;
 use Scalar::Util qw(looks_like_number);
 use ExchangeRates::CurrencyConverter qw/convert_currency/;
+use Format::Util::Numbers qw/get_min_unit/;
+use Try::Tiny;
+no indirect;
 
 use Brands;
 use BOM::User::Client;
@@ -179,35 +182,81 @@ sub pre_withdrawal_validation {
     return;
 }
 
+=head2
+
+Calculates transfer amount and fees
+
+Args
+
+=over4
+
+=item * The amount is be transferred (in the currency of the sending account)
+
+=item * The currency of the sending account
+
+=item * The currency of the receiving account
+
+=item * The rate expiry time for the currency pair
+
+=item * A BOM::User::Client instance of the sending client
+Optional: only required to ascertain if client qualifies for PA fee exemption
+
+=item * A BOM::User::Client instance of the receiving client
+Optional: only required to ascertain if client qualifies for PA fee exemption
+
+=back
+
+Returns
+
+=over4
+
+=item * The amount that will be received (in the currency of the receiving account)
+
+=item * The fee charged to the sender (in the currency of the sending account)
+
+=item * The fee percentage applied for transfers between these currencies
+Note: If a minimum fee was enforced then this will not reflect the actual fee charged.
+
+=back
+
+=cut
+
 sub calculate_to_amount_with_fees {
-    my ($fm_client, $to_client, $amount, $from_currency, $to_currency, $rate_expiry) = @_;
+    my ($amount, $from_currency, $to_currency, $rate_expiry, $fm_client, $to_client) = @_;
+    return ($amount, 0, 0) if $from_currency eq $to_currency;
 
-    # need to calculate fees only when currency type are different
-    my ($fees, $fees_percent) = (0, 0);
+    # Fee exemption for transfers between an authorised payment agent account and another account under that user.
+    return (convert_currency($amount, $from_currency, $to_currency, $rate_expiry), 0, 0)
+        if (defined $fm_client
+        && defined $to_client
+        && $fm_client->is_same_user_as($to_client)
+        && ($fm_client->is_pa_and_authenticated() || $to_client->is_pa_and_authenticated()));
 
-    my $from_currency_type = LandingCompany::Registry::get_currency_type($from_currency);
-    my $to_currency_type   = LandingCompany::Registry::get_currency_type($to_currency);
+    my $from_currency_def  = LandingCompany::Registry::get_currency_definition($from_currency);
+    my $to_currency_def    = LandingCompany::Registry::get_currency_definition($to_currency);
+    my $from_currency_type = $from_currency_def->{type};
+    my $to_currency_type   = $to_currency_def->{type};
 
-    # need to calculate fees only when currency type are different
-    # as MF (USD) to MLT (USD) is posssible, we charges zero when that happens
-    if (($from_currency_type ne $to_currency_type) and ($from_currency ne $to_currency)) {
+    my $transfer_type = "$from_currency_type-$to_currency_type";
+    my $transfer_subtype = ($from_currency_def->{stable} || $to_currency_def->{stable}) ? 'stable' : 'default';
 
-        # contains a pa agent account, and has no unauthorized payment agent account and it is the same user
-        if ($fm_client->is_same_user_as($to_client) && ($fm_client->is_pa_and_authenticated() || $to_client->is_pa_and_authenticated())) {
-            # no fees for authenticate payment agent
-            $fees = 0;
-        } else {
-            my $transfer_config = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts;
-            my $landing_company = LandingCompany::Registry::get_currency_type($from_currency);
-            $fees_percent = $transfer_config->fees->$landing_company;
-            $fees = ($amount) * ($fees_percent / 100);
-        }
-
-        $amount -= $fees;
-        $amount = convert_currency($amount, $from_currency, $to_currency, $rate_expiry);
+    my $key = "payments.transfer_between_accounts.fees.$transfer_type.$transfer_subtype";
+    my $fee_percent;
+    try {
+        $fee_percent = BOM::Config::Runtime->instance->app_config->get($key);
     }
+    catch {
+        die 'Transfers between these currencies not supported.';
+    };
 
-    return ($amount, $fees, $fees_percent);
+    my $fee = $amount * $fee_percent / 100;
+
+    my $min_fee = get_min_unit($from_currency);
+    $fee = $min_fee if $fee < $min_fee;
+
+    $amount = convert_currency(($amount - $fee), $from_currency, $to_currency, $rate_expiry);
+
+    return ($amount, $fee, $fee_percent);
 }
 
 sub _withdrawal_validation_period {
