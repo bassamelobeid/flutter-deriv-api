@@ -1462,9 +1462,17 @@ sub _mt5_validate_and_get_amount {
             # between currencies - we do not apply for USD -> USD transfers for example.
             my $mt5_amount = undef;
             my ($min, $max) = (1, 20000);
-            my $source_currency         = $client_currency;
+            my $source_currency = $client_currency;
+
+            my $mt5_currency_type    = LandingCompany::Registry::get_currency_type($mt5_currency);
+            my $source_currency_type = LandingCompany::Registry::get_currency_type($source_currency);
+
+            return _make_error($error_code, localize('Transfer between accounts is currently suspended.'))
+                if BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts
+                and (($source_currency_type // '') ne ($mt5_currency_type // ''));
+
             my $fees                    = 0;
-            my $fees_in_client_currency = 0;                  #when a withdrawal is done record the fee in the local amount
+            my $fees_in_client_currency = 0;    #when a withdrawal is done record the fee in the local amount
             if ($client_currency eq $mt5_currency) {
                 $mt5_amount = $amount;
             } else {

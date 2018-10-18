@@ -1400,6 +1400,10 @@ sub _validate_transfer_between_accounts {
     return _transfer_between_accounts_error(localize('Account transfers are not available for accounts with different currencies.'))
         if (($from_currency_type eq $to_currency_type) and ($from_currency_type eq 'fiat') and ($currency ne $to_currency));
 
+    return _transfer_between_accounts_error(localize('Transfer between accounts is currently suspended.'))
+        if BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts
+        and (($from_currency_type // '') ne ($to_currency_type // ''));
+
     # we don't allow crypto to crypto transfer
     return _transfer_between_accounts_error(localize('Account transfers are not available within accounts with cryptocurrency as default currency.'))
         if (($from_currency_type eq $to_currency_type) and ($from_currency_type eq 'crypto'));
