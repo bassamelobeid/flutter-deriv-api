@@ -193,8 +193,11 @@ sub get_settings_by_group {
         ],
         payments => [qw(
                 payments.payment_limits
-                payments.transfer_between_accounts.fees.fiat
-                payments.transfer_between_accounts.fees.crypto
+                payments.transfer_between_accounts.fees.fiat-crypto.default
+                payments.transfer_between_accounts.fees.fiat-crypto.stable
+                payments.transfer_between_accounts.fees.crypto-fiat.default
+                payments.transfer_between_accounts.fees.crypto-fiat.stable
+                payments.transfer_between_accounts.fees.fiat-fiat.default
                 payments.transfer_between_accounts.amount.fiat.min
                 payments.transfer_between_accounts.amount.crypto.min
                 payments.experimental_currencies_allowed
@@ -294,7 +297,12 @@ sub parse_and_refine_setting {
 sub get_extra_validation {
     my $setting = shift;
     state $setting_validators = {
-        'cgi.terms_conditions_version' => \&validate_tnc_string,
+        'cgi.terms_conditions_version'                                => \&validate_tnc_string,
+        'payments.transfer_between_accounts.fees.fiat-crypto.default' => \&validate_transfer_fee,
+        'payments.transfer_between_accounts.fees.fiat-crypto.stable'  => \&validate_transfer_fee,
+        'payments.transfer_between_accounts.fees.crypto-fiat.default' => \&validate_transfer_fee,
+        'payments.transfer_between_accounts.fees.crypto-fiat.stable'  => \&validate_transfer_fee,
+        'payments.transfer_between_accounts.fees.fiat-fiat.default'   => \&validate_transfer_fee,
     };
 
     return $setting_validators->{$setting};
@@ -323,6 +331,15 @@ sub validate_tnc_string {
     die 'New date is older than previous' if $new_date->is_before(Date::Utility->new($old_date));
 
     # No errors
+    return;
+}
+
+sub validate_transfer_fee {
+    my ($new_string) = @_;
+
+    my ($fee_min, $fee_max) = (0, 7);
+    die "Fee must be between $fee_min% and $fee_max% (inclusive)" if ($new_string < $fee_min || $new_string > $fee_max);
+
     return;
 }
 
