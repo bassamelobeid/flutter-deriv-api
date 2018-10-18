@@ -18,7 +18,7 @@ use BOM::User::Client;
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
+use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates populate_exchange_rates_db/;
 use BOM::Platform::Token;
 use Email::Stuffer::TestLinks;
 use BOM::Config::RedisReplicated;
@@ -50,26 +50,24 @@ my $params = {
 };
 
 my (
-    $email,         $client_vr,     $client_cr,        $cr_dummy,         $client_mlt, $client_mf, $client_cr_usd,
-    $client_cr_btc, $client_cr_eur, $client_cr_pa_usd, $client_cr_pa_btc, $user,       $token
+    $email,         $client_vr,     $client_cr,     $cr_dummy,         $client_mlt,       $client_mf, $client_cr_usd,
+    $client_cr_btc, $client_cr_ust, $client_cr_eur, $client_cr_pa_usd, $client_cr_pa_btc, $user,      $token
 );
 my $method = 'transfer_between_accounts';
 
 my $btc_usd_rate = 4000;
-
-populate_exchange_rates({'BTC' => $btc_usd_rate});
+my $custom_rates = {
+    'BTC' => $btc_usd_rate,
+    'UST' => 1
+};
+populate_exchange_rates($custom_rates);
 
 my $tmp_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
     email       => 'tmp@abcdfef.com'
 });
 
-$tmp_client->db->dbic->run(
-    ping => sub {
-        $_->do(
-            "insert into data_collection.exchange_rate (source_currency, target_currency,date, rate) values('BTC','USD', current_timestamp, '$btc_usd_rate')"
-        );
-    });
+populate_exchange_rates_db($tmp_client->db->dbic, $custom_rates);
 
 subtest 'call params validation' => sub {
     $email = 'dummy' . rand(999) . '@binary.com';
@@ -111,8 +109,8 @@ subtest 'call params validation' => sub {
     is @{$result->{accounts}}, 3, 'if no loginid from or to passed then it returns accounts';
 
     $params->{args} = {
-        "account_from" => $client_cr->loginid,
-        "account_to"   => $client_mlt->loginid,
+        account_from => $client_cr->loginid,
+        account_to   => $client_mlt->loginid,
     };
 
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
@@ -328,10 +326,10 @@ subtest $method => sub {
     subtest 'Validate transfers' => sub {
         $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mlt->loginid, 'test token');
         $params->{args} = {
-            "account_from" => $client_mlt->loginid,
-            "account_to"   => $client_mf->loginid,
-            "currency"     => "EUR",
-            "amount"       => 100
+            account_from => $client_mlt->loginid,
+            account_to   => $client_mf->loginid,
+            currency     => "EUR",
+            amount       => 100
         };
 
         $rpc_ct->call_ok($method, $params)
@@ -389,10 +387,10 @@ subtest $method => sub {
         is $tmp->{balance}, "0.00", 'balance is 0.00 for other account';
 
         $params->{args} = {
-            "account_from" => $client_mlt->loginid,
-            "account_to"   => $client_mf->loginid,
-            "currency"     => "EUR",
-            "amount"       => 10,
+            account_from => $client_mlt->loginid,
+            account_to   => $client_mf->loginid,
+            currency     => "EUR",
+            amount       => 10,
         };
         $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mlt->loginid, 'test token');
         $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
@@ -415,10 +413,10 @@ subtest $method => sub {
         ok $client_mlt->default_account->balance == 2990, '-2000';
 
         $params->{args} = {
-            "account_from" => $client_mlt->loginid,
-            "account_to"   => $client_mf->loginid,
-            "currency"     => "EUR",
-            "amount"       => 110
+            account_from => $client_mlt->loginid,
+            account_to   => $client_mf->loginid,
+            currency     => "EUR",
+            amount       => 110
         };
         my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
         is($result->{error}{message_to_client}, 'The maximum amount you may transfer is: EUR -10.00.', 'error for limit');
@@ -435,6 +433,12 @@ subtest 'transfer with fees' => sub {
     });
 
     $client_cr_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $test_binary_user_id
+    });
+
+    $client_cr_ust = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
         email          => $email,
         binary_user_id => $test_binary_user_id
@@ -471,6 +475,7 @@ subtest 'transfer with fees' => sub {
     $client_cr_usd->set_default_account('USD');
     $client_cr_btc->set_default_account('BTC');
     $client_cr_pa_btc->set_default_account('BTC');
+    $client_cr_ust->set_default_account('UST');
 
     $user = BOM::User->create(
         email          => $email,
@@ -481,6 +486,7 @@ subtest 'transfer with fees' => sub {
     $user->add_client($client_cr_usd);
     $user->add_client($client_cr_btc);
     $user->add_client($client_cr_pa_btc);
+    $user->add_client($client_cr_ust);
 
     $client_cr_pa_btc->save;
 
@@ -500,13 +506,21 @@ subtest 'transfer with fees' => sub {
 
     cmp_ok $client_cr_btc->default_account->balance, '==', 1, 'correct balance';
 
+    $client_cr_ust->payment_free_gift(
+        currency => 'UST',
+        amount   => 1000,
+        remark   => 'free gift',
+    );
+
+    cmp_ok $client_cr_ust->default_account->balance, '==', 1000, 'correct balance';
+
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_usd->loginid, 'test token');
     my $amount = 10;
     $params->{args} = {
-        "account_from" => $client_cr_usd->loginid,
-        "account_to"   => $client_cr_btc->loginid,
-        "currency"     => "USD",
-        "amount"       => $amount
+        account_from => $client_cr_usd->loginid,
+        account_to   => $client_cr_btc->loginid,
+        currency     => "USD",
+        amount       => $amount
     };
 
     my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
@@ -522,10 +536,10 @@ subtest 'transfer with fees' => sub {
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_btc->loginid, 'test token');
     $amount          = 0.1;
     $params->{args}  = {
-        "account_from" => $client_cr_btc->loginid,
-        "account_to"   => $client_cr_usd->loginid,
-        "currency"     => "BTC",
-        "amount"       => $amount
+        account_from => $client_cr_btc->loginid,
+        account_to   => $client_cr_usd->loginid,
+        currency     => "BTC",
+        amount       => $amount
     };
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{client_to_loginid}, $client_cr_usd->loginid, 'Transaction successful';
@@ -539,10 +553,10 @@ subtest 'transfer with fees' => sub {
     $amount = 0.1;
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_pa_btc->loginid, 'test token');
     $params->{args} = {
-        "account_from" => $client_cr_pa_btc->loginid,
-        "account_to"   => $client_cr_usd->loginid,
-        "currency"     => "BTC",
-        "amount"       => $amount
+        account_from => $client_cr_pa_btc->loginid,
+        account_to   => $client_cr_usd->loginid,
+        currency     => "BTC",
+        amount       => $amount
     };
 
     my $previous_amount     = $client_cr_pa_btc->default_account->balance;
@@ -566,10 +580,10 @@ subtest 'transfer with fees' => sub {
     $amount = 100;
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_usd->loginid, 'test token');
     $params->{args} = {
-        "account_from" => $client_cr_usd->loginid,
-        "account_to"   => $client_cr_pa_btc->loginid,
-        "currency"     => "USD",
-        "amount"       => $amount
+        account_from => $client_cr_usd->loginid,
+        account_to   => $client_cr_pa_btc->loginid,
+        currency     => "USD",
+        amount       => $amount
     };
 
     $previous_amount_usd = $client_cr_usd->default_account->balance;
@@ -588,6 +602,76 @@ subtest 'transfer with fees' => sub {
     cmp_ok(($current_balance - 0) - (0 + $previous_amount_btc + $transfer_amount),
         '<=', 0.00000001, 'non-pa to unauthorised pa transfer (USD to BTC) correct balance after transfer including fees');
 
+    subtest 'Correct commission charged for fiat -> stablecoin crypto' => sub {
+        my $previous_amount_usd = $client_cr_usd->account->balance;
+        my $previous_amount_ust = $client_cr_ust->account->balance;
+
+        my $amount                   = 100;
+        my $expected_fee_percent     = 0.5;
+        my $expected_transfer_amount = ($amount - $amount * $expected_fee_percent / 100);
+
+        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_usd->loginid, 'test token');
+        $params->{args} = {
+            account_from => $client_cr_usd->loginid,
+            account_to   => $client_cr_ust->loginid,
+            currency     => "USD",
+            amount       => $amount
+        };
+
+        $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+        is $result->{client_to_loginid}, $client_cr_ust->loginid, 'Transaction successful';
+
+        cmp_ok $client_cr_usd->account->balance, '==', $previous_amount_usd - $amount, 'From account deducted correctly';
+        cmp_ok $client_cr_ust->account->balance, '==', $previous_amount_ust + $expected_transfer_amount, 'To account credited correctly';
+    };
+
+    subtest 'Correct commission charged for stablecoin crypto -> fiat' => sub {
+        my $previous_amount_usd = $client_cr_usd->account->balance;
+        my $previous_amount_ust = $client_cr_ust->account->balance;
+
+        my $amount                   = 100;
+        my $expected_fee_percent     = 0.5;
+        my $expected_transfer_amount = ($amount - $amount * $expected_fee_percent / 100);
+
+        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_ust->loginid, 'test token');
+        $params->{args} = {
+            account_from => $client_cr_ust->loginid,
+            account_to   => $client_cr_usd->loginid,
+            currency     => "UST",
+            amount       => $amount
+        };
+
+        $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+        is $result->{client_to_loginid}, $client_cr_usd->loginid, 'Transaction successful';
+
+        cmp_ok $client_cr_ust->account->balance, '==', $previous_amount_ust - $amount, 'From account deducted correctly';
+        cmp_ok $client_cr_usd->account->balance, '==', $previous_amount_usd + $expected_transfer_amount, 'To account credited correctly';
+
+    };
+
+    subtest 'Minimum commission enforced for stablecoin crypto -> fiat' => sub {
+        my $previous_amount_usd = $client_cr_usd->account->balance;
+        my $previous_amount_ust = $client_cr_ust->account->balance;
+
+        my $amount                   = 1;
+        my $expected_fee_percent     = 1;
+        my $expected_transfer_amount = ($amount - $amount * $expected_fee_percent / 100);
+
+        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_ust->loginid, 'test token');
+        $params->{args} = {
+            account_from => $client_cr_ust->loginid,
+            account_to   => $client_cr_usd->loginid,
+            currency     => "UST",
+            amount       => $amount
+        };
+
+        $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+        is $result->{client_to_loginid}, $client_cr_usd->loginid, 'Transaction successful';
+
+        cmp_ok $client_cr_ust->account->balance, '==', $previous_amount_ust - $amount, 'From account deducted correctly';
+        cmp_ok $client_cr_usd->account->balance, '==', $previous_amount_usd + $expected_transfer_amount, 'To account credited correctly';
+
+    };
 };
 
 subtest 'transfer with no fee' => sub {
@@ -666,10 +750,10 @@ subtest 'transfer with no fee' => sub {
     my $amount = 0.1;
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_pa_btc->loginid, 'test token');
     $params->{args} = {
-        "account_from" => $client_cr_pa_btc->loginid,
-        "account_to"   => $client_cr_usd->loginid,
-        "currency"     => "BTC",
-        "amount"       => $amount
+        account_from => $client_cr_pa_btc->loginid,
+        account_to   => $client_cr_usd->loginid,
+        currency     => "BTC",
+        amount       => $amount
     };
 
     my $previous_to_amt = $client_cr_usd->default_account->balance;
@@ -701,10 +785,10 @@ subtest 'transfer with no fee' => sub {
     $amount = 10;
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_usd->loginid, 'test token');
     $params->{args} = {
-        "account_from" => $client_cr_usd->loginid,
-        "account_to"   => $client_cr_pa_btc->loginid,
-        "currency"     => "USD",
-        "amount"       => $amount
+        account_from => $client_cr_usd->loginid,
+        account_to   => $client_cr_pa_btc->loginid,
+        currency     => "USD",
+        amount       => $amount
     };
 
     $previous_to_amt = $client_cr_pa_btc->default_account->balance;
@@ -738,10 +822,10 @@ subtest 'multi currency transfers' => sub {
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_eur->loginid, 'test token');
     $params->{args} = {
-        "account_from" => $client_cr_eur->loginid,
-        "account_to"   => $client_cr_usd->loginid,
-        "currency"     => "EUR",
-        "amount"       => 10
+        account_from => $client_cr_eur->loginid,
+        account_to   => $client_cr_usd->loginid,
+        currency     => "EUR",
+        amount       => 10
     };
 
     my $result =

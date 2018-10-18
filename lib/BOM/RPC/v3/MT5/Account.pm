@@ -50,9 +50,6 @@ use constant MT5_ACCOUNT_TRADING_ENABLED_RIGHTS_ENUM => qw(
     483 1503 2527 3555
 );
 
-# Fees percentage for deposit and withdrawal within in different currencies
-use constant CONVERSION_FEES_PERCENTAGE => 1;
-
 # Days left to remind MT5 accounts to submit required documents
 use constant REMINDER_DAYS => 5;
 # Days left to send email to disable MT5 accounts
@@ -1076,12 +1073,13 @@ async_rpc mt5_deposit => sub {
 
             my $fees              = $response->{fees};
             my $fees_currency     = $response->{fees_currency};
+            my $fees_percent      = $response->{fees_percent};
             my $mt5_currency_code = $response->{mt5_currency_code};
             my ($account, $payment, $txn, $comment, $error);
             try {
                 $comment = "Transfer from $fm_loginid to MT5 account $to_mt5.";
                 $comment .=
-                    " Includes $fees_currency " . formatnumber('amount', $fees_currency, $fees) . " (" . CONVERSION_FEES_PERCENTAGE . "%) as fees."
+                    " Includes $fees_currency " . formatnumber('amount', $fees_currency, $fees) . " (" . $fees_percent . "%) as transfer fee*."
                     if $fees;
                 $account = $fm_client->set_default_account($fm_client->currency);
                 ($payment) = $account->add_payment({
@@ -1185,11 +1183,11 @@ async_rpc mt5_withdrawal => sub {
             my $fees_currency           = $response->{fees_currency};
             my $fees_in_client_currency = $response->{fees_in_client_currency};
             my $mt5_amount              = $response->{mt5_amount};
+            my $fees_percent            = $response->{fees_percent};
             my $mt5_currency_code       = $response->{mt5_currency_code};
 
             my $comment = "Transfer from MT5 account $fm_mt5 to $to_loginid.";
-            $comment .=
-                " Includes $fees_currency " . formatnumber('amount', $fees_currency, $fees) . " (" . CONVERSION_FEES_PERCENTAGE . "%) as fees."
+            $comment .= " Includes $fees_currency " . formatnumber('amount', $fees_currency, $fees) . " (" . $fees_percent . "%) as transfer fee*."
                 if $fees;
             # withdraw from MT5 a/c
             return BOM::MT5::User::Async::withdrawal({
@@ -1458,8 +1456,7 @@ sub _mt5_validate_and_get_amount {
             my $mt5_currency = $setting->{currency};
 
             # Actual USD or EUR amount that will be deposited into the MT5 account.
-            # We have a fixed 1% fees on all conversions, but this is only ever applied when converting
-            # between currencies - we do not apply for USD -> USD transfers for example.
+            # We have a currency conversion fees when transferring between currencies.
             my $mt5_amount = undef;
             my ($min, $max) = (1, 20000);
             my $source_currency = $client_currency;
@@ -1472,6 +1469,7 @@ sub _mt5_validate_and_get_amount {
                 and (($source_currency_type // '') ne ($mt5_currency_type // ''));
 
             my $fees                    = 0;
+            my $fees_percent            = 0;
             my $fees_in_client_currency = 0;    #when a withdrawal is done record the fee in the local amount
             if ($client_currency eq $mt5_currency) {
                 $mt5_amount = $amount;
@@ -1482,10 +1480,10 @@ sub _mt5_validate_and_get_amount {
                         $min = convert_currency(1,     'USD', $client_currency);
                         $max = convert_currency(20000, 'USD', $client_currency);
 
-                        $fees = $amount * (CONVERSION_FEES_PERCENTAGE / 100);
-                        $mt5_amount =
-                            financialrounding('amount', $mt5_currency,
-                            convert_currency(($amount - $fees), $client_currency, $mt5_currency, $rate_expiry));
+                        ($mt5_amount, $fees, $fees_percent) =
+                            BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $client_currency, $mt5_currency,
+                            $rate_expiry);
+                        $mt5_amount = financialrounding('amount', $mt5_currency, $mt5_amount);
                     }
                     catch {
                         # usually we get here when convert_currency() fails to find a rate within $rate_expiry
@@ -1496,10 +1494,10 @@ sub _mt5_validate_and_get_amount {
                         $min = convert_currency(1,     'USD', $mt5_currency);
                         $max = convert_currency(20000, 'USD', $mt5_currency);
 
-                        $fees = $amount * (CONVERSION_FEES_PERCENTAGE / 100);
-                        $mt5_amount =
-                            financialrounding('amount', $client_currency,
-                            convert_currency(($amount - $fees), $mt5_currency, $client_currency, $rate_expiry));
+                        ($mt5_amount, $fees, $fees_percent) =
+                            BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $mt5_currency, $client_currency,
+                            $rate_expiry);
+                        $mt5_amount = financialrounding('amount', $client_currency, $mt5_amount);
                         $fees_in_client_currency =
                             financialrounding('amount', $client_currency, convert_currency($fees, $mt5_currency, $client_currency, $rate_expiry));
                         $source_currency = $mt5_currency;
@@ -1526,6 +1524,7 @@ sub _mt5_validate_and_get_amount {
                 mt5_amount              => $mt5_amount,
                 fees                    => $fees,
                 fees_currency           => $source_currency,
+                fees_percent            => $fees_percent,
                 fees_in_client_currency => $fees_in_client_currency,
                 mt5_currency_code       => $mt5_currency
             });

@@ -400,7 +400,7 @@ sub get_available_currencies {
     my $has_fiat = any { (LandingCompany::Registry::get_currency_type($_) // '') eq 'fiat' } @client_currencies;
 
     if ($has_fiat) {
-        @available_currencies = grep { $legal_allowed_currencies->{$_} ne 'fiat' } @available_currencies;
+        @available_currencies = grep { $legal_allowed_currencies->{$_}->{type} ne 'fiat' } @available_currencies;
     }
 
     # Filter out the cryptocurrencies used by client
@@ -605,7 +605,7 @@ sub _is_currency_allowed {
     $result->{message} = localize('Please note that the selected currency is allowed for limited accounts only');
 
     return $result
-        if (LandingCompany::Registry::is_currency_experimental($currency)
+        if (LandingCompany::Registry::get_currency_definition($currency)->{experimental}
         and not any { $_ eq $client_email } @$allowed_emails);
 
     $result->{allowed} = 1;

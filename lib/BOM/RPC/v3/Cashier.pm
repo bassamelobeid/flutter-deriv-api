@@ -1138,8 +1138,8 @@ rpc transfer_between_accounts => sub {
     my ($to_amount, $fees, $fees_percent);
     try {
         ($to_amount, $fees, $fees_percent) =
-            BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($client_from, $client_to, $amount, $from_currency, $to_currency,
-            $rate_expiry);
+            BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $from_currency, $to_currency, $rate_expiry,
+            $client_from, $client_to);
     }
     catch {
         $err = $_;
@@ -1227,7 +1227,7 @@ rpc transfer_between_accounts => sub {
     try {
         my $remark = 'Account transfer from ' . $loginid_from . ' to ' . $loginid_to . '.';
         if ($fees) {
-            $remark .= " Includes $currency " . formatnumber('amount', $currency, $fees) . " ($fees_percent%) as fees.";
+            $remark .= " Includes $currency " . formatnumber('amount', $currency, $fees) . ' (' . $fees_percent . '%) as transfer fee*.';
         }
         $response = $client_from->payment_account_transfer(
             currency          => $currency,

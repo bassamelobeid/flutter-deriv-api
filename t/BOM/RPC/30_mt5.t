@@ -9,6 +9,7 @@ use JSON::MaybeUTF8;
 use List::Util qw();
 use Email::Address::UseXS;
 use Email::Folder::Search;
+use Format::Util::Numbers qw/financialrounding/;
 
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -790,12 +791,21 @@ subtest 'mf_deposit' => sub {
 subtest 'multi currency transfers' => sub {
     my $client_eur = create_client('CR');
     my $client_btc = create_client('CR');
+    my $client_ust = create_client('CR');
     $client_eur->set_default_account('EUR');
     $client_btc->set_default_account('BTC');
+    $client_ust->set_default_account('UST');
     top_up $client_eur, EUR => 1000;
     top_up $client_btc, BTC => 1;
+    top_up $client_ust, UST => 1000;
     $user->add_client($client_eur);
     $user->add_client($client_btc);
+    $user->add_client($client_ust);
+
+    my $eur_test_amount = 100;
+    my $btc_test_amount = 0.1;
+    my $ust_test_amount = 100;
+    my $usd_test_amount = 100;
 
     my $deposit_params = {
         language => 'EN',
@@ -803,7 +813,7 @@ subtest 'multi currency transfers' => sub {
         args     => {
             from_binary => $client_eur->loginid,
             to_mt5      => $DETAILS{login},
-            amount      => 100,
+            amount      => $eur_test_amount,
         },
     };
 
@@ -813,105 +823,215 @@ subtest 'multi currency transfers' => sub {
         args     => {
             from_mt5  => $DETAILS{login},
             to_binary => $client_eur->loginid,
-            amount    => 100,
+            amount    => $usd_test_amount,
         },
     };
 
-    $redis->hmset(
-        'exchange_rates::EUR_USD',
-        quote => 1.1,
-        epoch => time
-    );
+    my $prev_bal;
+    my ($EUR_USD, $BTC_USD, $UST_USD) = (1.1, 5000, 1);
+    my $after_default_fee = 1 - 0.01;
+    my $after_stable_fee  = 1 - 0.005;
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-    $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit EUR->USD with current rate - no error');
-    ok(defined $c->result->{binary_transaction_id}, 'deposit EUR->USD with current rate - has transaction id');
+    subtest 'EUR tests' => sub {
 
-    subtest multicurrency_mt5_transfer_deposit => sub {
-        my $mt5_transfer = _get_mt5transfer_from_transaction($test_client->db->dbic, $c->result->{binary_transaction_id});
-        # (100Eur  * 1%(fee)) * 1.1(Exchange Rate) = 108.9
-        is($mt5_transfer->{mt5_amount}, -108.9, 'Correct amount recorded');
+        $manager_module->mock(
+            'deposit',
+            sub {
+                is financialrounding('amount', 'USD', shift->{amount}),
+                    financialrounding('amount', 'USD', $eur_test_amount * $EUR_USD * $after_default_fee),
+                    '1% deducted as forex fee for USD<->EUR';
+                return Future->done({success => 1});
+            });
+
+        $redis->hmset(
+            'exchange_rates::EUR_USD',
+            quote => $EUR_USD,
+            epoch => time
+        );
+
+        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+        $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit EUR->USD with current rate - no error');
+        ok(defined $c->result->{binary_transaction_id}, 'deposit EUR->USD with current rate - has transaction id');
+        
+        subtest multicurrency_mt5_transfer_deposit => sub {
+            my $mt5_transfer = _get_mt5transfer_from_transaction($test_client->db->dbic, $c->result->{binary_transaction_id});
+            # (100Eur  * 1%(fee)) * 1.1(Exchange Rate) = 108.9
+            is($mt5_transfer->{mt5_amount}, -108.9, 'Correct amount recorded');
+        };
+
+        $prev_bal = $client_eur->account->balance;
+        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+        $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->EUR with current rate - no error');
+        ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->EUR with current rate - has transaction id');
+        is financialrounding('amount', 'EUR', $client_eur->account->balance),
+            financialrounding('amount', 'EUR', $prev_bal + ($usd_test_amount / $EUR_USD * $after_default_fee)),
+            '1% deducted as forex fee for USD<->EUR';
+            
+        subtest multicurrency_mt5_transfer_withdrawal => sub {
+            my $mt5_transfer = _get_mt5transfer_from_transaction($test_client->db->dbic, $c->result->{binary_transaction_id});
+             is($mt5_transfer->{mt5_amount}, 100, 'Correct amount recorded');
+        };
+
+        $redis->hmset(
+            'exchange_rates::EUR_USD',
+            quote => $EUR_USD,
+            epoch => time - (3600 * 12));
+
+        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+        $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit EUR->USD with 12hr old rate - no error');
+        ok(defined $c->result->{binary_transaction_id}, 'deposit EUR->USD with 12hr old rate - has transaction id');
+
+        $prev_bal = $client_eur->account->balance;
+        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+        $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->EUR with current rate - no error');
+        ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->EUR with 12hr old rate - has transaction id');
+        is financialrounding('amount', 'EUR', $client_eur->account->balance),
+            financialrounding('amount', 'EUR', $prev_bal + ($usd_test_amount / $EUR_USD * $after_default_fee)),
+            '1% deducted as forex fee for USD<->EUR';
+
+        $redis->hmset(
+            'exchange_rates::EUR_USD',
+            quote => $EUR_USD,
+            epoch => time - (3600 * 25));
+
+        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+        $c->call_ok('mt5_deposit', $deposit_params)->has_error('deposit EUR->USD with >1 day old rate - has error')
+            ->error_code_is('MT5DepositError', 'deposit EUR->USD with >1 day old rate - correct error code');
+
+        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+        $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error('withdraw USD->EUR with >1 day old rate - has error')
+            ->error_code_is('MT5WithdrawalError', 'withdraw USD->EUR with >1 day old rate - correct error code');
     };
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-    $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->EUR with current rate - no error');
-    ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->EUR with current rate - has transaction id');
 
-    subtest multicurrency_mt5_transfer_withdrawal => sub {
-        my $mt5_transfer = _get_mt5transfer_from_transaction($test_client->db->dbic, $c->result->{binary_transaction_id});
+    subtest 'BTC tests' => sub {
 
-        is($mt5_transfer->{mt5_amount}, 100, 'Correct amount recorded');
+        $manager_module->mock(
+            'deposit',
+            sub {
+                is financialrounding('amount', 'USD', shift->{amount}),
+                    financialrounding('amount', 'USD', $btc_test_amount * $BTC_USD * $after_default_fee),
+                    '1% deducted as forex fee for USD<->BTC';
+                return Future->done({success => 1});
+            });
+
+        $deposit_params->{args}->{from_binary} = $withdraw_params->{args}->{to_binary} = $client_btc->loginid;
+        $deposit_params->{args}->{amount} = $btc_test_amount;
+
+        $redis->hmset(
+            'exchange_rates::BTC_USD',
+            quote => $BTC_USD,
+            epoch => time
+        );
+
+        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+        $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit BTC->USD with current rate - no error');
+        ok(defined $c->result->{binary_transaction_id}, 'deposit BTC->USD with current rate - has transaction id');
+
+        $prev_bal = $client_btc->account->balance;
+        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+        $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->BTC with current rate - no error');
+        ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->BTC with current rate - has transaction id');
+        is financialrounding('amount', 'BTC', $client_btc->account->balance),
+            financialrounding('amount', 'BTC', $prev_bal + ($usd_test_amount / $BTC_USD * $after_default_fee)),
+            '1% deducted as forex fee for USD<->BTC';
+
+        $redis->hmset(
+            'exchange_rates::BTC_USD',
+            quote => $BTC_USD,
+            epoch => time - 3595
+        );
+
+        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+        $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit BTC->USD with older rate <1 hour - no error');
+        ok(defined $c->result->{binary_transaction_id}, 'deposit BTC->USD with older rate <1 hour - has transaction id');
+
+        $prev_bal = $client_btc->account->balance;
+        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+        $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->BTC with older rate <1 hour - no error');
+        ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->BTC with older rate <1 hour - has transaction id');
+        is financialrounding('amount', 'BTC', $client_btc->account->balance),
+            financialrounding('amount', 'BTC', $prev_bal + ($usd_test_amount / $BTC_USD * $after_default_fee)),
+            '1% deducted as forex fee for USD<->BTC';
+
+        $redis->hmset(
+            'exchange_rates::BTC_USD',
+            quote => $BTC_USD,
+            epoch => time - 3605
+        );
+
+        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+        $c->call_ok('mt5_deposit', $deposit_params)->has_error('deposit BTC->USD with rate >1 hour old - has error')
+            ->error_code_is('MT5DepositError', 'deposit BTC->USD with rate >1 hour old - correct error code');
+
+        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+        $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error('withdraw USD->BTC with rate >1 hour old - has error')
+            ->error_code_is('MT5WithdrawalError', 'withdraw USD->BTC with rate >1 hour old - correct error code');
     };
-    $redis->hmset(
-        'exchange_rates::EUR_USD',
-        quote => 1.1,
-        epoch => time - (3600 * 12));
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-    $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit EUR->USD with 12hr old rate - no error');
-    ok(defined $c->result->{binary_transaction_id}, 'deposit EUR->USD with 12hr old rate - has transaction id');
+    subtest 'UST tests' => sub {
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-    $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->EUR with current rate - no error');
-    ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->EUR with 12hr old rate - has transaction id');
+        $manager_module->mock(
+            'deposit',
+            sub {
+                is financialrounding('amount', 'USD', shift->{amount}),
+                    financialrounding('amount', 'USD', $ust_test_amount * $UST_USD * $after_stable_fee),
+                    '1% deducted as forex fee for USD<->UST';
+                return Future->done({success => 1});
+            });
 
-    $redis->hmset(
-        'exchange_rates::EUR_USD',
-        quote => 1.1,
-        epoch => time - (3600 * 25));
+        $deposit_params->{args}->{from_binary} = $withdraw_params->{args}->{to_binary} = $client_ust->loginid;
+        $deposit_params->{args}->{amount} = $ust_test_amount;
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-    $c->call_ok('mt5_deposit', $deposit_params)->has_error('deposit EUR->USD with >1 day old rate - has error')
-        ->error_code_is('MT5DepositError', 'deposit EUR->USD with >1 day old rate - correct error code');
+        $redis->hmset(
+            'exchange_rates::UST_USD',
+            quote => $UST_USD,
+            epoch => time
+        );
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-    $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error('withdraw USD->EUR with >1 day old rate - has error')
-        ->error_code_is('MT5WithdrawalError', 'withdraw USD->EUR with >1 day old rate - correct error code');
+        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+        $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit UST->USD with current rate - no error');
+        ok(defined $c->result->{binary_transaction_id}, 'deposit UST->USD with current rate - has transaction id');
 
-    $deposit_params->{args}->{from_binary} = $withdraw_params->{args}->{to_binary} = $client_btc->loginid;
-    $deposit_params->{args}->{amount} = 0.1;
+        $prev_bal = $client_ust->account->balance;
+        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+        $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->UST with current rate - no error');
+        ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->UST with current rate - has transaction id');
+        is financialrounding('amount', 'UST', $client_ust->account->balance),
+            financialrounding('amount', 'UST', $prev_bal + ($usd_test_amount / $UST_USD * $after_stable_fee)),
+            '1% deducted as forex fee for USD<->UST';
 
-    $redis->hmset(
-        'exchange_rates::BTC_USD',
-        quote => 5000,
-        epoch => time
-    );
+        $redis->hmset(
+            'exchange_rates::UST_USD',
+            quote => $UST_USD,
+            epoch => time - 3595
+        );
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-    $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit BTC->USD with current rate - no error');
-    ok(defined $c->result->{binary_transaction_id}, 'deposit BTC->USD with current rate - has transaction id');
+        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+        $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit UST->USD with older rate <1 hour - no error');
+        ok(defined $c->result->{binary_transaction_id}, 'deposit UST->USD with older rate <1 hour - has transaction id');
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-    $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->BTC with current rate - no error');
-    ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->BTC with current rate - has transaction id');
+        $prev_bal = $client_ust->account->balance;
+        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+        $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->UST with older rate <1 hour - no error');
+        ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->UST with older rate <1 hour - has transaction id');
+        is financialrounding('amount', 'UST', $client_ust->account->balance),
+            financialrounding('amount', 'UST', $prev_bal + ($usd_test_amount / $UST_USD * $after_stable_fee)),
+            '1% deducted as forex fee for USD<->UST';
 
-    $redis->hmset(
-        'exchange_rates::BTC_USD',
-        quote => 5000,
-        epoch => time - 3595
-    );
+        $redis->hmset(
+            'exchange_rates::UST_USD',
+            quote => $UST_USD,
+            epoch => time - 3605
+        );
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-    $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit BTC->USD with older rate <1 hour - no error');
-    ok(defined $c->result->{binary_transaction_id}, 'deposit BTC->USD with older rate <1 hour - has transaction id');
+        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+        $c->call_ok('mt5_deposit', $deposit_params)->has_error('deposit UST->USD with rate >1 hour old - has error')
+            ->error_code_is('MT5DepositError', 'deposit UST->USD with rate >1 hour old - correct error code');
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-    $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->BTC with older rate <1 hour - no error');
-    ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->BTC with older rate <1 hour - has transaction id');
-
-    $redis->hmset(
-        'exchange_rates::BTC_USD',
-        quote => 5000,
-        epoch => time - 3605
-    );
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-    $c->call_ok('mt5_deposit', $deposit_params)->has_error('deposit BTC->USD with rate >1 hour old - has error')
-        ->error_code_is('MT5DepositError', 'deposit BTC->USD with rate >1 hour old - correct error code');
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-    $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error('withdraw USD->BTC with rate >1 hour old - has error')
-        ->error_code_is('MT5WithdrawalError', 'withdraw USD->BTC with rate >1 hour old - correct error code');
-
+        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+        $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error('withdraw USD->UST with rate >1 hour old - has error')
+            ->error_code_is('MT5WithdrawalError', 'withdraw USD->UST with rate >1 hour old - correct error code');
+    };
 };
 
 sub _get_mt5transfer_from_transaction {
