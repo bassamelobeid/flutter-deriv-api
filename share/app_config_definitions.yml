@@ -87,16 +87,43 @@ payments:
           isa: section
           description: 'Transfer fees for currency conversion'
           contains:
-            fiat:
-              description: 'Fees for transfering from fiat currency to crypto currency in percentage'
-              isa: Num
-              default: 1
-              global: 1
-            crypto:
-              description: 'Fees for transfering from crypto currency to fiat currency in percentage'
-              isa: Num
-              default: 1
-              global: 1
+            fiat-fiat:
+              isa: section
+              description: 'Fiat to fiat transfer fees'
+              contains:
+                default:
+                  description: 'Default fee for transfering between fiat currencies in percentage (currently only for MT5 deposit/withdrawal)'
+                  isa: Num
+                  default: 1
+                  global: 1
+            fiat-crypto:
+              isa: section
+              description: 'Fiat to crypto transfer fees'
+              contains:
+                default:
+                  description: 'Default fee for transfering from fiat currency to a crypto currency in percentage'
+                  isa: Num
+                  default: 1
+                  global: 1
+                stable:
+                  description: 'Fee for transferring from fiat currency to a stablecoin crypto currency in percentage'
+                  isa: Num
+                  default: 0.5
+                  global: 1
+            crypto-fiat:
+              isa: section
+              description: 'Crypto to fiat transfer fees'
+              contains:
+                default:
+                  description: 'Default fee for transfering from crypto currency to fiat currency in percentage'
+                  isa: Num
+                  default: 1
+                  global: 1
+                stable:
+                  description: 'Fee for transferring from a stablecoin crypto currency to fiat currency in percentage'
+                  isa: Num
+                  default: 0.5
+                  global: 1
         amount:
           isa: section
           description: 'Transfer amount limits for currency conversion'
