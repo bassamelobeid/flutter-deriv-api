@@ -1227,7 +1227,7 @@ rpc transfer_between_accounts => sub {
     try {
         my $remark = 'Account transfer from ' . $loginid_from . ' to ' . $loginid_to . '.';
         if ($fees) {
-            $remark .= " Includes $currency " . formatnumber('amount', $currency, $fees) . ' (' . $fees_percent . '%) as transfer fee*.';
+            $remark .= " Includes $currency " . formatnumber('amount', $currency, $fees) . ' (' . $fees_percent . '%) as transfer fee.';
         }
         $response = $client_from->payment_account_transfer(
             currency          => $currency,

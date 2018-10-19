@@ -1079,7 +1079,7 @@ async_rpc mt5_deposit => sub {
             try {
                 $comment = "Transfer from $fm_loginid to MT5 account $to_mt5.";
                 $comment .=
-                    " Includes $fees_currency " . formatnumber('amount', $fees_currency, $fees) . " (" . $fees_percent . "%) as transfer fee*."
+                    " Includes $fees_currency " . formatnumber('amount', $fees_currency, $fees) . " (" . $fees_percent . "%) as transfer fee."
                     if $fees;
                 $account = $fm_client->set_default_account($fm_client->currency);
                 ($payment) = $account->add_payment({
@@ -1187,7 +1187,7 @@ async_rpc mt5_withdrawal => sub {
             my $mt5_currency_code       = $response->{mt5_currency_code};
 
             my $comment = "Transfer from MT5 account $fm_mt5 to $to_loginid.";
-            $comment .= " Includes $fees_currency " . formatnumber('amount', $fees_currency, $fees) . " (" . $fees_percent . "%) as transfer fee*."
+            $comment .= " Includes $fees_currency " . formatnumber('amount', $fees_currency, $fees) . " (" . $fees_percent . "%) as transfer fee."
                 if $fees;
             # withdraw from MT5 a/c
             return BOM::MT5::User::Async::withdrawal({
