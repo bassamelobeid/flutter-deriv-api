@@ -91,10 +91,6 @@ rpc authorize => sub {
     my ($token, $token_details, $client_ip) = @{$params}{qw/token token_details client_ip/};
 
     return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-    # temorary remove ua_fingerptint check
-    #if ($token_details->{ua_fingerprint} && $token_details->{ua_fingerprint} ne $params->{ua_fingerprint}) {
-    #    return BOM::RPC::v3::Utility::invalid_token_error();
-    #}
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidToken',
