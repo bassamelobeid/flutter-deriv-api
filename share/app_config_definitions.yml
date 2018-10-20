@@ -124,23 +124,26 @@ payments:
                   isa: Num
                   default: 0.5
                   global: 1
-        amount:
+        minimum:
           isa: section
-          description: 'Transfer amount limits for currency conversion'
+          description: 'Transfer minimum amount'
           contains:
-            fiat:
+            by_currency:
+              description: 'Minimum amount for individual currencies; example: {"UST":1, "DAI":1, "GBP":1.8}'
+              isa: json_string
+              default: '{"UST":1, "DAI":1}'
+              global: 1
+            default:
               isa: section
+              description: 'Default values'
               contains:
-                min:
-                  description: 'Minimum amount for transfering from fiat currency'
+                fiat:
                   isa: Num
+                  description: 'Default fiat transfer minimum'
                   default: 1
                   global: 1
-            crypto:
-              isa: section
-              contains:
-                min:
-                  description: 'Minimum amount for transfering from crypto currency'
+                crypto:
+                  description: 'Default crypto transfer minimum'
                   isa: Num
                   default: 0.002
                   global: 1
