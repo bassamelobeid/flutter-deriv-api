@@ -18,6 +18,28 @@
                     "type": "number",
                     "minimum": "0",
                     "required": "1"
+                },
+                "limits": {
+                    "type": "object",
+                    "required": "1",
+                    "properties": {
+                        "transfer_between_accounts": {
+                            "type": "object",
+                            "required": "1",
+                            "properties": { 
+                                "min": {
+                                    "type": "number",                                           
+                                    "minimum": "0",                                             
+                                    "required": "1"
+                                }
+                            }
+                        }
+                    }
+                },
+                "transfer_minimum": {
+                    "type": "number",
+                    "minimum": "0",
+                    "required": "1"
                 }
             }
         }
