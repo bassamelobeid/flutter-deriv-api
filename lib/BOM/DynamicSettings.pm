@@ -7,13 +7,18 @@ use Data::Compare;
 use Encode;
 use HTML::Entities;
 use JSON::MaybeXS;
+use JSON::MaybeUTF8;
 use Text::CSV;
 use Try::Tiny;
 use feature 'state';
+use LandingCompany::Registry;
+use Format::Util::Numbers qw/formatnumber/;
 use BOM::Platform::Email qw(send_email);
 use BOM::Config::Runtime;
 use Array::Utils qw(:all);
 use Date::Utility;
+use Scalar::Util;
+use List::Util;
 
 sub textify_obj {
     my $type  = shift;
@@ -52,13 +57,15 @@ sub save_settings {
             SAVESETTING:
             foreach my $s (@settings) {
                 next SAVESETTING unless grep { $s eq $_ } @{$settings_in_group};
-                my ($new_value, $display_value) = parse_and_refine_setting($settings->{$s}, $app_config->get_data_type($s));
-                my $old_value = $app_config->get($s);
-                my $compare = Data::Compare->new($new_value, $old_value);
+                my ($new_value, $display_value);
                 try {
+                    ($new_value, $display_value) = parse_and_refine_setting($settings->{$s}, $app_config->get_data_type($s));
+                    my $old_value = $app_config->get($s);
+                    my $compare = Data::Compare->new($new_value, $old_value);
+
                     if (not $compare->Cmp) {
                         my $extra_validation = get_extra_validation($s);
-                        $extra_validation->($new_value, $old_value) if $extra_validation;
+                        $extra_validation->($new_value, $old_value, $s) if $extra_validation;
                         send_email_notification($new_value, $old_value, $s) if ($s =~ /quants/ and ($s =~ /suspend/ or $s =~ /disabled/));
                         $values_to_set->{$s} = $new_value;
                         $message .= join('', '<div id="saved">Set ', encode_entities($s), ' to ', encode_entities($display_value), '</div>');
@@ -67,8 +74,7 @@ sub save_settings {
                 catch {
                     $message .= join('',
                         '<div id="error">Invalid value, could not set ',
-                        encode_entities($s), ' to ', encode_entities($display_value),
-                        ' because ', encode_entities($_), '</div>');
+                        encode_entities($s), ' to ', $settings->{$s}, ' because ', encode_entities($_), '</div>');
                     $has_errors = 1;
                 };
             }
@@ -158,7 +164,6 @@ sub get_settings_by_group {
                 system.suspend.trading
                 system.suspend.payments
                 system.suspend.payment_agents
-                system.suspend.payment_agents_in_countries
                 system.suspend.cryptocashier
                 system.suspend.cryptocurrencies
                 system.suspend.new_accounts
@@ -198,8 +203,9 @@ sub get_settings_by_group {
                 payments.transfer_between_accounts.fees.crypto-fiat.default
                 payments.transfer_between_accounts.fees.crypto-fiat.stable
                 payments.transfer_between_accounts.fees.fiat-fiat.default
-                payments.transfer_between_accounts.amount.fiat.min
-                payments.transfer_between_accounts.amount.crypto.min
+                payments.transfer_between_accounts.minimum.default.fiat
+                payments.transfer_between_accounts.minimum.default.crypto
+                payments.transfer_between_accounts.minimum.by_currency
                 payments.experimental_currencies_allowed
                 )]};
 
@@ -264,35 +270,31 @@ sub parse_and_refine_setting {
             $display_value = join(', ', @$input_value);
         }
     } elsif ($type eq 'json_string') {
-        my $decoded;
         try {
-            $decoded = JSON::MaybeXS->new->decode($input_value);
+            if (defined $input_value) {
+                my $decoded = JSON::MaybeXS->new->decode($input_value);
+                $input_value = Encode::encode_utf8(
+                    JSON::MaybeXS->new(
+                        pretty    => 1,
+                        canonical => 1,
+                    )->encode($decoded));
+            }
+            $display_value = $input_value;
         }
         catch {
-            warn("Error: decoding of $input_value failed - $_");
-        };
-        if (not defined $input_value or not defined $decoded) {
-            $input_value = '{}';
-        } else {
-            $input_value = Encode::encode_utf8(
-                JSON::MaybeXS->new(
-                    pretty    => 1,
-                    canonical => 1,
-                )->encode($decoded));
+            die 'JSON string is not well-formatted.';
         }
-        $display_value = $input_value;
-    } else {
-        $input_value = defined($input_value) ? $input_value : undef;
+    } elsif ($type eq 'Num') {
+        die "Value '$input_value' is not a valid number." unless Scalar::Util::looks_like_number($input_value);
     }
-
     return ($input_value, $display_value);
-
 }
 
 # This contains functions to do field-specific validation on the dynamic settings
 #   Functions specified should:
-#       - Accept one argument (the value being validated)...
-#       -   and an optional second argument (the old value)
+#       - Accept one argument (the value being validated)
+#       - an optional second argument (the old value)
+#       - an optional third argument (configuration key being validated)
 #       - If there is a problem die with a message describing the issue.
 sub get_extra_validation {
     my $setting = shift;
@@ -303,9 +305,55 @@ sub get_extra_validation {
         'payments.transfer_between_accounts.fees.crypto-fiat.default' => \&validate_transfer_fee,
         'payments.transfer_between_accounts.fees.crypto-fiat.stable'  => \&validate_transfer_fee,
         'payments.transfer_between_accounts.fees.fiat-fiat.default'   => \&validate_transfer_fee,
+        'payments.transfer_between_accounts.minimum.by_currency'      => \&_validate_transfer_min_by_currency,
+        'payments.transfer_between_accounts.minimum.default.fiat'     => \&_validate_transfer_min_default,
+        'payments.transfer_between_accounts.minimum.default.crypto'   => \&_validate_transfer_min_default,
     };
 
     return $setting_validators->{$setting};
+}
+
+=head2 _validate_transfer_min_default
+
+Validates the default minimum transfer amount to be a valid number.
+
+=cut  
+
+sub _validate_transfer_min_default {
+    my $new_string = shift;
+
+    die "Invalid numerical value $new_string" unless Scalar::Util::looks_like_number($new_string);
+
+    return 1;
+}
+
+=head2 _validate_transfer_min_by_currency
+
+Validates json string containing the minimum transfer amount per currency. 
+It validates currency codes (hash keys) to be supported within the system; also
+validates the minimum values to be well-frmatted for displaying.
+
+=cut
+
+sub _validate_transfer_min_by_currency {
+    my $new_string = shift;
+
+    my $json_config    = JSON::MaybeUTF8::decode_json_utf8($new_string);
+    my @all_currencies = LandingCompany::Registry::all_currencies();
+
+    foreach my $currency (keys %$json_config) {
+        die "$currency does not match any valid currency"
+            unless grep { $_ eq $currency } @all_currencies;
+
+        my $amount           = $json_config->{$currency};
+        my $allowed_decimals = Format::Util::Numbers::get_precision_config()->{price}->{$currency};
+        my $rounded_amount   = Format::Util::Numbers::financialrounding('price', $currency, $amount);
+
+        die "Minimum value $amount has more than $allowed_decimals decimals allowed for $currency."
+            if length($amount) > 12
+            or (sprintf('%0.010f', $rounded_amount) ne sprintf('%0.010f', $amount));
+    }
+    return 1;
 }
 
 sub validate_tnc_string {
