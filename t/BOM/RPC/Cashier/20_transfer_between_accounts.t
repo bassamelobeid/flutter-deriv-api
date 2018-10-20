@@ -12,6 +12,7 @@ use Test::Warn;
 use MojoX::JSON::RPC::Client;
 use POSIX qw/ ceil /;
 use ExchangeRates::CurrencyConverter qw(in_usd convert_currency);
+use Format::Util::Numbers qw/financialrounding/;
 
 use BOM::User::Client;
 
@@ -22,6 +23,7 @@ use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates populate_exchang
 use BOM::Platform::Token;
 use Email::Stuffer::TestLinks;
 use BOM::Config::RedisReplicated;
+use BOM::Config::CurrencyConfig;
 
 use utf8;
 
@@ -275,7 +277,8 @@ subtest 'validation' => sub {
     $params->{args}->{account_from} = $client_cr->loginid;
     $params->{args}->{account_to}   = $cr_dummy->loginid;
 
-    $params->{args}->{amount} = 0.0002;
+    my $min = BOM::Config::CurrencyConfig::transfer_between_accounts_limits()->{'BTC'}->{min};
+    $params->{args}->{amount} = financialrounding('amount', 'BTC', $min / 2);
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code crypto to crypto';
     like $result->{error}->{message_to_client},
@@ -289,7 +292,7 @@ subtest 'validation' => sub {
         qr/Invalid amount. Amount provided can not have more than/,
         'Correct error message for amount with decimal places more than allowed per currency';
 
-    $params->{args}->{amount} = 0.002;
+    $params->{args}->{amount} = $min;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code crypto to crypto';
     is $result->{error}->{message_to_client}, 'Account transfers are not available within accounts with cryptocurrency as default currency.',

@@ -2,10 +2,11 @@ use strict;
 use warnings;
 
 use utf8;
-use BOM::Test::RPC::Client;
 use Test::Most;
 use Test::Mojo;
-use Data::Dumper;
+
+use BOM::Test::RPC::Client;
+use BOM::Config::CurrencyConfig;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 subtest 'residence_list' => sub {
@@ -37,6 +38,25 @@ subtest 'states_list' => sub {
         },
         'Shanghai is correct'
     );
+};
+
+subtest 'currencies_config.transfer_between_accounts' => sub {
+    my $result = $c->call_ok(
+        'website_status',
+        {
+            language => 'EN',
+            args     => {website_status => 1}})->has_no_system_error->has_no_error->result;
+
+    my @all_currencies  = keys %{LandingCompany::Registry::get('costarica')->legal_allowed_currencies};
+    my $currency_config = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
+
+    cmp_ok(
+        $currency_config->{$_}->{min},
+        '==',
+        $result->{currencies_config}->{$_}->{limits}->{transfer_between_accounts}->{min},
+        "Transfer between account minimum is correct for $_"
+    ) for @all_currencies;
+
 };
 
 done_testing();

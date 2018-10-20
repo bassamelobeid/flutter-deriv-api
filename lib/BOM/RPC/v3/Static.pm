@@ -36,6 +36,7 @@ use BOM::Config;
 use BOM::Platform::Context qw (request);
 use BOM::Database::ClientDB;
 use BOM::RPC::v3::Utility;
+use BOM::Config::CurrencyConfig;
 
 =head2 residence_list
 
@@ -140,10 +141,12 @@ sub _currencies_config {
     # if there were no amount entered by client), we get max out of two minimal possible stakes.
     # Logic is copied from _build_staking_limits
 
+    my $transfer_mins = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
+
     # Get available currencies
     my @all_currencies = keys %{LandingCompany::Registry::get('costarica')->legal_allowed_currencies};
 
-    my $suspended_currencies = BOM::RPC::v3::Utility::get_suspended_crypto_currencies;
+    my $suspended_currencies = BOM::RPC::v3::Utility::get_suspended_crypto_currencies();
 
     my %currencies_config = map {
         $_ => {
@@ -151,13 +154,14 @@ sub _currencies_config {
             type              => LandingCompany::Registry::get_currency_type($_),
             stake_default     => $default_stakes->{$_},
             is_suspended      => $suspended_currencies->{$_} ? 1 : 0,
-            }
+            limits            => {
+                transfer_between_accounts => {
+                    min => $transfer_mins->{$_}->{min},
+                }}}
     } @{all_currencies};
 
     return \%currencies_config;
 }
-
-my $json = JSON::MaybeXS->new;
 
 rpc website_status => sub {
     my $params = shift;

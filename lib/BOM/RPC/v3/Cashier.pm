@@ -23,6 +23,7 @@ use BOM::User qw( is_payment_agents_suspended_in_country );
 use LandingCompany::Registry;
 use BOM::User::Client::PaymentAgent;
 use ExchangeRates::CurrencyConverter qw/convert_currency in_usd/;
+use BOM::Config::CurrencyConfig;
 
 use BOM::RPC::Registry '-dsl';
 
@@ -1382,7 +1383,8 @@ sub _validate_transfer_between_accounts {
     return _transfer_between_accounts_error(localize('Your [_1] cashier is locked as per your request.', $client_to->loginid))
         if $client_to->cashier_setting_password;
 
-    my $min_allowed_amount = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->amount->$from_currency_type->min;
+    my $min_allowed_amount = BOM::Config::CurrencyConfig::transfer_between_accounts_limits()->{$currency}->{min};
+
     return _transfer_between_accounts_error(
         localize(
             'Provided amount is not within permissible limits. Minimum transfer amount for provided currency is [_1].',
