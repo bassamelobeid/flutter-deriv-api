@@ -18,6 +18,7 @@ use WWW::OneAll;
 use Date::Utility;
 use HTML::Entities qw(encode_entities);
 use List::Util qw(any none sum0 first);
+use Digest::SHA qw(hmac_sha256_hex);
 
 use Brands;
 use BOM::User::Client;
@@ -854,15 +855,20 @@ rpc get_settings => sub {
     }
 
     my $client_tnc_status = $client->status->tnc_approval;
+    my $user              = $client->user;
 
     return {
         email         => $client->email,
         country       => $country,
         country_code  => $country_code,
-        email_consent => do { my $user = $client->user; ($user && $user->{email_consent}) ? 1 : 0 },
+        email_consent => ($user and $user->{email_consent}) ? 1 : 0,
         (
-            $client->is_virtual
-            ? ()
+              ($user and BOM::Config::third_party()->{elevio}{account_secret})
+            ? (user_hash => hmac_sha256_hex($user->email, BOM::Config::third_party()->{elevio}{account_secret}))
+            : ()
+        ),
+        (
+            $client->is_virtual ? ()
             : (
                 salutation                     => $client->salutation,
                 first_name                     => $client->first_name,

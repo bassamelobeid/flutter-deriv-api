@@ -852,7 +852,7 @@ subtest 'multi currency transfers' => sub {
         BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
         $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit EUR->USD with current rate - no error');
         ok(defined $c->result->{binary_transaction_id}, 'deposit EUR->USD with current rate - has transaction id');
-        
+
         subtest multicurrency_mt5_transfer_deposit => sub {
             my $mt5_transfer = _get_mt5transfer_from_transaction($test_client->db->dbic, $c->result->{binary_transaction_id});
             # (100Eur  * 1%(fee)) * 1.1(Exchange Rate) = 108.9
@@ -866,10 +866,10 @@ subtest 'multi currency transfers' => sub {
         is financialrounding('amount', 'EUR', $client_eur->account->balance),
             financialrounding('amount', 'EUR', $prev_bal + ($usd_test_amount / $EUR_USD * $after_default_fee)),
             '1% deducted as forex fee for USD<->EUR';
-            
+
         subtest multicurrency_mt5_transfer_withdrawal => sub {
             my $mt5_transfer = _get_mt5transfer_from_transaction($test_client->db->dbic, $c->result->{binary_transaction_id});
-             is($mt5_transfer->{mt5_amount}, 100, 'Correct amount recorded');
+            is($mt5_transfer->{mt5_amount}, 100, 'Correct amount recorded');
         };
 
         $redis->hmset(

@@ -501,8 +501,7 @@ Binary.com
 
         my @msg = split /\n/, <<EOM;
 ${\$client->loginid} created MT5 Financial Account MT$mt5_login, type $group.
-If this client has not submitted authentication documents by ${\Date::Utility->new(time() + 86400 * REMINDER_DAYS)->date_ddmmmyy()}, please disable Web API Connections and send a reminder email to the client.
-If the client has still not sent in all necessary documents by ${\Date::Utility->new(time() + 86400 * DISABLE_DAYS)->date_ddmmmyy()}, please disable the financial MT5 account and inform Compliance.
+If the client has not sent in all necessary documents, for authentication, by ${\Date::Utility->new(time() + 86400 * DISABLE_DAYS)->date_ddmmmyy()}, please disable the financial MT5 account and inform Compliance.
 EOM
 
         send_email({

@@ -12,6 +12,7 @@ use JSON::MaybeUTF8 qw(encode_json_utf8);
 use Encode qw(encode);
 use Email::Address::UseXS;
 use Email::Folder::Search;
+use Digest::SHA qw(hmac_sha256_hex);
 
 use Format::Util::Numbers qw/formatnumber/;
 use Scalar::Util qw/looks_like_number/;
@@ -25,6 +26,7 @@ use BOM::Database::Model::AccessToken;
 use BOM::RPC::v3::Utility;
 use BOM::User::Password;
 use BOM::User;
+use BOM::Config;
 use BOM::MT5::User::Async;
 
 use BOM::MarketData qw(create_underlying_db);
@@ -1196,6 +1198,7 @@ subtest $method => sub {
     my $params = {
         token => $token_21,
     };
+
     my $result = $c->tcall($method, $params);
     note explain $result;
     is_deeply(
@@ -1223,7 +1226,8 @@ subtest $method => sub {
             'tax_identification_number'      => undef,
             'account_opening_reason'         => undef,
             'request_professional_status'    => 0,
-            'citizen'                        => 'at'
+            'citizen'                        => 'at',
+            'user_hash'                      => hmac_sha256_hex($user_cr->email, BOM::Config::third_party()->{elevio}->{account_secret}),
         });
 
     $params->{token} = $token1;
@@ -1236,7 +1240,8 @@ subtest $method => sub {
             'email'         => 'abc@binary.com',
             'country'       => 'Indonesia',
             'country_code'  => 'id',
-            'email_consent' => '0'
+            'email_consent' => '0',
+            'user_hash'     => hmac_sha256_hex($user->email, BOM::Config::third_party()->{elevio}->{account_secret}),
         },
         'vr client return less messages'
     );
