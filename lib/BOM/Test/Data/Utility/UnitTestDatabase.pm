@@ -339,7 +339,7 @@ sub setup_bet_market {
     });
     my $db   = $connection_builder->db;
     my @uls  = Finance::Underlying::all_underlyings();
-    my @data = map { [$_->{symbol}, $_->{market}, $_->{submarket}, ($_->{financial} ? 'financial' : 'non_financial')] } @uls;
+    my @data = map { [$_->{symbol}, $_->{market}, $_->{submarket}, $_->{market_type}] } @uls;
     $db->dbic->run(
         ping => sub {
             my $sth = $_->prepare("INSERT INTO bet.market VALUES(?,?,?,?)");
