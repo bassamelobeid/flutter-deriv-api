@@ -355,16 +355,18 @@ no Moose;
 __PACKAGE__->meta->make_immutable;
 
 ## no critic (Variables::RequireLocalizedPunctuationVars)
+
 sub import {
-    my (undef, $init, $exclude_bet_market_setup) = @_;
+    shift;    # skip module name
+    my %options = map { $_ => 1 } @_;
 
-    if ($init && $init eq ':init') {
-
+    if (exists $options{':init'}) {
         __PACKAGE__->instance->prepare_unit_test_database;
-        setup_bet_market() unless $exclude_bet_market_setup;
+        setup_bet_market() unless exists $options{':exclude_bet_market_setup'};
         require BOM::Test::Data::Utility::UserTestDatabase;
         BOM::Test::Data::Utility::UserTestDatabase->import(':init');
     }
+
     return;
 }
 
