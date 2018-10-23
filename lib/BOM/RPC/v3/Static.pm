@@ -154,6 +154,7 @@ sub _currencies_config {
             type              => LandingCompany::Registry::get_currency_type($_),
             stake_default     => $default_stakes->{$_},
             is_suspended      => $suspended_currencies->{$_} ? 1 : 0,
+            name              => LandingCompany::Registry::get_currency_definition($_)->{name},
             limits            => {
                 transfer_between_accounts => {
                     min => $transfer_mins->{$_}->{min},
