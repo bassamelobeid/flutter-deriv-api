@@ -362,7 +362,9 @@ sub error_map {
         ),
         'InvalidDateOfBirth'         => localize('Date of birth is invalid'),
         'InsufficientAccountDetails' => localize('Please provide complete details for account opening.'),
-        'InvalidCitizenship'         => localize('Sorry, our service is not available for your country of citizenship.')};
+        'InvalidCitizenship'         => localize('Sorry, our service is not available for your country of citizenship.'),
+        'InvalidDateFirstContact'    => localize('Date first contact is invalid.'),
+        'InvalidBrand'               => localize('Brand is invalid.')};
 }
 
 =head2 filter_siblings_by_landing_company

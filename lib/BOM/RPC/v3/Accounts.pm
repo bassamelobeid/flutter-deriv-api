@@ -901,7 +901,8 @@ rpc set_settings => sub {
         @{$params}{qw/website_name client_ip user_agent language args/};
 
     my $brand = Brands->new(name => request()->brand);
-    my ($residence, $allow_copiers) = ($args->{residence}, $args->{allow_copiers});
+    my ($residence, $allow_copiers) =
+        ($args->{residence}, $args->{allow_copiers});
     if ($client->is_virtual) {
         # Virtual client can update
         # - residence, if residence not set.
@@ -987,8 +988,7 @@ rpc set_settings => sub {
     # email consent is per user whereas other settings are per client
     # so need to save it separately
     if (defined $args->{email_consent}) {
-        my $user = $client->user;
-        $user->update_email_fields(email_consent => $args->{email_consent});
+        $client->user->update_email_fields(email_consent => $args->{email_consent});
     }
 
     # only allow current client to set allow_copiers

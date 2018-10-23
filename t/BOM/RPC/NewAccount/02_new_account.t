@@ -73,11 +73,13 @@ subtest $method => sub {
         ->has_no_system_error->has_error->error_code_is('InvalidToken', 'If email verification_code is wrong it should return error')
         ->error_message_is('Your token has expired or is invalid.', 'If email verification_code is wrong it should return error_message');
 
-    $params->{args}->{residence}    = 'id';
-    $params->{args}->{utm_source}   = 'google.com';
-    $params->{args}->{utm_medium}   = 'email';
-    $params->{args}->{utm_campaign} = 'spring sale';
-    $params->{args}->{gclid_url}    = 'FQdb3wodOkkGBgCMrlnPq42q8C';
+    $params->{args}->{residence}          = 'id';
+    $params->{args}->{utm_source}         = 'google.com';
+    $params->{args}->{utm_medium}         = 'email';
+    $params->{args}->{utm_campaign}       = 'spring sale';
+    $params->{args}->{gclid_url}          = 'FQdb3wodOkkGBgCMrlnPq42q8C';
+    $params->{args}->{date_first_contact} = '2017-08-07';
+    $params->{args}->{signup_device}      = 'mobile';
 
     $params->{args}->{verification_code} = BOM::Platform::Token->new(
         email       => $email,
@@ -87,16 +89,18 @@ subtest $method => sub {
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
         ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
         ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
-
     my $new_loginid = $rpc_ct->result->{client_id};
+
     ok $new_loginid =~ /^VRTC\d+/, 'new VR loginid';
     my $user = BOM::User->new(
         email => $email,
     );
 
-    ok $user->{utm_source} =~ '^google\.com$',               'utm registered as expected';
-    ok $user->{gclid_url} =~ '^FQdb3wodOkkGBgCMrlnPq42q8C$', 'gclid value returned as expected';
-    is $user->{email_consent}, 1, 'email consent for new account is 1 for residence under costarica';
+    is $user->{utm_source},         'google.com',                 'utm registered as expected';
+    is $user->{gclid_url},          'FQdb3wodOkkGBgCMrlnPq42q8C', 'gclid value returned as expected';
+    is $user->{date_first_contact}, '2017-08-07',                 'date first contact value returned as expected';
+    is $user->{signup_device},      'mobile',                     'signup_device value returned as expected';
+    is $user->{email_consent},      1,                            'email consent for new account is 1 for residence under costarica';
 
     my ($resp_loginid, $t, $uaf) =
         @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};

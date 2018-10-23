@@ -69,10 +69,7 @@ rpc "new_account_virtual",
                 residence       => $args->{residence},
                 source          => $params->{source},
                 $args->{affiliate_token} ? (myaffiliates_token => $args->{affiliate_token}) : (),
-                $args->{utm_source}      ? (utm_source         => $args->{utm_source})      : (),
-                $args->{utm_medium}      ? (utm_medium         => $args->{utm_medium})      : (),
-                $args->{utm_campaign}    ? (utm_campaign       => $args->{utm_campaign})    : (),
-                $args->{gclid_url}       ? (gclid_url          => $args->{gclid_url})       : (),
+                (map { $args->{$_} ? ($_ => $args->{$_}) : () } qw( utm_source utm_medium utm_campaign gclid_url date_first_contact signup_device ))
             },
         });
 
