@@ -4,6 +4,17 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::Lookback', 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
+use BOM::Product::Exception;
+
+sub ticks_to_expiry {
+    my $self = shift;
+
+    return BOM::Product::Exception->throw(
+        error_code => 'InvalidTickExpiry',
+        error_args => [$self->code],
+    );
+}
+
 sub check_expiry_conditions {
     my $self = shift;
 
