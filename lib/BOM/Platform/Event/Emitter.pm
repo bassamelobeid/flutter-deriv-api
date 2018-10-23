@@ -170,7 +170,7 @@ Bind event name to its queue
 
 sub _queue_name {
     my $event = shift;
-    return 'STATEMENTS_QUEUE' if $event =~ /^quarterly_statement|client_statement$/;
+    return 'STATEMENTS_QUEUE' if $event eq 'email_statement';
     return 'GENERIC_EVENTS_QUEUE';
 }
 
