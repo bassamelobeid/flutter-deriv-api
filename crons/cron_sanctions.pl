@@ -118,7 +118,7 @@ sub get_matched_clients_info_by_broker {
             loginid      => $c,
             db_operation => 'replica'
         });
-        my $result = $sanctions->get_sanctioned_info($client->first_name, $client->last_name);
+        my $result = $sanctions->get_sanctioned_info($client->first_name, $client->last_name, $client->date_of_birth);
         push @matched, [$client, $result->{list}, $result->{name}] if $result->{matched};
     }
     return '' unless @matched;
