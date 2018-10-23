@@ -586,7 +586,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 }
 
 Bar("NAVIGATION");
-
 print qq[<style>
         div.flat { display: inline-block }
         table.collapsed { border-collapse: collapse }
@@ -891,6 +890,17 @@ foreach my $l (sort keys %$siblings) {
         print "Access Token [" . $l . "]: $1 <br\>";
     }
 }
+
+Bar('Send Client Statement');
+BOM::Backoffice::Request::template()->process(
+    'backoffice/send_client_statement.tt',
+    {
+        today     => Date::Utility->new()->date_yyyymmdd(),
+        broker    => $input{broker},
+        client_id => $input{loginID},
+        action    => request()->url_for('backoffice/f_send_statement.cgi')
+    },
+);
 
 Bar("Email Consent");
 print '<br/>';
