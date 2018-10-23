@@ -16,6 +16,7 @@ use BOM::User::Password;
 use BOM::User::AuditLog;
 use BOM::User::Static;
 use BOM::User::Utility;
+use BOM::User::Client;
 use BOM::Config::Runtime;
 use LandingCompany::Registry;
 
