@@ -35,7 +35,7 @@ Create new record in table users.binary_user
 =cut
 
 my @fields =
-    qw(id email password email_verified utm_source utm_medium utm_campaign app_id email_consent gclid_url has_social_signup secret_key is_totp_enabled);
+    qw(id email password email_verified utm_source utm_medium utm_campaign app_id email_consent gclid_url has_social_signup secret_key is_totp_enabled signup_device date_first_contact);
 
 # generate attribute accessor
 for my $k (@fields) {
