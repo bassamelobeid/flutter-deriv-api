@@ -220,21 +220,19 @@ sub _forget_feed_subscription {
     if ($subscription) {
         foreach my $channel (keys %{$subscription}) {
             my ($fsymbol, $ftype, $req_id) = split(";", $channel);
-
+            my $worker = $subscription->{$channel};
+            my $uuid   = $worker->uuid;
             # forget all call sends strings like forget_all: candles|tick|proposal_open_contract
-            if ($typeoruuid eq 'candles' and looks_like_number($ftype)) {
-                push @$removed_ids, $subscription->{$channel}->{uuid};
-                Binary::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel_unsubscribe($c, $fsymbol, $ftype, $req_id);
-            }
-            # . 's' while we are still using ticks in this calls. backward compatibility that must be removed
-            elsif (($ftype . 's') =~ /^$typeoruuid/) {
-                push @$removed_ids, $subscription->{$channel}->{uuid};
-                Binary::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel_unsubscribe($c, $fsymbol, $ftype, $req_id);
-            }
-            # this is condition for forget call where we send unique id forget: id
-            elsif ($typeoruuid eq $subscription->{$channel}->{uuid}) {
-                push @$removed_ids, $subscription->{$channel}->{uuid};
-                Binary::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel_unsubscribe($c, $fsymbol, $ftype, $req_id);
+            if (
+                ($typeoruuid eq 'candles' and looks_like_number($ftype))
+                # . 's' while we are still using ticks in this calls. backward compatibility that must be removed
+                or (($ftype . 's') =~ /^$typeoruuid/)
+                # this is condition for forget call where we send unique id forget: id
+                or ($typeoruuid eq $uuid))
+
+            {
+                push @$removed_ids, $uuid;
+                Binary::WebSocketAPI::v3::Wrapper::Streamer::feed_channel_unsubscribe($c, $fsymbol, $ftype, $req_id);
             }
         }
     }

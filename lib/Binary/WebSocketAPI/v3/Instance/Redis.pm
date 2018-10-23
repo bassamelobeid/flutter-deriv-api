@@ -49,27 +49,6 @@ my %message_handler = (
             }
         }
     },
-    shared_redis => sub {
-        my ($self, $msg, $channel) = @_;
-        return unless $channel =~ /^FEED::/ || $channel =~ /^TXNUPDATE::transaction_/;
-
-        if (my $ch = $self->{shared_info}{$channel}) {
-            for my $k (sort keys %$ch) {
-                next unless looks_like_number($k);
-                unless ($ch->{$k}
-                    && ref $ch->{$k}
-                    && $ch->{$k}{c})
-                {
-                    delete $ch->{$k};
-                    next;
-                }
-                Binary::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($ch->{$k}, $msg, $channel)
-                    if $channel =~ /^FEED::/;
-                Binary::WebSocketAPI::v3::Wrapper::Streamer::process_transaction_updates($ch->{$k}, $msg, $channel)
-                    if $channel =~ /^TXNUPDATE::transaction_/;
-            }
-        }
-    },
     ws_redis_master => sub {
         my ($redis, $msg, $channel) = @_;
         Binary::WebSocketAPI::v3::Wrapper::Streamer::send_notification($redis->{shared_info}, $msg, $channel)
