@@ -119,7 +119,7 @@ subtest 'process' => sub {
 
     is_deeply(
         [sort keys %{BOM::Event::Process::get_action_mappings()}],
-        [sort qw/email_consent register_details sync_user_to_MT5/],
+        [sort qw/email_consent register_details email_statement sync_user_to_MT5/],
         'Correct number of actions that can be emitted'
     );
 
@@ -134,6 +134,7 @@ subtest 'process' => sub {
             return {
                 register_details => sub { return 'Details registered'; },
                 email_consent    => sub { return 'Unsubscribe flag updated'; },
+                email_statement  => sub { return 'Statement has been sent'; }
             };
         });
 
@@ -152,13 +153,22 @@ subtest 'process' => sub {
         ),
         'Unsubscribe flag updated', 'Invoked associated sub for register_details event';
 
+    is BOM::Event::Process::process({
+            type    => 'email_statement',
+            details => {}
+        },
+        QUEUE_NAME
+        ),
+        'Statement has been sent', 'Invoked associated sub for email_statement event';
+
     $mock_process->unmock('get_action_mappings');
 
     $mock_process->mock(
         'get_action_mappings' => sub {
             return {
                 register_details => sub { die 'Error - connection error'; },
-                email_consent    => sub { die 'Error - connection error'; }
+                email_consent    => sub { die 'Error - connection error'; },
+                email_statement  => sub { die 'Error - connection error'; },
             };
         });
 
@@ -172,6 +182,14 @@ subtest 'process' => sub {
 
     is BOM::Event::Process::process({
             type    => 'email_consent',
+            details => {}
+        },
+        QUEUE_NAME
+        ),
+        0, 'If internal method die then process should just return false not die';
+
+    is BOM::Event::Process::process({
+            type    => 'email_statement',
             details => {}
         },
         QUEUE_NAME
