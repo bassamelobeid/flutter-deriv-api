@@ -82,7 +82,12 @@ sub callback {
     # consequently initialize user_id and link account to social login.
     if (not $user_id) {
         # create user based on email by fly if account does not exist yet
-        $user = $c->__create_virtual_user($email, $brand_name) unless $user;
+        $user = $c->__create_virtual_user(
+            email   => $email,
+            brand   => $brand_name,
+            details => {
+                date_first_contact => $c->session('date_first_contact'),
+                signup_device      => $c->session('signup_device')}) unless $user;
         # connect oneall provider data to user identity
         $user_connect->insert_connect($user->{id}, $provider_data);
         $user_id = $user->{id};
@@ -122,16 +127,19 @@ sub _get_email {
 }
 
 sub __create_virtual_user {
-    my ($c, $email, $brand_name) = @_;
+    my ($c, %user_details) = @_;
 
-    my $acc = BOM::Platform::Account::Virtual::create_account({
-            details => {
-                email             => $email,
-                client_password   => rand(999999),    # random password so you can't login without password
-                has_social_signup => 1,
-                brand_name        => $brand_name,
-            },
-        });
+    my $details = {
+        email             => $user_details{email},
+        client_password   => rand(999999),           # random password so you can't login without password
+        has_social_signup => 1,
+        brand_name        => $user_details{brand},
+    };
+
+    $details->{date_first_contact} = $user_details{details}{date_first_contact} if $user_details{details}{date_first_contact};
+    $details->{signup_device}      = $user_details{details}{signup_device}      if $user_details{details}{signup_device};
+
+    my $acc = BOM::Platform::Account::Virtual::create_account({details => $details});
     die $acc->{error} if $acc->{error};
 
     return $acc->{user};

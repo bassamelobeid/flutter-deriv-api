@@ -94,6 +94,15 @@ sub authorize {
         is_reset_password_allowed => _is_reset_password_allowed($app->{id}),
     );
 
+    my $date_first_contact = $c->param('date_first_contact') // '';
+    try {
+        return unless $date_first_contact =~ /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
+        return if Date::Utility->new($date_first_contact)->is_after(Date::Utility->today);
+        $c->session(date_first_contact => Date::Utility->new->date_yyyymmdd);
+    };
+    my $signup_device = $c->param('signup_device') // '';
+    $c->session(signup_device => $signup_device) if $signup_device and $signup_device =~ /^\w+$/;
+
     # detect and validate social_login param if provided
     if (my $method = $c->param('social_signup')) {
         if (!$c->param('email') and !$c->param('password')) {
