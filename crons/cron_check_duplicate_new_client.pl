@@ -54,14 +54,8 @@ foreach my $client_hash (@{$client_dup_list}) {
     my $user = $client->user;
 
     my $siblings = {map { $_->loginid => 1 } $user->clients};
-    my @duplicate_clients = map {
-        # SQL function returns an array, every element is loginid and client status, joined by /
-        # Status can be an empty string
-        my ($lid, $status) = split '/', $_, 2;
-        $lid eq $loginid || exists $siblings->{$lid} ? ()
-            : length $status ? "$lid(\u$status)"
-            :                  $lid;
-    } @{$client_hash->{loginids}};
+
+    my @duplicate_clients = grep { !($_ eq $loginid || exists $siblings->{$_}) } @{$client_hash->{loginids}};
 
     next unless @duplicate_clients;
 
