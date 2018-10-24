@@ -150,19 +150,22 @@ sub get_duplicate_client {
 
     my $dupe_sql = "
     SELECT
-        loginid,
-        first_name,
-        last_name,
-        date_of_birth,
-        email
+        c.loginid,
+        c.first_name,
+        c.last_name,
+        c.date_of_birth,
+        c.email
     FROM
-        betonmarkets.client
+        betonmarkets.client c
+    LEFT JOIN betonmarkets.client_status s ON s.client_loginid = c.loginid AND 
+        s.status_code = 'duplicate_account'
     WHERE
-        UPPER(TRIM(BOTH ' ' FROM first_name))=(TRIM(BOTH ' ' FROM ?)) AND
-        UPPER(TRIM(BOTH ' ' FROM last_name))=(TRIM(BOTH ' ' FROM ?)) AND
-        date_of_birth=? AND
-        email<>? AND
-        broker_code=?
+        UPPER(TRIM(BOTH ' ' FROM c.first_name))=(TRIM(BOTH ' ' FROM ?)) AND
+        UPPER(TRIM(BOTH ' ' FROM c.last_name))=(TRIM(BOTH ' ' FROM ?)) AND
+        c.date_of_birth=? AND
+        c.email<>? AND
+        c.broker_code=? AND 
+        s.id IS NULL        
 ";
     my $dbic        = $self->db->dbic;
     my @dupe_record = $dbic->run(

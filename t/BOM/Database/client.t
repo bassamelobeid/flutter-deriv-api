@@ -38,11 +38,25 @@ $client->save;
 
 $details->{first_name} = $details->{first_name} . ' ';
 $res = BOM::Database::ClientDB->new({broker_code => 'CR'})->get_duplicate_client($details);
-cmp_ok($res, '>', 1, 'It finds duplicats even with extra space');
+cmp_ok($res, '>', 1, 'It finds duplicates even with extra space');
 
 $details->{first_name} = 'NAME NOT THERE';
 $res = BOM::Database::ClientDB->new({broker_code => 'CR'})->get_duplicate_client($details);
 cmp_ok($res, '==', 0, 'But it does not exists, it will return 0');
+
+$client->first_name($details->{first_name});
+$client->save;
+$client->status->set('disabled', 'system', 'test');
+$res = BOM::Database::ClientDB->new({broker_code => 'CR'})->get_duplicate_client($details);
+cmp_ok($res, '>', 1, 'Disabled client is still flagged as duplicate');
+
+$client->status->set('duplicate_account', 'system', 'test');
+$res = BOM::Database::ClientDB->new({broker_code => 'CR'})->get_duplicate_client($details);
+cmp_ok($res, '==', 0, 'Client with duplicate_account status is not flagged as duplicate');
+
+$client->status->set('tnc_approval', 'system', 'test');
+$res = BOM::Database::ClientDB->new({broker_code => 'CR'})->get_duplicate_client($details);
+cmp_ok($res, '==', 0, '...even when they have some other status');
 
 subtest "unicode json in getall_arrayref" => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
