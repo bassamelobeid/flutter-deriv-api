@@ -1,8 +1,7 @@
 #!/etc/rmg/bin/perl
 #
-# script get credit balance from Experian and send an email to compliance, if it is lower, than threshold.
-#
-# threshold can be specified on command line, or 10000 will be used
+# Script get credit balance from Experian and send an email to compliance, if it is lower, than THRESHOLD.
+# use option -d to have the script print the limits to the console.
 #
 use strict;
 use warnings;
@@ -12,31 +11,44 @@ use Try::Tiny;
 use BOM::Backoffice::ExperianBalance;
 use BOM::Config;
 use BOM::Platform::Email qw(send_email);
+use Mojo::UserAgent;
+use Mojo::UserAgent::CookieJar;
+use DataDog::DogStatsd::Helper qw(stats_inc);
+use constant THRESHOLD => 25000;
 
 my $brand = Brands->new(name => 'binary');
 
 my ($used, $limit);
+my $ua       = Mojo::UserAgent->new->cookie_jar(Mojo::UserAgent::CookieJar->new);
+my $base_dir = '/etc/rmg/ssl/';
+$ua->key($base_dir . 'key/experian.key');
+$ua->cert($base_dir . 'crt/experian.crt');
 try {
-    ($used, $limit) = BOM::Backoffice::ExperianBalance::get_balance(BOM::Config::third_party()->{proveid}->{username},
+    ($used, $limit) = BOM::Backoffice::ExperianBalance::get_balance(
+        $ua,
+        BOM::Config::third_party()->{proveid}->{username},
         BOM::Config::third_party()->{proveid}->{password});
 }
 catch {
     warn "An error occurred: $_";
 };
 
-warn "Not able to get balance from experian." and exit(1) unless ($used and $limit);
+unless ($used && $limit) {
+    DataDog::DogStatsd::Helper::stats_inc('service.experian.failures', {tags => ["balance_check"]});
+    die "Not able to get balance from experian.";
+}
 
-my $threshold = 25000;
-my $remain    = $limit - $used;
-
-if ($remain < $threshold) {
-    my $message = <<"EOF";
+my $remain = $limit - $used;
+if ($ARGV[0] and $ARGV[0] eq '-d') { print("Used: $used,  Limit: $limit\n"); exit; }
+if ($remain < THRESHOLD) {
+    my $threshold_msg = THRESHOLD;
+    my $message       = <<"EOF";
 Experian credits warning:
 Limit: $limit
 Used: $used
 
 Remain: $remain
-Threshold: $threshold
+Threshold: $threshold_msg
 
 EOF
     send_email({

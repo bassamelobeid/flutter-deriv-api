@@ -2,9 +2,6 @@ package BOM::Backoffice::ExperianBalance;
 use strict;
 use warnings;
 
-use Mojo::UserAgent;
-use Mojo::UserAgent::CookieJar;
-
 my $urls = {
     login_page   => 'https://proveid.experian.com/signin/',
     login_post   => 'https://proveid.experian.com/signin/onsignin.cfm',
@@ -17,9 +14,7 @@ sub _get_csrf {
 }
 
 sub get_balance {
-    my ($login, $password) = @_;
-    my $ua = Mojo::UserAgent->new->cookie_jar(Mojo::UserAgent::CookieJar->new);
-
+    my ($ua, $login, $password) = @_;
     my $tx = $ua->post(
         $urls->{login_post} => form => {
             _CSRF_token => _get_csrf($ua->get($urls->{login_page})->result->dom),
@@ -27,6 +22,7 @@ sub get_balance {
             password    => $password,
             btnSubmit   => 'Login'
         });
+
     unless (my $res = $tx->success) {
         my $err = $tx->error;
         die "$err->{code} response: $err->{message}" if $err->{code};
