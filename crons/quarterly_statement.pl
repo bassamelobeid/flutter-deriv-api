@@ -70,7 +70,7 @@ for my $broker (@brokers) {
     my $params = {
         source        => 1,
         date_from     => $start->epoch(),
-        date_to       => $end->epoch(),
+        date_to       => $end->minus_time_interval('1s')->epoch(),
         email_subject => 'Quarterly Statement',
     };
 
