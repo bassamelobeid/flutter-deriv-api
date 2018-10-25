@@ -1,11 +1,10 @@
+package BOM::RPC::v3::Accounts;
 
 =head1 BOM::RPC::v3::Accounts
 
 This package contains methods for Account entities in our system.
 
 =cut
-
-package BOM::RPC::v3::Accounts;
 
 use 5.014;
 use strict;
@@ -53,6 +52,9 @@ use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
 use BOM::Config::Runtime;
 use BOM::Config::ContractPricingLimits qw(market_pricing_limits);
+use BOM::Platform::Event::Emitter;
+
+use constant DEFAULT_STATEMENT_LIMIT => 100;
 
 my $allowed_fields_for_virtual = qr/set_settings|email_consent|residence|allow_copiers/;
 my $email_field_labels         = {
@@ -299,7 +301,8 @@ rpc statement => sub {
     my $client = $params->{client};
     BOM::RPC::v3::PortfolioManagement::_sell_expired_contracts($client, $params->{source});
 
-    $params->{args}->{limit} //= 100;
+    $params->{args}->{limit} //= DEFAULT_STATEMENT_LIMIT;
+
     my $transaction_res = get_transaction_history($params);
     return {
         transactions => [],
@@ -358,6 +361,36 @@ rpc statement => sub {
         transactions => [@txns],
         count        => scalar @txns
     };
+};
+
+rpc request_report => sub {
+    my $params = shift;
+
+    my $client = $params->{client};
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'InputValidationFailed',
+            message_to_client => localize("From date must be before To date for sending statement")}
+    ) unless ($params->{args}->{date_to} > $params->{args}->{date_from});
+
+    # more different type of reports maybe added here in the future
+
+    if ($params->{args}->{report_type} eq 'statement') {
+
+        my $res = BOM::Platform::Event::Emitter::emit(
+            'email_statement',
+            {
+                loginid   => $client->loginid,
+                source    => $params->{source},
+                date_from => $params->{args}->{date_from},
+                date_to   => $params->{args}->{date_to},
+            });
+
+        return {report_status => 1} if $res;
+
+    }
+
+    return BOM::RPC::v3::Utility::client_error();
 };
 
 rpc account_statistics => sub {

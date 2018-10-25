@@ -451,6 +451,38 @@ subtest $method => sub {
 
 };
 
+# request report
+$method = 'request_report';
+subtest $method => sub {
+
+    subtest 'email_statement' => sub {
+        my $result = $c->tcall(
+            $method,
+            {
+                token => $token_with_txn,
+                args  => {
+                    request_report => 1,
+                    report_type    => "statement",
+                    date_from      => 1534036304,
+                    date_to        => 1538036304,
+                }});
+        is $result->{report_status}, 1, 'email statement task has been emitted successfully.';
+
+        $result = $c->tcall(
+            $method,
+            {
+                token => $token_with_txn,
+                args  => {
+                    request_report => 1,
+                    report_type    => "statement",
+                    date_from      => 1413950000,
+                    date_to        => 1413906900,
+                }});
+        is $result->{error}->{message_to_client}, 'From date must be before To date for sending statement', 'from date must be before to date';
+    };
+
+};
+
 $method = 'account_statistics';
 subtest $method => sub {
 
