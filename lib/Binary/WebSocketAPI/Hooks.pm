@@ -119,6 +119,8 @@ my %rate_limit_map = (
     verify_email_virtual           => 'websocket_call_email',
     cashier_password_real          => 'websocket_call_password',
     cashier_password_virtual       => 'websocket_call_password',
+    request_report_real            => 'websocket_call_email',
+    request_report_virtual         => 'websocket_call_email',
     account_statistics_real        => 'websocket_call_expensive',
     account_statistics_virtual     => 'websocket_call_expensive',
 );
