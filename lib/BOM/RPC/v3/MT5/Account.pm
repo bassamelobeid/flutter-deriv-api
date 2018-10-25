@@ -1463,7 +1463,7 @@ sub _mt5_validate_and_get_amount {
             my $mt5_currency_type    = LandingCompany::Registry::get_currency_type($mt5_currency);
             my $source_currency_type = LandingCompany::Registry::get_currency_type($source_currency);
 
-            return _make_error($error_code, localize('Transfer between accounts is currently suspended.'))
+            return _make_error($error_code, localize('Transfers between fiat and crypto accounts are currently disabled.'))
                 if BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts
                 and (($source_currency_type // '') ne ($mt5_currency_type // ''));
 
