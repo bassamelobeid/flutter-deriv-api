@@ -9,16 +9,12 @@ use List::Util qw(max min);
 use Format::Util::Numbers qw/financialrounding/;
 use Scalar::Util qw(looks_like_number);
 
-has _ask_price_per_unit => (
-    is         => 'ro',
-    lazy_build => 1,
-);
+sub _ask_price_per_unit {
+    my ($self, $for_sale) = @_;
 
-sub _build__ask_price_per_unit {
-    my $self = shift;
-
-    my $ask_price_per_unit = $self->theo_price + $self->commission_per_unit + $self->app_markup_per_unit;
-    return max($self->minimum_ask_price_per_unit, $ask_price_per_unit) if $self->can('minimum_ask_price_per_unit');
+    my $ask_price_per_unit = $self->theo_price + $self->commission_per_unit;
+    $ask_price_per_unit += $self->app_markup_per_unit unless $for_sale;
+    return max($self->minimum_ask_price_per_unit, $ask_price_per_unit) if $self->can('minimum_ask_price_per_unit') and not $for_sale;
     return $ask_price_per_unit;
 }
 
@@ -30,7 +26,7 @@ override '_build_bid_price' => sub {
         # if contract can be settled, then return the evaluated contract value
         $bid_price = $self->value;
     } else {
-        my $bid_price_per_unit = max($self->minimum_bid_price, $self->_ask_price_per_unit - 2 * $self->commission_per_unit);
+        my $bid_price_per_unit = max($self->minimum_bid_price, $self->_ask_price_per_unit(1) - 2 * $self->commission_per_unit);
         $bid_price_per_unit = financialrounding('price', $self->currency, $bid_price_per_unit) if $self->user_defined_multiplier;
         $bid_price = $bid_price_per_unit * $self->multiplier;
     }

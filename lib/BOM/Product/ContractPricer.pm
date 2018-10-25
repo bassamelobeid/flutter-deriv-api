@@ -269,12 +269,13 @@ sub spot_min_max {
         #Let's be more defensive here and use date pricing as well to determine the backprice flag.
         my $backprice = (defined $self->underlying->for_date or $self->date_pricing->is_after($self->date_expiry)) ? 1 : 0;
         my $decimate = BOM::Market::DataDecimate->new({market => $self->market->name});
+        my $use_decimate = $self->category_code eq 'lookback' ? 0 : $duration <= 900 ? 0 : 1;
         my $ticks = $decimate->get({
             underlying  => $self->underlying,
             start_epoch => $from_epoch,
             end_epoch   => $to_epoch,
             backprice   => $backprice,
-            decimate    => ($duration <= 900 ? 0 : 1),
+            decimate    => $use_decimate,
         });
 
         my @quotes = map { $_->{quote} } @$ticks;
