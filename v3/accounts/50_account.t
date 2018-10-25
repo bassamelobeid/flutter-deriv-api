@@ -143,6 +143,21 @@ ok($statement->{statement});
 is($statement->{statement}->{count}, 5);
 test_schema('statement', $statement);
 
+subtest 'request_report' => sub {
+
+    ## request_report
+    my $request_report = $t->await::request_report({
+        request_report => 1,
+        report_type    => "statement",
+        date_from      => 1534036304,
+        date_to        => 1535036304,
+    });
+    ok($request_report->{request_report});
+    is($request_report->{request_report}->{report_status}, 1);
+    test_schema('request_report', $request_report);
+
+};
+
 subtest 'account_statistics' => sub {
 
     $test_client->payment_free_gift(

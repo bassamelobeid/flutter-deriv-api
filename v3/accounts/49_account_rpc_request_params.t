@@ -122,10 +122,19 @@ $res = $t->await::statement({
 ok(ref $res->{statement});
 is $call_params->{token}, $token;
 
+$res = $t->await::request_report({
+    "request_report" => 1,
+    "report_type"    => "statement",
+    "date_from"      => 1334036304,
+    "date_to"        => 1535036304,
+});
+ok(ref $res->{request_report});
+
 $res = $t->await::account_statistics({
     "account_statistics" => 1,
 });
 ok(ref $res->{account_statistics});
+
 is $call_params->{token}, $token;
 
 $res = $t->await::profit_table({
