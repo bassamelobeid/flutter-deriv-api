@@ -70,8 +70,14 @@ sub _generate_report {
                 my $account_id  = $client_ref->{$login_id}->{'account_id'};
                 my $acbalance   = $client_ref->{$login_id}->{'balance_at'};
                 my $balance_sql = q{
-                INSERT INTO accounting.end_of_day_balances (account_id, effective_date, balance)
-                    VALUES(?,?,?) RETURNING id
+                INSERT INTO accounting.end_of_day_balances (
+                 account_id, effective_date, balance
+                )
+                VALUES(?,?,?)
+                ON CONFLICT (account_id, effective_date)
+                DO UPDATE
+                SET balance = EXCLUDED.balance
+                RETURNING id
                 };
 
                 my @eod_id = $dbh->selectrow_array($balance_sql, {}, ($account_id, $self->for_date, $acbalance));
