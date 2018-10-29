@@ -25,7 +25,7 @@ my @status_codes = qw(
     jp_transaction_detail  professional_requested  professional  tnc_approval
     migrated_single_email  duplicate_account  proveid_pending  proveid_requested
     require3ds  skip_3ds  ok  ico_only  allowed_other_card  can_authenticate
-    social_signup  trusted
+    social_signup  trusted pa_withdrawal_explicitly_allowed
 );
 
 for my $code (@status_codes) {

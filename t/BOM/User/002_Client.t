@@ -10,7 +10,7 @@ use BOM::User::Client;
 my $login_id = 'CR0009';
 
 subtest 'Almost all accessor/modifiers' => sub {
-    plan tests => 20;
+    plan tests => 18;
 
     my $client = BOM::User::Client::get_instance({'loginid' => $login_id});
     note "broker_code ", $client->broker_code;
@@ -94,9 +94,5 @@ subtest 'Almost all accessor/modifiers' => sub {
     $client->status->clear_disabled;
     is($client->status->disabled, undef, "the client is enabled");
 
-    is($client->payment_agent_withdrawal_expiration_date, undef, "payment_agent_withdrawal_expiration_date is undef");
-    $client->payment_agent_withdrawal_expiration_date('2013-01-01');
-    $client->save;
-    ok($client->payment_agent_withdrawal_expiration_date =~ /^2013-01-01/, "payment_agent_withdrawal_expiration_date matches");
 };
 

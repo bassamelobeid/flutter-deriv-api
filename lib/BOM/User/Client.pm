@@ -92,15 +92,10 @@ my $date_inflator_ymd = sub {
     return $val->isa('DateTime') ? $val->ymd : $val;
 };
 
-for (qw/date_of_birth payment_agent_withdrawal_expiration_date/) {
-    $META->column($_)->add_trigger(inflate => $date_inflator_ymd);
-    $META->column($_)->add_trigger(deflate => $date_inflator_ymd);
-}
-
-for (qw/date_joined/) {
-    $META->column($_)->add_trigger(inflate => $date_inflator_ymdhms);
-    $META->column($_)->add_trigger(deflate => $date_inflator_ymdhms);
-}
+$META->column('date_of_birth')->add_trigger(inflate => $date_inflator_ymd);
+$META->column('date_of_birth')->add_trigger(deflate => $date_inflator_ymd);
+$META->column('date_joined')->add_trigger(inflate => $date_inflator_ymdhms);
+$META->column('date_joined')->add_trigger(deflate => $date_inflator_ymdhms);
 
 my %DEFAULT_VALUES = (
     cashier_setting_password => '',
