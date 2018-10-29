@@ -28,16 +28,10 @@ sub execute {
     my $log    = $c->env->{log};
     my $client = $c->user;
 
-    if ($c->type =~ 'deposit') {
+    if ($c->type eq 'deposit') {
 
-        # when client deposits using DF, restrict withdrawals to payment agents
-        my $today = Date::Utility->today();
-        if (   !$client->payment_agent_withdrawal_expiration_date
-            || !Date::Utility->new($client->payment_agent_withdrawal_expiration_date)->is_same_as($today))
-        {
-            $client->payment_agent_withdrawal_expiration_date($today->date_yyyymmdd);
-            $client->save();
-        }
+        #if the client uses DF to deposit, unset flag to dont allow them withdrawal through PA
+        $client->status->clear_pa_withdrawal_explicitly_allowed;
     }
 
     if ($c->type eq 'withdrawal_reversal') {
