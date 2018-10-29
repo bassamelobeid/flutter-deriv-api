@@ -849,24 +849,26 @@ sub check_client_professional {
 
 =head2 allow_paymentagent_withdrawal
 
-to check client can withdrawal through payment agent. return 1 (allow) or undef (denied)
+to check client can withdrawal through payment agent. return 1 (allow) or 0 (denied)
+
+- if explicit flag is set it means cs/payments team have verified to allow
+payment agent withdrawal
+
+- if flag is not set then we fallback to check for doughflow or bank wire
+payments, if those does not exists then allow
 
 =cut
 
 sub allow_paymentagent_withdrawal {
     my ($self, $client) = (shift, shift);
 
-    my $expires_on = $client->payment_agent_withdrawal_expiration_date;
+    return 1 if $client->status->pa_withdrawal_explicitly_allowed;
 
-    if ($expires_on) {
-        return 1 if Date::Utility->new($expires_on)->is_after(Date::Utility->new);
-    } else {
-        # if expiry date is not set check for doughflow count
-        my $payment_mapper = BOM::Database::DataMapper::Payment->new({'client_loginid' => $client->loginid});
-        my $doughflow_count = $payment_mapper->get_client_payment_count_by({payment_gateway_code => 'doughflow'});
-        return 1 if $doughflow_count == 0;
-    }
-    return undef;
+    return 1
+        unless BOM::Database::DataMapper::Payment->new({'client_loginid' => $client->loginid})
+        ->get_client_payment_count_by({payment_gateway_code => ['doughflow', 'bank_wire']});
+
+    return 0;
 }
 
 1;

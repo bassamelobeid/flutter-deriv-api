@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More qw(no_plan);
+use Test::More;
 use Test::Exception;
 
 use Date::Utility;
@@ -38,16 +38,17 @@ $client->payment_legacy_payment(
 );
 my $validation_obj = BOM::Transaction::Validation->new({clients => [$client]});
 
-subtest 'no doughflow payment for client - allow for payment agent withdrawal' => sub {
+subtest 'no doughflow payment for client - no flag set - payment agent withdrawal allowed' => sub {
     my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal($client);
-    is $allow_withdraw, 1, 'no doughflow payment no expiry date set, allow payment agent withdrawal';
+    is $allow_withdraw, 1, 'no doughflow payment no flag set, allow payment agent withdrawal';
 };
 
-my $expire_date_before = Date::Utility->new(time() - 86400)->date_yyyymmdd;
-$client->payment_agent_withdrawal_expiration_date($expire_date_before);
-subtest 'no doughflow payment exists, expiration date exists in past ' => sub {
+Test::Exception::lives_ok {
+    $client->status->set('pa_withdrawal_explicitly_allowed', 'shuwnyuan', 'enable withdrawal through payment agent')
+};
+subtest 'no doughflow payment exists - withdrawal flag set - payment agent withdrawal allowed' => sub {
     my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal($client);
-    is $allow_withdraw, undef, 'no doughflow payment exists but expiration date so dont allow';
+    is $allow_withdraw, 1, 'no doughflow payment exists,withdrawal allow flag set,so allow';
 };
 
 $client->payment_doughflow(
@@ -56,24 +57,14 @@ $client->payment_doughflow(
     remark       => 'here is money',
     payment_type => 'external_cashier',
 );
-
-subtest 'doughflow payment exists for client - not allow for payment agent withdrawal' => sub {
+subtest 'doughflow payment exists for client - flag set - allow for payment agent withdrawal' => sub {
     my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal($client);
-    is $allow_withdraw, undef, 'doughflow payment exist, not allow for payment agent withdrawal';
+    is $allow_withdraw, 1, 'doughflow payment exist,flag set, allow for payment agent withdrawal';
 };
-
-$expire_date_before = Date::Utility->new(time() - 86400)->date_yyyymmdd;
-$client->payment_agent_withdrawal_expiration_date($expire_date_before);
-subtest 'doughflow payment exists for client - with past payment_agent_withdrawal_expiration_date' => sub {
+Test::Exception::lives_ok { $client->status->clear_pa_withdrawal_explicitly_allowed };
+subtest 'doughflow payment exists for client - no flag set - dont allow for payment agent withdrawal' => sub {
     my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal($client);
-    is $allow_withdraw, undef, 'with past payment_agent_withdrawal_expiration_date';
-};
-
-my $expire_date_after = Date::Utility->new(time() + 86400)->date_yyyymmdd;
-$client->payment_agent_withdrawal_expiration_date($expire_date_after);
-subtest 'doughflow payment exists for client - with future dated payment_agent_withdrawal_expiration_date' => sub {
-    my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal($client);
-    is $allow_withdraw, 1, 'with future dated payment_agent_withdrawal_expiration_date';
+    is $allow_withdraw, 0, 'doughflow payment exist,no flag set, dont allow for payment agent withdrawal';
 };
 
 my $reason = "test to set unwelcome login";
@@ -81,10 +72,6 @@ my $clerk  = 'shuwnyuan';
 
 # lock client cashier
 Test::Exception::lives_ok { $client->status->set('unwelcome', $clerk, $reason) } "set client unwelcome login";
-
-# save changes to CR.lockcashierlogins
-Test::Exception::lives_ok { $client->save() } "can save to unwelcome login file";
-
 #make sure unwelcome client cannot trade
 ok(ref $validation_obj->_validate_client_status($client) eq 'Error::Base', "unwelcome client cannot trade");
 
@@ -117,3 +104,34 @@ $client_new->set_default_account('USD');
 is($validation_obj->check_trade_status($client_new), undef, "MX client without age_verified allowed to trade before 1st deposit");
 $client_new->payment_free_gift(%deposit);
 ok(ref $validation_obj->check_trade_status($client_new) eq 'Error::Base', "MX client without age_verified cannot trade after 1st deposit");
+
+$email = 'test1' . rand(999) . '@binary.com';
+$user  = BOM::User->create(
+    email    => $email,
+    password => $hash_pwd
+);
+
+$client_details->{broker_code} = 'CR';
+
+$client_new = $user->create_client(%$client_details);
+$client_new->set_default_account('USD');
+
+$validation_obj = BOM::Transaction::Validation->new({clients => [$client_new]});
+
+subtest 'no bank_wire payment for client - no flag set - payment agent withdrawal allowed' => sub {
+    my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal($client_new);
+    is $allow_withdraw, 1, 'no bank_wire payment no flag set, allow payment agent withdrawal';
+};
+
+$client_new->payment_bank_wire(
+    currency => 'USD',
+    amount   => 1,
+    remark   => 'here is money',
+);
+
+subtest 'bank_wire payment exists for client - no flag set - dont allow for payment agent withdrawal' => sub {
+    my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal($client);
+    is $allow_withdraw, 0, 'bank_wire payment exist,no flag set, dont allow for payment agent withdrawal';
+};
+
+done_testing();
