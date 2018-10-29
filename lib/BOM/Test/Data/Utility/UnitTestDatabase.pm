@@ -358,7 +358,8 @@ __PACKAGE__->meta->make_immutable;
 
 sub import {
     shift;    # skip module name
-    my %options = map { $_ => 1 } @_;
+    my @others = @_;
+    my %options = map { $_ => 1 } @others;
 
     if (exists $options{':init'}) {
         __PACKAGE__->instance->prepare_unit_test_database;
