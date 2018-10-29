@@ -22,7 +22,7 @@ sub script_run {
     my $quants_config            = BOM::Config::Runtime->instance->app_config;
     my $current                  = $quants_config->get('quants.custom_product_profiles');
     my $current_product_profiles = $json->decode($current);
-    my ($todo, $risk_profile, $to_remove);
+    my ($todo, $risk_profile, $to_remove, $between);
     my $now = Date::Utility->new;
     my $cut_off_hour = $now->is_dst_in_zone('Europe/London') ? '06' : '07';
 
@@ -30,11 +30,13 @@ sub script_run {
         $todo         = 'set extreme_risk_fx_tick_trade';
         $to_remove    = 'set moderate_risk_fx_tick_trade';
         $risk_profile = 'extreme_risk';
+        $between      = "00 to " . $cut_off_hour . 'GMT';
 
     } elsif ($now->hour == $cut_off_hour) {
         $todo         = 'set moderate_risk_fx_tick_trade';
         $to_remove    = 'set extreme_risk_fx_tick_trade';
         $risk_profile = 'moderate_risk';
+        $between      = $cut_off_hour . ' to 00GMT';
     } else {
         return 1;
 
@@ -59,7 +61,7 @@ sub script_run {
 
     $current_product_profiles->{$uniq_key} = \%new_limit;
     $quants_config->set({'quants.custom_product_profiles' => $json->encode($current_product_profiles)});
-    send_notification_email(\%new_limit, 'Setting extreme risk for forex tick trade between 0 to 6GMT');
+    send_notification_email(\%new_limit, $todo . ' for forex tick trade between ' . $between);
 
     return 1;
 }
@@ -77,8 +79,8 @@ sub send_notification_email {
     my $landing_company   = $limit->{landing_company} // "Not specified";
     my $barrier_category  = $limit->{barrier_category} // "Not specified";
     my $start_type        = $limit->{start_type} // "Not specified";
-
-    my @message = "$for \n";
+    my $profile           = $limit->{risk_profile} // "Not specified";
+    my @message           = "$for \n";
     push @message,
         (
         "Contract Category: $contract_category",
@@ -89,6 +91,7 @@ sub send_notification_email {
         "Barrier category: $barrier_category",
         "Start type: $start_type",
         "Landing_company: $landing_company",
+        "profile: $profile",
         "Reason: " . $limit->{name},
         );
     push @message, ("By " . $limit->{updated_by} . " on " . $limit->{updated_on});
