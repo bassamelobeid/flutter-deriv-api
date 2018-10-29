@@ -240,13 +240,14 @@ sub print_client_details {
         show_funds_message             => ($client->residence eq 'gb' and not $client->is_virtual) ? 1 : 0,
         show_risk_approval => ($client->landing_company->short eq 'maltainvest') ? 1 : 0,
         show_tnc_status => ($client->is_virtual) ? 0 : 1,
-        show_uploaded_documents       => $show_uploaded_documents,
-        state_options                 => set_selected_item($client->state, $stateoptions),
-        client_state                  => $state_name,
-        tnc_approval_status           => $tnc_status,
-        ukgc_funds_status             => $client->status->ukgc_funds_protection,
-        tax_residence                 => \@tax_residences,
-        tax_residences_countries_name => $tax_residences_countries_name
+        show_uploaded_documents            => $show_uploaded_documents,
+        state_options                      => set_selected_item($client->state, $stateoptions),
+        client_state                       => $state_name,
+        tnc_approval_status                => $tnc_status,
+        ukgc_funds_status                  => $client->status->ukgc_funds_protection,
+        tax_residence                      => \@tax_residences,
+        tax_residences_countries_name      => $tax_residences_countries_name,
+        cashier_allow_payment_agent_status => $client->status->pa_withdrawal_explicitly_allowed
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})

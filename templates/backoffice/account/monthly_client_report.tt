@@ -37,7 +37,6 @@
             [ 'free_gift',          'Free Gift' ],
             [ 'internal_transfer',  'Internal Transfer' ],
             [ 'payment_fee',        'Payment Fee' ],
-            [ 'cash_transfer',      'Western Union' ],
             [ 'arbitrary_markup',   'Arbitrary Markup Payment' ],
             [ 'crypto_cashier',     'Crypto Cashier' ],
             [ 'test_account',       'Test Account' ],

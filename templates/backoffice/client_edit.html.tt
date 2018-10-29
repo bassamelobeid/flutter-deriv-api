@@ -491,12 +491,10 @@ IF client_for_prove
         <td class="small_header" colspan="2">#WITHDRAWAL VIA PAYMENT AGENT</td>
     </tr>
     <tr>
-        <td class="label">expiration_date</td>
-        <td>: <input type="text" name="payment_agent_withdrawal_expiration_date"  value="[% client.payment_agent_withdrawal_expiration_date %]" size="20" />
-             <i>format: YYYY-MM-DD (Optional)</i> Note: Allowed for withdrawal via payment agent until this date
-        </td>
-    </tr>
-
+      <td class="label">
+        <input type="checkbox" name="pa_withdrawal_explicitly_allowed" value="1" [% IF cashier_allow_payment_agent_status %]checked[% END %]/>
+      </td>
+       <td>Check this to explicitly allow payment agent withdrawal for the client that deposited through external cashier like the premier cashier.</td>   </tr>
     <tr>
         <td class="small_header" colspan="2">#Misc</td>
     </tr>

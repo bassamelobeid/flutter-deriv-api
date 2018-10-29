@@ -384,11 +384,13 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     if (exists $input{promo_code_status} & !exists $input{promo_code}) {
         $client->promo_code_status($input{promo_code_status});
     }
-
-    if (exists $input{payment_agent_withdrawal_expiration_date}) {
-        $client->payment_agent_withdrawal_expiration_date($input{payment_agent_withdrawal_expiration_date} || undef);
+    if (exists $input{pa_withdrawal_explicitly_allowed}) {
+        if ($input{pa_withdrawal_explicitly_allowed}) {
+            $client->status->set('pa_withdrawal_explicitly_allowed', $clerk, 'allow withdrawal through payment agent');
+        } else {
+            $client->status->clear_pa_withdrawal_explicitly_allowed;
+        }
     }
-
     my @simple_updates = qw/last_name
         first_name
         phone
@@ -842,7 +844,14 @@ print qq[
         });
         clientInfoForm.addEventListener('submit', ev => {
             clientInfoForm.querySelectorAll('$INPUT_SELECTOR:not(.data-changed),select:not(.data-changed)')
-                .forEach(input => input.setAttribute('disabled', 'disabled'));
+            .forEach(input => input.setAttribute('disabled', 'disabled'));
+            clientInfoForm.querySelectorAll('.data-changed[type=checkbox]').forEach(checkbox => {
+            if (checkbox.checked) return;
+            const input = document.createElement("input");
+            input.type = 'hidden';
+            input.value = '0';
+            input.name = checkbox.name;
+            checkbox.parentElement.appendChild(input);})
         });
     </script>
 ];

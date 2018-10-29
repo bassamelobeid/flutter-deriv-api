@@ -223,14 +223,12 @@ read_csv_row_and_callback(
             if ($err) {
                 $client_account_table .= construct_row_line(%row, error => "Transaction Error: $err");
                 return;
-            } elsif ($action eq 'credit' and $payment_type !~ /^affiliate_reward|arbitrary_markup|free_gift$/) {
-                # need to set this for batch payment in case of credit only
+            } elsif ($action eq 'credit' and $payment_type =~ /^bank_money_transfer|external_cashier$/) {
                 try {
-                    $client->payment_agent_withdrawal_expiration_date(Date::Utility->today->date_yyyymmdd);
-                    $client->save;
+                    $client->status->clear_pa_withdrawal_explicitly_allowed;
                 }
                 catch {
-                    warn "Not able to set payment agent expiration date for " . $client->loginid;
+                    warn "Not able to unset payment agent explicity allowed flag for " . $client->loginid;
                 };
             }
             $row{remark} = sprintf "OK transaction reference id: %d", $trx->id;

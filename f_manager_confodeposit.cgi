@@ -277,20 +277,16 @@ catch {
 };
 
 code_exit_BO() if $leave;
-
 my $today = Date::Utility->today;
-if ($ttype eq 'CREDIT' and $params{payment_type} !~ /^affiliate_reward|arbitrary_markup|free_gift$/) {
-    # we need to set paymentagent_expiration_date for manual deposit
-    # check with compliance if you want to change this
+if ($ttype eq 'CREDIT' and $params{payment_type} =~ /^bank_money_transfer|external_cashier$/) {
+    # unset pa_withdrawal_explicitly_allowed for bank_wire and doughflow mannual deposit
     try {
-        $client_pa_exp->payment_agent_withdrawal_expiration_date($today->date_yyyymmdd);
-        $client_pa_exp->save;
+        $client->status->clear_pa_withdrawal_explicitly_allowed;
     }
     catch {
-        warn "Not able to set payment agent expiration date for " . $client_pa_exp->loginid;
+        warn "Not able to unset payment agent explicity allowed flag for " . $client_pa_exp->loginid;
     };
 }
-
 my $now = Date::Utility->new;
 # Logging
 my $msg = $now->datetime . " $ttype $curr$amount $loginID clerk=$clerk (DCcode=$DCcode) $ENV{REMOTE_ADDR}";
