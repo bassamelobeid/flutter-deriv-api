@@ -901,12 +901,6 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         like($res->{error}{message_to_client}, qr/agent facilities are not available/, $test);
         reset_withdraw_testargs();
 
-        $test = 'Withdraw fails if client payment agent withdrawal not allowed';
-        $Alice->payment_agent_withdrawal_expiration_date('2017-01-01');
-        $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        like($res->{error}{message_to_client}, qr/not authorized for withdrawals via payment agents/, $test);
-        $Alice->payment_agent_withdrawal_expiration_date('2999-01-01');
-
         $test = 'Withdraw fails if client cashier has a password';
         $Alice->cashier_setting_password('black');
         $Alice->save;
