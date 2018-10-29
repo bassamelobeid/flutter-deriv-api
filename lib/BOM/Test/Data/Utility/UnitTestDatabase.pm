@@ -357,8 +357,7 @@ __PACKAGE__->meta->make_immutable;
 ## no critic (Variables::RequireLocalizedPunctuationVars)
 
 sub import {
-    shift;    # skip module name
-    my @others = @_;
+    my (undef, @others) = @_;
     my %options = map { $_ => 1 } @others;
 
     if (exists $options{':init'}) {
