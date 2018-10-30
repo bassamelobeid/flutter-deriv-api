@@ -2,8 +2,6 @@
 use strict;
 use warnings;
 
-use sigtrap;
-
 # load this file to force MOJO::JSON to use JSON::MaybeXS
 use Mojo::JSON::MaybeXS;
 use DataDog::DogStatsd::Helper;
@@ -37,21 +35,15 @@ my @running_forks;
 my @workers = (0) x $workers;
 my $index;
 
-sub signal_handler {
+$SIG{TERM} = sub {
     # Give everything a chance to shut down gracefully
     kill TERM => @running_forks;
     sleep 2;
     # ... but don't wait all day.
     kill KILL => @running_forks;
-    exit 0;
-}
-sigtrap->import(
-    handler => 'signal_handler',
-    'normal-signals'
-);
-
-$SIG{TERM} = sub { exit 1 };
-
+    exit 1;
+};
+    
 # tune cache: up to 2s
 $ENV{QUANT_FRAMEWORK_HOLIDAY_CACHE} = $ENV{QUANT_FRAMEWORK_PATRIALTRADING_CACHE} = 2;    ## nocritic
 my $pm = Parallel::ForkManager->new($workers);
