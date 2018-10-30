@@ -35,7 +35,7 @@ my $dm = BOM::Database::DataMapper::Copier->new(
     operation   => 'replica'
 );
 
-is($dm->get_copiers_cnt({trader_id => 'CR0027'}), 2, 'check copiers count');
+is($dm->get_copiers_count({trader_id => 'CR0027'}), 2, 'check copiers count');
 is($dm->get_traders({copier_id => 'CR0028'})->[0], 'CR0027', 'check trader');
 is($dm->get_traders({copier_id => 'CR0029'})->[0], 'CR0027', 'check trader');
 
