@@ -13,7 +13,50 @@ has auth_db => (
     lazy    => 1,
     default => sub { BOM::Database::AuthDB::rose_db()->dbic });
 
-sub get_copiers_cnt {
+=head2 get_copiers_count
+
+Gets the count of copy traders attached to a trader
+
+Takes the following arguments as named parameters
+
+=over 4
+
+=item trader_id  : client_id of the trader.
+
+=back
+
+Returns an integer with the count of copiers. 
+
+=cut
+
+sub get_copiers_count {
+
+    my ($self, $args) = @_;
+    my $tokens = $self->_filter_invalid_tokens($self->get_copiers_tokens_all($args));
+    return scalar @$tokens;
+}
+
+=head2 get_copiers_tokens_all
+
+Returns details on the copy traders attached to a trader including ones with invalid tokens.
+
+Takes the following arguments as named parameters
+
+=over 4
+
+=item trader_id  : client_id of the trader.
+
+=back
+
+Returns an ArrayRef with the following  ArrayRef
+
+    [ 
+        [copier_id, traderid, traders token] , 
+    ]
+
+=cut
+
+sub get_copiers_tokens_all {
     my ($self, $args) = @_;
 
     my $sql = q{
@@ -23,8 +66,8 @@ sub get_copiers_cnt {
     };
 
     my @binds = ($args->{trader_id});
-    my $res = $self->db->dbic->run(fixup => sub { [$_->selectall_arrayref($sql, undef, @binds)]->[0] });
-    return scalar @{$self->_filter_invalid_tokens($res)};
+    my $res = $self->db->dbic->run(fixup => sub { $_->selectall_arrayref($sql, undef, @binds) });
+    return $res;
 }
 
 sub get_trade_copiers {
@@ -39,18 +82,92 @@ sub get_trade_copiers {
     return $self->_filter_invalid_tokens($res);
 }
 
-sub get_traders {
+=head2 get_traders_tokens_all
+
+Returns a list of traders a copier is following including Invalid tokens. 
+
+Takes the following arguments as named parameters
+
+=over 4
+
+=item  copier_id :   The client_id of the copier. 
+
+=back
+
+Returns an ArrayRef with an ArrayRef  of copy trader details
+
+    [ 
+        [   trader_id, copier_id, traders token] , 
+    ]
+
+=cut
+
+sub get_traders_tokens_all {
     my ($self, $args) = @_;
 
     my $sql = q{
-        SELECT trader_id, trader_id, trader_token
+        SELECT  trader_id, copier_id, trader_token
           FROM betonmarkets.copiers
          WHERE copier_id = $1
     };
 
     my @binds = ($args->{copier_id});
     my $res = $self->db->dbic->run(fixup => sub { $_->selectall_arrayref($sql, undef, @binds) });
-    return $self->_filter_invalid_tokens($res);
+    return $res;
+}
+
+=head2 get_traders 
+
+Gets an ArrayRef of traders for a copier  with valid tokens 
+Takes the following arguments as named parameters
+
+=over 4
+
+=item  copier_id :   The client_id of the copier. 
+
+=back
+
+Returns an ArrayRef of unique trader client id with valid tokens. 
+
+=cut
+
+sub get_traders {
+    my ($self, $args) = @_;
+    my $res = $self->get_traders_tokens_all($args);
+    #maintaining some awkward backwards compatibility with _filter_invalid _tokens()
+    my @remapped = map { [$_->[0], $_->[0], $_->[2]] } $res->@*;
+    return $self->_filter_invalid_tokens(\@remapped);
+}
+
+=head2 delete_copiers
+
+Deletes copier tokens from the database 
+
+Takes the following arguments as named parameters
+
+
+=over 4
+
+=item  copier_id  client login id of the copier
+
+=item  trader_id client login id of the trader
+
+=item  token  token representing the copy
+
+=back
+
+Returns number of rows deleted. 
+
+=cut
+
+sub delete_copiers {
+    my ($self, $args) = @_;
+    my $rows_affected = $self->db->dbic->run(
+        ping => sub {
+            my $rows_affected = $_->do('SELECT FROM betonmarkets.delete_copiers(?::VARCHAR(12),?::VARCHAR(12),?::TEXT)',
+                undef, ($args->{trader_id}, $args->{copier_id}, $args->{token}));
+        });
+    return $rows_affected;
 }
 
 # Takes arrayref of [ item, login, token ]
