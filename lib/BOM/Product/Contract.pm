@@ -482,6 +482,14 @@ sub allowed_slippage {
     return 0.0175;
 }
 
+sub expected_date_expiry {
+    my $self = shift;
+
+    return $self->date_expiry unless $self->tick_expiry;
+    return Date::Utility->new($self->reset_time) if $self->category_code eq 'reset';
+    return $self->date_start->plus_time_interval($self->tick_count * $self->market->expected_tick_frequency);
+}
+
 # INTERNAL METHODS
 
 #A TimeInterval which expresses the maximum time a tick trade may run, even if there are missing ticks in the middle.
@@ -761,6 +769,9 @@ sub _build_apply_market_inefficient_limit {
 
 sub get_ticks_for_tick_expiry {
     my $self = shift;
+
+    # only fetch ticks if we expect it to expire to save a round-trip to feed database.
+    return [] if $self->date_pricing->is_before($self->expected_date_expiry) and not $self->is_path_dependent;
 
     my $ticks = $self->underlying->ticks_in_between_start_limit({
         start_time => $self->date_start->epoch + 1,

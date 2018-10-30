@@ -114,4 +114,43 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
     }
 }
 
+subtest 'reset spot tests' => sub {
+    my $now  = Date::Utility->new;
+    my $args = {
+        underlying => 'R_100',
+        bet_type   => 'RESETCALL',
+        date_start => $now,
+        currency   => 'USD',
+        payout     => 100,
+        barrier    => 'S0P'
+    };
+
+    my @test_data = (
+        [[(map { [$now->epoch + $_, 100] } (2, 4)), [$now->epoch + 6, 102]], '5t', 'reset on second tick'],
+        [[(map { [$now->epoch + $_, 100] } (2, 4, 6)), [$now->epoch + 8, 102]], '6t', 'reset on third tick'],
+        [[(map { [$now->epoch + $_, 100] } (2, 4, 6)), [$now->epoch + 8, 102]], '7t', 'reset on third tick'],
+        [[(map { [$now->epoch + $_, 100] } (2, 4, 6, 8, 10)), [$now->epoch + 12, 102]], '10t', 'reset on fifth tick'],
+    );
+    foreach my $d (@test_data) {
+        BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
+        my $ticks        = $d->[0];
+        my $duration     = $d->[1];
+        my $test_comment = $d->[2];
+        note($test_comment);
+        my $date_pricing;
+        foreach my $t (@$ticks) {
+            BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                underlying => $args->{underlying},
+                epoch      => $t->[0],
+                quote      => $t->[1],
+            });
+            $date_pricing = $t->[0];
+        }
+        $args->{date_pricing} = $date_pricing + 1;
+        $args->{duration}     = $duration;
+        my $c = produce_contract($args);
+        is $c->reset_spot->quote, 102, $test_comment;
+    }
+};
+
 done_testing;

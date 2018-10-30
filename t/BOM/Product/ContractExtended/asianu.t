@@ -82,7 +82,7 @@ subtest 'asian' => sub {
             quote      => 101
         });
         $args->{date_start}   = $now->plus_time_interval('1s');
-        $args->{date_pricing} = $now->plus_time_interval('6s');
+        $args->{date_pricing} = $now->plus_time_interval('12s');
         $c                    = produce_contract($args);
         ok $c->is_expired, 'expired';
         cmp_ok $c->barrier->as_absolute, '>', 100, 'barrier > 100';

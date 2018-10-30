@@ -53,7 +53,7 @@ subtest 'digits test it all' => sub {
     for (0 .. 4) {
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
-            epoch      => $now->epoch + $_
+            epoch      => $now->epoch + $_ * 2
         });
     }
 
@@ -64,10 +64,10 @@ subtest 'digits test it all' => sub {
         ok !$c->is_expired, 'not expired';
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
-            epoch      => $now->epoch + 5,
+            epoch      => $now->epoch + 10,
             quote      => 100.09,
         });
-        $c = produce_contract($args);
+        $c = produce_contract({%$args, date_pricing => $now->epoch + 10});
         is $c->exit_tick->quote, 100.09, 'correct exit tick';
         ok $c->is_expired, 'expired';
         cmp_ok $c->value, '==', $c->payout, 'full payout';

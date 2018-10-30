@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 2;
+use Test::More tests => 3;
 use Test::Warnings;
 use Test::Exception;
 use Test::MockModule;
@@ -184,5 +184,50 @@ subtest 'tick expiry one touch no touch' => sub {
 
     ok $c->hit_tick, 'hit tick';
     cmp_ok $c->hit_tick->quote, '==', 103;
+};
+
+subtest 'tick expiry touchnotouch settlement conditions' => sub {
+    my $now  = Date::Utility->new;
+    my $args = {
+        underlying => 'R_100',
+        bet_type   => 'ONETOUCH',
+        date_start => $now,
+        duration   => '5t',
+        currency   => 'USD',
+        payout     => 100,
+        barrier    => '+2.0'
+    };
+
+    my @test_data = (
+        [[[$now->epoch + 2, 100], [$now->epoch + 4, 102]], 1, 'expired on first tick'],
+        [[(map { [$now->epoch + $_, 100] } (2, 4)), [$now->epoch + 6, 102]], 1, 'expired on second tick'],
+        [[(map { [$now->epoch + $_, 100] } (2, 4, 6)), [$now->epoch + 8, 102]], 1, 'expired on fourth tick'],
+        [[(map { [$now->epoch + $_, 100] } (2, 4, 6, 8, 10))], 0, 'expired worthless'],
+    );
+    foreach my $d (@test_data) {
+        BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
+        my $ticks           = $d->[0];
+        my $expected_output = $d->[1];
+        my $test_comment    = $d->[2];
+        note($test_comment);
+        my $date_pricing;
+        foreach my $t (@$ticks) {
+            BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                underlying => $args->{underlying},
+                epoch      => $t->[0],
+                quote      => $t->[1],
+            });
+            $date_pricing = $t->[0];
+        }
+        $args->{date_pricing} = $date_pricing;
+        my $c = produce_contract($args);
+        is $c->is_expired, $expected_output, $test_comment;
+        if ($expected_output) {
+            is $c->barrier->as_absolute, '102.00', 'barrier 102.00';
+            ok $c->hit_tick, 'has hit tick';
+            is $c->hit_tick->quote, '102', 'hit tick 102.00';
+            is $c->hit_tick->epoch, $date_pricing, 'hit time ' . $date_pricing;
+        }
+    }
 };
 
