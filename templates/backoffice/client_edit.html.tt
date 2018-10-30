@@ -303,23 +303,19 @@ IF client_for_prove
             %]
 	        [%
                     option = auth_request.search_option;
-                    IF auth_request.has_done_request;
+                    IF auth_request.client.status.proveid_requested;
                 %]
                     [%
-                        IF auth_request.has_downloaded_xml;
+                        IF !auth_request.client.status.proveid_pending;
                         args.search_option = option;
                         args.raw = 0; href_rpt = request.url_for(raw_url, args );
                         args.raw = 1; href_xml = request.url_for(raw_url, args );
+                        pdf_args.path = "pdf/${client_for_prove.loginid}.${option}.pdf";
                     %]
                         An Experian <span class="lspace">[% option %]</span> request <span class="lspace">has</span> been done.
                         <a class="lspace" target="_blank" href="[% href_rpt | none %]">[Report]</a>
                         <a class="lspace" target="_blank" href="[% href_xml | none %]">[XML]</a>
-                        [%
-                            IF auth_request.has_downloaded_pdf;
-                            pdf_args.path = "pdf/${client_for_prove.loginid}.${option}.pdf";
-                        %]
                         <a class="lspace" target="_blank" href="[% request.url_for(doc_url, pdf_args) | none %]">[PDF]</a>
-                        [% END %]
                     [% ELSE %]
 		        <b>ProveID requested, but resulting xml file doesn't exist, please try again later or resend the ProveID request</b>
                     [% END %]

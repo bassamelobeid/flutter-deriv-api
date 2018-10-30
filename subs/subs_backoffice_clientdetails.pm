@@ -144,13 +144,13 @@ sub print_client_details {
 
         # If client is under Binary Investments (Europe) Ltd and there is no ProveID_KYC,
         # check whether there is ProveID_KYC under Binary (IOM) Ltd.
-        if ($client->landing_company->short eq 'maltainvest' && !$proveID->has_done_request) {
+        if ($client->landing_company->short eq 'maltainvest' && !$client->status->proveid_requested) {
             for my $client_iom ($user->clients_for_landing_company('iom')) {
                 my $prove = BOM::Platform::ProveID->new(
                     client        => $client_iom,
                     search_option => 'ProveID_KYC'
                 );
-                if ($prove->has_done_request) {
+                if ($client_iom->status->proveid_requested && !$client->status->proveid_pending) {
                     $client_for_prove = $client_iom;
                     $proveID          = $prove;
                     last;

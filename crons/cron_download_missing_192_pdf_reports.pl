@@ -63,7 +63,7 @@ sub find_loginids_with_pending_experian {
         fixup => sub {
             $_->selectall_arrayref(<<'SQL', {Slice => {}}) });
 SELECT client_loginid FROM betonmarkets.client_status
-WHERE status_code = 'proveid_pending' AND last_modified_date >= NOW() - INTERVAL '2 hour';
+WHERE status_code = 'proveid_pending' AND last_modified_date >= NOW() - INTERVAL '12 hour';
 SQL
 
     return [grep { $_ =~ /$broker/ } map { $_->{client_loginid} } @$result];
@@ -93,9 +93,9 @@ sub request_pdf {
     try {
         BOM::Platform::ProveID->new(
             client        => $client,
-            result_as_xml => $result_as_xml,
+            xml_result    => $result_as_xml,
             search_option => $so
-            )->save_pdf_result
+        )->get_pdf_result;
     }
     catch {
         die "Failed to save Experian pdf for " . $client->loginid . ": $_";
@@ -112,7 +112,7 @@ sub request_proveid {
     BOM::Platform::Client::IDAuthentication->new(
         client        => $client,
         force_recheck => 1
-    )->do_proveid;
+    )->_proveid;
 
     # Remove pending status to prevent ProveID search for the next cron schedule
     return remove_pending_status($loginid);

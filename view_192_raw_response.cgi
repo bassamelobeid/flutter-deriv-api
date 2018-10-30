@@ -24,7 +24,7 @@ my $client = BOM::User::Client->new({loginid => $loginID}) || die "could not get
 my $report = BOM::Platform::ProveID->new(
     client        => $client,
     search_option => $search_option
-    )->get_192_xml_report()
+    )->xml_result()
     || die "no 192 $search_option report available for $client";
 
 if (request()->param('raw')) {
