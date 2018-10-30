@@ -3,33 +3,41 @@ BTC:
         timeout: "3d"
     confirmation:
         required_confirmations: 3
+    protocol_cost: 0
 LTC:
     withdrawal:
         timeout: "3d"
     confirmation:
         required_confirmations: 3
+    protocol_cost: 0
 BCH:
     withdrawal:
         timeout: "3d"
     confirmation:
         required_confirmations: 3
+    protocol_cost: 0
 ETH:
     withdrawal:
         timeout: "5d"
     confirmation:
         required_confirmations: 3
+    protocol_cost: 0
 DAI:
     withdrawal:
         timeout: "5d"
     confirmation:
         required_confirmations: 3
+    protocol_cost: 0
 UST:
     withdrawal:
         timeout: "3d"
     confirmation:
         required_confirmations: 3
+    protocol_cost: 0.00000546
 USB:
     withdrawal:
         timeout: "3d"
     confirmation:
         required_confirmations: 3
+    protocol_cost: 0
+
