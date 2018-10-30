@@ -34,6 +34,7 @@ use BOM::Config;
 use BOM::Backoffice::FormAccounts;
 use BOM::Database::Model::AccessToken;
 use BOM::Backoffice::Config;
+use BOM::Database::DataMapper::Copier;
 use Finance::MIFIR::CONCAT qw(mifir_concat);
 use BOM::Platform::S3Client;
 use Media::Type::Simple;
@@ -133,6 +134,25 @@ if ($input{whattodo} eq 'sync_to_DF') {
     }
 }
 
+if ($input{whattodo} eq 'delete_copier_tokens') {
+    my $copier_ids = request()->param('copier_ids');
+    my $trader_ids = request()->param('trader_ids');
+    $copier_ids = [$copier_ids] if ref($copier_ids) ne 'ARRAY';
+    $trader_ids = [$trader_ids] if ref($trader_ids) ne 'ARRAY';
+    my $db           = $client->db;
+    my $delete_count = 0;
+    $delete_count = _delete_copiers($copier_ids, 'copier', $loginid, $db) if defined $copier_ids->[0];
+    $delete_count += _delete_copiers($trader_ids, 'trader', $loginid, $db) if defined $trader_ids->[0];
+
+    BOM::Backoffice::Request::template()->process(
+        'backoffice/client_edit_msg.tt',
+        {
+            message  => "deleted $delete_count copier, trader connections ",
+            self_url => $self_href,
+        },
+    ) || die BOM::Backoffice::Request::template()->error();
+    code_exit_BO();
+}
 # sync authentication status to MT5
 if ($input{whattodo} eq 'sync_to_MT5') {
     BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $loginid});
@@ -899,6 +919,19 @@ foreach my $l (sort keys %$siblings) {
         print "Access Token [" . $l . "]: $1 <br\>";
     }
 }
+Bar("$loginid Copiers/Traders");
+my $copiers_data_mapper = BOM::Database::DataMapper::Copier->new({
+    db             => $client->db,
+    client_loginid => $loginid
+});
+BOM::Backoffice::Request::template()->process(
+    'backoffice/copy_trader_tokens.html.tt',
+    {
+        copiers   => $copiers_data_mapper->get_copiers_tokens_all({trader_id => $loginid}),
+        traders   => $copiers_data_mapper->get_traders_tokens_all({copier_id => $loginid}),
+        loginid   => $encoded_loginid,
+        self_post => $self_post
+    }) || die BOM::Backoffice::Request::template()->error();
 
 Bar('Send Client Statement');
 BOM::Backoffice::Request::template()->process(
@@ -977,6 +1010,50 @@ BOM::Backoffice::Request::template()->process(
         history => $login_history,
         limit   => $limit
     });
+
+=head2 _delete_copiers  
+
+Takes incoming copier and token string and calls the routine that removes them 
+works for lists of copiers or traders. 
+
+Takes the following arguments
+
+=over 4
+
+=item ArrayRef of strings with combined clientid and token separated by "::" (CR900001::X9SrjksrY5, CR..  )
+
+=item String  "copier"|"trader" depending on which the list contains. 
+
+=item String  client_id for the user being editied (globally = $loginid)
+
+=item DB handle 
+
+=back
+
+Returns number of tokens deleted as integer
+
+=cut
+
+sub _delete_copiers {
+    my ($list, $type, $loginid, $db) = @_;
+
+    my $copiers_data_mapper = BOM::Database::DataMapper::Copier->new({
+        db             => $db,
+        client_loginid => $loginid
+    });
+    my $delete_count = 0;
+    foreach my $client_token (@$list) {
+        my ($client_id, $token) = split('::', $client_token);
+        # switch around ids depending if they are a copier or trader.
+        my ($trader_id, $copier_id) = $type eq 'copier' ? ($loginid, $client_id) : ($client_id, $loginid);
+        $delete_count += $copiers_data_mapper->delete_copiers({
+            trader_id => $trader_id,
+            copier_id => $copier_id,
+            token     => $token || undef
+        });
+    }
+    return $delete_count;
+}
 code_exit_BO();
 
 1;

@@ -1,0 +1,27 @@
+[% IF copiers.size > 0 || traders.size > 0 %]
+    <form action="[% self_post %]" method="get">
+    [% IF copiers.size > 0 %]
+        <h3>Copiers</h3>
+        <table>
+        <tr><th>Copier Id</th><th>token</th></tr>
+        [% FOREACH copier IN copiers %]
+            <tr><td>[% copier.0 %]</td><td>[% copier.2 %]</td><td><input type="checkbox" name="copier_ids" value="[% copier.0 %]::[% copier.2 %]"></tr>
+        [% END %]
+        </table>
+    [% END %]
+    
+    [% IF traders.size > 0 %]
+        <h3>Traders</h3>
+        <table>
+        <tr><th>trader Id</th><th>token</th></tr>
+        [% FOREACH trader IN traders %]
+            <tr><td>[% trader.0 %]</td><td>[% trader.2 %]</td><td><input type="checkbox" name="trader_ids" value="[% trader.0 %]::[% trader.2 %]"></tr>
+        [% END %]
+        </table>
+    [% END %]
+    <input type="hidden" name="loginID" value="[% loginid %]">
+    <input type="hidden" name="whattodo" value="delete_copier_tokens">
+    <input type="submit" value="Delete Selected"/>
+    </form>
+<p>*NOTE: This only removes the existing link between the copier and trader, existing tokens remain valid. </a>
+[% END %]
