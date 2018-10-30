@@ -55,7 +55,7 @@ rpc copytrading_statistics => sub {
         copiers => BOM::Database::DataMapper::Copier->new(
             broker_code => $trader->broker_code,
             operation   => 'replica'
-        )->get_copiers_cnt({trader_id => $trader_id}),
+        )->get_copiers_count({trader_id => $trader_id}),
     };
 
     my $account = $trader->default_account;
