@@ -1,364 +1,269 @@
 use Test::Most 'no_plan';
 use Test::FailWarnings;
-use Test::MockObject::Extends;
-use Carp;
 use File::Spec;
-
+use Test::MockModule;
+use Test::Exception;
+use Brands;
 use BOM::User::Client;
+use Email::Folder::Search;
+use BOM::Platform::ProveID;
+use BOM::Platform::Context qw(request);
+use BOM::Test::Helper::Client qw(create_client);
+
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 use BOM::Platform::Client::IDAuthentication;
-{
 
-    package IDAuthentication;
-    our @ISA = qw(BOM::Platform::Client::IDAuthentication);
-
-    sub _notify {
-        my ($self, @info) = @_;
-        push @{$self->{notifications}}, [@info];
-    }
-    sub notified { shift->{notifications} }
-    sub requires_authentication { my $s = shift; $s->client->landing_company->country eq 'Isle of Man' }
-}
+my $xml              = XML::Simple->new;
+my $support_email    = 'support@binary.com';
+my $compliance_email = 'compliance@binary.com';
 
 subtest 'Constructor' => sub {
-    my $client = BOM::User::Client->new({loginid => 'VRTC1001'});
-
-    my $v = new_ok('IDAuthentication', [client => $client]);
-
-    subtest 'client returned by default _register_account' => sub {
-        ok !$v->client->is_first_deposit_pending, 'is virtual, with no tracking of first deposit';
-        ok !$v->requires_authentication, 'triggers no authentication';
+    subtest 'No Client' => sub {
+        throws_ok(sub { BOM::Platform::Client::IDAuthentication->new() }, qr/Missing required arguments: client/, "Constructor dies with no client");
+    };
+    subtest 'With Client' => sub {
+        my $c = create_client();
+        my $obj = BOM::Platform::Client::IDAuthentication->new({client => $c});
+        isa_ok($obj, "BOM::Platform::Client::IDAuthentication", "Constructor ok with client");
     };
 };
 
-subtest 'No authentication for virtuals' => sub {
-    my $c = BOM::User::Client->new({loginid => 'VRTC1001'});
+subtest 'Virtual accounts' => sub {
+    my $c = create_client('VRTC');
 
-    my $v = IDAuthentication->new(client => $c);
-    ok !$v->client->is_first_deposit_pending, 'no tracking of first deposit';
-    ok !$v->requires_authentication, '.. no authentication required';
+    my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
+    ok !$v->client->is_first_deposit_pending, 'No tracking of first deposit for virtual accounts';
+    is($v->run_authentication, undef, "run_authentication for VRTC ok");
+
+};
+subtest "CR accounts" => sub {
+    my $c = create_client("CR");
+
+    my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
+    ok $v->client->is_first_deposit_pending, 'First deposit tracking for CR account';
+
+    $v->run_authentication();
+    ok !$v->client->status->cashier_locked, "CR client not cashier locked following run_authentication";
+    ok !$v->client->status->unwelcome,      "CR client not unwelcome following run_authentication";
 };
 
-subtest "No authentication for CR clients" => sub {
-    for my $residence (qw(at au br gb ru se sg)) {
-        subtest "resident of $residence" => sub {
-            my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'CR',
-                residence   => $residence,
-            });
+subtest 'MLT accounts' => sub {
+    subtest 'Not age verified prior to run_authentication' => sub {
+        my $c = create_client('MLT');
+        $c->status->clear_age_verification;
 
-            my $v = IDAuthentication->new(client => $c);
-            ok $v->client->is_first_deposit_pending, 'real client awaiting first deposit';
-            ok !$v->requires_authentication, '.. no authentication required';
-            $v->run_authentication;
-            ok !$v->client->status->cashier_locked;
-        };
-    }
+        my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
+        ok $v->client->is_first_deposit_pending, 'First deposit tracking for MLT account';
+
+        $v->run_authentication;
+
+        ok !$v->client->fully_authenticated, 'Not fully authenticated';
+        ok !$v->client->status->age_verification, 'Not age verified';
+        ok !$v->client->status->unwelcome,        'Not unwelcome';
+        ok $v->client->status->cashier_locked, 'Cashier_locked';
+    };
+    subtest 'Age verified prior to run_authentication' => sub {
+        my $c = create_client('MLT');
+
+        my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
+        ok $v->client->is_first_deposit_pending, 'First deposit tracking for MLT account';
+
+        $v->client->status->set("age_verification");
+
+        $v->run_authentication;
+
+        ok !$v->client->fully_authenticated, 'Not fully authenticated';
+        ok !$v->client->status->unwelcome,      'Not unwelcome';
+        ok !$v->client->status->cashier_locked, 'Not cashier_locked';
+    };
 };
 
-subtest 'MLT clients' => sub {
-    for my $residence (qw(gb)) {
-        subtest "resident of $residence" => sub {
-            my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'MLT',
-                residence   => $residence,
-            });
+subtest 'MF accounts' => sub {
+    subtest "Not authenticated prior to run_authentication" => sub {
+        my $c = create_client('MF');
 
-            my $v = IDAuthentication->new(client => $c);
-            ok $v->client->is_first_deposit_pending, 'real client awaiting first deposit';
-            ok !$v->requires_authentication, '.. does not require authentication';
-            }
-    }
+        my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
+        ok $v->client->is_first_deposit_pending, 'First deposit tracking for MF account';
 
-    # Non residents of supported countries should not require auth
-    for my $residence (qw(al br de ru)) {
-        subtest "resident of $residence" => sub {
-            my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'MLT',
-                residence   => $residence,
-            });
+        $c->set_authentication('ID_DOCUMENT')->status('pending');
 
-            my $v = IDAuthentication->new(client => $c);
-            ok $v->client->is_first_deposit_pending, 'real client awaiting first deposit';
-            ok !$v->requires_authentication, '.. no authentication required';
-            }
-    }
+        $v->run_authentication;
+
+        ok !$v->client->fully_authenticated, 'Not fully authenticated';
+        ok $v->client->status->unwelcome, "Unwelcome";
+    };
+    subtest "Authenticated prior to run_authentication" => sub {
+        my $c = create_client('MF');
+
+        my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
+        ok $v->client->is_first_deposit_pending, 'First deposit tracking for MF account';
+
+        $c->set_authentication('ID_DOCUMENT')->status('pass');
+
+        $v->run_authentication;
+
+        ok $v->client->fully_authenticated, 'Fully authenticated';
+        ok !$v->client->status->unwelcome, "Not unwelcome";
+    };
 };
 
-subtest 'MX clients' => sub {
-    for my $residence (qw(al at au br de gb iom ru se)) {
-        subtest "resident of $residence" => sub {
-            my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'MX',
-                residence   => $residence,
+my $emails = {};
+
+subtest 'MX accounts' => sub {
+    my $mock         = Test::MockModule->new('BOM::Platform::Client::IDAuthentication');
+    my $proveid_mock = Test::MockModule->new('BOM::Platform::ProveID');
+
+    my $brand = Brands->new(name => request()->brand);
+
+    $mock->mock(
+        send_email => sub {
+            _send_email(shift);
+        });
+
+    $mock->mock(
+        _notify_cs => sub {
+            my $self    = shift;
+            my $subject = shift;
+
+            return _send_email({
+                to      => $support_email,
+                subject => $subject
             });
+        });
 
-            my $v = IDAuthentication->new(client => $c);
-            ok $v->client->is_first_deposit_pending, 'real client awaiting first deposit';
-            ok $v->requires_authentication, '.. requires proveid';
-            }
-    }
-};
+    subtest "Invalid ProveID Matches" => sub {
+        my $base_dir = "/home/git/regentmarkets/bom-test/data/Experian/SavedXML/";
+        my @invalid_matches = ("ExperianFraud", "ExperianDeceased", "ExperianOFSI", "ExperianPEP", "ExperianBOE");
 
-subtest 'When auth not required' => sub {
-    subtest 'and strict age verification' => sub {
-        subtest 'for MLT' => sub {
-            my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'MLT',
-                residence   => 'br',
-            });
+        for my $match (@invalid_matches) {
+            subtest "$match" => sub {
+                my $c = create_client('MX');
 
-            my $v = IDAuthentication->new(client => $c);
-            Test::MockObject::Extends->new($v);
-            do {
-                local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
+                my $loginid      = $c->loginid;
+                my $client_email = $c->email;
+                $emails = {};
+
+                my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
+
+                my $file_path = $base_dir . $match . ".xml";
+
+                $proveid_mock->mock(
+                    get_result => sub {
+                        open my $fh, '<', $file_path;
+                        read $fh, my $file_content, -s $fh;
+                        return $file_content;
+                    });
                 $v->run_authentication;
+
+                ok $v->client->status->disabled,          "Disabled due to $match";
+                ok $v->client->status->proveid_requested, "ProveID requested";
+
+                is($emails->{$support_email}, "Account $loginid disabled following Experian results", "CS received email");
+                is($emails->{$client_email},  "Documents are required to verify your identity",       "Client received email");
             };
-            ok !$v->client->fully_authenticated, 'client should not be fully authenticated';
-            ok !$v->client->status->age_verification, 'client should not be age verified';
-            ok !$v->client->status->unwelcome,        'client is not unwelcome';
-            ok $v->client->status->cashier_locked, 'client is now cashier_locked';
-        };
-        subtest 'for MX' => sub {
-            my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'MX',
-                residence   => 'gb',
-            });
-
-            my $v = IDAuthentication->new(client => $c);
-            Test::MockObject::Extends->new($v);
-
-            $v->mock(
-                -_fetch_proveid,
-                sub {
-                    return {kyc_summary_score => 1};
-                });
-
-            do {
-                local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
-                $v->run_authentication;
-            };
-            ok !$v->client->fully_authenticated, 'client should not be fully authenticated';
-            ok !$v->client->status->age_verification, 'client should not be age verified';
-            ok $v->client->status->unwelcome, 'client is now unwelcome';
-            }
-
-    };
-
-    subtest 'but no strict age verification' => sub {
-        my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-            residence   => 'ar',
-        });
-
-        my $v = IDAuthentication->new(client => $c);
-        $v->run_authentication;
-
-        ok !$v->client->fully_authenticated, 'client should not be fully authenticated';
-        ok !$v->client->status->age_verification, 'client should not be age verified';
-        ok !$v->client->status->cashier_locked,   'cashier not locked';
-    };
-};
-
-subtest 'proveid' => sub {
-    subtest 'fully authenticated' => sub {
-        my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MX',
-            residence   => 'ar',
-        });
-
-        my $v = IDAuthentication->new(client => $c);
-        Test::MockObject::Extends->new($v);
-
-        $v->mock(
-            -_fetch_proveid,
-            sub {
-                return {
-                    fully_authenticated => 1,
-                    kyc_summary_score   => 3
-                };
-            });
-        $v->run_authentication;
-        is $v->notified, undef, 'sent zero notification';
-        ok $v->client->status->age_verification, 'client is age verified';
-        ok !$v->client->status->cashier_locked, 'cashier not locked';
-    };
-
-    subtest 'actual response from experian' => sub {
-        my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MX',
-            residence   => 'ar',
-        });
-
-        my $v = IDAuthentication->new(client => $c);
-        Test::MockObject::Extends->new($v);
-
-        $v->mock(
-            -_fetch_proveid,
-            sub {
-                return {
-                    kyc_summary_score   => 4,
-                    num_verifications   => '2',
-                    matches             => [],
-                    fully_authenticated => 1
-                };
-            });
-
-        $v->run_authentication;
-        ok $v->client->status->age_verification, 'client is age verified';
-        ok !$v->client->status->cashier_locked, 'cashier not locked';
-    };
-
-    subtest 'kyc 2 or less' => sub {
-        my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MX',
-            residence   => 'ar',
-        });
-
-        my $v = IDAuthentication->new(client => $c);
-        Test::MockObject::Extends->new($v);
-
-        $v->mock(
-            -_fetch_proveid,
-            sub {
-                return {kyc_summary_score => 1};
-            });
-
-        $v->run_authentication;
-        ok $v->client->status->unwelcome, 'client is unwelcome';
-        ok !$v->client->status->cashier_locked, 'cashier not locked';
-    };
-
-    subtest 'kyc more than 2' => sub {
-        my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MX',
-            residence   => 'ar',
-        });
-
-        my $v = IDAuthentication->new(client => $c);
-        Test::MockObject::Extends->new($v);
-
-        $v->mock(
-            -_fetch_proveid,
-            sub {
-                return {kyc_summary_score => 3};
-            });
-        $v->run_authentication;
-        ok $v->client->status->age_verification, 'client is age verified';
-        ok !$v->client->status->cashier_locked, 'cashier not locked';
-    };
-
-    subtest 'flagged' => sub {
-        my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MX',
-            residence   => 'ar',
-        });
-
-        my $v = IDAuthentication->new(client => $c);
-
-        Test::MockObject::Extends->new($v);
-
-        $v->mock(-_fetch_proveid, sub { return {kyc_summary_score => 3, matches => ['PEP']} });
-
-        $v->run_authentication;
-        my @notif = @{$v->notified};
-        is @notif, 1, 'sent two notifications';
-        like $notif[0][0], qr/PEP match/, 'notification is correct';
-        ok $v->client->status->disabled, 'client is disabled';
-    };
-
-    subtest 'deny' => sub {
-        my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MX',
-            residence   => 'ar',
-        });
-
-        my $v = IDAuthentication->new(client => $c);
-        Test::MockObject::Extends->new($v);
-
-        $v->mock(
-            -_fetch_proveid,
-            sub {
-                return {
-                    deny              => 1,
-                    kyc_summary_score => 0
-                };
-            });
-        do {
-            local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
-            $v->run_authentication;
-        };
-        ok !$v->client->fully_authenticated, 'client not fully authenticated';
-        ok !$v->client->status->age_verification, 'client not age verified';
-        ok $v->client->status->unwelcome, 'client now unwelcome';
-    };
-
-    subtest 'Director/CCJ' => sub {
-        my $types = {
-            Directors => {matches => [qw/Directors/]},
-            CCJ       => {CCJ     => 1},
-        };
-        foreach my $type (sort keys %$types) {
-            my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'MX',
-                residence   => 'ar',
-            });
-
-            my $v = IDAuthentication->new(client => $c);
-            Test::MockObject::Extends->new($v);
-
-            $v->mock(
-                -_fetch_proveid,
-                sub {
-                    return {
-                        matches           => [qw/Directors/],
-                        CCJ               => 1,
-                        kyc_summary_score => 0
-                    };
-                });
-            do {
-                local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
-                $v->run_authentication;
-            };
-            ok !$v->client->fully_authenticated, 'client not fully authenticated: ' . $type;
-            ok !$v->client->status->age_verification, 'client not age verified: ' . $type;
         }
     };
+    subtest "Insufficient DOB Match in ProveID" => sub {
+        my $c = create_client('MX');
 
-    subtest 'age verified' => sub {
-        my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MX',
-            residence   => 'ar',
-        });
+        my $loginid      = $c->loginid;
+        my $client_email = $c->email;
+        $emails = {};
 
-        my $v = IDAuthentication->new(client => $c);
-        Test::MockObject::Extends->new($v);
-        $v->mock(-_fetch_proveid, sub { return {kyc_summary_score => 3} });
+        my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
+
+        my $file_path = "/home/git/regentmarkets/bom-test/data/Experian/SavedXML/ExperianInsufficientDOB.xml";
+
+        $proveid_mock->mock(
+            get_result => sub {
+                open my $fh, '<', $file_path;
+                read $fh, my $file_content, -s $fh;
+                return $file_content;
+            });
+
         $v->run_authentication;
-        is $v->notified, undef, 'sent zero notification';
-        ok !$v->client->fully_authenticated, 'client not fully authenticated';
-        ok $v->client->status->age_verification, 'client is age verified';
-        ok !$v->client->status->cashier_locked, 'cashier not locked';
+
+        ok !$v->client->status->disabled, "Not disabled due to Insufficient DOB Match";
+        ok $v->client->status->unwelcome,         "Unwelcome due to Insufficient DOB Match";
+        ok $v->client->status->proveid_requested, "ProveID requested";
+
+        is($emails->{$support_email}, "Account $loginid unwelcome following Experian results", "CS received email");
+        is($emails->{$client_email},  "Documents are required to verify your identity",        "Client received email");
     };
+    subtest "Sufficient DOB Match in ProveID" => sub {
+        my $c = create_client('MX');
 
-    subtest 'failed authentication' => sub {
-        my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MX',
-            residence   => 'ar',
-        });
+        my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
 
-        my $v = IDAuthentication->new(client => $c);
-        Test::MockObject::Extends->new($v);
+        my $file_path = "/home/git/regentmarkets/bom-test/data/Experian/SavedXML/ExperianValid.xml";
 
-        $v->mock(-_fetch_proveid, sub { return {kyc_summary_score => 0} });
-        do {
-            local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
-            $v->run_authentication;
-        };
-        ok !$v->client->fully_authenticated, 'client not fully authenticated';
-        ok !$v->client->status->age_verification, 'client not age verified';
-        ok $v->client->status->unwelcome, 'client now unwelcome';
+        $proveid_mock->mock(
+            get_result => sub {
+                open my $fh, '<', $file_path;
+                read $fh, my $file_content, -s $fh;
+                return $file_content;
+            });
+
+        $v->run_authentication;
+
+        ok !$v->client->status->disabled,  "Not disabled due to sufficient DOB Match";
+        ok !$v->client->status->unwelcome, "Not welcome due to sufficient DOB Match";
+        ok $v->client->status->age_verification,  "Age verified due to suffiecient DOB Match";
+        ok $v->client->status->proveid_requested, "ProveID requested";
+    };
+    subtest "No Experian entry found" => sub {
+        my $c = create_client('MX');
+
+        my $loginid      = $c->loginid;
+        my $client_email = $c->email;
+        $emails = {};
+
+        my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
+        $proveid_mock->mock(
+            get_result => sub {
+                die 'Experian XML Request Failed with ErrorCode: 501, ErrorMessage: No Match Found';
+            });
+
+        $v->run_authentication;
+
+        ok !$v->client->status->disabled, "Not disabled due to no entry";
+        ok $v->client->status->unwelcome,         "Unwelcome due to no entry";
+        ok $v->client->status->proveid_requested, "ProveID requested";
+
+        is($emails->{$support_email}, "Account $loginid unwelcome due to lack of entry in Experian database", "CS received email");
+        is($emails->{$client_email}, "Documents are required to verify your identity", "Client received email");
+    };
+    subtest "Error connecting to Experian" => sub {
+        my $c = create_client('MX');
+
+        my $loginid = $c->loginid;
+        $emails = {};
+
+        my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
+        $proveid_mock->mock(
+            get_result => sub {
+                die "Test Error";
+            });
+
+        $v->run_authentication;
+
+        ok !$v->client->status->disabled, "Not disabled due to failed request";
+        ok $v->client->status->unwelcome,         "Unwelcome due to failed request";
+        ok $v->client->status->proveid_requested, "ProveID requested";
+        ok $v->client->status->proveid_pending,   "ProveID flag for retry set";
+
+        is($emails->{$compliance_email}, "Experian request error for client $loginid", "CS received email");
     };
 };
 
+sub _send_email {
+    my $args = shift;
+    my $to   = $args->{to};
+    my $subj = $args->{subject};
+
+    $emails->{$to} = $subj;
+    return 1;
+}
+
+1;

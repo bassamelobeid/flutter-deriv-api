@@ -35,7 +35,7 @@ my $dm = BOM::Database::DataMapper::Copier->new(
     operation   => 'replica'
 );
 
-is($dm->get_copiers_cnt({trader_id => 'CR0027'}), 2, 'check copiers count');
+is($dm->get_copiers_count({trader_id => 'CR0027'}), 2, 'check copiers count');
 is($dm->get_traders({copier_id => 'CR0028'})->[0], 'CR0027', 'check trader');
 is($dm->get_traders({copier_id => 'CR0029'})->[0], 'CR0027', 'check trader');
 
@@ -76,4 +76,23 @@ is(
     'got filtered copiers'
 );
 
+subtest duplicate_entries => sub {
+    BOM::Platform::Copier->update_or_create({
+        trader_id       => 'CR0027',
+        copier_id       => 'CR0028',
+        broker          => 'CR',
+        min_trade_stake => 10,
+        max_trade_stake => 100,
+        assets          => [],
+        trade_types     => ['CALL', 'CALL'],
+    });
+    #we don't use the get_trader_* calls here because they mask the issue.
+    my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
+    my $dbic     = $clientdb->db->dbic;
+    my $result   = $dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref("SELECT * FROM betonmarkets.copiers WHERE trader_id = 'CR0027' AND copier_id = 'CR0028' AND trade_type = 'CALL'");
+        });
+    is(scalar @$result, 1, 'Duplicate Trade types do not create duplicate entries');
+};
 done_testing;

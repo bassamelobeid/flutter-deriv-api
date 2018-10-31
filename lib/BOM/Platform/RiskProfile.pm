@@ -224,6 +224,7 @@ sub get_turnover_limit_parameters {
                     $params->{daily} = 1;
                 } else {
                     $params->{daily} = 0;
+                    $params->{ultra_short} = $exp eq 'ultra_short' ? 1 : 0;
                 }
             }
 

@@ -51,7 +51,7 @@ sub check {
 
     return if $client->is_virtual;
 
-    my $sanctioned_info = $sanctions->get_sanctioned_info($client->first_name, $client->last_name);
+    my $sanctioned_info = $sanctions->get_sanctioned_info($client->first_name, $client->last_name, $client->date_of_birth);
 
     $client->sanctions_check({
         type   => $self->type,
