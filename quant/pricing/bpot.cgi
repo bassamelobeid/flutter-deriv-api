@@ -78,7 +78,7 @@ if ($bet) {
         my $start_bet = make_similar_contract(
             $bet,
             {
-                priced_at       => 'start',
+                date_pricing    => $start,
                 landing_company => $landing_company
             });
         $debug_link = BOM::PricingDetails->new({bet => $start_bet})->debug_link;
