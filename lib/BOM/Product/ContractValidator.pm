@@ -160,7 +160,7 @@ sub _validate_settlement_conditions {
 sub _validate_offerings {
     my $self = shift;
 
-    my $message_to_client = [$ERROR_MAPPING->{TradeTemporarilyUnavailable}];
+    my $message_to_client = $self->for_sale ? [$ERROR_MAPPING->{ResaleNotOffered}] : [$ERROR_MAPPING->{TradeTemporarilyUnavailable}];
 
     if (BOM::Config::Runtime->instance->app_config->system->suspend->trading) {
         return {

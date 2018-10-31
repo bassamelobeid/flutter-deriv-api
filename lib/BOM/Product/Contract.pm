@@ -845,9 +845,15 @@ has landing_company => (
 sub _build_risk_profile {
     my $self = shift;
 
+    # keep the ultra_short expiry type to risk profile.
+    my $expiry_type = $self->expiry_type;
+    if ($expiry_type eq 'intraday' and $self->remaining_time->minutes <= 5) {
+        $expiry_type = 'ultra_short';
+    }
+
     return BOM::Platform::RiskProfile->new(
         contract_category              => $self->category_code,
-        expiry_type                    => $self->expiry_type,
+        expiry_type                    => $expiry_type,
         start_type                     => ($self->is_forward_starting ? 'forward' : 'spot'),
         currency                       => $self->currency,
         barrier_category               => $self->barrier_category,
