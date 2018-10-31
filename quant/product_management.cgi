@@ -57,6 +57,8 @@ if ($r->param('update_limit')) {
     my $offerings_obj = LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
     my %known_values  = map { $_ => [$offerings_obj->values_for_key($_)] } @known_keys;
 
+    # there's no separate in offerings for intraday and ultra_short duration. So adding it here
+    push @{$known_values{expiry_type}}, 'ultra_short';
     # landing company is not part of offerings object.
     $known_values{landing_company} = [map { $_->short } LandingCompany::Registry::all()];
     my %ref;

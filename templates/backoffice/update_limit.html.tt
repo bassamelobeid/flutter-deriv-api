@@ -49,7 +49,7 @@
         <tr>
             <td>Expiry Type: </td>
             <td><input type="text" name="expiry_type" value=''></input></td>
-            <td> e.g. daily | intraday | tick</td>
+            <td> e.g. daily | intraday | tick | ultra_short</td>
         </tr>
         <tr>
             <td>Landing Company: </td>

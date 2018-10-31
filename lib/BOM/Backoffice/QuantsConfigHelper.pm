@@ -268,7 +268,13 @@ sub get_config_input {
         }
     }
 
-    return [uniq(map { $_->values_for_key($key) } ($lc->basic_offerings($o_config), $lc->multi_barrier_offerings($o_config)))];
+    my @input = uniq(map { $_->values_for_key($key) } ($lc->basic_offerings($o_config), $lc->multi_barrier_offerings($o_config)));
+
+    if ($key eq 'expiry_type') {
+        push @input, 'ultra_short';
+    }
+
+    return \@input;
 }
 
 sub update_market_group {
