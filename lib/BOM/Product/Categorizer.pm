@@ -55,7 +55,7 @@ sub BUILD {
         BOM::Product::Exception->throw(error_code => 'InvalidBarrierSingle') if ($barrier_type_count == 0 and grep { ref $_ } @$barriers);
 
         BOM::Product::Exception->throw(error_code => 'InvalidBarrierDouble')
-            if ($barrier_type_count == scalar(@$contract_types) and grep { !ref $_ } @$barriers);
+            if ($barrier_type_count == scalar(@$contract_types) and grep { ref($_) ne 'HASH' or scalar(keys %$_) != 2 } @$barriers);
     }
 
     return;

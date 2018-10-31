@@ -183,6 +183,7 @@ subtest 'produce_batch_contract - error check' => sub {
         }];
     try {
         $batch = produce_batch_contract($args);
+        $batch->ask_prices;
     }
     catch {
         isa_ok $_, 'BOM::Product::Exception';
