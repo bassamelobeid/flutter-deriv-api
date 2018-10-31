@@ -932,6 +932,7 @@ rpc set_settings => sub {
 
     my ($website_name, $client_ip, $user_agent, $language, $args) =
         @{$params}{qw/website_name client_ip user_agent language args/};
+    $user_agent //= '';
 
     my $brand = Brands->new(name => request()->brand);
     my ($residence, $allow_copiers) =
@@ -1078,6 +1079,7 @@ rpc set_settings => sub {
                 code              => 'InvalidCitizen',
                 message_to_client => localize('Sorry, our service is not available for your country of citizenship.')});
     }
+
     if (   ($address1 and $address1 ne $client->address_1)
         or $address2 ne $client->address_2
         or $addressTown ne $client->city
@@ -1092,7 +1094,7 @@ rpc set_settings => sub {
             . '] updated his/her address from ['
             . join(' ', $client->address_1, $client->address_2, $client->city, $client->state, $client->postcode)
             . '] to ['
-            . join(' ', ($address1 // ''), $address2, $addressTown, $addressState, $addressPostcode) . ']';
+            . join(' ', $address1, $address2, $addressTown, $addressState, $addressPostcode) . ']';
     }
 
     # only allowed to set for maltainvest, costarica and only
