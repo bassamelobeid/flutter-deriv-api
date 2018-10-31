@@ -221,8 +221,10 @@ The function that will attach onto redis server. This function will call on_mess
 sub on_message {
     my ($self, $redis, $message, $channel) = @_;
     if (my $entry = $self->channel_subscriptions->{$channel}) {
-        foreach my $subscription (values %$entry) {
-            $subscription->process($message);
+        foreach my $k (keys %$entry) {
+            # Maybe during the iteration time, the element has been deleted, so we should check again before process the message
+            # Otherwise it will report `Use of freed value in iteration`
+            $entry->{$k}->process($message) if $entry->{$k};
         }
     } elsif (!exists($self->channel_unsubscribing->{$channel})) {
         $log->errorf('Had a message for channel [%s] but that channel is not subscribed', $channel);
