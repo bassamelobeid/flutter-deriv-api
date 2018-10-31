@@ -251,12 +251,73 @@ sub _build_reset_spot {
     return $reset_spot;
 }
 
+has hour_end_markup_parameters => (
+    is         => 'rw',
+    lazy_build => 1,
+);
+
+sub _build_hour_end_markup_parameters {
+    my $self = shift;
+
+    return {} unless ($self->market->name eq 'forex' or $self->market->name eq 'commodities');
+
+    # Do not apply hour end markup if duration is greater than 30 mins
+    return {} if ($self->timeindays->amount * 24 * 60) > 30;
+
+    # For forward starting, only applies it if the contract bought at 15 mins before the date_start, other that that it is hard for client to exploit the edge
+    return {} if ($self->is_forward_starting && ($self->date_start->epoch - $self->date_pricing->epoch) > 15 * 60);
+
+    my $adj_args = {
+        starting_minute     => 50,
+        end_minute          => 5,
+        max_starting_minute => 57,
+        max_end_minute      => 2
+
+    };
+
+    my $start_minute = $self->date_start->minute;
+    my $start_hour   = $self->date_start->hour;
+    # We did not do any ajdusment if it is on Monday between 00:00 - 00:05 GMT because traders are trade based on previous hour data pattern
+    # But on Monday morning, they do not have data over the weekend, hence this markup is not applicable
+    return {} if $start_hour == 0 and $self->date_start->day_of_week == 1 and $start_minute < $adj_args->{end_minute};
+
+    # Do not apply markup if it is not between 50 minutes of the hour to 5 minutes of next hour
+    return {} if $start_minute > $adj_args->{end_minute} and $start_minute < $adj_args->{starting_minute};
+
+    my $high_low_lookback_from;
+
+    if ($start_minute >= $adj_args->{starting_minute}) {
+        # For contract starts at 14:57GMT, we will get high low from 14GMT
+        $high_low_lookback_from = $self->date_start->minus_time_interval($self->date_start->epoch % 3600);
+    } else {
+        # For contract starts at 15:02GMT, we will get high low from 14GMT
+        $high_low_lookback_from = $self->date_start->minus_time_interval($self->date_start->epoch % 3600 + 3600);
+    }
+
+    # set the parameters to be used for markup parameters
+    return {
+        date_start          => $self->date_start,
+        duration            => $self->timeindays->amount * 24 * 60,
+        searching_date      => $high_low_lookback_from->plus_time_interval('1h'),
+        symbol              => ($self->underlying->submarket->name eq 'major_pairs' ? $self->underlying->symbol : $self->underlying->submarket->name),
+        high_low            => $self->spot_min_max($high_low_lookback_from),
+        is_forward_starting => $self->is_forward_starting,
+        adj_args            => $adj_args,
+        current_spot        => $self->_pricing_args->{spot},
+        contract_type       => $self->pricing_code
+    };
+
+}
+
 sub spot_min_max {
     my ($self, $from) = @_;
 
     my $from_epoch = $from->epoch;
 
-    my $to_epoch = $self->date_pricing->is_after($self->date_expiry) ? $self->date_expiry->epoch : $self->date_pricing->epoch;
+    my $to_epoch =
+          $self->date_pricing->is_after($self->date_expiry) ? $self->date_expiry->epoch
+        : $self->is_forward_starting                        ? $self->date_start->epoch
+        :                                                     $self->date_pricing->epoch;
     # When price a contract at the date start, the date pricing == date start
     # However, for price a lookback contract, we always excluded tick at date start (ie from is set to date_start +1)
     # Hence we need to cap the to epoch as follow
@@ -264,7 +325,6 @@ sub spot_min_max {
     my $duration = $to_epoch - $from_epoch;
 
     my ($high, $low);
-
     if ($self->date_pricing->epoch > $from->epoch) {
         #Let's be more defensive here and use date pricing as well to determine the backprice flag.
         my $backprice = (defined $self->underlying->for_date or $self->date_pricing->is_after($self->date_expiry)) ? 1 : 0;
@@ -357,15 +417,16 @@ sub _create_new_interface_engine {
                     and ($self->underlying->submarket->name eq 'major_pairs' or $self->underlying->submarket->name eq 'minor_pairs')) ? 1 : 0;
             %pricing_parameters = (
                 %contract_config,
-                chronicle_reader         => BOM::Config::Chronicle::get_chronicle_reader($self->underlying->for_date),
-                apply_equal_tie_markup   => $apply_equal_tie_markup,
-                discount_rate            => $self->discount_rate,
-                mu                       => $self->mu,
-                vol                      => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
-                q_rate                   => $self->q_rate,
-                r_rate                   => $self->r_rate,
-                volsurface               => $self->volsurface->surface,
-                volsurface_creation_date => $self->volsurface->creation_date,
+                chronicle_reader           => BOM::Config::Chronicle::get_chronicle_reader($self->underlying->for_date),
+                apply_equal_tie_markup     => $apply_equal_tie_markup,
+                discount_rate              => $self->discount_rate,
+                mu                         => $self->mu,
+                vol                        => $self->pricing_vol_for_two_barriers // $self->pricing_vol,
+                q_rate                     => $self->q_rate,
+                r_rate                     => $self->r_rate,
+                volsurface                 => $self->volsurface->surface,
+                volsurface_creation_date   => $self->volsurface->creation_date,
+                hour_end_markup_parameters => $self->hour_end_markup_parameters,
             );
         } elsif ($self->pricing_engine_name eq 'Pricing::Engine::BlackScholes') {
             %pricing_parameters = (
