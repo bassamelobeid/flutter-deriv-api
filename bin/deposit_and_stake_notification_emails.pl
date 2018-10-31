@@ -1,4 +1,15 @@
 #!/etc/rmg/bin/perl
+
+=for comment
+
+    This is a replacement for a simple shell script to generate an emailed report to assist Compliance in our CCD obligations to MGA and UKGC
+    
+    More details, including regulation excerpts can be found on this card: https://trello.com/c/Nt3OYPZn/3301-fixdepositandstakenotificationcron
+    
+    If that no longer exists, Compliance will be more than able to cite the current requirements.
+
+=cut
+
 use strict;
 use warnings;
 
