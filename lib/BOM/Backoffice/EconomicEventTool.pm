@@ -10,6 +10,7 @@ use Quant::Framework::EconomicEventCalendar;
 use Try::Tiny;
 use Volatility::Seasonality;
 use LandingCompany::Registry;
+use BOM::Config::RedisReplicated;
 
 use BOM::Backoffice::Request;
 use BOM::MarketData qw(create_underlying_db create_underlying);
@@ -176,6 +177,11 @@ sub restore_by_id {
 
 sub _regenerate {
     my $events = shift;
+
+    # signal pricer to refresh cache
+    my $redis = BOM::Config::RedisReplicated::redis_pricer;
+    $redis->set('economic_events_cache_snapshot', time);
+
     # update economic events impact curve with the newly added economic event
     Volatility::EconomicEvents::generate_variance({
         underlying_symbols => [_get_affected_underlying_symbols()],
