@@ -4,16 +4,20 @@ use Moose;
 use Rose::DB;
 use Carp;
 
-has 'client_loginid' => (
-    is => 'ro',
-);
+my @parameters = qw(client_loginid realized_loss potential_loss client_type market_type expiry);
 
-has 'realized_loss' => (
-    is => 'ro',
-);
+sub BUILD {
+    my $self = shift;
 
-has 'potential_loss' => (
-    is => 'ro',
+    foreach my $param (@parameters) {
+        $self->$param(undef) if defined $self->$param and $self->$param eq '';
+    }
+
+    return;
+}
+
+has [@parameters] => (
+    is => 'rw',
 );
 
 has 'db' => (
@@ -24,34 +28,14 @@ has 'db' => (
 sub record_user_specific_limit {
     my $self = shift;
 
-    my $potential_limit = $self->potential_loss eq '' ? undef : $self->potential_loss;
-    my $realized_limit  = $self->realized_loss eq ''  ? undef : $self->realized_loss;
-
     my $sql = q{
-    	SELECT * FROM betonmarkets.insert_user_specific_limit(?,?,?)
+    	SELECT * FROM betonmarkets.insert_user_specific_limit(?,?,?,?,?,?)
     };
 
     $self->db->dbic->run(
         ping => sub {
-            $_->do($sql, undef, $self->client_loginid, $potential_limit, $realized_limit);
-        });
-
-    return 1;
-}
-
-sub default_user_specific_limit {
-    my $self = shift;
-
-    my $potential_limit = $self->potential_loss eq '' ? undef : $self->potential_loss;
-    my $realized_limit  = $self->realized_loss eq ''  ? undef : $self->realized_loss;
-
-    my $sql = q{
-        SELECT * FROM betonmarkets.default_user_specific_limit(?,?)
-    };
-
-    $self->db->dbic->run(
-        ping => sub {
-            $_->do($sql, undef, $potential_limit, $realized_limit);
+            $_->do($sql, undef, $self->client_loginid, $self->market_type, $self->client_type, $self->potential_loss, $self->realized_loss,
+                $self->expiry);
         });
 
     return 1;
@@ -61,12 +45,12 @@ sub delete_user_specific_limit {
     my $self = shift;
 
     my $sql = q{
-	SELECT * FROM betonmarkets.delete_user_specific_limit(?)
+	SELECT * FROM betonmarkets.delete_user_specific_limit(?,?,?)
     };
 
     $self->db->dbic->run(
         ping => sub {
-            $_->do($sql, undef, $self->client_loginid);
+            $_->do($sql, undef, $self->client_loginid, $self->market_type, $self->client_type);
         });
 
     return 1;
@@ -92,7 +76,7 @@ sub select_default_user_specific_limit {
     my $self = shift;
 
     my $sql = q{
-       SELECT * FROM betonmarkets.user_specific_limits where binary_user_id=0
+       SELECT * FROM betonmarkets.user_specific_limits WHERE binary_user_id IS NULL
     };
 
     return $self->db->dbic->run(
@@ -100,7 +84,7 @@ sub select_default_user_specific_limit {
             my $sth = $_->prepare($sql);
             $sth->execute;
 
-            return $sth->fetchall_arrayref({})->[0];
+            return $sth->fetchall_arrayref({});
         });
 }
 

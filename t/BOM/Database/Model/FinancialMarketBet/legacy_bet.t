@@ -39,7 +39,7 @@ $client->payment_free_gift(
 my $legacy_bet;
 my $legacy_bet_financial_bet_id;
 
-my $underlying_symbol = 'FRXXAUUSD';
+my $underlying_symbol = 'frxXAUUSD';
 my $payout_price      = 200;
 my $buy_price         = 20;
 my $sell_price        = 0;
@@ -50,7 +50,6 @@ my $is_expired        = 1;
 my $bet_class         = 'legacy_bet';
 my $bet_type          = 'DOUBLEDBL';
 my $short_code        = 'DOUBLEDBL_FRXXAUUSD_100_14_MAY_09_I_8H1_L_8H2_L_8H3';
-
 # DOUBLEDBL_FRXUSDJPY_10_24_JAN_06_I_3H5_L_4_L_4H1
 my $absolute_higher_barrier = '1.1';
 my $absolute_lower_barrier  = '2.2';
