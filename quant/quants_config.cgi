@@ -182,20 +182,20 @@ if ($r->params->{'new_user_limit'}) {
             db             => $db,
             client_loginid => $r->params->{'client_loginid'},
             potential_loss => $r->params->{'potential_loss'},
-            realized_loss  => $r->params->{'realized_loss'}})->record_user_specific_limit;
+            realized_loss  => $r->params->{'realized_loss'},
+            client_type    => $r->params->{client_type},
+            market_type    => $r->params->{market_type},
+            expiry         => $r->params->{expiry},
+        })->record_user_specific_limit;
 }
 
 if ($r->params->{'delete_limit'}) {
     BOM::Database::Helper::UserSpecificLimit->new({
             db             => $db,
-            client_loginid => $r->params->{'client_loginid'}})->delete_user_specific_limit;
-}
-
-if ($r->params->{'default_user_limit'}) {
-    BOM::Database::Helper::UserSpecificLimit->new({
-            db             => $db,
-            potential_loss => $r->params->{'potential_loss'},
-            realized_loss  => $r->params->{'realized_loss'}})->default_user_specific_limit;
+            client_loginid => $r->params->{'client_loginid'},
+            client_type    => $r->params->{client_type},
+            market_type    => $r->params->{market_type},
+        })->delete_user_specific_limit;
 }
 
 Bar("Update User Specific Limit");

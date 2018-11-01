@@ -1,16 +1,22 @@
 <table>
     <tr>
         <td><b>Binary user id &nbsp;</b></td>
-        <td><b>Client login id &nbsp;</b></td>
+        <td><b>Market type &nbsp;</b></td>
+        <td><b>Client type &nbsp;</b></td>
         <td><b>Potential loss &nbsp;</b></td>
         <td><b>Realized loss &nbsp;</b></td>
+        <td><b>Expiry &nbsp;</b></td>
+        <td><b>Client login id &nbsp;</b></td>
     </tr>
     [% FOREACH data IN output %]
         <tr>
             <td>[% data.binary_user_id %]</td>
-            <td>[% data.client_loginid.join() %]</td>
+            <td>[% data.market_type %]</td>
+            <td>[% data.client_type %]</td>
             <td>[% data.potential_loss %]</td>
             <td>[% data.realized_loss %]</td>
+            <td>[% data.expiry %]</td>
+            <td>[% data.client_loginid.join() %]</td>
         </tr>
     [% END %]
 </table>
