@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
-use Test::More tests => 7;
+use Test::More tests => 8;
 use Test::Exception;
 use Guard;
 use Crypt::NamedKeys;
@@ -48,20 +48,8 @@ my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
 
 $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
 
-#create an empty un-used even so ask_price won't fail preparing market data for pricing engine
-#Because the code to prepare market data is called for all pricings in Contract
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'economic_events',
-    {
-        events => [{
-                symbol       => 'USD',
-                release_date => 1,
-                source       => 'forexfactory',
-                impact       => 1,
-                event_name   => 'FOMC',
-            }]});
-
 my $now = Date::Utility->new;
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
@@ -82,52 +70,19 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol        => 'frxUSDJPY',
         recorded_date => $now,
     });
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'randomindex',
-    {
-        symbol => 'R_100',
-        date   => Date::Utility->new
-    });
 
-my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    epoch      => $now->epoch - 99,
-    underlying => 'R_50',
-    quote      => 76.5996,
-    bid        => 76.6010,
-    ask        => 76.2030,
-});
+my $usdjpy = 'frxUSDJPY';
+my $r50    = 'R_50';
 
-my $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    epoch      => $now->epoch - 52,
-    underlying => 'R_50',
-    quote      => 76.6996,
-    bid        => 76.7010,
-    ask        => 76.3030,
-});
-
-my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    epoch      => $now->epoch,
-    underlying => 'R_50',
-});
-
-my $usdjpy_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    epoch      => $now->epoch,
-    underlying => 'frxUSDJPY',
-});
-
-my $tick_r100 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    epoch      => $now->epoch,
-    underlying => 'R_100',
-    quote      => 100,
-});
+my ($r50_tick, $usdjpy_tick) =
+    map { BOM::Test::Data::Utility::FeedTestDatabase::create_tick({epoch => $now->epoch, underlying => $_,}) } ($r50, $usdjpy);
 
 # Spread is calculated base on spot of the underlying.
 # In this case, we mocked the spot to 100.
 my $mocked_underlying = Test::MockModule->new('Quant::Framework::Underlying');
 $mocked_underlying->mock('spot', sub { 100 });
 
-my $underlying      = create_underlying('R_50');
-my $underlying_r100 = create_underlying('R_100');
+my $underlying = create_underlying('R_50');
 
 sub db {
     return BOM::Database::ClientDB->new({
@@ -190,39 +145,6 @@ sub top_up {
     note $c->loginid . "'s balance is now $cur " . $trx->balance_after . "\n";
 }
 
-sub free_gift {
-    my ($c, $cur, $amount) = @_;
-
-    my $fdp = $c->is_first_deposit_pending;
-    my $acc = $c->account($cur);
-
-    my ($pm) = $acc->add_payment({
-        amount               => $amount,
-        payment_gateway_code => "free_gift",
-        payment_type_code    => "free_gift",
-        status               => "OK",
-        staff_loginid        => "test",
-        remark               => __FILE__ . ':' . __LINE__,
-    });
-    $pm->free_gift({reason => "test"});
-    my ($trx) = $pm->add_transaction({
-        account_id    => $acc->id,
-        amount        => $amount,
-        staff_loginid => "test",
-        remark        => __FILE__ . ':' . __LINE__,
-        referrer_type => "payment",
-        action_type   => ($amount > 0 ? "deposit" : "withdrawal"),
-        quantity      => 1,
-    });
-    $pm->save(cascade => 1);
-    $trx->load;    # to re-read (get balance_after)
-
-    BOM::Platform::Client::IDAuthentication->new(client => $c)->run_authentication
-        if $fdp;
-
-    note $c->loginid . "'s balance is now $cur " . $trx->balance_after . "\n";
-}
-
 my $cl;
 my $acc_usd;
 my $acc_aud;
@@ -253,46 +175,292 @@ my $new_client = create_client;
 top_up $new_client, 'USD', 5000;
 my $new_acc_usd = $new_client->account;
 
-subtest 'buy a bet', sub {
-    plan tests => 3;
+my $db = BOM::Database::ClientDB->new({broker_code => 'CR'})->db;
 
-    my $db = BOM::Database::ClientDB->new({broker_code => 'CR'})->db;
-
-# Do the insert and delete here
+subtest 'potential loss', sub {
     BOM::Database::Helper::UserSpecificLimit->new({
             db             => $db,
             client_loginid => $cl->loginid,
             potential_loss => 50,
-            realized_loss  => 50
+            realized_loss  => 50,
+            client_type    => 'old',
+            market_type    => 'non_financial'
         })->record_user_specific_limit;
 
-    #lives_ok {
-    my $error = do {
+    my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+    $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+    my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+    $mock_validation->mock(
+        _validate_trade_pricing_adjustment => sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () }
+    );
+    $mock_validation->mock(_validate_offerings => sub { note "mocked Transaction::Validation->_validate_offerings returning nothing"; () });
+
+    my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+    $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+    subtest 'non_financial' => sub {
         my $contract = produce_contract({
-            underlying   => $underlying,
+            underlying   => $r50,
             bet_type     => 'CALL',
             currency     => 'USD',
-            payout       => 1000,
+            payout       => 100,
             duration     => '15m',
-            current_tick => $tick,
+            current_tick => $r50_tick,
             barrier      => 'S0P',
         });
 
-        my $txn = BOM::Transaction->new({
-            client        => $cl,
-            contract      => $contract,
-            price         => 514.00,
-            payout        => $contract->payout,
-            amount_type   => 'payout',
-            source        => 19,
-            purchase_date => $contract->date_start,
-        });
+        my $error = do {
+            my $txn = BOM::Transaction->new({
+                client        => $cl,
+                contract      => $contract,
+                price         => 50.00,
+                payout        => $contract->payout,
+                amount_type   => 'payout',
+                source        => 19,
+                purchase_date => $contract->date_start,
+            });
 
-        $txn->buy;
+            $txn->buy;
+        };
+
+        ok !$error, 'no error if limit matches potential loss';
+
+        $error = do {
+            my $txn = BOM::Transaction->new({
+                client        => $cl,
+                contract      => $contract,
+                price         => 50.00,
+                payout        => $contract->payout,
+                amount_type   => 'payout',
+                source        => 19,
+                purchase_date => $contract->date_start,
+            });
+
+            $txn->buy;
+        };
+
+        ok $error, 'error is thrown';
+        is $error->{'-mesg'},              'per user potential loss limit reached';
+        is $error->{'-message_to_client'}, 'This contract is currently unavailable due to market conditions';
     };
 
-    ok $error, 'error is thrown';
-    is $error->{'-mesg'},              'per user potential loss limit reached';
-    is $error->{'-message_to_client'}, 'This contract is currently unavailable due to market conditions';
+    subtest 'financial' => sub {
+        my $contract = produce_contract({
+            underlying   => $usdjpy,
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            duration     => '15m',
+            current_tick => $usdjpy_tick,
+            barrier      => 'S0P',
+        });
 
+        my $error = do {
+            my $txn = BOM::Transaction->new({
+                client        => $cl,
+                contract      => $contract,
+                price         => 50.00,
+                payout        => $contract->payout,
+                amount_type   => 'payout',
+                source        => 19,
+                purchase_date => $contract->date_start,
+            });
+
+            $txn->buy;
+        };
+
+        ok !$error, 'no error if limit matches potential loss';
+
+        $error = do {
+            my $txn = BOM::Transaction->new({
+                client        => $cl,
+                contract      => $contract,
+                price         => 50.00,
+                payout        => $contract->payout,
+                amount_type   => 'payout',
+                source        => 19,
+                purchase_date => $contract->date_start,
+            });
+
+            $txn->buy;
+        };
+
+        ok !$error, 'no error is thrown because no limit is set';
+        BOM::Database::Helper::UserSpecificLimit->new({
+                db             => $db,
+                client_loginid => $cl->loginid,
+                potential_loss => 149,
+                realized_loss  => 50,
+                client_type    => 'old',
+                market_type    => 'financial'
+            })->record_user_specific_limit;
+
+        $error = do {
+            my $txn = BOM::Transaction->new({
+                client        => $cl,
+                contract      => $contract,
+                price         => 50.00,
+                payout        => $contract->payout,
+                amount_type   => 'payout',
+                source        => 19,
+                purchase_date => $contract->date_start,
+            });
+
+            $txn->buy;
+        };
+
+        ok $error, 'error is thrown';
+        is $error->{'-mesg'},              'per user potential loss limit reached';
+        is $error->{'-message_to_client'}, 'This contract is currently unavailable due to market conditions';
+    };
 };
+
+subtest 'realized loss' => sub {
+    close_all_open_contracts('CR', 1);    # close open contracts with full payout.
+    note("current realized financial loss: 100, non_financial realized loss: 50");
+    BOM::Database::Helper::UserSpecificLimit->new({
+            db             => $db,
+            client_loginid => $cl->loginid,
+            realized_loss  => $_->[1],
+            client_type    => 'old',
+            market_type    => $_->[0]}
+        )->record_user_specific_limit
+        foreach (['financial', 100], ['non_financial', 50]);
+
+    my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+    $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+    my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+    $mock_validation->mock(
+        _validate_trade_pricing_adjustment => sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () }
+    );
+    $mock_validation->mock(_validate_offerings => sub { note "mocked Transaction::Validation->_validate_offerings returning nothing"; () });
+
+    my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+    $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+    subtest 'non_financial' => sub {
+        my $contract = produce_contract({
+            underlying   => $r50,
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            duration     => '15m',
+            current_tick => $r50_tick,
+            barrier      => 'S0P',
+        });
+
+        my $error = do {
+            my $txn = BOM::Transaction->new({
+                client        => $cl,
+                contract      => $contract,
+                price         => 50.00,
+                payout        => $contract->payout,
+                amount_type   => 'payout',
+                source        => 19,
+                purchase_date => $contract->date_start,
+            });
+
+            $txn->buy;
+        };
+
+        ok !$error, 'no error if limit matches realized loss';
+        sleep(1);
+        close_all_open_contracts('CR', 1);    # close open contracts with full payout.
+        $error = do {
+            my $txn = BOM::Transaction->new({
+                client        => $cl,
+                contract      => $contract,
+                price         => 50.00,
+                payout        => $contract->payout,
+                amount_type   => 'payout',
+                source        => 19,
+                purchase_date => $contract->date_start,
+            });
+
+            $txn->buy;
+        };
+
+        ok $error, 'error is thrown';
+        is $error->{'-mesg'},              'per user realized loss limit reached';
+        is $error->{'-message_to_client'}, 'This contract is currently unavailable due to market conditions';
+    };
+
+    subtest 'financial' => sub {
+        my $contract = produce_contract({
+            underlying   => $usdjpy,
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            duration     => '15m',
+            current_tick => $usdjpy_tick,
+            barrier      => 'S0P',
+        });
+
+        my $error = do {
+            my $txn = BOM::Transaction->new({
+                client        => $cl,
+                contract      => $contract,
+                price         => 50.00,
+                payout        => $contract->payout,
+                amount_type   => 'payout',
+                source        => 19,
+                purchase_date => $contract->date_start,
+            });
+
+            $txn->buy;
+        };
+
+        ok !$error, 'no error if limit matches realized loss';
+        sleep(1);
+        close_all_open_contracts('CR', 1);    # close open contracts with full payout.
+        $error = do {
+            my $txn = BOM::Transaction->new({
+                client        => $cl,
+                contract      => $contract,
+                price         => 50.00,
+                payout        => $contract->payout,
+                amount_type   => 'payout',
+                source        => 19,
+                purchase_date => $contract->date_start,
+            });
+
+            $txn->buy;
+        };
+
+        ok $error, 'error is thrown';
+        is $error->{'-mesg'},              'per user realized loss limit reached';
+        is $error->{'-message_to_client'}, 'This contract is currently unavailable due to market conditions';
+    };
+};
+
+sub close_all_open_contracts {
+    my $broker_code = shift;
+    my $fullpayout  = shift // 0;
+    my $clientdb    = BOM::Database::ClientDB->new({broker_code => $broker_code});
+
+    my $dbh = $clientdb->db->dbh;
+    my $sql = q{select client_loginid,currency_code from transaction.account};
+    my $sth = $dbh->prepare($sql);
+    $sth->execute;
+    my $output = $sth->fetchall_arrayref();
+
+    foreach my $client_data (@$output) {
+        foreach my $fmbo (
+            @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client_data->[0], $client_data->[1], 'false']) // []})
+        {
+            my $contract = produce_contract($fmbo->{short_code}, $client_data->[1]);
+            my $txn = BOM::Transaction->new({
+                client   => BOM::User::Client->new({loginid => $client_data->[0]}),
+                contract => $contract,
+                source   => 23,
+                price => ($fullpayout ? $fmbo->{payout_price} : $fmbo->{buy_price}),
+                contract_id   => $fmbo->{id},
+                purchase_date => $contract->date_start,
+            });
+            $txn->sell(skip_validation => 1);
+        }
+    }
+    return;
+}

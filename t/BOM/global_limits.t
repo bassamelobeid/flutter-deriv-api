@@ -17,7 +17,7 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Config::Runtime;
 use BOM::Database::ClientDB;
 
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init :exclude_bet_market_setup);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
@@ -38,14 +38,6 @@ $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to
 my $mock_transaction = Test::MockModule->new('BOM::Transaction');
 $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
-## setup bet.market table
-my $db = BOM::Database::ClientDB->new({broker_code => 'CR'})->db;
-$db->dbic->run(
-    fixup => sub {
-        $_->do(
-            "INSERT INTO bet.market(symbol,market,submarket) VALUES ('R_100','volidx','random_index'),('R_50','volidx','random_index'),('frxUSDJPY','forex','major_pairs')"
-        );
-    });
 
 my $now       = Date::Utility->new;
 my $tick_r100 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -99,14 +91,18 @@ subtest 'symbol not defined' => sub {
     is $error->{'-message_to_client'}, 'Trading is suspended for this instrument.';
 };
 
+BOM::Test::Data::Utility::UnitTestDatabase::setup_bet_market();
+
 subtest 'global potential loss' => sub {
     close_all_open_contracts('CR');
     ok(BOM::Config::Runtime->instance->app_config->quants->enable_global_potential_loss, 'global potential loss check is turned on');
 
     BOM::Test::Helper::QuantsConfig::create_config({
         limit_type   => 'global_potential_loss',
+        market       => ['volidx'],
         limit_amount => 0
     });
+
     my $contract = produce_contract({
         underlying   => 'R_100',
         bet_type     => 'CALL',
@@ -305,7 +301,6 @@ subtest 'global realized loss' => sub {
         });
         $txn->buy;
     };
-
     ok !$error, 'no error';
     note("turn on global realized loss check");
     BOM::Config::Runtime->instance->app_config->quants->enable_global_realized_loss(1);
@@ -353,6 +348,8 @@ subtest 'global realized loss' => sub {
             purchase_date => $contract->date_start,
         });
         $txn->buy;
+        sleep(1);    # avoid fmb constraint
+        close_all_open_contracts('CR', 1);
         $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
