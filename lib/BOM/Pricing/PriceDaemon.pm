@@ -17,6 +17,7 @@ use BOM::Platform::Context;
 use BOM::Config::RedisReplicated;
 use BOM::Config::Runtime;
 use BOM::Pricing::v3::Contract;
+use Volatility::LinearCache;
 
 use constant {
     DURATION_DONT_PRICE_SAME_SPOT                        => 10,
@@ -58,6 +59,8 @@ my $commands = {
         process         => \&_process_bid,
     },
 };
+
+my $eco_snapshot = 0;
 
 sub process_job {
     my ($self, $redis, $next, $params) = @_;
@@ -119,6 +122,12 @@ sub run {
     # Allow ->stop and restart
     local $self->{is_running} = 1;
     while ($self->is_running and (my $key = $redis->brpop(@{$args{queues}}, 0))) {
+        my $current_eco_cache_epoch = $redis->get('economic_events_cache_snapshot');
+        if ($current_eco_cache_epoch and $eco_snapshot != $current_eco_cache_epoch) {
+            Volatility::LinearCache::clear_cache();
+            $eco_snapshot = $current_eco_cache_epoch;
+        }
+
         # Remember that we had some jobs
         my $tv_now = [Time::HiRes::gettimeofday];
         my $queue  = $key->[0];
