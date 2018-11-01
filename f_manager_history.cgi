@@ -67,13 +67,44 @@ my $client = BOM::User::Client::get_instance({
     db_operation => 'replica'
 });
 if (not $client) {
-    print "Error : wrong loginID ($encoded_loginID) could not get client instance";
+    print "<div style='color:red' class='center-aligned'>Error : wrong loginID ($encoded_loginID) could not get client instance</div>";
     code_exit_BO();
 }
 
 my $currency = request()->param('currency');
 if (not $currency or $currency eq 'default') {
     $currency = $client->currency;
+}
+
+# Fetch and display gross deposits and gross withdrawals
+my $action = request()->param('action');
+if (defined $action && $action eq "gross_transactions") {
+    my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
+    if (!$client->account) {
+        print "<div style='color:red' class='center-aligned'>Error: Client $loginID does not have currency set. </div>";
+        code_exit_BO();
+    }
+    try {
+        my ($total_deposits, $total_withdrawals) = $clientdb->db->dbic->run(
+            fixup => sub {
+                my $statement = $_->prepare("SELECT * FROM betonmarkets.get_total_deposits_and_withdrawals(?)");
+                $statement->execute($client->account->id);
+                return @{$statement->fetchrow_arrayref};
+            });
+        $total_deposits    = formatnumber('amount', $currency, $total_deposits);
+        $total_withdrawals = formatnumber('amount', $currency, $total_withdrawals);
+        print "<h3>Client deposits/withdrawals for the lifetime of the account: </h3>";
+        print "<ul>";
+        print "<li><b>Total Deposits:</b> $total_deposits $currency </li>";
+        print "<li><b>Total Withdrawals:</b> $total_withdrawals $currency </li>";
+        print "</ul>";
+    }
+    catch {
+        warn "Error caught : $_\n";
+        print "<div style='color:red' class='center-aligned'>Error: Unable to fetch total deposits/withdrawals </div>";
+    };
+
+    code_exit_BO();
 }
 
 # print other untrusted section warning in backoffice
@@ -101,44 +132,24 @@ my $statement = client_statement_for_backoffice({
         currency            => $currency,
         max_number_of_lines => ($all_in_one_page ? 99999 : 200),
     });
-
 my $summary = client_statement_summary({
         client   => $client,
         currency => $currency,
         after    => $overview_from_date->datetime(),
         before   => $overview_to_date->datetime()});
-
-my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
-
-my $account = $client->account;
-die BOM::Backoffice::Request::template()->error() unless $account;
-
-my $dbic = $clientdb->db->dbic;
-my ($deposits_to_date, $withdrawals_to_date) = $dbic->run(
-    fixup => sub {
-        my $sth = $_->prepare("SELECT * FROM betonmarkets.get_total_deposits_and_withdrawals(?)");
-        $sth->execute($account->id);
-        return @{$sth->fetchall_arrayref->[0]};
-    });
-
-$deposits_to_date    = formatnumber('amount', $account->currency_code, $deposits_to_date);
-$withdrawals_to_date = formatnumber('amount', $account->currency_code, $withdrawals_to_date);
-
 my $appdb = BOM::Database::Model::OAuth->new();
 my @ids   = map { $_->{source} || () } @{$statement->{transactions}};
 my $apps  = $appdb->get_names_by_app_id(\@ids);
+
 BOM::Backoffice::Request::template()->process(
     'backoffice/account/statement.html.tt',
     {
-
         client_summary_ranges => {
             from => $overview_from_date->date_yyyymmdd(),
             to   => $overview_to_date->date_yyyymmdd()
         },
         transactions            => $statement->{transactions},
         apps                    => $apps,
-        withdrawals_to_date     => formatnumber('amount', $currency, $withdrawals_to_date),
-        deposits_to_date        => formatnumber('amount', $currency, $deposits_to_date),
         balance                 => $statement->{balance},
         currency                => $currency,
         loginid                 => $client->loginid,

@@ -75,7 +75,6 @@ my $permissions = {
     'f_client_deskcom.cgi'            => ['CS'],
     'email_templates.cgi'             => ['CS'],
     'send_emails.cgi'                 => ['CS'],
-    'send_emails.cgi'                 => ['CS'],
 
     'download_document.cgi'       => ['CS', 'Compliance', 'Quants', 'IT'],
     'f_client_combined_audit.cgi' => ['CS', 'Compliance'],

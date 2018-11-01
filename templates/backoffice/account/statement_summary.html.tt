@@ -1,32 +1,36 @@
 <table style="border: 1px solid black;" width=50%>
-
     <tr>
         <td colspan="2">
             Overview search:
             [% client_summary_ranges.from %]
             [% client_summary_ranges.to %]
-            <input type="date" name="overview_fm_date" value="[% client_summary_ranges.from %]" />
-            <input type="date" name="overview_to_date" value="[% client_summary_ranges.to %]" />
-            <input type="submit" value="view" />
+            <form action="[% self_post %]" method="get">
+                <input name="overview_fm_date" type="date" value="[% client_summary_ranges.from %]">
+                <input name="overview_to_date" type="date" value="[% client_summary_ranges.to %]">
+                <input name="loginID" type="hidden" value="[% loginid %]">
+                <input name="broker" type="hidden" value="[% broker %]">
+                <input name="currency" type="hidden" value="[% currency %]">
+                <input type="submit" value="view">
+            </form>
         </td>
-
     </tr>
-
     <tr>
         [% FOR t IN ['deposits', 'withdrawals'] %]
-            <td>
-
-                <table>
-                    <tr><td colspan="2" style="border-bottom: 1px solid #888888;">[% t %] [% currency %]</td></tr>
-                    [% FOR ps IN summary.$t %]
-                        <tr>
-                        <td width="180"  style="border-right: 1px solid #888888;">[% IF ps.0 == 'total' %]<b>TOTAL</b>[% ELSE; ps.0; END %]</td>
-                        <td width="30">[% formatnumber('amount', currency, ps.1) %]</td>
-                        </tr>
-                    [% END %]
-                </table>
-            </td>
+        <td>
+            <table>
+                <tr>
+                    <td colspan="2" style="border-bottom: 1px solid #888888;">[% t %] [% currency %]</td>
+                </tr>
+                [% FOR ps IN summary.$t %]
+                <tr>
+                    <td width="180" style="border-right: 1px solid #888888;">[% IF ps.0 == 'total' %]<b>TOTAL</b>[%
+                        ELSE; ps.0; END %]
+                    </td>
+                    <td width="30">[% formatnumber('amount', currency, ps.1) %]</td>
+                </tr>
+                [% END %]
+            </table>
+        </td>
         [% END %]
     </tr>
-
 </table>
