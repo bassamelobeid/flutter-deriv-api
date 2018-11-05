@@ -198,6 +198,8 @@ sub get_settings_by_group {
         ],
         payments => [qw(
                 payments.payment_limits
+                payments.transfer_between_accounts.limits.between_accounts
+                payments.transfer_between_accounts.limits.MT5
                 payments.transfer_between_accounts.fees.fiat-crypto.default
                 payments.transfer_between_accounts.fees.fiat-crypto.stable
                 payments.transfer_between_accounts.fees.crypto-fiat.default
