@@ -83,6 +83,20 @@ payments:
       description: 'Transfer between accounts config'
       isa: section
       contains:
+        limits:
+          isa: section
+          description: 'Limits for internal transfers'
+          contains:
+            between_accounts:
+              isa: Num
+              description: 'Limits the numbers of daily transfers between accounts'
+              default: 3
+              global: 1
+            MT5:
+              isa: Num
+              description: 'Limits the numbers of daily transfers between binary accounts and MT5 accounts'
+              default: 6
+              global: 1
         fees:
           isa: section
           description: 'Transfer fees for currency conversion'
