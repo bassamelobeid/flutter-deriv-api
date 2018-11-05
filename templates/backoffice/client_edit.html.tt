@@ -306,7 +306,7 @@ IF client_for_prove
                     IF auth_request.client.status.proveid_requested;
                 %]
                     [%
-                        IF !auth_request.client.status.proveid_pending;
+                        IF auth_request.has_saved_xml;
                         args.search_option = option;
                         args.raw = 0; href_rpt = request.url_for(raw_url, args );
                         args.raw = 1; href_xml = request.url_for(raw_url, args );
@@ -315,9 +315,11 @@ IF client_for_prove
                         An Experian <span class="lspace">[% option %]</span> request <span class="lspace">has</span> been done.
                         <a class="lspace" target="_blank" href="[% href_rpt | none %]">[Report]</a>
                         <a class="lspace" target="_blank" href="[% href_xml | none %]">[XML]</a>
-                        <a class="lspace" target="_blank" href="[% request.url_for(doc_url, pdf_args) | none %]">[PDF]</a>
+                        [% IF auth_request.has_saved_pdf %]
+                            <a class="lspace" target="_blank" href="[% request.url_for(doc_url, pdf_args) | none %]">[PDF]</a>
+                        [% END %]
                     [% ELSE %]
-		        <b>ProveID requested, but resulting xml file doesn't exist, please try again later or resend the ProveID request</b>
+		        <b>ProveID requested, but resulting xml file doesn't exist or has been deleted. Please try again later or resend the ProveID request</b>
                     [% END %]
                 [% ELSE %]
                     An Experian <span class="lspace">[% option %]</span> request <span class="lspace">has NOT</span> been done.
@@ -325,7 +327,11 @@ IF client_for_prove
                     <br/>
             [%  END %]
                 <input type="submit" name="do_id_check" value="Submit a new ProveID request"/>
+            [% IF auth_request.has_saved_pdf or auth_request.has_saved_xml %]
             <br/>
+                <input type="submit" name="delete_existing_192" value="Delete existing Experian results"/>
+            <br/>
+            [% END %]
 [% END %]
         </td>
     </tr>

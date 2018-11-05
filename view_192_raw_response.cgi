@@ -26,7 +26,6 @@ my $report = BOM::Platform::ProveID->new(
     search_option => $search_option
     )->xml_result()
     || die "no 192 $search_option report available for $client";
-
 if (request()->param('raw')) {
     PrintContentType_XML();
     print $report;

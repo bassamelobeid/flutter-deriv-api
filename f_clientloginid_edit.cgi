@@ -344,10 +344,7 @@ if ($input{whattodo} eq 'disable_2fa' and $user->is_totp_enabled) {
 # PERFORM ON-DEMAND ID CHECKS
 if (my $check_str = $input{do_id_check}) {
     my $result;
-    my $id_auth = BOM::Platform::Client::IDAuthentication->new(
-        client        => $client,
-        force_recheck => 1
-    );
+    my $id_auth = BOM::Platform::Client::IDAuthentication->new(client => $client);
     for ($check_str) {
         $result = /ProveID/ ? $id_auth->_proveid() : die("unknown IDAuthentication method $_");
     }
@@ -356,6 +353,14 @@ if (my $check_str = $input{do_id_check}) {
         qq[<p><b>"$encoded_check_str" completed</b></p>
              <p><a href="$self_href">&laquo;Return to Client Details<a/></p>]
     );
+}
+
+# DELETE EXISTING EXPERIAN RESULTS
+if ($input{delete_existing_192}) {
+    code_exit_BO(
+        qq[<p><b>Existing Reports Deleted</b></p>
+        <p><a href="$self_href">&laquo;Return to Client Details<a/></p>]
+    ) if BOM::Platform::ProveID->new(client => $client)->delete_existing_reports();
 }
 
 # SAVE DETAILS
