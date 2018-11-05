@@ -61,6 +61,11 @@ sub crypto {
     return $config;
 }
 
+sub domain {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/domain.yml');
+    return $config;
+}
+
 sub sanction_file {
     return "/var/lib/binary/sanctions.yml";
 }

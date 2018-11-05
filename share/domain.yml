@@ -1,0 +1,4 @@
+default_domain: binary.com
+white_list:
+  - binary.com
+  - binary.me
