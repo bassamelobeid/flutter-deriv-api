@@ -59,7 +59,7 @@ sub do_report {
     print $r if $verbose;
 
     my $headers =
-        'Matched name,List Name,List Updated,Database,LoginID,First Name,Last Name,Email,Phone,Gender,DateOfBirth,DateJoined,Residence,Citizen,Status,Reason';
+        'Matched name,List Name,List Updated,Database,LoginID,First Name,Last Name,Email,Phone,Gender,Date Of Birth,Date Joined,Residence,Citizen,Matched Reason';
 
     my $csv_file = path($reports_path . '/sanctions-run-' . Date::Utility->new()->date . '.csv');
     $csv_file->append_utf8($headers . "\n");
@@ -76,13 +76,13 @@ sub do_report {
 }
 
 sub make_client_csv_line {
-    my ($c, $list, $matched_name) = @{+shift};
+    my ($c, $list, $matched_name, $reason_matched) = @{+shift};
     my @fields = (
         $matched_name,
         $list,
         Date::Utility->new($sanctions->last_updated($list))->date,
         (map { $c->$_ // '' } qw(broker loginid first_name last_name email phone gender date_of_birth date_joined residence citizen)),
-        (map { $_ ? ($_, $c->status->$_->{reason}) : ('', '') } ((@{$c->status->all})[0])),    #use only last status
+        $reason_matched,    #use only last status
     );
     return join(',', @fields);
 }
@@ -119,7 +119,7 @@ sub get_matched_clients_info_by_broker {
             db_operation => 'replica'
         });
         my $result = $sanctions->get_sanctioned_info($client->first_name, $client->last_name, $client->date_of_birth);
-        push @matched, [$client, $result->{list}, $result->{name}] if $result->{matched};
+        push @matched, [$client, $result->{list}, $result->{name}, $result->{reason}] if $result->{matched};
     }
     return '' unless @matched;
 
