@@ -335,6 +335,28 @@ rpc get_limits => sub {
         formatnumber('price', $currency, convert_currency($withdrawal_for_x_days, $withdrawal_limit_curr, $currency));
     $limit->{remainder} = formatnumber('price', $currency, convert_currency($remainder, $withdrawal_limit_curr, $currency));
 
+    # also add Daily Transfer Limits
+    if (defined $client->default_account) {
+        my $between_accounts_transfer_limit =
+            BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts;
+        my $mt5_tranfer_limits = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5;
+
+        my $client_internal_transfer = $client->get_today_transfer_summary()->{count};
+        my $client_mt5_transfer      = $client->get_today_transfer_summary('mt5_transfer')->{count};
+
+        my $available_internal_transfer = $between_accounts_transfer_limit - $client_internal_transfer;
+        my $available_mt5_transfer      = $mt5_tranfer_limits - $client_mt5_transfer;
+
+        $limit->{daily_transfers} = {
+            'internal' => {
+                allowed   => $between_accounts_transfer_limit,
+                available => $available_internal_transfer > 0 ? $available_internal_transfer : 0,
+            },
+            'mt5' => {
+                allowed   => $mt5_tranfer_limits,
+                available => $available_mt5_transfer > 0 ? $available_mt5_transfer : 0
+            }};
+    }
     return $limit;
 };
 
@@ -1411,6 +1433,12 @@ sub _validate_transfer_between_accounts {
     # we don't allow crypto to crypto transfer
     return _transfer_between_accounts_error(localize('Account transfers are not available within accounts with cryptocurrency as default currency.'))
         if (($from_currency_type eq $to_currency_type) and ($from_currency_type eq 'crypto'));
+
+    # check for internal transactions number limits
+    my $daily_transfer_limit  = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts;
+    my $client_today_transfer = $current_client->get_today_transfer_summary();
+    return _transfer_between_accounts_error(localize("Maximum of [_1] transfers allowed per day.", $daily_transfer_limit))
+        unless $client_today_transfer->{count} < $daily_transfer_limit;
 
     return undef;
 }

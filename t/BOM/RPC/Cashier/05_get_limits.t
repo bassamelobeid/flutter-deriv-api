@@ -16,6 +16,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Platform::RiskProfile;
 use Email::Stuffer::TestLinks;
 use BOM::Config;
+use BOM::Config::Runtime;
 
 use ExchangeRates::CurrencyConverter qw/in_usd convert_currency/;
 
@@ -53,6 +54,17 @@ my %deposit = (
     payment_type => 'external_cashier',
     remark       => 'test deposit'
 );
+
+my $transfer_limit_config = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits;
+my $transfer_limits       = {
+    internal => {
+        allowed   => $transfer_limit_config->between_accounts,
+        available => $transfer_limit_config->between_accounts
+    },
+    mt5 => {
+        allowed   => $transfer_limit_config->MT5,
+        available => $transfer_limit_config->MT5
+    }};
 
 # Test for CR accounts which use USD as the currency
 subtest 'CR - USD' => sub {
@@ -101,6 +113,7 @@ subtest 'CR - USD' => sub {
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                           => formatnumber('price',  'USD', $limits->{lifetime_limit}),
+            'daily_transfers'                     => $transfer_limits,
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -137,6 +150,7 @@ subtest 'CR - USD' => sub {
             'withdrawal_since_inception_monetary' => '1000.00',
             'withdrawal_for_x_days_monetary'      => '1000.00',
             'remainder'                           => formatnumber('price',  'USD', 99998999),
+            'daily_transfers'                     => $transfer_limits,
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
@@ -193,6 +207,7 @@ subtest 'CR-EUR' => sub {
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                           => $lifetime_limit,
+            'daily_transfers'                     => $transfer_limits,
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -233,6 +248,7 @@ subtest 'CR-EUR' => sub {
             'withdrawal_since_inception_monetary' => '1000.00',
             'withdrawal_for_x_days_monetary'      => '1000.00',
             'remainder'                           => formatnumber('price',  'EUR', $lifetime_limit - 1000),
+            'daily_transfers'                     => $transfer_limits,
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
@@ -274,6 +290,7 @@ subtest 'CR-BTC' => sub {
             'withdrawal_for_x_days_monetary'      => '0.00000000',
             'withdrawal_since_inception_monetary' => '0.00000000',
             'remainder'                           => $lifetime_limit,
+            'daily_transfers'                     => $transfer_limits,
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -322,6 +339,7 @@ subtest 'CR-BTC' => sub {
             'withdrawal_since_inception_monetary' => '1.00000000',
             'withdrawal_for_x_days_monetary'      => '1.00000000',
             'remainder'                           => formatnumber('price',  'BTC', $lifetime_limit - 1),
+            'daily_transfers'                     => $transfer_limits,
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
@@ -361,6 +379,7 @@ subtest 'MLT' => sub {
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                           => formatnumber('price',  'EUR', $limits->{lifetime_limit}),
+            'daily_transfers'                     => $transfer_limits,
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -397,6 +416,7 @@ subtest 'MLT' => sub {
             'withdrawal_since_inception_monetary' => '1000.00',
             'withdrawal_for_x_days_monetary'      => '1000.00',
             'remainder'                           => formatnumber('price',  'EUR', 99998999),
+            'daily_transfers'                     => $transfer_limits,
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
@@ -436,6 +456,7 @@ subtest 'MX' => sub {
             'withdrawal_for_x_days_monetary'      => '0.00',
             'withdrawal_since_inception_monetary' => '0.00',
             'remainder'                           => formatnumber('price',  'EUR', $limits->{limit_for_days}),
+            'daily_transfers'                     => $transfer_limits,
         };
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
@@ -472,6 +493,7 @@ subtest 'MX' => sub {
             'withdrawal_since_inception_monetary' => '1000.00',
             'withdrawal_for_x_days_monetary'      => '1000.00',
             'remainder'                           => formatnumber('price',  'EUR', 99998999),
+            'daily_transfers'                     => $transfer_limits,
         };
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');

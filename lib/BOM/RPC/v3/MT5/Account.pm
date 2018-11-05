@@ -1016,12 +1016,7 @@ async_rpc mt5_deposit => sub {
     my $error_code = 'MT5DepositError';
     my $app_config = BOM::Config::Runtime->instance->app_config;
 
-    if (_throttle($client->loginid)) {
-        return create_error_future({
-                code              => $error_code,
-                message_to_client => localize('Request too frequent. Please try again later.')});
-    }
-
+    # no need to throttle this call only limited numbers of transfers are allowed
     if ($app_config->system->suspend->mt5_deposits) {
         return create_error_future({
                 code              => $error_code,
@@ -1148,12 +1143,7 @@ async_rpc mt5_withdrawal => sub {
     my $error_code = 'MT5WithdrawalError';
     my $app_config = BOM::Config::Runtime->instance->app_config;
 
-    if (_throttle($client->loginid)) {
-        return create_error_future({
-                code              => $error_code,
-                message_to_client => localize('Request too frequent. Please try again later.')});
-    }
-
+    # no need to throttle this call only limited numbers of transfers are allowed
     if ($app_config->system->suspend->mt5_withdrawals) {
         return create_error_future({
                 code              => $error_code,
@@ -1422,6 +1412,12 @@ sub _mt5_validate_and_get_amount {
             'Invalid amount. Amount provided can not have more than [_1] decimal places.',
             Format::Util::Numbers::get_precision_config()->{amount}->{$client_currency})
     ) if ($amount != financialrounding('amount', $client_currency, $amount));
+
+    my $daily_transfer_limit  = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5;
+    my $client_today_transfer = $client_obj->get_today_transfer_summary('mt5_transfer');
+
+    return _make_error($error_code, localize("Maximum of [_1] transfers allowed per day.", $daily_transfer_limit))
+        unless $client_today_transfer->{count} < $daily_transfer_limit;
 
     return mt5_get_settings({
             client => $authorized_client,

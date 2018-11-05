@@ -23,6 +23,7 @@ use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates populate_exchang
 use BOM::Platform::Token;
 use Email::Stuffer::TestLinks;
 use BOM::Config::RedisReplicated;
+use BOM::Config::Runtime;
 use BOM::Config::CurrencyConfig;
 
 use utf8;
@@ -35,6 +36,9 @@ my $redis = BOM::Config::RedisReplicated::redis_exchangerates_write();
 # In the weekend the account transfers will be suspended. So we mock a valid day here
 set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
 scope_guard { restore_time() };
+
+# unlimit daily transfer
+BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts(999);
 
 subtest 'Initialization' => sub {
     lives_ok {
@@ -868,6 +872,17 @@ subtest 'multi currency transfers' => sub {
         "fiat->cryto when rate older than 1 hour - correct error code")
         ->error_message_is('Account transfers for this currency are suspended due to exchange rates. Please try again when market is open.',
         'fiat->cryto when rate older than 1 hour - correct error message');
+
+    BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts(2);
+    $redis->hmset(
+        'exchange_rates::EUR_USD',
+        quote => 1.1,
+        epoch => time
+    );
+    $result =
+        $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Daily Transfer limit - correct error code")
+        ->error_message_is('Maximum of 2 transfers allowed per day.', 'Daily Transfer Limit - correct error message');
 };
 
 done_testing();

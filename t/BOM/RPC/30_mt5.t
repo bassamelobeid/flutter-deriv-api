@@ -1034,6 +1034,29 @@ subtest 'multi currency transfers' => sub {
     };
 };
 
+subtest 'Transfers Limits' => sub {
+    BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5(0);
+    my $client = create_client('CR');
+    $client->set_default_account('USD');
+    top_up $client, EUR => 1000;
+    $user->add_client($client);
+
+    my $deposit_params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            from_binary => $client->loginid,
+            to_mt5      => $DETAILS{login},
+            amount      => 1
+        },
+    };
+
+    $c->call_ok('mt5_deposit', $deposit_params)->has_error('Transfers should have been stopped')
+        ->error_code_is('MT5DepositError', 'Transfers limit - correct error code')
+        ->error_message_is('There was an error processing the request. Maximum of 0 transfers allowed per day.',
+        'Transfers limit - correct error message');
+};
+
 sub _get_mt5transfer_from_transaction {
     my ($dbic, $transaction_id) = @_;
 
