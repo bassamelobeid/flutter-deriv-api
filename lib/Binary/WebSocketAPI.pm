@@ -147,6 +147,16 @@ sub startup {
             }
 
             my $user_agent = $c->req->headers->header('User-Agent');
+
+            # We'll forward the domain for constructing URLs such as cashier. Note that we are
+            # not guaranteed to have referrer information so the stash value may not always
+            # be set.
+            if (my $domain = $c->req->headers->header('Origin')) {
+                if (my ($domain_without_prefix) = $domain =~ m{^(?:https://)?\S+(binary\.\S+)$}) {
+                    $c->stash(domain => $domain_without_prefix);
+                }
+            }
+
             $c->stash(
                 server_name          => $c->server_name,
                 client_ip            => $client_ip,
@@ -391,7 +401,7 @@ sub startup {
             'cashier',
             {
                 require_auth => 'payments',
-                stash_params => [qw/ server_name /],
+                stash_params => [qw/ server_name domain /],
             }
         ],
         [
