@@ -76,7 +76,9 @@ has xml_result => (
     lazy    => 1,
     default => sub {
         my $self = shift;
-        return Path::Tiny::path($self->xml_folder . "/" . $self->file_name)->slurp;
+        my $res = try { Path::Tiny::path($self->xml_folder . "/" . $self->file_name)->slurp } catch { return '' };
+
+        return $res;
     });
 
 =head2 folder
@@ -338,7 +340,6 @@ sub _get_pdf_result {
     }
 
     my $pdf_report_filepath = $self->pdf_folder . "/" . $self->file_name . ".pdf";
-    my $pdf_folder          = $self->pdf_folder;
 
     # Create directory if it doesn't exist
     Path::Tiny::path($self->pdf_folder)->mkpath unless -d $self->pdf_folder;
@@ -495,6 +496,47 @@ sub _2fa_header {
     my $hmac_sig = $hash . '_' . $timestamp . '_' . $public_key;
 
     return SOAP::Header->name('head:Signature')->value($hmac_sig);
+}
+
+=head2 delete_existing_reports
+
+Deletes existing reports from Experian if they exist, GDPR requirement
+
+=cut
+
+sub delete_existing_reports {
+    my $self   = shift;
+    my $client = $self->client;
+
+    my $xml_report_filepath = $self->xml_folder . "/" . $self->file_name;
+    my $pdf_report_filepath = $self->pdf_folder . "/" . $self->file_name . ".pdf";
+
+    Path::Tiny::path($xml_report_filepath)->remove();
+    Path::Tiny::path($pdf_report_filepath)->remove();
+
+    return 1;
+}
+
+=head2 has_saved_xml
+
+Returns 1 if there is a saved xml at $xml_folder . "/" . $file_name
+
+=cut
+
+sub has_saved_xml {
+    my $self = shift;
+    return -e $self->xml_folder . "/" . $self->file_name;
+}
+
+=head2 has_saved_pdf
+
+Returns 1 if there is a saved pdf at $pdf_folder . "/" . $file_name . ".pdf";
+
+=cut
+
+sub has_saved_pdf {
+    my $self = shift;
+    return -e $self->pdf_folder . "/" . $self->file_name . ".pdf";
 }
 
 =head2 BUILDERS
