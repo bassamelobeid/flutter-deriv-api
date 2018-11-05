@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use HTML::Entities;
-use List::Util qw( min first );
+use List::Util qw( min first any);
 use Scalar::Util qw( looks_like_number );
 use Data::UUID;
 use Path::Tiny;
@@ -45,7 +45,6 @@ use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::ClientDB;
-
 requires_auth();
 
 use constant MAX_DESCRIPTION_LENGTH => 300;
@@ -105,7 +104,8 @@ rpc "cashier", sub {
     my ($brand, $currency) = (Brands->new(name => request()->brand), $client->default_account->currency_code);
 
     if (LandingCompany::Registry::get_currency_type($currency) eq 'crypto') {
-        return _get_cryptocurrency_cashier_url($client->loginid, $params->{website_name}, $currency, $action, $params->{language}, $brand->name);
+        return _get_cryptocurrency_cashier_url($client->loginid, $params->{website_name},
+            $currency, $action, $params->{language}, $brand->name, $params->{domain});
     }
 
     my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $client_loginid});
@@ -251,7 +251,7 @@ sub _get_cryptocurrency_cashier_url {
 }
 
 sub _get_cashier_url {
-    my ($prefix, $loginid, $website_name, $currency, $action, $language, $brand_name) = @_;
+    my ($prefix, $loginid, $website_name, $currency, $action, $language, $brand_name, $domain) = @_;
 
     $prefix = lc($currency) if $prefix eq 'cryptocurrency';
 
@@ -263,7 +263,9 @@ sub _get_cashier_url {
     if (($website_name // '') =~ /qa/) {
         $url .= 'www.' . lc($website_name) . "/cryptocurrency/$prefix";
     } else {
-        $url .= "cryptocurrency.binary.com/cryptocurrency/$prefix";
+        my $is_white_listed = any { $domain eq $_ } @{BOM::Config->domain->{white_list}};
+        $domain = BOM::Config->domain->{default_domain} unless $domain and $is_white_listed;
+        $url = "cryptocurrency.$domain/cryptocurrency/$prefix";
     }
 
     $url .=
@@ -659,10 +661,10 @@ The [_4] team.', $currency, $amount, encode_entities($payment_agent->payment_age
         transaction_id      => $response->{transaction_id}};
 };
 
-=head2 _get_available_payment_agents 
+=head2 _get_available_payment_agents
 
 	my $available_agents = _get_available_payment_agents('id', 'CR', 'USD', 'CR90000');
-	
+
 Returns a hash reference containing authenticated payment agents available for the input search criteria.
 
 It gets the following args:
@@ -675,7 +677,7 @@ It gets the following args:
 
 =item * currency (optional)
 
-=item * client_loginid (optional), it is used for retrieving payment agents with previous transfer/withdrawal with a C<client> when the feature is suspended in the C<country> of residence. 
+=item * client_loginid (optional), it is used for retrieving payment agents with previous transfer/withdrawal with a C<client> when the feature is suspended in the C<country> of residence.
 
 =back
 

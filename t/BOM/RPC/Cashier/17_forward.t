@@ -314,4 +314,24 @@ subtest 'all status are covered' => sub {
     done_testing();
 };
 
+subtest 'crypto_cashier_forward_page' => sub {
+    my $prefix = 'cryptocurrency';
+    my $language = 'EN';
+    my $currency = "BTC";
+    my $loginid = 'CR90000000';
+    my $website_name = '';
+    my $brand_name = 'binary.com';
+    my $action = 'deposit';
+
+    my $invalid_deposit = BOM::RPC::v3::Cashier::_get_cashier_url($prefix, $loginid, $website_name, $currency, $action, $language, $brand_name, 'binary.la');
+    ok $invalid_deposit =~ /^cryptocurrency.binary.com/, 'valid domain to invalid domain';
+    my $valid_deposit = BOM::RPC::v3::Cashier::_get_cashier_url($prefix, $loginid, $website_name, $currency, $action, $language, $brand_name, 'binary.me');
+    ok $valid_deposit =~ /cryptocurrency.binary.me/, 'valid domain to valid domain';
+
+    $website_name = 'binaryqa25.com';
+    my $valid_QA_deposit = BOM::RPC::v3::Cashier::_get_cashier_url($prefix, $loginid, $website_name, $currency, $action, $language, $brand_name, 'binary.me');
+    ok $valid_QA_deposit =~ /^https:\/\/www.binaryqa25.com/;
+
+};
+
 done_testing();
