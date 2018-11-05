@@ -66,19 +66,20 @@ sub check {
     my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);
 
     my $message =
-          "UN Sanctions: $client_loginid suspected ($client_name)\n"
+          "UN Sanctions: $client_loginid suspected (Client's name is $client_name) - similar to $sanctioned_info->{name}\n"
         . "Check possible match in UN sanctions list found in [$sanctioned_info->{list}, "
-        . Date::Utility->new($sanctions->last_updated($sanctioned_info->{list}))->date . "].";
+        . Date::Utility->new($sanctions->last_updated($sanctioned_info->{list}))->date . "].\n"
+        . "Reason: $sanctioned_info->{reason}";
 
     # do not send notification if client is already disabled
-    if (!$client->status->disabled) {
-        send_email({
-                from    => $self->brand->emails('compliance'),
-                to      => join(',', $self->brand->emails('compliance'), $self->brand->emails('support')),
-                subject => $client->loginid . ' possible match in sanctions list',
-                message => [$message],
-            }) unless $self->skip_email;
-    }
+
+    send_email({
+            from    => $self->brand->emails('compliance'),
+            to      => join(',', $self->brand->emails('compliance'), $self->brand->emails('support')),
+            subject => $client->loginid . ' possible match in sanctions list',
+            message => [$message],
+        }) unless ($self->skip_email or $client->status->disabled);
+
     return $sanctioned_info->{list};
 }
 
