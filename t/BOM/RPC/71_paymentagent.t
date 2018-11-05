@@ -58,7 +58,7 @@ my $payment_agent_args = {
 ## For client authentication document tests.
 ## The expiration_date is left out on purpose and should be explicitly set each time.
 my $auth_document_args = {
-    document_type              => 'Testing Artifact',
+    document_type              => 'passport',
     document_format            => 'TST',
     document_path              => '/tmp/testfile2.tst',
     authentication_method_code => 'TESTY_TESTY',
