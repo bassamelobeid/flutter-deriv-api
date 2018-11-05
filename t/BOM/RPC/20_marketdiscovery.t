@@ -41,7 +41,7 @@ subtest $method => sub {
     ($indices) = grep { $_->{symbol} eq 'AEX' } @$result;
     is_deeply([sort keys %$indices], [sort @$expected_keys], 'result has correct keys');
     is($indices->{market_display_name},    'Indices',       'the market_display_name is translated');
-    is($indices->{submarket_display_name}, 'Europe/Africa', 'the submarket_display_name is translated');
+    is($indices->{submarket_display_name}, 'Europe', 'the submarket_display_name is translated');
     is(scalar @$result,                    75,              'the default landing company is "costarica", the number of result should be ok');
 
     my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
