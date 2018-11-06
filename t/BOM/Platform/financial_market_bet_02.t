@@ -461,7 +461,7 @@ SKIP: {
 
             ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
-                underlying_symbol => 'fritz',
+                underlying_symbol => 'R_50',
                 };
             $bal -= 20;
             push @bets_to_sell, [$acc_usd, $fmbid];
@@ -502,13 +502,13 @@ SKIP: {
                     max_losses               => 100 - 0.01,
                     specific_turnover_limits => [{    # fails
                             bet_type => [qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [qw/frxUSDJPY frxUSDGBP fritz/],
+                            symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
                             limit    => 100 - 0.01,
                             name     => 'test1',
                         },
                         {    # passes
                             bet_type => [qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [qw/frxUSDJPY frxUSDGBP fritz/],
+                            symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
                             limit    => 100,
                             name     => 'test2',
                         },
@@ -532,13 +532,13 @@ SKIP: {
                             limit       => 40,
                             name        => 'test6',
                         },
-                        {    # fails (count only the one bet w/ sym=fritz, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            symbols => [qw/hugo fritz/],
+                        {    # fails (count only the one bet w/ sym=R_50, USD 20 + USD 20 for the bet to be bought => limit=40)
+                            symbols => [qw/hugo R_50/],
                             limit   => 40 - 0.01,
                             name    => 'test7',
                         },
-                        {    # passes  (count only the one bet w/ sym=fritz, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            symbols => [qw/hugo fritz/],
+                        {    # passes  (count only the one bet w/ sym=R_50, USD 20 + USD 20 for the bet to be bought => limit=40)
+                            symbols => [qw/hugo R_50/],
                             limit   => 40,
                             name    => 'test8',
                         },
@@ -560,13 +560,13 @@ SKIP: {
                     max_losses               => 100 - 0.01,
                     specific_turnover_limits => [{    # fails
                             bet_type => [qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [qw/frxUSDJPY frxUSDGBP fritz/],
+                            symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
                             limit    => 100 - 0.01,
                             name     => 'test1',
                         },
                         {    # passes
                             bet_type => [qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [qw/frxUSDJPY frxUSDGBP fritz/],
+                            symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
                             limit    => 100,
                             name     => 'test2',
                         },
@@ -590,13 +590,13 @@ SKIP: {
                             limit       => 40,
                             name        => 'test6',
                         },
-                        {    # fails (count only the one bet w/ sym=fritz, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            symbols => [qw/hugo fritz/],
+                        {    # fails (count only the one bet w/ sym=R_50, USD 20 + USD 20 for the bet to be bought => limit=40)
+                            symbols => [qw/hugo R_50/],
                             limit   => 40 - 0.01,
                             name    => 'test7',
                         },
-                        {    # passes  (count only the one bet w/ sym=fritz, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            symbols => [qw/hugo fritz/],
+                        {    # passes  (count only the one bet w/ sym=R_50, USD 20 + USD 20 for the bet to be bought => limit=40)
+                            symbols => [qw/hugo R_50/],
                             limit   => 40,
                             name    => 'test8',
                         },
@@ -618,13 +618,13 @@ SKIP: {
                     max_losses               => 100,
                     specific_turnover_limits => [{    # fails
                             bet_type => [qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [qw/frxUSDJPY frxUSDGBP fritz/],
+                            symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
                             limit    => 100 - 0.01,
                             name     => 'test1',
                         },
                         {    # passes
                             bet_type => [qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [qw/frxUSDJPY frxUSDGBP fritz/],
+                            symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
                             limit    => 100,
                             name     => 'test2',
                         },
@@ -648,13 +648,13 @@ SKIP: {
                             limit       => 40,
                             name        => 'test6',
                         },
-                        {    # fails (count only the one bet w/ sym=fritz, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            symbols => [qw/hugo fritz/],
+                        {    # fails (count only the one bet w/ sym=R_50, USD 20 + USD 20 for the bet to be bought => limit=40)
+                            symbols => [qw/hugo R_50/],
                             limit   => 40 - 0.01,
                             name    => 'test7',
                         },
-                        {    # passes  (count only the one bet w/ sym=fritz, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            symbols => [qw/hugo fritz/],
+                        {    # passes  (count only the one bet w/ sym=R_50, USD 20 + USD 20 for the bet to be bought => limit=40)
+                            symbols => [qw/hugo R_50/],
                             limit   => 40,
                             name    => 'test8',
                         },
@@ -677,14 +677,14 @@ SKIP: {
                     max_losses               => 100,
                     specific_turnover_limits => [{    # fails
                             bet_type => [qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [qw/frxUSDJPY frxUSDGBP fritz/],
+                            symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
                             limit    => 20 - 0.01,
                             daily    => 1,
                             name     => 'test1',
                         },
                         {    # passes
                             bet_type => [qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [qw/frxUSDJPY frxUSDGBP fritz/],
+                            symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
                             limit    => 20,
                             daily    => 1,
                             name     => 'test2',
@@ -707,21 +707,21 @@ SKIP: {
                     max_losses               => 100,
                     specific_turnover_limits => [{    # passes
                             bet_type => [qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [qw/frxUSDJPY frxUSDGBP fritz/],
+                            symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
                             limit    => 100 - 0.01,
                             daily    => 1,
                             name     => 'test1',
                         },
                         {    # fails
                             bet_type => [qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [qw/frxUSDJPY frxUSDGBP fritz/],
+                            symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
                             limit    => 100 - 0.01,
                             daily    => 0,
                             name     => 'test2',
                         },
                         {    # passes
                             bet_type => [qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [qw/frxUSDJPY frxUSDGBP fritz/],
+                            symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
                             limit    => 100,
                             daily    => 0,
                             name     => 'test1',
@@ -744,7 +744,7 @@ SKIP: {
                     max_losses               => 100,
                     specific_turnover_limits => [{    # passes
                             bet_type => [qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [qw/frxUSDJPY frxUSDGBP fritz/],
+                            symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
                             limit    => 100,
                             name     => 'test2',
                         },
@@ -758,8 +758,8 @@ SKIP: {
                             limit       => 40,
                             name        => 'test6',
                         },
-                        {    # passes  (count only the one bet w/ sym=fritz, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            symbols => [qw/hugo fritz/],
+                        {    # passes  (count only the one bet w/ sym=R_50, USD 20 + USD 20 for the bet to be bought => limit=40)
+                            symbols => [qw/hugo R_50/],
                             limit   => 40,
                             name    => 'test8',
                         },

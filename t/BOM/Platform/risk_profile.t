@@ -146,7 +146,7 @@ subtest 'turnover limit parameters' => sub {
     $param = $rp->get_turnover_limit_parameters;
     is $param->[0]->{name},  'test custom', 'correct name';
     is $param->[0]->{limit}, 0,             'turnover limit correctly set to zero';
-    ok !$param->[0]->{daily}, 'daily set to 0';
+    ok !$param->[0]->{daily},       'daily set to 0';
     ok !$param->[0]->{ultra_short}, 'daily set to 0';
     is scalar(@{$param->[0]->{symbols}}), 7, '7 symbols selected';
     BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
@@ -175,8 +175,8 @@ subtest 'turnover limit parameters' => sub {
     $rp = BOM::Platform::RiskProfile->new(%args, expiry_type => 'ultra_short');
     is $rp->contract_info->{expiry_type}, 'ultra_short', 'ultra_short  expiry';
     $param = $rp->get_turnover_limit_parameters;
-    is $param->[0]->{name},  'test custom ultra_short', 'correct name';
-    is $param->[0]->{limit}, 0,             'turnover limit correctly set to zero';
+    is $param->[0]->{name}, 'test custom ultra_short', 'correct name';
+    is $param->[0]->{limit}, 0, 'turnover limit correctly set to zero';
     ok !$param->[0]->{daily}, 'daily set to 0';
     ok $param->[0]->{ultra_short}, 'daily set to 1';
     is scalar(@{$param->[0]->{symbols}}), 7, '7 symbols selected';
