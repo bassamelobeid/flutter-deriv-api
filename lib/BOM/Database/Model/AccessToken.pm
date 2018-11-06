@@ -125,31 +125,45 @@ sub remove_by_token {
 sub get_all_tokens_by_loginid {
     my ($self, $loginid) = @_;
 
-    my @tokens;
-    $self->dbic->run(
+    return $self->dbic->run(
         fixup => sub {
-            my $sth = $_->prepare('
-        SELECT
-            access_token
+            $_->selectall_arrayref("
+        SELECT                           
+            access_token as token, 'Access' as type, 'App ID: '|| app_id::text as info, creation_time::timestamp(0)
         FROM
             oauth.access_token
         WHERE
-            loginid = $1
+            loginid = ?
         UNION
         SELECT
-            token
+            token, 'API', 'Name: ' ||display_name||'; Scopes: '||array_to_string(scopes,','), creation_time::timestamp(0)
         FROM
             auth.access_token
         WHERE
-            client_loginid = $1;
-    ');
-            $sth->execute($loginid);
-            while (my $r = $sth->fetchrow_arrayref) {
-                push @tokens, $r->[0];
-            }
+            client_loginid = ?",
+                {Slice => {}},
+                $loginid, $loginid);
         });
+}
 
-    return wantarray ? @tokens : \@tokens;
+sub token_deletion_history {
+    my ($self, $loginid) = @_;
+
+    my $tokens = $self->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref("
+                SELECT payload->>'token' AS token, payload->>'display_name' AS name, 
+                  stamp::timestamp(0) AS deleted, payload->>'scopes' as scopes
+                FROM audit.auth_token 
+                WHERE operation = 'DELETE' 
+                  AND payload->>'client_loginid' = ?",
+                {Slice => {}},
+                $loginid);
+        });
+    # Easier to convert the scopes array here than in Postgres
+    map { $_->{scopes} =~ s/[\[\]\"]//g; $_->{info} = 'Name: ' . $_->{name} . '; Scopes: ' . $_->{scopes} } @$tokens;
+
+    return $tokens;
 }
 
 no Moose;
