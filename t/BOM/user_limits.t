@@ -177,6 +177,9 @@ my $new_acc_usd = $new_client->account;
 
 my $db = BOM::Database::ClientDB->new({broker_code => 'CR'})->db;
 
+BOM::Config::Runtime->instance->app_config->quants->enable_user_potential_loss(1);
+BOM::Config::Runtime->instance->app_config->quants->enable_user_realized_loss(1);
+
 subtest 'potential loss', sub {
     BOM::Database::Helper::UserSpecificLimit->new({
             db             => $db,

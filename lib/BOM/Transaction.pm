@@ -377,9 +377,9 @@ sub calculate_limits {
         foreach my $check_name (qw(user_potential_loss user_realized_loss)) {
             my $method       = 'enable_' . $check_name;
             my $alert_method = $check_name . '_alert_threshold';
-            $limits{$check_name}{per_user} = 1;
             if ($app_config->quants->$method) {
                 my $threshold = $app_config->quants->$alert_method;
+                $limits{$check_name}{per_user}          = 1;
                 $limits{$check_name}{warning_threshold} = $threshold;
             }
         }
