@@ -126,6 +126,13 @@ subtest 'spot min max lbhighlow' => sub {
 
     is $c->high_barrier->as_absolute, '103.00', 'high barrier is correct';
     is $c->low_barrier->as_absolute,  '101.00', 'low barrier is correct';
+
+    # high barrier should be 101 when we pass sell time as below
+    $bet_params->{sell_time} = $now->epoch;
+    $c = produce_contract($bet_params);
+
+    is $c->high_barrier->as_absolute, '101.00', 'high barrier is correct';
+    is $c->low_barrier->as_absolute,  '101.00', 'low barrier is correct';
 };
 
 done_testing;

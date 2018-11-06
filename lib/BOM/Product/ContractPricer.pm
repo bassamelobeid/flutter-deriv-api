@@ -321,6 +321,7 @@ sub spot_min_max {
     # When price a contract at the date start, the date pricing == date start
     # However, for price a lookback contract, we always excluded tick at date start (ie from is set to date_start +1)
     # Hence we need to cap the to epoch as follow
+    $to_epoch = $self->sell_time if $self->category_code eq 'lookback' and $self->sell_time and $self->sell_time < $self->date_expiry->epoch;
     $to_epoch = max($from_epoch, $to_epoch);
     my $duration = $to_epoch - $from_epoch;
 

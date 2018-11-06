@@ -212,6 +212,11 @@ has exit_tick => (
     lazy_build => 1,
 );
 
+# to be used for logic related to early sell especially tick related code.
+has sell_time => (
+    is => 'ro',
+);
+
 has primary_validation_error => (
     is       => 'rw',
     init_arg => undef,
