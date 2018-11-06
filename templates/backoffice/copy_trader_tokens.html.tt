@@ -5,7 +5,7 @@
         <table>
         <tr><th>Copier Id</th><th>token</th></tr>
         [% FOREACH copier IN copiers %]
-            <tr><td>[% copier.0 %]</td><td>[% copier.2 %]</td><td><input type="checkbox" name="copier_ids" value="[% copier.0 %]::[% copier.2 %]"></tr>
+            <tr><td>[% copier.0 %]</td><td>[% copier.3 %]</td><td><input type="checkbox" name="copier_ids" value="[% copier.0 %]::[% copier.2 %]"></tr>
         [% END %]
         </table>
     [% END %]
@@ -15,7 +15,7 @@
         <table>
         <tr><th>trader Id</th><th>token</th></tr>
         [% FOREACH trader IN traders %]
-            <tr><td>[% trader.0 %]</td><td>[% trader.2 %]</td><td><input type="checkbox" name="trader_ids" value="[% trader.0 %]::[% trader.2 %]"></tr>
+            <tr><td>[% trader.0 %]</td><td>[% trader.3 %]</td><td><input type="checkbox" name="trader_ids" value="[% trader.0 %]::[% trader.2 %]"></tr>
         [% END %]
         </table>
     [% END %]

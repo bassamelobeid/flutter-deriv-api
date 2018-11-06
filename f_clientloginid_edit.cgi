@@ -917,23 +917,43 @@ print qq{
 } if $user->is_totp_enabled;
 
 Bar("$loginid Tokens");
+my $token_db = BOM::Database::Model::AccessToken->new();
+my (@all_tokens, @deleted_tokens);
 foreach my $l (sort keys %$siblings) {
-    my $tokens = BOM::Database::Model::AccessToken->new->get_all_tokens_by_loginid($l);
-    foreach my $t (@$tokens) {
-        $t =~ /(.{4})$/;
-        print "Access Token [" . $l . "]: $1 <br\>";
+    foreach my $t (@{$token_db->get_all_tokens_by_loginid($l)}) {
+        $t->{loginid} = $l;
+        $t->{token}   = obfuscate_token($t->{token});
+        push @all_tokens, $t;
+    }
+    foreach my $t (@{$token_db->token_deletion_history($l)}) {
+        $t->{loginid} = $l;
+        push @deleted_tokens, $t;
     }
 }
+
+BOM::Backoffice::Request::template()->process(
+    'backoffice/access_tokens.html.tt',
+    {
+        tokens  => \@all_tokens,
+        deleted => \@deleted_tokens
+    }) || die BOM::Backoffice::Request::template()->error();
+
 Bar("$loginid Copiers/Traders");
 my $copiers_data_mapper = BOM::Database::DataMapper::Copier->new({
     db             => $client->db,
     client_loginid => $loginid
 });
+
+my $copiers = $copiers_data_mapper->get_copiers_tokens_all({trader_id => $loginid});
+my $traders = $copiers_data_mapper->get_traders_tokens_all({copier_id => $loginid});
+map { $_->[3] = obfuscate_token($_->[2]) } @$copiers;
+map { $_->[3] = obfuscate_token($_->[2]) } @$traders;
+
 BOM::Backoffice::Request::template()->process(
     'backoffice/copy_trader_tokens.html.tt',
     {
-        copiers   => $copiers_data_mapper->get_copiers_tokens_all({trader_id => $loginid}),
-        traders   => $copiers_data_mapper->get_traders_tokens_all({copier_id => $loginid}),
+        copiers   => $copiers,
+        traders   => $traders,
         loginid   => $encoded_loginid,
         self_post => $self_post
     }) || die BOM::Backoffice::Request::template()->error();
@@ -1059,6 +1079,13 @@ sub _delete_copiers {
     }
     return $delete_count;
 }
+
+sub obfuscate_token {
+    my $t = shift;
+    $t =~ s/(.*)(.{4})$/('*' x length $1).$2/e;
+    return $t;
+}
+
 code_exit_BO();
 
 1;

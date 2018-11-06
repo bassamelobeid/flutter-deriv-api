@@ -1,0 +1,56 @@
+<style type="text/css">
+.tokencell { padding-right: 15px; }
+</style>
+
+<table>
+    <tr>
+        <td class="small_header" colspan="5">ACTIVE ([% tokens.size %])</td>
+    </tr>
+    [% IF tokens.size > 0 %]
+    <tr>
+        <th>Login ID</th>
+        <th>Token</th>
+        <th>Type</th>
+        <th>Created</th>
+        <th>Details</th>
+    </tr>
+        [% FOREACH token IN tokens %]
+        <tr>
+            <td class="tokencell">[% token.loginid %]</td>
+            <td class="tokencell">[% token.token %]</td>
+            <td class="tokencell">[% token.type %]</td>
+            <td class="tokencell">[% token.creation_time %]</td>
+            <td class="tokencell">[% token.info %]</td>
+        </tr>
+        [% END %]
+     [% ELSE %]
+     <tr>
+         <td colspan="5">No active tokens</td>
+     </tr>
+     [% END %]
+    <tr>
+        <td class="small_header" colspan="5">DELETED ([% deleted.size %])</td>
+    </tr>
+    [% IF deleted.size > 0 %]
+    <tr>
+        <th>Login ID</th>
+        <th>Token</th>
+        <th>Type</th>
+        <th>Deleted</th>
+        <th>Details</th>
+    </tr>
+        [% FOREACH token IN deleted %]
+        <tr>
+            <td class="tokencell">[% token.loginid %]</td>
+            <td class="tokencell">[% token.token %]</td>
+            <td class="tokencell">API</td>
+            <td class="tokencell">[% token.deleted %]</td>
+            <td class="tokencell">[% token.info %]</td>
+        </tr>
+        [% END %]
+     [% ELSE %]
+     <tr>
+         <td colspan="5">No deleted tokens</td>
+     </tr>
+     [% END %]    
+</table>
