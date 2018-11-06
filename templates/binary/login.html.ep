@@ -2,7 +2,7 @@
 <div id="header" class="dark-blue">
     <div class="center-text">
         <div class="logo-wrapper">
-            <a href="https://www.binary.com/<%= lc($r->language) %>/home.html" class="logo-parent">
+            <a href="https://www.<%= $website_domain %>/<%= lc($r->language) %>/home.html" class="logo-parent">
                 <div class="logo">
                     <div></div>
                 </div>
@@ -39,8 +39,8 @@
     </div>
     <% if ($is_reset_password_allowed) { %>
         <div class="center-text links">
-            <p><a id="lost-password" href="https://www.binary.com/<%= lc($r->language) %>/user/lost_passwordws.html"><%= l('Lost Password?') %></a></p>
-            <p><%= l('Don\'t have a Binary.com account?') %> <a id="create-account" href="https://www.binary.com/<%= lc($r->language) %>/home.html"><%= l('Create one') %></a> <%= l('now.') %></p>
+            <p><a id="lost-password" href="https://www.<%= $website_domain %>/<%= lc($r->language) %>/user/lost_passwordws.html"><%= l('Lost Password?') %></a></p>
+            <p><%= l('Don\'t have a Binary.com account?') %> <a id="create-account" href="https://www.<%= $website_domain %>/<%= lc($r->language) %>/home.html"><%= l('Create one') %></a> <%= l('now.') %></p>
         </div>
     <% } %>
 </div>

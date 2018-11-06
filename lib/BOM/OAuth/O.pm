@@ -30,7 +30,7 @@ use BOM::User::AuditLog;
 use BOM::Platform::Context qw(localize);
 use BOM::OAuth::Static qw(get_message_mapping);
 
-use constant APP_ALLOWED_TO_RESET_PASSWORD => qw(1 14473);
+use constant APP_ALLOWED_TO_RESET_PASSWORD => qw(1 14473 15284);
 
 sub authorize {
     my $c = shift;
@@ -92,6 +92,7 @@ sub authorize {
         login_providers           => $c->stash('login_providers'),
         login_method              => undef,
         is_reset_password_allowed => _is_reset_password_allowed($app->{id}),
+        website_domain            => _website_domain($app->{id}),
     );
 
     my $date_first_contact = $c->param('date_first_contact') // '';
@@ -329,6 +330,7 @@ sub _login {
             login_providers           => $c->stash('login_providers'),
             login_method              => undef,
             is_reset_password_allowed => _is_reset_password_allowed($app->{id}),
+            website_domain            => _website_domain($app->{id}),
         );
 
         return;
@@ -511,6 +513,16 @@ sub _is_reset_password_allowed {
     die "Invalid application id." unless $app_id;
 
     return first { $_ == $app_id } APP_ALLOWED_TO_RESET_PASSWORD;
+}
+
+sub _website_domain {
+    my $app_id = shift;
+
+    die "Invalid application id." unless $app_id;
+
+    return "binary.me" if $app_id == 15284;
+
+    return "binary.com";
 }
 
 1;
