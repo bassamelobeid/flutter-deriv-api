@@ -18,6 +18,9 @@ my $xml              = XML::Simple->new;
 my $support_email    = 'support@binary.com';
 my $compliance_email = 'compliance@binary.com';
 
+my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
+$mailbox->init;
+
 subtest 'Constructor' => sub {
     subtest 'No Client' => sub {
         throws_ok(sub { BOM::Platform::Client::IDAuthentication->new() }, qr/Missing required arguments: client/, "Constructor dies with no client");
@@ -44,6 +47,15 @@ subtest "CR accounts" => sub {
     ok $v->client->is_first_deposit_pending, 'First deposit tracking for CR account';
 
     $v->run_authentication();
+
+    my @msgs = $mailbox->search(
+        email   => 'support-newaccount-notifications@binary.com',
+        subject => qr/New Sign-Up/
+    );
+
+    ok(@msgs, "New sign up email received");
+    $mailbox->clear;
+
     ok !$v->client->status->cashier_locked, "CR client not cashier locked following run_authentication";
     ok !$v->client->status->unwelcome,      "CR client not unwelcome following run_authentication";
 };
@@ -57,6 +69,13 @@ subtest 'MLT accounts' => sub {
         ok $v->client->is_first_deposit_pending, 'First deposit tracking for MLT account';
 
         $v->run_authentication;
+
+        my @msgs = $mailbox->search(
+            email   => 'support-newaccount-notifications@binary.com',
+            subject => qr/New Sign-Up/
+        );
+
+        is(@msgs, 0, 'No email received');
 
         ok !$v->client->fully_authenticated, 'Not fully authenticated';
         ok !$v->client->status->age_verification, 'Not age verified';
