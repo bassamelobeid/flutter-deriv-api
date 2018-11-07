@@ -30,9 +30,11 @@ sub run_authentication {
 
     return if $client->is_virtual || $client->fully_authenticated;
 
-    my $landing_company = $client->landing_company->short;
+    my $landing_company = $client->landing_company;
 
-    my $requirements = $client->landing_company->first_deposit_requirements;
+    $client->send_new_client_email() if ($landing_company->new_client_email_event eq 'first_deposit');
+
+    my $requirements = $landing_company->first_deposit_requirements;
 
     my $action_mapping = {
         age_verified => \&_age_verified,

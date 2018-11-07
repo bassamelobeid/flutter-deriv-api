@@ -59,7 +59,7 @@ install:
     - /tmp/travis-scripts/setup_authdb.sh
     - /tmp/travis-scripts/setup_usersdb.sh
     - /tmp/travis-scripts/setup_chronicledb.sh
-
+    - /tmp/travis-scripts/setup_postfix.sh
     - /tmp/travis-scripts/setup_logs.sh
     - . /tmp/travis-scripts/setup_perl5lib.sh
     - /tmp/travis-scripts/setup_experian_mock.sh

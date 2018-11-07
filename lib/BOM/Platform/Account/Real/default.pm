@@ -132,16 +132,12 @@ sub after_register_client {
     my $client_loginid = $client->loginid;
     my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);
 
-    my $notemsg = "$client_loginid - Name and Address\n\n\n\t\t $client_name \n\t\t";
-    my @address = map { $client->$_ } qw(address_1 address_2 city state postcode);
-    $notemsg .= join("\n\t\t", @address, Locale::Country::code2country($client->residence));
-    $notemsg .= sprintf "\n\nIP was %s (country %s)", $ip // 'unknown', $country // 'unknown';
-    $client->add_note("New Sign-Up Client [$client_loginid] - Name And Address Details", "$notemsg\n");
+    $client->send_new_client_email($ip, $country) if ($client->landing_company->new_client_email_event eq 'signup');
 
     if ($client->landing_company->short eq 'iom'
         and (length $client->first_name < 3 or length $client->last_name < 3))
     {
-        $notemsg = "$client_loginid - first name or last name less than 3 characters \n\n\n\t\t";
+        my $notemsg = "$client_loginid - first name or last name less than 3 characters \n\n\n\t\t";
         $notemsg .= join("\n\t\t",
             'first name: ' . $client->first_name,
             'last name: ' . $client->last_name,
