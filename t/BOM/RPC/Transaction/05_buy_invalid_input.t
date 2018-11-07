@@ -61,7 +61,7 @@ my $params = {
     },
 };
 
-my $params_invalid_symbol = {          
+my $params_invalid_symbol = {
     language            => 'EN',
     token               => $token,
     source              => 1,
@@ -92,7 +92,8 @@ subtest 'get proposal with invalid days duration' => sub {
 subtest 'get proposal with invalid symbol' => sub {
     my $ask_params = {args => $params_invalid_symbol->{contract_parameters}};
 
-    $c->call_ok('send_ask', $ask_params)->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'correct error code')->error_message_is('Trading is not offered for this asset.','Trading is not offered for this asset.');
+    $c->call_ok('send_ask', $ask_params)->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'correct error code')
+        ->error_message_is('Trading is not offered for this asset.', 'Trading is not offered for this asset.');
 };
 
 subtest 'buy with invalid days duration' => sub {

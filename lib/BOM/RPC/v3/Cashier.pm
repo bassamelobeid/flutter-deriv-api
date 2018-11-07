@@ -564,6 +564,10 @@ rpc paymentagent_transfer => sub {
         $error = "Paymentagent Transfer failed to $loginid_to [$_]";
     };
 
+    # Send email to CS whenever a new client has been deposited via payment agent
+    # This assumes no deposit has been made and the following deposit is a success
+    my $client_has_deposits = $client_to->has_deposits;
+
     if ($error) {
         if ($error =~ /\bBI102 /) {
             return $error_sub->(localize('Request too frequent. Please try again later.'));
@@ -651,6 +655,8 @@ rpc paymentagent_transfer => sub {
         amount        => $amount,
         payment_agent => 0,
     );
+
+    $client_to->send_new_client_email() unless $client_has_deposits;
 
     # sent email notification to client
     my $emailcontent = localize(
