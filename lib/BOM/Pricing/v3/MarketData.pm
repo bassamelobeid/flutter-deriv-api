@@ -177,7 +177,9 @@ sub asset_index {
     # Default to costarica, which returns the entire asset index, if no arg and not logged in
     $landing_company_name //= 'costarica';
 
-    for my $cache_key (map { $_ . '_asset_index_' . $language } ($country_name, $landing_company_name)) {
+    for my $country_or_lc ($country_name, $landing_company_name) {
+        next if not defined $country_or_lc;
+        my $cache_key = $country_or_lc . '_asset_index_' . $language;
         if (my $cache = _get_cache($cache_key)) {
             return $cache;
         }
