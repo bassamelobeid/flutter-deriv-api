@@ -205,7 +205,7 @@ record some stats
 
 sub BUILD {
     my $self = shift;
-    stats_inc($self . '.instances');
+    stats_inc($self->stats_name . '.instances');
     return $self;
 }
 
