@@ -29,7 +29,6 @@ sub create_account {
     } elsif ($residence && $brand_country_instance->restricted_country($residence)) {
         return {error => 'invalid residence'};
     }
-
     # set virtual company if residence is provided otherwise use brand name to infer the broker code
     my $default_virtual;
     $default_virtual = 'champion-virtual' if $brand_name eq 'champion';
@@ -37,9 +36,23 @@ sub create_account {
     return {error => 'InvalidBrand'} unless $default_virtual;
 
     #return error if date_first_contact is in future or invalid
+    # date_first_contact is used by marketing to record when users first touched a binary.com site.
+    # it must be passed in in GMT time to match the server timezone.
     if (defined $date_first_contact) {
-        my $valid_date = try { !Date::Utility->new($date_first_contact)->is_after(Date::Utility->today) };
-        return {error => 'InvalidDateFirstContact'} unless $valid_date;
+        my $valid_date = try {
+            my $contact_date = Date::Utility->new($date_first_contact);
+            #Any dates older than 30 days set to 30 days old
+            if ($contact_date->is_before(Date::Utility->today->minus_time_interval('30d'))) {
+                $date_first_contact = Date::Utility->today->minus_time_interval('30d')->date_yyyymmdd;
+            } elsif ($contact_date->is_after(Date::Utility->today)) {
+                $date_first_contact = Date::Utility->today->date_yyyymmdd;
+            }
+        }
+        catch {
+            $date_first_contact = Date::Utility->today->date_yyyymmdd;
+        };
+    } else {
+        $date_first_contact = Date::Utility->today->date_yyyymmdd;
     }
 
     my ($user, $client, $error, $error_msg);
