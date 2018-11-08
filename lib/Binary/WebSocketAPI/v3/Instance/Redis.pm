@@ -64,6 +64,10 @@ sub create {
     $redis_url->userinfo('dummy:' . $cf->{password}) if $cf->{password};
 
     my $server = Mojo::Redis2->new(url => $redis_url);
+    # NOTICE Mojo::Redis2 will 'encode_utf8' & 'decode_utf8' automatically when it send & receive messages. And before & after that we do encode & decode again. That means we do 'encode' & 'decode' twice.
+    # In most cases it is ok. I'm afraid that will cause new problem if I fix it. And we will replace Mojo::Redis2 in the future, so I don't fix it now.
+    # Bot in shared_redis, We send it by RedisDB, that will generate an error 'wide character' when we decode message twice. So we disable it now
+    $server->encoding(undef) if $name eq 'shared_redis';
     $server->on(
         connection => sub {
             stats_inc('bom_websocket_api.v_3.redis_instances.' . $name . '.connections');
