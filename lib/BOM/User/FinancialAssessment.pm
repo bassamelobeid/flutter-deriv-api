@@ -164,7 +164,10 @@ sub build_financial_assessment {
         $result->{financial_information}->{$key}->{label}  = $config->{financial_information}->{$key}->{label};
         $result->{financial_information}->{$key}->{answer} = $raw->{$key};
 
-        my $score = $raw->{$key} ? $config->{financial_information}->{$key}->{possible_answer}->{$raw->{$key}} : 0;
+        my $provided_answer  = $raw->{$key};
+        my $possible_answers = $config->{financial_information}->{$key}->{possible_answer};
+
+        my $score = ($provided_answer && defined $possible_answers->{$provided_answer}) ? $possible_answers->{$provided_answer} : 0;
         $result->{financial_information}->{$key}->{score} = $score;
         $result->{scores}->{financial_information_score} += $score;
         $result->{scores}->{total_score}                 += $score;
@@ -174,7 +177,10 @@ sub build_financial_assessment {
         $result->{trading_experience}->{$key}->{label}  = $config->{trading_experience}->{$key}->{label};
         $result->{trading_experience}->{$key}->{answer} = $raw->{$key};
 
-        my $score = $raw->{$key} ? $config->{trading_experience}->{$key}->{possible_answer}->{$raw->{$key}} : 0;
+        my $provided_answer  = $raw->{$key};
+        my $possible_answers = $config->{trading_experience}->{$key}->{possible_answer};
+
+        my $score = ($provided_answer && defined $possible_answers->{$provided_answer}) ? $possible_answers->{$provided_answer} : 0;
         $result->{trading_experience}->{$key}->{score} = $score;
         $result->{scores}->{trading_score} += $score;
         $result->{scores}->{cfd_score}     += $score if $key eq 'cfd_trading_frequency' or $key eq 'cfd_trading_experience';
@@ -199,8 +205,12 @@ sub _score_keys {
 sub is_section_complete {
     my $fa      = shift;
     my $section = shift;
+    my $config  = get_config();
 
-    return 0 + all { $fa->{$_} } @{_financial_assessment_keys(1)->{$section}};
+    return 0 + all {
+        $fa->{$_} && defined $config->{$section}->{$_}->{possible_answer}->{$fa->{$_}}
+    }
+    @{_financial_assessment_keys(1)->{$section}};
 }
 
 # Decodes the raw FA data from the DB. Can take in a section parameter to only return fields relevant to that section (trading_experience or financial_information).
