@@ -12,7 +12,7 @@ use Test::Warnings;
 
 use BOM::User::Client;
 use BOM::User::FinancialAssessment qw(decode_fa);
-
+use Date::Utility;
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
@@ -169,7 +169,42 @@ subtest 'create account' => sub {
         my ($vr_client_n, $user_n) = @{$vr_acc}{'client', 'user'};
     }
     'create VR acc without residence and password';
+    subtest date_first_contact => sub {
+        my $vr_acc_n = BOM::Platform::Account::Virtual::create_account({
+                details => {
+                    email              => 'foo1+datecontact@binary.com',
+                    date_first_contact => Date::Utility->today->plus_time_interval('1d')->date_yyyymmdd
+                }});
+        is($vr_acc_n->{user}->date_first_contact, '2016-02-29', 'Date in future set to today');
 
+        $vr_acc_n = BOM::Platform::Account::Virtual::create_account({
+                details => {
+                    email              => 'foo5+datecontact@binary.com',
+                    date_first_contact => '2016-13-40'
+                }});
+        is($vr_acc_n->{user}->date_first_contact, '2016-02-29', 'Invalid date gets set to today');
+
+        $vr_acc_n = BOM::Platform::Account::Virtual::create_account({
+                details => {
+                    email              => 'foo2+datecontact@binary.com',
+                    date_first_contact => Date::Utility->today->date_yyyymmdd
+                }});
+        isa_ok($vr_acc_n->{client}, 'BOM::User::Client', 'No error when today');
+
+        $vr_acc_n = BOM::Platform::Account::Virtual::create_account({
+                details => {
+                    email              => 'foo3+datecontact@binary.com',
+                    date_first_contact => Date::Utility->today->minus_time_interval('40d')->date_yyyymmdd
+                }});
+        is($vr_acc_n->{user}->date_first_contact, '2016-01-30', 'When over 30 days old date_first_contact is 30 days old');
+
+        $vr_acc_n = BOM::Platform::Account::Virtual::create_account({
+                details => {
+                    email              => 'foo4+datecontact@binary.com',
+                    date_first_contact => Date::Utility->today->minus_time_interval('20d')->date_yyyymmdd
+                }});
+        isa_ok($vr_acc_n->{client}, 'BOM::User::Client', 'No error when under 30 days old ');
+    };
     # real acc
     lives_ok {
         $real_acc = BOM::Platform::Account::Real::default::create_account({

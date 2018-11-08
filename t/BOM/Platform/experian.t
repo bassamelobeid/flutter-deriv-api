@@ -146,6 +146,11 @@ subtest 'Replace Existing Result' => sub {
 
     is(compare_text($saved_xml, $expected_xml), 0, "xml replaced ok");
     is(compare($saved_pdf, $expected_pdf), 0, "pdf replaced ok");
+
+    BOM::Platform::ProveID->new(client => $client)->delete_existing_reports;
+
+    is(-e $saved_xml, undef, "Deleted xml ok");
+    is(-e $saved_pdf, undef, "Deleted pdf ok");
 };
 
 # If run with -uat option (prove experian.t :: -uat), we will run tests against Experian's actual UAT server

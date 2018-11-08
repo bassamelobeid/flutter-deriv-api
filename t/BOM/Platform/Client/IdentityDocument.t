@@ -44,7 +44,7 @@ subtest 'Age Verified' => sub {
             ok !$client->has_valid_documents, "Client Does not have a valid document";
 
             my ($doc) = $client->add_client_authentication_document({
-                document_type              => "Passport",
+                document_type              => "passport",
                 document_format            => "PDF",
                 document_path              => '/tmp/test.pdf',
                 expiration_date            => Date::Utility->new()->plus_time_interval('1d')->date,
@@ -69,7 +69,7 @@ subtest 'Age Verified' => sub {
 my $client = $client_2{'CR'};
 
 my ($doc) = $client->add_client_authentication_document({
-    document_type              => "Passport",
+    document_type              => "passport",
     document_format            => "PDF",
     document_path              => '/tmp/test.pdf',
     expiration_date            => '2008-03-03',

@@ -9,7 +9,7 @@ use DBD::Pg;
 use IO::Select;
 use Try::Tiny;
 use RedisDB;
-use JSON::MaybeXS;
+use JSON::MaybeUTF8 qw(:v1);
 
 my $conn;
 
@@ -70,12 +70,10 @@ sub run {
     return 0;
 }
 
-my $json = JSON::MaybeXS->new;
-
 sub _publish {
     my $redis       = shift;
     my $msg         = shift;
-    my $encoded_msg = $json->encode($msg);
+    my $encoded_msg = encode_json_utf8($msg);
 
     return $redis->publish('TXNUPDATE::transaction_' . $msg->{account_id}, $encoded_msg);
 }
@@ -119,6 +117,10 @@ sub _db {
 
 sub _redis {
     my $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/chronicle.yml');
+    # NOTICE
+    # RedisDB has a weird behavior: Regardless the published string is encoded to utf8  or not, the listener always get the string that encoded to utf8.
+    # Please revert to https://trello.com/c/SjSUWoQ1/7669-48-encoding-on-notifypub
+
     return RedisDB->new(
         host     => $config->{write}->{host},
         port     => $config->{write}->{port},
