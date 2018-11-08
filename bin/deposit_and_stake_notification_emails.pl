@@ -8,7 +8,7 @@
     UKGC: 6.3 ... casino operators must also apply CDD measures in relation to any transaction that amounts to 2,000 EUR or more,
         whether the transaction is executed in a single operation or in several operations which appear to be linked
 
-    MGA: Regulation 9(1) ff the PMFLTR provides that CDD measures are to be applied when carrying out transactions amounting to 2,000 EUR or more,
+    MGA: Regulation 9(1) of the PMFLTR provides that CDD measures are to be applied when carrying out transactions amounting to 2,000 EUR or more,
         whether carried out within the context of a business relationship or otherwise...
 
         As regards the 2,000 EUR threshold, this is to be applied vis-a-vis funds deposited onto an account,
