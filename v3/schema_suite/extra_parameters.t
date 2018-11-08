@@ -8,7 +8,7 @@ use BOM::Test::Suite::DSL;
 
 # This test verifies "additionalProperties":false is set for inner json objects
 
-my $json = JSON::MaybeXS->new;
+my $json       = JSON::MaybeXS->new;
 my $SCHEMA_DIR = '/home/git/regentmarkets/binary-websocket-api/config/v3/';
 
 subtest 'Check specfic calls' => sub {
@@ -18,9 +18,9 @@ subtest 'Check specfic calls' => sub {
         test_app          => 'Binary::WebSocketAPI',
         suite_schema_path => __DIR__ . '/config/',
     );
-    
+
     set_language 'EN';
-    
+
     # Create virtual account
     test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test@binary.com', 'account_opening';
     test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
@@ -51,18 +51,18 @@ sub check {
     my ($cur, $e) = @_;
     return unless ref $cur eq "HASH";
     my @els;
-    
+
     # objects must have an element "additionalProperties" and it must be False
     if ($cur->{type} and $cur->{type} eq "object" and not(defined $cur->{additionalProperties} and not $cur->{additionalProperties})) {
         push @els, $e;
     }
-    
+
     if ($cur->{type} and $cur->{type} eq 'array') {
         push @els, check($cur->{items}, $e);
     } else {
         push @els, check($cur->{$_}, $_) for sort keys %$cur;
     }
-    
+
     return @els;
 }
 
