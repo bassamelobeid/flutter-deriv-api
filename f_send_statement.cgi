@@ -37,11 +37,11 @@ unless ($to_date > $from_date) {
     code_exit_BO();
 }
 
-# we do not allow support to spend to CR clients as payment agents have huge amount of transactions
-# that may cause the statement queue to get stuck
-my $client = BOM::User::Client->new({loginid => $input->{client_id}});
-if ($client->landing_company->short eq 'costarica') {
-    print "Sending statement to CR clients is currently disabled";
+# we do not allow payment agents to request for statement
+# as that may cause the statement queue to get stuck
+my $client = BOM::User::Client->new({loginid => uc($input->{client_id})});
+if ($client->payment_agent) {
+    print "Sending statements to payment agents is currently disabled.";
     code_exit_BO();
 }
 
