@@ -221,11 +221,14 @@ The function that will attach onto redis server. This function will call on_mess
 sub on_message {
     my ($self, $redis, $message, $channel) = @_;
     if (my $entry = $self->channel_subscriptions->{$channel}) {
-        foreach my $k (keys %$entry) {
-            # Maybe during the iteration time, the element has been deleted, so we should check again before process the message
-            # Otherwise it will report `Use of freed value in iteration`
-            $entry->{$k}->process($message) if $entry->{$k};
-        }
+        # The $entry hash could be modified while we are looping over it
+        # In order to avoid a situation like: https://perldoc.pl/perldiag#Use-of-freed-value-in-iteration
+        # since keys and values subs might leads to issues we will "Capture" the hash keys at the point of time
+        # Maybe during the iteration time, the element has been deleted, so we should check again before process the message
+        # when we received the message, also please see:
+        # https://trello.com/c/Qm0MSFBD/#comment-5be403a7dceb540885f49d2a
+        my @client_subscriptions = values %$entry;
+        $_ && $_->process($message) for @client_subscriptions;
     } elsif (!exists($self->channel_unsubscribing->{$channel})) {
         $log->errorf('Had a message for channel [%s] but that channel is not subscribed', $channel);
         stats_inc("SubscriptionManager.UnsubscribedMsg");
