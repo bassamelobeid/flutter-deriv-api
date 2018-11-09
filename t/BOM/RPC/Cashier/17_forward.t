@@ -325,10 +325,10 @@ subtest 'crypto_cashier_forward_page' => sub {
 
     my $invalid_deposit =
         BOM::RPC::v3::Cashier::_get_cashier_url($prefix, $loginid, $website_name, $currency, $action, $language, $brand_name, 'binary.la');
-    ok $invalid_deposit =~ /^cryptocurrency.binary.com/, 'valid domain to invalid domain';
+    ok $invalid_deposit =~ /^https:\/\/cryptocurrency.binary.com/, 'valid domain to invalid domain';
     my $valid_deposit =
         BOM::RPC::v3::Cashier::_get_cashier_url($prefix, $loginid, $website_name, $currency, $action, $language, $brand_name, 'binary.me');
-    ok $valid_deposit =~ /cryptocurrency.binary.me/, 'valid domain to valid domain';
+    ok $valid_deposit =~ /^https:\/\/cryptocurrency.binary.me/, 'valid domain to valid domain';
 
     $website_name = 'binaryqa25.com';
     my $valid_QA_deposit =
