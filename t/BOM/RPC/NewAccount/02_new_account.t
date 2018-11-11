@@ -73,12 +73,15 @@ subtest $method => sub {
         ->has_no_system_error->has_error->error_code_is('InvalidToken', 'If email verification_code is wrong it should return error')
         ->error_message_is('Your token has expired or is invalid.', 'If email verification_code is wrong it should return error_message');
 
+    # first contact is limited within 30d, anytime earlier is less useful for marketing
+    my $date_first_contact = Date::Utility->new->minus_time_interval('30d')->date_yyyymmdd;
+
     $params->{args}->{residence}          = 'id';
     $params->{args}->{utm_source}         = 'google.com';
     $params->{args}->{utm_medium}         = 'email';
     $params->{args}->{utm_campaign}       = 'spring sale';
     $params->{args}->{gclid_url}          = 'FQdb3wodOkkGBgCMrlnPq42q8C';
-    $params->{args}->{date_first_contact} = '2017-08-07';
+    $params->{args}->{date_first_contact} = $date_first_contact;
     $params->{args}->{signup_device}      = 'mobile';
 
     $params->{args}->{verification_code} = BOM::Platform::Token->new(
@@ -96,11 +99,11 @@ subtest $method => sub {
         email => $email,
     );
 
-    is $user->{utm_source},         'google.com',                 'utm registered as expected';
-    is $user->{gclid_url},          'FQdb3wodOkkGBgCMrlnPq42q8C', 'gclid value returned as expected';
-    is $user->{date_first_contact}, '2017-08-07',                 'date first contact value returned as expected';
-    is $user->{signup_device},      'mobile',                     'signup_device value returned as expected';
-    is $user->{email_consent},      1,                            'email consent for new account is 1 for residence under costarica';
+    is $user->{utm_source}, 'google.com', 'utm registered as expected';
+    is $user->{gclid_url}, 'FQdb3wodOkkGBgCMrlnPq42q8C', 'gclid value returned as expected';
+    is $user->{date_first_contact}, $date_first_contact, 'date first contact value returned as expected';
+    is $user->{signup_device}, 'mobile', 'signup_device value returned as expected';
+    is $user->{email_consent}, 1,        'email consent for new account is 1 for residence under costarica';
 
     my ($resp_loginid, $t, $uaf) =
         @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
