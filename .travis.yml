@@ -4,8 +4,6 @@ group: deprecated-2017Q1
 language: perl
 matrix:
     fast_finish: true
-perl:
-    - "5.14.2-thr"
 env:
     - TEST_SUITE=merlin_benchmark
     - TEST_SUITE=SDFX_benchmark_major
