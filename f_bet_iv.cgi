@@ -15,7 +15,7 @@ use HTML::Entities;
 
 use Bloomberg::FileDownloader;
 use Bloomberg::RequestFiles;
-use BOM::BloombergCalendar;
+use Bloomberg::BloombergCalendar;
 use BOM::Backoffice::EconomicEventTool;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Utility qw(master_live_server_error);
@@ -119,10 +119,18 @@ print generate_dividend_upload_form({
 # Upload calendar
 #
 Bar("Upload Calendar");
-print BOM::BloombergCalendar::generate_holiday_upload_form({
-    broker     => $broker,
-    upload_url => request()->url_for('backoffice/f_upload_holidays.cgi'),
-});
+my $form;
+
+BOM::Backoffice::Request::template()->process(
+    'backoffice/holiday_upload_form.html.tt',
+    {
+        broker     => $broker,
+        upload_url => request()->url_for('backoffice/f_upload_holidays.cgi'),
+    },
+    \$form
+) || die BOM::Backoffice::Request::template()->error();
+
+print $form;
 
 # Upload Correlations
 # Currently we can get a table of correlation data from SuperDerivatives but in excel format
