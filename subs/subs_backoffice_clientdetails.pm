@@ -273,7 +273,7 @@ sub build_client_statement_form {
         . Date::Utility->today()->date . ' "/>'
         . '<input type="hidden" name="broker" value="'
         . $broker . '">'
-        . '<SELECT name="currency"><option value="default">client\'s default currency</option>'
+        . '<SELECT name="currency_dropdown"><option value="default">client\'s default currency</option>'
         . get_currency_options()
         . '</SELECT>'
         . '<input type="hidden" name="l" value="EN">'

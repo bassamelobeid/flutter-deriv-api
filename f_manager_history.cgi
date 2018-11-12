@@ -71,9 +71,10 @@ if (not $client) {
     code_exit_BO();
 }
 
-my $currency = request()->param('currency');
-if (not $currency or $currency eq 'default') {
-    $currency = $client->currency;
+# We either choose the dropdown currency from transaction page or use the client currency for quick jump
+my $currency = $client->currency;
+if (my $currency_dropdown = request()->param('currency_dropdown')) {
+    $currency = $currency_dropdown unless $currency_dropdown eq 'default';
 }
 
 # Fetch and display gross deposits and gross withdrawals

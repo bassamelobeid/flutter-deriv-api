@@ -16,10 +16,10 @@
 </div>
 <hr>
 <div>
-    <div style="color:red;">
-        <b>Show All Transactions</b>, may fail for clients with a huge number of transactions, so use this feature only
-        when required.
-    </div>
+    <div style="color:red";>NOTE: 	
+        <b>Show All Transactions</b> may fail for clients with a huge number of transactions, so use this feature only	
+        when required.	
+    </div><br/>
     <div>
         <form action="[% self_post %]" method="get">
             <span>Quick jump to see another statement:</span>
@@ -28,10 +28,12 @@
             <input name="enddate" type="text" size=15 value="[% enddate %]" placeholder="2017-01-20">
             <input name="broker" type=hidden value="[% broker %]">
             <input name="currency" type="hidden" value="[% currency %]">
-            <input name="all_in_one_page" type="checkbox">Show All Transactions 
-            <input name="depositswithdrawalsonly" type="checkbox" value="yes">Deposits and Withdrawals only
-            <input name="l" type="hidden" value="EN">
-            <input type=submit value="view">
+            <div style = "padding-left: 195px;">
+                <input name="all_in_one_page" type="checkbox">Show All Transactions 
+                <input name="depositswithdrawalsonly" type="checkbox" value="yes">Deposits and Withdrawals only
+                <input name="l" type="hidden" value="EN">
+                <input type=submit value="view">
+            </div>
         </form>
     </div>
 </div>
