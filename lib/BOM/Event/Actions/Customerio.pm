@@ -1,4 +1,4 @@
-package BOM::Events::Actions::Customerio;
+package BOM::Event::Actions::Customerio;
 
 use strict;
 use warnings;
@@ -9,6 +9,7 @@ use Mojo::UserAgent;
 
 use BOM::User::Client;
 use BOM::Config;
+use JSON::MaybeUTF8 qw(:v1);
 
 use constant TIMEOUT => 5;
 
@@ -40,6 +41,7 @@ sub register_details {
         email      => $client->email,
         created_at => Date::Utility->new($client->date_joined)->epoch,
         # optional
+
         company         => $client->landing_company->short,
         language        => $data->{language} // 'EN',
         first_name      => $client->first_name // '',
@@ -50,8 +52,10 @@ sub register_details {
         country_code => $client->residence // '',
         country => $client->residence ? Locale::Country::code2country($client->residence) : '',
         is_region_eu => $client->landing_company->short =~ /^(?:malta|iom)/ ? 1 : 0,
+
         # remove these before passing
         loginid => $loginid,
+
     };
 
     return _connect_and_update_customer_io($details);
@@ -93,8 +97,10 @@ sub _connect_and_update_customer_io {
     my $ua = Mojo::UserAgent->new->connect_timeout(TIMEOUT);
 
     my $config = BOM::Config::third_party()->{customerio};
-    my $url    = Mojo::URL->new($config->{api_uri} . delete $details->{loginid})->userinfo($config->{api_site_id} . ':' . $config->{api_key});
-    my $tx     = $ua->put($url => json => encode_json_utf8($details));
+    my $url    = Mojo::URL->new($config->{api_uri} . '/customers/' . delete $details->{loginid});
+    $url->query($details);
+    $url->userinfo($config->{api_site_id} . ':' . $config->{api_key});
+    my $tx = $ua->put($url);
 
     if (my $err = $tx->error) {
         die 'Error - ' . $err->{code} . ' response: ' . $err->{message} if $err->{code};
