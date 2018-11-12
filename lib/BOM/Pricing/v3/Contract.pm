@@ -270,6 +270,42 @@ sub handle_batch_contract {
     };
 }
 
+=head2 get_bid
+
+Description Builds the L<open contract response|https://developers.binary.com/api/#proposal_open_contract> api response from the stored contract.
+
+    get_bid(\%params);
+
+Takes the following arguments as parameters
+
+=over 4
+
+=item short_code  String Coded description of the contract purchased, Example: CALL_R_100_90_1446704187_1446704787_S0P_0
+
+=item contract_id  Integer internal identifier of the purchased Contract
+
+=item currency  String  Standard 3 letter currency code of the contract.
+
+=item is_sold  Boolean  Whether the contract is sold or not.
+
+=item is_expired  Boolean  Whether the contract is expired or not.
+
+=item sell_time   Integer Epoch time of when the contract was sold (only present for contracts already sold)
+
+=item sell_price   Numeric Price at which contract was sold, only available when contract has been sold.
+
+=item app_markup_percentage 3rd party application markup percentage. 
+
+=item landing_company  String The landing company shortcode of the client.
+
+=item country_code  String International 2 letter country code of the client.
+
+=back
+
+Returns a contract proposal response as a  Hashref or an error from  L<BOM::Pricing::V3::Utility>
+
+=cut
+
 sub get_bid {
     my $params = shift;
 
@@ -280,7 +316,6 @@ sub get_bid {
         = @{$params}{qw/short_code contract_id currency is_sold is_expired sell_time sell_price app_markup_percentage landing_company country_code/};
 
     my ($response, $contract, $bet_params);
-    my $tv = [Time::HiRes::gettimeofday];
     try {
         $bet_params = shortcode_to_parameters($short_code, $currency);
     }
@@ -291,7 +326,6 @@ sub get_bid {
                 message_to_client => localize('Cannot create contract')});
     };
     return $response if $response;
-
     try {
         $bet_params->{is_sold}               = $is_sold;
         $bet_params->{app_markup_percentage} = $app_markup_percentage // 0;
@@ -308,7 +342,7 @@ sub get_bid {
     return $response if $response;
 
     # rare case: no tics between date_start and date_expiry.
-    # underlaying will return exit_tick preceding date_start
+    # underlying will return exit_tick preceding date_start
     return _data_disruption_error() if $contract->exit_tick and $contract->date_start->epoch > $contract->exit_tick->epoch;
 
     if ($contract->is_legacy) {
@@ -318,144 +352,23 @@ sub get_bid {
         });
     }
 
+    return _data_disruption_error() if ((not $contract->may_settle_automatically) and $contract->missing_market_data);
+
+    my $tv = [Time::HiRes::gettimeofday()];
     try {
         $params->{validation_params}->{landing_company} = $landing_company;
 
-        my $is_valid_to_sell = 1;
-        my $validation_error;
-        if (
-            not $contract->is_expired
-            and my $cve = _validate_offerings(
-                $contract,
-                {
-                    landing_company => $landing_company,
-                    country_code    => $country_code,
-                    action          => 'sell'
-                }))
-        {
-            $is_valid_to_sell = 0;
-            $validation_error = localize($cve->{error}{message_to_client});
-        } elsif (!$contract->is_valid_to_sell($params->{validation_params})) {
-            $is_valid_to_sell = 0;
-            $validation_error = localize($contract->primary_validation_error->message_to_client);
-        }
+        my $valid_to_sell = _is_valid_to_sell($contract, $params->{validation_params}, $country_code);
 
-        $response = {
-            is_valid_to_sell    => $is_valid_to_sell,
-            current_spot_time   => $contract->current_tick->epoch,
-            contract_id         => $contract_id,
-            underlying          => $contract->underlying->symbol,
-            display_name        => localize($contract->underlying->display_name),
-            is_expired          => $contract->is_expired,
-            is_forward_starting => $contract->is_forward_starting,
-            is_path_dependent   => $contract->is_path_dependent,
-            is_intraday         => $contract->is_intraday,
-            date_start          => $contract->date_start->epoch,
-            date_expiry         => $contract->date_expiry->epoch,
-            date_settlement     => $contract->date_settlement->epoch,
-            currency            => $contract->currency,
-            longcode            => localize($contract->longcode),
-            shortcode           => $contract->shortcode,
-            ($contract->is_binary) ? (payout => $contract->payout) : ($contract->can('maximum_payout')) ? (payout => $contract->maximum_payout) : (),
-            contract_type => $contract->code,
-            bid_price     => formatnumber('price', $contract->currency, $contract->bid_price),
-            ($contract->reset_spot) ? (reset_time => $contract->reset_spot->epoch) : (),
-        };
-
-        if ($is_sold and $is_expired) {
-            # here sell_price is used to parse the status of contracts that settled from bo
-            # For non binary , there is no concept of won or lost, hence will return empty status if it is already expired and sold
-            $response->{status} = !$contract->is_binary ? undef : ($sell_price == $contract->payout ? "won" : "lost");
-        } elsif ($is_sold and not $is_expired) {
-            $response->{status} = 'sold';
-        } else {    # not sold
-            $response->{status} = 'open';
-        }
-        $response->{validation_error} = localize($validation_error) unless $is_valid_to_sell;
-
-        if (not $contract->may_settle_automatically
-            and $contract->missing_market_data)
-        {
-            $response = _data_disruption_error();
-            return;
-        }
-
-        $response->{is_settleable} = $contract->is_settleable;
-
-        $response->{barrier_count} = $contract->two_barriers ? 2 : 1;
-        $response->{multiplier} = $contract->multiplier unless ($contract->is_binary);
-        if ($contract->entry_spot) {
-            my $entry_spot = $contract->underlying->pipsized_value($contract->entry_spot);
-            $response->{entry_tick}      = $entry_spot;
-            $response->{entry_spot}      = $entry_spot;
-            $response->{entry_tick_time} = $contract->entry_spot_epoch;
-
-            if ($contract->two_barriers) {
-                $response->{high_barrier} = $contract->high_barrier->as_absolute;
-                $response->{low_barrier}  = $contract->low_barrier->as_absolute;
-            } elsif ($contract->barrier) {
-                $response->{barrier} = $contract->barrier->as_absolute;
-            }
-        }
-
-        if ($contract->exit_tick and $contract->is_valid_exit_tick and $contract->is_after_settlement) {
-            $response->{exit_tick}      = $contract->underlying->pipsized_value($contract->exit_tick->quote);
-            $response->{exit_tick_time} = $contract->exit_tick->epoch;
-        }
-
-        if ($contract->is_settleable || $contract->is_sold) {
-            my $localized_audit_details;
-            my $ad = $contract->audit_details;
-            foreach my $key (sort keys %$ad) {
-                $localized_audit_details->{$key} = [
-                    map {
-                        if ($_->{name}) {
-                            my $name = $_->{name};
-                            localize_template_params($name);
-                            $_->{name} = localize($name);
-                        }
-                        $_
-                    } @{$ad->{$key}}];
-            }
-            $response->{audit_details} = $localized_audit_details;
-        }
-
-        $response->{current_spot} = $contract->current_spot
-            if $contract->underlying->feed_license eq 'realtime';
-
-        # sell_spot and sell_spot_time are updated if the contract is sold
-        # or when the contract is expired.
-        #exit_tick to be returned on these scenario:
-        # - sell back early (tick at sell time)
-        # - hit tick for an american contract
-        # - latest tick at the expiry time of a european contract.
-        # TODO: Planning to phase out sell_spot in the next api version.
-
-        my $contract_close_tick;
-        # contract expire before the expiry time
-        if ($sell_time and $sell_time < $contract->date_expiry->epoch) {
-            if ($contract->is_path_dependent and $contract->hit_tick and $contract->hit_tick->epoch <= $contract->date_expiry->epoch) {
-                $contract_close_tick = $contract->hit_tick;
-            }
-            # client sold early
-            $contract_close_tick = $contract->underlying->tick_at($sell_time, {allow_inconsistent => 1}) unless defined $contract_close_tick;
-        } elsif ($contract->is_expired) {
-            # it could be that the contract is not sold until/after expiry for path dependent
-            $contract_close_tick = $contract->hit_tick if $contract->is_path_dependent;
-            $contract_close_tick = $contract->exit_tick if not $contract_close_tick and $contract->exit_tick;
-        }
-
-        # if the contract is still open, $contract_close_tick will be undefined
-        if (defined $contract_close_tick) {
-            for ($is_sold ? qw(sell_spot exit_tick) : qw(exit_tick)) {
-                $response->{$_} = $contract->underlying->pipsized_value($contract_close_tick->quote);
-                $response->{$_ . '_time'} = $contract_close_tick->epoch;
-            }
-        }
-
-        if ($contract->expiry_type eq 'tick') {
-            $response->{tick_count} = $contract->tick_count;
-        }
+        $response = _build_bid_response({
+                contract         => $contract,
+                contract_id      => $contract_id,
+                is_valid_to_sell => $valid_to_sell->{is_valid_to_sell},
+                is_sold          => $is_sold,
+                is_expired       => $is_expired,
+                sell_price       => $sell_price,
+                sell_time        => $sell_time,
+                validation_error => $valid_to_sell->{validation_error}});
 
         my $pen = $contract->pricing_engine_name;
         $pen =~ s/::/_/g;
@@ -741,4 +654,210 @@ sub _validate_offerings {
 
 }
 
+=head2 _is_valid_to_sell
+
+Checks if the contract is valid to sell back to Binary
+
+    _is_valid_to_sell(12, \%validation_params, 'AU');
+
+Takes the following arguments as parameters
+
+=over 4
+
+=item  contract L<BOM::Product::Contract>::* type of contract varies depending on bet type   
+
+=item  validation_params A hashref  of attributes  used by the  contract validators in L<BOM::Product::ContractValidator>
+
+=item  country_code  2 letter International Country Code. 
+
+=back
+
+Returns a hashref is_valid_to_sell = boolean , validation_error = String (validation error message )
+
+=cut
+
+sub _is_valid_to_sell {
+    my ($contract, $validation_params, $country_code) = @_;
+    my $is_valid_to_sell = 1;
+    my $validation_error;
+
+    if (
+        not $contract->is_expired
+        and my $cve = _validate_offerings(
+            $contract,
+            {
+                landing_company => $validation_params->{landing_company},
+                country_code    => $country_code,
+                action          => 'sell'
+            }))
+    {
+        $is_valid_to_sell = 0;
+        $validation_error = localize($cve->{error}{message_to_client});
+    } elsif (!$contract->is_valid_to_sell($validation_params->{validation_params})) {
+        $is_valid_to_sell = 0;
+        $validation_error = localize($contract->primary_validation_error->message_to_client);
+    }
+    return {
+        is_valid_to_sell => $is_valid_to_sell,
+        validation_error => $validation_error
+    };
+}
+
+=head2 _build_bid_response
+
+Description Builds the open contract response from the stored contract.
+
+Takes the following arguments as named parameters
+
+=over 4
+
+=item contract L<BOM::Product::Contract>::* type of contract varies depending on bet type
+
+=item contract_id  Integer internal identifier of the purchased Contract
+
+=item is_valid_to_sell Boolean Whether the contract can be sold back to Binary.com. 
+
+=item is_sold  Boolean  Whether the contract is sold or not.
+
+=item is_expired  Boolean  Whether the contract is expired or not.
+
+=item sell_price   Numeric Price at which contract was sold, only available when contract has been sold.
+
+=item sell_time   Integer Epoch time of when the contract was sold (only present for contracts already sold).
+
+=item validation_error  String   Message to be returned on a validation error. 
+
+=back
+
+Returns a contract proposal response as a  Hashref
+
+=cut
+
+sub _build_bid_response {
+    my ($params) = @_;
+    my $contract = $params->{contract};
+
+    my $response = {
+        is_valid_to_sell    => $params->{is_valid_to_sell},
+        current_spot_time   => $contract->current_tick->epoch,
+        contract_id         => $params->{contract_id},
+        underlying          => $contract->underlying->symbol,
+        display_name        => localize($contract->underlying->display_name),
+        is_expired          => $contract->is_expired,
+        is_forward_starting => $contract->is_forward_starting,
+        is_path_dependent   => $contract->is_path_dependent,
+        is_intraday         => $contract->is_intraday,
+        date_start          => $contract->date_start->epoch,
+        date_expiry         => $contract->date_expiry->epoch,
+        date_settlement     => $contract->date_settlement->epoch,
+        currency            => $contract->currency,
+        longcode            => localize($contract->longcode),
+        shortcode           => $contract->shortcode,
+        contract_type       => $contract->code,
+        bid_price           => formatnumber('price', $contract->currency, $contract->bid_price),
+        is_settleable       => $contract->is_settleable,
+        barrier_count       => $contract->two_barriers ? 2 : 1,
+    };
+
+    $response->{reset_time} = $contract->reset_spot->epoch if $contract->reset_spot;
+    $response->{multiplier} = $contract->multiplier unless ($contract->is_binary);
+    $response->{validation_error} = localize($params->{validation_error}) unless $params->{is_valid_to_sell};
+    $response->{current_spot} = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
+    $response->{tick_count}   = $contract->tick_count   if $contract->expiry_type eq 'tick';
+
+    if ($contract->is_binary) {
+        $response->{payout} = $contract->payout;
+    } elsif ($contract->can('maximum_payout')) {
+        $response->{payout} = $contract->maximum_payout;
+    }
+
+    if ($params->{is_sold} and $params->{is_expired}) {
+        # here sell_price is used to parse the status of contracts that settled from Back Office
+        # For non binary , there is no concept of won or lost, hence will return empty status if it is already expired and sold
+        #$response->{status} = !$contract->is_binary ? undef : ($params->{sell_price} == $contract->payout ? "won" : "lost");
+        $response->{status} = undef;
+        if ($contract->is_binary) {
+            $response->{status} = ($params->{sell_price} == $contract->payout ? "won" : "lost");
+        }
+    } elsif ($params->{is_sold} and not $params->{is_expired}) {
+        $response->{status} = 'sold';
+    } else {    # not sold
+        $response->{status} = 'open';
+    }
+
+    if ($contract->entry_spot) {
+        my $entry_spot = $contract->underlying->pipsized_value($contract->entry_spot);
+        $response->{entry_tick}      = $entry_spot;
+        $response->{entry_spot}      = $entry_spot;
+        $response->{entry_tick_time} = $contract->entry_spot_epoch;
+
+        if ($contract->two_barriers) {
+            $response->{high_barrier} = $contract->high_barrier->as_absolute;
+            $response->{low_barrier}  = $contract->low_barrier->as_absolute;
+        } elsif ($contract->barrier) {
+            $response->{barrier} = $contract->barrier->as_absolute;
+        }
+    }
+
+    if (    $contract->exit_tick
+        and $contract->is_valid_exit_tick
+        and $contract->is_after_settlement)
+    {
+        $response->{exit_tick}      = $contract->underlying->pipsized_value($contract->exit_tick->quote);
+        $response->{exit_tick_time} = $contract->exit_tick->epoch;
+    }
+
+    if ($contract->is_settleable || $contract->is_sold) {
+        my $localized_audit_details;
+        my $ad = $contract->audit_details;
+        foreach my $key (sort keys %$ad) {
+            my @details = @{$ad->{$key}};
+            foreach my $detail (@details) {
+                if ($detail->{name}) {
+                    my $name = $detail->{name};
+                    localize_template_params($name);
+                    $detail->{name} = localize($name);
+                }
+            }
+            $localized_audit_details->{$key} = \@details;
+        }
+        $response->{audit_details} = $localized_audit_details;
+    }
+
+    # sell_spot and sell_spot_time are updated if the contract is sold
+    # or when the contract is expired.
+    #exit_tick to be returned on these scenario:
+    # - sell back early (tick at sell time)
+    # - hit tick for an American contract
+    # - latest tick at the expiry time of a European contract.
+    # TODO: Planning to phase out sell_spot in the next API version.
+
+    my $contract_close_tick;
+    # contract expire before the expiry time
+    if ($params->{sell_time} and $params->{sell_time} < $contract->date_expiry->epoch) {
+        if (    $contract->is_path_dependent
+            and $contract->hit_tick
+            and $contract->hit_tick->epoch <= $contract->date_expiry->epoch)
+        {
+            $contract_close_tick = $contract->hit_tick;
+        }
+        # client sold early
+        $contract_close_tick = $contract->underlying->tick_at($params->{sell_time}, {allow_inconsistent => 1})
+            unless defined $contract_close_tick;
+    } elsif ($contract->is_expired) {
+        # it could be that the contract is not sold until/after expiry for path dependent
+        $contract_close_tick = $contract->hit_tick if $contract->is_path_dependent;
+        $contract_close_tick = $contract->exit_tick if not $contract_close_tick and $contract->exit_tick;
+    }
+
+    # if the contract is still open, $contract_close_tick will be undefined
+    if (defined $contract_close_tick) {
+        foreach my $key ($params->{is_sold} ? qw(sell_spot exit_tick) : qw(exit_tick)) {
+            $response->{$key} = $contract->underlying->pipsized_value($contract_close_tick->quote);
+            $response->{$key . '_time'} = $contract_close_tick->epoch;
+        }
+    }
+
+    return $response;
+}
 1;
