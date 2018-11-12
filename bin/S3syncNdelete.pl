@@ -15,7 +15,7 @@ my ($directory, $bucket, $aws_profile) = @ARGV;
 die "directory to backup, S3 bucket name and AWS profile name are required arguments" unless $directory && $bucket && $aws_profile;
 die "directory to backup does not seem to be valid" unless -d $directory;
 
-open my $fh, '-|', qq( /usr/local/bin/aws s3 sync $directory s3://$bucket --profile $aws_profile ) or die "Cannot pipeopen AWS S3 - $!";
+open my $fh, '-|', qq( /home/nobody/bin/aws s3 sync $directory s3://$bucket --profile $aws_profile ) or die "Cannot pipeopen AWS S3 - $!";
 
 my ($rz, $fn, @err);
 
