@@ -2,15 +2,13 @@ sudo: required
 dist: precise
 group: deprecated-2017Q1
 language: perl
-perl:
-    - "5.14.2-thr"
 matrix:
     fast_finish: true
 services:
     - redis-server
 cache: apt
 env:
-    - TEST_SUITE=test SH=bash
+    - TEST_SUITE=test
     - TEST_SUITE=json_schemas
 notifications:
     slack:
@@ -64,7 +62,6 @@ install:
     - /tmp/travis-scripts/setup_logs.sh
     - . /tmp/travis-scripts/setup_perl5lib.sh
     - /tmp/travis-scripts/setup_postfix.sh
-    - sudo mkdir -p /var/log/httpd && sudo chmod 777 /var/log/httpd
     - /tmp/travis-scripts/postgres_service.sh
 script:
     - /etc/rmg/bin/perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
