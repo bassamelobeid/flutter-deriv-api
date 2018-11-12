@@ -53,6 +53,7 @@ install:
 
     - export PAYMENTAPI_LOG_FILE=/tmp/paymentapi.log
     - . /tmp/travis-scripts/setup_perl5lib.sh
+    - /tmp/travis-scripts/setup_postfix.sh
 
 script:
     - perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
