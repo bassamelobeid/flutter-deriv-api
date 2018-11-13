@@ -1,4 +1,5 @@
 <p>Update user specific limits: </p>
+[% IF update_error %]<p style="color: red;">[% update_error %]</p>[% END %]
 <form action="[% url | none %]" method="POST">
     <table>
         <tr>
@@ -19,12 +20,12 @@
         <tr>
             <td>Market type: </td>
             <td><input type="text" name="market_type"></input></td>
-            <td> accepts 'financial' or 'non_financial'.</td>
+            <td> (required) accepts 'financial' or 'non_financial'.</td>
         </tr>
         <tr>
             <td>Client type: </td>
             <td><input type="text" name="client_type"></input></td>
-            <td> accepts 'old' or 'new'. If 'new' is selected, it will affect new client who places their first financial trade</td>
+            <td> (required) accepts 'old' or 'new'. If 'new' is selected, it will affect new client who places their first financial trade</td>
         </tr>
         <tr>
             <td>Expiry: </td>
@@ -39,6 +40,7 @@
 
 <p>Delete user specific limit: </p>
 
+[% IF delete_error %]<p style="color: red;">[% delete_error %]</p>[% END %]
 <form action="[% url | none %]" method="POST">
     <table>
         <tr>
@@ -49,12 +51,12 @@
         <tr>
             <td>Market type: </td>
             <td><input type="text" name="market_type"></input></td>
-            <td> accepts 'financial' or 'non_financial'.</td>
+            <td> (required) accepts 'financial' or 'non_financial'.</td>
         </tr>
         <tr>
             <td>Client type: </td>
             <td><input type="text" name="client_type"></input></td>
-            <td> accepts 'old' or 'new'. If 'new' is selected, it will affect new client who places their first financial trade</td>
+            <td> (required) accepts 'old' or 'new'. If 'new' is selected, it will affect new client who places their first financial trade</td>
         </tr>
         <tr>
             <td><input type="submit" name="delete_limit" value="Delete"></td>

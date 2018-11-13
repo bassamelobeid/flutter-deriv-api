@@ -19,6 +19,7 @@ use BOM::Config::Chronicle;
 use BOM::Database::ClientDB;
 use BOM::Database::Helper::UserSpecificLimit;
 use List::MoreUtils qw(uniq);
+use Scalar::Util qw(looks_like_number);
 use BOM::Config::Runtime;
 
 BOM::Backoffice::Sysinit::init();
@@ -177,7 +178,15 @@ BOM::Backoffice::Request::template()->process(
 my $db = BOM::Database::ClientDB->new({broker_code => $broker})->db;
 
 # Do the insert and delete here
+my $update_error;
 if ($r->params->{'new_user_limit'}) {
+    if (not(looks_like_number($r->params->{potential_loss}) or looks_like_number($r->params->{realized_loss}))) {
+        $update_error = 'Please specify either potential loss or realized loss';
+    }
+    if ($r->params->{market_type} !~ /(?:financial|non_financial)/ or $r->params->{client_type} !~ /(?:old|new)/) {
+        $update_error = 'Market Type and Client Type are required parameters with restricted values';
+    }
+
     BOM::Database::Helper::UserSpecificLimit->new({
             db             => $db,
             client_loginid => $r->params->{'client_loginid'},
@@ -186,16 +195,25 @@ if ($r->params->{'new_user_limit'}) {
             client_type    => $r->params->{client_type},
             market_type    => $r->params->{market_type},
             expiry         => $r->params->{expiry},
-        })->record_user_specific_limit;
+        }
+        )->record_user_specific_limit
+        unless defined $update_error;
 }
 
+my $delete_error;
 if ($r->params->{'delete_limit'}) {
+    if ($r->params->{market_type} !~ /(?:financial|non_financial)/ or $r->params->{client_type} !~ /(?:old|new)/) {
+        $delete_error = 'Market Type and Client Type are required parameters with restricted values';
+    }
+
     BOM::Database::Helper::UserSpecificLimit->new({
             db             => $db,
             client_loginid => $r->params->{'client_loginid'},
             client_type    => $r->params->{client_type},
             market_type    => $r->params->{market_type},
-        })->delete_user_specific_limit;
+        }
+        )->delete_user_specific_limit
+        unless defined $delete_error;
 }
 
 Bar("Update User Specific Limit");
@@ -209,6 +227,8 @@ BOM::Backoffice::Request::template()->process(
     {
         url                => request()->url_for('backoffice/quant/quants_config.cgi'),
         default_user_limit => $default_user_limit,
+        update_error       => $update_error,
+        delete_error       => $delete_error,
     }) || die BOM::Backoffice::Request::template()->error;
 
 Bar("Existing User Specific  Limit");
