@@ -27,7 +27,7 @@ foreach my $srv ('MX','MLT') {
         psql service=$svcdef -XH -v ON_ERROR_STOP=1 -P null=N/A <<EOF
 SELECT '$srv' AS "Client-DB";
 SELECT 'yesterday'::DATE::TEXT AS "Reporting Day";
-SELECT * FROM deposit_and_stake_notification();
+SELECT * FROM reporting.deposit_and_stake_notification();
 EOF
     };
 
