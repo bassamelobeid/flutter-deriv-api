@@ -5,6 +5,7 @@ use warnings;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
+use List::Util ();
 use Test::More tests => 2;
 use Test::Warnings;
 use Test::Exception;
@@ -21,6 +22,10 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Market::DataDecimate;
 use Cache::RedisDB;
+
+note('always use market data');
+my $u_c = Test::MockModule->new('Quant::Framework::Underlying');
+$u_c->mock('uses_implied_rate', sub { 0 });
 
 note('mocking ticks to prevent warnings.');
 my $mocked = Test::MockModule->new('BOM::Market::DataDecimate');
@@ -62,7 +67,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol        => $_->symbol,
         recorded_date => $now
     }) for grep { $_->symbol !~ /frx/ } @market_data_underlyings;
-my @currencies =
+my @currencies = List::Util::uniqstr grep { !!$_ } # filter out duplicated or empty ('') currency symbols
     map { $_->market->name =~ /(forex|commodities)/ ? ($_->asset_symbol, $_->quoted_currency_symbol) : ($_->quoted_currency_symbol) } @underlyings;
 
 my @payout_curr = qw(USD GBP EUR AUD);
@@ -221,9 +226,7 @@ subtest 'memory cycle test' => sub {
                     my $barriers;
                     $barriers = $barrier_ref->{$expiry_type} if keys %$barrier_ref;
                     foreach my $barrier (@$barriers) {
-                      TODO: foreach my $currency (qw(USD GBP AUD EUR)) {
-                            # FIXME: see https://trello.com/c/rIkSXMCo/
-                            local $TODO = 'Intermittent failures on Perl 5.26 (different @underlyings)';
+                        foreach my $currency (qw(USD GBP AUD EUR)) {
                             lives_ok {
                                 my $c = produce_contract({
                                         bet_type     => $type,
@@ -242,7 +245,7 @@ subtest 'memory cycle test' => sub {
                                 }
                                 memory_cycle_ok($c);
                             }
-                            "lives through mem test [contract_type[$type] underlying_symbol[$u_symbol] start_type[$start_type] expiry_type[$expiry_type]";
+                            "lives through mem test [contract_type[$type] underlying_symbol[$u_symbol] start_type[$start_type] expiry_type[$expiry_type] currency[$currency]]";
                         }
                     }
                 }
