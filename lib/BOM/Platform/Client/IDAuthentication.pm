@@ -67,8 +67,6 @@ sub _age_verified {
     if (!$client->status->age_verification && !$client->has_valid_documents) {
         $client->status->set('cashier_locked', 'system', 'Age verification is needed after first deposit.');
         $self->_request_id_authentication();
-        $self->_notify_cs("Account $loginid cashier locked until age verification",
-            "An email has been sent out to the client requesting for Proof of Identification.");
     }
 
     return undef;

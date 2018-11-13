@@ -92,6 +92,13 @@ subtest 'MLT accounts' => sub {
 
         $v->run_authentication;
 
+        my @msgs = $mailbox->search(
+            email   => 'support-newaccount-notifications@binary.com',
+            subject => qr/New Sign-Up/
+        );
+
+        is(@msgs, 0, 'No email received');
+
         ok !$v->client->fully_authenticated, 'Not fully authenticated';
         ok !$v->client->status->unwelcome,      'Not unwelcome';
         ok !$v->client->status->cashier_locked, 'Not cashier_locked';
