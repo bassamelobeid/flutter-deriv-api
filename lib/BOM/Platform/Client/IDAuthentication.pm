@@ -8,6 +8,7 @@ use Brands;
 use BOM::User::Client;
 use BOM::Config;
 use XML::LibXML;
+use Text::Markdown;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::ProveID;
@@ -222,7 +223,11 @@ sub _request_id_authentication {
     my $brand         = Brands->new(name => request()->brand);
     my $support_email = $brand->emails('support');
     my $subject       = localize('Documents are required to verify your identity');
-    my $body          = localize(<<'EOM', $client_name, $brand->website_name, $support_email);
+
+    # Since this is an HTML email, plain text content will be mangled badly. Instead, we use
+    # Markdown syntax, since there are various converters and the plain text to HTML options
+    # in Perl are somewhat limited and/or opinionated.
+    my $body = localize(<<'EOM', $client_name, $brand->website_name, $support_email);
 Dear [_1],
 
 We are writing to you regarding your account with [_2].
@@ -239,14 +244,25 @@ Kind regards,
 
 [_2]
 EOM
+
     return send_email({
-        from               => $support_email,
-        to                 => $client->email,
-        subject            => $subject,
-        message            => [$body],
-        use_email_template => 1,
-        template_loginid   => $client->loginid,
-    });
+            from    => $support_email,
+            to      => $client->email,
+            subject => $subject,
+            message => [
+                Text::Markdown::markdown(
+                    $body,
+                    {
+                        # Defaults to the obsolete XHTML format
+                        empty_element_suffix => '>',
+                        tab_width            => 4,
+                    })
+            ],
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            skip_text2html        => 1,
+            template_loginid      => $client->loginid,
+        });
 }
 
 =head _notify_cs($subject, $body)
