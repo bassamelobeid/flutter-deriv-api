@@ -392,6 +392,11 @@ system:
           isa: Bool
           default: 0
           global: 1
+        transfer_currencies:
+          description: "Suspend transfer from and to the listed currencies, eg: UST, USD"
+          isa: ArrayRef
+          default: []
+          global: 1
     directory:
       description: "Configuration for system wide directories"
       isa: section
