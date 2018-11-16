@@ -1055,6 +1055,34 @@ subtest 'Transfers Limits' => sub {
         ->error_code_is('MT5DepositError', 'Transfers limit - correct error code')
         ->error_message_is('There was an error processing the request. Maximum of 0 transfers allowed per day.',
         'Transfers limit - correct error message');
+
+    # unlimit the transfers again
+    BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5(999);
+};
+
+subtest 'Suspended Transfers Currencies' => sub {
+    BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies(['BTC']);
+    my $client_cr_btc = create_client('CR');
+    $client_cr_btc->set_default_account('BTC');
+    top_up $client_cr_btc, BTC => 10;
+    $user->add_client($client_cr_btc);
+
+    subtest 'it should stop transfer from suspended currency' => sub {
+        my $deposit_params = {
+            language => 'EN',
+            token    => $token,
+            args     => {
+                from_binary => $client_cr_btc->loginid,
+                to_mt5      => $DETAILS{login},
+                amount      => 1
+            },
+        };
+
+        $c->call_ok('mt5_deposit', $deposit_params)->has_error('Transfers should have been stopped')
+            ->error_code_is('MT5DepositError', 'Transfer from suspended currency not allowed - correct error code')
+            ->error_message_is('There was an error processing the request. Account transfers are not available between BTC and USD',
+            'Transfer from suspended currency not allowed - correct error message');
+    };
 };
 
 sub _get_mt5transfer_from_transaction {

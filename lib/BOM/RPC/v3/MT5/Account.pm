@@ -1469,6 +1469,12 @@ sub _mt5_validate_and_get_amount {
             if ($client_currency eq $mt5_currency) {
                 $mt5_amount = $amount;
             } else {
+                # we don't allow transfer between these two currencies
+                my $disabled_for_transfer_currencies = BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies;
+                return _make_error($error_code,
+                    localize('Account transfers are not available between [_1] and [_2]', $source_currency, $mt5_currency))
+                    if first { $_ eq $source_currency or $_ eq $mt5_currency } @$disabled_for_transfer_currencies;
+
                 my $rate_expiry = BOM::RPC::v3::Utility::get_rate_expiry($client_currency, $mt5_currency);
                 if ($action eq 'deposit') {
                     try {

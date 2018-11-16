@@ -885,4 +885,95 @@ subtest 'multi currency transfers' => sub {
         ->error_message_is('Maximum of 2 transfers allowed per day.', 'Daily Transfer Limit - correct error message');
 };
 
+subtest 'suspended currency transfers' => sub {
+
+    $user = BOM::User->create(
+        email          => $email,
+        password       => BOM::User::Password::hashpw('jskjd8292922'),
+        email_verified => 1,
+    );
+
+    my $client_cr_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    $client_cr_btc->set_default_account('BTC');
+    $client_cr_btc->payment_free_gift(
+        currency => 'BTC',
+        amount   => 10,
+        remark   => 'free gift',
+    );
+
+    my $client_cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    $client_cr_usd->set_default_account('USD');
+    $client_cr_usd->payment_free_gift(
+        currency => 'USD',
+        amount   => 1000,
+        remark   => 'free gift',
+    );
+
+    my $client_mf_eur = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MF'});
+    $client_mf_eur->set_default_account('EUR');
+    $client_mf_eur->payment_free_gift(
+        currency => 'EUR',
+        amount   => 1000,
+        remark   => 'free gift',
+    );
+
+    my $client_mlt_eur = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MLT'});
+    $client_mlt_eur->set_default_account('EUR');
+
+    $user->add_client($client_cr_btc);
+    $user->add_client($client_cr_usd);
+    $user->add_client($client_mf_eur);
+    $user->add_client($client_mlt_eur);
+
+    my $token_cr_usd = BOM::Database::Model::AccessToken->new->create_token($client_cr_usd->loginid, 'test token');
+    my $token_cr_btc = BOM::Database::Model::AccessToken->new->create_token($client_cr_btc->loginid, 'test token');
+    my $token_mf_eur = BOM::Database::Model::AccessToken->new->create_token($client_mf_eur->loginid, 'test token');
+
+    subtest 'it should stop transfers to suspended currency' => sub {
+        $params->{token} = $token_cr_usd;
+        $params->{args}  = {
+            account_from => $client_cr_usd->loginid,
+            account_to   => $client_cr_btc->loginid,
+            currency     => "USD",
+            amount       => 10
+        };
+        BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies(['BTC']);
+        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError',
+            "Transfer to suspended currency not allowed - correct error code")
+            ->error_message_is('Account transfers are not available between USD and BTC',
+            'Transfer to suspended currency not allowed - correct error message');
+    };
+
+    subtest 'it should stop transfers from suspended currency' => sub {
+        $params->{token} = $token_cr_btc;
+        $params->{args}  = {
+            account_from => $client_cr_btc->loginid,
+            account_to   => $client_cr_usd->loginid,
+            currency     => "BTC",
+            amount       => 1
+        };
+
+        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError',
+            "Transfer from suspended currency not allowed - correct error code")
+            ->error_message_is('Account transfers are not available between BTC and USD',
+            'Transfer from suspended currency not allowed - correct error message');
+    };
+
+    subtest 'it should not stop transfer between the same currncy' => sub {
+        $params->{token} = $token_mf_eur;
+        BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies(['EUR']);
+        $params->{args} = {
+            account_from => $client_mf_eur->loginid,
+            account_to   => $client_mlt_eur->loginid,
+            currency     => "EUR",
+            amount       => 10
+        };
+
+        $rpc_ct->call_ok($method, $params);
+    };
+
+    # reset the config
+    BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies([]);
+};
+
 done_testing();

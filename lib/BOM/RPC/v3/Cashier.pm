@@ -1448,6 +1448,13 @@ sub _validate_transfer_between_accounts {
     return _transfer_between_accounts_error(localize('Account transfers are not available within accounts with cryptocurrency as default currency.'))
         if (($from_currency_type eq $to_currency_type) and ($from_currency_type eq 'crypto'));
 
+    # we don't allow transfer between these two currencies
+    if ($from_currency ne $to_currency) {
+        my $disabled_for_transfer_currencies = BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies;
+        return _transfer_between_accounts_error(localize('Account transfers are not available between [_1] and [_2]', $from_currency, $to_currency))
+            if first { $_ eq $from_currency or $_ eq $to_currency } @$disabled_for_transfer_currencies;
+    }
+
     # check for internal transactions number limits
     my $daily_transfer_limit  = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts;
     my $client_today_transfer = $current_client->get_today_transfer_summary();
