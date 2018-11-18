@@ -510,12 +510,15 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             if ($document_field eq 'expiration_date') {
                 try {
                     $new_value = Date::Utility->new($val)->date_yyyymmdd if $val ne 'clear';
+                    # indicate success
+                    1
                 }
                 catch {
                     my $err = (split "\n", $_)[0];                                         #handle Date::Utility's confess() call
                     print qq{<p style="color:red">ERROR: Could not parse $document_field for doc $id with $val: $err</p>};
-                    next CLIENT_KEY;
-                };
+                    # indicate failure so we skip to the next key
+                    0
+                } or next CLIENT_KEY;
             } else {
                 my $maxLength = ($document_field eq 'document_id') ? 30 : ($document_field eq 'comments') ? 255 : 0;
                 if (length($val) > $maxLength) {
