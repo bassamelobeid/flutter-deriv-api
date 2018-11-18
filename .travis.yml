@@ -18,54 +18,10 @@ notifications:
         on_failure: always
         on_pull_requests: false
 
-before_install:
-    - git clone ssh://git@github.com/regentmarkets/travis-scripts /tmp/travis-scripts-init
-    - /tmp/travis-scripts-init/clone_branch.sh regentmarkets/travis-scripts
-    - /tmp/travis-scripts/setup_ssh.sh
-    - sudo mkdir -p /home/git/binary-com
-    - sudo mkdir -p /home/git/regentmarkets
-    - . /tmp/travis-scripts/setup_perl.sh
-    - /tmp/travis-scripts/fixHostName.sh
-    - sudo mkdir -p /home/git/regentmarkets /home/git/binary-com
+before_install: ./travis/before_install.sh
 
-    - /tmp/travis-scripts/parallel_clone_branch.sh
-      regentmarkets/bom-test
-      regentmarkets/bom
-      regentmarkets/bom-config
-      regentmarkets/bom-platform
-      regentmarkets/bom-user
-      regentmarkets/bom-feed
-      regentmarkets/bom-populator
-      regentmarkets/bom-postgres
-      regentmarkets/bom-websocket-tests
-      binary-com/translations-websockets-api
-      regentmarkets/bom-market
-      regentmarkets/php-mt5-webapi
-      regentmarkets/bom-transaction
-      regentmarkets/bom-pricing
+install: ./travis/install.sh
 
-    - /tmp/travis-scripts/redis.sh
+script:  ./travis/script.sh
 
-install:
-    - source /tmp/travis-scripts/devbox_path.sh
-    - sudo ln -s $PWD /home/git/regentmarkets/bom-rpc
-    - export RPC_CONFIG=$PWD/rpc.conf.travis
-    - /tmp/travis-scripts/devbox.sh
-
-    - /tmp/travis-scripts/remove_postgresdb_config.sh
-    - /tmp/travis-scripts/setup_clientdb.sh
-    - /tmp/travis-scripts/setup_authdb.sh
-    - /tmp/travis-scripts/setup_feeddb.sh
-    - /tmp/travis-scripts/setup_usersdb.sh
-    - /tmp/travis-scripts/setup_chronicledb.sh
-
-    - /tmp/travis-scripts/setup_logs.sh
-    - . /tmp/travis-scripts/setup_perl5lib.sh
-    - /tmp/travis-scripts/setup_postfix.sh
-    - /tmp/travis-scripts/postgres_service.sh
-script:
-    - /etc/rmg/bin/perl -e 'print "$^V\n";' ; which perl ; ls -l /etc/rmg/bin
-    - if [ "$TEST_SUITE" == "" ]  ; then true; else make $TEST_SUITE; fi
-
-after_script:
-    - /tmp/travis-scripts/wait_for_ssh.sh
+after_script: /tmp/travis-scripts/wait_for_ssh.sh
