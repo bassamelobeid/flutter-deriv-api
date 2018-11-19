@@ -2,6 +2,7 @@
 package main;
 use strict;
 use warnings;
+no indirect;
 
 use Date::Utility;
 use Format::Util::Numbers qw/financialrounding formatnumber/;
@@ -17,6 +18,7 @@ use Try::Tiny;
 
 use Bitcoin::RPC::Client;
 use Ethereum::RPC::Client;
+use BOM::CTC::Currency;
 
 use BOM::User::Client;
 
@@ -25,7 +27,6 @@ use BOM::Backoffice::PlackHelpers qw/PrintContentType_excel PrintContentType/;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::Script::ValidateStaffPaymentLimit;
-use BOM::CTC::Reconciliation;
 use BOM::CTC::Utility;
 use BOM::Database::ClientDB;
 use BOM::DualControl;
@@ -102,17 +103,9 @@ catch {
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
 my $dbic = $clientdb->db->dbic;
 
-my $rpc_client_builders = {
-    BTC => sub { Bitcoin::RPC::Client->new((%{$cfg->{bitcoin}},      timeout => 5)) },
-    BCH => sub { Bitcoin::RPC::Client->new((%{$cfg->{bitcoin_cash}}, timeout => 5)) },
-    LTC => sub { Bitcoin::RPC::Client->new((%{$cfg->{litecoin}},     timeout => 5)) },
-    ETH => sub { Ethereum::RPC::Client->new((%{$cfg->{ethereum}},    timeout => 5)) },
-    DAI => sub { Ethereum::RPC::Client->new((%{$cfg->{ethereum}},    timeout => 5)) },
-    UST => sub { Bitcoin::RPC::Client->new((%{$cfg->{tether}},       timeout => 5)) },
-};
-my $rpc_client = ($rpc_client_builders->{$currency} // code_exit_BO("no RPC client found for currency " . $currency))->();
-# Exchange rate should be populated according to supported cryptocurrencies.
+my $currency_wrapper = BOM::CTC::Currency->new($currency);
 
+# Exchange rate should be populated according to supported cryptocurrencies.
 my $exchange_rate = eval { in_usd(1.0, $currency) } or code_exit_BO("no exchange rate found for currency " . $currency . ". Please contact IT.")->();
 
 my $display_transactions = sub {
@@ -233,28 +226,30 @@ if ($view_action eq 'withdrawals') {
     @trxns = (
         @{
             $dbic->run(
-                fixup =>
-                    sub { $_->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, ?, ?)", {Slice => {}}, $search_query, $currency) }
-            )
+                fixup => sub {
+                    $_->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, ?, ?)", {Slice => {}}, $search_query, $currency);
+                })
         },
         @{
             $dbic->run(
-                fixup =>
-                    sub { $_->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(NULL, ?, ?)", {Slice => {}}, $search_query, $currency) })
+                fixup => sub {
+                    $_->selectall_arrayref("SELECT * FROM payment.ctc_bo_get_deposit(NULL, ?, ?)", {Slice => {}}, $search_query, $currency);
+                })
         },
     ) if ($search_type eq 'address');
 
     @trxns = (
         @{
             $dbic->run(
-                fixup =>
-                    sub { $_->selectall_arrayref('SELECT * FROM payment.ctc_bo_get_withdrawal(?, NULL, ?)', {Slice => {}}, $search_query, $currency) }
-            )
+                fixup => sub {
+                    $_->selectall_arrayref('SELECT * FROM payment.ctc_bo_get_withdrawal(?, NULL, ?)', {Slice => {}}, $search_query, $currency);
+                })
         },
         @{
             $dbic->run(
-                fixup =>
-                    sub { $_->selectall_arrayref('SELECT * FROM payment.ctc_bo_get_deposit(?, NULL, ?)', {Slice => {}}, $search_query, $currency) })
+                fixup => sub {
+                    $_->selectall_arrayref('SELECT * FROM payment.ctc_bo_get_deposit(?, NULL, ?)', {Slice => {}}, $search_query, $currency);
+                })
         },
     ) if ($search_type eq 'loginid');
 
@@ -263,75 +258,12 @@ if ($view_action eq 'withdrawals') {
 } elsif ($view_action eq 'reconcil') {
     Bar($currency . ' Reconciliation');
 
-    my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
-    my $recon = BOM::CTC::Reconciliation->new(
-        currency => $currency,
-    );
+    my @recon_list = $currency_wrapper->recon_report($start_date, $end_date);
 
-    my $database_items = $dbic->run(
-        fixup => sub {
-            $_->selectall_arrayref(
-                q{SELECT * FROM payment.ctc_bo_transactions_for_reconciliation(?, ?, ?)},
-                {Slice => {}},
-                $currency, $start_date->iso8601, $end_date->iso8601
-            );
-        }) or die 'failed to run ctc_bo_transactions_for_reconciliation';
-
-    # First, we get a mapping from address to database transaction information
-    $recon->from_database_items($database_items);
-    my @sweep_transactions = ();
-
-    # TODO: once we move all currencies to our bookkeeping
-    # we need to remove this currency specific check
-    # and also this filtering of bookkeeping transaction to match
-    # reconciliation will be gone, as of now we want to release
-    # this and we will enhance later
-    if ($currency eq 'ETH') {
-        my $collectordb = BOM::Database::ClientDB->new({
-                broker_code => 'FOG',
-                operation   => 'collector',
-            })->db->dbh;
-
-        if (
-            my $transactions = $collectordb->selectall_arrayref(
-                q{SELECT * FROM cryptocurrency.get_bookkeeping_records(?, ?, ?)},
-                {Slice => {}},
-                $currency, $start_date->date_yyyymmdd,
-                $end_date->date_yyyymmdd
-            ))
-        {
-            $recon->from_blockchain_transactions($transactions);
-        } else {
-            code_exit_BO('<p style="color:red;">Unable to request transactions from RPC</p>');
-        }
-
-    } else {
-        # Apply date filtering. Note that this is currently BTC/BCH/LTC-specific, but
-        # once we have the information in the database we should pass the date range
-        # as a parameter instead.
-
-        my $filter = sub {
-            my ($transactions) = @_;
-            my $start_epoch    = $start_date->epoch;
-            my $end_epoch      = $end_date->epoch;
-            return [grep { (not exists $_->{time}) or ($_->{time} >= $start_epoch and $_->{time} <= $end_epoch and $_->{confirmations} >= -1) }
-                    @$transactions];
-        };
-
-        if (my $withdrawals = $rpc_client->listtransactions('*', 10_000)) {
-            $recon->from_blockchain_transactions($filter->($withdrawals));
-        } else {
-            code_exit_BO('<p style="color:red;">Unable to request transactions from RPC</p>');
-        }
-    }
-
-    # Go through the complete list of db/blockchain entries to make sure that
-    # things are consistent.
-    my @recon_list = $recon->reconcile;
-    my @hdr        = (
-        'Client ID',        'Type',        'Address',      'Amount',          'Amount USD',    'Fee',
-        'Status',           'Status date', 'Payment date', 'Blockchain date', 'Confirmations', 'Transactions',
-        'Transaction Hash', 'Errors'
+    my @hdr = (
+        'Client ID',     'Type',             'Address',     'Amount',       'Amount USD',      'Fee',
+        'Protocol Cost', 'Status',           'Status date', 'Payment date', 'Blockchain date', 'Confirmations',
+        'Transactions',  'Transaction Hash', 'Errors'
     );
     my $filename = join '-', $start_date->date_yyyymmdd, $end_date->date_yyyymmdd, $currency;
 
@@ -345,15 +277,14 @@ EOF
     print '<table id="recon_table" style="width:100%;" border="1" class="sortable"><thead><tr>';
     print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
     print '</thead><tbody>';
-    my $total_balance = 0;
 
     TRAN:
     for my $db_tran (@recon_list) {
         next TRAN if $db_tran->is_status_in(qw(NEW MIGRATED)) and not $show_new_addresses;
         print '<tr>';
-        print '<td>' . encode_entities($_) . '</td>' for map { $_ ne '' ? $_ : 'sweep' } @{$db_tran}{qw(account category)};
+        print '<td>' . encode_entities($_) . '</td>' for map { $_ && $_ ne '' ? $_ : '' } @{$db_tran}{qw(account transaction_type)};
 
-        my $address = BOM::CTC::Utility::is_valid_address($db_tran->{to_address}, $currency) ? $db_tran->{to_address} : $db_tran->{from_address};
+        my $address = $currency_wrapper->is_valid_address($db_tran->{to}) ? $db_tran->{to} : $db_tran->{from};
         my $encoded_address = encode_entities($address);
         print '<td><a href="' . $address_uri . $encoded_address . '" target="_blank">' . $encoded_address . '</a></td>';
 
@@ -363,13 +294,10 @@ EOF
         # for ethereum the fees values has more than that, and since we can't
         # get any difference in the recon report, better show the correct value
         # for amount we have a limit for each coin, so we don't need to show the entire value like in the fee
-        my $fee = Math::BigFloat->new($db_tran->{fee} // 0)->bstr;
+        my $fee           = Math::BigFloat->new($db_tran->{fee})->bstr;
+        my $protocol_cost = Math::BigFloat->new($db_tran->{protocol_cost})->bstr;
 
-        if (defined $db_tran->{amount}) {
-            print '<td style="text-align:right;">' . encode_entities($_) . '</td>' for ($amount, '$' . $usd_amount, $fee // '');
-        } else {
-            print '<td>&nbsp;</td><td>&nbsp;</td>';
-        }
+        print '<td style="text-align:right;">' . encode_entities($_) . '</td>' for ($amount, '$' . $usd_amount, $fee, $protocol_cost);
         print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(status)};
         print '<td sorttable_customkey="' . (sprintf "%012d", $_ ? Date::Utility->new($_)->epoch : 0) . '">' . encode_entities($_) . '</td>'
             for map { $_ // '' } @{$db_tran}{qw(status_date database_date blockchain_date)};
@@ -383,105 +311,32 @@ EOF
         print '</td>';
         print '<td style="color:red;">' . (join '<br><br>', map { encode_entities($_) } @{$db_tran->{comments} || []}) . '</td>';
         print '</tr>';
-        $total_balance += $amount + $fee;
     }
-
-    print "<tr><td>Balance:</td><td>$total_balance</td></tr>";
 
     print '</tbody></table>';
 } elsif ($view_action eq 'run') {
-    my $cmd               = request()->param('command');
-    my %valid_rpc_command = (
-        getbalance           => 1,
-        getinfo              => 1,
-        getpeerinfo          => 1,
-        getnetworkinfo       => 1,
-        listaccounts         => 1,
-        listtransactions     => 1,
-        listaddressgroupings => 1,
-    );
-    my @param;
-    if ($valid_rpc_command{$cmd}) {
-        if ($cmd eq 'listtransactions') {
-            push @param, '', 500;
+    my $cmd = request()->param('command');
+
+    if ($cmd eq 'getbalance') {
+        my $get_balance = $currency_wrapper->get_total_balance();
+        for my $currency_balance (keys %$get_balance) {
+            print sprintf("<p>%s:<pre>%s</pre></p>", $currency_balance, $get_balance->{$currency_balance});
         }
-        my $rslt;
-        if ($currency eq 'ETH' and $cmd eq 'getbalance') {
-            $rslt += Math::BigFloat->from_hex($rpc_client->eth_getBalance($_, 'latest'))->bdiv(1E18) for @{$rpc_client->eth_accounts()};
-        } elsif ($currency eq 'UST' and $cmd eq 'getbalance') {
-            for my $address (@{$rpc_client->omni_getwalletaddressbalances()}) {
-                $rslt += $_->{balance} for grep { $_->{propertyid} eq $cfg->{tether}->{account}->{property_id} } @{$address->{balances}};
-            }
-        } elsif ($cmd eq 'getbalance') {
-            for my $transaction (@{$rpc_client->listunspent(0)}) {
-                $rslt += $transaction->{amount}
-                    if ($transaction->{confirmations} >= 3 or grep { $transaction->{address} eq $_ } @{$rpc_client->getaddressesbyaccount('manual')});
-            }
-        } else {
-            $rslt = $rpc_client->$cmd(@param);
-        }
-        if ($cmd eq 'listaccounts') {
-            print '<table><thead><tr><th scope="col">Account</th><th scope="col">Amount</th></tr></thead><tbody>';
-            for my $k (sort keys %$rslt) {
-                my $amount = $rslt->{$k};
-                print '<tr><th scope="row">' . encode_entities($k) . '</th><td>' . encode_entities($amount) . '</td></tr>' . "\n";
-            }
-            print '</table>';
-        } elsif ($cmd eq 'getbalance') {
-            print 'Current balance: <pre>' . encode_entities($rslt) . '</pre>';
-        } elsif ($cmd eq 'listtransactions') {
-            my @hdr = ('Account', 'Transaction ID', 'Amount', 'Transaction date', 'Confirmations', 'Address');
-            print '<table><thead><tr>';
-            print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
-            print '</tr></thead><tbody>';
-            for my $tran (rev_nsort_by { $_->{time} } @$rslt) {
-                my @fields = @{$tran}{qw(account txid amount time confirmations address)};
-                $_ = Date::Utility->new($_)->datetime_yyyymmdd_hhmmss for $fields[3];
-                @fields = map { encode_entities($_) } @fields;
-                $_ = '<a target="_blank" href="' . $transaction_uri . $_ . '">' . $_ . '</a>' for $fields[1];
-                print '<tr>';
-                print '<td>' . $_ . '</td>' for @fields;
-                print "</tr>\n";
-            }
-            print '</tbody></table>';
-        } elsif ($cmd eq 'listaddressgroupings') {
-            print '<table><thead><tr><th scope="col">Address</th><th scope="col">Account</th><th scope="col">Amount</th></tr></thead><tbody>';
-            for my $item (@$rslt) {
-                for my $address (@$item) {
-                    print '<tr>';
-                    $address->[2] = join(',', splice @$address, 2) // '';
-                    # Swap address and amount so that the amount is at the end
-                    print '<td>' . encode_entities($_) . "</td>\n" for @{$address}[0, 2, 1];
-                    print "</tr>\n";
-                }
-            }
-            print '</tbody></table>';
-        } else {
-            print '<pre>' . encode_entities(JSON::MaybeXS->new->allow_blessed->pretty(1)->encode($rslt)) . '</pre>';
+    } elsif ($cmd eq 'getinfo') {
+        my $get_info = $currency_wrapper->get_info;
+        for my $info (keys %$get_info) {
+            next if ref($get_info->{$info}) =~ /HASH|ARRAY/;
+            print sprintf("<p><b>%s:</b><pre>%s</pre></p>", $info, $get_info->{$info});
         }
     } else {
         die 'Invalid ' . $currency . ' command: ' . $cmd;
     }
 } elsif ($view_action eq 'new_deposit_address') {
-    my $rslt;
-
-    # For ETH, a single address is used. This is read from a config file.
-    # If no address is found in the config file, an error will be shown.
-    # A new address will be generated by Devops and placed into the config file.
-    if ($currency =~ /^(?:ETC|ETH|DAI)$/) {
-        if (my $config_address = $cfg->{ethereum}->{account}->{address}) {
-            $rslt = $config_address;
-            print '<p>' . $currency . ' address for deposits: <strong>' . encode_entities($rslt) . '</strong></p>';
-        } else {
-            print
-                '<p style="color:red"><strong>WARNING! An address has not been found. Please contact Devops to obtain a new address to update this in the configuration.</strong></p>';
-        }
-        # For BTC, LTC, and BCH, a new address is generated.
-    } else {
-        $rslt = $rpc_client->getnewaddress('manual');
-        print '<p>New ' . $currency . ' address for deposits: <strong>' . encode_entities($rslt) . '</strong></p>';
-    }
-
+    my $new_address = $currency_wrapper->get_new_bo_address();
+    print '<p>' . $currency . ' address for deposits: <strong>' . encode_entities($new_address) . '</strong></p>' if $new_address;
+    print
+        '<p style="color:red"><strong>WARNING! An address has not been found. Please contact Devops to obtain a new address to update this in the configuration.</strong></p>'
+        unless $new_address;
 } elsif ($view_action eq 'prioritize_confirmation') {
     my $prioritize_address = request()->param('prioritize_address');
     if ($prioritize_address) {
@@ -489,7 +344,7 @@ EOF
         my $dbic = $clientdb->db->dbic;
 
         $prioritize_address =~ s/^\s+|\s+$//g;
-        if (BOM::CTC::Utility::is_valid_address($prioritize_address, $currency)) {
+        if ($currency_wrapper->is_valid_address($prioritize_address)) {
             my ($error) = $dbic->run(
                 ping => sub {
                     $_->selectrow_array('SELECT * FROM payment.ctc_set_address_priority(?, ?)', undef, $prioritize_address, $currency);

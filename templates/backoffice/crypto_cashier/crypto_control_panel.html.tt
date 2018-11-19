@@ -49,12 +49,8 @@
         <button type="submit" name="view_action" value="run">Run</button>
         <select name="command">
         <option value="getbalance" [% IF cmd == "getbalance" %] selected="selected" [% END %]>Get balance</option>
-        <option value="listtransactions" [% IF cmd == "listtransactions" %] selected="selected" [% END %]>List withdrawal transactions</option>
-        <option value="listaddressgroupings" [% IF cmd == "listaddressgroupings" %] selected="selected" [% END %]>List address groupings</option>
         <option value="..." disabled="disabled">---</option>
         <option value="getinfo" [% IF cmd == "getinfo" %] selected="selected" [% END %]>Get info</option>
-        <option value="getpeerinfo" [% IF cmd == "getpeerinfo" %] selected="selected" [% END %]>Get peer info</option>
-        <option  value="getnetworkinfo" [% IF cmd == "getnetworkinfo" %] selected="selected" [% END %] >Get network info</option>
         </select>
     <br>
 </form>
