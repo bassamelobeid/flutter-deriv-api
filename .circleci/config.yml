@@ -1,0 +1,20 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: debian:wheezy
+    steps:
+      - checkout
+      - run:
+          name: Install system packages
+          command: apt-get update && apt-get install -y cpanminus make gcc redis
+      - run:
+          name: Prepare
+          command: ./travis/before_install.sh
+      - run:
+          name: Install
+          command: ./travis/install.sh
+      - run:
+          name: Run tests
+          command: ./travis/script.sh
+
