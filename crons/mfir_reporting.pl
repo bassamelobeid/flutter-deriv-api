@@ -6,6 +6,7 @@ use Date::Utility;
 use Brands;
 use BOM::Platform::Email qw(send_email);
 use BOM::Datatracks;
+use Path::Tiny 'path';
 
 =head2
 
@@ -30,11 +31,9 @@ my $rd = Date::Utility->new($specified_rptDate);
 my $fileTail = join('', $rd->year, sprintf('%02d', $rd->month), sprintf('%02d', $rd->day_of_month), $rd->hour, $rd->minute, $rd->second);
 my $FN = 'BNRY_' . $fileTail . '.csv';
 
-# where will they go
-my $reports_path = '/reports/MiFIR/' . $rd->year;
-
-# automatically maintain our year-named sub-directories
-mkdir $reports_path unless (-d $reports_path);
+# where will they go under reports/ and create that if it doesn't yet exist
+my $reports_path = "/reports/MiFIR/@{[ $rd->year ]}";
+path($reports_path)->mkpath;
 
 # now adjust our actual reporting date if we have not specified the same
 $rd = $rd->minus_time_interval('1d') unless $specified_rptDate;
