@@ -37,11 +37,14 @@ Bar("Bet Parameters");
 my ($loginid, $broker) = map { request()->param($_) } qw(loginid broker);
 
 my $landing_company;
+my $lc_registry;
 if ($broker) {
-    $landing_company = LandingCompany::Registry->get_by_broker($broker)->short;
+    $lc_registry = LandingCompany::Registry->get_by_broker($broker);
 } elsif ($loginid) {
-    $landing_company = LandingCompany::Registry->get_by_loginid($loginid)->short;
+    $lc_registry = LandingCompany::Registry->get_by_loginid($loginid);
 }
+
+$landing_company = $lc_registry->short if $lc_registry;
 
 my $bet = do {
     my $contract_object = '';
