@@ -94,16 +94,28 @@ sub _sleep_to_next_second {
 
     return undef;
 }
+=head2 _process_price_queue
+
+Scans Redis for incoming requests and places them on the appropriate queue for the pricer daemon. 
+Separates the ask/price and bid queues for performance
+Takes no Arguments 
+
+
+Returns undef
+
+=cut
 
 sub _process_price_queue {
-    $log->trace('processing regular price_queue...');
+    $log->trace('processing price_queue...');
     _sleep_to_next_second();
-    my $overflow = $redis->llen('pricer_jobs');
-
+    my $overflow_count_price = $redis->llen('pricer_jobs');
+    my $overflow_count_bid = $redis->llen('pricer_jobs_bid');
     # If we didn't manage to process everything within 1s, we'll allow 1s extra - this will cause price update rates to
     # be halved on the UI.
-    if ($overflow) {
-        $log->debugf('got pricer_jobs overflow: %s', $overflow);
+    if ($overflow_count_price or $overflow_count_bid) {
+        my $msg = 'got pricer queue overflow: %s for queue %s';
+        $log->debugf($msg, $overflow_count_price , 'price');
+        $log->debugf($msg, $overflow_count_bid , 'bid');
         _sleep_to_next_second();
     }
 
@@ -114,24 +126,55 @@ sub _process_price_queue {
             MATCH => 'PRICER_KEYS::*',
             COUNT => 20000
         )};
+        my @bid_keys = extract_by {
+        /"price_daemon_cmd","bid"/
+    }
+    @keys;
 
-    my $not_processed = $redis->llen('pricer_jobs');
-    $log->debugf('got pricer_jobs not processed: %s', $not_processed) if $not_processed;
+    _update_queue('pricer_jobs', \@keys, $overflow_count_price);
+    _update_queue('pricer_jobs_bid', \@bid_keys, $overflow_count_bid);
+    return undef;
+}
 
-    $log->trace('pricer_jobs queue updating...');
-    $redis->del('pricer_jobs');
-    $redis->lpush('pricer_jobs', @keys) if @keys;
-    $log->debug('pricer_jobs queue updated.');
+=head2 _update_queue
 
-    stats_gauge('pricer_daemon.queue.overflow',      $overflow,      {tags => ['tag:' . $internal_ip]});
-    stats_gauge('pricer_daemon.queue.size',          0 + @keys,      {tags => ['tag:' . $internal_ip]});
-    stats_gauge('pricer_daemon.queue.not_processed', $not_processed, {tags => ['tag:' . $internal_ip]});
+Updates Redis queues and logs stats.  We use Redis lists for our queues 
+Takes the following arguments as parameters
+
+=over 4
+
+=item C<$queue_name>  String  name of redis queue (These will be processed by the pricer daemon)
+
+=item C<$keys>  arrayref of keys to add to the destination queue.
+ 
+=item C<$overflow_count> is the number of jobs still on the destination queue that have not been processed
+
+=back
+
+Returns undef
+
+=cut
+
+sub _update_queue {
+    my ($queue_name, $key, $overflow_count) = @_;
+    my @keys = @$key;
+    my $not_processed = $redis->llen($queue_name);
+    $log->debugf('got %s not processed: %s', $queue_name, $not_processed) if $not_processed;
+
+    $log->trace("$queue_name queue updating...");
+    $redis->del($queue_name);
+    $redis->lpush($queue_name, @keys) if @keys;
+    $log->debug("$queue_name queue updated with ".scalar(@keys)." keys");
+
+    stats_gauge('pricer_daemon.queue.overflow',      $overflow_count,      {tags => ['tag:' . $internal_ip, 'queue_name' => $queue_name]});
+    stats_gauge('pricer_daemon.queue.size',          0 + @keys,      {tags => ['tag:' . $internal_ip, 'queue_name' => $queue_name]});
+    stats_gauge('pricer_daemon.queue.not_processed', $not_processed, {tags => ['tag:' . $internal_ip, 'queue_name' => $queue_name]});
 
     $log->trace('pricer_daemon_queue_stats updating...');
     $redis->set(
-        'pricer_daemon_queue_stats',
+        'pricer_daemon_queue_stats_'.$queue_name,
         JSON::MaybeXS->new->encode({
-                overflow      => $overflow,
+                overflow      => $overflow_count,
                 not_processed => $not_processed,
                 size          => 0 + @keys,
                 updated       => time,
