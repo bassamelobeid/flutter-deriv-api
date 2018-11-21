@@ -5,7 +5,7 @@
 </form>
 [% INCLUDE 'backoffice/account/statement_summary.html.tt' %]
 <div style="margin:5px 0;">
-    <form action="[% self_post %]" method="get" target="_blank">
+    <form action="[% self_post %]" method="get">
         <span>Client deposits/withdrawals for the lifetime of the account: </span>
         <input name="loginID" type="hidden" value="[% loginid %]">
         <input name="broker" type="hidden" value="[% broker %]">
@@ -14,11 +14,23 @@
         <input type="submit" value="view">
     </form>
 </div>
+
+[% IF total_deposits %]
 <hr>
 <div>
-    <div style="color:red";>NOTE: 	
-        <b>Show All Transactions</b> may fail for clients with a huge number of transactions, so use this feature only	
-        when required.	
+    <h3>Client deposits/withdrawals for the lifetime of the account: </h3>
+    <ul>
+        <li><b>Total Deposits:</b> [% total_deposits %] [% currency %]</li>
+        <li><b>Total Withdrawals:</b> [% total_withdrawals %] [% currency %] </li>
+    </ul>
+</div>
+<hr>
+[% END %]
+
+<div>
+    <div style="color:red;">NOTE:
+        <b>Show All Transactions</b>, may fail for clients with a huge number of transactions, so use this feature only
+        when required.
     </div><br/>
     <div>
         <form action="[% self_post %]" method="get">

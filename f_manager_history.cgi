@@ -77,16 +77,19 @@ if (my $currency_dropdown = request()->param('currency_dropdown')) {
     $currency = $currency_dropdown unless $currency_dropdown eq 'default';
 }
 
+# initialize value to undef for conditional checking in statement.html.tt
+my $total_deposits;
+my $total_withdrawals;
+
 # Fetch and display gross deposits and gross withdrawals
 my $action = request()->param('action');
 if (defined $action && $action eq "gross_transactions") {
     my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
     if (!$client->account) {
         print "<div style='color:red' class='center-aligned'>Error: Client $loginID does not have currency set. </div>";
-        code_exit_BO();
     }
     try {
-        my ($total_deposits, $total_withdrawals) = $clientdb->db->dbic->run(
+        ($total_deposits, $total_withdrawals) = $clientdb->db->dbic->run(
             fixup => sub {
                 my $statement = $_->prepare("SELECT * FROM betonmarkets.get_total_deposits_and_withdrawals(?)");
                 $statement->execute($client->account->id);
@@ -94,18 +97,11 @@ if (defined $action && $action eq "gross_transactions") {
             });
         $total_deposits    = formatnumber('amount', $currency, $total_deposits);
         $total_withdrawals = formatnumber('amount', $currency, $total_withdrawals);
-        print "<h3>Client deposits/withdrawals for the lifetime of the account: </h3>";
-        print "<ul>";
-        print "<li><b>Total Deposits:</b> $total_deposits $currency </li>";
-        print "<li><b>Total Withdrawals:</b> $total_withdrawals $currency </li>";
-        print "</ul>";
     }
     catch {
         warn "Error caught : $_\n";
         print "<div style='color:red' class='center-aligned'>Error: Unable to fetch total deposits/withdrawals </div>";
     };
-
-    code_exit_BO();
 }
 
 # print other untrusted section warning in backoffice
@@ -160,6 +156,8 @@ BOM::Backoffice::Request::template()->process(
         clientedit_url          => request()->url_for('backoffice/f_clientloginid_edit.cgi'),
         self_post               => request()->url_for('backoffice/f_manager_history.cgi'),
         summary                 => $summary,
+        total_deposits          => $total_deposits,
+        total_withdrawals       => $total_withdrawals,
         client                  => {
             name      => $client_name,
             email     => $client_email,
