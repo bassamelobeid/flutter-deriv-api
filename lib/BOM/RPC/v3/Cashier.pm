@@ -1327,10 +1327,6 @@ rpc topup_virtual => sub {
                 $currency, formatnumber('amount', $currency, $minimum_topup_balance)));
     }
 
-    if (scalar($client->open_bets)) {
-        return $error_sub->(localize('Please close out all open positions before requesting additional funds.'));
-    }
-
     # CREDIT HIM WITH THE MONEY
     my ($curr, $amount) = $client->deposit_virtual_funds($source, localize('Virtual money credit to account'));
 

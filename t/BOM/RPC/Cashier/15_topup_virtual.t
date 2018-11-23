@@ -187,7 +187,13 @@ my $txn = BOM::Transaction->new($txn_data);
 is($txn->buy(skip_validation => 1), undef, 'buy contract without error');
 $balance = $account->balance + 0;
 is($balance, $limit - $price, 'balance is reduced for buying contract');
-$c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')
-    ->error_message_is('Please close out all open positions before requesting additional funds.', 'have opened bets');
+$c->call_ok($method, $params)->has_no_error->result_is_deeply({
+        currency => 'USD',
+        amount   => $amount
+    },
+    'topup account successfully'
+);
+$balance = $account->balance + 0;
+is($balance, $limit + $amount - $price, 'balance was increased correctly');
 
 done_testing();
