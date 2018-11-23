@@ -87,9 +87,11 @@ sub _send_email_statement {
         });
 
     # gather template data
-    my $has_account = $client->account ? 1 : 0;
+    my $account = $client->account;
     # result may not be available for clients with no currency
-    my $result = $has_account ? (values %$summary)[0] : {};
+    my $result = $account ? (values %$summary)[0] : {};
+    my $estimated_value = ($result->{ending_balance} // 0) + ($transactions->{estimated_profit} // 0);
+
     my $data = {
         client => {
             %$result,
@@ -97,11 +99,11 @@ sub _send_email_statement {
             closed_trades   => $transactions->{close_trade},
             payments        => $transactions->{payment},
             is_mf_client    => ($client->landing_company->short eq 'maltainvest') ? 1 : 0,
-            estimated_value => $has_account ? ($result->{ending_balance} // 0) + ($transactions->{estimated_profit} // 0) : '',
+            estimated_value => $account ? formatnumber('price', $account->currency_code, $estimated_value) : '',
             name            => $client->first_name . ' ' . $client->last_name,
             account_number  => $client->loginid,
             classification => $client->status->professional ? 'Professional' : 'Retail',
-            currency => ($client->account) ? $client->account->currency_code : 'No Currency Selected',
+            currency => $account ? $account->currency_code : 'No Currency Selected',
         },
         date      => Date::Utility->today->date_yyyymmdd(),
         statement => {
@@ -206,7 +208,7 @@ sub _retrieve_transaction_history {
                     ? formatnumber('price', $currency, $contract->{sell_price} - $txn->{buy_price})
                     : formatnumber('price', $currency, $contract->{bid_price} - $txn->{buy_price});
 
-                $txn->{indicative_price} = $txn->{buy_price} + $txn->{profit};
+                $txn->{indicative_price} = formatnumber('price', $currency, $txn->{buy_price} + $txn->{profit});
                 $transactions->{estimated_profit} += $txn->{profit};
             }
 
