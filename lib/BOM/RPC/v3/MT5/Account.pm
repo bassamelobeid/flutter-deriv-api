@@ -42,7 +42,7 @@ use constant MT5_ACCOUNT_THROTTLE_KEY_PREFIX => 'MT5ACCOUNT::THROTTLE::';
 use constant MT5_MALTAINVEST_MOCK_LEVERAGE => 33;
 use constant MT5_MALTAINVEST_REAL_LEVERAGE => 30;
 
-use constant MT5_VANUATU_STANDARD_MOCK_LEVERAGE => 100;
+use constant MT5_VANUATU_STANDARD_MOCK_LEVERAGE => 1;
 use constant MT5_VANUATU_STANDARD_REAL_LEVERAGE => 1000;
 
 # Defines mt5 account rights combination when trading is enabled
