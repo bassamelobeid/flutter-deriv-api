@@ -46,11 +46,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         date   => Date::Utility->new,
     }) for (qw/JPY USD GBP INR AUD/);
 
-create_underlying({symbol => 'frxGBPINR'})->set_combined_realtime({
-    epoch => $fake_date->epoch,
-    quote => 100,
-});
-
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'holiday',
     {
@@ -69,6 +64,11 @@ Quant::Framework::Utils::Test::create_doc(
         chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer,
         recorded_date    => Date::Utility->new,
     }) for qw(frxAUDJPY frxGBPJPY frxUSDJPY frxGBPINR);
+
+create_underlying({symbol => 'frxGBPINR'})->set_combined_realtime({
+    epoch => $fake_date->epoch,
+    quote => 100,
+});
 
 initialize_realtime_ticks_db;
 

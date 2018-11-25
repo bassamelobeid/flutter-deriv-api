@@ -19,7 +19,7 @@ use Quant::Framework::VolSurface::Moneyness;
 use Quant::Framework::Asset;
 use Quant::Framework::InterestRate;
 use Quant::Framework::ImpliedRate;
-use Quant::Framework::Holiday;
+use Quant::Framework::Calendar;
 use Quant::Framework::CorrelationMatrix;
 
 =head2 db
@@ -176,14 +176,23 @@ sub _recover_holiday {
     my $self = shift;
 
     try {
-        Quant::Framework::Holiday->new(
-            for_date         => Date::Utility->new,
-            chronicle_reader => $self->_chronicle_reader,
-            chronicle_writer => $self->_chronicle_writer
-        )->save($archive, $suppress_publish);
+        foreach my $d (
+            ['holidays',        'holidays'],
+            ['holidays',        'manual_holidays'],
+            ['partial_trading', 'early_closes'],
+            ['partial_trading', 'manual_early_closes'])
+        {
+            Quant::Framework::Calendar->new(
+                calendar_name    => $d->[0],
+                type             => $s->[1],
+                for_date         => Date::Utility->new,
+                chronicle_reader => $self->_chronicle_reader,
+                chronicle_writer => $self->_chronicle_writer
+            )->save($archive, $suppress_publish);
+        }
     }
     catch {
-        push @{$self->_exceptions}, 'Exception thrown while recovering holidays::holidays';
+        push @{$self->_exceptions}, 'Exception thrown while recovering holidays';
     };
 
     return;
