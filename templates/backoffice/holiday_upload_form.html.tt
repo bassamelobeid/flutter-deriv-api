@@ -21,14 +21,15 @@
         <tr>
             <td>What to upload: </td>
             <td><select name="calendar-type">
-                <option value='exchange_holiday'>Exchange Holiday</option>
-                <option value='country_holiday'>Country Holiday</option>
+                <option value='holidays'>Exchange Holiday</option>
+                <option value='holidays'>Country Holiday</option>
             </select></td>
         </tr>
         <tr><td>Symbol</td><td> : <INPUT type="text" name="symbol"></td><td>(e.g. USD GBP EUR NYSE TSE)</td></tr>
         <tr><td>Holiday Date</td><td> : <INPUT type="text" name="holiday_date"></td><td>(e.g. 12-Dec-2014)</td></tr>
         <tr><td>Holiday Description</td><td> : <INPUT type="text" name="holiday_desc"></td><td>(e.g. New Year's Eve)</td></tr>
-        <tr><td></td><td><INPUT type="submit" value="Save"></td></tr>
+        <tr><td></td><td><INPUT type="submit" name='save' value="save"></td></tr>
+        <tr><td></td><td><INPUT type="submit" name='delete' value="delete"></td></tr>
     </table>
 </form>
 
@@ -48,7 +49,8 @@
         <tr><td>Date</td><td> : <INPUT type="text" name="date"></td><td>(e.g. 12-Dec-2014)</td></tr>
         <tr><td>Time</td><td> : <INPUT type="text" name="time"></td><td>(e.g. 2h30m)</td></tr>
         <tr><td>Description</td><td> : <INPUT type="text" name="description"></td><td>(e.g. New Year's Eve)</td></tr>
-        <tr><td></td><td><INPUT type="submit" value="Save"></td></tr>
+        <tr><td></td><td><INPUT type="submit" name='save' value="save"></td></tr>
+        <tr><td></td><td><INPUT type="submit" name='delete' value="delete"></td></tr>
     </table>
 </form>
 
