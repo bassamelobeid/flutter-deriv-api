@@ -86,7 +86,10 @@ if ($whattodo eq 'show') {
     my ($max_withdrawal, $min_withdrawal) =
         (request()->param('pa_max_withdrawal') || $min_max->{maximum}, request()->param('pa_min_withdrawal') || $min_max->{minimum});
 
-    code_exit_BO("Invalid amount, minimum amount needs to be equal or greater than " . $min_max->{minimum})
+    code_exit_BO("Invalid amount: requested maximum amount exceeds required transfer maximum amount for $currency. Maximum Amount: " . $min_max->{maximum})
+        if ($max_withdrawal > $min_max->{maximum});
+
+    code_exit_BO("Invalid amount: requested minimum amount is below required transfer minimum amount. Minimum Amount: " . $min_max->{minimum})
         if ($min_withdrawal < $min_max->{minimum});
 
     # update payment agent file
