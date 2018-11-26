@@ -542,9 +542,14 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             # algorithm provide different encrypted string from the same text based on some randomness
             # so we update this encrypted field only on value change - we don't want our trigger log trash
 
-            my $secret_answer = BOM::User::Utility::decrypt_secret_answer($client->secret_answer);
-            $secret_answer = Encode::decode("UTF-8", $secret_answer)
-                unless (Encode::is_utf8($secret_answer));
+            my $secret_answer;
+            try {
+                $secret_answer = BOM::User::Utility::decrypt_secret_answer($client->secret_answer);
+            }
+            catch {
+                print qq{<p style="color:red">ERROR: Unable to extract secret answer. Client secret answer is outdated or invalid.</p>};
+                $secret_answer = '';
+            };
 
             $client->secret_answer(BOM::User::Utility::encrypt_secret_answer($input{$key}))
                 if ($input{$key} ne $secret_answer);

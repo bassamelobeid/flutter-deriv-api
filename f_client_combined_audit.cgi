@@ -137,7 +137,14 @@ foreach my $table (
             $old = $new;
         }
         foreach my $key (sort keys %{$u_db->{$stamp}}) {
-            $new->{secret_answer} = BOM::User::Utility::decrypt_secret_answer($new->{secret_answer}) if $key eq 'secret_answer';
+            if ($key eq 'secret_answer') {
+                try {
+                    $new->{secret_answer} = BOM::User::Utility::decrypt_secret_answer($new->{secret_answer});
+                }
+                catch {
+                    $new->{secret_answer} = 'Unable to extract secret answer. Client secret answer is outdated or invalid.';
+                };
+            }
             if ($key eq 'client_addr') {
                 $old->{client_addr} = revers_ip($old->{client_addr});
             }

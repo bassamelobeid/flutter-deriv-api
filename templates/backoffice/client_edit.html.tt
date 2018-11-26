@@ -409,10 +409,15 @@ IF client_for_prove
     <tr>
         <td class="label">Secret question</td>
         <td>: <input type="text" name="secret_question" value="[% client.secret_question %]" size="50" /> [% secret_question %]</td>
+
     </tr>
     <tr>
         <td class="label">Secret answer</td>
-        <td>: <input type="text" name="secret_answer" value="[% secret_answer %]" size="50" /> [% secret_answer %]</td>
+        [% IF can_decode_secret_answer %]
+            <td>: <input type="text" name="secret_answer" value="[% secret_answer %]" size="50" /> [% secret_answer %]</td>
+        [% ELSE %]
+            <td style="color:red"> Not able to decode secret answer. </td>
+        [% END %]
     </tr>
     <tr>
         <td class="label">IP security</td>

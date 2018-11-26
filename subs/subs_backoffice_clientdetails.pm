@@ -184,11 +184,15 @@ sub print_client_details {
     my @language_options = @{BOM::Config::Runtime->instance->app_config->cgi->allowed_languages};
 
     # SECURITYS SECTION
-    my $secret_answer = BOM::User::Utility::decrypt_secret_answer($client->secret_answer);
-
-    if (!Encode::is_utf8($secret_answer)) {
-        $secret_answer = Encode::decode("UTF-8", $secret_answer);
+    my ($secret_answer, $can_decode_secret_answer);
+    try {
+        $secret_answer            = BOM::User::Utility::decrypt_secret_answer($client->secret_answer);
+        $can_decode_secret_answer = 1;
     }
+    catch {
+        $can_decode_secret_answer = 0;
+        warn "ERROR: Loginid: " . $client->loginid . " - $_";
+    };
 
     # MARKETING SECTION
     my $promo_code_access = BOM::Backoffice::Auth0::has_authorisation(['Marketing']);
@@ -234,6 +238,7 @@ sub print_client_details {
         client_for_prove               => $client_for_prove,
         salutation_options             => \@salutation_options,
         secret_answer                  => $secret_answer,
+        can_decode_secret_answer       => $can_decode_secret_answer,
         self_exclusion_enabled         => $self_exclusion_enabled,
         client_professional_status     => $client->status->professional,
         show_allow_professional_client => $show_allow_professional_client,
