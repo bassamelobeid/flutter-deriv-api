@@ -150,7 +150,7 @@ sub print_client_details {
                     client        => $client_iom,
                     search_option => 'ProveID_KYC'
                 );
-                if ($client_iom->status->proveid_requested && !$client->status->proveid_pending) {
+                if (($client_iom->status->proveid_requested && !$client->status->proveid_pending) || $prove->has_saved_xml) {
                     $client_for_prove = $client_iom;
                     $proveID          = $prove;
                     last;

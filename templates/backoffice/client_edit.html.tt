@@ -301,9 +301,9 @@ IF client_for_prove
                 pdf_args = { broker => client_for_prove.broker, category => '192_result' };
                 FOREACH auth_request IN [ proveID ];
             %]
-	        [%
+	            [%
                     option = auth_request.search_option;
-                    IF auth_request.client.status.proveid_requested;
+                    IF auth_request.client.status.proveid_requested || auth_request.has_saved_xml;
                 %]
                     [%
                         IF auth_request.has_saved_xml;
@@ -319,7 +319,7 @@ IF client_for_prove
                             <a class="lspace" target="_blank" href="[% request.url_for(doc_url, pdf_args) | none %]">[PDF]</a>
                         [% END %]
                     [% ELSE %]
-		        <b>ProveID requested, but resulting xml file doesn't exist or has been deleted. Please try again later or resend the ProveID request</b>
+		                <b>ProveID requested, but resulting xml file doesn't exist or has been deleted. Please try again later or resend the ProveID request</b>
                     [% END %]
                 [% ELSE %]
                     An Experian <span class="lspace">[% option %]</span> request <span class="lspace">has NOT</span> been done.
