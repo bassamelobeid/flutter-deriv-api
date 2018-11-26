@@ -17,6 +17,7 @@ use Try::Tiny;
 use Webservice::GAMSTOP;
 use Email::Address::UseXS;
 use Email::Stuffer;
+use YAML::XS qw(LoadFile);
 
 use BOM::Config;
 
@@ -31,27 +32,32 @@ sub encrypt_secret_answer {
 }
 
 sub decrypt_secret_answer {
-    my $secret_answer = shift;
-    if ($secret_answer =~ /^\w+\*.*\./) {    # new AES format
-        return Crypt::NamedKeys->new(keyname => 'client_secret_answer')->decrypt_payload(value => $secret_answer);
-    } elsif ($secret_answer =~ s/^::ecp::(\S+)$/$1/) {    # legacy blowfish
-        my $cipher = Crypt::CBC->new({
-            'key'    => aes_keys()->{client_secret_answer}->{1},
-            'cipher' => 'Blowfish',
-            'iv'     => aes_keys()->{client_secret_iv}->{1},
-            'header' => 'randomiv',
-        });
+    my $encoded_secret_answer = shift;
 
-        $secret_answer = $cipher->decrypt_hex($secret_answer);
+    return undef unless $encoded_secret_answer;
 
-        if (Encode::Detect::Detector::detect($secret_answer) eq 'UTF-8') {
-            return Encode::decode('UTF-8', $secret_answer);
+    my $secret_answer;
+    try {
+        if ($encoded_secret_answer =~ /^\w+\*.*\./) {    # new AES format
+            $secret_answer = Crypt::NamedKeys->new(keyname => 'client_secret_answer')->decrypt_payload(value => $encoded_secret_answer);
+        } elsif ($encoded_secret_answer =~ s/^::ecp::(\S+)$/$1/) {    # legacy blowfish
+            my $cipher = Crypt::CBC->new({
+                'key'    => aes_keys()->{client_secret_answer}->{1},
+                'cipher' => 'Blowfish',
+                'iv'     => aes_keys()->{client_secret_iv}->{1},
+                'header' => 'randomiv',
+            });
+
+            $secret_answer = $cipher->decrypt_hex($encoded_secret_answer);
         } else {
-            return $secret_answer;
+            die "Invalid or outdated encrypted value.";
         }
-    } else {
-        return $secret_answer;
     }
+    catch {
+        die "Not able to decode secret answer! $_";
+    };
+
+    return $secret_answer;
 }
 
 =head2 set_gamstop_self_exclusion
