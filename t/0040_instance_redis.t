@@ -1,8 +1,9 @@
 use Test::More;
 use strict;
 use warnings;
+use BOM::Test::Helper qw/launch_redis/;
 
-BEGIN { use_ok('Binary::WebSocketAPI::v3::Instance::Redis', qw| redis_pricer check_connections |); }
+BEGIN { use_ok('Binary::WebSocketAPI::v3::Instance::Redis', qw| redis_pricer ws_redis_master check_connections |); }
 
 ok(Binary::WebSocketAPI::v3::Instance::Redis->check_connections, 'Check redis connections');
 my $server_ref1 = redis_pricer;
@@ -11,5 +12,11 @@ is($server_ref1->get("TESTKEY"), "meow-meow", "Check pricer redis read");
 is($server_ref1->del("TESTKEY"), 1,           "Delete test key");
 my $server_ref2 = redis_pricer;
 ok($server_ref2 == $server_ref1, "Checking of exist only one instance");
+
+my $ws_port = ws_redis_master->backend->config('port');
+
+my $redis = launch_redis();
+ok(check_connections, 'Connections ok after creating test ws-redis');
+cmp_ok( ws_redis_master->backend->config('port'), '!=', $ws_port, 'ws-redis port has changed' );
 
 done_testing;
