@@ -115,7 +115,6 @@ sub generate_settings_branch {
     SETTINGS:
     foreach my $ds (sort { scalar split(/\./, $a) >= scalar split(/\./, $b) } @$settings) {
         next SETTINGS unless grep { $ds eq $_ } @$settings_in_group;
-
         my $description = $app_config->get_description($ds);
         my $data_type   = $app_config->get_data_type($ds);
         my $default     = $app_config->get_default($ds);
@@ -311,6 +310,9 @@ sub get_extra_validation {
         'payments.transfer_between_accounts.minimum.by_currency'      => \&_validate_transfer_min_by_currency,
         'payments.transfer_between_accounts.minimum.default.fiat'     => \&_validate_transfer_min_default,
         'payments.transfer_between_accounts.minimum.default.crypto'   => \&_validate_transfer_min_default,
+        'payments.transfer_between_accounts.limits.between_accounts'  => \&_validate_transfer_min_default,
+        'payments.transfer_between_accounts.limits.MT5'               => \&_validate_transfer_min_default,
+        'payments.payment_limits'                                     => \&_validate_payment_min_by_staff,
     };
 
     return $setting_validators->{$setting};
@@ -323,10 +325,28 @@ Validates the default minimum transfer amount to be a valid number.
 =cut  
 
 sub _validate_transfer_min_default {
-    my $new_string = shift;
+    my $input_data = shift;
+    die "Invalid numerical value $input_data" unless Scalar::Util::looks_like_number($input_data);
+    die "$input_data is less than or equal to 0" unless $input_data > 0;
 
-    die "Invalid numerical value $new_string" unless Scalar::Util::looks_like_number($new_string);
+    return 1;
+}
 
+=head2 _validate_payment_min_by_staff
+
+Validates json string containing the minimum payment limit per staff
+
+=cut
+
+sub _validate_payment_min_by_staff {
+    my $input_string = shift;
+
+    my $json_config = JSON::MaybeUTF8::decode_json_utf8($input_string);
+
+    foreach my $user_name (keys %$json_config) {
+        my $amount = $json_config->{$user_name};
+        die "$user_name 's payment limit entered has a value less than or equal to 0" unless $amount > 0;
+    }
     return 1;
 }
 
@@ -352,6 +372,7 @@ sub _validate_transfer_min_by_currency {
         my $allowed_decimals = Format::Util::Numbers::get_precision_config()->{price}->{$currency};
         my $rounded_amount   = Format::Util::Numbers::financialrounding('price', $currency, $amount);
 
+        die "One or more currencies has value less than or equal to 0" unless $amount > 0;
         die "Minimum value $amount has more than $allowed_decimals decimals allowed for $currency."
             if length($amount) > 12
             or (sprintf('%0.010f', $rounded_amount) ne sprintf('%0.010f', $amount));
