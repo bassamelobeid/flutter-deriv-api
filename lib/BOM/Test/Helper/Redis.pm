@@ -21,7 +21,7 @@ sub is_within_threshold ($$;$) {    ## no critic (Subroutines::ProhibitSubroutin
     fail "Redis response is invalid!"
         unless $res and ref $res eq 'HASH';
 
-    note "Checking for number of Redis keys on $server:\n", explain $res;
+    note "Checking for number of Redis keys on $server";
 
     # A Redis may have more than one database, so compare each
     # database's number of used keys against the threshold
@@ -29,7 +29,7 @@ sub is_within_threshold ($$;$) {    ## no critic (Subroutines::ProhibitSubroutin
         # get number of keys from https://redis.io/commands/INFO keyspace
         # output format is like: 'keys=XXX,expires=XXX'
         my %stats = split /[,=]/, $res->{$db};
-        cmp_ok $stats{keys}, '<=', $threshold, "Current number of Redis keys for $server ($db) is within threshold ($threshold)";
+        cmp_ok $stats{keys}, '<=', $threshold, "Current number of Redis keys ($stats{keys}) for $server ($db) within threshold ($threshold)";
     }
 
     return undef;

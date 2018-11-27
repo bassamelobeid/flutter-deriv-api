@@ -10,6 +10,7 @@ BEGIN {
 
 use Test::More;
 use Test::Mojo;
+use Test::Builder;
 
 use Encode;
 use JSON::Schema;
@@ -23,13 +24,16 @@ use BOM::Test::Data::Utility::FeedTestDatabase;
 use BOM::Test::Data::Utility::UnitTestMarketData;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Helper::Redis qw/is_within_threshold/;
 use BOM::User::Password;
 use BOM::User;
 use Net::EmptyPort qw/empty_port/;
+use Binary::WebSocketAPI::v3::Instance::Redis;
 
 use Mojo::Redis2::Server;
 use File::Temp qw/ tempdir /;
 use Path::Tiny;
+use Try::Tiny;
 
 use Test::MockModule;
 use MojoX::JSON::RPC::Client;
@@ -42,6 +46,8 @@ our @EXPORT_OK = qw/test_schema build_mojo_test build_wsapi_test build_test_R_50
 
 my $version = 'v3';
 die 'unknown version' unless $version;
+
+my $redis_test_done;
 
 sub build_mojo_test {
     my $app_class = shift;
@@ -60,7 +66,9 @@ sub build_mojo_test {
 }
 
 sub launch_redis {
-    my $redis_port   = empty_port;
+    $redis_test_done = 0;
+    my $redis_port = empty_port;
+
     my $redis_server = Mojo::Redis2::Server->new;
     $redis_server->start(
         port    => $redis_port,
@@ -79,7 +87,31 @@ sub launch_redis {
         },
     };
     DumpFile($ws_redis_path, $ws_redis_config);
+
     $ENV{BOM_TEST_WS_REDIS} = "$ws_redis_path";    ## no critic (RequireLocalizedPunctuationVars)
+
+    {
+        no strict 'refs';                          ## no critic (ProhibitProlongedStrictureOverride)
+        my $orig    = Test::Builder->can('done_testing');
+        my $builder = Test::More->builder;
+        no warnings 'redefine';                    ## no critic (ProhibitNoWarnings)
+        *{'Test::Builder::done_testing'} = sub {
+            my $in_subtest_sub = $builder->can('in_subtest');
+            if (    not $redis_test_done
+                and not($in_subtest_sub ? $builder->$in_subtest_sub : $builder->parent))
+            {
+                try {
+                    my $redis = Binary::WebSocketAPI::v3::Instance::Redis::ws_redis_master();
+                    is_within_threshold 'ws_redis_master', $redis->backend->info('keyspace');
+                    $redis_test_done = 1;
+                }
+                catch {
+                    diag "Could not run ws_redis_master keys test: $_\n";
+                };
+            }
+            $orig->(@_);
+        };
+    }
 
     return ($tmp_dir, $redis_server);
 }
@@ -116,7 +148,7 @@ sub build_wsapi_test {
     # keep them until $t be destroyed
     $t->{_bom} = {
         tmp_dir      => $tmp_dir,
-        redis_server => $redis_server,
+        redis_server => $redis_server
     };
     return $t;
 }
