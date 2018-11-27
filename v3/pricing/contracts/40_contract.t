@@ -268,7 +268,7 @@ $res = $t->await::buy({
     price      => 0,
     parameters => \%contractParameters,
 });
-is $res->{error}->{code}, 'InputValidationFailed', 'Schema validation fails with huge duration';
+is $res->{error}->{code}, 'InvalidtoBuy', 'Schema validation does not fail with huge duration';
 
 $contractParameters{duration} = -10;
 $res = $t->await::buy({
