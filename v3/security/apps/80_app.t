@@ -266,6 +266,8 @@ $t = $t->send_ok({
 $res = $json->decode(Encode::decode_utf8($t->message->[1]));
 is $res->{error}{code}, 'PermissionDenied', 'revoke_oauth_app failed';
 
+$t->finish_ok;
+
 $t = build_wsapi_test({app_id => 333});
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 $res = $json->decode(Encode::decode_utf8($t->message->[1]));
