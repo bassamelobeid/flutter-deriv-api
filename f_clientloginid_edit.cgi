@@ -578,7 +578,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->set_authentication('ID_NOTARIZED')->status('pass')        if $auth_method eq 'ID_NOTARIZED';
             $client->set_authentication('ID_DOCUMENT')->status('pass')         if $auth_method eq 'ID_DOCUMENT';
             $client->set_authentication('ID_DOCUMENT')->status('needs_action') if $auth_method eq 'NEEDS_ACTION';
-
         }
 
         if ($key eq 'myaffiliates_token' and $input{$key}) {

@@ -45,7 +45,6 @@ foreach my $login_id (split(/\s+/, $clientID)) {
         push @invalid_logins, encode_entities($login_id);
         next LOGIN;
     }
-
     # check invalid reason
     if ($reason =~ /SELECT A REASON/) {
         print "<br /><font color=red><b>ERROR : Reason is not specified.</b></font><br /><br />";
@@ -55,6 +54,12 @@ foreach my $login_id (split(/\s+/, $clientID)) {
     # check invalid action
     if ($client_status_type =~ /SELECT AN ACTION/) {
         print "<br /><font color=red><b>ERROR : The action to perform is not specified.</b></font><br /><br />";
+        code_exit_BO();
+    }
+
+    # check invalid UKGC_authenticated action for non-GB residence
+    if ($client_status_type eq 'ukgcauthenticated' and $client->residence ne 'gb') {
+        print "<br /><font color=red><b>ERROR : This action is only applicable for UK clients</b></font><br /><br />";
         code_exit_BO();
     }
 
@@ -133,8 +138,13 @@ foreach my $login_id (split(/\s+/, $clientID)) {
         } elsif ($action eq 'remove_data') {
             $printline = try { $client->status->clear_duplicate_account; $remove_success_msg } catch { $remove_error_msg };
         }
+    } elsif ($client_status_type eq 'ukgcauthenticated') {
+        if ($action eq 'insert_data') {
+            $printline = try { $client->status->set('ukgc_authenticated', $clerk, $reason); $insert_success_msg } catch { $insert_error_msg };
+        } elsif ($action eq 'remove_data') {
+            $printline = try { $client->status->clear_ukgc_authenticated; $remove_success_msg } catch { $remove_error_msg };
+        }
     }
-
     # print success/fail message
     print $printline;
 }

@@ -255,21 +255,19 @@ table#client_edit td{
 	   authentication_status = client.authentication_status;
         %]
         <td id="verification">:
-            [%
-                text;
-                IF authentication_status == 'scans';
-                    text = 'Authenticated with scans';
-                ELSIF authentication_status == 'notarized';
-                    text = 'Authenticated with Notarized docs';
-                ELSIF authentication_status == 'under_review';
-                    text = 'Under Review';
-                ELSIF authentication_status == 'needs_action';
-                    text = 'Needs Action';
-                ELSE;
-                    text = 'Not authenticated';
-                END;
-            %]
-            Current methods: [% text %]
+        Current methods: 
+            [% SWITCH authentication_status %]
+                [% CASE "scans" %]
+                    Authenticated with scans
+                [% CASE "notarized" %]
+                    Authenticated with Notarized docs
+                [% CASE "under_review" %]
+                    Under Review
+                [% CASE "needs_action" %]
+                    Needs Action
+                [% CASE %]
+                    Not authenticated
+            [% END %] 
             <select name="client_authentication">
                 [% FOREACH authentication = authentication_options %]
                     [% IF  authentication.value == '' %]
