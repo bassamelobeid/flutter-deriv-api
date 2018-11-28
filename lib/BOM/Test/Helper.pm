@@ -28,7 +28,6 @@ use BOM::Test::Helper::Redis qw/is_within_threshold/;
 use BOM::User::Password;
 use BOM::User;
 use Net::EmptyPort qw/empty_port/;
-use Binary::WebSocketAPI::v3::Instance::Redis;
 
 use Mojo::Redis2::Server;
 use File::Temp qw/ tempdir /;
@@ -90,7 +89,7 @@ sub launch_redis {
 
     $ENV{BOM_TEST_WS_REDIS} = "$ws_redis_path";    ## no critic (RequireLocalizedPunctuationVars)
 
-    {
+    if (Binary::WebSocketAPI::v3::Instance::Redis->can('ws_redis_master')) {
         no strict 'refs';                          ## no critic (ProhibitProlongedStrictureOverride)
         my $orig    = Test::Builder->can('done_testing');
         my $builder = Test::More->builder;
