@@ -1758,12 +1758,12 @@ subtest 'get and set self_exclusion' => sub {
     };
 
     # Test for Maximum bets
-    $params->{args}->{max_open_bets} = 75;
+    $params->{args}->{max_open_bets} = 120;
 
     is_deeply(
         $c->tcall($method, $params)->{error},
         {
-            'message_to_client' => "Please enter a number between 1 and 60.",
+            'message_to_client' => "Please enter a number between 1 and 100.",
             'details'           => 'max_open_bets',
             'code'              => 'SetSelfExclusionError'
         });
