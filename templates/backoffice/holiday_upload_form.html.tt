@@ -5,7 +5,7 @@
         <tr>
             <td>What to upload: </td>
             <td><select name="calendar-type">
-                <option value='exchange_holiday'>Exchange Holiday</option>
+                <option value='holidays'>Exchange Holiday</option>
                 <option value='country_holiday'>Country Holiday</option>
             </select></td>
         </tr>
@@ -22,7 +22,7 @@
             <td>What to upload: </td>
             <td><select name="calendar-type">
                 <option value='holidays'>Exchange Holiday</option>
-                <option value='holidays'>Country Holiday</option>
+                <option value='country_holiday'>Country Holiday</option>
             </select></td>
         </tr>
         <tr><td>Symbol</td><td> : <INPUT type="text" name="symbol"></td><td>(e.g. USD GBP EUR NYSE TSE)</td></tr>

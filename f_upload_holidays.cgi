@@ -27,7 +27,8 @@ if ($cgi->param('upload_excel')) {
     my $fh       = File::Temp->new(SUFFIX => '.csv');
     my $filename = $fh->filename;
     copy($file, $filename);
-    $calendar_hash = Bloomberg::BloombergCalendar::parse_calendar($filename, $calendar_type);
+    my $type_to_parser = $calendar_type eq 'holidays' ? 'exchange_holiday' : $calendar_type;
+    $calendar_hash = Bloomberg::BloombergCalendar::parse_calendar($filename, $type_to_parser);
     # since partial_trading is handled separately in the function below, calendar_name is set to holidays
     $calendar_name = 'holidays';
     _save_early_closes_calendar($calendar_hash->{early_closes_data}) if defined $calendar_hash->{early_closes_data};
