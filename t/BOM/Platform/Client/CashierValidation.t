@@ -125,7 +125,8 @@ subtest 'Cashier validation common' => sub {
         document_path              => '/tmp/test.pdf',
         expiration_date            => '2008-03-03',
         authentication_method_code => 'ID_DOCUMENT',
-        status                     => 'uploaded'
+        status                     => 'uploaded',
+        checksum                   => 'CE114E4501D2F4E2DCEA3E17B546F339'
     });
     $cr_client->save;
 
