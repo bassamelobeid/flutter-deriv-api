@@ -550,6 +550,11 @@ rpc paymentagent_transfer => sub {
     $lc_limit_for_days = convert_currency($lc_limit_for_days, $lc_currency, $currency);
 
     my ($error, $response);
+
+    # Send email to CS whenever a new client has been deposited via payment agent
+    # This assumes no deposit has been made and the following deposit is a success
+    my $client_has_deposits = $client_to->has_deposits;
+
     try {
         $response = $client_fm->payment_account_transfer(
             toClient           => $client_to,
@@ -571,10 +576,6 @@ rpc paymentagent_transfer => sub {
         chomp;
         $error = "Paymentagent Transfer failed to $loginid_to [$_]";
     };
-
-    # Send email to CS whenever a new client has been deposited via payment agent
-    # This assumes no deposit has been made and the following deposit is a success
-    my $client_has_deposits = $client_to->has_deposits;
 
     if ($error) {
         if ($error =~ /\bBI102 /) {
