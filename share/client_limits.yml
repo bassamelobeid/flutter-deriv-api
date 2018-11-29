@@ -51,4 +51,4 @@ max_payout_open_positions:
     DAI: 50000
     UST: 50000
     USB: 50000
-max_open_bets_default: 60
+max_open_bets_default: 100
