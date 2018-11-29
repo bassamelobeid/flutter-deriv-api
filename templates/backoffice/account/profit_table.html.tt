@@ -1,166 +1,199 @@
 [%- MACRO display_performance_probability(probability) BLOCK -%]
-         <span class="probability">[% probability %]</span>
+<span class="probability">[% probability %]</span>
 [%- END -%]
 
-[%- MACRO sale_price(contract) IF contract.is_sold -%][% contract.sell_price %][% ELSIF contract.info.indicative_price %][% contract.info.indicative_price %][% ELSE %]0[% END %]
+[%- MACRO get_sell_price(contract, is_sold) IF is_sold -%]
+    [% contract.sell_price %]
+[% ELSIF contract.info.indicative_price %]
+    [% contract.info.indicative_price %]
+[% ELSE %]
+    0
+[% END %]
 
 [%- MACRO display_amount(amount) BLOCK -%]
-        [% IF amount >= 0 %]
-                <span class="profit">[% formatnumber('price', currency, amount) | none %]</span>
-        [% ELSE %]
-                <span class="loss">[% formatnumber('price', currency, amount) | none%]</span>
-        [% END %]
+    [% IF amount >= 0 %]
+    <span class="profit">[% formatnumber('price', currency, amount) | none %]</span>
+    [% ELSE %]
+    <span class="loss">[% formatnumber('price', currency, amount) | none %]</span>
+    [% END %]
 [%- END -%]
 
-
-[%- MACRO display_contract(contract) BLOCK -%]
-    [% IF contract.is_sold %]
+[%- MACRO display_contract(contract, is_sold) BLOCK -%]
+    [% IF is_sold %]
         [% ident = contract.txn_id %]
     [% ELSE %]
         [% ident = contract.buy_transaction_id %]
     [% END %]
-    <div class="grd-parent grd-grid-12 table-body table-body-lines grd-row-padding">
-        <div class="grd-grid-1">[% contract.purchase_date.datetime %]</div>
-        <div class="grd-grid-1">
-            <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, shortcode => contract.short_code, purchase_time => contract.purchase_date.datetime, loginid => loginid}) | none %]">[% ident %]</a>
-            <br/><label class="investigate"><input type="checkbox" name="investigate_list" value='[% ident %]:::[% contract.info.description FILTER truncate(70) %]:::[% contract.purchase_date.datetime %]'>QQ</label>
-        </div>
-        <div class="grd-grid-1">
-            [% display_amount(contract.payout_price) | none %]
-        </div>
-        <div class="grd-grid-3">[% contract.info.description %]</div>
-        <div class="grd-grid-1 right-aligned">
-            [% display_amount(contract.buy_price) | none %]
-        </div>
-        <div class="grd-grid-2">[% contract.sale_date.datetime %]</div>
-        <div class="grd-grid-1 right-aligned">
-            [% display_amount(sale_price(contract)) | none %]
-        </div>
-        <div class="grd-grid-1 right-aligned">
-            [% display_amount(sale_price(contract) - contract.buy_price) | none %]
-        </div>
-        <div class="grd-grid-1 right-aligned">
-            [% display_amount(contract.cumulative_pl) | none %]
+<div class="grd-parent grd-grid-12 table-body table-body-lines grd-row-padding">
+    <div class="grd-grid-1">[% contract.purchase_time %]</div>
+    <div class="grd-grid-1">
+        <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', { currency => currency, shortcode => contract.short_code, purchase_time => contract.purchase_time, loginid => loginid}) | none %]">[% ident %]</a>
+        <div>
+            <label for="investigate_list" class="investigate">
+                <input type="checkbox" name="investigate_list"
+                       value='[% ident %]:::[% contract.info.description FILTER truncate(70) %]:::[% contract.purchase_time %]'>QQ
+            </label>
         </div>
     </div>
+    <div class="grd-grid-1">
+        [% display_amount(contract.payout_price) | none %]
+    </div>
+    <div class="grd-grid-3">[% contract.info.description %]</div>
+    <div class="grd-grid-1">
+        [% display_amount(contract.buy_price) | none %]
+    </div>
+    [% IF is_sold %]
+        <div class="grd-grid-2">[% contract.sell_time %]</div>
+    [% END %]
+    <div class="grd-grid-1">
+        [% display_amount(get_sell_price(contract, is_sold)) | none %]
+    </div>
+    <div class="grd-grid-1">
+        [% display_amount(get_sell_price(contract, is_sold) - contract.buy_price) | none %]
+    </div>
+    <div class="[% IF is_sold %] grd-grid-1 [% ELSE %] grd-grid-3 [% END %]">
+        [% display_amount(contract.cumulative_pl) | none %]
+    </div>
+</div>
 [%- END -%]
 
-[%- MACRO startdate IF sold_contracts.size == 0 -%][% posted_startdate %][% ELSE %][% sold_contracts.last.purchase_time %][% END %]
-[%- MACRO enddate IF sold_contracts.size == 0 -%][% posted_enddate %][% ELSE %][% sold_contracts.first.purchase_time %][% END %]
+[%- MACRO display_pagination_link(page_number, submit_value) BLOCK -%]
+<form action="[% request.url_for('backoffice/f_profit_table.cgi') | none %]" method="GET">
+    <input type="hidden" name="first_purchase_time" value="[% first_purchase_time %]">
+    <input type="hidden" name="last_purchase_time" value="[% last_purchase_time %]">
+    <input type="hidden" name="loginID" value="[% loginid %]">
+    <input type="hidden" name="broker" value="[% request.broker_code %]">
+    <input type="hidden" name="l" value="EN">
+    <input type="hidden" name="page" value="[% page_number %]">
+    <input type="submit" value="[% submit_value %]">
+</form>
+[%- END -%]
 
-[%- MACRO navigator BLOCK -%]
-<div id="statement-table" class="grd-parent grd-grid-12 grd-row-padding">
+[% IF !all_in_one_page %]
+    [%- MACRO pagination BLOCK -%]
+<div class="grd-parent grd-grid-12 grd-row-padding">
     <div class="grd-grid-6 left-aligned">
-        <FORM ACTION="[% request.url_for('backoffice/f_profit_table.cgi') | none %]" METHOD="GET">
-                <INPUT name=enddate type=hidden value="[% startdate %]" />
-                <INPUT type=hidden name="loginID" value="[% loginid %]" />
-                <INPUT type=hidden name="broker" value="[% request.broker_code %]" />
-                <INPUT type=hidden name="l" value="EN" />
-                <INPUT type="submit" value="Older" [% IF startdate.length == 0 %]disabled=disabled[% END %]/>
-        </FORM>
+        [% IF has_older_page == 1 %]
+            [% display_pagination_link((page + 1), 'Older') | none %]
+        [% END %]
     </div>
     <div class="grd-grid-6 right-aligned">
-        <FORM ACTION="[% request.url_for('backoffice/f_profit_table.cgi') | none %]" METHOD="GET">
-                <INPUT name=startdate type=hidden value="[% enddate %]" />
-                <INPUT type=hidden name="loginID" value="[% loginid %]" />
-                <INPUT type=hidden name="broker" value="[% request.broker_code %]" />
-                <INPUT type=hidden name="l" value="EN" />
-                <INPUT type="submit" value="Newer" [% IF enddate.length == 0 %]disabled=disabled[% END %]/>
-        </FORM>
+        [% IF has_newer_page == 1 %]
+            [% display_pagination_link((page - 1), 'Newer') | none %]
+        [% END %]
     </div>
 </div>
 [%- END -%]
+[% END %]
 
-<style type="text/css">
-#limit_entry { background-color: #ccf; }
-#limit_entry th { font-size: small; }
-#limit_entry td { text-align: center; padding: 5px;}
-#limit_entry caption { caption-side: bottom; font-size: small;  }
-.investigate { background-color: #ffa; font-weight: bold; }
-</style>
-<FORM ACTION="[% request.url_for('backoffice/f_profit_table.cgi') | none %]" METHOD="POST">
-        <span style="color:red;"><b>Show All Transaction</b>, may fail for clients with huge number of transaction, so use this feature only when required.</span></br>
-        Sold Contracts Between <INPUT name=startdate type=text size=20 value="[% startdate %]" />
-        and <INPUT name=enddate type=text size=20 value="[% enddate %]" />
-        <INPUT type=hidden name="loginID" value="[% loginid %]" />
-        <INPUT type=hidden name="broker" value="[% request.broker_code %]" />
-        <INPUT type=hidden name="l" value="EN" />
-        <INPUT type=checkbox name="all_in_one_page">Show All Transactions</INPUT>
-        <INPUT type="submit" value="Update" />
-        <input type="submit" name="calc_performance_probability" value="Calculate Performance Probability" />
-</FORM>
+<div>
+    <b>[% full_name %]</b>, [% email %] from [% residence %]
+</div>
+<hr>
+<div class="grd-parent grd-grid-12 table-header grd-row-padding">
+    <b>Sold Contracts</b>
+</div>
+<form action="[% request.url_for('backoffice/f_profit_table.cgi') | none %]" method="POST">
+    <div class="errorfield">
+        <b>Show All Transactions</b>, may fail for clients with huge number of transaction, so use this feature only
+        when required.
+    </div>
+    Sold Contracts Between <input type=text name="first_purchase_time" title="First Purchase Date" size="20"
+                                  value="[% first_purchase_time %]"/>
+    and <input type="text" name="last_purchase_time" title="Last Purchase Date" size="20"
+               value="[% last_purchase_time %]">
+    <input type="hidden" name="page" value="1">
+    <input type="hidden" name="loginID" value="[% loginid %]">
+    <input type="hidden" name="broker" value="[% request.broker_code %]">
+    <input type="hidden" name="l" value="EN">
+    <input type="checkbox" name="all_in_one_page" title="Show All Transactions in one page" [% IF all_in_one_page %]
+           checked="checked" [% END %]>Show All Transactions
+    <input type="submit" value="Update">
+    <input type="submit" name="calc_performance_probability" value="Calculate Performance Probability">
+</form>
 
 [% IF performance_probability %]
-        <p>Performance Probability: [% display_performance_probability(performance_probability) | none %] percentile or [% inv_performance_probability %] </p>
-[% END %]
-
-<div id="statement-table" class="grd-parent grd-grid-12 table-header grd-row-padding">
-<p><b>[% full_name %]</b>, [% email %] from [% residence %]</p>
+<div class="grd-with-padding">
+    <b> Performance Probability: </b> [% display_performance_probability(performance_probability) | none %] percentile
+    or [% inv_performance_probability %]
 </div>
-[% navigator | none %]
-[% IF sold_contracts.size == 0 %]
-        <p>[% l('There are no contracts during this period') %]</p>
-[% ELSE %]
-<div id="statement-table" class="grd-parent grd-grid-12 table-header grd-row-padding">
-    [% cumulative_pl = 0;
-        FOREACH contract IN sold_contracts.reverse;
-            contract.info = contract_details(contract, currency);
-            cumulative_pl = cumulative_pl + sale_price(contract) - contract.buy_price;
-            contract.cumulative_pl = cumulative_pl;
-    END %]
-    <div class="grd-parent grd-grid-12 table-header grd-row-padding">
-        <div class="grd-grid-1">Purchase Date</div>
-        <div class="grd-grid-1">Id</div>
-        <div class="grd-grid-1">Payout</div>
-        <div class="grd-grid-3">Contract</div>
-        <div class="grd-grid-1">Purchase Price</div>
-        <div class="grd-grid-2">Sale Date</div>
-        <div class="grd-grid-1">Sale Price</div>
-        <div class="grd-grid-1 right-aligned">Profit/Loss</div>
-        <div class="grd-grid-1 right-aligned"></div>
-    </div>
-
-    <form action="[% request.url_for('backoffice/f_quant_query.cgi') | none %]" method="post">
-        [% FOREACH contract IN sold_contracts %]
-            [%
-                    display_contract(contract) | none
-            %]
-        [% END %]
-        <input type="hidden" name="loginID" value="[% loginid %]"/>
-        <input type=hidden name="broker" value="[% request.broker_code %]" />
-        <input type="submit" name="QQ" value="Quant Query" class="investigate">
-    </form>
-    [% navigator | none %]
 [% END %]
 
-[% cumulative_pl = 0;
-FOREACH contract IN open_contracts.reverse;
-    contract.info = contract_details(contract, currency);
-    cumulative_pl = cumulative_pl + sale_price(contract) - contract.buy_price;
-    contract.cumulative_pl = cumulative_pl;
-END %]
-    <div class="grd-parent grd-grid-12 table-header grd-row-padding">
-        <b>Open Contracts</b>
-    </div>
-    <div class="grd-parent grd-grid-12 table-header grd-row-padding">
-        <div class="grd-grid-1">Purchase Date</div>
-        <div class="grd-grid-1">Id</div>
-        <div class="grd-grid-1">Payout</div>
-        <div class="grd-grid-3">Contract</div>
-        <div class="grd-grid-1">Purchase Price</div>
-        <div class="grd-grid-2">Sale Date</div>
-        <div class="grd-grid-1">Sale Price</div>
-        <div class="grd-grid-1 right-aligned">Profit/Loss</div>
-        <div class="grd-grid-1 right-aligned"></div>
-    </div>
-    <form action="[% request.url_for('backoffice/f_quant_query.cgi') | none %]" method="post">
-        [% FOREACH contract IN open_contracts %]
-            [%
-                display_contract(contract) | none;
-            %]
-        [% END %]
-        <input type="hidden" name="loginID" value="[% loginid %]"/>
-        <input type=hidden name="broker" value="[% request.broker_code %]" />
-        <input type="submit" name="QQ" value="Quant Query" class="investigate">
-    </form>
-<div>
+[% IF error %]
+<div class="errorfield">[% error %]</div>
+[% ELSIF sold_contracts.size == 0 %]
+<div class="center-aligned grd-with-padding">[% l('There is no sold contract during this period!') %]</div>
+[% ELSE %]
+    [% cumulative_pl = 0;
+    FOREACH contract IN sold_contracts.reverse;
+        contract.info = contract_details(contract, currency);
+        cumulative_pl = cumulative_pl + get_sell_price(contract, 1) - contract.buy_price;
+        contract.cumulative_pl = cumulative_pl;
+    END %]
+    [% pagination | none %]
+<div class="grd-parent grd-grid-12 table-header">
+    <div class="grd-grid-1">Purchase Date</div>
+    <div class="grd-grid-1">Id</div>
+    <div class="grd-grid-1">Payout</div>
+    <div class="grd-grid-3">Contract</div>
+    <div class="grd-grid-1">Purchase Price</div>
+    <div class="grd-grid-2">Sale Date</div>
+    <div class="grd-grid-1">Sale Price</div>
+    <div class="grd-grid-1">Profit/Loss</div>
+    <div class="grd-grid-1">Cumulative Profit/Loss</div>
+</div>
+<form action="[% request.url_for('backoffice/f_quant_query.cgi') | none %]" method="post">
+    [% FOREACH contract IN sold_contracts %]
+        [%
+        display_contract(contract, 1) | none
+        %]
+    [% END %]
+    <input type="hidden" name="loginID" value="[% loginid %]"/>
+    <input type=hidden name="broker" value="[% request.broker_code %]"/>
+    <input type="submit" name="QQ" value="Quant Query" class="investigate">
+</form>
+    [% pagination | none %]
+[% END %]
+
+<hr>
+
+<div class="grd-parent grd-grid-12 table-header grd-row-padding">
+    <b>Open Contracts</b>
+</div>
+[% IF open_contracts.size == 0 %]
+<div class="center-aligned grd-with-padding">[% l('There is no open contract for the client!') %]</div>
+[% ELSE %]
+    [%
+    cumulative_pl = 0;
+    FOREACH contract IN open_contracts.reverse;
+        contract.info = contract_details(contract, currency);
+        cumulative_pl = cumulative_pl + get_sell_price(contract, 0) - contract.buy_price;
+        contract.cumulative_pl = cumulative_pl;
+    END
+    %]
+<div class="grd-parent grd-grid-12 table-header">
+    <div class="grd-grid-1">Purchase Date</div>
+    <div class="grd-grid-1">Id</div>
+    <div class="grd-grid-1">Payout</div>
+    <div class="grd-grid-3">Contract</div>
+    <div class="grd-grid-1">Purchase Price</div>
+    <div class="grd-grid-1">Sale Price</div>
+    <div class="grd-grid-1">Profit/Loss</div>
+    <div class="grd-grid-3">Cumulative Profit/Loss</div>
+</div>
+<form action="[% request.url_for('backoffice/f_quant_query.cgi') | none %]" method="post">
+    [% FOREACH contract IN open_contracts %]
+        [% display_contract(contract, 0) | none; %]
+    [% END %]
+    <input type="hidden" name="loginID" value="[% loginid %]"/>
+    <input type=hidden name="broker" value="[% request.broker_code %]"/>
+    <input type="submit" name="QQ" value="Quant Query" class="investigate">
+</form>
+[% END %]
+
+<style type="text/css">
+    .investigate {
+        background-color: #ffa;
+        font-weight: bold;
+    }
+</style>

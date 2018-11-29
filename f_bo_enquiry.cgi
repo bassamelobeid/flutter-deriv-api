@@ -41,8 +41,8 @@ if ($broker ne 'FOG') {
     print
         "<span style=\"color:red;\"><b>Show All Transaction</b>, may fail for clients with huge number of transaction, so use this feature only when required.</span><br/>";
     print "Check Profit Table of LoginID : <input id='profit_check_loginID' name=loginID type=text size=10 value='$encoded_broker'>";
-    print "From : <input name=startdate type=text size=10 value='" . Date::Utility->today()->minus_time_interval('30d')->date . "'/>";
-    print "To : <input name=enddate type=text size=10 value='" . Date::Utility->today()->date . "'/>";
+    print "From : <input name='first_purchase_time' type='text' size='10' value='" . Date::Utility->today()->minus_time_interval('30d')->date . "'/>";
+    print "To : <input name='last_purchase_time' type='text' size='10' value='" . Date::Utility->today()->date . "'/>";
     print "<INPUT type=hidden name=\"broker\" value=\"$encoded_broker\">";
     print "<INPUT type=hidden name=\"l\" value=\"EN\">";
     print "<INPUT type=checkbox name=\"all_in_one_page\">Show All Transactions</INPUT>";
