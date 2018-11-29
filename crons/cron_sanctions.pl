@@ -1,62 +1,67 @@
 #!/etc/rmg/bin/perl
+
 use strict;
 use warnings;
+binmode STDOUT, ':encoding(UTF-8)';
 
 use Date::Utility;
 use Data::Validate::Sanctions;
 use Path::Tiny;
-use Parallel::ForkManager;
+use Getopt::Long;
+use Text::CSV;
 
 use Brands;
-use BOM::User::Client;
 use BOM::Database::ClientDB;
 use BOM::Config;
 use BOM::Platform::Email qw(send_email);
 
+use Log::Any qw($log);
+use Log::Any::Adapter;
+
 =head2
 
- This scripts:
+ This script:
  - tries to update sanctions cached file
- - runs check for all clients agains sanctioned list, but only if list has changed since last run
+ - runs check for all clients against sanctioned list, but only if list has changed since last run
 
 =cut
 
-my $file_flag    = '/tmp/last_cron_sanctions_check_run';
-my $reports_path = shift or die "Provide path for storing files as an argument";
-my @brokers      = qw/CR MF MLT MX/;
-my $verbose      = 0;
-my $childs       = 2;
+GetOptions(
+    'v|verbose' => \(my $verbose = 0),
+    'f|force'   => \(my $force   = 0),
+) or die "Invalid argument\n";
 
-my $brand = Brands->new(name => 'binary');
+Log::Any::Adapter->import(qw(Stdout), log_level => $verbose ? 'info' : 'warning');
+
+my $reports_path = shift or die "Provide path for storing files as an argument";
+my @brokers = qw/CR MF MLT MX/;
+
 my $sanctions = Data::Validate::Sanctions->new(sanction_file => BOM::Config::sanction_file);
 
-my $last_run = (stat $file_flag)[9] // 0;
+my $file_flag = path('/tmp/last_cron_sanctions_check_run');
+my $last_run = $file_flag->exists ? $file_flag->stat->mtime : 0;
 $sanctions->update_data();
-{ open my $fh, '>', $file_flag; close $fh };
-exit if $last_run > $sanctions->last_updated();
+$file_flag->spew("Created by $0 PID $$");
+if (($last_run > $sanctions->last_updated()) && !$force) {
+    $log->infof('Exiting because sanctions appear up to date (file=%s)', $file_flag);
+    exit 0;
+}
+
+my %listdate;
 
 do_report();
 
 sub do_report {
-    my $pm = Parallel::ForkManager->new($childs);
-    my $r  = '';
-    $pm->run_on_finish(
-        sub {
-            my ($pid, $exit_code, $ident, $exit_signal, $core_dump, $data_structure_reference) = @_;
-            if (defined($data_structure_reference)) {    # children are not forced to send anything
-                $r .= $$data_structure_reference;
-            }
-        });
-    for (@brokers) {
-        $pm->start and next;
-        warn time, " $_ starting" if $verbose;
-        my $result = get_matched_clients_info_by_broker($_);
-        warn time, " $_ finished" if $verbose;
-        $pm->finish(0, \$result);
-    }
-    $pm->wait_all_children;
 
-    print $r if $verbose;
+    my $r = '';
+    for my $broker (@brokers) {
+        $log->infof('Starting %s at %s', $broker, scalar localtime);
+        my $result = get_matched_clients_info_by_broker($broker);
+        $r .= $result // '';
+        $log->infof('Finished %s at %s', $broker, scalar localtime);
+    }
+
+    $log->info($r);
 
     my $headers =
         'Matched name,List Name,List Updated,Database,LoginID,First Name,Last Name,Email,Phone,Gender,Date Of Birth,Date Joined,Residence,Citizen,Matched Reason';
@@ -64,6 +69,10 @@ sub do_report {
     my $csv_file = path($reports_path . '/sanctions-run-' . Date::Utility->new()->date . '.csv');
     $csv_file->append_utf8($headers . "\n");
     $csv_file->append_utf8($r . "\n");
+
+    my $brand = Brands->new(name => 'binary');
+
+    $log->infof('Wrote CSV file %s', $csv_file);
 
     send_email({
         from       => $brand->emails('support'),
@@ -75,72 +84,57 @@ sub do_report {
     return;
 }
 
-sub make_client_csv_line {
-    my ($c, $list, $matched_name, $reason_matched) = @{+shift};
-    my @fields = (
-        $matched_name,
-        $list,
-        Date::Utility->new($sanctions->last_updated($list))->date,
-        (map { $c->$_ // '' } qw(broker loginid first_name last_name email phone gender date_of_birth date_joined residence citizen)),
-        $reason_matched,    #use only last status
-    );
-    return join(',', @fields);
-}
-
 sub get_matched_clients_info_by_broker {
+
     my $broker = shift;
-    my @matched;
+
     my $dbic = BOM::Database::ClientDB->new({
-            broker_code => $broker,
+            broker_code  => $broker,
+            db_operation => 'write',
         })->db->dbic;
-    my $clients = $dbic->run(
+
+    my $output = '';
+    my $csv    = Text::CSV->new({
+        eol        => "\n",
+        quote_char => undef
+    });
+
+    my $updates = $dbic->run(
         fixup => sub {
-            $_->selectcol_arrayref(
+            my $update_sanctions_check =
+                $_->prepare(q{UPDATE betonmarkets.sanctions_check SET result=?,tstmp=now(),type='C' WHERE client_loginid = ?});
+
+            my $sth = $_->prepare(
                 q{
-        SELECT
-            loginid
-        FROM
-            betonmarkets.client
-        WHERE
-            loginid ~ ('^' || ? || '\\d')
-        }, undef, $broker
+                   SELECT broker_code, loginid, first_name, last_name, email, phone, gender, date_of_birth, date_joined, residence, citizen
+                   FROM betonmarkets.client
+                   WHERE loginid ~ ('^' || ? || '\\d')
+                   ORDER BY loginid
+                 }
             );
-        });
-    #XXX: can we rely on rows? New rows are added on client's registration
-    # WHERE condition we need only for QA
-    $dbic->run(
-        ping => sub {
-            $_->do("UPDATE betonmarkets.sanctions_check SET result='0',type='C',tstmp=? WHERE client_loginid ~ ('^' || ? || '\\d')",
-                undef, Date::Utility->new->datetime, $broker);
-        });
-    foreach my $c (@$clients) {
-        my $client = BOM::User::Client->new({
-            loginid      => $c,
-            db_operation => 'replica'
-        });
-        my $result = $sanctions->get_sanctioned_info($client->first_name, $client->last_name, $client->date_of_birth);
-        push @matched, [$client, $result->{list}, $result->{name}, $result->{reason}] if $result->{matched};
-    }
-    return '' unless @matched;
+            $sth->execute($broker);
+            my $client;
+            while ($client = $sth->fetchrow_hashref()) {
 
-    my $values = join ",", ('(?,?)') x scalar @matched;
-    $dbic->run(
-        ping => sub {
-            $_->do(
-                qq{
-            WITH input(result, client_loginid)
-                AS(VALUES $values)
-            UPDATE betonmarkets.sanctions_check s
-            SET result=input.result
-            FROM input
-            WHERE s.client_loginid=input.client_loginid
-            }, undef, map { $_->[1] => $_->[0]->loginid } @matched
-            );
-        }) or warn $DBI::errstr;
+                my $sinfo = $sanctions->get_sanctioned_info($client->{first_name}, $client->{last_name}, $client->{date_of_birth});
+                $update_sanctions_check->execute($sinfo->{matched} ? $sinfo->{list} : '0', $client->{loginid});
 
-    my $result = '';
-    $result .= make_client_csv_line($_) . "\n" for sort { $a->[0]->loginid cmp $b->[0]->loginid } @matched;
+                if ($sinfo->{matched}) {
+                    my @fields = (
+                        $sinfo->{name},
+                        $sinfo->{list},
+                        $listdate{$sinfo->{list}} //= Date::Utility->new($sanctions->last_updated($sinfo->{list}))->date,
+                        (
+                            map { $client->{$_} // '' }
+                                qw(broker_code loginid first_name last_name email phone gender date_of_birth date_joined residence citizen)
+                        ),
+                        $sinfo->{reason},
+                    );
+                    $csv->combine(@fields);
+                    $output .= $csv->string();
+                }
+            }
+        });
 
-    return $result;
+    return $output;
 }
-
