@@ -267,37 +267,37 @@ subtest 'lookback expiry conditions' => sub {
         ok $c->is_expired, 'contract is expired';
         is $c->exit_tick->quote, 104, 'exit tick present';
         ok $c->is_valid_exit_tick, 'exit tick is valid';
-        is $c->value, $test_case->[1], 'value is ' . $test_case->[1];
-        cmp_ok $c->bid_price , '==', $test_case->[1], 'bid price ' . $test_case->[1];
-        ok $c->is_valid_to_sell, 'valid to sell';
+        is $c->value,              $test_case->[1], 'value is ' . $test_case->[1];
+        cmp_ok $c->bid_price,      '==', $test_case->[1], 'bid price ' . $test_case->[1];
+        ok $c->is_valid_to_sell,   'valid to sell';
     }
 };
 
 subtest 'do not floor ask price on bid' => sub {
     my $mocked = Test::MockModule->new('BOM::Product::Contract');
-    $mocked->mock('theo_price', sub { return 0.30});
-    $mocked->mock('commission_per_unit', sub {return 0.01});
+    $mocked->mock('theo_price',          sub { return 0.30 });
+    $mocked->mock('commission_per_unit', sub { return 0.01 });
     BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
 
-    my $now = Date::Utility->new;
+    my $now  = Date::Utility->new;
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                underlying => 'R_100',
-                quote      => 100,
-                epoch      => $now->epoch
-            });
+        underlying => 'R_100',
+        quote      => 100,
+        epoch      => $now->epoch
+    });
     my $c = produce_contract({
-            current_tick => $tick,
-            bet_type     => 'LBFLOATCALL',
-            underlying   => 'R_100',
-            date_start   => $now,
-            date_pricing => $now,
-            date_expiry  => $now->plus_time_interval('1m'),
-            currency     => 'USD',
-            multiplier   => 1,
-            amount_type  => 'multiplier',
-        });
+        current_tick => $tick,
+        bet_type     => 'LBFLOATCALL',
+        underlying   => 'R_100',
+        date_start   => $now,
+        date_pricing => $now,
+        date_expiry  => $now->plus_time_interval('1m'),
+        currency     => 'USD',
+        multiplier   => 1,
+        amount_type  => 'multiplier',
+    });
 
-    is $c->ask_price, 0.5, 'ask price is floored at 50 cents';
+    is $c->ask_price, 0.5,  'ask price is floored at 50 cents';
     is $c->bid_price, 0.29, 'bid price is the thro_price - commission per unit';
 };
 done_testing();

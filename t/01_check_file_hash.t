@@ -42,6 +42,26 @@ my %file_details = (
         filename => module_path('BOM::Product::Contract::Digitover'),
         hash     => 'f55b758fc8e17ac4bdb69471f0e717fb2bee4e54'
     },
+    lookbacks => {
+        filename => module_path('BOM::Product::Contract::Lbfloatcall'),
+        hash     => 'cfabe639268b3ded0da8c50e3827ef96f7e93e8f'
+    },
+    highlowtick => {
+        filename => module_path('BOM::Product::Contract::Tickhigh'),
+        hash     => 'ab0ed946bc7c35560238201b5f63ef0a889a3402'
+    },
+    callputspread => {
+        filename => module_path('BOM::Product::Contract::Callspread'),
+        hash     => 'f8345bf4f010dbd0f76e686f8395b7f8acfb972b'
+    },
+    resetcallput => {
+        filename => module_path('BOM::Product::Contract::Resetcall'),
+        hash     => 'e719f87985ee4d75bbdc33ee5f587ef9df26783c'
+    },
+    calleputte => {
+        filename => module_path('BOM::Product::Contract::Calle'),
+        hash     => 'b21689e81e8727649167e67c2ce3e06c111d3abf'
+    },
 );
 
 foreach my $entry (keys %file_details) {
@@ -50,7 +70,8 @@ foreach my $entry (keys %file_details) {
 
     is(Digest::SHA1->new->addfile($fh)->hexdigest, $file_details{$entry}{hash}, 'File hash is unchanged')
         or diag
-        'Games must be recertified when this happens as part of UKGC compliance. Please contact compliance to discuss this before proceeding any further.';
+        'Games must be recertified when this happens as part of UKGC compliance. Please contact compliance to discuss this before proceeding any further. Failed for: '
+        . $entry;
 
     close $fh;
 }

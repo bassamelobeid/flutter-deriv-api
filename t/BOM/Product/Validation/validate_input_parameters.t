@@ -266,7 +266,7 @@ subtest 'invalid payout currency' => sub {
 };
 
 subtest 'stable crypto as payout currency' => sub {
-    my $now = Date::Utility->new($fake_tick->epoch);
+    my $now        = Date::Utility->new($fake_tick->epoch);
     my $bet_params = {
         date_start   => $now,
         date_pricing => $now,
@@ -280,7 +280,7 @@ subtest 'stable crypto as payout currency' => sub {
     };
     my $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid multi-day ATM contract with relative barrier.';
-    lives_ok {$c->ask_price} 'ask price without exception';
+    lives_ok { $c->ask_price } 'ask price without exception';
 };
 
 done_testing();

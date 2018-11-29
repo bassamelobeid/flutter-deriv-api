@@ -360,7 +360,16 @@ subtest 'invalid contract stake evokes sympathy' => sub {
     $mocked_contract->mock('pricing_vol', sub { 0.1 });
     my $mocked_engine = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
     $mocked_engine->mock('ticks_for_trend', sub { [] });
-    $mocked_engine->mock('end_hour_markup', sub { Math::Util::CalculatedValue::Validatable->new({ name        => 'end_hour_markup',description => 'Intraday end hour markup.',set_by      => __PACKAGE__,base_amount => 0,}) });
+    $mocked_engine->mock(
+        'end_hour_markup',
+        sub {
+            Math::Util::CalculatedValue::Validatable->new({
+                name        => 'end_hour_markup',
+                description => 'Intraday end hour markup.',
+                set_by      => __PACKAGE__,
+                base_amount => 0,
+            });
+        });
     $bet = produce_contract($bet_params);
     is $bet->theo_probability->amount, 0, 'Theo probability can be zero if there are not ticks for forex intraday';
     $mocked_engine->unmock_all;
