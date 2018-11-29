@@ -21,7 +21,7 @@ is($client->documents_expired(), 0, $test);
 $test = q{After call to start_document_upload, client has a single document, with an 'uploading' status};
 my $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?)';
 my $sth_doc_new = $dbh->prepare($SQL);
-$sth_doc_new->execute($client->loginid, 'passport', 'PNG', 'yesterday', 55555, undef, 'none', 'front');
+$sth_doc_new->execute($client->loginid, 'passport', 'PNG', 'yesterday', 55555, '75bada1e034d13b417083507db47ee4a', 'none', 'front');
 my $id1 = $sth_doc_new->fetch()->[0];
 $SQL = 'SELECT id,status FROM betonmarkets.client_authentication_document WHERE client_loginid = ?';
 my $sth_doc_info = $dbh->prepare($SQL);
@@ -81,8 +81,16 @@ is($client->documents_expired(), 1, $test);
 
 $test = q{BOM::User::Client->documents_expired returns 0 if all documents have no expiration date};
 ## Create a second document
-$sth_doc_new->execute($client->loginid, 'passport', 'PNG', undef, 66666, undef, 'none', 'front');
+$sth_doc_new->execute($client->loginid, 'passport', 'PNG', undef, 66666, '204a5098dac0dc176c88e4ab5312dbd5', 'none', 'front');
 my $id2 = $sth_doc_new->fetch()->[0];
+
+$SQL = 'SELECT COUNT(*) from betonmarkets.client_authentication_document WHERE client_loginid = ?';
+my $doc_nums = $dbh->prepare($SQL);
+$doc_nums->execute($client->loginid);
+my $total_docs = $doc_nums->fetchrow_array();
+
+is($total_docs, 2, 'Two documents uploaded');
+
 $sth_doc_finish->execute($id2);
 $SQL = 'UPDATE betonmarkets.client_authentication_document SET expiration_date = null WHERE client_loginid = ?';
 $dbh->do($SQL, undef, $client->loginid);
