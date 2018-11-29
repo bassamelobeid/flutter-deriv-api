@@ -200,7 +200,7 @@ ok exists $call_params->{token};
 my $res = $t->await::get_limits({get_limits => 1});
 ok($res->{get_limits});
 is $res->{msg_type}, 'get_limits';
-is $res->{get_limits}->{open_positions}, 60;
+is $res->{get_limits}->{open_positions}, 100;
 test_schema('get_limits', $res);
 
 my $args = {

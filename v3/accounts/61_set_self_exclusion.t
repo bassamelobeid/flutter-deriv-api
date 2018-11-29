@@ -54,7 +54,7 @@ is_deeply $res->{get_self_exclusion}, {}, 'all are blank';
 $res = $t->await::set_self_exclusion({
     set_self_exclusion => 1,
     max_balance        => 10000,
-    max_open_bets      => 100,
+    max_open_bets      => 120,      # limit is 100 so this should be over
     max_turnover       => undef,    # null should be OK to pass
     max_7day_losses    => 0,        # 0 is ok to pass but not saved
 });

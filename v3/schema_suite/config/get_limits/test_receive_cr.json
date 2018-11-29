@@ -103,7 +103,7 @@
                 },
                 "open_positions": {
                   "type": "integer",
-                  "pattern": "^60$",
+                  "pattern": "^100$",
                   "required": "1"
                 },
                 "payout": {
