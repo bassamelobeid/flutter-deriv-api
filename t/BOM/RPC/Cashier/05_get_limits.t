@@ -164,7 +164,8 @@ subtest 'CR - USD' => sub {
             document_format            => "PDF",
             document_path              => '/tmp/test.pdf',
             expiration_date            => '2008-10-10',
-            authentication_method_code => 'ID_DOCUMENT'
+            authentication_method_code => 'ID_DOCUMENT',
+            checksum                   => 'CE114E4501D2F4E2DCEA3E17B546F339'
         });
         $client->save;
         ok $c->call_ok($method, $params)->has_no_error->result->{account_balance}, "Got limits for client with expired docs";
