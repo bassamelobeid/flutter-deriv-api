@@ -83,7 +83,8 @@ subtest 'Initialization' => sub {
         }
 
         # Insert frxUSDJPY data ticks
-        BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/14-Mar-12.dump');
+        BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('feed.tick_2012_3', 'frxUSDJPY', '14-Mar-12');
+
     }
     'Setup ticks';
 };
