@@ -13,6 +13,7 @@ use Email::Stuffer;
 use Date::Utility;
 use List::Util qw/all/;
 use Locale::Country::Extra;
+
 use Format::Util::Numbers qw(roundcommon);
 use BOM::Platform::Context qw (request);
 use Brands;
@@ -757,11 +758,20 @@ Returns 1 upon success and 0 upon failure
 
 sub send_new_client_email {
 
-    my ($self, $ip, $country) = @_;
+    my ($self, $ip, $ip_country) = @_;
 
     my $client_name    = $self->full_name;
     my $client_loginid = $self->loginid;
-    my @address        = map { $self->$_ } qw(address_1 address_2 city state postcode);
+    my $user           = $self->user;
+    my $recent_login_env;
+    # login_history is sorted in descending order so selecting [0] means to select the latest login
+    $recent_login_env = $user->login_history(limit => 1)->[0]->{'environment'} if $user;
+
+    if ($recent_login_env) {
+        ($ip, $ip_country) = $recent_login_env =~ /IP=([0-9a-z\.:]+) IP_COUNTRY=([A-Z]{1,3})/;
+    }
+
+    my @address = map { $self->$_ } qw(address_1 address_2 city state postcode);
 
     my $notemsg = <<EOF;
 $client_loginid - Name and Address
@@ -770,7 +780,7 @@ $client_loginid - Name and Address
 		 $client_name 
 		@{[ join "\n\t\t" => @address, Locale::Country::code2country($self->residence) ]}
 
-IP was @{[ $ip // 'unknown' ]} (country @{[ $country // 'unknown' ]})
+IP was @{[ $ip // 'unknown' ]} (country @{[ $ip_country // 'unknown' ]})
 EOF
 
     return $self->add_note("New Sign-Up Client [$client_loginid] - Name And Address Details", "$notemsg\n");
