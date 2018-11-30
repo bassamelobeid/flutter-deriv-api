@@ -54,7 +54,6 @@ subtest "CR accounts" => sub {
     );
 
     ok(@msgs, "New sign up email received");
-    $mailbox->clear;
 
     ok !$v->client->status->cashier_locked, "CR client not cashier locked following run_authentication";
     ok !$v->client->status->unwelcome,      "CR client not unwelcome following run_authentication";
@@ -64,6 +63,8 @@ subtest 'MLT accounts' => sub {
     subtest 'Not age verified prior to run_authentication' => sub {
         my $c = create_client('MLT');
         $c->status->clear_age_verification;
+
+        $mailbox->clear;
 
         my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
         ok $v->client->is_first_deposit_pending, 'First deposit tracking for MLT account';
