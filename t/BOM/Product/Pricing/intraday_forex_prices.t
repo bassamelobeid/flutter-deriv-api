@@ -27,7 +27,10 @@ BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
     '{"yyy": {"market": "forex", "barrier_category": "euro_atm", "commission": "0.05", "name": "test commission", "updated_on": "xxx date", "updated_by": "xxyy"}}'
 );
 BOM::Config::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom-test/feed/combined');
-BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
+BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('feed.ohlc_hourly',        'frxUSDJPY', '8-Nov-12');
+BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('feed.ohlc_minutely_2012', 'frxUSDJPY', '8-Nov-12');
+BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('feed.tick_2012_11',       'frxUSDJPY', '8-Nov-12');
+
 my $volsurfaces = LoadFile('/home/git/regentmarkets/bom-test/data/20121108_volsurfaces.yml');
 my $news        = LoadFile('/home/git/regentmarkets/bom-test/data/20121108_news.yml');
 my $holidays    = LoadFile('/home/git/regentmarkets/bom-test/data/20121108_holidays.yml');

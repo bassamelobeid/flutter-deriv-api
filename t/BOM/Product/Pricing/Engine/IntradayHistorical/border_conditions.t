@@ -16,7 +16,10 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Config::Runtime;
 
 BOM::Config::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom-test/feed/combined');
-BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
+
+BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('feed.ohlc_hourly',        'frxUSDJPY', '8-Nov-12');
+BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('feed.ohlc_minutely_2012', 'frxUSDJPY', '8-Nov-12');
+BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('feed.tick_2012_11',       'frxUSDJPY', '8-Nov-12');
 
 my $test_date = Date::Utility->new('8-Nov-12');
 # If this moves, the test might be otherwise wonky.
