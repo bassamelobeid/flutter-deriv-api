@@ -1,5 +1,4 @@
 package BOM::Test::Data::Utility::FeedTestDatabase;
-
 use strict;
 use warnings;
 
@@ -9,6 +8,7 @@ use MooseX::Singleton;
 use Postgres::FeedDB;
 use Postgres::FeedDB::Spot::Tick;
 use Postgres::FeedDB::Spot::OHLC;
+use File::Basename;
 use Try::Tiny;
 use YAML::XS qw(LoadFile);
 use Sereal::Encoder;
@@ -64,22 +64,17 @@ sub truncate_tables {
 }
 
 sub setup_ticks {
-    my $file       = shift;
-    my $feed_file  = '/home/git/regentmarkets/bom-test/feed/combined/' . $file;
+    my ($table, $currency_pair, $date) = @_;
+    my $file_name = "$date.$table.copy";
+    # get this file's path, not the path of script that is using this function
+    # this is to make the path below a relative path
+    my $feed_file  = dirname(__FILE__) . "/../../../../../feed/combined/$currency_pair/$file_name";
     my $db_postfix = $ENV{DB_POSTFIX} // '';
-    my $db         = 'feed' . $db_postfix;
-    my $command;
-    $command = "PGPASSWORD=mRX1E3Mi00oS8LG";
-    $command .= " /usr/lib/postgresql/9.1/bin/pg_restore -d $db";
-    $command .= " -Fc -a -p 5433";
-    $command .= " -U write";
-    $command .= " -h localhost ";
-    $command .= " $feed_file";
+    my $db         = "feed$db_postfix";
 
-    my $error = `$command 2>&1`;
-    return 1 if $? >> 8 == 0;
-    warn "setup ticks failed: $error";
-
+    my $command = qq{psql -p 5433 postgresql://write:mRX1E3Mi00oS8LG\@localhost/$db -c "\\COPY $table FROM '$feed_file'"};
+    return 1 if system($command) == 0;
+    warn "setup ticks failed: $?\n";
     return;
 }
 
