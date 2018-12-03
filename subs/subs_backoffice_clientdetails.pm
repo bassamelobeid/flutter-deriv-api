@@ -176,10 +176,8 @@ sub print_client_details {
     }
 
     # COMMUNICATION ADDRESSES
-    my $client_phone_country = $countries_instance->code_from_phone($client->phone);
-    if (not $client_phone_country) {
-        $client_phone_country = 'Unknown';
-    }
+    my $client_phone_country = join(", ", $countries_instance->codes_from_phone($client->phone)->@*);
+    $client_phone_country = 'Unknown' unless ($client_phone_country);
 
     my @language_options = @{BOM::Config::Runtime->instance->app_config->cgi->allowed_languages};
 

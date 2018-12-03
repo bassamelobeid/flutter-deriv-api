@@ -100,7 +100,7 @@ table#client_edit td{
     </tr>
     <tr>
         <td class="label">Date of Birth</td>
-        <td>: 
+        <td>:
             <select name="dob_day">[% dob_day_options | none %]</select>
             <select name="dob_month">[% dob_month_options | none %]</select>
             <select name="dob_year">[% dob_year_options | none %]</select>
@@ -108,7 +108,7 @@ table#client_edit td{
     </tr>
     <tr>
         <td class="label">Citizen</td>
-        <td>: 
+        <td>:
             <select name="citizen">
                 [% IF client.citizen == "" %]
                     <option value="" selected="selected">Select Citizen</option>
@@ -255,7 +255,7 @@ table#client_edit td{
 	   authentication_status = client.authentication_status;
         %]
         <td id="verification">:
-        Current methods: 
+        Current methods:
             [% SWITCH authentication_status %]
                 [% CASE "scans" %]
                     Authenticated with scans
@@ -267,7 +267,7 @@ table#client_edit td{
                     Needs Action
                 [% CASE %]
                     Not authenticated
-            [% END %] 
+            [% END %]
             <select name="client_authentication">
                 [% FOREACH authentication = authentication_options %]
                     [% IF  authentication.value == '' %]
@@ -399,7 +399,7 @@ IF client_for_prove
     </tr>
     <tr>
         <td class="label">Tel</td>
-        <td>: <input type="text" name="phone" value="[% client.phone %]" size="20" /> Note: this number's intl. code is: <b>[% client_phone_country %]</b></td>
+        <td>: <input type="text" name="phone" value="[% client.phone %]" size="20" /> Note: this number's intl. code can be: <b>[% client_phone_country %]</b></td>
     </tr>
     <tr>
         <td class="small_header" colspan="2">#Secrets</td>
