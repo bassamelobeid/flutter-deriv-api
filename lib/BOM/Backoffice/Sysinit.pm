@@ -41,8 +41,6 @@ my $permissions = {
     'f_accountingreports.cgi'     => ['Accounts'],
     'aggregate_balance.cgi'       => ['Accounts'],
 
-    'client_risk_report.cgi' => ['Compliance'],
-
     'promocode_edit.cgi'            => ['Marketing'],
     'f_promotional.cgi'             => ['Marketing'],
     'f_promotional_processing.cgi'  => ['Marketing'],
