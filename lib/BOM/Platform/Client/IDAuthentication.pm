@@ -196,16 +196,17 @@ EOM
                     message => [$message]});
             $successful_request = 0;
         }
-
-        if ($successful_request) {
-            # On successful requests, we clear this status so the cron job will not retry ProveID requests on this account
-            $client->status->clear_proveid_pending;
-
-            # Clear unwelcome status set from failing Experian request
-            my $unwelcome_status = $client->status->unwelcome;
-            $client->status->clear_unwelcome if ($unwelcome_status && $unwelcome_status->{reason} =~ /^FailedExperian/);
-        }
     };
+
+    if ($successful_request) {
+        # On successful requests, we clear this status so the cron job will not retry ProveID requests on this account
+        $client->status->clear_proveid_pending;
+
+        # Clear unwelcome status set from failing Experian request
+        my $unwelcome_status = $client->status->unwelcome;
+        $client->status->clear_unwelcome if ($unwelcome_status && $unwelcome_status->{reason} =~ /^FailedExperian/);
+    }
+
     return $result;
 }
 
