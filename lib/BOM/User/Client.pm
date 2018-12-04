@@ -319,13 +319,32 @@ sub is_financial_assessment_complete {
     return 1;
 }
 
+=head2 documents_expired
+
+documents_expired returns a boolean indicating if this client (or any related clients)
+have any POI documents (passport, proofid, driverslicense, vf_id, vf_face_id) which
+have expired, or the expiration is before a specific date.
+
+Takes one argument:
+
+=over 4
+
+=item * $date_limit
+
+If this argument is not specified, the sub which check for documents which have expired
+(i.e. have an expiration date yesterday or earlier).
+If this argument is specified, the sub will check for documents whose expiration
+date is earlier than the specified date.
+
+=cut
+
 sub documents_expired {
-    my $self = shift;
+    my ($self, $date_limit) = @_;
+    $date_limit //= Date::Utility->new();
 
-    my @query_params = ($self->loginid);
-    my $dbic_code    = sub {
-        my $query = $_->prepare('SELECT * FROM betonmarkets.get_expired_documents_loginids($1::TEXT)');
-
+    my @query_params = ($self->loginid, $date_limit->db_timestamp);
+    my $dbic_code = sub {
+        my $query = $_->prepare('SELECT * FROM betonmarkets.get_expired_documents_loginids($1::TEXT, $2::DATE)');
         $query->execute(@query_params);
         return $query->fetchrow_arrayref();
     };

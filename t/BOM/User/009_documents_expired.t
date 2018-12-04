@@ -7,6 +7,8 @@ use Data::Dumper;
 use Test::More;
 use Test::Deep;
 
+use Date::Utility;
+
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client qw( create_client );
 
@@ -107,5 +109,9 @@ $sth_doc_update->execute('tomorrow', $id1);
 $sth_doc_update->execute('tomorrow', $id2);
 $client->client_authentication_document(undef);
 is($client->documents_expired(), 0, $test);
+
+$test = q{BOM::User::Client->documents_expired returns 1 if documents within future date limit};
+my $test_date = Date::Utility->new()->plus_time_interval('2d');
+is($client->documents_expired($test_date), 1, $test);
 
 done_testing();

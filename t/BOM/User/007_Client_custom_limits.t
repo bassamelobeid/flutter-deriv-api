@@ -26,10 +26,10 @@ my $payout_limit = $client->get_limit({'for' => 'payout'});
 is($payout_limit, 50000, 'open positions payout limit = 50000');
 
 my $open_positions_limit = $client->get_limit({'for' => 'open_positions'});
-is($open_positions_limit, 60, 'open positions limit = 60 (constant)');
+is($open_positions_limit, 100, 'open positions limit = 100 (constant)');
 
 my $self_exclusion_open_positions_limit = $client->get_limit({'for' => 'open_positions'});
-is($self_exclusion_open_positions_limit, 60, 'self exclusion open positions limit not defined, yet. So, default value of 60 is used');
+is($self_exclusion_open_positions_limit, 100, 'self exclusion open positions limit not defined, yet. So, default value of 100 is used');
 
 #setting
 
