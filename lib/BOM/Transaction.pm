@@ -1209,6 +1209,28 @@ In case of an unexpected error, the exception is re-thrown unmodified.
                 BOM::Platform::Context::localize('No further trading is allowed on this contract type for the current trading session.'),
         );
     },
+    BI104 => sub {
+        my $msg = 'Transaction time is too old (check server time), ' . $_[2];
+
+        warn $msg;
+
+        Error::Base->cuss(
+            -type              => 'TransactionTimeTooOld',
+            -mesg              => $msg,
+            -message_to_client => BOM::Platform::Context::localize('Cannot create contract'),
+        );
+    },
+    BI105 => sub {
+        my $msg = 'Transaction time is too new (check server time), ' . $_[2];
+
+        warn $msg;
+
+        Error::Base->cuss(
+            -type              => 'TransactionTimeTooYoung',
+            -mesg              => $msg,
+            -message_to_client => BOM::Platform::Context::localize('Cannot create contract'),
+        );
+    },
     BI054 => Error::Base->cuss(
         -type              => 'SymbolMissingInBetMarketTable',
         -mesg              => 'Symbol missing in bet.market table',

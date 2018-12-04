@@ -38,7 +38,6 @@ $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to
 my $mock_transaction = Test::MockModule->new('BOM::Transaction');
 $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
-
 my $now       = Date::Utility->new;
 my $tick_r100 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch,
