@@ -50,7 +50,6 @@ my $params = {
     loginid              => $input->{client_id},
     date_from            => $from_date,
     date_to              => $to_date,
-    send_to_support_team => 1,
 };
 
 BOM::Platform::Event::Emitter::emit('email_statement', $params);
