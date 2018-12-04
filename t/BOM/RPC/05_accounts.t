@@ -912,6 +912,39 @@ subtest $method => sub {
     $test_client->status->clear_professional;
     $test_client->save;
 
+    $mocked_client->mock('documents_expired', sub { return 1 });
+    cmp_deeply(
+        $c->tcall($method, {token => $token1}),
+        {
+            status                        => superbagof(qw(document_expired)),
+            risk_classification           => 'low',
+            prompt_client_to_authenticate => '0',
+        },
+        'correct account status returned for document expired'
+    );
+
+    $mocked_client->mock(
+        'documents_expired',
+        sub {
+            my ($self, $date) = @_;
+            return 0 unless $date;
+            my $date_obj = Date::Utility->new($date);
+            return 1
+                if $date_obj->is_after(Date::Utility->today)
+                and $date_obj->is_before(Date::Utility->today->plus_time_interval('1mo')->plus_time_interval('1d'));
+        });
+    cmp_deeply(
+        $c->tcall($method, {token => $token1}),
+        {
+            status                        => superbagof(qw(document_expiring_soon)),
+            risk_classification           => 'low',
+            prompt_client_to_authenticate => '0',
+        },
+        'correct account status returned for document expiring in next month'
+    );
+
+    $mocked_client->unmock('documents_expired');
+
 };
 
 $method = 'change_password';

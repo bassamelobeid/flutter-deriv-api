@@ -588,6 +588,13 @@ rpc get_account_status => sub {
         unless is_section_complete(decode_fa($client->financial_assessment()), "trading_experience");
     push(@$status, 'financial_assessment_not_complete') unless $client->is_financial_assessment_complete();
 
+    # check if the user's documents are expired or expiring soon
+    if ($client->documents_expired()) {
+        push(@$status, 'document_expired');
+    } elsif ($client->documents_expired(Date::Utility->new()->plus_time_interval('1mo'))) {
+        push(@$status, 'document_expiring_soon');
+    }
+
     my $shortcode                     = $client->landing_company->short;
     my $prompt_client_to_authenticate = 0;
     if ($client->fully_authenticated) {
