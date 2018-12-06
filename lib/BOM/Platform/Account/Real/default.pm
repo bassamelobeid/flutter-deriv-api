@@ -184,6 +184,12 @@ sub add_details_to_desk {
 sub validate_account_details {
     my ($args, $client, $broker, $source) = @_;
 
+    # If it's a virtual client, replace client with the newest real account if any
+    if ($client->is_virtual) {
+        $client = (sort { $b->date_joined cmp $a->date_joined } grep { not $_->is_virtual } $client->user->clients(include_disabled => 0))[0]
+            // $client;
+    }
+
     my $details = {
         broker_code                   => $broker,
         email                         => $client->email,
@@ -249,8 +255,11 @@ sub validate_account_details {
             $details->{$field} = $args->{$field};
         }
     }
-    return {error => 'InsufficientAccountDetails'} if ($lc->citizen_required && !$client->citizen && !$args->{citizen});
-    $details->{citizen} = $args->{citizen} // '';
+
+    # Client cannot change citizenship if already set
+    $details->{citizen} = ($client->citizen || $args->{citizen}) // '';
+    return {error => 'InsufficientAccountDetails'} if ($lc->citizen_required && !$details->{citizen});
+
     return {details => $details};
 }
 
