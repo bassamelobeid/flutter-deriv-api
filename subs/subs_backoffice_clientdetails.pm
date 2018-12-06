@@ -530,14 +530,14 @@ sub client_statement_summary {
 
     $currency = $args->{currency} if exists $args->{currency};
     $currency //= $client->currency;
-    my $db = BOM::Database::ClientDB->new({
-            client_loginid => $client->loginid,
-        })->db;
+    my $clientdb = BOM::Database::ClientDB->new({
+        client_loginid => $client->loginid,
+    });
 
     my $txn_dm = BOM::Database::DataMapper::Transaction->new({
         client_loginid => $client->loginid,
         currency_code  => $currency,
-        db             => $db,
+        db             => $clientdb->db,
     });
     my $transactions = $txn_dm->get_payments({
         before => $before,
@@ -569,6 +569,24 @@ sub client_statement_summary {
         push @$ps_summary, ['total', $total];
         $summary->{$type} = $ps_summary;
     }
+
+    # include client's profit & loss in the summary for easier analysis
+    my $dbic       = $clientdb->db->dbic;
+    my $account_id = $dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare(q{SELECT id FROM transaction.account WHERE client_loginid=?});
+            $sth->execute($client->loginid);
+            my $out = $sth->fetchall_arrayref();
+            return $out->[0][0];
+        });
+    my $pnl_summary = $dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref("SELECT * FROM get_close_trades_profit_or_loss(?,?,?,?)",
+                undef, $account_id, $client->currency, $client->date_joined, Date::Utility->new->datetime);
+        });
+
+    $summary->{pnl} = $pnl_summary->{get_close_trades_profit_or_loss} ? $pnl_summary->{get_close_trades_profit_or_loss} : '0.00';
+
     return $summary;
 }
 

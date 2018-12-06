@@ -50,7 +50,7 @@
     </div>
 </div>
 <div>
-    [% client.name %] Email: [% client.email %] Country: [% client.country %] Residence: [% client.residence %] Tel: [% client.tel %]
+    [% client.name %] Email: [% client.email %] Country: [% client.country %] Residence: [% client.residence %] Tel: [% client.tel %] Date Joined: [% client.date_joined %]
 </div>
 <div class="grd-parent grd-grid-12 table-header grd-row-padding">
     <div class="grd-grid-10">

@@ -134,6 +134,7 @@ my $summary = client_statement_summary({
         currency => $currency,
         after    => $overview_from_date->datetime(),
         before   => $overview_to_date->datetime()});
+
 my $appdb = BOM::Database::Model::OAuth->new();
 my @ids   = map { $_->{source} || () } @{$statement->{transactions}};
 my $apps  = $appdb->get_names_by_app_id(\@ids);
@@ -159,11 +160,12 @@ BOM::Backoffice::Request::template()->process(
         total_deposits          => $total_deposits,
         total_withdrawals       => $total_withdrawals,
         client                  => {
-            name      => $client_name,
-            email     => $client_email,
-            country   => $citizen,
-            residence => $residence,
-            tel       => $tel
+            name        => $client_name,
+            email       => $client_email,
+            country     => $citizen,
+            residence   => $residence,
+            tel         => $tel,
+            date_joined => $client->date_joined,
         },
         startdate => (not $all_in_one_page and $from_date) ? $from_date->datetime_yyyymmdd_hhmmss() : undef,
         enddate   => (not $all_in_one_page and $to_date)   ? $to_date->datetime_yyyymmdd_hhmmss()   : undef,
