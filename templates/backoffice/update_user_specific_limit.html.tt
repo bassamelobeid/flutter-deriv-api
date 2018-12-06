@@ -30,7 +30,7 @@
         <tr>
             <td>Expiry: </td>
             <td><input type="text" name="expiry"></input></td>
-            <td> Expiry of the limit</td>
+            <td> Expiry of the limit. Accepts epoch or '2018-11-25 10:10:20' format</td>
         </tr>
         <tr>
             <td><input type="submit" name="new_user_limit" value="Add New Limit/Update"></td>

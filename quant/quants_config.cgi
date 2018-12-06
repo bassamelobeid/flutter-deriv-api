@@ -183,7 +183,7 @@ if ($r->params->{'new_user_limit'}) {
     if (not(looks_like_number($r->params->{potential_loss}) or looks_like_number($r->params->{realized_loss}))) {
         $update_error = 'Please specify either potential loss or realized loss';
     }
-    if ($r->params->{market_type} !~ /(?:financial|non_financial)/ or $r->params->{client_type} !~ /(?:old|new)/) {
+    if ($r->params->{market_type} !~ /^(?:financial|non_financial)$/ or $r->params->{client_type} !~ /^(?:old|new)$/) {
         $update_error = 'Market Type and Client Type are required parameters with restricted values';
     }
 
@@ -202,7 +202,7 @@ if ($r->params->{'new_user_limit'}) {
 
 my $delete_error;
 if ($r->params->{'delete_limit'}) {
-    if ($r->params->{market_type} !~ /(?:financial|non_financial)/ or $r->params->{client_type} !~ /(?:old|new)/) {
+    if ($r->params->{market_type} !~ /^(?:financial|non_financial)$/ or $r->params->{client_type} !~ /^(?:old|new)$/) {
         $delete_error = 'Market Type and Client Type are required parameters with restricted values';
     }
 
@@ -214,6 +214,22 @@ if ($r->params->{'delete_limit'}) {
         }
         )->delete_user_specific_limit
         unless defined $delete_error;
+}
+
+my $delete_multiple_error;
+if ($r->params->{'delete_multiple'}) {
+    my $ids = ref($r->params->{id}) ne 'ARRAY' ? [$r->params->{id}] : $r->params->{id};
+
+    foreach my $data (@$ids) {
+        my ($client_id, $market_type, $client_type) = split '-', $data;
+        my @multiple = split(' ', $client_id);
+        BOM::Database::Helper::UserSpecificLimit->new({
+                db             => $db,
+                client_loginid => $multiple[0],    # first client_loginid will do
+                client_type    => $client_type,
+                market_type    => $market_type,
+            })->delete_user_specific_limit;
+    }
 }
 
 Bar("Update User Specific Limit");
@@ -231,12 +247,14 @@ BOM::Backoffice::Request::template()->process(
         delete_error       => $delete_error,
     }) || die BOM::Backoffice::Request::template()->error;
 
-Bar("Existing User Specific  Limit");
+Bar("Existing User Specific Limit");
 
 my @specific_limit_output = BOM::Database::Helper::UserSpecificLimit->new({db => $db})->select_user_specific_limit;
 
 BOM::Backoffice::Request::template()->process(
     'backoffice/existing_user_specific_limit.html.tt',
     {
-        output => \@specific_limit_output,
+        profit_table_url => request()->url_for('backoffice/f_profit_table.cgi?loginID='),
+        url              => request()->url_for('backoffice/quant/quants_config.cgi'),
+        output           => \@specific_limit_output,
     }) || die BOM::Backoffice::Request::template()->error;
