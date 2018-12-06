@@ -148,7 +148,22 @@ sub _get_ask {
 
     try {
         $contract_parameters = {%$args_copy, %{contract_metadata($contract)}};
-        if (!($contract->is_valid_to_buy({landing_company => $args_copy->{landing_company}}))) {
+        my $country_code;
+        if ($args_copy->{token_details} and exists $args_copy->{token_details}->{loginid}) {
+            my $client = BOM::User::Client->new({
+                loginid      => $args_copy->{token_details}->{loginid},
+                db_operation => 'replica',
+            });
+            $country_code = $client->residence;
+        }
+
+        if (
+            !(
+                $contract->is_valid_to_buy({
+                        landing_company => $args_copy->{landing_company},
+                        country_code    => $country_code
+                    })))
+        {
             my ($message_to_client, $code);
 
             if (my $pve = $contract->primary_validation_error) {
