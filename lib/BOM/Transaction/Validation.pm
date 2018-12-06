@@ -445,7 +445,12 @@ sub _is_valid_to_buy {
 
     my $contract = $self->transaction->contract;
 
-    unless ($contract->is_valid_to_buy({landing_company => $client->landing_company->short})) {
+    unless (
+        $contract->is_valid_to_buy({
+                landing_company => $client->landing_company->short,
+                country_code    => $client->residence
+            }))
+    {
         return $self->_write_to_rejected({
             type   => 'invalid_contract',
             action => 'buy',
