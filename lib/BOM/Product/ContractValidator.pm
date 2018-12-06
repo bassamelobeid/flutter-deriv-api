@@ -459,13 +459,18 @@ sub _validate_trading_times {
     my $date_expiry = $self->date_expiry;
     my $date_start  = $self->date_start;
     my $volidx_flag = 1;
-    my ($markets, $lc);
+    my (@markets, $lc);
 
     if (not($calendar->trades_on($exchange, $date_start) and $calendar->is_open_at($exchange, $date_start))) {
         if ($args->{landing_company}) {
-            $lc          = LandingCompany::Registry::get($args->{landing_company});
-            $markets     = $lc->legal_allowed_markets if $lc;
-            $volidx_flag = any { $_ eq 'volidx' } @$markets;
+            $lc = LandingCompany::Registry::get($args->{landing_company});
+            if ($lc and $args->{country_code}) {
+                @markets = $lc->basic_offerings_for_country($args->{country_code}, BOM::Config::Runtime->instance->get_offerings_config())
+                    ->values_for_key('market');
+            } else {
+                @markets = @{$lc->legal_allowed_markets};
+            }
+            $volidx_flag = any { $_ eq 'volidx' } @markets;
         }
         my $message;
         if ($volidx_flag) {
