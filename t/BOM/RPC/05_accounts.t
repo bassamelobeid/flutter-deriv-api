@@ -1660,7 +1660,7 @@ subtest $method => sub {
         $params->{token} = $token1;
 
         subtest 'invalid' => sub {
-            $params->{args} = {%full_args, citizen => 'ss'};
+            $params->{args} = {%full_args, citizen => 'xx'};
             $test_client->citizen('');
             $test_client->save();
             is(

@@ -340,10 +340,13 @@ subtest $method => sub {
         $cl_usd->save();
 
         $params->{args}->{currency} = 'LTC';
+        $params->{args}->{citizen} = 'af';
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('create second crypto currency account')
             ->result_value_is(sub { shift->{currency} }, 'LTC', 'crypto account currency is LTC');
 
         my $cl_ltc = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
+        
+        cmp_ok($cl_ltc->citizen, 'eq', $cl_usd->citizen, 'Citizenship cannot be changed');
 
         cmp_deeply(
             decode_json_utf8($cl_ltc->financial_assessment->{data}),
@@ -484,7 +487,10 @@ subtest $method => sub {
 
         $params->{args}->{residence} = 'de';
 
-        $params->{args}->{citizen} = 'ss';
+        $client->citizen('');
+        $client->save;
+        
+        $params->{args}->{citizen} = 'xx';
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InvalidCitizenship', 'Correct error code for invalid citizenship for maltainvest')
             ->error_message_is(
