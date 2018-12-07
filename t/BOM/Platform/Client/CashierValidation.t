@@ -7,9 +7,10 @@ use Test::Exception;
 use Test::MockModule;
 use Test::Warnings;
 
-use BOM::User::Client;
 use ExchangeRates::CurrencyConverter;
+use Format::Util::Numbers qw/get_min_unit roundcommon/;
 
+use BOM::User::Client;
 use BOM::Config::Runtime;
 use BOM::Platform::Client::CashierValidation;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -294,80 +295,100 @@ subtest 'Calculate to amount and fees' => sub {
     my $mock_forex = Test::MockModule->new('BOM::Platform::Client::CashierValidation', no_auto => 1);
 
     my $helper = sub {
-        my ($amount_to_tranfer, $from_currency, $to_currency, $expected_fee_percent, $display_fee_percent, $mock_forex_rate, $from_cli, $to_cli) = @_;
-        my $expected_fee    = $amount_to_tranfer * $expected_fee_percent / 100;
-        my $expected_amount = ($amount_to_tranfer - $expected_fee) * $mock_forex_rate;
+        my (
+            $amount_to_tranfer, $from_currency,           $to_currency,     $expected_fee_applied, $expected_fee_percent,
+            $expected_fee_min,  $expected_fee_calculated, $mock_forex_rate, $from_cli,             $to_cli
+        ) = @_;
+        my $expected_amount = ($amount_to_tranfer - $expected_fee_applied) * $mock_forex_rate;
 
         $mock_forex->mock(convert_currency => sub { return (shift) * $mock_forex_rate; });
-        my ($amount, $fee, $fee_percent) =
+        my ($amount, $fee_applied, $fee_percent, $fee_min, $fee_calculated) =
             BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount_to_tranfer, $from_currency, $to_currency, undef,
             $from_cli, $to_cli);
 
-        cmp_ok $amount,      '==', $expected_amount,     'Correct amount sent';
-        cmp_ok $fee,         '==', $expected_fee,        'Correct fee calculated';
-        cmp_ok $fee_percent, '==', $display_fee_percent, 'Correct fee percent';
+        cmp_ok $amount,      '==', $expected_amount,      'Correct amount sent';
+        cmp_ok $fee_applied, '==', $expected_fee_applied, 'Correct fee percent';
+        cmp_ok $fee_percent, '==', $expected_fee_percent, 'Correct fee percent';
+        cmp_ok $fee_min,     '==', $expected_fee_min,     'Correct fee percent';
+        cmp_ok roundcommon(0.000001, $fee_calculated), '==', roundcommon(0.000001, $expected_fee_calculated), 'Correct fee percent';
     };
 
+    my $currency_fees = {
+        'USD_UST' => 0.1,
+        'UST_USD' => 0.2,
+        'USD_BTC' => 0.3,
+        'BTC_USD' => 0.4,
+        'USD_USD' => 0.5,    # ineffective (same currency is not charged any fee)
+        'USD_EUR' => 0.6,
+        'BTC_BCH' => 0.7     # ineffective (crypto-crypto is not supported)
+
+    };
+
+    BOM::Config::Runtime->instance->app_config()->set({
+            'payments.transfer_between_accounts.fees.by_currency' => JSON::MaybeUTF8::encode_json_utf8($currency_fees)
+
+        });
+
     subtest 'Fiat to stable crypto' => sub {
-        $helper->(100, 'USD', 'UST', 0.5, 0.5, 1, $cr_client, $cr_client_2);
+        $helper->(100, 'USD', 'UST', 0.1, 0.1, get_min_unit('USD'), 0.1, 1, $cr_client, $cr_client_2);
     };
 
     subtest 'Stable coin to fiat' => sub {
-        $helper->(100, 'UST', 'USD', 0.5, 0.5, 1, $cr_client, $cr_client_2);
+        $helper->(100, 'UST', 'USD', 0.2, 0.2, get_min_unit('UST'), 0.2, 1, $cr_client, $cr_client_2);
     };
 
-    subtest 'Minimum fee enforcement (highest of 0.5% or $0.01)' => sub {
-        $helper->(1, 'UST', 'USD', 1, 0.5, 1);
+    subtest 'Minimum fee enforcement (lower than threshold)' => sub {
+        $helper->(1, 'UST', 'USD', get_min_unit('UST'), 0.2, get_min_unit('UST'), 0.002, 1);
     };
 
-    subtest 'Minimum fee enforcement 2 (highest of 0.5% or $0.01)' => sub {
-        $helper->(1.04, 'USD', 'UST', (0.01 / 1.04 * 100), 0.5, 1);
+    subtest 'Minimum fee enforcement 2 (lower than threshold)' => sub {
+        $helper->(1.04, 'USD', 'UST', get_min_unit('USD'), 0.1, get_min_unit('USD'), 0.00104, 1);
     };
 
     subtest 'Fiat to crypto' => sub {
-        $helper->(100, 'USD', 'BTC', 1, 1, 7000, $cr_client, $cr_client_2);
+        $helper->(100, 'USD', 'BTC', 0.3, 0.3, get_min_unit('USD'), 0.3, 7000, $cr_client, $cr_client_2);
     };
 
     subtest 'Crypto to fiat' => sub {
-        $helper->(100, 'BTC', 'USD', 1, 1, 1 / 7000, $cr_client, $cr_client_2);
+        $helper->(100, 'BTC', 'USD', 0.4, 0.4, get_min_unit('BTC'), 0.4, 1 / 7000, $cr_client, $cr_client_2);
     };
 
     subtest 'MF (USD) to MLT (USD)' => sub {
-        $helper->(100, 'USD', 'USD', 0, 0, 1, $mf_client, $mlt_client);
+        $helper->(100, 'USD', 'USD', 0, 0, 0, 0, 1, $mf_client, $mlt_client);
     };
 
     subtest 'MLT (USD) to MF (USD)' => sub {
-        $helper->(100, 'USD', 'USD', 0, 0, 1, $mlt_client, $mf_client);
+        $helper->(100, 'USD', 'USD', 0, 0, 0, 0, 1, $mlt_client, $mf_client);
     };
 
     subtest 'Fiat to fiat (for MT5 deposit/withdrawal)' => sub {
-        $helper->(100, 'USD', 'EUR', 1, 1, 1.1);
+        $helper->(100, 'USD', 'EUR', 0.6, 0.6, get_min_unit('USD'), 0.6, 1.1);
     };
 
     subtest 'PA fee exemption #1 (clients under same user, sender is PA)' => sub {
         my $mock_client = Test::MockModule->new('BOM::User::Client');
         $mock_client->mock(is_pa_and_authenticated => sub { return 1 if (shift)->loginid eq $cr_client->loginid; });
-        $helper->(100, 'USD', 'BTC', 0, 0, 7000, $cr_client, $cr_client_2);
+        $helper->(100, 'USD', 'BTC', 0, 0, 0, 0, 7000, $cr_client, $cr_client_2);
         $mock_client->unmock('is_pa_and_authenticated');
     };
 
     subtest 'PA fee exemption #2 (clients under same user, receiever is PA)' => sub {
         my $mock_client = Test::MockModule->new('BOM::User::Client');
         $mock_client->mock(is_pa_and_authenticated => sub { return 1 if (shift)->loginid eq $cr_client_2->loginid; });
-        $helper->(100, 'BTC', 'USD', 0, 0, 1 / 7000, $cr_client, $cr_client_2);
+        $helper->(100, 'BTC', 'USD', 0, 0, 0, 0, 1 / 7000, $cr_client, $cr_client_2);
         $mock_client->unmock('is_pa_and_authenticated');
     };
 
     subtest 'PA fee exemption #3 (clients under same user, both are PA)' => sub {
         my $mock_client = Test::MockModule->new('BOM::User::Client');
         $mock_client->mock(is_pa_and_authenticated => sub { return 1; });
-        $helper->(100, 'USD', 'BTC', 0, 0, 7000, $cr_client, $cr_client_2);
+        $helper->(100, 'USD', 'BTC', 0, 0, 0, 0, 7000, $cr_client, $cr_client_2);
         $mock_client->unmock('is_pa_and_authenticated');
     };
 
     subtest 'Crypto to crypto' => sub {
         throws_ok {
-            $helper->(100, 'BTC', 'BCH', 0, 0, 12, $cr_client, $cr_client_2);
+            $helper->(100, 'BTC', 'BCH', 0, 0, 0, 0, 12, $cr_client, $cr_client_2);
         }
         qr/Transfers between these currencies not supported/, 'Cryptoto crypto dies';
     };

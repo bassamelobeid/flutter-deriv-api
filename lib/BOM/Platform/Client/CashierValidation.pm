@@ -26,6 +26,7 @@ use LandingCompany::Registry;
 
 use BOM::Config::Runtime;
 use BOM::Platform::Context qw/request localize/;
+use BOM::Config::CurrencyConfig;
 
 =head2 validate
 
@@ -117,6 +118,16 @@ Returns whether payment is currently suspended or not
 
 sub is_payment_suspended {
     return BOM::Config::Runtime->instance->app_config->system->suspend->payments;
+}
+
+=head2 is_cashier_suspended
+
+Returns whether fiat cashier is currently suspended or not
+
+=cut
+
+sub is_cashier_suspended {
+    return BOM::Config::Runtime->instance->app_config->system->suspend->cashier;
 }
 
 =head2 is_crypto_cashier_suspended
@@ -212,10 +223,14 @@ Returns
 
 =item * The amount that will be received (in the currency of the receiving account)
 
-=item * The fee charged to the sender (in the currency of the sending account)
+=item * The fee charged to the sender (in the currency of the sending account). It is maximum of minimum fee and calculated fee.
 
 =item * The fee percentage applied for transfers between these currencies
 Note: If a minimum fee was enforced then this will not reflect the actual fee charged.
+
+-item * Minimum fee possible for the sending account currency (minimum currency unit).
+
+-item * Fee caclulated by the fee percent alone (without comparing to the minimum fee).
 
 =back
 
@@ -223,40 +238,29 @@ Note: If a minimum fee was enforced then this will not reflect the actual fee ch
 
 sub calculate_to_amount_with_fees {
     my ($amount, $from_currency, $to_currency, $rate_expiry, $fm_client, $to_client) = @_;
-    return ($amount, 0, 0) if $from_currency eq $to_currency;
+
+    return ($amount, 0, 0, 0, 0) if $from_currency eq $to_currency;
 
     # Fee exemption for transfers between an authorised payment agent account and another account under that user.
-    return (convert_currency($amount, $from_currency, $to_currency, $rate_expiry), 0, 0)
+    return (convert_currency($amount, $from_currency, $to_currency, $rate_expiry), 0, 0, 0, 0)
         if (defined $fm_client
         && defined $to_client
         && $fm_client->is_same_user_as($to_client)
         && ($fm_client->is_pa_and_authenticated() || $to_client->is_pa_and_authenticated()));
 
-    my $from_currency_def  = LandingCompany::Registry::get_currency_definition($from_currency);
-    my $to_currency_def    = LandingCompany::Registry::get_currency_definition($to_currency);
-    my $from_currency_type = $from_currency_def->{type};
-    my $to_currency_type   = $to_currency_def->{type};
+    my $currency_config = BOM::Config::CurrencyConfig::transfer_between_accounts_fees();
+    my $fee_percent     = $currency_config->{$from_currency}->{$to_currency};
 
-    my $transfer_type = "$from_currency_type-$to_currency_type";
-    my $transfer_subtype = ($from_currency_def->{stable} || $to_currency_def->{stable}) ? 'stable' : 'default';
+    die "Transfers between these currencies not supported. $from_currency $to_currency" unless defined $fee_percent;
 
-    my $key = "payments.transfer_between_accounts.fees.$transfer_type.$transfer_subtype";
-    my $fee_percent;
-    try {
-        $fee_percent = BOM::Config::Runtime->instance->app_config->get($key);
-    }
-    catch {
-        die 'Transfers between these currencies not supported.';
-    };
-
-    my $fee = $amount * $fee_percent / 100;
+    my $fee_calculated_by_percent = $amount * $fee_percent / 100;
 
     my $min_fee = get_min_unit($from_currency);
-    $fee = $min_fee if $fee < $min_fee;
+    my $fee_applied = ($fee_calculated_by_percent < $min_fee) ? $min_fee : $fee_calculated_by_percent;
 
-    $amount = convert_currency(($amount - $fee), $from_currency, $to_currency, $rate_expiry);
+    $amount = convert_currency(($amount - $fee_applied), $from_currency, $to_currency, $rate_expiry);
 
-    return ($amount, $fee, $fee_percent);
+    return ($amount, $fee_applied, $fee_percent, $min_fee, $fee_calculated_by_percent);
 }
 
 sub _withdrawal_validation_period {
