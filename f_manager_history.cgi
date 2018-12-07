@@ -56,20 +56,23 @@ unless ($broker) {
     code_exit_BO();
 }
 
-if ($depositswithdrawalsonly eq 'yes') {
-    Bar($loginID . ' (DEPO & WITH ONLY)');
-} else {
-    Bar($loginID);
-}
-
 my $client = BOM::User::Client::get_instance({
     'loginid'    => $loginID,
     db_operation => 'replica'
 });
+
 if (not $client) {
+    Bar($loginID);
     print "<div style='color:red' class='center-aligned'>Error : wrong loginID ($encoded_loginID) could not get client instance</div>";
     code_exit_BO();
 }
+
+my $loginid_bar = $loginID;
+$loginid_bar .= ' (DEPO & WITH ONLY)' if ($depositswithdrawalsonly eq 'yes');
+my $pa = $client->payment_agent;
+$loginid_bar .= ' - Payment Agent' if ($pa and $pa->is_authenticated);
+
+Bar($loginid_bar);
 
 # We either choose the dropdown currency from transaction page or use the client currency for quick jump
 my $currency = $client->currency;
