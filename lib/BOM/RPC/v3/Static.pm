@@ -141,7 +141,8 @@ sub _currencies_config {
     # if there were no amount entered by client), we get max out of two minimal possible stakes.
     # Logic is copied from _build_staking_limits
 
-    my $transfer_mins = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
+    my $transfer_limits = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
+    my $transfer_fees   = BOM::Config::CurrencyConfig::transfer_between_accounts_fees();
 
     # Get available currencies
     my @all_currencies = keys %{LandingCompany::Registry::get('costarica')->legal_allowed_currencies};
@@ -150,16 +151,16 @@ sub _currencies_config {
 
     my %currencies_config = map {
         $_ => {
-            fractional_digits => $amt_precision->{$_},
-            type              => LandingCompany::Registry::get_currency_type($_),
-            stake_default     => $default_stakes->{$_},
-            is_suspended      => $suspended_currencies->{$_} ? 1 : 0,
-            name              => LandingCompany::Registry::get_currency_definition($_)->{name},
-            limits            => {
-                transfer_between_accounts => {
-                    min => $transfer_mins->{$_}->{min},
-                }}}
-    } @{all_currencies};
+            fractional_digits         => $amt_precision->{$_},
+            type                      => LandingCompany::Registry::get_currency_type($_),
+            stake_default             => $default_stakes->{$_},
+            is_suspended              => $suspended_currencies->{$_} ? 1 : 0,
+            name                      => LandingCompany::Registry::get_currency_definition($_)->{name},
+            transfer_between_accounts => {
+                limits => $transfer_limits->{$_},
+                fees   => $transfer_fees->{$_},
+            }}
+    } @all_currencies;
 
     return \%currencies_config;
 }

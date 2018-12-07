@@ -108,6 +108,9 @@ rpc "cashier", sub {
             $currency, $action, $params->{language}, $brand->name, $params->{domain});
     }
 
+    return $error_sub->(localize('Sorry, cashier is temporarily unavailable due to system maintenance.'))
+        if BOM::Platform::Client::CashierValidation::is_cashier_suspended();
+
     my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $client_loginid});
     # hit DF's CreateCustomer API
     my $ua = LWP::UserAgent->new(timeout => 20);
@@ -1175,9 +1178,9 @@ rpc transfer_between_accounts => sub {
     };
 
     my $rate_expiry = BOM::RPC::v3::Utility::get_rate_expiry($from_currency, $to_currency);
-    my ($to_amount, $fees, $fees_percent);
+    my ($to_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent);
     try {
-        ($to_amount, $fees, $fees_percent) =
+        ($to_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =
             BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $from_currency, $to_currency, $rate_expiry,
             $client_from, $client_to);
     }
@@ -1267,7 +1270,10 @@ rpc transfer_between_accounts => sub {
     try {
         my $remark = 'Account transfer from ' . $loginid_from . ' to ' . $loginid_to . '.';
         if ($fees) {
-            $remark .= " Includes $currency " . formatnumber('amount', $currency, $fees) . ' (' . $fees_percent . '%) as transfer fee.';
+            $remark .=
+                  " Includes transfer fee of $currency "
+                . formatnumber('amount', $currency, $fee_calculated_by_percent)
+                . " ($fees_percent %) or $currency $min_fee, whichever is higher.";
         }
         $response = $client_from->payment_account_transfer(
             currency          => $currency,

@@ -530,11 +530,27 @@ subtest 'transfer with fees' => sub {
         amount       => $amount
     };
 
+    BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts(1);
+    $rpc_ct->call_ok($method, $params)->has_error('error as all transfer_between_accounts are suspended in system config')
+        ->error_code_is('TransferBetweenAccountsError', 'error code is TransferBetweenAccountsError')
+        ->error_message_is('Transfers between fiat and crypto accounts are currently disabled.')->result;
+    BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts(0);
+
+    my ($usd_btc_fee, $btc_usd_fee, $usd_ust_fee, $ust_usd_fee) = (2, 3, 4, 5);
+
+    BOM::Config::Runtime->instance->app_config->set({
+            'payments.transfer_between_accounts.fees.by_currency' => JSON::MaybeUTF8::encode_json_utf8({
+                    "USD_BTC" => $usd_btc_fee,
+                    "BTC_USD" => $btc_usd_fee,
+                    "USD_UST" => $usd_ust_fee,
+                    "UST_USD" => $ust_usd_fee
+                })});
+
     my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{client_to_loginid}, $client_cr_btc->loginid, 'Transaction successful';
 
-    # fiat to crypto to is 1% and exchange rate is 4000 for BTC
-    my $fee_percent     = 1;
+    # fiat to crypto. exchange rate is 4000 for BTC
+    my $fee_percent     = $usd_btc_fee;
     my $transfer_amount = ($amount - $amount * $fee_percent / 100) / 4000;
     my $current_balance = $client_cr_btc->default_account->balance;
     cmp_ok $current_balance, '==', 1 + $transfer_amount, 'correct balance after transfer including fees';
@@ -552,10 +568,14 @@ subtest 'transfer with fees' => sub {
     is $result->{client_to_loginid}, $client_cr_usd->loginid, 'Transaction successful';
 
     # crypto to fiat is 1%
+    $fee_percent     = $btc_usd_fee;
     $transfer_amount = ($amount - $amount * $fee_percent / 100) * 4000;
     cmp_ok $client_cr_usd->default_account->balance, '==', 990 + $transfer_amount, 'correct balance after transfer including fees';
-    cmp_ok $client_cr_btc->default_account->balance, '==', $current_balance - $amount,
-        'non-pa to non-pa (BTC to USD), correct balance after transfer including fees';
+    is(
+        financialrounding('price', 'BTC', $client_cr_btc->account->balance),
+        financialrounding('price', 'BTC', $current_balance - $amount),
+        'non-pa to non-pa (BTC to USD), correct balance after transfer including fees'
+    );
 
     $amount = 0.1;
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_pa_btc->loginid, 'test token');
@@ -573,7 +593,7 @@ subtest 'transfer with fees' => sub {
     is $result->{client_to_loginid}, $client_cr_usd->loginid, 'Transaction successful';
 
     # crypto to fiat is 1% and fiat to crypto is 1%
-    $fee_percent     = 1;
+    $fee_percent     = $btc_usd_fee;
     $transfer_amount = ($amount - $amount * $fee_percent / 100) * 4000;
     cmp_ok $client_cr_pa_btc->default_account->balance, '==', $previous_amount - $amount, 'correct balance after transfer including fees';
     $current_balance = $client_cr_usd->default_account->balance;
@@ -598,23 +618,23 @@ subtest 'transfer with fees' => sub {
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{client_to_loginid}, $client_cr_pa_btc->loginid, 'Transaction successful';
 
-    $fee_percent     = 1;
+    $fee_percent     = $usd_btc_fee;
     $transfer_amount = ($amount - $amount * $fee_percent / 100) / 4000;
     cmp_ok $client_cr_usd->default_account->balance, '==', $previous_amount_usd - $amount, 'correct balance after transfer including fees';
     $current_balance = $client_cr_pa_btc->default_account->balance;
 
-    # tried the cmp below, however it does not work i think it may be caused by implementation of cmp_ok
-    # cmp_ok( ($current_balance - 0), '==', (0 + $previous_amount_btc + $transfer_amount), 'non-pa to unauthorised pa transfer (USD to BTC) correct balance after transfer including fees');
-
-    cmp_ok(($current_balance - 0) - (0 + $previous_amount_btc + $transfer_amount),
-        '<=', 0.00000001, 'non-pa to unauthorised pa transfer (USD to BTC) correct balance after transfer including fees');
+    is(
+        financialrounding('price', 'BTC', $current_balance),
+        financialrounding('price', 'BTC', $previous_amount_btc + $transfer_amount),
+        'non-pa to unauthorised pa transfer (USD to BTC) correct balance after transfer including fees'
+    );
 
     subtest 'Correct commission charged for fiat -> stablecoin crypto' => sub {
         my $previous_amount_usd = $client_cr_usd->account->balance;
         my $previous_amount_ust = $client_cr_ust->account->balance;
 
         my $amount                   = 100;
-        my $expected_fee_percent     = 0.5;
+        my $expected_fee_percent     = $usd_ust_fee;
         my $expected_transfer_amount = ($amount - $amount * $expected_fee_percent / 100);
 
         $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_usd->loginid, 'test token');
@@ -637,7 +657,7 @@ subtest 'transfer with fees' => sub {
         my $previous_amount_ust = $client_cr_ust->account->balance;
 
         my $amount                   = 100;
-        my $expected_fee_percent     = 0.5;
+        my $expected_fee_percent     = $ust_usd_fee;
         my $expected_transfer_amount = ($amount - $amount * $expected_fee_percent / 100);
 
         $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_ust->loginid, 'test token');
@@ -661,7 +681,7 @@ subtest 'transfer with fees' => sub {
         my $previous_amount_ust = $client_cr_ust->account->balance;
 
         my $amount                   = 1;
-        my $expected_fee_percent     = 1;
+        my $expected_fee_percent     = $ust_usd_fee;
         my $expected_transfer_amount = ($amount - $amount * $expected_fee_percent / 100);
 
         $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_ust->loginid, 'test token');
@@ -679,6 +699,8 @@ subtest 'transfer with fees' => sub {
         cmp_ok $client_cr_usd->account->balance, '==', $previous_amount_usd + $expected_transfer_amount, 'To account credited correctly';
 
     };
+
+    BOM::Config::Runtime->instance->app_config->set({'payments.transfer_between_accounts.fees.by_currency' => '{}'});
 };
 
 subtest 'transfer with no fee' => sub {

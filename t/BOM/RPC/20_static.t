@@ -48,14 +48,24 @@ subtest 'currencies_config.transfer_between_accounts' => sub {
             args     => {website_status => 1}})->has_no_system_error->has_no_error->result;
 
     my @all_currencies  = keys %{LandingCompany::Registry::get('costarica')->legal_allowed_currencies};
-    my $currency_config = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
+    my $currency_limits = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
+    my $currency_fees   = BOM::Config::CurrencyConfig::transfer_between_accounts_fees();
 
     cmp_ok(
-        $currency_config->{$_}->{min},
+        $currency_limits->{$_}->{min},
         '==',
-        $result->{currencies_config}->{$_}->{limits}->{transfer_between_accounts}->{min},
+        $result->{currencies_config}->{$_}->{transfer_between_accounts}->{limits}->{min},
         "Transfer between account minimum is correct for $_"
     ) for @all_currencies;
+
+    for my $currency (@all_currencies) {
+        cmp_ok(
+            $currency_fees->{$currency}->{$_} // -1,
+            '==',
+            $result->{currencies_config}->{$currency}->{transfer_between_accounts}->{fees}->{$_} // -1,
+            "Transfer between account fee is correct for ${currency}_$_"
+        ) for @all_currencies;
+    }
 
 };
 

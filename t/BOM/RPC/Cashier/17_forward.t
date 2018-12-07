@@ -40,6 +40,8 @@ foreach my $status (@can_affect_cashier) {
         });
 }
 
+my $runtime_system = BOM::Config::Runtime->instance->app_config->system;
+
 subtest 'Initialization' => sub {
     lives_ok {
         $t = Test::Mojo->new('BOM::RPC');
@@ -154,12 +156,24 @@ subtest 'common' => sub {
 };
 
 subtest 'deposit' => sub {
+    $runtime_system->suspend->cashier(1);
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Cashier is suspended')
+        ->error_message_is('Sorry, cashier is temporarily unavailable due to system maintenance.',
+        'Correct error message for withdrawal when cashier is locked.');
+    $runtime_system->suspend->cashier(0);
+
     $client_cr->status->set('unwelcome', 'system');
 
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client marked as unwelcome')
         ->error_message_is('Your account is restricted to withdrawals only.', 'Correct error message for client marked as unwelcome');
 
     $client_cr->status->clear_unwelcome;
+
+    $runtime_system->suspend->cashier(1);
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Cashier is suspended')
+        ->error_message_is('Sorry, cashier is temporarily unavailable due to system maintenance.',
+        'Correct error message for deposit when cashier is locked.');
+    $runtime_system->suspend->cashier(0);
 };
 
 subtest 'withdraw' => sub {

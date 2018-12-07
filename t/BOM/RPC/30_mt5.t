@@ -829,17 +829,30 @@ subtest 'multi currency transfers' => sub {
 
     my $prev_bal;
     my ($EUR_USD, $BTC_USD, $UST_USD) = (1.1, 5000, 1);
-    my $after_default_fee = 1 - 0.01;
-    my $after_stable_fee  = 1 - 0.005;
+
+    my ($eur_usd_fee, $btc_usd_fee, $ust_usd_fee) = (0.02, 0.03, 0.04);
+
+    my $after_fiat_fee   = 1 - $eur_usd_fee;
+    my $after_crypto_fee = 1 - $btc_usd_fee;
+    my $after_stable_fee = 1 - $ust_usd_fee;
+
+    BOM::Config::Runtime->instance->app_config->set({
+            'payments.transfer_between_accounts.fees.by_currency' => JSON::MaybeUTF8::encode_json_utf8({
+                    "EUR_USD" => $eur_usd_fee * 100,
+                    "USD_EUR" => $eur_usd_fee * 100,
+                    "BTC_USD" => $btc_usd_fee * 100,
+                    "USD_BTC" => $btc_usd_fee * 100,
+                    "UST_USD" => $ust_usd_fee * 100,
+                    "USD_UST" => $ust_usd_fee * 100
+                })});
 
     subtest 'EUR tests' => sub {
-
         $manager_module->mock(
             'deposit',
             sub {
                 is financialrounding('amount', 'USD', shift->{amount}),
-                    financialrounding('amount', 'USD', $eur_test_amount * $EUR_USD * $after_default_fee),
-                    '1% deducted as forex fee for USD<->EUR';
+                    financialrounding('amount', 'USD', $eur_test_amount * $EUR_USD * $after_fiat_fee),
+                    'Correct forex fee for USD<->EUR';
                 return Future->done({success => 1});
             });
 
@@ -856,7 +869,7 @@ subtest 'multi currency transfers' => sub {
         subtest multicurrency_mt5_transfer_deposit => sub {
             my $mt5_transfer = _get_mt5transfer_from_transaction($test_client->db->dbic, $c->result->{binary_transaction_id});
             # (100Eur  * 1%(fee)) * 1.1(Exchange Rate) = 108.9
-            is($mt5_transfer->{mt5_amount}, -108.9, 'Correct amount recorded');
+            is($mt5_transfer->{mt5_amount}, -100 * $after_fiat_fee * $EUR_USD, 'Correct amount recorded');
         };
 
         $prev_bal = $client_eur->account->balance;
@@ -864,8 +877,8 @@ subtest 'multi currency transfers' => sub {
         $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->EUR with current rate - no error');
         ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->EUR with current rate - has transaction id');
         is financialrounding('amount', 'EUR', $client_eur->account->balance),
-            financialrounding('amount', 'EUR', $prev_bal + ($usd_test_amount / $EUR_USD * $after_default_fee)),
-            '1% deducted as forex fee for USD<->EUR';
+            financialrounding('amount', 'EUR', $prev_bal + ($usd_test_amount / $EUR_USD * $after_fiat_fee)),
+            'Correct forex fee for USD<->EUR';
 
         subtest multicurrency_mt5_transfer_withdrawal => sub {
             my $mt5_transfer = _get_mt5transfer_from_transaction($test_client->db->dbic, $c->result->{binary_transaction_id});
@@ -886,8 +899,8 @@ subtest 'multi currency transfers' => sub {
         $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->EUR with current rate - no error');
         ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->EUR with 12hr old rate - has transaction id');
         is financialrounding('amount', 'EUR', $client_eur->account->balance),
-            financialrounding('amount', 'EUR', $prev_bal + ($usd_test_amount / $EUR_USD * $after_default_fee)),
-            '1% deducted as forex fee for USD<->EUR';
+            financialrounding('amount', 'EUR', $prev_bal + ($usd_test_amount / $EUR_USD * $after_fiat_fee)),
+            'Correct forex fee for USD<->EUR';
 
         $redis->hmset(
             'exchange_rates::EUR_USD',
@@ -909,8 +922,8 @@ subtest 'multi currency transfers' => sub {
             'deposit',
             sub {
                 is financialrounding('amount', 'USD', shift->{amount}),
-                    financialrounding('amount', 'USD', $btc_test_amount * $BTC_USD * $after_default_fee),
-                    '1% deducted as forex fee for USD<->BTC';
+                    financialrounding('amount', 'USD', $btc_test_amount * $BTC_USD * $after_crypto_fee),
+                    'Correct forex fee for USD<->BTC';
                 return Future->done({success => 1});
             });
 
@@ -932,8 +945,8 @@ subtest 'multi currency transfers' => sub {
         $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->BTC with current rate - no error');
         ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->BTC with current rate - has transaction id');
         is financialrounding('amount', 'BTC', $client_btc->account->balance),
-            financialrounding('amount', 'BTC', $prev_bal + ($usd_test_amount / $BTC_USD * $after_default_fee)),
-            '1% deducted as forex fee for USD<->BTC';
+            financialrounding('amount', 'BTC', $prev_bal + ($usd_test_amount / $BTC_USD * $after_crypto_fee)),
+            'Correct forex fee for USD<->BTC';
 
         $redis->hmset(
             'exchange_rates::BTC_USD',
@@ -950,8 +963,8 @@ subtest 'multi currency transfers' => sub {
         $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->BTC with older rate <1 hour - no error');
         ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->BTC with older rate <1 hour - has transaction id');
         is financialrounding('amount', 'BTC', $client_btc->account->balance),
-            financialrounding('amount', 'BTC', $prev_bal + ($usd_test_amount / $BTC_USD * $after_default_fee)),
-            '1% deducted as forex fee for USD<->BTC';
+            financialrounding('amount', 'BTC', $prev_bal + ($usd_test_amount / $BTC_USD * $after_crypto_fee)),
+            'Correct forex fee for USD<->BTC';
 
         $redis->hmset(
             'exchange_rates::BTC_USD',
@@ -975,7 +988,7 @@ subtest 'multi currency transfers' => sub {
             sub {
                 is financialrounding('amount', 'USD', shift->{amount}),
                     financialrounding('amount', 'USD', $ust_test_amount * $UST_USD * $after_stable_fee),
-                    '1% deducted as forex fee for USD<->UST';
+                    'Correct forex fee for USD<->UST';
                 return Future->done({success => 1});
             });
 
@@ -998,7 +1011,7 @@ subtest 'multi currency transfers' => sub {
         ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->UST with current rate - has transaction id');
         is financialrounding('amount', 'UST', $client_ust->account->balance),
             financialrounding('amount', 'UST', $prev_bal + ($usd_test_amount / $UST_USD * $after_stable_fee)),
-            '1% deducted as forex fee for USD<->UST';
+            'Correct forex fee for USD<->UST';
 
         $redis->hmset(
             'exchange_rates::UST_USD',
@@ -1016,7 +1029,7 @@ subtest 'multi currency transfers' => sub {
         ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->UST with older rate <1 hour - has transaction id');
         is financialrounding('amount', 'UST', $client_ust->account->balance),
             financialrounding('amount', 'UST', $prev_bal + ($usd_test_amount / $UST_USD * $after_stable_fee)),
-            '1% deducted as forex fee for USD<->UST';
+            'Correct forex fee for USD<->UST';
 
         $redis->hmset(
             'exchange_rates::UST_USD',
@@ -1032,6 +1045,7 @@ subtest 'multi currency transfers' => sub {
         $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error('withdraw USD->UST with rate >1 hour old - has error')
             ->error_code_is('MT5WithdrawalError', 'withdraw USD->UST with rate >1 hour old - correct error code');
     };
+    BOM::Config::Runtime->instance->app_config->set({'payments.transfer_between_accounts.fees.by_currency' => '{}'});
 };
 
 subtest 'Transfers Limits' => sub {
@@ -1082,7 +1096,9 @@ subtest 'Suspended Transfers Currencies' => sub {
             ->error_code_is('MT5DepositError', 'Transfer from suspended currency not allowed - correct error code')
             ->error_message_is('There was an error processing the request. Account transfers are not available between BTC and USD',
             'Transfer from suspended currency not allowed - correct error message');
+
     };
+    BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies([]);
 };
 
 sub _get_mt5transfer_from_transaction {

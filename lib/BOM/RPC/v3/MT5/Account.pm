@@ -1071,10 +1071,15 @@ async_rpc mt5_deposit => sub {
             my $mt5_currency_code = $response->{mt5_currency_code};
             my ($account, $payment, $txn, $comment, $error);
             try {
+                my $fee_calculated_by_percent = $response->{calculated_fee};
+                my $min_fee                   = $response->{min_fee};
                 $comment = "Transfer from $fm_loginid to MT5 account $to_mt5.";
                 $comment .=
-                    " Includes $fees_currency " . formatnumber('amount', $fees_currency, $fees) . " (" . $fees_percent . "%) as transfer fee."
+                      " Includes transfer fee of $fees_currency "
+                    . formatnumber('amount', $fees_currency, $fee_calculated_by_percent)
+                    . " ($fees_percent %) or $fees_currency $min_fee, whichever is higher."
                     if $fees;
+
                 $account = $fm_client->set_default_account($fm_client->currency);
                 ($payment) = $account->add_payment({
                     amount               => -$amount,
@@ -1168,15 +1173,20 @@ async_rpc mt5_withdrawal => sub {
                 $to_client_db->unfreeze;
             };
 
-            my $fees                    = $response->{fees};
-            my $fees_currency           = $response->{fees_currency};
-            my $fees_in_client_currency = $response->{fees_in_client_currency};
-            my $mt5_amount              = $response->{mt5_amount};
-            my $fees_percent            = $response->{fees_percent};
-            my $mt5_currency_code       = $response->{mt5_currency_code};
+            my $fees                      = $response->{fees};
+            my $fees_currency             = $response->{fees_currency};
+            my $fees_in_client_currency   = $response->{fees_in_client_currency};
+            my $mt5_amount                = $response->{mt5_amount};
+            my $fees_percent              = $response->{fees_percent};
+            my $mt5_currency_code         = $response->{mt5_currency_code};
+            my $fee_calculated_by_percent = $response->{calculated_fee};
+            my $min_fee                   = $response->{min_fee};
 
             my $comment = "Transfer from MT5 account $fm_mt5 to $to_loginid.";
-            $comment .= " Includes $fees_currency " . formatnumber('amount', $fees_currency, $fees) . " (" . $fees_percent . "%) as transfer fee."
+            $comment .=
+                  " Includes transfer fee of $fees_currency "
+                . formatnumber('amount', $fees_currency, $fee_calculated_by_percent)
+                . " ($fees_percent %) or $fees_currency $min_fee, whichever is higher."
                 if $fees;
             # withdraw from MT5 a/c
             return BOM::MT5::User::Async::withdrawal({
@@ -1458,7 +1468,6 @@ sub _mt5_validate_and_get_amount {
 
             my $mt5_currency_type    = LandingCompany::Registry::get_currency_type($mt5_currency);
             my $source_currency_type = LandingCompany::Registry::get_currency_type($source_currency);
-
             return _make_error($error_code, localize('Transfers between fiat and crypto accounts are currently disabled.'))
                 if BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts
                 and (($source_currency_type // '') ne ($mt5_currency_type // ''));
@@ -1466,6 +1475,7 @@ sub _mt5_validate_and_get_amount {
             my $fees                    = 0;
             my $fees_percent            = 0;
             my $fees_in_client_currency = 0;    #when a withdrawal is done record the fee in the local amount
+            my ($min_fee, $fee_calculated_by_percent);
             if ($client_currency eq $mt5_currency) {
                 $mt5_amount = $amount;
             } else {
@@ -1481,7 +1491,7 @@ sub _mt5_validate_and_get_amount {
                         $min = convert_currency(1,     'USD', $client_currency);
                         $max = convert_currency(20000, 'USD', $client_currency);
 
-                        ($mt5_amount, $fees, $fees_percent) =
+                        ($mt5_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =
                             BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $client_currency, $mt5_currency,
                             $rate_expiry);
                         $mt5_amount = financialrounding('amount', $mt5_currency, $mt5_amount);
@@ -1495,7 +1505,7 @@ sub _mt5_validate_and_get_amount {
                         $min = convert_currency(1,     'USD', $mt5_currency);
                         $max = convert_currency(20000, 'USD', $mt5_currency);
 
-                        ($mt5_amount, $fees, $fees_percent) =
+                        ($mt5_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =
                             BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $mt5_currency, $client_currency,
                             $rate_expiry);
                         $mt5_amount = financialrounding('amount', $client_currency, $mt5_amount);
@@ -1527,7 +1537,9 @@ sub _mt5_validate_and_get_amount {
                 fees_currency           => $source_currency,
                 fees_percent            => $fees_percent,
                 fees_in_client_currency => $fees_in_client_currency,
-                mt5_currency_code       => $mt5_currency
+                mt5_currency_code       => $mt5_currency,
+                min_fee                 => $min_fee,
+                calculated_fee          => $fee_calculated_by_percent,
             });
         });
 }
