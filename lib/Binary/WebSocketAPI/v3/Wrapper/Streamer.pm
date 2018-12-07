@@ -187,6 +187,10 @@ sub ticks_history {
     my ($c, $req_storage) = @_;
 
     my $args = $req_storage->{args};
+    # looks like we should not be throwing error if granularity=0 to support our existing API user. So deleting it here.
+    # We will try to tell them they screw up on another day.
+    # TODO: remove delete $args->{granularity} when we decided to inform third party about granularity cannot be 0.
+    delete $args->{granularity} unless $args->{granularity};
     if ($args->{granularity} and not grep { $_ == $args->{granularity} } qw(60 120 180 300 600 900 1800 3600 7200 14400 28800 86400)) {
         return $c->new_error('ticks_history', "InvalidGranularity", $c->l('Granularity is not valid'));
     }
