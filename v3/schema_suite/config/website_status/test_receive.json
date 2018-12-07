@@ -1,50 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "definitions": {
-        "currency_config": {
-            "type": "object",
-            "properties": {
-                "fractional_digits": {
-                    "type": "number",
-                    "pattern": "^\\d+$",
-                    "required": "1"
-                },
-                "type": {
-                    "type": "string",
-                    "pattern": "^(fiat|crypto)$",
-                    "required": "1"
-                },
-                "stake_default": {
-                    "type": "number",
-                    "minimum": "0",
-                    "required": "1"
-                },
-                "limits": {
-                    "type": "object",
-                    "required": "1",
-                    "properties": {
-                        "transfer_between_accounts": {
-                            "type": "object",
-                            "required": "1",
-                            "properties": { 
-                                "min": {
-                                    "type": "number",                                           
-                                    "minimum": "0",                                             
-                                    "required": "1"
-                                }
-                            }
-                        }
-                    }
-                },
-                "transfer_minimum": {
-                    "type": "number",
-                    "minimum": "0",
-                    "required": "1"
-                }
-            }
-        }
-    },
     "type": "object",
+    "title": "Website Status Response",
     "properties": {
         "website_status": {
             "type": "object",
@@ -67,13 +24,53 @@
                     "type": "object",
                     "required": "1",
                     "properties": {
-                        "BTC": { "$ref": "#/definitions/currency_config" },
-                        "LTC": { "$ref": "#/definitions/currency_config" },
-                        "ETH": { "$ref": "#/definitions/currency_config" },
-                        "GBP": { "$ref": "#/definitions/currency_config" },
-                        "AUD": { "$ref": "#/definitions/currency_config" },
-                        "EUR": { "$ref": "#/definitions/currency_config" },
-                        "USD": { "$ref": "#/definitions/currency_config" }
+                        "^[A-Z]{3-4}$": {
+                            "type": "object",
+                            "properties": {
+                                "fractional_digits": {
+                                    "type": "number",
+                                    "pattern": "^[0-9]+$",
+                                    "required": "1"
+                                },
+                                "type": {
+                                    "enum": ["fiat", "crypto"],
+                                    "required": "1"
+                                },
+                                "stake_default": {
+                                    "type": "number",
+                                    "minimum": "0",
+                                    "required": "1"
+                                },
+                                "transfer_between_accounts": {
+                                    "type": "object",
+                                    "required": "1",
+                                    "properties": {
+                                        "limits": {
+                                            "type": "object",
+                                            "required": "1",
+                                            "properties": {
+                                                "min": {
+                                                    "type": "number",
+                                                    "minimum": 0,
+                                                    "required": "1"
+                                                }
+                                            }
+                                        },
+                                        "fees": {
+                                            "type": "object",
+                                            "required": "1",
+                                            "properties": {
+                                                "^[A-Z]{3-4}$": {
+                                                    "type": "number",
+                                                    "minimum": 0,
+                                                    "maximum": 7
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 },
                 "api_call_limits": {
