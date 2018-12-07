@@ -422,8 +422,8 @@ sub generate_asset_index {
 
     # mapper for callput so that we can show the different expiries for them.
     my %barrier_category_mapper = (
-        euro_atm     => 'Rise/Fall',
-        euro_non_atm => 'Higher/Lower',
+        euro_atm     => ['Rise/Fall'],
+        euro_non_atm => ['Higher/Lower', 2.5],
     );
     ## remove obj for json encode
     my @data;
@@ -434,21 +434,27 @@ sub generate_asset_index {
             for my $ul (@{$submarket->{underlyings}}) {
                 delete $ul->{$_} for (qw/obj parent_obj children parent/);
                 my @category_expiries;
-                for my $contract_category (@{$ul->{contract_categories}}) {
+                # just sorting by display order is not quite enough since we want contracts of different category be placed next to each other.
+                # E.g. Rise/Fall Equals next to Rise/Fall.
+                for my $contract_category (sort { $a->{obj}->display_order <=> $b->{obj}->display_order } @{$ul->{contract_categories}}) {
                     foreach my $barrier_category (sort keys %{$contract_category->{expiries}}) {
-                        my $name =
-                            $contract_category->{code} eq 'callput'
-                            ? localize($barrier_category_mapper{$barrier_category})
-                            : $contract_category->{name};
+                        my ($name, $order) = ($contract_category->{name}, $contract_category->{obj}->display_order);
+                        if ($contract_category->{code} eq 'callput') {
+                            $name = localize($barrier_category_mapper{$barrier_category}->[0]);
+                            $order = $barrier_category_mapper{$barrier_category}->[1] if $barrier_category_mapper{$barrier_category}->[1];
+                        }
                         push @category_expiries,
                             [
-                            $contract_category->{code},
-                            $name,
-                            $contract_category->{expiries}->{$barrier_category}->[0][1],
-                            $contract_category->{expiries}->{$barrier_category}->[-1][1]];
+                            $order,
+                            [
+                                $contract_category->{code},
+                                $name,
+                                $contract_category->{expiries}->{$barrier_category}->[0][1],
+                                $contract_category->{expiries}->{$barrier_category}->[-1][1]]];
                     }
                 }
-                my $x = [$ul->{code}, $ul->{name}, \@category_expiries];
+                my @sorted = map { $_->[1] } sort { $a->[0] <=> $b->[0] } @category_expiries;
+                my $x = [$ul->{code}, $ul->{name}, \@sorted];
                 push @data, $x;
             }
         }
