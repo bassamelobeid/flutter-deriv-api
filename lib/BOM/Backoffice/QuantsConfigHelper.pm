@@ -17,11 +17,18 @@ use List::Util qw(uniq);
 sub save_limit {
     my $args = shift;
 
-    $args->{$_} =~ s/\s+//g for keys %$args;
+    for my $key (keys %$args) {
+        next if !defined $args->{$key};
+        if ($key =~ /comment|start_time|end_time/) {
+            $args->{$key} =~ s/^\s*(.*?)\s*$/$1/;
+        } else {
+            $args->{$key} =~ s/\s+//g;
+        }
+    }
 
     # clean up and restructure inputs
     my %new_args = map {
-              ($_ =~ /limit_type|limit_amount/) ? ($_ => $args->{$_})
+              ($_ =~ /limit_type|limit_amount|comment|start_time|end_time/) ? ($_ => $args->{$_})
             : ($_ =~ /underlying_symbol/) ? ($_ => [split ',', $args->{$_}])
             : ($_ => [$args->{$_} =~ /$_=(\w+)/g])
         } grep {
@@ -36,7 +43,10 @@ sub save_limit {
 
     }
     catch {
-        +{error => $_};
+        my $error = ref $_ eq 'Mojo::Exception' ? $_->message : $_;
+        ## Postgres error messages are too verbose to show the whole thing:
+        $error =~ s/(DETAIL|CONTEXT|HINT):.*//s;
+        +{error => $error};
     };
 
     return $limits;
@@ -135,7 +145,11 @@ sub decorate_for_display {
         my $group = [grep { $_->{market} and $_->{market} eq $market } @$records];
         my @sorted = ();
         foreach my $type (@type_order) {
-            push @sorted, grep { $_->{type} eq $type } @$group;
+            ## This is to enforce a consistent but arbitrary ordering of things via createDisplayTable
+            push @sorted, map { $_->[0] }
+                sort { $a->[1] cmp $b->[1] }
+                map { [$_, (join '.' => sort values %$_)] }
+                grep { $_->{type} eq $type } @$group;
         }
 
         foreach my $record (@sorted) {
@@ -173,7 +187,11 @@ sub decorate_for_display {
             [barrier_type      => 'Barrier Type'],
             [contract_group    => 'Contract Group'],
             [landing_company   => 'Landing Company'],
-            (map { [$_ => $supported->{$_}] } keys %$supported),
+            [comment           => 'Comment'],
+            [time_status       => 'Time Status'], ## Must come before Start Time
+            [start_time        => 'Start Time'],
+            [end_time          => 'End Time'],
+            (map { [$_ => $supported->{$_}] } sort keys %$supported),
         ],
     };
 }

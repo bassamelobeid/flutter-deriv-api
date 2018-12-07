@@ -69,9 +69,9 @@ my $existing_per_landing_company = BOM::Backoffice::QuantsConfigHelper::decorate
 my %lc_limits = map { $_ => $json->encode($existing_per_landing_company->{$_}) } keys %$existing_per_landing_company;
 
 my @limit_types;
-foreach my $key (keys %$supported_config) {
+foreach my $key (sort keys %$supported_config) {
     next if $key ne 'per_landing_company';
-    foreach my $type (keys %{$supported_config->{$key}}) {
+    foreach my $type (sort keys %{$supported_config->{$key}}) {
         push @limit_types, [$type, $supported_config->{$key}{$type}];
     }
 }
@@ -149,7 +149,7 @@ sub _format_output {
             $groups{$group} = $key;
             next;
         }
-        $groups{$group} = join ',', ($groups{$group}, $key);
+        $groups{$group} = join ', ', ($groups{$group}, $key);
     }
 
     return \%groups;
