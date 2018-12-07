@@ -253,7 +253,6 @@ sub get_xml_result {
     #   And the following namespace is needed to pass the signature :
     #   xmlns:head=http://xml.proveid.experian.com/xsd/Headers
     my $header_namespace = 'http://xml.proveid.experian.com/xsd/Headers';
-
     my $soap = SOAP::Lite->readable(1)->uri($self->api_uri)->proxy($self->api_proxy)->ns($header_namespace, 'head');
 
     my $som = $soap->search(SOAP::Data->type('xml' => $request), $self->_2fa_header);

@@ -10,8 +10,8 @@ use BOM::Test::Helper::Client qw(create_client);
 use BOM::Config;
 use Test::Exception;
 use Test::Deep;
-use File::Compare qw(compare_text compare);
-
+use File::Compare qw(compare);
+use XML::SemanticDiff;
 subtest 'Constructor' => sub {
     subtest 'No Client' => sub {
         throws_ok(sub { BOM::Platform::ProveID->new() }, qr/Missing required arguments: client/, "Constructor dies with no client");
@@ -83,8 +83,8 @@ subtest 'Request Tags' => sub {
 };
 
 subtest 'Response' => sub {
-    my $entries = ["ExperianValid", "ExperianInsufficientDOB", "ExperianFraud", "ExperianDeceased", "ExperianOFSI", "ExperianPEP", "ExperianBOE"];
 
+    my $entries = [map { "Experian$_" } qw(Valid InsufficientDOB Fraud Deceased OFSI PEP BOE InsufficientUKGC)];
     my $xml_fld = "/home/git/regentmarkets/bom-test/data/Experian/SavedXML/";
     my $pdf_fld = "/home/git/regentmarkets/bom-test/data/Experian/PDF/";
 
@@ -99,7 +99,8 @@ subtest 'Response' => sub {
             my $pdf_file = $pdf_fld . $entry . ".pdf";
             ok(BOM::Platform::ProveID->new(client => $client)->get_result, "get result response ok");
 
-            is(compare_text($xml_file, "/db/f_accounts/MX/192com_authentication/xml/" . $loginid . ".ProveID_KYC"), 0, "xml saved ok");
+            is(XML::SemanticDiff->new()->compare($xml_file, "/db/f_accounts/MX/192com_authentication/xml/" . $loginid . ".ProveID_KYC"),
+                0, "xml saved ok");
             is(compare($pdf_file, "/db/f_accounts/MX/192com_authentication/pdf/" . $loginid . ".ProveID_KYC.pdf"), 0, "pdf saved ok");
         };
     }
@@ -143,8 +144,7 @@ subtest 'Replace Existing Result' => sub {
 
     my $expected_xml = "/home/git/regentmarkets/bom-test/data/Experian/SavedXML/ExperianValid.xml";
     my $expected_pdf = "/home/git/regentmarkets/bom-test/data/Experian/PDF/ExperianValid.pdf";
-
-    is(compare_text($saved_xml, $expected_xml), 0, "xml replaced ok");
+    is(XML::SemanticDiff->new()->compare($saved_xml, $expected_xml), 0, "xml replaced ok");
     is(compare($saved_pdf, $expected_pdf), 0, "pdf replaced ok");
 
     BOM::Platform::ProveID->new(client => $client)->delete_existing_reports;

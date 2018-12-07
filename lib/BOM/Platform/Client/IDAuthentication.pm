@@ -18,6 +18,9 @@ has client => (
     required => 1
 );
 
+use constant NEEDED_MATCHES_FOR_UKGC_AUTH        => 2;
+use constant NEEDED_MATCHES_FOR_AGE_VERIFICATION => 1;
+
 =head2 run_authentication
 
 This is called for validation checks on first time deposits
@@ -99,10 +102,11 @@ sub _proveid {
     my $client  = $self->client;
     my $loginid = $client->loginid;
 
+    return undef unless $client->residence eq 'gb';
+
     my $prove_id_result = $self->_fetch_proveid;
 
     return undef unless $prove_id_result;
-
     my $xml = XML::LibXML->new()->parse_string($prove_id_result);
 
     my ($credit_reference_summary) = $xml->findnodes('/Search/Result/CreditReference/CreditReferenceSummary');
@@ -130,9 +134,16 @@ sub _proveid {
 
     # Handle DOB match for age verification
     my $dob_match = ($kyc_summary->findnodes("DateOfBirth/Count"))[0]->textContent();
+    # Handle Firstname and Address match for UKGC verification
+    my $name_address_match = ($kyc_summary->findnodes("FullNameAndAddress/Count"))[0]->textContent();
 
-    if ($dob_match > 0) {
-        return $client->status->set('age_verification', 'system', "Experian results are sufficient to mark client as age verified.");
+    if ($dob_match >= NEEDED_MATCHES_FOR_AGE_VERIFICATION) {
+        my $status_set_response =
+            $client->status->set('age_verification', 'system', "Experian results are sufficient to mark client as age verified.");
+        if ($name_address_match >= NEEDED_MATCHES_FOR_UKGC_AUTH) {
+            $status_set_response = $client->status->set('ukgc_authenticated', 'system', "Online verification passed");
+        }
+        return $status_set_response;
     } else {
         $client->status->set('unwelcome', 'system', "Experian results are insufficient to mark client as age verified.");
         $self->_notify_cs(

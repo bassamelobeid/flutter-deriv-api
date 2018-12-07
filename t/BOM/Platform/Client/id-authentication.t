@@ -158,14 +158,21 @@ subtest 'MX accounts' => sub {
                 subject => $subject
             });
         });
+    subtest 'Non-gb residence' => sub {
 
+        my $c = create_client('MX', undef, {residence => 'de'});
+
+        my $v = BOM::Platform::Client::IDAuthentication->new(client => $c)->_proveid;
+        is($v, undef, "run_authentication for Non-gb residence ok");
+
+    };
     subtest "Invalid ProveID Matches" => sub {
         my $base_dir = "/home/git/regentmarkets/bom-test/data/Experian/SavedXML/";
         my @invalid_matches = ("ExperianFraud", "ExperianDeceased", "ExperianOFSI", "ExperianPEP", "ExperianBOE");
 
         for my $match (@invalid_matches) {
             subtest "$match" => sub {
-                my $c = create_client('MX');
+                my $c = create_client('MX', undef, {residence => 'gb'});
 
                 my $loginid      = $c->loginid;
                 my $client_email = $c->email;
@@ -192,7 +199,7 @@ subtest 'MX accounts' => sub {
         }
     };
     subtest "Insufficient DOB Match in ProveID" => sub {
-        my $c = create_client('MX');
+        my $c = create_client('MX', undef, {residence => 'gb'});
 
         my $loginid      = $c->loginid;
         my $client_email = $c->email;
@@ -218,8 +225,8 @@ subtest 'MX accounts' => sub {
         is($emails->{$support_email}, "Account $loginid unwelcome following Experian results", "CS received email");
         is($emails->{$client_email},  "Documents are required to verify your identity",        "Client received email");
     };
-    subtest "Sufficient DOB Match in ProveID" => sub {
-        my $c = create_client('MX');
+    subtest "Sufficient DOB, Sufficient UKGC" => sub {
+        my $c = create_client('MX', undef, {residence => 'gb'});
 
         my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
 
@@ -236,11 +243,35 @@ subtest 'MX accounts' => sub {
 
         ok !$v->client->status->disabled,  "Not disabled due to sufficient DOB Match";
         ok !$v->client->status->unwelcome, "Not welcome due to sufficient DOB Match";
-        ok $v->client->status->age_verification,  "Age verified due to suffiecient DOB Match";
+        ok $v->client->status->age_verification,   "Age verified due to suffiecient DOB Match";
+        ok $v->client->status->ukgc_authenticated, "UKGC authenticated due to sufficient FullNameAndAddress Match";
+        ok $v->client->status->proveid_requested,  "ProveID requested";
+    };
+    subtest "Sufficient DOB, Insufficient UKGC" => sub {
+        my $c = create_client('MX', undef, {residence => 'gb'});
+
+        my $loginid = $c->loginid;
+
+        my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
+
+        my $file_path = "/home/git/regentmarkets/bom-test/data/Experian/SavedXML/ExperianInsufficientUKGC.xml";
+
+        $proveid_mock->mock(
+            get_result => sub {
+                open my $fh, '<', $file_path;
+                read $fh, my $file_content, -s $fh;
+                return $file_content;
+            });
+
+        $v->run_authentication;
+        ok !$v->client->status->disabled,           "Not disabled due to Insufficient DOB Match";
+        ok !$v->client->status->unwelcome,          "Not welcome due to sufficient DOB Match";
+        ok !$v->client->status->ukgc_authenticated, "Not ukgc authenticated due to insufficient FullNameAndAddress match";
         ok $v->client->status->proveid_requested, "ProveID requested";
+
     };
     subtest "No Experian entry found" => sub {
-        my $c = create_client('MX');
+        my $c = create_client('MX', undef, {residence => 'gb'});
 
         my $loginid      = $c->loginid;
         my $client_email = $c->email;
@@ -262,7 +293,7 @@ subtest 'MX accounts' => sub {
         is($emails->{$client_email}, "Documents are required to verify your identity", "Client received email");
     };
     subtest "Error connecting to Experian" => sub {
-        my $c = create_client('MX');
+        my $c = create_client('MX', undef, {residence => 'gb'});
 
         my $loginid = $c->loginid;
         $emails = {};
