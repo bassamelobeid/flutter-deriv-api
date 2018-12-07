@@ -101,40 +101,37 @@ payments:
           isa: section
           description: 'Transfer fees for currency conversion'
           contains:
-            fiat-fiat:
+            by_currency:
+              description: 'Default transfer fee for individual currency pairs in percentage (bidirectional, first currency is fiat); example: {"USD_UST":1, "EUR_BTC":0.8}'
+              isa: json_string
+              default: '{}'
+              global: 1
+            default:
               isa: section
-              description: 'Fiat to fiat transfer fees'
+              description: 'Default values'
               contains:
-                default:
-                  description: 'Default fee for transfering between fiat currencies in percentage (currently only for MT5 deposit/withdrawal)'
+                fiat_fiat:
+                  description: 'Default fee for transfering between a pair of fiat currencies in percentage (currently only for MT5 deposit/withdrawal)'
                   isa: Num
                   default: 1
                   global: 1
-            fiat-crypto:
-              isa: section
-              description: 'Fiat to crypto transfer fees'
-              contains:
-                default:
-                  description: 'Default fee for transfering from fiat currency to a crypto currency in percentage'
+                fiat_crypto:
+                  description: 'Default fee for transfering from a fiat to a crypto currency in percentage'
                   isa: Num
                   default: 1
                   global: 1
-                stable:
-                  description: 'Fee for transferring from fiat currency to a stablecoin crypto currency in percentage'
+                fiat_stable:
+                  description: 'Default fee for transferring from a fiat to stablecoin crypto currency in percentage'
                   isa: Num
                   default: 0.5
                   global: 1
-            crypto-fiat:
-              isa: section
-              description: 'Crypto to fiat transfer fees'
-              contains:
-                default:
-                  description: 'Default fee for transfering from crypto currency to fiat currency in percentage'
+                crypto_fiat:
+                  description: 'Default fee for transferring from a crypto to a fiat currency in percentage'
                   isa: Num
                   default: 1
                   global: 1
-                stable:
-                  description: 'Fee for transferring from a stablecoin crypto currency to fiat currency in percentage'
+                stable_fiat:
+                  description: 'Default fee for transferring from a stablecoin to a fialt currency in percentage'
                   isa: Num
                   default: 0.5
                   global: 1
@@ -332,6 +329,11 @@ system:
           isa: Bool
           default: 0
           global: 1
+        cashier:
+          description: "Suspend fiat cashier only"
+          isa: Bool
+          default: 0
+          global: 1
         cryptocurrencies:
           description: "Suspend comma-separated list of currencies"
           isa: Str
@@ -377,18 +379,8 @@ system:
           isa: Bool
           default: 0
           global: 1
-        mt5_deposits:
-          description: "Suspend MT5 deposits"
-          isa: Bool
-          default: 0
-          global: 1
-        mt5_withdrawals:
-          description: "Suspend MT5 withdrawals"
-          isa: Bool
-          default: 0
-          global: 1
         transfer_between_accounts:
-          description: "Suspend transfer between accounts be it between binary accounts or between binary and MT5 or vice versa"
+          description: "Suspend all transfer between accounts be it between binary accounts or between binary and MT5 or vice versa"
           isa: Bool
           default: 0
           global: 1
