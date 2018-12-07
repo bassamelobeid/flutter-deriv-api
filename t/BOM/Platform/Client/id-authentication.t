@@ -1,25 +1,42 @@
+use strict;
+use warnings;
+
+use Email::Sender::Transport::Test;
 use Test::Most 'no_plan';
 use Test::FailWarnings;
 use File::Spec;
 use Test::MockModule;
 use Test::Exception;
 use Brands;
+
+use BOM::Platform::Email;
+
+$ENV{EMAIL_SENDER_TRANSPORT} = 'Test';
+
 use BOM::User::Client;
-use Email::Folder::Search;
 use BOM::Platform::ProveID;
 use BOM::Platform::Context qw(request);
+use BOM::Platform::Client::IDAuthentication;
+
 use BOM::Test::Helper::Client qw(create_client);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-
-use BOM::Platform::Client::IDAuthentication;
 
 my $xml              = XML::Simple->new;
 my $support_email    = 'support@binary.com';
 my $compliance_email = 'compliance@binary.com';
 
-my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
-$mailbox->init;
+sub email_list {
+    my $transport = Email::Sender::Simple->default_transport;
+    my @emails = map {
+        +{
+            $_->{envelope}->%*,
+            subject => '' . $_->{email}->get_header('Subject'),
+        }
+    } $transport->deliveries;
+    $transport->clear_deliveries;
+    @emails
+}
 
 subtest 'Constructor' => sub {
     subtest 'No Client' => sub {
@@ -41,6 +58,7 @@ subtest 'Virtual accounts' => sub {
 
 };
 subtest "CR accounts" => sub {
+    is(0 + email_list(), 0, 'have no emails to start with');
     my $c = create_client("CR");
 
     my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
@@ -48,12 +66,13 @@ subtest "CR accounts" => sub {
 
     $v->run_authentication();
 
-    my @msgs = $mailbox->search(
-        email   => 'support-newaccount-notifications@binary.com',
-        subject => qr/New Sign-Up/
-    );
+    my @msgs = grep {
+        $_->{to}[0] eq 'support-newaccount-notifications@binary.com'
+            and
+        $_->{subject} =~ qr/New Sign-Up/
+    } my @existing = email_list();
 
-    ok(@msgs, "New sign up email received");
+    ok(@msgs, "New sign up email received") or note explain \@existing;
 
     ok !$v->client->status->cashier_locked, "CR client not cashier locked following run_authentication";
     ok !$v->client->status->unwelcome,      "CR client not unwelcome following run_authentication";
@@ -64,17 +83,17 @@ subtest 'MLT accounts' => sub {
         my $c = create_client('MLT');
         $c->status->clear_age_verification;
 
-        $mailbox->clear;
-
         my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
         ok $v->client->is_first_deposit_pending, 'First deposit tracking for MLT account';
 
+        is(0 + email_list(), 0, 'have no emails to start with');
         $v->run_authentication;
 
-        my @msgs = $mailbox->search(
-            email   => 'support-newaccount-notifications@binary.com',
-            subject => qr/New Sign-Up/
-        );
+        my @msgs = grep {
+            $_->{to}[0] eq 'support-newaccount-notifications@binary.com'
+                and
+            $_->{subject} =~ qr/New Sign-Up/
+        } email_list();
 
         is(@msgs, 0, 'No email received');
 
@@ -91,12 +110,14 @@ subtest 'MLT accounts' => sub {
 
         $v->client->status->set("age_verification");
 
+        is(0 + email_list(), 0, 'have no emails to start with');
         $v->run_authentication;
 
-        my @msgs = $mailbox->search(
-            email   => 'support-newaccount-notifications@binary.com',
-            subject => qr/New Sign-Up/
-        );
+        my @msgs = grep {
+            $_->{to}[0] eq 'support-newaccount-notifications@binary.com'
+                and
+            $_->{subject} =~ qr/New Sign-Up/
+        } email_list();
 
         is(@msgs, 0, 'No email received');
 
