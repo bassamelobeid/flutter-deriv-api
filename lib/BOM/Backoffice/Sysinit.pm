@@ -109,6 +109,7 @@ my $permissions = {
     'quant/settle_contracts.cgi'                                              => ['Quants'],
     'quant/quants_config.cgi'                                                 => ['Quants'],
     'quant/update_quants_config.cgi'                                          => ['Quants'],
+    'quant/internal_transfer_fees.cgi'                                        => ['Quants'],
 };
 
 sub init {

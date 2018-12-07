@@ -87,7 +87,7 @@ sub save_settings {
                     $message .= '<div id="saved">Saved global settings to environment, offerings updated</div>';
                 }
                 catch {
-                    $message .= '<div id="error">Could not save global settings to environment</div>';
+                    $message .= "<div id=\"error\">Could not save global settings to environment: $_</div>";
                 };
             }
         } else {
@@ -164,6 +164,7 @@ sub get_settings_by_group {
                 system.suspend.payments
                 system.suspend.payment_agents
                 system.suspend.cryptocashier
+                system.suspend.cashier
                 system.suspend.cryptocurrencies
                 system.suspend.new_accounts
                 system.suspend.expensive_api_calls
@@ -200,15 +201,20 @@ sub get_settings_by_group {
                 payments.payment_limits
                 payments.transfer_between_accounts.limits.between_accounts
                 payments.transfer_between_accounts.limits.MT5
-                payments.transfer_between_accounts.fees.fiat-crypto.default
-                payments.transfer_between_accounts.fees.fiat-crypto.stable
-                payments.transfer_between_accounts.fees.crypto-fiat.default
-                payments.transfer_between_accounts.fees.crypto-fiat.stable
-                payments.transfer_between_accounts.fees.fiat-fiat.default
                 payments.transfer_between_accounts.minimum.default.fiat
                 payments.transfer_between_accounts.minimum.default.crypto
                 payments.transfer_between_accounts.minimum.by_currency
                 payments.experimental_currencies_allowed
+                )
+        ],
+        # these settings are configured in separate pages. No need to reconfure them in Dynamic Settings/Others.
+        exclude => [qw(
+                payments.transfer_between_accounts.fees.default.fiat_fiat
+                payments.transfer_between_accounts.fees.default.fiat_crypto
+                payments.transfer_between_accounts.fees.default.fiat_stable
+                payments.transfer_between_accounts.fees.default.crypto_fiat
+                payments.transfer_between_accounts.fees.default.stable_fiat
+                payments.transfer_between_accounts.fees.by_currency
                 )]};
 
     my $settings;
@@ -301,18 +307,13 @@ sub parse_and_refine_setting {
 sub get_extra_validation {
     my $setting = shift;
     state $setting_validators = {
-        'cgi.terms_conditions_version'                                => \&validate_tnc_string,
-        'payments.transfer_between_accounts.fees.fiat-crypto.default' => \&validate_transfer_fee,
-        'payments.transfer_between_accounts.fees.fiat-crypto.stable'  => \&validate_transfer_fee,
-        'payments.transfer_between_accounts.fees.crypto-fiat.default' => \&validate_transfer_fee,
-        'payments.transfer_between_accounts.fees.crypto-fiat.stable'  => \&validate_transfer_fee,
-        'payments.transfer_between_accounts.fees.fiat-fiat.default'   => \&validate_transfer_fee,
-        'payments.transfer_between_accounts.minimum.by_currency'      => \&_validate_transfer_min_by_currency,
-        'payments.transfer_between_accounts.minimum.default.fiat'     => \&_validate_transfer_min_default,
-        'payments.transfer_between_accounts.minimum.default.crypto'   => \&_validate_transfer_min_default,
-        'payments.transfer_between_accounts.limits.between_accounts'  => \&_validate_transfer_min_default,
-        'payments.transfer_between_accounts.limits.MT5'               => \&_validate_transfer_min_default,
-        'payments.payment_limits'                                     => \&_validate_payment_min_by_staff,
+        'cgi.terms_conditions_version'                               => \&validate_tnc_string,
+        'payments.transfer_between_accounts.minimum.by_currency'     => \&_validate_transfer_min_by_currency,
+        'payments.transfer_between_accounts.minimum.default.fiat'    => \&_validate_transfer_min_default,
+        'payments.transfer_between_accounts.minimum.default.crypto'  => \&_validate_transfer_min_default,
+        'payments.transfer_between_accounts.limits.between_accounts' => \&_validate_transfer_min_default,
+        'payments.transfer_between_accounts.limits.MT5'              => \&_validate_transfer_min_default,
+        'payments.payment_limits'                                    => \&_validate_payment_min_by_staff,
     };
 
     return $setting_validators->{$setting};
@@ -403,15 +404,6 @@ sub validate_tnc_string {
     die 'New date is older than previous' if $new_date->is_before(Date::Utility->new($old_date));
 
     # No errors
-    return;
-}
-
-sub validate_transfer_fee {
-    my ($new_string) = @_;
-
-    my ($fee_min, $fee_max) = (0, 7);
-    die "Fee must be between $fee_min% and $fee_max% (inclusive)" if ($new_string < $fee_min || $new_string > $fee_max);
-
     return;
 }
 

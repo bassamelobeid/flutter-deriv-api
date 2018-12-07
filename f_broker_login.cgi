@@ -233,13 +233,18 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
 				</td>
                          </tr>
 			 <tr>	
-                                <td align="center" width="50%">
+                 <td align="center" width="50%">
 					<p><b>PRODUCT MANAGEMENT</b></p>
 					<form action="~ . request()->url_for('backoffice/quant/product_management.cgi') . qq~" method="post"><font size=2>
                                                 <input type="submit" value="PRODUCT MANAGEMENT">
 					</font></form>
 				</td>
-
+				 <td align="center" width="50%">
+					<p><b>INTERNAL TRANSFER FEES</b></p>
+					<form action="~ . request()->url_for('backoffice/quant/internal_transfer_fees.cgi') . qq~" method="post"><font size=2>
+                                                <input type="submit" value="INTERNAL TRANSFER FEES">
+					</font></form>
+				</td>
 			</tr>
 		</tbody>
 	</table>~;
