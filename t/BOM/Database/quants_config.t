@@ -15,6 +15,9 @@ use Test::Exception;
 use Test::FailWarnings;
 use Test::MockModule;
 
+my $test_start_time = '2012-07-04 0900';
+my $test_end_time   = '20200704 1700';
+
 my $json = JSON::MaybeXS->new;
 
 my $qc = BOM::Database::QuantsConfig->new();
@@ -23,8 +26,6 @@ subtest 'exception check for set_global_limit' => sub {
     throws_ok { $qc->set_global_limit() } qr/limit_type not specified/, 'throws error if limit_type is not undefined';
     throws_ok { $qc->set_global_limit({limit_type => 'unknown', limit_amount => 10}) } qr/limit_type is not supported/,
         'throws error if limit_type is unknown';
-    throws_ok { $qc->set_global_limit({limit_type => 'global_potential_loss'}) } qr/limit_amount not specified/,
-        'throws error if limit_amount is not defined';
     throws_ok { $qc->set_global_limit({limit_type => 'global_potential_loss'}) } qr/limit_amount not specified/,
         'throws error if limit_amount is not defined';
     throws_ok { $qc->set_global_limit({limit_type => 'global_potential_loss', limit_amount => -1}) } qr/limit_amount must be a positive number/,
@@ -48,6 +49,29 @@ subtest 'exception check for set_global_limit' => sub {
             })
     }
     qr/Please specify the market of the underlying symbol input/, 'throws error if market is not specified but underlying symbol is specified';
+
+    my $test;
+    my $testargs = {
+        limit_type   => 'global_potential_loss',
+        limit_amount => 123,
+    };
+
+    $test = 'Call to set_global_limit fails if start_time is set but end_time is not';
+    $testargs->{start_time} = '2018-07-04 12:34';
+    throws_ok { $qc->set_global_limit($testargs) } qr/If using start_time, must also provide end_time/, $test;
+    delete $testargs->{start_time};
+
+    $test = 'Call to set_global_limit fails if end_time is set but start_time is not';
+    $testargs->{end_time} = '2018-07-04 12:34';
+    throws_ok { $qc->set_global_limit($testargs) } qr/If using end_time, must also provide start_time/, $test;
+    delete $testargs->{end_time};
+
+    $test = 'Call to set_global_limit fails if start_time same as end_time';
+    $testargs->{start_time} = $testargs->{end_time} = '2018-07-04 12:34';
+    throws_ok { $qc->set_global_limit($testargs) } qr/start_time and end_time may not be the same/, $test;
+    delete $testargs->{start_time};
+    delete $testargs->{end_time};
+
 };
 
 subtest 'set global' => sub {
@@ -112,8 +136,22 @@ subtest 'set global' => sub {
             contract_group  => ['callput'],
             landing_company => ['costarica'],
         },
+        {
+            limit_type   => 'global_potential_loss',
+            limit_amount => 209,
+            market       => ['forex', 'volidx'],
+            start_time   => '19990704 0:00',
+            end_time     => '20200704 23:59',
+        },
     );
     foreach my $t (@set_test_cases) {
+        lives_ok { $qc->set_global_limit($t) } 'limit save for ' . $json->encode($t);
+    }
+
+    ## Reprise with a time period
+    foreach my $t (@set_test_cases) {
+        $t->{start_time} = $test_start_time;
+        $t->{end_time}   = $test_end_time;
         lives_ok { $qc->set_global_limit($t) } 'limit save for ' . $json->encode($t);
     }
 
@@ -140,7 +178,7 @@ subtest 'get global limit' => sub {
                 expiry_type    => 'intraday',
                 barrier_type   => 'atm',
                 contract_group => 'callput',
-                limit_type     => 'global_potential_loss'
+                limit_type     => 'global_potential_loss',
             },
             107
         ],
@@ -216,7 +254,7 @@ subtest 'get global limit' => sub {
     foreach my $t (@test_cases) {
         my %input = %{$t->[0]};
         $input{landing_company} = 'costarica';
-        is $qc->get_global_limit(\%input), $t->[1], 'expected limit amount received for ' . $json->encode($t->[0]);
+        is $qc->get_global_limit(\%input), $t->[1], "expected limit amount $t->[1] received for " . $json->encode($t->[0]);
     }
 };
 
@@ -335,12 +373,20 @@ subtest 'delete global limit' => sub {
         ),
         'limit fetched';
     lives_ok { $qc->delete_global_limit({type => 'market', landing_company => 'costarica', limit_type => 'global_potential_loss'}) } 'delete ok';
-    ok !$qc->get_global_limit({
+    my $res = $qc->get_global_limit({
             landing_company => 'costarica',
             limit_type      => 'global_potential_loss'
         }
-        ),
-        'deleted';
+        );
+    is $res, '110', 'deleted global but time period still exists';
+    lives_ok { $qc->delete_global_limit({type => 'market', landing_company => 'costarica', limit_type => 'global_potential_loss',
+					start_time => $test_start_time, end_time => $test_end_time}) } 'delete ok';
+    $res = $qc->get_global_limit({
+            landing_company => 'costarica',
+            limit_type      => 'global_potential_loss'
+        }
+        );
+    is $res, '', 'delete';
 };
 
 my $client  = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});

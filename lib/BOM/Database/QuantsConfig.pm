@@ -20,7 +20,17 @@ BOM::Database::QuantsConfig - a class to get and set quants global limits
         underlying_symbol => ['frxUSDJPY'. 'frxAUDJPY'],
         barrier_category => ['atm'],
         limit_type => 'global_potential_loss',
-        limit_amount => 10000
+        limit_amount => 10000,
+    });
+
+    # set a time-restricted limit
+    $qc->set_global_limit({
+        market => ['forex'],
+        limit_type => 'global_potential_loss',
+        limit_amount => 1000,
+        start_time => '2019-11-05 09:00',
+        end_time => '2019-11-05 17:00'
+        comment => 'Added by Alice to handle Guy Fawkes Day',
     });
 
 =cut
@@ -121,6 +131,9 @@ set global limits with parameters. Valid parameters:
 - landing_company (defaults to all landing company)
 - limit_type (required)
 - limit_amount (required)
+- comment (optional)
+- start_time (timestamp, optional)
+- end_time (timestamp, optional)
 
 ->set_global_limit({
     market => ['forex'],
@@ -141,41 +154,92 @@ sub set_global_limit {
     # set it to default
     $args->{landing_company} //= ['default'];
 
-    for (qw(limit_type limit_amount)) {
-        die "$_ not specified" unless defined $args->{$_};
-    }
+    die "Please specify a limit amount\n" unless defined $args->{limit_amount};
+
+    die "Please specify a limit type\n" unless defined $args->{limit_type};
 
     my $supported_config = $self->supported_config_type->{per_landing_company};
 
-    die 'limit_type is not supported' unless $supported_config->{$args->{limit_type}};
+    die "Limit type is not supported\n" unless $supported_config->{$args->{limit_type}};
 
-    die "limit_amount must be a positive number" if not looks_like_number($args->{limit_amount}) or $args->{limit_amount} < 0;
+    die "Limit amount must be a positive number\n" if not looks_like_number($args->{limit_amount}) or $args->{limit_amount} < 0;
 
     if (    $args->{market}
         and scalar(@{$args->{market}}) > 1
         and @{$args->{underlying_symbol}}
         and (scalar(@{$args->{underlying_symbol}}) > 1 or grep { $_ ne 'default' } @{$args->{underlying_symbol}}))
     {
-        die "If you select multiple markets, underlying symbol can only be default";
+        die "If you select multiple markets, underlying symbol can only be default\n";
     }
 
     if (@{$args->{underlying_symbol}}) {
         # if underlying symbol is specified, then market is required
-        die "Please specify the market of the underlying symbol input" unless $args->{market};
+        die "Please specify the market of the underlying symbol input\n" unless $args->{market};
         # must be default or a valid underlying symbol
-        die "invalid underlying symbol"
+        die "Invalid underlying symbol\n"
             if grep { $_ ne 'default' and not Finance::Underlying->by_symbol($_) } @{$args->{underlying_symbol}};
+    }
+
+    if (defined $args->{start_time} and not defined $args->{end_time}) {
+        die "If using start time, must also provide end time\n";
+    }
+    if (defined $args->{end_time} and not defined $args->{start_time}) {
+        die "If using end time, must also provide start time\n";
+    }
+
+    ## Clean up and verify the start and end times
+    if (defined $args->{start_time}) {
+        for my $time (qw/ start_time end_time /) {
+
+            ## Change any odd characters (e.g. tabs) to spaces and collapse them
+            $args->{$time} =~ s/[^\d\-\:\w]+/ /g;
+
+            ## Remove whitespace
+            $args->{$time} =~ s/^\s*(.+?)\s*$/$1/;
+
+            ## If this looks like just a date, adjust to start or end of day
+            ## Example: "2018-07-04" becomes "2018-07-04 00:00:00"
+            if ($args->{$time} =~ /^\d\d\d\d\-\d\d?\-\d\d?$/) {
+                $args->{$time} .= $time eq 'start_time' ? ' 00:00:00' : ' 24:00:00';
+            } else {
+                ## Turn four and six digit numbers into proper times
+                ## Example: "1234" becomes "12:34:00"
+                ## Example: "102101" becomes "10:21:01"
+                $args->{$time} =~ s/^(\d\d)(\d\d)$/$1:$2:00/;
+                $args->{$time} =~ s/^(\d\d)(\d\d)(\d\d)$/$1:$2:$3/;
+
+                ## If we only have a single number, assume it is an hour and add the minutes
+                ## Example "12" becomes "12:00:00"
+                $args->{$time} =~ s/^(\d\d?)$/$1:00:00/;
+
+                ## Same as above, but with the year
+                ## Example "2018-11-28 12" becomes "2018-11-28 12:00:00"
+                $args->{$time} =~ s/^(\d\d\d\d\-\d\d?\-\d\d? \d\d?)$/$1:00:00/;
+
+                ## If we just have a time, add today's date
+                ## Example: "12:00" becomes "today 12:00"
+                if ($args->{$time} =~ /^\s*\d[\d:]{0,7}\s*$/) {
+                    $args->{$time} = "today $args->{$time}";
+                }
+            }
+        }
+
+        ## Quick sanity check, but the database will also catch similar cases
+        if ($args->{start_time} eq $args->{end_time}) {
+            die "The start_time and end_time may not be the same\n";
+        }
     }
 
     my $statement;
     if (@{$args->{underlying_symbol}}) {
         my $table_name = 'update_symbol_' . $args->{limit_type};
-        $statement = qq{SELECT betonmarkets.$table_name (?,?,?,?,?,?)};
+        $statement = qq{SELECT betonmarkets.$table_name (?,?,?,?,?,?, ?,?,?)};
     } else {
         my $table_name = 'update_market_' . $args->{limit_type};
-        $statement = qq{SELECT betonmarkets.$table_name (?,?,?,?,?)};
+        $statement = qq{SELECT betonmarkets.$table_name (?,?,?,?,?, ?,?,?)};
     }
 
+    my $comment = $args->{comment} // '';
     foreach my $lc (@{$args->{landing_company}}) {
         foreach my $db (@{$self->_db_list($lc)}) {
             foreach my $market (@{$args->{market}}) {
@@ -186,15 +250,34 @@ sub set_global_limit {
                             $barrier_type = $bt eq 'atm' ? 1 : 0;
                         }
                         foreach my $contract_group (@{$args->{contract_group}}) {
-                            if (@{$args->{underlying_symbol}}) {
-                                foreach my $u_symbol (@{$args->{underlying_symbol}}) {
-                                    my $query_symbol = $u_symbol;
-                                    $query_symbol = undef if $u_symbol and $u_symbol eq 'default';
-                                    $self->_update_db($db, $statement,
-                                        [$market, $query_symbol, $contract_group, $expiry_type, $barrier_type, $args->{limit_amount}]);
+                            eval {
+                                if (@{$args->{underlying_symbol}}) {
+                                    foreach my $u_symbol (@{$args->{underlying_symbol}}) {
+                                        my $query_symbol = $u_symbol;
+                                        $query_symbol = undef if $u_symbol and $u_symbol eq 'default';
+                                        $self->_update_db(
+                                            $db,
+                                            $statement,
+                                            [
+                                                $market,      $query_symbol,       $contract_group,
+                                                $expiry_type, $barrier_type,       $args->{limit_amount},
+                                                $comment,     $args->{start_time}, $args->{end_time}]);
+                                    }
+                                } else {
+                                    $self->_update_db(
+                                        $db,
+                                        $statement,
+                                        [
+                                            $market,               $contract_group, $expiry_type,        $barrier_type,
+                                            $args->{limit_amount}, $comment,        $args->{start_time}, $args->{end_time}]);
                                 }
-                            } else {
-                                $self->_update_db($db, $statement, [$market, $contract_group, $expiry_type, $barrier_type, $args->{limit_amount}]);
+                            };
+                            if ($@) {
+                                ## Catch known date/time errors
+                                if ($@ =~ /field value out of range|invalid input syntax/) {
+                                    die "Sorry, that is not a valid time\n";
+                                }
+                                die $@;
                             }
                         }
                     }
@@ -227,6 +310,7 @@ get global limits with parameters. Valid parameters:
 =cut
 
 sub get_global_limit {
+
     my ($self, $args) = @_;
 
     my $landing_company = $args->{landing_company};
@@ -249,7 +333,7 @@ sub get_global_limit {
 
     die 'cannot find database for landing company [' . $landing_company . ']' unless $db;
 
-    my $amount = $db->dbic->run(
+    my $row = $db->dbic->run(
         fixup => sub {
             my @execute_args;
             foreach my $key (@key_list) {
@@ -262,14 +346,12 @@ sub get_global_limit {
             $sth->execute(@execute_args);
             my $output = $sth->fetchrow_arrayref();
             my $record = @$output ? $output->[0] : undef;
-            my $limit;
-            if ($record) {
-                ($limit) = $record =~ /^\(\d+,(\d+)\)$/;
-            }
-            return $limit;
+            return $record;
         });
 
-    return $amount;
+    return '' if !defined $row;
+    my ($rank, $limit) = split /,/ => $row;
+    return $limit;
 }
 
 =head2 get_all_global_limit
@@ -309,41 +391,58 @@ sub get_all_global_limit {
     return [values %uniq_records];
 }
 
-# This as a separate funtion is purely for testability.
+# This as a separate function is purely for testability.
 # Currently, we only have one client database in development environment.
 sub _get_all {
     my ($self, $landing_company) = @_;
 
+    my $time_status =
+          'CASE WHEN end_time IS NOT NULL AND end_time < now() THEN 3 '
+        . 'WHEN start_time IS NOT NULL AND start_time < now() AND end_time > now() THEN 2 '
+        . 'ELSE 1 END AS time_status';
     my %limits;
     foreach my $db (@{$self->_db_list($landing_company)}) {
         foreach my $limit_type (sort keys %{$self->supported_config_type->{per_landing_company}}) {
             foreach my $data (
-                ['market_' . $limit_type,                      [qw(market contract_group expiry_type barrier_type)],            'market'],
-                ['symbol_' . $limit_type,                      [qw(underlying_symbol contract_group expiry_type barrier_type)], 'symbol'],
-                ['symbol_' . $limit_type . '_market_defaults', [qw(market contract_group expiry_type barrier_type)],            'symbol_default'],
+                ['market_' . $limit_type,                      'market'],
+                ['symbol_' . $limit_type,                      'symbol'],
+                ['symbol_' . $limit_type . '_market_defaults', 'symbol_default'],
                 )
             {
-                my ($table_name, $table_fields, $type) = @$data;
+                my ($table_name, $type) = @$data;
                 my $id_postfix = $type =~ /^symbol/ ? 'symbol' : 'market';
                 my $records = $db->dbic->run(
                     fixup => sub {
-                        $_->selectall_arrayref(qq{SELECT * from betonmarkets.$table_name});
+                        $_->selectall_arrayref(qq{SELECT *, $time_status FROM betonmarkets.$table_name}, {Slice => {}});
                     });
                 foreach my $record (@$records) {
-                    my $limit_amount = pop @$record;
-                    my $id = substr(md5_hex(join '', @$record, $id_postfix), 0, 16);
-                    for (0 .. $#$record) {
-                        my $name = $table_fields->[$_];
-                        my $name_info = $record->[$_] ? $record->[$_] : 'default';
-                        if ($name eq 'barrier_type' and $name_info ne 'default') {
-                            $name_info = $name_info eq 'true' ? 'atm' : 'non_atm';
+                    my $id = substr(md5_hex(join '', sort map { $_ // 'undef' } values %$record, $id_postfix), 0, 16);
+                    for my $name (keys %$record) {
+                        my $name_info = $record->{$name} || 'default';
+
+                        ## We only want to show up to the second granularity for start_time and end_time
+                        if ($name =~ /_time$/ and $name_info ne 'default') {
+                            $name_info =~ s/(\d\d\d\d-\d\d-\d\d \d\d:\d\d\:\d\d).+/$1/;
                         }
+
+                        # barrier_type is linked to the 'is_atm' column
+                        if ($name eq 'is_atm') {
+                            $name = 'barrier_type';
+                            if ($name_info ne 'default') {
+                                $name_info = $name_info eq 'true' ? 'atm' : 'non_atm';
+                            }
+                        }
+
+                        ## We want to refer to 'symbol' as 'underlying_symbol' henceforth
+                        $name = 'underlying_symbol' if $name eq 'symbol';
+
                         $limits{$id}{$name} = $name_info;
                     }
+
                     # for market level, underlying symbol is '-'
                     $limits{$id}{underlying_symbol} //= ($type eq 'symbol_default' ? 'default' : '-');
                     $limits{$id}{market} //= $self->_get_market_for_symbol($limits{$id}{underlying_symbol});
-                    $limits{$id}{$limit_type} = $limit_amount;
+                    $limits{$id}{$limit_type} = $record->{limit_amount};
                     $limits{$id}{type} = $type;
                 }
             }
@@ -355,7 +454,7 @@ sub _get_all {
 
 =head2 delete_global_limit
 
-get global limits with parameters. Valid parameters:
+delete global limits with parameters. Valid parameters:
 - expiry_type (defaults to undef)
 - barrier_type (defaults to undef)
 - contract_group (defaults to undef)
@@ -363,6 +462,8 @@ get global limits with parameters. Valid parameters:
 - market (defaults to undef)
 - landing_company (required)
 - limit_type (required)
+- start_time (optional)
+- end_time (otional)
 
 ->delete_global_limit({
     market => ['forex'],
@@ -381,12 +482,12 @@ sub delete_global_limit {
 
     if ($type eq 'market') {
         my $table_name = 'update_market_' . $args->{limit_type};
-        $statement   = qq{SELECT betonmarkets.$table_name (?,?,?,?,?)};
-        @func_inputs = qw(market contract_group expiry_type barrier_type);
+        $statement   = qq{SELECT betonmarkets.$table_name (?,?,?,?,?, ?,?,?)};
+        @func_inputs = qw(market contract_group expiry_type barrier_type limit   comment start_time end_time);
     } else {
         my $table_name = 'update_symbol_' . $args->{limit_type};
-        $statement   = qq{SELECT betonmarkets.$table_name (?,?,?,?,?,?)};
-        @func_inputs = qw(market underlying_symbol contract_group expiry_type barrier_type);
+        $statement   = qq{SELECT betonmarkets.$table_name (?,?,?,?,?,?, ?,?,?)};
+        @func_inputs = qw(market underlying_symbol contract_group expiry_type barrier_type limit   comment start_time end_time);
     }
 
     foreach my $db (@{$self->_db_list($landing_company)}) {
@@ -395,10 +496,9 @@ sub delete_global_limit {
             my $val = $args->{$key};
             $val = undef if $val and $val eq 'default';
             $val = $val eq 'atm' ? 1 : 0 if $key eq 'barrier_type' and defined $val;
+            $val = undef if $key eq 'limit';    ## We delete by providing a null limit amount
             push @execute_args, $val;
         }
-        my $limit_amount = undef;
-        push @execute_args, $limit_amount;    # to delete
         $self->_update_db($db, $statement, \@execute_args);
     }
 
