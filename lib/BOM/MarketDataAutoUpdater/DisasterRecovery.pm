@@ -184,7 +184,7 @@ sub _recover_holiday {
         {
             Quant::Framework::Calendar->new(
                 calendar_name    => $d->[0],
-                type             => $s->[1],
+                type             => $d->[1],
                 for_date         => Date::Utility->new,
                 chronicle_reader => $self->_chronicle_reader,
                 chronicle_writer => $self->_chronicle_writer

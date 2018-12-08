@@ -11,7 +11,6 @@ use Test::Warnings;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Test::Data::Utility::UnitTestDatabase;
 
 use BOM::MarketDataAutoUpdater::ImpliedInterestRates;
 
