@@ -12,7 +12,7 @@ use MojoX::JSON::RPC::Client;
 use POSIX qw/ ceil /;
 
 use BOM::Test::RPC::Client;
-use BOM::Test::Data::Utility::UnitTestDatabase;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::Token;
 use BOM::User::Client;
@@ -340,12 +340,12 @@ subtest $method => sub {
         $cl_usd->save();
 
         $params->{args}->{currency} = 'LTC';
-        $params->{args}->{citizen} = 'af';
+        $params->{args}->{citizen}  = 'af';
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('create second crypto currency account')
             ->result_value_is(sub { shift->{currency} }, 'LTC', 'crypto account currency is LTC');
 
         my $cl_ltc = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
-        
+
         cmp_ok($cl_ltc->citizen, 'eq', $cl_usd->citizen, 'Citizenship cannot be changed');
 
         cmp_deeply(
@@ -489,7 +489,7 @@ subtest $method => sub {
 
         $client->citizen('');
         $client->save;
-        
+
         $params->{args}->{citizen} = 'xx';
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InvalidCitizenship', 'Correct error code for invalid citizenship for maltainvest')
@@ -641,6 +641,78 @@ subtest $method => sub {
         is($result->{tax_residence}, 'de,nl', 'MF client has tax residence set');
         $result = $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token_mf})->result;
         isnt(keys %$result, 0, 'MF client has financial assessment set');
+    };
+
+    subtest 'Create a new account maltainvest from a virtual account' => sub {
+        #create a virtual gb client
+        my $password = 'jskjd8292922';
+        my $hash_pwd = BOM::User::Password::hashpw($password);
+        $email = 'virtual_email' . rand(999) . '@binary.com';
+        $user  = BOM::User->create(
+            email          => $email,
+            password       => $hash_pwd,
+            email_verified => 1,
+        );
+        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+            email       => $email,
+            residence   => 'gb',
+        });
+        $auth_token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
+        $user->add_client($client);
+
+        $params->{args}->{accept_risk} = 1;
+        $params->{token}               = $auth_token;
+        $params->{args}->{residence}   = 'gb';
+
+        # call with totally random values - our client still should have correct one
+        ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name residence address_city/;
+        $params->{args}->{phone}         = '1234567890';
+        $params->{args}->{date_of_birth} = '1990-09-09';
+
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('PermissionDenied',
+            'Correct error code for virtual account trying to open maltainvest account without an mx account')->error_message_is('Permission denied.',
+            'Correct error message for virtual account trying to open maltainvest account without an mx account');
+
+        $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'MX',
+            email       => $email,
+            residence   => 'gb',
+        });
+        $auth_token = BOM::Database::Model::AccessToken->new->create_token($client_mx->loginid, 'test token');
+        $params->{token} = $auth_token;
+
+        $user->add_client($client_mx);
+
+        my $result = $rpc_ct->call_ok($method, $params)->result;
+        ok $result->{client_id}, "Create an MF account after have a MX account";
+
+        #create a virtual de client
+        $email = 'virtual_de_email' . rand(999) . '@binary.com';
+        # call with totally random values - our client still should have correct one
+        ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name residence address_city/;
+        $params->{args}->{phone}         = '1234567821';
+        $params->{args}->{date_of_birth} = '1990-09-09';
+
+        $user = BOM::User->create(
+            email          => $email,
+            password       => $hash_pwd,
+            email_verified => 1,
+        );
+        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+            email       => $email,
+            residence   => 'de',
+        });
+        $auth_token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
+        $user->add_client($client);
+
+        $params->{token} = $auth_token;
+        $params->{args}->{residence} = 'de';
+
+        $result = $rpc_ct->call_ok($method, $params)->result;
+        ok $result->{client_id}, "Germany users can create MF account from the virtual account";
     };
 };
 

@@ -446,6 +446,14 @@ sub validate_make_new_account {
             code              => 'InvalidResidence',
             message_to_client => $error_map->{'invalid residence'}}) if ($countries_instance->restricted_country($residence));
 
+    if ($client->is_virtual && $account_type eq 'financial' && $gaming_company && ($financial_company // '') eq 'maltainvest') {
+        # if the gaming_company is none this means that the user can create an maltainvest account without
+        # needs to create an MX account first from an virtual account.
+        # if the gaming_company has some data, the client needs first create the gaming account and after that
+        # create the financial account, can't create the financial account from the virtual account directly.
+        return permission_error();
+    }
+
     # get all real account siblings
     my $siblings = $client->real_account_siblings_information;
 
