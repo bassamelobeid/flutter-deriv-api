@@ -46,10 +46,10 @@ if ($client->payment_agent) {
 }
 
 my $params = {
-    source               => 1,
-    loginid              => $input->{client_id},
-    date_from            => $from_date,
-    date_to              => $to_date,
+    source    => 1,
+    loginid   => $input->{client_id},
+    date_from => $from_date,
+    date_to   => $to_date,
 };
 
 BOM::Platform::Event::Emitter::emit('email_statement', $params);

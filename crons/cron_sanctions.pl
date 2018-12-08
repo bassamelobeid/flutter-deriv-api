@@ -64,7 +64,7 @@ sub do_report {
     $log->info($r);
 
     my $headers =
-        'Matched name,List Name,List Updated,Database,LoginID,First Name,Last Name,Email,Phone,Gender,Date Of Birth,Date Joined,Residence,Citizen,Matched Reason';
+        'Matched name,List Name,List Updated,DOB (From list),DOB (Client),Database,LoginID,First Name,Last Name,Gender,Date Joined,Residence,Citizen,Matched Reason';
 
     my $csv_file = path($reports_path . '/sanctions-run-' . Date::Utility->new()->date . '.csv');
     $csv_file->append_utf8($headers . "\n");
@@ -124,12 +124,9 @@ sub get_matched_clients_info_by_broker {
                         $sinfo->{name},
                         $sinfo->{list},
                         $listdate{$sinfo->{list}} //= Date::Utility->new($sanctions->last_updated($sinfo->{list}))->date,
-                        (
-                            map { $client->{$_} // '' }
-                                qw(broker_code loginid first_name last_name email phone gender date_of_birth date_joined residence citizen)
-                        ),
-                        $sinfo->{reason},
-                    );
+                        $sinfo->{matched_dob},
+                        (map { $client->{$_} // '' } qw(date_of_birth broker_code loginid first_name last_name gender date_joined residence citizen)),
+                        $sinfo->{reason});
                     $csv->combine(@fields);
                     $output .= $csv->string();
                 }
