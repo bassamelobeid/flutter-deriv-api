@@ -1043,6 +1043,20 @@ rpc set_settings => sub {
     my $tax_residence             = $args->{'tax_residence'}             // '';
     my $tax_identification_number = $args->{'tax_identification_number'} // '';
 
+    # according to compliance, tax_residence and tax_identification_number can be changed
+    # but cannot be removed once they have been set
+    foreach my $field (qw(tax_residence tax_identification_number)) {
+        if ($client->$field and exists $args->{$field} and not $args->{$field}) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'PermissionDenied',
+                    message_to_client => localize('Tax information cannot be removed once it has been set.'),
+                    details           => {
+                        field => $field,
+                    },
+                });
+        }
+    }
+
     # This can be a comma-separated list - if that's the case, we'll just use the first failing residence in
     # the error message.
     if (my $bad_residence = first { $brand->countries_instance->restricted_country($_) } split /,/, $tax_residence || '') {

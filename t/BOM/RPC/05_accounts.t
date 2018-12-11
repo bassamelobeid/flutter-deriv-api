@@ -1581,6 +1581,14 @@ subtest $method => sub {
             'cannot send place_of_birth with a different value'
         );
     }
+    for my $tax_field (qw(tax_residence tax_identification_number)) {
+        local $params->{args} = {
+            $tax_field => '',
+        };
+
+        my $res = $c->tcall($method, $params);
+        is($res->{error}{code}, 'PermissionDenied', $tax_field . ' cannot be removed once it has been set');
+    }
     for my $restricted_country (qw(us ir hk my)) {
         local $params->{args} = {
             tax_residence             => $restricted_country,
