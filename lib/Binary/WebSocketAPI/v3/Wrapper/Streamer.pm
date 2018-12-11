@@ -12,6 +12,7 @@ use Time::HiRes qw(gettimeofday);
 use List::MoreUtils qw(last_index);
 use JSON::MaybeXS;
 use Scalar::Util qw (looks_like_number refaddr weaken);
+use List::Util qw(any);
 use Format::Util::Numbers qw(formatnumber);
 
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
@@ -187,21 +188,23 @@ sub ticks_history {
     my ($c, $req_storage) = @_;
 
     my $args = $req_storage->{args};
-    # looks like we should not be throwing error if granularity=0 to support our existing API user. So deleting it here.
-    # We will try to tell them they screw up on another day.
-    # TODO: remove delete $args->{granularity} when we decided to inform third party about granularity cannot be 0.
-    delete $args->{granularity} unless $args->{granularity};
-    if ($args->{granularity} and not grep { $_ == $args->{granularity} } qw(60 120 180 300 600 900 1800 3600 7200 14400 28800 86400)) {
-        return $c->new_error('ticks_history', "InvalidGranularity", $c->l('Granularity is not valid'));
-    }
 
-    my $publish;
+    # Remove this first, since { granularity: 0 } with no style should be
+    # treated as a request for ticks
+    delete $args->{granularity} unless $args->{granularity};
     my $style = $args->{style};
     $style //= $args->{granularity} ? 'candles' : 'ticks';
+
+    my $publish;
     if ($style eq 'ticks') {
         $publish = 'tick';
     } elsif ($style eq 'candles') {
-        $args->{granularity} //= 60;    # $args->{granularity} will never be zero here
+        # Default missing and 0 cases to 60 (one-minute candles)
+        $args->{granularity} //= 60;
+        # The granularity parameter is documented as only being relevant for candles, so we limit the error check
+        # to the candles case
+        return $c->new_error('ticks_history', "InvalidGranularity", $c->l('Granularity is not valid'))
+            unless any { $_ == $args->{granularity} } qw(60 120 180 300 600 900 1800 3600 7200 14400 28800 86400);
         $publish = $args->{granularity};
     } else {
         return $c->new_error('ticks_history', "InvalidStyle", $c->l('Style [_1] invalid', $style));
@@ -210,12 +213,12 @@ sub ticks_history {
     my $callback = sub {
         my $worker = shift;
         # Here $c might be undef and will generate an error during shutdown of websockets. Here is Tom's comment:
-        #as far as I can see, the issue here is that we process a Redis response just after the websocket connection has closed.
-        #In this case, we're already in global destruction and there just happens to be a race,
-        #one that we might be able to fix by explicitly closing the Redis connection as one of the first steps during shutdown.
+        # as far as I can see, the issue here is that we process a Redis response just after the websocket connection has closed.
+        # In this case, we're already in global destruction and there just happens to be a race,
+        # one that we might be able to fix by explicitly closing the Redis connection as one of the first steps during shutdown.
         #
-        #Explicitly closing the Redis connection wouldn't do anything to help a race between websocket close and Redis response during normal operation, of course,
-        #but until we have a failing test case which demonstrates that, I don't think it's worth spending too much time on.
+        # Explicitly closing the Redis connection wouldn't do anything to help a race between websocket close and Redis response during normal operation, of course,
+        # but until we have a failing test case which demonstrates that, I don't think it's worth spending too much time on.
         return if (!$c || !$c->tx);
         $c->call_rpc({
                 args            => $args,
@@ -296,7 +299,7 @@ sub ticks_history {
     };
 
     # subscribe first with flag of cache_only passed as 1 to indicate to cache the feed data
-    if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
+    if ($args->{subscribe}) {
         if (not _feed_channel_subscribe($c, $args->{ticks_history}, $publish, $args, $callback, 1)) {
             return $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
         }
