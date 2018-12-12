@@ -175,13 +175,12 @@ sub print_client_details {
             if $siblings_docs;
     }
 
-    # COMMUNICATION ADDRESSES
-    my $client_phone_country = join(", ", $countries_instance->codes_from_phone($client->phone)->@*);
-    $client_phone_country = 'Unknown' unless ($client_phone_country);
+    # Get matching countries (country abbreviations) from client's phone
+    my $client_phone_country = get_client_phone_country($client, $countries_instance);
 
     my @language_options = @{BOM::Config::Runtime->instance->app_config->cgi->allowed_languages};
 
-    # SECURITYS SECTION
+    # SECURITY SECTION
     my ($secret_answer, $can_decode_secret_answer);
     try {
         $secret_answer            = BOM::User::Utility::decrypt_secret_answer($client->secret_answer);
@@ -209,7 +208,10 @@ sub print_client_details {
     my $crs_tin_status                 = $client->status->crs_tin_information;
     my $show_allow_professional_client = $client->landing_company->short =~ /^(?:costarica|maltainvest)$/ ? 1 : 0;
 
-    my @tax_residences = $client->tax_residence ? split ',', $client->tax_residence : ();
+    my @tax_residences =
+        $client->tax_residence
+        ? split ',', $client->tax_residence
+        : ();
     my $tax_residences_countries_name;
     if (@tax_residences) {
         $tax_residences_countries_name = join ',', map { code2country($_) } @tax_residences;
@@ -773,6 +775,39 @@ sub sync_to_doughflow {
     BOM::User::AuditLog::log($msg, $loginid, $clerk);
 
     return undef;
+}
+
+#
+
+=head2 get_client_phone_country
+
+Get abbreviation(s) of matching countrie(s) from the given client's phone based on phone code
+Returns a string with country abbreviations separated by comma
+
+Arguments:
+
+=over 1
+
+=item C<$client>, type L<BOM::User::Client>
+
+Client whose phone is processed to find the matching countries
+
+=item C<$countries_instance>, type "Locale::Country::Extra"
+
+Instance of all available countries for a brand
+
+=back
+
+=cut
+
+sub get_client_phone_country {
+    my ($client, $countries_instance) = @_;
+
+    my $client_phone_country;
+    $client_phone_country = join(", ", $countries_instance->codes_from_phone($client->phone)->@*) if $client->phone;
+    $client_phone_country = 'Unknown' unless $client_phone_country;
+
+    return $client_phone_country;
 }
 
 1;

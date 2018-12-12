@@ -26,7 +26,8 @@ if (request()->param('save_limit')) {
 
 if (request()->param('delete_limit')) {
     my %args =
-        map { $_ => request()->param($_) } qw(market expiry_type contract_group underlying_symbol landing_company barrier_type type limit_type start_time end_time);
+        map { $_ => request()->param($_) }
+        qw(market expiry_type contract_group underlying_symbol landing_company barrier_type type limit_type start_time end_time);
     print $json->encode(BOM::Backoffice::QuantsConfigHelper::delete_limit(\%args));
 }
 

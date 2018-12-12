@@ -188,7 +188,7 @@ sub decorate_for_display {
             [contract_group    => 'Contract Group'],
             [landing_company   => 'Landing Company'],
             [comment           => 'Comment'],
-            [time_status       => 'Time Status'], ## Must come before Start Time
+            [time_status       => 'Time Status'],       ## Must come before Start Time
             [start_time        => 'Start Time'],
             [end_time          => 'End Time'],
             (map { [$_ => $supported->{$_}] } sort keys %$supported),

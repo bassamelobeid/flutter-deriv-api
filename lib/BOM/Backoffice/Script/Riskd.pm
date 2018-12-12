@@ -20,7 +20,7 @@ has rest_period => (
 );
 
 sub _build_rest_period {
-    return Time::Duration::Concise::Localize->new(interval => INTERVAL.'s');
+    return Time::Duration::Concise::Localize->new(interval => INTERVAL . 's');
 }
 
 has last_run => (
@@ -31,7 +31,7 @@ has last_run => (
 
 sub _build_last_run {
     return +{
-        mtm       => time - 2 * INTERVAL, # we assume there was a previous successful run at the beginning, to prevent sending 0 as elapsed time
+        mtm       => time - 2 * INTERVAL,    # we assume there was a previous successful run at the beginning, to prevent sending 0 as elapsed time
         dashboard => time - INTERVAL,
     };
 }
@@ -73,10 +73,10 @@ and updates C<last_run> for the next round.
 
 sub send_log {
     my ($self, $type) = @_;
-    my $last_run      = $self->last_run;
-    my $now           = time;
+    my $last_run = $self->last_run;
+    my $now      = time;
 
-    stats_gauge('risk_reporting.run', $now - $last_run->{lc $type}, { tags => ["tag:$type"] });
+    stats_gauge('risk_reporting.run', $now - $last_run->{lc $type}, {tags => ["tag:$type"]});
     $last_run->{lc $type} = $now;
 }
 
