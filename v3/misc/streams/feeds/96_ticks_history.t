@@ -27,6 +27,7 @@ subtest 'validations' => sub {
     $req_storage = {
         ticks_history => 'blah',
         granularity   => 10,
+        style         => 'candles',
         end           => 'latest'
     };
 
