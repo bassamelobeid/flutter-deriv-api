@@ -6,8 +6,13 @@ use warnings;
 use Email::MIME;
 use Email::Abstract;
 use Email::Sender::Transport::Test;
+use Email::Sender::Simple;
 
-our @EXPORT_OK = our @EXPORT = qw(mailbox_clear mailbox_search);
+use Test::More;
+
+use Exporter qw(import export_to_level);
+
+our @EXPORT_OK = our @EXPORT = qw(mailbox_check_empty mailbox_clear mailbox_search);
 
 $ENV{EMAIL_SENDER_TRANSPORT} = 'Test';    ## no critic
 
