@@ -62,6 +62,9 @@ sub _update_redis {
         $diff,
         sub {
             my ($redis, $error, $count) = @_;
+            # We can do nothing useful if we are already shutting down
+            return if ${^GLOBAL_PHASE} eq 'DESTRUCT';
+
             if ($error) {
                 $c->app->log->warn("Redis error: $error");
                 return $f->fail($error);
