@@ -40,7 +40,11 @@ This variable will be set if test is running on qa devbox. If it is set the BOM:
 This variable will be set if test is running on qa devbox. If it is set the BOM::Config::RedisReplicated and other bom services
 will use test redis instance instead of development.
 
-=back
+=cut
+
+=item $ENV{BOM_TEST_REDIS_FEED}
+
+This variable wil be set if test is running on qa devbox. If it is set the BOM::Config::RedisReplicated::redis_feed_*() will use it.
 
 =cut
 
@@ -72,6 +76,7 @@ BEGIN {
         # Redis rand and replicated servers config
         $ENV{BOM_TEST_REDIS_REPLICATED} = $config_dir . '/redis-replicated.yml';
         $ENV{BOM_TEST_REDIS_RAND}       = $config_dir . '/redis.yml';
+        $ENV{BOM_TEST_REDIS_FEED}       = $config_dir . '/redis-feed.yml';
 
         # Cache redis server
         $ENV{REDIS_CACHE_SERVER} = $ENV{BOM_CACHE_SERVER} = '127.0.1.3:6385';
