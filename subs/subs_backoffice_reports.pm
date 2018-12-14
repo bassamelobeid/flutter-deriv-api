@@ -84,10 +84,10 @@ sub DailyTurnOverReport {
     my $days_in_month = $currdate->days_in_month;
     foreach my $day (1 .. $days_in_month) {
 
-	my $date = $day . '-' . $args->{'month'};
+	    my $date = $day . '-' . $args->{'month'};
 
         my $when = Date::Utility->new($date);
-	next if $when->epoch > Date::Utility->new->epoch;
+	    next if $when->epoch > Date::Utility->new->epoch;
         my %tday = (
             is_weekend => $when->is_a_weekend,
             date       => $date,
