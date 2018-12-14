@@ -15,7 +15,7 @@ jobs:
       - checkout
       - run:
           name: Start services
-          command: for i in chronicle; do sudo pg_ctlcluster 9.6 $i start & done & sudo service binary_pgbouncer restart & sudo service redis-server start & wait && sudo cp /home/git/regentmarkets/travis-scripts/conf/redis_appsettings.conf /etc/redis/ && sudo /usr/bin/redis-server /etc/redis/redis_appsettings.conf && sudo mkdir -p /db/f_accounts && sudo chown -R nobody:nogroup /db
+          command: for i in chronicle; do sudo pg_ctlcluster 9.6 $i start & done & sudo service binary_pgbouncer restart & sudo service redis-server start & wait && sudo cp /home/git/regentmarkets/travis-scripts/conf/redis_appsettings.conf /etc/redis/ && sudo /usr/bin/redis-server /etc/redis/redis_appsettings.conf && sudo mkdir -p /db/f_accounts && sudo chown -R nobody:nogroup /db && sudo .circleci/add_config_files.sh
       - run:
           name: Run tests
           command: echo '--formatter TAP::Formatter::JUnit' >> .proverc && make test

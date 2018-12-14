@@ -25,6 +25,7 @@ my $config = {
     replicated    => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-replicated.yml'),
     pricer        => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml'),
     exchangerates => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-exchangerates.yml'),
+    feed          => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_FEED}       // '/etc/rmg/redis-feed.yml'),
 };
 my $connections = {};
 
@@ -55,6 +56,16 @@ sub _redis {
     return $connections->{$key};
 }
 
+sub redis_config {
+    my ($redis_type, $access_type) = @_;
+    my $redis = $config->{$redis_type}->{$access_type};
+    return {
+        uri  => "redis://$redis->{host}:$redis->{port}",
+        host => $redis->{host},
+        port => $redis->{port},
+        ($redis->{password} ? ('password' => $redis->{password}) : ())};
+}
+
 sub redis_write {
     return _redis('replicated', 'write');
 }
@@ -76,6 +87,20 @@ sub redis_exchangerates_write {
     return _redis('exchangerates', 'write');
 }
 
-1;
+sub redis_feed_master {
+    return _redis('feed', 'master-read');
+}
+
+sub redis_feed_master_write {
+    return _redis('feed', 'master-write');
+}
+
+sub redis_feed {
+    return _redis('feed', 'read');
+}
+
+sub redis_feed_write {
+    return _redis('feed', 'write');
+}
 
 1;
