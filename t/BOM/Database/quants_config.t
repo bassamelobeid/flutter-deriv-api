@@ -374,18 +374,24 @@ subtest 'delete global limit' => sub {
         'limit fetched';
     lives_ok { $qc->delete_global_limit({type => 'market', landing_company => 'costarica', limit_type => 'global_potential_loss'}) } 'delete ok';
     my $res = $qc->get_global_limit({
-            landing_company => 'costarica',
-            limit_type      => 'global_potential_loss'
-        }
-        );
+        landing_company => 'costarica',
+        limit_type      => 'global_potential_loss'
+    });
     is $res, '110', 'deleted global but time period still exists';
-    lives_ok { $qc->delete_global_limit({type => 'market', landing_company => 'costarica', limit_type => 'global_potential_loss',
-					start_time => $test_start_time, end_time => $test_end_time}) } 'delete ok';
+    lives_ok {
+        $qc->delete_global_limit({
+                type            => 'market',
+                landing_company => 'costarica',
+                limit_type      => 'global_potential_loss',
+                start_time      => $test_start_time,
+                end_time        => $test_end_time
+            })
+    }
+    'delete ok';
     $res = $qc->get_global_limit({
-            landing_company => 'costarica',
-            limit_type      => 'global_potential_loss'
-        }
-        );
+        landing_company => 'costarica',
+        limit_type      => 'global_potential_loss'
+    });
     is $res, '', 'delete';
 };
 
