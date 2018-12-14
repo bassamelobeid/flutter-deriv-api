@@ -304,14 +304,19 @@ sub aml_risk_level {
     return $risk;
 }
 
-# This function should be renamed to something more fitting, like passed_compliance checks, or something else. However, this is not done as this function is used to set a flag in the get_account_status call and we don't want to change the name of that flag right now. This should be changed alongside the release of the v4 api.
+# This function should be renamed to something more fitting, like passed_compliance checks, or something else.
+# However, this is not done as this function is used to set a flag in the get_account_status call and we don't want to change the name of that flag right now.
+# This should be changed alongside the release of the v4 api.
 sub is_financial_assessment_complete {
     my $self = shift;
 
-    my $sc    = $self->landing_company->short;
-    my $aml   = $self->aml_risk_level();
-    my $is_FI = is_section_complete(decode_fa($self->financial_assessment()), 'financial_information');
-    my $is_TE = is_section_complete(decode_fa($self->financial_assessment()), 'trading_experience');
+    my $sc                   = $self->landing_company->short;
+    my $aml                  = $self->aml_risk_level();
+    my $financial_assessment = decode_fa($self->financial_assessment());
+
+    my $is_FI = is_section_complete($financial_assessment, 'financial_information');
+    my $is_TE = is_section_complete($financial_assessment, 'trading_experience');
+
     return 0 if ($sc eq 'costarica' and $aml eq 'high' and not $is_FI);
     return 0 if ($sc eq 'maltainvest' and not($is_FI and $is_TE));
     return 0 if ($sc =~ /^iom|malta$/ and $aml eq 'high' and not $is_FI);

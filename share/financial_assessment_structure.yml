@@ -10,6 +10,7 @@ trading_experience:
         possible_answer: &frequency_possible_answer
             '0-5 transactions in the past 12 months': 0
             '6-10 transactions in the past 12 months': 1
+            '11-39 transactions in the past 12 months': 1
             '40 transactions or more in the past 12 months': 2
     binary_options_trading_experience:
         label: 'Binary options trading experience'
@@ -39,7 +40,15 @@ financial_information:
             'Finance': 15
             'Health': 0
             'Tourism': 0
-            'Other': 0
+            'Information & Communications Technology': 0
+            'Science & Engineering': 0
+            'Legal': 0
+            'Social & Cultural': 0
+            'Agriculture': 0
+            'Real Estate': 0
+            'Food Services': 0
+            'Manufacturing': 0
+            'Unemployed': 0
     education_level:
         label: 'Level of Education'
         possible_answer:
@@ -53,7 +62,8 @@ financial_information:
             'Self-Employed': 0
             'Investments & Dividends': 4
             'Pension': 0
-            'Other': 0
+            'State Benefits': 0
+            'Savings & Inheritance': 0
     net_income :
         label: 'Net Annual Income'
         possible_answer:
@@ -93,7 +103,8 @@ financial_information:
             'Mining, Construction, Manufacturing and Transport Workers': 0
             'Armed Forces': 0
             'Government Officers': 0
-            'Others': 0
+            'Students': 0
+            'Unemployed': 0
     employment_status:
         label: 'Employment Status'
         possible_answer:
@@ -112,5 +123,4 @@ financial_information:
             'Inheritance': 0
             'Investment Income': 0
             'Sale of Property': 0
-            'Other': 0
 
