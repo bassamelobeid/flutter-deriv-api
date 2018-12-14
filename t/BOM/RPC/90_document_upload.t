@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 
+use Email::Sender::Transport::Test;
 use BOM::Test::RPC::Client;
 use Test::More;
 use Test::Mojo;
@@ -8,27 +9,28 @@ use Test::Warn;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
-use Email::Folder::Search;
 use Email::Stuffer::TestLinks;
 use List::Util qw( all );
 use BOM::RPC::v3::DocumentUpload qw(MAX_FILE_SIZE);
 
-#########################################################
-## Setup test RPC
-#########################################################
+$ENV{EMAIL_SENDER_TRANSPORT} = 'Test';
+
+sub email_list {
+    my $transport = Email::Sender::Simple->default_transport;
+    my @emails = map {
+        +{
+            $_->{envelope}->%*,
+            subject => '' . $_->{email}->get_header('Subject'),
+            body => '' . $_->{email}->get_body,
+        }
+    } $transport->deliveries;
+    $transport->clear_deliveries;
+    @emails
+}
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
-#########################################################
-## Setup mailbox
-#########################################################
-
-my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
-$mailbox->init;
-
-#########################################################
-## Setup clients
-#########################################################
+# Set up clients
 
 my $email = 'dummy@binary.com';
 
@@ -226,8 +228,7 @@ sub finish_successful_upload {
         file_id => $file_id
     };
 
-    # Clear mailbox
-    $mailbox->clear;
+    is(0 + email_list(), 0, 'have no emails to start with');
 
     # Call successful upload
     my $result = $c->call_ok($method, $params)->has_no_error->result;
@@ -286,10 +287,13 @@ sub customise_params {
 sub get_notification_email {
     my $client_id = shift;
 
-    my ($msg) = $mailbox->search(
-        email   => 'authentications@binary.com',
-        subject => qr/New uploaded document for: $client_id/
-    );
+    my ($msg) = grep {
+        my $item = $_;
+        (grep { $_ eq 'authentications@binary.com' } @{$item->{to}})
+            and
+        $_->{subject} =~ qr/New uploaded document for: $client_id/
+    } my @email = email_list();
+    note explain \@email unless $msg;
     return $msg;
 }
 

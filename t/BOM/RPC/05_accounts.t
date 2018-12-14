@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use utf8;
-use Test::Most;
+use Test::More;
 use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
@@ -11,12 +11,12 @@ use Encode;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
 use Encode qw(encode);
 use Email::Address::UseXS;
-use Email::Folder::Search;
 use Digest::SHA qw(hmac_sha256_hex);
 
 use Format::Util::Numbers qw/formatnumber/;
 use Scalar::Util qw/looks_like_number/;
 use LandingCompany::Registry;
+use BOM::Test::Email;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -88,8 +88,6 @@ my $user         = BOM::User->create(
 );
 $user->add_client($test_client);
 $user->add_client($test_client_vr);
-my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
-$mailbox->init;
 
 my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
@@ -1082,10 +1080,10 @@ subtest $method => sub {
         'Password should be at least six characters, including lower and uppercase letters with numbers.');
     my $new_password = 'Fsfjxljfwkls3@fs9';
     $params->{args}{new_password} = $new_password;
-    $mailbox->clear;
+    mailbox_clear();
     is($c->tcall($method, $params)->{status}, 1, 'update password correctly');
     my $subject = 'Your password has been changed.';
-    my @msgs    = $mailbox->search(
+    my @msgs    = mailbox_search(
         email   => $email,
         subject => qr/\Q$subject\E/
     );
@@ -1161,7 +1159,7 @@ subtest $method => sub {
     );
     $params->{args}{lock_password} = $tmp_new_password;
 
-    $mailbox->clear;
+    mailbox_clear();
     # here I mocked function 'save' to simulate the db failure.
     my $mocked_client = Test::MockModule->new(ref($test_client));
     $mocked_client->mock('save', sub { return undef });
@@ -1174,7 +1172,7 @@ subtest $method => sub {
 
     is($c->tcall($method, $params)->{status}, 1, 'set password success');
     my $subject = 'Cashier password updated';
-    my @msgs    = $mailbox->search(
+    my @msgs    = mailbox_search(
         email   => $email,
         subject => qr/\Q$subject\E/
     );
@@ -1187,7 +1185,7 @@ subtest $method => sub {
     $params->{args}{unlock_password} = '123456';
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Your cashier was not locked.', 'return error if not locked');
 
-    $mailbox->clear;
+    mailbox_clear();
     $test_client->cashier_setting_password(BOM::User::Password::hashpw($tmp_password));
     $test_client->save;
     is(
@@ -1196,7 +1194,7 @@ subtest $method => sub {
         'return error if not correct'
     );
     $subject = 'Failed attempt to unlock cashier section';
-    @msgs    = $mailbox->search(
+    @msgs    = mailbox_search(
         email   => $email,
         subject => qr/\Q$subject\E/
     );
@@ -1212,12 +1210,12 @@ subtest $method => sub {
     );
     $mocked_client->unmock_all;
 
-    $mailbox->clear;
+    mailbox_clear();
     is($c->tcall($method, $params)->{status}, 0, 'unlock password ok');
     $test_client->load;
     ok(!$test_client->cashier_setting_password, 'Cashier password unset');
     $subject = 'Cashier password updated';
-    @msgs    = $mailbox->search(
+    @msgs    = mailbox_search(
         email   => $email,
         subject => qr/\Q$subject\E/
     );
@@ -1373,7 +1371,7 @@ subtest $method => sub {
     # test that setting this for one client sets it for clients with same landing company
     is($c->tcall('get_financial_assessment', {token => $token_21})->{source_of_wealth},   undef, "Financial assessment not set for CR client");
     is($c->tcall('get_financial_assessment', {token => $token_cr_2})->{source_of_wealth}, undef, "Financial assessment not set for second CR clinet");
-    $mailbox->clear;
+    mailbox_clear();
 
     $c->tcall(
         $method,
@@ -1389,7 +1387,7 @@ subtest $method => sub {
         "Financial assessment set for second CR client"
     );
 
-    my @msgs = $mailbox->search(
+    my @msgs = mailbox_search(
         email   => 'compliance@binary.com',
         subject => qr/has submitted the assessment test/
     );
@@ -1442,7 +1440,7 @@ subtest $method => sub {
         "account_turnover"                     => 'Less than $25,000',                                # +0
     };
 
-    $mailbox->clear;
+    mailbox_clear();
     $c->tcall(
         $method,
         {
@@ -1451,14 +1449,14 @@ subtest $method => sub {
         });
     is($c->tcall('get_financial_assessment', {token => $token1})->{forex_trading_experience}, "1-2 years", "forex_trading_experience changed");
 
-    my @msgs = $mailbox->search(
+    my @msgs = mailbox_search(
         email   => 'compliance@binary.com',
         subject => qr/assessment test details have been updated/
     );
     ok(@msgs, 'send a email to compliance for MF after changing financial assessment');
     # make call again but with same arguments
 
-    $mailbox->clear;
+    mailbox_clear();
 
     $c->tcall(
         $method,
@@ -1467,7 +1465,7 @@ subtest $method => sub {
             token => $token1
         });
 
-    @msgs = $mailbox->search(
+    @msgs = mailbox_search(
         email   => 'compliance@binary.com',
         subject => qr/assessment test details have been updated/
     );
@@ -1647,7 +1645,7 @@ subtest $method => sub {
     my $add_note_called;
     $mocked_client->mock('add_note', sub { $add_note_called = 1; });
     my $old_latest_environment = $test_client->latest_environment;
-    $mailbox->clear;
+    mailbox_clear();
     $params->{args}->{email_consent} = 1;
 
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
@@ -1701,24 +1699,24 @@ subtest $method => sub {
     isnt($test_client->latest_environment, $old_latest_environment, "latest environment updated");
 
     my $subject = 'Change in account settings';
-    my @msgs    = $mailbox->search(
+    my @msgs    = mailbox_search(
         email   => $test_client->email,
         subject => qr/\Q$subject\E/
     );
     ok(@msgs, 'send a email to client');
     like($msgs[0]{body}, qr/>address line 1, address line 2, address city, Bali/s, 'email content correct');
-    $mailbox->clear;
+    mailbox_clear();
 
     $params->{args}->{request_professional_status} = 1;
 
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
     $subject = $test_loginid . ' requested for professional status';
-    @msgs    = $mailbox->search(
+    @msgs    = mailbox_search(
         email   => 'compliance@binary.com,support@binary.com',
         subject => qr/\Q$subject\E/
     );
     ok(@msgs, 'send a email to client');
-    $mailbox->clear;
+    mailbox_clear();
 
     $res = $c->tcall('get_settings', {token => $token1});
     is($res->{request_professional_status}, 1, "Was able to request professional status");
@@ -1945,7 +1943,7 @@ subtest 'get and set self_exclusion' => sub {
             'code'              => 'SetSelfExclusionError'
         });
 
-    $mailbox->clear;
+    mailbox_clear();
     my $exclude_until = Date::Utility->new->plus_time_interval('7mo')->date_yyyymmdd;
     my $timeout_until = Date::Utility->new->plus_time_interval('1d');
     $params->{args} = {
@@ -1958,7 +1956,7 @@ subtest 'get and set self_exclusion' => sub {
         timeout_until          => $timeout_until->epoch,
     };
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
-    my @msgs = $mailbox->search(
+    my @msgs = mailbox_search(
         email   => 'compliance@binary.com,marketing@binary.com',
         subject => qr/Client $test_loginid set self-exclusion limits/
     );
@@ -1983,7 +1981,7 @@ subtest 'get and set self_exclusion' => sub {
 
     ## Section: Check self-exclusion notification emails for compliance, related to
     ##  clients under Binary (Europe) Limited, are sent under correct circumstances.
-    $mailbox->clear;
+    mailbox_clear();
 
     ## Set some limits, and no email should be sent, because no MT5 account has
     ##   been opened yet.
@@ -2001,7 +1999,7 @@ subtest 'get and set self_exclusion' => sub {
         session_duration_limit => 1440,
     };
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
-    @msgs = $mailbox->search(
+    @msgs = mailbox_search(
         email   => 'compliance@binary.com,marketing@binary.com,x-acc@binary.com',
         subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
     );
@@ -2043,7 +2041,7 @@ subtest 'get and set self_exclusion' => sub {
 
     ## Verify an email was sent after opening an MT5 account, since user has
     ##  limits currently in place.
-    @msgs = $mailbox->search(
+    @msgs = mailbox_search(
         email   => 'compliance@binary.com,marketing@binary.com,x-acc@binary.com',
         subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
     );
@@ -2052,9 +2050,9 @@ subtest 'get and set self_exclusion' => sub {
 
     ## Set some limits again, and another email should be sent to compliance listing
     ##  the new limitations since an MT5 account is open.
-    $mailbox->clear;
+    mailbox_clear();
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
-    @msgs = $mailbox->search(
+    @msgs = mailbox_search(
         email   => 'compliance@binary.com,marketing@binary.com,x-acc@binary.com',
         subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
     );

@@ -1,0 +1,110 @@
+version: 2
+
+default: &default
+  docker:
+    - image: regentmarkets/debian-ci:latest
+      user: nobody
+      auth:
+        username: circle4regentmarkets
+        password: $DOCKERHUB_PASSWORD
+  working_directory: /home/git/regentmarkets/binary-websocket-api
+
+alias:
+  - &ssh_keys
+    add_ssh_keys:
+      fingerprints:
+        - "26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb"
+  - &services
+    run:
+      name: Start services
+      command: |
+        set -ex
+        for i in authdb chronicle feed main users; do
+          sudo pg_ctlcluster 9.6 $i start &
+        done
+        sudo service binary_feeddb_pgbouncer restart &
+        sudo service binary_pgbouncer restart &
+        sudo service redis-server start &
+        wait
+        sudo cp /home/git/regentmarkets/travis-scripts/conf/redis_appsettings.conf /etc/redis/
+        sudo /usr/bin/redis-server /etc/redis/redis_appsettings.conf
+        sudo mkdir -p /var/log/httpd && sudo chown nobody:nogroup /var/log/httpd
+  - &inotify
+    run:
+      name: inotify dæmon
+      command: perl /home/git/regentmarkets/bom-platform/bin/notify_pub.pl 2>&1 | grep -Ev '(connection has been closed unexpectedly)|(terminating connection due to administrator)'
+      background: true
+      environment:
+        PERL5LIB: /home/git/regentmarkets/bom/lib:/home/git/regentmarkets/bom-postgres/lib:/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-market/lib:/home/git/regentmarkets/bom-marketdataautoupdater/lib:/home/git/regentmarkets/bom-backoffice/lib:/home/git/regentmarkets/bom-myaffiliates/lib:/home/git/regentmarkets/binary-websocket-api/lib:/home/git/regentmarkets/bom-paymentapi/lib:/home/git/regentmarkets/bom-oauth/lib:/home/git/regentmarkets/bom-rpc/lib:/home/git/regentmarkets/bom-populator/lib:/home/git/regentmarkets/bom-feed/lib:/home/git/regentmarkets/bom-test/lib:/home/git/regentmarkets/php-mt5-webapi/lib:/home/git/regentmarkets/bom-transaction/lib:/home/git/regentmarkets/bom-pricing/lib:/home/git/regentmarkets/bom-cryptocurrency/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-config/lib
+  - &pricing_queue
+    run:
+      name: pricing queue
+      command: perl /home/git/regentmarkets/bom-pricing/bin/price_queue.pl daemon
+      background: true
+      environment:
+        PERL5LIB: /home/git/regentmarkets/bom/lib:/home/git/regentmarkets/bom-postgres/lib:/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-market/lib:/home/git/regentmarkets/bom-marketdataautoupdater/lib:/home/git/regentmarkets/bom-backoffice/lib:/home/git/regentmarkets/bom-myaffiliates/lib:/home/git/regentmarkets/binary-websocket-api/lib:/home/git/regentmarkets/bom-paymentapi/lib:/home/git/regentmarkets/bom-oauth/lib:/home/git/regentmarkets/bom-rpc/lib:/home/git/regentmarkets/bom-populator/lib:/home/git/regentmarkets/bom-feed/lib:/home/git/regentmarkets/bom-test/lib:/home/git/regentmarkets/php-mt5-webapi/lib:/home/git/regentmarkets/bom-transaction/lib:/home/git/regentmarkets/bom-pricing/lib:/home/git/regentmarkets/bom-cryptocurrency/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-config/lib
+  - &pricing_daemon
+    run:
+      name: pricing dæmon
+      command: perl /home/git/regentmarkets/bom-pricing/bin/price_daemon.pl --no-warmup=1 daemon
+      background: true
+      environment:
+        PERL5LIB: /home/git/regentmarkets/bom/lib:/home/git/regentmarkets/bom-postgres/lib:/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-market/lib:/home/git/regentmarkets/bom-marketdataautoupdater/lib:/home/git/regentmarkets/bom-backoffice/lib:/home/git/regentmarkets/bom-myaffiliates/lib:/home/git/regentmarkets/binary-websocket-api/lib:/home/git/regentmarkets/bom-paymentapi/lib:/home/git/regentmarkets/bom-oauth/lib:/home/git/regentmarkets/bom-rpc/lib:/home/git/regentmarkets/bom-populator/lib:/home/git/regentmarkets/bom-feed/lib:/home/git/regentmarkets/bom-test/lib:/home/git/regentmarkets/php-mt5-webapi/lib:/home/git/regentmarkets/bom-transaction/lib:/home/git/regentmarkets/bom-pricing/lib:/home/git/regentmarkets/bom-cryptocurrency/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-config/lib
+  - &tests
+    environment:
+      PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
+      PERL5LIB: /home/git/regentmarkets/bom/lib:/home/git/regentmarkets/bom-postgres/lib:/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-market/lib:/home/git/regentmarkets/bom-marketdataautoupdater/lib:/home/git/regentmarkets/bom-backoffice/lib:/home/git/regentmarkets/bom-myaffiliates/lib:/home/git/regentmarkets/binary-websocket-api/lib:/home/git/regentmarkets/bom-paymentapi/lib:/home/git/regentmarkets/bom-oauth/lib:/home/git/regentmarkets/bom-rpc/lib:/home/git/regentmarkets/bom-populator/lib:/home/git/regentmarkets/bom-feed/lib:/home/git/regentmarkets/bom-test/lib:/home/git/regentmarkets/php-mt5-webapi/lib:/home/git/regentmarkets/bom-transaction/lib:/home/git/regentmarkets/bom-pricing/lib:/home/git/regentmarkets/bom-cryptocurrency/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-config/lib
+      RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
+
+jobs:
+  syntax:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *services
+      - run:
+          <<: *tests
+          name: Verify syntax and compilation
+          command: echo '--formatter TAP::Formatter::JUnit' >> .proverc && make syntax
+      - store_test_results:
+          path: /var/tmp/test-output
+  unit:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *services
+      - run:
+          <<: *tests
+          name: Run tests
+          command: echo '--formatter TAP::Formatter::JUnit' >> .proverc && make test
+      - store_test_results:
+          path: /var/tmp/test-output
+  schema:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *services
+      - *inotify
+      - *pricing_queue
+      - *pricing_daemon
+      - run:
+          <<: *tests
+          name: Run tests
+          command: echo '--formatter TAP::Formatter::JUnit' >> .proverc && make json_schemas
+      - store_test_results:
+          path: /var/tmp/test-output
+
+workflows:
+  version: 2
+  build-workflow:
+    jobs:
+      - syntax:
+          context: perl
+      - unit:
+          context: perl
+      - schema:
+          context: perl
+

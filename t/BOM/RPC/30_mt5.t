@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+use Email::Sender::Transport::Test;
 use Guard;
 use Test::Most;
 use Test::Mojo;
@@ -8,7 +9,6 @@ use Test::MockTime qw(:all);
 use JSON::MaybeUTF8;
 use List::Util qw();
 use Email::Address::UseXS;
-use Email::Folder::Search;
 use Format::Util::Numbers qw/financialrounding/;
 
 use BOM::Test::RPC::Client;
@@ -21,6 +21,8 @@ use BOM::Platform::Token;
 use BOM::User;
 use BOM::Config::Runtime;
 use BOM::Config::RedisReplicated;
+
+$ENV{EMAIL_SENDER_TRANSPORT} = 'Test';
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 my $json = JSON::MaybeXS->new;
@@ -107,9 +109,6 @@ my $token_vr = $m->create_token($test_client_vr->loginid, 'test token');
 
 @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
 
-my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
-$mailbox->init;
-
 # Throttle function limits requests to 1 per minute which may cause
 # consecutive tests to fail without a reset.
 BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
@@ -170,7 +169,7 @@ subtest 'new account with switching' => sub {
 subtest 'authenticated CR client should not receive authentication request when he opens new MT5 financial account' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     my $method = 'mt5_new_account';
-    $mailbox->clear;
+    is(0 + email_list(), 0, 'have no emails to start with');
     my $params = {
         language => 'EN',
         token    => $token,
@@ -195,7 +194,7 @@ subtest 'authenticated CR client should not receive authentication request when 
     $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account');
     #check inbox for emails
     my $cli_subject  = 'Authenticate your account to continue trading on MT5';
-    my @client_email = $mailbox->search(
+    my @client_email = mailbox_search(
         email   => $DETAILS{email},
         subject => qr/\Q$cli_subject\E/
     );
@@ -208,7 +207,7 @@ subtest 'new CR financial accounts should receive identity verification request 
     $test_client->set_authentication('ID_DOCUMENT')->status('pending');
     $test_client->save;
     my $method = 'mt5_new_account';
-    $mailbox->clear;
+    is(0 + email_list(), 0, 'have no emails to start with');
     my $params = {
         language => 'EN',
         token    => $token,
@@ -226,7 +225,7 @@ subtest 'new CR financial accounts should receive identity verification request 
     $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account');
     #check inbox for emails
     my $cli_subject  = 'Authenticate your account to continue trading on MT5';
-    my @client_email = $mailbox->search(
+    my @client_email = mailbox_search(
         email   => $DETAILS{email},
         subject => qr/\Q$cli_subject\E/
     );
@@ -485,7 +484,7 @@ subtest 'password change' => sub {
 
 subtest 'password reset' => sub {
     my $method = 'mt5_password_reset';
-    $mailbox->clear;
+    is(0 + email_list(), 0, 'have no emails to start with');
 
     my $code = BOM::Platform::Token->new({
             email       => $DETAILS{email},
@@ -508,7 +507,7 @@ subtest 'password reset' => sub {
     is($c->result, 1, 'result');
 
     my $subject = 'Your MT5 password has been reset.';
-    my @msgs    = $mailbox->search(
+    my @msgs    = mailbox_search(
         email   => $DETAILS{email},
         subject => qr/\Q$subject\E/
     );
@@ -518,7 +517,7 @@ subtest 'password reset' => sub {
 
 subtest 'investor password reset' => sub {
     my $method = 'mt5_password_reset';
-    $mailbox->clear;
+    is(0 + email_list(), 0, 'have no emails to start with');
 
     my $code = BOM::Platform::Token->new({
             email       => $DETAILS{email},
@@ -541,7 +540,7 @@ subtest 'investor password reset' => sub {
     is($c->result, 1, 'result');
 
     my $subject = 'Your MT5 password has been reset.';
-    my @msgs    = $mailbox->search(
+    my @msgs    = mailbox_search(
         email   => $DETAILS{email},
         subject => qr/\Q$subject\E/
     );
@@ -1114,5 +1113,30 @@ sub _get_mt5transfer_from_transaction {
             );
         });
     return $result;
+}
+
+sub email_list {
+    my $transport = Email::Sender::Simple->default_transport;
+    my @emails = map {
+        +{
+            $_->{envelope}->%*,
+            subject => '' . $_->{email}->get_header('Subject'),
+            body => '' . $_->{email}->get_body,
+        }
+    } $transport->deliveries;
+    $transport->clear_deliveries;
+    @emails
+}
+
+sub mailbox_search {
+    my (%args) = @_;
+    my ($msg) = grep {
+        my $item = $_;
+        (exists $args{email} and grep { $_ eq $args{email} } @{$item->{to}})
+            and
+        (exists $args{subject} and $_->{subject} =~ $args{subject})
+    } my @email = email_list();
+    note explain \@email unless $msg;
+    return $msg;
 }
 done_testing();

@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 
+use Email::Sender::Transport::Test;
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
@@ -13,12 +14,12 @@ use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::RPC::v3::Utility;
 use BOM::Database::Model::AccessToken;
-use Email::Folder::Search;
 use BOM::User;
 use Email::Stuffer::TestLinks;
 
 use utf8;
 
+$ENV{EMAIL_SENDER_TRANSPORT} = 'Test';
 my ($user, $client, $email);
 my ($t, $rpc_ct);
 my $method = 'verify_email';
@@ -34,9 +35,6 @@ my @params = (
     # cleanup
     BOM::Database::Model::AccessToken->new->dbic->dbh->do('DELETE FROM auth.access_token');
 }
-
-my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
-$mailbox->init;
 
 subtest 'Initialization' => sub {
     lives_ok {
@@ -66,7 +64,7 @@ subtest 'Initialization' => sub {
 };
 
 subtest 'Account opening request with an invalid email address' => sub {
-    $mailbox->clear;
+    mailbox_clear();
     $params[1]->{args}->{verify_email} = 'test' . rand(999) . '.@binary.com';
     $params[1]->{args}->{type}         = 'account_opening';
     $params[1]->{server_name}          = 'binary.com';
@@ -77,7 +75,7 @@ subtest 'Account opening request with an invalid email address' => sub {
 };
 
 subtest 'Account opening request with email does not exist' => sub {
-    $mailbox->clear;
+    mailbox_clear();
     $params[1]->{args}->{verify_email} = 'test' . rand(999) . '@binary.com';
     $params[1]->{args}->{type}         = 'account_opening';
     $params[1]->{server_name}          = 'binary.com';
@@ -86,7 +84,7 @@ subtest 'Account opening request with email does not exist' => sub {
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
 
-    my @msgs = $mailbox->search(
+    my @msgs = mailbox_search(
         email   => $params[1]->{args}->{verify_email},
         subject => qr/Verify your email address/
     );
@@ -94,7 +92,7 @@ subtest 'Account opening request with email does not exist' => sub {
 };
 
 subtest 'Account opening request with email exists' => sub {
-    $mailbox->clear;
+    mailbox_clear();
     $params[1]->{args}->{verify_email} = uc $email;
     $params[1]->{args}->{type}         = 'account_opening';
     $params[1]->{server_name}          = 'binary.com';
@@ -103,7 +101,7 @@ subtest 'Account opening request with email exists' => sub {
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
 
-    my @msgs = $mailbox->search(
+    my @msgs = mailbox_search(
         email   => lc($params[1]->{args}->{verify_email}),
         subject => qr/Duplicate email address submitted/
     );
@@ -111,7 +109,7 @@ subtest 'Account opening request with email exists' => sub {
 };
 
 subtest 'Reset password for exists user' => sub {
-    $mailbox->clear;
+    mailbox_clear();
     $params[1]->{args}->{verify_email} = uc $email;
     $params[1]->{args}->{type}         = 'reset_password';
     $params[1]->{server_name}          = 'binary.com';
@@ -120,7 +118,7 @@ subtest 'Reset password for exists user' => sub {
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
 
-    my @msgs = $mailbox->search(
+    my @msgs = mailbox_search(
         email   => lc($params[1]->{args}->{verify_email}),
         subject => qr/New Password Request/
     );
@@ -138,7 +136,7 @@ subtest 'Reset password for not exists user' => sub {
 };
 
 subtest 'Payment agent withdraw' => sub {
-    $mailbox->clear;
+    mailbox_clear();
 
     $params[1]->{args}->{verify_email} = $email;
     $params[1]->{args}->{type}         = 'paymentagent_withdraw';
@@ -151,18 +149,18 @@ subtest 'Payment agent withdraw' => sub {
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
 
-    my @msgs = $mailbox->search(
+    my @msgs = mailbox_search(
         email   => $params[1]->{args}->{verify_email},
         subject => qr/Verify your withdrawal request/
     );
     ok @msgs, 'Email sent successfully';
-    $mailbox->clear;
+    mailbox_clear();
 
     $params[1]->{args}->{verify_email} = 'dummy@email.com';
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
 
-    @msgs = $mailbox->search(
+    @msgs = mailbox_search(
         email   => $params[1]->{args}->{verify_email},
         subject => qr/Verify your withdrawal request/
     );
@@ -170,7 +168,7 @@ subtest 'Payment agent withdraw' => sub {
 };
 
 subtest 'Payment withdraw' => sub {
-    $mailbox->clear;
+    mailbox_clear();
     $params[1]->{args}->{verify_email} = $email;
     $params[1]->{args}->{type}         = 'payment_withdraw';
     $params[1]->{server_name}          = 'binary.com';
@@ -182,22 +180,51 @@ subtest 'Payment withdraw' => sub {
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
 
-    my @msgs = $mailbox->search(
+    my @msgs = mailbox_search(
         email   => $params[1]->{args}->{verify_email},
         subject => qr/Verify your withdrawal request/
     );
     ok @msgs, 'Email sent successfully';
-    $mailbox->clear;
+    mailbox_clear();
 
     $params[1]->{args}->{verify_email} = 'dummy@email.com';
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
 
-    @msgs = $mailbox->search(
+    @msgs = mailbox_search(
         email   => $params[1]->{args}->{verify_email},
         subject => qr/Verify your withdrawal request/
     );
     ok !@msgs, 'no email as token email different from passed email';
 };
+
+sub email_list {
+    my $transport = Email::Sender::Simple->default_transport;
+    my @emails = map {
+        +{
+            $_->{envelope}->%*,
+            subject => '' . $_->{email}->get_header('Subject'),
+            body => '' . $_->{email}->get_body,
+        }
+    } $transport->deliveries;
+    $transport->clear_deliveries;
+    @emails
+}
+
+sub mailbox_clear {
+    is(0 + email_list(), 0, 'have no emails to start with');
+}
+
+sub mailbox_search {
+    my (%args) = @_;
+    my ($msg) = grep {
+        my $item = $_;
+        (exists $args{email} and grep { $_ eq $args{email} } @{$item->{to}})
+            and
+        (exists $args{subject} and $_->{subject} =~ $args{subject})
+    } my @email = email_list();
+    note explain \@email unless $msg;
+    return $msg;
+}
 
 done_testing();

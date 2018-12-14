@@ -1,15 +1,17 @@
 use strict;
 use warnings;
+use Email::Sender::Transport::Test;
 use BOM::Test::RPC::Client;
 use Test::Most;
 use Test::Mojo;
 use Email::Address::UseXS;
-use Email::Folder::Search;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::User;
 use utf8;
 use BOM::Platform::Token;
+
+$ENV{EMAIL_SENDER_TRANSPORT} = 'Test';
 
 # init db
 my $email_vr = 'abv@binary.com';
@@ -31,8 +33,6 @@ my $user_vr = BOM::User->create(
     password => $hash_pwd
 );
 $user_vr->add_client($test_client_vr);
-my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
-$mailbox->init;
 
 my ($status, $code);
 
@@ -49,7 +49,7 @@ my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 # reset password vrtc
 my $method = 'reset_password';
 subtest 'reset_password_vrtc' => sub {
-    $mailbox->clear;
+    is(0 + email_list(), 0, 'have no emails to start with');
     $code = BOM::Platform::Token->new({
             email       => $email_vr,
             expires_in  => 3600,
@@ -64,7 +64,7 @@ subtest 'reset_password_vrtc' => sub {
 
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({status => 1});
     my $subject = 'Your password has been reset.';
-    my @msgs    = $mailbox->search(
+    my @msgs    = mailbox_search(
         email   => $email_vr,
         subject => qr/\Q$subject\E/
     );
@@ -141,10 +141,10 @@ subtest $method => sub {
         })->token;
     $params->{args}->{verification_code} = $code;
 
-    $mailbox->clear;
+    is(0 + email_list(), 0, 'have no emails to start with');
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({status => 1});
     my $subject = 'Your password has been reset.';
-    my @msgs    = $mailbox->search(
+    my @msgs    = mailbox_search(
         email   => $email_cr,
         subject => qr/\Q$subject\E/
     );
@@ -157,5 +157,30 @@ subtest 'check_password' => sub {
     $status = $user_cr->login(password => $new_password);
     is $status->{success}, 1, 'cr login with new password OK';
 };
+
+sub email_list {
+    my $transport = Email::Sender::Simple->default_transport;
+    my @emails = map {
+        +{
+            $_->{envelope}->%*,
+            subject => '' . $_->{email}->get_header('Subject'),
+            body => '' . $_->{email}->get_body,
+        }
+    } $transport->deliveries;
+    $transport->clear_deliveries;
+    @emails
+}
+
+sub mailbox_search {
+    my (%args) = @_;
+    my ($msg) = grep {
+        my $item = $_;
+        (exists $args{email} and grep { $_ eq $args{email} } @{$item->{to}})
+            and
+        (exists $args{subject} and $_->{subject} =~ $args{subject})
+    } my @email = email_list();
+    note explain \@email unless $msg;
+    return $msg;
+}
 
 done_testing();
