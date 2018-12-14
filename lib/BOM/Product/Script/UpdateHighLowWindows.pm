@@ -4,8 +4,8 @@ use warnings;
 
 use LandingCompany::Registry;
 use BOM::Config::Runtime;
+use BOM::Config::RedisReplicated;
 use BOM::Product::Contract::PredefinedParameters qw(update_predefined_highlow);
-use Cache::RedisDB;
 use JSON::MaybeXS;
 
 #Update high and low of symbols for predefined periods.
@@ -13,7 +13,7 @@ sub run {
     my $offerings_obj = LandingCompany::Registry::get('costarica')->multi_barrier_offerings(BOM::Config::Runtime->instance->get_offerings_config);
     my @symbols       = $offerings_obj->values_for_key('underlying_symbol');
 
-    my $redis = Cache::RedisDB->redis;
+    my $redis = BOM::Config::RedisReplicated::redis_feed();
 
     $redis->subscription_loop(
         subscribe        => [map { 'FEED_LATEST_TICK::' . $_ } @symbols],
