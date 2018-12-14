@@ -26,9 +26,9 @@ use warnings;
 
 use Moo;
 
-use Mojo::Redis2;
 use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
+use BOM::Config::RedisReplicated;
 use Quant::Framework::EconomicEventCalendar;
 use LandingCompany::Registry;
 
@@ -73,32 +73,21 @@ sub run {
 }
 
 sub iterate {
-    my $self = shift;
+    my $self  = shift;
+    my $redis = BOM::Config::RedisReplicated::redis_feed();
 
-    my $redis = Mojo::Redis2->new({url => $ENV{REDIS_CACHE_SERVER} // 'redis://127.0.0.1'});
-
-    # Set up the handler to be called on each Redis published quote notification
-    $redis->on(
-        pmessage => sub {
-            my ($redis, $tick) = @_;
+    $redis->subscription_loop(
+        psubscribe       => ['FEED_LATEST_TICK::*'],
+        default_callback => sub {
+            my ($redis, $channel, $pattern, $message) = @_;
             try {
-                $self->_perform_checks($json->decode($tick));
+                $self->_perform_checks($json->decode($message));
             }
             catch {
                 warn "exception caught while performing feed jump checks for $_";
                 stats_inc('bom.marketdata.feedjump.exception');
             };
         });
-
-    $redis->psubscribe(
-        ['FEED_LATEST_TICK::*'],
-        sub {
-            my ($self, $err);
-            warn "Had error when subscribing - $err" if $err;
-            print "Subscribed and waiting for ticks\n";
-        });
-
-    Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
 
     return;
 }
