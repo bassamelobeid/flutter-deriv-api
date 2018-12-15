@@ -48,9 +48,8 @@ test_sendrecv_params 'active_symbols/test_send.json', 'active_symbols/test_recei
 test_sendrecv_params 'active_symbols/test_send_lc.json', 'active_symbols/test_receive_lc.json', 'malta',       'volidx',             '.*';
 test_sendrecv_params 'active_symbols/test_send_lc.json', 'active_symbols/test_receive_lc.json', 'maltainvest', '(?!^volidx$)(^.*$)', '.*';
 
-test_sendrecv 'asset_index/test_send.json',   'asset_index/test_receive.json';
-test_sendrecv 'trading_times/test_send.json', 'trading_times/test_receive.json';
-# test_sendrecv 'paymentagent_list/test_send.json', 'paymentagent_list/test_receive.json';
+test_sendrecv 'asset_index/test_send.json',    'asset_index/test_receive.json';
+test_sendrecv 'trading_times/test_send.json',  'trading_times/test_receive.json';
 test_sendrecv 'residence_list/test_send.json', 'residence_list/test_receive.json';
 test_sendrecv 'states_list/test_send.json',    'states_list/test_receive.json';
 
