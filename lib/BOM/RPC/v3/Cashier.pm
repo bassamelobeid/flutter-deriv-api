@@ -18,6 +18,7 @@ use Scope::Guard qw/guard/;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use Format::Util::Numbers qw/formatnumber financialrounding/;
 use JSON::MaybeXS;
+use Text::Trim;
 use Brands;
 use BOM::User qw( is_payment_agents_suspended_in_country );
 use LandingCompany::Registry;
@@ -47,7 +48,7 @@ use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::ClientDB;
 requires_auth();
 
-use constant MAX_DESCRIPTION_LENGTH => 300;
+use constant MAX_DESCRIPTION_LENGTH => 250;
 
 my $payment_limits = BOM::Config::payment_limits;
 
@@ -444,9 +445,10 @@ rpc paymentagent_transfer => sub {
     my $loginid_fm = $client_fm->loginid;
 
     my ($website_name, $args) = @{$params}{qw/website_name args/};
-    my $currency   = $args->{currency};
-    my $amount     = $args->{amount};
-    my $loginid_to = uc $args->{transfer_to};
+    my $currency    = $args->{currency};
+    my $amount      = $args->{amount};
+    my $loginid_to  = uc $args->{transfer_to};
+    my $description = trim($args->{description} // '');
 
     my $error_sub = sub {
         my ($message_to_client) = @_;
@@ -506,6 +508,9 @@ rpc paymentagent_transfer => sub {
             unless $available_payment_agents_for_client->{$client_fm->loginid};
     }
 
+    return $error_sub->(localize('Notes must not exceed [_1] characters.', MAX_DESCRIPTION_LENGTH))
+        if (length($description) > MAX_DESCRIPTION_LENGTH);
+
     if ($args->{dry_run}) {
         return {
             status              => 2,
@@ -537,7 +542,10 @@ rpc paymentagent_transfer => sub {
     my $today     = $now->datetime_ddmmmyy_hhmmss_TZ;
     my $reference = Data::UUID->new()->create_str();
     my $comment =
-        'Transfer from Payment Agent ' . $payment_agent->payment_agent_name . " to $loginid_to. Transaction reference: $reference. Timestamp: $today";
+          'Transfer from Payment Agent '
+        . $payment_agent->payment_agent_name
+        . " to $loginid_to. Transaction reference: $reference. Timestamp: $today."
+        . ($description ? " Agent note: $description" : '');
 
     ## We want to pass limits in to the function so it can verify amounts
     my $lcshort              = $client_fm->landing_company->short;
@@ -777,7 +785,7 @@ rpc paymentagent_withdraw => sub {
 
     my $currency             = $args->{currency};
     my $amount               = $args->{amount};
-    my $further_instruction  = $args->{description} // '';
+    my $further_instruction  = trim($args->{description} // '');
     my $paymentagent_loginid = $args->{paymentagent_loginid};
     my $reference            = Data::UUID->new()->create_str();
 

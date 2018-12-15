@@ -25,7 +25,7 @@ my @crypto_currencies = qw/ BCH BTC ETH LTC /;    ## ETC not enabled for CR land
 my @fiat_currencies   = qw/ AUD EUR GBP USD /;
 
 ## Things hard-coded into Cashier.pm:
-my $MAX_DESCRIPTION_LENGTH = 300;
+my $MAX_DESCRIPTION_LENGTH = 250;
 
 my $payment_config   = BOM::Config::payment_agent;
 my $withdrawal_limit = $payment_config->{transaction_limits}->{withdraw};
@@ -311,6 +311,12 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         is($res->{error}{message_to_client}, "Invalid amount. Minimum withdrawal allowed is $min_amount.", $test);
         $Alice->payment_agent->min_withdrawal(undef);
 
+        $test = "Withdraw fails if description is over $MAX_DESCRIPTION_LENGTH characters";
+        $testargs->{args}{description} = 'A' x (1 + $MAX_DESCRIPTION_LENGTH);
+        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        like($res->{error}{message_to_client}, qr/Notes must not exceed $MAX_DESCRIPTION_LENGTH/, $test);
+        reset_withdraw_testargs();
+
         $test                          = 'Transfer fails if transfer_to client does not exist';
         $testargs->{args}{transfer_to} = q{Invalid O'Hare};
         $res                           = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
@@ -507,6 +513,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $auth_document_args->{expiration_date} = '2999-12-31';
         $Alice->add_client_authentication_document($auth_document_args);
         $Alice->save;
+        $testargs->{args}->{description} = 'One document is expired';
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{error}{message_to_client}, undef, $test);
         $Alice_transferred += $test_amount;
@@ -608,7 +615,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $old_residence = $Alice->residence;
         $Alice->residence('in the Wonder Land');
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{status}, 1, $test) or diag Dumper $res;
+        is($res->{status}, 1, $test);
         $Alice_transferred += $test_amount;
         $Alice->residence($old_residence);
         pop @$payment_agent_exclusion_list;
@@ -623,7 +630,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         is($res->{status}, 1, $test);
         $Alice_transferred += $test_amount;
         $Alice_balance = sprintf('%0.*f', $precision, $Alice_balance - $test_amount * 2);    # * 2 because we performed 2 pa transfer
-        $Bob_balance   = sprintf('%0.*f', $precision, $Bob_balance + $test_amount);
+        $Bob_balance   = sprintf('%0.*f', $precision, $Bob_balance + $test_amount * 2);
         $test_amount   = sprintf('%0.*f', $precision, $test_amount + $amount_boost);
         reset_transfer_testargs();
 
