@@ -7,9 +7,12 @@ BEGIN {
 }
 
 use Getopt::Long;
+use Path::Tiny qw(path);
+use Text::CSV;
 
 use Brands;
 use Date::Utility;
+
 use BOM::Config;
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::Request qw(request);
@@ -17,6 +20,7 @@ use BOM::Backoffice::Utility qw(master_live_server_error);
 use BOM::Platform::Email qw(send_email);
 use BOM::Config::Runtime;
 use BOM::DailySummaryReport;
+
 use LandingCompany;
 use LandingCompany::Registry;
 
@@ -34,6 +38,11 @@ if (!$optres) {
     exit;
 }
 
+my $csv = Text::CSV->new({
+    eol        => "\n",
+    quote_char => undef
+});
+
 # By default we run all brokers and currencies for today.
 $for_date ||= Date::Utility->new->date_yyyymmdd;
 
@@ -43,8 +52,6 @@ my @currencies  = ($currencies)  ? split(/,/, $currencies)  : LandingCompany::Re
 # This report will now only be run on the master server
 master_live_server_error() unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}}));
 
-my $run_for = Date::Utility->new($for_date);
-
 my $total_pl = BOM::DailySummaryReport->new(
     for_date    => $for_date,
     currencies  => \@currencies,
@@ -52,18 +59,40 @@ my $total_pl = BOM::DailySummaryReport->new(
     broker_path => BOM::Config::Runtime->instance->app_config->system->directory->db . '/f_broker/',
 )->generate_report;
 
-my @mail_msg;
+my @csv_rows;
+
 foreach my $broker (keys %{$total_pl}) {
     foreach my $currency (keys %{$total_pl->{$broker}}) {
-        push @mail_msg, "$broker, $currency, $total_pl->{$broker}->{$currency}";
+        my $csv_row = [$broker, $currency, $for_date, $total_pl->{$broker}->{$currency}];
+        push @csv_rows, $csv_row;
     }
 }
+
+# CSV creation starts here
+my $filename = 'daily_open_trades_' . $for_date . '.csv';
+
+{
+    use autodie qw(close);
+
+    my $file = path($filename)->openw_utf8;
+
+    my @headers = ('Broker', 'Currency', 'Date', 'Open_trades_PL');
+    $csv->print($file, \@headers);
+    $csv->print($file, $_) for @csv_rows;
+
+    close $file;
+}
+
+# CSV creation ends here
+
 my $brand = Brands->new(name => request()->brand);
 send_email({
-    'from'    => $brand->emails('system'),
-    'to'      => 'i-payments@binary.com',
-    'subject' => 'Daily Outstanding Bets Profit / Lost [' . $run_for->date . ']',
-    'message' => \@mail_msg,
+    'from'       => $brand->emails('system'),
+    'to'         => 'i-payments@binary.com',
+    'subject'    => 'Daily Outstanding Bets Profit / Lost [' . $for_date . ']',
+    'attachment' => $filename,
 });
+
+path($filename)->remove;
 
 1;
