@@ -1,8 +1,7 @@
 use strict;
 use warnings;
-use Email::Sender::Transport::Test;
 use Guard;
-use Test::Most;
+use Test::More;
 use Test::Mojo;
 use Test::MockModule;
 use Test::MockTime qw(:all);
@@ -16,13 +15,12 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Helper::Client qw(create_client top_up);
+use BOM::Test::Email;
 use BOM::MT5::User::Async;
 use BOM::Platform::Token;
 use BOM::User;
 use BOM::Config::Runtime;
 use BOM::Config::RedisReplicated;
-
-$ENV{EMAIL_SENDER_TRANSPORT} = 'Test';
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 my $json = JSON::MaybeXS->new;
@@ -169,7 +167,7 @@ subtest 'new account with switching' => sub {
 subtest 'authenticated CR client should not receive authentication request when he opens new MT5 financial account' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     my $method = 'mt5_new_account';
-    is(0 + email_list(), 0, 'have no emails to start with');
+    mailbox_clear();
     my $params = {
         language => 'EN',
         token    => $token,
@@ -194,12 +192,12 @@ subtest 'authenticated CR client should not receive authentication request when 
     $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account');
     #check inbox for emails
     my $cli_subject  = 'Authenticate your account to continue trading on MT5';
-    my @client_email = mailbox_search(
+    my $client_email = mailbox_search(
         email   => $DETAILS{email},
         subject => qr/\Q$cli_subject\E/
     );
 
-    ok(!@client_email, "identity verification request email not sent");
+    ok(!$client_email, "identity verification request email not sent");
 };
 
 subtest 'new CR financial accounts should receive identity verification request if account is not verified' => sub {
@@ -207,7 +205,7 @@ subtest 'new CR financial accounts should receive identity verification request 
     $test_client->set_authentication('ID_DOCUMENT')->status('pending');
     $test_client->save;
     my $method = 'mt5_new_account';
-    is(0 + email_list(), 0, 'have no emails to start with');
+    mailbox_clear();
     my $params = {
         language => 'EN',
         token    => $token,
@@ -225,12 +223,12 @@ subtest 'new CR financial accounts should receive identity verification request 
     $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account');
     #check inbox for emails
     my $cli_subject  = 'Authenticate your account to continue trading on MT5';
-    my @client_email = mailbox_search(
+    my $client_email = mailbox_search(
         email   => $DETAILS{email},
         subject => qr/\Q$cli_subject\E/
     );
 
-    ok(@client_email, "identity verification request email received");
+    ok($client_email, "identity verification request email received");
 };
 
 subtest 'MF should be allowed' => sub {
@@ -484,7 +482,7 @@ subtest 'password change' => sub {
 
 subtest 'password reset' => sub {
     my $method = 'mt5_password_reset';
-    is(0 + email_list(), 0, 'have no emails to start with');
+    mailbox_clear();
 
     my $code = BOM::Platform::Token->new({
             email       => $DETAILS{email},
@@ -507,17 +505,17 @@ subtest 'password reset' => sub {
     is($c->result, 1, 'result');
 
     my $subject = 'Your MT5 password has been reset.';
-    my @msgs    = mailbox_search(
+    my $msg     = mailbox_search(
         email   => $DETAILS{email},
         subject => qr/\Q$subject\E/
     );
-    ok(@msgs, "email received");
+    ok($msg, "email received");
 
 };
 
 subtest 'investor password reset' => sub {
     my $method = 'mt5_password_reset';
-    is(0 + email_list(), 0, 'have no emails to start with');
+    mailbox_clear();
 
     my $code = BOM::Platform::Token->new({
             email       => $DETAILS{email},
@@ -540,11 +538,11 @@ subtest 'investor password reset' => sub {
     is($c->result, 1, 'result');
 
     my $subject = 'Your MT5 password has been reset.';
-    my @msgs    = mailbox_search(
+    my $msg     = mailbox_search(
         email   => $DETAILS{email},
         subject => qr/\Q$subject\E/
     );
-    ok(@msgs, "email received");
+    ok($msg, "email received");
 
 };
 
@@ -1115,28 +1113,4 @@ sub _get_mt5transfer_from_transaction {
     return $result;
 }
 
-sub email_list {
-    my $transport = Email::Sender::Simple->default_transport;
-    my @emails = map {
-        +{
-            $_->{envelope}->%*,
-            subject => '' . $_->{email}->get_header('Subject'),
-            body => '' . $_->{email}->get_body,
-        }
-    } $transport->deliveries;
-    $transport->clear_deliveries;
-    @emails
-}
-
-sub mailbox_search {
-    my (%args) = @_;
-    my ($msg) = grep {
-        my $item = $_;
-        (exists $args{email} and grep { $_ eq $args{email} } @{$item->{to}})
-            and
-        (exists $args{subject} and $_->{subject} =~ $args{subject})
-    } my @email = email_list();
-    note explain \@email unless $msg;
-    return $msg;
-}
 done_testing();

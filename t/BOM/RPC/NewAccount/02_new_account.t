@@ -1,12 +1,12 @@
 use strict;
 use warnings;
 
-use Email::Sender::Transport::Test;
-use Test::Most;
+use Test::More;
 use Test::Mojo;
 use Test::MockModule;
 use Test::FailWarnings;
 use Test::Warn;
+use Test::Fatal qw(lives_ok);
 
 use Date::Utility;
 use MojoX::JSON::RPC::Client;
@@ -15,6 +15,7 @@ use POSIX qw/ ceil /;
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::Email;
 use BOM::Platform::Token;
 use BOM::User::Client;
 use Email::Stuffer::TestLinks;
@@ -22,8 +23,6 @@ use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use BOM::Test::Helper::FinancialAssessment;
 
 use utf8;
-
-$ENV{EMAIL_SENDER_TRANSPORT} = 'Test';
 
 my $email = 'test' . rand(999) . '@binary.com';
 my ($t, $rpc_ct);
@@ -350,7 +349,7 @@ subtest $method => sub {
 
         cmp_ok($cl_ltc->citizen, 'eq', $cl_usd->citizen, 'Citizenship cannot be changed');
 
-        cmp_deeply(
+        is_deeply(
             decode_json_utf8($cl_ltc->financial_assessment->{data}),
             decode_json_utf8($cl_usd->financial_assessment->{data}),
             "new client financial assessment is the same as old client financial_assessment"
@@ -574,11 +573,11 @@ subtest $method => sub {
         is($result->{tax_residence}, 'de,nl', 'MF client has tax residence set');
         $result = $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token_mf})->result;
         isnt(keys %$result, 0, 'MF client has financial assessment set');
-        my @msgs = mailbox_search(
+        my $msg = mailbox_search(
             email   => 'compliance@binary.com',
             subject => qr/\Qhas submitted the assessment test\E/
         );
-        ok(@msgs, "Risk disclosure email received");
+        ok($msg, "Risk disclosure email received");
     };
 
     my $client_mx;
@@ -715,34 +714,5 @@ subtest $method => sub {
         ok $result->{client_id}, "Germany users can create MF account from the virtual account";
     };
 };
-
-sub email_list {
-    my $transport = Email::Sender::Simple->default_transport;
-    my @emails = map {
-        +{
-            $_->{envelope}->%*,
-            subject => '' . $_->{email}->get_header('Subject'),
-            body => '' . $_->{email}->get_body,
-        }
-    } $transport->deliveries;
-    $transport->clear_deliveries;
-    @emails
-}
-
-sub mailbox_clear {
-    is(0 + email_list(), 0, 'have no emails to start with');
-}
-
-sub mailbox_search {
-    my (%args) = @_;
-    my ($msg) = grep {
-        my $item = $_;
-        (exists $args{email} and grep { $_ eq $args{email} } @{$item->{to}})
-            and
-        (exists $args{subject} and $_->{subject} =~ $args{subject})
-    } my @email = email_list();
-    note explain \@email unless $msg;
-    return $msg;
-}
 
 done_testing();

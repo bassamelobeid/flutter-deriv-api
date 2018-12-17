@@ -1,21 +1,20 @@
 use strict;
 use warnings;
 
-use Email::Sender::Transport::Test;
-use Test::Most;
+use Test::More;
 use Test::Mojo;
 use Test::MockModule;
+use Test::Fatal qw(lives_ok);
 
 use MojoX::JSON::RPC::Client;
-use Data::Dumper;
 use BOM::User::Password;
 
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
+use BOM::Test::Email;
 use BOM::RPC::v3::Utility;
 use BOM::Database::Model::AccessToken;
 use BOM::User;
-use Email::Stuffer::TestLinks;
 
 use utf8;
 
@@ -149,22 +148,22 @@ subtest 'Payment agent withdraw' => sub {
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
 
-    my @msgs = mailbox_search(
+    my $msg = mailbox_search(
         email   => $params[1]->{args}->{verify_email},
         subject => qr/Verify your withdrawal request/
     );
-    ok @msgs, 'Email sent successfully';
+    ok $msg, 'Email sent successfully';
     mailbox_clear();
 
     $params[1]->{args}->{verify_email} = 'dummy@email.com';
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
 
-    @msgs = mailbox_search(
+    $msg = mailbox_search(
         email   => $params[1]->{args}->{verify_email},
         subject => qr/Verify your withdrawal request/
     );
-    ok !@msgs, 'no email as token email different from passed email';
+    ok !$msg, 'no email as token email different from passed email';
 };
 
 subtest 'Payment withdraw' => sub {
@@ -180,51 +179,22 @@ subtest 'Payment withdraw' => sub {
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
 
-    my @msgs = mailbox_search(
+    my $msg = mailbox_search(
         email   => $params[1]->{args}->{verify_email},
         subject => qr/Verify your withdrawal request/
     );
-    ok @msgs, 'Email sent successfully';
+    ok $msg, 'Email sent successfully';
     mailbox_clear();
 
     $params[1]->{args}->{verify_email} = 'dummy@email.com';
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
 
-    @msgs = mailbox_search(
+    $msg = mailbox_search(
         email   => $params[1]->{args}->{verify_email},
         subject => qr/Verify your withdrawal request/
     );
-    ok !@msgs, 'no email as token email different from passed email';
+    ok !$msg, 'no email as token email different from passed email';
 };
-
-sub email_list {
-    my $transport = Email::Sender::Simple->default_transport;
-    my @emails = map {
-        +{
-            $_->{envelope}->%*,
-            subject => '' . $_->{email}->get_header('Subject'),
-            body => '' . $_->{email}->get_body,
-        }
-    } $transport->deliveries;
-    $transport->clear_deliveries;
-    @emails
-}
-
-sub mailbox_clear {
-    is(0 + email_list(), 0, 'have no emails to start with');
-}
-
-sub mailbox_search {
-    my (%args) = @_;
-    my ($msg) = grep {
-        my $item = $_;
-        (exists $args{email} and grep { $_ eq $args{email} } @{$item->{to}})
-            and
-        (exists $args{subject} and $_->{subject} =~ $args{subject})
-    } my @email = email_list();
-    note explain \@email unless $msg;
-    return $msg;
-}
 
 done_testing();

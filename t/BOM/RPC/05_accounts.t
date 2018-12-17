@@ -34,7 +34,7 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
 package MojoX::JSON::RPC::Client;
-use Test::Most;
+use Test::More;    # import ok again into this namespace
 
 sub tcall {
     my $self   = shift;
@@ -1083,11 +1083,11 @@ subtest $method => sub {
     mailbox_clear();
     is($c->tcall($method, $params)->{status}, 1, 'update password correctly');
     my $subject = 'Your password has been changed.';
-    my @msgs    = mailbox_search(
+    my $msg     = mailbox_search(
         email   => $email,
         subject => qr/\Q$subject\E/
     );
-    ok(@msgs, "email received");
+    ok($msg, "email received");
     $user = BOM::User->new(id => $user->{id});
     isnt($user->{password}, $hash_pwd, 'user password updated');
     $test_client->load;
@@ -1172,11 +1172,11 @@ subtest $method => sub {
 
     is($c->tcall($method, $params)->{status}, 1, 'set password success');
     my $subject = 'Cashier password updated';
-    my @msgs    = mailbox_search(
+    my $msg     = mailbox_search(
         email   => $email,
         subject => qr/\Q$subject\E/
     );
-    ok(@msgs, "email received");
+    ok($msg, "email received");
 
     # test unlock
     $test_client->cashier_setting_password('');
@@ -1194,11 +1194,11 @@ subtest $method => sub {
         'return error if not correct'
     );
     $subject = 'Failed attempt to unlock cashier section';
-    @msgs    = mailbox_search(
+    $msg     = mailbox_search(
         email   => $email,
         subject => qr/\Q$subject\E/
     );
-    ok(@msgs, "email received");
+    ok($msg, "email received");
 
     # here I mocked function 'save' to simulate the db failure.
     $mocked_client->mock('save', sub { return undef });
@@ -1215,11 +1215,11 @@ subtest $method => sub {
     $test_client->load;
     ok(!$test_client->cashier_setting_password, 'Cashier password unset');
     $subject = 'Cashier password updated';
-    @msgs    = mailbox_search(
+    $msg     = mailbox_search(
         email   => $email,
         subject => qr/\Q$subject\E/
     );
-    ok(@msgs, "email received");
+    ok($msg, "email received");
 };
 
 $method = 'get_settings';
@@ -1387,11 +1387,11 @@ subtest $method => sub {
         "Financial assessment set for second CR client"
     );
 
-    my @msgs = mailbox_search(
+    my $msg = mailbox_search(
         email   => 'compliance@binary.com',
         subject => qr/has submitted the assessment test/
     );
-    ok(!@msgs, 'no email for CR submitting FA');
+    ok(!$msg, 'no email for CR submitting FA');
 
 };
 
@@ -1449,11 +1449,11 @@ subtest $method => sub {
         });
     is($c->tcall('get_financial_assessment', {token => $token1})->{forex_trading_experience}, "1-2 years", "forex_trading_experience changed");
 
-    my @msgs = mailbox_search(
+    my $msg = mailbox_search(
         email   => 'compliance@binary.com',
         subject => qr/assessment test details have been updated/
     );
-    ok(@msgs, 'send a email to compliance for MF after changing financial assessment');
+    ok($msg, 'send a email to compliance for MF after changing financial assessment');
     # make call again but with same arguments
 
     mailbox_clear();
@@ -1465,12 +1465,12 @@ subtest $method => sub {
             token => $token1
         });
 
-    @msgs = mailbox_search(
+    $msg = mailbox_search(
         email   => 'compliance@binary.com',
         subject => qr/assessment test details have been updated/
     );
 
-    ok(!@msgs, 'no email sent when no change');
+    ok(!$msg, 'no email sent when no change');
 };
 
 $method = 'set_settings';
@@ -1699,23 +1699,24 @@ subtest $method => sub {
     isnt($test_client->latest_environment, $old_latest_environment, "latest environment updated");
 
     my $subject = 'Change in account settings';
-    my @msgs    = mailbox_search(
+    my $msg     = mailbox_search(
         email   => $test_client->email,
         subject => qr/\Q$subject\E/
     );
-    ok(@msgs, 'send a email to client');
-    like($msgs[0]{body}, qr/>address line 1, address line 2, address city, Bali/s, 'email content correct');
+    ok($msg, 'send a email to client');
+    like($msg->{body}, qr/>address line 1, address line 2, address city, Bali/s, 'email content correct');
     mailbox_clear();
 
     $params->{args}->{request_professional_status} = 1;
 
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
     $subject = $test_loginid . ' requested for professional status';
-    @msgs    = mailbox_search(
-        email   => 'compliance@binary.com,support@binary.com',
+    $msg     = mailbox_search(
+        email   => 'compliance@binary.com',
         subject => qr/\Q$subject\E/
     );
-    ok(@msgs, 'send a email to client');
+    ok($msg, 'send a email to client');
+    is_deeply($msg->{to}, ['compliance@binary.com', 'support@binary.com'], 'email to address is ok');
     mailbox_clear();
 
     $res = $c->tcall('get_settings', {token => $token1});
@@ -1956,12 +1957,13 @@ subtest 'get and set self_exclusion' => sub {
         timeout_until          => $timeout_until->epoch,
     };
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
-    my @msgs = mailbox_search(
-        email   => 'compliance@binary.com,marketing@binary.com',
-        subject => qr/Client $test_loginid set self-exclusion limits/
+    my $msg = mailbox_search(
+        email   => 'compliance@binary.com',
+        subject => qr/Client $test_loginid set self-exclusion limits/,    # debug => 1,
     );
-    ok(@msgs, "msg sent to marketing and compliance email");
-    like($msgs[0]{body}, qr/.*Exclude from website until/s, 'email content is ok');
+    ok($msg, "msg sent to marketing and compliance email");
+    is_deeply($msg->{to}, ['compliance@binary.com', 'marketing@binary.com'], "msg sent to marketing and compliance email");
+    like($msg->{body}, qr/.*Exclude from website until/s, 'email content is ok');
 
     like(
         $c->tcall($method, $params)->{error}->{message_to_client},
@@ -1999,11 +2001,11 @@ subtest 'get and set self_exclusion' => sub {
         session_duration_limit => 1440,
     };
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
-    @msgs = mailbox_search(
-        email   => 'compliance@binary.com,marketing@binary.com,x-acc@binary.com',
+    $msg = mailbox_search(
+        email   => 'compliance@binary.com',
         subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
     );
-    ok(!@msgs, 'No email for MLT client limits without MT5 accounts');
+    ok(!$msg, 'No email for MLT client limits without MT5 accounts');
 
     ## Open an MT5 account
     # Mocked account details
@@ -2041,23 +2043,25 @@ subtest 'get and set self_exclusion' => sub {
 
     ## Verify an email was sent after opening an MT5 account, since user has
     ##  limits currently in place.
-    @msgs = mailbox_search(
-        email   => 'compliance@binary.com,marketing@binary.com,x-acc@binary.com',
+    $msg = mailbox_search(
+        email   => 'compliance@binary.com',
         subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
     );
-    ok(@msgs, 'Email for MLT client limits with MT5 accounts');
-    like($msgs[0]{body}, qr/MT$mt5_loginid/, 'email content is ok');
+    ok($msg, 'Email for MLT client limits with MT5 accounts');
+    is_deeply($msg->{to}, ['compliance@binary.com', 'marketing@binary.com', 'x-acc@binary.com'], 'email to address ok');
+    like($msg->{body}, qr/MT$mt5_loginid/, 'email content is ok');
 
     ## Set some limits again, and another email should be sent to compliance listing
     ##  the new limitations since an MT5 account is open.
     mailbox_clear();
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
-    @msgs = mailbox_search(
-        email   => 'compliance@binary.com,marketing@binary.com,x-acc@binary.com',
+    $msg = mailbox_search(
+        email   => 'compliance@binary.com',
         subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
     );
-    ok(@msgs, 'Email for MLT client limits with MT5 accounts');
-    like($msgs[0]{body}, qr/MT$mt5_loginid/, 'email content is ok');
+    ok($msg, 'Email for MLT client limits with MT5 accounts');
+    is_deeply($msg->{to}, ['compliance@binary.com', 'marketing@binary.com', 'x-acc@binary.com'], 'email to address ok');
+    like($msg->{body}, qr/MT$mt5_loginid/, 'email content is ok');
 };
 
 # Recursively get values from nested hashes
