@@ -29,7 +29,7 @@ subtest 'callput' => sub {
 subtest 'callputequal' => sub {
     my $cat = Finance::Contract::Category->new('callputequal');
     is $cat->code,          'callputequal';
-    is $cat->display_order, 9;
+    is $cat->display_order, 2;
     is $cat->display_name,  'Rise/Fall Equal';
     ok !$cat->is_path_dependent;
     ok $cat->barrier_at_start, 'barrier determined at start';
@@ -40,7 +40,7 @@ subtest 'callputequal' => sub {
 subtest 'asian' => sub {
     my $cat = Finance::Contract::Category->new('asian');
     is $cat->code,          'asian';
-    is $cat->display_order, 6;
+    is $cat->display_order, 7;
     is $cat->display_name,  'Asians';
     ok !$cat->is_path_dependent;
     ok !$cat->barrier_at_start, 'barrier determined at expiry';
@@ -51,7 +51,7 @@ subtest 'asian' => sub {
 subtest 'digits' => sub {
     my $cat = Finance::Contract::Category->new('digits');
     is $cat->code,          'digits';
-    is $cat->display_order, 5;
+    is $cat->display_order, 6;
     is $cat->display_name,  'Digits';
     ok !$cat->is_path_dependent;
     ok $cat->barrier_at_start, 'barrier determined at start';
@@ -62,7 +62,7 @@ subtest 'digits' => sub {
 subtest 'touchnotouch' => sub {
     my $cat = Finance::Contract::Category->new('touchnotouch');
     is $cat->code,          'touchnotouch';
-    is $cat->display_order, 2;
+    is $cat->display_order, 3;
     is $cat->display_name,  'Touch/No Touch';
     ok $cat->is_path_dependent;
     ok $cat->barrier_at_start, 'barrier determined at start';
@@ -73,7 +73,7 @@ subtest 'touchnotouch' => sub {
 subtest 'endsinout' => sub {
     my $cat = Finance::Contract::Category->new('endsinout');
     is $cat->code,          'endsinout';
-    is $cat->display_order, 3;
+    is $cat->display_order, 4;
     is $cat->display_name,  'Ends Between/Ends Outside';
     ok !$cat->is_path_dependent;
     ok $cat->barrier_at_start, 'barrier determined at start';
@@ -84,7 +84,7 @@ subtest 'endsinout' => sub {
 subtest 'staysinout' => sub {
     my $cat = Finance::Contract::Category->new('staysinout');
     is $cat->code,          'staysinout';
-    is $cat->display_order, 4;
+    is $cat->display_order, 5;
     is $cat->display_name,  'Stays Between/Goes Outside';
     ok $cat->is_path_dependent;
     ok $cat->barrier_at_start, 'barrier determined at start';

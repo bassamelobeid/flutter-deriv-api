@@ -13,6 +13,7 @@ use Volatility::Seasonality;
 use VolSurface::Utils qw( get_delta_for_strike );
 use Math::Function::Interpolator;
 use Finance::Exchange;
+use BOM::Config::Runtime;
 use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
 use Pricing::Engine::Intraday::Forex::Base;
@@ -20,6 +21,8 @@ use Pricing::Engine::Markup::EconomicEventsSpotRisk;
 use Pricing::Engine::Markup::EqualTie;
 use Pricing::Engine::Markup::CustomCommission;
 use Pricing::Engine::Markup::HourEndMarkup;
+use Pricing::Engine::Markup::HourEndDiscount;
+use Math::Util::CalculatedValue::Validatable;
 
 =head2 tick_source
 
@@ -130,15 +133,15 @@ sub _build_hour_end_markup {
     my $markup = Math::Util::CalculatedValue::Validatable->new({
         name        => 'hour_end_markup',
         description => 'Intraday hour end markup.',
-        minimum     => 0,
         set_by      => __PACKAGE__,
         base_amount => 0,
     });
-
     my $bet = $self->bet;
-    my $hour_end_markup = Pricing::Engine::Markup::HourEndMarkup->new(hour_end_markup_parameters => $bet->hour_end_markup_parameters)->markup;
-
-    $markup->include_adjustment('add', $hour_end_markup);
+    my %params = (hour_end_markup_parameters => $bet->hour_end_markup_parameters);
+    $markup->include_adjustment('add', Pricing::Engine::Markup::HourEndMarkup->new(%params)->markup);
+    # we do not apply discount for forward starting contracts.
+    $markup->include_adjustment('add', Pricing::Engine::Markup::HourEndDiscount->new(%params)->markup)
+        if not $bet->is_forward_starting and BOM::Config::Runtime->instance->app_config->quants->enable_hour_end_discount;
 
     return $markup;
 }
@@ -280,12 +283,12 @@ Markup added to accommdate for pricing uncertainty
 sub _build_risk_markup {
     my $self = shift;
 
-    my $bet         = $self->bet;
+    my $bet = $self->bet;
+    # minimum of 0 is removed for end of hour discount
     my $risk_markup = Math::Util::CalculatedValue::Validatable->new({
         name        => 'risk_markup',
         description => 'A set of markups added to accommodate for pricing risk',
         set_by      => __PACKAGE__,
-        minimum     => 0,                                                          # no discounting
         base_amount => 0,
     });
 

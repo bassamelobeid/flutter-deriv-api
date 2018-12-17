@@ -609,6 +609,7 @@ sub _build_risk_markup {
     });
 }
 
+# TODO: The commission structure should be incorporated in the tool that we used to set potential/realized loss limit. Existing hard-coded implementation is bad practice!
 sub _build_base_commission {
     my $self = shift;
 
@@ -629,6 +630,17 @@ sub _build_base_commission {
         # The approximated discrete-monitoring prices (for one/double touch) underestimate the true prices for tick trades.
         # The discrete_monitoring_adj_markup is applied to push prices up just above the true prices.
         $underlying_base = $underlying_base + 0.02;
+    }
+
+    # apply reduced commission for major_pairs on forex intraday ATM on european hours. Normal hours, base_commission is set to 0.035.
+    my $pricing_hour = $self->date_pricing->hour;
+    if (    $self->priced_with_intraday_model
+        and $self->underlying->submarket->name eq 'major_pairs'
+        and $self->is_atm_bet
+        and $pricing_hour >= 6
+        and $pricing_hour <= 16)
+    {
+        $underlying_base = 0.03;
     }
 
     return $underlying_base * $per_market_scaling / 100;
@@ -779,6 +791,8 @@ sub _build_price_calculator {
         deep_otm_threshold    => $self->otm_threshold,
         base_commission       => $self->base_commission,
         app_markup_percentage => $self->app_markup_percentage,
+        # due to discount on end of hour, we just want to have a safety net to make sure we don't go below 0.45
+        ($self->priced_with_intraday_model and $self->is_atm_bet) ? (minimum_ask_probability => 0.45) : (),
         ($self->has_commission_markup)      ? (commission_markup      => $self->commission_markup)      : (),
         ($self->has_commission_from_stake)  ? (commission_from_stake  => $self->commission_from_stake)  : (),
         ($self->has_payout)                 ? (payout                 => $self->payout)                 : (),
