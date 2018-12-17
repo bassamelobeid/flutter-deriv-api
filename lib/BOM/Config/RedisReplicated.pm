@@ -35,8 +35,7 @@ my $connections = {};
 
 sub _redis {
     my ($redis_type, $access_type, $timeout) = @_;
-    $timeout //= 10;
-    my $key = join '_', ($redis_type, $access_type, $timeout);
+    my $key = join '_', ($redis_type, $access_type, $timeout ? $timeout : ());
     my $connection_config = $config->{$redis_type}->{$access_type};
     if ($access_type eq 'write' && $connections->{$key}) {
         try {
@@ -48,9 +47,9 @@ sub _redis {
         };
     }
     $connections->{$key} //= RedisDB->new(
-        timeout => $timeout,
-        host    => $connection_config->{host},
-        port    => $connection_config->{port},
+        $timeout ? (timeout => $timeout) : (),
+        host => $connection_config->{host},
+        port => $connection_config->{port},
         ($connection_config->{password} ? ('password' => $connection_config->{password}) : ()));
 
     return $connections->{$key};
@@ -67,11 +66,11 @@ sub redis_config {
 }
 
 sub redis_write {
-    return _redis('replicated', 'write');
+    return _redis('replicated', 'write', 10);
 }
 
 sub redis_read {
-    return _redis('replicated', 'read');
+    return _redis('replicated', 'read', 10);
 }
 
 sub redis_pricer {
@@ -80,11 +79,11 @@ sub redis_pricer {
 }
 
 sub redis_exchangerates {
-    return _redis('exchangerates', 'read');
+    return _redis('exchangerates', 'read', 10);
 }
 
 sub redis_exchangerates_write {
-    return _redis('exchangerates', 'write');
+    return _redis('exchangerates', 'write', 10);
 }
 
 sub redis_feed_master {
@@ -92,15 +91,16 @@ sub redis_feed_master {
 }
 
 sub redis_feed_master_write {
-    return _redis('feed', 'master-write');
+    return _redis('feed', 'master-write', 10);
 }
 
 sub redis_feed {
+    # No timeout here as we are expecting not recieving anything when market is closed.
     return _redis('feed', 'read');
 }
 
 sub redis_feed_write {
-    return _redis('feed', 'write');
+    return _redis('feed', 'write', 10);
 }
 
 1;
