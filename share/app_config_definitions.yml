@@ -266,6 +266,11 @@ quants:
       isa: Num
       global: 1
       default: 0.5
+    enable_hour_end_discount:
+      description: "A switch to turn off end of hour discount."
+      isa: Bool
+      global: 1
+      default: 1
     enable_global_potential_loss:
       description: "A switch to turn off global potential loss check."
       isa: Bool
