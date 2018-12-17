@@ -80,7 +80,8 @@ sub mailbox_search {
 sub email_list {
     my $transport = Email::Sender::Simple->default_transport;
     my @emails =
-        map { +{$_->{envelope}->%*, subject => '' . $_->{email}->get_header('Subject'), body => '' . $_->{email}->get_body,} } $transport->deliveries;
+        map { +{$_->{envelope}->%*, subject => '' . $_->{email}->get_header('Subject'), body => '' . $_->{email}->cast('Email::MIME')->body_str,} }
+        $transport->deliveries;
     $transport->clear_deliveries;
     return @emails;
 }
