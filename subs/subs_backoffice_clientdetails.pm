@@ -802,9 +802,8 @@ Instance of all available countries for a brand
 
 sub get_client_phone_country {
     my ($client, $countries_instance) = @_;
-
     my $client_phone_country;
-    $client_phone_country = join(", ", $countries_instance->codes_from_phone($client->phone)->@*) if $client->phone;
+    $client_phone_country = join(", ", ($countries_instance->codes_from_phone($client->phone) || [])->@*) if $client->phone;
     $client_phone_country = 'Unknown' unless $client_phone_country;
 
     return $client_phone_country;

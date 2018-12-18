@@ -31,10 +31,16 @@ my $cr_uk_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     phone       => '+441234567891'
 });
 
-my $cr_invalid_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+my $cr_invalid_code_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
     email       => $email,
-    phone       => '+999234567891'
+    phone       => '000000'
+});
+
+my $cr_invalid_phone_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+    email       => $email,
+    phone       => '+'
 });
 
 subtest '_get_client_phone_country' => sub {
@@ -49,11 +55,15 @@ subtest '_get_client_phone_country' => sub {
 
     #Test Case 3: Client's phone resolves to more than one country (e.g. +44)
     is(get_client_phone_country($cr_uk_client, $countries_instance),
-        'gb, im', "get_client_phone_country() should return single country 'gb, im' when client's phone starts with +1");
+        'gb, im', "get_client_phone_country() should return two countries 'gb, im' when client's phone starts with +44");
 
-    #Test Case 3: Client's phone resolves to no valid country (e.g. +999)
-    is(get_client_phone_country($cr_invalid_client, $countries_instance),
-        'Unknown', "get_client_phone_country() should return single country 'Unknown' when client's phone has invalid code");
+    #Test Case 3: Client's phone resolves to no valid country (e.g. +000)
+    is(get_client_phone_country($cr_invalid_code_client, $countries_instance),
+        'Unknown', "get_client_phone_country() should return value of 'Unknown' when client's phone has invalid code");
+
+    #Test Case 4: Client's phone resolves to invalid phone
+    is(get_client_phone_country($cr_invalid_phone_client, $countries_instance),
+        'Unknown', "get_client_phone_country() should return value of 'Unknown' when client's phone is invalid");
 
 };
 
