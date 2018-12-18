@@ -23,14 +23,14 @@ my $json = JSON::MaybeXS->new;
 my $qc = BOM::Database::QuantsConfig->new();
 
 subtest 'exception check for set_global_limit' => sub {
-    throws_ok { $qc->set_global_limit() } qr/limit_type not specified/, 'throws error if limit_type is not undefined';
-    throws_ok { $qc->set_global_limit({limit_type => 'unknown', limit_amount => 10}) } qr/limit_type is not supported/,
+    throws_ok { $qc->set_global_limit() } qr/Please specify a limit amount/, 'throws error if limit_type is not undefined';
+    throws_ok { $qc->set_global_limit({limit_type => 'unknown', limit_amount => 10}) } qr/Limit type is not supported/,
         'throws error if limit_type is unknown';
-    throws_ok { $qc->set_global_limit({limit_type => 'global_potential_loss'}) } qr/limit_amount not specified/,
+    throws_ok { $qc->set_global_limit({limit_type => 'global_potential_loss'}) } qr/Please specify a limit amount/,
         'throws error if limit_amount is not defined';
-    throws_ok { $qc->set_global_limit({limit_type => 'global_potential_loss', limit_amount => -1}) } qr/limit_amount must be a positive number/,
+    throws_ok { $qc->set_global_limit({limit_type => 'global_potential_loss', limit_amount => -1}) } qr/Limit amount must be a positive number/,
         'throws error if limit_amount is not a positive number';
-    throws_ok { $qc->set_global_limit({limit_type => 'global_potential_loss', limit_amount => 'test'}) } qr/limit_amount must be a positive number/,
+    throws_ok { $qc->set_global_limit({limit_type => 'global_potential_loss', limit_amount => 'test'}) } qr/Limit amount must be a positive number/,
         'throws error if limit_amount is not a positive number';
     throws_ok {
         $qc->set_global_limit({
@@ -58,12 +58,12 @@ subtest 'exception check for set_global_limit' => sub {
 
     $test = 'Call to set_global_limit fails if start_time is set but end_time is not';
     $testargs->{start_time} = '2018-07-04 12:34';
-    throws_ok { $qc->set_global_limit($testargs) } qr/If using start_time, must also provide end_time/, $test;
+    throws_ok { $qc->set_global_limit($testargs) } qr/If using start time, must also provide end time/, $test;
     delete $testargs->{start_time};
 
     $test = 'Call to set_global_limit fails if end_time is set but start_time is not';
     $testargs->{end_time} = '2018-07-04 12:34';
-    throws_ok { $qc->set_global_limit($testargs) } qr/If using end_time, must also provide start_time/, $test;
+    throws_ok { $qc->set_global_limit($testargs) } qr/If using end time, must also provide start time/, $test;
     delete $testargs->{end_time};
 
     $test = 'Call to set_global_limit fails if start_time same as end_time';

@@ -40,16 +40,16 @@ use warnings;
 
 use Moo;
 
-use BOM::Database::ClientDB;
-
 use Digest::MD5 qw(md5_hex);
 use Scalar::Util qw(looks_like_number);
-use List::Util qw(uniq);
-use List::MoreUtils qw(all);
-use LandingCompany::Registry;
+use List::Util qw(uniq all);
 use YAML::XS qw(LoadFile);
 use Finance::Underlying;
+use Try::Tiny;
 
+use LandingCompany::Registry;
+
+use BOM::Database::ClientDB;
 my $clientdb_config = LoadFile('/etc/rmg/clientdb.yml');
 
 =head2 supported_config_type
@@ -250,7 +250,7 @@ sub set_global_limit {
                             $barrier_type = $bt eq 'atm' ? 1 : 0;
                         }
                         foreach my $contract_group (@{$args->{contract_group}}) {
-                            eval {
+                            try {
                                 if (@{$args->{underlying_symbol}}) {
                                     foreach my $u_symbol (@{$args->{underlying_symbol}}) {
                                         my $query_symbol = $u_symbol;
@@ -271,14 +271,16 @@ sub set_global_limit {
                                             $market,               $contract_group, $expiry_type,        $barrier_type,
                                             $args->{limit_amount}, $comment,        $args->{start_time}, $args->{end_time}]);
                                 }
-                            };
-                            if ($@) {
-                                ## Catch known date/time errors
-                                if ($@ =~ /field value out of range|invalid input syntax/) {
-                                    die "Sorry, that is not a valid time\n";
-                                }
-                                die $@;
                             }
+                            catch {
+                                if ($_) {
+                                    ## Catch known date/time errors
+                                    if ($_ =~ /field value out of range|invalid input syntax/) {
+                                        die "Sorry, that is not a valid time.\n";
+                                    }
+                                    die $_;
+                                }
+                            };
                         }
                     }
                 }
