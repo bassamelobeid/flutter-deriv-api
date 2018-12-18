@@ -1,0 +1,39 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: binarytom/debian-ci:latest
+        auth:
+          username: circle4regentmarkets
+          password: $DOCKERHUB_PASSWORD
+    working_directory: /home/git/regentmarkets/bom-backoffice
+    steps:
+      - add_ssh_keys:
+          fingerprints:
+            - "26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb"
+      - checkout
+      - run:
+          name: Start services
+          command: for i in authdb chronicle feed main users; do pg_ctlcluster 9.6 $i start & done && /home/git/regentmarkets/travis-scripts/setup_feeddb.sh  && service binary_feeddb_pgbouncer restart & service binary_pgbouncer restart & service redis-server start & wait && cp /home/git/regentmarkets/travis-scripts/conf/redis_appsettings.conf /etc/redis/ && /usr/bin/redis-server /etc/redis/redis_appsettings.conf && cd /home/git/regentmarkets/bom-postgres && git pull --rebase && cd /home/git/regentmarkets/bom-test && git pull --rebase
+      - run:
+          name: Run Syntax Check
+          command: make syntax
+          environment:
+            PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
+            PERL5LIB: /home/git/regentmarkets/bom/lib:/home/git/regentmarkets/bom-postgres/lib:/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-market/lib:/home/git/regentmarkets/bom-marketdataautoupdater/lib:/home/git/regentmarkets/bom-backoffice/lib:/home/git/regentmarkets/bom-myaffiliates/lib:/home/git/regentmarkets/binary-websocket-api/lib:/home/git/regentmarkets/bom-paymentapi/lib:/home/git/regentmarkets/bom-oauth/lib:/home/git/regentmarkets/bom-rpc/lib:/home/git/regentmarkets/bom-populator/lib:/home/git/regentmarkets/bom-feed/lib:/home/git/regentmarkets/bom-test/lib:/home/git/regentmarkets/php-mt5-webapi/lib:/home/git/regentmarkets/bom-transaction/lib:/home/git/regentmarkets/bom-pricing/lib:/home/git/regentmarkets/bom-cryptocurrency/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-config/lib
+      - run:
+          name: Run tests
+          command: sudo tee -a /etc/hosts < /home/git/regentmarkets/bom-postgres/hosts.db && make test
+          environment:
+            PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
+            PERL5LIB: /home/git/regentmarkets/bom/lib:/home/git/regentmarkets/bom-postgres/lib:/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-market/lib:/home/git/regentmarkets/bom-marketdataautoupdater/lib:/home/git/regentmarkets/bom-backoffice/lib:/home/git/regentmarkets/bom-myaffiliates/lib:/home/git/regentmarkets/binary-websocket-api/lib:/home/git/regentmarkets/bom-paymentapi/lib:/home/git/regentmarkets/bom-oauth/lib:/home/git/regentmarkets/bom-rpc/lib:/home/git/regentmarkets/bom-populator/lib:/home/git/regentmarkets/bom-feed/lib:/home/git/regentmarkets/bom-test/lib:/home/git/regentmarkets/php-mt5-webapi/lib:/home/git/regentmarkets/bom-transaction/lib:/home/git/regentmarkets/bom-pricing/lib:/home/git/regentmarkets/bom-cryptocurrency/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-config/lib
+      - store_test_results:
+          path: /var/tmp/test-output
+
+workflows:
+  version: 2
+  build-workflow:
+    jobs:
+      - build:
+          context: perl
+

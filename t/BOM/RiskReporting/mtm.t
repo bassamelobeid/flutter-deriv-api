@@ -6,11 +6,11 @@ use Test::More;
 use Test::Exception;
 use Test::MockModule;
 use Test::Warnings qw/warning/;
-use Email::Address::UseXS;
-use Email::Folder::Search;
 use File::Spec;
 use Path::Tiny;
 
+use Email::Address::UseXS;
+use BOM::Test::Email qw/mailbox_clear mailbox_search/;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -70,7 +70,9 @@ foreach my $symbol (keys %date_string) {
 }
 
 subtest 'realtime report generation' => sub {
-    plan tests => 12;
+    plan tests => 11;
+
+    mailbox_clear();
 
     my $dm = BOM::Database::DataMapper::CollectorReporting->new({
         broker_code => 'CR',
@@ -155,9 +157,6 @@ subtest 'realtime report generation' => sub {
     $mocked_system->mock('on_production', sub { 1 });
 
     my $results;
-    my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
-    $mailbox->init;
-    $mailbox->clear;
     warning {
         lives_ok { $results = BOM::RiskReporting::MarkedToModel->new(end => $now, send_alerts => 0)->generate } 'Report generation does not die.';
     };
@@ -166,13 +165,15 @@ subtest 'realtime report generation' => sub {
     is($dm->get_last_generated_historical_marked_to_market_time, $now->db_timestamp, 'It ran and updated our timestamp.');
     note "Includes a lot of unit test transactions about which we don't care.";
     is($called_count, 1, 'BOM::Transaction::sell_expired_contracts called only once');
-    my @msgs = $mailbox->search(
+
+    my @msgs = mailbox_search(
         email   => 'quants-market-data@regentmarkets.com',
-        subject => qr/AutoSell Failures/
+        subject => qr/AutoSell Failures/,
+        body    => qr/Shortcode:/,
     );
-    ok(@msgs,                                        "find the email");
-    ok($msgs[0]{body} =~ /Shortcode:   $short_code/, "contract $short_code has error");
-    my @errors = $msgs[0]{body} =~ /Shortcode:/g;
+
+    ok(@msgs, "find the email");
+    my @errors = $msgs[0]{body};
     is(scalar @errors, 1, "number of contracts that have errors ");
 
     my @is_sold = (1, 1, 0, 0, 0);

@@ -78,6 +78,8 @@ sub send_log {
 
     stats_gauge('risk_reporting.run', $now - $last_run->{lc $type}, {tags => ["tag:$type"]});
     $last_run->{lc $type} = $now;
+
+    return;
 }
 
 =head2 rest
