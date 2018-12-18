@@ -141,6 +141,14 @@ has password => (
     is      => 'ro',
     default => BOM::Config::third_party()->{proveid}->{password});
 
+has pdf_username => (
+    is      => 'ro',
+    default => BOM::Config::third_party()->{proveid}->{pdf_username});
+
+has pdf_password => (
+    is      => 'ro',
+    default => BOM::Config::third_party()->{proveid}->{pdf_password});
+
 =head2 private_key
 
 Private key used in the Experian API two factor authentication.
@@ -230,8 +238,12 @@ sub get_result {
     $self->get_xml_result;
 
     $self->_save_xml_result;
-
-    $self->_get_pdf_result;
+    try {
+        $self->_get_pdf_result;
+    }
+    catch {
+        warn "$_";
+    };
 
     return $self->xml_result;
 }
@@ -327,8 +339,8 @@ sub _get_pdf_result {
     my $login_tx = $ua->post(
         "$url/signin/onsignin.cfm" => form => {
             _CSRF_token => $ua->get("$url/signin/")->result->dom->at('input[name=_CSRF_token]')->attr('value'),
-            login       => $self->username,
-            password    => $self->password,
+            login       => $self->pdf_username,
+            password    => $self->pdf_password,
             btnSubmit   => 'Login'
         });
 
@@ -353,7 +365,6 @@ sub _get_pdf_result {
 
     # move_to overwrites any existing data
     $dl_tx->res->content->asset->move_to($pdf_report_filepath);
-
     return 1;
 }
 

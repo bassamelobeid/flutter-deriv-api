@@ -28,14 +28,9 @@ my $compliance_email = 'compliance@binary.com';
 
 sub email_list {
     my $transport = Email::Sender::Simple->default_transport;
-    my @emails = map {
-        +{
-            $_->{envelope}->%*,
-            subject => '' . $_->{email}->get_header('Subject'),
-        }
-    } $transport->deliveries;
+    my @emails = map { +{$_->{envelope}->%*, subject => '' . $_->{email}->get_header('Subject'),} } $transport->deliveries;
     $transport->clear_deliveries;
-    @emails
+    @emails;
 }
 
 subtest 'Constructor' => sub {
@@ -66,11 +61,8 @@ subtest "CR accounts" => sub {
 
     $v->run_authentication();
 
-    my @msgs = grep {
-        $_->{to}[0] eq 'support-newaccount-notifications@binary.com'
-            and
-        $_->{subject} =~ qr/New Sign-Up/
-    } my @existing = email_list();
+    my @msgs = grep { $_->{to}[0] eq 'support-newaccount-notifications@binary.com' and $_->{subject} =~ qr/New Sign-Up/ } my @existing =
+        email_list();
 
     ok(@msgs, "New sign up email received") or note explain \@existing;
 
@@ -89,11 +81,8 @@ subtest 'MLT accounts' => sub {
         is(0 + email_list(), 0, 'have no emails to start with');
         $v->run_authentication;
 
-        my @msgs = grep {
-            $_->{to}[0] eq 'support-newaccount-notifications@binary.com'
-                and
-            $_->{subject} =~ qr/New Sign-Up/
-        } email_list();
+        my @msgs =
+            grep { $_->{to}[0] eq 'support-newaccount-notifications@binary.com' and $_->{subject} =~ qr/New Sign-Up/ } email_list();
 
         is(@msgs, 0, 'No email received');
 
@@ -113,11 +102,8 @@ subtest 'MLT accounts' => sub {
         is(0 + email_list(), 0, 'have no emails to start with');
         $v->run_authentication;
 
-        my @msgs = grep {
-            $_->{to}[0] eq 'support-newaccount-notifications@binary.com'
-                and
-            $_->{subject} =~ qr/New Sign-Up/
-        } email_list();
+        my @msgs =
+            grep { $_->{to}[0] eq 'support-newaccount-notifications@binary.com' and $_->{subject} =~ qr/New Sign-Up/ } email_list();
 
         is(@msgs, 0, 'No email received');
 
