@@ -59,7 +59,7 @@
                     "required": "1",
                     "items": {
                         "type": "string",
-                        "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|callputspread|callputequal)$",
+                        "enum": ["asian","callput","digits","endsinout","staysinout","touchnotouch","callputspread","callputequal","lookback", "highlowticks", "reset"],
                         "required": "1"
                     }
                 },
