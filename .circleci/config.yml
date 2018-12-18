@@ -1,0 +1,25 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: binarytom/debian-ci:latest
+        user: nobody
+        auth:
+          username: circle4regentmarkets
+          password: $DOCKERHUB_PASSWORD
+    working_directory: /home/git/regentmarkets/bom-websocket-tests
+    steps:
+      - add_ssh_keys:
+          fingerprints:
+            - "26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb"
+      - checkout
+      - run:
+          name: Standard tests
+          command: echo '--formatter TAP::Formatter::JUnit' >> .proverc && make test
+workflows:
+  version: 2
+  build-workflow:
+    jobs:
+      - build:
+          context: perl
+
