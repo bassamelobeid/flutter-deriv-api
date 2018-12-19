@@ -347,6 +347,8 @@ sub documents_expired {
     my ($self, $date_limit) = @_;
     $date_limit //= Date::Utility->new();
 
+    return 0 if $self->is_virtual;
+
     my @query_params = ($self->loginid, $date_limit->db_timestamp);
     my $dbic_code = sub {
         my $query = $_->prepare('SELECT * FROM betonmarkets.get_expired_documents_loginids($1::TEXT, $2::DATE)');
