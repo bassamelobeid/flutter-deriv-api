@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: binarytom/debian-ci:latest
+      - image: regentmarkets/debian-ci:latest
         user: nobody
         auth:
           username: circle4regentmarkets
