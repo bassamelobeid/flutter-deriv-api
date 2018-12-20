@@ -44,7 +44,7 @@ subtest "check if keys are valid" => sub {
     }
 };
 
-subtest "check total score is 67" => sub {
+subtest "check total score is 71" => sub {
     my $total_score = 0;
 
     foreach my $key (@financial_information_keys) {
@@ -60,7 +60,7 @@ subtest "check total score is 67" => sub {
             $total_score += $answer_hash->{$answer};
         }
     }
-    is($total_score, 67, "total score is 67");
+    is($total_score, 71, "total score is 71");
 };
 
 done_testing;
