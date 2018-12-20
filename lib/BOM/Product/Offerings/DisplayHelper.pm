@@ -122,13 +122,17 @@ my %known_decorations = (
         };
         if (my $open = $trading_calendar->opening_on($exchange, $self->date)) {
             push @{$times->{open}}, $open->$display_method;
-            my @closes;
-            push @closes, $trading_calendar->closing_on($exchange, $self->date);
+            my $close_of_the_day = $trading_calendar->closing_on($exchange, $self->date);
+            my @closes = ($close_of_the_day);
             $times->{settlement} = $trading_calendar->get_exchange_open_times($exchange, $self->date, 'daily_settlement')->$display_method;
             if (my $breaks = $trading_calendar->trading_breaks($exchange, $self->date)) {
                 for my $break (@$breaks) {
-                    push @{$times->{open}}, $break->[-1]->$display_method;
-                    push @closes, $break->[0];
+                    my $break_start = $break->[-1];
+                    my $break_end   = $break->[0];
+                    # if we close before the break, just skip it
+                    next if ($close_of_the_day->is_before($break_start));
+                    push @{$times->{open}}, $break_start->$display_method;
+                    push @closes, ($break_end->epoch < $close_of_the_day->epoch ? $break_end : $close_of_the_day);
                 }
             }
             @{$times->{close}} = map { $_->$display_method } sort { $a->epoch <=> $b->epoch } @closes;
