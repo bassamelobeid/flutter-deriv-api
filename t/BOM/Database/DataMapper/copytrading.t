@@ -95,7 +95,7 @@ subscribe({
 });
 my $dm = BOM::Database::DataMapper::Copier->new(
     broker_code => 'CR',
-    operation   => 'replica'
+    operation   => 'write'
 );
 my $data_copiers_expected = [['CR0028', 'CR0027', $trader_token], ['CR0029', 'CR0027', $trader_token]];
 

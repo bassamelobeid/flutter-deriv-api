@@ -7,6 +7,7 @@ use JSON::MaybeXS;
 use LandingCompany::Registry;
 use Try::Tiny;
 use YAML::XS qw(LoadFile);
+use BOM::Config;
 
 use BOM::Database::Rose::DB;
 
@@ -114,6 +115,15 @@ sub _cached_db {
 
     if ($ENV{AUDIT_STAFF_NAME} and $ENV{AUDIT_STAFF_IP}) {
         $db->dbic->dbh->selectall_arrayref('SELECT audit.set_staff(?::TEXT, ?::CIDR)', undef, @ENV{qw/AUDIT_STAFF_NAME AUDIT_STAFF_IP/});
+    }
+
+    if (BOM::Config->env() =~ /(^development$)|(^qa)/
+        and $self->{operation} =~ /^(replica|backoffice_replica)$/)
+    {
+        # Currently in QA/CI environments, the database is setup such that user is able
+        # to write to replicas. Until we can more accurately mimic production setup,
+        # we simulate this replica readonly behaviour as such:
+        $db->dbic->dbh->do("SET default_transaction_read_only TO 'on'");
     }
 
     return $db;
