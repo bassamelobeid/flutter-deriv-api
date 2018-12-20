@@ -55,7 +55,7 @@ sub validate_payment {
         }
 
         my $max_balance = $self->get_limit({'for' => 'account_balance'});
-        die "Balance would exceed $max_balance limit\n"
+        die "Balance would exceed $max_balance limit [$currency] [" . $self->loginid . "] \n"
             if ($amount + $accbal) > $max_balance;
     }
 
