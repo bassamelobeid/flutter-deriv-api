@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 7;
+use Test::More tests => 6;
 use Test::Exception;
 use Test::MockModule;
 use Test::Warnings;
@@ -74,7 +74,7 @@ my $test_surface2 = Quant::Framework::Utils::Test::create_doc(
 subtest 'more than 4 hours old' => sub {
     my $test_file = dirname(__FILE__) . '/combined_without_DJI.xls';
     my $au        = BOM::MarketDataAutoUpdater::Indices->new(
-        file              => $test_file,
+        filename          => $test_file,
         symbols_to_update => [qw(TOP40)]);
     $au->run;
     is keys %{$au->report}, 1, 'only atttempt one underlying if specified';
@@ -86,7 +86,7 @@ subtest 'more than 4 hours old' => sub {
 subtest 'surface data not found' => sub {
     my $test_file = dirname(__FILE__) . '/combined_without_DJI.xls';
     my $au        = BOM::MarketDataAutoUpdater::Indices->new(
-        file              => $test_file,
+        filename          => $test_file,
         symbols_to_update => [qw(CRAPPY)]);    # wrong symbol
     $au->run;
     ok !$au->report->{CRAPPY}->{success}, 'update failed';
@@ -104,7 +104,7 @@ subtest 'surface has not change' => sub {
             recorded_date    => Date::Utility->new(Date::Utility->new - 18000),
         });
     my $au = BOM::MarketDataAutoUpdater::Indices->new(
-        file               => $test_file,
+        filename           => $test_file,
         symbols_to_update  => [qw(TOP40)],
         surfaces_from_file => {TOP40 => $test_surface});
     $au->run;
@@ -126,7 +126,7 @@ subtest 'First Term is 7' => sub {
             recorded_date    => Date::Utility->new,
         });
     my $au = BOM::MarketDataAutoUpdater::Indices->new(
-        file              => $test_file,
+        filename          => $test_file,
         symbols_to_update => [qw(AS51)]);    # wrong symbol
     $au->run;
     cmp_ok($au->report->{AS51}->{success}, '==', 1);
@@ -136,7 +136,7 @@ subtest 'First Term is 7' => sub {
 subtest 'First Term is not 7' => sub {
     my $test_file = dirname(__FILE__) . '/auto_upload_wrong.xls';
     my $au        = BOM::MarketDataAutoUpdater::Indices->new(
-        file              => $test_file,
+        filename          => $test_file,
         symbols_to_update => [qw(AS51)]);    # wrong symbol
     $au->run;
     ok !$au->report->{AS51}->{success}, 'update failed';
@@ -144,31 +144,5 @@ subtest 'First Term is not 7' => sub {
     like $au->report->{AS51}->{reason}, qr/Term 7 is missing from datasource for/, 'correct error message';
 };
 $mocked->unmock_all();
-
-SKIP: {
-    skip 'Success test does not work on the weekends.', 1 if Date::Utility->today->is_a_weekend;
-    subtest 'updated hurray!' => sub {
-        my $tmp = File::Temp->newdir;
-        # get the real deal because we check date
-        my $url = 'https://www.dropbox.com/s/yjl5jqe6f71stf5/auto_upload.xls?raw=1';
-        my $ua  = Mojo::UserAgent->new->max_redirects(5);
-        $ua->get($url)->result->content->asset->move_to("$tmp/auto_upload.xls");
-
-        my @symbols_to_update = grep { $_ !~ /^OTC_/ } create_underlying_db->get_symbols_for(
-            market            => 'indices',
-            contract_category => 'ANY',
-        );
-
-        my $au = BOM::MarketDataAutoUpdater::Indices->new(
-            file              => "$tmp/auto_upload.xls",
-            symbols_to_update => \@symbols_to_update
-        );
-        $au->run;
-
-        my @success = grep { $au->report->{$_}->{success} == 1 } keys %{$au->report};
-        cmp_ok(scalar(@success), '>=', 1), 'update success';
-
-    };
-}
 
 1;

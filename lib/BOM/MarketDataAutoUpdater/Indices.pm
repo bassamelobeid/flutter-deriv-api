@@ -6,7 +6,7 @@ BOM::MarketDataAutoUpdater::Indices
 
 =head1 DESCRIPTION
 
-Updates Index vols from a given .file file.
+Updates Index vols from a given file.
 
 =cut
 
@@ -24,17 +24,13 @@ use BOM::Config::Runtime;
 use BOM::MarketData qw(create_underlying_db);
 use SuperDerivatives::VolSurface;
 
+# We have a bash script on Amazon which is intended to call SD macro to update vol of different underlying on the auto_upload.xls on hourly basis and copy the file to our S3 (bloomberg-files bucket).
 has filename => (
     is => 'ro',
 );
 
 has input_market => (
     is => 'ro',
-);
-
-has file => (
-    is         => 'ro',
-    lazy_build => 1,
 );
 
 has uses_binary_spot => (
@@ -48,19 +44,6 @@ has uses_binary_spot => (
     },
 );
 
-# We have a bash script on Amazon which is intended to call SD macro to update vol of different underlying on the auto_upload.xls on hourly basis and copy the file to our dropbox.
-
-sub _build_file {
-    my $self     = shift;
-    my $filename = $self->filename;
-    my $url      = 'https://www.dropbox.com/s/yjl5jqe6f71stf5/auto_upload.xls?raw=1';
-    my $file     = '/tmp/' . $filename;
-
-    my $ua = Mojo::UserAgent->new->max_redirects(5);
-    $ua->get($url)->result->content->asset->move_to($file);
-
-    return $file;
-}
 has symbols_to_update => (
     is         => 'ro',
     lazy_build => 1,
@@ -90,7 +73,7 @@ has surfaces_from_file => (
 
 sub _build_surfaces_from_file {
     my $self = shift;
-    return SuperDerivatives::VolSurface->new->parse_data_for($self->file, $self->symbols_to_update);
+    return SuperDerivatives::VolSurface->new->parse_data_for($self->filename, $self->symbols_to_update);
 }
 
 sub run {
