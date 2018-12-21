@@ -1,0 +1,134 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+use Getopt::Long qw(GetOptions);
+Getopt::Long::Configure qw(gnu_getopt);
+
+use Path::Tiny;
+use DBIx::Connector::Pg;
+
+# parse command line options
+my ($path, $service);
+
+GetOptions(
+    'path|p=s'    => \$path,
+    'service|s=s' => \$service
+) or die 'Usage $0 --path <path> --service <service>';
+
+my $dbc = DBIx::Connector::Pg->new("dbi:Pg:service=$service", '', '');
+# check for constraint that uses user defined functions
+my $has_dependent_constraint = $dbc->run(
+    fixup => sub {
+        $_->selectall_hashref("SELECT c.conname::information_schema.sql_identifier AS constraint_name,\
+                                    c.conrelid::regclass AS constraint_table,\
+                                    p.oid::regproc AS function_name,\
+                                    p.prorettype::regtype AS function_type,\
+                                    pg_get_function_arguments(p.oid::regproc) AS function_arguments\
+                                    FROM pg_namespace nc,\
+                                         pg_constraint c,\
+                                         pg_depend d,\
+                                         pg_proc p,\
+                                         pg_namespace np\
+                                    WHERE nc.oid = c.connamespace AND c.contype = 'c'::\"char\" \
+                                          AND c.oid = d.objid AND d.classid = 'pg_constraint'::regclass::oid\
+                                          AND d.refobjid = p.oid AND d.refclassid = 'pg_proc'::regclass::oid\
+                                          AND p.pronamespace = np.oid;",
+        'constraint_table', {});
+    });
+    
+$/ = ';';
+
+while (<STDIN>) {
+    my $line = $_;
+    if ($line =~ /CREATE TABLE "(\w+)"."(\w+)"/) {
+        if (my $params = $has_dependent_constraint->{"$1.$2"}){
+            $line = _get_dummy_func_def($params->{function_name}, $params->{function_arguments}, $params->{function_type}) . $line;
+        }
+        _write("tables", $1, $2, $line);
+    } elsif ($line =~ /CREATE TYPE "(\w+)"."(\w+)"/) {
+        _write("types", $1, $2, $line);
+    } elsif ($line =~ /CREATE SEQUENCE "(\w+)"."(\w+)"/) {
+        _write("sequences", $1, $2, $line);
+    } elsif ($line =~ /CREATE SCHEMA "(\w+)";/) {
+        _write("utilities", "all", "schemas", $line, 1);
+    } elsif ($line =~ /CREATE(?: UNIQUE)? INDEX.*"(\w+)" ON "(\w+)"/) {
+        _write("indices", $2, $1, $line); # Here Index name is the first match and the second match is the schema name
+    } elsif ($line =~ /ALTER TABLE .* "(\w+)"."(\w+)"\n.*ADD CONSTRAINT.*PRIMARY KEY/) {
+        _write("tables", $1, $2, $line, 1);
+    } elsif ($line =~ /ALTER TABLE .* "(\w+)"."(\w+)"\n.*ADD CONSTRAINT.*FOREIGN KEY/) { # pg_dump dump the constraint with a newline in the middle
+        _write("fk_constraints", $1, $2, $line, 1);
+    } elsif ($line =~ /ALTER TABLE .* "(\w+)"."(\w+)"\n.*ADD CONSTRAINT/) { 
+        _write("constraints", $1, $2, $line, 1);
+    } elsif ($line =~ /CREATE FUNCTION "(\w+)"."(\w+)"(?:\w|\s|\W)+AS(.*\$)(?:\w|\s|\W)?/) {
+        my ($schema, $function_name, $end_pattern) = ($1, $2, $3);
+        while (my $next_line = <STDIN>) {
+            last if $next_line =~ /ALTER FUNCTION/;
+            $line .= $next_line;
+        }
+        $line =~ s/CREATE FUNCTION/CREATE OR REPLACE FUNCTION/;
+        _write("functions", $schema, $function_name, $line, 1);
+    } elsif ($line =~ /GRANT/ or $line =~ /REVOKE/) {
+         _write("utilities", "all", "grants", $line, 1);
+    } elsif ($line =~ /CREATE EXTENSION/) {
+        _write("utilities", "all", "extentions", $line, 1);
+    } elsif ($line =~ /CREATE VIEW "(\w+)"."(\w+)"/) {
+        _write("views", $1, $2, $line);
+    } elsif ($line =~ /CREATE SERVER/) {
+        _write("utilities", "all", "servers", $line, 1);
+    } elsif ($line =~ /CREATE FOREIGN TABLE "(\w+)"."(\w+)"/) {
+        _write("foreign_tables", $1, $2, $line);
+    } elsif ($line =~ /CREATE(?: CONSTRAINT)? TRIGGER "\w+" .* ON "(\w+)"."(\w+)"/) {
+        _write("triggers", $1, $2, $line, 1);
+    } elsif ($line =~ /COMMENT/) {
+        unless ($line =~ /[\w|\s|\W|\n]*';/) {
+            while (my $next_line = <STDIN>) {
+                $line .= $next_line;
+                last if $next_line =~ /[\w|\s|\W|\n]*';/;
+            }
+        }
+        _write("utilities", "all", "comments", $line, 1);
+    } elsif ($line =~ /CREATE AGGREGATE "(\w+)"."(\w+)"/) {
+        _write("aggregates", $1, $2, $line, 1);
+    } elsif ($line =~ /OWNER TO/ or $line =~ /OWNED BY/) {
+        _write("utilities", "all", "ownerships", $line, 1);
+    } elsif ($line =~ /CREATE USER MAPPING/) {
+        _write("utilities", "all", "mappings", $line, 1);
+    } elsif ($line =~ /SET DEFAULT/) {
+        _write("utilities", "all", "defaults", $line, 1);
+    } elsif ($line =~ /CREATE EVENT TRIGGER/) {
+        _write("utilities", "all", "events", $line, 1);
+    } elsif ($line =~ /CREATE RULE/) {
+        _write("utilities", "all", "rules", $line, 1);
+    } elsif ($line =~ /SET/ or $line =~ /SELECT/) {
+        # DO NOTHING
+    } else {
+        warn $line;
+    }
+
+}
+
+sub _write {
+    my ($object_type, $schema_name, $object_name, $definition, $append) = @_;
+    # path will always looks like `/home/git/regentmarkets/bom-postgres-*/schema`
+    my $file_path = path($path)->child('schema')->child($object_type)->child($schema_name)->child($object_name . '.sql');
+    $file_path->parent->mkpath;
+
+    $definition =~ s/^\n//;
+    $definition .= "\n\n";
+    
+    $append ? $file_path->append_utf8($definition) : $file_path->spew_utf8($definition);
+}
+
+
+sub _get_dummy_func_def {
+    my ($name, $args, $return_type) = @_;
+    return "\
+CREATE FUNCTION $name($args)
+RETURNS $return_type AS \$\$
+BEGIN
+ -- dummy
+END;
+\$\$ LANGUAGE plpgsql;\n";
+}
