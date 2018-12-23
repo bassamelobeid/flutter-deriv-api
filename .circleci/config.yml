@@ -1,36 +1,68 @@
 version: 2
+
+default: &default
+  docker:
+    - image: regentmarkets/debian-ci:latest
+      user: nobody
+      auth:
+        username: circle4regentmarkets
+        password: $DOCKERHUB_PASSWORD
+  shell: /bin/bash -leo pipefail
+  working_directory: /home/git/regentmarkets/bom-platform
+
+alias:
+  - &ssh_keys
+    add_ssh_keys:
+      fingerprints:
+        - "26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb"
+  - &git
+    run:
+      name: Update git repositories
+      command: /opt/circle/prepare-test.sh
+  - &services
+    run:
+      name: Start services
+      command: |
+        start_services
+        touch /tmp/services.ready
+      background: true
+  - &wait_services
+    run:
+      name: Wait for services to start up
+      command: |
+        count=0
+        while [ ! -f /tmp/services.ready ]; do
+            echo 'Still waiting for services...'
+            (( count++ )) && (( count >= 20 )) && break
+            sleep 1
+        done
+  - &tests
+    environment:
+      PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
+
 jobs:
   build:
-    docker:
-      - image: regentmarkets/debian-ci:latest
-        user: nobody
-        auth:
-          username: circle4regentmarkets
-          password: $DOCKERHUB_PASSWORD
-    working_directory: /home/git/regentmarkets/bom-platform
+    <<: *default
     steps:
-      - add_ssh_keys:
-          fingerprints:
-            - "26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb"
+      - *ssh_keys
       - checkout
+      - *git
+      - *services
+      - *wait_services
+      # This should not be needed, but our background service handling does not appear to
+      # be successful for the morbo execution step - presumably it's being shut down soon
+      # after starting, or fails on startup for some reason. We're keeping the entry in
+      # services.yml because that's where it *should* be, and if that starts working tests
+      # will hopefully maybe fail due to the duplicate service... if not, harmless enough.
       - run:
-          name: Update git repositories
-          command: /opt/circle/prepare-test.sh
-      - run:
-          name: Start services
-          command: for i in authdb chronicle feed main users; do sudo pg_ctlcluster 9.6 $i start & done && sudo service binary_feeddb_pgbouncer restart & sudo service binary_pgbouncer restart & sudo service redis-server start & wait && sudo cp /home/git/regentmarkets/travis-scripts/conf/redis_appsettings.conf /etc/redis/ && sudo /usr/bin/redis-server /etc/redis/redis_appsettings.conf && cd /home/git/regentmarkets/cpan && git pull --rebase && sudo mkdir -p /db/f_accounts && sudo chown -R nobody:nogroup /db
-      - run:
-          name: Experian mock service
+          name: Experian mock service again
           command: /home/git/regentmarkets/cpan/local/bin/morbo /home/git/regentmarkets/bom-platform/bin/experian_mock.pl -l http://localhost:4040
           background: true
-          environment:
-            PERL5LIB: /home/git/regentmarkets/bom/lib:/home/git/regentmarkets/bom-postgres/lib:/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-market/lib:/home/git/regentmarkets/bom-marketdataautoupdater/lib:/home/git/regentmarkets/bom-backoffice/lib:/home/git/regentmarkets/bom-myaffiliates/lib:/home/git/regentmarkets/binary-websocket-api/lib:/home/git/regentmarkets/bom-paymentapi/lib:/home/git/regentmarkets/bom-oauth/lib:/home/git/regentmarkets/bom-rpc/lib:/home/git/regentmarkets/bom-populator/lib:/home/git/regentmarkets/bom-feed/lib:/home/git/regentmarkets/bom-test/lib:/home/git/regentmarkets/php-mt5-webapi/lib:/home/git/regentmarkets/bom-transaction/lib:/home/git/regentmarkets/bom-pricing/lib:/home/git/regentmarkets/bom-cryptocurrency/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-config/lib
       - run:
           name: Run tests
-          command: echo '--formatter TAP::Formatter::JUnit' >> .proverc && make test
-          environment:
-            PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
-            PERL5LIB: /home/git/regentmarkets/bom/lib:/home/git/regentmarkets/bom-postgres/lib:/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-market/lib:/home/git/regentmarkets/bom-marketdataautoupdater/lib:/home/git/regentmarkets/bom-backoffice/lib:/home/git/regentmarkets/bom-myaffiliates/lib:/home/git/regentmarkets/binary-websocket-api/lib:/home/git/regentmarkets/bom-paymentapi/lib:/home/git/regentmarkets/bom-oauth/lib:/home/git/regentmarkets/bom-rpc/lib:/home/git/regentmarkets/bom-populator/lib:/home/git/regentmarkets/bom-feed/lib:/home/git/regentmarkets/bom-test/lib:/home/git/regentmarkets/php-mt5-webapi/lib:/home/git/regentmarkets/bom-transaction/lib:/home/git/regentmarkets/bom-pricing/lib:/home/git/regentmarkets/bom-cryptocurrency/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-config/lib
+          command: |
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make test
       - store_test_results:
           path: /var/tmp/test-output
 
@@ -40,4 +72,3 @@ workflows:
     jobs:
       - build:
           context: perl
-
