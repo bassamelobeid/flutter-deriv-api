@@ -7,6 +7,7 @@ default: &default
       auth:
         username: circle4regentmarkets
         password: $DOCKERHUB_PASSWORD
+  shell: /bin/bash -leo pipefail
   working_directory: /home/git/regentmarkets/bom-rpc
 
 alias:
@@ -22,9 +23,6 @@ alias:
     run:
       name: Start services
       command: |
-        sudo mkdir -p /var/log/fixedodds
-        sudo chown nobody:nogroup /var/log/fixedodds
-        source /etc/profile.d/perl5.sh
         start_services
         touch /tmp/services.ready
       background: true
@@ -57,7 +55,6 @@ jobs:
           name: Verify syntax and compilation
           command: |
             echo '--formatter TAP::Formatter::JUnit' >> .proverc
-            source /etc/profile.d/perl5.sh
             make syntax
       - store_test_results:
           path: /var/tmp/test-output
@@ -74,7 +71,6 @@ jobs:
           name: Run tests
           command: |
             echo '--formatter TAP::Formatter::JUnit' >> .proverc
-            source /etc/profile.d/perl5.sh
             make test
       - store_test_results:
           path: /var/tmp/test-output
@@ -91,7 +87,6 @@ jobs:
           name: Run tests
           command: |
             echo '--formatter TAP::Formatter::JUnit' >> .proverc
-            source /etc/profile.d/perl5.sh
             make json_schemas
       - store_test_results:
           path: /var/tmp/test-output
