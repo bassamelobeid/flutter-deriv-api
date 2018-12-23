@@ -7,7 +7,7 @@ default: &default
       auth:
         username: circle4regentmarkets
         password: $DOCKERHUB_PASSWORD
-  working_directory: /home/git/regentmarkets/binary-websocket-api
+  working_directory: /home/git/regentmarkets/bom-rpc
 
 alias:
   - &ssh_keys
@@ -22,42 +22,25 @@ alias:
     run:
       name: Start services
       command: |
-        set -ex
-        for i in authdb chronicle feed main users; do
-          sudo pg_ctlcluster 9.6 $i start &
+        sudo mkdir -p /var/log/fixedodds
+        sudo chown nobody:nogroup /var/log/fixedodds
+        source /etc/profile.d/perl5.sh
+        start_services
+        touch /tmp/services.ready
+      background: true
+  - &wait_services
+    run:
+      name: Wait for services to start up
+      command: |
+        count=0
+        while [ ! -f /tmp/services.ready ]; do
+            echo 'Still waiting for services...'
+            (( count++ )) && (( count >= 20 )) && break
+            sleep 1
         done
-        sudo service binary_feeddb_pgbouncer restart &
-        sudo service binary_pgbouncer restart &
-        sudo service redis-server start &
-        wait
-        sudo cp /home/git/regentmarkets/travis-scripts/conf/redis_appsettings.conf /etc/redis/
-        sudo /usr/bin/redis-server /etc/redis/redis_appsettings.conf
-        sudo mkdir -p /var/log/httpd && sudo chown nobody:nogroup /var/log/httpd
-  - &inotify
-    run:
-      name: inotify dæmon
-      command: perl /home/git/regentmarkets/bom-platform/bin/notify_pub.pl 2>&1 | grep -Ev '(connection has been closed unexpectedly)|(terminating connection due to administrator)'
-      background: true
-      environment:
-        PERL5LIB: /home/git/regentmarkets/bom/lib:/home/git/regentmarkets/bom-postgres/lib:/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-market/lib:/home/git/regentmarkets/bom-marketdataautoupdater/lib:/home/git/regentmarkets/bom-backoffice/lib:/home/git/regentmarkets/bom-myaffiliates/lib:/home/git/regentmarkets/binary-websocket-api/lib:/home/git/regentmarkets/bom-paymentapi/lib:/home/git/regentmarkets/bom-oauth/lib:/home/git/regentmarkets/bom-rpc/lib:/home/git/regentmarkets/bom-populator/lib:/home/git/regentmarkets/bom-feed/lib:/home/git/regentmarkets/bom-test/lib:/home/git/regentmarkets/php-mt5-webapi/lib:/home/git/regentmarkets/bom-transaction/lib:/home/git/regentmarkets/bom-pricing/lib:/home/git/regentmarkets/bom-cryptocurrency/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-config/lib
-  - &pricing_queue
-    run:
-      name: pricing queue
-      command: perl /home/git/regentmarkets/bom-pricing/bin/price_queue.pl daemon
-      background: true
-      environment:
-        PERL5LIB: /home/git/regentmarkets/bom/lib:/home/git/regentmarkets/bom-postgres/lib:/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-market/lib:/home/git/regentmarkets/bom-marketdataautoupdater/lib:/home/git/regentmarkets/bom-backoffice/lib:/home/git/regentmarkets/bom-myaffiliates/lib:/home/git/regentmarkets/binary-websocket-api/lib:/home/git/regentmarkets/bom-paymentapi/lib:/home/git/regentmarkets/bom-oauth/lib:/home/git/regentmarkets/bom-rpc/lib:/home/git/regentmarkets/bom-populator/lib:/home/git/regentmarkets/bom-feed/lib:/home/git/regentmarkets/bom-test/lib:/home/git/regentmarkets/php-mt5-webapi/lib:/home/git/regentmarkets/bom-transaction/lib:/home/git/regentmarkets/bom-pricing/lib:/home/git/regentmarkets/bom-cryptocurrency/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-config/lib
-  - &pricing_daemon
-    run:
-      name: pricing dæmon
-      command: perl /home/git/regentmarkets/bom-pricing/bin/price_daemon.pl --no-warmup=1 daemon
-      background: true
-      environment:
-        PERL5LIB: /home/git/regentmarkets/bom/lib:/home/git/regentmarkets/bom-postgres/lib:/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-market/lib:/home/git/regentmarkets/bom-marketdataautoupdater/lib:/home/git/regentmarkets/bom-backoffice/lib:/home/git/regentmarkets/bom-myaffiliates/lib:/home/git/regentmarkets/binary-websocket-api/lib:/home/git/regentmarkets/bom-paymentapi/lib:/home/git/regentmarkets/bom-oauth/lib:/home/git/regentmarkets/bom-rpc/lib:/home/git/regentmarkets/bom-populator/lib:/home/git/regentmarkets/bom-feed/lib:/home/git/regentmarkets/bom-test/lib:/home/git/regentmarkets/php-mt5-webapi/lib:/home/git/regentmarkets/bom-transaction/lib:/home/git/regentmarkets/bom-pricing/lib:/home/git/regentmarkets/bom-cryptocurrency/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-config/lib
   - &tests
     environment:
       PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
-      PERL5LIB: /home/git/regentmarkets/bom/lib:/home/git/regentmarkets/bom-postgres/lib:/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-market/lib:/home/git/regentmarkets/bom-marketdataautoupdater/lib:/home/git/regentmarkets/bom-backoffice/lib:/home/git/regentmarkets/bom-myaffiliates/lib:/home/git/regentmarkets/binary-websocket-api/lib:/home/git/regentmarkets/bom-paymentapi/lib:/home/git/regentmarkets/bom-oauth/lib:/home/git/regentmarkets/bom-rpc/lib:/home/git/regentmarkets/bom-populator/lib:/home/git/regentmarkets/bom-feed/lib:/home/git/regentmarkets/bom-test/lib:/home/git/regentmarkets/php-mt5-webapi/lib:/home/git/regentmarkets/bom-transaction/lib:/home/git/regentmarkets/bom-pricing/lib:/home/git/regentmarkets/bom-cryptocurrency/lib:/home/git/regentmarkets/bom-user/lib:/home/git/regentmarkets/bom-config/lib
       RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
 
 jobs:
@@ -68,10 +51,14 @@ jobs:
       - checkout
       - *git
       - *services
+      - *wait_services
       - run:
           <<: *tests
           name: Verify syntax and compilation
-          command: echo '--formatter TAP::Formatter::JUnit' >> .proverc && make syntax
+          command: |
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            source /etc/profile.d/perl5.sh
+            make syntax
       - store_test_results:
           path: /var/tmp/test-output
   unit:
@@ -81,10 +68,14 @@ jobs:
       - checkout
       - *git
       - *services
+      - *wait_services
       - run:
           <<: *tests
           name: Run tests
-          command: echo '--formatter TAP::Formatter::JUnit' >> .proverc && make test
+          command: |
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            source /etc/profile.d/perl5.sh
+            make test
       - store_test_results:
           path: /var/tmp/test-output
   schema:
@@ -94,13 +85,14 @@ jobs:
       - checkout
       - *git
       - *services
-      - *inotify
-      - *pricing_queue
-      - *pricing_daemon
+      - *wait_services
       - run:
           <<: *tests
           name: Run tests
-          command: echo '--formatter TAP::Formatter::JUnit' >> .proverc && make json_schemas
+          command: |
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            source /etc/profile.d/perl5.sh
+            make json_schemas
       - store_test_results:
           path: /var/tmp/test-output
 
