@@ -232,4 +232,52 @@ subtest 'remove user confirm on scope changes' => sub {
     is_deeply([sort @scopes], ['admin', 'read', 'trade'], 'scopes are updated');
 };
 
+subtest 'block app' => sub {
+    my $app1 = $m->create_app({
+        name         => 'App 1010',
+        scopes       => ['read', 'admin'],
+        user_id      => $test_user_id,
+        redirect_uri => 'https://www.example.com',
+        active       => 1
+    });
+
+    is $app1->{active}, 1, 'the initial state is active';
+    $m->block_app($app1->{app_id});
+    my $get_app = $m->get_app($test_user_id, $app1->{app_id}, 0);
+    is $get_app->{active}, 0, 'app should be de-activated';
+
+};
+
+subtest 'unblock app' => sub {
+    my $app1 = $m->create_app({
+        name         => 'App 1010',
+        scopes       => ['read', 'admin'],
+        user_id      => $test_user_id,
+        redirect_uri => 'https://www.example.com',
+        active       => 1
+    });
+
+    $m->block_app($app1->{app_id});
+    my $get_app1 = $m->get_app($test_user_id, $app1->{app_id}, 0);
+    is $get_app1->{active}, 0, 'app should be de-activated';
+
+    $m->unblock_app($app1->{app_id});
+    my $get_app2 = $m->get_app($test_user_id, $app1->{app_id});
+    is $get_app2->{active}, 1, 'app should be activated';
+};
+
+subtest 'get app by id' => sub {
+    my $app1 = $m->create_app({
+        name         => 'App 1020',
+        scopes       => ['read', 'admin'],
+        user_id      => $test_user_id,
+        redirect_uri => 'https://www.example.com',
+        active       => 1
+    });
+
+    my $get_app1 = $m->get_app($test_user_id, $app1->{app_id});
+    my $retrieved_app = $m->get_app_by_id($app1->{app_id});
+    is $get_app1->{name}, $retrieved_app->{name}, 'app retrieved from DB and created app should be the same ';
+
+};
 done_testing();

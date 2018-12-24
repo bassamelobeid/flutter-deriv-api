@@ -11,12 +11,10 @@ use BOM::Database::ClientDB;
 use BOM::Config;
 
 subtest 'Writes to replica database should fail' => sub {
-    my $clientdb = BOM::Database::ClientDB->new(
-        {
-            broker_code => 'CR',
-            operation   => 'replica',
-        }
-    );
+    my $clientdb = BOM::Database::ClientDB->new({
+        broker_code => 'CR',
+        operation   => 'replica',
+    });
 
     my $dbic = $clientdb->db->dbic;
 
@@ -28,20 +26,16 @@ subtest 'Writes to replica database should fail' => sub {
                 local $dbh->{RaiseError}    = 1;
                 local $dbh->{HandleError};
 
-                $dbh->do(
-                    'insert into betonmarkets.broker_code values (\'BRU\');');
+                $dbh->do('insert into betonmarkets.broker_code values (\'BRU\');');
 
-                ok( 0, 'Should not be able to write into a replica!' );
+                ok(0, 'Should not be able to write into a replica!');
             }
             catch {
-                if ( $dbh->state =~ /^25006$/ ) {
-                    ok( 1,
-                        'read_only_sql_transaction error is thrown as expected.'
-                    );
+                if ($dbh->state =~ /^25006$/) {
+                    ok(1, 'read_only_sql_transaction error is thrown as expected.');
                 }
             };
-        }
-    );
+        });
 };
 
 done_testing();

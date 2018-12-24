@@ -158,15 +158,14 @@ sub is_name_taken {
 sub create_app {
     my ($self, $app) = @_;
 
-    my @result = $self->dbic->run(
+    my $result = $self->dbic->run(
         fixup => sub {
             my $sth = $_->prepare("
         INSERT INTO oauth.apps
             (name, scopes, homepage, github, appstore, googleplay, redirect_uri, verification_uri, app_markup_percentage, binary_user_id)
         VALUES
             (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        RETURNING id
-    ");
+        RETURNING * ");
             $sth->execute(
                 $app->{name},
                 $app->{scopes},
@@ -179,22 +178,13 @@ sub create_app {
                 $app->{app_markup_percentage} || 0,
                 $app->{user_id});
 
-            my @result = $sth->fetchrow_array();
-            return @result;
+            my $result = $sth->fetchrow_hashref();
+            return $result;
         });
-
-    return {
-        app_id                => $result[0],
-        name                  => $app->{name},
-        scopes                => $app->{scopes},
-        redirect_uri          => $app->{redirect_uri},
-        verification_uri      => $app->{verification_uri} || '',
-        homepage              => $app->{homepage} || '',
-        github                => $app->{github} || '',
-        appstore              => $app->{appstore} || '',
-        googleplay            => $app->{googleplay} || '',
-        app_markup_percentage => $app->{app_markup_percentage} || 0
-    };
+    $result->{scopes} = __parse_array($result->{scopes});
+    $result->{app_id} = $result->{id};
+    delete @$result{qw(binary_user_id stamp id)};
+    return $result;
 }
 
 sub update_app {
@@ -203,18 +193,21 @@ sub update_app {
     # get old scopes
     my $old_scopes = $self->dbic->run(
         ping => sub {
-            my $sth = $_->prepare("
-        SELECT scopes FROM oauth.apps WHERE id = ?
-    ");
+            my $sth = $_->prepare("SELECT scopes FROM oauth.apps WHERE id = ?");
             $sth->execute($app_id);
             my $old_scopes = $sth->fetchrow_array;
-            $old_scopes = __parse_array($old_scopes);
+            return __parse_array($old_scopes);
+        });
+    return if !@$old_scopes;
 
-            $sth = $_->prepare("
+    my $updated_app = $self->dbic->run(
+        ping => sub {
+            my $sth = $_->prepare("
         UPDATE oauth.apps SET
             name = ?, scopes = ?, homepage = ?, github = ?,
-            appstore = ?, googleplay = ?, redirect_uri = ?, verification_uri = ?, app_markup_percentage = ?
+            appstore = ?, googleplay = ?, redirect_uri = ?, verification_uri = ?, app_markup_percentage = ?, active = ?
         WHERE id = ?
+        RETURNING *
     ");
             $sth->execute(
                 $app->{name},
@@ -226,9 +219,11 @@ sub update_app {
                 $app->{redirect_uri}          || '',
                 $app->{verification_uri}      || '',
                 $app->{app_markup_percentage} || 0,
+                $app->{active} // 1,
                 $app_id
             );
-            return $old_scopes;
+            my $result = $sth->fetchrow_hashref();
+            return $result;
         });
 
     ## revoke user_scope_confirm on scope changes
@@ -240,33 +235,38 @@ sub update_app {
         }
     }
 
-    return {
-        app_id                => $app_id,
-        name                  => $app->{name},
-        scopes                => $app->{scopes},
-        redirect_uri          => $app->{redirect_uri},
-        verification_uri      => $app->{verification_uri} || '',
-        homepage              => $app->{homepage} || '',
-        github                => $app->{github} || '',
-        appstore              => $app->{appstore} || '',
-        googleplay            => $app->{googleplay} || '',
-        app_markup_percentage => $app->{app_markup_percentage} || 0
-    };
+    $updated_app->{scopes} = __parse_array($updated_app->{scopes});
+    $updated_app->{app_id} = $updated_app->{id};
+    delete @$updated_app{qw(binary_user_id stamp id)};
+
+    return $updated_app;
 }
 
 sub get_app {
-    my ($self, $user_id, $app_id) = @_;
-
+    my ($self, $user_id, $app_id, $active) = @_;
+    $active = $active // 1;    #defined($active) ? $active : 1;
     my $app = $self->dbic->run(
         fixup => sub {
             $_->selectrow_hashref("
         SELECT
             id as app_id, name, redirect_uri, verification_uri, scopes,
-            homepage, github, appstore, googleplay, app_markup_percentage
-        FROM oauth.apps WHERE id = ? AND binary_user_id = ? AND active", undef, $app_id, $user_id);
+            homepage, github, appstore, googleplay, app_markup_percentage, active
+        FROM oauth.apps WHERE id = ? AND binary_user_id = ? AND active = ?", undef, $app_id, $user_id, $active);
         });
     return unless $app;
 
+    $app->{scopes} = __parse_array($app->{scopes});
+    return $app;
+}
+
+sub get_app_by_id {
+    my ($self, $app_id) = @_;
+    my $app = $self->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref("SELECT *  FROM oauth.apps WHERE id = ?", undef, $app_id);
+        });
+
+    return unless $app;
     $app->{scopes} = __parse_array($app->{scopes});
     return $app;
 }
@@ -279,7 +279,7 @@ sub get_apps_by_user_id {
             $_->selectall_arrayref("
         SELECT
             id as app_id, name, redirect_uri, verification_uri, scopes,
-            homepage, github, appstore, googleplay, app_markup_percentage
+            homepage, github, appstore, googleplay, app_markup_percentage, active
         FROM oauth.apps WHERE binary_user_id = ? AND active ORDER BY name", {Slice => {}}, $user_id);
         });
     return [] unless $apps;
@@ -398,6 +398,20 @@ sub user_has_app_id {
 
     return $self->dbic->run(
         fixup => sub { $_->selectrow_array("SELECT id FROM oauth.apps WHERE binary_user_id = ? AND id = ?", undef, $user_id, $app_id) });
+}
+
+sub block_app {
+    my ($self, $app_id) = @_;
+    my $app = $self->get_app_by_id($app_id);
+    $app->{active} = 0;
+    return $self->update_app($app_id, $app);
+}
+
+sub unblock_app {
+    my ($self, $app_id) = @_;
+    my $app = $self->get_app_by_id($app_id);
+    $app->{active} = 1;
+    return $self->update_app($app_id, $app);
 }
 
 no Moose;
