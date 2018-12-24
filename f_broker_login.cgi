@@ -158,6 +158,24 @@ print qq~
 	</tbody>
 </table>~;
 
+# App management
+if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
+    print qq~
+        <table class="Grey2Candy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="94%">
+        	<tbody>
+        		<tr class="GreyLabel">
+        			<td class="whitelabel" colspan="2">App management</td>
+        		</tr>
+        		<tr>
+        			<td align="center" width="50%">
+                                    <p><b>App management</b></p>
+                                    <a href="f_app_management.cgi">Go to app management</a>
+                                </td>
+		        </tr>
+	        </tbody>
+        </table>~;
+}
+
 # MARKETING
 if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
     print qq~

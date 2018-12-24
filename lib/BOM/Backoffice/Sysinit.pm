@@ -45,6 +45,7 @@ my $permissions = {
     'f_promotional.cgi'             => ['Marketing'],
     'f_promotional_processing.cgi'  => ['Marketing'],
     'fetch_myaffiliate_payment.cgi' => ['Marketing'],
+    'f_app_management.cgi'          => ['Marketing'],
 
     'c_listclientlimits.cgi'          => ['CS'],
     'client_email.cgi'                => ['CS'],
