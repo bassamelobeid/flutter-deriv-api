@@ -36,6 +36,11 @@ my $config = {
         NEW_SIGNIN_ACTIVITY => "New Sign-In Activity Detected",
         TFA_FAILURE         => "Invalid authentication code",
         NO_AUTHENTICATION   => "The user did not authenticate successfully.",
+        INVALID_RESIDENCE   => 'Sorry, our service is currently unavailable in [_1].',
+        'duplicate email' =>
+            'Your provided email address is already in use by another Login ID. According to our terms and conditions, you may only register once through our site.',
+        'InvalidBrand' => 'Brand is invalid.',
+        'invalid'      => 'Sorry, an error occurred. Please try again later.'
     },
 };
 

@@ -13,6 +13,7 @@ use BOM::OAuth::Helper;
 use BOM::Platform::Context qw(localize);
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use BOM::OAuth::Static qw(get_message_mapping);
+use Locale::Codes::Country qw(code2country);
 
 sub callback {
     my $c = shift;
@@ -68,6 +69,7 @@ sub callback {
     my $user  = try {
         BOM::User->new(email => $email)
     };
+
     # Registered users who have email/password based account are forbidden
     # from social signin. As only one login method
     # is allowed (either email/password or social login).
@@ -78,16 +80,31 @@ sub callback {
         $c->session('error', localize(get_message_mapping()->{NO_LOGIN_SIGNUP}));
         return $c->redirect_to($redirect_uri);
     }
+
     # Create virtual client if user not found
     # consequently initialize user_id and link account to social login.
-    if (not $user_id) {
-        # create user based on email by fly if account does not exist yet
-        $user = $c->__create_virtual_user(
-            email   => $email,
-            brand   => $brand_name,
-            details => {
+    unless ($user_id) {
+        # create user based on email if account does not exist yet
+        unless ($user) {
+            #get client's residence automatically from cloudflare headers
+            my $residence = $c->stash('request')->country_code;
+            my $account   = $c->__create_virtual_account(
+                email              => $email,
+                brand              => $brand_name,
+                residence          => $residence,
                 date_first_contact => $c->session('date_first_contact'),
-                signup_device      => $c->session('signup_device')}) unless $user;
+                signup_device      => $c->session('signup_device'));
+            if ($account->{error}) {
+                my $error_msg =
+                    ($account->{error} eq 'invalid residence')
+                    ? localize(get_message_mapping()->{INVALID_RESIDENCE}, code2country($residence))
+                    : localize(get_message_mapping()->{$account->{error}});
+                $c->session(error => $error_msg);
+                return $c->redirect_to($redirect_uri);
+            } else {
+                $user = $account->{user};
+            }
+        }
         # connect oneall provider data to user identity
         $user_connect->insert_connect($user->{id}, $provider_data);
         $user_id = $user->{id};
@@ -126,23 +143,54 @@ sub _get_email {
     return $emails->[0]->{value};    # or need check is_verified?
 }
 
-sub __create_virtual_user {
+=head2 __create_virtual_account
+
+Register user and create a virtual account for user with given information
+Returns a hashref {error}/{client, user}
+
+Arguments:
+
+=over 1
+
+=item C<$email>
+
+User's email
+
+=item C<$brand>
+
+Company's brand
+
+=item C<$residence>
+
+User's country of residence
+
+=item C<$date_first_contact>
+
+Date of registration. It's optinal
+
+=item C<$signup_device>
+
+Device(platform) used for signing up on the website. It's optinal
+
+=back
+
+=cut
+
+sub __create_virtual_account {
     my ($c, %user_details) = @_;
 
     my $details = {
         email             => $user_details{email},
-        client_password   => rand(999999),           # random password so you can't login without password
+        client_password   => rand(999999),               # random password so you can't login without password
         has_social_signup => 1,
         brand_name        => $user_details{brand},
+        residence         => $user_details{residence},
     };
 
-    $details->{date_first_contact} = $user_details{details}{date_first_contact} if $user_details{details}{date_first_contact};
-    $details->{signup_device}      = $user_details{details}{signup_device}      if $user_details{details}{signup_device};
+    $details->{date_first_contact} = $user_details{date_first_contact} if $user_details{date_first_contact};
+    $details->{signup_device}      = $user_details{signup_device}      if $user_details{signup_device};
 
-    my $acc = BOM::Platform::Account::Virtual::create_account({details => $details});
-    die $acc->{error} if $acc->{error};
-
-    return $acc->{user};
+    return BOM::Platform::Account::Virtual::create_account({details => $details});
 }
 
 1;
