@@ -164,11 +164,47 @@ rpc "landing_company",
     $landing_company{id} = $country;
     my $registry = LandingCompany::Registry->new;
 
-    foreach my $type ('gaming_company', 'financial_company', 'mt_gaming_company', 'mt_financial_company') {
+    foreach my $type ('gaming_company', 'financial_company') {
         if (($landing_company{$type} // '') ne 'none') {
             $landing_company{$type} = __build_landing_company($registry->get($landing_company{$type}));
         } else {
             delete $landing_company{$type};
+        }
+    }
+
+    # mt5 structure as per country config
+    # 'mt' => {
+    #    'gaming' => {
+    #         'standard' => 'none'
+    #    },
+    #    'financial' => {
+    #         'advanced' => 'none',
+    #         'standard' => 'none'
+    #    }
+    # }
+
+    # need to send it like
+    # {
+    #   mt_gaming_company: {
+    #    standard: {}
+    #   },
+    #   mt_financial_company: {
+    #    advanced: {},
+    #    standard: {}
+    #   }
+    # }
+
+    # we don't want to send "mt" as key so need to delete from structure
+    my $mt5_landing_company_details = delete $landing_company{mt};
+
+    foreach my $mt5_type (keys %{$mt5_landing_company_details}) {
+        foreach my $mt5_sub_type (keys %{$mt5_landing_company_details->{$mt5_type}}) {
+            next
+                unless exists $mt5_landing_company_details->{$mt5_type}{$mt5_sub_type}
+                and $mt5_landing_company_details->{$mt5_type}{$mt5_sub_type} ne 'none';
+
+            $landing_company{"mt_${mt5_type}_company"}{$mt5_sub_type} =
+                __build_landing_company($registry->get($mt5_landing_company_details->{$mt5_type}{$mt5_sub_type}));
         }
     }
 

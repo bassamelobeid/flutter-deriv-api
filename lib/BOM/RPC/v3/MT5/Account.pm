@@ -209,16 +209,13 @@ sub _mt5_group {
 
     # for demo accounts we recognize company type if sub_account_type is available or not
     if ($account_type eq 'demo') {
-
         return "demo\\${company_name}_$sub_account_type${GBP}" if length $sub_account_type;
         return "demo\\$company_name";
-
     } else {
         $sub_account_type = "_${sub_account_type}" if $account_type eq 'financial';
 
         return "real\\${company_name}${sub_account_type}${GBP}" unless $manager_id;
         return "real\\${company_name}_mamm${sub_account_type}${GBP}_${manager_id}";
-
     }
 }
 
@@ -282,8 +279,12 @@ async_rpc mt5_new_account => sub {
     my $user = $client->user;
 
     # demo accounts type determined if this parameter exists or not
-    my $company_type        = $mt5_account_type eq '' ? 'gaming' : 'financial';
-    my $company_name        = $countries_list->{$residence}->{"mt_${company_type}_company"};
+    my $company_type = $mt5_account_type eq '' ? 'gaming' : 'financial';
+    my $company_name = $countries_instance->mt_company_for_country(
+        country          => $residence,
+        account_type     => $company_type,
+        sub_account_type => $mt5_account_type
+    );
     my $binary_company_name = $countries_list->{$residence}->{"${company_type}_company"};
 
     # MT5 is not allowed in client country

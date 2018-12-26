@@ -58,7 +58,7 @@ sub cmd_UserAdd {
     $input->{mainPassword} eq $DETAILS{password}->{main}
         or die "UserAdd with unexpected mainPassword=$input->{mainPassword}\n";
     # allow another group to pass in order to create new real (standard & advanced) MT5 financial account
-    $input->{group} eq $DETAILS{group} || $input->{group} =~ /real\\vanuatu|malta.*/
+    $input->{group} eq $DETAILS{group} || $input->{group} =~ /real\\vanuatu|labuan|malta.*/
         or die "UserAdd with unexpected group=$input->{group}\n";
 
     $input->{investPassword} eq $DETAILS{password}->{investor}
