@@ -15,8 +15,8 @@ use BOM::Transaction;
 use BOM::Transaction::History qw(get_transaction_history);
 use BOM::Transaction::Validation;
 use BOM::Event::Actions::CustomerStatement;
+use BOM::Test::Email;
 
-use Email::Folder::Search;
 use Email::Stuffer::TestLinks;
 
 use Date::Utility;
@@ -28,8 +28,6 @@ use Test::Warn;
 
 use constant CONTRACT_START_DATE   => 1413892500;
 use constant FOUR_HOURS_IN_SECONDS => 60 * 60 * 4;
-my $mailbox = Email::Folder::Search->new('/tmp/default.mailbox');
-$mailbox->init;
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -88,7 +86,7 @@ my $user         = BOM::User->create(
 );
 $user->add_client($test_client);
 
-$mailbox->clear();
+mailbox_clear();
 my $response = BOM::Event::Actions::CustomerStatement::_send_email_statement({
     client    => $test_client,
     source    => 1,
@@ -96,7 +94,7 @@ my $response = BOM::Event::Actions::CustomerStatement::_send_email_statement({
     date_to   => $now->epoch,
 });
 ok($response->{status_code} == 1, "client with no transaction should still receive an email");
-my @msgs = $mailbox->search(
+my @msgs = mailbox_search(
     email   => $test_client->email,
     subject => qr/Statement from .+ to .+/
 );
@@ -218,8 +216,6 @@ $txn = BOM::Transaction->new({
 $error = $txn->buy(skip_validation => 1);
 is $error, undef, 'no error buying contract';
 
-$mailbox->clear();
-
 my $status = BOM::Event::Actions::CustomerStatement::_send_email_statement({
     client    => $test_client,
     source    => 1,
@@ -229,7 +225,7 @@ my $status = BOM::Event::Actions::CustomerStatement::_send_email_statement({
 
 is $status->{status_code}, 1, 'email has been sent';
 
-@msgs = $mailbox->search(
+@msgs = mailbox_search(
     email   => $test_client->email,
     subject => qr/Statement from .+ to .+/
 );
