@@ -260,6 +260,8 @@ sub validate_account_details {
     $details->{citizen} = ($client->citizen || $args->{citizen}) // '';
     return {error => 'InsufficientAccountDetails'} if ($lc->citizen_required && !$details->{citizen});
 
+    $details->{place_of_birth} = ($client->place_of_birth || $args->{place_of_birth}) // '';
+
     return {details => $details};
 }
 
