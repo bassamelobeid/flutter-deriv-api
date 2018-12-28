@@ -43,6 +43,8 @@ $client_details = {
     secret_answer          => 'test',
     account_opening_reason => 'Speculative',
     citizen                => 'de',
+    place_of_birth         => "de",
+
 };
 
 $params = {
@@ -342,10 +344,12 @@ subtest $method => sub {
 
         $params->{args}->{currency} = 'LTC';
         $params->{args}->{citizen}  = 'af';
+        $params->{args}->{place_of_birth}  = 'af';
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('create second crypto currency account')
             ->result_value_is(sub { shift->{currency} }, 'LTC', 'crypto account currency is LTC');
 
         my $cl_ltc = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
+
 
         cmp_ok($cl_ltc->citizen, 'eq', $cl_usd->citizen, 'Citizenship cannot be changed');
 
@@ -354,6 +358,10 @@ subtest $method => sub {
             decode_json_utf8($cl_usd->financial_assessment->{data}),
             "new client financial assessment is the same as old client financial_assessment"
         );
+
+        $rpc_ct->call_ok('get_settings', {token => $rpc_ct->result->{oauth_token}})->result;
+        cmp_ok($rpc_ct->result->{place_of_birth}, 'eq', $client_details->{place_of_birth}, 'place_of_birth cannot be changed');
+
     };
 };
 
