@@ -1,0 +1,553 @@
+version: 2
+
+default: &default
+  docker:
+    - image: regentmarkets/debian-ci:latest
+      user: nobody
+      auth:
+        username: circle4regentmarkets
+        password: $DOCKERHUB_PASSWORD
+  shell: /bin/bash -leo pipefail
+  working_directory: /home/git/regentmarkets/bom
+
+alias:
+  - &ssh_keys
+    add_ssh_keys:
+      fingerprints:
+        - "26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb"
+  - &git
+    run:
+      name: Update git repositories
+      command: /opt/circle/prepare-test.sh
+  - &services
+    run:
+      name: Start services
+      command: |
+        start_services
+        touch /tmp/services.ready
+      background: true
+  - &wait_services
+    run:
+      name: Wait for services to start up
+      command: |
+        count=0
+        while [ ! -f /tmp/services.ready ]; do
+            echo 'Still waiting for services...'
+            (( count++ )) && (( count >= 20 )) && break
+            sleep 1
+        done
+  - &tests
+    environment:
+      PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
+
+jobs:
+  syntax:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: Code structure and syntax
+          command: |
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make unit_test_syntax
+      - store_test_results:
+          path: /var/tmp/test-output
+  filehash:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: Check file hash
+          command: |
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make unit_test_initial
+      - store_test_results:
+          path: /var/tmp/test-output
+  product_contract:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: Product contract test
+          command: |
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make unit_test_product_contract
+      - store_test_results:
+          path: /var/tmp/test-output
+  product_contract_extended:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: Product contract extended test
+          command: |
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make unit_test_product_contract_extended
+      - store_test_results:
+          path: /var/tmp/test-output
+  product_contract_all:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: Product contract all
+          command: |
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make unit_test_product_all
+      - store_test_results:
+          path: /var/tmp/test-output
+  validation:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: Validation test
+          command: |
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make unit_test_syntax
+      - store_test_results:
+          path: /var/tmp/test-output
+  pricing:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: Pricing test
+          command: |
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make unit_test_pricing
+      - store_test_results:
+          path: /var/tmp/test-output
+  intraday:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: Intraday test
+          command: |
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make unit_test_intraday
+      - store_test_results:
+          path: /var/tmp/test-output
+  merlin:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: Merlin
+          command: |
+            cd /home/git/regentmarkets/bom-quant-benchmark
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make merlin_benchmark
+      - store_test_results:
+          path: /var/tmp/test-output
+  SDFX_benchmark_major:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: SDFX benchmark major
+          command: |
+            cd /home/git/regentmarkets/bom-quant-benchmark
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make SDFX_benchmark_major
+      - store_test_results:
+          path: /var/tmp/test-output
+  SDFX_benchmark_minor:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: SDFX benchmark minor
+          command: |
+            cd /home/git/regentmarkets/bom-quant-benchmark
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make SDFX_benchmark_minor
+      - store_test_results:
+          path: /var/tmp/test-output
+  SDEQ_benchmark_DJI:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: SDEQ benchmark DJI
+          command: |
+            cd /home/git/regentmarkets/bom-quant-benchmark
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make SDEQ_benchmark_DJI
+      - store_test_results:
+          path: /var/tmp/test-output
+  SDEQ_benchmark_FCHI:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: SDEQ benchmark FCHI
+          command: |
+            cd /home/git/regentmarkets/bom-quant-benchmark
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make SDEQ_benchmark_FCHI
+      - store_test_results:
+          path: /var/tmp/test-output
+  SDEQ_benchmark_SPC:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: SDEQ benchmark SPC
+          command: |
+            cd /home/git/regentmarkets/bom-quant-benchmark
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make SDEQ_benchmark_SPC
+      - store_test_results:
+          path: /var/tmp/test-output
+  SDEQ_benchmark_N225:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: SDEQ benchmark N225
+          command: |
+            cd /home/git/regentmarkets/bom-quant-benchmark
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make SDEQ_benchmark_N225
+      - store_test_results:
+          path: /var/tmp/test-output
+  SDEQ_benchmark_SSECOMP:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: SDEQ benchmark SSECOMP
+          command: |
+            cd /home/git/regentmarkets/bom-quant-benchmark
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make SDEQ_benchmark_SSECOMP
+      - store_test_results:
+          path: /var/tmp/test-output
+  SDEQ_benchmark_FTSE:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: SDEQ benchmark FTSE
+          command: |
+            cd /home/git/regentmarkets/bom-quant-benchmark
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make SDEQ_benchmark_FTSE
+      - store_test_results:
+          path: /var/tmp/test-output
+  OVRA_benchmark:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: OVRA benchmark
+          command: |
+            cd /home/git/regentmarkets/bom-quant-benchmark
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make OVRA_benchmark
+      - store_test_results:
+          path: /var/tmp/test-output
+  perl-Pricing-Engine-European-Digital-Slope:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: perl-Pricing-Engine-European-Digital-Slope
+          command: |
+            cd /home/git/regentmarkets/perl-Pricing-Engine-European-Digital-Slope
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make test
+      - store_test_results:
+          path: /var/tmp/test-output
+  perl-Pricing-Engine-BlackScholes:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: perl-Pricing-Engine-BlackScholes
+          command: |
+            cd /home/git/regentmarkets/perl-Pricing-Engine-BlackScholes
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make test
+      - store_test_results:
+          path: /var/tmp/test-output
+  perl-Pricing-Engine-Digits:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: perl-Pricing-Engine-Digits
+          command: |
+            cd /home/git/regentmarkets/perl-Pricing-Engine-Digits
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make test
+      - store_test_results:
+          path: /var/tmp/test-output
+  perl-Pricing-Engine-HighLow-Ticks:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: perl-Pricing-Engine-HighLow-Ticks
+          command: |
+            cd /home/git/regentmarkets/perl-Pricing-Engine-HighLow-Ticks
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make test
+      - store_test_results:
+          path: /var/tmp/test-output
+  perl-Pricing-Engine-Intraday-Forex-Base:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: perl-Pricing-Engine-Intraday-Forex-Base
+          command: |
+            cd /home/git/regentmarkets/perl-Pricing-Engine-Intraday-Forex-Base
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make test
+      - store_test_results:
+          path: /var/tmp/test-output
+  perl-Pricing-Engine-Lookback:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: perl-Pricing-Engine-Lookback
+          command: |
+            cd /home/git/regentmarkets/perl-Pricing-Engine-Lookback
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make test
+      - store_test_results:
+          path: /var/tmp/test-output
+  perl-Pricing-Engine-Markup:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: perl-Pricing-Engine-Markup
+          command: |
+            cd /home/git/regentmarkets/perl-Pricing-Engine-Markup
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make test
+      - store_test_results:
+          path: /var/tmp/test-output
+  perl-Pricing-Engine-Reset:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: perl-Pricing-Engine-Reset
+          command: |
+            cd /home/git/regentmarkets/perl-Pricing-Engine-Reset
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make test
+      - store_test_results:
+          path: /var/tmp/test-output
+  perl-Pricing-Engine-TickExpiry:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - checkout
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: perl-Pricing-Engine-TickExpiry
+          command: |
+            cd /home/git/regentmarkets/perl-Pricing-Engine-TickExpiry
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make test
+      - store_test_results:
+          path: /var/tmp/test-output
+
+workflows:
+  version: 2
+  build-workflow:
+    jobs:
+      - syntax:
+          context: perl
+      - filehash:
+          context: perl
+      - product_contract:
+          context: perl
+      - product_contract_extended:
+          context: perl
+      - product_contract_all:
+          context: perl
+      - validation:
+          context: perl
+      - pricing:
+          context: perl
+      - intraday:
+          context: perl
+      - merlin:
+          context: perl
+      - SDFX_benchmark_major:
+          context: perl
+      - SDFX_benchmark_minor:
+          context: perl
+      - SDEQ_benchmark_DJI:
+          context: perl
+      - SDEQ_benchmark_FCHI:
+          context: perl
+      - SDEQ_benchmark_SPC:
+          context: perl
+      - SDEQ_benchmark_N225:
+          context: perl
+      - SDEQ_benchmark_SSECOMP:
+          context: perl
+      - SDEQ_benchmark_FTSE:
+          context: perl
+      - OVRA_benchmark:
+          context: perl
+      - perl-Pricing-Engine-European-Digital-Slope:
+          context: perl
+      - perl-Pricing-Engine-BlackScholes:
+          context: perl
+      - perl-Pricing-Engine-Digits:
+          context: perl
+      - perl-Pricing-Engine-HighLow-Ticks:
+          context: perl
+      - perl-Pricing-Engine-Intraday-Forex-Base:
+          context: perl
+      - perl-Pricing-Engine-Lookback:
+          context: perl
+      - perl-Pricing-Engine-Markup:
+          context: perl
+      - perl-Pricing-Engine-Reset:
+          context: perl
+      - perl-Pricing-Engine-TickExpiry:
+          context: perl
