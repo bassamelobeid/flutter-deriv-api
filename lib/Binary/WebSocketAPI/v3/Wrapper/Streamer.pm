@@ -48,7 +48,6 @@ sub website_status {
     my ($c, $req_storage) = @_;
 
     my $args = $req_storage->{args};
-
     ### TODO: to config
     my $channel_name = "NOTIFY::broadcast::channel";
     my $redis        = ws_redis_master;
@@ -56,9 +55,11 @@ sub website_status {
 
     my $callback = sub {
         $c->call_rpc({
-                args        => $args,
-                method      => 'website_status',
-                call_params => {
+                schema_receive    => $req_storage->{schema_receive},
+                schema_receive_v3 => $req_storage->{schema_receive_v3},
+                args              => $args,
+                method            => 'website_status',
+                call_params       => {
                     country_code => $c->country_code,
                 },
                 response => sub {
@@ -155,11 +156,13 @@ sub ticks {
     my @symbols = (ref $args->{ticks}) ? @{$args->{ticks}} : ($args->{ticks});
     foreach my $symbol (@symbols) {
         $c->call_rpc({
-                args        => $args,
-                method      => 'ticks',
-                msg_type    => 'tick',
-                symbol      => $symbol,
-                call_params => {
+                schema_receive    => $req_storage->{schema_receive},
+                schema_receive_v3 => $req_storage->{schema_receive_v3},
+                args              => $args,
+                method            => 'ticks',
+                msg_type          => 'tick',
+                symbol            => $symbol,
+                call_params       => {
                     symbol => $symbol,
                 },
                 success => sub {
@@ -221,10 +224,12 @@ sub ticks_history {
         # but until we have a failing test case which demonstrates that, I don't think it's worth spending too much time on.
         return if (!$c || !$c->tx);
         $c->call_rpc({
-                args            => $args,
-                origin_args     => $req_storage->{origin_args},
-                method          => 'ticks_history',
-                rpc_response_cb => sub {
+                schema_receive    => $req_storage->{schema_receive},
+                schema_receive_v3 => $req_storage->{schema_receive_v3},
+                args              => $args,
+                origin_args       => $req_storage->{origin_args},
+                method            => 'ticks_history',
+                rpc_response_cb   => sub {
                     my ($c, $rpc_response, $req_storage) = @_;
                     return if (!$c || !$c->tx);
                     my $args = $req_storage->{args};

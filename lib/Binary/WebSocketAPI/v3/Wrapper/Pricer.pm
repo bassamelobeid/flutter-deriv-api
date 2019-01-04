@@ -56,10 +56,12 @@ sub proposal {
 
     my $args = $req_storage->{args};
     $c->call_rpc({
-            args        => $args,
-            method      => 'send_ask',
-            msg_type    => 'proposal',
-            call_params => {
+            schema_receive    => $req_storage->{schema_receive},
+            schema_receive_v3 => $req_storage->{schema_receive_v3},
+            args              => $args,
+            method            => 'send_ask',
+            msg_type          => 'proposal',
+            call_params       => {
                 token                 => $c->stash('token'),
                 language              => $c->stash('language'),
                 app_markup_percentage => $c->stash('app_markup_percentage'),
@@ -223,10 +225,12 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
 
                 my $f = Future::Mojo->new;
                 $c->call_rpc({
-                        args        => $args,
-                        method      => 'send_ask',
-                        msg_type    => 'proposal',
-                        call_params => {
+                        schema_receive    => $req_storage->{schema_receive},
+                        schema_receive_v3 => $req_storage->{schema_receive_v3},
+                        args              => $args,
+                        method            => 'send_ask',
+                        msg_type          => 'proposal',
+                        call_params       => {
                             token                 => $c->stash('token'),
                             language              => $c->stash('language'),
                             app_markup_percentage => $c->stash('app_markup_percentage'),
@@ -893,7 +897,6 @@ sub _price_stream_results_adjustment {
 #
 sub send_proposal_open_contract_last_time {
     my ($c, $args, $contract_id, $stash_data) = @_;
-
     Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $args->{uuid});
     # we don't want to end up with new subscribtion
     delete $stash_data->{subscribe} if exists $stash_data->{subscribe};

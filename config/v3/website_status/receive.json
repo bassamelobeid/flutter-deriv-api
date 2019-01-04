@@ -1,66 +1,62 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "title": "Website Status Response",
-    "properties": {
-        "website_status": {
-            "type": "object",
-            "required": "1",
-            "properties": {
-                "clients_country": {
-                    "type": "string"
-                },
-                "terms_conditions_version": {
-                    "type": "string",
-                    "required": "1"
-                },
-                "supported_languages": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
+    "$schema" : "http://json-schema.org/draft-04/schema#",
+    "required" : [
+        "echo_req",
+        "msg_type"
+    ],
+    "type" : "object",
+    "description" : null,
+    "title" : "Website Status Response",
+    "properties" : {
+        "msg_type" : {
+            "description" : "website_status",
+            "type" : "string"
+        },
+        "website_status" : {
+            "required" : ["currencies_config", "api_call_limits"],
+            "properties" : {
+                "supported_languages" : {
+                    "description" : "Provides codes for languages supported",
+                    "type" : "array",
+                    "items" : {
+                        "type" : "string"
                     }
                 },
                 "currencies_config": {
                     "type": "object",
-                    "required": "1",
-                    "properties": {
-                        "^[A-Z]{3-4}$": {
+                    "minProperties" :  1,
+                    "patternProperties": {
+                        "^[A-Z]{3,4}$": {
                             "type": "object",
+                            "required": ["fractional_digits", "type", "stake_default", "transfer_between_accounts"],
                             "properties": {
                                 "fractional_digits": {
-                                    "type": "number",
-                                    "pattern": "^[0-9]+$",
-                                    "required": "1"
+                                    "type": "number"
                                 },
                                 "type": {
-                                    "enum": ["fiat", "crypto"],
-                                    "required": "1"
+                                    "enum": ["fiat", "crypto"]
                                 },
                                 "stake_default": {
                                     "type": "number",
-                                    "minimum": "0",
-                                    "required": "1"
+                                    "minimum": 0
                                 },
                                 "transfer_between_accounts": {
                                     "type": "object",
-                                    "required": "1",
+                                    "required": ["limits","fees"],
                                     "properties": {
                                         "limits": {
                                             "type": "object",
-                                            "required": "1",
                                             "properties": {
                                                 "min": {
                                                     "type": "number",
-                                                    "minimum": 0,
-                                                    "required": "1"
+                                                    "minimum": 0
                                                 }
                                             }
                                         },
                                         "fees": {
                                             "type": "object",
-                                            "required": "1",
-                                            "properties": {
-                                                "^[A-Z]{3-4}$": {
+                                            "patternProperties": {
+                                                "^[A-Z]{3,4}$": {
                                                     "type": "number",
                                                     "minimum": 0,
                                                     "maximum": 7
@@ -75,97 +71,95 @@
                 },
                 "api_call_limits": {
                     "type": "object",
-                    "required": "1",
+                    "required": ["max_proposal_subscription", "max_requests_pricing","max_requests_outcome","max_requestes_general"],
                     "properties": {
                         "max_proposal_subscription": {
                             "type": "object",
-                            "required": "1",
+                            "required": ["max","applies_to"],
                             "properties": {
                                 "max": {
-                                    "type": "number",
-                                    "pattern": "^5$",
-                                    "required": "1"
+                                    "type": "number"
                                 },
                                 "applies_to": {
-                                    "type": "string",
-                                    "required": "1"
+                                    "type": "string"
                                 }
                             }
                         },
                         "max_requests_pricing": {
                             "type": "object",
-                            "required": "1",
+                            "required": ["minutely","hourly", "applies_to"],
                             "properties": {
                                 "minutely": {
-                                    "type": "number",
-                                    "pattern": "^66$",
-                                    "required": "1"
+                                    "type": "number"
                                 },
                                 "hourly": {
-                                    "type": "number",
-                                    "pattern": "^266$",
-                                    "required": "1"
+                                    "type": "number"
                                 },
                                 "applies_to": {
-                                    "type": "string",
-                                    "required": "1"
+                                    "type": "string"
                                 }
                             }
                         },
                         "max_requests_outcome": {
                             "type": "object",
-                            "required": "1",
+                            "required": ["minutely","hourly","applies_to"],
                             "properties": {
                                 "minutely": {
-                                    "type": "number",
-                                    "pattern": "^55$",
-                                    "required": "1"
+                                    "type": "number"
                                 },
                                 "hourly": {
-                                    "type": "number",
-                                    "pattern": "^255$",
-                                    "required": "1"
+                                    "type": "number"
                                 },
                                 "applies_to": {
-                                    "type": "string",
-                                    "required": "1"
+                                    "type": "string"
                                 }
                             }
                         },
                         "max_requestes_general": {
                             "type": "object",
-                            "required": "1",
+                            "required": ["minutely","hourly","applies_to"],
                             "properties": {
                                 "minutely": {
-                                    "type": "number",
-                                    "pattern": "^244$",
-                                    "required": "1"
+                                    "type": "number"
                                 },
                                 "hourly": {
-                                    "type": "number",
-                                    "pattern": "^244$",
-                                    "required": "1"
+                                    "type": "number"
                                 },
                                 "applies_to": {
-                                    "type": "string",
-                                    "required": "1"
+                                    "type": "string"
                                 }
                             }
                         }
                     }
+
+                },
+                "site_status" : {
+                    "pattern" : "^(up|down)$",
+                    "description" : "Current status of the site. up or down",
+                    "type" : "string"
+                },
+                "clients_country" : {
+                    "type" : "string",
+                    "description" : "Country code of connected IP"
+                },
+                "terms_conditions_version" : {
+                    "description" : "Latest terms and conditions version",
+                    "type" : "string"
+                },
+                "message": {
+                    "type":"string",
+                    "description": "Text for site status banner, contains problem description.  Shown only if set by the system"
                 }
-            }
+            },
+            "type" : "object"
         },
-        "echo_req": {
-            "required": "1"
+        "req_id" : {
+            "description" : "Optional field send in request to map to response, present only when request contains req_id",
+            "type" : "integer"
         },
-        "msg_type": {
-            "type": "string",
-            "pattern": "^website_status$",
-            "required": "1"
-        },
-        "req_id": {
-            "type": "integer"
+        "echo_req" : {
+            "description" : "Echo of the request made",
+            "title" : "Echo request"
         }
     }
 }

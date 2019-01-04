@@ -11,7 +11,13 @@ use Mojo::IOLoop;
 use Path::Tiny;
 use Try::Tiny;
 use Data::Dumper;
-
+use JSON::Schema;
+use JSON::Validator;
+use Clone;
+#set up a specific logger for the V3 to v4 logging
+use Log::Any '$schema_log', category => 'schema_log';
+use Log::Any::Adapter;
+Log::Any::Adapter->set({category => 'schema_log'}, 'File', '/var/lib/binary/v4_v3_schema_fails.log');
 my $json = JSON::MaybeXS->new;
 
 sub start_timing {
@@ -150,10 +156,11 @@ sub reached_limit_check {
 sub _set_defaults {
     my ($validator, $args) = @_;
 
-    my $properties = $validator->{in_validator}->schema->{properties};
+    my $properties = $validator->{schema_send}->{properties};
 
     foreach my $k (keys %$properties) {
-        $args->{$k} = $properties->{$k}->{default} if not exists $args->{$k} and $properties->{$k}->{default};
+        next if exists $args->{$k};
+        $args->{$k} = $properties->{$k}->{default} if $properties->{$k}->{default};
     }
     return;
 }
@@ -172,19 +179,14 @@ sub before_forward {
 
     return reached_limit_check($c, $category, $is_real)->then(
         sub {
-
-            my $input_validation_result = $req_storage->{in_validator}->validate($args);
-            if (not $input_validation_result) {
-                my ($details, @general);
-                foreach my $err ($input_validation_result->errors) {
-                    if ($err->property =~ /\$\.(.+)$/) {
-                        $details->{$1} = $err->message;
-                    } else {
-                        push @general, $err->message;
-                    }
-                }
-                my $message = $c->l('Input validation failed: ') . join(', ', (keys %$details, @general));
-                return Future->fail($c->new_error($req_storage->{name}, 'InputValidationFailed', $message, $details));
+            my $caller_info = {
+                loginid => $c->stash('loginid'),
+                app_id  => $c->app_id
+            };
+            my $error = _validate_schema_error($req_storage->{schema_send}, $req_storage->{schema_send_v3}, $args, $caller_info);
+            if ($error) {
+                my $message = $c->l('Input validation failed: ') . join(', ', (keys %{$error->{details}}, @{$error->{general}}));
+                return Future->fail($c->new_error($req_storage->{name}, 'InputValidationFailed', $message, $error->{details}));
             }
 
             _set_defaults($req_storage, $args);
@@ -266,7 +268,6 @@ sub get_doc_auth_s3_conf {
 
 sub output_validation {
     my ($c, $req_storage, $api_response) = @_;
-
     return unless $req_storage;
 
     # Because of the implementation of "Mojo::WebSocketProxy::Dispatcher", a request reached
@@ -274,15 +275,18 @@ sub output_validation {
     if (ref $api_response eq 'HASH' and exists $api_response->{error}) {
         return if exists $api_response->{error}{code} and $api_response->{error}{code} eq 'RateLimit';
     }
+    if ($req_storage->{schema_receive}) {
 
-    if ($req_storage->{out_validator}) {
-        my $output_validation_result = $req_storage->{out_validator}->validate($api_response);
-        if (not $output_validation_result) {
-            my $error = join(" - ", $output_validation_result->errors);
-            $c->app->log->warn("Invalid output parameter for [ " . $json->encode($api_response) . " error: $error ]");
+        my $caller_info = {
+            loginid => $c->stash('loginid'),
+            app_id  => $c->stash('app_id')};
+        my $error = _validate_schema_error($req_storage->{schema_receive}, $req_storage->{schema_receive_v3}, $api_response, $caller_info);
+        if ($error) {
+            my $error_msg = join(" - ", (map { "$_:$error->{details}{$_}" } keys %{$error->{details}}), @{$error->{general}});
+            $c->app->log->warn("Invalid output parameter for [ " . $json->encode($api_response) . " error: $error_msg ]");
             %$api_response = %{
                 $c->new_error($req_storage->{msg_type} || $req_storage->{name},
-                    'OutputValidationFailed', $c->l("Output validation failed: ") . $error)};
+                    'OutputValidationFailed', $c->l("Output validation failed: ") . $error_msg)};
         }
     }
 
@@ -394,4 +398,138 @@ sub introspection_before_send_response {
     return;
 }
 
+=head2 filter_sensitive_fields
+
+Changes the value of any attribute that has a C<{"sensitive" : 1}> attribute set in the schema 
+note that "sensitive" is not a standard JSON schema attribute but JSON validators will ignore non
+standard attributes. 
+Also Note that this updates the reference  to the data so make a copy of the data if you do not want it modified. 
+Takes the following arguments as parameters
+
+=over 4
+
+=item C<$schema> HashRef JSON schema as a  HashRef 
+
+=item C<$data> HashRef API data matching the JSON schema 
+
+=back
+
+Returns undef
+
+=cut
+
+sub filter_sensitive_fields {
+    my ($schema, $data) = @_;
+    my $properties = $schema->{'properties'};
+    foreach my $attr (keys(%{$properties})) {
+        my $current_attr = $properties->{$attr};
+        if (ref($current_attr) eq 'HASH' && ($current_attr->{'type'} // '') eq 'object') {
+            filter_sensitive_fields($current_attr, $data->{$attr});
+        }
+        if (defined($data->{$attr}) && $current_attr->{'sensitive'}) {
+            if ($current_attr->{type} eq 'array') {
+                my $array_count    = scalar(@{$data->{$attr}});
+                my @filtered_array = (('### Sensitive ###') x $array_count);
+                $data->{$attr} = \@filtered_array;
+            } else {
+                $data->{$attr} = '### Sensitive ###';
+            }
+        }
+    }
+    return undef;
+}
+
+=head2 _validate_schema_error
+
+Checks sent and received API data for validation against our JSON schema's
+Currently from 11/2018 it first validates against v4 of the schema and if it fails it will try against v3
+if it passes V3 we log the message, error and the source.  The idea is to capture the failures and 
+determine if we need any action before enforcing v4 
+Takes the following arguments as parameters
+
+=over 4
+
+=item  C<$schema> HashRef version 4 of the schema 
+
+=item  C<$schema_v3> HashRef version 3 of the schema 
+
+=item  C<$args> HashRef Data from API call 
+
+=item  C<$caller_info> HashRef  containing extra information for logs messages with keys "loginid", "app_id"
+
+
+=back
+
+Returns an HashRef on error or undef if no error
+
+ {
+    details => { "attribute name" => "Error message" },
+    general => [ "error message one" ,  "error message two" ]
+ }
+   
+
+=cut
+
+sub _validate_schema_error {
+    my ($schema, $schema_v3, $args, $caller_info) = @_;
+    my $validator = JSON::Validator->new();
+    my @errors;
+    # This statement will coerce items like "1" into a integer this allows for better compatibility with the existing schema
+    $validator->coerce(
+        booleans => 1,
+        numbers  => 1,
+        strings  => 1
+    );
+    @errors = $validator->schema($schema)->validate($args);
+    return undef unless scalar(@errors);    #passed Version 4 Check
+
+    if (!$schema_v3) {
+        my (%details, @general);
+
+        foreach my $error (@errors) {
+            if ($error->path =~ /\/(.+)$/) {
+                $details{$1} = $error->message;
+            } else {
+                push @general, $error->message;
+            }
+        }
+
+        return {
+            details => \%details,
+            general => \@general
+        };
+    }
+
+    #check against version 3 of JSON Schema
+    my $v3_result = JSON::Schema->new($schema_v3, format => \%JSON::Schema::FORMATS)->validate($args);
+
+    # This result object uses overload to mimic a boolean, true means no error, false means error
+    if ($v3_result) {
+        #Failed v4 check but passed V3 so log it and let it through
+        my $cloned_args = Clone::clone($args);
+        filter_sensitive_fields($schema, $cloned_args);
+        my $message = {
+            data         => $cloned_args,
+            errors       => "@errors",
+            caller       => $caller_info,
+            schema_title => $schema->{title}};
+        $schema_log->warn($message);
+        return undef;
+    } else {
+        my (%details, @general);
+        foreach my $err ($v3_result->errors) {
+            if ($err->property =~ /\$\.(.+)$/) {
+                @details{$1} = $err->message;
+            } else {
+                push @general, $err->message;
+            }
+        }
+
+        #failed version 4 and 3 check return the version 4 error message.
+        return {
+            details => \%details,
+            general => \@general
+        };
+    }
+}
 1;

@@ -17,6 +17,6 @@ my $ws_port = ws_redis_master->backend->config('port');
 
 my $redis = launch_redis();
 ok(check_connections, 'Connections ok after creating test ws-redis');
-cmp_ok( ws_redis_master->backend->config('port'), '!=', $ws_port, 'ws-redis port has changed' );
+cmp_ok(ws_redis_master->backend->config('port'), '!=', $ws_port, 'ws-redis port has changed');
 
 done_testing;
