@@ -78,12 +78,11 @@ subtest "Create Subscribes" => sub {
         $t->tx->req->cookies({
                 name  => 'user',
                 value => ('#' . $i)});
-
         $t->tx->on(
             message => sub {
-                my ($tx, $msg) = @_;
-                test_schema('proposal', JSON::MaybeXS->new->decode(Encode::decode_utf8($msg)));
-
+                my ($tx, $json_msg) = @_;
+                my $msg = JSON::MaybeXS->new->decode(Encode::decode_utf8($json_msg));
+                test_schema($msg->{msg_type}, $msg);
                 $user_first->{$tx->req->cookie('user')->value} = 1;
             });
 

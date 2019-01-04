@@ -1,0 +1,109 @@
+use strict;
+use warnings;
+
+use Test::More;
+use JSON::MaybeXS;
+use Path::Tiny;
+use Log::Any::Test;
+use Log::Any qw ($log);
+
+use Binary::WebSocketAPI::Hooks;
+
+my $v4_schema_dir = '/home/git/regentmarkets/binary-websocket-api/config/v3';
+my $v3_schema_dir = $v4_schema_dir . '/draft-03';
+
+my $caller_info = {
+    loginid => 'CR90001',
+    app_id  => 12
+};
+my $json = JSON::MaybeXS->new();
+
+subtest v4_fail_v3_pass => sub {
+    my $args = $json->decode('{"ticks":1}');
+    my $errors = Binary::WebSocketAPI::Hooks::_validate_schema_error(encode_schemas('ticks'), $args, $caller_info);
+    is($errors, undef, 'No error when v4 fails but v3 passes ticks');
+    $log->contains_ok(qr/oneOf Expected string or array, got number/, "Logged tick failure expecting string got number");
+
+    $args = $json->decode('{"buy":"asdfasdfadfadsf", "price": 123}');
+    $errors = Binary::WebSocketAPI::Hooks::_validate_schema_error(encode_schemas('buy'), $args, $caller_info);
+    like($errors->{details}->{buy}, qr/does not match/, 'Error when v4 fails and  v3 also fails');
+
+    my ($schema, $schema_v3) = encode_schemas('authorize');
+    $schema->{'required'} = ['authorize', 'add_to_login_history'];
+    $args = $json->decode('{"authorize":"asdfasdfadfadsf"}');
+    $errors = Binary::WebSocketAPI::Hooks::_validate_schema_error($schema, $schema_v3, $args, $caller_info);
+    $log->contains_ok(qr/authorize => \"### Sensitive ###\"/, "Masked Sensitive information in  Log");
+
+};
+
+subtest mask_tokens => sub {
+
+    my $schema = {
+        '$schema'  => "http://json-schema.org/draft-04/schema#",
+        title      => 'Authorize Request',
+        properties => {
+            "authorize" => {
+                type        => "string",
+                pattern     => '^[\\w\\-]{1,128}$',
+                required    => 1,
+                description => 'Blah Blah',
+                sensitive   => 1
+            }}};
+
+    my $data = {authorize => 'secret'};
+    Binary::WebSocketAPI::Hooks::filter_sensitive_fields($schema, $data);
+    is($data->{authorize}, '### Sensitive ###', 'result filtered');
+
+    my $schema_array = {
+        '$schema'  => "http://json-schema.org/draft-04/schema#",
+        title      => 'buy a contract for multiple accounts',
+        properties => {
+            "tokens" => {
+                type        => "array",
+                pattern     => '^[\\w\\-]{1,128}$',
+                required    => 1,
+                description => 'Blah Blah',
+                sensitive   => 1
+            },
+            price => {
+                type    => 'number',
+                minimum => 0
+            }}};
+    $data = {
+        tokens => ['tokens1', 'token2', 'token3'],
+        price  => 12.30
+    };
+    Binary::WebSocketAPI::Hooks::filter_sensitive_fields($schema_array, $data);
+    my $expected = ['### Sensitive ###', '### Sensitive ###', '### Sensitive ###'];
+    is_deeply($data->{tokens}, $expected, 'array has been filtered');
+
+    $data = {
+        authorize => 'secrect',
+        tokens    => ['asdasd1232asd'],
+        nested    => {
+            token => 'token1',
+            name  => 'fred'
+        }};
+    my $nested_object = {
+        type       => 'object',
+        properties => {
+            token => {
+                type      => 'string',
+                sensitive => 1
+            },
+            name => {type => 'string'}}};
+    $schema_array->{properties}->{nested} = $nested_object;
+    Binary::WebSocketAPI::Hooks::filter_sensitive_fields($schema_array, $data);
+    is($data->{nested}->{token}, '### Sensitive ###', 'filtered nested object');
+};
+
+sub encode_schemas {
+
+    my ($action)  = @_;
+    my $v4_schema = $json->decode(path("$v4_schema_dir/$action/send.json")->slurp_utf8);
+    my $v3_schema = $json->decode(path("$v3_schema_dir/$action/send.json")->slurp_utf8);
+    return ($v4_schema, $v3_schema);
+}
+
+done_testing();
+

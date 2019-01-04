@@ -48,15 +48,6 @@ my $t = build_wsapi_test();
 }
 
 {
-    my ($fake_rpc_response, $fake_rpc_client, $rpc_client_mock);
-    $fake_rpc_response = Test::MockObject->new();
-    $fake_rpc_response->mock('is_error', sub { '' });
-    $fake_rpc_response->mock('result', sub { +{ok => ('1' x 600000)} });
-    $fake_rpc_client = Test::MockObject->new();
-    $fake_rpc_client->mock('call', sub { shift; return $_[2]->($fake_rpc_response) });
-    $rpc_client_mock = Test::MockModule->new('MojoX::JSON::RPC::Client');
-    $rpc_client_mock->mock('new', sub { return $fake_rpc_client });
-
     my $res = $t->await::website_status({
         website_status => 1,
         req_id         => 3
@@ -65,7 +56,6 @@ my $t = build_wsapi_test();
     is $res->{echo_req}->{website_status}, 1;
     is $res->{req_id}, 3;
 
-    $rpc_client_mock->unmock_all;
 }
 
 {

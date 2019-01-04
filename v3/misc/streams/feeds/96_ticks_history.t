@@ -25,9 +25,9 @@ my $json = JSON::MaybeXS->new;
 # as these validations are in websocket so test it
 subtest 'validations' => sub {
     $req_storage = {
-        ticks_history => 'blah',
-        granularity   => 10,
-        style         => 'candles',
+        ticks_history => 'R_50',
+        style => 'candles',
+        granularity   => '10',
         end           => 'latest'
     };
 
@@ -36,7 +36,7 @@ subtest 'validations' => sub {
     $res = $json->decode(Encode::decode_utf8($t->message->[1]));
     is $res->{error}->{code}, 'InvalidGranularity', "Correct error code for granularity";
     delete $req_storage->{granularity};
-
+    delete $req_storage->{style};
     $t->send_ok({json => $req_storage});
     $t   = $t->message_ok;
     $res = $json->decode(Encode::decode_utf8($t->message->[1]));

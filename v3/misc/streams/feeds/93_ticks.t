@@ -61,13 +61,34 @@ unless ($pid) {
 }
 
 subtest 'ticks' => sub {
+
+    # Should pass even if subscribe is a string, not integer
+    $t->send_ok({
+            json => {
+                ticks     => 'R_50',
+                subscribe => "1"
+            }})->message_ok;
+    $res = $json->decode(Encode::decode_utf8($t->message->[1]));
+    is $res->{error}->{code}, undef , 'Should pass validation though string';
+
+    # will fail because subscribe should only be 1
+    $t->send_ok({
+            json => {
+                ticks     => 'R_50',
+                subscribe => 2
+            }})->message_ok;
+    $res = $json->decode(Encode::decode_utf8($t->message->[1]));
+    is $res->{error}->{code}, 'InputValidationFailed', 'Should return InputValidationFailed error';
+    is $res->{error}->{message}, 'Input validation failed: subscribe', 'Should return ticks validation error';
+
     $t->send_ok({json => {ticks => ['R_50', 'R_100']}});
     $t->send_ok({json => {ticks => 'R_50'}})->message_ok;
     $res = $json->decode(Encode::decode_utf8($t->message->[1]));
     is $res->{error}->{code}, 'AlreadySubscribed', 'Should return already subscribed error';
     is $res->{error}->{message}, 'You are already subscribed to R_50', 'Should return already subscribed error';
 
-    $t->send_ok({json => {ticks => 'R_5012312312'}})->message_ok;
+    my $res = $t->await::forget_all({forget_all => 'ticks'});
+    $t->send_ok({json => {ticks => 'R_12312312', subscribe => 1}})->message_ok;
     $res = $json->decode(Encode::decode_utf8($t->message->[1]));
     is $res->{error}->{code}, 'InvalidSymbol', 'Should return invalid symbol error';
 };
