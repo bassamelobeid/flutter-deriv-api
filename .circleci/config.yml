@@ -70,6 +70,8 @@ jobs:
           <<: *tests
           name: Run tests
           command: |
+            sudo touch /var/log/fixedodds/audit.log
+            sudo chown nobody:nogroup /var/log/fixedodds/audit.log
             echo '--formatter TAP::Formatter::JUnit' >> .proverc
             make test
       - store_test_results:
