@@ -33,6 +33,7 @@ use RateLimitations::Pluggable;
 use Scalar::Util qw(weaken);
 use Time::Duration::Concise;
 use YAML::XS qw(LoadFile);
+use URI;
 
 # Set up the event loop singleton so that any code we pull in uses the Mojo
 # version, rather than trying to set its own.
@@ -48,6 +49,7 @@ our %DIVERT_APP_IDS;
 # These apps are blocked entirely.
 # This list is also overwritten by Redis.
 our %BLOCK_APP_IDS;
+our %BLOCK_ORIGINS;
 
 my $json = JSON::MaybeXS->new;
 
@@ -137,6 +139,14 @@ sub startup {
                 json   => {error => 'SystemMaintenance'},
                 status => 500
             ) if exists $BLOCK_APP_IDS{$app_id};
+
+            my $request_origin = $c->tx->req->headers->origin // '';
+            $request_origin = 'https://' . $request_origin unless $request_origin =~ /^https?:/;
+            my $uri = URI->new($request_origin);
+            return $c->render(
+                json   => {error => 'SystemMaintenance'},
+                status => 500
+            ) if exists $BLOCK_ORIGINS{$uri->host};
 
             my $client_ip = $c->client_ip;
             my $brand     = defang($c->req->param('brand'));
@@ -592,6 +602,18 @@ sub startup {
             return unless $ids;
             warn "Have blocked app_ids, applying: $ids\n";
             %BLOCK_APP_IDS = %{$json->decode(Encode::decode_utf8($ids))};
+        });
+    $redis->get(
+        'origins::blocked',
+        sub {
+            my ($redis, $err, $origins) = @_;
+            if ($err) {
+                warn "Error reading blocked origins from Redis: $err\n";
+                return;
+            }
+            return unless $origins;
+            warn "Have blocked origins, applying: $origins\n";
+            %BLOCK_ORIGINS = %{$json->decode(Encode::decode_utf8($origins))};
         });
     return;
 

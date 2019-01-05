@@ -497,6 +497,58 @@ command block => sub {
     return $f;
 };
 
+=head2
+
+Block a domain from connecting.
+
+=cut
+
+command block_origin => sub {
+    my ($self, $app, $origin, $service) = @_;
+    my $redis = ws_redis_master();
+    my $f     = Future::Mojo->new;
+    $redis->get(
+        'origins::blocked',
+        sub {
+            my ($redis, $err, $origins) = @_;
+            if ($err) {
+                warn "Error reading blocked app orgins from Redis: $err\n";
+                return $f->fail(
+                    $err,
+                    redis => $origins,
+                    $service
+                );
+            }
+            %Binary::WebSocketAPI::BLOCK_ORIGINS = %{$json->decode(Encode::decode_utf8($origins))} if $origins;
+            my $rslt = {blocked => \%Binary::WebSocketAPI::BLOCK_ORIGINS};
+            if ($origin) {
+                if ($service) {
+                    $Binary::WebSocketAPI::BLOCK_ORIGINS{$origin} = 1;
+                } else {
+                    delete $Binary::WebSocketAPI::BLOCK_ORIGINS{$origin};
+                }
+                $redis->set(
+                    'origins::blocked' => Encode::encode_utf8($json->encode(\%Binary::WebSocketAPI::BLOCK_ORIGINS)),
+                    sub {
+                        my ($redis, $err) = @_;
+                        unless ($err) {
+                            $f->done($rslt);
+                            return;
+                        }
+                        warn "Redis error when recording blocked origin - $err";
+                        $f->fail(
+                            $err,
+                            redis => $origin,
+                            $service
+                        );
+                    });
+            } else {
+                $f->done($rslt);
+            }
+        });
+    return $f;
+};
+
 =head2 help
 
 Returns a list of available commands.
