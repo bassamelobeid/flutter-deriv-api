@@ -289,11 +289,14 @@ subtest 'buy and subscribe' => sub {
     $res         = $t->await::buy({
         buy         => $proposal_id,
         price       => 10000,
-        "subscribe" => "1"
+        "subscribe" => "1",
+        req_id      => 1111,
     });
 
     my $contract_id;
     diag explain $res unless ok($contract_id = $res->{buy}->{contract_id}, "got contract_id");
+
+    is $res->{req_id}, 1111, 'same req_id in response'; 
 
     is_deeply(
         [sort keys %{$res->{buy}}],
