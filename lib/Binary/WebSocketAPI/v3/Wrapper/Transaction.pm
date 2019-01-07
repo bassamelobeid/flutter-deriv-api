@@ -14,7 +14,7 @@ sub buy_get_single_contract {
 
     my $contract_details = delete $api_response->{contract_details};
 
-    _subscribe_to_contract($c, $contract_details) if $req_storage->{call_params}->{args}->{subscribe};
+    _subscribe_to_contract($c, $contract_details, $req_storage->{call_params}->{args}) if $req_storage->{call_params}->{args}->{subscribe};
 
     buy_store_last_contract_id($c, $api_response);
 
@@ -22,7 +22,7 @@ sub buy_get_single_contract {
 }
 
 sub _subscribe_to_contract {
-    my ($c, $contract_details) = @_;
+    my ($c, $contract_details, $req_args) = @_;
 
     my $contract = {map { $_ => $contract_details->{$_} }
             qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode)};
@@ -34,6 +34,7 @@ sub _subscribe_to_contract {
         contract_id            => $contract_id,
         proposal_open_contract => 1
     };
+    $args->{req_id} = $req_args->{req_id} if exists $req_args->{req_id};
 
     my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::pricing_channel_for_bid($c, $args, $contract);
     # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
