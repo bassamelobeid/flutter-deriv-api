@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: regentmarkets/debian-ci:latest
+      - image: regentmarkets/debian-ci:stable
         user: nobody
         auth:
           username: circle4regentmarkets
