@@ -207,8 +207,6 @@ Args
 
 =item * The currency of the receiving account
 
-=item * The rate expiry time for the currency pair
-
 =item * A BOM::User::Client instance of the sending client
 Optional: only required to ascertain if client qualifies for PA fee exemption
 
@@ -237,7 +235,8 @@ Note: If a minimum fee was enforced then this will not reflect the actual fee ch
 =cut
 
 sub calculate_to_amount_with_fees {
-    my ($amount, $from_currency, $to_currency, $rate_expiry, $fm_client, $to_client) = @_;
+    my ($amount, $from_currency, $to_currency, $fm_client, $to_client) = @_;
+    my $rate_expiry = BOM::Config::CurrencyConfig::rate_expiry($from_currency, $to_currency);
 
     return ($amount, 0, 0, 0, 0) if $from_currency eq $to_currency;
 

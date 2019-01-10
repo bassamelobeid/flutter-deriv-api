@@ -303,7 +303,7 @@ subtest 'Calculate to amount and fees' => sub {
 
         $mock_forex->mock(convert_currency => sub { return (shift) * $mock_forex_rate; });
         my ($amount, $fee_applied, $fee_percent, $fee_min, $fee_calculated) =
-            BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount_to_tranfer, $from_currency, $to_currency, undef,
+            BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount_to_tranfer, $from_currency, $to_currency,
             $from_cli, $to_cli);
 
         cmp_ok $amount,      '==', $expected_amount,      'Correct amount sent';
