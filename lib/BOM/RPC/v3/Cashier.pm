@@ -567,10 +567,14 @@ rpc paymentagent_transfer => sub {
     my $client_has_deposits = $client_to->has_deposits;
 
     try {
+        # Payment agents right now cannot transfer to clients with different currencies
+        # but it is not harmful to use to_amount here.
+        my $to_amount = formatnumber('amount', $client_to->currency, convert_currency($amount, $currency, $client_to->currency));
         $response = $client_fm->payment_account_transfer(
             toClient           => $client_to,
             currency           => $currency,
             amount             => $amount,
+            to_amount          => $to_amount,
             fmStaff            => $loginid_fm,
             toStaff            => $loginid_to,
             remark             => $comment,
@@ -1178,19 +1182,16 @@ rpc transfer_between_accounts => sub {
     BOM::User::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
     my $error_audit_sub = sub {
         my ($err, $client_message) = @_;
-
         BOM::User::AuditLog::log("Account Transfer FAILED, $err");
 
         $client_message ||= localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.');
         return _transfer_between_accounts_error($client_message);
     };
 
-    my $rate_expiry = BOM::RPC::v3::Utility::get_rate_expiry($from_currency, $to_currency);
     my ($to_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent);
     try {
         ($to_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =
-            BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $from_currency, $to_currency, $rate_expiry,
-            $client_from, $client_to);
+            BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $from_currency, $to_currency, $client_from, $client_to);
     }
     catch {
         $err = $_;
@@ -1286,6 +1287,7 @@ rpc transfer_between_accounts => sub {
         $response = $client_from->payment_account_transfer(
             currency          => $currency,
             amount            => $amount,
+            to_amount         => $to_amount,
             toClient          => $client_to,
             fmStaff           => $loginid_from,
             toStaff           => $loginid_to,

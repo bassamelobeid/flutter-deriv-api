@@ -790,20 +790,4 @@ sub filter_out_suspended_cryptocurrencies {
     return \@valid_payout_currencies;
 }
 
-=head2 get_rate_expiry
-
-Gets the maximum allowed age of the exchange rate for a currency pair used in a transfer
-
-Accepts: two currency symbols in any order
-
-Returns: time in seconds
-
-=cut
-
-sub get_rate_expiry {
-    my @currency_types = map { LandingCompany::Registry::get_currency_type($_) } @_;
-    # If crypto is involved, it takes precedence over fiat->fiat
-    return (any { $_ eq 'crypto' } @currency_types) ? CURRENCY_CONVERSION_MAX_AGE_CRYPTO : CURRENCY_CONVERSION_MAX_AGE_FIAT;
-}
-
 1;

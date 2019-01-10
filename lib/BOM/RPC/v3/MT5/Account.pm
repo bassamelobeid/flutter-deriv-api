@@ -1486,19 +1486,16 @@ sub _mt5_validate_and_get_amount {
                     localize('Account transfers are not available between [_1] and [_2]', $source_currency, $mt5_currency))
                     if first { $_ eq $source_currency or $_ eq $mt5_currency } @$disabled_for_transfer_currencies;
 
-                my $rate_expiry = BOM::RPC::v3::Utility::get_rate_expiry($client_currency, $mt5_currency);
                 if ($action eq 'deposit') {
                     try {
                         $min = convert_currency(1,     'USD', $client_currency);
                         $max = convert_currency(20000, 'USD', $client_currency);
 
                         ($mt5_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =
-                            BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $client_currency, $mt5_currency,
-                            $rate_expiry);
+                            BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $client_currency, $mt5_currency);
                         $mt5_amount = financialrounding('amount', $mt5_currency, $mt5_amount);
                     }
                     catch {
-                        # usually we get here when convert_currency() fails to find a rate within $rate_expiry
                         $mt5_amount = undef;
                     };
                 } elsif ($action eq 'withdrawal') {
@@ -1507,11 +1504,11 @@ sub _mt5_validate_and_get_amount {
                         $max = convert_currency(20000, 'USD', $mt5_currency);
 
                         ($mt5_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =
-                            BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $mt5_currency, $client_currency,
-                            $rate_expiry);
+                            BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $mt5_currency, $client_currency);
                         $mt5_amount = financialrounding('amount', $client_currency, $mt5_amount);
+                        # if last rate is expiered calculate_to_amount_with_fees would fail.
                         $fees_in_client_currency =
-                            financialrounding('amount', $client_currency, convert_currency($fees, $mt5_currency, $client_currency, $rate_expiry));
+                            financialrounding('amount', $client_currency, convert_currency($fees, $mt5_currency, $client_currency));
                         $source_currency = $mt5_currency;
                     }
                     catch {

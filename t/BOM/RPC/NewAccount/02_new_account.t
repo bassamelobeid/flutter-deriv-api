@@ -342,14 +342,13 @@ subtest $method => sub {
         });
         $cl_usd->save();
 
-        $params->{args}->{currency} = 'LTC';
-        $params->{args}->{citizen}  = 'af';
-        $params->{args}->{place_of_birth}  = 'af';
+        $params->{args}->{currency}       = 'LTC';
+        $params->{args}->{citizen}        = 'af';
+        $params->{args}->{place_of_birth} = 'af';
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('create second crypto currency account')
             ->result_value_is(sub { shift->{currency} }, 'LTC', 'crypto account currency is LTC');
 
         my $cl_ltc = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
-
 
         cmp_ok($cl_ltc->citizen, 'eq', $cl_usd->citizen, 'Citizenship cannot be changed');
 
