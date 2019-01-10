@@ -280,6 +280,7 @@ sub payment_account_transfer {
     my $toClient = delete $args{toClient} || die "no toClient";
     my $currency = delete $args{currency} || die "no currency";
     my $amount   = delete $args{amount}   || die "no amount";
+    my $to_amount = delete $args{to_amount};
     # fees can be zero as well
     my $fees = delete $args{fees} // die "no fees";
     my $staff    = delete $args{staff}    || 'system';
@@ -302,6 +303,16 @@ sub payment_account_transfer {
     $inter_db_transfer = delete $args{inter_db_transfer} if (exists $args{inter_db_transfer});
     my $gateway_code = delete $args{gateway_code} || 'account_transfer';
 
+    my $from_curr = $fmClient->account->currency_code;
+    my $to_curr   = $toClient->account->currency_code;
+
+    if ($to_curr ne $from_curr and not defined $to_amount) {
+        die "to_amount is required if from_currency and to_currency are different";
+    } elsif ($to_curr eq $from_curr) {
+        $to_amount = $amount;
+    }
+
+    $to_amount = financialrounding('amount', $to_curr, $to_amount);
     my $dbic = $fmClient->db->dbic;
     unless ($inter_db_transfer) {
         # here we rely on ->set_default_account above
@@ -310,11 +321,11 @@ sub payment_account_transfer {
         try {
             my $records = $dbic->run(
                 ping => sub {
-                    my $sth = $_->prepare('SELECT (v_from_trans).id FROM payment.payment_account_transfer(?,?,?,?,?,?, ?,?,?,?,?,?, ?,?,?)');
+                    my $sth = $_->prepare('SELECT (v_from_trans).id FROM payment.payment_account_transfer(?,?,?,?,?,?,?, ?,?,?,?,?,?, ?,?,?)');
                     $sth->execute(
-                        $fmClient->loginid, $toClient->loginid,  $currency,          $amount,      $fmStaff,
-                        $toStaff,           $fmRemark,           $toRemark,          $source,      $fees,
-                        $gateway_code,      $is_agent_to_client, $lc_lifetime_limit, $lc_for_days, $lc_limit_for_days
+                        $fmClient->loginid,  $toClient->loginid, $currency,    $amount, $to_amount, $fmStaff,
+                        $toStaff,            $fmRemark,          $toRemark,    $source, $fees,      $gateway_code,
+                        $is_agent_to_client, $lc_lifetime_limit, $lc_for_days, $lc_limit_for_days
                     );
                     return $sth->fetchall_arrayref({});
                 });
@@ -332,35 +343,6 @@ sub payment_account_transfer {
         return $response;
     }
 
-    # Even though at the moment we do not allow the transfer of different currencies to different
-    # landing companies we will add a conversion here in case this rule changes in the future.
-    #
-
-    my $to_amount = $amount;
-    my $from_curr = $fmClient->default_account->currency_code;
-    my $to_curr   = $toClient->default_account->currency_code;
-    my $result;
-    if ($to_curr ne $from_curr) {
-        #use the same currency conversion routines as the DB functions
-        try {
-            $result = $dbic->run(
-                fixup => sub {
-                    $_->selectrow_hashref(
-                        "SELECT amount_from_to_currency as amount FROM payment.amount_from_to_currency(?,?,?)",
-                        undef, ($amount - $fees),
-                        $from_curr, $to_curr
-                    );
-                });
-            $to_amount = $result->{amount};
-        }
-        catch {
-            if (ref eq 'ARRAY') {
-                die "@$_";
-            } else {
-                die $_;
-            }
-        };
-    }
     my ($fmPayment) = $fmAccount->add_payment({
         amount               => -$amount,
         payment_gateway_code => $gateway_code,
