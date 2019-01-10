@@ -201,6 +201,8 @@ sub get_settings_by_group {
                 payments.payment_limits
                 payments.transfer_between_accounts.limits.between_accounts
                 payments.transfer_between_accounts.limits.MT5
+                payments.transfer_between_accounts.exchange_rate_expiry.fiat
+                payments.transfer_between_accounts.exchange_rate_expiry.crypto
                 payments.transfer_between_accounts.minimum.default.fiat
                 payments.transfer_between_accounts.minimum.default.crypto
                 payments.transfer_between_accounts.minimum.by_currency
