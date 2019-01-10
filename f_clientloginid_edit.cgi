@@ -993,13 +993,13 @@ my $financial_information = $built_fa->{financial_information};
 if ($trading_experience) {
     Bar("Trading Experience");
     print_fa_table(%$trading_experience);
-    print '<p>Trading experience score: ' . $fa_score->{trading_score} . '</p>';
+    print '<p>Trading experience score: ' . $fa_score->{trading_experience} . '</p>';
     print '<p>CFD Score: ' . $fa_score->{cfd_score} . '</p><br/>';
 }
 if ($financial_information) {
     Bar("Financial Information");
     print_fa_table(%$financial_information);
-    print '<p>Financial information score: ' . $fa_score->{financial_information_score} . '</p><br/>';
+    print '<p>Financial information score: ' . $fa_score->{financial_information} . '</p><br/>';
 }
 
 sub print_fa_table {
