@@ -784,15 +784,15 @@ subtest $method => sub {
     }
 
     # 'financial_assessment_not_complete' should not present when everything is complete
-    test_financial_assessment($data, 0, 'financial_assessment_not_complete should not present when questions are answered properly');
-
-    # When some answers are empty
-    $data->{account_turnover} = "";
-    test_financial_assessment($data, 1, 'financial_assessment_not_complete should present when some answers are empty');
+    test_financial_assessment($data, 0, 'financial_assessment_not_complete should not be present when questions are answered properly');
 
     # When some questions are not answered
     delete $data->{account_turnover};
     test_financial_assessment($data, 1, 'financial_assessment_not_complete should present when questions are not answered');
+
+    # When some answers are empty
+    $data->{account_turnover} = "";
+    test_financial_assessment($data, 1, 'financial_assessment_not_complete should be present when some answers are empty');
 
     # When the client's risk classification is different
     $test_client->aml_risk_classification('high');

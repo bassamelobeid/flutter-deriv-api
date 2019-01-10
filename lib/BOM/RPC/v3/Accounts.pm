@@ -1755,6 +1755,9 @@ rpc set_financial_assessment => sub {
     # This is here to continue sending scores through our api as we cannot change the output of our calls. However, this should be removed with v4 as this is not used by front-end at all
     my $response = build_financial_assessment($params->{args})->{scores};
 
+    $response->{financial_information_score} = delete $response->{financial_information};
+    $response->{trading_score}               = delete $response->{trading_experience};
+
     return $response;
 };
 
@@ -1769,6 +1772,10 @@ rpc get_financial_assessment => sub {
     # This is here to continue sending scores through our api as we cannot change the output of our calls. However, this should be removed with v4 as this is not used by front-end at all
     if (keys %$response) {
         my $scores = build_financial_assessment($response)->{scores};
+
+        $scores->{financial_information_score} = delete $scores->{financial_information};
+        $scores->{trading_score}               = delete $scores->{trading_experience};
+
         $response = {%$response, %$scores};
     }
 
