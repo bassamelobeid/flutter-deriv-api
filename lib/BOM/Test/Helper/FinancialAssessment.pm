@@ -40,7 +40,7 @@ sub get_fulfilled_hash {
 
 sub _get_with_selector {
     my $func = shift;
-    my $h    = BOM::User::FinancialAssessment::get_config();
+    my $h    = BOM::Config::financial_assessment_fields();
     my %r    = map {
         my $inner = $_;
         map { $_ => $func->($inner->{$_}->{possible_answer}) } keys %$inner
