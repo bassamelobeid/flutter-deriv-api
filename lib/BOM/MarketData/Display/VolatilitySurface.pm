@@ -14,6 +14,7 @@ use List::Util qw(uniq);
 use Try::Tiny;
 use Quant::Framework;
 use BOM::Config::Chronicle;
+use Scalar::Util qw(looks_like_number);
 
 =head1 surface
 
@@ -121,7 +122,7 @@ sub rmg_table_format {
             });
 
             push @surface, [
-                map { defined $_ ? sprintf('%.3f', $_) : '—' } (
+                map { defined $_ and looks_like_number($_) ? sprintf('%.3f', $_) : '—' } (
                     (map { $smile->{$_} * 100 } @deltas),
                     (map { ($spread->{$_} // 0) * 100 } @{$volsurface->spread_points}),
                     # Forward Vol
