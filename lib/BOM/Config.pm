@@ -70,6 +70,11 @@ sub sanction_file {
     return "/var/lib/binary/sanctions.yml";
 }
 
+sub financial_assessment_fields {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/financial_assessment_structure.yml');
+    return $config;
+}
+
 {
     my $env = do {
         local @ARGV = ('/etc/rmg/environment');
