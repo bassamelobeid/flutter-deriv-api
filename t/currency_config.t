@@ -103,6 +103,23 @@ subtest 'transfer_between_accounts_fees' => sub {
     }
 };
 
+subtest 'exchange_rate_expiry' => sub {
+    my $app_config = BOM::Config::Runtime->instance->app_config();
+    $app_config->set({
+        'payments.transfer_between_accounts.exchange_rate_expiry.fiat'   => 8600,
+        'payments.transfer_between_accounts.exchange_rate_expiry.crypto' => 1800,
+    });
+
+    is(BOM::Config::CurrencyConfig::rate_expiry('USD', 'EUR'), 8600, 'should return fiat expiry if all currencies are fiat');
+    is(BOM::Config::CurrencyConfig::rate_expiry('BTC', 'ETH'), 1800, 'should return crypto expiry if all currencies are crypto');
+    is(BOM::Config::CurrencyConfig::rate_expiry('BTC', 'USD'), 1800, 'should return crypto expiry if crypto expiry is less than fiat expiry');
+
+    $app_config->set({'payments.transfer_between_accounts.exchange_rate_expiry.fiat' => 5});
+
+    is(BOM::Config::CurrencyConfig::rate_expiry('BTC', 'USD'), 5, 'should return fiat expiry if fiat expiry is less than crypto expiry');
+
+};
+
 $mock_app_config->unmock_all();
 
 done_testing();

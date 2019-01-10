@@ -15,7 +15,7 @@ use warnings;
 use feature 'state';
 
 use JSON::MaybeUTF8;
-
+use List::Util qw(any);
 use Format::Util::Numbers;
 use LandingCompany::Registry;
 use BOM::Config::Runtime;
@@ -100,6 +100,38 @@ sub transfer_between_accounts_fees {
     $currency_config->{revision} = $current_revision;
     $transfer_fees_cache = $currency_config;
     return $currency_config;
+}
+
+=head2 rate_expiry
+
+Get exchange rates quote expiry time for two currencies
+For example exchange rate last known quote between USD and BTC 
+Should not be more than 1800 second.
+
+Currently we only care about general categories Fiat-Crypto, Fiat-Fiat and Crypto-Crypto.
+
+=item * The source currrency we want to convert from.
+
+=item * The target currency we want to convert to.
+
+Retruns
+
+=item * The allowed age for exchange rate quote in seconds.
+
+=cut
+
+sub rate_expiry {
+    my @currency_types = map { LandingCompany::Registry::get_currency_type($_) } @_;
+    my $config = {};
+    $config->{fiat}   = app_config()->get('payments.transfer_between_accounts.exchange_rate_expiry.fiat');
+    $config->{crypto} = app_config()->get('payments.transfer_between_accounts.exchange_rate_expiry.crypto');
+
+    # If all currencies has the same type return that type age
+    return $config->{$currency_types[0]} if (@currency_types == grep { $_ eq $currency_types[0] } @currency_types);
+
+    # else If currnecies have different types return the shortest age
+    return ($config->{crypto} < $config->{fiat}) ? $config->{crypto} : $config->{fiat};
+
 }
 
 1;

@@ -97,6 +97,20 @@ payments:
               description: 'Limits the numbers of daily transfers between binary accounts and MT5 accounts'
               default: 6
               global: 1
+        exchange_rate_expiry:
+          isa: section
+          description: 'Exchange Rates expiry age in seconds i.e do exchange rates from BTC to USD if last known rate IS NOT OLDER THAN 1800 second'
+          contains:
+            fiat:
+              isa: Num
+              default: 86400 # 1 day
+              description: 'Expiry age for transfer between Fiat-Fiat.'
+              global: 1
+            crypto:
+              isa: Num
+              default: 3600 # 1 hour
+              description: 'Expiry age for transfer between Crypto-Fiat and Crypto-Crypto'
+              global: 1
         fees:
           isa: section
           description: 'Transfer fees for currency conversion'
