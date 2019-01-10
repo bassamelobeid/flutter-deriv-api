@@ -19,7 +19,7 @@ open my $fh, '-|', qq( /home/nobody/bin/aws s3 sync $directory s3://$bucket --pr
 
 my ($rz, $fn, @err);
 
-while ( <$fh> ) {
+while (<$fh>) {
     $rz .= $_;
 
     if (m/upload: (.*) to .*/) {
@@ -45,4 +45,4 @@ close $fh or die "AWS S3 exited nonzero - $?";
 # also, unfortunately, this sort of stuff sometimes
 # Completed 1 file(s) with 2 file(s) remaining^Mupload: ../../reports/mnb.ky to s3://binary-misc-backup/mnb.ky
 # Completed 2 file(s) with 1 file(s) remaining^Mupload: ../../reports/mnb.k to s3://binary-misc-backup/mnb.k
-# Completed 619.7 KiB/~619.7 KiB (4.1 MiB/s) with ~0 file(s) remaining (calculating...) 
+# Completed 619.7 KiB/~619.7 KiB (4.1 MiB/s) with ~0 file(s) remaining (calculating...)

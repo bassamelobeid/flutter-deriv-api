@@ -3,6 +3,7 @@ use warnings;
 
 use Test::More;
 use BOM::User::FinancialAssessment;
+use BOM::Config;
 
 my @financial_information_keys = qw/
     occupation
@@ -25,7 +26,7 @@ my @trading_experience_keys = qw/
     cfd_trading_frequency
     cfd_trading_experience/;
 
-my $input_mapping = BOM::User::FinancialAssessment::get_config();
+my $input_mapping = BOM::Config::financial_assessment_fields();
 
 subtest "check for all keys" => sub {
     is_deeply([sort keys %{$input_mapping->{financial_information}}], [sort @financial_information_keys], 'correct keys for financial information');

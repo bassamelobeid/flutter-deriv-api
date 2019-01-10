@@ -50,30 +50,26 @@ GetOptions(
 );
 
 ($name) = Sys::Hostname::hostname() =~ /^([^.]+)/ unless $name;
-$interval //= 60;
-$redis_uri //= 'redis://localhost';
+$interval   //= 60;
+$redis_uri  //= 'redis://localhost';
 $redis_auth //= '';
 
 # Prepare and connect to Redis
 my $loop = IO::Async::Loop->new;
 $loop->add(
     my $redis = Net::Async::Redis->new(
-	 uri => $redis_uri,
-	 auth => $redis_auth,
-    )
-);
-$loop->add(
-    my $ryu = Ryu::Async->new
-);
+        uri  => $redis_uri,
+        auth => $redis_auth,
+    ));
+$loop->add(my $ryu = Ryu::Async->new);
 $redis->connect->get;
 
 # Start main loop
 $log->infof('Server health check main loop active for %s, interval %d seconds', $name, $interval);
-$ryu->timer(
-        interval => $interval
-    )
+$ryu->timer(interval => $interval)
     # Generate the statistics
-    ->map(sub {
+    ->map(
+    sub {
         my %stats;
         $stats{now} = Time::HiRes::time;
 
@@ -95,45 +91,41 @@ $ryu->timer(
                 next unless $dev =~ m{^/dev/} or $dev =~ m{\b/boot};
                 $free = min $available, $free // ();
             }
-            $free
+            $free;
         };
 
         # Total service uptime is not measured in seconds
         $stats{uptime_valid} = qx{uptime} !~ /sec/ ? 1 : 0;
-        
+
         # Minimum spare space in MB across all non-tmpfs mountpoints
         $stats{disk_free} = $df_check->('-m');
         # Minimum available inodes across all non-tmpfs mountpoints
         $stats{inodes_free} = $df_check->('-i');
-        $stats{healthy} = (
+        $stats{healthy}     = (
             # At least 1G free on all drives
             $stats{disk_free} > 1024
-            # and 1k inodes
-            && $stats{inodes_free} > 1024
-            # and NTP should be running
-            && $stats{found_ntp}
-            && $stats{uptime_valid}
-        ) ? 1 : 0;
+                # and 1k inodes
+                && $stats{inodes_free} > 1024
+                # and NTP should be running
+                && $stats{found_ntp}
+                && $stats{uptime_valid}) ? 1 : 0;
         return \%stats;
     })
     # Apply them to Redis
-    ->each(sub {
+    ->each(
+    sub {
         my %data = %$_;
-        my $k = 'server_health::' . $name;
+        my $k    = 'server_health::' . $name;
         $log->debugf('Recording %s for %s', \%data, $k);
-        stats_gauge('server.health.' . $_, $data{$_}, { tags => [ "name:$name" ]}) for sort keys %data;
-        $redis->hmset(
-            $k => %data
-        )->on_done(sub { $log->debugf('Recorded row data %s', \%data) })
-         ->on_fail(sub { $log->errorf('failed to record server status info - %s', $_[0]) })
-         ->then(sub {
-             # Use slightly more than our interval value for expiry, so we don't drop the
-             # data too early on service restart or slow queries.
-             $redis->expire($k => 300 + $interval)
-         })
-         ->retain;
-    })
-    ->await;
+        stats_gauge('server.health.' . $_, $data{$_}, {tags => ["name:$name"]}) for sort keys %data;
+        $redis->hmset($k => %data)->on_done(sub { $log->debugf('Recorded row data %s', \%data) })
+            ->on_fail(sub { $log->errorf('failed to record server status info - %s', $_[0]) })->then(
+            sub {
+                # Use slightly more than our interval value for expiry, so we don't drop the
+                # data too early on service restart or slow queries.
+                $redis->expire($k => 300 + $interval);
+            })->retain;
+    })->await;
 $log->infof('Server health check loop shutting down');
 
 __END__

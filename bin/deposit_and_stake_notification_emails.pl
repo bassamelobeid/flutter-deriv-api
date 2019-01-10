@@ -21,8 +21,8 @@ use warnings;
 
 use BOM::Platform::Email qw(send_email);
 
-foreach my $srv ('MX','MLT') {
-    my $svcdef = lc($srv) . '03';
+foreach my $srv ('MX', 'MLT') {
+    my $svcdef  = lc($srv) . '03';
     my $content = qx{
         psql service=$svcdef -XH -v ON_ERROR_STOP=1 -P null=N/A <<EOF
 SELECT '$srv' AS "Client-DB";
