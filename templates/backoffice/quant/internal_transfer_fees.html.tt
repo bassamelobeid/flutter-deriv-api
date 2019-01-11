@@ -1,0 +1,256 @@
+<script>
+
+// Global variables coming from backend code.
+let _fiat_currencies   = [ [% fiat_currencies %] ];
+let _crypto_currencies = [ [% crypto_currencies %] ];
+let _stable_currencies = [ [% stable_currencies %] ];
+let _fiat_fiat = [% fiat_fiat %];
+let _fiat_crypto = [% fiat_crypto %];
+let _fiat_stable = [% fiat_stable %];
+let _crypto_fiat = [% crypto_fiat %];
+let _stable_fiat = [% stable_fiat %];
+let _fee_by_currency = JSON.parse('[% fee_by_currency %]'.replace(/&quot;/g, '"'));
+
+
+let _all_currencies = _fiat_currencies.concat(_crypto_currencies).concat(_stable_currencies).sort();
+let _fee_by_currency_edit = {};
+
+/* 
+Validates the input to be a number in range 0-7
+*/
+function validate_fee(fee, name){
+     if (fee.trim().length == 0){
+        window.alert(name+" is empty.");
+        return false;
+    }
+    if (isNaN(fee)){
+        window.alert(name+" is not a valid number.");
+        return false;
+    }
+    if (fee <= 0 || fee > 7){
+        window.alert(name+  " : " + fee + " is not in range 0 (exclusive) - 7 (inclusive).");
+        return false;
+    }
+    if (fee != Math.round(fee * 100) / 100){
+        window.alert(name + " exceeds the maximum number of 2 decimals.");
+        return false;
+    }
+    return true;
+}
+
+/*
+Sorts keys of a JSON object alphabetically.
+*/
+function sort_json(unordered){
+    let ordered = {};
+    Object.keys(unordered).sort().forEach(function(key) {
+        ordered[key] = unordered[key];
+    });
+    return ordered;
+}
+
+/* 
+Checks if all default fees are valid
+*/
+function validate_input(){
+    document.getElementById("currency_msg").innerHTML = '';
+    document.getElementById("default_msg").innerHTML = '';
+    let default_valid = validate_fee(document.getElementById("fiat_fiat").value, "fiat-fiat") && 
+    validate_fee(document.getElementById("fiat_crypto").value, "fiat-crypto") && 
+    validate_fee(document.getElementById("fiat_stable").value, "fiat-stable") &&
+    validate_fee(document.getElementById("crypto_fiat").value, "crypto_fiat") &&
+    validate_fee(document.getElementById("stable_fiat").value, "stable_fiat");
+    
+    if (!default_valid)
+        return false;
+    
+    let key;
+    let fee_json = {};
+    for (key in _fee_by_currency) {
+	    if (!document.getElementById('delete_'+key).checked)
+            fee_json[key] = _fee_by_currency[key];
+    }
+
+    for(key in _fee_by_currency_edit)
+        fee_json[key] = _fee_by_currency_edit[key];
+    
+    document.getElementById('fee_by_currency').value = JSON.stringify(sort_json(fee_json, null, 2));
+	return true;
+}
+
+/*
+Generates a list of currencies matching the value selected in a currency combo-box.
+*/
+function get_currency_list(selected_currency){
+    switch (selected_currency){
+        case 'fiat':
+            return _fiat_currencies;
+        case 'crypto':
+            return _crypto_currencies;
+        case 'stable':
+            return _stable_currencies;
+        case 'all':
+            return _all_currencies;
+    }
+    return [selected_currency];
+}
+
+/*
+Adds new non-default fee by currency.
+*/
+function add_fee_by_crurrency() {
+    document.getElementById("currency_msg").innerHTML = '';
+    document.getElementById("default_msg").innerHTML = '';
+    let currency_array1 = get_currency_list(document.getElementById("first_currency").value);
+    let currency_array2 = get_currency_list(document.getElementById("second_currency").value);
+    
+    let fee = document.getElementById("currency_fee").value;
+    if (!validate_fee(fee, 'Fee Per Currency'))
+        return;
+
+    for (from of currency_array1)
+        for (to of currency_array2){
+            let key = from+"_"+to;
+            _fee_by_currency_edit[key] = Number(fee);
+        }
+    _fee_by_currency_edit = sort_json(_fee_by_currency_edit);
+    redraw_table();
+}
+
+/*
+Redraws the transfer fee edit table.
+*/
+function redraw_table(){
+    let dynamic_table = document.getElementById("table_fee_by_currency_edit");
+    for (let i = dynamic_table.rows.length - 1; i > 1 ; i--)
+        dynamic_table.deleteRow(i);
+
+    let pairs = Object.keys(_fee_by_currency_edit);
+    pairs.forEach(pair => {
+        let fee = _fee_by_currency_edit[pair];
+        let splitted = pair.split('_');
+        let from = splitted[0];
+        let to = splitted[1];
+        let tr = dynamic_table.insertRow(-1);
+        tr.id = 'row_'+pairs;
+        tr.innerHTML = '<td>'+from+'</td><td>'+to+'</td><td>'+fee+
+            ' %</td><td><a href="#" onclick="delete_fee_by_crurrency(`'+from+'_'+to+'`)">Delete</a></td>';
+    });
+}
+
+/*
+Deletes the selected currency pair from fee_by_currency.
+*/
+function delete_fee_by_crurrency(key) {
+    document.getElementById("currency_msg").innerHTML = '';
+    document.getElementById("default_msg").innerHTML = '';
+    delete _fee_by_currency_edit[key];
+    redraw_table();
+}
+
+/*
+Sets up the elements included in the HTML from at startup.
+We are going to edit transfer fees from <first_currency> to <second_currency>, represented by two option elements.
+The result is displayed in the <fee_by_currency> textarea.
+*/
+function initialize_values(){ 
+
+    let static_table = document.getElementById("table_fee_by_currency");
+    let pairs = Object.keys(_fee_by_currency);
+    pairs.forEach(pair => {
+        let fee = _fee_by_currency[pair];
+        let splitted = pair.split('_');
+        let from = splitted[0];
+        let to = splitted[1];
+        let tr = static_table.insertRow(-1);
+        tr.innerHTML = '<td>'+from+'</td><td>'+to+'</td><td>'+fee+'%</td><td><input type="checkbox" id="delete_'+pair+'"></td>';
+    });
+
+    document.getElementById("fee_by_currency").value = JSON.stringify(_fee_by_currency, null, 2);
+    
+    for(cur of _all_currencies){
+         let option = document.createElement('option');
+         option.text = cur;
+         document.getElementById('first_currency').add(option);
+         document.getElementById('second_currency').add(option.cloneNode(true));
+     }
+    
+    option = document.createElement('option');
+    option.text = 'fiat';
+    document.getElementById('first_currency').add(option);
+    document.getElementById('second_currency').add(option.cloneNode(true));
+    
+    option = document.createElement('option');
+    option.text = 'crypto';
+    document.getElementById('first_currency').add(option);
+    document.getElementById('second_currency').add(option.cloneNode(true));
+    
+    option = document.createElement('option');
+    option.text = 'stable';
+    document.getElementById('first_currency').add(option);
+    document.getElementById('second_currency').add(option.cloneNode(true));
+    
+    option = document.createElement('option');
+    option.text = 'all';
+    document.getElementById('first_currency').add(option);
+    document.getElementById('second_currency').add(option.cloneNode(true));
+    
+    document.getElementById("first_currency").selectedIndex = "0";
+    document.getElementById("second_currency").selectedIndex = "0";
+    
+    document.getElementById("fiat_fiat").value = _fiat_fiat;
+    document.getElementById("fiat_crypto").value = _fiat_crypto;
+    document.getElementById("fiat_stable").value = _fiat_stable;
+    document.getElementById("crypto_fiat").value = _crypto_fiat;
+    document.getElementById("stable_fiat").value = _stable_fiat;
+};
+
+window.onload = initialize_values;
+</script>
+
+<form id="fees_form" name="fees_form" action="$action" onsubmit="return validate_input()" method="post">
+<input type="hidden" name='_form_submit' value='_form_submit'></input>
+<p style='color:black'><strong>DEFAULT VALUES</strong> <i>(The default transfer fees per currency type in percent)</i></p>
+<p  id='default_msg'>$defaults_msg</p>
+<table>
+	<tr><td>fiat-fiat: </td><td><input type="text" size="10" name="fiat_fiat" id="fiat_fiat" /> % </td></tr>
+	<tr><td>fiat-crypto: </td><td><input type="text" size="10" name="fiat_crypto" id="fiat_crypto" /> % </td></tr>
+	<tr><td>fiat-stable: </td><td><input type="text" size="10" name="fiat_stable" id="fiat_stable" /> % </td></tr>
+	<tr><td>crypto_fiat: </td><td><input type="text" size="10" name="crypto_fiat" id="crypto_fiat" /> % </td></tr>
+	<tr><td>stable_fiat: </td><td><input type="text" size="10" name="stable_fiat" id="stable_fiat" /> % </td></tr>
+</table>
+<br/>
+<hr>
+<p style='color:black'><strong>BY CURRENCY</strong> <i>(The non-default transfer fees per currency pair overriding the default values)</i></p>
+<p  id='currency_msg'>$currency_msg </p>
+<input id="fee_by_currency" name="fee_by_currency" type="hidden" />
+<style> 
+    table.table_fee_by_currency, .table_fee_by_currency td { border: 1px solid; border-collapse: collapse; }
+</style>
+
+Saved non-default fees:
+<table class="table_fee_by_currency" id='table_fee_by_currency'>
+    <tr><th width="70">From</th><th width="70">To</th><th width="70">Fee</th><th width="70">Delete</th></tr>
+</table>
+<i> -You can delete rows with the checkboxes in the last column. </i><br/>
+<br/><br/>
+
+New/updated non-default fees:
+<table class="table_fee_by_currency" id='table_fee_by_currency_edit'>
+    <tr><th width="70">From</th><th width="70">To</th><th width="70">Fee</th><th width="70">&nbsp</th></tr>
+    <tr>
+        <td><select id="first_currency"></select></td>
+        <td><select id="second_currency"></select></td>
+        <td><input type="text" size=6 id="currency_fee" /> % </td>
+        <td><button type="button" onclick="add_fee_by_crurrency()">ADD</button></td>
+    </tr>
+</table>
+<i> -New currency pairs will be inserted here by clicking the ADD button.</i>
+<br/>
+<hr/>
+<font color="darkred"><i class="notice"> * Changes you've made above will not be saved until you click <strong>Apply Changes</strong> button.</i></font>
+<br/>
+<br/>
+<input type="submit" name='submit' value='Apply Changes'></input>
+<br/>
+</form>
