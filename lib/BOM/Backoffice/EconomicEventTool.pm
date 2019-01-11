@@ -37,16 +37,19 @@ sub get_economic_events_for_date {
         to   => $to,
     });
 
-    my @events = map { get_info($_) } @$economic_events;
+    my @categorized_events = map { get_info($_) } grep { Volatility::EconomicEvents::is_defined($_->{symbol}, $_->{event_name}) } @$economic_events;
+    my @uncategorized_events =
+        map { get_info($_) } grep { !Volatility::EconomicEvents::is_defined($_->{symbol}, $_->{event_name}) } @$economic_events;
     my @deleted_events =
         map { get_info($_) }
         grep { Date::Utility->new($_->{release_date})->epoch >= $from->epoch && Date::Utility->new($_->{release_date})->epoch <= $to->epoch }
         (values %{$eec->_get_deleted()});
     my @l = _get_affected_underlying_symbols();
     return {
-        categorized_events => $json->encode(\@events),
-        deleted_events     => $json->encode(\@deleted_events),
-        underlying_symbols => $json->encode([sort @l]),
+        categorized_events   => $json->encode(\@categorized_events),
+        uncategorized_events => $json->encode(\@uncategorized_events),
+        deleted_events       => $json->encode(\@deleted_events),
+        underlying_symbols   => $json->encode([sort @l]),
     };
 }
 

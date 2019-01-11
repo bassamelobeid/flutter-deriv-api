@@ -51,8 +51,11 @@
     
 <p>Display for date: <select onchange="updateTable(this.value)">[% FOREACH date IN dates %]<option value="[% date %]">[% date %]</option>[% END %]</select></p>
 
-<p><b>List of Scheduled Economic Events</b> (* represents uncategorized events)</p>
+<p><b>List of Scheduled Categorized Economic Events</b></p>
 <div id='scheduled_event_list'></div>
+
+<p><b>List of Scheduled Uncategorized Economic Events</b></p>
+<div id='scheduled_uncategorized_event_list'></div>
 
 <p><b>List of Deleted Economic Events</b></p>
 <div id='deleted_event_list'></div>
@@ -65,6 +68,7 @@
     underlyings.unshift(['Select Underlying', '']);
     [% PROCESS backoffice/economic_event_forms.js %]
     createEcoTable([% categorized_events | none %], 'scheduled_event_list');
+    createEcoTable([% uncategorized_events | none %], 'scheduled_uncategorized_event_list');
     createEcoTable([% deleted_events | none %], 'deleted_event_list');
 </script>
 

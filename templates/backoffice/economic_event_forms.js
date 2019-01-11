@@ -24,6 +24,7 @@
                 success: function(data) {
                     var r = JSON.parse(data);
                     createEcoTable(JSON.parse(r.categorized_events), 'scheduled_event_list');
+                     createEcoTable(JSON.parse(r.uncategorized_events), 'scheduled_uncategorized_event_list');
                     createEcoTable(JSON.parse(r.deleted_events), 'deleted_event_list');
                 }
             });
@@ -152,7 +153,6 @@
         } else {
             to_append += '<td>' + event.event_name + '</td>';
         }
-
         to_append += '<td>' + event.release_date + '</td><td>' + event.symbol + '</td><td id="binary_info">';
         to_append += formatInfo(event);
         to_append += '</td><td>';
