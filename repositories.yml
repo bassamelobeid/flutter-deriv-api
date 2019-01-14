@@ -1,2 +1,2 @@
-regentmarkets/travis-scripts
-regentmarkets/bom-postgres
+- regentmarkets/travis-scripts
+- regentmarkets/bom-postgres
