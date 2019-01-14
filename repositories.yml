@@ -1,14 +1,14 @@
-binary-com/translations-websockets-api
-regentmarkets/bom
-regentmarkets/bom-config
-regentmarkets/bom-market
-regentmarkets/bom-platform
-regentmarkets/bom-postgres-authdb
-regentmarkets/bom-postgres-chronicledb
-regentmarkets/bom-postgres-clientdb
-regentmarkets/bom-postgres-collectordb
-regentmarkets/bom-postgres-feedbdb
-regentmarkets/bom-postgres-userdb
-regentmarkets/bom-test
-regentmarkets/bom-user
-regentmarkets/travis-scripts
+- binary-com/translations-websockets-api
+- regentmarkets/bom
+- regentmarkets/bom-config
+- regentmarkets/bom-market
+- regentmarkets/bom-platform
+- regentmarkets/bom-postgres-authdb
+- regentmarkets/bom-postgres-chronicledb
+- regentmarkets/bom-postgres-clientdb
+- regentmarkets/bom-postgres-collectordb
+- regentmarkets/bom-postgres-feedbdb
+- regentmarkets/bom-postgres-userdb
+- regentmarkets/bom-test
+- regentmarkets/bom-user
+- regentmarkets/travis-scripts
