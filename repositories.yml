@@ -1,0 +1,9 @@
+- regentmarkets/travis-scripts
+- regentmarkets/bom-test
+- regentmarkets/bom
+- regentmarkets/bom-config
+- regentmarkets/bom-platform
+- regentmarkets/bom-postgres
+- binary-com/translations-websockets-api
+- regentmarkets/bom-market
+- regentmarkets/bom-user
