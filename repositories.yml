@@ -1,17 +1,16 @@
-binary-com/translations-websockets-api
-regentmarkets/cpan
-regentmarkets/bom
-regentmarkets/bom-config
-regentmarkets/bom-feed
-regentmarkets/bom-market
-regentmarkets/bom-platform
-regentmarkets/bom-populator
-regentmarkets/bom-postgres
-regentmarkets/bom-pricing
-regentmarkets/bom-rpc
-regentmarkets/bom-test
-regentmarkets/bom-transaction
-regentmarkets/bom-user
-regentmarkets/bom-websocket-tests
-regentmarkets/php-mt5-webapi
-
+- binary-com/translations-websockets-api
+- regentmarkets/cpan
+- regentmarkets/bom
+- regentmarkets/bom-config
+- regentmarkets/bom-feed
+- regentmarkets/bom-market
+- regentmarkets/bom-platform
+- regentmarkets/bom-populator
+- regentmarkets/bom-postgres
+- regentmarkets/bom-pricing
+- regentmarkets/bom-rpc
+- regentmarkets/bom-test
+- regentmarkets/bom-transaction
+- regentmarkets/bom-user
+- regentmarkets/bom-websocket-tests
+- regentmarkets/php-mt5-webapi
