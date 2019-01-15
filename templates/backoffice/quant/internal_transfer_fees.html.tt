@@ -10,6 +10,7 @@ let _fiat_stable = [% fiat_stable %];
 let _crypto_fiat = [% crypto_fiat %];
 let _stable_fiat = [% stable_fiat %];
 let _fee_by_currency = JSON.parse('[% fee_by_currency %]'.replace(/&quot;/g, '"'));
+let _max_percent = [% max_percent %];
 
 
 let _all_currencies = _fiat_currencies.concat(_crypto_currencies).concat(_stable_currencies).sort();
@@ -27,7 +28,7 @@ function validate_fee(fee, name){
         window.alert(name+" is not a valid number.");
         return false;
     }
-    if (fee <= 0 || fee > 7){
+    if (fee <= 0 || fee > _max_percent){
         window.alert(name+  " : " + fee + " is not in range 0 (exclusive) - 7 (inclusive).");
         return false;
     }

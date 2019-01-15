@@ -13,12 +13,14 @@ use Try::Tiny;
 use feature 'state';
 use LandingCompany::Registry;
 use Format::Util::Numbers qw/formatnumber/;
-use BOM::Platform::Email qw(send_email);
-use BOM::Config::Runtime;
 use Array::Utils qw(:all);
 use Date::Utility;
 use Scalar::Util;
 use List::Util;
+
+use BOM::Platform::Email qw(send_email);
+use BOM::Config::Runtime;
+use BOM::Config::CurrencyConfig;
 
 sub textify_obj {
     my $type  = shift;
@@ -328,9 +330,31 @@ Validates the default minimum transfer amount to be a valid number.
 =cut  
 
 sub _validate_transfer_min_default {
-    my $input_data = shift;
-    die "Invalid numerical value $input_data" unless Scalar::Util::looks_like_number($input_data);
-    die "$input_data is less than or equal to 0" unless $input_data > 0;
+    my ($new_value, $old_value, $key) = @_;
+
+    die "Invalid numerical value $new_value" unless Scalar::Util::looks_like_number($new_value);
+    die "$new_value is less than or equal to 0" unless $new_value > 0;
+
+    return unless $key =~ /^payments.transfer_between_accounts.minimum.default.(.*)$/;
+    my $type = $1;
+
+    my @currencies = LandingCompany::Registry::all_currencies();
+    @currencies = grep {
+        LandingCompany::Registry::get_currency_definition($_)->{type} eq 'crypto'
+            and (not LandingCompany::Registry::get_currency_definition($_)->{stable})
+        } @currencies
+        if $type eq 'crypto';
+    @currencies = grep {
+               LandingCompany::Registry::get_currency_definition($_)->{type} eq 'fiat'
+            or LandingCompany::Registry::get_currency_definition($_)->{stable}
+        } @currencies
+        if $type eq 'fiat';
+
+    my $lower_bounds    = BOM::Config::CurrencyConfig::transfer_between_accounts_lower_bounds();
+    my @matching_bounds = map { $lower_bounds->{$_} } @currencies;
+    my $lower_bound     = List::Util::max(@matching_bounds);
+
+    die "The value $new_value is lower than the lower bound $lower_bound." if ($new_value < $lower_bound);
 
     return 1;
 }
@@ -375,10 +399,12 @@ sub _validate_transfer_min_by_currency {
         my $allowed_decimals = Format::Util::Numbers::get_precision_config()->{price}->{$currency};
         my $rounded_amount   = Format::Util::Numbers::financialrounding('price', $currency, $amount);
 
-        die "One or more currencies has value less than or equal to 0" unless $amount > 0;
         die "Minimum value $amount has more than $allowed_decimals decimals allowed for $currency."
             if length($amount) > 12
             or (sprintf('%0.010f', $rounded_amount) ne sprintf('%0.010f', $amount));
+
+        my $lower_bound = BOM::Config::CurrencyConfig::transfer_between_accounts_lower_bounds()->{$currency};
+        die "The value $amount for $currency is lower than the lower bound $lower_bound" if $amount < $lower_bound;
     }
     return 1;
 }

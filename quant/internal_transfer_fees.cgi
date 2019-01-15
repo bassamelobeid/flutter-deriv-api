@@ -10,6 +10,7 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 use BOM::Config::Runtime;
+use BOM::Config::CurrencyConfig;
 use LandingCompany::Registry;
 
 BOM::Backoffice::Sysinit::init();
@@ -85,6 +86,7 @@ if ($submit) {
 binmode STDOUT, ':encoding(UTF-8)';
 
 Bar("INTERNAL TRANSFER FEES");
+my $max_fee_percent = BOM::Config::CurrencyConfig::MAX_TRANSFER_FEE;
 
 BOM::Backoffice::Request::template()->process(
     'backoffice/quant/internal_transfer_fees.html.tt',
@@ -98,6 +100,7 @@ BOM::Backoffice::Request::template()->process(
         crypto_fiat       => $crypto_fiat,
         stable_fiat       => $stable_fiat,
         fee_by_currency   => $fee_by_currency,
+        max_percent       => $max_fee_percent
     });
 
 code_exit_BO();
