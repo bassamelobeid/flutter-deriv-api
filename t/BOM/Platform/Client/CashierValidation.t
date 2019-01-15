@@ -293,6 +293,24 @@ subtest 'Cashier validation landing company and country specific' => sub {
 
 subtest 'Calculate to amount and fees' => sub {
     my $mock_forex = Test::MockModule->new('BOM::Platform::Client::CashierValidation', no_auto => 1);
+    my $mock_fees = Test::MockModule->new('BOM::Config::CurrencyConfig', no_auto => 1);
+    $mock_fees->mock(
+        transfer_between_accounts_fees => sub {
+            return {
+                'USD' => {
+                    'UST' => 0.1,
+                    'BTC' => 0.3,
+                    'USD' => 0.5,    # ineffective (no fee should be charged for USD-USD)
+                    'EUR' => 0.6
+                },
+                'UST' => {'USD' => 0.2},
+                'BTC' => {
+                    'USD' => 0.4,
+                    'BTC' => 0.7     # ineffective (crypto-crypto transfer is not supported)
+                    }
+
+            };
+        });
 
     my $helper = sub {
         my (
@@ -313,22 +331,6 @@ subtest 'Calculate to amount and fees' => sub {
         cmp_ok roundcommon(0.000001, $fee_calculated), '==', roundcommon(0.000001, $expected_fee_calculated), 'Correct fee percent';
     };
 
-    my $currency_fees = {
-        'USD_UST' => 0.1,
-        'UST_USD' => 0.2,
-        'USD_BTC' => 0.3,
-        'BTC_USD' => 0.4,
-        'USD_USD' => 0.5,    # ineffective (same currency is not charged any fee)
-        'USD_EUR' => 0.6,
-        'BTC_BCH' => 0.7     # ineffective (crypto-crypto is not supported)
-
-    };
-
-    BOM::Config::Runtime->instance->app_config()->set({
-            'payments.transfer_between_accounts.fees.by_currency' => JSON::MaybeUTF8::encode_json_utf8($currency_fees)
-
-        });
-
     subtest 'Fiat to stable crypto' => sub {
         $helper->(100, 'USD', 'UST', 0.1, 0.1, get_min_unit('USD'), 0.1, 1, $cr_client, $cr_client_2);
     };
@@ -347,6 +349,12 @@ subtest 'Calculate to amount and fees' => sub {
 
     subtest 'Fiat to crypto' => sub {
         $helper->(100, 'USD', 'BTC', 0.3, 0.3, get_min_unit('USD'), 0.3, 7000, $cr_client, $cr_client_2);
+
+        throws_ok {
+            $helper->(0.01, 'USD', 'BTC', 0.3, 0.3, get_min_unit('USD'), 0.3, 7000, $cr_client, $cr_client_2);
+        }
+        qr/The amount \(0\) is below the minimum allowed amount \(0.00000001\) for BTC/, 'Too low amount for receiving account fails.';
+
     };
 
     subtest 'Crypto to fiat' => sub {
@@ -390,10 +398,11 @@ subtest 'Calculate to amount and fees' => sub {
         throws_ok {
             $helper->(100, 'BTC', 'BCH', 0, 0, 0, 0, 12, $cr_client, $cr_client_2);
         }
-        qr/Transfers between these currencies not supported/, 'Cryptoto crypto dies';
+        qr/No transfer fee found for BTC-BCH/, 'Crypto to crypto dies';
     };
 
     $mock_forex->unmock('convert_currency');
+    $mock_fees->unmock('transfer_between_accounts_fees');
 };
 
 done_testing();

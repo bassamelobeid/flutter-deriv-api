@@ -16,7 +16,7 @@ use warnings;
 use Date::Utility;
 use Scalar::Util qw(looks_like_number);
 use ExchangeRates::CurrencyConverter qw/convert_currency/;
-use Format::Util::Numbers qw/get_min_unit/;
+use Format::Util::Numbers qw/get_min_unit financialrounding/;
 use Try::Tiny;
 no indirect;
 
@@ -226,9 +226,9 @@ Returns
 =item * The fee percentage applied for transfers between these currencies
 Note: If a minimum fee was enforced then this will not reflect the actual fee charged.
 
--item * Minimum fee possible for the sending account currency (minimum currency unit).
+-item * Minimum fee amount allowed for the sending account's currency (minimum currency unit).
 
--item * Fee caclulated by the fee percent alone (without comparing to the minimum fee).
+-item * The fee amount calculated by the fee percent alone (before comparing to the minimum fee).
 
 =back
 
@@ -250,7 +250,7 @@ sub calculate_to_amount_with_fees {
     my $currency_config = BOM::Config::CurrencyConfig::transfer_between_accounts_fees();
     my $fee_percent     = $currency_config->{$from_currency}->{$to_currency};
 
-    die "Transfers between these currencies not supported. $from_currency $to_currency" unless defined $fee_percent;
+    die "No transfer fee found for $from_currency-$to_currency" unless defined $fee_percent;
 
     my $fee_calculated_by_percent = $amount * $fee_percent / 100;
 
@@ -258,6 +258,9 @@ sub calculate_to_amount_with_fees {
     my $fee_applied = ($fee_calculated_by_percent < $min_fee) ? $min_fee : $fee_calculated_by_percent;
 
     $amount = convert_currency(($amount - $fee_applied), $from_currency, $to_currency, $rate_expiry);
+
+    die "The amount ($amount) is below the minimum allowed amount (" . get_min_unit($to_currency) . ") for $to_currency."
+        if $amount < get_min_unit($to_currency);
 
     return ($amount, $fee_applied, $fee_percent, $min_fee, $fee_calculated_by_percent);
 }
