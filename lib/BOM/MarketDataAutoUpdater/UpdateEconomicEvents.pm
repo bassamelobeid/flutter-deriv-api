@@ -52,7 +52,7 @@ sub run {
 
     my $num_events_saved = scalar(@$consolidate_events);
 
-    stats_gauge('economic_events_saved', $consolidate_events);
+    stats_gauge('economic_events_saved', $num_events_saved);
 
     if (not $num_events_saved > 0) {
         print "No economic event is saved on chronicle today. Please check.\n";
