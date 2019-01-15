@@ -976,7 +976,7 @@ sub _unique_barriers {
     my $barriers = shift;
     my %h;
     for my $barrier (@$barriers) {
-        my $idx = $barrier->{barrier} . ":" . ($barrier->{barrier2} // '');
+        my $idx = $barrier->{barrier} // '' . ":" . ($barrier->{barrier2} // '');
         return 0 if $h{$idx}++;
     }
     return 1;
