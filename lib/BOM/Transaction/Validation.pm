@@ -274,8 +274,8 @@ sub _validate_trade_pricing_adjustment {
     my $recomputed_price = $contract->is_binary ? $contract->ask_price : formatnumber('price', $contract->currency, $contract->ask_price);
     $self->transaction->recomputed_price($recomputed_price);
     my $recomputed = $contract->is_binary ? $contract->ask_probability->amount : $recomputed_price;
-    my $move       = $contract->is_binary ? $requested - $recomputed           : ($requested - $recomputed) / $requested;
-    my $slippage   = $self->transaction->price - $recomputed_price;
+    my $move         = ($contract->is_binary or ($requested == 0)) ? $requested - $recomputed : ($requested - $recomputed) / $requested;
+    my $slippage     = $self->transaction->price - $recomputed_price;
     my $allowed_move = $contract->allowed_slippage;
 
     $allowed_move = 0 if $contract->is_binary and $recomputed == 1;

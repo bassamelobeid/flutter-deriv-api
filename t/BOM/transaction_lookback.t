@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
-use Test::More tests => 9;
+use Test::More tests => 10;
 use Test::Exception;
 use Guard;
 use Crypt::NamedKeys;
@@ -343,6 +343,35 @@ my ($trx, $fmb, $chld, $qv1, $qv2);
 my $new_client = create_client;
 top_up $new_client, 'USD', 5000;
 my $new_acc_usd = $new_client->account;
+
+subtest 'buy a bet with zero price', sub {
+    plan tests => 2;
+    lives_ok {
+        my $contract = produce_contract({
+            underlying   => $underlying_R50,
+            bet_type     => 'LBFLOATCALL',
+            currency     => 'USD',
+            multiplier   => 5.0,
+            duration     => '30m',
+            current_tick => $tick,
+            amount_type  => 'multiplier',
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 0,
+            multiplier    => $contract->multiplier,
+            amount_type   => 'multiplier',
+            source        => 19,
+            purchase_date => $contract->date_start,
+        });
+
+        my $error = $txn->buy;
+        is $error->{-message_to_client}, 'The underlying market has moved too much since you priced the contract. The contract price has changed from USD0.00 to USD2.50.', 'slippage error';
+    }
+    'survived';
+};
 
 subtest 'buy a bet', sub {
     plan tests => 11;
