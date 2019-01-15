@@ -1074,12 +1074,8 @@ async_rpc mt5_deposit => sub {
             try {
                 my $fee_calculated_by_percent = $response->{calculated_fee};
                 my $min_fee                   = $response->{min_fee};
-                $comment = "Transfer from $fm_loginid to MT5 account $to_mt5.";
-                $comment .=
-                      " Includes transfer fee of $fees_currency "
-                    . formatnumber('amount', $fees_currency, $fee_calculated_by_percent)
-                    . " ($fees_percent %) or $fees_currency $min_fee, whichever is higher."
-                    if $fees;
+                $comment = "Transfer from $fm_loginid to MT5 account $to_mt5."
+                    . BOM::RPC::v3::Cashier::get_transfer_fee_remark($fees, $fees_percent, $fees_currency, $min_fee, $fee_calculated_by_percent);
 
                 $account = $fm_client->set_default_account($fm_client->currency);
                 ($payment) = $account->add_payment({
@@ -1183,12 +1179,9 @@ async_rpc mt5_withdrawal => sub {
             my $fee_calculated_by_percent = $response->{calculated_fee};
             my $min_fee                   = $response->{min_fee};
 
-            my $comment = "Transfer from MT5 account $fm_mt5 to $to_loginid.";
-            $comment .=
-                  " Includes transfer fee of $fees_currency "
-                . formatnumber('amount', $fees_currency, $fee_calculated_by_percent)
-                . " ($fees_percent %) or $fees_currency $min_fee, whichever is higher."
-                if $fees;
+            my $comment = "Transfer from MT5 account $fm_mt5 to $to_loginid."
+                . BOM::RPC::v3::Cashier::get_transfer_fee_remark($fees, $fees_percent, $fees_currency, $min_fee, $fee_calculated_by_percent);
+
             # withdraw from MT5 a/c
             return BOM::MT5::User::Async::withdrawal({
                     login   => $fm_mt5,
@@ -1417,12 +1410,8 @@ sub _mt5_validate_and_get_amount {
     return _make_error($error_code, localize('Please set currency for existsing account [_1].', $loginid))
         unless $client_currency;
 
-    return _make_error(
-        $error_code,
-        localize(
-            'Invalid amount. Amount provided can not have more than [_1] decimal places.',
-            Format::Util::Numbers::get_precision_config()->{amount}->{$client_currency})
-    ) if ($amount != financialrounding('amount', $client_currency, $amount));
+    my $err = BOM::RPC::v3::Cashier::validate_amount($amount, $client_currency);
+    return _make_error($error_code, $err) if $err;
 
     my $daily_transfer_limit  = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5;
     my $client_today_transfer = $client_obj->get_today_transfer_summary('mt5_transfer');
@@ -1477,13 +1466,15 @@ sub _mt5_validate_and_get_amount {
             my $fees_percent            = 0;
             my $fees_in_client_currency = 0;    #when a withdrawal is done record the fee in the local amount
             my ($min_fee, $fee_calculated_by_percent);
+            my $err;
+
             if ($client_currency eq $mt5_currency) {
                 $mt5_amount = $amount;
             } else {
                 # we don't allow transfer between these two currencies
                 my $disabled_for_transfer_currencies = BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies;
                 return _make_error($error_code,
-                    localize('Account transfers are not available between [_1] and [_2]', $source_currency, $mt5_currency))
+                    localize('Account transfers are not available between [_1] and [_2].', $source_currency, $mt5_currency))
                     if first { $_ eq $source_currency or $_ eq $mt5_currency } @$disabled_for_transfer_currencies;
 
                 if ($action eq 'deposit') {
@@ -1496,12 +1487,15 @@ sub _mt5_validate_and_get_amount {
                         $mt5_amount = financialrounding('amount', $mt5_currency, $mt5_amount);
                     }
                     catch {
+                        # usually we get here when convert_currency() fails to find a rate within $rate_expiry, $mt5_amount is too low, or no transfer fee are defined (invalid currency pair).
+                        $err        = $_;
                         $mt5_amount = undef;
                     };
                 } elsif ($action eq 'withdrawal') {
                     try {
-                        $min = convert_currency(1,     'USD', $mt5_currency);
-                        $max = convert_currency(20000, 'USD', $mt5_currency);
+                        $source_currency = $mt5_currency;
+                        $min             = convert_currency(1, 'USD', $mt5_currency);
+                        $max             = convert_currency(20000, 'USD', $mt5_currency);
 
                         ($mt5_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =
                             BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $mt5_currency, $client_currency);
@@ -1509,17 +1503,35 @@ sub _mt5_validate_and_get_amount {
                         # if last rate is expiered calculate_to_amount_with_fees would fail.
                         $fees_in_client_currency =
                             financialrounding('amount', $client_currency, convert_currency($fees, $mt5_currency, $client_currency));
-                        $source_currency = $mt5_currency;
                     }
                     catch {
                         # same as previous catch
-                        $mt5_amount = undef;
+                        $err = $_;
                     };
                 }
             }
 
-            return _make_error($error_code, localize("Conversion rate not available for this currency."))
-                unless defined $mt5_amount;
+            if ($err) {
+                return _make_error($error_code,
+                    localize('Account transfers for this currency are suspended due to exchange rates. Please try again when market is open.'))
+                    if ($err =~ /No rate available to convert/);
+
+                return _make_error($error_code, localize('Account transfers are not possible between [_1] and [_2]', $client_currency, $mt5_currency))
+                    if ($err =~ /No transfer fee/);
+
+                # Lower than min_unit in the receiving currency. The lower-bounds are not uptodate, otherwise we should not accept the amount in sending currency.
+                # To update them, transfer_between_accounts_fees is called again with force_refresh on.
+                return _make_error(
+                    $error_code,
+                    localize(
+                        "This amount is too low. Please enter a minimum of [_1] [_2].",
+                        BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1)->{$source_currency}->{min},
+                        $source_currency
+                    )) if ($err =~ /The amount .* is below the minimum allowed amount/);
+
+                #default error:
+                return _make_error($error_code);
+            }
 
             return _make_error($error_code,
                 localize("Amount must be greater than [_1] [_2].", $source_currency, formatnumber('amount', $source_currency, $min)))

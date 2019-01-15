@@ -66,6 +66,7 @@ my $custom_rates = {
     'BTC' => $btc_usd_rate,
     'UST' => 1
 };
+populate_exchange_rates();
 populate_exchange_rates($custom_rates);
 
 my $tmp_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -285,9 +286,7 @@ subtest 'validation' => sub {
     $params->{args}->{amount} = financialrounding('amount', 'BTC', $min / 2);
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code crypto to crypto';
-    like $result->{error}->{message_to_client},
-        qr/Provided amount is not within permissible limits. Minimum transfer amount for provided currency is/,
-        'Correct error message for invalid amount';
+    like $result->{error}->{message_to_client}, qr/This amount is too low. Please enter a minimum of/, 'Correct error message for invalid amount';
 
     $params->{args}->{amount} = 0.500000001;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
@@ -451,6 +450,12 @@ subtest 'transfer with fees' => sub {
         binary_user_id => $test_binary_user_id
     });
 
+    $client_cr_eur = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $test_binary_user_id
+    });
+
     # create an unauthorised pa
     $client_cr_pa_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
@@ -483,6 +488,7 @@ subtest 'transfer with fees' => sub {
     $client_cr_btc->set_default_account('BTC');
     $client_cr_pa_btc->set_default_account('BTC');
     $client_cr_ust->set_default_account('UST');
+    $client_cr_eur->set_default_account('EUR');
 
     $user = BOM::User->create(
         email          => $email,
@@ -494,6 +500,7 @@ subtest 'transfer with fees' => sub {
     $user->add_client($client_cr_btc);
     $user->add_client($client_cr_pa_btc);
     $user->add_client($client_cr_ust);
+    $user->add_client($client_cr_eur);
 
     $client_cr_pa_btc->save;
 
@@ -536,16 +543,39 @@ subtest 'transfer with fees' => sub {
         ->error_message_is('Transfers between fiat and crypto accounts are currently disabled.')->result;
     BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts(0);
 
-    my ($usd_btc_fee, $btc_usd_fee, $usd_ust_fee, $ust_usd_fee) = (2, 3, 4, 5);
+    my ($usd_btc_fee, $btc_usd_fee, $usd_ust_fee, $ust_usd_fee, $ust_eur_fee) = (2, 3, 4, 5, 6);
+    my $mock_fees = Test::MockModule->new('BOM::Config::CurrencyConfig', no_auto => 1);
+    $mock_fees->mock(
+        transfer_between_accounts_fees => sub {
+            return {
+                'USD' => {
+                    'UST' => $usd_ust_fee,
+                    'BTC' => $usd_btc_fee,
+                },
+                'UST' => {
+                    'USD' => $ust_usd_fee,
+                    'EUR' => $ust_eur_fee
+                },
+                'BTC' => {'USD' => $btc_usd_fee},
+            };
+        },
+        transfer_between_accounts_limits => sub {
+            my $force_refresh = shift;
+            my $limits        = $mock_fees->original('transfer_between_accounts_limits')->($force_refresh);
+            #It ensures that instead of fake values below, actual limits will be retrieved in error handling, where update to transfer limits is requested.
+            unless ($force_refresh) {
+                $limits->{USD}->{min} = 0.01;
+                $limits->{UST}->{min} = 0.01;
+            }
+            return $limits;
+        });
 
-    BOM::Config::Runtime->instance->app_config->set({
-            'payments.transfer_between_accounts.fees.by_currency' => JSON::MaybeUTF8::encode_json_utf8({
-                    "USD_BTC" => $usd_btc_fee,
-                    "BTC_USD" => $btc_usd_fee,
-                    "USD_UST" => $usd_ust_fee,
-                    "UST_USD" => $ust_usd_fee
-                })});
+    $params->{args}->{amount} = 0.01;
+    # The amount will be accepted initially, but rejected when getting the recieved amount in BTC.
+    $rpc_ct->call_ok($method, $params)->has_error->error_code_is('TransferBetweenAccountsError')
+        ->error_message_is("This amount is too low. Please enter a minimum of 1 USD.");
 
+    $params->{args}->{amount} = $amount;
     my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{client_to_loginid}, $client_cr_btc->loginid, 'Transaction successful';
 
@@ -603,6 +633,31 @@ subtest 'transfer with fees' => sub {
     # database function throw error if same transaction happens
     # in 2 seconds
     sleep(2);
+
+    #The minimum fee 0.01 UST is applied on the total of 0.02. The reamining 0.01 is less than 0.01 EUR (minimum allowed)
+    #Similar to the case of 0.01 USD transfer above.
+    $amount = 0.02;
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_ust->loginid, 'test token');
+    $params->{args} = {
+        account_from => $client_cr_ust->loginid,
+        account_to   => $client_cr_eur->loginid,
+        currency     => "UST",
+        amount       => $amount
+    };
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->error_code_is('TransferBetweenAccountsError')
+        ->error_message_is('This amount is too low. Please enter a minimum of 1 UST.');
+
+    #No transfer fee for BTC-EUR
+    $amount = 0.02;
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_btc->loginid, 'test token');
+    $params->{args} = {
+        account_from => $client_cr_btc->loginid,
+        account_to   => $client_cr_eur->loginid,
+        currency     => "BTC",
+        amount       => $amount
+    };
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->error_code_is('TransferBetweenAccountsError')
+        ->error_message_is('Account transfers are not possible between BTC and EUR.');
 
     $amount = 100;
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_usd->loginid, 'test token');
@@ -697,10 +752,9 @@ subtest 'transfer with fees' => sub {
 
         cmp_ok $client_cr_ust->account->balance, '==', $previous_amount_ust - $amount, 'From account deducted correctly';
         cmp_ok $client_cr_usd->account->balance, '==', $previous_amount_usd + $expected_transfer_amount, 'To account credited correctly';
-
     };
 
-    BOM::Config::Runtime->instance->app_config->set({'payments.transfer_between_accounts.fees.by_currency' => '{}'});
+    $mock_fees->unmock_all();
 };
 
 subtest 'transfer with no fee' => sub {
@@ -962,7 +1016,7 @@ subtest 'suspended currency transfers' => sub {
         BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies(['BTC']);
         my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError',
             "Transfer to suspended currency not allowed - correct error code")
-            ->error_message_is('Account transfers are not available between USD and BTC',
+            ->error_message_is('Account transfers are not available between USD and BTC.',
             'Transfer to suspended currency not allowed - correct error message');
     };
 
@@ -977,7 +1031,7 @@ subtest 'suspended currency transfers' => sub {
 
         my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError',
             "Transfer from suspended currency not allowed - correct error code")
-            ->error_message_is('Account transfers are not available between BTC and USD',
+            ->error_message_is('Account transfers are not available between BTC and USD.',
             'Transfer from suspended currency not allowed - correct error message');
     };
 

@@ -459,7 +459,7 @@ rpc paymentagent_transfer => sub {
     };
 
     # Simple regex plus precision check via precision.yml
-    my $amount_validation_error = _validate_amount($amount, $currency);
+    my $amount_validation_error = validate_amount($amount, $currency);
     return $error_sub->($amount_validation_error) if $amount_validation_error;
 
     # Check global status via the chronicle database
@@ -807,7 +807,7 @@ rpc paymentagent_withdraw => sub {
     #   aren't required to accept T&Cs. It's here in case either of these situations change.
     return $error_sub->(localize('Terms and conditions approval is required.')) if $client->is_tnc_approval_required;
 
-    my $amount_validation_error = _validate_amount($amount, $currency);
+    my $amount_validation_error = validate_amount($amount, $currency);
     return $error_sub->($amount_validation_error) if $amount_validation_error;
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -1099,6 +1099,53 @@ sub __client_withdrawal_notes {
     return ($error_message);
 }
 
+=head2 get_transfer_fee_remark
+
+Returns a description for the fee applied to a transfer. This function is created to make the code fragment reusable between cashier and MT5.
+Takes the following list of arguments:
+
+=over 4
+
+=item fees: actual amount of fee to be applied.
+
+=item fee_percent: the fee percentage used for the current transfer.
+
+=item currency: currency of the sending account.
+
+=item min_fee: the smallest amount meaningful in the sending currency.
+
+=item fee_calculated_by_percent: the fee amount calculated directly by applying the fee percent alone.
+
+=back 
+
+Returns a string in one of the following forms:
+
+=over 4
+
+=item '': when fees = 0
+
+=item 'Includes transfer fee of USD 10 (0.5 %).': when fees >= min_fee
+
+=item 'Includes minimim transfer fee of USD 0.01.': when fees < min_fee
+
+=back
+
+=cut
+
+sub get_transfer_fee_remark {
+    my ($fees, $fees_percent, $currency, $min_fee, $fee_calculated_by_percent) = @_;
+
+    my $remark = '';
+    if ($fees) {
+        $remark .=
+            ($fee_calculated_by_percent >= $min_fee)
+            ? " Includes transfer fee of $currency " . formatnumber('amount', $currency, $fee_calculated_by_percent) . " (${fees_percent}%)"
+            : " Includes the minimum transfer fee of $currency $min_fee.";
+    }
+
+    return $remark;
+}
+
 rpc transfer_between_accounts => sub {
     my $params = shift;
     my $err;
@@ -1183,8 +1230,7 @@ rpc transfer_between_accounts => sub {
     my $error_audit_sub = sub {
         my ($err, $client_message) = @_;
         BOM::User::AuditLog::log("Account Transfer FAILED, $err");
-
-        $client_message ||= localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.');
+        $client_message ||= localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.' . $err);
         return _transfer_between_accounts_error($client_message);
     };
 
@@ -1201,6 +1247,19 @@ rpc transfer_between_accounts => sub {
         return $error_audit_sub->(
             $err, localize('Account transfers for this currency are suspended due to exchange rates. Please try again when market is open.')
         ) if ($err =~ /No rate available to convert/);
+
+        return $error_audit_sub->($err, localize('Account transfers are not possible between [_1] and [_2].', $from_currency, $to_currency))
+            if ($err =~ /No transfer fee/);
+
+        # Lower than min_unit in the receiving currency. The lower-bounds are not uptodate, otherwise we should not accept the amount in sending currency.
+        # To update them, transfer_between_accounts_fees is called again with force_refresh on.
+        return $error_audit_sub->(
+            $err,
+            localize(
+                "This amount is too low. Please enter a minimum of [_1] [_2].",
+                BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1)->{$from_currency}->{min},
+                $from_currency
+            )) if ($err =~ /The amount .* is below the minimum allowed amount .* for $to_currency/);
 
         return $error_audit_sub->($err);
     }
@@ -1277,13 +1336,10 @@ rpc transfer_between_accounts => sub {
     }
     my $response;
     try {
-        my $remark = 'Account transfer from ' . $loginid_from . ' to ' . $loginid_to . '.';
-        if ($fees) {
-            $remark .=
-                  " Includes transfer fee of $currency "
-                . formatnumber('amount', $currency, $fee_calculated_by_percent)
-                . " ($fees_percent %) or $currency $min_fee, whichever is higher.";
-        }
+        my $remark =
+            "Account transfer from $loginid_from to $loginid_to."
+            . get_transfer_fee_remark($fees, $fees_percent, $currency, $min_fee, $fee_calculated_by_percent);
+
         $response = $client_from->payment_account_transfer(
             currency          => $currency,
             amount            => $amount,
@@ -1437,14 +1493,11 @@ sub _validate_transfer_between_accounts {
     my $min_allowed_amount = BOM::Config::CurrencyConfig::transfer_between_accounts_limits()->{$currency}->{min};
 
     return _transfer_between_accounts_error(
-        localize(
-            'Provided amount is not within permissible limits. Minimum transfer amount for provided currency is [_1].',
-            formatnumber('amount', $currency, $min_allowed_amount))) if $amount < $min_allowed_amount;
+        localize('This amount is too low. Please enter a minimum of [_1] [_2].', formatnumber('amount', $currency, $min_allowed_amount), $currency))
+        if $amount < $min_allowed_amount;
 
-    return _transfer_between_accounts_error(
-        localize(
-            'Invalid amount. Amount provided can not have more than [_1] decimal places.',
-            Format::Util::Numbers::get_precision_config()->{amount}->{$currency})) if ($amount != financialrounding('amount', $currency, $amount));
+    my $err = validate_amount($amount, $currency);
+    return _transfer_between_accounts_error($err) if $err;
 
     my $to_currency_type = LandingCompany::Registry::get_currency_type($to_currency);
 
@@ -1464,7 +1517,7 @@ sub _validate_transfer_between_accounts {
     # we don't allow transfer between these two currencies
     if ($from_currency ne $to_currency) {
         my $disabled_for_transfer_currencies = BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies;
-        return _transfer_between_accounts_error(localize('Account transfers are not available between [_1] and [_2]', $from_currency, $to_currency))
+        return _transfer_between_accounts_error(localize('Account transfers are not available between [_1] and [_2].', $from_currency, $to_currency))
             if first { $_ eq $from_currency or $_ eq $to_currency } @$disabled_for_transfer_currencies;
     }
 
@@ -1477,7 +1530,7 @@ sub _validate_transfer_between_accounts {
     return undef;
 }
 
-sub _validate_amount {
+sub validate_amount {
     my ($amount, $currency) = @_;
 
     return localize('Invalid amount.') if ($amount !~ m/^(?:\d+\.?\d*|\.\d+)$/);

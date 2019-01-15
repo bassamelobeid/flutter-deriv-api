@@ -833,15 +833,21 @@ subtest 'multi currency transfers' => sub {
     my $after_crypto_fee = 1 - $btc_usd_fee;
     my $after_stable_fee = 1 - $ust_usd_fee;
 
-    BOM::Config::Runtime->instance->app_config->set({
-            'payments.transfer_between_accounts.fees.by_currency' => JSON::MaybeUTF8::encode_json_utf8({
-                    "EUR_USD" => $eur_usd_fee * 100,
-                    "USD_EUR" => $eur_usd_fee * 100,
-                    "BTC_USD" => $btc_usd_fee * 100,
-                    "USD_BTC" => $btc_usd_fee * 100,
-                    "UST_USD" => $ust_usd_fee * 100,
-                    "USD_UST" => $ust_usd_fee * 100
-                })});
+    my $mock_fees = Test::MockModule->new('BOM::Config::CurrencyConfig', no_auto => 1);
+    $mock_fees->mock(
+        transfer_between_accounts_fees => sub {
+            return {
+                'USD' => {
+                    'UST' => $ust_usd_fee * 100,
+                    'BTC' => $btc_usd_fee * 100,
+                    'EUR' => $eur_usd_fee * 100
+                },
+                'UST' => {'USD' => $ust_usd_fee * 100},
+                'BTC' => {'USD' => $btc_usd_fee * 100},
+                'EUR' => {'USD' => $eur_usd_fee * 100}
+
+            };
+        });
 
     subtest 'EUR tests' => sub {
         $manager_module->mock(
@@ -1042,13 +1048,20 @@ subtest 'multi currency transfers' => sub {
         $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error('withdraw USD->UST with rate >1 hour old - has error')
             ->error_code_is('MT5WithdrawalError', 'withdraw USD->UST with rate >1 hour old - correct error code');
     };
-    BOM::Config::Runtime->instance->app_config->set({'payments.transfer_between_accounts.fees.by_currency' => '{}'});
+
+    $mock_fees->unmock('transfer_between_accounts_fees');
 };
 
 subtest 'Transfers Limits' => sub {
+    $redis->hmset(
+        'exchange_rates::EUR_USD',
+        quote => 1.2,
+        epoch => time
+    );
+
     BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5(0);
     my $client = create_client('CR');
-    $client->set_default_account('USD');
+    $client->set_default_account('EUR');
     top_up $client, EUR => 1000;
     $user->add_client($client);
 
@@ -1069,6 +1082,39 @@ subtest 'Transfers Limits' => sub {
 
     # unlimit the transfers again
     BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5(999);
+
+    $deposit_params->{args}->{amount} = 2.001;
+    $c->call_ok('mt5_deposit', $deposit_params)->has_error('Transfers should have been stopped')
+        ->error_code_is('MT5DepositError', 'Transfers limit - correct error code')
+        ->error_message_is('There was an error processing the request. Invalid amount. Amount provided can not have more than 2 decimal places.',
+        'Transfers amount validation - correct error message');
+
+    $deposit_params->{args}->{amount} = 0.6;
+    $c->call_ok('mt5_deposit', $deposit_params)->has_error('Transfers should have been stopped')
+        ->error_code_is('MT5DepositError', 'Transfers limit - correct error code')
+        ->error_message_is('There was an error processing the request. Amount must be greater than EUR 0.83.',
+        'Transfers minimum - correct error message');
+
+    $redis->hmset(
+        'exchange_rates::EUR_USD',
+        quote => 10000,
+        epoch => time
+    );
+
+    my $withdraw_params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            from_mt5  => $DETAILS{login},
+            to_binary => $client->loginid,
+            amount    => 1,
+        },
+    };
+    $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error('Transfers should have been stopped')
+        ->error_code_is('MT5WithdrawalError', 'Lower bound - correct error code')
+        ->error_message_is('There was an error processing the request. This amount is too low. Please enter a minimum of 107.54 USD.',
+        'Lower bound - correct error message');
+
 };
 
 subtest 'Suspended Transfers Currencies' => sub {
@@ -1091,7 +1137,7 @@ subtest 'Suspended Transfers Currencies' => sub {
 
         $c->call_ok('mt5_deposit', $deposit_params)->has_error('Transfers should have been stopped')
             ->error_code_is('MT5DepositError', 'Transfer from suspended currency not allowed - correct error code')
-            ->error_message_is('There was an error processing the request. Account transfers are not available between BTC and USD',
+            ->error_message_is('There was an error processing the request. Account transfers are not available between BTC and USD.',
             'Transfer from suspended currency not allowed - correct error message');
 
     };
