@@ -4,11 +4,13 @@ use warnings;
 use Test::More;
 use Test::MockModule;
 use JSON::MaybeUTF8;
+use Format::Util::Numbers qw(get_min_unit financialrounding);
 
 use BOM::Config::CurrencyConfig;
 use BOM::Config::Runtime;
 
 my %fake_config;
+my $revision = 1;
 
 my $mock_app_config = Test::MockModule->new('App::Config::Chronicle', no_auto => 1);
 $mock_app_config->mock(
@@ -29,6 +31,9 @@ $mock_app_config->mock(
         }
         return $fake_config{$key} if ($fake_config{$key});
         return $mock_app_config->original('get')->(@_);
+    },
+    'current_revision' => sub {
+        return $revision;
     });
 
 subtest 'transfer_between_accounts_limits' => sub {
@@ -50,10 +55,108 @@ subtest 'transfer_between_accounts_limits' => sub {
 
     foreach (@all_currencies) {
         my $type = LandingCompany::Registry::get_currency_type($_);
+        $type = 'fiat' if LandingCompany::Registry::get_currency_definition($_)->{stable};
         my $min_default = ($type eq 'crypto') ? 9 : 90;
 
         cmp_ok($transfer_limits->{$_}->{min}, '==', $minimum->{$_} // $min_default, "Transfer between account minimum is correct for $_");
     }
+};
+
+subtest 'transfer_between_accounts_lower_bounds' => sub {
+    my $rates = {
+        USD => 1,
+        EUR => 1.2,
+        GBP => 1.5,
+        JPY => 0.01,
+        BTC => 5000,
+        BCH => 300,
+        LTC => 50,
+        ETH => 500,
+        DAI => 1,
+        UST => 1,
+        AUD => 0.8
+    };
+    my $mock_rates = Test::MockModule->new('ExchangeRates::CurrencyConverter', no_auto => 1);
+    $mock_rates->mock(
+        'in_usd' => sub {
+            my ($amount, $currency) = @_;
+            return $amount * $rates->{$currency} if $currency ne 'EUR';
+            die "EUR not available";
+        });
+
+    my $lower_bounds = {
+        'BCH' => '0.00005377',
+        'BTC' => '0.00000324',
+        'USD' => '0.04',
+        'AUD' => '0.04',
+        'GBP' => '0.03',
+        'ETH' => '0.00003227',
+        'EUR' => '0.03',
+        'UST' => '0.04',
+        'LTC' => '0.00032259',
+        'DAI' => '0.04'
+    };
+
+    is_deeply(BOM::Config::CurrencyConfig::transfer_between_accounts_lower_bounds(), $lower_bounds, 'Lower bounds are correct');
+
+    my $min_by_cyrrency = {
+        "USD" => 0.001,
+        "GBP" => 0.002,
+        "BTC" => 0.0000003,
+        "UST" => 0.004
+    };
+
+    my $app_config = BOM::Config::Runtime->instance->app_config();
+    $app_config->set({
+        'payments.transfer_between_accounts.minimum.by_currency'    => JSON::MaybeUTF8::encode_json_utf8($min_by_cyrrency),
+        'payments.transfer_between_accounts.minimum.default.crypto' => 0.00001,
+        'payments.transfer_between_accounts.minimum.default.fiat'   => 0.001,
+    });
+
+    my @all_currencies = LandingCompany::Registry::all_currencies();
+
+    my $transfer_limits = BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1);
+    is_deeply({map { $_ => financialrounding('amount', $_, $transfer_limits->{$_}->{min}) } @all_currencies},
+        $lower_bounds, 'Minimum values raised to lower bounds');
+
+    $min_by_cyrrency = {};
+    my $expected_min = {
+        'BCH' => '0.00100000',
+        'BTC' => '0.00100000',
+        'USD' => '1.00',
+        'AUD' => '1.00',
+        'GBP' => '1.00',
+        'ETH' => '0.00100000',
+        'EUR' => '1.00',
+        'UST' => '1.00',
+        'LTC' => '0.00100000',
+        'DAI' => '1.00'
+    };
+    $app_config->set({
+        'payments.transfer_between_accounts.minimum.by_currency'    => JSON::MaybeUTF8::encode_json_utf8($min_by_cyrrency),
+        'payments.transfer_between_accounts.minimum.default.crypto' => 0.001,
+        'payments.transfer_between_accounts.minimum.default.fiat'   => 1,
+    });
+
+    $transfer_limits = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
+    is_deeply({map { $_ => financialrounding('amount', $_, $transfer_limits->{$_}->{min}) } @all_currencies},
+        $lower_bounds, 'Minimum values are unchagend when they are not force to refresh.');
+
+    $transfer_limits = BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1);
+    is_deeply({map { $_ => financialrounding('amount', $_, $transfer_limits->{$_}->{min}) } @all_currencies},
+        $expected_min, 'Minimum values higher than the lower bounds (forced to refresh).');
+
+    $rates->{GBP} = 0.001;
+
+    my $new_transfer_limits = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
+    is_deeply($new_transfer_limits, $transfer_limits, 'Minimum values are the same if we don_t force refresh.');
+
+    $revision = 2;
+
+    $new_transfer_limits = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
+    is($new_transfer_limits->{GBP}->{min}, 10.76, 'Minimum values updated with changing app-config revision.');
+
+    $mock_rates->unmock_all();
 };
 
 subtest 'transfer_between_accounts_fees' => sub {

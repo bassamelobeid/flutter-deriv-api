@@ -164,7 +164,7 @@ payments:
               contains:
                 fiat:
                   isa: Num
-                  description: 'Default fiat transfer minimum'
+                  description: 'Default fiat and stable-coin transfer minimum'
                   default: 1
                   global: 1
                 crypto:

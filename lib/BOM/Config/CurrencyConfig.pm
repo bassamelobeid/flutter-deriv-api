@@ -14,11 +14,21 @@ use strict;
 use warnings;
 use feature 'state';
 
+use Try::Tiny;
 use JSON::MaybeUTF8;
+use Log::Any qw($log);
+use Format::Util::Numbers qw(get_min_unit financialrounding);
+use ExchangeRates::CurrencyConverter qw/convert_currency/;
 use List::Util qw(any);
 use Format::Util::Numbers;
 use LandingCompany::Registry;
+use List::Util qw(max);
+
 use BOM::Config::Runtime;
+
+use constant MAX_TRANSFER_FEE => 7;
+require Exporter;
+our @EXPORT_OK = qw(MAX_TRANSFER_FEE);
 
 my $_app_config;
 
@@ -32,9 +42,27 @@ sub app_config {
 
 Transfer limits are returned as a {currency => {min => 1}, ... } hash ref (there aren't any predefined maximum limits for now).
 These values are extracted from app_config->payment.transfer_between_accounts.minimum, editable in backoffice Dynamic Settings page.
+
+=over4
+
+=item * if true, transfer between accouts will be recalculated (a little expensive); otherwise, use the cached values.
+
+=back
+
 =cut
 
 sub transfer_between_accounts_limits {
+    my ($force_refresh) = @_;
+
+    state $currency_limits_cache = {};
+    my $current_revision = BOM::Config::Runtime->instance->app_config()->current_revision // '';
+    return $currency_limits_cache
+        if (not $force_refresh)
+        and $currency_limits_cache->{revision}
+        and ($currency_limits_cache->{revision} eq $current_revision);
+
+    my $lower_bounds = transfer_between_accounts_lower_bounds();
+
     my @all_currencies = LandingCompany::Registry::all_currencies();
 
     my $configs = app_config()->get([
@@ -43,15 +71,25 @@ sub transfer_between_accounts_limits {
     ]);
     my $configs_json = JSON::MaybeUTF8::decode_json_utf8($configs->{'payments.transfer_between_accounts.minimum.by_currency'});
 
-    my %currency_limits = map {
+    my $currency_limits;
+    foreach (@all_currencies) {
         my $type = LandingCompany::Registry::get_currency_type($_);
+        $type = 'fiat' if (LandingCompany::Registry::get_currency_definition($_)->{stable});
         my $min = $configs_json->{$_} // $configs->{"payments.transfer_between_accounts.minimum.default.$type"};
-        $_ => {
-            min => 0 + Format::Util::Numbers::financialrounding('price', $_, $min),
-            }
-    } @all_currencies;
+        my $lower_bound = $lower_bounds->{$_};
+        if ($min < $lower_bound) {
+            $log->tracef("The %s transfer minimum of %d in app_config->payements.transfer_between_accounts.minimum was too low. Raised to %d",
+                $_, $min, $lower_bound);
+            $min = $lower_bound;
+        }
+        $currency_limits->{$_} = {
+            min => 0 + Format::Util::Numbers::financialrounding('amount', $_, $min),
+        };
+    }
 
-    return \%currency_limits;
+    $currency_limits->{revision} = $current_revision;
+    $currency_limits_cache = $currency_limits;
+    return $currency_limits;
 }
 
 =head2 transfer_between_accounts_fees
@@ -90,6 +128,17 @@ sub transfer_between_accounts_fees {
                 my $to_category = $to_def->{stable} ? 'stable' : $to_def->{type};
                 my $fee = $fee_by_currency->{"${from_currency}_$to_currency"}
                     // $configs->{"payments.transfer_between_accounts.fees.default.${from_category}_$to_category"};
+                if ($fee < 0) {
+                    $log->tracef("The %s-%s transfer fee of %d in app_config->payements.transfer_between_accounts.fees was too low. Raised to 0",
+                        $from_currency, $to_currency, $fee);
+                    $fee = 0;
+                }
+                if ($fee > MAX_TRANSFER_FEE) {
+                    $log->tracef("The %s-%s transfer fee of %d app_config->payements.transfer_between_accounts.fees was too high. Lowered to %d",
+                        $from_currency, $to_currency, $fee, MAX_TRANSFER_FEE);
+                    $fee = MAX_TRANSFER_FEE;
+                }
+
                 $fees->{$to_currency} = 0 + Format::Util::Numbers::roundcommon(0.01, $fee);
             }
         }
@@ -100,6 +149,48 @@ sub transfer_between_accounts_fees {
     $currency_config->{revision} = $current_revision;
     $transfer_fees_cache = $currency_config;
     return $currency_config;
+}
+
+=head2 transfer_between_accounts_lower_bounds
+
+Calculates the minimum amount acceptable for all available currencies. 
+It should be guaranteed that tranfering any amount higher than the lower bound
+will not lead to depositing an amount less than the minimum unit for any receiving currency. 
+Reversing the calculations of BOM_Platform_Client_CashierValidation::calculate_to_amount_with_fees 
+it computes the amount of a source currency that would deposit at least a minmum unit of any receiving currency,
+considering the exchange rates and transfer fees (the maximum of which is %7) involved.
+It doesn't have any input arg and returns:
+
+=over4
+
+=item * A hash-ref containing the lower bounds of currencies, like: {USD => 0.03, EUR => 0.02, ... }
+
+=back
+
+=cut
+
+sub transfer_between_accounts_lower_bounds {
+    my @all_currencies = sort(LandingCompany::Registry::all_currencies());
+    my $result         = {};
+    for my $target_currency (@all_currencies) {
+        $result->{$target_currency} = 0;
+        for my $to_currency (@all_currencies) {
+            try {
+                my $amount = get_min_unit($to_currency);
+                $amount = convert_currency($amount, $to_currency, $target_currency) unless $target_currency eq $to_currency;
+                $amount = max($amount * 100 / (100 - MAX_TRANSFER_FEE), $amount + get_min_unit($target_currency));
+                $result->{$target_currency} = $amount if $result->{$target_currency} < $amount;
+            }
+            catch {
+                $log->tracef("No exchange rate for the currency pair %s-%s.", $target_currency, $to_currency);
+            };
+        }
+        # an extra min_unit is added to make for truncations in rounding
+        $result->{$target_currency} += get_min_unit($target_currency);
+        $result->{$target_currency} = financialrounding('amount', $target_currency, $result->{$target_currency});
+    }
+
+    return $result;
 }
 
 =head2 rate_expiry
