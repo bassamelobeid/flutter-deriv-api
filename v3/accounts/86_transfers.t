@@ -192,12 +192,12 @@ subtest 'transfer between accounts' => sub {
     $client_balance = $client_usd->default_account->balance;
 
     check_last_statement($t, $client_token, -$amount, 'withdrawal',
-        qr/^Account transfer from $from_id to $to_id. Includes transfer fee of USD .* \(.* %\).$/,
+        qr/^Account transfer from $from_id to $to_id. Includes transfer fee of USD .* \(.*%\).$/,
         $client_balance, $response->{transaction_id});
     check_last_statement(
         $t, $btc_token, $client_btc->default_account->balance,
         'deposit',
-        qr/^Account transfer from $from_id to $to_id. Includes transfer fee of USD .* \(.* %\).$/,
+        qr/^Account transfer from $from_id to $to_id. Includes transfer fee of USD .* \(.*%\).$/,
         $client_btc->default_account->balance
     );
 };
