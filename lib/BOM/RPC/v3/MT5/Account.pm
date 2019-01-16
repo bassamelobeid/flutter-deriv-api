@@ -1074,8 +1074,16 @@ async_rpc mt5_deposit => sub {
             try {
                 my $fee_calculated_by_percent = $response->{calculated_fee};
                 my $min_fee                   = $response->{min_fee};
-                $comment = "Transfer from $fm_loginid to MT5 account $to_mt5."
-                    . BOM::RPC::v3::Cashier::get_transfer_fee_remark($fees, $fees_percent, $fees_currency, $min_fee, $fee_calculated_by_percent);
+
+                $comment = "Transfer from $fm_loginid to MT5 account $to_mt5.";
+                my $additional_comment = BOM::RPC::v3::Cashier::get_transfer_fee_remark(
+                    fees                      => $fees,
+                    fee_percent               => $fees_percent,
+                    currency                  => $fees_currency,
+                    minimum_fee               => $min_fee,
+                    fee_calculated_by_percent => $fee_calculated_by_percent
+                );
+                $comment = "$comment $additional_comment" if $additional_comment;
 
                 $account = $fm_client->set_default_account($fm_client->currency);
                 ($payment) = $account->add_payment({
@@ -1179,8 +1187,16 @@ async_rpc mt5_withdrawal => sub {
             my $fee_calculated_by_percent = $response->{calculated_fee};
             my $min_fee                   = $response->{min_fee};
 
-            my $comment = "Transfer from MT5 account $fm_mt5 to $to_loginid."
-                . BOM::RPC::v3::Cashier::get_transfer_fee_remark($fees, $fees_percent, $fees_currency, $min_fee, $fee_calculated_by_percent);
+            my $comment            = "Transfer from MT5 account $fm_mt5 to $to_loginid.";
+            my $additional_comment = BOM::RPC::v3::Cashier::get_transfer_fee_remark(
+                fees                      => $fees,
+                fee_percent               => $fees_percent,
+                currency                  => $fees_currency,
+                minimum_fee               => $min_fee,
+                fee_calculated_by_percent => $fee_calculated_by_percent
+            );
+
+            $comment = "$comment $additional_comment" if $additional_comment;
 
             # withdraw from MT5 a/c
             return BOM::MT5::User::Async::withdrawal({

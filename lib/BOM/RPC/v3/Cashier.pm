@@ -1133,17 +1133,18 @@ Returns a string in one of the following forms:
 =cut
 
 sub get_transfer_fee_remark {
-    my ($fees, $fees_percent, $currency, $min_fee, $fee_calculated_by_percent) = @_;
+    my (%args) = @_;
 
-    my $remark = '';
-    if ($fees) {
-        $remark .=
-            ($fee_calculated_by_percent >= $min_fee)
-            ? " Includes transfer fee of $currency " . formatnumber('amount', $currency, $fee_calculated_by_percent) . " (${fees_percent}%)"
-            : " Includes the minimum transfer fee of $currency $min_fee.";
-    }
+    return '' unless $args{fees};
 
-    return $remark;
+    return "Includes transfer fee of $args{currency} "
+        . formatnumber(
+        amount => $args{currency},
+        $args{fee_calculated_by_percent})
+        . " ($args{fee_percent}%)."
+        if $args{fee_calculated_by_percent} >= $args{minimum_fee};
+
+    return "Includes the minimum transfer fee of $args{currency} $args{minimum_fee}.";
 }
 
 rpc transfer_between_accounts => sub {
@@ -1336,9 +1337,16 @@ rpc transfer_between_accounts => sub {
     }
     my $response;
     try {
-        my $remark =
-            "Account transfer from $loginid_from to $loginid_to."
-            . get_transfer_fee_remark($fees, $fees_percent, $currency, $min_fee, $fee_calculated_by_percent);
+        my $remark            = "Account transfer from $loginid_from to $loginid_to.";
+        my $additional_remark = get_transfer_fee_remark(
+            fees                      => $fees,
+            fee_percent               => $fees_percent,
+            currency                  => $currency,
+            minimum_fee               => $min_fee,
+            fee_calculated_by_percent => $fee_calculated_by_percent
+        );
+
+        $remark = "$remark $additional_remark" if $additional_remark;
 
         $response = $client_from->payment_account_transfer(
             currency          => $currency,
