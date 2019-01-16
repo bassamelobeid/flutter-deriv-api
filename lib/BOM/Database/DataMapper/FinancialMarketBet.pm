@@ -28,6 +28,7 @@ use BOM::Database::Model::FinancialMarketBet::LookbackOption;
 use BOM::Database::Model::FinancialMarketBet::ResetBet;
 use BOM::Database::Model::FinancialMarketBet::HighLowTick;
 use BOM::Database::Model::FinancialMarketBet::CallputSpread;
+use BOM::Database::Model::FinancialMarketBet::Runs;
 use Date::Utility;
 use Try::Tiny;
 
@@ -404,6 +405,9 @@ sub _fmb_rose_to_fmb_model {
     } elsif ($rose_object->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_CALLPUT_SPREAD) {
         $param->{'callput_spread_record'} = $rose_object->callput_spread;
         $model_class = 'BOM::Database::Model::FinancialMarketBet::CallputSpread';
+    } elsif ($rose_object->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_RUNS) {
+        $param->{'runs_record'} = $rose_object->runs;
+        $model_class = 'BOM::Database::Model::FinancialMarketBet::Runs';
     } else {
         Carp::croak('UNSUPPORTED rose_object class [' . $rose_object->bet_class . ']');
     }

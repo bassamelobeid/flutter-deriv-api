@@ -25,10 +25,12 @@ our $BET_CLASS_LOOKBACK_OPTION  = 'lookback_option';
 our $BET_CLASS_RESET_BET        = 'reset_bet';
 our $BET_CLASS_CALLPUT_SPREAD   = 'callput_spread';
 our $BET_CLASS_HIGH_LOW_TICK    = 'highlowticks';
+our $BET_CLASS_RUNS             = 'runs';
 
 # Constant reference to volatile hash
 our $BET_CLASS_TO_TYPE_MAP = {
     'spread_bet'       => ['SPREADU', 'SPREADD'],
+    'runs'             => ['RUNLOW',  'RUNHIGH'],
     'higher_lower_bet' => ['CALL',    'PUT', 'CALLE', 'PUTE', 'ASIANU', 'ASIAND'],
 
     'legacy_bet' => [
