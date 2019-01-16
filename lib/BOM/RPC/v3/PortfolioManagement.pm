@@ -154,13 +154,14 @@ sub populate_response_proposal_contract {
     foreach my $fmb (@{$contract_details}) {
         my $id = $fmb->{id};
         my $sell_time;
+        my $is_sold = $fmb->{is_sold} ? 1 : 0;    #change value from a JSON::PP::Boolean to just 1 or 0  as per API Docs
         $sell_time = Date::Utility->new($fmb->{sell_time})->epoch if $fmb->{sell_time};
         my $contract = {
             short_code            => $fmb->{short_code},
             contract_id           => $id,
             currency              => $client->currency,
             is_expired            => $fmb->{is_expired},
-            is_sold               => $fmb->{is_sold},
+            is_sold               => $is_sold,
             sell_price            => $fmb->{sell_price},
             buy_price             => $fmb->{buy_price},
             app_markup_percentage => $params->{app_markup_percentage},
@@ -181,7 +182,7 @@ sub populate_response_proposal_contract {
             $contract->{transaction_ids} = $transaction_ids;
             $contract->{buy_price}       = $fmb->{buy_price};
             $contract->{account_id}      = $fmb->{account_id};
-            $contract->{is_sold}         = $fmb->{is_sold};
+            $contract->{is_sold}         = $is_sold;
             $contract->{sell_time}       = $sell_time if $sell_time;
             $contract->{sell_price}      = formatnumber('price', $client->currency, $fmb->{sell_price}) if defined $fmb->{sell_price};
 
