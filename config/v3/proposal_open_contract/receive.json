@@ -25,7 +25,8 @@
                   "open",
                   "sold",
                   "won",
-                  "lost"
+                  "lost",
+                  null
                ],
                "description" : "Contract status. Will be 'sold' if the contract was sold back before expiry, 'won' if won and 'lost' if lost at expiry. Otherwise will be 'open'",
                "type" : [
