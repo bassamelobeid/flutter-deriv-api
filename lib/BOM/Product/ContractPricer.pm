@@ -18,6 +18,8 @@ use Pricing::Engine::TickExpiry;
 use Pricing::Engine::BlackScholes;
 use Pricing::Engine::Lookback;
 use Pricing::Engine::Reset;
+use Pricing::Engine::HighLow::Ticks;
+use Pricing::Engine::HighLow::Runs;
 use LandingCompany::Commission qw(get_underlying_base_commission);
 
 use BOM::MarketData qw(create_underlying_db);
@@ -365,7 +367,7 @@ sub _create_new_interface_engine {
             strike => $self->barrier ? $self->barrier->as_absolute : undef,
             contract_type => $self->pricing_code,
         );
-    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::HighLowTicks') {
+    } elsif ($self->pricing_engine_name eq 'Pricing::Engine::HighLow::Ticks' or $self->pricing_engine_name eq 'Pricing::Engine::HighLow::Runs') {
         %pricing_parameters = (
             contract_type => $self->pricing_code,
             selected_tick => $self->selected_tick,
@@ -673,7 +675,8 @@ sub _build_new_interface_engine {
         'Pricing::Engine::TickExpiry'           => 1,
         'Pricing::Engine::EuropeanDigitalSlope' => 1,
         'Pricing::Engine::Lookback'             => 1,
-        'Pricing::Engine::HighLowTicks'         => 1,
+        'Pricing::Engine::HighLow::Ticks'       => 1,
+        'Pricing::Engine::HighLow::Runs'        => 1,
         'Pricing::Engine::Reset'                => 1,
     );
 
@@ -882,6 +885,7 @@ sub _build_q_rate {
 sub _build_pricing_new {
     my $self = shift;
 
+    $self->date_pricing;
     # do not use $self->date_pricing here because milliseconds matters!
     # _date_pricing_milliseconds will not be set if date_pricing is not built.
     my $time = $self->_date_pricing_milliseconds // $self->date_pricing->epoch;

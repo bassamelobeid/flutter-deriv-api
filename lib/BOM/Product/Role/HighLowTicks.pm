@@ -3,6 +3,7 @@ package BOM::Product::Role::HighLowTicks;
 use Moose::Role;
 use BOM::Product::Exception;
 use Scalar::Util::Numeric qw/isint/;
+use BOM::Product::Pricing::Greeks::ZeroGreek;
 
 use constant DURATION_IN_TICKS => 5;
 use constant MIN_SELECTED_TICK => 1;
@@ -38,7 +39,7 @@ sub ticks_to_expiry {
 }
 
 sub _build_pricing_engine_name {
-    return 'Pricing::Engine::HighLowTicks';
+    return 'Pricing::Engine::HighLow::Ticks';
 }
 
 sub _build_greek_engine {

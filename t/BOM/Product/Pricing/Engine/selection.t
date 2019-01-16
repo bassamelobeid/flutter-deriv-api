@@ -77,6 +77,8 @@ subtest 'test everything' => sub {
                 )
             {
                 $contract_args->{selected_tick} = 1;
+            } elsif ($ref->{contract_type} eq 'RUNHIGH' or $ref->{contract_type} eq 'RUNLOW') {
+                $contract_args->{barrier} = 'S0P';
             } else {
                 $contract_args = {%$contract_args, %barriers};
             }

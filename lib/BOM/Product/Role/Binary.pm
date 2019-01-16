@@ -168,6 +168,8 @@ sub _build_staking_limits {
     my $per_contract_payout_limit = $static->{risk_profile}{$self->risk_profile->get_risk_profile}{payout}{$self->currency};
     my @possible_payout_maxes = ($bl_max, $per_contract_payout_limit);
     push @possible_payout_maxes, $static->{bet_limits}->{inefficient_period_payout_max}->{$self->currency} if $self->apply_market_inefficient_limit;
+    push @possible_payout_maxes, $static->{bet_limits}->{restricted_payout_contract_categories}->{$self->category_code}->{$self->currency}
+        if $static->{bet_limits}->{restricted_payout_contract_categories}->{$self->category_code};
 
     my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);
 

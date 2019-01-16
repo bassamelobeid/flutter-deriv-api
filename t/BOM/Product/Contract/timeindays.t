@@ -169,10 +169,8 @@ TODO: subtest Forex => sub {
         date_expiry => Date::Utility->new('29-Mar-12')->plus_time_interval('23h59m59s'),
     );
     is($bet->timeindays->amount, ($bet->date_expiry->epoch - $bet->date_start->epoch) / 86400, 'Three week FX bet in summer.');
-    cmp_ok(
-        $bet->vol_at_strike,
-        '==',
-        $bet->volsurface->get_volatility({
+    ok(
+        abs($bet->vol_at_strike - $bet->volsurface->get_volatility({
                 from   => $bet->effective_start,
                 to     => $bet->date_expiry,
                 spot   => 100,
@@ -180,7 +178,7 @@ TODO: subtest Forex => sub {
                 r_rate => $bet->r_rate,
                 q_rate => $bet->q_rate,
             },
-        ),
+        )) < 0.0001,
         'We select correct vol.'
     );
 
@@ -189,10 +187,8 @@ TODO: subtest Forex => sub {
         date_expiry => Date::Utility->new('30-Mar-12')->plus_time_interval('23h59m59s'),
     );
     is($bet->timeindays->amount, ($bet->date_expiry->epoch - $bet->date_start->epoch) / 86400, 'Three week FX bet in summer ending on Friday.');
-    cmp_ok(
-        $bet->vol_at_strike,
-        '==',
-        $bet->volsurface->get_volatility({
+    ok(
+        abs($bet->vol_at_strike - $bet->volsurface->get_volatility({
                 from   => $bet->effective_start,
                 to     => $bet->date_expiry,
                 spot   => 100,
@@ -200,7 +196,7 @@ TODO: subtest Forex => sub {
                 r_rate => $bet->r_rate,
                 q_rate => $bet->q_rate,
             },
-        ),
+        )) < 0.0001,
         'We select correct vol.'
     );
 

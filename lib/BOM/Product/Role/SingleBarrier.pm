@@ -47,6 +47,7 @@ sub _validate_barrier {
     my $current_spot = $self->current_spot;
 
     return ($barrier->all_errors)[0] if defined $barrier and not $barrier->confirm_validity;
+    return unless $self->has_user_defined_barrier;
 
     my ($min_move, $max_move) = (0.25, 2.5);
     my $abs_barrier = (defined $barrier) ? $barrier->as_absolute : undef;

@@ -282,18 +282,18 @@ sub _validate_price {
             },
             stake_outside_range => sub {
                 my ($details) = @_;
-                my $params = [$details->[0], $details->[1]];
+                my $params = [$details->[0], $details->[1], $details->[2]];
                 return {
                     message           => 'stake is not within limits ' . "[stake: " . $details->[0] . "] " . "[min: " . $details->[1] . "] ",
-                    message_to_client => [$ERROR_MAPPING->{StakePayoutLimits}, @$params],
+                    message_to_client => [$ERROR_MAPPING->{StakeLimits}, @$params],
                 };
             },
             payout_outside_range => sub {
                 my ($details) = @_;
-                my $params = [$details->[0], $details->[1]];
+                my $params = [$details->[0], $details->[1], $details->[2]];
                 return {
                     message => 'payout amount outside acceptable range ' . "[given: " . $details->[0] . "] " . "[max: " . $details->[1] . "]",
-                    message_to_client => [$ERROR_MAPPING->{StakePayoutLimits}, @$params],
+                    message_to_client => [$ERROR_MAPPING->{PayoutLimits}, @$params],
                 };
             },
             payout_too_many_places => sub {

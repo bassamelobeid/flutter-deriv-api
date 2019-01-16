@@ -44,7 +44,7 @@ subtest 'Test that contract can be created correctly' => sub {
         is $c->category->code, 'highlowticks';
         is_deeply $c->supported_expiries, ['tick'];
         isa_ok $c, 'BOM::Product::Contract::Ticklow';
-        is $c->pricing_engine_name, 'Pricing::Engine::HighLowTicks';
+        is $c->pricing_engine_name, 'Pricing::Engine::HighLow::Ticks';
         isa_ok $c->greek_engine,    'BOM::Product::Pricing::Greeks::ZeroGreek';
         ok $c->tick_expiry;
         is $c->tick_count,      5;

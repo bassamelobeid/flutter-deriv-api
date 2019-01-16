@@ -77,7 +77,7 @@ subtest 'prices' => sub {
 
             is $c->pricing_code, $bt_code, 'contract type';
 
-            is $c->pricing_engine_name, 'Pricing::Engine::HighLowTicks', 'pricing engine';
+            is $c->pricing_engine_name, 'Pricing::Engine::HighLow::Ticks', 'pricing engine';
             _check_amount($c->theo_probability,  $expect->{bs_prob}, 'bs_prob');
             _check_amount($c->commission_markup, $expect->{markup},  'markup');
         };
