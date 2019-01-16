@@ -99,7 +99,9 @@
                   "EXPIRYMISS",
                   "DIGITEVEN",
                   "TICKHIGH",
-                  "TICKLOW"
+                  "TICKLOW",
+                  "RUNHIGH",
+                  "RUNLOW"
                ]
             }
          ],

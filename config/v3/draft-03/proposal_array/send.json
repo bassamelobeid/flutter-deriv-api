@@ -28,7 +28,7 @@
         "contract_type": {
             "type": "array",
             "items": [
-                {"enum": ["UPORDOWN", "EXPIRYRANGE", "ONETOUCH", "CALLE", "LBHIGHLOW", "ASIAND", "EXPIRYRANGEE", "DIGITDIFF", "DIGITMATCH", "DIGITOVER", "PUTE", "DIGITUNDER", "NOTOUCH", "CALL", "RANGE", "LBFLOATPUT", "DIGITODD", "PUT", "ASIANU", "LBFLOATCALL", "EXPIRYMISSE", "EXPIRYMISS", "DIGITEVEN", "TICKHIGH", "TICKLOW"]
+                {"enum": ["UPORDOWN", "EXPIRYRANGE", "ONETOUCH", "CALLE", "LBHIGHLOW", "ASIAND", "EXPIRYRANGEE", "DIGITDIFF", "DIGITMATCH", "DIGITOVER", "PUTE", "DIGITUNDER", "NOTOUCH", "CALL", "RANGE", "LBFLOATPUT", "DIGITODD", "PUT", "ASIANU", "LBFLOATCALL", "EXPIRYMISSE", "EXPIRYMISS", "DIGITEVEN", "TICKHIGH", "TICKLOW", "RUNHIGH", "RUNLOW"]
                 }
             ],
             "description": "One or two valid contract-types.",

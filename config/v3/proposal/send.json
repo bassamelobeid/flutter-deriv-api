@@ -142,7 +142,9 @@
             "RESETCALL",
             "RESETPUT",
             "CALLSPREAD",
-            "PUTSPREAD"
+            "PUTSPREAD",
+            "RUNHIGH",
+            "RUNLOW"
          ],
          "description" : "The proposed contract type"
       }
