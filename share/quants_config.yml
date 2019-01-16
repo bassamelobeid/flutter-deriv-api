@@ -24,6 +24,33 @@ default_stake:
 bet_limits:
   holiday_blackout_start: 345
   holiday_blackout_end: 5
+  restricted_payout_contract_categories:
+    runs:
+      USD: 10000
+      EUR: 10000
+      AUD: 10000
+      GBP: 10000
+      BTC: 3
+      BCH: 10
+      ETH: 10
+      LTC: 50
+      ETC: 50
+      DAI: 1000
+      UST: 1000
+      USB: 1000
+    digits:
+      USD: 30000
+      EUR: 30000
+      AUD: 30000
+      GBP: 30000
+      BTC: 10
+      BCH: 50
+      ETH: 50
+      LTC: 50
+      ETC: 50
+      DAI: 5000
+      UST: 5000
+      USB: 5000
   inefficient_period_payout_max:
     USD: 200
     EUR: 200
