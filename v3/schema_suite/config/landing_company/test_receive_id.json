@@ -77,7 +77,7 @@
                             "required": "1",
                             "items": {
                                 "type": "string",
-                                "pattern": "^(asian|callput|callputequal|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread)$",
+                                "pattern": "^(asian|callput|callputequal|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|runs)$",
                                 "required": "1"
                             }
                         },
@@ -144,7 +144,7 @@
                             "required": "1",
                             "items": {
                                 "type": "string",
-                                "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|callputequal)$",
+                                "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|callputequal|runs)$",
                                 "required": "1"
                             }
                         },
