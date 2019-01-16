@@ -11,15 +11,15 @@ use Path::Tiny 'path';
 =head2
 
  This script:
- - creates our two daily MFID reporting files
+ - creates our two daily MFID reporting files for Binaries and two for MT5
 
 =cut
 
 my $specified_rptDate = $ARGV[0];
 my $brand = Brands->new(name => 'binary');
 
-my $report_recipients = join(',', $brand->emails('compliance'), 'bill@binary.com', 'x-acc@binary.com');
-my $failure_recipients = join(',', $brand->emails('compliance'), 'sysadmin@binary.com');
+my $report_recipients = join(',', 'compliance-alerts@binary.com', 'bill@binary.com', 'x-acc@binary.com');
+my $failure_recipients = join(',', 'compliance-alerts@binary.com', 'sysadmin@binary.com');
 
 # If we pass in a date, then we presumably want to report on that date
 # Yesterday is default
@@ -29,12 +29,14 @@ my $failure_recipients = join(',', $brand->emails('compliance'), 'sysadmin@binar
 my $rd = Date::Utility->new($specified_rptDate);
 
 # our files will be written out for reference
-my $fileTail = join('', $rd->year, sprintf('%02d', $rd->month), sprintf('%02d', $rd->day_of_month), '_', $rd->hour, $rd->minute, $rd->second);
-my $tradesFN = 'BIE001_trades_' . $fileTail . '.csv';
-my $usersFN  = 'BIE001_users_' . $fileTail . '.csv';
+my $fileTail     = join('', $rd->year, sprintf('%02d', $rd->month), sprintf('%02d', $rd->day_of_month), '_', $rd->hour, $rd->minute, $rd->second);
+my $tradesFN     = 'BIE001_trades_' . $fileTail . '.csv';
+my $usersFN      = 'BIE001_users_' . $fileTail . '.csv';
+my $mt5_tradesFN = 'BIE001_MT5_trades_' . $fileTail . '.csv';
+my $mt5_usersFN  = 'BIE001_MT5_users_' . $fileTail . '.csv';
 
-# where will they go under reports/ and create that if it doesn't yet exist
-my $reports_path = "/reports/Emir/@{[ $rd->year ]}";
+# where will they go
+my $reports_path = '/reports/Emir/' . $rd->year;
 path($reports_path)->mkpath;
 
 # now adjust our actual reporting date if we have not specified the same
@@ -42,10 +44,12 @@ $rd = $rd->minus_time_interval('1d') unless $specified_rptDate;
 my $rptDate = $rd->date_yyyymmdd;
 
 # just let PG/psql create the files directly
-my $rz = qx(/usr/bin/psql service=collector01 -v ON_ERROR_STOP=1 -X <<SQL
+my $rz = qx(/usr/bin/psql service=report -v ON_ERROR_STOP=1 -X <<SQL
     SET SESSION CHARACTERISTICS as TRANSACTION READ ONLY;
     \\COPY (SELECT * FROM mfid_trades_rpt('$rptDate')) TO '$reports_path/$tradesFN' WITH (FORMAT 'csv', DELIMITER ',', FORCE_QUOTE *, HEADER);
     \\COPY (SELECT * FROM mfid_users_rpt('$rptDate')) TO '$reports_path/$usersFN' WITH (FORMAT 'csv', DELIMITER ',', FORCE_QUOTE *, HEADER);
+    \\COPY (SELECT * FROM mt5.mfid_trades_rpt_mt5('$rptDate')) TO '$reports_path/$mt5_tradesFN' WITH (FORMAT 'csv', DELIMITER ',', FORCE_QUOTE *, HEADER);
+    \\COPY (SELECT * FROM mt5.mfid_users_rpt_mt5('$rptDate')) TO '$reports_path/$mt5_usersFN' WITH (FORMAT 'csv', DELIMITER ',', FORCE_QUOTE *, HEADER);
 SQL
 );
 
@@ -53,9 +57,11 @@ SQL
 # COPY 456
 # COPY 7890
 # COPY 0 can happen on the weekend for trades, but we will always produce a complete client list
-if ($rz =~ /COPY [0-9]+.*COPY [1-9]+/s) {
+# If there is a connection failure, that will result in something similar to this> psql: definition of service "report" not found
+# For errors resulting from the SQL it will be similar to this> ERROR:  column "fob" does not exist
+if ($rz !~ /psql:|ERROR:/s) {
 
-    my $upload_status = BOM::MapFintech::upload("$reports_path", [$tradesFN, $usersFN]);
+    my $upload_status = BOM::MapFintech::upload("$reports_path", [$tradesFN, $usersFN, $mt5_tradesFN, $mt5_usersFN]);
     my $message = $upload_status ? "There was a problem uploading files: $upload_status" : 'Files uploaded successfully';
     $message .= "\n\nSee attached.";
 
@@ -65,7 +71,7 @@ if ($rz =~ /COPY [0-9]+.*COPY [1-9]+/s) {
             to         => $report_recipients,
             subject    => "Emir reporting - $rptDate",
             message    => [$message],
-            attachment => ["$reports_path/$tradesFN", "$reports_path/$usersFN"]});
+            attachment => ["$reports_path/$tradesFN", "$reports_path/$usersFN", "$reports_path/$mt5_tradesFN", "$reports_path/$mt5_usersFN"]});
 } else {
     send_email({
             from    => 'sysadmin@binary.com',

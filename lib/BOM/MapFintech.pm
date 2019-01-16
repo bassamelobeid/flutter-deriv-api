@@ -2,7 +2,7 @@ package BOM::MapFintech;
 
 use strict;
 use warnings;
-
+use YAML::XS qw(LoadFile);
 use Net::SFTP::Foreign;
 
 =head1 NAME
@@ -41,7 +41,7 @@ sub upload {
 # In the interim, we need to use the pw they provided to us
 
 sub _by_pw {
-    my $config = YAML::XS::LoadFile('/etc/rmg/third_party.yml');
+    my $config = LoadFile('/etc/rmg/third_party.yml');
     return Net::SFTP::Foreign->new(
         $config->{mapfintech}->{host},
         user     => $config->{mapfintech}->{user},
@@ -49,7 +49,7 @@ sub _by_pw {
 }
 
 sub _by_public_key {
-    my $config = YAML::XS::LoadFile('/etc/rmg/third_party.yml');
+    my $config = LoadFile('/etc/rmg/third_party.yml');
     return Net::SFTP::Foreign->new(
         $config->{mapfintech}->{host},
         user     => $config->{mapfintech}->{user},
