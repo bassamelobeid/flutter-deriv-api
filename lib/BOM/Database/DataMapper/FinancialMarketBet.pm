@@ -264,7 +264,7 @@ sub get_sold_contracts {
     my $sold_contracts = try {
         $dbic->run(
             fixup => sub {
-                my $statement = "SELECT * FROM betonmarkets.get_client_sold_contracts(?, ?, ?, ?, ?, ?)";
+                my $statement = "SELECT * FROM betonmarkets.get_client_sold_contracts_v2(?, ?, ?, ?, ?, ?)";
                 my @bind_values = ($self->account->id, $first_purchase_time, $last_purchase_time, $order_type, $limit, $offset);
 
                 return $_->selectall_arrayref($statement, {Slice => {}}, @bind_values);
@@ -275,49 +275,6 @@ sub get_sold_contracts {
     };
 
     return $sold_contracts;
-}
-
-=head2 get_purchase_time_of_sold_contracts
-
-Fetch a single purchase time from client's sold contracts/bets based on given conditions
-Returns a string of purchase time in 'YYYY-DD-MM HH:MI:SS' format
-
-Arguments:
-
-=over 2
-
-=item C<order_type>, type "string"
-
-Ordering type of the list. Default is DESC
-
-=item C<offset>, type "int"
-
-Number of sold contracts to be skipped in the list. Default is 0.
-
-=back
-
-=cut
-
-sub get_purchase_time_of_sold_contracts {
-    my ($self, %args) = @_;
-    my $order_type = $args{order_type} || 'DESC';
-    my $offset     = $args{offset}     || 0;
-    my $dbic       = $self->db->dbic;
-
-    my $purchase_time = try {
-        $dbic->run(
-            fixup => sub {
-                my $statement     = "SELECT purchase_time FROM betonmarkets.get_client_sold_contracts(?, ?, ?, ?, ?, ?)";
-                my @bind_values   = ($self->account->id, undef, undef, $order_type, 1, $offset);
-                my $purchase_time = $_->selectcol_arrayref($statement, {Slice => {}}, @bind_values)->[0] || undef;
-                return $purchase_time;
-            });
-    }
-    catch {
-        die "Database Error: Unable to fetch the purchase time.\n";
-    };
-
-    return $purchase_time;
 }
 
 # we need to get buy sell transactions id for particular contract
