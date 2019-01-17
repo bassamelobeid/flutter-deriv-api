@@ -21,7 +21,7 @@
     <table id="dtr" border="1" cellpadding="1" cellspacing="0">
         <tr>
             <th>DATE</th>
-            [% FOREACH currency IN dtr.currencies %]
+            [% FOREACH currency IN dtr.currencies.sort %]
                 <th>[% dtr.buy_label %] ([% currency %])</th>
                 <th>[% dtr.sell_label %] ([% currency %])</th>
             [% END %]
@@ -36,7 +36,7 @@
             [% FOREACH day IN dtr.days %]
                 <tr[% IF day.is_weekend %] class="weekend"[% END %]>
                     <td>[% day.date %]</td>
-                    [% FOREACH currency IN dtr.currencies %]
+                    [% FOREACH currency IN dtr.currencies.sort%]
                         <td>[% IF day.buys.$currency %][% currency %]<br>[% commas(day.buys.$currency) %][% ELSE %]&nbsp;[% END %]</td>
                         <td>[% IF day.sells.$currency %][% currency %]<br>[% commas(day.sells.$currency) %][% ELSE %]&nbsp;[% END %]</td>
                     [% END %]
@@ -53,7 +53,7 @@
             [% END %]
         <tr>
             <td>TOTALS</td>
-            [% FOREACH currency IN dtr.currencies %]
+            [% FOREACH currency IN dtr.currencies.sort%]
                 <td><strong>[% currency %] [% commas(dtr.all_buys.$currency) %]</strong></td>
                 <td><strong>[% currency %] [% commas(dtr.all_sells.$currency) %]</strong></td>
             [% END %]

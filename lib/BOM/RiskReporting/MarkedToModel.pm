@@ -287,6 +287,7 @@ sub cache_daily_turnover {
     my $pricing_date = shift;
 
     my $curr_month    = Date::Utility->new('1-' . $pricing_date->months_ahead(0));
+    my $prev_month    = Date::Utility->new('1-' . $pricing_date->months_ahead(-1));
     my $report_mapper = BOM::Database::DataMapper::CollectorReporting->new({
         broker_code => 'FOG',
         operation   => 'collector'
@@ -315,7 +316,7 @@ sub cache_daily_turnover {
         # get latest time of previous month
         foreach my $time (@{$redis_time}) {
             my $bom_date = Date::Utility->new($time);
-            if ($bom_date->month == ($curr_month->month - 1)) {
+            if ($bom_date->month == $prev_month->month) {
                 push @prev_month, $bom_date;
 
                 if (not $latest_prev or $bom_date->epoch > $latest_prev->epoch) {
