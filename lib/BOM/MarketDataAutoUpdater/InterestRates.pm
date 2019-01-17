@@ -76,7 +76,7 @@ sub run {
             );
             $rates->save;
             $report->{$currency_symbol}->{success} = 1;
-            $self->_update_related_currency($data, qw(DAI UST)) if $currency_symbol eq 'USD';
+            $self->_update_related_currency($data, qw(UST)) if $currency_symbol eq 'USD';
         }
     }
 
@@ -117,8 +117,8 @@ sub _get_currency_and_term_from_BB_ticker {
     return;
 }
 
-# update related currency interest rates currently we have DAI/USD
-# we might have TUSD/USD in the future
+# update related currency interest rates currently we have UST/USD
+# we might have USB/USD in the future
 sub _update_related_currency {
     my ($self, $data, @related_currency) = @_;
     foreach (@related_currency) {

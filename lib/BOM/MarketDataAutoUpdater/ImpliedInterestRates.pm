@@ -196,7 +196,7 @@ sub run {
         $report->{$implied_symbol}->{success} = 1;
     }
 
-    my @crypto = qw(BTC BCH ETH ETC LTC DAI UST USB);
+    my @crypto = qw(BTC BCH ETH ETC LTC UST USB);
     my @fiat   = qw(USD EUR AUD JPY NZD CAD CHF GBP PLN NOK MXN SEK);
     my @pairs;
     for my $crypto (@crypto) {
