@@ -11,7 +11,7 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
 });
 
-my %rates = map { $_ => 100 } ('BCH', 'EUR', 'BTC', 'GBP', 'LTC', 'ETH', 'AUD', 'JPY', 'DAI', 'UST');
+my %rates = map { $_ => 100 } ('BCH', 'EUR', 'BTC', 'GBP', 'LTC', 'ETH', 'AUD', 'JPY', 'UST');
 populate_exchange_rates(\%rates);
 
 my $dashboard = BOM::RiskReporting::Dashboard->new(
