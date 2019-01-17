@@ -83,7 +83,7 @@ test_sendrecv_params 'new_account_real/test_send.json',      'new_account_real/t
 test_sendrecv_params 'authorize/test_send.json',             'authorize/test_receive_cr.json',
     $suite->get_stashed('new_account_real/new_account_real/oauth_token'), 'test@binary.com', 'Peter';
 test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '0\\\\.00', '', $suite->get_stashed('authorize/authorize/loginid');
-test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', '(USD|EUR|GBP|AUD|BTC|LTC|BCH|DAI|ETH|UST)', 9;
+test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', '(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST)', 9;
 
 # READ SCOPE CALLS (CR) BEFORE CHANGE
 test_sendrecv 'get_limits/test_send.json',   'get_limits/test_receive_cr.json';

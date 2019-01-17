@@ -35,7 +35,7 @@
                     "required": "1",
                     "items": {
                         "type": "string",
-                        "pattern": "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|DAI|UST|ETH)$",
+                        "pattern": "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|UST|ETH)$",
                         "required": "1"
                     }
                 },
