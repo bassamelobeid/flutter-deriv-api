@@ -49,8 +49,7 @@
                         }
                     },
 
-                    "minProperties" : 1,
-                    "maxProperties" : 1
+                    "minProperties" : 1
                 },
                 "performance_probability" : {
                     "type" : "number",
@@ -74,8 +73,7 @@
                             "description" : "Number of trades in percentage.",
                             "type" : "number"
                         },
-                        "minProperties" : 1,
-                        "maxProperties" : 1
+                        "minProperties" : 1
                     },
                     "type" : "object",
                     "description" : "Represents the portfolio distribution by markets."
@@ -109,7 +107,6 @@
                     },
                     "type" : "object",
                     "minProperties" : 1,
-                    "maxProperties" : 1,
                     "description" : "Represents the net change in equity per year."
                 }
             }

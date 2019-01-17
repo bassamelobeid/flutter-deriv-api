@@ -15,7 +15,7 @@
          "description" : "Markup to be added to contract prices (as a percentage of contract payout). Min: 0, Max: 5",
          "type" : "number",
          "minimum" : 0, 
-         "maximum" : 1 
+         "maximum" : 5 
       },
       "homepage" : {
          "description" : "Application's homepage",

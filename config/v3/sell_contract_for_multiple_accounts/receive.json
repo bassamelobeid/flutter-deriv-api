@@ -66,6 +66,10 @@
                            "contract_id" : {
                               "description" : "Internal contract identifier",
                               "type" : "integer"
+                           },
+                           "sell_time" : {
+                               "type" : "string",
+                               "description" : "date and time of sale YYYY-MM-dd hh:mm:ss format"
                            }
                         },
                         "type" : "object",

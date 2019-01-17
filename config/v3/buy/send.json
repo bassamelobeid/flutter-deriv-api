@@ -34,7 +34,7 @@
                "description" : "Markup added to contract prices (as a percentage of contract payout)"
             },
             "date_start" : {
-               "minimum" : 1,
+               "minimum" : 0,
                "type" : "integer",
                "description" : "For forward-starting contracts, epoch value of the starting time of the contract.",
                "maximum" : 9999999999
