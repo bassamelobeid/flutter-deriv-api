@@ -27,7 +27,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $now
-    }) for qw(USD DAI);
+    }) for qw(USD UST);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
@@ -274,7 +274,7 @@ subtest 'stable crypto as payout currency' => sub {
         bet_type     => 'CALL',
         duration     => '3d',
         barrier      => 'S0P',
-        currency     => 'DAI',
+        currency     => 'UST',
         payout       => 10,
         current_tick => $fake_tick,
     };
