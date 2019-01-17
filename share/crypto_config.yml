@@ -26,13 +26,6 @@ ETH:
         required_confirmations: 3
     protocol_cost: 0
     decimal_places: 18
-DAI:
-    withdrawal:
-        timeout: "5d"
-    confirmation:
-        required_confirmations: 3
-    protocol_cost: 0
-    decimal_places: 18
 UST:
     withdrawal:
         timeout: "3d"

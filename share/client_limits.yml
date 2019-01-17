@@ -8,7 +8,6 @@ maximum_daily_turnover:
   ETH: 100
   LTC: 500
   ETC: 500
-  DAI: 500000
   UST: 500000
   USB: 500000
 max_balance:
@@ -22,7 +21,6 @@ max_balance:
     ETH: 200
     LTC: 1000
     ETC: 1000
-    DAI: 1000000
     UST: 1000000
     USB: 1000000
   real:
@@ -35,7 +33,6 @@ max_balance:
     ETH: 100
     LTC: 500
     ETC: 500
-    DAI: 300000
     UST: 300000
     USB: 300000
 max_payout_open_positions:
@@ -48,7 +45,6 @@ max_payout_open_positions:
     ETH: 10
     LTC: 50
     ETC: 50
-    DAI: 50000
     UST: 50000
     USB: 50000
 max_open_bets_default: 100

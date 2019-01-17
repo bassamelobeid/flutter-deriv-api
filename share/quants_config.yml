@@ -6,7 +6,7 @@ commission:
     level_multiplier: 1.4
   adjustment:
     forward_start_factor: 1.5
-    
+
 default_stake:
   USD: 10
   EUR: 10
@@ -17,7 +17,6 @@ default_stake:
   ETH: 0.05
   LTC: 0.25
   ETC: 2
-  DAI: 10
   UST: 10
   USB: 10
 
@@ -61,7 +60,6 @@ bet_limits:
     ETH: 0.5
     LTC: 2.5
     ETC: 2.5
-    DAI: 200
     UST: 200
     USB: 200
   max_payout:
@@ -76,7 +74,6 @@ bet_limits:
         ETH: 10
         LTC: 50
         ETC: 50
-        DAI: 5000
         UST: 5000
         USB: 5000
   min_stake:
@@ -91,7 +88,6 @@ bet_limits:
         ETH: 0.002
         LTC: 0.01
         ETC: 0.05
-        DAI: 0.5
         UST: 0.5
         USB: 0.5
       volidx:
@@ -104,7 +100,6 @@ bet_limits:
         ETH: 0.002
         LTC: 0.01
         ETC: 0.05
-        DAI: 0.5
         UST: 0.5
         USB: 0.5
     maltainvest:
@@ -118,7 +113,6 @@ bet_limits:
         ETH: 0.02
         LTC: 0.1
         ETC: 1
-        DAI: 5
         UST: 5
         USB: 5
   min_commission_amount:
@@ -131,13 +125,12 @@ bet_limits:
     ETH: 0.00015
     LTC: 0.00075
     ETC: 0.0015
-    DAI: 0.02
     UST: 0.02
     USB: 0.02
 
 #Lookback option limits – the Value-at-risk approach
 #
-#In order to match the risk profile of lookback options with binary options, the 1% Value-at-risk (VaR) of each option and underlying are used as estimates the payoff of the option during adverse conditions – i.e. large movements on the underlying. The 1% VaR is defined such that the probability of losing more than the VaR is less than or equal to 1%. 
+#In order to match the risk profile of lookback options with binary options, the 1% Value-at-risk (VaR) of each option and underlying are used as estimates the payoff of the option during adverse conditions – i.e. large movements on the underlying. The 1% VaR is defined such that the probability of losing more than the VaR is less than or equal to 1%.
 #
 #The VaRs are computed using simulations with a starting underlying price of 1. Hence, one should multiply it by the current underlying price to arrive at the current VaR of the lookback option – this works because lookback option payoffs are proportional to current underlying price.
 #
@@ -170,7 +163,6 @@ lookback_limits:
     ETH: 3
     LTC: 3
     ETC: 3
-    DAI: 300
     UST: 300
     USB: 300
 
@@ -186,7 +178,6 @@ risk_profile:
           ETH: 0
           LTC: 0
           ETC: 0
-          DAI: 0
           UST: 0
           USB: 0
       payout:
@@ -199,7 +190,6 @@ risk_profile:
           ETH: 0
           LTC: 0
           ETC: 0
-          DAI: 0
           UST: 0
           USB: 0
   extreme_risk:
@@ -213,7 +203,6 @@ risk_profile:
           ETH: 2
           LTC: 10
           ETC: 10
-          DAI: 1000
           UST: 1000
           USB: 1000
       payout:
@@ -226,7 +215,6 @@ risk_profile:
           ETH: 0.2
           LTC: 1
           ETC: 1
-          DAI: 100
           UST: 100
           USB: 100
   moderate_risk:
@@ -240,7 +228,6 @@ risk_profile:
           ETH: 10
           LTC: 50
           ETC: 50
-          DAI: 5000
           UST: 5000
           USB: 5000
       payout:
@@ -253,7 +240,6 @@ risk_profile:
           ETH: 2
           LTC: 10
           ETC: 10
-          DAI: 1000
           UST: 1000
           USB: 1000
   high_risk:
@@ -267,7 +253,6 @@ risk_profile:
           ETH: 50
           LTC: 250
           ETC: 250
-          DAI: 50000
           UST: 50000
           USB: 50000
       payout:
@@ -280,7 +265,6 @@ risk_profile:
           ETH: 5
           LTC: 50
           ETC: 50
-          DAI: 5000
           UST: 5000
           USB: 5000
   medium_risk:
@@ -294,7 +278,6 @@ risk_profile:
           ETH: 50
           LTC: 250
           ETC: 250
-          DAI: 100000
           UST: 100000
           USB: 100000
       payout:
@@ -307,7 +290,6 @@ risk_profile:
           ETH: 5
           LTC: 50
           ETC: 50
-          DAI: 20000
           UST: 20000
           USB: 20000
   low_risk:
@@ -321,7 +303,6 @@ risk_profile:
           ETH: 100
           LTC: 500
           ETC: 500
-          DAI: 500000
           UST: 500000
           USB: 500000
       payout:
@@ -334,6 +315,5 @@ risk_profile:
           ETH: 10
           LTC: 50
           ETC: 50
-          DAI: 50000
           UST: 50000
           USB: 50000

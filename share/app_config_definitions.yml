@@ -154,9 +154,9 @@ payments:
           description: 'Transfer minimum amount'
           contains:
             by_currency:
-              description: 'Minimum amount for individual currencies; example: {"UST":1, "DAI":1, "GBP":1.8}'
+              description: 'Minimum amount for individual currencies; example: {"UST":1, "GBP":1.8}'
               isa: json_string
-              default: '{"UST":1, "DAI":1}'
+              default: '{"UST":1}'
               global: 1
             default:
               isa: section

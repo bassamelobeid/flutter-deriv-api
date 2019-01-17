@@ -72,7 +72,6 @@ subtest 'transfer_between_accounts_lower_bounds' => sub {
         BCH => 300,
         LTC => 50,
         ETH => 500,
-        DAI => 1,
         UST => 1,
         AUD => 0.8
     };
@@ -94,7 +93,6 @@ subtest 'transfer_between_accounts_lower_bounds' => sub {
         'EUR' => '0.03',
         'UST' => '0.04',
         'LTC' => '0.00032259',
-        'DAI' => '0.04'
     };
 
     is_deeply(BOM::Config::CurrencyConfig::transfer_between_accounts_lower_bounds(), $lower_bounds, 'Lower bounds are correct');
@@ -130,7 +128,6 @@ subtest 'transfer_between_accounts_lower_bounds' => sub {
         'EUR' => '1.00',
         'UST' => '1.00',
         'LTC' => '0.00100000',
-        'DAI' => '1.00'
     };
     $app_config->set({
         'payments.transfer_between_accounts.minimum.by_currency'    => JSON::MaybeUTF8::encode_json_utf8($min_by_cyrrency),
