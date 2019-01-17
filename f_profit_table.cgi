@@ -19,7 +19,7 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use Finance::Asset::Market::Registry;
 use BOM::ContractInfo;
 use Try::Tiny;
-
+use BOM::Product::ContractFactory qw(produce_contract);
 use Performance::Probability qw(get_performance_probability);
 
 use f_brokerincludeall;
@@ -71,58 +71,38 @@ my $first_purchase_time            = trim(request()->param('first_purchase_time'
 my $last_purchase_time             = trim(request()->param('last_purchase_time'));
 my $date_format_regex              = qr/\b[0-9]{4}-\b[0-9]{2}-\b[0-9]{2}$/;
 my $datetime_without_seconds_regex = qr/[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}$/;
-try {
-
-    if (!$first_purchase_time) {
-        %params = (order_type => 'ASC');
-        $first_purchase_time = $financial_market_data_mapper->get_purchase_time_of_sold_contracts(%params);
-    } else {
-        #Convert "YYYY-MM-DD HH:MI" into "YYYY-MM-DD HH:MI:00" format to prevent buggy behaviour of Date::Utility
-        $first_purchase_time .= ":00" if ($first_purchase_time =~ $datetime_without_seconds_regex);
-        $first_purchase_time = Date::Utility->new($first_purchase_time)->datetime_yyyymmdd_hhmmss;
-    }
+if ($first_purchase_time) {
+    #Convert "YYYY-MM-DD HH:MI" into "YYYY-MM-DD HH:MI:00" format to prevent buggy behaviour of Date::Utility
+    $first_purchase_time .= ":00" if ($first_purchase_time =~ $datetime_without_seconds_regex);
+    $first_purchase_time = Date::Utility->new($first_purchase_time)->datetime_yyyymmdd_hhmmss;
 }
-catch {
-    $error = "Error: First purchase date format is not valid (e.g. '2023-06-06' or '2023-06-06 06:06:06' ).\n";
-};
-if (!$error) {
-    try {
-        #Convert date format to datetime (timestamp) format
-        if (!$last_purchase_time) {
-            $last_purchase_time = $financial_market_data_mapper->get_purchase_time_of_sold_contracts();
-        } else {
-            if ($last_purchase_time =~ $date_format_regex) {
-                $last_purchase_time = Date::Utility->new($last_purchase_time)->plus_time_interval('86399s')->datetime_yyyymmdd_hhmmss;
-            } elsif ($last_purchase_time =~ $datetime_without_seconds_regex) {
-                #Convert "YYYY-MM-DD HH:MM" into "YYYY-MM-DD HH:MM:00" format to prevent buggy behaviour of Date::Utility
-                $last_purchase_time .= ":00";
-                $last_purchase_time = Date::Utility->new($last_purchase_time)->datetime_yyyymmdd_hhmmss;
-            } else {
-                $last_purchase_time = Date::Utility->new($last_purchase_time)->datetime_yyyymmdd_hhmmss;
-            }
-        }
+
+if ($last_purchase_time) {
+    if ($last_purchase_time =~ $date_format_regex) {
+        $last_purchase_time = Date::Utility->new($last_purchase_time)->plus_time_interval('86399s')->datetime_yyyymmdd_hhmmss;
+    } elsif ($last_purchase_time =~ $datetime_without_seconds_regex) {
+        #Convert "YYYY-MM-DD HH:MM" into "YYYY-MM-DD HH:MM:00" format to prevent buggy behaviour of Date::Utility
+        $last_purchase_time .= ":00";
+        $last_purchase_time = Date::Utility->new($last_purchase_time)->datetime_yyyymmdd_hhmmss;
+    } else {
+        $last_purchase_time = Date::Utility->new($last_purchase_time)->datetime_yyyymmdd_hhmmss;
     }
-    catch {
-        $error = "Error: Last purchase date format is not valid (e.g. '2023-06-06' or '2023-06-06 06:06:06' ).\n";
-    };
 }
 
 ##Fetch sold contracts based on the input conditions if validation of inputs is passed.
 my $sold_contracts = [];
-if (!$error) {
-    %params = (
-        first_purchase_time => $first_purchase_time,
-        last_purchase_time  => $last_purchase_time,
-        limit               => $limit,
-        offset              => $offset
-    );
-    $sold_contracts = try {
-        $financial_market_data_mapper->get_sold_contracts(%params)
-    }
-    catch {
-        $error = $_;
-    };
+%params = (
+    $first_purchase_time ? (first_purchase_time => $first_purchase_time) : (),
+    $last_purchase_time  ? (last_purchase_time  => $last_purchase_time)  : (),
+    limit  => $limit,
+    offset => $offset
+);
+$sold_contracts = try {
+    $financial_market_data_mapper->get_sold_contracts(%params)
 }
+catch {
+    $error = $_;
+};
 
 ##Handle pagination
 my $has_newer_page      = ($page > 1) ? 1 : 0;
@@ -147,7 +127,8 @@ my @start_time;
 my @sell_time;
 my @underlying_symbol;
 my @bet_type;
-
+my @exit_tick_epoch;
+my @barriers;
 my $cumulative_pnl = 0;
 
 my $performance_probability;
@@ -159,7 +140,18 @@ if (defined $do_calculation && $sold_contracts_size) {
         my $start_epoch = Date::Utility->new($contract->{start_time})->epoch;
         my $sell_epoch  = Date::Utility->new($contract->{sell_time})->epoch;
 
-        if ($contract->{bet_type} =~ /^CALL/ or $contract->{bet_type} =~ /^PUT/) {
+        if (   $contract->{bet_type} eq 'CALL'
+            or $contract->{bet_type} eq 'PUT'
+            or $contract->{bet_type} eq 'CALLE'
+            or $contract->{bet_type} eq 'PUTE'
+            or $contract->{bet_type} =~ /^DIGIT/)
+        {
+
+            my $c = try { produce_contract($contract->{short_code}, 'USD') } catch { undef };
+            next unless $c;
+
+            push @exit_tick_epoch,   $c->exit_tick->epoch;
+            push @barriers,          $c->barrier->as_absolute;
             push @start_time,        $start_epoch;
             push @sell_time,         $sell_epoch;
             push @buy_price,         $contract->{buy_price};
@@ -173,13 +165,15 @@ if (defined $do_calculation && $sold_contracts_size) {
 
     if (scalar(@start_time) > 0) {
         $performance_probability = Performance::Probability::get_performance_probability({
-            payout       => \@payout_price,
-            bought_price => \@buy_price,
-            pnl          => $cumulative_pnl,
-            types        => \@bet_type,
-            underlying   => \@underlying_symbol,
-            start_time   => \@start_time,
-            sell_time    => \@sell_time,
+            payout          => \@payout_price,
+            bought_price    => \@buy_price,
+            pnl             => $cumulative_pnl,
+            types           => \@bet_type,
+            underlying      => \@underlying_symbol,
+            start_time      => \@start_time,
+            sell_time       => \@sell_time,
+            exit_tick_epoch => \@exit_tick_epoch,
+            barriers        => \@barriers,
         });
 
         $inv_performance_probability = roundcommon(0.01, 1 / ($performance_probability + machine_epsilon()));

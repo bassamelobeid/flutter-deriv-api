@@ -110,7 +110,8 @@
            checked="checked" [% END %]>Show All Transactions
     <input type="submit" value="Update">
     <input type="submit" name="calc_performance_probability" value="Calculate Performance Probability">
-</form>
+    <p> Note: Performance probability calculation just taking into account CALL/PUT and Digit contracts.
+    <p> It is a likelihood measure of a client reaching his/her current PL. Hence the lower the value of this probability indicates the less likelihood can achieve such success rate repeatedly.</form>
 
 [% IF performance_probability %]
 <div class="grd-with-padding">
