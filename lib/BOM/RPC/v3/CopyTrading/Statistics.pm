@@ -17,6 +17,7 @@ use BOM::Database::DataMapper::Copier;
 use BOM::MarketData qw(create_underlying);
 use BOM::Platform::Context qw (localize);
 use BOM::Config::RedisReplicated;
+use BOM::Product::ContractFactory qw(produce_contract);
 
 rpc copytrading_statistics => sub {
     my $params = shift->{args};
@@ -133,7 +134,17 @@ rpc copytrading_statistics => sub {
         my $start_epoch = Date::Utility->new($contract->{start_time})->epoch;
         my $sell_epoch  = Date::Utility->new($contract->{sell_time})->epoch;
 
-        if ($contract->{bet_type} eq 'CALL' or $contract->{bet_type} eq 'PUT') {
+        if (   $contract->{bet_type} eq 'CALL'
+            or $contract->{bet_type} eq 'PUT'
+            or $contract->{bet_type} eq 'CALLE'
+            or $contract->{bet_type} eq 'PUTE'
+            or $contract->{bet_type} =~ /^DIGIT/)
+        {
+            my $c;
+            try { $c = produce_contract($contract->{short_code}, 'USD'); } catch { next; }
+
+            push @{$contract_parameters->{exit_tick_epoch}},   $c->exit_tick->epoch;
+            push @{$contract_parameters->{barriers}},          $c->barrier->as_absolute;
             push @{$contract_parameters->{start_time}},        $start_epoch;
             push @{$contract_parameters->{sell_time}},         $sell_epoch;
             push @{$contract_parameters->{buy_price}},         $contract->{buy_price};
@@ -152,13 +163,15 @@ rpc copytrading_statistics => sub {
             $result_hash->{performance_probability} = sprintf(
                 "%.4f",
                 1 - Performance::Probability::get_performance_probability({
-                        pnl          => $cumulative_pnl,
-                        payout       => $contract_parameters->{payout_price},
-                        bought_price => $contract_parameters->{buy_price},
-                        types        => $contract_parameters->{bet_type},
-                        underlying   => $contract_parameters->{underlying_symbol},
-                        start_time   => $contract_parameters->{start_time},
-                        sell_time    => $contract_parameters->{sell_time},
+                        pnl             => $cumulative_pnl,
+                        payout          => $contract_parameters->{payout_price},
+                        bought_price    => $contract_parameters->{buy_price},
+                        types           => $contract_parameters->{bet_type},
+                        underlying      => $contract_parameters->{underlying_symbol},
+                        start_time      => $contract_parameters->{start_time},
+                        sell_time       => $contract_parameters->{sell_time},
+                        exit_tick_epoch => $contract_parameters->{exit_tick_epoch},
+                        barriers        => $contract_parameters->{barriers},
                     }));
         }
         catch {
