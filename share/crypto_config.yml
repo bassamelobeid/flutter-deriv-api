@@ -1,6 +1,7 @@
 BTC:
     withdrawal:
         timeout: "3d"
+        min_usd: 5
     confirmation:
         required_confirmations: 3
     protocol_cost: 0
@@ -8,6 +9,7 @@ BTC:
 LTC:
     withdrawal:
         timeout: "3d"
+        min_usd: 5
     confirmation:
         required_confirmations: 3
     protocol_cost: 0
@@ -15,6 +17,7 @@ LTC:
 BCH:
     withdrawal:
         timeout: "3d"
+        min_usd: 5
     confirmation:
         required_confirmations: 3
     protocol_cost: 0
@@ -22,6 +25,7 @@ BCH:
 ETH:
     withdrawal:
         timeout: "5d"
+        min_usd: 5
     confirmation:
         required_confirmations: 3
     protocol_cost: 0
@@ -29,6 +33,7 @@ ETH:
 UST:
     withdrawal:
         timeout: "3d"
+        min_usd: 5
     confirmation:
         required_confirmations: 3
     protocol_cost: 0.00000546
@@ -36,6 +41,7 @@ UST:
 USB:
     withdrawal:
         timeout: "3d"
+        min_usd: 5
     confirmation:
         required_confirmations: 3
     protocol_cost: 0
