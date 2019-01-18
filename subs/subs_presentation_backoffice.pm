@@ -269,6 +269,19 @@ sub vk_BOtopPRES    #this sub executed in BrokerPresentation
         . qq~" class="Blue" style="margin-left: 10px;">Investigative Tools</a>
 								</td>
 							</tr>
+							
+							<tr>
+								<td colspan="3" class="ParamTblCell" style="padding-bottom: 3px; padding-top: 3px;" width="$vk_BOmenuWidth">
+									<a href="~
+        . request()->url_for(
+        'backoffice/f_client_anonymization.cgi',
+        {
+            _r     => $rand,
+            broker => $broker
+        })
+        . qq~" class="Blue" style="margin-left: 10px;">Client Anonymization</a>
+								</td>
+							</tr>
       </tbody>
      </table>
     </td>

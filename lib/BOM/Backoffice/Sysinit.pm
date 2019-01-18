@@ -75,6 +75,9 @@ my $permissions = {
     'email_templates.cgi'             => ['CS'],
     'send_emails.cgi'                 => ['CS'],
 
+    'f_client_anonymization.cgi'     => ['Compliance'],
+    'f_client_anonymization_dcc.cgi' => ['Compliance'],
+
     'download_document.cgi'       => ['CS', 'Compliance', 'Quants', 'IT'],
     'f_client_combined_audit.cgi' => ['CS', 'Compliance'],
     'f_dailyturnoverreport.cgi' => ['Accounts', 'Quants', 'IT'],

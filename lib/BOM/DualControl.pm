@@ -84,15 +84,24 @@ sub batch_payment_control_code {
     return $code;
 }
 
+sub client_anonymization_control_code {
+    my ($self, $loginid) = @_;
+
+    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')
+        ->encrypt_payload(data => join('_##_', time, $self->staff, $self->transactiontype, $loginid, $self->_environment));
+
+    Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
+
+    return $code;
+}
+
 sub validate_client_control_code {
     my ($self, $incode, $email, $user_id) = @_;
 
     my $code = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
     my $error_status = $self->_validate_empty_code($code);
     return $error_status if $error_status;
-    $error_status = $self->_validate_client_code_is_valid($code);
-    return $error_status if $error_status;
-    $error_status = $self->_validate_code_expiry($code);
+    $error_status = $self->_validate_code_element_count($code, 6);
     return $error_status if $error_status;
     $error_status = $self->_validate_environment($code);
     return $error_status if $error_status;
@@ -104,7 +113,7 @@ sub validate_client_control_code {
     return $error_status if $error_status;
     $error_status = $self->_validate_client_userid($code, $user_id);
     return $error_status if $error_status;
-    $error_status = $self->_validate_client_code_already_used($incode);
+    $error_status = $self->_validate_code_already_used($incode);
     return $error_status if $error_status;
     return;
 }
@@ -116,9 +125,7 @@ sub validate_payment_control_code {
 
     my $error_status = $self->_validate_empty_code($code);
     return $error_status if $error_status;
-    $error_status = $self->_validate_payment_code_is_valid($code);
-    return $error_status if $error_status;
-    $error_status = $self->_validate_code_expiry($code);
+    $error_status = $self->_validate_code_element_count($code, 7);
     return $error_status if $error_status;
     $error_status = $self->_validate_environment($code);
     return $error_status if $error_status;
@@ -134,7 +141,7 @@ sub validate_payment_control_code {
     return $error_status if $error_status;
     $error_status = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($self->staff, in_usd($amount, $currency));
     return $error_status if $error_status;
-    $error_status = $self->_validate_payment_code_already_used($incode);
+    $error_status = $self->_validate_code_already_used($incode);
     return $error_status if $error_status;
 
     return;
@@ -147,9 +154,7 @@ sub validate_batch_payment_control_code {
 
     my $error_status = $self->_validate_empty_code($code);
     return $error_status if $error_status;
-    $error_status = $self->_validate_batch_payment_code_is_valid($code);
-    return $error_status if $error_status;
-    $error_status = $self->_validate_code_expiry($code);
+    $error_status = $self->_validate_code_element_count($code, 5);
     return $error_status if $error_status;
     $error_status = $self->_validate_environment($code);
     return $error_status if $error_status;
@@ -159,9 +164,29 @@ sub validate_batch_payment_control_code {
     return $error_status if $error_status;
     $error_status = $self->_validate_filelinescount($code, $lines);
     return $error_status if $error_status;
-    $error_status = $self->_validate_payment_code_already_used($incode);
+    $error_status = $self->_validate_code_already_used($incode);
     return $error_status if $error_status;
 
+    return;
+}
+
+sub validate_client_anonymization_control_code {
+    my ($self, $incode, $loginid) = @_;
+    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
+    my $error_status = $self->_validate_empty_code($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_code_element_count($code, 5);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_environment($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_fellow_staff($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_transaction_type($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_payment_loginid($code, $loginid);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_code_already_used($incode);
+    return $error_status if $error_status;
     return;
 }
 
@@ -177,53 +202,14 @@ sub _validate_empty_code {
     return;
 }
 
-sub _validate_client_code_is_valid {
-    my ($self, $code) = @_;
+sub _validate_code_element_count {
+    my ($self, $code, $element_count) = @_;
 
     my @arry = split("_##_", $code);
-    if (@arry != 6) {
+    if (@arry != $element_count) {
         return Error::Base->cuss(
             -type => 'InvalidClientCode',
-            -mesg => 'Dual control code is not valid',
-        );
-    }
-    return;
-}
-
-sub _validate_payment_code_is_valid {
-    my ($self, $code) = @_;
-
-    my @arry = split("_##_", $code);
-    if (@arry != 7) {
-        return Error::Base->cuss(
-            -type => 'InvalidPaymentCode',
-            -mesg => 'Dual control code is not valid',
-        );
-    }
-    return;
-}
-
-sub _validate_batch_payment_code_is_valid {
-    my ($self, $code) = @_;
-
-    my @arry = split("_##_", $code);
-    if (@arry != 5) {
-        return Error::Base->cuss(
-            -type => 'InvalidBatchPaymentCode',
-            -mesg => 'Dual control code is not valid',
-        );
-    }
-    return;
-}
-
-sub _validate_code_expiry {
-    my ($self, $code) = @_;
-
-    my @arry = split("_##_", $code);
-    if (Date::Utility->new->date_yyyymmdd ne Date::Utility->new($arry[0])->date_yyyymmdd) {
-        return Error::Base->cuss(
-            -type => 'CodeExpired',
-            -mesg => 'The code provided has expired. Please generate new one.',
+            -mesg => 'Dual control code has unexpected number of elements',
         );
     }
     return;
@@ -255,21 +241,7 @@ sub _validate_transaction_type {
     return;
 }
 
-sub _validate_payment_code_already_used {
-    my ($self, $code) = @_;
-
-    if (Cache::RedisDB->get('DUAL_CONTROL_CODE', $code)) {
-        Cache::RedisDB->del('DUAL_CONTROL_CODE', $code);
-    } else {
-        return Error::Base->cuss(
-            -type => 'CodeAlreadyUsed',
-            -mesg => 'This control code has already been used or already expired',
-        );
-    }
-    return;
-}
-
-sub _validate_client_code_already_used {
+sub _validate_code_already_used {
     my ($self, $code) = @_;
 
     if (Cache::RedisDB->get('DUAL_CONTROL_CODE', $code)) {
