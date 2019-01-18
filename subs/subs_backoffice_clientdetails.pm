@@ -89,6 +89,28 @@ sub allow_uplift_self_exclusion {
     return 0;
 }
 
+=head2 
+
+This sub returns any of the four: Pending, Approved, Rejected, None
+In terms of priority, rejected has higher priority than approved, and approved has higher priority than pending.
+In the worst case scenario, the client might have both professional_rejected and professional statuses
+In cases like this, we assume the client is rejected because there must be a reason why compliance rejected him/her in the first place.
+
+=cut 
+
+sub get_professional_status {
+
+    my $client = shift;
+
+    return 'Rejected' if $client->status->professional_rejected;
+
+    return 'Approved' if $client->status->professional;
+
+    return 'Pending' if $client->status->professional_requested;
+
+    return 'None';
+}
+
 sub print_client_details {
 
     my $client = shift;
@@ -204,15 +226,15 @@ sub print_client_details {
         $stateoptions .= qq|<option value="$_->{value}">$_->{text}</option>|;
     }
 
-    my $tnc_status                     = $client->status->tnc_approval;
-    my $crs_tin_status                 = $client->status->crs_tin_information;
-    my $show_allow_professional_client = $client->landing_company->short =~ /^(?:costarica|maltainvest)$/ ? 1 : 0;
+    my $tnc_status     = $client->status->tnc_approval;
+    my $crs_tin_status = $client->status->crs_tin_information;
 
     my @tax_residences =
         $client->tax_residence
         ? split ',', $client->tax_residence
         : ();
     my $tax_residences_countries_name;
+
     if (@tax_residences) {
         $tax_residences_countries_name = join ',', map { code2country($_) } @tax_residences;
     }
@@ -240,8 +262,8 @@ sub print_client_details {
         secret_answer                  => $secret_answer,
         can_decode_secret_answer       => $can_decode_secret_answer,
         self_exclusion_enabled         => $self_exclusion_enabled,
-        client_professional_status     => $client->status->professional,
-        show_allow_professional_client => $show_allow_professional_client,
+        show_allow_professional_client => ($client->landing_company->short =~ /^(?:costarica|maltainvest)$/) ? 1 : 0,
+        professional_status            => get_professional_status($client),
         show_funds_message             => ($client->residence eq 'gb' and not $client->is_virtual) ? 1 : 0,
         show_risk_approval => ($client->landing_company->short eq 'maltainvest') ? 1 : 0,
         show_tnc_status => ($client->is_virtual) ? 0 : 1,
@@ -318,7 +340,7 @@ sub build_client_warning_message {
             . request()->url_for(
             "backoffice/untrusted_client_edit.cgi",
             {
-                untrusted_action      => 'remove_data',
+                untrusted_action      => 'remove_status',
                 login_id              => $login_id,
                 broker                => $broker,
                 untrusted_action_type => $action_type
@@ -692,6 +714,11 @@ sub get_untrusted_types {
             'linktype' => 'ukgcauthenticated',
             'comments' => 'UKGC authenticated',
             'code'     => 'ukgc_authenticated'
+        },
+        {
+            'linktype' => 'professionalrequested',
+            'comments' => 'Professional requested',
+            'code'     => 'professional_requested'
         },
     ];
 }

@@ -58,7 +58,11 @@ table#client_edit td{
         last_check = client.sanctions_check;
 -%]
         <td class="label">Last sanctions check run</td>
-        <td>: <b>[% last_check.result %]</b> [% last_check.tstmp %] [% last_check.type == 'R' ? 'Registration' : 'Cron'%]</td>
+        <td>: [% last_check.tstmp %] [% last_check.type == 'R' ? 'Registration' : 'Cron'%]</td>
+    </tr>
+    <tr>
+        <td class="label">Client's Professional status</td>
+        <td>: <b>[% professional_status %]</b> </td>
     </tr>
     <tr>
         <td class="small_header" colspan="2">#AFFILIATE INFO</td>
@@ -545,13 +549,13 @@ IF client_for_prove
     [% IF show_allow_professional_client %]
         <tr>
             <td class="label">
-                <input type="radio" name="professional_client" value="1" [% IF client_professional_status %]checked[% END %]/>
+                <input type="radio" name="professional_client" value="1" [% IF professional_status == 'Approved' %]checked[% END %]/>
             </td>
             <td>Mark client as a Professional investor</td>
         </tr>
         <tr>
             <td class="label">
-                <input type="radio" name="professional_client" value="0" [% IF !client_professional_status %]checked[% END %]/>
+                <input type="radio" name="professional_client" value="0" [% IF professional_status != 'Approved' %]checked[% END %]/>
             </td>
             <td> Mark client as a Retail </td>
         </tr>

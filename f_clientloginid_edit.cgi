@@ -439,23 +439,29 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         my $result = "";
 
         # Only allow CR and MF
-        foreach my $existing_client (map { $user->clients_for_landing_company($_) } qw/costarica maltainvest/) {
-            my $existing_client_loginid = encode_entities($existing_client->loginid);
+        foreach my $client (map { $user->clients_for_landing_company($_) } qw/costarica maltainvest/) {
+            my $loginid = encode_entities($client->loginid);
 
             try {
                 if ($input{professional_client}) {
-                    $existing_client->status->multi_set_clear({
+
+                    $client->status->multi_set_clear({
                         set        => ['professional'],
-                        clear      => ['professional_requested'],
+                        clear      => ['professional_requested', 'professional_rejected'],
                         staff_name => $clerk,
                         reason     => 'Mark as professional as requested',
                     });
                 } else {
-                    $existing_client->status->clear_professional;
+                    $client->status->multi_set_clear({
+                        set        => ['professional_rejected'],
+                        clear      => ['professional'],
+                        staff_name => $clerk,
+                        reason     => 'Revoke professional status',
+                    });
                 }
             }
             catch {
-                $result .= "<p>Failed to update professional status of client: $existing_client_loginid</p>";
+                $result .= "<p>Failed to update professional status of client: $loginid</p>";
             }
         }
 
