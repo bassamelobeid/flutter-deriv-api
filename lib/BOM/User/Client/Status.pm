@@ -22,7 +22,7 @@ my @status_codes = qw(
     mt5_withdrawal_locked  ukgc_funds_protection  financial_risk_approval
     crs_tin_information  ukrts_max_turnover_limit_not_set
     jp_knowledge_test_pending  jp_knowledge_test_fail  jp_activation_pending
-    jp_transaction_detail  professional_requested  professional  tnc_approval
+    jp_transaction_detail  professional_requested  professional professional_rejected  tnc_approval
     migrated_single_email  duplicate_account  proveid_pending  proveid_requested
     require3ds  skip_3ds  ok  ico_only  allowed_other_card  can_authenticate
     social_signup  trusted pa_withdrawal_explicitly_allowed ukgc_authenticated
