@@ -673,8 +673,7 @@ sub set_professional_status {
     catch { $error = client_error() };
     return $error if $error;
 
-    send_professional_requested_email($client->loginid, $client->residence, $client->landing_company->short)
-        if $set_prof_request;
+    send_professional_requested_email($client->loginid, $client->residence, $client->landing_company->short) if $set_prof_request;
 
     return undef;
 }

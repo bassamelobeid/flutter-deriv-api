@@ -1162,7 +1162,13 @@ rpc set_settings => sub {
             and $client_obj->landing_company->short =~ /^(?:costarica|maltainvest)$/
             and not($client_obj->status->professional or $client_obj->status->professional_requested))
         {
-            $client_obj->status->set('professional_requested', 'SYSTEM', 'Professional account requested');
+            $client_obj->status->multi_set_clear({
+                set        => ['professional_requested'],
+                clear      => ['professional_rejected'],
+                staff_name => 'SYSTEM',
+                reason     => 'Professional account requested'
+            });
+
             return 1;
         }
         return undef;
