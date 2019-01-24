@@ -9,9 +9,10 @@ __PACKAGE__->meta->setup(
     schema   => 'bet',
 
     columns => [
-        symbol    => { type => 'text', not_null => 1 },
-        market    => { type => 'text', not_null => 1 },
-        submarket => { type => 'text', not_null => 1 },
+        symbol      => { type => 'text', not_null => 1 },
+        market      => { type => 'text', not_null => 1 },
+        submarket   => { type => 'text', not_null => 1 },
+        market_type => { type => 'enum', check_in => [ 'n/a', 'financial', 'non_financial' ], db_type => 'bet.market_type' },
     ],
 
     primary_key_columns => [ 'symbol' ],

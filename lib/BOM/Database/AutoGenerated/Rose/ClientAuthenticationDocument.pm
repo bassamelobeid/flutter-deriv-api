@@ -20,7 +20,7 @@ __PACKAGE__->meta->setup(
         document_id                => { type => 'varchar', default => '', length => 30, not_null => 1 },
         status                     => { type => 'enum', check_in => [ 'uploading', 'uploaded' ], db_type => 'status_type' },
         file_name                  => { type => 'varchar', length => 100 },
-        checksum                   => { type => 'varchar', length => 40 },
+        checksum                   => { type => 'varchar', length => 40, not_null => 1 },
         upload_date                => { type => 'timestamp' },
     ],
 

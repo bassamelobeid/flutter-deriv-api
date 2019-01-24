@@ -18,7 +18,7 @@ __PACKAGE__->meta->setup(
         account_id           => { type => 'bigint', not_null => 1 },
         staff_loginid        => { type => 'varchar', length => 12, not_null => 1 },
         remark               => { type => 'varchar', default => '', length => 800, not_null => 1 },
-        transfer_fees        => { type => 'numeric', not_null => 0 },
+        transfer_fees        => { type => 'numeric' },
     ],
 
     primary_key_columns => [ 'id' ],

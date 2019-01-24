@@ -15,6 +15,7 @@ __PACKAGE__->meta->setup(
         amount           => { type => 'numeric' },
         transaction_time => { type => 'timestamp' },
         source           => { type => 'bigint' },
+        market_type      => { type => 'enum', check_in => [ 'n/a', 'financial', 'non_financial' ], db_type => 'bet.market_type' },
     ],
 
     primary_key_columns => [ 'account_id', 'action_type' ],
