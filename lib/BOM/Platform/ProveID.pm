@@ -302,7 +302,7 @@ sub _save_xml_result {
     my $xml_report_filepath = $self->xml_folder . "/" . $self->file_name;
 
     # Create directory if it doesn't exist
-    Path::Tiny::path($self->xml_folder)->mkpath unless -d $self->xml_folder;
+    Path::Tiny::path($self->xml_folder)->mkpath unless -d -x $self->xml_folder;
 
     # Path::Tiny spew overwrites any existing data
     Path::Tiny::path($xml_report_filepath)->spew($self->xml_result);
@@ -353,7 +353,7 @@ sub _get_pdf_result {
     my $pdf_report_filepath = $self->pdf_folder . "/" . $self->file_name . ".pdf";
 
     # Create directory if it doesn't exist
-    Path::Tiny::path($self->pdf_folder)->mkpath unless -d $self->pdf_folder;
+    Path::Tiny::path($self->pdf_folder)->mkpath unless -d -x $self->pdf_folder;
 
     my $dl_tx = $ua->get("$url/archive/index.cfm?event=archive.pdf&id=$our_ref");
 
