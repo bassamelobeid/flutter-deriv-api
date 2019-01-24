@@ -20,8 +20,6 @@ use BOM::Backoffice::Cookie;
 use LandingCompany::Registry;
 BOM::Backoffice::Sysinit::init();
 
-PrintContentType();
-BrokerPresentation("MAKE DUAL CONTROL CODE");
 my $staff = BOM::Backoffice::Cookie::get_staff();
 
 Bar("Make dual control code");
@@ -124,7 +122,24 @@ if ($input->{'dcctype'} eq 'file_content') {
 
     BOM::User::AuditLog::log($message, '', $staff);
 
-    print encode_entities($message);
+    print '<p>'
+        . 'DCC: <br>'
+        . '<textarea rows="5" cols="100" readonly="readonly">'
+        . encode_entities($code)
+        . '</textarea><br>'
+        . 'This code is valid for 1 hour from now: UTC '
+        . Date::Utility->new->datetime_ddmmmyy_hhmmss . '<br>'
+        . 'Creator: '
+        . $staff . '<br>'
+        . 'Currency: '
+        . $input->{currency} . '<br>'
+        . 'Amount: '
+        . $input->{amount} . '<br>'
+        . 'Payment type: '
+        . $input->{transtype} . '<br>'
+        . 'Comment/reminder: '
+        . $input->{reminder} . '</p>';
+
     print "<p>Note: "
         . encode_entities($input->{'clientloginid'}) . " is "
         . encode_entities($client->salutation) . ' '

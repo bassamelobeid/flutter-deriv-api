@@ -14,11 +14,9 @@ BOM::Backoffice::Sysinit::init();
 
 use BOM::User::Client;
 
-PrintContentType();
-BrokerPresentation("MAKE DUAL CONTROL CODE");
 my $clerk = BOM::Backoffice::Cookie::get_staff();
 
-Bar("Make client dual control code");
+Bar("Make dual control code");
 
 my $now   = Date::Utility->new;
 my $input = request()->params;
@@ -60,11 +58,25 @@ if ($input->{'transtype'} =~ /^UPDATECLIENT/) {
         . $input->{'clientemail'}
         . " is: $code This code is valid for 1 hour (from "
         . $now->datetime_ddmmmyy_hhmmss
-        . ") only.";
+        . ") only. Reminder/comment: "
+        . $input->{'reminder'};
 
     BOM::User::AuditLog::log($message, '', $clerk);
 
-    print encode_entities($message);
+    print '<p>'
+        . 'DCC: <br>'
+        . '<textarea rows="5" cols="100" readonly="readonly">'
+        . encode_entities($code)
+        . '</textarea><br>'
+        . 'This code is valid for 1 hour from now: UTC '
+        . Date::Utility->new->datetime_ddmmmyy_hhmmss . '<br>'
+        . 'Creator: '
+        . $clerk . '<br>'
+        . 'Email: '
+        . $input->{clientemail} . '<br>'
+        . 'Comment/reminder: '
+        . $input->{reminder} . '</p>';
+
     print "<p>Note: "
         . encode_entities($input->{'clientloginid'}) . " is "
         . encode_entities($client->salutation) . ' '

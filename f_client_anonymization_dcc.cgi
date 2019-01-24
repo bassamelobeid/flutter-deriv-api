@@ -9,6 +9,8 @@ BOM::Backoffice::Sysinit::init();
 my $input = request()->params;
 my $clerk = BOM::Backoffice::Cookie::get_staff();
 
+Bar("Make dual control code");
+
 # Error checks
 
 unless ($input->{transtype} eq 'CLIENTANONYMIZE') {
