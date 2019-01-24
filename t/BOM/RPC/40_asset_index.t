@@ -34,17 +34,17 @@ my $first_entry_mlt = [
     "Volatility 10 Index",
     [
         ["callput",       "Higher/Lower",               "5t",  "365d"],
-        ["callput",       "Rise/Fall",                  "5t",  "365d"],
+        ["callput",       "Rise/Fall",                  "1t",  "365d"],
         ["touchnotouch",  "Touch/No Touch",             "5t",  "365d"],
         ["endsinout",     "Ends Between/Ends Outside",  "2m",  "365d"],
         ["staysinout",    "Stays Between/Goes Outside", "2m",  "365d"],
-        ["digits",        "Digits",                     "5t",  "10t"],
+        ["digits",        "Digits",                     "1t",  "10t"],
         ["asian",         "Asians",                     "5t",  "10t"],
         ["reset",         "Reset Call/Reset Put",       "5t",  "2h"],
         ["callputspread", "Call Spread/Put Spread",     "15s", "365d"],
         ["highlowticks",  "High/Low Ticks",             "5t",  "5t"],
         ["lookback",      "Lookbacks",                  "1m",  "30m"],
-        ["callputequal",  "Rise/Fall Equal",            "5t",  "1d"],
+        ["callputequal",  "Rise/Fall Equal",            "1t",  "1d"],
     ]];
 my $first_entry_cr_mf = [
     "frxAUDJPY",
