@@ -1114,6 +1114,13 @@ async_rpc mt5_deposit => sub {
 
             return _make_error($error_code, $error->{-message_to_client}) if $error;
 
+            _store_transaction_redis({
+                loginid       => $fm_loginid,
+                mt5_id        => $to_mt5,
+                action        => 'deposit',
+                amount_in_USD => convert_currency($amount, $fm_client->currency, 'USD'),
+            });
+
             # deposit to MT5 a/c
             return BOM::MT5::User::Async::deposit({
                     login   => $to_mt5,
@@ -1236,6 +1243,14 @@ async_rpc mt5_withdrawal => sub {
                         });
                         $payment->save(cascade => 1);
                         _record_mt5_transfer($to_client->db->dbic, $payment->id, $amount, $fm_mt5, $mt5_currency_code);
+
+                        _store_transaction_redis({
+                            loginid       => $to_loginid,
+                            mt5_id        => $fm_mt5,
+                            action        => 'withdraw',
+                            amount_in_USD => $amount,
+                        });
+
                         return Future->done({
                             status                => 1,
                             binary_transaction_id => $txn->id
@@ -1637,6 +1652,12 @@ sub _record_mt5_transfer {
             $sth->execute($payment_id, $mt5_amount, $mt5_account_id, $mt5_currency_code);
         });
     return 1;
+}
+
+sub _store_transaction_redis {
+    my $data = shift;
+    BOM::Platform::Event::Emitter::emit('store_mt5_transaction', $data);
+    return;
 }
 
 1;
