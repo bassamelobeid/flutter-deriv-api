@@ -1,0 +1,38 @@
+<style>
+ table {
+  padding-bottom: 2%;
+ }
+
+ th {
+  background-color: lightgray;
+ }
+
+ td {
+  text-align: center;
+ }
+</style>
+<h2>Client has just exceeded 8k USD in [% action %]</h2>
+<table>
+ <tbody align="left">
+  <tr>
+   <th scope="row">Client Loginid:</th>
+   <td style="text-align:left">[% loginid %]</td>
+  </tr>
+  <tr>
+   <th scope="row">MT5 Loginid:</th>
+   <td style="text-align:left">[% mt5_id %]</td>
+  </tr>
+  <tr>
+   <th scope="row">MT5 Group:</th>
+   <td style="text-align:left">[% mt5_group %]</td>
+  </tr>
+  <tr>
+   <th scope="row">Deposit/ Withdrawal:</th>
+   <td style="text-align:left">[% action %]</td>
+  </tr>
+  <tr>
+   <th scope="row">Total Amount (USD):</th>
+   <td style="text-align:left">[% total_amount %]</td>
+  </tr>
+ </tbody>
+</table>
