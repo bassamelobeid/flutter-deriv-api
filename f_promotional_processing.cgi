@@ -27,7 +27,7 @@ my @approved = grep { /_promo$/ && $input{$_} eq 'A' } keys %input;
 my @rejected = grep { /_promo$/ && $input{$_} eq 'R' } keys %input;
 s/_promo$// for (@approved, @rejected);
 
-my $tac_url = 'https://www.binary.com/en/terms-and-conditions.html?selected_tab=promo-tac-tab';
+my $tac_url = 'https://www.binary.com/en/terms-and-conditions.html?anchor=free-bonus#legal-binary';
 
 my $json = JSON::MaybeXS->new;
 CLIENT:
