@@ -13,7 +13,6 @@ use Brands;
 use BOM::RPC::Registry '-dsl';
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Context qw (localize request);
-use BOM::RPC::v3::Utility;
 use BOM::User;
 use BOM::User::AuditLog;
 use BOM::User::Client;
@@ -128,6 +127,16 @@ rpc authorize => sub {
     } elsif (length $token == 32 && $token =~ /^a1-/) {
         $token_type = 'oauth_token';
     }
+
+    (my $client_broker_code = $loginid) =~ s/\d+//g;
+
+    BOM::RPC::v3::Utility::check_ip_country(
+        client_residence => $client->{residence},
+        client_ip        => $params->{client_ip},
+        country_code     => $params->{country_code},
+        client_login_id  => $params->{token_details}->{loginid},
+        broker_code      => $client_broker_code
+    ) if $client->landing_company->ip_check_required;
 
     my $_get_account_details = sub {
         my ($clnt, $curr) = @_;

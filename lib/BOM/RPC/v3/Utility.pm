@@ -19,6 +19,7 @@ use Date::Utility;
 use YAML::XS qw(LoadFile);
 use List::Util qw(any uniqstr shuffle);
 use List::UtilsBy qw(bundle_by);
+use JSON::MaybeXS qw{encode_json};
 use URI;
 use Domain::PublicSuffix;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc stats_gauge);
@@ -787,6 +788,36 @@ sub filter_out_suspended_cryptocurrencies {
     my @valid_payout_currencies =
         sort grep { !exists $suspended_currencies->{$_} } @currencies;
     return \@valid_payout_currencies;
+}
+
+=head2 check_ip_country
+
+check for difference in between IP address country and client's residence
+
+ Gets data from rpc authorize
+
+Saves the mismatches in redis so cron_report_ip_mismatch can send an email to the compliance daily
+
+=cut
+
+sub check_ip_country {
+    my %data  = @_;
+    my $redis = BOM::Config::RedisReplicated::redis_write;
+    use constant REDIS_MASTERKEY => 'IP_COUNTRY_MISMATCH';
+
+    return undef unless $data{country_code};
+
+    if (uc($data{client_residence}) ne uc($data{country_code})) {
+        my $json_record = encode_json({
+                date_time        => Date::Utility->new()->datetime_ddmmmyy_hhmmss_TZ(),
+                client_residence => uc $data{client_residence},
+                ip_address       => $data{client_ip},
+                ip_country       => uc $data{country_code},
+                broker_code      => $data{broker_code}});
+        $redis->hset(REDIS_MASTERKEY, $data{client_login_id} => $json_record);
+    }
+
+    return undef;
 }
 
 1;
