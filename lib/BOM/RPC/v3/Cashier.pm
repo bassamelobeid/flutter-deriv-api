@@ -737,14 +737,9 @@ It gets the following args:
 
 sub _get_available_payment_agents {
     my ($country, $broker_code, $currency, $loginid) = @_;
-
-    my $query_args = {
-        target_country => $country,
-    };
-    $query_args->{currency_code} = $currency if $currency;
-
     my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => $broker_code});
-    my $authenticated_paymentagent_agents = $payment_agent_mapper->get_authenticated_payment_agents($query_args);
+    my $authenticated_paymentagent_agents = BOM::User::Client::PaymentAgent->get_payment_agents($country, $broker_code, $currency);
+
     #if payment agents are suspended in client's country, we will keep only those agents that the client has previously transfered money with.
     if (is_payment_agents_suspended_in_country($country)) {
         my $linked_pas = $payment_agent_mapper->get_payment_agents_linked_to_client($loginid);
