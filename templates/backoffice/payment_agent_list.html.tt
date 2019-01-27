@@ -1,0 +1,79 @@
+<style>
+form {display: inline-block;}
+.pa_table {border-collapse: collapse;} 
+.pa_cell td, .pa_cell th{border: 1px solid #eee; padding: 5px; }
+#count {padding-left: 1em; color: green; font-weight: bold;}
+#not-found{display:block;color:red; text-align:center;width:100%; padding:20px}
+</style>
+
+<form action="[% submit_form_url %]" method="post">
+Select country 
+    <select name="country">
+    [% FOREACH entry IN countries_list.sort %]
+                [% IF entry == selected_country %]
+                   <option value="[% entry %]" selected>[% countries_list.$entry %]</option>
+                [% ELSE %]
+                   <option value="[% entry %]">[% countries_list.$entry %]</option>
+                [% END %]
+            [% END %]
+    </select> 
+     Currency 
+    <select name="currency">
+        [% FOREACH entry IN currency_options %]
+            [% IF entry == selected_currency %]
+                <option value="[% entry %]" selected>[% entry %]</option>
+            [% ELSE %]
+                <option value="[% entry %]">[% entry %]</option>
+            [% END %]
+        [% END %]
+    </select> 
+    <input style="padding:5px" type="submit" name="submit" value="submit"></form>
+</form>
+[% IF records.size > 0 %] 
+<span id="count">Number of payment agents in [% countries_list.$selected_country %] : [% records.size  %]</span>
+[% END %]
+    <table class="pa_table pa_cell sortable">
+        <tr class = "pa_cell" style="background: burlywood;font-weight: bold;text-align: center;">
+        <th>LoginID</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Phone Number</th>
+        <th>URL</th>
+        <th>Max Withdrawal</th>
+        <th>Min Withdrawal</th> 
+        <th>Information</th>
+        <th>Summary</th>
+        <th>Commission_deposit</th>
+        <th>Commission_withdrawal</th>
+        <th>Supported Banks</th>
+        </tr>
+        <tbody>
+        [% IF records.size == 0 AND selected_country != "" %] 
+            <tr><td colspan="12">
+                <span id="not-found">
+                    No payment agent is available in [% countries_list.$selected_country %] with [% selected_currency %] currency
+                </span>
+            </td></tr>
+        [% END %]
+    [% FOREACH entry IN records.keys.sort %]
+        <tr class="pa_cell">
+            <td>
+                <a href="f_clientloginid_edit.cgi?broker=CR&loginID=[% records.$entry.client_loginid %]">
+                    [% records.$entry.client_loginid %]
+                </a>
+            </td>
+            <td>[% records.$entry.payment_agent_name %]</td>
+            <td>[% records.$entry.email %]</td>
+            <td>[% records.$entry.phone %]</td>
+            <td>[% records.$entry.url %]</td>
+            <td>[% records.$entry.max_withdrawal %]</td>
+            <td>[% records.$entry.min_withdrawal %]</td>
+            <td>[% records.$entry.information %]</td>
+            <td>[% records.$entry.summary %]</td>
+            <td>[% records.$entry.commission_deposit %]</td>
+            <td>[% records.$entry.commission_withdrawal %]</td>
+            <td>[% records.$entry.supported_banks %]</td>
+        </tr>
+    [% END %]
+   </tbody> 
+</body>

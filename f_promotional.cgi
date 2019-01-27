@@ -355,4 +355,8 @@ BOM::Backoffice::Request::template()->process(
     },
 );
 
+Bar('Payment Agent List');
+my $pa_list_url = request()->url_for('backoffice/f_payment_agent_list.cgi', {broker => $broker});
+print qq[<p><a href="$pa_list_url">Display list of payment agents</a></p>];
+
 code_exit_BO();
