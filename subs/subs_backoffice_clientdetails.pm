@@ -681,44 +681,52 @@ sub client_statement_for_backoffice {
 
 sub get_untrusted_types {
     return [{
-            'linktype' => 'disabledlogins',
-            'comments' => 'Disabled/Closed Accounts',
-            'code'     => 'disabled'
+            'linktype'    => 'disabledlogins',
+            'comments'    => 'Disabled/Closed Accounts',
+            'code'        => 'disabled',
+            'show_reason' => 'yes'
         },
         {
-            'linktype' => 'lockcashierlogins',
-            'comments' => 'Cashier Lock Section',
-            'code'     => 'cashier_locked'
+            'linktype'    => 'lockcashierlogins',
+            'comments'    => 'Cashier Lock Section',
+            'code'        => 'cashier_locked',
+            'show_reason' => 'yes'
         },
         {
-            'linktype' => 'unwelcomelogins',
-            'comments' => 'Unwelcome loginIDs',
-            'code'     => 'unwelcome'
+            'linktype'    => 'unwelcomelogins',
+            'comments'    => 'Unwelcome loginIDs',
+            'code'        => 'unwelcome',
+            'show_reason' => 'yes'
         },
         {
-            'linktype' => 'lockwithdrawal',
-            'comments' => 'Withdrawal Locked',
-            'code'     => 'withdrawal_locked'
+            'linktype'    => 'lockwithdrawal',
+            'comments'    => 'Withdrawal Locked',
+            'code'        => 'withdrawal_locked',
+            'show_reason' => 'yes'
         },
         {
-            'linktype' => 'lockmt5withdrawal',
-            'comments' => 'MT5 Withdrawal Locked',
-            'code'     => 'mt5_withdrawal_locked'
+            'linktype'    => 'lockmt5withdrawal',
+            'comments'    => 'MT5 Withdrawal Locked',
+            'code'        => 'mt5_withdrawal_locked',
+            'show_reason' => 'yes'
         },
         {
-            'linktype' => 'duplicateaccount',
-            'comments' => 'Duplicate account',
-            'code'     => 'duplicate_account'
+            'linktype'    => 'duplicateaccount',
+            'comments'    => 'Duplicate account',
+            'code'        => 'duplicate_account',
+            'show_reason' => 'yes'
         },
         {
-            'linktype' => 'ukgcauthenticated',
-            'comments' => 'UKGC authenticated',
-            'code'     => 'ukgc_authenticated'
+            'linktype'    => 'ukgcauthenticated',
+            'comments'    => 'UKGC authenticated',
+            'code'        => 'ukgc_authenticated',
+            'show_reason' => 'yes'
         },
         {
-            'linktype' => 'professionalrequested',
-            'comments' => 'Professional requested',
-            'code'     => 'professional_requested'
+            'linktype'    => 'professionalrequested',
+            'comments'    => 'Professional requested',
+            'code'        => 'professional_requested',
+            'show_reason' => 'no'
         },
     ];
 }

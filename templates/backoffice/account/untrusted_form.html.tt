@@ -8,6 +8,7 @@ Action :-
 <select name="untrusted_action_type">
 <option>--------------------SELECT AN ACTION--------------------</option>
 [% FOREACH r IN actions%]
+    [% NEXT IF r.show_reason == 'no' %]
     <option value="[% r.linktype %]"[% IF r.linktype == selected_untrusted_action %]selected[% END%]>[% r.comments %]</option>
 [% END %]
 </select>
