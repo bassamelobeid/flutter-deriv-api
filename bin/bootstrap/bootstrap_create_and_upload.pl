@@ -14,7 +14,7 @@ use Path::Tiny qw( path );
 use Time::Duration qw( duration );
 use Format::Util::Numbers qw( commas );
 
-our $VERSION = '3.03';
+our $VERSION = '3.12';
 
 my $USAGE = "Usage: $0 --db=<cr or vr> [--time_limit=X] [--verbose]\n";
 
@@ -35,16 +35,40 @@ my $force   = $opt{force}   // 0;
 ## Are we running on a devbox?
 my $devbox = hostname =~ /^qa/ ? 1 : 0;
 
+## Setup logging:
+my $ideal_log_dir = '/var/log/bootstrap';
+my $log_dir       = -e $ideal_log_dir ? $ideal_log_dir : '/tmp';
+my $log_file      = path("$log_dir/bootstrap.log");
+my $log_messages  = '';
+
+sub logit {
+
+    my $message = shift;
+    chomp $message;
+    $message .= "\n";
+
+    $verbose and print $message;
+    $log_messages .= $message;
+    $log_file->append($message);
+
+    return;
+}
+
+END {
+    ## If we did not exit cleanly, we want cron to get all the verbose information
+    warn $log_messages if defined $log_messages and $? and not $verbose;
+}
+
 ## Globals we set early on:
 my ($service_name, $database_name, $temp_database_name, $time_limit);
 my ($basedir,      $datadir,       $socketdir,          $pgbindir);
 my ($psql_local,   $psql_remote,   $pg_dump_local,      $pg_dump_remote);
 my ($aws, $s3_profile_name, $s3_bucket_name);
 
-$verbose and print "Starting $0 version $VERSION\n";
+logit "Starting $0 version $VERSION\n";
 my $script_start_time = time();
-$verbose and printf "--> Time:                         %s\n", scalar localtime;
-$verbose > 1 and printf "--> Running on devbox?:           %s\n", $devbox ? 'yes' : 'no';
+logit sprintf "--> Time:                         %s\n", scalar localtime;
+logit sprintf "--> Running on devbox?:           %s\n", $devbox ? 'yes' : 'no';
 
 my %info = (
 
@@ -112,7 +136,7 @@ dump_and_ship();
 remove_temp_cluster("$basedir/temp_bootstrap_cluster");
 
 my $total_time = duration(time() - $script_start_time);
-print "Complete. Total time: $total_time\n";
+logit "Complete. Total time: $total_time\n";
 
 exit;
 
@@ -122,11 +146,11 @@ sub run_command {
 
     my $command = shift // "Need a command";
 
-    $verbose > 1 and print "ABOUT TO RUN: $command\n";
+    $verbose > 1 and logit "ABOUT TO RUN: $command\n";
 
     my $result = qx{ $command 2>&1 };
     chomp $result;
-    $verbose > 1 and print "RESULT: $result\n";
+    $verbose > 1 and logit "RESULT: $result\n";
 
     return $result;
 
@@ -155,15 +179,11 @@ sub get_database_info {
         $service_name = 'clientdb-pgadmin';
     }
 
-    if ($verbose) {
-        print "--> Database:                     $db\n";
-        print "--> Service name:                 $service_name\n";
-        print "--> Time range:                   $time_limit\n";
-    }
-    if ($verbose > 1) {
-        print "--> Database name:                $database_name\n";
-        print "--> Temp database name:           $temp_database_name\n";
-    }
+    logit "--> Database:                     $db\n";
+    logit "--> Service name:                 $service_name\n";
+    logit "--> Time range:                   $time_limit\n";
+    logit "--> Database name:                $database_name\n";
+    logit "--> Temp database name:           $temp_database_name\n";
 
     return;
 
@@ -173,11 +193,6 @@ sub sanity_checks {
 
     ## Do our best to make sure we fail early if important things are missing
 
-    ## GPG password file must exist
-    if (!-f "$ENV{HOME}/.bootstrap.password") {
-        die qq{Cannot proceed without a GPG password file\n};
-    }
-
     $psql_remote = qq{psql -AX -qt service=$service_name};
 
     ## It's really best to run this script against a hot standby server
@@ -185,20 +200,20 @@ sub sanity_checks {
     $result =~ /^[tf]$/ or die "Invalid response from pg_is_in_recovery: $result\n";
     if (!$devbox && $result eq 'f') {
         $force or die qq{Must run on a replica (or use the --force option)\n};
-        $verbose and print "--> Forcing run on a non-replica database\n";
+        logit "--> Forcing run on a non-replica database\n";
     }
 
     ## Warn if a non-zero statement_timeout is set
     $result = run_command(qq{$psql_remote -c "SHOW statement_timeout"});
     $result =~ /^\d+$/ or die qq{Invalid result for statement_timeout: $result\n};
     if ($result ne '0') {
-        warn "Warning: statement_timeout is set to $result!\n";
+        logit "WARNING: statement_timeout is set to $result!\n";
     }
 
     ## Grab the version
     $result = run_command(qq{ $psql_remote -c 'SELECT version()' });
     $result =~ s/, compiled.*//;
-    $verbose > 1 and print "--> Postgres version:             $result\n";
+    logit "--> Postgres version:             $result\n";
     if ($result !~ /(\d+)\.(\d+)/) {
         die 'Could not determine the Postgres version';
     }
@@ -214,13 +229,18 @@ sub sanity_checks {
     $basedir = "$ENV{HOME}/bootstrap";
     if (!-d $basedir) {
         mkdir $basedir, 0700;
-        $verbose and print "--> Created directory:            $basedir\n";
+        logit "--> Created directory:            $basedir\n";
     }
 
     ## No S3 on devboxes
     if ($devbox) {
-        $verbose > 1 and print "--> S3 tests skipped:             yes\n";
+        logit "--> S3 tests skipped:             yes\n";
         return;
+    }
+
+    ## GPG password file must exist
+    if (!-f "$ENV{HOME}/.bootstrap.password") {
+        die qq{Cannot proceed without a GPG password file\n};
     }
 
     ## The aws program must be available
@@ -234,10 +254,8 @@ sub sanity_checks {
     $s3_profile_name = "db-pgarchive-$db";
     $s3_bucket_name  = "binary-pgarchive-$db";
 
-    if ($verbose) {
-        print "--> S3 profile name:              $s3_profile_name\n";
-        print "--> S3 bucket name:               $s3_bucket_name\n";
-    }
+    logit "--> S3 profile name:              $s3_profile_name\n";
+    logit "--> S3 bucket name:               $s3_bucket_name\n";
 
     $result = run_command(qq{$aws s3 --profile "$s3_profile_name" ls s3://$s3_bucket_name}) // '?';
     if ($result =~ /profile.+could not be found/) {
@@ -259,7 +277,7 @@ sub sanity_checks {
     }
     unlink $testfile;
 
-    $verbose > 1 and print "--> S3 test file uploaded:        $testfile\n";
+    logit "--> S3 test file uploaded:        $testfile\n";
 
     return;
 
@@ -269,7 +287,7 @@ sub create_temp_cluster {
 
     ## Create a very private and very temporary cluster
     my $dirname = "$basedir/temp_bootstrap_cluster";
-    $verbose and print "--> Temp cluster dir:             $dirname\n";
+    logit "--> Temp cluster dir:             $dirname\n";
 
     ## Just in case, remove any older version:
     remove_temp_cluster($dirname);
@@ -283,10 +301,8 @@ sub create_temp_cluster {
 
     $pg_dump_local = qq{$pgbindir/pg_dump -h $socketdir -p 7777 -d $temp_database_name };
 
-    if ($verbose > 1) {
-        print "--> Temp data directory:          $datadir\n";
-        print "--> Temp socket directory:        $socketdir\n";
-    }
+    logit "--> Temp data directory:          $datadir\n";
+    logit "--> Temp socket directory:        $socketdir\n";
 
     my $result = run_command(qq{$pgbindir/initdb -D "$datadir" -A trust -U bootstrap});
     if ($result !~ /Success/) {
@@ -306,12 +322,13 @@ log_min_duration_statement  = 0
 unix_socket_directories     = '$socketdir'
 wal_level                   = replica
 max_wal_senders             = 5
+shared_preload_libraries    = 'pglogical'
 EOT
     );
-    $verbose and print "--> Adjusted:                     $datadir/postgresql.conf\n";
+    logit "--> Adjusted:                     $datadir/postgresql.conf\n";
 
     path("$datadir/pg_hba.conf")->append("local  replication  $ENV{LOGNAME}  trust");
-    $verbose and print "--> Adjusted:                     $datadir/pg_hba.conf\n";
+    logit "--> Adjusted:                     $datadir/pg_hba.conf\n";
 
     $result = run_command(qq{$pgbindir/pg_ctl start -w -D "$datadir" -l logfile});
     if ($result !~ /waiting for server/) {
@@ -339,7 +356,6 @@ sub remove_temp_cluster {
     }
 
     $dirname =~ /temp/ or die "Safety check failed: refusing to remove $dirname\n";
-    $verbose > 1 and print "Trying to remove_tree on $dirname\n";
     my $rmfail;
     remove_tree($dirname, {error => \$rmfail});
 
@@ -353,7 +369,7 @@ sub fetch_postgres_globals {
 
     my $result = run_command(qq{$pgbindir/pg_dumpall -d service="$service_name" --globals | $psql_local -f -});
     length $result and die qq{Failed to load global info into temp cluster: $result\n};
-    $verbose and print "--> Applied:                      pg_dumpall --globals\n";
+    logit "--> Applied:                      pg_dumpall --globals\n";
 
     return;
 
@@ -364,8 +380,8 @@ sub fetch_postgres_pre_data {
     ## Get all the "pre" data schema information and load directly into the test cluster
 
     my $result = run_command(qq{$pg_dump_remote --section=pre-data | $psql_local -f -});
-    length $result and die qq{Loading pre-data section into temp custer failed: $result\n};
-    $verbose and print "--> Applied:                      pg_dump --section=pre-data\n";
+    length $result and die qq{Loading pre-data section into temp cluster failed: $result\n};
+    logit "--> Applied:                      pg_dump --section=pre-data\n";
 
     return;
 
@@ -389,7 +405,7 @@ sub fetch_postgres_data {
     my $result     = run_command(qq{$pg_dump_remote --section=data $no_schemas $no_tables | $psql_local -f - });
     $result =~ /[a-z]/ and die qq{Load of data section failed: $result\n};
 
-    $verbose and printf "--> Time to copy --section=data:  %s\n", duration(time() - $start_time);
+    logit sprintf "--> Time to copy --section=data:  %s\n", duration(time() - $start_time);
 
     return;
 
@@ -401,10 +417,10 @@ sub fetch_postgres_post_data {
 
     my $result = run_command(qq{$pg_dump_remote --section=post-data | $psql_local -f -});
     length $result and die qq{Loading post-data section into temp custer failed: $result\n};
-    $verbose and print "--> Applied:                      pg_dump --section=post-data\n";
+    logit "--> Applied:                      pg_dump --section=post-data\n";
 
     $result = run_command(qq{$psql_local -c 'ANALYZE'});
-    $verbose and print "--> Applied:                      ANALYZE\n";
+    logit "--> Applied:                      ANALYZE\n";
 
     return;
 
@@ -429,12 +445,12 @@ sub fetch_postgres_special_tables {
             die "Invalid result from $SQL\n$id\n";
         }
 
-        $verbose and printf "--> %s transaction ID:          %s%s\n", $type, $type eq 'Low' ? ' ' : '', commas($id);
+        logit sprintf "--> %s transaction ID:          %s%s\n", $type, $type eq 'Low' ? ' ' : '', commas($id);
         $txn{$type} = $id;
     }
 
     my $total_txns = $txn{High} - $txn{Low};
-    $verbose and printf "--> Potential IDs:                %*s\n", length(commas($txn{Low})), commas($total_txns);
+    logit sprintf "--> Potential IDs:                %*s\n", length(commas($txn{Low})), commas($total_txns);
 
     for my $table (sort grep { $info{special_tables}{$_} ne 'skip' } keys %{$info{special_tables}}) {
 
@@ -458,11 +474,11 @@ sub fetch_postgres_special_tables {
         my $result     = run_command(qq{ $psql_remote -c "COPY ($SQL) TO STDOUT" | $psql_local -c "COPY $table FROM STDIN" -f - });
         length $result and die qq{Load of table $table failed: $result\n};
 
-        $verbose and printf "--> Applied:                      %s (Time: %s)\n", $table, duration(time() - $start_time);
+        logit sprintf "--> Applied:                      %s (Time: %s)\n", $table, duration(time() - $start_time);
     }
 
     for my $table (sort grep { $info{special_tables}{$_} eq 'skip' } keys %{$info{special_tables}}) {
-        $verbose > 1 and print "--> Skipping all data for table $table\n";
+        logit "--> Skipping all data for table $table\n";
     }
 
     return;
@@ -573,7 +589,7 @@ EOT
     $tempfile->spew($bootstrap_script);
     my $result = run_command(qq{ $psql_local -f $tempfile });
     length $result and die qq{Failed to run bootstrap script: $result};
-    $verbose and print "--> Ran script:                   bootstrap_post_load_adjustments\n";
+    logit "--> Ran script:                   bootstrap_post_load_adjustments\n";
 
     return;
 
@@ -585,7 +601,7 @@ sub dump_and_ship {
     ## Compress it, encrypt it, and ship it off to S3
 
     if ($devbox) {
-        $verbose and print "--> Skipping S4 upload:           (devbox)\n";
+        logit "--> Skipping S4 upload:           (devbox)\n";
         return;
     }
 
@@ -598,14 +614,14 @@ sub dump_and_ship {
 
     my $result = run_command(" $basebackup | $compress | $encrypt | $s3 ");
     length $result and die qq{base backup failed: $result};
-    $verbose and print "--> Uploaded to S3:               $backup_name\n";
+    logit "--> Uploaded to S3:               $backup_name\n";
 
     ## Check it out and show the size
     $result = run_command(qq{ $aws s3 --profile $s3_profile_name ls s3://$s3_bucket_name/bootstrap/$backup_name });
     if ($result =~ /(\d+) $backup_name/) {
-        printf "--> Upload size:                  %s\n", pretty_size($1);
+        logit sprintf "--> Upload size:                  %s\n", pretty_size($1);
     } else {
-        warn "Could not determine size. aws s3 ls said: $result\n";
+        logit "Could not determine size. aws s3 ls said: $result\n";
     }
 
     return;
