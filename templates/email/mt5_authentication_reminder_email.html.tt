@@ -1,0 +1,25 @@
+[% l("Dear [_1],
+
+Thank you for opening an MT5 real money account with us. We hope your trading experience has been positive so far.
+
+Following the email we sent you a few days ago, we'd like to remind you to authenticate your account if you wish to continue trading on MT5.", full_name) %]
+
+<strong>[% l("You may ignore this email if you have sent us your documents.") %]</strong>
+
+[% l("Please authenticate your account by uploading the following documents:") %]
+<ul>
+    <li>[% l("A copy of a valid driving licence, identity card, or passport (front and back)") %]</li>
+    <li>[% l("A copy of a utility bill or bank statement issued within the past six months") %]</li>
+    <li>[% l("A photo of yourself (selfie) holding your driving licence, identity card, or passport") %]</li>
+</ul>
+
+[% l("You may upload the copies of all required documents directly from your real money account at https://www.binary.com/en/user/authenticate.html.") %]
+
+<strong>[% l("Kindly note that if we don't receive your documents by [_1], your account will be disabled and any open position that you may have on the MT5 platform will be closed.", last_date) %]</strong>
+
+[% l("Should you need further assistance, please don't hesitate to contact us at support@binary.com. We're always happy to help.
+
+If clicking the link above doesn't work, please copy and paste the URL in a new browser window instead.
+
+With regards,
+Binary.com") %]
