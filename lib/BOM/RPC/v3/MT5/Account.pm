@@ -397,7 +397,9 @@ async_rpc mt5_new_account => sub {
                                 unless BOM::RPC::v3::Accounts::send_self_exclusion_notification($client, 'malta_with_mt5', $self_exclusion);
                         }
                     } elsif ($account_type eq 'financial' && $client->landing_company->short eq 'costarica' && !$client->fully_authenticated) {
-                        _send_notification_email($client, $mt5_login, $brand, $params->{language}, $group);
+                        _send_notification_email($client, $mt5_login, $brand, $params->{language}, $group)
+                            if BOM::RPC::v3::Utility::queue_for_mt5_reminder_email($client->binary_user_id);
+
                     }
 
                     my $balance = 0;

@@ -62,12 +62,17 @@ my %DETAILS = (
 # Setup a test user
 my $test_client    = create_client('CR');
 my $test_client_vr = create_client('VRTC');
+
 $test_client->email($DETAILS{email});
 $test_client->set_default_account('USD');
+$test_client->binary_user_id(1);
+
 $test_client_vr->email($DETAILS{email});
 $test_client_vr->set_default_account('USD');
+
 $test_client->set_authentication('ID_DOCUMENT')->status('pass');
 $test_client->save;
+
 $test_client_vr->save;
 
 my $user = BOM::User->create(
@@ -220,6 +225,7 @@ subtest 'new CR financial accounts should receive identity verification request 
             leverage         => 500,
         },
     };
+
     $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account');
     #check inbox for emails
     my $cli_subject  = 'Authenticate your account to continue trading on MT5';
@@ -229,6 +235,12 @@ subtest 'new CR financial accounts should receive identity verification request 
     );
 
     ok($client_email, "identity verification request email received");
+
+    my $redis = BOM::Config::RedisReplicated::redis_read;
+    use constant REDIS_MASTERKEY => 'MT5_REMINDER_AUTHENTICATION_CHECK';
+
+    ok($redis->hget(REDIS_MASTERKEY, $test_client->binary_user_id), "redis key for user id exists");
+
 };
 
 subtest 'MF should be allowed' => sub {

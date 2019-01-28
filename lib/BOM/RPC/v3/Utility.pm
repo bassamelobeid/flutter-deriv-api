@@ -26,6 +26,7 @@ use DataDog::DogStatsd::Helper qw(stats_timing stats_inc stats_gauge);
 use Time::HiRes;
 use Time::Duration::Concise::Localize;
 use Format::Util::Numbers qw/formatnumber/;
+use JSON::MaybeUTF8 qw/encode_json_utf8/;
 
 use Brands;
 use Quant::Framework;
@@ -37,7 +38,6 @@ use BOM::Platform::Context qw(localize request);
 use BOM::Platform::ProveID;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Config::RedisReplicated;
-use BOM::Config::Chronicle;
 use BOM::Config::Runtime;
 use BOM::Database::Model::AccessToken;
 use BOM::Database::Model::OAuth;
@@ -677,6 +677,30 @@ sub set_professional_status {
     send_professional_requested_email($client->loginid, $client->residence, $client->landing_company->short) if $set_prof_request;
 
     return undef;
+}
+
+=head2 queue_for_mt5_reminder_email
+
+This stores the binary_user_id and the timestamp when an unauthenticated CR-client opens a 
+financial MT5 account
+
+=cut
+
+sub queue_for_mt5_reminder_email {
+
+    my ($binary_user_id) = @_;
+
+    my $redis     = BOM::Config::RedisReplicated::redis_write;
+    my $masterkey = 'MT5_REMINDER_AUTHENTICATION_CHECK';
+
+    my $data = encode_json_utf8({
+        creation_epoch => Date::Utility->new()->epoch,
+        has_email_sent => 0
+    });
+
+    # Store in redis
+    # NOTE: We do not store again if there is an existing entry
+    return $redis->hsetnx($masterkey, $binary_user_id, $data);
 }
 
 sub send_professional_requested_email {
