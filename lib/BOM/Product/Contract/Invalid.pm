@@ -39,8 +39,18 @@ sub longcode {
     return [get_longcodes()->{legacy_contract}];
 }
 
-sub _price_from_prob        { die "Can not price legacy bet: " . shift->shortcode; }
-sub shortcode               { die "Invalid legacy bet type[" . shift->code . ']'; }
+sub _price_from_prob {
+    my $self = shift;
+
+    return BOM::Product::Exception->throw(error_code => 'InvalidContractType');
+}
+
+sub shortcode {
+    my $self = shift;
+
+    return BOM::Product::Exception->throw(error_code => 'InvalidContractType');
+}
+
 sub is_expired              { return 1; }
 sub is_settleable           { return 1; }
 sub is_atm_bet              { return 1; }

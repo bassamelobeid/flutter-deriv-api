@@ -60,6 +60,7 @@ my $config = {
         InvalidBarrierUndef           => 'Invalid barrier.',
         InvalidBarrierForSpot         => 'Barrier must be at least [plural,_1,%d pip,%d pips] away from the spot.',
         InvalidBarrierRange           => 'Barriers must be on either side of the spot.',
+        InvalidContractType           => 'Invalid contract type.',
         InvalidExpiryTime             => 'Invalid expiry time.',
         InvalidHighBarrier            => 'High barrier must be higher than low barrier.',
         InvalidHighLowBarrrierRange   => 'High barrier is out of acceptable range. Please adjust the high barrier.',

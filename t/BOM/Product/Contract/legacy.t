@@ -30,8 +30,9 @@ subtest 'General.' => sub {
 
     isa_ok $contract, 'BOM::Product::Contract::Invalid';
     is_deeply($contract->longcode, ['Legacy contract. No further information is available.']);
-    throws_ok { $contract->bid_price } qr/legacy bet type/i, 'Pricing legacy bet.';
-    throws_ok { $contract->shortcode } qr/legacy bet type/i, 'Legacy bet shortcode.';
+
+    throws_ok { $contract->bid_price } qr/BOM::Product::Exception/, 'Pricing legacy bet.';
+    throws_ok { $contract->shortcode } qr/BOM::Product::Exception/, 'Legacy bet shortcode.';
 
 };
 
