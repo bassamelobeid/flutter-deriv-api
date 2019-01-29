@@ -3,6 +3,10 @@ package BOM::Backoffice::Utility;
 use strict;
 use warnings;
 
+use Exporter qw(import export_to_level);
+
+our @EXPORT_OK = qw(get_languages master_live_server_error);
+
 sub get_languages {
     return {
         EN    => 'English',
@@ -20,7 +24,7 @@ sub get_languages {
 }
 
 sub master_live_server_error {
-    return code_exit_BO(
+    return main::code_exit_BO(
         "WARNING! You are not on the Master Live Server. Please go to the following link: https://collector01.binary.com/d/backoffice/f_broker_login.cgi"
     );
 }

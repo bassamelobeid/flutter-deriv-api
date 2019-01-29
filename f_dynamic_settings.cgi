@@ -16,7 +16,7 @@ use Data::Compare;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
-use BOM::Backoffice::Utility qw( master_live_server_error);
+use BOM::Backoffice::Utility qw(master_live_server_error);
 
 PrintContentType();
 
