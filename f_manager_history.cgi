@@ -70,9 +70,9 @@ if (not $client) {
 my $loginid_bar = $loginID;
 $loginid_bar .= ' (DEPO & WITH ONLY)' if ($depositswithdrawalsonly eq 'yes');
 my $pa = $client->payment_agent;
-$loginid_bar .= ' - Payment Agent' if ($pa and $pa->is_authenticated);
 
 Bar($loginid_bar);
+print "<span style='color:red; font-weight:bold; font-size:14px'>PAYMENT AGENT</span>" if ($pa and $pa->is_authenticated);
 
 # We either choose the dropdown currency from transaction page or use the client currency for quick jump
 my $currency = $client->currency;
