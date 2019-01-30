@@ -177,7 +177,7 @@ sub _fetch_proveid {
     catch {
         my $error = $_;
 
-        if ($error =~ /ErrorCode: 50\d/
+        if ($error =~ /^50[01]/
             ) # ErrorCode 500 and 501 are Search Errors according to Appendix B of https://github.com/regentmarkets/third_party_API_docs/blob/master/AML/20160520%20Experian%20ID%20Search%20XML%20API%20v1.22.pdf
         {
             # We don't retry when there is a search error (no entry or otherwise)

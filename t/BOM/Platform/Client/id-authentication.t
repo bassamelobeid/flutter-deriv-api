@@ -287,7 +287,7 @@ subtest 'MX accounts' => sub {
         my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
         $proveid_mock->mock(
             get_result => sub {
-                die 'Experian XML Request Failed with ErrorCode: 501, ErrorMessage: No Match Found';
+                die '501: No Match Found';
             });
 
         $v->run_authentication;
