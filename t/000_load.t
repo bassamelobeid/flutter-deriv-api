@@ -4,8 +4,7 @@ use warnings;
 
 use Test::Fatal;
 
-is( exception { require Binary::WebSocketAPI; Binary::WebSocketAPI->import },
-    undef, 'can load module without issues' )
-  or note "module load failure: $@";
+is(exception { require Binary::WebSocketAPI; Binary::WebSocketAPI->import }, undef, 'can load module without issues')
+    or note "module load failure: $@";
 
 done_testing;
