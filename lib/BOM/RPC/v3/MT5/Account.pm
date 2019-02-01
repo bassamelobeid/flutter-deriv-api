@@ -1545,8 +1545,7 @@ sub _mt5_validate_and_get_amount {
             }
 
             if ($err) {
-                return _make_error($error_code,
-                    localize('Account transfers for this currency are suspended due to exchange rates. Please try again when market is open.'))
+                return _make_error($error_code, localize('Sorry, transfers are currently unavailable. Please try again later.'))
                     if ($err =~ /No rate available to convert/);
 
                 return _make_error($error_code, localize('Account transfers are not possible between [_1] and [_2]', $client_currency, $mt5_currency))

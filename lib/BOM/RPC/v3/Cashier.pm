@@ -1240,9 +1240,8 @@ rpc transfer_between_accounts => sub {
     };
 
     if ($err) {
-        return $error_audit_sub->(
-            $err, localize('Account transfers for this currency are suspended due to exchange rates. Please try again when market is open.')
-        ) if ($err =~ /No rate available to convert/);
+        return $error_audit_sub->($err, localize('Sorry, transfers are currently unavailable. Please try again later.'))
+            if ($err =~ /No rate available to convert/);
 
         return $error_audit_sub->($err, localize('Account transfers are not possible between [_1] and [_2].', $from_currency, $to_currency))
             if ($err =~ /No transfer fee/);

@@ -946,7 +946,7 @@ subtest 'multi currency transfers' => sub {
     );
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError',
         "fiat->cryto when rate older than 1 hour - correct error code")
-        ->error_message_is('Account transfers for this currency are suspended due to exchange rates. Please try again when market is open.',
+        ->error_message_is('Sorry, transfers are currently unavailable. Please try again later.',
         'fiat->cryto when rate older than 1 hour - correct error message');
 
     BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts(2);
