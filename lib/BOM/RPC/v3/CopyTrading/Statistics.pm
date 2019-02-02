@@ -141,7 +141,7 @@ rpc copytrading_statistics => sub {
             or $contract->{bet_type} =~ /^DIGIT/)
         {
             my $c;
-            try { $c = produce_contract($contract->{short_code}, 'USD'); } catch { next; }
+            try { $c = produce_contract($contract->{short_code}, 'USD'); } or next;
 
             push @{$contract_parameters->{exit_tick_epoch}},   $c->exit_tick->epoch;
             push @{$contract_parameters->{barriers}},          $c->barrier->as_absolute;
