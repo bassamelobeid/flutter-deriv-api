@@ -14,6 +14,7 @@ use BOM::Platform::Context qw(localize);
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use BOM::OAuth::Static qw(get_message_mapping);
 use Locale::Codes::Country qw(code2country);
+use Email::Valid;
 
 sub callback {
     my $c = shift;
@@ -30,7 +31,7 @@ sub callback {
     my $brand_name = BOM::OAuth::Helper->extract_brand_from_params($c->stash('request')->params) // $c->stash('brand')->name;
 
     unless ($brand_name) {
-        $c->session(error => 'Invalid brand name.');
+        $c->session(social_error => 'Invalid brand name.');
         return $c->redirect_to($redirect_uri);
     }
 
@@ -48,7 +49,7 @@ sub callback {
     # bad status code from oneall, wrong pub/private keys can be a reason
     # for bad status code
     if (not $data or $data->{response}->{request}->{status}->{code} != 200) {
-        $c->session(error => localize(get_message_mapping()->{NO_USER_IDENTITY}));
+        $c->session(social_error => localize(get_message_mapping()->{NO_USER_IDENTITY}));
         stats_inc('login.oneall.connection_failure',
             {tags => ["brand:$brand_name", "status_code:" . $data->{response}->{request}->{status}->{code}]});
         return $c->redirect_to($redirect_uri);
@@ -56,17 +57,23 @@ sub callback {
 
     my $provider_result = $data->{response}->{result};
     if ($provider_result->{status}->{code} != 200 or $provider_result->{status}->{flag} eq 'error') {
-        $c->session(error => localize(get_message_mapping()->{NO_AUTHENTICATION}));
+        $c->session(social_error => localize(get_message_mapping()->{NO_AUTHENTICATION}));
         return $c->redirect_to($redirect_uri);
     }
 
-    # retrieve user identity from provider data
+    # retrieve provider and user identity from provider data
     my $provider_data = $provider_result->{data};
     my $user_connect  = BOM::Database::Model::UserConnect->new;
     my $user_id       = $user_connect->get_user_id_by_connect($provider_data);
-
     my $email = _get_email($provider_data);
-    my $user  = try {
+    #Check that whether user has granted access to a valid email address in her/his social account
+    unless ($email and Email::Valid->address($email)) {
+        my $provider_name = $provider_data->{user}->{identity}->{provider};
+        $c->session(social_error => localize(get_message_mapping()->{INVALID_SOCIAL_EMAIL}, ucfirst $provider_name));
+        return $c->redirect_to($redirect_uri);
+    }
+
+    my $user = try {
         BOM::User->new(email => $email)
     };
 
@@ -77,7 +84,7 @@ sub callback {
         # Redirect client to login page if social signup flag is not found.
         # As the main purpose of this package is to serve
         # clients with social login only.
-        $c->session('error', localize(get_message_mapping()->{NO_LOGIN_SIGNUP}));
+        $c->session(social_error => localize(get_message_mapping()->{NO_LOGIN_SIGNUP}));
         return $c->redirect_to($redirect_uri);
     }
 
@@ -99,7 +106,7 @@ sub callback {
                     ($account->{error} eq 'invalid residence')
                     ? localize(get_message_mapping()->{INVALID_RESIDENCE}, code2country($residence))
                     : localize(get_message_mapping()->{$account->{error}});
-                $c->session(error => $error_msg);
+                $c->session(social_error => $error_msg);
                 return $c->redirect_to($redirect_uri);
             } else {
                 $user = $account->{user};

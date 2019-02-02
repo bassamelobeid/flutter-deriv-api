@@ -123,7 +123,8 @@ sub authorize {
 
     # show error when no client found in session show login form
     if (!$client) {
-        $template_params{error} = delete $c->session->{error} || '';
+        $template_params{error}        = delete $c->session->{error}        || '';
+        $template_params{social_error} = delete $c->session->{social_error} || '';
         return $c->render(%template_params);
     }
 

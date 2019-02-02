@@ -13,7 +13,7 @@
         </div>
     </div>
 </div>
-<% if (!$login_method || stash('error')) { %>
+<% if (!$login_method || stash('error') || stash('social_error')) { %>
 <div class="container">
     <div id="inline">
         <div id="wrapper">
@@ -27,16 +27,20 @@
                 <div><button type="submit" class="button" name="login" value="<%= l('Log in') %>"><%= l('Log in') %></button></div>
                 <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
             </form>
-            <% if ($use_social_login) { %>
-            <div class="section-divider">
-                <div class="align-self-center border-bottom-light-gray"></div>
-                <div class="circle"><%= l('Or') %></div>
-                <div class="align-self-center border-bottom-light-gray"></div>
-            </div>
-            <div id="oa_social_login_container"></div>
-            <% } %>
         </div>
     </div>
+    <% if ($use_social_login) { %>
+        <div class="section-divider">
+            <div class="align-self-center border-bottom-light-gray"></div>
+            <div class="circle"><%= l('Or') %></div>
+            <div class="align-self-center border-bottom-light-gray"></div>
+        </div>
+        <p class="center-text no-margin padding-bottom-10">Log in using social account</p>
+        <% if (stash('social_error')) { %>
+            <p class='error-msg center-text'><%= stash('social_error') %></p>
+        <% } %>
+        <div id="oa_social_login_container"></div>
+    <% } %>
     <% if ($is_reset_password_allowed) { %>
         <div class="center-text links">
             <p><a id="lost-password" href="https://www.<%= $website_domain %>/<%= lc($r->language) %>/user/lost_passwordws.html"><%= l('Reset Password') %></a></p>
