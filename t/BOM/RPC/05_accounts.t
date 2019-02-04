@@ -803,7 +803,7 @@ subtest $method => sub {
     cmp_deeply(
         $c->tcall($method, {token => $token_21}),
         {
-            status                        => bag(qw(financial_information_not_complete trading_experience_not_complete)),
+            status                        => noneof(qw(duplicate_account)),
             risk_classification           => 'low',
             prompt_client_to_authenticate => '0',
         },
@@ -823,7 +823,7 @@ subtest $method => sub {
     cmp_deeply(
         $c->tcall($method, {token => $token_21}),
         {
-            status                        => bag(qw(financial_information_not_complete trading_experience_not_complete document_needs_action)),
+            status                        => superbagof(qw(document_needs_action)),
             risk_classification           => 'low',
             prompt_client_to_authenticate => '1',
         },
@@ -835,7 +835,7 @@ subtest $method => sub {
     cmp_deeply(
         $c->tcall($method, {token => $token_21}),
         {
-            status                        => bag(qw(financial_information_not_complete trading_experience_not_complete document_under_review)),
+            status                        => superbagof(qw(document_under_review)),
             risk_classification           => 'low',
             prompt_client_to_authenticate => '1',
         },
@@ -849,7 +849,7 @@ subtest $method => sub {
     cmp_deeply(
         $c->tcall($method, {token => $token_21}),
         {
-            status                        => bag(qw(financial_information_not_complete trading_experience_not_complete)),
+            status                        => noneof(qw(document_needs_action document_under_review)),
             risk_classification           => 'low',
             prompt_client_to_authenticate => '0',
         },
@@ -859,7 +859,7 @@ subtest $method => sub {
     cmp_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status                        => bag(qw(financial_assessment_not_complete financial_information_not_complete)),
+            status                        => noneof(qw(authenticated)),
             risk_classification           => 'low',
             prompt_client_to_authenticate => '1',
         },
@@ -876,7 +876,7 @@ subtest $method => sub {
     cmp_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status                        => bag(qw(financial_assessment_not_complete financial_information_not_complete authenticated professional)),
+            status                        => superbagof(qw(authenticated)),
             risk_classification           => 'low',
             prompt_client_to_authenticate => '0',
         },
@@ -887,7 +887,7 @@ subtest $method => sub {
     cmp_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status                        => bag(qw(financial_assessment_not_complete financial_information_not_complete authenticated professional)),
+            status                        => superbagof(qw(authenticated)),
             risk_classification           => 'low',
             prompt_client_to_authenticate => '1',
         },
@@ -899,7 +899,7 @@ subtest $method => sub {
     cmp_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status => bag(qw(financial_assessment_not_complete financial_information_not_complete age_verification authenticated professional)),
+            status                        => superbagof(qw(age_verification authenticated)),
             risk_classification           => 'low',
             prompt_client_to_authenticate => '0',
         },
@@ -1542,7 +1542,7 @@ subtest $method => sub {
     );
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
-        'Input validation failed: account_opening_reason',
+        'Input validation failed: account opening reason',
         'real account without account opening reason has to set it'
     );
 
@@ -1575,7 +1575,7 @@ subtest $method => sub {
 
         is(
             $c->tcall($method, $params)->{error}{message_to_client},
-            'Value of place_of_birth cannot be changed.',
+            'Your landing company does not allow place of birth to be changed.',
             'cannot send place_of_birth with a different value'
         );
     }
@@ -1625,7 +1625,7 @@ subtest $method => sub {
         $params->{args} = {%full_args};
         is(
             $c->tcall($method, $params)->{error}{message_to_client},
-            'Value of account_opening_reason cannot be changed.',
+            'Your landing company does not allow account opening reason to be changed.',
             'cannot send account_opening_reason with a different value'
         );
     }
@@ -1680,7 +1680,7 @@ subtest $method => sub {
             $params->{args} = {%full_args, citizen => 'bt'};
             $test_client->citizen('at');
             $test_client->save();
-            is($c->tcall($method, $params)->{error}{message_to_client}, 'Citizenship cannot be changed.', 'different value for citizenship');
+            is($c->tcall($method, $params)->{error}{message_to_client}, 'Your landing company does not allow citizen to be changed.', 'different value for citizenship');
         };
         subtest 'restricted countries' => sub {
             for my $restricted_country (qw(us ir hk my)) {
