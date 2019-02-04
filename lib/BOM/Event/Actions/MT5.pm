@@ -11,14 +11,19 @@ use Log::Any qw($log);
 use Log::Any::Adapter qw(Stderr), log_level => $ENV{BOM_LOG_LEVEL} // 'info';
 
 use BOM::Platform::Event::Emitter;
+use BOM::Platform::Context qw(localize);
+use BOM::Platform::Email qw(send_email);
 use BOM::User::Client;
 use BOM::MT5::User::Async;
+use BOM::Config::RedisReplicated;
 
 use Brands;
 use Cache::RedisDB;
 use Email::Stuffer;
 use RedisDB;
 use YAML::XS;
+use Date::Utility;
+use JSON::MaybeUTF8 qw/encode_json_utf8/;
 
 use constant DAYS_TO_EXPIRE => 14;
 use constant SECONDS_IN_DAY => 86400;
@@ -67,7 +72,7 @@ sub sync_info {
 
 sub redis_record_mt5_transfer {
     my $input_data = shift;
-    my $redis      = BOM::Config::RedisReplicated::redis_write;
+    my $redis      = BOM::Config::RedisReplicated::redis_write();
     my $loginid    = $input_data->{loginid};
     my $mt5_id     = $input_data->{mt5_id};
     my $redis_key  = $mt5_id . "_" . $input_data->{action};
@@ -128,6 +133,67 @@ sub notifiy_compliance_mt5_over8K {
     }
 
     return 1;
+}
+
+=head2 new_financial_mt5_signup
+
+This stores the binary_user_id and the timestamp when an unauthenticated CR-client opens a 	
+financial MT5 account. It also sends the user an email to remind them to authenticate, if they
+have not
+
+=cut 
+
+sub new_financial_mt5_signup {
+    my $data = shift;
+
+    my $client = BOM::User::Client->new({loginid => $data->{loginid}});
+
+    my $redis     = BOM::Config::RedisReplicated::redis_write();
+    my $masterkey = 'MT5_REMINDER_AUTHENTICATION_CHECK';
+
+    my $redis_data = encode_json_utf8({
+        creation_epoch => Date::Utility->new()->epoch,
+        has_email_sent => 0
+    });
+
+    # NOTE: We do not store again if there is an existing entry and don't send email the second time
+    return unless $redis->hsetnx($masterkey, $client->binary_user_id, $redis_data);
+
+    my $cs_email = $data->{cs_email};
+
+    #language in params is in upper form.
+    my $language = lc($data->{language} // 'en');
+
+    my $client_email_template = localize(
+        "\
+    <p>Dear [_1],</p>
+    <p>Thank you for registering your MetaTrader 5 account.</p>
+    <p>We are legally required to verify each client's identity and address. Therefore, we kindly request that you authenticate your account by submitting the following documents:
+    <ul><li>A copy of a valid driving licence, identity card, or passport (front and back)</li><li>A copy of a utility bill or bank statement issued within the past six months</li><li>A photo of yourself (selfie) holding your driving licence, identity card, or passport</li></ul>
+    </p>
+    <p>Please <a href=\"https://www.binary.com/[_2]/user/authenticate.html\">upload scanned copies</a> of the above documents within five days of receipt of this email to keep your MT5 account active.</p>
+    <p>We look forward to hearing from you soon.</p>
+    <p>Regards,<p>
+    Binary.com
+    ", $client->full_name, $language
+    );
+
+    try {
+        send_email({
+            from                  => $cs_email,
+            to                    => $client->email,
+            subject               => localize('Authenticate your account to continue trading on MT5'),
+            message               => [$client_email_template],
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            skip_text2html        => 1
+        });
+    }
+    catch {
+        $log->warn("Failed to notify customer about verification process");
+    };
+
+    return undef;
 }
 
 1;
