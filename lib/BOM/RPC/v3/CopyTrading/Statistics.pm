@@ -143,7 +143,12 @@ rpc copytrading_statistics => sub {
             my $c;
             try { $c = produce_contract($contract->{short_code}, 'USD'); } or next;
 
-            push @{$contract_parameters->{exit_tick_epoch}},   $c->exit_tick->epoch;
+            if ($c->exit_tick) {
+                push @{$contract_parameters->{exit_tick_epoch}}, $c->exit_tick->epoch;
+            } else {
+                push @{$contract_parameters->{exit_tick_epoch}}, $c->underlying->tick_at($contract->{sell_time}, {allow_inconsistent => 1})->epoch;
+            }
+
             push @{$contract_parameters->{barriers}},          $c->barrier->as_absolute;
             push @{$contract_parameters->{start_time}},        $start_epoch;
             push @{$contract_parameters->{sell_time}},         $sell_epoch;
