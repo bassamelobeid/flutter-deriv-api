@@ -71,21 +71,9 @@ sub validate {
         {
             return {error => 'duplicate name DOB'};
         }
-
-        # mininum age check: Estonia = 21, others = 18
-        my $dob_date     = Date::Utility->new($details->{date_of_birth});
-        my $minimumAge   = ($residence eq 'ee') ? 21 : 18;
-        my $now          = Date::Utility->new;
-        my $mmyy         = $now->months_ahead(-12 * $minimumAge);
-        my $day_of_month = $now->day_of_month;
-        # we should pay special attention to 02-29 because maybe there is no such date $minimumAge years ago
-        if ($day_of_month == 29 && $now->month == 2) {
-            $day_of_month = $day_of_month - 1;
-        }
-        my $cutoff = Date::Utility->new($day_of_month . '-' . $mmyy);
-        if ($dob_date->is_after($cutoff)) {
-            return {error => 'too young'};
-        }
+        
+        my $dob_error = validate_dob($details->{date_of_birth}, $residence);
+        return $dob_error if $dob_error;
     }
     return undef;
 }
@@ -270,6 +258,23 @@ sub get_account_fields {
         address_city address_state address_postcode phone secret_question secret_answer place_of_birth
         tax_residence tax_identification_number account_opening_reason);
     return @account_fields;
+}
+
+sub validate_dob {
+    my ($dob, $residence) = @_;
+    # mininum age check: Estonia = 21, others = 18
+    my $dob_date     = Date::Utility->new($dob);
+    my $minimumAge   = ($residence eq 'ee') ? 21 : 18;
+    my $now          = Date::Utility->new;
+    my $mmyy         = $now->months_ahead(-12 * $minimumAge);
+    my $day_of_month = $now->day_of_month;
+    # we should pay special attention to 02-29 because maybe there is no such date $minimumAge years ago
+    if ($day_of_month == 29 && $now->month == 2) {
+        $day_of_month = $day_of_month - 1;
+    }
+    my $cutoff = Date::Utility->new($day_of_month . '-' . $mmyy);
+    return {error => 'too young'} if $dob_date->is_after($cutoff);
+    return undef;
 }
 
 1;
