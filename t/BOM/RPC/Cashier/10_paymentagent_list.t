@@ -84,6 +84,10 @@ subtest 'paymentagent_list RPC call' => sub {
     };
 
     my $expected_result = {
+        stash => {
+            app_markup_percentage => '0',
+            valid_source          => 1
+        },
         'available_countries' => [['id', 'Indonesia',], ['', undef]],
         'list' => [{
                 'telephone'             => '+12345678',
@@ -123,6 +127,10 @@ subtest 'paymentagent_list RPC call' => sub {
         ->has_no_error->result_is_deeply($expected_result, "If token is valid, then the paymentagents are from client's broker");
 
     $expected_result = {
+        stash => {
+            app_markup_percentage => '0',
+            valid_source          => 1
+        },
         'available_countries' => [['id', 'Indonesia',], ['', undef]],
         'list' => [{
                 'telephone'             => '+12345678',
@@ -186,11 +194,19 @@ subtest 'suspend countries' => sub {
     my $token_client = BOM::Database::Model::OAuth->new->store_access_token_only(1, $af_client->loginid);
 
     my $empty_result = {
+        stash => {
+            app_markup_percentage => '0',
+            valid_source          => 1
+        },
         'available_countries' => [['id', 'Indonesia',], ['', undef]],
         'list' => [],
     };
 
     my $full_result = {
+        stash => {
+            app_markup_percentage => '0',
+            valid_source          => 1
+        },
         'available_countries' => [['id', 'Indonesia',], ['af', 'Afghanistan',], ['', undef]],
         'list' => [{
                 'telephone'             => '+12345678',
@@ -211,6 +227,10 @@ subtest 'suspend countries' => sub {
     };
 
     my $empty_plus_agent_result = {
+        stash => {
+            app_markup_percentage => '0',
+            valid_source          => 1
+        },
         'available_countries' => [['id', 'Indonesia',], ['', undef]],
         'list' => [{
                 'telephone'             => '+12345678',

@@ -28,12 +28,21 @@ my @params = (
     {
         language => 'EN',
         country  => 'ru',
+        source   => 1,
     });
 
 {
     # cleanup
     BOM::Database::Model::AccessToken->new->dbic->dbh->do('DELETE FROM auth.access_token');
 }
+
+my $expected_result = {
+    stash => {
+        app_markup_percentage => '0',
+        valid_source          => 1
+    },
+    status => 1
+};
 
 subtest 'Initialization' => sub {
     lives_ok {
@@ -81,7 +90,7 @@ subtest 'Account opening request with email does not exist' => sub {
     $params[1]->{link}                 = 'binary.com/some_url';
 
     $rpc_ct->call_ok(@params)
-        ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
+        ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
 
     my @msgs = mailbox_search(
         email   => $params[1]->{args}->{verify_email},
@@ -98,7 +107,7 @@ subtest 'Account opening request with email exists' => sub {
     $params[1]->{link}                 = 'binary.com/some_url';
 
     $rpc_ct->call_ok(@params)
-        ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
+        ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
 
     my @msgs = mailbox_search(
         email   => lc($params[1]->{args}->{verify_email}),
@@ -115,7 +124,7 @@ subtest 'Reset password for exists user' => sub {
     $params[1]->{link}                 = 'binary.com/some_url';
 
     $rpc_ct->call_ok(@params)
-        ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
+        ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
 
     my @msgs = mailbox_search(
         email   => lc($params[1]->{args}->{verify_email}),
@@ -131,7 +140,7 @@ subtest 'Reset password for not exists user' => sub {
     $params[1]->{link}                 = 'binary.com/some_url';
 
     $rpc_ct->call_ok(@params)
-        ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
+        ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
 };
 
 subtest 'Payment agent withdraw' => sub {
@@ -146,7 +155,7 @@ subtest 'Payment agent withdraw' => sub {
     $params[1]->{params}->{token_details} = BOM::RPC::v3::Utility::get_token_details($token);
 
     $rpc_ct->call_ok(@params)
-        ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
+        ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
 
     my $msg = mailbox_search(
         email   => $params[1]->{args}->{verify_email},
@@ -157,7 +166,7 @@ subtest 'Payment agent withdraw' => sub {
 
     $params[1]->{args}->{verify_email} = 'dummy@email.com';
     $rpc_ct->call_ok(@params)
-        ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
+        ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
 
     $msg = mailbox_search(
         email   => $params[1]->{args}->{verify_email},
@@ -177,7 +186,7 @@ subtest 'Payment withdraw' => sub {
     $params[1]->{params}->{token_details} = BOM::RPC::v3::Utility::get_token_details($token);
 
     $rpc_ct->call_ok(@params)
-        ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
+        ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
 
     my $msg = mailbox_search(
         email   => $params[1]->{args}->{verify_email},
@@ -188,7 +197,7 @@ subtest 'Payment withdraw' => sub {
 
     $params[1]->{args}->{verify_email} = 'dummy@email.com';
     $rpc_ct->call_ok(@params)
-        ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
+        ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
 
     $msg = mailbox_search(
         email   => $params[1]->{args}->{verify_email},

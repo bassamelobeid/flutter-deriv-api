@@ -44,6 +44,14 @@ my $new_password = 'jskjD8292923';
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
+my $expected_result = {
+    status => 1,
+    stash  => {
+        app_markup_percentage => '0',
+        valid_source          => 1
+    },
+};
+
 # reset password vrtc
 my $method = 'reset_password';
 subtest 'reset_password_vrtc' => sub {
@@ -60,7 +68,7 @@ subtest 'reset_password_vrtc' => sub {
             verification_code => $code
         }};
 
-    $c->call_ok($method, $params)->has_no_error->result_is_deeply({status => 1});
+    $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result);
     my $subject = 'Your password has been reset.';
     my $msg     = mailbox_search(
         email   => $email_vr,
@@ -140,7 +148,7 @@ subtest $method => sub {
     $params->{args}->{verification_code} = $code;
 
     mailbox_clear();
-    $c->call_ok($method, $params)->has_no_error->result_is_deeply({status => 1});
+    $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result);
     my $subject = 'Your password has been reset.';
     my $msg     = mailbox_search(
         email   => $email_cr,

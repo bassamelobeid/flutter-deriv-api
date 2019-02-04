@@ -51,7 +51,14 @@ $c->call_ok($method, {token => 12345})->has_error->error_message_is('The token i
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client_vr->loginid);
 
 my $result = $c->call_ok($method, {token => $token})->result;
-is_deeply $result, {}, 'empty record for client that has no reality check';
+is_deeply $result,
+    {
+    stash => {
+        valid_source          => 1,
+        app_markup_percentage => 0,
+    },
+    },
+    'empty record for client that has no reality check';
 
 ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client_mlt->loginid);
 my $details       = BOM::RPC::v3::Utility::get_token_details($token);

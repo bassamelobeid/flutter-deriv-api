@@ -94,6 +94,8 @@ subtest $method => sub {
     $params->{token} = $token;
     my $expected_result = {
         'stash' => {
+            app_markup_percentage  => '0',
+            valid_source           => 1,
             'email'                => 'dummy@binary.com',
             'scopes'               => ['read', 'admin', 'trade', 'payments'],
             'country'              => 'id',
@@ -292,7 +294,12 @@ subtest 'logout' => sub {
         token_type   => 'oauth_token',
         token        => $token
     };
-    $c->call_ok('logout', $params)->has_no_error->result_is_deeply({status => 1});
+    $c->call_ok('logout', $params)->has_no_error->result_is_deeply({
+            status => 1,
+            stash  => {
+                app_markup_percentage => '0',
+                valid_source          => 1
+            }});
 
     #check login history
     ($new_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
@@ -329,7 +336,12 @@ subtest 'logout' => sub {
     $params->{token}      = $logout_token;
     $params->{token_type} = 'api_token';
 
-    $c->call_ok('logout', $params)->has_no_error->result_is_deeply({status => 1});
+    $c->call_ok('logout', $params)->has_no_error->result_is_deeply({
+            status => 1,
+            stash  => {
+                app_markup_percentage => '0',
+                valid_source          => 1
+            }});
 
     my $history_records_new = $c->call_ok(
         'login_history',

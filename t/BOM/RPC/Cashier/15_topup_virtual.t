@@ -41,6 +41,17 @@ my ($token_vr) = $oauth->store_access_token_only(1, $test_client_vr->loginid);
 my $account     = $test_client_vr->default_account;
 my $old_balance = $account->balance;
 
+sub expected_result {
+    return {
+        stash => {
+            app_markup_percentage => '0',
+            valid_source          => 1
+        },
+        currency => 'USD',
+        amount   => shift
+    };
+}
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
     {
@@ -112,12 +123,7 @@ $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')
     ->error_message_is('Sorry, this feature is available to virtual accounts only', 'topup virtual error');
 
 $params->{token} = $token_vr;
-$c->call_ok($method, $params)->has_no_error->result_is_deeply({
-        currency => 'USD',
-        amount   => $amount
-    },
-    'topup account successfully'
-);
+$c->call_ok($method, $params)->has_no_error->result_is_deeply(expected_result($amount), 'topup account successfully');
 my $balance = $account->balance + 0;
 is($old_balance + $amount, $balance, 'balance is right');
 $old_balance = $balance;
@@ -145,12 +151,7 @@ $test_client_vr->payment_legacy_payment(
 );
 $balance = $account->balance + 0;
 is($balance, $limit, 'balance is equal to limit');
-$c->call_ok($method, $params)->has_no_error->result_is_deeply({
-        currency => 'USD',
-        amount   => $amount
-    },
-    'topup account successfully'
-);
+$c->call_ok($method, $params)->has_no_error->result_is_deeply(expected_result($amount), 'topup account successfully');
 $balance = $account->balance + 0;
 is($balance, $limit + $amount, 'balance is topuped');
 
@@ -187,12 +188,7 @@ my $txn = BOM::Transaction->new($txn_data);
 is($txn->buy(skip_validation => 1), undef, 'buy contract without error');
 $balance = $account->balance + 0;
 is($balance, $limit - $price, 'balance is reduced for buying contract');
-$c->call_ok($method, $params)->has_no_error->result_is_deeply({
-        currency => 'USD',
-        amount   => $amount
-    },
-    'topup account successfully'
-);
+$c->call_ok($method, $params)->has_no_error->result_is_deeply(expected_result($amount), 'topup account successfully');
 $balance = $account->balance + 0;
 is($balance, $limit + $amount - $price, 'balance was increased correctly');
 

@@ -18,6 +18,17 @@ use BOM::Database::Model::OAuth;
 use BOM::Database::ClientDB;
 use Email::Stuffer::TestLinks;
 
+my $expected_result = {
+    error => {
+        message_to_client => 'The token is invalid.',
+        code              => 'InvalidToken',
+    },
+    stash => {
+        app_markup_percentage => '0',
+        valid_source          => 1
+    },
+};
+
 use utf8;
 
 my ($vclient, $vclient_token, $client, $client_token, $oauth_token);
@@ -116,15 +127,30 @@ subtest 'Sell expired contract' => sub {
         buy_bet    => 1
     );
 
-    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result_is_deeply({count => 1}, 'It should return counts of sold contracts');
+    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result_is_deeply({
+            count => 1,
+            stash => {
+                app_markup_percentage => '0',
+                valid_source          => 1
+            }
+        },
+        'It should return counts of sold contracts'
+    );
 
     lives_ok {
         create_fmb($client);
     }
     'Create expired contract for sell';
 
-    $rpc_ct->call_ok(@params)
-        ->has_no_system_error->has_no_error->result_is_deeply({count => 0}, 'It should return 0 if there are not expired contracts');
+    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result_is_deeply({
+            count => 0,
+            stash => {
+                app_markup_percentage => '0',
+                valid_source          => 1
+            }
+        },
+        'It should return 0 if there are not expired contracts'
+    );
 };
 
 subtest 'Emergency error while sell contract' => sub {

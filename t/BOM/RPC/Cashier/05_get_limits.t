@@ -103,6 +103,10 @@ subtest 'CR - USD' => sub {
 
         # Set expected results for accounts that have not had withdrawals yet
         my $expected_result = {
+            stash => {
+                app_markup_percentage => '0',
+                valid_source          => 1
+            },
             'account_balance'                     => formatnumber('amount', 'USD', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => formatnumber('price',  'USD', $client->get_limit_for_payout),
@@ -140,6 +144,10 @@ subtest 'CR - USD' => sub {
 
         # Set expected results to reflect withdrawn amount of USD 1000
         my $expected_result = {
+            stash => {
+                app_markup_percentage => '0',
+                valid_source          => 1
+            },
             'account_balance'                     => formatnumber('amount', 'USD', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => formatnumber('price',  'USD', $client->get_limit_for_payout),
@@ -198,6 +206,10 @@ subtest 'CR-EUR' => sub {
     subtest 'unauthenticated' => sub {
         # Set expected results for accounts that have not had withdrawals yet
         my $expected_result = {
+            stash => {
+                app_markup_percentage => '0',
+                valid_source          => 1
+            },
             'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => formatnumber('price',  'EUR', $client->get_limit_for_payout),
@@ -239,6 +251,10 @@ subtest 'CR-EUR' => sub {
         $client->save;
         # Set expected results to reflect withdrawn amount of EUR 1000
         my $expected_result = {
+            stash => {
+                app_markup_percentage => '0',
+                valid_source          => 1
+            },
             'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => formatnumber('price',  'EUR', $client->get_limit_for_payout),
@@ -281,6 +297,10 @@ subtest 'CR-BTC' => sub {
     subtest 'unauthenticated' => sub {
         # Set expected results for accounts that have not had withdrawals yet
         my $expected_result = {
+            stash => {
+                app_markup_percentage => '0',
+                valid_source          => 1
+            },
             'account_balance'                     => formatnumber('amount', 'BTC', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => formatnumber('price',  'BTC', $client->get_limit_for_payout),
@@ -330,6 +350,10 @@ subtest 'CR-BTC' => sub {
         $client->save;
         # Set expected results to reflect withdrawn amount of BTC 1.00000000
         my $expected_result = {
+            stash => {
+                app_markup_percentage => '0',
+                valid_source          => 1
+            },
             'account_balance'                     => formatnumber('amount', 'BTC', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => formatnumber('price',  'BTC', $client->get_limit_for_payout),
@@ -370,6 +394,10 @@ subtest 'MLT' => sub {
     subtest 'unauthenticated' => sub {
         # Set expected results for accounts that have not had withdrawals yet
         my $expected_result = {
+            stash => {
+                app_markup_percentage => '0',
+                valid_source          => 1
+            },
             'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => formatnumber('price',  'EUR', $client->get_limit_for_payout),
@@ -407,6 +435,10 @@ subtest 'MLT' => sub {
         $client->save;
         # Set expected results to reflect withdrawn amount of USD 1000
         my $expected_result = {
+            stash => {
+                app_markup_percentage => '0',
+                valid_source          => 1
+            },
             'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => formatnumber('price',  'EUR', $client->get_limit_for_payout),
@@ -447,6 +479,10 @@ subtest 'MX' => sub {
     subtest 'unauthenticated' => sub {
         # Set expected results for accounts that have not had withdrawals yet
         my $expected_result = {
+            stash => {
+                app_markup_percentage => '0',
+                valid_source          => 1
+            },
             'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => formatnumber('price',  'EUR', $client->get_limit_for_payout),
@@ -484,6 +520,10 @@ subtest 'MX' => sub {
         $client->save;
         # Set expected results to reflect withdrawn amount of USD 1000
         my $expected_result = {
+            stash => {
+                app_markup_percentage => '0',
+                valid_source          => 1
+            },
             'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
             'open_positions'                      => $client->get_limit_for_open_positions,
             'payout'                              => formatnumber('price',  'EUR', $client->get_limit_for_payout),

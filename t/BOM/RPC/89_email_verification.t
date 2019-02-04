@@ -9,6 +9,7 @@ my $code             = 'RANDOM_CODE';
 my $website_name     = 'My website name';
 my $verification_uri = 'https://www.example.com/verify';
 my $language         = 'EN';
+my $source           = 1;
 
 sub get_verification_uri {
     my $action = shift;
@@ -66,6 +67,7 @@ sub get_verification {
         code         => $code,
         website_name => $website_name,
         language     => $language,
+        source       => $source,
         ($with_link ? (verification_uri => $verification_uri) : ()),
     });
 }

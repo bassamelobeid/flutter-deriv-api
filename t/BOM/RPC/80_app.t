@@ -80,6 +80,7 @@ $app1 = $c->call_ok(
             homepage         => 'https://www.homepage2.com/'
         },
     })->has_no_system_error->has_no_error->result;
+delete $app1->{stash};    # This will check against an ARRAY response which doesn't have the stash
 is_deeply([sort @{$app1->{scopes}}], ['admin', 'read', 'trade'], 'scopes are updated');
 is $app1->{redirect_uri},     'https://www.example.com/callback',       'redirect_uri is updated';
 is $app1->{verification_uri}, 'https://www.example.com/verify_updated', 'redirect_uri is updated';
@@ -93,7 +94,8 @@ my $get_app = $c->call_ok(
             app_get => $app1->{app_id},
         },
     })->has_no_system_error->has_no_error->result;
-is_deeply($app1, $get_app, 'same on get');
+delete $get_app->{stash};    # This will check against an ARRAY response which doesn't have the stash
+is_deeply($get_app, $app1, 'same on get');
 
 $res = $c->call_ok(
     'app_register',
@@ -130,6 +132,7 @@ $app2 = $c->call_ok(
             app_markup_percentage => 4
         },
     })->has_no_system_error->has_no_error->result;
+delete $app2->{stash};    # This will check against an ARRAY response which doesn't have the stash
 is $app2->{app_markup_percentage}, 4, 'app_markup_percentage is updated';
 
 my $get_apps = $c->call_ok(

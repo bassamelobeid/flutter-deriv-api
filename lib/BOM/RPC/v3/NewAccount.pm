@@ -126,6 +126,11 @@ sub get_verification_uri {
     return BOM::Database::Model::OAuth->new->get_verification_uri_by_app_id($app_id);
 }
 
+sub get_app_name {
+    my $app_id = shift;
+    return BOM::Database::Model::OAuth->new->get_names_by_app_id($app_id)->{$app_id};
+}
+
 rpc "verify_email",
     auth => 0,    # unauthenticated
     sub {
@@ -148,6 +153,8 @@ rpc "verify_email",
         website_name     => $params->{website_name},
         verification_uri => get_verification_uri($params->{source}),
         language         => $params->{language},
+        source           => $params->{source},
+        app_name         => get_app_name($params->{source}),
     });
 
     my $email_already_exist = BOM::User->new(

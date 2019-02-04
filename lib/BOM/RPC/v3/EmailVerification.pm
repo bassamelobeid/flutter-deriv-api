@@ -14,11 +14,19 @@ sub email_verification {
     my $website_name     = $args->{website_name};
     my $verification_uri = $args->{verification_uri};
     my $language         = $args->{language};
+    my $source           = $args->{source};
+    my $app_name         = $args->{app_name};
 
     my $gen_verify_link = sub {
         my $action = shift;
         return "$verification_uri?action=$action&lang=$language&code=$code";
     };
+
+    my $password_reset_url = 'https://www.'
+        # Redirect Binary.me and Binary Desktop to binary.me
+        . ($source == 15284 || $source == 14473 ? 'binary.me' : $website_name) . '/'
+        . lc($language)
+        . ($website_name =~ /champion/i ? '/lost-password.html' : '/user/lost_passwordws.html');
 
     return {
         account_opening_new => sub {
@@ -39,13 +47,26 @@ sub email_verification {
         },
         account_opening_existing => sub {
             return {
-                subject => localize('Duplicate email address submitted - [_1]', $website_name),
-                message => '<div style="line-height:200%;color:#333333;font-size:15px;">'
-                    . localize(
-                    '<p>Dear Valued Customer,</p><p>It appears that you have tried to register an email address that is already included in our system.  <p>You may have:</p><ul><li>Registered with us using the same email in the past, or</li><li>Registered with one of our technology or brokerage partners</li></ul><p>If you\'d like to proceed, please try using a different email address to register your account.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_1]</p>',
-                    $website_name
+                # Check the user is trying to sign up from binary.com
+                $source == 1
+                ? (
+                    subject => localize('Duplicate email address submitted - [_1]', $website_name),
+                    message => '<div style="line-height:200%;color:#333333;font-size:15px;">'
+                        . localize(
+                        '<p>It seems that you tried to sign up with an email address that\'s already in the [_2] system.</p><p>You may have</p><ul><li>Previously signed up with [_2] using the same email address, or</li><li>Signed up with another trading application that uses [_2] technology.</li></ul><p>If you\'d like to proceed, please <a href="[_1]">reset your password</a>.</p><p>If this wasn\'t you, please ignore this email.</p><p style="color:#333333;font-size:15px;">Regards,<br/>[_2]</p>',
+                        $password_reset_url,
+                        $website_name,
+                        )
+                        . '</div>'
                     )
-                    . '</div>'
+                : (
+                    subject => localize('Duplicate email address submitted to [_1] (powered by [_2])', $app_name, $website_name),
+                    message => '<div style="line-height:200%;color:#333333;font-size:15px;">'
+                        . localize(
+                        '<p>[_3] is one of many trading applications powered by [_2] technology. It seems that you tried to sign up with an email address that\'s already in the [_2] system.</p><p>You may have</p><ul><li>Previously signed up with [_3] using the same email address, or</li><li>Signed up with another trading application that uses [_2] technology.</li></ul><p>If you\'d like to proceed, please <a href="[_1]">reset your password</a>.</p><p>If this wasn\'t you, please ignore this email.</p><p style="color:#333333;font-size:15px;">Regards,<br/>[_2]</p>',
+                        $password_reset_url, $website_name, $app_name,)
+                        . '</div>'
+                ),
             };
         },
         payment_withdraw => sub {
