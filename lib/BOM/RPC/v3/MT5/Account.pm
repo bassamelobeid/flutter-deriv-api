@@ -397,8 +397,11 @@ async_rpc mt5_new_account => sub {
                                 unless BOM::RPC::v3::Accounts::send_self_exclusion_notification($client, 'malta_with_mt5', $self_exclusion);
                         }
                     } elsif ($account_type eq 'financial' && $client->landing_company->short eq 'costarica' && !$client->fully_authenticated) {
-                        _send_notification_email($client, $mt5_login, $brand, $params->{language}, $group)
-                            if BOM::RPC::v3::Utility::queue_for_mt5_reminder_email($client->binary_user_id);
+
+                        _handle_new_financial_signup({
+                                loginid  => $client->loginid,
+                                cs_email => $brand->emails('support'),
+                                language => $params->{language}});
 
                     }
 
@@ -463,62 +466,6 @@ sub _check_logins {
     foreach my $login (@{$logins}) {
         return unless (any { $login eq $_ } ($user->loginids));
     }
-    return 1;
-}
-
-sub _send_notification_email {
-    my ($client, $mt5_login, $brand, $language, $group) = @_;
-    $language = 'en' unless defined $language;
-    #language in params is in upper form.
-    $language = lc $language;
-    my $client_email_template = localize(
-        "\
-<p>Dear [_1],</p>
-<p>Thank you for registering your MetaTrader 5 account.</p>
-<p>We are legally required to verify each client's identity and address. Therefore, we kindly request that you authenticate your account by submitting the following documents:
-<ul><li>Valid driving licence, identity card, or passport</li><li>Utility bill or bank statement issued within the past six months</li></ul>
-</p>
-<p>Please <a href=\"https://www.binary.com/[_2]/user/authenticate.html\">upload scanned copies</a> of the above documents, or email them to support\@binary.com within five days of receipt of this email to keep your account active.</p>
-<p>We look forward to hearing from you soon.</p>
-<p>Regards,<p>
-Binary.com
-", $client->full_name, $language
-    );
-
-    try {
-        send_email({
-            from                  => $brand->emails('support'),
-            to                    => $client->email,
-            subject               => localize('Authenticate your account to continue trading on MT5'),
-            message               => [$client_email_template],
-            use_email_template    => 1,
-            email_content_is_html => 1,
-            skip_text2html        => 1
-        });
-    }
-    catch {
-        warn "Failed to notify customer about verification process";
-    };
-
-    try {
-
-        my @msg = split /\n/, <<EOM;
-${\$client->loginid} created MT5 Financial Account MT$mt5_login, type $group.
-If the client has not sent in all necessary documents, for authentication, by ${\Date::Utility->new(time() + 86400 * DISABLE_DAYS)->date_ddmmmyy()}, please disable the financial MT5 account and inform Compliance.
-EOM
-
-        send_email({
-            from                  => $brand->emails('system'),
-            to                    => $brand->emails('support'),
-            subject               => 'Asked for authentication documents',
-            message               => \@msg,
-            use_email_template    => 0,
-            email_content_is_html => 0,
-        });
-    }
-    catch {
-        warn "Failed to notify cs team about new CR Financial account MT$mt5_login";
-    };
     return 1;
 }
 
@@ -1653,6 +1600,18 @@ sub _record_mt5_transfer {
             $sth->execute($payment_id, $mt5_amount, $mt5_account_id, $mt5_currency_code);
         });
     return 1;
+}
+
+=head2 _handle_new_financial_signup
+
+Event handler for new financial mt5 accounts by un-authenticated clients
+
+=cut 
+
+sub _handle_new_financial_signup {
+    my $data = shift;
+    BOM::Platform::Event::Emitter::emit('new_financial_mt5_signup', $data);
+    return undef;
 }
 
 sub _store_transaction_redis {

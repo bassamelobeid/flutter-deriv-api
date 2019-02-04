@@ -227,20 +227,6 @@ subtest 'new CR financial accounts should receive identity verification request 
     };
 
     $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account');
-    #check inbox for emails
-    my $cli_subject  = 'Authenticate your account to continue trading on MT5';
-    my $client_email = mailbox_search(
-        email   => $DETAILS{email},
-        subject => qr/\Q$cli_subject\E/
-    );
-
-    ok($client_email, "identity verification request email received");
-
-    my $redis = BOM::Config::RedisReplicated::redis_read;
-    use constant REDIS_MASTERKEY => 'MT5_REMINDER_AUTHENTICATION_CHECK';
-
-    ok($redis->hget(REDIS_MASTERKEY, $test_client->binary_user_id), "redis key for user id exists");
-
 };
 
 subtest 'MF should be allowed' => sub {

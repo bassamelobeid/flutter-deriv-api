@@ -679,30 +679,6 @@ sub set_professional_status {
     return undef;
 }
 
-=head2 queue_for_mt5_reminder_email
-
-This stores the binary_user_id and the timestamp when an unauthenticated CR-client opens a 
-financial MT5 account
-
-=cut
-
-sub queue_for_mt5_reminder_email {
-
-    my ($binary_user_id) = @_;
-
-    my $redis     = BOM::Config::RedisReplicated::redis_write;
-    my $masterkey = 'MT5_REMINDER_AUTHENTICATION_CHECK';
-
-    my $data = encode_json_utf8({
-        creation_epoch => Date::Utility->new()->epoch,
-        has_email_sent => 0
-    });
-
-    # Store in redis
-    # NOTE: We do not store again if there is an existing entry
-    return $redis->hsetnx($masterkey, $binary_user_id, $data);
-}
-
 sub send_professional_requested_email {
     my ($loginid, $residence, $landing_company_short) = @_;
 
