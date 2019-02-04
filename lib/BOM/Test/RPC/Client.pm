@@ -35,6 +35,8 @@ sub call_ok {
 
     $description ||= "called /$method";
 
+    $req_params->{source} //= 1;
+
     $self->_tcall($method, $req_params);
 
     $self->_test('ok', $self->response, $description);
