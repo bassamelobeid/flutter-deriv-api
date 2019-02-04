@@ -150,7 +150,15 @@ if (defined $do_calculation && $sold_contracts_size) {
             my $c = try { produce_contract($contract->{short_code}, 'USD') } catch { undef };
             next unless $c;
 
-            push @exit_tick_epoch,   $c->exit_tick->epoch;
+            if ($c->exit_tick) {
+
+                push @exit_tick_epoch, $c->exit_tick->epoch;
+
+            } else {
+
+                push @exit_tick_epoch, $c->underlying->tick_at($contract->{sell_time}, {allow_inconsistent => 1})->epoch;
+            }
+
             push @barriers,          $c->barrier->as_absolute;
             push @start_time,        $start_epoch;
             push @sell_time,         $sell_epoch;
