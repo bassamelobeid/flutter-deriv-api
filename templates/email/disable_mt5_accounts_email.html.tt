@@ -1,0 +1,17 @@
+<p>[% l("Dear [_1],", full_name) %]</p>
+
+<p>[% l("We recently sent you an email requesting documents to authenticate your MT5 real money account.") %]</p>
+
+<p><strong>[% l("You may ignore this email if you have sent us your documents. We shall process your documents in due time.") %]</strong></p>
+
+<p>[% l("If you have not sent us your documents thus far, your MT5 real money account will be disabled shortly. This will close any open positions you may have. Your remaining MT5 real money account balance will also be transferred back to your binary options real money account.") %]</p>
+
+<p>[% l("Should you wish to reactivate your MT5 account, please ") %] <a href="[% "https://www.binary.com/en/user/settings/detailsws.html" %]">[% l("update your tax information") %]</a>
+[%l (" and ") %] <a href="[% "https://www.binary.com/en/user/authenticate.html" %]">[% l("authenticate your account.") %]</a>
+</p>
+
+<p>[% l("If you need further clarification or assistance regarding this decision, please contact us at ") %]  <a href="[% "mailto:support@binary.com" %]">[% ("support@binary.com.")%]</a></p>
+
+<p>[% l("Regards,")%]</p>
+
+<p>[% l("Binary.com") %]</p>
