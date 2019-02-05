@@ -6,6 +6,7 @@
       <option value="ETH"[% IF currency == 'ETH' %] selected="selected"[% END %]>Ethereum</option>
       <option value="BCH"[% IF currency == 'BCH' %] selected="selected"[% END %]>Bitcoin Cash</option>
       <option value="UST"[% IF currency == 'UST' %] selected="selected"[% END %]>Tether</option>
+      <option value="USB"[% IF currency == 'USB' %] selected="selected"[% END %]>Binary Coin</option>
     </select>
 <!-- Manual wallet functions -->
         <input type="hidden" name="wallet_command" value="getnewaddress">
