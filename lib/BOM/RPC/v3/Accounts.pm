@@ -1155,6 +1155,12 @@ rpc set_settings => sub {
     # so need to save it separately
     if (defined $args->{email_consent}) {
         $client->user->update_email_fields(email_consent => $args->{email_consent});
+
+        BOM::Platform::Event::Emitter::emit(
+            'email_consent',
+            {
+                loginid       => $client->loginid,
+                email_consent => $args->{email_consent}});
     }
 
     # only allow current client to set allow_copiers
