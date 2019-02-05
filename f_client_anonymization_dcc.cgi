@@ -13,22 +13,15 @@ Bar("Make dual control code");
 
 # Error checks
 
-unless ($input->{transtype} eq 'CLIENTANONYMIZE') {
-    print "Invalid transaction type";
-    code_exit_BO();
-}
-unless ($input->{clientloginid}) {
-    print "ERROR: Please provide client loginid";
-    code_exit_BO();
-}
+code_exit_BO("Please provide a transaction type.")   unless $input->{transtype};
+code_exit_BO("Invalid transaction type")             unless ($input->{transtype} =~ /^Anonymize client|Delete customerio record$/);
+code_exit_BO("ERROR: Please provide client loginid") unless ($input->{clientloginid});
+
 my $client = BOM::User::Client::get_instance({
     'loginid'    => uc($input->{'clientloginid'}),
     db_operation => 'replica'
 });
-if (not $client) {
-    print "ERROR: " . encode_entities($input->{'clientloginid'}) . " does not exist";
-    code_exit_BO();
-}
+code_exit_BO("ERROR: " . encode_entities($input->{'clientloginid'}) . " does not exist") if (not $client);
 
 my $code = BOM::DualControl->new({
         staff           => $clerk,

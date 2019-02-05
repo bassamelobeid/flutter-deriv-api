@@ -5,6 +5,11 @@ use strict;
 use warnings;
 
 use Date::Utility;
+use HTML::Entities;
+
+use f_brokerincludeall;
+use BOM::Platform::Event::Emitter;
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 
 BOM::Backoffice::Sysinit::init();
 PrintContentType();
@@ -20,7 +25,10 @@ print "<form id='generateDCC' action='"
     . request()->url_for('backoffice/f_client_anonymization_dcc.cgi')
     . "' method='get' class='bo_ajax_form'>"
     . "<input type='hidden' name='l' value='EN'>"
-    . "<input type='hidden' name='transtype' value='CLIENTANONYMIZE'>"
+    . "Transaction type: <select name='transtype'>"
+    . "<option value='Anonymize client'>Anonymize client details</option>"
+    . "<option value='Delete customerio record'>Delete client customerio record</option>"
+    . "</select><br><br>"
     . "Loginid : <input type='text' name='clientloginid' placeholder='required'>"
     . "<br><br><input type='submit' value='Make Dual Control Code (by "
     . encode_entities($clerk) . ")'>"
@@ -33,55 +41,63 @@ print "<b>WARNING : THIS WILL RESULT IN PERMANENT DATA LOSS</b><br><br>
     <li>TBC : This functionality is not yet implemented</li>
     </ul>
     <hr>";
-my $prev_loginid = $input->{clientloginid} // '';
-my $prev_dcc     = $input->{DCcode}        // '';
-print "<form id='generateDCC' action='"
+my $loginid  = $input->{clientloginid} // '';
+my $prev_dcc = $input->{DCcode}        // '';
+print "<form id='clientAnonymization' action='"
     . request()->url_for('backoffice/f_client_anonymization.cgi')
     . "' method='post'>"
     . "<input type='hidden' name='l' value='EN'>"
-    . "<input type='hidden' name='transtype' value='CLIENTANONYMIZE'>"
     . "Loginid : <input type='text' name='clientloginid' placeholder='required' value='"
-    . $prev_loginid . "'>"
+    . $loginid . "'>"
     . "<br><br>DCC : <input type='text' name='DCcode' placeholder='required' value='"
     . $prev_dcc . "'>"
-    . "<br><br><input type='checkbox' name='verification' value='true'> I understand this action is irreversible"
-    . "<br><br><input type='submit' value='Start (by "
-    . encode_entities($clerk) . ")'>"
+    . "<br><br><input type='checkbox' name='verification' value='true'> I understand this action is irreversible ("
+    . encode_entities($clerk)
+    . ")<br><br><input type='submit' name='transtype' value='Anonymize client'/>"
+    . "<br><br><input type='submit' name='transtype' value='Delete customerio record'/>"
     . "</form>";
 
-if ($input->{transtype} // '' eq 'CLIENTANONYMIZE') {
+if ($input->{transtype}) {
     #Error checking
-    unless ($input->{clientloginid}) {
-        print "ERROR: Please provide client loginid";
-        code_exit_BO();
-    }
-    unless ($input->{DCcode}) {
-        print "ERROR: Please provide a dual control code";
-        code_exit_BO();
-    }
-    unless ($input->{verification}) {
-        print "ERROR: You must check the verification box";
-        code_exit_BO();
-    }
+    code_exit_BO(_get_display_message("ERROR: Please provide client loginid"))       unless $input->{clientloginid};
+    code_exit_BO(_get_display_message("ERROR: Please provide a dual control code"))  unless $input->{DCcode};
+    code_exit_BO(_get_display_message("ERROR: You must check the verification box")) unless $input->{verification};
+
     my $dcc_error = BOM::DualControl->new({
             staff           => $clerk,
             transactiontype => $input->{transtype}})->validate_client_anonymization_control_code($input->{DCcode}, $input->{clientloginid});
-    if ($dcc_error) {
-        print "ERROR: " . $dcc_error->get_mesg();
-        code_exit_BO();
+    code_exit_BO(_get_display_message("ERROR: " . $dcc_error->get_mesg())) if $dcc_error;
+
+    if ($input->{transtype} eq 'Anonymize client') {
+        #Start anonymization
+        print "Anonymization successfully started (functionality not yet implemented).";
+
+        my $msg =
+              Date::Utility->new->datetime . " "
+            . $input->{transtype} . " for "
+            . $input->{clientloginid}
+            . " by clerk=$clerk (DCcode="
+            . $input->{DCcode}
+            . ") $ENV{REMOTE_ADDR}";
+        BOM::User::AuditLog::log($msg, '', $clerk);
     }
 
-    #Start anonymization
-    print "Anonymization successfully started (functionality not yet implemented).";
+    if ($input->{transtype} eq 'Delete customerio record') {
+        # sending email consent as 0 delete record from customerio
+        BOM::Platform::Event::Emitter::emit(
+            'email_consent',
+            {
+                loginid       => $loginid,
+                email_consent => 0
+            });
 
-    my $msg =
-          Date::Utility->new->datetime . " "
-        . $input->{transtype} . " for "
-        . $input->{clientloginid}
-        . " by clerk=$clerk (DCcode="
-        . $input->{DCcode}
-        . ") $ENV{REMOTE_ADDR}";
-    BOM::User::AuditLog::log($msg, '', $clerk);
+        code_exit_BO(_get_display_message("Process to delete customerio initiated. Please verify by logging into customer.io portal."));
+    }
+}
+
+sub _get_display_message {
+    my $message = shift;
+    return "<p><h2>$message</h2></p>";
 }
 
 code_exit_BO();

@@ -7,11 +7,11 @@ use Try::Tiny;
 use Email::Valid;
 use List::MoreUtils qw( uniq any firstval );
 use HTML::Entities;
-
-use f_brokerincludeall;
 use Format::Util::Strings qw( defang );
 use Text::Trim;
 use Date::Utility;
+
+use f_brokerincludeall;
 use BOM::User::Client;
 use BOM::User;
 use BOM::Database::Model::UserConnect;
