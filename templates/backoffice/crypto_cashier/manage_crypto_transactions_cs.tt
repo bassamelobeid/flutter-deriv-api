@@ -1,0 +1,74 @@
+[% MACRO address_link BLOCK %]
+[% IF addr %]
+    <a href="[% address_uri _ addr %]" target="_blank">[% addr %]</a>
+[% ELSE %]
+    &nbsp;
+[% END %]
+[% END %]
+[% MACRO transaction_link BLOCK %]
+[% IF tx %]
+    <a href="[% transaction_uri _ tx %]" target="_blank">[% tx.substr(0,6) %]...</a>
+[% ELSE %]
+    &nbsp;
+[% END %]
+[% END %]
+<div id="crypto" class="grd-parent grd-grid-12">
+    <table>
+        <tr>
+            <th>Status</th>
+            <th>BlockchainInfo</th>
+            <th>PaymentInfo</th>
+            <th>Date</th>
+            <th>Action</th>
+        </tr>
+        [% FOREACH trx IN transactions %]
+            <tr>
+                <td><table><tbody>
+                    <b>[% trx.transaction_type FILTER ucfirst %]: </b>
+                    [% IF trx.status == 'LOCKED' %]PENDING[% ELSE %][% trx.status %][% END %]
+                </tbody></table></td>
+                <td><table><tbody>
+                    <tr><td>
+                        <b>Address</b>:
+                        [% address_link(addr = trx.address) %]
+                    </td></tr>
+                    <tr><td>
+                        <b>Blockchain ID</b>:
+                        [% transaction_link(tx = trx.blockchain_txn) %]
+                    </td></tr>
+                </tbody></table></td>
+                <td><table><tbody>
+                    <tr><td>Amount: [% trx.currency_code %] [% trx.amount %] (USD [% trx.usd_amount %])</td></tr>
+                    <tr><td>Client: [% trx.client_loginid %]<td></tr>
+                    <tr><td>Balance: [% trx.balance %]</td></tr>
+                    <tr><td>Payment ID: [% trx.payment_id %]</td></tr>
+                    [% IF trx.transaction_type == 'withdrawal'%]
+                        <tr><td>Estimated Fee: [% trx.estimated_fee %]</td></tr>
+                        <tr><td>Transaction Fee: [% trx.txn_fee %]</td></tr>
+                    [% END %]
+                </tbody></table></td>
+                <td><table><tbody>
+                    <tr><td>Creation: [% trx.creation_date %]</td></tr>
+                    [% IF trx.transaction_type == 'deposit' %]
+                        <tr><td>Pending: [% trx.pending_date %]</td></tr>
+                        <tr><td>Confirmed: [% trx.confirmed_date %]</td></tr>
+                    [% ELSIF trx.transaction_type == 'withdrawal' %]
+                        <tr><td>Verified: [% trx.verified_date %]</td></tr>
+                        <tr><td>Rejected: [% trx.rejected_date %]</td></tr>
+                        <tr><td>Processing: [% trx.processing_date %]</td></tr>
+                        <tr><td>Performing Blockchain: [% trx.performing_blockchain_txn_date %]</td></tr>
+                        <tr><td>Sent:[% trx.sent_date %]</td></tr>
+                    [% END %]
+                </tbody></table></td>
+                [% IF trx.status == 'NEW' %]
+                    <td>
+                        <form action="[% controller_url %]" method="POST">
+                            <input type="hidden" id="address" name="address" value="[% trx.address %]" />
+                            <button type="submit" name="action" value="prioritize">Prioritize Confirmation</button>
+                        </form>
+                    </td>
+                [% END %]
+            </tr>
+        [% END %]
+    </table>
+</div>

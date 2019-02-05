@@ -1,13 +1,20 @@
 #!/etc/rmg/bin/perl
 package main;
+
 use strict;
 use warnings;
+no indirect;
 
 use Text::Trim qw(trim);
 use Locale::Country;
 use f_brokerincludeall;
 use HTML::Entities;
 use Date::Utility;
+use YAML::XS;
+use ExchangeRates::CurrencyConverter qw(in_usd);
+use Format::Util::Numbers qw(formatnumber);
+use Try::Tiny;
+use LandingCompany::Registry;
 
 use BOM::User::Client;
 use BOM::Platform::Locale;
@@ -16,8 +23,10 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Database::ClientDB;
 use BOM::ContractInfo;
 use BOM::Backoffice::Sysinit ();
+use BOM::Config;
 BOM::Backoffice::Sysinit::init();
-use Format::Util::Numbers qw/formatnumber/;
+
+my $cfg = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_rpc.yml');
 
 PrintContentType();
 
@@ -67,6 +76,8 @@ if (not $client) {
     code_exit_BO();
 }
 
+my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
+
 my $loginid_bar = $loginID;
 $loginid_bar .= ' (DEPO & WITH ONLY)' if ($depositswithdrawalsonly eq 'yes');
 my $pa = $client->payment_agent;
@@ -87,7 +98,6 @@ my $total_withdrawals;
 # Fetch and display gross deposits and gross withdrawals
 my $action = request()->param('action');
 if (defined $action && $action eq "gross_transactions") {
-    my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
     if (!$client->account) {
         print "<div style='color:red' class='center-aligned'>Error: Client $loginID does not have currency set. </div>";
     }
@@ -174,5 +184,68 @@ BOM::Backoffice::Request::template()->process(
         enddate   => (not $all_in_one_page and $to_date)   ? $to_date->datetime_yyyymmdd_hhmmss()   : undef,
     },
 ) || die BOM::Backoffice::Request::template()->error();
+
+my @trxns;
+if (LandingCompany::Registry::get_currency_type($currency) eq 'crypto') {
+    @trxns = (
+        @{
+            $clientdb->db->dbic->run(
+                fixup => sub {
+                    $_->selectall_arrayref('SELECT * FROM payment.ctc_bo_get_deposit(?)', {Slice => {}}, $client->loginid);
+                })
+        },
+        @{
+            $clientdb->db->dbic->run(
+                fixup => sub {
+                    $_->selectall_arrayref('SELECT * FROM payment.ctc_bo_get_withdrawal(?)', {Slice => {}}, $client->loginid);
+                })
+        },
+    );
+}
+
+if (@trxns) {
+    my $exchange_rate = try {
+        in_usd(1.0, $currency);
+    }
+    catch {
+        code_exit_BO("no exchange rate found for currency " . $currency . ". Please contact IT.")->();
+    };
+
+    my $currency_url    = $cfg->{blockchain_url}{$currency};
+    my $transaction_uri = URI->new($currency_url->{transaction});
+    my $address_uri     = URI->new($currency_url->{address});
+
+    for my $trx (@trxns) {
+        $trx->{amount} //= 0;    # it will be undef on newly generated addresses
+        $trx->{usd_amount} = formatnumber('amount', 'USD', $trx->{amount} * $exchange_rate);
+    }
+    Bar('CRYPTOCURRENCY ACTIVITY');
+
+    my $tt = BOM::Backoffice::Request::template;
+    $tt->process(
+        'backoffice/crypto_cashier/manage_crypto_transactions_cs.tt',
+        {
+            transactions    => \@trxns,
+            broker          => $broker,
+            currency        => $currency,
+            transaction_uri => $transaction_uri,
+            address_uri     => $address_uri,
+            testnet         => BOM::Config::on_qa() ? 1 : 0,
+        }) || die $tt->error();
+}
+
+if ($action && $action eq 'prioritize') {
+    my $prioritize_address = request()->param('address');
+    my ($error) = $clientdb->db->dbic->run(
+        ping => sub {
+            $_->selectrow_array('SELECT * FROM payment.ctc_set_address_priority(?, ?)', undef, $prioritize_address, $currency);
+        });
+
+    if ($error) {
+        print "<p style='color:red'><strong>ERROR: $error while trying to prioritize address $prioritize_address</strong></p>";
+    } else {
+        print "<p style='color:green'><strong>SUCCESS: Requested priority to address: $prioritize_address</strong></p>";
+    }
+}
 
 code_exit_BO();
