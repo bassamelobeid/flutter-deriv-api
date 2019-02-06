@@ -16,7 +16,7 @@
       "required": "1",
       "items": {
         "type": "string",
-        "pattern": "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST)$",
+        "pattern": "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB)$",
         "required": "1"
       }
     },
