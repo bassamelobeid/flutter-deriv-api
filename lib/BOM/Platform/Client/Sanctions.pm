@@ -72,10 +72,9 @@ sub check {
         . "Reason: $sanctioned_info->{reason}";
 
     # do not send notification if client is already disabled
-
     send_email({
-            from    => $self->brand->emails('compliance'),
-            to      => join(',', $self->brand->emails('compliance'), $self->brand->emails('support')),
+            from    => $self->brand->emails('system'),
+            to      => $self->brand->emails('compliance'),
             subject => $client->loginid . ' possible match in sanctions list',
             message => [$message],
         }) unless ($self->skip_email or $client->status->disabled);

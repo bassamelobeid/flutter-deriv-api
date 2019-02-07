@@ -71,7 +71,7 @@ sub validate {
         {
             return {error => 'duplicate name DOB'};
         }
-        
+
         my $dob_error = validate_dob($details->{date_of_birth}, $residence);
         return $dob_error if $dob_error;
     }

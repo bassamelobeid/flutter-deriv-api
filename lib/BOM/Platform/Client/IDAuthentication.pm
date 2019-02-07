@@ -146,10 +146,7 @@ sub _proveid {
         return $status_set_response;
     } else {
         $client->status->set('unwelcome', 'system', "Experian results are insufficient to mark client as age verified.");
-        $self->_notify_cs(
-            "Account $loginid unwelcome following Experian results",
-            "Experian results was insufficient to mark client as age verified and an email has been sent out to the client requesting for Proof of Identification."
-        );
+
         return $self->_request_id_authentication();
     }
 }
@@ -182,10 +179,6 @@ sub _fetch_proveid {
         {
             # We don't retry when there is a search error (no entry or otherwise)
             $client->status->set('unwelcome', 'system', 'No entry for this client found in Experian database.');
-            $self->_notify_cs(
-                "Account $loginid unwelcome due to lack of entry in Experian database",
-                "An email has been sent out to the client requesting for Proof of Identification."
-            );
             $self->_request_id_authentication();
             $successful_request = 1;    # Successful request made, even if response is invalid
         } else {

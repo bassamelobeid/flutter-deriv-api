@@ -229,8 +229,7 @@ subtest 'MX accounts' => sub {
         ok $v->client->status->unwelcome,         "Unwelcome due to Insufficient DOB Match";
         ok $v->client->status->proveid_requested, "ProveID requested";
 
-        is($emails->{$support_email}, "Account $loginid unwelcome following Experian results", "CS received email");
-        is($emails->{$client_email},  "Documents are required to verify your identity",        "Client received email");
+        is($emails->{$client_email}, "Documents are required to verify your identity", "Client received email");
     };
     subtest "Sufficient DOB, Sufficient UKGC" => sub {
         my $c = create_client('MX', undef, {residence => 'gb'});
@@ -296,7 +295,6 @@ subtest 'MX accounts' => sub {
         ok $v->client->status->unwelcome,         "Unwelcome due to no entry";
         ok $v->client->status->proveid_requested, "ProveID requested";
 
-        is($emails->{$support_email}, "Account $loginid unwelcome due to lack of entry in Experian database", "CS received email");
         is($emails->{$client_email}, "Documents are required to verify your identity", "Client received email");
     };
     subtest "Error connecting to Experian" => sub {
