@@ -365,8 +365,6 @@ if ($informclient) {
     catch {
         code_exit_BO("Transaction was performed, please check client statement but an error occured while sending email. Error details $_");
     };
-
-    $client->add_note($subject, $email_body);
 }
 
 code_exit_BO();
