@@ -1538,7 +1538,7 @@ subtest $method => sub {
         address_city   => 'address city',
         address_state  => 'BA',
         phone          => '2345678',
-        place_of_birth => 'au',
+        place_of_birth => undef,
     );
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
@@ -1564,6 +1564,11 @@ subtest $method => sub {
 
     $params->{args} = {%full_args};
     delete $params->{args}{address_line_1};
+
+    $params->{args}{place_of_birth} = 'xx';
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Please enter a valid place of birth.', 'place_of_birth no exists');
+
+    $params->{args}{place_of_birth} = 'de';
     is($c->tcall($method, $params)->{status}, 1, 'can update without sending all required fields');
 
     is($c->tcall($method, $params)->{status}, 1, 'can send account_opening_reason with same value');

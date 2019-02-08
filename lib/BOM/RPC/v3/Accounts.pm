@@ -1033,6 +1033,11 @@ rpc set_settings => sub {
                 }}) if (not $client->account_opening_reason and not $args->{account_opening_reason});
 
         if ($args->{place_of_birth}) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'InputValidationFailed',
+                    message_to_client => localize("Please enter a valid place of birth.")}
+            ) unless Locale::Country::code2country($args->{place_of_birth});
+
             if ($client->landing_company->change_details_before_auth) {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'PermissionDenied',
@@ -1384,10 +1389,11 @@ rpc set_settings => sub {
         [localize('Citizen'),              $client->citizen]);
 
     my $tr_tax_residence = join ', ', map { Locale::Country::code2country($_) } split /,/, ($client->tax_residence || '');
+    my $pob_country = $client->place_of_birth ? Locale::Country::code2country($client->place_of_birth) : '';
 
     push @updated_fields,
         (
-        [localize('Place of birth'), $client->place_of_birth ? Locale::Country::code2country($client->place_of_birth) : ''],
+        [localize('Place of birth'), $pob_country // ''],
         [localize("Tax residence"), $tr_tax_residence],
         [localize('Tax identification number'), ($client->tax_identification_number || '')],
         );
