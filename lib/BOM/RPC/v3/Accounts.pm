@@ -771,7 +771,7 @@ rpc cashier_password => sub {
 
         $client->cashier_setting_password(BOM::User::Password::hashpw($lock_password));
         if (not $client->save()) {
-            return $error_sub->(localize('Sorry, an error occurred while processing your account.'));
+            return $error_sub->(localize('Sorry, an error occurred while processing your request.'));
         } else {
             send_email({
                     'from'    => Brands->new(name => request()->brand)->emails('support'),
@@ -820,7 +820,7 @@ rpc cashier_password => sub {
 
         $client->cashier_setting_password('');
         if (not $client->save()) {
-            return $error_sub->(localize('Sorry, an error occurred while processing your account.'));
+            return $error_sub->(localize('Sorry, an error occurred while processing your request.'));
         } else {
             send_email({
                     'from'    => Brands->new(name => request()->brand)->emails('support'),

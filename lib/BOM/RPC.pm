@@ -195,7 +195,7 @@ sub wrap_rpc_sub {
 
             BOM::RPC::v3::Utility::create_error({
                     code              => 'InternalServerError',
-                    message_to_client => localize("Sorry, an error occurred while processing your account.")});
+                    message_to_client => localize("Sorry, an error occurred while processing your request.")});
         };
 
         if ($verify_app_res && ref $result eq 'HASH' && !$result->{error}) {

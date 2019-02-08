@@ -1165,7 +1165,7 @@ subtest $method => sub {
     $mocked_client->mock('save', sub { return undef });
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
-        'Sorry, an error occurred while processing your account.',
+        'Sorry, an error occurred while processing your request.',
         'return error if cannot save password'
     );
     $mocked_client->unmock_all;
@@ -1205,7 +1205,7 @@ subtest $method => sub {
     $params->{args}{unlock_password} = $tmp_password;
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
-        'Sorry, an error occurred while processing your account.',
+        'Sorry, an error occurred while processing your request.',
         'return error if cannot save'
     );
     $mocked_client->unmock_all;
@@ -1639,7 +1639,7 @@ subtest $method => sub {
     $mocked_client->mock('save', sub { return undef });
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
-        'Sorry, an error occurred while processing your account.',
+        'Sorry, an error occurred while processing your request.',
         'return error if cannot save'
     );
     $mocked_client->unmock_all;

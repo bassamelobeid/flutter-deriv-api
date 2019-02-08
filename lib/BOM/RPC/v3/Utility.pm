@@ -243,7 +243,7 @@ sub site_limits {
 sub client_error() {
     return create_error({
             code              => 'InternalServerError',
-            message_to_client => localize('Sorry, an error occurred while processing your account.')});
+            message_to_client => localize('Sorry, an error occurred while processing your request.')});
 }
 
 sub website_name {
