@@ -65,4 +65,14 @@ workflows:
     jobs:
       - build:
           context: perl
-
+  daily:
+    triggers:
+      - schedule:
+          cron: "8 20 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build:
+          context: perl
