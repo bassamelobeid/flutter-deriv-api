@@ -76,6 +76,10 @@
             "type":"string"
           }
         },
+        "changeable_fields" : {
+          "type" : "object",
+          "description": "Special conditions for changing sensitive fields"
+        },
         "legal_default_currency":{
           "description":"Default currency of client accounts with this Landing Company.",
           "type":"string"

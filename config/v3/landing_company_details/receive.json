@@ -25,6 +25,10 @@
                   "type" : "string"
                }
             },
+            "changeable_fields" : {
+              "type" : "object",
+              "description": "Special conditions for changing sensitive fields"
+            },
             "legal_allowed_contract_categories" : {
                "type" : "array",
                "items" : {

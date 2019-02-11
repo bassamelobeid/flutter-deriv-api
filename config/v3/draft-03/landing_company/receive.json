@@ -45,6 +45,10 @@
               "type":"string",
               "description": "Landing Company country of incorporation"
             },
+            "changeable_fields" : {
+              "type" : "object",
+              "description": "Special conditions for changing sensitive fields"
+            },
             "legal_default_currency":{
               "type":"string",
               "description": "Default account currency"
@@ -94,6 +98,10 @@
             "country":{
               "type":"string",
               "description": "Landing Company country of incorporation"
+            },
+            "changeable_fields" : {
+              "type" : "object",
+              "description": "Special conditions for changing sensitive fields"
             },
             "legal_default_currency":{
               "type":"string",

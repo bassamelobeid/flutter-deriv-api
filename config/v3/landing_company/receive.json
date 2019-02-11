@@ -121,6 +121,10 @@
                                 "type": "string"
                             }
                         },
+                        "changeable_fields" : {
+                          "type" : "object",
+                          "description": "Special conditions for changing sensitive fields"
+                        },
                         "legal_allowed_currencies": {
                             "items": {
                                 "type": "string"
@@ -313,6 +317,10 @@
                             "items": {
                                 "type": "string"
                             }
+                        },
+                        "changeable_fields" : {
+                          "type" : "object",
+                          "description": "Special conditions for changing sensitive fields"
                         },
                         "address": {
                             "description": "Landing Company address",
