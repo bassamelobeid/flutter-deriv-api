@@ -1,244 +1,321 @@
-version: 2
-
-default: &default
+alias:
+- &1
+  add_ssh_keys:
+    fingerprints:
+    - 26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb
+- &2
+  run:
+    command: /opt/circle/prepare-test.sh
+    name: Update git repositories
+- &3
+  run:
+    background: true
+    command: |
+      start_services
+      touch /tmp/services.ready
+    name: Start services
+- &4
+  run:
+    command: |
+      count=0
+      while [ ! -f /tmp/services.ready ]; do
+          echo 'Still waiting for services...'
+          (( count++ )) && (( count >= 20 )) && break
+          sleep 1
+      done
+    name: Wait for services to start up
+- &5
+  environment:
+    PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
+default: &6
   docker:
-    - image: regentmarkets/debian-ci:stable
-      user: nobody
-      auth:
-        username: circle4regentmarkets
-        password: $DOCKERHUB_PASSWORD
+  - auth:
+      password: $DOCKERHUB_PASSWORD
+      username: circle4regentmarkets
+    image: regentmarkets/debian-ci:stable
+    user: nobody
   shell: /bin/bash -leo pipefail
   working_directory: /home/git/regentmarkets/bom-quant-benchmark
-
-alias:
-  - &ssh_keys
-    add_ssh_keys:
-      fingerprints:
-        - "26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb"
-  - &git
-    run:
-      name: Update git repositories
-      command: /opt/circle/prepare-test.sh
-  - &services
-    run:
-      name: Start services
-      command: |
-        start_services
-        touch /tmp/services.ready
-      background: true
-  - &wait_services
-    run:
-      name: Wait for services to start up
-      command: |
-        count=0
-        while [ ! -f /tmp/services.ready ]; do
-            echo 'Still waiting for services...'
-            (( count++ )) && (( count >= 20 )) && break
-            sleep 1
-        done
-  - &tests
-    environment:
-      PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
-
 jobs:
-  critique:
-    <<: *default
-    steps:
-      - *ssh_keys
-      - checkout
-      - *git
-      - *services
-      - *wait_services
-      - run:
-          <<: *tests
-          name: Perl critique
-          command: |
-            echo '--formatter TAP::Formatter::JUnit' >> .proverc
-            make critique
-      - store_test_results:
-          path: /var/tmp/test-output
-  merlin:
-    <<: *default
-    steps:
-      - *ssh_keys
-      - checkout
-      - *git
-      - *services
-      - *wait_services
-      - run:
-          <<: *tests
-          name: Merlin
-          command: |
-            echo '--formatter TAP::Formatter::JUnit' >> .proverc
-            make merlin_benchmark
-      - store_test_results:
-          path: /var/tmp/test-output
-  SDFX_benchmark_major:
-    <<: *default
-    steps:
-      - *ssh_keys
-      - checkout
-      - *git
-      - *services
-      - *wait_services
-      - run:
-          <<: *tests
-          name: SDFX benchmark major
-          command: |
-            echo '--formatter TAP::Formatter::JUnit' >> .proverc
-            make SDFX_benchmark_major
-      - store_test_results:
-          path: /var/tmp/test-output
-  SDFX_benchmark_minor:
-    <<: *default
-    steps:
-      - *ssh_keys
-      - checkout
-      - *git
-      - *services
-      - *wait_services
-      - run:
-          <<: *tests
-          name: SDFX benchmark minor
-          command: |
-            echo '--formatter TAP::Formatter::JUnit' >> .proverc
-            make SDFX_benchmark_minor
-      - store_test_results:
-          path: /var/tmp/test-output
-  SDEQ_benchmark_DJI:
-    <<: *default
-    steps:
-      - *ssh_keys
-      - checkout
-      - *git
-      - *services
-      - *wait_services
-      - run:
-          <<: *tests
-          name: SDEQ benchmark DJI
-          command: |
-            echo '--formatter TAP::Formatter::JUnit' >> .proverc
-            make SDEQ_benchmark_DJI
-      - store_test_results:
-          path: /var/tmp/test-output
-  SDEQ_benchmark_FCHI:
-    <<: *default
-    steps:
-      - *ssh_keys
-      - checkout
-      - *git
-      - *services
-      - *wait_services
-      - run:
-          <<: *tests
-          name: SDEQ benchmark FCHI
-          command: |
-            echo '--formatter TAP::Formatter::JUnit' >> .proverc
-            make SDEQ_benchmark_FCHI
-      - store_test_results:
-          path: /var/tmp/test-output
-  SDEQ_benchmark_SPC:
-    <<: *default
-    steps:
-      - *ssh_keys
-      - checkout
-      - *git
-      - *services
-      - *wait_services
-      - run:
-          <<: *tests
-          name: SDEQ benchmark SPC
-          command: |
-            echo '--formatter TAP::Formatter::JUnit' >> .proverc
-            make SDEQ_benchmark_SPC
-      - store_test_results:
-          path: /var/tmp/test-output
-  SDEQ_benchmark_N225:
-    <<: *default
-    steps:
-      - *ssh_keys
-      - checkout
-      - *git
-      - *services
-      - *wait_services
-      - run:
-          <<: *tests
-          name: SDEQ benchmark N225
-          command: |
-            echo '--formatter TAP::Formatter::JUnit' >> .proverc
-            make SDEQ_benchmark_N225
-      - store_test_results:
-          path: /var/tmp/test-output
-  SDEQ_benchmark_SSECOMP:
-    <<: *default
-    steps:
-      - *ssh_keys
-      - checkout
-      - *git
-      - *services
-      - *wait_services
-      - run:
-          <<: *tests
-          name: SDEQ benchmark SSECOMP
-          command: |
-            echo '--formatter TAP::Formatter::JUnit' >> .proverc
-            make SDEQ_benchmark_SSECOMP
-      - store_test_results:
-          path: /var/tmp/test-output
-  SDEQ_benchmark_FTSE:
-    <<: *default
-    steps:
-      - *ssh_keys
-      - checkout
-      - *git
-      - *services
-      - *wait_services
-      - run:
-          <<: *tests
-          name: SDEQ benchmark FTSE
-          command: |
-            echo '--formatter TAP::Formatter::JUnit' >> .proverc
-            make SDEQ_benchmark_FTSE
-      - store_test_results:
-          path: /var/tmp/test-output
   OVRA_benchmark:
-    <<: *default
+    <<: *6
     steps:
-      - *ssh_keys
-      - checkout
-      - *git
-      - *services
-      - *wait_services
-      - run:
-          <<: *tests
-          name: OVRA benchmark
-          command: |
-            echo '--formatter TAP::Formatter::JUnit' >> .proverc
-            make OVRA_benchmark
-      - store_test_results:
-          path: /var/tmp/test-output
-
+    - *1
+    - checkout
+    - *2
+    - *3
+    - *4
+    - run:
+        <<: *5
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make OVRA_benchmark
+        name: OVRA benchmark
+    - store_test_results:
+        path: /var/tmp/test-output
+  SDEQ_benchmark_DJI:
+    <<: *6
+    steps:
+    - *1
+    - checkout
+    - *2
+    - *3
+    - *4
+    - run:
+        <<: *5
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make SDEQ_benchmark_DJI
+        name: SDEQ benchmark DJI
+    - store_test_results:
+        path: /var/tmp/test-output
+  SDEQ_benchmark_FCHI:
+    <<: *6
+    steps:
+    - *1
+    - checkout
+    - *2
+    - *3
+    - *4
+    - run:
+        <<: *5
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make SDEQ_benchmark_FCHI
+        name: SDEQ benchmark FCHI
+    - store_test_results:
+        path: /var/tmp/test-output
+  SDEQ_benchmark_FTSE:
+    <<: *6
+    steps:
+    - *1
+    - checkout
+    - *2
+    - *3
+    - *4
+    - run:
+        <<: *5
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make SDEQ_benchmark_FTSE
+        name: SDEQ benchmark FTSE
+    - store_test_results:
+        path: /var/tmp/test-output
+  SDEQ_benchmark_N225:
+    <<: *6
+    steps:
+    - *1
+    - checkout
+    - *2
+    - *3
+    - *4
+    - run:
+        <<: *5
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make SDEQ_benchmark_N225
+        name: SDEQ benchmark N225
+    - store_test_results:
+        path: /var/tmp/test-output
+  SDEQ_benchmark_SPC:
+    <<: *6
+    steps:
+    - *1
+    - checkout
+    - *2
+    - *3
+    - *4
+    - run:
+        <<: *5
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make SDEQ_benchmark_SPC
+        name: SDEQ benchmark SPC
+    - store_test_results:
+        path: /var/tmp/test-output
+  SDEQ_benchmark_SSECOMP:
+    <<: *6
+    steps:
+    - *1
+    - checkout
+    - *2
+    - *3
+    - *4
+    - run:
+        <<: *5
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make SDEQ_benchmark_SSECOMP
+        name: SDEQ benchmark SSECOMP
+    - store_test_results:
+        path: /var/tmp/test-output
+  SDFX_benchmark_major:
+    <<: *6
+    steps:
+    - *1
+    - checkout
+    - *2
+    - *3
+    - *4
+    - run:
+        <<: *5
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make SDFX_benchmark_major
+        name: SDFX benchmark major
+    - store_test_results:
+        path: /var/tmp/test-output
+  SDFX_benchmark_minor:
+    <<: *6
+    steps:
+    - *1
+    - checkout
+    - *2
+    - *3
+    - *4
+    - run:
+        <<: *5
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make SDFX_benchmark_minor
+        name: SDFX benchmark minor
+    - store_test_results:
+        path: /var/tmp/test-output
+  critique:
+    <<: *6
+    steps:
+    - *1
+    - checkout
+    - *2
+    - *3
+    - *4
+    - run:
+        <<: *5
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make critique
+        name: Perl critique
+    - store_test_results:
+        path: /var/tmp/test-output
+  merlin:
+    <<: *6
+    steps:
+    - *1
+    - checkout
+    - *2
+    - *3
+    - *4
+    - run:
+        <<: *5
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make merlin_benchmark
+        name: Merlin
+    - store_test_results:
+        path: /var/tmp/test-output
+version: 2
 workflows:
-  version: 2
   build-workflow:
+    jobs: &7
+    - merlin:
+        context: perl
+    - SDFX_benchmark_major:
+        context: perl
+    - SDFX_benchmark_minor:
+        context: perl
+    - SDEQ_benchmark_DJI:
+        context: perl
+    - SDEQ_benchmark_FCHI:
+        context: perl
+    - SDEQ_benchmark_SPC:
+        context: perl
+    - SDEQ_benchmark_N225:
+        context: perl
+    - SDEQ_benchmark_SSECOMP:
+        context: perl
+    - SDEQ_benchmark_FTSE:
+        context: perl
+    - OVRA_benchmark:
+        context: perl
+  daily:
+    jobs: *7
+    triggers:
+    - schedule:
+        cron: 40 20 * * *
+        filters:
+          branches:
+            only:
+            - master
+  tagged:
     jobs:
-      - merlin:
-          context: perl
-      - SDFX_benchmark_major:
-          context: perl
-      - SDFX_benchmark_minor:
-          context: perl
-      - SDEQ_benchmark_DJI:
-          context: perl
-      - SDEQ_benchmark_FCHI:
-          context: perl
-      - SDEQ_benchmark_SPC:
-          context: perl
-      - SDEQ_benchmark_N225:
-          context: perl
-      - SDEQ_benchmark_SSECOMP:
-          context: perl
-      - SDEQ_benchmark_FTSE:
-          context: perl
-      - OVRA_benchmark:
-          context: perl
+    - merlin:
+        context: perl
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /^V\d+_.*/
+    - SDFX_benchmark_major:
+        context: perl
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /^V\d+_.*/
+    - SDFX_benchmark_minor:
+        context: perl
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /^V\d+_.*/
+    - SDEQ_benchmark_DJI:
+        context: perl
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /^V\d+_.*/
+    - SDEQ_benchmark_FCHI:
+        context: perl
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /^V\d+_.*/
+    - SDEQ_benchmark_SPC:
+        context: perl
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /^V\d+_.*/
+    - SDEQ_benchmark_N225:
+        context: perl
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /^V\d+_.*/
+    - SDEQ_benchmark_SSECOMP:
+        context: perl
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /^V\d+_.*/
+    - SDEQ_benchmark_FTSE:
+        context: perl
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /^V\d+_.*/
+    - OVRA_benchmark:
+        context: perl
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /^V\d+_.*/
+  version: 2
