@@ -1,81 +1,102 @@
-version: 2
-
-default: &default
+alias:
+- &1
+  add_ssh_keys:
+    fingerprints:
+    - 26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb
+- &2
+  run:
+    command: /opt/circle/prepare-test.sh
+    name: Update git repositories
+- &3
+  run:
+    background: true
+    command: |
+      start_services
+      touch /tmp/services.ready
+    name: Start services
+- &4
+  run:
+    command: |
+      count=0
+      while [ ! -f /tmp/services.ready ]; do
+          echo 'Still waiting for services...'
+          (( count++ )) && (( count >= 20 )) && break
+          sleep 1
+      done
+    name: Wait for services to start up
+- &5
+  environment:
+    PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
+default: &6
   docker:
-    - image: regentmarkets/debian-ci:stable
-      user: nobody
-      auth:
-        username: circle4regentmarkets
-        password: $DOCKERHUB_PASSWORD
+  - auth:
+      password: $DOCKERHUB_PASSWORD
+      username: circle4regentmarkets
+    image: regentmarkets/debian-ci:stable
+    user: nobody
   shell: /bin/bash -leo pipefail
   working_directory: /home/git/regentmarkets/bom-backoffice
-
-alias:
-  - &ssh_keys
-    add_ssh_keys:
-      fingerprints:
-        - "26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb"
-  - &git
-    run:
-      name: Update git repositories
-      command: /opt/circle/prepare-test.sh
-  - &services
-    run:
-      name: Start services
-      command: |
-        start_services
-        touch /tmp/services.ready
-      background: true
-  - &wait_services
-    run:
-      name: Wait for services to start up
-      command: |
-        count=0
-        while [ ! -f /tmp/services.ready ]; do
-            echo 'Still waiting for services...'
-            (( count++ )) && (( count >= 20 )) && break
-            sleep 1
-        done
-  - &tests
-    environment:
-      PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
-
 jobs:
-  syntax:
-    <<: *default
-    steps:
-      - *ssh_keys
-      - checkout
-      - *git
-      - run:
-          <<: *tests
-          name: Code structure and syntax
-          command: |
-            sudo mkdir -p /home/website/www/temp
-            make syntax
-      - store_test_results:
-          path: /var/tmp/test-output
   core:
-    <<: *default
+    <<: *6
     steps:
-      - *ssh_keys
-      - checkout
-      - *git
-      - *services
-      - *wait_services
-      - run:
-          <<: *tests
-          name: Test
-          command: |
-            sudo tee -a /etc/hosts < /home/git/regentmarkets/bom-postgres/hosts.db && make test
-      - store_test_results:
-          path: /var/tmp/test-output
-
+    - *1
+    - checkout
+    - *2
+    - *3
+    - *4
+    - run:
+        <<: *5
+        command: |
+          sudo tee -a /etc/hosts < /home/git/regentmarkets/bom-postgres/hosts.db && make test
+        name: Test
+    - store_test_results:
+        path: /var/tmp/test-output
+  syntax:
+    <<: *6
+    steps:
+    - *1
+    - checkout
+    - *2
+    - run:
+        <<: *5
+        command: |
+          sudo mkdir -p /home/website/www/temp
+          make syntax
+        name: Code structure and syntax
+    - store_test_results:
+        path: /var/tmp/test-output
+version: 2
 workflows:
-  version: 2
   build-workflow:
+    jobs: &7
+    - syntax:
+        context: perl
+    - core:
+        context: perl
+  daily:
+    jobs: *7
+    triggers:
+    - schedule:
+        cron: 4 20 * * *
+        filters:
+          branches:
+            only:
+            - master
+  tagged:
     jobs:
-      - syntax:
-          context: perl
-      - core:
-          context: perl
+    - syntax:
+        context: perl
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /^V\d+_.*/
+    - core:
+        context: perl
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /^V\d+_.*/
+  version: 2
