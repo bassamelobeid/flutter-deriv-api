@@ -1,25 +1,42 @@
-version: 2
 jobs:
   build:
     docker:
-      - image: regentmarkets/debian-ci:stable
-        user: nobody
-        auth:
-          username: circle4regentmarkets
-          password: $DOCKERHUB_PASSWORD
-    working_directory: /home/git/regentmarkets/bom-websocket-tests
+    - auth:
+        password: $DOCKERHUB_PASSWORD
+        username: circle4regentmarkets
+      image: regentmarkets/debian-ci:stable
+      user: nobody
     steps:
-      - add_ssh_keys:
-          fingerprints:
-            - "26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb"
-      - checkout
-      - run:
-          name: Standard tests
-          command: echo '--formatter TAP::Formatter::JUnit' >> .proverc && make test
+    - add_ssh_keys:
+        fingerprints:
+        - 26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb
+    - checkout
+    - run:
+        command: echo '--formatter TAP::Formatter::JUnit' >> .proverc && make test
+        name: Standard tests
+    working_directory: /home/git/regentmarkets/bom-websocket-tests
+version: 2
 workflows:
-  version: 2
   build-workflow:
+    jobs: &1
+    - build:
+        context: perl
+  daily:
+    jobs: *1
+    triggers:
+    - schedule:
+        cron: 18 20 * * *
+        filters:
+          branches:
+            only:
+            - master
+  tagged:
     jobs:
-      - build:
-          context: perl
-
+    - build:
+        context: perl
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /^V\d+_.*/
+  version: 2
