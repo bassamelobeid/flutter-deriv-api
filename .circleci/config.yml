@@ -1,34 +1,53 @@
-version: 2
 jobs:
   build:
     docker:
-      - image: regentmarkets/debian-ci:stable
-        user: nobody
-        auth:
-          username: circle4regentmarkets
-          password: $DOCKERHUB_PASSWORD
-    working_directory: /home/git/regentmarkets/bom-marketdataautoupdater
+    - auth:
+        password: $DOCKERHUB_PASSWORD
+        username: circle4regentmarkets
+      image: regentmarkets/debian-ci:stable
+      user: nobody
     steps:
-      - add_ssh_keys:
-          fingerprints:
-            - "26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb"
-      - checkout
-      - run:
-          name: Start services
-          command: for i in chronicle feed; do sudo pg_ctlcluster 9.6 $i start & done && sudo service binary_feeddb_pgbouncer restart & sudo service binary_pgbouncer restart & sudo service redis-server start & wait && sudo cp /home/git/regentmarkets/travis-scripts/conf/redis_appsettings.conf /etc/redis/ && sudo /usr/bin/redis-server /etc/redis/redis_appsettings.conf
-      - run:
-          name: Run tests
-          command: echo '--formatter TAP::Formatter::JUnit' >> .proverc && make test
-          environment:
-            PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
-            PERL5LIB: /home/git/regentmarkets/bom/lib:/home/git/regentmarkets/bom-postgres/lib:/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/bom-market/lib:/home/git/regentmarkets/bom-test/lib:/home/git/regentmarkets/bom-config/lib:/home/git/regentmarkets/bom-marketdataautoupdater/lib
-      - store_test_results:
-          path: /var/tmp/test-output
-
+    - add_ssh_keys:
+        fingerprints:
+        - 26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb
+    - checkout
+    - run:
+        command: for i in chronicle feed; do sudo pg_ctlcluster 9.6 $i start & done
+          && sudo service binary_feeddb_pgbouncer restart & sudo service binary_pgbouncer
+          restart & sudo service redis-server start & wait && sudo cp /home/git/regentmarkets/travis-scripts/conf/redis_appsettings.conf
+          /etc/redis/ && sudo /usr/bin/redis-server /etc/redis/redis_appsettings.conf
+        name: Start services
+    - run:
+        command: echo '--formatter TAP::Formatter::JUnit' >> .proverc && make test
+        environment:
+          PERL5LIB: /home/git/regentmarkets/bom/lib:/home/git/regentmarkets/bom-postgres/lib:/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/bom-market/lib:/home/git/regentmarkets/bom-test/lib:/home/git/regentmarkets/bom-config/lib:/home/git/regentmarkets/bom-marketdataautoupdater/lib
+          PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
+        name: Run tests
+    - store_test_results:
+        path: /var/tmp/test-output
+    working_directory: /home/git/regentmarkets/bom-marketdataautoupdater
+version: 2
 workflows:
-  version: 2
   build-workflow:
+    jobs: &1
+    - build:
+        context: perl
+  daily:
+    jobs: *1
+    triggers:
+    - schedule:
+        cron: 35 20 * * *
+        filters:
+          branches:
+            only:
+            - master
+  tagged:
     jobs:
-      - build:
-          context: perl
-
+    - build:
+        context: perl
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /^V\d+_.*/
+  version: 2
