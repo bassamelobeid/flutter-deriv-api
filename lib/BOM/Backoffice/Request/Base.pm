@@ -197,11 +197,12 @@ sub _build_cookie_domain {
 sub _build_domain_name {
     my $self = shift;
 
-    my @host_name = split(/\./, Sys::Hostname::hostname);
+    my @host_name = split(/\./, Sys::Hostname::hostname());
     my $name = $host_name[0];
 
     if ($name =~ /^qa\d+$/) {
-        return 'binary' . $name . '.com';
+        return 'binary' . $name . '.com' if $host_name[1] eq 'regentmarkets';
+        return Sys::Hostname::hostname();
     }
     return 'binary.com';
 }

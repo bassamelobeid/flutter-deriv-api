@@ -87,11 +87,12 @@ sub _SetEnvironment {
 }
 
 sub _domain_for {
-    my @host_name = split(/\./, Sys::Hostname::hostname);
+    my @host_name = split(/\./, Sys::Hostname::hostname());
     my $server_name = $host_name[0];
 
     if ($server_name =~ /^(qa\d+)$/) {
-        return "www.binary$1.com";
+        return "www.binary$1.com" if $host_name[1] eq 'regentmarkets';
+        return Sys::Hostname::hostname();
     }
 
     if ($server_name =~ /^backoffice.*$/) {
