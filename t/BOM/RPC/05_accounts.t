@@ -1685,7 +1685,11 @@ subtest $method => sub {
             $params->{args} = {%full_args, citizen => 'bt'};
             $test_client->citizen('at');
             $test_client->save();
-            is($c->tcall($method, $params)->{error}{message_to_client}, 'Your landing company does not allow citizen to be changed.', 'different value for citizenship');
+            is(
+                $c->tcall($method, $params)->{error}{message_to_client},
+                'Your landing company does not allow citizen to be changed.',
+                'different value for citizenship'
+            );
         };
         subtest 'restricted countries' => sub {
             for my $restricted_country (qw(us ir hk my)) {

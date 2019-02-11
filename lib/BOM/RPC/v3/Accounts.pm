@@ -320,7 +320,9 @@ sub __build_landing_company {
         legal_allowed_markets             => $lc->legal_allowed_markets,
         legal_allowed_contract_categories => $lc->legal_allowed_contract_categories,
         has_reality_check                 => $lc->has_reality_check ? 1 : 0,
-        currency_config                   => market_pricing_limits($payout_currencies, $lc->short, $lc->legal_allowed_markets)};
+        currency_config                   => market_pricing_limits($payout_currencies, $lc->short, $lc->legal_allowed_markets),
+        changeable_fields                 => $lc->changeable_fields,
+    };
 }
 
 rpc statement => sub {
@@ -980,6 +982,7 @@ rpc set_settings => sub {
     my $brand = Brands->new(name => request()->brand);
     my ($residence, $allow_copiers) =
         ($args->{residence}, $args->{allow_copiers});
+
     if ($client->is_virtual) {
         # Virtual client can update
         # - residence, if residence not set.
@@ -1010,7 +1013,7 @@ rpc set_settings => sub {
         return BOM::RPC::v3::Utility::permission_error() if $residence;
 
         if ($args->{account_opening_reason}) {
-            if ($client->landing_company->change_details_before_auth) {
+            if ($client->landing_company->is_field_changeable_before_auth('account_opening_reason')) {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'PermissionDenied',
                         message_to_client => localize("Value of account opening reason cannot be changed after authentication.")})
@@ -1033,12 +1036,14 @@ rpc set_settings => sub {
                 }}) if (not $client->account_opening_reason and not $args->{account_opening_reason});
 
         if ($args->{place_of_birth}) {
+
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'InputValidationFailed',
                     message_to_client => localize("Please enter a valid place of birth.")}
             ) unless Locale::Country::code2country($args->{place_of_birth});
 
-            if ($client->landing_company->change_details_before_auth) {
+            if ($client->landing_company->is_field_changeable_before_auth('place_of_birth')) {
+
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'PermissionDenied',
                         message_to_client => localize("Value of place of birth cannot be changed after authentication.")})
@@ -1055,7 +1060,7 @@ rpc set_settings => sub {
         }
 
         if ($args->{date_of_birth}) {
-            if ($client->landing_company->change_details_before_auth) {
+            if ($client->landing_company->is_field_changeable_before_auth('date_of_birth')) {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'PermissionDenied',
                         message_to_client => localize("Value of date of birth cannot be changed after authentication.")})
@@ -1078,7 +1083,7 @@ rpc set_settings => sub {
         }
 
         if ($args->{salutation}) {
-            if ($client->landing_company->change_details_before_auth) {
+            if ($client->landing_company->is_field_changeable_before_auth('salutation')) {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'PermissionDenied',
                         message_to_client => localize("Value of salutation cannot be changed after authentication.")})
@@ -1095,7 +1100,7 @@ rpc set_settings => sub {
         }
 
         if ($args->{first_name}) {
-            if ($client->landing_company->change_details_before_auth) {
+            if ($client->landing_company->is_field_changeable_before_auth('first_name')) {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'PermissionDenied',
                         message_to_client => localize("Value of first name cannot be changed after authentication.")})
@@ -1112,7 +1117,7 @@ rpc set_settings => sub {
         }
 
         if ($args->{last_name}) {
-            if ($client->landing_company->change_details_before_auth) {
+            if ($client->landing_company->is_field_changeable_before_auth('last_name')) {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'PermissionDenied',
                         message_to_client => localize("Value of last name cannot be changed after authentication.")})
@@ -1207,7 +1212,7 @@ rpc set_settings => sub {
     ) if ($client->landing_company->short eq 'maltainvest' and (not $tax_residence or not $tax_identification_number));
 
     if ($args->{citizen}) {
-        if ($client->landing_company->change_details_before_auth) {
+        if ($client->landing_company->is_field_changeable_before_auth('citizen')) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'PermissionDenied',
                     message_to_client => localize("Value of citizen cannot be changed after authentication.")})
