@@ -238,13 +238,14 @@ sub bom_loginids {
 }
 #
 sub mt5_logins {
-    my $self = shift;
-    my $filter = shift || 'real|demo';
+    my $self   = shift;
+    my $filter = shift;
     my @mt5_logins;
 
     for my $login (sort grep { /^MT\d+$/ } $self->loginids) {
         push(@mt5_logins, $login)
-            if ((
+            if (
+            not $filter or (
                 BOM::MT5::User::Async::get_user(
                     do { $login =~ /(\d+)/; $1 }
                 )->get->{group} // ''

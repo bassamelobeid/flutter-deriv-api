@@ -13,9 +13,9 @@ has 'id' => (
 
 has 'client_loginid' => (
     is => 'ro',
-
 );
-has 'currency_code' => (
+
+has 'last_transaction_id' => (
     is => 'ro',
 );
 
@@ -45,17 +45,50 @@ sub BUILD {
     return if $existing_account || !$args->{currency_code};
 
     # No current account but currency code supplied so we can create one
-    my $result = $db->dbic->run(
+    my $account = $db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref(
-                "SELECT add_account as id FROM transaction.add_account(?,?)",
-                undef,
-                $args->{client_loginid},
-                $args->{currency_code});
+            $_->selectrow_hashref("SELECT * FROM transaction.new_account(?,?)", undef, $args->{client_loginid}, $args->{currency_code});
         });
 
-    $self->{id} = $result->{id};
+    $self->_update_object($account);
     return;
+}
+
+=head2 currency_code
+
+This sub is used to set/get the currency associated with this account.
+
+If no argument is provided it will behave as a get method.
+If an argument is provided it will perform a set if there are no transactions
+    associated with this account. This allows an accidental choice to be corrected
+    without opening another account.
+    The account currency will be returned whether or not a change was made.
+
+=over 4
+
+=item new_currency (optional) => string
+
+=back
+
+=cut
+
+sub currency_code {
+    my ($self, $new_currency) = @_;
+
+    return $self->{currency_code} unless $new_currency;
+    # Skip update if account has a transaction
+    return $self->{currency_code} if $self->last_transaction_id;
+    # Skip update if new currency is alike
+    return $self->{currency_code} if $self->{currency_code} eq $new_currency;
+
+    my $updated_currency = $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_arrayref("SELECT transaction.set_account_currency(?,?)", undef, $self->id, $new_currency)->[0];
+        });
+
+    $self->{currency_code} = $updated_currency;
+
+    return $self->{currency_code};
 }
 
 =head2 _refresh_object
@@ -74,16 +107,21 @@ sub _refresh_object {
     my $self             = shift;
     my $existing_account = $self->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref("SELECT * FROM transaction.account WHERE client_loginid = ? AND  is_default = TRUE", undef,
-                $self->{client_loginid});
+            $_->selectrow_hashref("SELECT * FROM transaction.account WHERE client_loginid = ? AND  is_default = TRUE",
+                undef, $self->{client_loginid});
         });
 
-    if (defined $existing_account) {
-        @{$self}{keys %$existing_account} = values %$existing_account;
+    return $self->_update_object($existing_account);
+}
+
+sub _update_object {
+    my ($self, $account) = @_;
+
+    if (defined $account) {
+        @{$self}{keys %$account} = values %$account;
         return 1;
     }
     return 0;
-
 }
 
 =head2 balance
