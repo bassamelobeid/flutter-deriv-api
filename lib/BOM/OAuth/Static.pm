@@ -38,6 +38,7 @@ my $config = {
         TFA_FAILURE         => "Invalid authentication code",
         NO_AUTHENTICATION   => "Please log in to your social account to continue.",
         INVALID_RESIDENCE   => "Sorry, our service is currently unavailable in [_1].",
+        INVALID_PROVIDER    => "The email address you provided is already registered with your [_1] account.",
         'duplicate email' =>
             "Your provided email address is already in use by another Login ID. According to our terms and conditions, you may only register once through our site.",
         'InvalidBrand' => "Brand is invalid.",

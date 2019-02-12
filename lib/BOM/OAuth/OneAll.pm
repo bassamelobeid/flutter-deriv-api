@@ -61,14 +61,12 @@ sub callback {
         return $c->redirect_to($redirect_uri);
     }
 
-    # retrieve provider and user identity from provider data
     my $provider_data = $provider_result->{data};
-    my $user_connect  = BOM::Database::Model::UserConnect->new;
-    my $user_id       = $user_connect->get_user_id_by_connect($provider_data);
-    my $email = _get_email($provider_data);
-    #Check that whether user has granted access to a valid email address in her/his social account
+    my $email         = _get_email($provider_data);
+    my $provider_name = $provider_data->{user}->{identity}->{provider};
+
+    # Check that whether user has granted access to a valid email address in her/his social account
     unless ($email and Email::Valid->address($email)) {
-        my $provider_name = $provider_data->{user}->{identity}->{provider};
         $c->session(social_error => localize(get_message_mapping()->{INVALID_SOCIAL_EMAIL}, ucfirst $provider_name));
         return $c->redirect_to($redirect_uri);
     }
@@ -76,51 +74,54 @@ sub callback {
     my $user = try {
         BOM::User->new(email => $email)
     };
-
-    # Registered users who have email/password based account are forbidden
-    # from social signin. As only one login method
-    # is allowed (either email/password or social login).
-    if ($user and not $user->{has_social_signup}) {
-        # Redirect client to login page if social signup flag is not found.
-        # As the main purpose of this package is to serve
-        # clients with social login only.
-        $c->session(social_error => localize(get_message_mapping()->{NO_LOGIN_SIGNUP}));
-        return $c->redirect_to($redirect_uri);
-    }
-
-    # Create virtual client if user not found
-    # consequently initialize user_id and link account to social login.
-    unless ($user_id) {
-        # create user based on email if account does not exist yet
-        unless ($user) {
-            #get client's residence automatically from cloudflare headers
-            my $residence = $c->stash('request')->country_code;
-            my $account   = $c->__create_virtual_account(
-                email              => $email,
-                brand              => $brand_name,
-                residence          => $residence,
-                date_first_contact => $c->session('date_first_contact'),
-                signup_device      => $c->session('signup_device'));
-            if ($account->{error}) {
-                my $error_msg =
-                    ($account->{error} eq 'invalid residence')
-                    ? localize(get_message_mapping()->{INVALID_RESIDENCE}, code2country($residence))
-                    : localize(get_message_mapping()->{$account->{error}});
-                $c->session(social_error => $error_msg);
-                return $c->redirect_to($redirect_uri);
-            } else {
-                $user = $account->{user};
-            }
+    my $user_connect = BOM::Database::Model::UserConnect->new;
+    if ($user) {
+        # Registered users who have email/password based account are forbidden
+        # from social signin. As only one login method
+        # is allowed (either email/password or social login).
+        unless ($user->{has_social_signup}) {
+            $c->session(social_error => localize(get_message_mapping()->{NO_LOGIN_SIGNUP}));
+            return $c->redirect_to($redirect_uri);
         }
+
+        my $user_providers = $user_connect->get_connects_by_user_id($user->{id});
+        # Social user with a specific email can only sign up/sign in via the provider (social account)
+        # by which s/he has created an account at the beginning.
+        # Getting the first provider from $user_providers is based on the assumption that
+        # there is exactly one provider for a social user.
+        if ($provider_name ne $user_providers->[0]) {
+            $c->session(social_error => localize(get_message_mapping()->{INVALID_PROVIDER}, ucfirst $user_providers->[0]));
+            return $c->redirect_to($redirect_uri);
+        }
+    } else {
+        # Get client's residence automatically from cloudflare headers
+        my $residence = $c->stash('request')->country_code;
+        # Create virtual client if user not found
+        my $account = $c->__create_virtual_account(
+            email              => $email,
+            brand              => $brand_name,
+            residence          => $residence,
+            date_first_contact => $c->session('date_first_contact'),
+            signup_device      => $c->session('signup_device'));
+        if ($account->{error}) {
+            my $error_msg =
+                ($account->{error} eq 'invalid residence')
+                ? localize(get_message_mapping()->{INVALID_RESIDENCE}, code2country($residence))
+                : localize(get_message_mapping()->{$account->{error}});
+            $c->session(social_error => $error_msg);
+            return $c->redirect_to($redirect_uri);
+        } else {
+            $user = $account->{user};
+        }
+
         # connect oneall provider data to user identity
         $user_connect->insert_connect($user->{id}, $provider_data);
-        $user_id = $user->{id};
-        my $provider_name = $provider_data->{user}->{identity}->{provider};
+        # initialize user_id and link account to social login.
         stats_inc('login.oneall.new_user_created', {tags => ["brand:$brand_name", "provider:$provider_name"]});
     }
 
     # login client to the system
-    $c->session(_oneall_user_id => $user_id);
+    $c->session(_oneall_user_id => $user->{id});
     stats_inc('login.oneall.success', {tags => ["brand:$brand_name"]});
     return $c->redirect_to($redirect_uri);
 }
