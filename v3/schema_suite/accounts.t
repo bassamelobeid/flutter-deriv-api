@@ -91,7 +91,7 @@ test_sendrecv 'get_settings/test_send.json', 'get_settings/test_receive_cr_befor
 
 # ADMIN SCOPE CALLS (CR)
 test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json',       'USD';
-test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive_error.json', 'GBP';
+test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive_error.json', 'XXX';
 test_sendrecv_params 'payout_currencies/test_send.json',    'payout_currencies/test_receive_vrt.json',      'USD', 1;
 test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '0\\\\.00', 'USD', $suite->get_stashed('authorize/authorize/loginid');
 test_sendrecv 'set_self_exclusion/test_send.json', 'set_self_exclusion/test_receive.json';
@@ -161,7 +161,7 @@ test_sendrecv_params 'reality_check/test_send.json', 'reality_check/test_receive
 
 # PAYMENT SCOPE CALLS (MLT)
 test_sendrecv_params 'set_account_currency/test_send.json',   'set_account_currency/test_receive.json',       'EUR';
-test_sendrecv_params 'set_account_currency/test_send.json',   'set_account_currency/test_receive_error.json', 'GBP';
+test_sendrecv_params 'set_account_currency/test_send.json',   'set_account_currency/test_receive_error.json', 'XXX';
 test_sendrecv_params 'payout_currencies/test_send.json',      'payout_currencies/test_receive_vrt.json',      'EUR', 1;
 fail_test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json',      'USD', 1;
 
