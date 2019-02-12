@@ -63,8 +63,6 @@ $text =~ s/\n\r/\n/g;
 
 my @lines = split(/\n/, $text);
 
-my $ON_expiry_date;
-
 if ($filen eq 'editvol') {
     my $underlying = create_underlying($vol_update_symbol);
     my $market     = $underlying->market->name;
@@ -106,7 +104,6 @@ if ($filen eq 'editvol') {
             ($expiry_date ? (expiry_date => $expiry_date) : ()),
         };
 
-        $ON_expiry_date = Date::Utility->new($expiry_date)->truncate_to_day if $day eq 'ON';
     }
     my %surface_args = (
         underlying       => $underlying,
@@ -138,9 +135,7 @@ if ($filen eq 'editvol') {
         print @output;
 
         my $today = Date::Utility->new->truncate_to_day;
-        if (($market eq 'forex' or $market eq 'commodities') and $today->is_same_as($ON_expiry_date)) {
-            print "<P> Overnight expiry date cannot be the same date as today for forex.</P>";
-        } elsif (!$surface->is_valid) {
+        if (!$surface->is_valid) {
             print "<P> " . encode_entities($surface->validation_error) . " </P>";
 
         } elsif ($big_differences) {
