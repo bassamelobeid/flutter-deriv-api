@@ -14,6 +14,7 @@ use Date::Utility;
 use Format::Util::Numbers qw(roundcommon);
 use Bloomberg::CurrencyConfig;
 use Quant::Framework::InterestRate;
+use LandingCompany::Registry;
 
 has file => (
     is         => 'ro',
@@ -53,11 +54,25 @@ sub run {
         }
     }
 
-    # we need to include rates for BTC LTC ETH ETC here. Currently setting it to zero rates.
+    my @currencies = LandingCompany::Registry::all_currencies();
+    my @unstable_crypto;
+    my @stable_crypto;
+    for my $currency_code (@currencies) {
+        my $definition = LandingCompany::Registry::get_currency_definition($currency_code);
+        # here we add only the cryptocurrencies that are not stable
+        push(@unstable_crypto, $currency_code) if $definition->{type} eq 'crypto' && !$definition->{stable};
+        # here we add only the cryptocurrencies that are stable
+        # we push the definition because we need to compare with the actual
+        # currency at the following loop
+        $definition->{currency_code} = $currency_code;
+        push(@stable_crypto, $definition) if exists $definition->{stable};
+    }
+
+    # we need to include rates for all not stable cryptocurrencies here. Currently setting it to zero rates.
     $rates->{$_}->{rates} = {
         0   => 0,
         365 => 0
-    } foreach qw/BTC BCH LTC ETH ETC/;
+    } for @unstable_crypto;
 
     foreach my $currency_symbol (keys %$rates) {
         my $data = $rates->{$currency_symbol}->{rates};
@@ -75,8 +90,11 @@ sub run {
                 chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
             );
             $rates->save;
+
             $report->{$currency_symbol}->{success} = 1;
-            $self->_update_related_currency($data, qw(UST USB)) if $currency_symbol eq 'USD';
+            # We need to update all the stable cryptocurrencies related to the current currency
+            my @related_crypto = map { $_->{currency_code} } grep { $_->{stable} eq $currency_symbol } @stable_crypto;
+            $self->_update_related_currency($data, @related_crypto) if @related_crypto;
         }
     }
 

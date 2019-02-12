@@ -18,6 +18,11 @@ use Quant::Framework::Currency;
 use Quant::Framework;
 use Quant::Framework::ExpiryConventions;
 use BOM::Config::Chronicle;
+use LandingCompany::Registry;
+
+use constant EXTERNAL_FIAT_CURRENCIES => qw(
+    JPY NZD CAD CHF PLN NOK MXN SEK
+);
 
 has file => (
     is         => 'ro',
@@ -27,6 +32,52 @@ has file => (
 sub _build_file {
     my @files = Bloomberg::FileDownloader->new->grab_files({file_type => 'forward_rates'});
     return $files[0];
+}
+
+has currencies => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_currencies {
+    my @currencies = LandingCompany::Registry::all_currencies();
+    return \@currencies;
+}
+
+has fiat_currencies => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_fiat_currencies {
+    my ($self) = @_;
+    my @currencies = $self->_get_currencies_by_type('fiat');
+    # for now we need to set these fiat currencies manually since
+    # they are not on our LandingCompany config and quants needs
+    # these currencies for further calculation.
+    push(@currencies, EXTERNAL_FIAT_CURRENCIES);
+    return \@currencies;
+}
+
+=head2
+
+search for all currencies by a specific type (fiat/crypto)
+
+=back
+
+return array with the currencies for the given type
+
+=cut
+
+sub _get_currencies_by_type {
+    my ($self, $type) = @_;
+
+    my @response;
+    for my $currency_code ($self->currencies->@*) {
+        my $definition = LandingCompany::Registry::get_currency_definition($currency_code);
+        push(@response, $currency_code) if $definition->{type} eq $type;
+    }
+    return @response;
 }
 
 sub _get_forward_rates {
@@ -196,11 +247,11 @@ sub run {
         $report->{$implied_symbol}->{success} = 1;
     }
 
-    my @crypto = qw(BTC BCH ETH ETC LTC UST USB);
-    my @fiat   = qw(USD EUR AUD JPY NZD CAD CHF GBP PLN NOK MXN SEK);
+    my @crypto = $self->_get_currencies_by_type('crypto');
+
     my @pairs;
     for my $crypto (@crypto) {
-        push @pairs, join '-', $crypto, $_ for @fiat;
+        push @pairs, join '-', $crypto, $_ for $self->fiat_currencies->@*;
     }
 
     foreach my $sym (@pairs) {
