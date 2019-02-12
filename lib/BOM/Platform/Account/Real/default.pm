@@ -202,6 +202,8 @@ sub validate_account_details {
         };
         return $dob_error if $dob_error;
     }
+    return {error => 'InvalidPlaceOfBirth'}
+        if ($args->{place_of_birth} and not Locale::Country::code2country($args->{place_of_birth}));
 
     my $lc = LandingCompany::Registry->get_by_broker($broker);
     foreach my $key (get_account_fields($lc->short)) {
