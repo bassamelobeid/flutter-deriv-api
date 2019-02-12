@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-03/schema#",
   "type": "object",
   "title": "MT5 Account Deposit Request",
-  "description": "This call allows deposit into MT5 account from Binary account.",
+  "description": "This API call allows deposits from a real money Binary options account into a real money MT5 account. It can also be used to top up a demo MT5 account.",
   "properties": {
     "mt5_deposit": {
       "type":"integer",
@@ -12,19 +12,17 @@
     "from_binary": {
       "type": "string",
       "pattern": "^\\w+\\d+$",
-      "description": "Binary account loginid to transfer money from",
-      "required": "1"
+      "description": "Binary account loginid to transfer money from"
     },
     "to_mt5": {
       "type": "string",
       "pattern": "^\\d+$",
-      "description": "MT5 account login to deposit money to",
+      "description": "MT5 account loginid to deposit money to",
       "required": "1"
     },
     "amount": {
       "type": "number",
-      "description": "Amount to deposit (in the currency of from_binary); min = $1 or an equivalent amount, max = $20000 or an equivalent amount",
-      "required": "1"
+      "description": "Amount to deposit (in the currency of from_binary); min = $1 or an equivalent amount, max = $20000 or an equivalent amount"
     },
     "passthrough": {
       "type": "object",

@@ -2,9 +2,7 @@
    "$schema" : "http://json-schema.org/draft-04/schema#",
    "required" : [
       "mt5_deposit",
-      "from_binary",
-      "to_mt5",
-      "amount"
+      "to_mt5"
    ],
    "type" : "object",
    "description" : "This call allows deposit into MT5 account from Binary account.",
