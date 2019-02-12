@@ -555,7 +555,13 @@ sub validate_make_new_account {
 sub validate_set_currency {
     my ($client, $currency) = @_;
 
-    my $siblings = $client->real_account_siblings_information();
+    return _currency_type_error("This account already has a currency set and cannot be changed because transactions have been made.")
+        if $client->account && $client->account->last_transaction_id;
+
+    return _currency_type_error("This account already has a currency set and cannot be changed because an MT5 account has been opened.")
+        if $client->account && $client->account->currency_code() && $client->user->mt5_logins();
+
+    my $siblings = $client->real_account_siblings_information(include_self => 0);
     $siblings = filter_siblings_by_landing_company($client->landing_company->short, $siblings);
 
     my $is_currency_allowed = _is_currency_allowed($client, $siblings, $currency);

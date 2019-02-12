@@ -633,6 +633,9 @@ rpc get_account_status => sub {
         push(@$status, 'document_expiring_soon');
     }
 
+    # account currency can be changed
+    push @$status, 'currency_unlocked' unless (($client->account && $client->account->last_transaction_id) || $user->mt5_logins());
+
     my $shortcode                     = $client->landing_company->short;
     my $prompt_client_to_authenticate = 0;
     if ($client->fully_authenticated) {
@@ -1868,9 +1871,6 @@ rpc set_account_currency => sub {
 
     my ($client, $currency) = @{$params}{qw/client currency/};
 
-    # bail out if default account is already set
-    return {status => 0} if $client->default_account;
-
     # check if we are allowed to set currency
     # i.e if we have exhausted available options
     # - client can have single fiat currency
@@ -1879,20 +1879,30 @@ rpc set_account_currency => sub {
     #   for example BTC => ETH is allowed but BTC => BTC is not
     # - currency is not legal in the landing company
     # - currency is crypto and crytocurrency is suspended in system config
+
     my $error = BOM::RPC::v3::Utility::validate_set_currency($client, $currency);
     return $error if $error;
 
-    # no change in default account currency if default account is already set
     my $status = 0;
-    try {
-        $status = 1 if $client->set_default_account($currency);
-    };
+
+    my $account = $client->account;
+    if (    $account
+        and $account->currency_code ne $currency
+        and not $account->last_transaction_id)
+    {
+        try {
+            $status = 1 if $account->currency_code($currency) eq $currency;
+        };
+    } else {
+        try {
+            $status = 1 if $client->account($currency);
+        };
+    }
     return {status => $status};
 };
 
 rpc set_financial_assessment => sub {
-    my $params = shift;
-
+    my $params         = shift;
     my $client         = $params->{client};
     my $client_loginid = $client->loginid;
 
