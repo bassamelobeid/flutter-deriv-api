@@ -169,71 +169,13 @@ subtest 'new account with switching' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 };
 
-subtest 'authenticated CR client should not receive authentication request when he opens new MT5 financial account' => sub {
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-    my $method = 'mt5_new_account';
-    mailbox_clear();
-    my $params = {
-        language => 'EN',
-        token    => $token,
-        args     => {
-            account_type     => 'financial',
-            mt5_account_type => 'standard',
-            country          => 'mt',
-            email            => $DETAILS{email},
-            name             => $DETAILS{name},
-            investPassword   => 'Abcd1234',
-            mainPassword     => $DETAILS{password},
-            leverage         => 500,
-        },
-    };
-    $c->call_ok($method, $params)->has_error('error for financial mt5_new_account')
-        ->error_code_is('TINDetailsMandatory', 'tax information is mandatory for financial account');
-
-    $test_client->tax_residence('mt');
-    $test_client->tax_identification_number('111222333');
-    $test_client->save;
-
-    $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account');
-    #check inbox for emails
-    my $cli_subject  = 'Authenticate your account to continue trading on MT5';
-    my $client_email = mailbox_search(
-        email   => $DETAILS{email},
-        subject => qr/\Q$cli_subject\E/
-    );
-
-    ok(!$client_email, "identity verification request email not sent");
-};
-
-subtest 'new CR financial accounts should receive identity verification request if account is not verified' => sub {
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-    $test_client->set_authentication('ID_DOCUMENT')->status('pending');
-    $test_client->save;
-    my $method = 'mt5_new_account';
-    mailbox_clear();
-    my $params = {
-        language => 'EN',
-        token    => $token,
-        args     => {
-            account_type     => 'financial',
-            mt5_account_type => 'advanced',
-            country          => 'mt',
-            email            => $DETAILS{email},
-            name             => $DETAILS{name},
-            investPassword   => 'Abcd1234',
-            mainPassword     => $DETAILS{password},
-            leverage         => 500,
-        },
-    };
-
-    $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account');
-};
-
 subtest 'MF should be allowed' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+
     my $mf_client = create_client('MF');
     $mf_client->set_default_account('EUR');
     $mf_client->save();
+
     $user->add_client($mf_client);
 
     my $method = 'mt5_new_account';
@@ -250,7 +192,15 @@ subtest 'MF should be allowed' => sub {
             mainPassword     => $DETAILS{password},
         },
     };
+
+    $c->call_ok($method, $params)->has_error('no error for mt5_new_account')->error_code_is('TINDetailsMandatory', 'Tax information is required');
+
+    $test_client->tax_residence('mt');
+    $test_client->tax_identification_number('111222333');
+    $test_client->save;
+
     $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account');
+
 };
 
 subtest 'MF to MLT account switching' => sub {
@@ -597,6 +547,53 @@ subtest 'deposit' => sub {
     $params->{args}{to_mt5} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_deposit wrong login')
         ->error_code_is('PermissionDenied', 'error code for mt5_deposit wrong login');
+};
+
+subtest 'virtual_deposit' => sub {
+
+    my $method = "mt5_new_account";
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+
+    my $new_account_params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type     => 'demo',
+            mt5_account_type => 'advanced',
+            country          => 'af',
+            email            => $DETAILS{email},
+            name             => $DETAILS{name},
+            investPassword   => 'Abcd1234',
+            mainPassword     => $DETAILS{password},
+        },
+    };
+
+    $c->call_ok($method, $new_account_params)->has_no_error('no error for mt5_new_account');
+    is($c->result->{balance}, 10000, 'Balance is 10,000 upon creation');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+
+    my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    $demo_account_mock->mock('_is_account_demo', sub { return 1 });
+
+    $method = "mt5_deposit";
+    my $deposit_demo_params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            to_mt5 => $DETAILS{login},
+            amount => 180,
+        },
+    };
+
+    $c->call_ok($method, $deposit_demo_params)->has_error('Cannot Deposit')->error_code_is('MT5DepositError')
+        ->error_message_is(
+        'There was an error processing the request. You can only request additional funds if your demo account balance falls below USD 1000.00.',
+        'Balance is higher');
+
+    $demo_account_mock->unmock;
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+
 };
 
 subtest 'mx_deposit' => sub {

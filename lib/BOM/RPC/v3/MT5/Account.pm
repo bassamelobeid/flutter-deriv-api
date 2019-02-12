@@ -50,11 +50,6 @@ use constant MT5_ACCOUNT_TRADING_ENABLED_RIGHTS_ENUM => qw(
     483 1503 2527 3555
 );
 
-# Days left to remind MT5 accounts to submit required documents
-use constant REMINDER_DAYS => 5;
-# Days left to send email to disable MT5 accounts
-use constant DISABLE_DAYS => 10;
-
 # TODO(leonerd):
 #   These helpers exist mostly to coördinate the idea of error management in
 #   Future-chained async RPC methods. This logic would probably be a lot neater
@@ -978,6 +973,29 @@ async_rpc mt5_deposit => sub {
             my ($response) = @_;
             return Future->done($response) if (ref $response eq 'HASH' and $response->{error});
 
+            if ($response->{top_up_virtual}) {
+
+                my $amount_to_topup = 10000;
+
+                return BOM::MT5::User::Async::deposit({
+                        login   => $to_mt5,
+                        amount  => $amount_to_topup,
+                        comment => 'Binary MT5 Virtual Money deposit.'
+                    }
+                    )->then(
+                    sub {
+                        my ($status) = @_;
+
+                        if ($status->{error}) {
+                            return _make_error($error_code, $status->{error});
+                        }
+
+                        reset_throttler($to_mt5);
+
+                        return Future->done({status => 1});
+                    });
+            }
+
             # withdraw from Binary a/c
             my $fm_client_db = BOM::Database::ClientDB->new({
                 client_loginid => $fm_loginid,
@@ -1356,88 +1374,102 @@ sub _mt5_validate_and_get_amount {
     return _make_error($error_code, localize('Payments are suspended.'))
         if ($app_config->system->suspend->payments);
 
-    return _make_error($error_code, localize("Amount must be greater than zero.")) if ($amount <= 0);
-
     # MT5 login or binary loginid not belongs to user
-    return permission_error_future() unless _check_logins($authorized_client, ['MT' . $mt5_loginid, $loginid]);
+    my @loginids_list = ('MT' . $mt5_loginid);
+    push @loginids_list, $loginid if $loginid;
 
-    my $client_obj;
-    try {
-        $client_obj = BOM::User::Client->new({
-            loginid      => $loginid,
-            db_operation => 'replica'
-        });
-    } or return _make_error($error_code, localize('Invalid loginid - [_1].', $loginid));
-
-    # only for real money account
-    return permission_error_future() if ($client_obj->is_virtual);
-
-    # MX should not be able to deposit to, or withdraw from, MT5
-    return _make_error($error_code, localize('Please switch to your MF account to access MT5.'))
-        if ($client_obj->landing_company->short eq 'iom');
-
-    # Deposits and withdrawals are blocked for non-authenticated MF clients
-    return _make_error($error_code, localize('Please authenticate your account.'))
-        if ($client_obj->landing_company->short eq 'maltainvest' and not $client_obj->fully_authenticated);
-
-    return _make_error($error_code, localize('Your account [_1] is disabled.', $loginid))
-        if ($client_obj->status->disabled);
-
-    return _make_error($error_code, localize('Your account [_1] cashier section is locked.', $loginid))
-        if ($client_obj->status->cashier_locked || $client_obj->documents_expired);
-
-    my $client_currency = $client_obj->default_account ? $client_obj->default_account->currency_code : undef;
-    return _make_error($error_code, localize('Please set currency for existsing account [_1].', $loginid))
-        unless $client_currency;
-
-    my $err = BOM::RPC::v3::Cashier::validate_amount($amount, $client_currency);
-    return _make_error($error_code, $err) if $err;
-
-    my $daily_transfer_limit  = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5;
-    my $client_today_transfer = $client_obj->get_today_transfer_summary('mt5_transfer');
-
-    return _make_error($error_code, localize("Maximum of [_1] transfers allowed per day.", $daily_transfer_limit))
-        unless $client_today_transfer->{count} < $daily_transfer_limit;
+    return permission_error_future() unless _check_logins($authorized_client, \@loginids_list);
 
     return mt5_get_settings({
             client => $authorized_client,
             args   => {login => $mt5_loginid}}
         )->then(
         sub {
+
             my ($setting) = @_;
 
             return _make_error($error_code, localize('Unable to get account details for your MT5 account [_1].', $mt5_loginid))
                 if (ref $setting eq 'HASH' && $setting->{error});
 
-            # check if mt5 account is real
-            return permission_error_future() unless ($setting->{group} // '') =~ /^real\\/;
-
             my $action = ($error_code =~ /Withdrawal/) ? 'withdrawal' : 'deposit';
+
+            my $mt5_group    = $setting->{group};
+            my $mt5_currency = $setting->{currency};
+
+            # Check if id is a demo account
+            # If yes, then no need to validate client
+            if (_is_account_demo($mt5_group)) {
+
+                return _make_error($error_code, localize('Withdrawals are not allowed for demo accounts.'))
+                    if $action eq 'withdrawal';
+
+                my $max_balance_before_topup = BOM::Config::payment_agent()->{minimum_topup_balance}->{DEFAULT};
+
+                return _make_error(
+                    $error_code,
+                    localize(
+                        'You can only request additional funds if your demo account balance falls below [_1] [_2].',
+                        , $mt5_currency, formatnumber('amount', $mt5_currency, $max_balance_before_topup))
+                ) if ($setting->{balance} > $max_balance_before_topup);
+
+                if (_throttle($mt5_loginid)) {
+                    return _make_error($error_code, localize('We are currently processing your top-up request.'));
+                }
+
+                return Future->done({top_up_virtual => 1});
+
+            }
+
+            return _make_error($error_code, localize('Your login ID is missing.')) unless $loginid;
+
+            return _make_error($error_code, localize('Please enter the amount you wish to transfer.')) unless $amount;
+
+            return _make_error($error_code, localize("Amount must be greater than zero.")) if ($amount <= 0);
+
+            my $client;
+            try {
+                $client = BOM::User::Client->new({
+                    loginid      => $loginid,
+                    db_operation => 'replica'
+                });
+            }
+            catch {
+
+            } or return _make_error($error_code, localize('Invalid loginid - [_1].', $loginid));
+
+            # Validate the binary client
+            my $err = _validate_client($client);
+            return _make_error($error_code, $err) if $err;
+
+            my $client_currency = $client->account ? $client->account->currency_code : undef;
+
+            $err = BOM::RPC::v3::Cashier::validate_amount($amount, $client_currency);
+            return _make_error($error_code, $err) if $err;
 
             # master groups are real\costarica_mamm_master and
             # real\vanuatu_mamm_advanced_master
             return _make_error($error_code,
                 localize('Permission error. MT5 manager accounts are not allowed to withdraw as payments are processed manually.'))
-                if ($action eq 'withdrawal' and ($setting->{group} // '') =~ /^real\\[a-z]*_mamm(?:_[a-z]*)?_master$/);
+                if ($action eq 'withdrawal' and ($mt5_group // '') =~ /^real\\[a-z]*_mamm(?:_[a-z]*)?_master$/);
 
             # check for fully authenticated only if it's not gaming account
             # as of now we only support gaming for binary brand, in future if we
             # support for champion please revisit this
             return _make_error($error_code, localize('Please authenticate your account.'))
                 if ($action eq 'withdrawal'
-                and ($setting->{group} // '') !~ /^real\\costarica$/
+                and ($mt5_group // '') !~ /^real\\costarica$/
                 and not $authorized_client->fully_authenticated);
-
-            my $mt5_currency = $setting->{currency};
 
             # Actual USD or EUR amount that will be deposited into the MT5 account.
             # We have a currency conversion fees when transferring between currencies.
             my $mt5_amount = undef;
             my ($min, $max) = (1, 20000);
+
             my $source_currency = $client_currency;
 
             my $mt5_currency_type    = LandingCompany::Registry::get_currency_type($mt5_currency);
             my $source_currency_type = LandingCompany::Registry::get_currency_type($source_currency);
+
             return _make_error($error_code, localize('Transfers between fiat and crypto accounts are currently disabled.'))
                 if BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts
                 and (($source_currency_type // '') ne ($mt5_currency_type // ''));
@@ -1446,40 +1478,51 @@ sub _mt5_validate_and_get_amount {
             my $fees_percent            = 0;
             my $fees_in_client_currency = 0;    #when a withdrawal is done record the fee in the local amount
             my ($min_fee, $fee_calculated_by_percent);
-            my $err;
 
             if ($client_currency eq $mt5_currency) {
                 $mt5_amount = $amount;
             } else {
+
                 # we don't allow transfer between these two currencies
                 my $disabled_for_transfer_currencies = BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies;
+
                 return _make_error($error_code,
                     localize('Account transfers are not available between [_1] and [_2].', $source_currency, $mt5_currency))
                     if first { $_ eq $source_currency or $_ eq $mt5_currency } @$disabled_for_transfer_currencies;
 
                 if ($action eq 'deposit') {
+
                     try {
+
                         $min = convert_currency(1,     'USD', $client_currency);
                         $max = convert_currency(20000, 'USD', $client_currency);
 
                         ($mt5_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =
                             BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $client_currency, $mt5_currency);
+
                         $mt5_amount = financialrounding('amount', $mt5_currency, $mt5_amount);
                     }
+
                     catch {
                         # usually we get here when convert_currency() fails to find a rate within $rate_expiry, $mt5_amount is too low, or no transfer fee are defined (invalid currency pair).
                         $err        = $_;
                         $mt5_amount = undef;
                     };
+
                 } elsif ($action eq 'withdrawal') {
+
                     try {
+
                         $source_currency = $mt5_currency;
-                        $min             = convert_currency(1, 'USD', $mt5_currency);
-                        $max             = convert_currency(20000, 'USD', $mt5_currency);
+
+                        $min = convert_currency(1,     'USD', $mt5_currency);
+                        $max = convert_currency(20000, 'USD', $mt5_currency);
 
                         ($mt5_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =
                             BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $mt5_currency, $client_currency);
+
                         $mt5_amount = financialrounding('amount', $client_currency, $mt5_amount);
+
                         # if last rate is expiered calculate_to_amount_with_fees would fail.
                         $fees_in_client_currency =
                             financialrounding('amount', $client_currency, convert_currency($fees, $mt5_currency, $client_currency));
@@ -1618,6 +1661,50 @@ sub _store_transaction_redis {
     my $data = shift;
     BOM::Platform::Event::Emitter::emit('store_mt5_transaction', $data);
     return;
+}
+
+=head2 _validate_client
+
+Validate the client account, which is involved in real-money deposit/withdrawal
+
+=cut
+
+sub _validate_client {
+    my ($client_obj) = @_;
+
+    my $loginid = $client_obj->loginid;
+
+    # only for real money account
+    return localize('Permission denied.') if ($client_obj->is_virtual);
+
+    # MX should not be able to deposit to, or withdraw from, MT5
+    return localize('Please switch to your MF account to access MT5.')
+        if ($client_obj->landing_company->short eq 'iom');
+
+    # Deposits and withdrawals are blocked for non-authenticated MF clients
+    return localize('Please authenticate your account.')
+        if ($client_obj->landing_company->short eq 'maltainvest' and not $client_obj->fully_authenticated);
+
+    return localize('Your account [_1] is disabled.', $loginid) if ($client_obj->status->disabled);
+
+    return localize('Your account [_1] cashier section is locked.', $loginid)
+        if ($client_obj->status->cashier_locked || $client_obj->documents_expired);
+
+    my $client_currency = $client_obj->account ? $client_obj->account->currency_code : undef;
+    return localize('Please set currency for existing account [_1].', $loginid) unless $client_currency;
+
+    my $daily_transfer_limit  = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5;
+    my $client_today_transfer = $client_obj->get_today_transfer_summary('mt5_transfer');
+
+    return localize("Maximum of [_1] transfers allowed per day.", $daily_transfer_limit)
+        unless $client_today_transfer->{count} < $daily_transfer_limit;
+
+    return undef;
+}
+
+sub _is_account_demo {
+    my ($group) = @_;
+    return $group =~ /demo/;
 }
 
 1;
