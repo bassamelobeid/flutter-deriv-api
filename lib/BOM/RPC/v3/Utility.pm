@@ -362,6 +362,7 @@ sub error_map {
             'Unfortunately your answers to the questions above indicate that you do not have sufficient financial resources or trading experience to be eligible to open a trading account at this time.'
         ),
         'InvalidDateOfBirth'         => localize('Date of birth is invalid'),
+        'InvalidPlaceOfBirth'        => localize('Please enter a valid place of birth.'),
         'InsufficientAccountDetails' => localize('Please provide complete details for account opening.'),
         'InvalidCitizenship'         => localize('Sorry, our service is not available for your country of citizenship.'),
         'InvalidDateFirstContact'    => localize('Date first contact is invalid.'),
