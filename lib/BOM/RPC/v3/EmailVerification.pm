@@ -53,7 +53,7 @@ sub email_verification {
                     subject => localize('Duplicate email address submitted - [_1]', $website_name),
                     message => '<div style="line-height:200%;color:#333333;font-size:15px;">'
                         . localize(
-                        '<p>It seems that you tried to sign up with an email address that\'s already in the [_2] system.</p><p>You may have</p><ul><li>Previously signed up with [_2] using the same email address, or</li><li>Signed up with another trading application that uses [_2] technology.</li></ul><p>If you\'d like to proceed, please <a href="[_1]">reset your password</a>.</p><p>If this wasn\'t you, please ignore this email.</p><p style="color:#333333;font-size:15px;">Regards,<br/>[_2]</p>',
+                        '<p>It seems that you tried to sign up with an email address that\'s already in the [_2] system.</p><p>You may have</p><ul><li>Previously signed up with [_2] using the same email address, or</li><li>Signed up with another trading application that uses [_2] technology.</li></ul><p>If you have forgotten your password, please <a href="[_1]">reset your password</a> now to access your account.</p><p>If this wasn\'t you, please ignore this email.</p><p style="color:#333333;font-size:15px;">Regards,<br/>[_2]</p>',
                         $password_reset_url,
                         $website_name,
                         )
@@ -63,7 +63,7 @@ sub email_verification {
                     subject => localize('Duplicate email address submitted to [_1] (powered by [_2])', $app_name, $website_name),
                     message => '<div style="line-height:200%;color:#333333;font-size:15px;">'
                         . localize(
-                        '<p>[_3] is one of many trading applications powered by [_2] technology. It seems that you tried to sign up with an email address that\'s already in the [_2] system.</p><p>You may have</p><ul><li>Previously signed up with [_3] using the same email address, or</li><li>Signed up with another trading application that uses [_2] technology.</li></ul><p>If you\'d like to proceed, please <a href="[_1]">reset your password</a>.</p><p>If this wasn\'t you, please ignore this email.</p><p style="color:#333333;font-size:15px;">Regards,<br/>[_2]</p>',
+                        '<p>[_3] is one of many trading applications powered by [_2] technology. It seems that you tried to sign up with an email address that\'s already in the [_2] system.</p><p>You may have</p><ul><li>Previously signed up with [_3] using the same email address, or</li><li>Signed up with another trading application that uses [_2] technology.</li></ul><p>If you have forgotten your password, please <a href="[_1]">reset your password</a> now to access your account.</p><p>If this wasn\'t you, please ignore this email.</p><p style="color:#333333;font-size:15px;">Regards,<br/>[_2]</p>',
                         $password_reset_url, $website_name, $app_name,)
                         . '</div>'
                 ),
