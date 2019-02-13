@@ -58,21 +58,11 @@ is $res->{set_account_currency}, 1, 'Default currency set properly';
 
 $t = $t->send_ok({json => {set_account_currency => 'USD'}})->message_ok;
 $res = $json->decode(Encode::decode_utf8($t->message->[1]));
-is $res->{set_account_currency}, 1, 'Can set default currency again if no deposit yet';
+is $res->{set_account_currency}, 0, 'Can not set default currency again';
 
 $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
 ok $test_client->default_account, 'Default account set correctly';
-is $test_client->currency, 'USD', 'Got correct client currency after setting account';
-
-$test_client->payment_free_gift(
-    currency => 'USD',
-    amount   => 1000,
-    remark   => 'free gift',
-);
-
-$t = $t->send_ok({json => {set_account_currency => 'GBP'}})->message_ok;
-$res = $json->decode(Encode::decode_utf8($t->message->[1]));
-ok $res->{error}, 'Cannot change currency after deposit has been made';
+is $test_client->currency, 'EUR', 'Got correct client currency after setting account';
 
 # clear oauth token
 $t = $t->send_ok({json => {logout => 1}})->message_ok;
