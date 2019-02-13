@@ -179,6 +179,7 @@ subtest 'get_bid' => sub {
             status
             payout
             reset_time
+            stash
     ));
     cmp_bag([sort keys %{$result}], [sort @expected_keys]);
 
@@ -222,6 +223,10 @@ subtest $method => sub {
             'display_name' => 'Volatility 50 Index',
             'date_expiry'  => $now->epoch - 50,
             'barrier'      => 'S0P',
+            stash => {
+                valid_source => 1,
+                app_markup_percentage => 0
+            }
         },
         'result is ok'
     );
@@ -297,7 +302,7 @@ subtest 'send_ask' => sub {
 
     my $result = $c->call_ok('send_ask', $params)->has_no_error->result;
     my $expected_keys =
-        [sort { $a cmp $b } (qw(longcode spot display_value ask_price spot_time date_start rpc_time payout contract_parameters))];
+        [sort { $a cmp $b } (qw(longcode spot display_value ask_price spot_time date_start rpc_time payout contract_parameters stash))];
     cmp_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is(
         $result->{longcode},
