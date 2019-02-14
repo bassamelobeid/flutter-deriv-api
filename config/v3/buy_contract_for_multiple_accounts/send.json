@@ -99,7 +99,7 @@
             "date_start" : {
                "type" : "integer",
                "description" : "For forward-starting contracts, epoch value of the starting time of the contract.",
-               "minimum" : 1,
+               "minimum" : 0,
                "maximum" : 9999999999
             }
          }
