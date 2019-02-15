@@ -42,14 +42,15 @@ sub mt5_check_real_vanuatu {
     my ($loginid, $broker_code) = @_;
     return 1 unless exists $mt5_checks{$broker_code};
 
-    my @mt5_list = BOM::User->new(loginid => $loginid)->mt5_logins('real');
+    # not sending any values into mt5_logins will not trigger call to MT5 server
+    my @mt5_list = BOM::User->new(loginid => $loginid)->mt5_logins('');
 
     my $check_flag;
     if (@mt5_list) {
-        # $check_flag = undef;
         for (@mt5_list) {
             $_ =~ s/[A-Z]+//g;
             my $mt5_group = Cache::RedisDB->get('MT5_USER_GROUP', $_);
+            Cache::RedisDB->redis->lpush('MT5_USER_GROUP_PENDING', join(':', $_, time)) unless defined $mt5_group;
             $mt5_group //= 'unknown';
             $check_flag = 1 if ($mt5_group eq 'real\vanuatu_standard');
             last if ($check_flag);
