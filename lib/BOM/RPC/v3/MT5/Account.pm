@@ -1082,11 +1082,11 @@ async_rpc mt5_deposit => sub {
             return _make_error($error_code, $error->{-message_to_client}) if $error;
 
             _store_transaction_redis({
-                loginid       => $fm_loginid,
-                mt5_id        => $to_mt5,
-                action        => 'deposit',
-                amount_in_USD => convert_currency($amount, $fm_client->currency, 'USD'),
-            });
+                    loginid       => $fm_loginid,
+                    mt5_id        => $to_mt5,
+                    action        => 'deposit',
+                    amount_in_USD => convert_currency($amount, $fm_client->currency, 'USD'),
+                }) if ($response->{mt5_data}->{group} eq 'real\vanuatu_standard');
 
             # deposit to MT5 a/c
             return BOM::MT5::User::Async::deposit({
@@ -1172,6 +1172,8 @@ async_rpc mt5_withdrawal => sub {
 
             $comment = "$comment $additional_comment" if $additional_comment;
 
+            my $mt5_group = $response->{mt5_data}->{group};
+
             # withdraw from MT5 a/c
             return BOM::MT5::User::Async::withdrawal({
                     login   => $fm_mt5,
@@ -1212,11 +1214,11 @@ async_rpc mt5_withdrawal => sub {
                         _record_mt5_transfer($to_client->db->dbic, $payment->id, $amount, $fm_mt5, $mt5_currency_code);
 
                         _store_transaction_redis({
-                            loginid       => $to_loginid,
-                            mt5_id        => $fm_mt5,
-                            action        => 'withdraw',
-                            amount_in_USD => $amount,
-                        });
+                                loginid       => $to_loginid,
+                                mt5_id        => $fm_mt5,
+                                action        => 'withdraw',
+                                amount_in_USD => $amount,
+                            }) if ($mt5_group eq 'real\vanuatu_standard');
 
                         return Future->done({
                             status                => 1,
@@ -1572,6 +1574,7 @@ sub _mt5_validate_and_get_amount {
                 mt5_currency_code       => $mt5_currency,
                 min_fee                 => $min_fee,
                 calculated_fee          => $fee_calculated_by_percent,
+                mt5_data                => $setting
             });
         });
 }
