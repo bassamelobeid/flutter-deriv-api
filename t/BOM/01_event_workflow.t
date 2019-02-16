@@ -119,7 +119,10 @@ subtest 'process' => sub {
 
     is_deeply(
         [sort keys %{BOM::Event::Process::get_action_mappings()}],
-        [sort qw/email_consent register_details email_statement sync_user_to_MT5 store_mt5_transaction new_financial_mt5_signup/],
+        [
+            sort
+                qw/email_consent register_details email_statement sync_user_to_MT5 store_mt5_transaction new_financial_mt5_signup send_mt5_disable_csv/
+        ],
         'Correct number of actions that can be emitted'
     );
 

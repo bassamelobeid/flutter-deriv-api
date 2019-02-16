@@ -34,7 +34,8 @@ my $action_mapping = {
     email_statement          => \&BOM::Event::Actions::CustomerStatement::email_statement,
     sync_user_to_MT5         => \&BOM::Event::Actions::MT5::sync_info,
     store_mt5_transaction    => \&BOM::Event::Actions::MT5::redis_record_mt5_transfer,
-    new_financial_mt5_signup => \&BOM::Event::Actions::MT5::new_financial_mt5_signup
+    new_financial_mt5_signup => \&BOM::Event::Actions::MT5::new_financial_mt5_signup,
+    send_mt5_disable_csv     => \&BOM::Event::Actions::MT5::send_mt5_disable_csv
 };
 
 =head1 METHODS

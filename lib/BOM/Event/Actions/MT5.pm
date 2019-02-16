@@ -23,6 +23,8 @@ use Email::Stuffer;
 use RedisDB;
 use YAML::XS;
 use Date::Utility;
+use Text::CSV;
+use Path::Tiny qw(tempdir);
 use JSON::MaybeUTF8 qw/encode_json_utf8/;
 
 use constant DAYS_TO_EXPIRE => 14;
@@ -192,6 +194,79 @@ sub new_financial_mt5_signup {
     catch {
         $log->warn("Failed to notify customer about verification process");
     };
+
+    return undef;
+}
+
+=head2 send_mt5_disable_csv
+    
+Send CSV file to customer support for the list of MT5 accounts to disable
+    
+=cut
+
+sub send_mt5_disable_csv {
+    my $data = shift;
+
+    my $mt5_loginid_hashref = $data->{csv_info} // {};
+    my @csv_rows = ();
+
+    my @futures;
+
+    foreach my $client_loginid_info (keys %$mt5_loginid_hashref) {
+
+        my $mt5_loginids = $mt5_loginid_hashref->{$client_loginid_info};
+
+        foreach my $mt5_loginid (@$mt5_loginids) {
+
+            $mt5_loginid =~ s/\D//g;
+
+            push @futures, BOM::MT5::User::Async::get_user($mt5_loginid)->then(
+                sub {
+                    my $result = shift;
+
+                    return Future->done unless $result->{group} =~ /^real\\(vanuatu|labuan)/;
+
+                    return BOM::MT5::User::Async::get_open_positions_count($mt5_loginid)->then(
+                        sub {
+                            my $open_positions = shift;
+                            my $csv_row = [$client_loginid_info, $mt5_loginid, $result->{group}, $result->{balance}, $open_positions->{total}];
+                            push @csv_rows, $csv_row;
+                        });
+                });
+        }
+    }
+
+    Future->wait_all(@futures)->get;
+
+    my $present_day = Date::Utility::today()->date_yyyymmdd;
+    my $brands      = Brands->new();
+
+    my $csv = Text::CSV->new({
+        eol        => "\n",
+        quote_char => undef
+    });
+
+    # CSV creation starts here
+    my $filename = 'mt5_disable_list_' . $present_day . '.csv';
+    my @headers = ('Loginid (Currency)', 'MT5 ID', 'MT5 Group', 'MT5 Balance', 'Open Positions');
+
+    my $tdir = Path::Tiny->tempdir;
+    $filename = $tdir->child($filename);
+    my $file = $filename->openw_utf8;
+
+    $csv->print($file, \@headers);
+    $csv->print($file, $_) for @csv_rows;
+
+    close $file;
+
+    # CSV creation ends here
+
+    send_email({
+        'from'       => $brands->emails('system'),
+        'to'         => $brands->emails('support'),
+        'subject'    => 'List of MT5 accounts to disable -  ' . $present_day,
+        'attachment' => $filename->canonpath
+    });
 
     return undef;
 }
