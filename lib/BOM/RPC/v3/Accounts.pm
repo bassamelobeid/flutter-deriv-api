@@ -1282,16 +1282,17 @@ rpc set_settings => sub {
                 message_to_client => localize('Sorry, our service is not available for your country of citizenship.')});
     }
 
-    if (   ($address1 and $address1 ne $client->address_1)
-        or $address2 ne $client->address_2
-        or $addressTown ne $client->city
-        or $addressState ne $client->state
-        or $addressPostcode ne $client->postcode)
+    if ((
+               ($address1 and $address1 ne $client->address_1)
+            or ($address2 ne $client->address_2)
+            or ($addressTown ne $client->city)
+            or ($addressState ne $client->state)
+            or ($addressPostcode ne $client->postcode))
+        and $client->fully_authenticated
+        )
     {
-        my $authenticated = $client->fully_authenticated;
         $cil_message =
-              ($authenticated ? 'Authenticated' : 'Non-authenticated')
-            . ' client ['
+              'Authenticated client ['
             . $client->loginid
             . '] updated his/her address from ['
             . join(' ', $client->address_1, $client->address_2, $client->city, $client->state, $client->postcode)
