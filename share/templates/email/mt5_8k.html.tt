@@ -23,10 +23,6 @@
    <td style="text-align:left">[% mt5_id %]</td>
   </tr>
   <tr>
-   <th scope="row">MT5 Group:</th>
-   <td style="text-align:left">[% mt5_group %]</td>
-  </tr>
-  <tr>
    <th scope="row">Deposit/ Withdrawal:</th>
    <td style="text-align:left">[% action %]</td>
   </tr>

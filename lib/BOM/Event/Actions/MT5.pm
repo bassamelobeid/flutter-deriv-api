@@ -78,11 +78,7 @@ sub redis_record_mt5_transfer {
     my $loginid    = $input_data->{loginid};
     my $mt5_id     = $input_data->{mt5_id};
     my $redis_key  = $mt5_id . "_" . $input_data->{action};
-    my $mt5_group  = Cache::RedisDB->get('MT5_USER_GROUP', $mt5_id);
-    $mt5_group //= 'unknown';
     my $data;
-
-    return undef unless ($mt5_group =~ /real\\vanuatu_standard/);
 
     # check if the mt5 id exists in redis
     if ($redis->get($redis_key)) {
@@ -115,9 +111,6 @@ sub notifiy_compliance_mt5_over8K {
     my $brands                 = Brands->new();
     my $system_email           = $brands->emails('system');
     my $compliance_alert_email = $brands->emails('compliance_alert');
-    my $mt5_group              = Cache::RedisDB->get('MT5_USER_GROUP', $data->{mt5_id});
-    $mt5_group //= 'unknown';
-    $data->{mt5_group} = $mt5_group;
 
     my $email_subject = 'VN - International currency transfers reporting obligation';
 
