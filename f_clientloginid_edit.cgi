@@ -576,6 +576,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         }
 
         if ($key eq 'client_authentication' and $input{$key}) {
+            use Data::Dumper;
+            warn Dumper($key);
             $auth_method = $input{$key};
 
             # Remove existing status to make the auth methods mutually exclusive

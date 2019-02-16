@@ -18,5 +18,5 @@
 
 <p>[% l("Should you need further assistance, please don't hesitate to contact us at ") %] <a href="[% "mailto:support@binary.com" %]">[% ("support@binary.com.")%]</a> [% l(" We're always happy to help.") %]</p>
 
-<p>[% l("Regards,") %]</p>
-<p>[% l("Binary.com") %]</p>
+<p>[% l("Regards,") %]<br>
+[% l("Binary.com") %]</p>

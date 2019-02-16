@@ -24,8 +24,8 @@ use BOM::MT5::User::Async;
 use BOM::Config::RedisReplicated;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(localize);
+use BOM::Platform::Event::Emitter;
 use BOM::Backoffice::Request;
-
 use Date::Utility;
 use List::MoreUtils qw/first_index/;
 use JSON::MaybeUTF8 qw/decode_json_utf8 encode_json_utf8/;
@@ -36,7 +36,13 @@ use constant REDIS_MASTERKEY               => 'MT5_REMINDER_AUTHENTICATION_CHECK
 use constant MT5_EMAIL_AUTHENTICATION_DAYS => 5;
 use constant MT5_ACCOUNT_DISABLE_DAYS      => 10;
 
-sub send_email_to_client_fifth_day {
+=head2 send_email_authentication_reminder
+
+Send email to client to remind them to authenticate their account
+
+=cut 
+
+sub send_email_authentication_reminder {
 
     my ($days_between_account_creation, $client, $data, $brands, $redis) = @_;
 
@@ -75,69 +81,57 @@ sub send_email_to_client_fifth_day {
     return undef;
 }
 
-sub create_csv_rows {
+=head2 send_email_disable_account
 
-    my ($brands, $user, $client, $redis) = @_;
+Send email to client to tell them that their MT5 accounts will be disabled
 
-    my $loginid_info = $client->loginid . ' (' . $client->currency . ')';
+=cut
+
+sub send_email_disable_account {
+
+    my ($brands, $client) = @_;
 
     # Send client the email that their account will be disabled
     my $mt5_disable_email;
 
     BOM::Backoffice::Request::template()->process("email/disable_mt5_accounts_email.html.tt", {full_name => $client->full_name}, \$mt5_disable_email);
 
-    send_email({
+    my $email_sent = send_email({
         from                  => $brands->emails('support'),
         to                    => $client->email,
-        subject               => localize('IMPORTANT: Your MT5 real money account has been disabled'),
+        subject               => localize('IMPORTANT: We are disabling your MT5 real money account'),
         message               => [$mt5_disable_email],
         email_content_is_html => 1,
         use_email_template    => 1,
         skip_text2html        => 1
     });
 
-    my @new_csv_rows;
-    my $csv_row = [];
-
-    my @mt5_loginids = sort grep { /^MT\d+$/ } $user->loginids;
-
-    foreach my $mt5_loginid (@mt5_loginids) {
-
-        $mt5_loginid =~ s/\D//g;
-        my $result = BOM::MT5::User::Async::get_user($mt5_loginid)->get;
-
-        next unless $result->{group} =~ /^real\\(vanuatu|labuan)/;
-
-        my $open_positions = BOM::MT5::User::Async::get_open_positions_count($mt5_loginid)->get;
-
-        $csv_row = [$loginid_info, $mt5_loginid, $result->{group}, $result->{balance}, $open_positions->{total}];
-        push @new_csv_rows, $csv_row;
-    }
-
-    $redis->hdel(REDIS_MASTERKEY, $user->{id});
-
-    return @new_csv_rows;
+    return $email_sent;
 }
 
-my @csv_rows;
+my $csv_hashref;
 
 my $redis   = BOM::Config::RedisReplicated::redis_write();
 my @all_ids = @{$redis->hkeys(REDIS_MASTERKEY)};
 
 my $brands = Brands->new(name => BOM::Backoffice::Request::request()->brand);
-my $present_day = Date::Utility->new();
+my $present_day = Date::Utility::today();
 
 foreach my $id (@all_ids) {
     my $user = BOM::User->new(id => $id);
 
     # real\\vanuatu or labuan is only for costarica clients
-    my @clients = $user->clients_for_landing_company('costarica');
+    my @all_clients = $user->clients_for_landing_company('costarica');
+
+    # Filter disabled and duplicated accounts
+    @all_clients = grep { !$_->status->disabled && !$_->status->duplicate_account } @all_clients;
+    next unless @all_clients;
 
     # Priority is getting fiat currency, as it is easier for payments for currency conversion
-    my $fiat_index = first_index { LandingCompany::Registry::get_currency_type($_->currency) eq 'fiat' } @clients;
+    my $fiat_index = first_index { LandingCompany::Registry::get_currency_type($_->currency) eq 'fiat' } @all_clients;
 
     my $client;
-    $client = $fiat_index == -1 ? $clients[0] : $clients[$fiat_index];
+    $client = $fiat_index == -1 ? $all_clients[0] : $all_clients[$fiat_index];
 
     # Remove from redis if client is authenticated
     if ($client->fully_authenticated) {
@@ -154,41 +148,22 @@ foreach my $id (@all_ids) {
     next if $days_between_account_creation < MT5_EMAIL_AUTHENTICATION_DAYS;
 
     # Send email to client five days after account creation
-    send_email_to_client_fifth_day($days_between_account_creation, $client, $data, $brands, $redis) unless $data->{has_email_sent};
+    send_email_authentication_reminder($days_between_account_creation, $client, $data, $brands, $redis) unless $data->{has_email_sent};
 
     # Save the client details in CSV if 10 days have passed after account creation
     if ($days_between_account_creation == MT5_ACCOUNT_DISABLE_DAYS) {
-        my @new_csv_rows = create_csv_rows($brands, $user, $client, $redis);
-        push @csv_rows, @new_csv_rows;
+        my $loginid_info = $client->loginid . ' (' . $client->currency . ')';
+
+        my $email_sent = send_email_disable_account($brands, $client);
+
+        my @mt5_loginids = sort grep { /^MT\d+$/ } $user->loginids;
+
+        $csv_hashref->{$loginid_info} = \@mt5_loginids;
+
+        $redis->hdel(REDIS_MASTERKEY, $user->{id}) if $email_sent;
     }
 }
 
-$present_day = $present_day->date_yyyymmdd;
-
-my $csv = Text::CSV->new({
-    eol        => "\n",
-    quote_char => undef
-});
-
-# CSV creation starts here
-my $filename = 'mt5_disable_list_' . $present_day . '.csv';
-
-{
-    my $file = path($filename)->openw_utf8;
-    my @headers = ('Loginid (Currency)', 'MT5 ID', 'MT5 Group', 'MT5 Balance', 'Open Positions');
-
-    $csv->print($file, \@headers);
-    $csv->print($file, $_) for @csv_rows;
-}
-# CSV creation ends here
-
-send_email({
-    'from'       => $brands->emails('system'),
-    'to'         => $brands->emails('support'),
-    'subject'    => 'List of MT5 accounts to disable -  ' . $present_day,
-    'attachment' => $filename,
-});
-
-path($filename)->remove;
+BOM::Platform::Event::Emitter::emit('send_mt5_disable_csv', {csv_info => $csv_hashref});
 
 1;
