@@ -38,7 +38,8 @@ $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to
 my $mock_transaction = Test::MockModule->new('BOM::Transaction');
 $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
-my $now       = Date::Utility->new;
+#just to be safe so that sell time does not equal to purchase time
+my $now       = Date::Utility->new->minus_time_interval('1s');
 my $tick_r100 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch,
     underlying => 'R_100',
@@ -104,6 +105,8 @@ subtest 'global potential loss' => sub {
 
     my $contract = produce_contract({
         underlying   => 'R_100',
+        date_start   => $now,
+        date_pricing => $now,
         bet_type     => 'CALL',
         currency     => 'USD',
         payout       => 100,
@@ -170,6 +173,8 @@ subtest 'global potential loss' => sub {
 
     my $args = {
         underlying   => 'R_100',
+        date_start   => $now,
+        date_pricing => $now,
         bet_type     => 'CALL',
         currency     => 'USD',
         payout       => 100,
@@ -263,6 +268,8 @@ subtest 'global realized loss' => sub {
     });
     my $contract = produce_contract({
         underlying   => 'R_100',
+        date_start   => $now,
+        date_pricing => $now,
         bet_type     => 'CALL',
         currency     => 'USD',
         payout       => 100,
@@ -327,6 +334,8 @@ subtest 'global realized loss' => sub {
 
     my $args = {
         underlying   => 'R_100',
+        date_start   => $now,
+        date_pricing => $now,
         bet_type     => 'CALL',
         currency     => 'USD',
         payout       => 100,

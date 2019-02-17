@@ -152,7 +152,7 @@ subtest 'buy - runhigh' => sub {
             bet_type     => 'RUNHIGH',
             currency     => 'USD',
             payout       => 100,
-            duration     => '1t',
+            duration     => '2t',
             current_tick => $tick,
             barrier      => 'S0P',
         });
@@ -229,7 +229,7 @@ subtest 'buy - runhigh' => sub {
             cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
             like $fmb->{short_code}, qr/RUNHIGH/, 'short_code';
             cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
-            is $fmb->{tick_count},        1,  'tick_count';
+            is $fmb->{tick_count},        2,  'tick_count';
             is $fmb->{underlying_symbol}, 'R_100', 'underlying_symbol';
         };
 
@@ -238,7 +238,7 @@ subtest 'buy - runhigh' => sub {
         subtest 'chld row', sub {
             plan tests => 3;
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{selected_tick},       1, 'selected_tick';
+            is $chld->{selected_tick},       2, 'selected_tick';
             is $chld->{relative_barrier}, 'S0P', 'relative_barrier';
         };
 
@@ -266,7 +266,7 @@ subtest 'buy - runlow' => sub {
             bet_type     => 'RUNLOW',
             currency     => 'USD',
             payout       => 100,
-            duration     => '1t',
+            duration     => '2t',
             current_tick => $tick,
             barrier      => 'S0P',
         });
@@ -343,7 +343,7 @@ subtest 'buy - runlow' => sub {
             cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
             like $fmb->{short_code}, qr/RUNLOW/, 'short_code';
             cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
-            is $fmb->{tick_count},        1,  'tick_count';
+            is $fmb->{tick_count},        2,  'tick_count';
             is $fmb->{underlying_symbol}, 'R_100', 'underlying_symbol';
         };
 
@@ -352,7 +352,7 @@ subtest 'buy - runlow' => sub {
         subtest 'chld row', sub {
             plan tests => 3;
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{selected_tick},       1, 'selected_tick';
+            is $chld->{selected_tick},       2, 'selected_tick';
             is $chld->{relative_barrier}, 'S0P', 'relative_barrier';
         };
 
