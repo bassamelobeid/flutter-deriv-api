@@ -67,6 +67,9 @@ Bar('Quants Config');
 
 my $existing_per_landing_company = BOM::Backoffice::QuantsConfigHelper::decorate_for_display($quants_config->get_all_global_limit(['default']));
 my %lc_limits = map { $_ => $json->encode($existing_per_landing_company->{$_}) } keys %$existing_per_landing_company;
+my $pending_market_group =
+    BOM::Backoffice::QuantsConfigHelper::decorate_for_pending_market_group($quants_config->get_pending_market_group(['default']));
+my %lc_pending_market_group = map { $_ => $json->encode($pending_market_group->{$_}) } keys %$pending_market_group;
 
 my @limit_types;
 foreach my $key (sort keys %$supported_config) {
@@ -89,14 +92,15 @@ my @existing_market_groups = map { {key => $_, list => $market_group_data->{$_}}
 BOM::Backoffice::Request::template()->process(
     'backoffice/quants_config_form.html.tt',
     {
-        upload_url               => request()->url_for('backoffice/quant/update_quants_config.cgi'),
-        existing_landing_company => \%lc_limits,
-        existing_contract_groups => \@existing_contract_groups,
-        existing_market_groups   => \@existing_market_groups,
-        data                     => {
-            markets           => $json->encode($markets),
+        upload_url                    => request()->url_for('backoffice/quant/update_quants_config.cgi'),
+        existing_landing_company      => \%lc_limits,
+        existing_pending_market_group => \%lc_pending_market_group,
+        existing_contract_groups      => \@existing_contract_groups,
+        existing_market_groups        => \@existing_market_groups,
+        data                          => {
+            markets           => $json->encode([@$markets, 'new_market']),
             expiry_types      => $json->encode(BOM::Backoffice::QuantsConfigHelper::get_config_input('expiry_type')),
-            contract_groups   => $json->encode([uniq(@$contract_groups, 'new_category')]),
+            contract_groups   => $json->encode([uniq(@$contract_groups)]),
             barrier_types     => $json->encode(BOM::Backoffice::QuantsConfigHelper::get_config_input('barrier_type')),
             limit_types       => \@limit_types,
             landing_companies => $json->encode(BOM::Backoffice::QuantsConfigHelper::get_config_input('landing_company')),

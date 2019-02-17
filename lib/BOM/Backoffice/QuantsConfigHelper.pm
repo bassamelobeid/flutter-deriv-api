@@ -28,7 +28,7 @@ sub save_limit {
 
     # clean up and restructure inputs
     my %new_args = map {
-              ($_ =~ /limit_type|limit_amount|comment|start_time|end_time/) ? ($_ => $args->{$_})
+              ($_ =~ /new_market|limit_type|limit_amount|comment|start_time|end_time/) ? ($_ => $args->{$_})
             : ($_ =~ /underlying_symbol/) ? ($_ => [split ',', $args->{$_}])
             : ($_ => [$args->{$_} =~ /$_=(\w+)/g])
         } grep {
@@ -37,9 +37,30 @@ sub save_limit {
 
     my $limits = try {
         my $qc = BOM::Database::QuantsConfig->new();
+        # if the specified market group is not currently tied to any underlying symbol and we have a selected time period defined,
+        # then we need to store these information into another table.
+        die 'market and new_market cannot co-exists' if $new_args{market} and $new_args{new_market};
+        if ($new_args{underlying_symbol} and $new_args{new_market}) {
+            # delete $new_args{underlying_symbol} from %new_args because we will then save this entry as a market level limit.
+            my $symbols_to_alter = delete $new_args{underlying_symbol};
+            $new_args{market} = [$new_args{new_market}];
+            die 'start_time and end_time are required when setting new market group for underlyings'
+                unless $new_args{start_time} and $new_args{end_time};
+            $qc->set_pending_market_group({
+                    landing_company => $new_args{landing_company},
+                    new_market      => $new_args{new_market},
+                    symbols         => $symbols_to_alter,
+                    start_time      => $new_args{start_time},
+                    end_time        => $new_args{end_time}});
+        }
+
         $qc->set_global_limit(\%new_args);
-        my $decorated_data = decorate_for_display($qc->get_all_global_limit(['default']));
-        +{data => $decorated_data};
+        my $decorated_limit = decorate_for_display($qc->get_all_global_limit(['default']));
+        my $pending_group   = decorate_for_pending_market_group($qc->get_pending_market_group(['default']));
+        +{
+            limit        => $decorated_limit,
+            market_group => $pending_group,
+        };
 
     }
     catch {
@@ -137,7 +158,11 @@ sub decorate_for_display {
         fixup => sub {
             $_->selectall_arrayref("SELECT market from bet.market group by market");
         });
-    my @market_order = uniq(qw(forex indices commodities volidx default), (map { @$_ } @$output));
+    my $potentially_new_market = $db->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref("SELECT market from betonmarkets.quants_wishlist group by market");
+        });
+    my @market_order = uniq(qw(forex indices commodities volidx default), (map { @$_ } (@$output, @$potentially_new_market)));
     my @type_order = qw(market symbol_default symbol);
 
     my @sorted_records = ();
@@ -192,6 +217,46 @@ sub decorate_for_display {
             [start_time        => 'Start Time'],
             [end_time          => 'End Time'],
             (map { [$_ => $supported->{$_}] } sort keys %$supported),
+        ],
+    };
+}
+
+sub decorate_for_pending_market_group {
+    my $records = shift;
+
+    # group all the underlyings with the same new market group and switch period together
+    my %groups;
+    foreach my $record (@$records) {
+        my $key = join ',', ($record->{market}, $record->{start_time}, $record->{end_time}, $record->{landing_company});
+        unless ($groups{$key}) {
+            $groups{$key} = $record;
+            next;
+        }
+        $groups{$key}{symbol} .= ",$record->{symbol}";
+    }
+
+    # just to adhere to the format in html
+    my @records;
+    foreach my $data (values %groups) {
+        my $record;
+        foreach my $key (keys %$data) {
+            $record->{$key} = {
+                data_key      => $data->{$key},
+                display_value => ($data->{$key} eq 'default') ? '-' : $data->{$key},
+            };
+        }
+        push @records, $record;
+    }
+
+    return {
+        records => \@records,
+        header  => [
+            [landing_company => 'Landing Company'],
+            [market          => 'New Market'],
+            [symbol          => 'Underlying Symbol'],
+            [start_time      => 'Start Time'],
+            [end_time        => 'End Time'],
+            [market_switched => 'Switch Status'],
         ],
     };
 }
@@ -318,24 +383,7 @@ sub update_market_group {
     }
 
     my $output = try {
-        my $dbs = BOM::Database::QuantsConfig->new->_db_list('default');
-        foreach my $db (@$dbs) {
-            my $dbic = $db->dbic;
-            foreach my $underlying_symbol (split ',', $args->{underlying_symbol}) {
-                my $u_config = Finance::Underlying->by_symbol($underlying_symbol);
-                $args->{submarket_group} ||= $u_config->{submarket};
-                $args->{market_group} = $u_config->{market} if $args->{market_group} eq 'default';
-                $dbic->run(
-                    fixup => sub {
-                        $_->do(
-                            qq{SELECT bet.update_underlying_symbol_group(?,?,?,?)},
-                            undef, $underlying_symbol, $args->{market_group}, $args->{submarket_group},
-                            $args->{market_type});
-                    },
-                );
-
-            }
-        }
+        BOM::Database::QuantsConfig->new->update_market_group($args);
         +{success => 1};
     }
     catch {
@@ -345,6 +393,26 @@ sub update_market_group {
     };
 
     return $output;
+}
+
+sub delete_market_group {
+    my $args = shift;
+
+    my $groups = try {
+        my $qc = BOM::Database::QuantsConfig->new();
+        $qc->delete_market_group($args);
+        my $market_group = decorate_for_pending_market_group($qc->get_pending_market_group(['default']));
+        my $limit        = decorate_for_display($qc->get_all_global_limit(['default']));
+        +{
+            limit        => $limit,
+            market_group => $market_group
+        };
+    }
+    catch {
+        +{error => $_};
+    };
+
+    return $groups;
 }
 
 1;

@@ -19,9 +19,14 @@ my $json = JSON::MaybeXS->new;
 
 if (request()->param('save_limit')) {
     my %args = map { $_ => request()->param($_) }
-        qw(market expiry_type contract_group underlying_symbol landing_company barrier_type limit_type limit_amount comment start_time end_time);
+        qw(market new_market expiry_type contract_group underlying_symbol landing_company barrier_type limit_type limit_amount comment start_time end_time);
 
     print $json->encode(BOM::Backoffice::QuantsConfigHelper::save_limit(\%args));
+}
+
+if (request()->param('delete_market_group')) {
+    my %args = map { $_ => request()->param($_) } qw(market landing_company start_time end_time symbol);
+    print $json->encode(BOM::Backoffice::QuantsConfigHelper::delete_market_group(\%args));
 }
 
 if (request()->param('delete_limit')) {

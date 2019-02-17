@@ -96,9 +96,42 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
 
 <div id="per_landing_company"></div>
 
+</br></br>
+<p><b>Pending market group switch</b> </p>
+<p>Market group update and clean-up of expired records is by a cron that runs every minute. So, if you select a start time of 20:11:15, it will be updated at 20:12:00</p>
+
+<div id="market_group_display"></div>
+
 <script>
 
     var upload_url = "[% upload_url %]";
+
+    function deleteMarketGroup(table_id, row_id) {
+        var el = \$('table#'+table_id).find('tr#'+row_id);
+        var result = el.find('td.result');
+        result.text('processing ...');
+
+        \$.ajax({
+            url: upload_url,
+            data: {
+                delete_market_group: "1",
+                market: el.find('td.market').attr('data_key'),
+                landing_company: el.find('td.landing_company').attr('data_key'),
+                start_time: el.find('td.start_time').attr('data_key'),
+                end_time: el.find('td.end_time').attr('data_key'),
+                symbol: el.find('td.symbol').attr('data_key')
+            },
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'red');
+                } else {
+                    createDisplayTable(config.limit.records, config.limit.header, 'per_landing_company');
+                    createDisplayTable(config.market_group.records, config.market_group.header, 'market_group_display');
+                }
+            }
+        });
+    }
 
     function deleteLimit(table_id, target_name, row_id) {
         var el = \$('table#'+table_id).find('tr#'+row_id);
@@ -175,7 +208,13 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
                     table += value.display_value+'</td>';
                 }
             }
-            table += '<td class="type" data_key="'+d['type'].data_key+'"></td>';
+            if (typeof(d['type']) != 'undefined') {
+                table += '<td class="type" data_key="'+d['type'].data_key+'"></td>';
+            }
+
+            if (id == 'market_group_display') {
+                table += '<td><button onClick="deleteMarketGroup(\''+id+'\','+i+')" type="button">delete</button></td><td class="result"></td>';
+            }
             table += '</tr>'
         }
 
@@ -188,7 +227,11 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
 
         for (var i=0; i<data.length; i++) {
             var input = data[i];
-            table += '<tr><td><input type="checkbox" name="'+id+'" value="'+input+'">'+input+'</input></td></tr>';
+            if (input == 'new_market') {
+                table += '<tr><td><input type="text" name="new_market"></input></td></tr>';
+            } else {
+                table += '<tr><td><input type="checkbox" name="'+id+'" value="'+input+'">'+input+'</input></td></tr>';
+            }
         }
 
         table += '</table>';
@@ -201,6 +244,7 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
             var result = el.find("span.save_result");
             result.text('processing ...');
             var market = el.find('input[name="market"]:checked').serialize();
+            var new_market = el.find('input[name="new_market"]').val();
             var underlying_symbol = el.find('input[name="underlying_symbol"]').val();
             var expiry_type = el.find('input[name="expiry_type"]:checked').serialize();
             var contract_group = el.find('input[name="contract_group"]:checked').serialize();
@@ -217,6 +261,7 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
                 data: {
                     save_limit: "1",
                     market: market,
+                    new_market: new_market,
                     underlying_symbol: underlying_symbol,
                     expiry_type: expiry_type,
                     contract_group: contract_group,
@@ -234,7 +279,8 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
                         result.text(config.error).css('color', 'red');
                     } else {
                         result.text('saved').css('color', 'green');
-                        createDisplayTable(config.data.records, config.data.header, 'per_landing_company');
+                        createDisplayTable(config.limit.records, config.limit.header, 'per_landing_company');
+                        createDisplayTable(config.market_group.records, config.market_group.header, 'market_group_display');
                     }
                 }
             });
@@ -248,6 +294,7 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
     createInputTable([% data.contract_groups | none %], 'contract_group');
 
     createDisplayTable([% existing_landing_company.records | none %], [% existing_landing_company.header | none %], 'per_landing_company');
+    createDisplayTable([% existing_pending_market_group.records | none %], [% existing_pending_market_group.header | none %], 'market_group_display');
 
 </script>
 <style>
