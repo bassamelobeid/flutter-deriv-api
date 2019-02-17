@@ -26,8 +26,10 @@ is(scalar @payments, 34 * $repetitions, "number of rows is correct");
 is_deeply(
     [sort keys %{$payments[0]}],
     [
-        'account_id', 'affiliate_email', 'affiliate_username', 'affiliation',  'currency', 'loginid',
-        'name',       'payments',        'profit',             'usd_payments', 'usd_profit'
+        'account_id',           'affiliate_email',  'affiliate_username',   'affiliation',
+        'currency',             'financial_profit', 'loginid',              'name',
+        'non_financial_profit', 'payments',         'usd_financial_profit', 'usd_non_financial_profit',
+        'usd_payments'
     ],
     "key is correct"
 );
