@@ -7,7 +7,7 @@
 [% FOREACH broker IN data.closed_pl.pl.$broker_index.keys.sort %]
     <h3 style="outline: none">
         <strong>[% broker %] :</strong>
-          <span style="color: [% data.closed_pl.pl.$broker_index.$broker.total_closed_pl > 0 ? 'green' : 'red' %]">
+          <span style="color: [% data.closed_pl.pl.$broker_index.$broker.total_closed_pl != '' AND data.closed_pl.pl.$broker_index.$broker.total_closed_pl > 0 ? 'green' : 'red' %]">
                 Closed_PL: USD [% data.closed_pl.pl.$broker_index.$broker.total_closed_pl %]
           <span>
     </h3>  
@@ -80,7 +80,7 @@
 [% FOREACH broker IN data.previous_closed_pl.pl.$broker_index.keys.sort %]
     <h3 style="outline: none">
         <strong>[% broker %] :</strong>
-          <span style="color: [% data.previous_closed_pl.pl.$broker_index.$broker.total_closed_pl > 0 ? 'green' : 'red' %]">
+          <span style="color: [% data.previous_closed_pl.pl.$broker_index.$broker.total_closed_pl != '' AND data.previous_closed_pl.pl.$broker_index.$broker.total_closed_pl > 0 ? 'green' : 'red' %]">
                 Closed_PL: USD [% data.previous_closed_pl.pl.$broker_index.$broker.total_closed_pl %]
           <span>
     </h3>  

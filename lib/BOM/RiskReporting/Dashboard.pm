@@ -306,23 +306,17 @@ sub _top_turnover {
         start_date => $self->start->db_timestamp,
         end_date   => $self->end->db_timestamp
     });
-    my @sorted_top =
-        sort { $b->{turnover} <=> $a->{turnover} }
+    my @sorted_financial =
+        sort { $b->{financial_turnover} <=> $a->{financial_turnover} }
         map { $self->_do_name_plus($tops->{$_}) } (keys %$tops);
-    foreach my $entry (@sorted_top) {
-        $self->_affiliate_info->{$entry->{affiliation}}->{turnover} += $entry->{turnover}
-            if ($entry->{affiliation} and defined $entry->{turnover});
-    }
-    my @sorted_affils =
-        sort { $b->{turnover} <=> $a->{turnover} }
-        grep { defined $_->{turnover} }
-        map  { $self->_affiliate_info->{$_} } keys %{$self->_affiliate_info};
-    return +{
-        clients => [(scalar @sorted_top <= 10) ? @sorted_top : @sorted_top[0 .. 9]],
-        affiliates => [
-            (scalar @sorted_affils <= 10)
-            ? @sorted_affils
-            : @sorted_affils[0 .. 9]]};
+    my @sorted_non_financial =
+        sort { $b->{non_financial_turnover} <=> $a->{non_financial_turnover} }
+        map { $self->_do_name_plus($tops->{$_}) } (keys %$tops);
+
+    return {
+        financial     => [(scalar @sorted_financial <= 10)     ? @sorted_financial     : @sorted_financial[0 .. 9]],
+        non_financial => [(scalar @sorted_non_financial <= 10) ? @sorted_non_financial : @sorted_non_financial[0 .. 9]],
+    };
 }
 
 sub _payment_and_profit_report {
@@ -344,15 +338,21 @@ sub _payment_and_profit_report {
             if ($withdrawals[$i] and $withdrawals[$i]->{usd_payments} < 0);
     }
 
-    my @winners = sort { $b->{usd_profit} <=> $a->{usd_profit} } @movers;
-    my @losers = reverse @winners;
-    my (@big_winners, @big_losers, @watched);
+    my @financial_winners     = sort { $b->{usd_financial_profit} <=> $a->{usd_financial_profit} } @movers;
+    my @financial_losers      = reverse @financial_winners;
+    my @non_financial_winners = sort { $b->{usd_non_financial_profit} <=> $a->{usd_non_financial_profit} } @movers;
+    my @non_financial_losers  = reverse @non_financial_winners;
+    my (@big_financial_winners, @big_non_financial_winners, @big_financial_losers, @big_non_financial_losers, @watched);
 
     for my $i (0 .. 9) {
-        push @big_winners, $winners[$i]
-            if ($winners[$i] and $winners[$i]->{usd_profit} > 0);
-        push @big_losers, $losers[$i]
-            if ($losers[$i] and $losers[$i]->{usd_profit} < 0);
+        push @big_financial_winners, $financial_winners[$i]
+            if ($financial_winners[$i] and $financial_winners[$i]->{usd_financial_profit} > 0);
+        push @big_non_financial_winners, $non_financial_winners[$i]
+            if ($non_financial_winners[$i] and $non_financial_winners[$i]->{usd_non_financial_profit} > 0);
+        push @big_financial_losers, $financial_losers[$i]
+            if ($financial_losers[$i] and $financial_losers[$i]->{usd_financial_profit} < 0);
+        push @big_non_financial_losers, $non_financial_losers[$i]
+            if ($non_financial_losers[$i] and $non_financial_losers[$i]->{usd_non_financial_profit} < 0);
     }
     my %all_watched =
         map { $_ => 1 } (keys %{$self->custom_client_profiles});
@@ -382,9 +382,15 @@ sub _payment_and_profit_report {
     return {
         big_deposits    => \@big_deposits,
         big_withdrawals => \@big_withdrawals,
-        big_winners     => \@big_winners,
-        big_losers      => \@big_losers,
-        watched         => \@watched,
+        big_winners     => {
+            financial     => \@big_financial_winners,
+            non_financial => \@big_non_financial_winners,
+        },
+        big_losers => {
+            financial     => \@big_financial_losers,
+            non_financial => \@big_non_financial_losers,
+        },
+        watched => \@watched,
     };
 }
 

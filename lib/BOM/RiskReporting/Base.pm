@@ -117,7 +117,7 @@ sub historical_open_bets {
         fixup => sub {
             $_->selectall_hashref(
                 qq{ SELECT id, loginid AS client_loginid, currency_code, short_code, buy_price, ref AS transaction_id
-FROM accounting.get_historical_open_bets_overview(?::TIMESTAMP)}, 'id', {}, $date
+FROM accounting.get_historical_open_bets_overview_v2(?::TIMESTAMP)}, 'id', {}, $date
             );
         });
 }

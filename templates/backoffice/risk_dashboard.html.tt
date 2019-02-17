@@ -17,26 +17,36 @@
             <h3>Withdrawals</h3>
             [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = big_withdrawals, key = 'payments' %]
         </div>
+<hr/>
         <div class="sum_table">
-            <h3>Winners</h3>
-            [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = big_winners, key = 'profit' %]
+            <h3>Winners (financial)</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = big_winners.financial, key = 'financial_profit' %]
         </div>
         <div class="sum_table">
-            <h3>Losers</h3>
-            [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = big_losers, key = 'profit' %]
+            <h3>Winners (non_financial)</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = big_winners.non_financial, key = 'non_financial_profit' %]
+        </div>
+        <div class="sum_table">
+            <h3>Losers (financial)</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = big_losers.financial, key = 'financial_profit' %]
+        </div>
+        <div class="sum_table">
+            <h3>Losers (non_financial)</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = big_losers.non_financial, key = 'non_financial_profit' %]
+        </div>
+<hr/>
+        <div class="sum_table">
+            <h3>Turnover (financial)</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = top_turnover.financial, key = 'financial_turnover' %]
+        </div>
+        <div class="sum_table">
+            <h3>Turnover (non_financial)</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = top_turnover.non_financial, key = 'non_financial_turnover' %]
         </div>
 <hr/>
         <div class="sum_table">
             <h3>Watched</h3>
             [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = watched, action = 'watched', key = 'profit' %]
-        </div>
-        <div class="sum_table">
-            <h3>Turnover</h3>
-            [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = top_turnover.clients, key = 'turnover' %]
-        </div>
-        <div class="sum_table">
-            <h3>Affiliate</h3>
-            [% INCLUDE 'backoffice/risk_dashboard_affiliate_table.html.tt' affiliates = top_turnover.affiliates, key = 'turnover' %]
         </div>
 <hr/>
 </div>
