@@ -5,6 +5,7 @@ use BOM::Database::ClientDB;
 use BOM::User::Client;
 use DBI;
 
+use BOM::Test::Data::Utility::UnitTestDatabase;
 use Date::Utility;
 
 =head2 create_client({ broker_code => $broker_code})
@@ -23,10 +24,11 @@ sub create_client {
     my $broker_code = delete $args->{broker_code};
 
     my $client_data = {
-        loginid                  => undef,                                           ###
+        loginid                  => undef,                                                                   ###
         client_password          => 'angelina',
-        email                    => undef,                                           ####
-        broker_code              => undef,                                           ####
+        binary_user_id           => BOM::Test::Data::Utility::UnitTestDatabase::get_next_binary_user_id(),
+        email                    => undef,                                                                   ####
+        broker_code              => undef,                                                                   ####
         residence                => 'USA',
         citizen                  => 'USA',
         salutation               => 'MR',

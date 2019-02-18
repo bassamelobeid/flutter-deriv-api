@@ -32,7 +32,9 @@ subtest 'Client getters, setters' => sub {
 
     # create client object
     my $client;
-    Test::Exception::lives_ok { $client = BOM::User::Client::get_instance({'loginid' => $login_id}); }
+    Test::Exception::lives_ok {
+        $client = BOM::User::Client::get_instance({'loginid' => $login_id});
+    }
     "Can create client object 'BOM::User::Client::get_instance({'loginid' => $login_id})'";
 
     is($client->broker, 'CR', 'client broker is CR');
@@ -87,7 +89,10 @@ subtest 'Client getters, setters' => sub {
 
     # This was the original test case provided with ticket #593, believe it or
     # not. https://bitbucket.org/binarydotcom/bom/issue/593
-    Test::Exception::lives_ok { $client->secret_question("Carlos Lima's homies live here") } "set secret question: Carlos Lima's homies live here";
+    Test::Exception::lives_ok {
+        $client->secret_question("Carlos Lima's homies live here")
+    }
+    "set secret question: Carlos Lima's homies live here";
     is($client->secret_question, "Carlos Lima's homies live here", "client secret question is: Carlos Lima's homies live here");
 
     Test::Exception::lives_ok { $client->secret_answer("São Paulo") } "set secret answer: São Paulo";
@@ -108,7 +113,13 @@ subtest 'Client getters, setters' => sub {
     Test::Exception::lives_ok { $client->restricted_ip_address("192.168.0.1") } "set restricted_ip_address: 192.168.0.1";
     is($client->restricted_ip_address, "192.168.0.1", "client restricted_ip_address is: 192.168.0.1");
 
-    Test::Exception::lives_ok { $client->save({'log' => 0, 'clerk' => 'test'}); } "Can save all the changes back to the client";
+    Test::Exception::lives_ok {
+        $client->save({
+            'log'   => 0,
+            'clerk' => 'test'
+        });
+    }
+    "Can save all the changes back to the client";
 };
 
 my $open_account_details = {
@@ -132,11 +143,15 @@ my $open_account_details = {
     myaffiliates_token_registered => 0,
     checked_affiliate_exposures   => 0,
     client_password               => '123456',
+    binary_user_id                => BOM::Test::Data::Utility::UnitTestDatabase::get_next_binary_user_id(),
 };
 
 my $client;
 subtest 'create client' => sub {
-    Test::Exception::lives_ok { $client = $user->create_client(%$open_account_details) } "create new client success";
+    Test::Exception::lives_ok {
+        $client = $user->create_client(%$open_account_details)
+    }
+    "create new client success";
     my $new_loginid = $client->loginid;
 
     # Test save method
@@ -151,7 +166,9 @@ subtest 'create client' => sub {
     is($client->last_name,               "mimi",                  "[save] client last_name is: mimi");
     is($client->email,                   'test@betonmarkets.com', '[save] client email is: shuwnyuan@betonmarkets.com');
     is($client->aml_risk_classification, 'low',                   'by default risk classification is low for new client');
-    throws_ok { $client->aml_risk_classification('dummy') } qr/Invalid aml_risk_classification/, $client->aml_risk_classification('standard');
+    throws_ok { $client->aml_risk_classification('dummy') }
+    qr/Invalid aml_risk_classification/,
+        $client->aml_risk_classification('standard');
     Test::Exception::lives_ok { $client->save(); } "[save] call client save OK";
     is($client->aml_risk_classification, 'standard', 'correct risk classification after update');
 
