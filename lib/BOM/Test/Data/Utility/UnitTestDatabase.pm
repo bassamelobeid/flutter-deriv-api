@@ -71,13 +71,27 @@ sub _post_import_operations {
     return;
 }
 
+=head2 get_next_binary_user_id
+
+Use this to get next binary_user_id
+The binary_user_id is generated from users.binary_user_id_seq from Users datbase
+
+=cut
+
+sub get_next_binary_user_id {
+    return BOM::Database::UserDB::rose_db()->dbic->run(
+        sub {
+            $_->selectcol_arrayref(q{SELECT nextval('users.binary_user_id_seq')})->[0];
+        });
+}
+
 =head2 create_client({ broker_code => $broker_code}, auth)
 
-    Use this to create a new client object for testing. broker_code is required.
-    Additional args to the hashref can be specified which will update the
-    relavant client attribute
+Use this to create a new client object for testing. broker_code is required.
+Additional args to the hashref can be specified which will update the
+relavant client attribute
 
-    If auth is defined and broker need authentication, do it
+If auth is defined and broker need authentication, do it
 
 =cut
 
@@ -114,6 +128,7 @@ sub create_client {
     my $new_loginid = $broker_code . $loginid_sequence[0];
 
     $client_data->{loginid} = $new_loginid;
+    $client_data->{binary_user_id} = $args->{binary_user_id} // get_next_binary_user_id();
 
     # any modify args were specified?
     for (keys %$args) {
