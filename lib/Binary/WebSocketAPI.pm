@@ -231,10 +231,11 @@ sub startup {
         [
             'balance',
             {
-                require_auth   => 'read',
-                before_forward => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::subscribe_transaction_channel,
-                error          => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::balance_error_handler,
-                success        => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::balance_success_handler,
+                require_auth           => 'read',
+                before_forward         => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::before_forward_balance,
+                after_got_rpc_response => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::subscribe_transaction_channel,
+                error                  => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::balance_error_handler,
+                success                => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::balance_success_handler,
             }
         ],
 
