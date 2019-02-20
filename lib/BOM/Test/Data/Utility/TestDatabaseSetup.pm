@@ -274,10 +274,12 @@ sub _kill_all_pg_connections {
     #suppress 'WARNING:  PID 31811 is not a PostgreSQL server process'
     {
         local $SIG{__WARN__} = sub { warn @_ if $_[0] !~ /is not a PostgreSQL server process/; };
+
+        # kill everything else besides pglogical
         $dbh->do(
-            'select pid, pg_terminate_backend(pid) terminated
-           from pg_stat_get_activity(NULL::integer) s(datid, pid)
-          where pid<>pg_backend_pid()'
+            q{SELECT pid, pg_terminate_backend(pid) terminated
+            FROM pg_stat_get_activity(NULL::integer) s(datid, pid)
+            WHERE pid <> pg_backend_pid() AND application_name NOT LIKE '%pglogical%'}
         );
     }
 
