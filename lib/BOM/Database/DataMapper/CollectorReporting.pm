@@ -37,7 +37,7 @@ sub get_open_bet_overviews {
 
     my $sql;
     if ($from_historical) {
-        $sql = q{ SELECT * FROM accounting.get_historical_open_bets_overview(?) };
+        $sql = q{ SELECT * FROM accounting.get_historical_open_bets_overview_v2(?) };
     } else {
         $sql = q{ SELECT * FROM accounting.get_open_bets_overview() };
     }
@@ -101,7 +101,7 @@ sub get_active_accounts_payment_profit {
     my $result = $self->db->dbic->run(
         fixup => sub {
             return $_->selectall_arrayref(
-                q{ SELECT * FROM accounting.get_active_accounts_payment_profit(?, ?) },
+                q{ SELECT * FROM accounting.get_active_accounts_payment_profit_v2(?, ?) },
                 {Slice => {}},
                 $args->{start_time}->db_timestamp,
                 $args->{end_time}->db_timestamp
@@ -115,7 +115,7 @@ sub turnover_in_period {
     my $args = shift;
 
     my $dbic = $self->db->dbic;
-    my $sql  = q{ SELECT * FROM accounting.turnover_in_period(?, ?) };
+    my $sql  = q{ SELECT * FROM accounting.turnover_in_period_v2(?, ?) };
 
     return $dbic->run(
         fixup => sub {

@@ -375,19 +375,25 @@ sub get_all_global_limit {
 
     my %limits = map { my $l = $self->_get_all($_); defined $l ? ($_ => $l) : () } @$landing_company;
 
-    my @all_ids = uniq map { keys %{$limits{$_}} } keys %limits;
+    return $self->_get_unique_records(\%limits, $landing_company);
+}
+
+sub _get_unique_records {
+    my ($self, $data, $landing_company) = @_;
+
+    my @all_ids = uniq map { keys %{$data->{$_}} } keys %$data;
     # fill the landing_company field for each record.
     foreach my $id (@all_ids) {
-        if (all { $limits{$_}{$id} } @$landing_company) {
-            $limits{$_}{$id}{landing_company} = 'default' for @$landing_company;
+        if (all { $data->{$_}{$id} } @$landing_company) {
+            $data->{$_}{$id}{landing_company} = 'default' for @$landing_company;
         } else {
-            for (grep { $limits{$_}{$id} } @$landing_company) {
-                $limits{$_}{$id}{landing_company} = $_;
+            for (grep { $data->{$_}{$id} } @$landing_company) {
+                $data->{$_}{$id}{landing_company} = $_;
             }
         }
     }
 
-    my @records = values %limits;
+    my @records = values %$data;
     my %uniq_records = map { %{$records[$_]} } (0 .. $#records);
 
     return [values %uniq_records];
@@ -454,6 +460,41 @@ sub _get_all {
     return \%limits;
 }
 
+=head2 delete_market_group
+
+delete global limits with parameters. Valid parameters:
+- symbol (required)
+- market (required)
+- landing_company (required)
+- start_time (required)
+- end_time (required)
+
+->delete_market_group({
+    market => 'new_forex',
+    landing_company => 'default',
+    start_time => time,
+    end_time => time + 300,
+    symbol => 'frxAUDJPY,frxEURJPY',
+})
+=cut
+
+sub delete_market_group {
+    my ($self, $args) = @_;
+
+    $args->{symbol} =~ s/\s+//g;
+
+    my $statement = qq{SELECT betonmarkets.delete_quants_wishlist(?,?,?,?)};
+    foreach my $db (@{$self->_db_list($args->{landing_company})}) {
+        foreach my $symbol (split ',', $args->{symbol}) {
+            my @execute_args = ($args->{market}, $symbol, Date::Utility->new($args->{start_time})->db_timestamp,
+                Date::Utility->new($args->{end_time})->db_timestamp);
+            $self->_update_db($db, $statement, \@execute_args);
+        }
+    }
+
+    return;
+}
+
 =head2 delete_global_limit
 
 delete global limits with parameters. Valid parameters:
@@ -502,6 +543,130 @@ sub delete_global_limit {
             push @execute_args, $val;
         }
         $self->_update_db($db, $statement, \@execute_args);
+    }
+
+    return;
+}
+
+sub set_pending_market_group {
+    my ($self, $args) = @_;
+
+    my ($landing_company, $new_market, $symbols, $start, $end) = @{$args}{qw(landing_company new_market symbols start_time end_time)};
+    $landing_company //= 'default';
+
+    my $statement = qq{SELECT betonmarkets.insert_quants_wishlist(?,?,?,?)};
+    foreach my $db (@{$self->_db_list($landing_company)}) {
+        foreach my $symbol (@$symbols) {
+            $self->_update_db($db, $statement, [$new_market, $symbol, $start, $end]);
+        }
+    }
+
+    return;
+}
+
+sub get_pending_market_group {
+    my ($self, $landing_company) = @_;
+
+    # if there's a default, override the whole list
+    if (grep { $_ eq 'default' } @$landing_company) {
+        $landing_company = [keys %{$self->broker_code_mapper}];
+    }
+
+    my %pending_groups = map { my $l = $self->_get_all_pending($_); defined $l ? ($_ => $l) : () } @$landing_company;
+
+    return $self->_get_unique_records(\%pending_groups, $landing_company);
+}
+
+sub _get_all_pending {
+    my ($self, $landing_company) = @_;
+
+    my $pending_groups;
+    foreach my $db (@{$self->_db_list($landing_company)}) {
+        $db->dbic->run(
+            fixup => sub {
+                my @records = @{$_->selectall_arrayref("SELECT * FROM betonmarkets.quants_wishlist;", {Slice => {}}) // []};
+                foreach my $record (@records) {
+                    my $id = substr(md5_hex(join('', map { $record->{$_} } sort keys %$record)), 0, 16);
+                    $pending_groups->{$id} = $record;
+                }
+            });
+    }
+
+    return $pending_groups;
+}
+
+=head2 cleanup_expired_quants_config
+
+Cleans up expired quants config.
+
+This is invoked by a cron running every minute..
+
+=cut
+
+sub cleanup_expired_quants_config {
+    my $self = shift;
+
+    foreach my $db (@{$self->_db_list('default')}) {
+        $db->dbic->run(
+            fixup => sub {
+                $_->do("SELECT betonmarkets.cleanup_expired_quants_config()");
+            });
+    }
+
+    return;
+}
+
+=head2 switch_pending_market_group
+
+This function handles switching between pending market group for a list of underlyings
+and also reverses the change once the time period is over.
+
+This is invoked by a cron running every minute..
+
+=cut
+
+sub switch_pending_market_group {
+    my $self = shift;
+
+    foreach my $db (@{$self->_db_list('default')}) {
+        $db->dbic->run(
+            fixup => sub {
+                $_->do("SELECT betonmarkets.switch_market_pending_group()");
+            });
+    }
+
+    return;
+}
+
+=head2 update_market_group
+
+Update bet.market table for underlying with the right information.
+->update_market_group({
+    underlying_symbol => 'frxUSDJPY',
+    market => 'new_market',
+})
+
+=cut
+
+sub update_market_group {
+    my ($self, $args) = @_;
+
+    foreach my $db (@{$self->_db_list('default')}) {
+        foreach my $underlying_symbol (split ',', $args->{underlying_symbol}) {
+            my $u_config = Finance::Underlying->by_symbol($underlying_symbol);
+            $args->{submarket_group} //= $u_config->{submarket};
+            $args->{market_type}     //= $u_config->{market_type};
+            $args->{market_group} = $u_config->{market} if $args->{market_group} eq 'default';
+            $db->dbic->run(
+                fixup => sub {
+                    $_->do(
+                        qq{SELECT bet.update_underlying_symbol_group(?,?,?,?)},
+                        undef, $underlying_symbol, $args->{market_group}, $args->{submarket_group},
+                        $args->{market_type});
+                },
+            );
+
+        }
     }
 
     return;

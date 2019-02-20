@@ -12,9 +12,11 @@ use Log::Any qw($log), default_adapter => 'Stdout';
 
 my (%opt, $verbose, $quiet, $repo, $repodir, $db);
 
-our $VERSION = '1.6';
+our $VERSION = '1.8';
 
 my $USAGE = "Usage: $0 --repo=<repo name> --db=<service file name>";
+
+my @excluded_schemas = qw/ tmp /;
 
 get_all_options();
 
@@ -58,6 +60,7 @@ if (@onlyrepo) {
 my @onlydb;
 for my $dbfunc (keys %{$db_hashes}) {
     next if exists $git_hashes->{$dbfunc};
+    next if $dbfunc =~ /^(\w+)\./ and grep { $_ eq $1 } @excluded_schemas;
     push @onlydb => $dbfunc;
 }
 if (@onlydb) {
