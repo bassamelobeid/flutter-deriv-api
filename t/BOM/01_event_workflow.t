@@ -65,7 +65,13 @@ my @events = ({
         'email_consent' => {
             loginid       => 'CR123',
             email_consent => 1
-        }});
+        }
+    },
+    {
+        'anonymize_client' => {
+            loginid => 'CR124',
+        }
+    });
 
 subtest 'emit' => sub {
     like(
@@ -91,7 +97,7 @@ subtest 'emit' => sub {
         $count = BOM::Platform::Event::Emitter::emit($action, $event->{$action});
     }
 
-    is $count, 9, 'Correct number of event emitted';
+    is $count, 10, 'Correct number of event emitted';
 };
 
 subtest 'listen' => sub {
@@ -121,7 +127,7 @@ subtest 'process' => sub {
         [sort keys %{BOM::Event::Process::get_action_mappings()}],
         [
             sort
-                qw/email_consent register_details email_statement sync_user_to_MT5 store_mt5_transaction new_financial_mt5_signup send_mt5_disable_csv/
+                qw/email_consent register_details email_statement sync_user_to_MT5 store_mt5_transaction new_financial_mt5_signup anonymize_client send_mt5_disable_csv/
         ],
         'Correct number of actions that can be emitted'
     );
