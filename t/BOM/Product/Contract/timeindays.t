@@ -170,15 +170,17 @@ TODO: subtest Forex => sub {
     );
     is($bet->timeindays->amount, ($bet->date_expiry->epoch - $bet->date_start->epoch) / 86400, 'Three week FX bet in summer.');
     ok(
-        abs($bet->vol_at_strike - $bet->volsurface->get_volatility({
-                from   => $bet->effective_start,
-                to     => $bet->date_expiry,
-                spot   => 100,
-                strike => $bet->barrier->as_absolute,
-                r_rate => $bet->r_rate,
-                q_rate => $bet->q_rate,
-            },
-        )) < 0.0001,
+        abs(
+            $bet->vol_at_strike - $bet->volsurface->get_volatility({
+                    from   => $bet->effective_start,
+                    to     => $bet->date_expiry,
+                    spot   => 100,
+                    strike => $bet->barrier->as_absolute,
+                    r_rate => $bet->r_rate,
+                    q_rate => $bet->q_rate,
+                },
+            )
+            ) < 0.0001,
         'We select correct vol.'
     );
 
@@ -188,15 +190,17 @@ TODO: subtest Forex => sub {
     );
     is($bet->timeindays->amount, ($bet->date_expiry->epoch - $bet->date_start->epoch) / 86400, 'Three week FX bet in summer ending on Friday.');
     ok(
-        abs($bet->vol_at_strike - $bet->volsurface->get_volatility({
-                from   => $bet->effective_start,
-                to     => $bet->date_expiry,
-                spot   => 100,
-                strike => $bet->barrier->as_absolute,
-                r_rate => $bet->r_rate,
-                q_rate => $bet->q_rate,
-            },
-        )) < 0.0001,
+        abs(
+            $bet->vol_at_strike - $bet->volsurface->get_volatility({
+                    from   => $bet->effective_start,
+                    to     => $bet->date_expiry,
+                    spot   => 100,
+                    strike => $bet->barrier->as_absolute,
+                    r_rate => $bet->r_rate,
+                    q_rate => $bet->q_rate,
+                },
+            )
+            ) < 0.0001,
         'We select correct vol.'
     );
 
