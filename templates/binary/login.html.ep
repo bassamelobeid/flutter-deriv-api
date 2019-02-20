@@ -35,7 +35,7 @@
             <div class="circle"><%= l('Or') %></div>
             <div class="align-self-center border-bottom-light-gray"></div>
         </div>
-        <p class="center-text no-margin padding-bottom-10">Log in using social account</p>
+        <p class="center-text no-margin padding-bottom-10"><%= l('Log in using social account') %></p>
         <% if (stash('social_error')) { %>
             <p class='error-msg center-text'><%= stash('social_error') %></p>
         <% } %>
