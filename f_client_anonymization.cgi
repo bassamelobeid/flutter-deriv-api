@@ -70,7 +70,11 @@ if ($input->{transtype}) {
 
     if ($input->{transtype} eq 'Anonymize client') {
         #Start anonymization
-        print "Anonymization successfully started (functionality not yet implemented).";
+        my $success = BOM::Platform::Event::Emitter::emit(
+            'anonymize_client',
+            {
+                loginid => $loginid,
+            });
 
         my $msg =
               Date::Utility->new->datetime . " "
@@ -80,6 +84,9 @@ if ($input->{transtype}) {
             . $input->{DCcode}
             . ") $ENV{REMOTE_ADDR}";
         BOM::User::AuditLog::log($msg, '', $clerk);
+
+        $msg = 'Client anonymization ' . ($success ? 'was started successfully.' : 'failed to start.');
+        code_exit_BO(_get_display_message($msg));
     }
 
     if ($input->{transtype} eq 'Delete customerio record') {
