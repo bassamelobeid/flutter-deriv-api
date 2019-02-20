@@ -13,7 +13,7 @@ my $redis = ws_redis_master();
 
 for (@{$redis->keys("rate_limits::*")}) {
     my $exp = $redis->ttl($_);
-    if($exp == -1) {
+    if ($exp == -1) {
         #no need to use any tag here
         DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.bad_expiry.count');
         $redis->del($_);

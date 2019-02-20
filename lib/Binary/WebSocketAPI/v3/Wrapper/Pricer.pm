@@ -125,10 +125,8 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
     # We can end up with 10 barriers or more, and each one has a CPU cost, so we limit each
     # request and distribute between RPC servers and pricers.
     my $barrier_chunks = [List::UtilsBy::bundle_by { [@_] } BARRIERS_PER_BATCH, @barriers];
-
-    my $copy_args = {%{$req_storage->{args}}};
+    my $copy_args      = {%{$req_storage->{args}}};
     my @contract_types = ref($copy_args->{contract_type}) ? @{$copy_args->{contract_type}} : $copy_args->{contract_type};
-
     $copy_args->{skip_streaming} = 1;    # only for proposal_array: do not create redis subscription, we need only uuid stored in stash
     my $uuid = _pricing_channel_for_ask($c, $copy_args, {}) or do {
         my $error = $c->new_error('proposal_array', 'AlreadySubscribed', $c->l('You are already subscribed to proposal_array.'));
@@ -158,12 +156,18 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
         # Apply contract parameters - we will use them for Price::Calculator calls to determine
         # the actual price from the theo_probability value the pricers return
         for my $contract_type (keys %{$rpc_response->{proposals}}) {
-            for my $barrier (@{$rpc_response->{proposals}{$contract_type}}) {
-                my $barrier_key = _make_barrier_key($barrier->{error} ? $barrier->{error}->{details} : $barrier);
+            for my $contract (@{$rpc_response->{proposals}{$contract_type}}) {
+                # Use consistent `barrier_key` generated from API request input. Delete the key to avoid displaying it in API response
+                my $barrier_key = delete $contract->{barrier_key};
+                # Prevent creating pricer channel and streaming for irreversible errors in barrier(s)
+                if ($contract->{error} and not delete $contract->{error}{skip_error}) {
+                    $rpc_response->{error} = $contract->{error};
+                    return;
+                }
                 my $entry = {
                     %{$rpc_response->{contract_parameters}},
-                    longcode  => $barrier->{longcode},
-                    ask_price => $barrier->{ask_price},
+                    longcode  => $contract->{longcode},
+                    ask_price => $contract->{ask_price},
                 };
                 delete @{$entry}{qw(proposals barriers)};
                 $entry->{error}{details}{longcode} ||= $entry->{longcode} if $entry->{error};
@@ -173,7 +177,6 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
             }
         }
 
-        $rpc_response->{error}{details}{longcode} = $rpc_response->{longcode} if $rpc_response->{error};
         $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $cache);
         if ($req_storage->{args}{subscribe}) {    # we are in subscr mode, so remember the sequence of streams
             my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions');
@@ -183,7 +186,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                     my $idx      = _make_barrier_key($barriers);
                     warn "unknown idx " . $idx . ", available: " . join ',', sort keys %$barriers_order unless exists $barriers_order->{$idx};
                     ${$proposal_array_subscriptions->{$uuid}{seq}}[$barriers_order->{$idx}] = $req_storage->{uuid};
-                    # creating this key to be used by forget_all, undef - not to allow proposal_array message to be sent before real data received
+                    # creating this key to be used by forget_all, undef - not to allow proposal_array message to be sent before real data received.
                     $proposal_array_subscriptions->{$uuid}{proposals}{$req_storage->{uuid}} = undef;
                 } else {
                     # `_pricing_channel_for_ask` does not generated uuid.
@@ -238,7 +241,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                             country_code          => $c->stash('country_code'),
                             proposal_array        => 1,
                         },
-                        error    => $create_price_channel,
+                        #Creating pricing channel and price subscription in Redis server on RPC call success
                         success  => $create_price_channel,
                         response => sub {
                             my ($rpc_response, $api_response, $req_storage) = @_;
@@ -542,10 +545,10 @@ sub _pricing_channel_for_ask {
     my $redis_channel = _serialized_args(\%args_hash);
     my $subchannel    = $args->{amount};
 
-    my $skip = Binary::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args);
+    my $skip_streaming = Binary::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args);
 
-    # uuid is needed regardless of whether its subscription or not
-    return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache, $skip);
+    # uuid is needed regardless of whether there is price subscription or not
+    return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache, $skip_streaming);
 }
 
 sub pricing_channel_for_bid {
@@ -572,10 +575,10 @@ sub pricing_channel_for_bid {
 }
 
 sub _create_pricer_channel {
-    my ($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache, $skip_redis_subscr) = @_;
+    my ($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache, $skip_streaming) = @_;
     my $pricing_channel = $c->stash('pricing_channel') || {};
 
-    # channel already generated
+    # if channel has already been generated, return;
     if (exists $pricing_channel->{$redis_channel} and exists $pricing_channel->{$redis_channel}->{$subchannel}) {
         return $pricing_channel->{$redis_channel}->{$subchannel}->{uuid}
             if not(exists $args->{subscribe} and $args->{subscribe} == 1)
@@ -591,11 +594,7 @@ sub _create_pricer_channel {
         return none { exists $pricing_channel->{uuid}{$_}{subscription} } @all_uuids;
     };
     # subscribe if it is not already subscribed
-    if (    exists $args->{subscribe}
-        and $args->{subscribe} == 1
-        and $channel_not_subscribed->()
-        and not $skip_redis_subscr)
-    {
+    if (exists $args->{subscribe} and $args->{subscribe} == 1 and $channel_not_subscribed->() and not $skip_streaming) {
         $pricing_channel->{uuid}{$uuid}{subscription} =
             $c->pricing_subscriptions($redis_channel)->subscribe($c);
     }
@@ -611,6 +610,7 @@ sub _create_pricer_channel {
     $pricing_channel->{uuid}->{$uuid}->{cache}                         = $cache;
     $pricing_channel->{price_daemon_cmd}->{$price_daemon_cmd}->{$uuid} = 1;                   # for forget_all
     $c->stash('pricing_channel' => $pricing_channel);
+
     return $uuid;
 }
 
@@ -715,14 +715,17 @@ sub process_proposal_array_event {
                         warn __PACKAGE__ . " process_proposal_array_event: _get_validation_for_type failed, results: " . $json->encode($invalid);
                         return $invalid;
                     } elsif (exists $price->{error}) {
+                        # Interpolate variables values into error message to be shown properly in API response
+                        $price->{error}->{message_to_client} = $c->l($price->{error}->{message_to_client});
                         return $price;
                     } else {
-                        my $barrier_key                 = _make_barrier_key($price);
-                        my $theo_probability            = delete $price->{theo_probability};
-                        my $stashed_contract_parameters = $stash_data->{cache}{$contract_type}{$barrier_key};
+                        my $theo_probability = delete $price->{theo_probability};
+                        # Use consistent `barrier_key` generated from API request input. Delete the key to avoid displaying it in API response.
+                        my $stashed_contract_parameters = $stash_data->{cache}{$contract_type}{delete $price->{barrier_key}};
                         $stashed_contract_parameters->{contract_parameters}{currency} ||= $stash_data->{args}{currency};
                         $stashed_contract_parameters->{contract_parameters}{$stashed_contract_parameters->{contract_parameters}{amount_type}} =
-                            $stashed_contract_parameters->{contract_parameters}{amount};
+                            $stashed_contract_parameters->{contract_parameters}{amount}
+                            if $stashed_contract_parameters->{contract_parameters}{amount};
                         delete $stashed_contract_parameters->{contract_parameters}{ask_price};
 
                         # Make sure that we don't override any of the values for next time (e.g. ask_price)
