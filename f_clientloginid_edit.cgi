@@ -82,6 +82,14 @@ code_exit_BO(
 
 my $user = $client->user;
 
+my @user_clients;
+push @user_clients, $client;
+foreach my $lid (sort keys %{$user->bom_loginid_details}) {
+    next if ($lid eq $client->loginid);
+
+    push @user_clients, BOM::User::Client->new({loginid => $lid});
+}
+
 my $broker         = $client->broker;
 my $encoded_broker = encode_entities($broker);
 my $clerk          = BOM::Backoffice::Auth0::from_cookie()->{nickname};
@@ -364,21 +372,67 @@ if ($input{delete_existing_192}) {
 }
 
 # SAVE DETAILS
+# TODO:  Once we switch to userdb, we will not need to loop through all clients
 if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
-    unless ($client->get_db eq 'write') {
-        $client->set_db('write');
+    # save all clients except VR
+    my @clients_to_update;
+    foreach my $cli (@user_clients) {
+        next if $cli->is_virtual;
+
+        push @clients_to_update, $cli;
     }
 
-    #error checks
-    unless ($client->is_virtual) {
-        foreach (qw/last_name first_name/) {
-            next unless exists $input{$_};
-            if (length($input{$_}) < 1) {
-                code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR ! $_ field appears incorrect or empty.</p></p>");
-            }
+    # Active client specific update details:
+    my $auth_method = 'dummy';
+    if ($input{client_authentication}) {
+        $auth_method = $input{client_authentication};
+
+        # Remove existing status to make the auth methods mutually exclusive
+        $_->delete for @{$client->client_authentication_method};
+
+        $client->set_authentication('ID_NOTARIZED')->status('pass')        if $auth_method eq 'ID_NOTARIZED';
+        $client->set_authentication('ID_DOCUMENT')->status('pass')         if $auth_method eq 'ID_DOCUMENT';
+        $client->set_authentication('ID_DOCUMENT')->status('needs_action') if $auth_method eq 'NEEDS_ACTION';
+    }
+    my @number_updates = qw/
+        custom_max_acbal
+        custom_max_daily_turnover
+        custom_max_payout
+        /;
+    foreach my $key (@number_updates) {
+        next unless exists $input{$key};
+        if ($input{$key} =~ /^(|[1-9]([0-9]+)?)$/) {
+            $client->$key($input{$key});
+        } else {
+            code_exit_BO(qq{<p style="color:red">ERROR: Invalid $key, minimum value is 1 and it can be integer only</p>});
         }
     }
+    if (exists $input{professional_client}) {
+        my $result;
+        try {
+            if ($input{professional_client}) {
 
+                $client->status->multi_set_clear({
+                    set        => ['professional'],
+                    clear      => ['professional_requested', 'professional_rejected'],
+                    staff_name => $clerk,
+                    reason     => 'Mark as professional as requested',
+                });
+            } else {
+                $client->status->multi_set_clear({
+                    set        => ['professional_rejected'],
+                    clear      => ['professional'],
+                    staff_name => $clerk,
+                    reason     => 'Revoke professional status',
+                });
+            }
+        }
+        catch {
+            $result = "<p>Failed to update professional status of client: $loginid</p>";
+        };
+        # Print clients that were not updated
+        print $result if $result;
+    }
     # client promo_code related fields
     if (exists $input{promo_code}) {
         if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
@@ -404,227 +458,182 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             }
         }
     }
-
     # status change for existing promo code
-    if (exists $input{promo_code_status} & !exists $input{promo_code}) {
+    if (exists $input{promo_code_status} and not exists $input{promo_code}) {
         $client->promo_code_status($input{promo_code_status});
     }
-    if (exists $input{pa_withdrawal_explicitly_allowed}) {
-        if ($input{pa_withdrawal_explicitly_allowed}) {
-            $client->status->set('pa_withdrawal_explicitly_allowed', $clerk, 'allow withdrawal through payment agent');
-        } else {
-            $client->status->clear_pa_withdrawal_explicitly_allowed;
-        }
-    }
-    my @simple_updates = qw/last_name
-        first_name
-        phone
-        secret_question
-        citizen
-        address_1
-        address_2
-        city
-        state
-        postcode
-        residence
-        place_of_birth
-        restricted_ip_address
-        cashier_setting_password
-        salutation
-        /;
-    exists $input{$_} && $client->$_($input{$_}) for @simple_updates;
 
-    if (exists $input{professional_client}) {
-        # Handing the professional client status (For all existing clients)
-        my $result = "";
-
-        # Only allow CR and MF
-        foreach my $client (map { $user->clients_for_landing_company($_) } qw/costarica maltainvest/) {
-            my $loginid = encode_entities($client->loginid);
-
-            try {
-                if ($input{professional_client}) {
-
-                    $client->status->multi_set_clear({
-                        set        => ['professional'],
-                        clear      => ['professional_requested', 'professional_rejected'],
-                        staff_name => $clerk,
-                        reason     => 'Mark as professional as requested',
-                    });
-                } else {
-                    $client->status->multi_set_clear({
-                        set        => ['professional_rejected'],
-                        clear      => ['professional'],
-                        staff_name => $clerk,
-                        reason     => 'Revoke professional status',
-                    });
-                }
-            }
-            catch {
-                $result .= "<p>Failed to update professional status of client: $loginid</p>";
+    # Updates that apply to both active client and its corresponding clients
+    foreach my $cli (@clients_to_update) {
+        # Prevent last_name and first_name from being set blank
+        foreach (qw/last_name first_name/) {
+            next unless exists $input{$_};
+            if ($input{$_} =~ /^\s*$/) {
+                code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR ! $_ field appears incorrect or empty.</p></p>");
             }
         }
 
-        # Print clients that were not updated
-        print $result if $result;
-    }
-
-    my $tax_residence;
-    if (exists $input{tax_residence}) {
-        # Filter keys for tax residence
-        my @tax_residence_multiple =
-            ref $input{tax_residence} eq 'ARRAY' ? @{$input{tax_residence}} : ($input{tax_residence});
-        $tax_residence = join(",", sort grep { length } @tax_residence_multiple);
-    }
-
-    my @number_updates = qw/
-        custom_max_acbal
-        custom_max_daily_turnover
-        custom_max_payout
-        /;
-    foreach my $key (@number_updates) {
-        next unless exists $input{$key};
-        if ($input{$key} =~ /^(|[1-9](\d+)?)$/) {
-            $client->$key($input{$key});
-        } else {
-            code_exit_BO(qq{<p style="color:red">ERROR: Invalid $key, minimum value is 1 and it can be integer only</p>});
+        unless ($cli->get_db eq 'write') {
+            $cli->set_db('write');
         }
-    }
-    if (my @dob_keys = grep { /dob_/ } keys %input) {
-        my @dob_fields = map { 'dob_' . $_ } qw/year month day/;
-        my @dob_values = ($client->date_of_birth // '') =~ /(\d+)-(\d+)-(\d+)/;
-        my %current_dob = map { $dob_fields[$_] => $dob_values[$_] } 0 .. $#dob_fields;
 
-        $current_dob{$_} = $input{$_} for @dob_keys;
-
-        if (grep { !$_ } values %current_dob) {
-            print qq{<p style="color:red">Error: Date of birth cannot be empty.</p>};
-            code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
-        } else {
-            $client->date_of_birth(sprintf "%04d-%02d-%02d", $current_dob{'dob_year'}, $current_dob{'dob_month'}, $current_dob{'dob_day'});
-        }
-    }
-
-    my $auth_method = 'dummy';
-    CLIENT_KEY:
-    foreach my $key (keys %input) {
-        if (my ($document_field, $id) = $key =~ /^(expiration_date|comments|document_id)_([0-9]+)$/) {
-            my $val = encode_entities($input{$key} // '') || next CLIENT_KEY;
-            my ($doc) = grep { $_->id eq $id } $client->client_authentication_document;    # Rose
-            next CLIENT_KEY unless $doc;
-            my $new_value;
-            if ($document_field eq 'expiration_date') {
-                try {
-                    $new_value = Date::Utility->new($val)->date_yyyymmdd if $val ne 'clear';
-                    # indicate success
-                    1
-                }
-                catch {
-                    my $err = (split "\n", $_)[0];                                         #handle Date::Utility's confess() call
-                    print qq{<p style="color:red">ERROR: Could not parse $document_field for doc $id with $val: $err</p>};
-                    # indicate failure so we skip to the next key
-                    0
-                } or next CLIENT_KEY;
+        if (exists $input{pa_withdrawal_explicitly_allowed}) {
+            if ($input{pa_withdrawal_explicitly_allowed}) {
+                $cli->status->set('pa_withdrawal_explicitly_allowed', $clerk, 'allow withdrawal through payment agent');
             } else {
-                my $maxLength = ($document_field eq 'document_id') ? 30 : ($document_field eq 'comments') ? 255 : 0;
-                if (length($val) > $maxLength) {
-                    print qq{<p style="color:red">ERROR: $document_field is too long. </p>};
+                $cli->status->clear_pa_withdrawal_explicitly_allowed;
+            }
+        }
+        my @simple_updates = qw/last_name
+            first_name
+            phone
+            secret_question
+            citizen
+            address_1
+            address_2
+            city
+            state
+            postcode
+            residence
+            place_of_birth
+            restricted_ip_address
+            cashier_setting_password
+            salutation
+            /;
+        exists $input{$_} && $cli->$_($input{$_}) for @simple_updates;
+
+        my $tax_residence;
+        if (exists $input{tax_residence}) {
+            # Filter keys for tax residence
+            my @tax_residence_multiple =
+                ref $input{tax_residence} eq 'ARRAY' ? @{$input{tax_residence}} : ($input{tax_residence});
+            $tax_residence = join(",", sort grep { length } @tax_residence_multiple);
+        }
+
+        if (my @dob_keys = grep { /dob_/ } keys %input) {
+            my @dob_fields = map { 'dob_' . $_ } qw/year month day/;
+            my @dob_values = ($cli->date_of_birth // '') =~ /([0-9]+)-([0-9]+)-([0-9]+)/;
+            my %current_dob = map { $dob_fields[$_] => $dob_values[$_] } 0 .. $#dob_fields;
+
+            $current_dob{$_} = $input{$_} for @dob_keys;
+
+            if (grep { !$_ } values %current_dob) {
+                print qq{<p style="color:red">Error: Date of birth cannot be empty.</p>};
+                code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
+            } else {
+                $cli->date_of_birth(sprintf "%04d-%02d-%02d", $current_dob{'dob_year'}, $current_dob{'dob_month'}, $current_dob{'dob_day'});
+            }
+        }
+
+        CLIENT_KEY:
+        foreach my $key (keys %input) {
+            if (my ($document_field, $id) = $key =~ /^(expiration_date|comments|document_id)_([0-9]+)$/) {
+                my $val = encode_entities($input{$key} // '') || next CLIENT_KEY;
+                my ($doc) = grep { $_->id eq $id } $cli->client_authentication_document;    # Rose
+                next CLIENT_KEY unless $doc;
+                my $new_value;
+                if ($document_field eq 'expiration_date') {
+                    try {
+                        $new_value = Date::Utility->new($val)->date_yyyymmdd if $val ne 'clear';
+                        # indicate success
+                        1
+                    }
+                    catch {
+                        my $err = (split "\n", $_)[0];                                      #handle Date::Utility's confess() call
+                        print qq{<p style="color:red">ERROR: Could not parse $document_field for doc $id with $val: $err</p>};
+                        # indicate failure so we skip to the next key
+                        0
+                    } or next CLIENT_KEY;
+                } else {
+                    my $maxLength = ($document_field eq 'document_id') ? 30 : ($document_field eq 'comments') ? 255 : 0;
+                    if (length($val) > $maxLength) {
+                        print qq{<p style="color:red">ERROR: $document_field is too long. </p>};
+                        next CLIENT_KEY;
+                    }
+                    $new_value = $val;
+                }
+                next CLIENT_KEY if $new_value eq $doc->$document_field();
+                my $set_success = try {
+                    $doc->$document_field($new_value);
+                    1;
+                };
+                if (not $set_success) {
+                    print qq{<p style="color:red">ERROR: Could not set $document_field for doc $id with $val: $_</p>};
                     next CLIENT_KEY;
                 }
-                $new_value = $val;
-            }
-            next CLIENT_KEY if $new_value eq $doc->$document_field();
-            my $set_success = try {
-                $doc->$document_field($new_value);
-                1;
-            };
-            if (not $set_success) {
-                print qq{<p style="color:red">ERROR: Could not set $document_field for doc $id with $val: $_</p>};
                 next CLIENT_KEY;
             }
-            next CLIENT_KEY;
-        }
-        if ($key eq 'secret_answer') {
-            # algorithm provide different encrypted string from the same text based on some randomness
-            # so we update this encrypted field only on value change - we don't want our trigger log trash
+            if ($key eq 'secret_answer') {
+                # algorithm provide different encrypted string from the same text based on some randomness
+                # so we update this encrypted field only on value change - we don't want our trigger log trash
 
-            my $secret_answer;
-            try {
-                $secret_answer = BOM::User::Utility::decrypt_secret_answer($client->secret_answer);
+                my $secret_answer;
+                try {
+                    $secret_answer = BOM::User::Utility::decrypt_secret_answer($cli->secret_answer);
+                }
+                catch {
+                    print qq{<p style="color:red">ERROR: Unable to extract secret answer. Client secret answer is outdated or invalid.</p>};
+                    $secret_answer = '';
+                };
+
+                $cli->secret_answer(BOM::User::Utility::encrypt_secret_answer($input{$key}))
+                    if ($input{$key} ne $secret_answer);
+
+                next CLIENT_KEY;
             }
-            catch {
-                print qq{<p style="color:red">ERROR: Unable to extract secret answer. Client secret answer is outdated or invalid.</p>};
-                $secret_answer = '';
-            };
 
-            $client->secret_answer(BOM::User::Utility::encrypt_secret_answer($input{$key}))
-                if ($input{$key} ne $secret_answer);
-
-            next CLIENT_KEY;
-        }
-
-        if ($key eq 'age_verification') {
-            if ($input{$key} eq 'yes') {
-                $client->status->set('age_verification', $clerk, 'No specific reason.') unless $client->status->age_verification;
-            } else {
-                $client->status->clear_age_verification;
+            if (($key eq 'age_verification') && (($cli->loginid eq $loginid) || $cli->landing_company->short eq 'costarica')) {
+                if ($input{$key} eq 'yes') {
+                    $cli->status->set('age_verification', $clerk, 'No specific reason.') unless $cli->status->age_verification;
+                } else {
+                    $cli->status->clear_age_verification;
+                }
             }
-        }
 
-        if ($key eq 'client_aml_risk_classification' and not $client->is_virtual) {
-            $client->aml_risk_classification($input{$key});
-        }
+            if ($key eq 'client_aml_risk_classification') {
+                $cli->aml_risk_classification($input{$key});
+            }
 
-        if ($key eq 'client_authentication' and $input{$key}) {
-            use Data::Dumper;
-            warn Dumper($key);
-            $auth_method = $input{$key};
+            if ($key eq 'myaffiliates_token' and $input{$key}) {
+                $cli->myaffiliates_token($input{$key});
+            }
 
-            # Remove existing status to make the auth methods mutually exclusive
-            $_->delete for @{$client->client_authentication_method};
+            if ($input{mifir_id} and $cli->mifir_id eq '' and $broker eq 'MF') {
+                code_exit_BO(
+                    "<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $encoded_loginid: MIFIR_ID line too long</p>"
+                ) if (length($input{mifir_id}) > 35);
+                $cli->mifir_id($input{mifir_id});
+            }
 
-            $client->set_authentication('ID_NOTARIZED')->status('pass')        if $auth_method eq 'ID_NOTARIZED';
-            $client->set_authentication('ID_DOCUMENT')->status('pass')         if $auth_method eq 'ID_DOCUMENT';
-            $client->set_authentication('ID_DOCUMENT')->status('needs_action') if $auth_method eq 'NEEDS_ACTION';
-        }
+            if ($key eq 'tax_residence') {
+                code_exit_BO("<p style=\"color:red; font-weight:bold;\">Tax residence cannot be set empty if value already exists</p>")
+                    if ($cli->tax_residence and not $tax_residence);
+                $cli->tax_residence($tax_residence);
+            }
 
-        if ($key eq 'myaffiliates_token' and $input{$key}) {
-            $client->myaffiliates_token($input{$key});
-        }
-
-        if ($input{mifir_id} and $client->mifir_id eq '' and $broker eq 'MF') {
-            code_exit_BO(
-                "<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $encoded_loginid: MIFIR_ID line too long</p>"
-            ) if (length($input{mifir_id}) > 35);
-            $client->mifir_id($input{mifir_id});
-        }
-
-        if ($key eq 'tax_residence') {
-            code_exit_BO("<p style=\"color:red; font-weight:bold;\">Tax residence cannot be set empty if value already exists</p>")
-                if ($client->tax_residence and not $tax_residence);
-            $client->tax_residence($tax_residence);
-        }
-
-        if ($key eq 'tax_identification_number') {
-            code_exit_BO("<p style=\"color:red; font-weight:bold;\">Tax residence cannot be set empty if value already exists</p>")
-                if ($client->tax_identification_number and not $input{tax_identification_number});
-            $client->tax_identification_number($input{tax_identification_number});
+            if ($key eq 'tax_identification_number') {
+                code_exit_BO("<p style=\"color:red; font-weight:bold;\">Tax residence cannot be set empty if value already exists</p>")
+                    if ($cli->tax_identification_number and not $input{tax_identification_number});
+                $cli->tax_identification_number($input{tax_identification_number});
+            }
         }
     }
 
-    my $sync_error;
-    if (not $client->save) {
-        code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $encoded_loginid</p></p>");
-    } elsif ($auth_method =~ /^(?:ID_NOTARIZED|ID_DOCUMENT$)/) {
-        # sync to doughflow once we authenticate client
-        # need to do after client save so that all information is upto date
-        $sync_error = sync_to_doughflow($client, $clerk);
-    }
+    # Save details for all clients
+    foreach my $cli (@clients_to_update) {
+        my $sync_error;
+        if (not $cli->save) {
+            code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $encoded_loginid</p></p>");
+        } elsif ($auth_method =~ /^(?:ID_NOTARIZED|ID_DOCUMENT$)/) {
+            # sync to doughflow once we authenticate client
+            # need to do after client save so that all information is upto date
+            $sync_error = sync_to_doughflow($cli, $clerk);
+        }
 
-    print "<p style=\"color:#eeee00; font-weight:bold;\">Client details saved</p>";
-    print "<p style=\"color:#eeee00;\">$sync_error</p>" if $sync_error;
-    BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $client->loginid});
-    code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
+        print "<p style=\"color:#eeee00; font-weight:bold;\">Client " . $cli->loginid . " saved</p>";
+        print "<p style=\"color:#eeee00;\">$sync_error</p>" if $sync_error;
+        BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $cli->loginid}) if ($cli->loginid eq $loginid);
+    }
 }
 
 Bar("NAVIGATION");
@@ -795,57 +804,51 @@ if ($link_acc) {
     print $link_acc;
 }
 
-my $siblings;
-if ($user) {
-    $siblings = $user->bom_loginid_details;
-    my @mt_logins = sort grep { /^MT\d+$/ } $user->loginids;
+my @mt_logins = sort grep { /^MT\d+$/ } $user->loginids;
 
-    if (%$siblings or @mt_logins > 0) {
-        print "<p>Corresponding accounts: </p><ul>";
+print "<p>Corresponding accounts: </p><ul>";
 
-        # show all BOM loginids for user, include disabled acc
-        foreach my $lid (sort keys %$siblings) {
-            next if ($lid eq $client->loginid);
+# show all BOM loginids for user, include disabled acc
+foreach my $lid (@user_clients) {
+    next if ($lid->loginid eq $client->loginid);
 
-            # get BOM loginids for the user, and get instance of each loginid's currency
-            my $client = BOM::User::Client->new({loginid => $siblings->{$lid}->{loginid}});
-            my $currency = $client->default_account ? $client->default_account->currency_code : 'No currency selected';
+    # get BOM loginids for the user, and get instance of each loginid's currency
+    my $client = BOM::User::Client->new({loginid => $lid->loginid});
+    my $currency = $client->default_account ? $client->default_account->currency_code : 'No currency selected';
 
-            my $link_href = request()->url_for(
-                'backoffice/f_clientloginid_edit.cgi',
-                {
-                    broker  => $siblings->{$lid}->{broker_code},
-                    loginID => $lid,
-                });
+    my $link_href = request()->url_for(
+        'backoffice/f_clientloginid_edit.cgi',
+        {
+            broker  => $lid->broker_code,
+            loginID => $lid->loginid,
+        });
 
-            print "<li><a href='$link_href'"
-                . ($client->status->disabled ? ' style="color:red"' : '') . ">"
-                . encode_entities($lid) . " ("
-                . $currency
-                . ") </a></li>";
+    print "<li><a href='$link_href'"
+        . ($client->status->disabled ? ' style="color:red"' : '') . ">"
+        . encode_entities($lid->loginid) . " ("
+        . $currency
+        . ") </a></li>";
 
-        }
-
-        # show MT5 a/c
-        foreach my $mt_ac (@mt_logins) {
-            my ($id) = $mt_ac =~ /^MT(\d+)$/;
-            print "<li>" . encode_entities($mt_ac);
-            # If we have group information, display it
-            if (my $group = Cache::RedisDB->get('MT5_USER_GROUP', $id)) {
-                print " (" . encode_entities($group) . ")";
-            } else {
-                # ... and if we don't, queue up the request. This may lead to a few duplicates
-                # in the queue - that's fine, we check each one to see if it's already
-                # been processed.
-                Cache::RedisDB->redis->lpush('MT5_USER_GROUP_PENDING', join(':', $id, time));
-                print ' (<span title="Try refreshing in a minute or so">no group info yet</span>)';
-            }
-            print "</li>";
-        }
-
-        print "</ul>";
-    }
 }
+
+# show MT5 a/c
+foreach my $mt_ac (@mt_logins) {
+    my ($id) = $mt_ac =~ /^MT(\d+)$/;
+    print "<li>" . encode_entities($mt_ac);
+    # If we have group information, display it
+    if (my $group = Cache::RedisDB->get('MT5_USER_GROUP', $id)) {
+        print " (" . encode_entities($group) . ")";
+    } else {
+        # ... and if we don't, queue up the request. This may lead to a few duplicates
+        # in the queue - that's fine, we check each one to see if it's already
+        # been processed.
+        Cache::RedisDB->redis->lpush('MT5_USER_GROUP_PENDING', join(':', $id, time));
+        print ' (<span title="Try refreshing in a minute or so">no group info yet</span>)';
+    }
+    print "</li>";
+}
+
+print "</ul>";
 
 my $log_args = {
     broker   => $broker,
@@ -926,14 +929,15 @@ print qq{
 Bar("$loginid Tokens");
 my $token_db = BOM::Database::Model::AccessToken->new();
 my (@all_tokens, @deleted_tokens);
-foreach my $l (sort keys %$siblings) {
-    foreach my $t (@{$token_db->get_all_tokens_by_loginid($l)}) {
-        $t->{loginid} = $l;
+
+foreach my $l (@user_clients) {
+    foreach my $t (@{$token_db->get_all_tokens_by_loginid($l->loginid)}) {
+        $t->{loginid} = $l->loginid;
         $t->{token}   = obfuscate_token($t->{token});
         push @all_tokens, $t;
     }
-    foreach my $t (@{$token_db->token_deletion_history($l)}) {
-        $t->{loginid} = $l;
+    foreach my $t (@{$token_db->token_deletion_history($l->loginid)}) {
+        $t->{loginid} = $l->loginid;
         push @deleted_tokens, $t;
     }
 }
@@ -994,8 +998,9 @@ if (not $client->is_virtual) {
         });
 }
 
-my $built_fa = BOM::User::FinancialAssessment::build_financial_assessment(BOM::User::FinancialAssessment::decode_fa($client->financial_assessment()));
-my $fa_score = $built_fa->{scores};
+my $built_fa =
+    BOM::User::FinancialAssessment::build_financial_assessment(BOM::User::FinancialAssessment::decode_fa($client->financial_assessment()));
+my $fa_score              = $built_fa->{scores};
 my $trading_experience    = $built_fa->{trading_experience};
 my $financial_information = $built_fa->{financial_information};
 if ($trading_experience) {
@@ -1043,10 +1048,10 @@ BOM::Backoffice::Request::template()->process(
         limit   => $limit
     });
 
-=head2 _delete_copiers  
+=head2 _delete_copiers
 
-Takes incoming copier and token string and calls the routine that removes them 
-works for lists of copiers or traders. 
+Takes incoming copier and token string and calls the routine that removes them
+works for lists of copiers or traders.
 
 Takes the following arguments
 
@@ -1054,11 +1059,11 @@ Takes the following arguments
 
 =item ArrayRef of strings with combined clientid and token separated by "::" (CR900001::X9SrjksrY5, CR..  )
 
-=item String  "copier"|"trader" depending on which the list contains. 
+=item String  "copier"|"trader" depending on which the list contains.
 
 =item String  client_id for the user being editied (globally = $loginid)
 
-=item DB handle 
+=item DB handle
 
 =back
 
