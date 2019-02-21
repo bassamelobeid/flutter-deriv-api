@@ -89,16 +89,29 @@ my $tt              = BOM::Backoffice::Request::template;
 ## CTC
 Bar("Actions");
 
-my $now        = Date::Utility->new;
-my $start_date = request()->param('start_date') || POSIX::mktime(0, 0, 0, 1, $now->month - 1, $now->year - 1900);
-my $end_date   = request()->param('end_date') || POSIX::mktime(0, 0, 0, 0, $now->month, $now->year - 1900);
+my $start_date = request()->param('start_date');
+my $end_date   = request()->param('end_date');
+
 try {
-    $start_date = Date::Utility->new($start_date);
-    $end_date   = Date::Utility->new($end_date);
+    if ($start_date && $start_date =~ /[0-9]{4}-[0-1][0-9]{1,2}-[0-3][0-9]{1,2}$/) {
+        $start_date = Date::Utility->new("$start_date 00:00:00");
+    } else {
+        $start_date = Date::Utility->today()->truncate_to_month();
+    }
+
+    if ($end_date && $end_date =~ /[0-9]{4}-[0-1][0-9]{1,2}-[0-3][0-9]{1,2}$/) {
+        $end_date = Date::Utility->new("$end_date 23:59:59");
+    } else {
+        $end_date = Date::Utility->today();
+    }
 }
 catch {
-    code_exit_BO($_);
+    code_exit_BO('Invalid dates, please check the dates and try again');
 };
+
+if ($end_date->is_before($start_date)) {
+    code_exit_BO("Invalid dates, the end date must be after the initial date");
+}
 
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
 my $dbic = $clientdb->db->dbic;
@@ -145,7 +158,6 @@ $tt2->process(
         broker         => $broker,
         start_date     => $start_date->date_yyyymmdd,
         end_date       => $end_date->date_yyyymmdd,
-        now            => $now->datetime_ddmmmyy_hhmmss,
         staff          => $staff,
     }) || die $tt2->error();
 if ($view_action eq 'withdrawals') {
