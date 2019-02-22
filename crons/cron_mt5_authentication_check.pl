@@ -151,7 +151,7 @@ foreach my $id (@all_ids) {
     send_email_authentication_reminder($days_between_account_creation, $client, $data, $brands, $redis) unless $data->{has_email_sent};
 
     # Save the client details in CSV if 10 days have passed after account creation
-    if ($days_between_account_creation == MT5_ACCOUNT_DISABLE_DAYS) {
+    if ($days_between_account_creation >= MT5_ACCOUNT_DISABLE_DAYS) {
         my $loginid_info = $client->loginid . ' (' . $client->currency . ')';
 
         my $email_sent = send_email_disable_account($brands, $client);
