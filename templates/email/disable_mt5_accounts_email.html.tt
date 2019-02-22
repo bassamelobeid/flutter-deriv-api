@@ -10,7 +10,7 @@
 [%l (" and ") %] <a href="[% "https://www.binary.com/en/user/authenticate.html" %]">[% l("authenticate your account.") %]</a>
 </p>
 
-<p>[% l("If you need further clarification or assistance regarding this decision, please contact us at ") %]  <a href="[% "mailto:support@binary.com" %]">[% ("support@binary.com.")%]</a></p>
+<p>[% l("If you need further clarification or assistance regarding this decision, please contact us at ") %] <a href="[% "mailto:support@binary.com" %]">[% ("support@binary.com.")%]</a></p>
 
 <p>[% l("Regards,")%]<br>
 [% l("Binary.com") %]</p>

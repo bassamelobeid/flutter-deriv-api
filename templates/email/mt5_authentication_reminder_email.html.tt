@@ -16,7 +16,7 @@
 
 <p><strong>[% l("Kindly note that if we don't receive your documents by [_1], your account will be disabled and any open position that you may have on the MT5 platform will be closed.", last_date) %]</strong></p>
 
-<p>[% l("Should you need further assistance, please don't hesitate to contact us at ") %] <a href="[% "mailto:support@binary.com" %]">[% ("support@binary.com.")%]</a> [% l(" We're always happy to help.") %]</p>
+<p>[% l("If you need further clarification or assistance, please contact us at ") %] <a href="[% "mailto:support@binary.com" %]">[% ("support@binary.com.")%]</a></p>
 
 <p>[% l("Regards,") %]<br>
 [% l("Binary.com") %]</p>
