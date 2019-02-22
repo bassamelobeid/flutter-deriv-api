@@ -70,8 +70,7 @@ my @events = ({
     {
         'anonymize_client' => {
             loginid => 'CR124',
-        }
-    });
+        }});
 
 subtest 'emit' => sub {
     like(

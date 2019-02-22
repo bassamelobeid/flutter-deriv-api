@@ -203,8 +203,6 @@ sub send_mt5_disable_csv {
     my $mt5_loginid_hashref = $data->{csv_info} // {};
     my @csv_rows = ();
 
-    my @futures;
-
     foreach my $client_loginid_info (keys %$mt5_loginid_hashref) {
 
         my $mt5_loginids = $mt5_loginid_hashref->{$client_loginid_info};
@@ -213,23 +211,9 @@ sub send_mt5_disable_csv {
 
             $mt5_loginid =~ s/\D//g;
 
-            push @futures, BOM::MT5::User::Async::get_user($mt5_loginid)->then(
-                sub {
-                    my $result = shift;
-
-                    return Future->done unless $result->{group} =~ /^real\\(vanuatu|labuan)/;
-
-                    return BOM::MT5::User::Async::get_open_positions_count($mt5_loginid)->then(
-                        sub {
-                            my $open_positions = shift;
-                            my $csv_row = [$client_loginid_info, $mt5_loginid, $result->{group}, $result->{balance}, $open_positions->{total}];
-                            push @csv_rows, $csv_row;
-                        });
-                });
+            push @csv_rows, [$client_loginid_info, $mt5_loginid];
         }
     }
-
-    Future->wait_all(@futures)->get;
 
     my $present_day = Date::Utility::today()->date_yyyymmdd;
     my $brands      = Brands->new();
@@ -241,7 +225,7 @@ sub send_mt5_disable_csv {
 
     # CSV creation starts here
     my $filename = 'mt5_disable_list_' . $present_day . '.csv';
-    my @headers = ('Loginid (Currency)', 'MT5 ID', 'MT5 Group', 'MT5 Balance', 'Open Positions');
+    my @headers = ('Loginid (Currency)', 'MT5 ID');
 
     my $tdir = Path::Tiny->tempdir;
     $filename = $tdir->child($filename);
