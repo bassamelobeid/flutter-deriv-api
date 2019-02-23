@@ -8,6 +8,17 @@ use Job::Async;
 use JSON::MaybeXS;
 use Data::Dump 'pp';
 
+# usage:
+#   perl submit-one.pl RPCNAME ARG=VALUE ARG=VALUE...
+#
+# examples:
+#
+# $ perl submit-one.pl ping
+# { result => "success" }
+#
+# $ perl submit-one.pl sleep seconds=5
+# { result => "success", success => 1 }
+
 my $json = JSON::MaybeXS->new;
 
 my $loop = IO::Async::Loop->new;
@@ -30,7 +41,7 @@ foreach( @ARGV ) {
     $args{$1} = $2;
 }
 
-my $jsonresult = $client->submit(name => $name, args => $json->encode(\%args))->get;
+my $jsonresult = $client->submit(name => $name, params => $json->encode(\%args))->get;
 my $result = $json->decode($jsonresult);
 
 print pp($result) . "\n";
