@@ -26,7 +26,7 @@ my $json = JSON::MaybeXS->new;
 subtest 'validations' => sub {
     $req_storage = {
         ticks_history => 'R_50',
-        style         => 'candles',
+        style => 'candles',
         granularity   => '10',
         end           => 'latest'
     };

@@ -49,7 +49,7 @@ my ($t, $test_name, $response) = (build_wsapi_test());
 my $v = 'config/v3';
 explain "Testing version: $v";
 foreach my $f (grep { -d } glob "$v/*") {
-    #TODO Note that for Authenticated calls these tests are not really working as they are just returning with  a need to Authenticate  message.
+    #TODO Note that for Authenticated calls these tests are not really working as they are just returning with  a need to Authenticate  message. 
     $test_name = File::Basename::basename($f);
     next if ($f =~ /draft-03/);
     explain $f;
@@ -81,7 +81,7 @@ foreach my $f (grep { -d } glob "$v/*") {
         numbers  => 1,
         strings  => 1
     );
-    my @result = $validator->validate($json->decode(Encode::decode_utf8($t->message->[1])));
+    my @result    = $validator->validate($json->decode(Encode::decode_utf8($t->message->[1])));
     ok !@result, "$f response is valid";
     if (@result) { print " - $_\n" foreach @result; print Dumper($json->decode($t->message->[1])) }
 }

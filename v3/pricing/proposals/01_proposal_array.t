@@ -9,6 +9,7 @@ use Test::More;
 use Test::Deep;
 
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
+use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Binary::WebSocketAPI::v3::Instance::Redis qw| redis_pricer |;
 
@@ -17,7 +18,6 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Config::RedisReplicated;
 use BOM::Config::Chronicle;
 use BOM::MarketData qw(create_underlying);
-use BOM::Pricing::v3::Contract qw/ _skip_barrier_error /;
 
 use Sereal::Encoder;
 use Quant::Framework;
@@ -250,17 +250,6 @@ SKIP: {
 
         my ($c) = values %{$t->app->active_connections};
 
-        if ($response->{proposal_array}{proposals}{CALLE}[0]{error}) {
-            my $error = {
-                message_to_client => [$response->{proposal_array}{proposals}{CALLE}[0]{error}->{message}]
-            };
-            unless (BOM::Pricing::v3::Contract::_skip_barrier_error($error)) {
-                is(scalar keys %{$c->pricing_subscriptions()},
-                    0, "If there is an irreversible error in API response, subscription should be prevented");
-                return;
-            }
-        }
-
         is(scalar keys %{$c->pricing_subscriptions()}, 1, "Subscription created");
         my $channel = [keys %{$c->pricing_subscriptions()}]->[0];
         is(refcount($c->pricing_subscriptions()->{$channel}), 1, "check refcount");
@@ -272,7 +261,6 @@ SKIP: {
 
     subtest 'using durations' => sub {
         delete $proposal_array_req_tpl->{date_expiry};
-        delete $proposal_array_req_tpl->{subscribe};
 
         $proposal_array_req_tpl->{duration}      = 1;
         $proposal_array_req_tpl->{duration_unit} = 'd';
@@ -287,66 +275,10 @@ SKIP: {
         $response = $t->await::proposal_array($proposal_array_req_tpl);
         is $response->{error}->{code}, 'InputValidationFailed', 'Schema validation fails with huge duration';
     };
-
-    subtest 'invalid symbol in proposal_array API call' => sub {
-        $proposal_array_req_tpl->{duration}      = 1;
-        $proposal_array_req_tpl->{duration_unit} = 'd';
-        $proposal_array_req_tpl->{symbol}        = 'frxUSDJPYfake';
-        $proposal_array_req_tpl->{subscribe}     = 1;
-
-        $response = $t->await::proposal_array($proposal_array_req_tpl);
-        my ($c) = values %{$t->app->active_connections};
-
-        is $response->{error}->{error}->{message}, 'Trading is not offered for this asset.',
-            "When symbol code is invalid, API call should return 'Trading is not offered for this asset.'";
-        is(scalar keys %{$c->pricing_subscriptions()}, 0, "If there is an irreversible error in API response, subscription should be prevented");
-
-    };
-
-    subtest 'invalid barriers in proposal_array API call' => sub {
-        delete $proposal_array_req_tpl->{product_type};
-        $proposal_array_req_tpl->{duration}      = 7;
-        $proposal_array_req_tpl->{duration_unit} = 'd';
-        $proposal_array_req_tpl->{symbol}        = 'frxUSDJPY';
-        $proposal_array_req_tpl->{contract_type} = ['EXPIRYRANGE'];
-        $proposal_array_req_tpl->{subscribe}     = 1;
-
-        #Test Case 1: Irreversible barrier error with subscription request
-        $proposal_array_req_tpl->{barriers} = [{
-                barrier  => 0.1,
-                barrier2 => 0.9
-            }];
-        $response = $t->await::proposal_array($proposal_array_req_tpl);
-
-        is $response->{proposal_array}{proposals}{EXPIRYRANGE}[0]{error}{message}, 'High barrier must be higher than low barrier.',
-            "When barrier is higher than barrier2, API call should return 'High barrier must be higher than low barrier.'";
-
-        my ($c) = values %{$t->app->active_connections};
-        is(scalar keys %{$c->pricing_subscriptions()}, 0, "If there is an irreversible error in API response, subscription should be prevented");
-
-        #Test Case 2: Reversible barrier error with subscription request
-        $proposal_array_req_tpl->{barriers} = [{
-                "barrier"  => "1111",
-                "barrier2" => "97"
-            }];
-        $response = $t->await::proposal_array($proposal_array_req_tpl);
-
-        is $response->{proposal_array}{proposals}{EXPIRYRANGE}[0]{error}{message},
-            'High barrier is out of acceptable range. Please adjust the high barrier.',
-            "When barrier is temporarily out of range, API call should return 'High barrier is out of acceptable range. Please adjust the high barrier.'";
-
-        ($c) = values %{$t->app->active_connections};
-        is(scalar keys %{$c->pricing_subscriptions()}, 1, "If there is a reversible error in API response, subscription should be started");
-        my $channel = [keys %{$c->pricing_subscriptions()}]->[0];
-        is(refcount($c->pricing_subscriptions()->{$channel}), 1, "check refcount");
-        ok(redis_pricer->get($channel), "check redis subscription");
-
-        $response = $t->await::forget_all({forget_all => "proposal_array"});
-        is($c->pricing_subscriptions()->{$channel}, undef, "Forgotten");
-
-    };
 }
 
+#use Data::Dumper;
+#print Dumper $proposal_array_req_tpl;
 $t->finish_ok;
 
 done_testing();

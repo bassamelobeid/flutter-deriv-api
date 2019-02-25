@@ -69,7 +69,7 @@ subtest 'ticks' => sub {
                 subscribe => "1"
             }})->message_ok;
     $res = $json->decode(Encode::decode_utf8($t->message->[1]));
-    is $res->{error}->{code}, undef, 'Should pass validation though string';
+    is $res->{error}->{code}, undef , 'Should pass validation though string';
 
     # will fail because subscribe should only be 1
     $t->send_ok({
@@ -88,11 +88,7 @@ subtest 'ticks' => sub {
     is $res->{error}->{message}, 'You are already subscribed to R_50', 'Should return already subscribed error';
 
     my $res = $t->await::forget_all({forget_all => 'ticks'});
-    $t->send_ok({
-            json => {
-                ticks     => 'R_12312312',
-                subscribe => 1
-            }})->message_ok;
+    $t->send_ok({json => {ticks => 'R_12312312', subscribe => 1}})->message_ok;
     $res = $json->decode(Encode::decode_utf8($t->message->[1]));
     is $res->{error}->{code}, 'InvalidSymbol', 'Should return invalid symbol error';
 };
