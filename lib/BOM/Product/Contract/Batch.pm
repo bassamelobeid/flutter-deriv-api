@@ -116,11 +116,10 @@ sub ask_prices {
 
     my %prices;
     foreach my $contract (@{$self->_contracts}) {
-        #Barrier key should be generated using requested input to be consitent throughout the process
         my $barrier_key =
-              $contract->two_barriers
-            ? $contract->{supplied_high_barrier} . ':' . $contract->{supplied_low_barrier}
-            : $contract->{supplied_barrier};
+            $contract->two_barriers
+            ? ($contract->high_barrier->as_absolute) . '-' . ($contract->low_barrier->as_absolute)
+            : ($contract->barrier->as_absolute);
         my $contract_info = ($prices{$contract->code}{$barrier_key} //= {});
         if ($contract->is_valid_to_buy) {
             $contract_info->{$_} = $contract->$_ for qw(ask_price longcode);
