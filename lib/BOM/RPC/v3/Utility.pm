@@ -349,7 +349,6 @@ sub error_map {
         'invalid residence'   => localize('Sorry, our service is not available for your country of residence.'),
         'invalid UK postcode' => localize('Postcode is required for UK residents.'),
         'invalid PO Box'      => localize('P.O. Box is not accepted in address.'),
-        'invalid DOB'         => localize('Your date of birth is invalid.'),
         'duplicate email'     => localize(
             'Your provided email address is already in use by another Login ID. According to our terms and conditions, you may only register once through our site.'
         ),
@@ -361,7 +360,7 @@ sub error_map {
         'insufficient score'   => localize(
             'Unfortunately your answers to the questions above indicate that you do not have sufficient financial resources or trading experience to be eligible to open a trading account at this time.'
         ),
-        'InvalidDateOfBirth'         => localize('Date of birth is invalid'),
+        'InvalidDateOfBirth'         => localize('Date of birth is invalid.'),
         'InvalidPlaceOfBirth'        => localize('Please enter a valid place of birth.'),
         'InsufficientAccountDetails' => localize('Please provide complete details for account opening.'),
         'InvalidCitizenship'         => localize('Sorry, our service is not available for your country of citizenship.'),
