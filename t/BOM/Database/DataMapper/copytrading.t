@@ -212,7 +212,7 @@ subtest delete_copiers => sub {
         token     => undef
     });
 
-    $data_traders_expected = [['CR0031', 'CR0032', 'asd'], ['CR0029', 'CR0032', undef]];
+    $data_traders_expected = [['CR0029', 'CR0032', undef], ['CR0031', 'CR0032', 'asd']];
 
     is_deeply($dm->get_traders_tokens_all({copier_id => 'CR0032'}), $data_traders_expected, 'expected data for copiers after delete with NULL token');
 

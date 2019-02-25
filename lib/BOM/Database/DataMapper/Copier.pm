@@ -60,9 +60,10 @@ sub get_copiers_tokens_all {
     my ($self, $args) = @_;
 
     my $sql = q{
-        SELECT copier_id, trader_id, trader_token
+        SELECT DISTINCT copier_id, trader_id, trader_token
           FROM betonmarkets.copiers
          WHERE trader_id = $1
+         ORDER BY copier_id    
     };
 
     my @binds = ($args->{trader_id});
@@ -106,9 +107,10 @@ sub get_traders_tokens_all {
     my ($self, $args) = @_;
 
     my $sql = q{
-        SELECT  trader_id, copier_id, trader_token
+        SELECT DISTINCT trader_id, copier_id, trader_token
           FROM betonmarkets.copiers
          WHERE copier_id = $1
+         ORDER BY trader_id
     };
 
     my @binds = ($args->{copier_id});
