@@ -149,6 +149,7 @@ sub authorize {
         return $c->render(
             template   => $brand_name . '/totp',
             layout     => $brand_name,
+            website_domain => _website_domain($app->{id}),
             app        => $app,
             error      => $otp_error,
             r          => $c->stash('request'),
@@ -190,6 +191,7 @@ sub authorize {
     return $c->render(
         template   => $brand_name . '/scope_confirms',
         layout     => $brand_name,
+        website_domain => _website_domain($app->{id}),
         app        => $app,
         client     => $client,
         scopes     => \@{$app->{scopes}},

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title><%= l('Log in') %></title>
+    <title><%= l('Log in') %> | <%= ucfirst($website_domain) %> </title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel='stylesheet' href='https://style.binary.com/oauth.css' />
     <script type="text/javascript" src="https://style.binary.com/oauth.js"></script>
