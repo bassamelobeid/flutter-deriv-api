@@ -4,9 +4,7 @@ use strict;
 use warnings;
 no indirect;
 
-use List::Util qw(any);
-use Scalar::Util qw(blessed looks_like_number);
-use Scalar::Util::Numeric qw(isint);
+use Scalar::Util qw(blessed);
 use Try::Tiny;
 use List::MoreUtils qw(none);
 use JSON::MaybeXS;
@@ -14,28 +12,25 @@ use Date::Utility;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use Time::HiRes;
 use Time::Duration::Concise::Localize;
-use Format::Util::Numbers qw/formatnumber/;
-use feature "state";
-
 use BOM::User::Client;
+
+use Format::Util::Numbers qw/formatnumber/;
+use Scalar::Util::Numeric qw(isint);
+
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Config;
-use BOM::Config::Runtime;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Locale;
+use BOM::Config::Runtime;
 use BOM::Product::ContractFactory qw(produce_contract produce_batch_contract);
 use BOM::Product::ContractFinder;
-use BOM::Product::Static qw/get_error_mapping/;
-use BOM::Pricing::v3::Utility;
 use Finance::Contract::Longcode qw( shortcode_to_parameters);
+use BOM::Product::ContractFinder;
 use LandingCompany::Registry;
-
-#List of barrier errors which can be temporary and should be skipped to keep subscription (streaming)
-use constant SKIPPABLE_BARRIER_ERRORS => [
-    'InvalidBarrierForSpot', 'BarrierOutOfRange', 'InvalidHighLowBarrrierRange', 'InvalidLowBarrrierRange',
-    'NoReturn',              'StakeLimits',       'PayoutLimits'
-];
+use BOM::Pricing::v3::Utility;
+use Scalar::Util qw(looks_like_number);
+use feature "state";
 
 my $json = JSON::MaybeXS->new->allow_blessed;
 
@@ -240,51 +235,49 @@ sub _get_ask {
 sub handle_batch_contract {
     my ($batch_contract, $p2) = @_;
 
-    # This is done with an assumption that batch contracts has identical duration and contract category
-    my $offerings_error = _validate_offerings($batch_contract->_contracts->[0], $p2);
-    my $ask_prices = $batch_contract->ask_prices;
+    # We should now have a usable ::Contract instance. This may be a single
+    # or multiple (batch) contract.
 
     my $proposals = {};
-    my $price;
-    for my $contract ($batch_contract->_contracts->@*) {
-        #Barrier key should be generated using requested input to be consistent throughout the process
-        my $barrier_key =
-            ($contract->two_barriers) ? $contract->{supplied_high_barrier} . ':' . $contract->{supplied_low_barrier} : $contract->{supplied_barrier};
-        $price = $ask_prices->{$contract->code}{$barrier_key};
-        #To avoid missing barrier key for relative barriers, store a `barrier_key` key for each price.
-        $price->{barrier_key} = $barrier_key;
-        $price->{error}{skip_error} = _skip_barrier_error($price->{error}) if $price->{error};
-        #Interpolate variables values into longcode and error messages (if any) to be shown properly in API response
-        $price->{longcode} = $price->{longcode} ? localize($price->{longcode}) : '';
-        if ($price->{error}) {
-            $price->{error}->{message_to_client} = localize($price->{error}->{message_to_client});
-        }
 
-        if ($offerings_error) {
-            my $price_offering_error = {
-                longcode => $price->{longcode},
-                error    => {
-                    message_to_client => localize($offerings_error->{error}{message_to_client}),
-                    code              => $offerings_error->{error}{code},
-                    details           => {
-                        display_value => $price->{error} ? $price->{error}{details}{display_value} : $price->{display_value},
-                        payout        => $price->{error} ? $price->{error}{details}{payout}        : $price->{display_value},
-                    }
-                },
-            };
-            if ($contract->two_barriers) {
-                $price_offering_error->{error}{details}{barrier}  = $batch_contract->underlying->pipsized_value($contract->{barrier});
-                $price_offering_error->{error}{details}{barrier2} = $batch_contract->underlying->pipsized_value($contract->{barrier2});
-            } else {
-                $price_offering_error->{error}{details}{barrier} = $batch_contract->underlying->pipsized_value($contract->{barrier});
+    # This is done with an assumption that batch contracts has identical duration and contract category
+    my $offerings_error = _validate_offerings($batch_contract->_contracts->[0], $p2);
+
+    my $ask_prices = $batch_contract->ask_prices;
+
+    for my $contract_type (sort keys %$ask_prices) {
+        for my $barrier (@{$p2->{barriers}}) {
+            my $key =
+                ref($barrier)
+                ? $batch_contract->underlying->pipsized_value($barrier->{barrier}) . '-'
+                . $batch_contract->underlying->pipsized_value($barrier->{barrier2})
+                : $batch_contract->underlying->pipsized_value($barrier);
+            warn "Could not find barrier for key $key, available barriers: " . join ',', sort keys %{$ask_prices->{$contract_type}}
+                unless exists $ask_prices->{$contract_type}{$key};
+            my $price = $ask_prices->{$contract_type}{$key} // {};
+            if ($offerings_error) {
+                my $new_error = {
+                    longcode => $price->{longcode},
+                    error    => {
+                        message_to_client => $offerings_error->{error}{message_to_client},
+                        code              => $offerings_error->{error}{code},
+                        details           => {
+                            display_value => $price->{error} ? $price->{error}{details}{display_value} : $price->{display_value},
+                            payout        => $price->{error} ? $price->{error}{details}{payout}        : $price->{display_value},
+                        }
+                    },
+                };
+                if (ref($barrier)) {
+                    $new_error->{error}{details}{barrier}  = $batch_contract->underlying->pipsized_value($barrier->{barrier});
+                    $new_error->{error}{details}{barrier2} = $batch_contract->underlying->pipsized_value($barrier->{barrie2});
+                } else {
+                    $new_error->{error}{details}{barrier} = $batch_contract->underlying->pipsized_value($barrier);
+                }
+                $price = $new_error;
             }
-            $price = $price_offering_error;
-
+            push @{$proposals->{$contract_type}}, $price;
         }
-
-        push @{$proposals->{$contract->code}}, $price;
     }
-
     return {
         proposals           => $proposals,
         contract_parameters => {%$p2, %{$batch_contract->market_details}},
@@ -881,30 +874,5 @@ sub _build_bid_response {
     }
 
     return $response;
-}
-
-=head2 _skip_barrier_error
-
-Determines whether barrier error (if any) can be skipped to begin/keep subscription/streaming of contract
-Returns 1 if there is no barrier error or error can be skipped, otherwise 0 (i.e. subscription of contract should be prevented/stopped)
-
-Arguments:
-
-=over 4
-
-=item C<$error>
-
-A hash reference of barrier error info that has {message_to_client} arrayref key containing error message.
-
-=back
-
-=cut
-
-sub _skip_barrier_error {
-    my ($error) = @_;
-    my $error_msg = $error->{message_to_client}->[0];
-
-    return 1 if any { get_error_mapping()->{$_} eq $error_msg } SKIPPABLE_BARRIER_ERRORS->@*;
-    return 0;
 }
 1;
