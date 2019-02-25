@@ -94,6 +94,45 @@ my $broker         = $client->broker;
 my $encoded_broker = encode_entities($broker);
 my $clerk          = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
+if ($input{del_document_list}) {
+    my $documents = $input{del_document_list};
+    my @documents = ref $documents ? @$documents : ($documents);
+    my $full_msg  = "";
+    my $loginid   = "";
+    my $client;
+
+    for my $document (@documents) {
+        # if the checkbox is checked and unchecked, the EventListener will still send input value as 0.
+        # this line is to escape this case.
+        next unless $document;
+        my @tokens          = split(/\./, $document);
+        my $current_loginid = $tokens[0];
+        my ($doc_id)        = $tokens[2] =~ m{(\d+)};
+        if ((not defined $client) or ($client->loginid ne $current_loginid)) {
+            $client = BOM::User::Client::get_instance({loginid => $current_loginid});
+        }
+        if ($client) {
+            $client->set_db('write');
+            my ($doc) = $client->find_client_authentication_document(query => [id => $doc_id]);    # Rose
+            if ($doc) {
+                if ($doc->delete) {
+                    $full_msg .= "<p style=\"color:#eeee00; font-weight:bold;\">SUCCESS - $document is deleted!</p>";
+                } else {
+                    $full_msg .= "<p style=\"color:red; font-weight:bold;\">ERROR: did not remove $document record from db</p>";
+                }
+            } else {
+                $full_msg .= "<p style=\"color:red; font-weight:bold;\">ERROR: could not find $document record in db</p>";
+            }
+
+        } else {
+            $full_msg .= "<p style=\"color:red; font-weight:bold;\">ERROR: with client login $loginid</p>";
+        }
+    }
+
+    print $full_msg;
+    code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
+}
+
 if ($broker eq 'MF') {
     if ($input{view_action} eq "mifir_reset") {
         $client->mifir_id('');

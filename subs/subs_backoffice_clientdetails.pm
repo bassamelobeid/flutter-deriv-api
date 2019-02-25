@@ -195,6 +195,11 @@ sub print_client_details {
 
         $show_uploaded_documents .= 'To edit following documents please select corresponding user<br>' . $siblings_docs
             if $siblings_docs;
+
+        if ($show_uploaded_documents) {
+            my $confirm_box = qq{javascript:return get_checked_files()};
+            $show_uploaded_documents .= qq{<button onclick="$confirm_box">Delete Checked Files</button>};
+        }
     }
 
     # Get matching countries (country abbreviations) from client's phone
@@ -499,7 +504,6 @@ SELECT id,
  WHERE client_loginid = ? AND status != 'uploading'
 SQL
         });
-
     foreach my $doc (sort { $a->[0] <=> $b->[0] } @$docs) {
         my ($id, $file_name, $expiration_date, $comments, $document_id, $upload_date, $age) = @$doc;
 
@@ -535,14 +539,13 @@ SQL
         my $url       = $s3_client->get_s3_url($file_name);
 
         $links .= qq{<tr><td><a href="$url">$file_name</a></td>$age_display<td>$input};
-        if ($show_delete && !$args{no_edit}) {
-            my $onclick    = qq{javascript:return confirm('Are you sure you want to delete $file_name?')};
-            my $delete_url = request()->url_for("backoffice/download_document.cgi?loginid=$loginid&doc_id=$id&deleteit=yes");
-            $links .= qq{[<a onclick="$onclick" href="$delete_url">Delete</a>]};
-        }
+
+        $links .= qq{<input type="checkbox" class='files_checkbox' name="del_document_list" value="$file_name">};
+
         $links .= "</td></tr>";
     }
     $links = "<table>$links</table>" if $links;
+
     return $links;
 }
 

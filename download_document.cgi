@@ -44,37 +44,6 @@ if ($category eq '192_result') {
 
 local $\ = "";
 
-if (request()->param('deleteit') eq 'yes') {
-    PrintContentType();
-    BrokerPresentation('DELETE DOCUMENT');
-    my $msg;
-    my $loginid = encode_entities(request()->param('loginid'));
-    my $doc_id  = request()->param('doc_id');
-    my $client  = BOM::User::Client::get_instance({loginid => $loginid});
-    if ($client) {
-        $client->set_db('write');
-        my ($doc) = $client->find_client_authentication_document(query => [id => $doc_id]);    # Rose
-        if ($doc) {
-            if ($doc->delete) {
-                $msg = "SUCCESS - $encoded_path is deleted!";
-            } else {
-                $msg = "ERROR: did not remove $encoded_path record from db";
-            }
-        } else {
-            $msg = "ERROR: could not find $encoded_path record in db";
-        }
-        $msg .=
-              '<p>Go back to client details <a href="'
-            . request()->url_for("backoffice/f_clientloginid_edit.cgi", {loginID => $loginid}) . '">'
-            . $loginid . '</p>';
-
-    } else {
-        $msg = "ERROR: with client login " . $loginid;
-    }
-    print "<p>$msg</p>";
-    code_exit_BO();
-}
-
 if (my ($type) = $path =~ /\.(tif|txt|csv|xls|doc|gif|png|bmp|jpg|jpeg|pdf|zip|mp4)$/i) {
     if (-f -r $full_path) {
         PrintContentType_XSendfile($full_path, (lc($type) eq 'pdf' ? 'application/pdf' : 'application/octet-stream'));

@@ -565,3 +565,22 @@ IF client_for_prove
         </tr>
     [% END %]
 </table>
+<script type="text/javascript" language="javascript">
+function get_checked_files() {
+    var checkboxes = document.getElementsByClassName('files_checkbox');
+    var doc_array = [];
+    for (var i=0, n=checkboxes.length;i<n;i++) 
+    {
+        if (checkboxes[i].checked) 
+        {
+            doc_array.push(checkboxes[i].value);
+        }
+    }
+    if (doc_array.length > 0){
+        return confirm('Are you sure you want to delete:\n' + doc_array.join('\n'));
+    } else {
+        alert('No files selected');
+        return false;
+    }
+}
+</script>
