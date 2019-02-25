@@ -14,7 +14,7 @@ use strict;
 use warnings;
 
 use IO::File;
-use List::Util qw(max first sum reduce);
+use List::Util qw(max first sum reduce sum0);
 use List::UtilsBy qw(rev_nsort_by);
 use JSON::MaybeXS;
 use Moose;
@@ -378,6 +378,10 @@ sub _payment_and_profit_report {
     @watched =
         sort { $a->{loginid} cmp $b->{loginid} }
         sort { $a->{currency} cmp $b->{currency} } grep { $_->{being_watched_for} } @watched;
+
+    foreach my $watch (@watched) {
+        $watch->{profit} = List::Util::sum0 map { $watch->{$_} // 0 } qw(financial_profit non_financial_profit);
+    }
 
     return {
         big_deposits    => \@big_deposits,
