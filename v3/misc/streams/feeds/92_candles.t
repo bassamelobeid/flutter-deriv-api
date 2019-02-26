@@ -2,7 +2,8 @@ use strict;
 use warnings;
 use Test::More;
 use Test::MockTime qw/:all/;
-use JSON;
+use Encode;
+use JSON::MaybeXS;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
@@ -12,6 +13,8 @@ use Date::Utility;
 use Data::Dumper;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
+
+my $json = JSON::MaybeXS->new;
 
 for my $symbol (qw/R_50 R_100/) {
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -35,14 +38,14 @@ sub _create_tick {    #creates R_50 tick in redis channel FEED::R_50
         bid    => $i + 1,
         ohlc   => $ohlc_sample,
     };
-    BOM::Config::RedisReplicated::redis_write()->publish("FEED::$symbol", encode_json($payload));
+    BOM::Config::RedisReplicated::redis_write()->publish("FEED::$symbol", Encode::encode_utf8($json->encode($payload)));
 }
 
 my $t = build_wsapi_test();
 
 my ($res);
 
-$t->send_ok({
+$res = $t->send_ok({
         json => {
             ticks_history => 'R_50',
             end           => "latest",
@@ -50,6 +53,14 @@ $t->send_ok({
             style         => "candles",
             subscribe     => 1
         }})->message_ok;
+$res = $json->decode(Encode::decode_utf8($res->message->[1]));
+
+test_schema('ticks_history', $res);
+
+is $res->{msg_type}, 'candles', 'Correct message type';
+ok $res->{subscription}->{id}, 'Subscription id is ok';
+is ref $res->{candles}, 'ARRAY', 'Valid datatype array ref';
+
 my $pid = fork;
 die "Failed fork for testing 'ticks' WS API call: $@" unless defined $pid;
 unless ($pid) {
@@ -66,7 +77,8 @@ unless ($pid) {
 
 for (my $i = 0; $i < 2; $i++) {
     $t->message_ok;
-    $res = decode_json($t->message->[1]);
+    $res = $json->decode(Encode::decode_utf8($t->message->[1]));
+
     ok $res->{ohlc}->{open} =~ /\d+\.\d{4,}/
         && $res->{ohlc}->{high} =~ /\d+\.\d{4,}/
         && $res->{ohlc}->{close} =~ /\d+\.\d{4,}/

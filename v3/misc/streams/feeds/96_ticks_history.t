@@ -13,6 +13,16 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Quant::Framework;
 use BOM::Config::Chronicle;
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+
+initialize_realtime_ticks_db();
+for my $symbol (qw/R_50 frxUSDJPY/) {
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => $symbol,
+        epoch      => Date::Utility->new->epoch,
+        quote      => 100
+    });
+}
 
 my $time      = Date::Utility->new;
 my $test_date = Date::Utility->new('2012-03-14 07:00:00');
@@ -40,6 +50,7 @@ subtest 'validations' => sub {
     $t->send_ok({json => $req_storage});
     $t   = $t->message_ok;
     $res = $json->decode(Encode::decode_utf8($t->message->[1]));
+    test_schema('ticks_history', $res);
     is_deeply($res->{echo_req}, $req_storage, 'Echo request is the same');
 
     $req_storage->{style} = 'sample';
@@ -70,7 +81,9 @@ subtest 'call_ticks_history' => sub {
 
     # If it is not open, this call will return error message.
     if ($is_open) {
+        test_schema('ticks_history', $res);
         is $res->{msg_type}, 'history', 'Result type should be history';
+        ok $res->{subscription}->{id}, 'Subscription id is set';
 
         $req_storage->{count} = 10;
         $t->send_ok({json => $req_storage});
@@ -78,7 +91,6 @@ subtest 'call_ticks_history' => sub {
         $res = $json->decode(Encode::decode_utf8($t->message->[1]));
         is $res->{error}->{code}, 'AlreadySubscribed', 'Already subscribed';
     } else {
-
         is $res->{msg_type}, 'ticks_history', 'Result type should be history';
         is $res->{error}->{code}, 'MarketIsClosed', 'The market is presently closed';
     }

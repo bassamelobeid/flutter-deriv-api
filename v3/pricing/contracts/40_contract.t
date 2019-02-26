@@ -298,11 +298,11 @@ subtest 'buy and subscribe' => sub {
 
     is $res->{req_id}, 1111, 'same req_id in response'; 
 
-    is_deeply(
-        [sort keys %{$res->{buy}}],
-        [sort ('balance_after', 'shortcode', 'contract_id', 'start_time', 'longcode', 'transaction_id', 'buy_price', 'purchase_time', 'payout')],
-        'no unexpected response'
-    );
+    my @buy_keys = sort qw/balance_after shortcode contract_id start_time longcode transaction_id buy_price purchase_time payout/;
+
+    is_deeply([sort (keys %{$res->{buy}})], [@buy_keys], 'no unexpected response');
+
+    ok $res->{subscription}->{id}, 'Subscription id is added';
 
     my $msg = {
         %$res,

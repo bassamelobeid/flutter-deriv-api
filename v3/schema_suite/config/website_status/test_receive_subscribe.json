@@ -13,7 +13,7 @@
             "type" : "string"
         },
         "website_status" : {
-            "required" : ["currencies_config", "api_call_limits", "supported_languages", "site_status", "terms_conditions_version", "clients_country"],
+            "required" : ["currencies_config", "api_call_limits", "supported_languages", "site_status", "terms_conditions_version", "clients_country", "subscription"],
             "properties" : {
                 "supported_languages" : {
                     "description" : "Provides codes for languages supported",
@@ -159,6 +159,17 @@
         "echo_req" : {
             "description" : "Echo of the request made",
             "title" : "Echo request"
+        },
+        "subscription" : {
+            "title" : "Subscription information",
+            "description" : "For subscription requests only.",
+            "type" : "object",
+            "properties": {
+               "id" : {
+                "description": "The subscription identifier of the data to be streamed.",
+                "type" : "string"
+               }
+            }
         }
     }
 }

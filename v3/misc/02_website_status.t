@@ -30,6 +30,52 @@ $writer->set('app_settings', 'binary', {global => {cgi => {terms_conditions_vers
 
 is $reader->get('app_settings', 'binary')->{global}->{cgi}->{terms_conditions_version}, $updated_tcv, 'Chronickle should be updated';
 
+#Test website status subscription id
+my $uuid = $res->{subscription}->{id};
+ok $uuid, 'Already sunscribed (subscribe arg defaults to 1)';
+
+$t = $t->send_ok({
+        json => {
+            website_status => 1,
+            subscribe      => 1
+        }})->message_ok;
+$res = $json->decode(Encode::decode_utf8($t->message->[1]));
+is $res->{error}->{code}, undef, 'No duplicate subscription error';
+is $res->{subscription}->{id}, $uuid, 'The same id is returned';
+
+$t = $t->send_ok({
+        json => {
+            website_status => 1,
+            subscribe      => 0
+        }})->message_ok;
+$res = $json->decode(Encode::decode_utf8($t->message->[1]));
+is $res->{subscription}->{id}, undef, 'No subscription id for non-subscribe requests.';
+
+$t = $t->send_ok({json => {forget_all => 'website_status'}})->message_ok;
+$res = $json->decode(Encode::decode_utf8($t->message->[1]));
+is $res->{forget_all}->[0], $uuid, 'The same id returned by forget_all';
+
+$t = $t->send_ok({
+        json => {
+            website_status => 1,
+            subscribe      => 0
+        }})->message_ok;
+$res = $json->decode(Encode::decode_utf8($t->message->[1]));
+is $res->{subscription}->{id}, undef, 'No subscription ids after forget_all';
+
+$t = $t->send_ok({
+        json => {
+            website_status => 1,
+            subscribe      => 1
+        }})->message_ok;
+$res = $json->decode(Encode::decode_utf8($t->message->[1]));
+cmp_ok $uuid, 'ne', $res->{subscription}->{id}, 'New subscription id is issued';
+$uuid = $res->{subscription}->{id};
+
+$t = $t->send_ok({json => {forget => $uuid}})->message_ok;
+$res = $json->decode(Encode::decode_utf8($t->message->[1]));
+is $res->{subscription}->{id}, undef, 'No subscription ids after forget one';
+
 # The followind does NOT work on travis, as rpc lauched as separate process
 # my $time_mock =  Test::MockModule->new('App::Config::Chronicle');
 # $time_mock->mock('refresh_interval', sub { -1 });
