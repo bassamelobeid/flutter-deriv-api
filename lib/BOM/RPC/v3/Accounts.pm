@@ -973,7 +973,7 @@ rpc get_settings => sub {
 rpc set_settings => sub {
     my $params = shift;
 
-    my $client = $params->{client};
+    my $current_client = $params->{client};
 
     my ($website_name, $client_ip, $user_agent, $language, $args) =
         @{$params}{qw/website_name client_ip user_agent language args/};
@@ -983,19 +983,19 @@ rpc set_settings => sub {
     my ($residence, $allow_copiers) =
         ($args->{residence}, $args->{allow_copiers});
 
-    if ($client->is_virtual) {
+    if ($current_client->is_virtual) {
         # Virtual client can update
         # - residence, if residence not set.
         # - email_consent (common to real account as well)
-        if (not $client->residence and $residence) {
+        if (not $current_client->residence and $residence) {
 
             if ($brand->countries_instance->restricted_country($residence)) {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'InvalidResidence',
                         message_to_client => localize('Sorry, our service is not available for your country of residence.')});
             } else {
-                $client->residence($residence);
-                if (not $client->save()) {
+                $current_client->residence($residence);
+                if (not $current_client->save()) {
                     return BOM::RPC::v3::Utility::client_error();
                 }
             }
@@ -1013,19 +1013,19 @@ rpc set_settings => sub {
         return BOM::RPC::v3::Utility::permission_error() if $residence;
 
         if ($args->{account_opening_reason}) {
-            if ($client->landing_company->is_field_changeable_before_auth('account_opening_reason')) {
+            if ($current_client->landing_company->is_field_changeable_before_auth('account_opening_reason')) {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'PermissionDenied',
                         message_to_client => localize("Value of account opening reason cannot be changed after authentication.")})
-                    if ($client->account_opening_reason
-                    and $args->{account_opening_reason} ne $client->account_opening_reason
-                    and $client->fully_authenticated());
+                    if ($current_client->account_opening_reason
+                    and $args->{account_opening_reason} ne $current_client->account_opening_reason
+                    and $current_client->fully_authenticated());
             } else {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'PermissionDenied',
                         message_to_client => localize("Your landing company does not allow account opening reason to be changed.")})
-                    if ($client->account_opening_reason
-                    and $args->{account_opening_reason} ne $client->account_opening_reason);
+                    if ($current_client->account_opening_reason
+                    and $args->{account_opening_reason} ne $current_client->account_opening_reason);
             }
         }
         return BOM::RPC::v3::Utility::create_error({
@@ -1033,7 +1033,7 @@ rpc set_settings => sub {
                 message_to_client => localize("Input validation failed: account opening reason"),
                 details           => {
                     account_opening_reason => "is missing and it is required",
-                }}) if (not $client->account_opening_reason and not $args->{account_opening_reason});
+                }}) if (not $current_client->account_opening_reason and not $args->{account_opening_reason});
 
         if ($args->{place_of_birth}) {
 
@@ -1042,98 +1042,98 @@ rpc set_settings => sub {
                     message_to_client => localize("Please enter a valid place of birth.")}
             ) unless Locale::Country::code2country($args->{place_of_birth});
 
-            if ($client->landing_company->is_field_changeable_before_auth('place_of_birth')) {
+            if ($current_client->landing_company->is_field_changeable_before_auth('place_of_birth')) {
 
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'PermissionDenied',
                         message_to_client => localize("Value of place of birth cannot be changed after authentication.")})
-                    if ($client->place_of_birth
-                    and $args->{place_of_birth} ne $client->place_of_birth
-                    and $client->fully_authenticated());
+                    if ($current_client->place_of_birth
+                    and $args->{place_of_birth} ne $current_client->place_of_birth
+                    and $current_client->fully_authenticated());
             } else {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'PermissionDenied',
                         message_to_client => localize("Your landing company does not allow place of birth to be changed.")})
-                    if ($client->place_of_birth
-                    and $args->{place_of_birth} ne $client->place_of_birth);
+                    if ($current_client->place_of_birth
+                    and $args->{place_of_birth} ne $current_client->place_of_birth);
             }
         }
 
         if ($args->{date_of_birth}) {
-            if ($client->landing_company->is_field_changeable_before_auth('date_of_birth')) {
+            if ($current_client->landing_company->is_field_changeable_before_auth('date_of_birth')) {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'PermissionDenied',
                         message_to_client => localize("Value of date of birth cannot be changed after authentication.")})
-                    if ($client->date_of_birth
-                    and $args->{date_of_birth} ne $client->date_of_birth
-                    and $client->fully_authenticated());
+                    if ($current_client->date_of_birth
+                    and $args->{date_of_birth} ne $current_client->date_of_birth
+                    and $current_client->fully_authenticated());
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'PermissionDenied',
                         message_to_client => localize("Value of date of birth is below the minimum age required.")})
-                    if ($client->date_of_birth
-                    and $args->{date_of_birth} ne $client->date_of_birth
-                    and BOM::Platform::Account::Real::default::validate_dob($args->{date_of_birth}, $client->residence));
+                    if ($current_client->date_of_birth
+                    and $args->{date_of_birth} ne $current_client->date_of_birth
+                    and BOM::Platform::Account::Real::default::validate_dob($args->{date_of_birth}, $current_client->residence));
             } else {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'PermissionDenied',
                         message_to_client => localize("Your landing company does not allow date of birth to be changed.")})
-                    if ($client->date_of_birth
-                    and $args->{date_of_birth} ne $client->date_of_birth);
+                    if ($current_client->date_of_birth
+                    and $args->{date_of_birth} ne $current_client->date_of_birth);
             }
         }
 
         if ($args->{salutation}) {
-            if ($client->landing_company->is_field_changeable_before_auth('salutation')) {
+            if ($current_client->landing_company->is_field_changeable_before_auth('salutation')) {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'PermissionDenied',
                         message_to_client => localize("Value of salutation cannot be changed after authentication.")})
-                    if ($client->salutation
-                    and $args->{salutation} ne $client->salutation
-                    and $client->fully_authenticated());
+                    if ($current_client->salutation
+                    and $args->{salutation} ne $current_client->salutation
+                    and $current_client->fully_authenticated());
             } else {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'PermissionDenied',
                         message_to_client => localize("Your landing company does not allow salutation to be changed.")})
-                    if ($client->salutation
-                    and $args->{salutation} ne $client->salutation);
+                    if ($current_client->salutation
+                    and $args->{salutation} ne $current_client->salutation);
             }
         }
 
         if ($args->{first_name}) {
-            if ($client->landing_company->is_field_changeable_before_auth('first_name')) {
+            if ($current_client->landing_company->is_field_changeable_before_auth('first_name')) {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'PermissionDenied',
                         message_to_client => localize("Value of first name cannot be changed after authentication.")})
-                    if ($client->first_name
-                    and $args->{first_name} ne $client->first_name
-                    and $client->fully_authenticated());
+                    if ($current_client->first_name
+                    and $args->{first_name} ne $current_client->first_name
+                    and $current_client->fully_authenticated());
             } else {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'PermissionDenied',
                         message_to_client => localize("Your landing company does not allow first name to be changed.")})
-                    if ($client->first_name
-                    and $args->{first_name} ne $client->first_name);
+                    if ($current_client->first_name
+                    and $args->{first_name} ne $current_client->first_name);
             }
         }
 
         if ($args->{last_name}) {
-            if ($client->landing_company->is_field_changeable_before_auth('last_name')) {
+            if ($current_client->landing_company->is_field_changeable_before_auth('last_name')) {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'PermissionDenied',
                         message_to_client => localize("Value of last name cannot be changed after authentication.")})
-                    if ($client->last_name
-                    and $args->{last_name} ne $client->last_name
-                    and $client->fully_authenticated());
+                    if ($current_client->last_name
+                    and $args->{last_name} ne $current_client->last_name
+                    and $current_client->fully_authenticated());
             } else {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'PermissionDenied',
                         message_to_client => localize("Your landing company does not allow last name to be changed.")})
-                    if ($client->last_name
-                    and $args->{last_name} ne $client->last_name);
+                    if ($current_client->last_name
+                    and $args->{last_name} ne $current_client->last_name);
             }
         }
 
-        if ($client->residence eq 'gb' and defined $args->{address_postcode} and $args->{address_postcode} eq '') {
+        if ($current_client->residence eq 'gb' and defined $args->{address_postcode} and $args->{address_postcode} eq '') {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'InputValidationFailed',
                     message_to_client => localize("Input validation failed: address_postcode"),
@@ -1146,14 +1146,14 @@ rpc set_settings => sub {
 
     return BOM::RPC::v3::Utility::permission_error()
         if $allow_copiers
-        and ($client->landing_company->short ne 'costarica' and not $client->is_virtual);
+        and ($current_client->landing_company->short ne 'costarica' and not $current_client->is_virtual);
 
     if (
         $allow_copiers
         and @{BOM::Database::DataMapper::Copier->new(
-                broker_code => $client->broker_code,
+                broker_code => $current_client->broker_code,
                 operation   => 'replica'
-                )->get_traders({copier_id => $client->loginid})
+                )->get_traders({copier_id => $current_client->loginid})
                 || []})
     {
         return BOM::RPC::v3::Utility::create_error({
@@ -1161,25 +1161,27 @@ rpc set_settings => sub {
                 message_to_client => localize("Copier can't be a trader.")});
     }
 
+    my $user = $current_client->user;
+
     # email consent is per user whereas other settings are per client
     # so need to save it separately
     if (defined $args->{email_consent}) {
-        $client->user->update_email_fields(email_consent => $args->{email_consent});
+        $user->update_email_fields(email_consent => $args->{email_consent});
 
         BOM::Platform::Event::Emitter::emit(
             'email_consent',
             {
-                loginid       => $client->loginid,
+                loginid       => $current_client->loginid,
                 email_consent => $args->{email_consent}});
     }
 
     # only allow current client to set allow_copiers
     if (defined $allow_copiers) {
-        $client->allow_copiers($allow_copiers);
-        return BOM::RPC::v3::Utility::client_error() unless $client->save();
+        $current_client->allow_copiers($allow_copiers);
+        return BOM::RPC::v3::Utility::client_error() unless $current_client->save();
     }
 
-    return {status => 1} if $client->is_virtual;
+    return {status => 1} if $current_client->is_virtual;
 
     my $tax_residence             = $args->{'tax_residence'}             // '';
     my $tax_identification_number = $args->{'tax_identification_number'} // '';
@@ -1187,7 +1189,7 @@ rpc set_settings => sub {
     # according to compliance, tax_residence and tax_identification_number can be changed
     # but cannot be removed once they have been set
     foreach my $field (qw(tax_residence tax_identification_number)) {
-        if ($client->$field and exists $args->{$field} and not $args->{$field}) {
+        if ($current_client->$field and exists $args->{$field} and not $args->{$field}) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'PermissionDenied',
                     message_to_client => localize('Tax information cannot be removed once it has been set.'),
@@ -1209,22 +1211,22 @@ rpc set_settings => sub {
             code => 'TINDetailsMandatory',
             message_to_client =>
                 localize('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.')}
-    ) if ($client->landing_company->short eq 'maltainvest' and (not $tax_residence or not $tax_identification_number));
+    ) if ($current_client->landing_company->short eq 'maltainvest' and (not $tax_residence or not $tax_identification_number));
 
     if ($args->{citizen}) {
-        if ($client->landing_company->is_field_changeable_before_auth('citizen')) {
+        if ($current_client->landing_company->is_field_changeable_before_auth('citizen')) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'PermissionDenied',
                     message_to_client => localize("Value of citizen cannot be changed after authentication.")})
-                if ($client->citizen
-                and $args->{citizen} ne $client->citizen
-                and $client->fully_authenticated());
+                if ($current_client->citizen
+                and $args->{citizen} ne $current_client->citizen
+                and $current_client->fully_authenticated());
         } else {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'PermissionDenied',
                     message_to_client => localize("Your landing company does not allow citizen to be changed.")})
-                if ($client->citizen
-                and $args->{citizen} ne $client->citizen);
+                if ($current_client->citizen
+                and $args->{citizen} ne $current_client->citizen);
         }
     }
 
@@ -1233,38 +1235,38 @@ rpc set_settings => sub {
             code              => 'PermissionDenied',
             message_to_client => localize('Citizenship cannot be changed after authentication.')})
         if (defined $args->{'citizen'}
-        and $client->citizen
-        and $args->{'citizen'} ne $client->citizen
-        and $client->fully_authenticated());
+        and $current_client->citizen
+        and $args->{'citizen'} ne $current_client->citizen
+        and $current_client->fully_authenticated());
 
     my $now                    = Date::Utility->new;
-    my $address1               = $args->{'address_line_1'} // $client->address_1;
-    my $address2               = ($args->{'address_line_2'} // $client->address_2) // '';
-    my $addressTown            = $args->{'address_city'} // $client->city;
-    my $addressState           = ($args->{'address_state'} // $client->state) // '';
-    my $addressPostcode        = $args->{'address_postcode'} // $client->postcode;
-    my $phone                  = ($args->{'phone'} // $client->phone) // '';
-    my $birth_place            = $args->{place_of_birth} // $client->place_of_birth;
-    my $date_of_birth          = $args->{date_of_birth} // $client->date_of_birth;
-    my $citizen                = ($args->{'citizen'} // $client->citizen) // '';
-    my $salutation             = $args->{'salutation'} // $client->salutation;
-    my $first_name             = $args->{'first_name'} // $client->first_name;
-    my $last_name              = $args->{'last_name'} // $client->last_name;
-    my $account_opening_reason = $args->{'account_opening_reason'} // $client->account_opening_reason;
+    my $address1               = $args->{'address_line_1'} // $current_client->address_1;
+    my $address2               = ($args->{'address_line_2'} // $current_client->address_2) // '';
+    my $addressTown            = $args->{'address_city'} // $current_client->city;
+    my $addressState           = ($args->{'address_state'} // $current_client->state) // '';
+    my $addressPostcode        = $args->{'address_postcode'} // $current_client->postcode;
+    my $phone                  = ($args->{'phone'} // $current_client->phone) // '';
+    my $birth_place            = $args->{place_of_birth} // $current_client->place_of_birth;
+    my $date_of_birth          = $args->{date_of_birth} // $current_client->date_of_birth;
+    my $citizen                = ($args->{'citizen'} // $current_client->citizen) // '';
+    my $salutation             = $args->{'salutation'} // $current_client->salutation;
+    my $first_name             = $args->{'first_name'} // $current_client->first_name;
+    my $last_name              = $args->{'last_name'} // $current_client->last_name;
+    my $account_opening_reason = $args->{'account_opening_reason'} // $current_client->account_opening_reason;
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'PermissionDenied',
             message_to_client => localize(
                 'Sorry, you seem to already have a real money account with us. Perhaps you have used a different email address when you registered it. For legal reasons we are not allowed to open multiple real money accounts per person.'
             )})
-        if (($args->{first_name} and $args->{first_name} ne $client->first_name)
-        or ($args->{last_name} and $args->{last_name} ne $client->last_name)
-        or ($args->{date_of_birth} and $args->{date_of_birth} ne $client->date_of_birth))
-        and BOM::Database::ClientDB->new({broker_code => $client->broker_code})->get_duplicate_client({
+        if (($args->{first_name} and $args->{first_name} ne $current_client->first_name)
+        or ($args->{last_name} and $args->{last_name} ne $current_client->last_name)
+        or ($args->{date_of_birth} and $args->{date_of_birth} ne $current_client->date_of_birth))
+        and BOM::Database::ClientDB->new({broker_code => $current_client->broker_code})->get_duplicate_client({
             first_name    => $first_name,
             last_name     => $last_name,
             date_of_birth => $date_of_birth,
-            email         => $client->email,
+            email         => $current_client->email,
         });
 
     my $cil_message;
@@ -1272,7 +1274,7 @@ rpc set_settings => sub {
     return BOM::RPC::v3::Utility::create_error({
             code              => 'PermissionDenied',
             message_to_client => localize('Citizenship is required.')}
-    ) if ($client->landing_company->citizen_required && (!defined $citizen || $citizen eq ''));
+    ) if ($current_client->landing_company->citizen_required && (!defined $citizen || $citizen eq ''));
 
     if ($args->{'citizen'}
         && !defined $brand->countries_instance->countries->country_from_code($args->{'citizen'}))
@@ -1283,19 +1285,22 @@ rpc set_settings => sub {
     }
 
     if ((
-               ($address1 and $address1 ne $client->address_1)
-            or ($address2 ne $client->address_2)
-            or ($addressTown ne $client->city)
-            or ($addressState ne $client->state)
-            or ($addressPostcode ne $client->postcode))
-        and $client->fully_authenticated
+               ($address1 and $address1 ne $current_client->address_1)
+            or ($address2 ne $current_client->address_2)
+            or ($addressTown ne $current_client->city)
+            or ($addressState ne $current_client->state)
+            or ($addressPostcode ne $current_client->postcode))
+        and $current_client->fully_authenticated
         )
     {
         $cil_message =
               'Authenticated client ['
-            . $client->loginid
+            . $current_client->loginid
             . '] updated his/her address from ['
-            . join(' ', $client->address_1, $client->address_2, $client->city, $client->state, $client->postcode)
+            . join(' ',
+            $current_client->address_1,
+            $current_client->address_2,
+            $current_client->city, $current_client->state, $current_client->postcode)
             . '] to ['
             . join(' ', $address1, $address2, $addressTown, $addressState, $addressPostcode) . ']';
     }
@@ -1320,25 +1325,26 @@ rpc set_settings => sub {
         return undef;
     };
 
-    my $user = $client->user;
-    foreach my $cli ($user->clients) {
-        next if $cli->is_virtual;
+    my @realclient_loginids = $user->bom_real_loginids;
 
-        $cli->address_1($address1);
-        $cli->address_2($address2);
-        $cli->city($addressTown);
-        $cli->state($addressState) if defined $addressState;                       # FIXME validate
-        $cli->postcode($addressPostcode) if defined $args->{'address_postcode'};
-        $cli->phone($phone);
-        $cli->citizen($citizen);
-        $cli->place_of_birth($birth_place);
-        $cli->account_opening_reason($account_opening_reason);
-        $cli->date_of_birth($date_of_birth);
-        $cli->salutation($salutation);
-        $cli->first_name($first_name);
-        $cli->last_name($last_name);
+    foreach my $loginid (@realclient_loginids) {
+        my $client = $loginid eq $current_client->loginid ? $current_client : BOM::User::Client->new({loginid => $loginid});
 
-        $cli->latest_environment($now->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
+        $client->address_1($address1);
+        $client->address_2($address2);
+        $client->city($addressTown);
+        $client->state($addressState) if defined $addressState;                       # FIXME validate
+        $client->postcode($addressPostcode) if defined $args->{'address_postcode'};
+        $client->phone($phone);
+        $client->citizen($citizen);
+        $client->place_of_birth($birth_place);
+        $client->account_opening_reason($account_opening_reason);
+        $client->date_of_birth($date_of_birth);
+        $client->salutation($salutation);
+        $client->first_name($first_name);
+        $client->last_name($last_name);
+
+        $client->latest_environment($now->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
 
         # As per CRS/FATCA regulatory requirement we need to
         # save this information as client status, so updating
@@ -1348,71 +1354,71 @@ rpc set_settings => sub {
                    $tax_residence
                 or $tax_identification_number
             )
-            and (  ($cli->tax_residence // '') ne $tax_residence
-                or ($cli->tax_identification_number // '') ne $tax_identification_number))
+            and (  ($client->tax_residence // '') ne $tax_residence
+                or ($client->tax_identification_number // '') ne $tax_identification_number))
         {
-            $cli->tax_residence($tax_residence)                         if $tax_residence;
-            $cli->tax_identification_number($tax_identification_number) if $tax_identification_number;
+            $client->tax_residence($tax_residence)                         if $tax_residence;
+            $client->tax_identification_number($tax_identification_number) if $tax_identification_number;
         }
 
-        my $set_status = $update_professional_status->($cli);
+        my $set_status = $update_professional_status->($client);
 
-        if (not $cli->save()) {
+        if (not $client->save()) {
             return BOM::RPC::v3::Utility::client_error();
         }
 
-        BOM::RPC::v3::Utility::send_professional_requested_email($cli->loginid, $cli->residence, $cli->landing_company->short)
+        BOM::RPC::v3::Utility::send_professional_requested_email($client->loginid, $client->residence, $client->landing_company->short)
             if ($set_status);
     }
-    # update client value after latest changes
-    $client = BOM::User::Client->new({loginid => $client->loginid});
+
     if ($cil_message) {
-        $client->add_note('Update Address Notification', $cil_message);
+        $current_client->add_note('Update Address Notification', $cil_message);
     }
 
     my $message = localize(
         'Dear [_1] [_2] [_3],',
-        map { encode_entities($_) } BOM::Platform::Locale::translate_salutation($client->salutation),
-        $client->first_name, $client->last_name
+        map { encode_entities($_) } BOM::Platform::Locale::translate_salutation($current_client->salutation),
+        $current_client->first_name,
+        $current_client->last_name
     ) . "\n\n";
     $message .= localize('Please note that your settings have been updated as follows:') . "\n\n";
 
     # lookup state name by id
     my $lookup_state =
-        ($client->state and $client->residence)
-        ? BOM::Platform::Locale::get_state_by_id($client->state, $client->residence) // ''
+        ($current_client->state and $current_client->residence)
+        ? BOM::Platform::Locale::get_state_by_id($current_client->state, $current_client->residence) // ''
         : '';
-    my @address_fields = ((map { $client->$_ } qw/address_1 address_2 city/), $lookup_state, $client->postcode);
+    my @address_fields = ((map { $current_client->$_ } qw/address_1 address_2 city/), $lookup_state, $current_client->postcode);
     # filter out empty fields
     my $full_address = join ', ', grep { defined $_ and /\S/ } @address_fields;
 
-    my $residence_country = Locale::Country::code2country($client->residence);
+    my $residence_country = Locale::Country::code2country($current_client->residence);
     my @updated_fields    = (
-        [localize('Email address'),        $client->email],
+        [localize('Email address'),        $current_client->email],
         [localize('Country of Residence'), $residence_country],
         [localize('Address'),              $full_address],
-        [localize('Telephone'),            $client->phone],
-        [localize('Citizen'),              $client->citizen]);
+        [localize('Telephone'),            $current_client->phone],
+        [localize('Citizen'),              $current_client->citizen]);
 
-    my $tr_tax_residence = join ', ', map { Locale::Country::code2country($_) } split /,/, ($client->tax_residence || '');
-    my $pob_country = $client->place_of_birth ? Locale::Country::code2country($client->place_of_birth) : '';
+    my $tr_tax_residence = join ', ', map { Locale::Country::code2country($_) } split /,/, ($current_client->tax_residence || '');
+    my $pob_country = $current_client->place_of_birth ? Locale::Country::code2country($current_client->place_of_birth) : '';
 
     push @updated_fields,
         (
         [localize('Place of birth'), $pob_country // ''],
         [localize("Tax residence"), $tr_tax_residence],
-        [localize('Tax identification number'), ($client->tax_identification_number || '')],
+        [localize('Tax identification number'), ($current_client->tax_identification_number || '')],
         );
-    push @updated_fields, [localize('Receive news and special offers'), $client->user->{email_consent} ? localize("Yes") : localize("No")]
+    push @updated_fields, [localize('Receive news and special offers'), $current_client->user->{email_consent} ? localize("Yes") : localize("No")]
         if exists $args->{email_consent};
-    push @updated_fields, [localize('Allow copiers'), $client->allow_copiers ? localize("Yes") : localize("No")]
+    push @updated_fields, [localize('Allow copiers'), $current_client->allow_copiers ? localize("Yes") : localize("No")]
         if defined $allow_copiers;
     push @updated_fields,
         [
         localize('Requested professional status'),
         (
                    $args->{request_professional_status}
-                or $client->status->professional_requested
+                or $current_client->status->professional_requested
         ) ? localize("Yes") : localize("No")];
 
     $message .= "<table>";
@@ -1429,15 +1435,15 @@ rpc set_settings => sub {
 
     send_email({
         from                  => $brand->emails('support'),
-        to                    => $client->email,
-        subject               => $client->loginid . ' ' . localize('Change in account settings'),
+        to                    => $current_client->email,
+        subject               => $current_client->loginid . ' ' . localize('Change in account settings'),
         message               => [$message],
         use_email_template    => 1,
         email_content_is_html => 1,
-        template_loginid      => $client->loginid,
+        template_loginid      => $current_client->loginid,
     });
-    BOM::User::AuditLog::log('Your settings have been updated successfully', $client->loginid);
-    BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $client->loginid});
+    BOM::User::AuditLog::log('Your settings have been updated successfully', $current_client->loginid);
+    BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $current_client->loginid});
     return {status => 1};
 };
 
