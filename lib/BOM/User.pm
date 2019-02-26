@@ -44,6 +44,11 @@ for my $k (@fields) {
         unless __PACKAGE__->can($k);
 }
 
+use constant {
+    MT5_REGEX     => qr/^MT[0-9]+$/,
+    VIRTUAL_REGEX => qr/^VR/,
+};
+
 sub create {
     my ($class, %args) = @_;
     croak "email and password are mandatory" unless (exists($args{email}) && exists($args{password}));
@@ -234,15 +239,27 @@ get client non-mt5 login ids
 
 sub bom_loginids {
     my $self = shift;
-    return grep { $_ !~ /^MT\d+$/ } $self->loginids;
+    return grep { $_ !~ MT5_REGEX } $self->loginids;
 }
+
+=head2 bom_real_loginids
+
+get non-mt5 real login ids
+
+=cut
+
+sub bom_real_loginids {
+    my $self = shift;
+    return grep { $_ !~ MT5_REGEX && $_ !~ VIRTUAL_REGEX } $self->loginids;
+}
+
 #
 sub mt5_logins {
     my $self = shift;
     my $filter = shift // 'real|demo';
     my @mt5_logins;
 
-    for my $login (sort grep { /^MT\d+$/ } $self->loginids) {
+    for my $login (sort grep { $_ =~ MT5_REGEX } $self->loginids) {
         push(@mt5_logins, $login)
             if (
             not $filter or (
