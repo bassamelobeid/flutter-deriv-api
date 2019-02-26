@@ -6,13 +6,6 @@
         "website_status": {
             "type": "object",
             "properties": {
-                "clients_country": {
-                    "type": "string"
-                },
-                "terms_conditions_version": {
-                    "type": "string",
-                    "required": "1"
-                },
                 "supported_languages": {
                     "type": "array",
                     "items": {
@@ -146,6 +139,17 @@
                         }
                     }
                 },
+                "site_status" : {
+                    "enum": ["up", "down"],
+                    "description" : "The current status of the website."
+                },
+                "clients_country": {
+                    "type": "string"
+                },
+                "terms_conditions_version": {
+                    "type": "string",
+                    "required": "1"
+                },
                 "message": {
                     "type":"string",
                     "description": "Text for site status banner, contains problem description.  Shown only if set by the system"
@@ -162,6 +166,17 @@
         },
         "req_id": {
             "type": "integer"
+        },
+        "subscription" : {
+            "title" : "Subscription information",
+            "description" : "For subscription requests only.",
+            "type" : "object",
+            "properties": {
+               "id" : {
+                "description": "The subscription identifier of the data to be streamed.",
+                "type" : "string"
+               }
+            }
         }
     }
 }

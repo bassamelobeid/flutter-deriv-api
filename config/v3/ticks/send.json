@@ -31,7 +31,7 @@
       "subscribe" : {
          "enum" : [1],
          "type" : "integer",
-         "description" : "If set to 1, will send updates whenever the price change."
+         "description" : "If set to 1, will send updates whenever a new tick is received."
       },
       "passthrough" : {
          "type" : "object",

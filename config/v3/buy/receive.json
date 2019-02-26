@@ -7,7 +7,6 @@
       "echo_req"
    ],
    "title" : "Buy a Contract Receive",
-   
    "properties" : {
       "req_id" : {
          "type" : "integer",
@@ -74,6 +73,17 @@
             "buy_price",
             "longcode"
          ]
-      }
+      },
+      "subscription" : {
+         "title" : "Subscription information",
+         "description" : "For subscription requests only.",
+         "type" : "object",
+         "properties": {
+            "id" : {
+             "description": "The subscription identifier of the data to be streamed.",
+             "type" : "string"
+            }
+         }
+     }
    }
 }

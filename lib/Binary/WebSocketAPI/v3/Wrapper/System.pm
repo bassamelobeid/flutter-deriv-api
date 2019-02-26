@@ -7,6 +7,7 @@ use Scalar::Util qw(looks_like_number);
 use Array::Utils qw(array_minus);
 
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
+use Binary::WebSocketAPI::v3::Instance::Redis qw(ws_redis_master);
 use DataDog::DogStatsd::Helper qw(stats_dec);
 
 sub forget {
@@ -37,14 +38,17 @@ sub forget_all {
     if (my $types = $req_storage->{args}->{forget_all}) {
         # if type is a string, turn it into an array
         $types = [$types] unless ref($types) eq 'ARRAY';
-
         # since we accept array, syntax check should be done here
         # TODO: move this to anyOf in JSON schema after anyOf usage in schema is fixed
-        my $accepted_types = qr/^(ticks|candles|proposal|portfolio|proposal_open_contract|balance|transaction|proposal_array)$/;
+        my $accepted_types = qr/^(ticks|candles|proposal|proposal_open_contract|balance|transaction|proposal_array|website_status)$/;
         my @failed_types = grep { !/$accepted_types/ } @$types;
         return $c->new_error('forget_all', 'InputValidationFailed', $c->l('Input validation failed: ') . join(', ', @failed_types)) if @failed_types;
 
         for my $type (@$types) {
+            if ($type eq 'website_status') {
+                @removed_ids{@{_forget_all_website_status($c)}} = ();
+                next;
+            }
             if ($type eq 'balance' or $type eq 'transaction' or $type eq 'proposal_open_contract') {
                 @removed_ids{@{_forget_transaction_subscription($c, $type)}} = ();
             }
@@ -81,6 +85,43 @@ sub _forget_all_proposal_array {
     return $pa_keys;
 }
 
+=head2 _forget_all_website_status
+
+Cancels an existing subscription to B<website_status> stream.
+
+Example usage:
+
+Takes the following arguments
+
+=over 4
+
+=item * C<$c> - websocket connection object
+
+=item * C<$id> - a uuid representig the subscription to be teminated (optional).
+
+=back 
+
+Returns an array ref containg uuid of subscriptions effectively cancelled.
+
+=cut
+
+sub _forget_all_website_status {
+    my ($c, $id) = @_;
+
+    my $connection_id = $c + 0;
+    my $redis         = ws_redis_master();
+
+    return [] unless $redis->{shared_info}->{broadcast_notifications}{$connection_id};
+
+    my $uuid = $redis->{shared_info}->{broadcast_notifications}{$connection_id}->{uuid} // '';
+
+    return [] if $id and ($id ne $uuid);
+
+    delete $redis->{shared_info}->{broadcast_notifications}->{$connection_id};
+
+    return $uuid ? [$uuid] : [];
+}
+
 sub forget_one {
     my ($c, $id, $reason) = @_;
 
@@ -90,6 +131,8 @@ sub forget_one {
         @removed_ids{@{_forget_transaction_subscription($c, $id)}} = ();
         @removed_ids{@{_forget_pricing_subscription($c, $id)}} = ();
         @removed_ids{@{_forget_proposal_array($c, $id)}} = ();
+        @removed_ids{@{_forget_all_website_status($c, $id)}} = ();
+
     }
 
     return scalar keys %removed_ids;

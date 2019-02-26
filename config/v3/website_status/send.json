@@ -16,12 +16,10 @@
          "enum" : [
             1
          ],
-         "type" : "integer",
          "description" : "Must be 1."
       },
       "subscribe" : {
-         "type" : "integer",
-         "description" : "[Optional] 1 - to receive a steam of the server/website status.",
+         "description" : "[Optional] 1 - to stream the server/website status updates (default = 1)",
          "enum" : [
             0,
             1

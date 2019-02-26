@@ -54,7 +54,7 @@
          "enum" : [
             1
          ],
-         "description" : "[Optional] 1 - to send updates whenever the price changes.",
+         "description" : "[Optional] 1 - to send updates whenever a new tick is received.",
          "type" : "integer"
       },
       "adjust_start_time" : {

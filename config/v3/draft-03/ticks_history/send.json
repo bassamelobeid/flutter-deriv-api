@@ -43,7 +43,7 @@
     },
     "subscribe": {
       "type": "integer",
-      "description": "[Optional] 1 - to send updates whenever the price changes.",
+      "description": "[Optional] 1 - to send updates whenever a new tick is received.",
       "pattern": "^1$"
     },
     "passthrough": {

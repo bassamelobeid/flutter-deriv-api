@@ -131,12 +131,10 @@
                             }
                         }
                     }
-
                 },
                 "site_status" : {
-                    "pattern" : "^(up|down)$",
-                    "description" : "Current status of the site. up or down",
-                    "type" : "string"
+                    "enum": ["up", "down"],
+                    "description" : "The current status of the website."
                 },
                 "clients_country" : {
                     "type" : "string",
@@ -160,6 +158,17 @@
         "echo_req" : {
             "description" : "Echo of the request made",
             "title" : "Echo request"
+        },
+        "subscription" : {
+            "title" : "Subscription information",
+            "description" : "For subscription requests only.",
+            "type" : "object",
+            "properties": {
+               "id" : {
+                "description": "The subscription identifier of the data to be streamed.",
+                "type" : "string"
+               }
+            }
         }
     }
 }

@@ -14,11 +14,45 @@ sub buy_get_single_contract {
 
     my $contract_details = delete $api_response->{contract_details};
 
-    _subscribe_to_contract($c, $contract_details, $req_storage->{call_params}->{args}) if $req_storage->{call_params}->{args}->{subscribe};
+    $req_storage->{uuid} = _subscribe_to_contract($c, $contract_details, $req_storage->{call_params}->{args})
+        if $req_storage->{call_params}->{args}->{subscribe};
 
     buy_store_last_contract_id($c, $api_response);
 
     return undef;
+}
+
+=head2 buy_set_poc_subscription_id
+
+Sets C<proposal_open_contract> stream subscription id, after a C<buy> request is successfully processed.
+At this stage, the subscription id is already injected into C<$req_storage> with a JSON key named C<uuid> by the C<success> handler.
+
+Takes the following arguments
+
+=over 4
+
+=item * C<$rpc_response> - message returned by rpc call.
+
+=item * C<$api_response> - response to be sent through websocket.
+
+=item * C<$req_storage> - JSON message containing a B<buy> request as received through websocket.
+
+=back 
+
+Returns a JSON message, containing B<$api_response> and subscription id.
+
+=cut
+
+sub buy_set_poc_subscription_id {
+    my ($rpc_response, $api_response, $req_storage) = @_;
+    return $api_response if $rpc_response->{error};
+
+    my $uuid = delete $req_storage->{uuid};
+    return {
+        buy      => $rpc_response,
+        msg_type => 'buy',
+        ($uuid ? (subscription => {id => $uuid}) : ()),
+    };
 }
 
 sub _subscribe_to_contract {
@@ -42,7 +76,8 @@ sub _subscribe_to_contract {
         $c, 'subscribe', $account_id,    # should not go to client
         $uuid, $args, $contract_id
     );
-    return undef;
+
+    return $uuid;
 }
 
 sub buy_store_last_contract_id {

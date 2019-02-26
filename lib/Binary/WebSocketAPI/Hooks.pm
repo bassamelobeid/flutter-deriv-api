@@ -308,6 +308,8 @@ sub forget_all {
 
     Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_proposal_array($c);
 
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_website_status($c);
+
     return;
 }
 

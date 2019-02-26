@@ -6,7 +6,6 @@
       "msg_type",
       "echo_req"
    ],
-   
    "title" : "Tick History Response",
    "properties" : {
       "req_id" : {
@@ -75,6 +74,17 @@
             }
          },
          "title" : "Tick History Response"
-      }
+      },
+      "subscription" : {
+         "title" : "Subscription information",
+         "description" : "For subscription requests only.",
+         "type" : "object",
+         "properties": {
+            "id" : {
+             "description": "The subscription identifier of the data to be streamed.",
+             "type" : "string"
+            }
+         }
+     }
    }
 }

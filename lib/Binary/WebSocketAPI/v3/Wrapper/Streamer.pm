@@ -46,7 +46,6 @@ sub get_status_msg {
 
 sub website_status {
     my ($c, $req_storage) = @_;
-
     my $args = $req_storage->{args};
     ### TODO: to config
     my $channel_name = "NOTIFY::broadcast::channel";
@@ -63,21 +62,31 @@ sub website_status {
                     country_code => $c->country_code,
                 },
                 response => sub {
-                    my ($rpc_response, $api_response) = @_;
+                    my ($rpc_response, $api_response, $req_storage) = @_;
                     return $api_response if $rpc_response->{error};
+
                     my $website_status = {};
-                    $rpc_response->{clients_country} //= '';
-                    $website_status->{$_} = $rpc_response->{$_}
-                        for qw|api_call_limits clients_country supported_languages terms_conditions_version currencies_config|;
+                    my $connection_id  = $c + 0;
+                    my $uuid           = $shared_info->{broadcast_notifications}{$connection_id}->{uuid};
 
-                    $shared_info->{broadcast_notifications}{$c + 0}{'c'}            = $c;
-                    $shared_info->{broadcast_notifications}{$c + 0}{echo}           = $args;
-                    $shared_info->{broadcast_notifications}{$c + 0}{website_status} = $rpc_response;
+                    if ($req_storage->{args}->{subscribe}) {
+                        $uuid = _generate_uuid_string() unless $uuid;
 
-                    Scalar::Util::weaken($shared_info->{broadcast_notifications}{$c + 0}{'c'});
+                        $shared_info->{broadcast_notifications}{$connection_id}{'c'}            = $c;
+                        $shared_info->{broadcast_notifications}{$connection_id}{echo}           = $args;
+                        $shared_info->{broadcast_notifications}{$connection_id}{website_status} = $rpc_response;
+                        $shared_info->{broadcast_notifications}{$connection_id}{uuid}           = $uuid;
+
+                        Scalar::Util::weaken($shared_info->{broadcast_notifications}{$connection_id}{'c'});
+                    } else {
+                        $uuid = undef;
+                    }
 
                     ### to config
                     my $current_state = ws_redis_master()->get("NOTIFY::broadcast::state");
+                    $rpc_response->{clients_country} //= '';
+                    $website_status->{$_} = $rpc_response->{$_}
+                        for qw|api_call_limits clients_country supported_languages terms_conditions_version currencies_config|;
 
                     $current_state = eval { $json->decode(Encode::decode_utf8($current_state)) }
                         if $current_state && !ref $current_state;
@@ -86,23 +95,21 @@ sub website_status {
 
                     return {
                         website_status => $website_status,
-                        msg_type       => 'website_status'
+                        msg_type       => 'website_status',
+                        ($uuid ? (subscription => {id => $uuid}) : ()),
                     };
                 }
             });
     };
 
-    if (!$args->{subscribe} || $args->{subscribe} == 0) {
-        delete $shared_info->{broadcast_notifications}{$c + 0};
-        $callback->();
-        return;
-    }
-    if ($shared_info->{broadcast_notifications}{$c + 0}) {
-        $callback->();
+    $args->{subscribe} = 1 unless exists $args->{subscribe};
+
+    if ($args->{subscribe} && !$shared_info->{broadcast_notifications}{$c + 0}->{uuid}) {
+        $redis->subscribe([$channel_name], $callback);
         return;
     }
 
-    $redis->subscribe([$channel_name], $callback);
+    $callback->();
     return;
 }
 
@@ -139,11 +146,14 @@ sub send_notification {
         $website_status->{site_status} = $message->{site_status};
         $website_status->{message} = get_status_msg($c, $message->{message}) if $message->{message};
 
+        my $uuid = $client_shared->{uuid};
+
         $c->send({
                 json => {
                     website_status => $website_status,
                     echo_req       => $client_shared->{echo},
-                    msg_type       => 'website_status'
+                    msg_type       => 'website_status',
+                    ($uuid ? (subscription => {id => $uuid}) : ()),
                 }});
     }
     return;
@@ -291,10 +301,15 @@ sub ticks_history {
 
                     }
 
-                    # remove the cache_only flag which was set during subscription
-                    # TODO chylli to viewer: should we delete it if we used cache directly but not do a subscription? that is, we run callback directly, without subscribing ? I guess we shouldn't delete it
-                    $worker->clear_cache   if $worker;
-                    $worker->cache_only(0) if $worker;
+                    if ($worker) {
+                        # remove the cache_only flag which was set during subscription
+                        # TODO chylli to viewer: should we delete it if we used cache directly but not do a subscription? that is, we run callback directly, without subscribing ? I guess we shouldn't delete it
+                        $worker->clear_cache;
+                        $worker->cache_only(0);
+
+                        my $uuid = $worker->uuid();
+                        $rpc_response->{data}->{subscription}->{id} = $uuid if $uuid;
+                    }
 
                     return {
                         msg_type => $rpc_response->{type},
