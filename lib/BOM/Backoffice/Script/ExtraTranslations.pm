@@ -89,8 +89,7 @@ sub add_underlyings {
 
     my $fh = $self->pot_append_fh;
 
-    foreach my $underlying (@underlyings) {
-        next unless $underlying->{display_name};
+    foreach my $underlying (sort { $a->{display_name} cmp $b->{display_name} } grep { $_->{display_name} } @underlyings) {
         my $msgid = $self->msg_id($underlying->{display_name});
         if ($self->is_id_unique($msgid)) {
             print $fh "\n";
@@ -112,7 +111,7 @@ sub add_contract_types {
 
     my $contract_type_config = Finance::Contract::Category::get_all_contract_types();
 
-    foreach my $contract_type (keys %{$contract_type_config}) {
+    foreach my $contract_type (sort keys %{$contract_type_config}) {
         next if ($contract_type eq 'INVALID');
 
         if (my $display_name = $contract_type_config->{$contract_type}->{display_name}) {
@@ -136,22 +135,21 @@ sub add_contract_categories {
         map { Finance::Contract::Category->new($_) }
         LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config)
         ->values_for_key('contract_category');
-    foreach my $contract_category (@all_categories) {
-        if ($contract_category->display_name) {
-            my $msgid = $self->msg_id($contract_category->display_name);
-            if ($self->is_id_unique($msgid)) {
-                print $fh "\n";
-                print $fh $msgid . "\n";
-                print $fh "msgstr \"\"\n";
-            }
+
+    foreach my $contract_category (sort { $a->display_name cmp $b->display_name } grep { $_->display_name } @all_categories) {
+        my $msgid = $self->msg_id($contract_category->display_name);
+        if ($self->is_id_unique($msgid)) {
+            print $fh "\n";
+            print $fh $msgid . "\n";
+            print $fh "msgstr \"\"\n";
         }
-        if ($contract_category->explanation) {
-            my $msgid = $self->msg_id($contract_category->explanation);
-            if ($self->is_id_unique($msgid)) {
-                print $fh "\n";
-                print $fh $msgid . "\n";
-                print $fh "msgstr \"\"\n";
-            }
+    }
+    foreach my $contract_category (sort { $a->explanation cmp $b->explanation } grep { $_->explanation } @all_categories) {
+        my $msgid = $self->msg_id($contract_category->explanation);
+        if ($self->is_id_unique($msgid)) {
+            print $fh "\n";
+            print $fh $msgid . "\n";
+            print $fh "msgstr \"\"\n";
         }
     }
 
@@ -163,23 +161,22 @@ sub add_markets {
 
     my $fh = $self->pot_append_fh;
 
-    foreach my $market (Finance::Asset::Market::Registry->all) {
-        if ($market->display_name) {
-            my $msgid = $self->msg_id($market->display_name);
-            if ($self->is_id_unique($msgid)) {
-                print $fh "\n";
-                print $fh $msgid . "\n";
-                print $fh "msgstr \"\"\n";
-            }
-        }
+    my @markets = Finance::Asset::Market::Registry->all();
 
-        if ($market->explanation) {
-            my $msgid = $self->msg_id($market->explanation);
-            if ($self->is_id_unique($msgid)) {
-                print $fh "\n";
-                print $fh $msgid . "\n";
-                print $fh "msgstr \"\"\n";
-            }
+    foreach my $market (sort { $a->display_name cmp $b->display_name } grep { $_->display_name } @markets) {
+        my $msgid = $self->msg_id($market->display_name);
+        if ($self->is_id_unique($msgid)) {
+            print $fh "\n";
+            print $fh $msgid . "\n";
+            print $fh "msgstr \"\"\n";
+        }
+    }
+    foreach my $market (sort { $a->explanation cmp $b->explanation } grep { $_->explanation } @markets) {
+        my $msgid = $self->msg_id($market->explanation);
+        if ($self->is_id_unique($msgid)) {
+            print $fh "\n";
+            print $fh $msgid . "\n";
+            print $fh "msgstr \"\"\n";
         }
     }
     return;
@@ -190,23 +187,22 @@ sub add_submarkets {
 
     my $fh = $self->pot_append_fh;
 
-    foreach my $submarket (Finance::Asset::SubMarket::Registry->all) {
-        if ($submarket->display_name) {
-            my $msgid = $self->msg_id($submarket->display_name);
-            if ($self->is_id_unique($msgid)) {
-                print $fh "\n";
-                print $fh $msgid . "\n";
-                print $fh "msgstr \"\"\n";
-            }
-        }
+    my @sub_markets = Finance::Asset::SubMarket::Registry->all();
 
-        if ($submarket->explanation) {
-            my $msgid = $self->msg_id($submarket->explanation);
-            if ($self->is_id_unique($msgid)) {
-                print $fh "\n";
-                print $fh $msgid . "\n";
-                print $fh "msgstr \"\"\n";
-            }
+    foreach my $submarket (sort { $a->display_name cmp $b->display_name } grep { $_->display_name } @sub_markets) {
+        my $msgid = $self->msg_id($submarket->display_name);
+        if ($self->is_id_unique($msgid)) {
+            print $fh "\n";
+            print $fh $msgid . "\n";
+            print $fh "msgstr \"\"\n";
+        }
+    }
+    foreach my $submarket (sort { $a->explanation cmp $b->explanation } grep { $_->explanation } @sub_markets) {
+        my $msgid = $self->msg_id($submarket->explanation);
+        if ($self->is_id_unique($msgid)) {
+            print $fh "\n";
+            print $fh $msgid . "\n";
+            print $fh "msgstr \"\"\n";
         }
     }
 
@@ -219,7 +215,7 @@ sub add_longcodes {
     my $fh        = $self->pot_append_fh;
     my $longcodes = Finance::Contract::Longcode::get_longcodes();
 
-    foreach my $longcode (keys %$longcodes) {
+    foreach my $longcode (sort keys %$longcodes) {
         my $msgid = $self->msg_id($longcodes->{$longcode});
         if ($self->is_id_unique($msgid)) {
             print $fh "\n";
@@ -240,7 +236,7 @@ sub add_messages {
         BOM::User::Static::get_error_mapping(),    BOM::OAuth::Static::get_message_mapping());
 
     foreach my $message_mapping (@message_mappings) {
-        foreach my $message (keys %$message_mapping) {
+        foreach my $message (sort keys %$message_mapping) {
             my $msgid = $self->msg_id($message_mapping->{$message});
             if ($self->is_id_unique($msgid)) {
                 print $fh "\n";

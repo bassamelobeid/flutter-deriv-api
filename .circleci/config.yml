@@ -66,6 +66,28 @@ jobs:
         name: Code structure and syntax
     - store_test_results:
         path: /var/tmp/test-output
+  translations:
+    <<: *6
+    steps:
+    - *1
+    - checkout
+    - *2
+    - run:
+        <<: *5
+        command: |
+          cd /home/git/binary-com/translations-websockets-api
+          git config user.name "Automated translations build"
+          git config user.email "sysadmin@binary.com"
+          git fetch origin
+          git checkout master
+          git rebase origin/master
+          git merge origin/translations
+          ( cd /home/git/regentmarkets/bom-backoffice && make i18n )
+          git commit -am 'i18n'
+          git checkout translations
+          git merge master
+          git push --all
+        name: Automated translations
 version: 2
 workflows:
   build-workflow:
@@ -75,7 +97,13 @@ workflows:
     - core:
         context: perl
   daily:
-    jobs: *7
+    jobs:
+    - syntax:
+        context: perl
+    - core:
+        context: perl
+    - translations:
+        context: translation
     triggers:
     - schedule:
         cron: 4 20 * * *
