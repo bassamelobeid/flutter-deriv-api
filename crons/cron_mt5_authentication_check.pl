@@ -40,10 +40,9 @@ use constant MT5_ACCOUNT_DISABLE_DAYS      => 10;
 
 Send email to client to remind them to authenticate their account
 
-=cut 
+=cut
 
 sub send_email_authentication_reminder {
-
     my ($days_between_account_creation, $client, $data, $brands, $redis) = @_;
 
     # Edge case: if the email is sent but the number of days is more than five, we need to handle this
