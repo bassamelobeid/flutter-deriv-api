@@ -160,8 +160,7 @@ sub new_financial_mt5_signup {
     my $language = lc($data->{language} // 'en');
 
     my $client_email_template = localize(
-        "\
-    <p>Dear [_1],</p>
+        "<p>Dear [_1],</p>
     <p>Thank you for registering your MetaTrader 5 account.</p>
     <p>We are legally required to verify each client's identity and address. Therefore, we kindly request that you authenticate your account by submitting the following documents:
     <ul><li>A copy of a valid driving licence, identity card, or passport (front and back)</li><li>A copy of a utility bill or bank statement issued within the past six months</li><li>A photo of yourself (selfie) holding your driving licence, identity card, or passport</li></ul>
