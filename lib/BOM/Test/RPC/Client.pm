@@ -103,6 +103,15 @@ sub error_message_is {
     return $self;
 }
 
+sub error_details_is {
+    my ($self, $expected, $description) = @_;
+    my $result = $self->result    || {};
+    my $error  = $result->{error} || {};
+
+    $self->_test('is_deeply', $error->{details}, $expected, $description);
+    return $self;
+}
+
 sub result_is_deeply {
     my ($self, $expected, $description) = @_;
 

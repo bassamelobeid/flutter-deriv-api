@@ -8,6 +8,7 @@ use Date::Utility;
 use MooseX::Singleton;
 use Postgres::FeedDB;
 use Finance::Underlying;
+use BOM::User::Utility;
 
 use BOM::Database::ClientDB;
 use BOM::Database::Model::FinancialMarketBet::HigherLowerBet;
