@@ -68,7 +68,6 @@ test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test
 test_sendrecv_params 'new_account_real/test_send_placeholder.json', 'new_account_real/test_receive_cr.json',
     'Howde', 'Pann', '1980-11-31', 'id', 'Jakarta', '+612345678';
 test_sendrecv_params 'get_settings/test_send.json', 'new_account_real/test_recieve_get_settings.conf';
-
 # allowed to make mutliple call now as currency is set for existing account
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_cr.json',
     $suite->get_stashed('new_account_real/new_account_real/oauth_token'), 'testmultiple@binary.com', 'Howdee';

@@ -22,9 +22,10 @@ my $t = build_wsapi_test({language => 'EN'});
 #create client
 my $email      = 'dummy' . rand(999) . '@binary.com';
 my $client_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    email       => $email,
-    residence   => 'id',
+    broker_code    => 'CR',
+    email          => $email,
+    residence      => 'id',
+    place_of_birth => 'id',
 });
 $client_usd->set_default_account('USD');
 my $user_client = BOM::User->create(
@@ -39,9 +40,10 @@ my $client_token = BOM::Database::Model::AccessToken->new->create_token($client_
 $email = 'dummy' . rand(999) . '@binary.com';
 my $agent_name = 'Test Agent';
 my $agent_usd  = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    email       => $email,
-    residence   => 'id',
+    broker_code    => 'CR',
+    email          => $email,
+    residence      => 'id',
+    place_of_birth => 'id',
 });
 $agent_usd->set_default_account('USD');
 $agent_usd->payment_agent({

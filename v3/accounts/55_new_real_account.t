@@ -99,7 +99,9 @@ subtest 'new MX real account' => sub {
     subtest 'UK client - invalid postcode' => sub {
         my $res = $t->await::new_account_real({%details, address_postcode => ''});
 
-        is($res->{error}->{code}, 'invalid UK postcode', 'UK client must have postcode');
+        is($res->{error}->{code}, 'InsufficientAccountDetails', 'UK client must have postcode');
+        is_deeply($res->{error}->{details}, {missing => ['address_postcode']});
+
         is($res->{new_account_real}, undef, 'NO account created');
     };
 
@@ -148,18 +150,6 @@ subtest 'create account failed' => sub {
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
     $t->await::authorize({authorize => $token});
 
-    subtest 'insufficient info' => sub {
-        # create real acc
-        my %details = %client_details;
-        delete $details{residence};
-        delete $details{first_name};
-
-        my $res = $t->await::new_account_real(\%details);
-
-        is($res->{error}->{code}, 'InputValidationFailed', 'fail input validation');
-        is($res->{new_account_real}, undef, 'NO account created');
-    };
-
     subtest 'email unverified' => sub {
         $user->update_email_fields(email_verified => 'f');
 
@@ -206,6 +196,18 @@ subtest 'create account failed' => sub {
         my $res = $t->await::new_account_real({%details, date_of_birth => '2008-01-01'});
         is($res->{error}->{code},    'too young', 'min age unmatch');
         is($res->{new_account_real}, undef,       'NO account created');
+    };
+
+    subtest 'insufficient info' => sub {
+        # create real acc
+        my %details = %client_details;
+        delete $details{first_name};
+
+        my $res = $t->await::new_account_real(\%details);
+
+        is($res->{error}->{code}, 'InputValidationFailed', 'not enough info');
+        is_deeply($res->{error}->{details}, {first_name => 'is missing and it is required'}, "error info ok");
+        is($res->{new_account_real}, undef, 'NO account created');
     };
 
     subtest 'restricted or invalid country' => sub {

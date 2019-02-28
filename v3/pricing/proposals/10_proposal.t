@@ -46,7 +46,7 @@ is $res->{error}->{code}, 'InputValidationFailed', 'Correct failed due to input 
 
 $req->{amount} = "+100";
 $res = $t->await::proposal($req);
-is $res->{error}->{code}, undef  , 'Correct + sign in number, allowed due to coercion';
+is $res->{error}->{code}, undef, 'Correct + sign in number, allowed due to coercion';
 
 $req->{amount}   = "100";
 $req->{duration} = "100000000";
