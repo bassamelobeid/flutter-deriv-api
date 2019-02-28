@@ -67,6 +67,10 @@
                 "type":"string"
               }
             },
+            "requirements" : {
+              "type" : "object",
+              "description": "Legal requirements for the Landing Company"
+            },
             "legal_allowed_contract_categories":{
               "type":"array",
               "description": "Allowed contract types",
@@ -127,6 +131,10 @@
               "items":{
                 "type":"string"
               }
+            },
+            "requirements" : {
+              "type" : "object",
+              "description": "Legal requirements for the Landing Company"
             },
             "has_reality_check": {
               "type": "integer",

@@ -47,13 +47,11 @@
     "place_of_birth": {
       "type" : "string",
       "pattern": "^[a-z]{2}$",
-      "description": "Place of birth, 2-letter country code.",
-      "required": "1"
+      "description": "Place of birth, 2-letter country code."
     },
     "address_line_1": {
       "type" : "string",
-      "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#\/-]{1,70}$",
-      "required": "1"
+      "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#\/-]{1,70}$"
     },
     "address_line_2": {
       "type" : "string",
@@ -63,8 +61,7 @@
     "address_city": {
       "type" : "string",
       "pattern": "^[\\p{L}\\s'.-]{1,35}$",
-      "description": "Within 35 characters",
-      "required": "1"
+      "description": "Within 35 characters"
     },
     "address_state": {
       "type" : "string",
@@ -79,8 +76,7 @@
     "phone": {
       "type" : "string",
       "pattern": "^\\+?((-|\\s)*[0-9]){8,35}$",
-      "description": "Within 8-35 digits, allowing '+' in front, numbers, hyphens or space.",
-      "required": "1"
+      "description": "Within 8-35 digits, allowing '+' in front, numbers, hyphens or space."
     },
     "secret_question": {
       "enum": [ "Mother's maiden name", "Name of your pet", "Name of first love", "Memorable town/city", "Memorable date", "Favourite dish", "Brand of first car", "Favourite artist" ],

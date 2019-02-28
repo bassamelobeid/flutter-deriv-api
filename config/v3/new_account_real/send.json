@@ -1,13 +1,9 @@
 {
    "$schema" : "http://json-schema.org/draft-04/schema#",
    "required" : [
-      "address_line_1",
       "new_account_real",
-      "phone",
       "date_of_birth",
       "first_name",
-      "address_city",
-      "place_of_birth",
       "last_name",
       "salutation",
       "residence"

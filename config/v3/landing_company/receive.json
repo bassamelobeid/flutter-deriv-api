@@ -75,6 +75,11 @@
                             "type": "string",
                             "description": "Landing Company country of incorporation"
                         },
+                        "requirements" : {
+                          "type" : "object",
+                          "description": "Legal requirements for the Landing Company"
+                          
+                        },
                         "shortcode": {
                             "type": "string",
                             "description": "Landing Company short code"

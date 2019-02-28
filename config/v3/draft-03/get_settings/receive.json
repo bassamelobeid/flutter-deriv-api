@@ -111,6 +111,10 @@
         "user_hash": {
           "type": ["string", "null"],
           "description": "Hash generated using user details to verify whether the user is legitimate for our customer support system."
+        },
+        "has_secret_answer" : {
+           "enum" : [0, 1],
+           "description" : "Returns 1 if the client has a secret answer, 0 otherwise."
         }
       }
     },

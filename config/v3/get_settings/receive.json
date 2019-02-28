@@ -142,6 +142,10 @@
                   "null"
                ],
                "pattern" : "^[a-z]{0,2}$"
+            },
+            "has_secret_answer" : {
+               "enum" : [0, 1],
+               "description" : "Returns 1 if the client has a secret answer, 0 otherwise."
             }
          },
          "title" : "User Details",

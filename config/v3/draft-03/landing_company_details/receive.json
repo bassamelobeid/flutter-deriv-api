@@ -57,6 +57,10 @@
           "description": "Flag to indicate whether reality check is applicable for this Landing Company. 1: applicable, 0: not applicable. The Reality Check is a feature that gives a summary of the client's trades and account balances on a regular basis throughout his session, and is a regulatory requirement for certain Landing Companies.",
           "pattern": "^(1|0)$"
         },
+        "requirements" : {
+          "type" : "object",
+          "description": "Legal requirements for the Landing Company"
+        },
         "legal_allowed_contract_categories":{
           "type":"array",
           "items":{
