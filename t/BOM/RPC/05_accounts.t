@@ -1573,6 +1573,14 @@ subtest $method => sub {
     $params->{args} = {%full_args};
     delete $params->{args}{address_line_1};
 
+    $params->{args}{date_of_birth} = '1987-1-1';
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Your landing company does not allow date of birth to be changed.',
+        'date_of_birth not allow changed'
+    );
+    delete $params->{args}{date_of_birth};
+
     $params->{args}{place_of_birth} = 'xx';
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Please enter a valid place of birth.', 'place_of_birth no exists');
 

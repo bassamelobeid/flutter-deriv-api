@@ -1070,6 +1070,12 @@ rpc set_settings => sub {
         }
 
         if ($args->{date_of_birth}) {
+            $args->{date_of_birth} = BOM::Platform::Account::Real::default::format_date($args->{date_of_birth});
+
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'InvalidDateOfBirth',
+                    message_to_client => localize("Date of birth is invalid.")}) unless $args->{date_of_birth};
+
             if ($current_client->landing_company->is_field_changeable_before_auth('date_of_birth')) {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'PermissionDenied',
