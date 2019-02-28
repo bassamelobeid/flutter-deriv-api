@@ -213,16 +213,17 @@ subtest $method => sub {
         my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
         isnt $result->{error}->{code}, 'InvalidAccount', 'No error with duplicate details but residence not provided so it errors out';
 
-        $params->{args}->{residence} = 'id';
+        $params->{args}->{residence}      = 'id';
+        $params->{args}->{place_of_birth} = 'id';
 
         @{$params->{args}}{keys %$client_details} = values %$client_details;
-        delete $params->{args}->{first_name};
+        $params->{args}{citizen} = "at";
 
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
-            ->error_message_is('Please provide complete details for account opening.', 'It should return error if missing any details');
+        # These are here because our test helper function "create_client" creates a virtual client with details such as first name which never happens in production. This causes the new_account_real call to fail as it checks against some details can't be changed but is checked against the details of the virtual account
+        # $params->{args}{first_name} = $vclient->first_name;
+        # $params->{args}{last_name} = $vclient->last_name;
+        # $params->{args}{date_of_birth} = $vclient->date_of_birth;
 
-        $params->{args}->{first_name} = $client_details->{first_name};
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('email unverified', 'It should return error if email unverified')
             ->error_message_is('Your email address is unverified.', 'It should return error if email unverified');
@@ -345,6 +346,12 @@ subtest $method => sub {
         $params->{args}->{currency}       = 'LTC';
         $params->{args}->{citizen}        = 'af';
         $params->{args}->{place_of_birth} = 'af';
+
+        $rpc_ct->call_ok($method, $params)->has_error()->error_code_is('CannotChangeAccountDetails')
+            ->error_message_is('You may not change these account details.')->error_details_is({changed => ["citizen", "place_of_birth"]});
+
+        delete $params->{args}->{place_of_birth};
+        delete $params->{args}->{citizen};
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('create second crypto currency account')
             ->result_value_is(sub { shift->{currency} }, 'LTC', 'crypto account currency is LTC');
 
@@ -456,8 +463,8 @@ subtest $method => sub {
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
-            ->error_message_is('Please provide complete details for account opening.', 'It should return error if missing any details');
-
+            ->error_message_is('Please provide complete details for account opening.', 'It should return error if missing any details')
+            ->error_details_is({missing => ["tax_residence", "tax_identification_number", "first_name"]});
         $params->{args}->{first_name}  = $client_details->{first_name};
         $params->{args}->{residence}   = 'de';
         $params->{args}->{accept_risk} = 1;
@@ -476,7 +483,8 @@ subtest $method => sub {
             ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
             ->error_message_is('Please provide complete details for account opening.', 'It should return error if missing any details');
 
-        $client->citizen('at');
+        $params->{args}->{citizen} = 'at';
+
         $client->save;
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('email unverified', 'It should return error if email unverified')
@@ -499,12 +507,14 @@ subtest $method => sub {
         $client->save;
 
         $params->{args}->{citizen} = 'xx';
+
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InvalidCitizenship', 'Correct error code for invalid citizenship for maltainvest')
             ->error_message_is(
             'Sorry, our service is not available for your country of citizenship.',
             'Correct error message for invalid citizenship for maltainvest'
             );
+
         #if citizenship is from restricted country but residence is valid,it shouldn't throw any error
         $params->{args}->{citizen} = 'ir';
 
@@ -544,14 +554,15 @@ subtest $method => sub {
                 residence   => 'cz',
             });
             $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'MLT',
-                email       => $email,
-                residence   => 'cz',
-            });
+                    broker_code   => 'MLT',
+                    email         => $email,
+                    residence     => 'cz',
+                    secret_answer => BOM::User::Utility::encrypt_secret_answer('mysecretanswer')});
             $auth_token = BOM::Database::Model::AccessToken->new->create_token($client_mlt->loginid, 'test token');
 
             $user->add_client($client);
             $user->add_client($client_mlt);
+
         }
         'Initial users and clients';
     };
@@ -560,6 +571,7 @@ subtest $method => sub {
         $params->{args}->{accept_risk} = 1;
         $params->{token}               = $auth_token;
         $params->{args}->{residence}   = 'gb';
+        $params->{args}->{citizen}     = 'at';
 
         mailbox_clear();
 
@@ -568,14 +580,17 @@ subtest $method => sub {
         $params->{args}->{phone}         = '1234567890';
         $params->{args}->{date_of_birth} = '1990-09-09';
 
-        my $result        = $rpc_ct->call_ok($method, $params)->result;
-        my $new_loginid   = $result->{client_id};
-        my $auth_token_mf = BOM::Database::Model::AccessToken->new->create_token($new_loginid, 'test token');
+        # We have to delete these fields here as our test helper function creates clients with different fields than what is declared above in this file. Should change this.
+        delete $params->{args}->{secret_question};
+        delete $params->{args}->{secret_answer};
 
+        my $result = $rpc_ct->call_ok($method, $params)->result;
+        my $new_loginid = $result->{client_id};
+
+        my $auth_token_mf = BOM::Database::Model::AccessToken->new->create_token($new_loginid, 'test token');
         # make sure data is same, as in first account, regardless of what we have provided
         my $cl = BOM::User::Client->new({loginid => $new_loginid});
         is $client_mlt->$_, $cl->$_, "$_ is correct on created account" for qw/first_name last_name residence address_city phone date_of_birth/;
-
         $result = $rpc_ct->call_ok('get_settings', {token => $auth_token_mf})->result;
         is($result->{tax_residence}, 'de,nl', 'MF client has tax residence set');
         $result = $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token_mf})->result;
@@ -604,10 +619,10 @@ subtest $method => sub {
                 residence   => 'gb',
             });
             $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'MX',
-                email       => $email,
-                residence   => 'gb',
-            });
+                    broker_code   => 'MX',
+                    email         => $email,
+                    residence     => 'gb',
+                    secret_answer => BOM::User::Utility::encrypt_secret_answer('mysecretanswer')});
             $auth_token = BOM::Database::Model::AccessToken->new->create_token($client_mx->loginid, 'test token');
 
             $user->add_client($client);
@@ -632,7 +647,6 @@ subtest $method => sub {
         is $result->{error}->{code}, 'UnwelcomeAccount', 'Client marked as unwelcome';
 
         $client_mx->status->clear_unwelcome;
-
         $result = $rpc_ct->call_ok($method, $params)->result;
         is $result->{error}->{code}, undef, 'Allow to open even if Client KYC is pending';
 
@@ -682,10 +696,10 @@ subtest $method => sub {
             'Correct error message for virtual account trying to open maltainvest account without an mx account');
 
         $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'MX',
-            email       => $email,
-            residence   => 'gb',
-        });
+                broker_code   => 'MX',
+                email         => $email,
+                residence     => 'gb',
+                secret_answer => BOM::User::Utility::encrypt_secret_answer('mysecretanswer')});
         $auth_token = BOM::Database::Model::AccessToken->new->create_token($client_mx->loginid, 'test token');
         $params->{token} = $auth_token;
 
@@ -714,8 +728,10 @@ subtest $method => sub {
         $auth_token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
         $user->add_client($client);
 
-        $params->{token} = $auth_token;
-        $params->{args}->{residence} = 'de';
+        $params->{token}                   = $auth_token;
+        $params->{args}->{residence}       = 'de';
+        $params->{args}->{secret_answer}   = 'test';
+        $params->{args}->{secret_question} = 'test';
 
         $result = $rpc_ct->call_ok($method, $params)->result;
         ok $result->{client_id}, "Germany users can create MF account from the virtual account";

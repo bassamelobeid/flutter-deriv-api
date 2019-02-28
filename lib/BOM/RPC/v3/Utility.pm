@@ -177,6 +177,7 @@ sub get_token_details {
 sub create_error {
     my $args = shift;
     stats_inc("bom_rpc.v_3.error", {tags => ['code:' . $args->{code},]});
+
     return {
         error => {
             code              => $args->{code},
@@ -365,7 +366,9 @@ sub error_map {
         'InsufficientAccountDetails' => localize('Please provide complete details for account opening.'),
         'InvalidCitizenship'         => localize('Sorry, our service is not available for your country of citizenship.'),
         'InvalidDateFirstContact'    => localize('Date first contact is invalid.'),
-        'InvalidBrand'               => localize('Brand is invalid.')};
+        'InvalidBrand'               => localize('Brand is invalid.'),
+        'CannotChangeAccountDetails' => localize('You may not change these account details.'),
+    };
 }
 
 =head2 filter_siblings_by_landing_company

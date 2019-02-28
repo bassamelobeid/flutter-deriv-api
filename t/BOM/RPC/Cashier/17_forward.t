@@ -63,8 +63,9 @@ my $client_vr           = BOM::Test::Data::Utility::UnitTestDatabase::create_cli
     email       => $email
 });
 my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    email       => $email
+    broker_code    => 'CR',
+    email          => $email,
+    place_of_birth => 'id',
 });
 my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',

@@ -85,18 +85,21 @@ subtest 'call params validation' => sub {
     });
 
     $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => $email
+        broker_code    => 'CR',
+        email          => $email,
+        place_of_birth => 'id'
     });
 
     $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MLT',
-        email       => $email
+        broker_code    => 'MLT',
+        email          => $email,
+        place_of_birth => 'id'
     });
 
     $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MF',
-        email       => $email
+        broker_code    => 'MF',
+        email          => $email,
+        place_of_birth => 'id'
     });
 
     $user = BOM::User->create(
@@ -256,8 +259,9 @@ subtest 'validation' => sub {
 
     $email    = 'new_email' . rand(999) . '@binary.com';
     $cr_dummy = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => $email
+        broker_code    => 'CR',
+        email          => $email,
+        place_of_birth => 'id'
     });
 
     $user = BOM::User->create(
@@ -267,8 +271,9 @@ subtest 'validation' => sub {
     );
 
     $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => $email,
+        broker_code    => 'CR',
+        email          => $email,
+        place_of_birth => 'id'
     });
 
     $user->add_client($cr_dummy);
@@ -435,32 +440,37 @@ subtest 'transfer with fees' => sub {
     $client_cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
         email          => $email,
-        binary_user_id => $test_binary_user_id
+        binary_user_id => $test_binary_user_id,
+        place_of_birth => 'id',
     });
 
     $client_cr_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
         email          => $email,
-        binary_user_id => $test_binary_user_id
+        binary_user_id => $test_binary_user_id,
+        place_of_birth => 'id',
     });
 
     $client_cr_ust = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
         email          => $email,
-        binary_user_id => $test_binary_user_id
+        binary_user_id => $test_binary_user_id,
+        place_of_birth => 'id',
     });
 
     $client_cr_eur = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
         email          => $email,
-        binary_user_id => $test_binary_user_id
+        binary_user_id => $test_binary_user_id,
+        place_of_birth => 'id',
     });
 
     # create an unauthorised pa
     $client_cr_pa_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
         email          => $email,
-        binary_user_id => $test_binary_user_id
+        binary_user_id => $test_binary_user_id,
+        place_of_birth => 'id',
     });
 
     $client_cr_pa_btc->payment_agent({
@@ -505,25 +515,28 @@ subtest 'transfer with fees' => sub {
     $client_cr_pa_btc->save;
 
     $client_cr_usd->payment_free_gift(
-        currency => 'USD',
-        amount   => 1000,
-        remark   => 'free gift',
+        currency       => 'USD',
+        amount         => 1000,
+        remark         => 'free gift',
+        place_of_birth => 'id',
     );
 
     cmp_ok $client_cr_usd->default_account->balance, '==', 1000, 'correct balance';
 
     $client_cr_btc->payment_free_gift(
-        currency => 'BTC',
-        amount   => 1,
-        remark   => 'free gift',
+        currency       => 'BTC',
+        amount         => 1,
+        remark         => 'free gift',
+        place_of_birth => 'id',
     );
 
     cmp_ok $client_cr_btc->default_account->balance, '==', 1, 'correct balance';
 
     $client_cr_ust->payment_free_gift(
-        currency => 'UST',
-        amount   => 1000,
-        remark   => 'free gift',
+        currency       => 'UST',
+        amount         => 1000,
+        remark         => 'free gift',
+        place_of_birth => 'id',
     );
 
     cmp_ok $client_cr_ust->default_account->balance, '==', 1000, 'correct balance';
@@ -763,19 +776,22 @@ subtest 'transfer with no fee' => sub {
     $client_cr_pa_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
         email          => $email,
-        binary_user_id => $test_binary_user_id
+        binary_user_id => $test_binary_user_id,
+        place_of_birth => 'id',
     });
 
     $client_cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
         email          => $email,
-        binary_user_id => $test_binary_user_id
+        binary_user_id => $test_binary_user_id,
+        place_of_birth => 'id',
     });
 
     $client_cr_pa_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
         email          => $email,
-        binary_user_id => $test_binary_user_id
+        binary_user_id => $test_binary_user_id,
+        place_of_birth => 'id',
     });
 
     $user->add_client($client_cr_pa_btc);
@@ -892,7 +908,8 @@ subtest 'multi currency transfers' => sub {
     $client_cr_eur = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
         email          => $email,
-        binary_user_id => $test_binary_user_id
+        binary_user_id => $test_binary_user_id,
+        place_of_birth => 'id',
     });
     $user->add_client($client_cr_eur);
     $client_cr_eur->set_default_account('EUR');
@@ -969,7 +986,10 @@ subtest 'suspended currency transfers' => sub {
         email_verified => 1,
     );
 
-    my $client_cr_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    my $client_cr_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        place_of_birth => 'id',
+    });
     $client_cr_btc->set_default_account('BTC');
     $client_cr_btc->payment_free_gift(
         currency => 'BTC',
@@ -977,7 +997,10 @@ subtest 'suspended currency transfers' => sub {
         remark   => 'free gift',
     );
 
-    my $client_cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    my $client_cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        place_of_birth => 'id',
+    });
     $client_cr_usd->set_default_account('USD');
     $client_cr_usd->payment_free_gift(
         currency => 'USD',

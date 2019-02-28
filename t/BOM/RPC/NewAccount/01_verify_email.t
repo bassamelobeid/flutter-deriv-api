@@ -205,5 +205,4 @@ subtest 'Payment withdraw' => sub {
     );
     ok !$msg, 'no email as token email different from passed email';
 };
-
 done_testing();

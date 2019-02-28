@@ -35,6 +35,7 @@
         "occupation": "Managers",
         "employment_status": "Self-Employed",
         "source_of_wealth": "Company Ownership",
-        "accept_risk": "[_4]"
+        "accept_risk": "[_4]",
+        "account_opening_reason": "Hedging"
     }
 }

@@ -72,7 +72,8 @@ subtest 'CR - USD' => sub {
     # Initialise a CR test account and email and set USD as the currency
     my $email  = 'test-cr-usd@binary.com';
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
+        broker_code    => 'CR',
+        place_of_birth => 'id',
     });
     $client->set_default_account('USD');
 
@@ -186,7 +187,8 @@ subtest 'CR-EUR' => sub {
     # Initialise a CR test account and email and set USD as the currency
     my $email  = 'test-cr-eur@binary.com';
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
+        broker_code    => 'CR',
+        place_of_birth => 'id',
     });
     $client->set_default_account('EUR');
 
@@ -277,7 +279,8 @@ subtest 'CR-BTC' => sub {
     # Initialise a CR test account and email and set BTC as the currency
     my $email  = 'test-cr-BTC@binary.com';
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
+        broker_code    => 'CR',
+        place_of_birth => 'id',
     });
     $client->set_default_account('BTC');
 
@@ -376,7 +379,8 @@ subtest 'MLT' => sub {
     # Initialise a MLT test account and email and set EUR as the currency
     my $email  = 'test-mlt@binary.com';
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MLT',
+        broker_code    => 'MLT',
+        place_of_birth => 'id',
     });
     $client->set_default_account('EUR');
 
@@ -461,7 +465,8 @@ subtest 'MX' => sub {
     # Initialise a MX test account and email and set EUR as the currency
     my $email  = 'test-mlt@binary.com';
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MX',
+        broker_code    => 'MX',
+        place_of_birth => 'id',
     });
     $client->set_default_account('EUR');
 

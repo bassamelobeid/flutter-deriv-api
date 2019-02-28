@@ -864,6 +864,8 @@ rpc paymentagent_withdraw => sub {
     return $error_sub->(localize('You cannot perform this action, as your account is withdrawal locked.'))
         if $client->status->withdrawal_locked;
 
+    return $error_sub->(localize('Your account is missing required details for withdrawal.')) if ($client->missing_requirements('withdrawal'));
+
     return $error_sub->(localize('You cannot perform this action, as your verification documents have expired.')) if $client->documents_expired;
 
     return $error_sub->(
@@ -1158,9 +1160,10 @@ rpc transfer_between_accounts => sub {
         if $client->status->disabled;
     return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is cashier locked.'))
         if $client->status->cashier_locked;
-
     return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is withdrawal locked.'))
         if $client->status->withdrawal_locked;
+    return _transfer_between_accounts_error(localize('Your account is missing required details for withdrawal.'))
+        if ($client->missing_requirements('withdrawal'));
     return _transfer_between_accounts_error(localize('Your cashier is locked as per your request.')) if $client->cashier_setting_password;
 
     my $args = $params->{args};

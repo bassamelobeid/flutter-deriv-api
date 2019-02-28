@@ -243,7 +243,6 @@ rpc new_account_real => sub {
         if $client->landing_company->short eq 'maltainvest';
 
     $client->residence($args->{residence}) unless $client->residence;
-
     my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'real', $args);
     return $error if $error;
 
@@ -253,11 +252,13 @@ rpc new_account_real => sub {
     my $broker = LandingCompany::Registry->new->get($company)->broker_codes->[0];
 
     my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, $broker, $params->{source});
+
     my $error_map = BOM::RPC::v3::Utility::error_map();
-    if (my $err = $details_ref->{error}) {
+    if ($details_ref && $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => $err,
-                message_to_client => $error_map->{$err}});
+                code              => $details_ref->{error},
+                message_to_client => $details_ref->{message_to_client} // $error_map->{$details_ref->{error}},
+                details           => $details_ref->{details}});
     }
 
     my $user = $client->user;
@@ -267,7 +268,6 @@ rpc new_account_real => sub {
     my $val = _update_professional_existing_clients($clients, $professional_status, $professional_requested);
 
     return $val if $val;
-
     my $acc = BOM::Platform::Account::Real::default::create_account({
         ip => $params->{client_ip} // '',
         country => uc($client->residence // ''),
@@ -356,10 +356,10 @@ rpc new_account_maltainvest => sub {
     my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, 'MF', $params->{source});
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => $err,
-                message_to_client => $error_map->{$err}});
+                code              => $details_ref->{error},
+                message_to_client => $error_map->{$details_ref->{error}},
+                details           => $details_ref->{details}});
     }
-
     # When a Binary (Europe) Ltd/Binary (IOM) Ltd account is created,
     # the 'place of birth' field is not present.
     # After creating Binary (Europe) Ltd/Binary (IOM) Ltd account, client can select

@@ -1291,6 +1291,7 @@ subtest $method => sub {
             'request_professional_status'    => 0,
             'citizen'                        => 'at',
             'user_hash'                      => hmac_sha256_hex($user_cr->email, BOM::Config::third_party()->{elevio}->{account_secret}),
+            'has_secret_answer'              => 1,
         });
 
     $params->{token} = $token1;
@@ -1300,11 +1301,12 @@ subtest $method => sub {
     is_deeply(
         $c->tcall($method, $params),
         {
-            'email'         => 'abc@binary.com',
-            'country'       => 'Indonesia',
-            'country_code'  => 'id',
-            'email_consent' => '0',
-            'user_hash'     => hmac_sha256_hex($user->email, BOM::Config::third_party()->{elevio}->{account_secret}),
+            'email'             => 'abc@binary.com',
+            'country'           => 'Indonesia',
+            'country_code'      => 'id',
+            'email_consent'     => '0',
+            'has_secret_answer' => '1',
+            'user_hash'         => hmac_sha256_hex($user->email, BOM::Config::third_party()->{elevio}->{account_secret}),
         },
         'vr client return less messages'
     );
@@ -1533,17 +1535,14 @@ subtest $method => sub {
     # Need to delete this parameter so this next call returns the error of interest
     delete $params->{args}{residence};
     my %full_args = (
-        address_line_1 => 'address line 1',
-        address_line_2 => 'address line 2',
-        address_city   => 'address city',
-        address_state  => 'BA',
-        phone          => '2345678',
-        place_of_birth => undef,
-    );
-    is(
-        $c->tcall($method, $params)->{error}{message_to_client},
-        'Input validation failed: account opening reason',
-        'real account without account opening reason has to set it'
+        address_line_1  => 'address line 1',
+        address_line_2  => 'address line 2',
+        address_city    => 'address city',
+        address_state   => 'BA',
+        phone           => '2345678',
+        secret_question => 'testq',
+        secret_answer   => 'testa',
+        place_of_birth  => undef,
     );
 
     $params->{args}{residence} = 'kr';
@@ -1552,6 +1551,15 @@ subtest $method => sub {
     $params->{args} = {%{$params->{args}}, %full_args};
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', 'real account cannot update residence');
     $params->{args} = {%full_args};
+
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Already have a secret_answer.', 'Cannot send secret_answer if already exists');
+    delete $params->{args}{secret_answer};
+
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Already have a secret_question.', 'Cannot send secret_question if already exists');
+    delete $params->{args}{secret_question};
+
+    delete $full_args{secret_question};
+    delete $full_args{secret_answer};
 
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
@@ -1571,9 +1579,7 @@ subtest $method => sub {
     $params->{args}{place_of_birth} = 'de';
     is($c->tcall($method, $params)->{status}, 1, 'can update without sending all required fields');
 
-    is($c->tcall($method, $params)->{status}, 1, 'can send account_opening_reason with same value');
-
-    is($c->tcall($method, $params)->{status}, 1, 'can send place_of_birth with same value');
+    is($c->tcall($method, $params)->{status}, 1, 'can send set_settings with same value');
     {
         local $full_args{place_of_birth} = 'at';
         $params->{args} = {%full_args};
@@ -1739,11 +1745,6 @@ subtest $method => sub {
 
     $params->{token} = $token_mx;
     $params->{args}{account_opening_reason} = 'Income Earning';
-    is(
-        $c->tcall($method, $params)->{error}{message_to_client},
-        'Input validation failed: address_postcode',
-        'postcode is required for MX clients and cannot be set to null'
-    );
 
     # setting account settings for one client also updates for clients that have a different landing company
     $params->{token} = $token_mlt;
@@ -2046,7 +2047,6 @@ subtest 'get and set self_exclusion' => sub {
             leverage       => 100,
         },
     };
-
     my $mt5_loginid = $c->tcall('mt5_new_account', $mt5_params)->{login};
     is($mt5_loginid, $DETAILS{login}, 'MT5 loginid is correct: ' . $mt5_loginid);
 

@@ -1009,6 +1009,14 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $Alice->status->clear_withdrawal_locked;
         $Alice->save;
 
+        $Alice->place_of_birth('');
+        $Alice->save;
+        $test = 'Withdraw fails if missing place of birth';
+        $res  = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
+        like($res->{error}{message_to_client}, qr/Your account is missing required details for withdrawal./, $test);
+        $Alice->place_of_birth('id');
+        $Alice->save;
+
         $test = 'Withdraw fails if client authentication documents are expired';
         $auth_document_args->{expiration_date} = '1999-12-31';
         my ($doc) = $Alice->add_client_authentication_document($auth_document_args);

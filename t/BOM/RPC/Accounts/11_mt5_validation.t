@@ -20,8 +20,9 @@ my $user = BOM::User->create(
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    citizen     => 'at',
+    broker_code    => 'CR',
+    citizen        => 'at',
+    place_of_birth => 'at'
 });
 $test_client->set_default_account('USD');
 $test_client->save();
@@ -36,8 +37,8 @@ subtest 'new account' => sub {
         language => 'EN',
         token    => 12345,
         args     => {
-            mainPassword   => 'Abc123',
-            investPassword => 'dummy',
+            mainPassword   => 'Abc1234d',
+            investPassword => 'Abcd12345e',
         },
     };
     $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'check invalid token');
@@ -55,15 +56,7 @@ subtest 'new account' => sub {
     $c->call_ok($method, $params)->has_error->error_message_is('Invalid account type.', 'Correct error message for invalid account type');
     $params->{args}->{account_type} = 'demo';
 
-    my $residence = $test_client->residence;
-
-    $test_client->residence('');
-    $test_client->save;
-
-    $c->call_ok($method, $params)->has_error->error_message_is('Please set your country of residence.', 'Residence not set');
-
-    $test_client->residence($residence);
-    $test_client->save;
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
     my $citizen = $test_client->citizen;
 
@@ -85,6 +78,18 @@ subtest 'new account' => sub {
     $c->call_ok($method, $params)->has_error->error_message_is('Invalid sub account type.', 'Invalid sub account type error message');
 
     $params->{args}->{account_type} = 'financial';
+
+    my $pob = $test_client->place_of_birth;
+
+    $test_client->place_of_birth('');
+    $test_client->save();
+
+    $c->call_ok($method, $params)->has_error->error_code_is("MissingBasicDetails")->error_message_is("Please fill in your account details")
+        ->error_details_is({missing => ["place_of_birth"]});
+
+    $test_client->place_of_birth($pob);
+    $test_client->save();
+
     delete $params->{args}->{mt5_account_type};
     $c->call_ok($method, $params)->has_error->error_message_is('Invalid sub account type.', 'Sub account mandatory for financial');
 
@@ -101,7 +106,9 @@ subtest 'new account' => sub {
         residence   => 'fr',
     });
     $test_client->set_default_account('EUR');
+    $test_client->account_opening_reason("test");
     $test_client->save();
+
     $user->add_client($test_client);
 
     $m               = BOM::Database::Model::AccessToken->new;

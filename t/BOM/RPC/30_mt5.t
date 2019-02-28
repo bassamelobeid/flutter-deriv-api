@@ -103,6 +103,13 @@ my %financial_data = (
     "source_of_wealth"                     => "Company Ownership",
 );
 
+my %basic_details = (
+    place_of_birth            => "af",
+    tax_residence             => "af",
+    tax_identification_number => "1122334455",
+    account_opening_reason    => "testing"
+);
+
 $test_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
 $test_client->save;
 
@@ -115,6 +122,33 @@ my $token_vr = $m->create_token($test_client_vr->loginid, 'test token');
 # Throttle function limits requests to 1 per minute which may cause
 # consecutive tests to fail without a reset.
 BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+
+subtest 'new account without basic details' => sub {
+
+    my $method = 'mt5_new_account';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type   => 'gaming',
+            country        => 'mt',
+            email          => $DETAILS{email},
+            name           => $DETAILS{name},
+            investPassword => 'Abcd1234',
+            mainPassword   => $DETAILS{password},
+            leverage       => 100,
+        },
+    };
+
+    $c->call_ok($method, $params)->has_error('error from missing basic details')
+        ->error_code_is('MissingBasicDetails', 'error code for missing basic details')->error_details_is({missing => ['place_of_birth']});
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+
+    # Set field
+    $test_client->place_of_birth("id");
+    $test_client->save;
+};
 
 subtest 'new account' => sub {
     my $method = 'mt5_new_account';
@@ -174,6 +208,7 @@ subtest 'MF should be allowed' => sub {
 
     my $mf_client = create_client('MF');
     $mf_client->set_default_account('EUR');
+    $mf_client->$_($basic_details{$_}) for keys %basic_details;
     $mf_client->save();
 
     $user->add_client($mf_client);
@@ -213,6 +248,7 @@ subtest 'MF to MLT account switching' => sub {
     $mlt_switch_client->residence('at');
 
     $mf_switch_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
+    $mf_switch_client->$_($basic_details{$_}) for keys %basic_details;
 
     $mf_switch_client->save();
     $mlt_switch_client->save();
@@ -274,6 +310,7 @@ subtest 'MLT to MF account switching' => sub {
     $mlt_switch_client->residence('at');
 
     $mf_switch_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
+    $mlt_switch_client->$_($basic_details{$_}) for keys %basic_details;
 
     $mf_switch_client->save();
     $mlt_switch_client->save();
@@ -781,9 +818,9 @@ subtest 'mf_deposit' => sub {
 };
 
 subtest 'multi currency transfers' => sub {
-    my $client_eur = create_client('CR');
-    my $client_btc = create_client('CR');
-    my $client_ust = create_client('CR');
+    my $client_eur = create_client('CR', undef, {place_of_birth => 'id'});
+    my $client_btc = create_client('CR', undef, {place_of_birth => 'id'});
+    my $client_ust = create_client('CR', undef, {place_of_birth => 'id'});
     $client_eur->set_default_account('EUR');
     $client_btc->set_default_account('BTC');
     $client_ust->set_default_account('UST');
@@ -1153,5 +1190,4 @@ sub _get_mt5transfer_from_transaction {
         });
     return $result;
 }
-
 done_testing();

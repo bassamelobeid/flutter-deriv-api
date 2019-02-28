@@ -163,5 +163,4 @@ subtest 'check_password' => sub {
     $status = $user_cr->login(password => $new_password);
     is $status->{success}, 1, 'cr login with new password OK';
 };
-
 done_testing();

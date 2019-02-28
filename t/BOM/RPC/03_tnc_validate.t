@@ -13,13 +13,16 @@ use utf8;
 use Data::Dumper;
 use Email::Stuffer::TestLinks;
 
-my $email       = 'dummy@binary.com';
+my $email = 'dummy@binary.com';
+
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MX',
 });
+
 my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
+
 $test_client->email($email);
 $test_client->save;
 $test_client_cr->email($email);

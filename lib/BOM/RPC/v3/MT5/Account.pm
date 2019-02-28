@@ -235,7 +235,12 @@ async_rpc mt5_new_account => sub {
             code              => 'InvalidAccountType',
             message_to_client => localize('Invalid account type.')});
     return $invalid_account_type_error if (not $account_type or $account_type !~ /^demo|gaming|financial$/);
-
+    if (($account_type ne "demo") && (my @arr = $client->missing_requirements("mt5_signup"))) {
+        return create_error_future({
+                code              => 'MissingBasicDetails',
+                message_to_client => localize('Please fill in your account details'),
+                details           => {missing => [@arr]}});
+    }
     return create_error_future({
             code              => 'NoCitizen',
             message_to_client => localize('Please set citizenship for your account.')})
@@ -258,9 +263,6 @@ async_rpc mt5_new_account => sub {
 
     # legal validation
     my $residence = $client->residence;
-    return create_error_future({
-            code              => 'NoResidence',
-            message_to_client => localize('Please set your country of residence.')}) unless $residence;
 
     my $brand              = Brands->new(name => request()->brand);
     my $countries_instance = $brand->countries_instance;

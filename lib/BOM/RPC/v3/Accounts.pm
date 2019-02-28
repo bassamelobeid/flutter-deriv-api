@@ -16,7 +16,7 @@ use Try::Tiny;
 use WWW::OneAll;
 use Date::Utility;
 use HTML::Entities qw(encode_entities);
-use List::Util qw(any none sum0 first);
+use List::Util qw(any sum0 first);
 use Digest::SHA qw(hmac_sha256_hex);
 
 use Brands;
@@ -321,6 +321,7 @@ sub __build_landing_company {
         legal_allowed_contract_categories => $lc->legal_allowed_contract_categories,
         has_reality_check                 => $lc->has_reality_check ? 1 : 0,
         currency_config                   => market_pricing_limits($payout_currencies, $lc->short, $lc->legal_allowed_markets),
+        requirements                      => $lc->requirements,
         changeable_fields                 => $lc->changeable_fields,
     };
 }
@@ -940,6 +941,7 @@ rpc get_settings => sub {
         country       => $country,
         country_code  => $country_code,
         email_consent => ($user and $user->{email_consent}) ? 1 : 0,
+        has_secret_answer => ($client->secret_answer) ? 1 : 0,
         (
               ($user and BOM::Config::third_party()->{elevio}{account_secret})
             ? (user_hash => hmac_sha256_hex($user->email, BOM::Config::third_party()->{elevio}{account_secret}))
@@ -1012,6 +1014,20 @@ rpc set_settings => sub {
         # real client is not allowed to update residence
         return BOM::RPC::v3::Utility::permission_error() if $residence;
 
+        for my $detail (qw (secret_answer secret_question)) {
+            if ($args->{$detail} && $current_client->$detail) {
+                return BOM::RPC::v3::Utility::create_error({
+                        code              => 'PermissionDenied',
+                        message_to_client => localize("Already have a $detail.")});
+            }
+        }
+
+        if ($args->{secret_answer} xor $args->{secret_question}) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'PermissionDenied',
+                    message_to_client => localize("Need both secret_question and secret_answer")});
+        }
+
         if ($args->{account_opening_reason}) {
             if ($current_client->landing_company->is_field_changeable_before_auth('account_opening_reason')) {
                 return BOM::RPC::v3::Utility::create_error({
@@ -1028,12 +1044,6 @@ rpc set_settings => sub {
                     and $args->{account_opening_reason} ne $current_client->account_opening_reason);
             }
         }
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InputValidationFailed',
-                message_to_client => localize("Input validation failed: account opening reason"),
-                details           => {
-                    account_opening_reason => "is missing and it is required",
-                }}) if (not $current_client->account_opening_reason and not $args->{account_opening_reason});
 
         if ($args->{place_of_birth}) {
 
@@ -1230,15 +1240,6 @@ rpc set_settings => sub {
         }
     }
 
-    # can not update citizenship once it is set
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'PermissionDenied',
-            message_to_client => localize('Citizenship cannot be changed after authentication.')})
-        if (defined $args->{'citizen'}
-        and $current_client->citizen
-        and $args->{'citizen'} ne $current_client->citizen
-        and $current_client->fully_authenticated());
-
     my $now                    = Date::Utility->new;
     my $address1               = $args->{'address_line_1'} // $current_client->address_1;
     my $address2               = ($args->{'address_line_2'} // $current_client->address_2) // '';
@@ -1253,6 +1254,8 @@ rpc set_settings => sub {
     my $first_name             = $args->{'first_name'} // $current_client->first_name;
     my $last_name              = $args->{'last_name'} // $current_client->last_name;
     my $account_opening_reason = $args->{'account_opening_reason'} // $current_client->account_opening_reason;
+    my $secret_answer          = $args->{secret_answer} ? BOM::User::Utility::encrypt_secret_answer($args->{secret_answer}) : '';
+    my $secret_question        = $args->{secret_question} // '';
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'PermissionDenied',
@@ -1274,8 +1277,8 @@ rpc set_settings => sub {
     return BOM::RPC::v3::Utility::create_error({
             code              => 'PermissionDenied',
             message_to_client => localize('Citizenship is required.')}
-    ) if ($current_client->landing_company->citizen_required && (!defined $citizen || $citizen eq ''));
 
+    ) if ((any { $_ eq "citizen" } $current_client->landing_company->requirements->{signup}->@*) && !$citizen);
     if ($args->{'citizen'}
         && !defined $brand->countries_instance->countries->country_from_code($args->{'citizen'}))
     {
@@ -1343,6 +1346,8 @@ rpc set_settings => sub {
         $client->salutation($salutation);
         $client->first_name($first_name);
         $client->last_name($last_name);
+        $client->secret_answer($secret_answer)     if $secret_answer;
+        $client->secret_question($secret_question) if $secret_question;
 
         $client->latest_environment($now->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
 
@@ -1444,6 +1449,7 @@ rpc set_settings => sub {
     });
     BOM::User::AuditLog::log('Your settings have been updated successfully', $current_client->loginid);
     BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $current_client->loginid});
+
     return {status => 1};
 };
 
