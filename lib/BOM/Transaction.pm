@@ -1387,16 +1387,13 @@ sub sell_expired_contracts {
             next;
         }
 
+        # if contract is not expired, don't bother to do anything
+        next unless $contract->is_expired;
+
         my $logging_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code}
             or warn "No logging class found for contract type " . $contract->code;
         $logging_class //= 'INVALID';
         $stats_attempt{$logging_class}++;
-        if (not $contract->is_settleable) {
-            $stats_failure{$logging_class}{'NotExpired'}++;
-            $failure->{reason} = 'not expired';
-            push @{$result->{failures}}, $failure;
-            next;
-        }
 
         try {
             if ($contract->is_valid_to_sell) {
@@ -1451,8 +1448,9 @@ sub sell_expired_contracts {
             } else {
                 my $cpve = $contract->primary_validation_error;
                 if ($cpve) {
-                    $stats_failure{$logging_class}{_normalize_error($cpve)}++;
-                    $failure->{reason} = $cpve->message;
+                    my ($error_msg, $reason) = !$contract->is_settleable ? ('NotExpired', 'not expired') : (_normalize_error($cpve), $cpve->message);
+                    $stats_failure{$logging_class}{$error_msg}++;
+                    $failure->{reason} = $reason;
                 } else {
                     $failure->{reason} = "Unknown failure in sell_expired_contracts, shortcode: " . $contract->shortcode;
                     warn 'validation error missing when contract is invalid to sell, shortcode['

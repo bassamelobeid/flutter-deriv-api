@@ -48,20 +48,20 @@ my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
 
 $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
 
-my $now = Date::Utility->new;
+my $now = Date::Utility->new->minus_time_interval('1s');
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol        => $_,
-        recorded_date => Date::Utility->new,
+        recorded_date => $now,
     }) for qw(JPY USD JPY-USD);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
     {
         symbol => 'R_50',
-        date   => Date::Utility->new
+        date   => $now
     });
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -205,6 +205,8 @@ subtest 'potential loss', sub {
     subtest 'non_financial' => sub {
         my $contract = produce_contract({
             underlying   => $r50,
+            date_start   => $now,
+            date_pricing => $now,
             bet_type     => 'CALL',
             currency     => 'USD',
             payout       => 100,
@@ -251,6 +253,8 @@ subtest 'potential loss', sub {
     subtest 'financial' => sub {
         my $contract = produce_contract({
             underlying   => $usdjpy,
+            date_start   => $now,
+            date_pricing => $now,
             bet_type     => 'CALL',
             currency     => 'USD',
             payout       => 100,
@@ -345,6 +349,8 @@ subtest 'realized loss' => sub {
 
     subtest 'non_financial' => sub {
         my $contract = produce_contract({
+            date_start   => $now,
+            date_pricing => $now,
             underlying   => $r50,
             bet_type     => 'CALL',
             currency     => 'USD',
@@ -392,6 +398,8 @@ subtest 'realized loss' => sub {
 
     subtest 'financial' => sub {
         my $contract = produce_contract({
+            date_start   => $now,
+            date_pricing => $now,
             underlying   => $usdjpy,
             bet_type     => 'CALL',
             currency     => 'USD',
