@@ -3,8 +3,9 @@ use warnings;
 use Test::MockTime::HiRes;
 use Guard;
 use JSON::MaybeXS;
+use Date::Utility;
 
-use Test::More (tests => 4);
+use Test::More (tests => 5);
 use Test::Exception;
 use Test::Warn;
 use Test::MockModule;
@@ -346,3 +347,39 @@ sub create_mf_acc {
     });
 }
 
+subtest 'validate_dob of create account' => sub {
+    my $age = 23;
+    my $mock_request = Test::MockModule->new('Brands::Countries');
+    $mock_request->mock('minimum_age_for_country', sub { return $age });
+    my $dob_result;
+    
+    my $minimum_date = Date::Utility->new->_minus_years($age);
+    my $specific_date = Date::Utility->new('2016-02-29');
+    my %data_dob_valid = (
+        $minimum_date->date_yyyymmdd                                    => undef,
+        $specific_date->minus_time_interval($age . 'y')->date_yyyymmdd  => undef,
+        $minimum_date->minus_time_interval(1 . 'y')->date_yyyymmdd      => undef,
+        $minimum_date->minus_time_interval(30 . 'd')->date_yyyymmdd     => undef,
+        $minimum_date->minus_time_interval(1 . 'd')->date_yyyymmdd      => undef
+        );
+    my %data_dob_invalid = (
+        "13-03-21"                                                     => {error => 'InvalidDateOfBirth'},
+        "1913-03-00"                                                   => {error => 'InvalidDateOfBirth'},
+        "1993-13-11"                                                   => {error => 'InvalidDateOfBirth'},
+        "1923-04-32"                                                   => {error => 'InvalidDateOfBirth'},
+        $minimum_date->plus_time_interval(1 . 'y')->date_yyyymmdd      => {error => 'too young'},
+        $minimum_date->plus_time_interval(30 . 'd')->date_yyyymmdd     => {error => 'too young'},
+        $minimum_date->plus_time_interval(1 . 'd')->date_yyyymmdd      => {error => 'too young'}
+        );
+        
+    foreach my $key (keys %data_dob_valid) {
+        $dob_result = BOM::Platform::Account::Real::default::validate_dob($key,'ee');
+        my $value = $data_dob_valid{$key};
+        is($dob_result, $value , "Successfully validate_dob $key");
+    }
+    foreach my $key (keys %data_dob_invalid) {
+        my $dob_result_hash = BOM::Platform::Account::Real::default::validate_dob($key,'ee');
+        my $value_hash = $data_dob_invalid{$key};
+        is($dob_result_hash->{error}, $value_hash->{error} , "validate_dob gets error $key");
+    }
+};

@@ -193,15 +193,11 @@ sub validate_account_details {
     $affiliate_token = delete $args->{affiliate_token} if (exists $args->{affiliate_token});
     $details->{myaffiliates_token} = $affiliate_token || $client->myaffiliates_token || '';
 
-    if ($args->{date_of_birth} and $args->{date_of_birth} =~ /^(\d{4})-(\d\d?)-(\d\d?)$/) {
-        my $dob_error;
-        try {
-            $args->{date_of_birth} = Date::Utility->new($args->{date_of_birth})->date;
-        }
-        catch {
-            $dob_error = {error => 'InvalidDateOfBirth'};
-        };
-        return $dob_error if $dob_error;
+    if ($args->{date_of_birth}) {
+        $args->{date_of_birth} = format_date($args->{date_of_birth});
+        return {error => 'InvalidDateOfBirth'} unless $args->{date_of_birth};
+        my $error = validate_dob($args->{date_of_birth}, $client->residence);
+        return $error if $error;
     }
 
     if ($args->{secret_answer} xor $args->{secret_question}) {
@@ -322,21 +318,49 @@ sub fields_cannot_change {
     return qw(citizen place_of_birth);
 }
 
+=head2 validate_dob
+
+check if client's date of birth is valid, meaning the client is older than residence's minimum age
+
+=over 4
+
+=item * C<dob> - client's date of birth in format of date_yyyymmdd means 1988-02-12
+
+=item * C<residence> - client's residence
+
+=back
+
+return undef if client is older than residence's minimum age
+otherwise return error hash
+
+=cut
+
 sub validate_dob {
     my ($dob, $residence) = @_;
-    # mininum age check: Estonia = 21, others = 18
-    my $dob_date     = Date::Utility->new($dob);
-    my $minimumAge   = ($residence eq 'ee') ? 21 : 18;
-    my $now          = Date::Utility->new;
-    my $mmyy         = $now->months_ahead(-12 * $minimumAge);
-    my $day_of_month = $now->day_of_month;
-    # we should pay special attention to 02-29 because maybe there is no such date $minimumAge years ago
-    if ($day_of_month == 29 && $now->month == 2) {
-        $day_of_month = $day_of_month - 1;
-    }
-    my $cutoff = Date::Utility->new($day_of_month . '-' . $mmyy);
-    return {error => 'too young'} if $dob_date->is_after($cutoff);
+
+    my $dob_date = try { Date::Utility->new($dob) };
+    return {error => 'InvalidDateOfBirth'} unless $dob_date;
+
+    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
+    return {error => 'invalid country'} if !defined $countries_instance;
+
+    # Get the minimum age from the client's residence
+    my $min_age = $countries_instance->minimum_age_for_country($residence);
+    return {error => 'invalid residence'} unless $min_age;
+    my $minimum_date = Date::Utility->new->minus_time_interval($min_age . 'y');
+    return {error => 'too young'} if $dob_date->is_after($minimum_date);
     return undef;
+}
+
+sub format_date {
+    my $date = shift;
+    try {
+        return Date::Utility->new($date)->date;
+    }
+    catch {
+        return undef;
+    };
+
 }
 
 1;
