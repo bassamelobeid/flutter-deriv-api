@@ -53,6 +53,7 @@ my %new_client_details = (
     address_line_1  => 'ADDR 1',
     address_city    => 'Cyberjaya',
     phone           => '+60123456789',
+    place_of_birth  => 'br',
     secret_question => "Mother's maiden name",
     secret_answer   => 'blah',
 );

@@ -803,8 +803,8 @@ sub send_new_client_email {
 $client_loginid - Name and Address
 
 
-		 $client_name 
-		@{[ join "\n\t\t" => @address, Locale::Country::code2country($self->residence) ]}
+         $client_name 
+        @{[ join "\n\t\t" => @address, Locale::Country::code2country($self->residence) ]}
 
 IP was @{[ $ip // 'unknown' ]} (country @{[ $ip_country // 'unknown' ]})
 EOF
@@ -1047,6 +1047,26 @@ sub get_mt5_details {
         zipCode => $self->postcode,
         country => Locale::Country::Extra->new()->country_from_code($self->residence),
     };
+}
+
+=head2 missing_requirements
+
+Returns a list of missing entries of fields of a given requirement (defaults to signup requirement).
+
+=cut
+
+sub missing_requirements {
+    my $self = shift;
+    my $requirement = shift // "signup";
+
+    my $requirements = $self->landing_company->requirements->{$requirement};
+    my @missing;
+
+    for my $detail (@$requirements) {
+        push(@missing, $detail) unless $self->$detail;
+    }
+
+    return @missing;
 }
 
 1;
