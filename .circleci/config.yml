@@ -72,6 +72,8 @@ jobs:
     - *1
     - checkout
     - *2
+    - *3
+    - *4
     - run:
         <<: *5
         command: |
