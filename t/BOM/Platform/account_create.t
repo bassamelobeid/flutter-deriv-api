@@ -211,13 +211,13 @@ subtest 'create account' => sub {
     };
 
     $t_details{place_of_birth} = 'xx';
-    my $details = BOM::Platform::Account::Real::default::validate_account_details(\%t_details, $vr_client,$broker , 1);
-    is $details->{error} , 'InvalidPlaceOfBirth', 'invalid place of birth returns correct error';
+    my $details = BOM::Platform::Account::Real::default::validate_account_details(\%t_details, $vr_client, $broker, 1);
+    is $details->{error}, 'InvalidPlaceOfBirth', 'invalid place of birth returns correct error';
 
     $t_details{place_of_birth} = '';
-    $details = BOM::Platform::Account::Real::default::validate_account_details(\%t_details, $vr_client,$broker , 1);
-    is $details->{error} , undef, 'no error for empty place of birth';
-    
+    $details = BOM::Platform::Account::Real::default::validate_account_details(\%t_details, $vr_client, $broker, 1);
+    is $details->{error}, undef, 'no error for empty place of birth';
+
     # real acc
     lives_ok {
         $real_acc = BOM::Platform::Account::Real::default::create_account({

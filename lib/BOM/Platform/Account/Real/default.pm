@@ -16,7 +16,7 @@ use BOM::Database::ClientDB;
 use BOM::Config;
 use BOM::Config::Runtime;
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Context qw(request);
+use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Client::Sanctions;
 
 sub validate {
@@ -44,6 +44,7 @@ sub validate {
 
     if ($details) {
         my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
+
         if ($details->{citizen}
             && !defined $countries_instance->countries->country_from_code($details->{citizen}))
         {
@@ -202,64 +203,123 @@ sub validate_account_details {
         };
         return $dob_error if $dob_error;
     }
+
+    if ($args->{secret_answer} xor $args->{secret_question}) {
+        return {
+            error             => 'PermissionDenied',
+            message_to_client => localize("Need both secret_question and secret_answer")};
+    }
+
     return {error => 'InvalidPlaceOfBirth'}
         if ($args->{place_of_birth} and not Locale::Country::code2country($args->{place_of_birth}));
 
     my $lc = LandingCompany::Registry->get_by_broker($broker);
-    foreach my $key (get_account_fields($lc->short)) {
-        my $value = $args->{$key};
-        # as we are going to support multiple accounts per landing company
-        # so we need to copy secret question and answer from old clients
-        # if present else we will take the new one
-        $value = $client->secret_question || $value if ($key eq 'secret_question');
 
-        if ($key eq 'secret_answer') {
-            if (my $answer = $client->secret_answer) {
-                $value = $answer;
-            } elsif ($value) {
-                $value = BOM::User::Utility::encrypt_secret_answer($value);
+    unless ($client->is_virtual) {
+        for my $field (fields_to_duplicate()) {
+            if ($field eq "secret_answer") {
+                $args->{$field} ||= BOM::User::Utility::decrypt_secret_answer($client->$field);
+            } else {
+                $args->{$field} ||= $client->$field;
             }
         }
-
-        if (not $client->is_virtual) {
-            $value ||= $client->$key;
-        }
-        # we need to store null for these fields not blank if not defined
-        $details->{$key} = (grep { $key eq $_ } qw /place_of_birth tax_residence tax_identification_number/) ? $value : $value // '';
-
-        # account fields place_of_birth tax_residence tax_identification_number
-        # are optional for all except financial account
-        next
-            if (any { $key eq $_ }
-            qw(address_line_2 address_state address_postcode salutation place_of_birth tax_residence tax_identification_number));
-        return {error => 'InsufficientAccountDetails'} if (not $details->{$key});
     }
 
-    # it's not a standard way, we need to refactor this sub later to
-    # to remove reference to database columns name from code
-    # need to check broker here as its upgrade from MLT so
-    # landing company would be malta not maltainvest
-    if ($broker eq 'MF') {
-        foreach my $field (qw /place_of_birth tax_residence tax_identification_number/) {
-            return {error => 'InsufficientAccountDetails'} unless $args->{$field};
-            $details->{$field} = $args->{$field};
+    if (my @missing = grep { !$args->{$_} } required_fields($lc)) {
+        return {
+            error   => 'InsufficientAccountDetails',
+            details => {missing => [@missing]}};
+    }
+
+    unless ($client->is_virtual) {
+        my @changed;
+
+        for my $field (fields_cannot_change()) {
+            if ($args->{$field} && $client->$field) {
+                my $client_field;
+                if ($field eq "secret_answer") {
+                    $client_field = BOM::User::Utility::decrypt_secret_answer($client->$field);
+                } else {
+                    $client_field = $client->$field;
+                }
+
+                push(@changed, $field) if $client_field && ($client_field ne $args->{$field});
+            }
+        }
+        if (@changed) {
+            return {
+                error   => 'CannotChangeAccountDetails',
+                details => {changed => [@changed]}};
         }
     }
 
-    # Client cannot change citizenship if already set
-    $details->{citizen} = ($client->citizen || $args->{citizen}) // '';
-    return {error => 'InsufficientAccountDetails'} if ($lc->citizen_required && !$details->{citizen});
+    $args->{secret_answer} = BOM::User::Utility::encrypt_secret_answer($args->{secret_answer}) if $args->{secret_answer};
 
-    $details->{place_of_birth} = ($client->place_of_birth || $args->{place_of_birth}) // '';
+    # This exist to accommodate some rules in our database (mostly NOT NULL and NULL constraints). Should change to be more consistent. Also used to filter the args to return for new account creation.
+    my %default_values = (
+        citizen                   => '',
+        salutation                => '',
+        first_name                => '',
+        last_name                 => '',
+        date_of_birth             => '',
+        residence                 => '',
+        address_line_1            => '',
+        address_line_2            => '',
+        address_city              => '',
+        address_state             => '',
+        address_postcode          => '',
+        phone                     => '',
+        secret_question           => '',
+        secret_answer             => '',
+        place_of_birth            => '',
+        tax_residence             => '',
+        tax_identification_number => '',
+        account_opening_reason    => '',
+        place_of_birth            => undef,
+        tax_residence             => undef,
+        tax_identification_number => undef
+    );
+
+    for my $field (keys %default_values) {
+        $details->{$field} = $args->{$field} // $default_values{$field};
+    }
 
     return {details => $details};
 }
 
-sub get_account_fields {
-    my @account_fields = qw(salutation first_name last_name date_of_birth residence address_line_1 address_line_2
-        address_city address_state address_postcode phone secret_question secret_answer place_of_birth
-        tax_residence tax_identification_number account_opening_reason);
-    return @account_fields;
+=head2 required_fields
+
+Returns an array of required fields given a landing company
+
+=cut
+
+sub required_fields {
+    my $lc = shift;
+
+    return $lc->requirements->{signup}->@*;
+}
+
+=head2 fields_to_duplicate
+
+Returns an array of the fields that should be duplicated between clients
+
+=cut
+
+sub fields_to_duplicate {
+    return
+        qw(citizen salutation first_name last_name date_of_birth residence address_line_1 address_line_2 address_city address_state address_postcode phone secret_question secret_answer place_of_birth tax_residence tax_identification_number account_opening_reason);
+}
+
+=head2 fields_cannot_change
+
+Returns an array of the fields that can't be changed if they have been set before
+
+Note: Currently only used for citizen but will expand it's use after refactoring (or be changed completely following the clientdb -> userdb changes)
+
+=cut
+
+sub fields_cannot_change {
+    return qw(citizen place_of_birth);
 }
 
 sub validate_dob {
