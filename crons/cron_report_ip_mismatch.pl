@@ -30,49 +30,27 @@ use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
 my $redis = BOM::Config::RedisReplicated::redis_write;
-use constant REDIS_MASTERKEY => 'IP_COUNTRY_MISMATCH';
-my @allkeys = @{$redis->hkeys(REDIS_MASTERKEY)};
-my @compiled_data;
+use constant REDIS_MASTERKEY     => 'IP_COUNTRY_MISMATCH';
+use constant REDIS_TRACK_CHECKED => 'CHECKED_ID';
+my %ip_mismatch_data = @{$redis->hgetall(REDIS_MASTERKEY)};
+my %client_retry_que;
+my %landing_company_data;
+my @mt5_retry_que;
 
-my %mt5_checks = map { $_ => 1 } LandingCompany::Registry::get_mt5_check_broker_codes();
+for my $loginid (keys %ip_mismatch_data) {
+    my $raw_data     = $ip_mismatch_data{$loginid};
+    my $decoded_data = decode_json($raw_data);
+    my $broker_code  = $decoded_data->{broker_code};
+    $decoded_data->{client_loginid} = $loginid;
 
-# get the list of MT5 accounts, check if any of them
-# This check checks if the account have any 'real\vanautu_standard' MT5 account.
-sub mt5_check_real_vanuatu {
-    my ($loginid, $broker_code) = @_;
-    return 1 unless exists $mt5_checks{$broker_code};
-
-    # not sending any values into mt5_logins will not trigger call to MT5 server
-    my @mt5_list = BOM::User->new(loginid => $loginid)->mt5_logins('');
-
-    my $check_flag;
-    if (@mt5_list) {
-        for (@mt5_list) {
-            $_ =~ s/[A-Z]+//g;
-            my $mt5_group = Cache::RedisDB->get('MT5_USER_GROUP', $_);
-            Cache::RedisDB->redis->lpush('MT5_USER_GROUP_PENDING', join(':', $_, time)) unless defined $mt5_group;
-            $mt5_group //= 'unknown';
-            $check_flag = 1 if ($mt5_group eq 'real\vanuatu_standard');
-            last if ($check_flag);
-        }
-    }
-    return $check_flag;
-}
-
-my %lc_data;
-
-foreach my $loginid (@allkeys) {
-    my $each_data = decode_json $redis->hget(REDIS_MASTERKEY, $loginid);
-    next unless mt5_check_real_vanuatu($loginid, $each_data->{broker_code});
-    $each_data->{client_loginid} = $loginid;
-    push @{$lc_data{$each_data->{broker_code}}}, $each_data;
+    push @{$landing_company_data{$broker_code}}, $decoded_data;
 }
 
 my $list_ip_mismatch_email;
 BOM::Backoffice::Request::template()->process(
     "backoffice/mismatch_ip_records.html.tt",
     {
-        all_data => \%lc_data,
+        all_data => \%landing_company_data,
     },
     \$list_ip_mismatch_email
 ) || die BOM::Backoffice::Request::template()->error();
@@ -89,3 +67,6 @@ send_email({
 
 # clear redis after sending email.
 $redis->del(REDIS_MASTERKEY);
+$redis->del(REDIS_TRACK_CHECKED);
+
+1;
