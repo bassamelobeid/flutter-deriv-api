@@ -194,8 +194,7 @@ rpc logout => sub {
         my ($loginid, $scopes) = ($token_details and exists $token_details->{loginid}) ? @{$token_details}{qw/loginid scopes/} : ();
 
         # if the $loginid is not undef, then only check for ip_mismatch.
-        # PS: changing password will trigger logout, however, in that process, $loginid is not sent in, causing error in this linr
-        if ($loginid) {
+        # PS: changing password will trigger logout, however, in that process, $loginid is not sent in, causing error in this line        if ($loginid) {
             my $client = BOM::User::Client->new({
                 loginid      => $loginid,
                 db_operation => 'replica'
