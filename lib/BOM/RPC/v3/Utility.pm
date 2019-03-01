@@ -46,6 +46,7 @@ use BOM::Platform::Token;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Client::CashierValidation;
 use BOM::MarketData qw(create_underlying);
+use BOM::Platform::Event::Emitter;
 
 use Exporter qw(import export_to_level);
 our @EXPORT_OK = qw(longcode);
@@ -805,18 +806,25 @@ Saves the mismatches in redis so cron_report_ip_mismatch can send an email to th
 
 sub check_ip_country {
     my %data  = @_;
-    my $redis = BOM::Config::RedisReplicated::redis_write;
-    use constant REDIS_MASTERKEY => 'IP_COUNTRY_MISMATCH';
+    my $redis = BOM::Config::RedisReplicated::redis_write();
+    use constant REDIS_MASTERKEY     => 'IP_COUNTRY_MISMATCH';
+    use constant REDIS_TRACK_CHECKED => 'CHECKED_ID';
 
     return undef unless $data{country_code};
+    # preventing it from rechecking the same id again and again
+    return undef unless ($redis->hsetnx(REDIS_TRACK_CHECKED, $data{client_login_id}, 1));
 
     if (uc($data{client_residence}) ne uc($data{country_code})) {
-        my $json_record = encode_json({
-                date_time        => Date::Utility->new()->datetime_ddmmmyy_hhmmss_TZ(),
-                client_residence => uc $data{client_residence},
-                ip_address       => $data{client_ip},
-                ip_country       => uc $data{country_code},
-                broker_code      => $data{broker_code}});
+
+        my $compiled_data = {
+            date_time        => Date::Utility->new()->datetime_ddmmmyy_hhmmss_TZ(),
+            client_residence => uc $data{client_residence},
+            ip_address       => $data{client_ip},
+            ip_country       => uc $data{country_code},
+            broker_code      => $data{broker_code},
+            loginid          => $data{client_login_id}};
+
+        my $json_record = encode_json($compiled_data);
         $redis->hset(REDIS_MASTERKEY, $data{client_login_id} => $json_record);
     }
 

@@ -15,15 +15,17 @@ subtest 'check if test saves ' => sub {
     my $mock_country_code     = 'MY';
     my $mock_client_login_id  = 'MX1234567';
     my $redis_masterkey       = 'IP_COUNTRY_MISMATCH';
+    my $check_flag            = 'always';
+    my $redis                 = BOM::Config::RedisReplicated::redis_write();
 
     BOM::RPC::v3::Utility::check_ip_country(
         client_residence => $mock_client_residence,
         client_ip        => $mock_client_ip,
         country_code     => $mock_country_code,
-        client_login_id  => $mock_client_login_id
+        client_login_id  => $mock_client_login_id,
+        check_flag       => $check_flag
     );
 
-    my $redis = BOM::Config::RedisReplicated::redis_write;
     ok(defined $redis->hget($redis_masterkey, $mock_client_login_id), "redis record exists and defined");
     my $data = decode_json $redis->hget($redis_masterkey, $mock_client_login_id);
     ok($data->{ip_country} eq $mock_country_code,           "Correct country_ip");

@@ -126,17 +126,13 @@ rpc authorize => sub {
         }
     } elsif (length $token == 32 && $token =~ /^a1-/) {
         $token_type = 'oauth_token';
+        BOM::RPC::v3::Utility::check_ip_country(
+            client_residence => $client->{residence},
+            client_ip        => $params->{client_ip},
+            country_code     => $params->{country_code},
+            client_login_id  => $params->{token_details}->{loginid},
+            broker_code      => $client->{broker_code}) if $client->landing_company->ip_check_required;
     }
-
-    (my $client_broker_code = $loginid) =~ s/\d+//g;
-
-    BOM::RPC::v3::Utility::check_ip_country(
-        client_residence => $client->{residence},
-        client_ip        => $params->{client_ip},
-        country_code     => $params->{country_code},
-        client_login_id  => $params->{token_details}->{loginid},
-        broker_code      => $client_broker_code
-    ) if $client->landing_company->ip_check_required;
 
     my $_get_account_details = sub {
         my ($clnt, $curr) = @_;
@@ -196,6 +192,18 @@ rpc logout => sub {
     if (my $email = $params->{email}) {
         my $token_details = $params->{token_details};
         my ($loginid, $scopes) = ($token_details and exists $token_details->{loginid}) ? @{$token_details}{qw/loginid scopes/} : ();
+
+        my $client = BOM::User::Client->new({
+            loginid      => $loginid,
+            db_operation => 'replica'
+        });
+
+        BOM::RPC::v3::Utility::check_ip_country(
+            client_residence => $client->{residence},
+            client_ip        => $params->{client_ip},
+            country_code     => $params->{country_code},
+            client_login_id  => $params->{token_details}->{loginid},
+            broker_code      => $client->{broker_code}) if $client->landing_company->ip_check_required;
 
         if (my $user = BOM::User->new(email => $email)) {
             my $skip_login_history;
