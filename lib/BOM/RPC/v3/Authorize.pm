@@ -188,8 +188,6 @@ rpc authorize => sub {
 
 rpc logout => sub {
     my $params = shift;
-    use Data::Dumper;
-    warn Dumper($params);
 
     if (my $email = $params->{email}) {
         my $token_details = $params->{token_details};
