@@ -200,12 +200,12 @@ rpc logout => sub {
 
         # if the $loginid is not undef, then only check for ip_mismatch.
         # PS: changing password will trigger logout, however, in that process, $loginid is not sent in, causing error in this linr
-        if ($loginid){
+        if ($loginid) {
             my $client = BOM::User::Client->new({
                 loginid      => $loginid,
                 db_operation => 'replica'
             });
-    
+
             BOM::RPC::v3::Utility::check_ip_country(
                 client_residence => $client->{residence},
                 client_ip        => $params->{client_ip},
