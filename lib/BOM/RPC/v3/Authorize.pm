@@ -198,12 +198,21 @@ rpc logout => sub {
             db_operation => 'replica'
         });
 
-        BOM::RPC::v3::Utility::check_ip_country(
-            client_residence => $client->{residence},
-            client_ip        => $params->{client_ip},
-            country_code     => $params->{country_code},
-            client_login_id  => $params->{token_details}->{loginid},
-            broker_code      => $client->{broker_code}) if $client->landing_company->ip_check_required;
+        # if the $loginid is not undef, then only check for ip_mismatch.
+        # PS: changing password will trigger logout, however, in that process, $loginid is not sent in, causing error in this linr
+        if ($loginid){
+            my $client = BOM::User::Client->new({
+                loginid      => $loginid,
+                db_operation => 'replica'
+            });
+    
+            BOM::RPC::v3::Utility::check_ip_country(
+                client_residence => $client->{residence},
+                client_ip        => $params->{client_ip},
+                country_code     => $params->{country_code},
+                client_login_id  => $params->{token_details}->{loginid},
+                broker_code      => $client->{broker_code}) if $client->landing_company->ip_check_required;
+        }
 
         if (my $user = BOM::User->new(email => $email)) {
             my $skip_login_history;
