@@ -22,12 +22,15 @@ git pull --rebase
 ( cd /home/git/regentmarkets/bom-backoffice && make i18n )
 
 # Now sync up both the translations and the master
-# branches, ensuring everything is committed and pushed
-git commit -am 'i18n'
-git checkout master
-git pull --rebase
-git merge translations
-git push --all
+# branches, ensuring everything is committed and pushed.
+# Some builds may not have any work to do, so we guard this
+# with an `if` rather than letting it cause a failure.
+if git commit -am 'i18n'; then
+    git checkout master
+    git pull --rebase
+    git merge translations
+    git push --all
+fi
 
 # At this point we can unlock Weblate and get things moving again
 echo '{"lock":false}' | curl -X POST -d '@-' -H "Content-Type: application/json" -H "Authorization: Token $WEBLATE_TOKEN" https://hosted.weblate.org/api/components/binary-websocket/translations/lock/
