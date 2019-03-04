@@ -86,14 +86,14 @@ subtest 'MT5 Manager Tests' => sub {
                 my $message_decoded = decode_json_utf8(substr($message, 0, $message_length, ''));
 
                 ok($message_length > 0, 'message length shoule be set');
-                is($message_decoded->{text},       'Hello World', 'message was encoded correctly');
-                is($message_decoded->{request_id}, 0,             'request id has been set');         # the first request is 0
-                ok($message_decoded->{api_key}, 'MT5 shared secret has been set');
+                is($message_decoded->{text}, 'Hello World', 'message was encoded correctly');
+                ok($message_decoded->{request_id}, 'request id has been set');
+                ok($message_decoded->{api_key},    'MT5 shared secret has been set');
                 is($message,                         $CRLF, 'message trailed with CRLF');
                 is(@{$manager->{_pending_requests}}, 1,     'request have been queued');
             });
 
-        my $request = $manager->_send_message({text => 'Hello World'});
+        my $request = $manager->_send_message({text => 'Hello World'}, "1");
 
         $loop->remove($manager);
     };
@@ -158,13 +158,11 @@ subtest 'MT5 Manager Tests' => sub {
         }
         'adjust_balance should be called with a comment';
 
-        warnings_exist {
-            my $result = $manager->adjust_balance(1233, 10, 'comment')->get;
+        my $result = $manager->adjust_balance(1233, 10, 'comment')->get;
 
-            is($result->{success},    0,    'success should be 0 if so returned by MT5');
-            is($result->{error_code}, 3000, 'error code shoule be carried as well');
-        }
-        [qr/faild to execute/], "Expected warning is thrown";
+        is($result->{success},    0,    'success should be 0 if so returned by MT5');
+        is($result->{error_code}, 3000, 'error code shoule be carried as well');
+
     };
 };
 

@@ -8,6 +8,9 @@ use JSON;
 use IPC::Run3;
 use Try::Tiny;
 use BOM::MT5::User::Manager;
+use Log::Any qw($log);
+use Log::Any::Adapter qw(File), '/var/log/httpd/bom-MT5-tracking.log', log_level => $ENV{BOM_LOG_LEVEL} // 'info';
+use Data::UUID;
 
 use IO::Async::Loop;
 # Overrideable in unit tests
@@ -252,14 +255,25 @@ sub withdrawal {
         type        => '2'                 # enum DEAL_BALANCE = 2
     };
 
+    my $request_UUID = Data::UUID->new()->create_str();
+
+    # send a dummy request to MT5 manager bridge to compare result later
+    manager_api_withdrawal({
+            login        => $args->{login},
+            amount       => $amount,
+            comment      => $args->{comment},
+            request_UUID => $request_UUID,
+        })->retain();
+
     return _invoke_mt5('UserDepositChange', $param)->then(
         sub {
             my ($hash) = @_;
 
             if ($hash->{error}) {
+                $log->info("{success: 0, request_id: $request_UUID, error: {err_descr: $hash->{error} }");
                 return Future->done({error => $hash->{error}});
             }
-
+            $log->info("{success: 1, request_id: $request_UUID }");
             return Future->done({status => 1});
         });
 }
@@ -292,7 +306,7 @@ sub manager_api_withdrawal {
         warn "Amount should be < 0";
         return Future->done({error => 'internal error'});
     }
-    return _mt5_manager->adjust_balance($args->{login}, $amount, $args->{comment})->then(
+    return _mt5_manager->adjust_balance($args->{login}, $amount, $args->{comment}, $args->{request_UUID})->then(
         sub {
             my ($hash) = @_;
 

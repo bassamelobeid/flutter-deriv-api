@@ -9,6 +9,7 @@ use Encode;
 use YAML ();
 use JSON::MaybeUTF8 qw(:v1);
 use Try::Tiny;
+use Data::UUID;
 
 use IO::Async::Stream;
 use IO::Async::SSL;
@@ -96,8 +97,7 @@ sub _resolve_request_future {
 }
 
 sub _get_request_id {
-    state $request_id = 0;
-    return $request_id++;
+    return Data::UUID->new()->create_str();
 }
 
 sub _clean_up {
@@ -112,10 +112,10 @@ sub _clean_up {
 }
 
 sub _send_message {
-    my ($self, $message) = @_;
+    my ($self, $message, $request_UUID) = @_;
     return $self->_connected->then(
         sub {
-            $message->{request_id} = "${\$self->_get_request_id}";
+            $message->{request_id} = $request_UUID;
             $message->{api_key}    = $mt5_config->{api_key};
             my $message_string = encode_json_utf8($message);
 
@@ -146,7 +146,7 @@ sub _parse_message {
 }
 
 sub adjust_balance {
-    my ($self, $login, $amount, $comment) = @_;
+    my ($self, $login, $amount, $comment, $request_UUID) = @_;
     return Future->fail('MT5 user id is required')     unless $login;
     return Future->fail('Transfer amount is required') unless $amount;
     return Future->fail('Comment is mandatory')        unless length $comment;
@@ -156,22 +156,15 @@ sub adjust_balance {
         args   => [$login + 0, $amount + 0, $comment],
     };
 
-    return $self->_send_message($message)->then(
+    return $self->_send_message($message, $request_UUID)->then(
         sub {
             my ($message) = @_;
             return Future->done($message) if $message->{success};
-            warn "faild to execute 'adjust_balance' error:" . $message->{error}{err_descr};
             return Future->done({
                     success    => 0,
                     error      => 'internal error',
                     error_code => $message->{error}->{err_code}});
         });
-}
-
-sub DEMOLISH {
-    my $self = shift;
-    $self->_clean_up;
-    return;
 }
 
 1;
