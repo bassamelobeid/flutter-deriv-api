@@ -156,7 +156,7 @@ table#client_edit td{
     <tr>
         <td class="label">Residence</td>
         <td>:
-            <select name="residence" disabled="disabled">
+            <select name="residence" [% IF NOT can_change_residence %]disabled="disabled"[% END %]>
                 [% IF client.residence == "" %]
                     <option value="" selected="selected">Select Residence</option>
                 [% ELSE %]
@@ -170,7 +170,7 @@ table#client_edit td{
                    <option value="[% country_codes.$country %]">[% country %]</option>
                 [% END %]
             [% END %]
-            </select>&nbsp;<span style="color:red;">Country can't be changed</span>
+            </select>[% IF NOT can_change_residence %]&nbsp;<span style="color:red;">Country can't be changed</span>[% END %]
         </td>
     </tr>
     <tr>

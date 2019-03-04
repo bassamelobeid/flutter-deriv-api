@@ -84,15 +84,17 @@ my $user = $client->user;
 
 my @user_clients;
 push @user_clients, $client;
-foreach my $lid (sort keys %{$user->bom_loginid_details}) {
+foreach my $lid ($user->bom_loginids) {
     next if ($lid eq $client->loginid);
 
     push @user_clients, BOM::User::Client->new({loginid => $lid});
 }
 
-my $broker         = $client->broker;
-my $encoded_broker = encode_entities($broker);
-my $clerk          = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my @mt_logins = sort grep { /^MT\d+$/ } $user->loginids;
+my $is_virtual_only = (@user_clients == 1 and @mt_logins == 0 and $client->is_virtual);
+my $broker          = $client->broker;
+my $encoded_broker  = encode_entities($broker);
+my $clerk           = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 if ($input{del_document_list}) {
     my $documents = $input{del_document_list};
@@ -413,12 +415,15 @@ if ($input{delete_existing_192}) {
 # SAVE DETAILS
 # TODO:  Once we switch to userdb, we will not need to loop through all clients
 if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
-    # save all clients except VR
     my @clients_to_update;
-    foreach my $cli (@user_clients) {
-        next if $cli->is_virtual;
-
-        push @clients_to_update, $cli;
+    if ($is_virtual_only) {
+        # When there are no real accounts, CS still needs to be able to change the residence.
+        # However, the code here enables them to change all client details. It is not a big
+        # deal; virtual client details are not used once real clients are added.
+        push @clients_to_update, $client;
+    } else {
+        # Save real clients only
+        push @clients_to_update, grep { not $_->is_virtual } @user_clients;
     }
 
     # Active client specific update details:
@@ -843,8 +848,6 @@ if ($link_acc) {
     print $link_acc;
 }
 
-my @mt_logins = sort grep { /^MT\d+$/ } $user->loginids;
-
 print "<p>Corresponding accounts: </p><ul>";
 
 # show all BOM loginids for user, include disabled acc
@@ -901,7 +904,7 @@ print qq[<form action="$self_post?loginID=$encoded_loginid" id="clientInfoForm" 
     <input type="submit" value="Save Client Details">
     <input type="hidden" name="broker" value="$encoded_broker">];
 
-print_client_details($client);
+print_client_details($client, $is_virtual_only);
 
 my $INPUT_SELECTOR = 'input:not([type="hidden"]):not([type="submit"]):not([type="reset"]):not([type="button"])';
 

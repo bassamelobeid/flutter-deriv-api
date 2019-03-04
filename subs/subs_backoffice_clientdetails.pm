@@ -113,7 +113,8 @@ sub get_professional_status {
 
 sub print_client_details {
 
-    my $client = shift;
+    my $client          = shift;
+    my $is_virtual_only = shift;
 
     # IDENTITY SECTION
     my @salutation_options = BOM::Backoffice::FormAccounts::GetSalutations();
@@ -279,7 +280,8 @@ sub print_client_details {
         ukgc_funds_status                  => $client->status->ukgc_funds_protection,
         tax_residence                      => \@tax_residences,
         tax_residences_countries_name      => $tax_residences_countries_name,
-        cashier_allow_payment_agent_status => $client->status->pa_withdrawal_explicitly_allowed
+        cashier_allow_payment_agent_status => $client->status->pa_withdrawal_explicitly_allowed,
+        can_change_residence               => $is_virtual_only,
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
