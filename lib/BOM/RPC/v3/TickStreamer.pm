@@ -262,8 +262,8 @@ sub _validate_start_end {
 
     if (   not $end
         or $end !~ /^[0-9]+$/
-        or $end <= $start
-        or $end >= time())
+        or $end < $start
+        or $end > time())
     {
         $end = time();
     }

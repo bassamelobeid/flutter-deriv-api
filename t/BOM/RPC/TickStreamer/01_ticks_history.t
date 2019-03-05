@@ -23,6 +23,8 @@ use BOM::MarketData::Types;
 
 use utf8;
 
+use constant MAX_TICK_COUNT => 5000;
+
 my ($t, $rpc_ct, $result);
 my $method = 'ticks_history';
 
@@ -88,6 +90,7 @@ subtest 'Initialization' => sub {
     }
     'Setup ticks';
 };
+
 subtest 'ticks_history' => sub {
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('InvalidSymbol', 'It should return error if there is no symbol param')
@@ -152,6 +155,12 @@ subtest '_validate_start_end' => sub {
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('InvalidStartEnd', 'It should return error if start > end time');
 
+    $params->{args}->{start} = $end->epoch;
+    $params->{args}->{end}   = $end->epoch;
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    is @{$result->{data}->{history}->{times}}, 1, 'It should return one tick when start == end';
+    is $result->{data}->{history}->{times}->[0], $end->epoch, 'It should return correct tick when start == end time';
+
     $params->{args}->{end}   = 'invalid';
     $params->{args}->{count} = 10;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
@@ -167,15 +176,15 @@ subtest '_validate_start_end' => sub {
     $params->{args}->{end}   = $now->epoch;
     delete $params->{args}->{count};
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is @{$rpc_ct->result->{data}->{history}->{times}}, 5000, 'It should return 500 ticks by default';
+    is @{$rpc_ct->result->{data}->{history}->{times}}, MAX_TICK_COUNT, 'It should return ' . MAX_TICK_COUNT . ' ticks by default';
 
     $params->{args}->{count} = 'invalid';
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is @{$rpc_ct->result->{data}->{history}->{times}}, 5000, 'It should return 500 ticks if sent invalid count';
+    is @{$rpc_ct->result->{data}->{history}->{times}}, MAX_TICK_COUNT, 'It should return ' . MAX_TICK_COUNT . ' ticks if sent invalid count';
 
-    $params->{args}->{count} = 5001;
+    $params->{args}->{count} = MAX_TICK_COUNT + 1;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is @{$rpc_ct->result->{data}->{history}->{times}}, 5000, 'It should return 500 ticks if sent very big count';
+    is @{$rpc_ct->result->{data}->{history}->{times}}, MAX_TICK_COUNT, 'It should return ' . MAX_TICK_COUNT . ' ticks if sent very big count';
 
     delete $params->{args}->{start};
     $params->{args}->{count} = 10;
@@ -188,7 +197,7 @@ subtest '_validate_start_end' => sub {
     $params->{args}->{granularity} = 5;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
     is substr($result->{data}->{candles}->[-3]->{low}, -1), '0', 'Quote with zero at end should be pipsized';
-    is @{$result->{data}->{candles}}, 3941, 'It should return 3941 candle (due to misisng ticks)';
+    is @{$result->{data}->{candles}}, 3941, 'It should return 3941 candles (due to missing ticks)';
     is $result->{data}->{candles}->[0]->{epoch}, $now->epoch - (4000 * 5), 'It should start at ' . (4000 * 5) . 's from end';
 
     $params->{args}->{style}         = 'ticks';
