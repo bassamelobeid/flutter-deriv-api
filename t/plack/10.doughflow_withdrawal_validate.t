@@ -5,8 +5,13 @@ use lib "$Bin/lib";
 use Test::More;
 use APIHelper qw(balance deposit withdraw);
 use JSON::MaybeUTF8 qw(:v1);
+use BOM::User::Client;
 
 my $loginid = 'CR0011';
+
+my $cli = BOM::User::Client->new({loginid => $loginid});
+$cli->place_of_birth('id');
+$cli->save;
 
 my $r = deposit(loginid => $loginid);
 is($r->code,    201,       'correct status code');
