@@ -108,7 +108,7 @@ sub validate {
         if ($action eq 'withdraw' and $client->status->withdrawal_locked);
 
     return _create_error(localize('Your account is missing required details for withdrawal.'))
-        if ($client->missing_requirements('withdrawal'));
+        if ($action eq 'withdraw' and $client->missing_requirements('withdrawal'));
 
     return;
 }
