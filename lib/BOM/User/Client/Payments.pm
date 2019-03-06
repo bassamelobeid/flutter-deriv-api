@@ -63,7 +63,7 @@ sub validate_payment {
         die "Withdrawal is disabled.\n"
             if $self->status->withdrawal_locked;
 
-        die "Missing details required for withdrawal"
+        die "Missing details required for withdrawal.\n"
             if ($self->missing_requirements('withdrawal'));
 
         die "Withdrawal amount [$currency $absamt] exceeds client balance [$currency $accbal].\n"
