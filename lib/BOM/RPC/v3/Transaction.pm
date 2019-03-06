@@ -234,7 +234,7 @@ rpc buy => sub {
         buy_price       => $contract_details->{buy_price},
         sell_price      => $contract_details->{sell_price},
         sell_time       => $contract_details->{sell_time},
-        purchase_time   => $contract_details->{purchase_time},
+        purchase_time   => $trx->purchase_date->epoch,
         is_sold         => $contract_details->{is_sold},
         transaction_ids => {buy => $transaction_details->{id}},
         longcode        => localize(shortcode_to_longcode($contract_details->{short_code})),
