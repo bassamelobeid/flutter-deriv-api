@@ -311,6 +311,14 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         is($res->{error}{message_to_client}, "Invalid amount. Minimum withdrawal allowed is $min_amount.", $test);
         $Alice->payment_agent->min_withdrawal(undef);
 
+        $test = 'Transfer fails if missing required details (place_of_birth)';
+        $Alice->place_of_birth('');
+        $Alice->save;
+        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        like($res->{error}{message_to_client}, qr/Please provide the required details to perform a payment agent transfer./, $test);
+        $Alice->place_of_birth('id');
+        $Alice->save;
+
         $test = "Withdraw fails if description is over $MAX_DESCRIPTION_LENGTH characters";
         $testargs->{args}{description} = 'A' x (1 + $MAX_DESCRIPTION_LENGTH);
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);

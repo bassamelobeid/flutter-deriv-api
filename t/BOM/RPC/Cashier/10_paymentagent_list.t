@@ -177,8 +177,9 @@ subtest 'suspend countries' => sub {
     };
 
     my $af_agent = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        residence   => 'af'
+        broker_code    => 'CR',
+        residence      => 'af',
+        place_of_birth => 'af',
     });
     $af_agent->set_default_account('USD');
     $af_agent->payment_agent($pa_info);
@@ -186,8 +187,9 @@ subtest 'suspend countries' => sub {
     my $token_agent = BOM::Database::Model::OAuth->new->store_access_token_only(1, $af_agent->loginid);
 
     my $af_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        residence   => 'af'
+        broker_code    => 'CR',
+        residence      => 'af',
+        place_of_birth => 'af',
     });
     $af_client->set_default_account('USD');
     $af_client->save;
