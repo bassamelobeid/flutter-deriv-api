@@ -975,8 +975,8 @@ sub audit_details {
     # If there's no entry tick, practically the contract hasn't started.
     return {} unless $self->entry_tick;
 
-    my $start_epoch  = $self->date_start->epoch;
-    my $expiry_epoch = $self->date_expiry->epoch;
+    my $start_epoch  = 0 + $self->date_start->epoch;
+    my $expiry_epoch = 0 + $self->date_expiry->epoch;
 
     # rare case: no tics between date_start and date_expiry.
     # underlaying will return exit_tick preceding date_start
@@ -986,12 +986,12 @@ sub audit_details {
     my $details = {
         contract_start => $self->_get_tick_details({
                 requested_epoch => {
-                    value => $start_epoch,
+                    value => 0 + $start_epoch,
                     name  => [$GENERIC_MAPPING->{start_time}],
                 },
                 quote => {
-                    value => $self->entry_tick->quote,
-                    epoch => $self->entry_tick->epoch,
+                    value => 0 + $self->entry_tick->quote,
+                    epoch => 0 + $self->entry_tick->epoch,
                     name  => [$GENERIC_MAPPING->{entry_spot_cap}],
                 }}
         ),
@@ -1007,7 +1007,8 @@ sub audit_details {
     if ($self->is_path_dependent && $self->hit_tick) {
         my $hit_tick = $self->hit_tick;
         $details->{contract_end} = [{
-                epoch => $hit_tick->epoch,
+                # "0 +" converts string into number. This was added to ensure some fields return the value as number instead of string
+                epoch => 0 + $hit_tick->epoch,
                 tick  => $self->underlying->pipsized_value($hit_tick->quote),
                 name  => [$GENERIC_MAPPING->{exit_spot}],
                 flag  => 'highlight_tick',
@@ -1015,7 +1016,7 @@ sub audit_details {
     } elsif ($self->expiry_daily) {
         my $closing_tick = $self->underlying->closing_tick_on($self->date_expiry->date);
         $details->{contract_end} = [{
-                epoch => $closing_tick->epoch,
+                epoch => 0 + $closing_tick->epoch,
                 tick  => $self->underlying->pipsized_value($closing_tick->quote),
                 name  => [$GENERIC_MAPPING->{closing_spot}],
                 flag  => 'highlight_tick',
@@ -1023,32 +1024,31 @@ sub audit_details {
     } else {
         $details->{contract_end} = $self->_get_tick_details({
                 requested_epoch => {
-                    value => $expiry_epoch,
+                    value => 0 + $expiry_epoch,
                     name  => [$GENERIC_MAPPING->{end_time}],
                 },
                 quote => {
                     value => $self->exit_tick->quote,
-                    epoch => $self->exit_tick->epoch,
+                    epoch => 0 + $self->exit_tick->epoch,
                     name  => [$GENERIC_MAPPING->{exit_spot}],
                 }});
     }
-
     return $details;
 }
 
 sub _get_tick_details {
     my ($self, $args) = @_;
 
-    my $epoch       = $args->{requested_epoch}{value};
+    my $epoch       = 0 + $args->{requested_epoch}{value};
     my $epoch_name  = $args->{requested_epoch}{name};
-    my $quote_epoch = $args->{quote}{epoch};
+    my $quote_epoch = 0 + $args->{quote}{epoch};
     my $quote_name  = $args->{quote}{name};
 
     # tick frequency is a problem here. Hence, using two calls to ensure we get
     # the desired number of ticks if they are in the database.
     my @ticks_before = reverse @{
         $self->underlying->ticks_in_between_end_limit({
-                end_time => $epoch,
+                end_time => 0 + $epoch,
                 limit    => 3,
             })};
     my @ticks_after = @{
@@ -1070,7 +1070,7 @@ sub _get_tick_details {
         my $t2 = $ticks[$i + 1];
 
         my $t_details = {
-            epoch => $t->epoch,
+            epoch => 0 + $t->epoch,
             tick  => $self->underlying->pipsized_value($t->quote),
         };
 
@@ -1106,7 +1106,7 @@ sub _get_tick_details {
                 +{
                 flag  => "highlight_time",
                 name  => $epoch_name,
-                epoch => $epoch
+                epoch => 0 + $epoch
                 };
         }
     }
