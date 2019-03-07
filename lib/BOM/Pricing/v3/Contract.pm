@@ -752,9 +752,10 @@ sub _build_bid_response {
     my ($params) = @_;
     my $contract = $params->{contract};
 
+    # "0 +" converts string into number. This was added to ensure some fields return the value as number instead of string
     my $response = {
         is_valid_to_sell    => $params->{is_valid_to_sell},
-        current_spot_time   => $contract->current_tick->epoch,
+        current_spot_time   => 0 + $contract->current_tick->epoch,
         contract_id         => $params->{contract_id},
         underlying          => $contract->underlying->symbol,
         display_name        => localize($contract->underlying->display_name),
@@ -762,9 +763,9 @@ sub _build_bid_response {
         is_forward_starting => $contract->is_forward_starting,
         is_path_dependent   => $contract->is_path_dependent,
         is_intraday         => $contract->is_intraday,
-        date_start          => $contract->date_start->epoch,
-        date_expiry         => $contract->date_expiry->epoch,
-        date_settlement     => $contract->date_settlement->epoch,
+        date_start          => 0 + $contract->date_start->epoch,
+        date_expiry         => 0 + $contract->date_expiry->epoch,
+        date_settlement     => 0 + $contract->date_settlement->epoch,
         currency            => $contract->currency,
         longcode            => localize($contract->longcode),
         shortcode           => $contract->shortcode,
@@ -774,7 +775,7 @@ sub _build_bid_response {
         barrier_count       => $contract->two_barriers ? 2 : 1,
     };
 
-    $response->{reset_time} = $contract->reset_spot->epoch if $contract->reset_spot;
+    $response->{reset_time} = 0 + $contract->reset_spot->epoch if $contract->reset_spot;
     $response->{multiplier} = $contract->multiplier unless ($contract->is_binary);
     $response->{validation_error} = localize($params->{validation_error}) unless $params->{is_valid_to_sell};
     $response->{current_spot} = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
@@ -804,7 +805,7 @@ sub _build_bid_response {
         my $entry_spot = $contract->underlying->pipsized_value($contract->entry_spot);
         $response->{entry_tick}      = $entry_spot;
         $response->{entry_spot}      = $entry_spot;
-        $response->{entry_tick_time} = $contract->entry_spot_epoch;
+        $response->{entry_tick_time} = 0 + $contract->entry_spot_epoch;
 
         if ($contract->two_barriers) {
             $response->{high_barrier} = $contract->high_barrier->as_absolute;
@@ -819,7 +820,7 @@ sub _build_bid_response {
         and $contract->is_after_settlement)
     {
         $response->{exit_tick}      = $contract->underlying->pipsized_value($contract->exit_tick->quote);
-        $response->{exit_tick_time} = $contract->exit_tick->epoch;
+        $response->{exit_tick_time} = 0 + $contract->exit_tick->epoch;
     }
 
     if ($contract->is_settleable || $contract->is_sold) {
@@ -869,10 +870,9 @@ sub _build_bid_response {
     if (defined $contract_close_tick) {
         foreach my $key ($params->{is_sold} ? qw(sell_spot exit_tick) : qw(exit_tick)) {
             $response->{$key} = $contract->underlying->pipsized_value($contract_close_tick->quote);
-            $response->{$key . '_time'} = $contract_close_tick->epoch;
+            $response->{$key . '_time'} = 0 + $contract_close_tick->epoch;
         }
     }
-
     return $response;
 }
 1;

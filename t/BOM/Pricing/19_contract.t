@@ -223,8 +223,8 @@ subtest $method => sub {
             'display_name' => 'Volatility 50 Index',
             'date_expiry'  => $now->epoch - 50,
             'barrier'      => 'S0P',
-            stash => {
-                valid_source => 1,
+            stash          => {
+                valid_source          => 1,
                 app_markup_percentage => 0
             }
         },

@@ -144,8 +144,8 @@ subtest $method => sub {
             'display_name' => 'Volatility 50 Index',
             'date_expiry'  => '1127285670',
             'barrier'      => 'S29054P',
-            stash => {
-                valid_source => 1,
+            stash          => {
+                valid_source          => 1,
                 app_markup_percentage => 0
             }
         },
