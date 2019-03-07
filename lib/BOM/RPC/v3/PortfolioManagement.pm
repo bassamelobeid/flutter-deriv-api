@@ -62,12 +62,12 @@ rpc portfolio => sub {
         my %trx = (
             contract_id    => $row->{id},
             transaction_id => $row->{buy_transaction_id},
-            purchase_time  => Date::Utility->new($row->{purchase_time})->epoch,
+            purchase_time  => 0 + Date::Utility->new($row->{purchase_time})->epoch,
             symbol         => $row->{underlying_symbol},
             payout         => $row->{payout_price},
             buy_price      => $row->{buy_price},
-            date_start     => Date::Utility->new($row->{start_time})->epoch,
-            expiry_time    => Date::Utility->new($row->{expiry_time})->epoch,
+            date_start     => 0 + Date::Utility->new($row->{start_time})->epoch,
+            expiry_time    => 0 + Date::Utility->new($row->{expiry_time})->epoch,
             contract_type  => $row->{bet_type},
             currency       => $client->currency,
             shortcode      => $row->{short_code},
@@ -134,7 +134,6 @@ rpc proposal_open_contract => sub {
     } else {
         @fmbs = @{__get_open_contracts($client)};
     }
-
     return populate_response_proposal_contract($client, $params, \@fmbs);
 };
 
@@ -155,7 +154,7 @@ sub populate_response_proposal_contract {
         my $id = $fmb->{id};
         my $sell_time;
         my $is_sold = $fmb->{is_sold} ? 1 : 0;    #change value from a JSON::PP::Boolean to just 1 or 0  as per API Docs
-        $sell_time = Date::Utility->new($fmb->{sell_time})->epoch if $fmb->{sell_time};
+        $sell_time = 0 + Date::Utility->new($fmb->{sell_time})->epoch if $fmb->{sell_time};
         my $contract = {
             short_code            => $fmb->{short_code},
             contract_id           => $id,
@@ -178,12 +177,12 @@ sub populate_response_proposal_contract {
             my $transaction_ids = {buy => $fmb->{buy_transaction_id}};
             $transaction_ids->{sell} = $fmb->{sell_transaction_id} if ($fmb->{sell_transaction_id});
 
-            $contract->{purchase_time}   = Date::Utility->new($fmb->{purchase_time})->epoch;
+            $contract->{purchase_time}   = 0 + Date::Utility->new($fmb->{purchase_time})->epoch;
             $contract->{transaction_ids} = $transaction_ids;
             $contract->{buy_price}       = $fmb->{buy_price};
             $contract->{account_id}      = $fmb->{account_id};
             $contract->{is_sold}         = $is_sold;
-            $contract->{sell_time}       = $sell_time if $sell_time;
+            $contract->{sell_time}       = 0 + $sell_time if $sell_time;
             $contract->{sell_price}      = formatnumber('price', $client->currency, $fmb->{sell_price}) if defined $fmb->{sell_price};
 
             if (defined $contract->{buy_price} and (defined $contract->{bid_price} or defined $contract->{sell_price})) {
