@@ -148,7 +148,7 @@ sub handle_message {
         $result   = {
             id     => $self->uuid,
             symbol => $symbol,
-            epoch  => $epoch,
+            epoch  => 0 + $epoch,
             quote  => $payload->{spot},
             bid    => $payload->{bid},
             ask    => $payload->{ask}};
