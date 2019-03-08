@@ -142,7 +142,7 @@ sub _get_details_structure {
         account_type    => $client->is_virtual ? 'virtual' : 'real',
         country_code => $client->residence // '',
         country => $client->residence ? Locale::Country::code2country($client->residence) : '',
-        is_region_eu => $client->landing_company->short =~ /^(?:malta|iom)/ ? 1 : 0,
+        is_region_eu => $client->is_region_eu,
 
         # remove these before passing
         loginid => $client->loginid,
