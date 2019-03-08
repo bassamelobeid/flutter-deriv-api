@@ -97,6 +97,7 @@ sub go {
         from transaction.account acc
         join betonmarkets.client cli on acc.client_loginid = cli.loginid
         join payment.payment p on p.account_id = acc.id
+        inner join transaction.transaction trx on trx.payment_id = p.id -- TODO: remove this line once we can assert each payment.payment has a corresponding transaction.transaction row
         left join payment.doughflow dw on dw.payment_id = p.id
         where
             p.payment_time >= ?                 -- b4
