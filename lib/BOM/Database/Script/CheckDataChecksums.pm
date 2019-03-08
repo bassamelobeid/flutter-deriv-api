@@ -61,6 +61,7 @@ SELECT min(oid),
        pg_relation_filepath(min(oid)::regclass::text)
   FROM pg_class
  WHERE relkind IN ('r', 'i', 'm', 't') -- regular, index, matview, toast
+   AND relpersistence <> 't'           -- skip temporary objects
    AND ($1::text IS NULL OR oid::regclass::text ~ $1::text)
 EOF
 
@@ -71,6 +72,7 @@ SELECT oid,
   FROM pg_class
  WHERE oid>$1
    AND relkind IN ('r', 'i', 'm', 't') -- regular, index, matview, toast
+   AND relpersistence <> 't'           -- skip temporary objects
    AND ($2::text IS NULL OR oid::regclass::text ~ $2::text)
  ORDER BY 1 ASC
  LIMIT 1
