@@ -102,7 +102,7 @@ sub generate_data {
         $client->residence
         ? Locale::Country::code2country($client->residence)
         : '';
-    $data{is_region_eu} = $client->landing_company->short =~ /^(?:malta|iom)/ ? 1 : 0;
+    $data{is_region_eu} = $client->is_region_eu;
 
     return \%data;
 }
