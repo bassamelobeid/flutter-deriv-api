@@ -803,7 +803,7 @@ sub send_new_client_email {
 $client_loginid - Name and Address
 
 
-         $client_name 
+         $client_name
         @{[ join "\n\t\t" => @address, Locale::Country::code2country($self->residence) ]}
 
 IP was @{[ $ip // 'unknown' ]} (country @{[ $ip_country // 'unknown' ]})
@@ -1069,4 +1069,24 @@ sub missing_requirements {
     return @missing;
 }
 
+=head2 is_region_eu
+
+return 1 or 0 according to client's landing company or the residence for VRT client.
+
+=cut
+
+sub is_region_eu {
+    my ($self) = @_;
+
+    if ($self->is_virtual) {
+
+        my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
+        my $company = $countries_instance->real_company_for_country($self->residence);
+
+        return LandingCompany::Registry->new->get($company)->is_eu;
+    } else {
+        return $self->landing_company->is_eu;
+    }
+
+}
 1;

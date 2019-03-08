@@ -607,4 +607,38 @@ subtest 'test update social signup' => sub {
     is($user->has_social_signup, 0, 'has_social_signup is false now');
 };
 
+subtest 'is_region_eu' => sub {
+    my ($client_vr, $client_mlt, $client_mx, $client_cr);
+    lives_ok {
+        $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+        });
+        $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'MLT',
+        });
+        $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'MX',
+        });
+        $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+        });
+    }
+    'creating clients';
+
+    $client_vr->residence('cn');
+    $client_vr->save;
+
+    is $client_vr->is_region_eu, 0, 'is_region_eu FALSE for virtual cn client';
+
+    $client_vr->residence('gb');
+    $client_vr->save;
+
+    is $client_vr->is_region_eu, 1, 'is_region_eu TRUE for virtual gb client';
+
+    is $client_mlt->is_region_eu, 1, 'is_region_eu TRUE for MLT client';
+    is $client_mx->is_region_eu,  1, 'is_region_eu TRUE for MX client';
+    is $client_mx->is_region_eu,  1, 'is_region_eu FALSE for CR client';
+
+};
+
 done_testing;
