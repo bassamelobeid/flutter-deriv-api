@@ -135,6 +135,9 @@ sub _validate_input_parameters {
     BOM::Product::Exception->throw(error_code => 'MissingRequiredMultiplier')
         if ($params->{category}->code eq 'lookback' and not defined $params->{multiplier});
 
+    BOM::Product::Exception->throw(error_code => 'MissingTradingPeriodStart')
+        if (($params->{product_type} // '') eq 'multi_barrier' and not $params->{trading_period_start});
+
     my $start  = Date::Utility->new($params->{date_start});
     my $expiry = Date::Utility->new($params->{date_expiry});
 

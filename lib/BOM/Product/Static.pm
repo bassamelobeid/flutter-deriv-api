@@ -114,6 +114,7 @@ my $config = {
         WrongAmountTypeTwo            => 'Basis can either be [_1] or [_2] for this contract.',
         ZeroAbsoluteBarrier           => 'Absolute barrier cannot be zero.',
         CountrySpecificError          => '[_1] is not allowed for residence of [_2].',
+        MissingTradingPeriodStart     => 'trading_period_start must be supplied for multi barrier contracts.',
     },
     generic => {
         # use it audit details

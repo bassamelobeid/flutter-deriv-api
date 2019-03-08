@@ -283,4 +283,34 @@ subtest 'stable crypto as payout currency' => sub {
     lives_ok { $c->ask_price } 'ask price without exception';
 };
 
+subtest 'missing trading_period_start' => sub {
+    my $now        = Date::Utility->new($fake_tick->epoch);
+    my $bet_params = {
+        bet_type             => 'CALLE',
+        date_start           => $now,
+        date_pricing         => $now,
+        duration             => '20m',
+        barrier              => 'S20P',
+        underlying           => 'frxUSDJPY',
+        currency             => 'USD',
+        payout               => 10,
+        product_type         => 'multi_barrier',
+        trading_period_start => $now->epoch,
+        current_tick         => $fake_tick,
+    };
+
+    my $c = produce_contract($bet_params);
+    lives_ok { $c->ask_price } 'create a multi_barrier contract without exception';
+
+    delete $bet_params->{trading_period_start};
+    try {
+        $c = produce_contract($bet_params);
+    }
+    catch {
+        isa_ok $_, 'BOM::Product::Exception';
+        is $_->error_code, "MissingTradingPeriodStart", 'error code is MissingTradingPeriodStart';
+    };
+
+};
+
 done_testing();
