@@ -2,7 +2,7 @@
 <div id="header" class="dark-blue">
     <div class="center-text">
         <div class="logo-wrapper">
-            <a href="https://www.binary.com/<%= lc($r->language) %>/home.html" class="logo-parent">
+            <a href="https://www.<%= $website_domain %>/<%= lc($r->language) %>/home.html" class="logo-parent">
                 <div class="logo">
                     <div></div>
                 </div>

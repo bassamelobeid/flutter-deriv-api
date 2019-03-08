@@ -1,7 +1,7 @@
 <div id="wrapper" class="scope-confirms">
     <div id="main-header">
         <div id="logo">
-            <img src="https://style.binary.com/images/logo/binary_logo_dark.svg" alt="Binary.com" />
+            <img src="https://style.<%= $website_domain %>/images/logo/binary_logo_dark.svg" alt="Binary.com" />
         </div>
     </div>
     <div>
