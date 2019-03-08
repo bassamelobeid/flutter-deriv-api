@@ -30,7 +30,7 @@ my $account_existing = new_ok(
         client_loginid => $client->loginid
     ]);
 
-is($account_existing->currency_code, 'USD', 'Existing account fetched from DB');
+is($account_existing->currency_code(), 'USD', 'Existing account fetched from DB');
 
 ok(
     my $new_payment = $account_existing->add_payment({
@@ -167,6 +167,6 @@ subtest default_account => sub {
             my $sth = $_->prepare("INSERT INTO transaction.account (client_loginid, currency_code, is_default) VALUES (?,?,?)");
             $sth->execute($client->loginid, 'GBP', 'FALSE');
         });
-    is($client->account->currency_code, 'USD', 'Correct account returned');
+    is($client->account->currency_code(), 'USD', 'Correct account returned');
 };
 done_testing();

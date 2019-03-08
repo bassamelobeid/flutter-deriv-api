@@ -635,7 +635,7 @@ sub currency {
     return 'USD' if $self->is_virtual;
 
     if (my $account = $self->default_account) {
-        return $account->currency_code;
+        return $account->currency_code();
     }
 
     return 'GBP' if $self->residence eq 'gb';
@@ -671,7 +671,7 @@ sub _ffd {    # first_funded_details
     if (my $ff = $payment_mapper->first_funding) {
         $ffd->{first_funded_date}     = Date::Utility->new($ff->payment_time->epoch);
         $ffd->{first_funded_amount}   = sprintf '%.2f', $ff->amount;
-        $ffd->{first_funded_currency} = $ff->account->currency_code;
+        $ffd->{first_funded_currency} = $ff->account->currency_code();
     }
     return $ffd;
 }
@@ -726,10 +726,11 @@ sub account {
         currency_code  => $currency,
         db             => $self->db,
     );
-    #calls to Account new will always return some sort  of object because that's how moo works,
+
+    #calls to Account new will always return some sort of object because that's how moo works,
     #so to maintain backward compatibility we return undef if no currency_code exists showing
     #an empty account.
-    return undef if !defined $account->currency_code;
+    return undef if !defined $account->currency_code();
 
     return $account;
 }
@@ -955,6 +956,7 @@ sub cookie_string {
 sub real_account_siblings_information {
     my ($self, %args) = @_;
     my $include_disabled = $args{include_disabled} // 1;
+    my $include_self     = $args{include_self}     // 1;
 
     my $user = $self->user;
     # return empty if we are not able to find user, this should not
@@ -973,9 +975,10 @@ sub real_account_siblings_information {
         $siblings->{$cl->loginid} = {
             loginid              => $cl->loginid,
             landing_company_name => $cl->landing_company->short,
-            currency => $acc ? $acc->currency_code : '',
-            balance => $acc ? formatnumber('amount', $acc->currency_code, $acc->balance) : "0.00",
-        };
+            currency => $acc ? $acc->currency_code() : '',
+            balance => $acc ? formatnumber('amount', $acc->currency_code(), $acc->balance) : "0.00",
+            }
+            unless (!$include_self && ($cl->loginid eq $self->loginid));
     }
 
     return $siblings;

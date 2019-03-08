@@ -164,18 +164,18 @@ subtest 'account ' => sub {
     is($client->account, undef, ' No account set so should return undef');
 
     $client->account('JYN');
-    is($client->account->currency_code, 'JYN', 'Correct Currency Code on Account');
+    is($client->account->currency_code(), 'JYN', 'Correct Currency Code on Account');
 
 #set it again shouldn't cause any changes or errors even with a different currency
     $client->account('USD');
-    is($client->account->currency_code, 'JYN', 'Correct Currency Code on Account');
+    is($client->account->currency_code(), 'JYN', 'Correct Currency Code on Account');
 
     #Account is already set
     my $loginid = $client->loginid;
     $client = undef;
     my $existing_client = BOM::User::Client->new({loginid => $loginid});
 
-    is($existing_client->account->currency_code, 'JYN', 'Existing client has account');
+    is($existing_client->account->currency_code(), 'JYN', 'Existing client has account');
 
 };
 

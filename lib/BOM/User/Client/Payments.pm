@@ -29,7 +29,7 @@ sub validate_payment {
     my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
     my $account = $self->default_account || die "no account\n";
     my $accbal  = $account->balance;
-    my $acccur  = $account->currency_code;
+    my $acccur  = $account->currency_code();
     my $absamt  = abs($amount);
 
     die "Client\'s cashier is locked.\n"
@@ -242,7 +242,7 @@ sub payment_legacy_payment {
     my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
     my $account = $self->set_default_account($currency);
 
-    die "cannot deal in $currency; clients currency is " . $account->currency_code if $account->currency_code ne $currency;
+    die "cannot deal in $currency; clients currency is " . $account->currency_code() if $account->currency_code() ne $currency;
     my ($payment) = $account->add_payment({
         amount               => $amount,
         payment_gateway_code => 'legacy_payment',
@@ -306,8 +306,8 @@ sub payment_account_transfer {
     $inter_db_transfer = delete $args{inter_db_transfer} if (exists $args{inter_db_transfer});
     my $gateway_code = delete $args{gateway_code} || 'account_transfer';
 
-    my $from_curr = $fmClient->account->currency_code;
-    my $to_curr   = $toClient->account->currency_code;
+    my $from_curr = $fmClient->account->currency_code();
+    my $to_curr   = $toClient->account->currency_code();
 
     if ($to_curr ne $from_curr and not defined $to_amount) {
         die "to_amount is required if from_currency and to_currency are different";

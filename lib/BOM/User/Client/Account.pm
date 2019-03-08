@@ -13,10 +13,6 @@ has 'id' => (
 
 has 'client_loginid' => (
     is => 'ro',
-
-);
-has 'currency_code' => (
-    is => 'ro',
 );
 
 #Not used anymore but left for compatibility.
@@ -54,8 +50,45 @@ sub BUILD {
                 $args->{currency_code});
         });
 
-    $self->{id} = $result->{id};
+    $self->{id}            = $result->{id};
+    $self->{currency_code} = $args->{currency_code};
+
     return;
+}
+
+=head2 currency_code
+
+This sub is used to set/get the currency associated with this account.
+
+If no argument is provided it will behave as a get method.
+If an argument is provided it will perform a set if there are no transactions
+    associated with this account. This allows an accidental choice to be corrected
+    without opening another account.
+    The account currency will be returned whether or not a change was made.
+
+=over 4
+
+=item new_currency (optional) => string
+
+=back
+
+=cut
+
+sub currency_code {
+    my ($self, $new_currency) = @_;
+
+    return $self->{currency_code} unless $new_currency;
+    # Skip update if new currency is alike
+    return $self->{currency_code} if $self->{currency_code} eq $new_currency;
+
+    my $updated_currency = $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_arrayref("SELECT transaction.set_account_currency(?,?)", undef, $self->id, $new_currency)->[0];
+        });
+
+    $self->{currency_code} = $updated_currency;
+
+    return $self->{currency_code};
 }
 
 =head2 _refresh_object
@@ -74,8 +107,8 @@ sub _refresh_object {
     my $self             = shift;
     my $existing_account = $self->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref("SELECT * FROM transaction.account WHERE client_loginid = ? AND  is_default = TRUE", undef,
-                $self->{client_loginid});
+            $_->selectrow_hashref("SELECT * FROM transaction.account WHERE client_loginid = ? AND  is_default = TRUE",
+                undef, $self->{client_loginid});
         });
 
     if (defined $existing_account) {

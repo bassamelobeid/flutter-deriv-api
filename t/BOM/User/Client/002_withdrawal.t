@@ -423,7 +423,7 @@ sub _apply_promo_amount {
     my $amount = $pc->{_json}{amount} * $direction;
 
     $client->smart_payment(
-        currency     => $account->currency_code,
+        currency     => $account->currency_code(),
         amount       => $amount,
         remark       => 'promo',
         payment_type => 'free_gift'
