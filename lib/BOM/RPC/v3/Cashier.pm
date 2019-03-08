@@ -102,7 +102,7 @@ rpc "cashier", sub {
             code              => $validation->{error}->{code},
             message_to_client => $validation->{error}->{message_to_client}}) if exists $validation->{error};
 
-    my ($brand, $currency) = (Brands->new(name => request()->brand), $client->default_account->currency_code);
+    my ($brand, $currency) = (Brands->new(name => request()->brand), $client->default_account->currency_code());
 
     if (LandingCompany::Registry::get_currency_type($currency) eq 'crypto') {
         return _get_cryptocurrency_cashier_url($client->loginid, $params->{website_name},
@@ -1397,7 +1397,7 @@ rpc topup_virtual => sub {
         return $error_sub->(localize('Sorry, this feature is available to virtual accounts only'));
     }
 
-    my $currency              = $client->default_account->currency_code;
+    my $currency              = $client->default_account->currency_code();
     my $min_topup_bal         = BOM::Config::payment_agent()->{minimum_topup_balance};
     my $minimum_topup_balance = $min_topup_bal->{$currency} // $min_topup_bal->{DEFAULT};
 

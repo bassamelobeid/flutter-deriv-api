@@ -558,7 +558,17 @@ sub validate_make_new_account {
 sub validate_set_currency {
     my ($client, $currency) = @_;
 
-    my $siblings = $client->real_account_siblings_information();
+    return _currency_type_error('Change of currency is not allowed due to an existing MT5 account.')
+        if $client->account && $client->account->currency_code() && $client->user->mt5_logins();
+
+    return _currency_type_error('Change of currency is not allowed for an existing account with previous deposits.')
+        if $client->has_deposits();
+
+    return _currency_type_error('Account currency is set to cryptocurrency. Any change is not allowed.')
+        if $client->account
+        && LandingCompany::Registry::get_currency_type($client->account->currency_code() // '') eq 'crypto';
+
+    my $siblings = $client->real_account_siblings_information(include_self => 0);
     $siblings = filter_siblings_by_landing_company($client->landing_company->short, $siblings);
 
     my $is_currency_allowed = _is_currency_allowed($client, $siblings, $currency);

@@ -67,7 +67,7 @@ rpc copy_start => sub {
 
     unless ($client->default_account
         && $trader->default_account
-        && ($client->default_account->currency_code eq $trader->default_account->currency_code))
+        && ($client->default_account->currency_code() eq $trader->default_account->currency_code()))
     {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'CopyTradingWrongCurrency',

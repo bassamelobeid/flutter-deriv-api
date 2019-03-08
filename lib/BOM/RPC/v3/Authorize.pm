@@ -153,7 +153,7 @@ rpc authorize => sub {
     my @account_list;
     my $currency;
     foreach my $clnt (@$client_list) {
-        $currency = $clnt->default_account ? $clnt->default_account->currency_code : '';
+        $currency = $clnt->default_account ? $clnt->default_account->currency_code() : '';
         push @account_list, $_get_account_details->($clnt, $currency);
     }
 
@@ -161,8 +161,8 @@ rpc authorize => sub {
     return {
         fullname => $client->full_name,
         loginid  => $client->loginid,
-        balance  => $account ? formatnumber('amount', $account->currency_code, $account->balance) : '0.00',
-        currency => ($account ? $account->currency_code : ''),
+        balance  => $account ? formatnumber('amount', $account->currency_code(), $account->balance) : '0.00',
+        currency => ($account ? $account->currency_code() : ''),
         email    => $client->email,
         country  => $client->residence,
         landing_company_name     => $lc->short,
@@ -179,7 +179,7 @@ rpc authorize => sub {
             scopes               => $scopes,
             account_id           => ($account ? $account->id : ''),
             country              => $client->residence,
-            currency             => ($account ? $account->currency_code : ''),
+            currency             => ($account ? $account->currency_code() : ''),
             landing_company_name => $lc->short,
             is_virtual           => ($client->is_virtual ? 1 : 0),
         },

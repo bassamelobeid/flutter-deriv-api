@@ -348,7 +348,7 @@ rpc statement => sub {
         count        => 0
     } unless (keys %$transaction_res);
 
-    my $currency_code = $client->default_account->currency_code;
+    my $currency_code = $client->default_account->currency_code();
     # combine all trades, and sort by transaction_id
     my @transactions = reverse sort { 0 + $a->{transaction_id} <=> 0 + $b->{transaction_id} }
         (@{$transaction_res->{open_trade}}, @{$transaction_res->{close_trade}}, @{$transaction_res->{payment}});
@@ -467,7 +467,7 @@ rpc account_statistics => sub {
         return BOM::RPC::v3::Utility::client_error();
     };
 
-    my $currency_code = $account->currency_code;
+    my $currency_code = $account->currency_code();
     $total_deposits    = formatnumber('amount', $currency_code, $total_deposits);
     $total_withdrawals = formatnumber('amount', $currency_code, $total_withdrawals);
 
@@ -596,8 +596,8 @@ rpc balance => sub {
 
     return {
         loginid  => $client_loginid,
-        currency => $client->default_account->currency_code,
-        balance  => formatnumber('amount', $client->default_account->currency_code, $client->default_account->balance)};
+        currency => $client->default_account->currency_code(),
+        balance  => formatnumber('amount', $client->default_account->currency_code(), $client->default_account->balance)};
 };
 
 rpc get_account_status => sub {
@@ -1887,9 +1887,6 @@ rpc set_account_currency => sub {
 
     my ($client, $currency) = @{$params}{qw/client currency/};
 
-    # bail out if default account is already set
-    return {status => 0} if $client->default_account;
-
     # check if we are allowed to set currency
     # i.e if we have exhausted available options
     # - client can have single fiat currency
@@ -1898,20 +1895,30 @@ rpc set_account_currency => sub {
     #   for example BTC => ETH is allowed but BTC => BTC is not
     # - currency is not legal in the landing company
     # - currency is crypto and crytocurrency is suspended in system config
+
     my $error = BOM::RPC::v3::Utility::validate_set_currency($client, $currency);
     return $error if $error;
 
-    # no change in default account currency if default account is already set
-    my $status = 0;
+    my $status  = 0;
+    my $account = $client->account;
+
     try {
-        $status = 1 if $client->set_default_account($currency);
+        if ($account && $account->currency_code() ne $currency) {
+            # Change currency
+            $status = 1 if $account->currency_code($currency) eq $currency;
+        } else {
+            # Initial set of currency
+            $status = 1 if $client->account($currency);
+        }
+    }
+    catch {
+        warn "Error caught in set_account_currency: $_\n";
     };
     return {status => $status};
 };
 
 rpc set_financial_assessment => sub {
-    my $params = shift;
-
+    my $params         = shift;
     my $client         = $params->{client};
     my $client_loginid = $client->loginid;
 

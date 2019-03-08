@@ -98,8 +98,8 @@ rpc "new_account_virtual",
     return {
         client_id   => $client->loginid,
         email       => $email,
-        currency    => $account->currency_code,
-        balance     => formatnumber('amount', $account->currency_code, $account->balance),
+        currency    => $account->currency_code(),
+        balance     => formatnumber('amount', $account->currency_code(), $account->balance),
         oauth_token => _create_oauth_token($client->loginid),
     };
     };

@@ -71,7 +71,7 @@ rpc copytrading_statistics => sub {
         })->db;
 
     # Calculate average performance for multiple accounts
-    my $currency = $account->currency_code;
+    my $currency = $account->currency_code();
     my $txn_dm   = BOM::Database::DataMapper::Transaction->new({
         client_loginid => $trader->loginid,
         currency_code  => $currency,

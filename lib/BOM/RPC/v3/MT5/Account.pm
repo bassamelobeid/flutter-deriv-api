@@ -1017,7 +1017,7 @@ async_rpc mt5_deposit => sub {
             my $withdraw_error;
             try {
                 $fm_client->validate_payment(
-                    currency => $fm_client->default_account->currency_code,
+                    currency => $fm_client->default_account->currency_code(),
                     amount   => -$amount,
                 );
             }
@@ -1445,7 +1445,7 @@ sub _mt5_validate_and_get_amount {
             my $err = _validate_client($client);
             return _make_error($error_code, $err) if $err;
 
-            my $client_currency = $client->account ? $client->account->currency_code : undef;
+            my $client_currency = $client->account ? $client->account->currency_code() : undef;
 
             $err = BOM::RPC::v3::Cashier::validate_amount($amount, $client_currency);
             return _make_error($error_code, $err) if $err;
@@ -1695,7 +1695,7 @@ sub _validate_client {
     return localize('Your account [_1] cashier section is locked.', $loginid)
         if ($client_obj->status->cashier_locked || $client_obj->documents_expired);
 
-    my $client_currency = $client_obj->account ? $client_obj->account->currency_code : undef;
+    my $client_currency = $client_obj->account ? $client_obj->account->currency_code() : undef;
     return localize('Please set currency for existing account [_1].', $loginid) unless $client_currency;
 
     my $daily_transfer_limit  = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5;
