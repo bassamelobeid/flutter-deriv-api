@@ -26,7 +26,7 @@ fail_test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_vir
     $suite->get_token('test@binary.com'), 'test@binary.com', 'id';
 
 # READ SCOPE CALLS (VRTC)
-test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '10000\\\\.00', 'USD', $suite->get_stashed('authorize/authorize/loginid');
+test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '10000', 'USD', $suite->get_stashed('authorize/authorize/loginid');
 test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', 'USD',       1;
 test_sendrecv 'login_history/test_send.json',            'login_history/test_receive.json';
 test_sendrecv_params 'get_settings/test_send.json',      'get_settings/test_receive_vrtc.json',     'Indonesia', 'id';
@@ -35,7 +35,7 @@ test_sendrecv 'get_account_status/test_send.json',       'get_account_status/tes
 # TRADE SCOPE CALLS (VRTC)
 test_sendrecv 'topup_virtual/test_send.json',     'topup_virtual/test_receive_error.json';
 test_sendrecv 'balance/test_send_subscribe.json', 'balance/test_receive.json',
-    template_values => ['10000\\\\.00', 'USD', $suite->get_stashed('authorize/authorize/loginid')],
+    template_values => ['10000', 'USD', $suite->get_stashed('authorize/authorize/loginid')],
     start_stream_id => 1;
 test_sendrecv 'proposal/test_send_buy.json', 'proposal/test_receive_buy.json';
 test_sendrecv_params 'buy/test_send.json', 'buy/test_receive.json', $suite->get_stashed('proposal/proposal/id'), '99\\\\d{2}\\\\.\\\\d{2}';
@@ -82,18 +82,18 @@ fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/t
 test_sendrecv_params 'new_account_real/test_send.json',      'new_account_real/test_receive_cr.json', 'Peter', 'id';
 test_sendrecv_params 'authorize/test_send.json',             'authorize/test_receive_cr.json',
     $suite->get_stashed('new_account_real/new_account_real/oauth_token'), 'test@binary.com', 'Peter';
-test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '0\\\\.00', '', $suite->get_stashed('authorize/authorize/loginid');
+test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '0', '', $suite->get_stashed('authorize/authorize/loginid');
 test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', '(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB)', 10;
 
 # READ SCOPE CALLS (CR) BEFORE CHANGE
 test_sendrecv 'get_limits/test_send.json',   'get_limits/test_receive_cr.json';
 test_sendrecv 'get_settings/test_send.json', 'get_settings/test_receive_cr_before.json';
-
+die;
 # ADMIN SCOPE CALLS (CR)
 test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json',       'USD';
 test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive_error.json', 'XXX';
 test_sendrecv_params 'payout_currencies/test_send.json',    'payout_currencies/test_receive_vrt.json',      'USD', 1;
-test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '0\\\\.00', 'USD', $suite->get_stashed('authorize/authorize/loginid');
+test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '0', 'USD', $suite->get_stashed('authorize/authorize/loginid');
 test_sendrecv 'set_self_exclusion/test_send.json', 'set_self_exclusion/test_receive.json';
 test_sendrecv 'set_settings/test_send.json',       'set_settings/test_receive.json';
 
@@ -152,7 +152,7 @@ test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.js
 test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mlt.json', 'Jack', 'dk';
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_mlt.json',
     $suite->get_stashed('new_account_real/new_account_real/oauth_token'), 'test-mlt@binary.com', 'Jack';
-test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '0\\\\.00', '', $suite->get_stashed('authorize/authorize/loginid');
+test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '0', '', $suite->get_stashed('authorize/authorize/loginid');
 test_sendrecv_params 'payout_currencies/test_send.json',      'payout_currencies/test_receive_vrt.json', '(USD|EUR|GBP)', 3;
 fail_test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', '(USD|EUR|JPY)', 3;
 
@@ -174,7 +174,7 @@ test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_malt
 test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive.json',       '1', 'Jack', 'dk';
 test_sendrecv_params 'authorize/test_send.json',               'authorize/test_receive_mf.json',
     $suite->get_stashed('new_account_maltainvest/new_account_maltainvest/oauth_token'), 'test-mlt@binary.com', 'Jack';
-test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '0\\\\.00', '', $suite->get_stashed('authorize/authorize/loginid');
+test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '0', '', $suite->get_stashed('authorize/authorize/loginid');
 test_sendrecv_params 'payout_currencies/test_send.json',      'payout_currencies/test_receive_vrt.json', '(USD|EUR|GBP)', 3;
 fail_test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', '(USD|EUR|JPY)', 3;
 
@@ -203,7 +203,7 @@ test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.js
 test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mx.json', 'John', 'gb';
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_mx.json',
     $suite->get_stashed('new_account_real/new_account_real/oauth_token'), 'test-mx@binary.com', 'John';
-test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '0\\\\.00', '', $suite->get_stashed('authorize/authorize/loginid');
+test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '0', '', $suite->get_stashed('authorize/authorize/loginid');
 test_sendrecv_params 'payout_currencies/test_send.json',      'payout_currencies/test_receive_vrt.json', '(USD|GBP)', 2;
 fail_test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', '(EUR|GBP)', 2;
 
@@ -219,7 +219,7 @@ $suite->change_status($suite->get_stashed('authorize/authorize/loginid'), 'set',
 test_sendrecv 'cashier/test_send_deposit.json', 'cashier/test_receive_max_turnover.json';
 # set_self_exclusion for max_30day_turnover should remove ukrts_max_turnover_limit_not_set status
 test_sendrecv 'set_self_exclusion/test_send.json', 'set_self_exclusion/test_receive.json';
-test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '0\\\\.00', 'GBP', $suite->get_stashed('authorize/authorize/loginid');
+test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '0', 'GBP', $suite->get_stashed('authorize/authorize/loginid');
 
 # VIRTUAL ACCOUNT OPENING (VRTC)
 test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test2@binary.com', 'account_opening';

@@ -25,7 +25,7 @@
         },
         "balance": {
           "type": "number",
-          "pattern": "^10000.00$",
+          "enum" : [10000],
           "required": "1"
         },
         "oauth_token": {
