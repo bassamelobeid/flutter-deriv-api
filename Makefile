@@ -2,7 +2,7 @@ TESTS=unit_test_database_datamapper \
       unit_test_database_model \
       unit_test_database_all \
 
-M=[ -t 1 ] && echo 'making \033[01;33m$@\033[00m' || echo 'making $@'
+M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
 D=$(CURDIR)
 P=/etc/rmg/bin/prove -v --timer -I$D/lib -I$D -I$D/t
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
