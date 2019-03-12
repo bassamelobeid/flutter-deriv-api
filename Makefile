@@ -1,4 +1,4 @@
-M=[ -t 1 ] && echo 'making \033[01;33m$@\033[00m' || echo 'making $@'
+M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
 D=$(CURDIR)
 export SKIP_EMAIL=1
 I=-I$D/lib -I$D -I/home/git/regentmarkets/cpan/local/lib
