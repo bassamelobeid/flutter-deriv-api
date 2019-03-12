@@ -23,6 +23,9 @@ structure:
 schema:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite t/999_redis_keys.t
 
+subscriptions:
+	@$(PROVE) --norc /home/git/regentmarkets/bom-websocket-tests/v3/subscriptions
+
 test: structure schema accounts security pricing misc
 
 tidy:

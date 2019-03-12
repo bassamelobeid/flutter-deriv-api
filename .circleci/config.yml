@@ -148,6 +148,22 @@ jobs:
         name: Code structure and syntax
     - store_test_results:
         path: /var/tmp/test-output
+  subscriptions:
+    <<: *6
+    steps:
+    - *1
+    - checkout
+    - *2
+    - *3
+    - *4
+    - run:
+        <<: *5
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make subscriptions
+        name: Run subscription tests
+    - store_test_results:
+        path: /var/tmp/test-output
 version: 2
 workflows:
   build-workflow:
@@ -163,6 +179,8 @@ workflows:
     - misc:
         context: perl
     - schema:
+        context: perl
+    - subscriptions:
         context: perl
   daily:
     jobs: *7
@@ -211,6 +229,13 @@ workflows:
           tags:
             only: /^V\d+_.*/
     - schema:
+        context: perl
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /^V\d+_.*/
+    - subscriptions:
         context: perl
         filters:
           branches:
