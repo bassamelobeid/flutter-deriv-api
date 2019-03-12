@@ -12,6 +12,7 @@ my $pattern = $ARGV[0];    # confines test to just files matching this pattern.
 subtest "Check modules in lib" => sub {
     for (sort File::Find::Rule->file->name(qr/\.p[lm]$/)->in(Cwd::abs_path . '/lib')) {
         /$pattern/ || next if $pattern;
+        next if m!/WebsocketAPI/Tests/|/WebsocketAPI/Helpers/!;
         syntax_ok($_) if $_ =~ /\.pl$/;
         critic_ok($_);
     }

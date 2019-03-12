@@ -1,0 +1,27 @@
+virtual_buy_transaction:
+    1m: 2440000
+    1h: 2440000
+virtual_sell_transaction:
+    1m: 2440000
+    1h: 2440000
+virtual_batch_sell:
+    1m: 2440000
+    1h: 2440000
+websocket_call:
+    1m: 2440000
+    1h: 2440000
+websocket_call_expensive:
+    1m: 2440000
+    1h: 2440000
+websocket_call_pricing:
+    1m: 2440000
+    1h: 2440000
+websocket_call_email:
+    1m: 2440000
+    1h: 2440000
+websocket_call_password:
+    1m: 2440000
+    1h: 2440000
+websocket_real_pricing:
+    1m: 2440000
+    1h: 2440000
