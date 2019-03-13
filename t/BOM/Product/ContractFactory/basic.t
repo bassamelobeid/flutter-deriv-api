@@ -7,6 +7,7 @@ use Test::Exception;
 use Test::MockModule;
 use File::Spec;
 use Try::Tiny;
+use JSON;
 
 use Postgres::FeedDB::Spot::Tick;
 use BOM::Test::Data::Utility::UnitTestRedis;
@@ -61,16 +62,20 @@ subtest 'produce_contract' => sub {
         bet_type   => 'PUT',
         duration   => '4t',
         underlying => 'frxUSDJPY',
-        payout     => 1,
+        payout     => '1',
         currency   => 'USD',
         barrier    => 108.26,
-    };
+        current_spot => 100,                                                    
 
+    };
+    my $contract;
     lives_ok {
-        my $contract = produce_contract($contract_params);
+        $contract = produce_contract($contract_params);
         isa_ok($contract, 'BOM::Product::Contract');
     }
     'produce a contract';
+
+    is to_json([$contract->payout]), '[1]','payout is number';
 };
 
 subtest 'produce_contract exception' => sub {

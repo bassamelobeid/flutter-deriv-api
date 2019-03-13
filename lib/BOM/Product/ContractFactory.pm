@@ -101,7 +101,7 @@ sub produce_contract {
     $params_ref->{'_produce_contract_ref'} = \&produce_contract;
 
     my $contract_class = 'BOM::Product::Contract::' . ucfirst lc $params_ref->{bet_type};
-
+    $params_ref->{payout} += 0 if $params_ref->{payout};
     return $contract_class->new($params_ref) unless $role_exists;
 
     # we're applying role. For speed reasons, we're not using $role->meta->apply($contract_obj),
