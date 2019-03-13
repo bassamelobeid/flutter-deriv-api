@@ -107,8 +107,7 @@ subtest 'call variations' => sub {
         is $c->code,        'CALL';
         ok $c->is_intraday, 'is intraday';
         ok !$c->expiry_daily, 'not expiry daily';
-
-        cmp_ok $c->ask_price, '==', 6.6, 'correct ask price';
+        cmp_ok $c->ask_price, '==', 6.48, 'correct ask price';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
         isa_ok $c->barrier,        'BOM::Product::Contract::Strike';
         cmp_ok $c->barrier->as_absolute, '==', 76.900, 'correct absolute barrier';
@@ -269,7 +268,7 @@ subtest 'pips size changes' => sub {
         cmp_ok $c->barrier->as_absolute, 'eq', '0.99360', 'correct absolute barrier (it will be pipsized) ';
         cmp_ok $c->entry_tick->quote,    'eq', '0.9936',  'correct entry tick';
         cmp_ok $c->current_spot, 'eq', '0.99360', 'correct current spot (it will be pipsized)';
-        cmp_ok $c->ask_price,    'eq', '6.79',    'correct ask price';
+        cmp_ok $c->ask_price,    'eq', '6.50',    'correct ask price';
         $args->{date_pricing} = $now->plus_time_interval('10m');
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'frxAUDCAD',

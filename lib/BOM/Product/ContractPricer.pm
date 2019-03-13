@@ -279,10 +279,6 @@ sub _build_hour_end_markup_parameters {
 
     my $start_minute = $self->date_start->minute;
     my $start_hour   = $self->date_start->hour;
-    # We did not do any ajdusment if it is on Monday between 00:00 - 00:05 GMT because traders are trade based on previous hour data pattern
-    # But on Monday morning, they do not have data over the weekend, hence this markup is not applicable
-    return {} if $start_hour == 0 and $self->date_start->day_of_week == 1 and $start_minute < $adj_args->{end_minute};
-
     # Do not apply markup if it is not between 50 minutes of the hour to 5 minutes of next hour
     return {} if $start_minute > $adj_args->{end_minute} and $start_minute < $adj_args->{starting_minute};
 
@@ -295,6 +291,9 @@ sub _build_hour_end_markup_parameters {
         # For contract starts at 15:02GMT, we will get high low from 14GMT
         $high_low_lookback_from = $self->date_start->minus_time_interval($self->date_start->epoch % 3600 + 3600);
     }
+
+    # We did not do any ajdusment if there is nothing to lookback ie either monday morning or the next day after early close
+    return {} unless $self->trading_calendar->is_open_at($self->underlying->exchange, $high_low_lookback_from);
 
     # set the parameters to be used for markup parameters
     return {

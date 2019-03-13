@@ -22,6 +22,7 @@ use Pricing::Engine::Markup::EqualTie;
 use Pricing::Engine::Markup::CustomCommission;
 use Pricing::Engine::Markup::HourEndMarkup;
 use Pricing::Engine::Markup::HourEndDiscount;
+use Pricing::Engine::Markup::IntradayMeanReversionMarkup;
 use Math::Util::CalculatedValue::Validatable;
 
 =head2 tick_source
@@ -92,8 +93,7 @@ sub _build_base_engine {
 
     my $bet          = $self->bet;
     my $pricing_args = $bet->_pricing_args;
-
-    my %args = (
+    my %args         = (
         ticks                => $self->ticks_for_trend,
         strikes              => [$pricing_args->{barrier1}],
         vol                  => $pricing_args->{iv},
@@ -122,6 +122,47 @@ sub _build_apply_equal_tie_markup {
             and ($self->bet->underlying->submarket->name eq 'major_pairs' or $self->bet->underlying->submarket->name eq 'minor_pairs')) ? 1 : 0;
 }
 
+has mean_reversion_markup => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_mean_reversion_markup {
+    my $self = shift;
+
+    my $markup = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'mean_reversion_markup',
+        description => 'Intraday mean reversion markup.',
+        set_by      => __PACKAGE__,
+        base_amount => 0,
+    });
+
+    my $bet = $self->bet;
+
+    return $markup unless ($bet->market->name eq 'forex' or $bet->market->name eq 'commodities');
+
+    return $markup if $bet->is_forward_starting;
+
+    my $bet_duration = $bet->timeindays->amount * 24 * 60;
+    # Maximum lookback period is 30 minutes
+    my $lookback_duration = min(30, $bet_duration);
+    #  We did not do any ajdusment if there is nothing to lookback ie either monday morning or the next day after early close
+    return $markup
+        unless $bet->trading_calendar->is_open_at($bet->underlying->exchange, $bet->date_start->minus_time_interval($lookback_duration . 'm'));
+    my $bs_probability = $self->base_probability->base_amount;
+    my $min_max        = $bet->spot_min_max($bet->date_start->minus_time_interval($lookback_duration . 'm'));
+
+    my %params = (
+        min_max        => $min_max,
+        bs_probability => $bs_probability,
+        spot           => $bet->pricing_spot,
+        pricing_code   => $bet->pricing_code
+    );
+
+    $markup->include_adjustment('add', Pricing::Engine::Markup::IntradayMeanReversionMarkup->new(%params)->markup);
+
+    return $markup;
+}
 has hour_end_markup => (
     is         => 'ro',
     lazy_build => 1,
@@ -293,7 +334,16 @@ sub _build_risk_markup {
     });
 
     $risk_markup->include_adjustment('add', $self->economic_events_markup);
-    $risk_markup->include_adjustment('add', $self->hour_end_markup) if %{$self->bet->hour_end_markup_parameters};
+
+    if (%{$self->bet->hour_end_markup_parameters} and $self->hour_end_markup->amount > $self->mean_reversion_markup->amount) {
+
+        $risk_markup->include_adjustment('add', $self->hour_end_markup);
+
+    } else {
+
+        $risk_markup->include_adjustment('add', $self->mean_reversion_markup);
+
+    }
 
     if ($bet->is_path_dependent) {
         my $iv_risk = Math::Util::CalculatedValue::Validatable->new({

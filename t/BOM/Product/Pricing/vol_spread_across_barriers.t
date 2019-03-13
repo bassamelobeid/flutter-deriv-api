@@ -85,7 +85,7 @@ my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 subtest 'test prices across barriers' => sub {
-    foreach my $d ([130.581, 977], [130.485, 1000], [130.381, 1000], [130.301, 1000], [130.221, 1000]) {
+    foreach my $d ([130.581, 970], [130.485, 1000], [130.381, 1000], [130.301, 1000], [130.221, 1000]) {
         my $c = produce_contract({
             bet_type             => 'CALLE',
             currency             => 'JPY',
@@ -99,7 +99,7 @@ subtest 'test prices across barriers' => sub {
             underlying           => $underlying,
             current_tick         => $current_tick,
         });
-        is $c->ask_price, $d->[1], "price is $d->[1] for barrier $d->[0]";
+is $c->ask_price, $d->[1], "price is $d->[1] for barrier $d->[0] shortcode ". $c->shortcode;
     }
 };
 
