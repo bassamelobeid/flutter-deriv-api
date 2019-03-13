@@ -139,11 +139,11 @@
          "maximum" : 9999999999,
          "type" : "integer",
          "description" : "Epoch value of the expiry time of the contract. You must either specify date_expiry or duration.",
-         "minimum" : 1
+         "minimum" : 0
       },
       "date_start" : {
          "maximum" : 9999999999,
-         "minimum" : 1,
+         "minimum" : 0,
          "type" : "integer",
          "description" : "[Optional] Indicates epoch value of the starting time of the contract. If left empty, the start time of the contract is now."
       },
