@@ -67,7 +67,8 @@
                      },
                      "token" : {
                         "type" : "string",
-                        "description" : "The token designating the account"
+                        "description" : "The token designating the account",
+                        "sensitive": 1
                      },
                      "payout" : {
                         "type" : "number",
@@ -100,7 +101,7 @@
                            },
                            "message_to_client" : {
                               "description" : "An error message localized according to the websocket",
-                              "type" : "string",
+                              "type" : ["string","null" ],
                               "required" : "1"
                            },
                            "token" : {
