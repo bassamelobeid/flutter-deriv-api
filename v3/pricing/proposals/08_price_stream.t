@@ -46,7 +46,9 @@ $req = {
 
 $t->send_ok({json => $req})->message_ok;
 $res = $json->decode(Encode::decode_utf8($t->message->[1]));
-ok $res->{proposal}->{id}, 'Should return id';
+my $uuid = $res->{proposal}->{id};
+ok $uuid, 'Should return id';
+is $res->{subscription}->{id}, $uuid, 'Subscription id with a correct value';
 
 $t->send_ok({json => $req})->message_ok;
 $res = $json->decode(Encode::decode_utf8($t->message->[1]));
@@ -54,6 +56,7 @@ is $res->{error}->{code}, 'AlreadySubscribed', 'Correct error for already subscr
 
 $t->send_ok({json => {forget_all => 'proposal'}})->message_ok;
 $res = $json->decode(Encode::decode_utf8($t->message->[1]));
-is scalar @{$res->{forget_all}}, 1, 'Correct number of subscription forget';
+is scalar @{$res->{forget_all}}, 1, 'Correct number of subscriptions forgotten';
+is $res->{forget_all}->[0], $uuid, 'Correct subscription id forgotten';
 
 done_testing();

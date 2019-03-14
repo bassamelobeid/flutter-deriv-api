@@ -19,17 +19,17 @@ subtest 'Examples match the send schema' => sub {
         my $send_schema = path("$call_name/send.json")->slurp_utf8;
         my $validator   = JSON::Validator->new()->schema($json->decode($send_schema));
 
-         $validator->coerce(
+        $validator->coerce(
             booleans => 1,
             numbers  => 1,
             strings  => 1
         );
         my $example = path("$call_name/example.json")->slurp_utf8;
         my $request = $json->decode($example);
-        my @error  = $validator->validate($request);
+        my @error   = $validator->validate($request);
         ok !@error, "$call_name response is valid";
 
-        if ( @error) {
+        if (@error) {
             diag Dumper(\$request);
             diag " - $_" foreach @error;
             last;

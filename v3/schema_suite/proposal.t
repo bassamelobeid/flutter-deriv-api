@@ -112,12 +112,12 @@ test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
     '100', 'CALL', 'FCHI', '1', 'd', 'Win payout if French Index is strictly higher than entry spot at close on 2016-08-10.', '52.92', '52.92',
     '3563.07';
-    test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
+test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
     'CALL', 'FCHI', '7', 'd', '3564', 'Win payout if French Index is strictly higher than 3564.00 at close on 2016-08-16.', '51.12', '51.12',
     '3563.07';
-    test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
+test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
     'ONETOUCH', 'FCHI', '7', 'd', '3624', 'Win payout if French Index touches 3624.00 through close on 2016-08-16.', '40.89', '40.89', '3563.07';
-    test_sendrecv_params 'proposal/test_send_double_barrier.json', 'proposal/test_receive_double_barrier.json',
+test_sendrecv_params 'proposal/test_send_double_barrier.json', 'proposal/test_receive_double_barrier.json',
     'EXPIRYMISS', 'FCHI', '7', 'd', '3600', '3490', 'Win payout if French Index ends outside 3490.00 to 3600.00 at close on 2016-08-16.', '45.24',
     '45.24', '3563.07';
 test_sendrecv_params 'proposal/test_send_double_barrier.json', 'proposal/test_receive_double_barrier.json',
@@ -174,4 +174,10 @@ test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_rec
     '100', 'PUTSPREAD', 'R_100', '7', 'd', '65258.00', '65208.19',
     'Win up to USD 100 if Volatility 100 Index\'s exit tick is between 65258.00 and 65208.19 at close on 2016-08-16.',
     '53.54', '53.54', '65258.19';
+
+#subscription
+test_sendrecv_params 'proposal/test_send_subscribe.json', 'proposal/test_receive_subscribe.json',
+    '100', 'ASIANU', 'R_100', '5', 't', 'Win payout if the last tick of Volatility 100 Index is strictly higher than the average of the 5 ticks.',
+    '51.49', '51.49', '65258.19';
+
 finish;

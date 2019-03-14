@@ -20,7 +20,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase;
 use Date::Utility;
 use await;
 
-use JSON::MaybeXS;
+use JSON::MaybeUTF8 qw/encode_json_utf8/;
 
 build_test_R_50_data();
 my $t = build_wsapi_test();
@@ -80,7 +80,9 @@ my $proposal = $t->await::proposal({
     proposal => 1,
     %contractParameters
 });
-ok $proposal->{proposal}->{id};
+
+ok($proposal->{proposal}->{id}, 'There is always an id');
+is($proposal->{subscription}, undef, "... even when there is not any subscription");
 ok $proposal->{proposal}->{ask_price};
 test_schema('proposal', $proposal);
 
@@ -118,7 +120,7 @@ my $err_proposal = $t->await::proposal({
 });
 
 cmp_ok $err_proposal->{msg_type},, 'eq', 'proposal';
-cmp_ok $err_proposal->{error}->{code},, 'eq', 'AlreadySubscribed', 'AlreadySubscribed error expected';
+cmp_ok $err_proposal->{error}->{code}, 'eq', 'AlreadySubscribed', 'AlreadySubscribed error expected';
 
 sleep 1;
 my $buy_error = $t->await::buy({
@@ -279,7 +281,6 @@ $res = $t->await::buy({
 is $res->{error}->{code}, 'InputValidationFailed', 'Schema validation fails with negative duration';
 
 subtest 'buy and subscribe' => sub {
-
     my $proposal_3 = $t->await::proposal({
         proposal => 1,
         %notouch_2
@@ -296,13 +297,19 @@ subtest 'buy and subscribe' => sub {
     my $contract_id;
     diag explain $res unless ok($contract_id = $res->{buy}->{contract_id}, "got contract_id");
 
-    is $res->{req_id}, 1111, 'same req_id in response'; 
+    is $res->{req_id}, 1111, 'same req_id in response';
 
     my @buy_keys = sort qw/balance_after shortcode contract_id start_time longcode transaction_id buy_price purchase_time payout/;
-
     is_deeply([sort (keys %{$res->{buy}})], [@buy_keys], 'no unexpected response');
 
-    ok $res->{subscription}->{id}, 'Subscription id is added';
+    ok my $uuid = $res->{subscription}->{id}, 'Subscription id is added';
+
+    $res = $t->await::proposal_open_contract({
+        proposal_open_contract => 1,
+        subscribe              => 1,
+        contract_id            => $contract_id
+    });
+    is $res->{error}->{code}, 'AlreadySubscribed', 'Already subscribed to this contract with buy&subscribe';
 
     my $msg = {
         %$res,
@@ -315,13 +322,13 @@ subtest 'buy and subscribe' => sub {
 
     };
 
-    my $json = JSON::MaybeXS->new;
-    BOM::Config::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, Encode::encode_utf8($json->encode($msg)));
+    BOM::Config::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, encode_json_utf8($msg));
 
     sleep 2;
 
     my $data = $t->await::forget_all({forget_all => 'proposal_open_contract'});
     diag explain $res if not is(scalar @{$data->{forget_all}}, 1, 'Correct number of subscription forget');
+    is $data->{forget_all}->[0], $uuid, 'Correct subscription id returned';
 };
 
 $t->finish_ok;

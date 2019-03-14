@@ -63,8 +63,16 @@ $response = $t->await::transaction({
     transaction => 1,
     subscribe   => 1
 });
+ok my $uuid = $response->{transaction}->{id}, 'There is an ID';
+is $response->{subscription}->{id}, $uuid, 'It is equal to subscription id';
+test_schema('transaction', $response);
 
-ok $response->{transaction}->{id};
+$response = $t->await::transaction({
+    transaction => 1,
+    subscribe   => 1
+});
+cmp_ok $response->{msg_type},, 'eq', 'transaction';
+cmp_ok $response->{error}->{code}, 'eq', 'AlreadySubscribed', 'AlreadySubscribed error expected';
 
 # NOTICE I don't know why, but if I want to get the stream message, I must send a wrong websocket command
 # otherwise I cannot get the following message.
@@ -78,6 +86,14 @@ $client->smart_payment(
 );
 
 # Here we test the message process flow when json include utf8 string.
-lives_ok { $t->await::transaction() } "utf8 string is ok";
+lives_ok { $response = $t->await::transaction() } "utf8 string is ok";
+is $response->{transaction}->{id},  $uuid, 'The same id';
+is $response->{subscription}->{id}, $uuid, 'The same subscription id';
+test_schema('transaction', $response);
+
+$response = $t->await::forget_all({forget_all => 'transaction'});
+is scalar @{$response->{forget_all}}, 1, 'Correct number of ids';
+is $response->{forget_all}->[0], $uuid, 'Correct id value';
+test_schema('transaction', $response);
 
 done_testing();

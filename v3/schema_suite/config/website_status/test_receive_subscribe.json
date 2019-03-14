@@ -164,10 +164,12 @@
             "title" : "Subscription information",
             "description" : "For subscription requests only.",
             "type" : "object",
+            "required": 1,
             "properties": {
                "id" : {
-                "description": "The subscription identifier of the data to be streamed.",
-                "type" : "string"
+                "description": "A stream id that can be used to cancel this stream using the Forget request.",
+                "type" : "string",
+                "required" : 1
                }
             }
         }

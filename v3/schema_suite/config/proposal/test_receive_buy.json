@@ -54,6 +54,16 @@
       "type": "string",
       "pattern": "^proposal$",
       "required": 1
+    },
+    "subscription": {
+      "type": "object",
+      "required": 1,
+      "properties":{
+          "id": {
+              "type": "string",
+              "required": 1
+          }
+      }
     }
   }
 }

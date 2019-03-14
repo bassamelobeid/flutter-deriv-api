@@ -246,6 +246,13 @@ SKIP: {
             $response = $t->await::proposal_array($proposal_array_req_tpl);
             test_schema('proposal_array', $response);
 
+            my $uuid = $response->{proposal_array}->{id};
+            ok $uuid, "There is an id";
+            is $response->{subscription}->{id}, $uuid, "And it is the same as the subscription id";
+
+            my $failure = $t->await::proposal_array($proposal_array_req_tpl);
+            is $failure->{error}->{code}, 'AlreadySubscribed', 'Error when subscribed again';
+
             my ($c) = values %{$t->app->active_connections};
 
             is(scalar keys %{$c->pricing_subscriptions()}, 1, "Subscription created");
@@ -254,6 +261,8 @@ SKIP: {
             ok(redis_pricer->get($channel), "check redis subscription");
 
             $response = $t->await::forget_all({forget_all => "proposal_array"});
+            is @{$response->{forget_all}}, 1, 'Correct number of subscriptions forgotten';
+            is $response->{forget_all}->[0], $uuid, 'Correct subscription id returned';
             is($c->pricing_subscriptions()->{$channel}, undef, "Forgotten");
         };
 
