@@ -66,8 +66,5 @@
       "description": "Optional field to map request to response"
     }
   },
-  "additionalProperties": false,
-  "required": [
-    "set_self_exclusion"
-  ]
+  "additionalProperties": false
 }

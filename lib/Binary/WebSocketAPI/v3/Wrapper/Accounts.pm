@@ -53,9 +53,28 @@ sub balance_error_handler {
 }
 
 sub balance_success_handler {
-    my (undef, $rpc_response, $req_storage) = @_;
+    my ($c, $rpc_response, $req_storage) = @_;
     $rpc_response->{id} = $req_storage->{transaction_channel_id} if $req_storage->{transaction_channel_id};
     return;
+}
+
+=head2 balance_response_handler
+
+An event handler invoked by websocket API before sending B<balance> response.
+Currently it is used for adding a subscription attribute to the JSON.
+
+=cut
+
+sub balance_response_handler {
+    my ($rpc_response, $api_response, $req_storage) = @_;
+
+    $api_response->{passthrough} = $req_storage->{args}->{passthrough};
+
+    return $api_response if $rpc_response->{error};
+    if (my $uuid = $rpc_response->{id}) {
+        $api_response->{subscription}->{id} = $uuid;
+    }
+    return $api_response;
 }
 
 sub login_history_response_handler {

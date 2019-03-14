@@ -141,7 +141,9 @@ sub transaction {
 
     return {
         msg_type => 'transaction',
-        transaction => {$id ? (id => $id) : ()}};
+        transaction => {$id ? (id => $id) : ()},
+        $id ? (subscription => {(id => $id)}) : (),
+    };
 }
 
 1;

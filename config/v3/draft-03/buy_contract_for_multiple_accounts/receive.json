@@ -6,13 +6,15 @@
   "properties": {
     "echo_req": {
       "title":"Echo request",
-      "description":"Echo of the request made"
+      "description":"Echo of the request made",
+      "required": 1
     },
     "buy_contract_for_multiple_accounts": {
       "type": "object",
       "title": "Receipt confirmation",
       "description": "Receipt confirmation for the purchase",
       "additionalProperties": false,
+      "required": 1,
       "properties": {
         "result": {
           "type": "array",
@@ -100,16 +102,12 @@
     },
     "msg_type": {
       "type": "string",
-      "description":"buy_contract_for_multiple_accounts"
+      "description":"buy_contract_for_multiple_accounts",
+      "required": 1
     },
     "req_id": {
       "type": "integer",
       "description": "Optional field send in request to map to response, present only when request contains req_id"
     }
-  },
-  "required": [
-    "echo_req",
-    "buy_contract_for_multiple_accounts",
-    "msg_type"
-  ]
+  }
 }
