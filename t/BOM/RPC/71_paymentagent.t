@@ -315,7 +315,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Alice->place_of_birth('');
         $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        like($res->{error}{message_to_client}, qr/Please provide the required details to perform a payment agent transfer./, $test);
+        like($res->{error}{message_to_client}, qr/Your profile appears to be incomplete. Please update your personal details to continue./, $test);
         $Alice->place_of_birth('id');
         $Alice->save;
 
@@ -1021,7 +1021,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $Alice->save;
         $test = 'Withdraw fails if missing place of birth';
         $res  = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        like($res->{error}{message_to_client}, qr/Your account is missing required details for withdrawal./, $test);
+        like($res->{error}{message_to_client}, qr/Your profile appears to be incomplete. Please update your personal details to continue./, $test);
         $Alice->place_of_birth('id');
         $Alice->save;
 

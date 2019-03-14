@@ -88,14 +88,14 @@ subtest 'Can change fiat -> fiat before first deposit' => sub {
     subtest 'Change to EUR' => sub {
         $params->{currency} = 'EUR';
         $c->call_ok($method, $params)->has_no_error;
-        is($c->result->{status},            1,     'set currency succeeded');
+        is($c->result->{status},              1,     'set currency succeeded');
         is($client->account->currency_code(), 'EUR', 'currency successfully changed to EUR');
     };
 
     subtest 'Change back to USD' => sub {
         $params->{currency} = 'USD';
         $c->call_ok($method, $params)->has_no_error;
-        is($c->result->{status},            1,     'set currency succeeded');
+        is($c->result->{status},              1,     'set currency succeeded');
         is($client->account->currency_code(), 'USD', 'currency successfully changed back to USD');
     };
 };

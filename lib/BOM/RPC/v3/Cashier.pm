@@ -500,7 +500,7 @@ rpc paymentagent_transfer => sub {
     return $error_sub->(localize('You cannot transfer to a client in a different country of residence.'))
         if $client_fm->residence ne $client_to->residence and not _is_pa_residence_exclusion($client_fm);
 
-    return $error_sub->(localize('Please provide the required details to perform a payment agent transfer.'))
+    return $error_sub->(localize('Your profile appears to be incomplete. Please update your personal details to continue.'))
         if ($client_fm->missing_requirements('withdrawal'));
 
     #disable/suspending pa transfers in a country, does not exclude a pa if a previous transfer is recorded in db.
@@ -867,7 +867,8 @@ rpc paymentagent_withdraw => sub {
     return $error_sub->(localize('You cannot perform this action, as your account is withdrawal locked.'))
         if $client->status->withdrawal_locked;
 
-    return $error_sub->(localize('Your account is missing required details for withdrawal.')) if ($client->missing_requirements('withdrawal'));
+    return $error_sub->(localize('Your profile appears to be incomplete. Please update your personal details to continue.'))
+        if ($client->missing_requirements('withdrawal'));
 
     return $error_sub->(localize('You cannot perform this action, as your verification documents have expired.')) if $client->documents_expired;
 
@@ -1165,7 +1166,7 @@ rpc transfer_between_accounts => sub {
         if $client->status->cashier_locked;
     return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is withdrawal locked.'))
         if $client->status->withdrawal_locked;
-    return _transfer_between_accounts_error(localize('Please provide the required details to perform a transfer between accounts.'))
+    return _transfer_between_accounts_error(localize('Your profile appears to be incomplete. Please update your personal details to continue.'))
         if ($client->missing_requirements('withdrawal'));
     return _transfer_between_accounts_error(localize('Your cashier is locked as per your request.')) if $client->cashier_setting_password;
 
