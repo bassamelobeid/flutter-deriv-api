@@ -255,8 +255,8 @@ sub bom_real_loginids {
 
 #
 sub mt5_logins {
-    my $self   = shift;
-    my $filter = shift;
+    my $self = shift;
+    my $filter = shift // 'real|demo';
     my @mt5_logins;
 
     for my $login (sort grep { $_ =~ MT5_REGEX } $self->loginids) {
