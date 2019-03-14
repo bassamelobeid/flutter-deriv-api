@@ -42,9 +42,8 @@
       "description": "[Optional] 1 - if the market is closed at the end time, or license limit is before end time, adjust interval backwards to compensate."
     },
     "subscribe": {
-      "type": "integer",
       "description": "[Optional] 1 - to send updates whenever a new tick is received.",
-      "pattern": "^1$"
+      "enum": [1]
     },
     "passthrough": {
         "type": "object",

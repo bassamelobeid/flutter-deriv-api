@@ -100,9 +100,8 @@
       "additionalProperties": false
     },
     "subscribe": {
-      "type": "integer",
       "description": "1 - to stream",
-      "pattern": "^1$"
+      "enum": [1]
     },
     "passthrough": {
       "type": "object",

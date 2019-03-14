@@ -7,7 +7,8 @@
     "get_self_exclusion": {
       "type":"integer",
       "description": "Must be 1",
-      "pattern": "^1$"
+      "pattern": "^1$",
+      "required": 1
     },
     "passthrough": {
       "type": "object",
@@ -18,8 +19,5 @@
       "description": "Optional field to map request to response"
     }
   },
-  "additionalProperties": false,
-  "required": [
-    "get_self_exclusion"
-  ]
+  "additionalProperties": false
 }

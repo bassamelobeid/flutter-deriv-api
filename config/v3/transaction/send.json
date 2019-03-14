@@ -25,7 +25,6 @@
          "type" : "integer"
       },
       "transaction" : {
-         "type" : "integer",
          "description" : "Must be 1.",
          "enum" : [
             1

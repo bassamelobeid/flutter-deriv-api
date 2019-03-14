@@ -85,6 +85,7 @@ sub proposal {
                 $api_response->{passthrough} = $req_storage->{args}->{passthrough};
                 if (my $uuid = $req_storage->{uuid}) {
                     $api_response->{proposal}->{id} = $uuid;
+                    $api_response->{subscription}->{id} = $uuid if $req_storage->{args}->{subscribe};
                 } else {
                     $api_response = $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to proposal.'));
                 }
@@ -130,11 +131,13 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
     my @contract_types = ref($copy_args->{contract_type}) ? @{$copy_args->{contract_type}} : $copy_args->{contract_type};
 
     $copy_args->{skip_streaming} = 1;    # only for proposal_array: do not create redis subscription, we need only uuid stored in stash
-    my $uuid = _pricing_channel_for_ask($c, $copy_args, {}) or do {
+
+    my $uuid = _pricing_channel_for_ask($c, $copy_args, {});
+    unless ($uuid) {
         my $error = $c->new_error('proposal_array', 'AlreadySubscribed', $c->l('You are already subscribed to proposal_array.'));
         $c->send({json => $error}, $req_storage);
         return;
-    };
+    }
 
     if ($req_storage->{args}{subscribe}) {    # store data in stash if it is a subscription
         my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
@@ -334,6 +337,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                                 proposals => \%proposal_array,
                                 $uuid ? (id => $uuid) : (),
                             },
+                            ($req_storage->{args}->{subscribe} and $uuid) ? (subscription => {id => $uuid}) : (),
                             msg_type => $msg_type,
                             map { ; $_ => $req_storage->{args}{$_} } grep { $req_storage->{args}{$_} } qw(req_id passthrough),
                         }};
@@ -493,6 +497,7 @@ sub _process_proposal_open_contract_response {
                     json => {
                         msg_type               => 'proposal_open_contract',
                         proposal_open_contract => $result,
+                        $uuid ? (subscription => {id => $uuid}) : (),
                     },
                 },
                 $req_storage
@@ -662,8 +667,9 @@ sub process_bid_event {
 
             $response->{contract_id} = $stash_data->{args}->{contract_id} if exists $stash_data->{args}->{contract_id};
             $results = {
-                msg_type => $type,
-                $type    => $response
+                msg_type     => $type,
+                $type        => $response,
+                subscription => {id => $stash_data->{uuid}},
             };
         }
         if ($c->stash('debug')) {
@@ -687,6 +693,7 @@ sub process_bid_event {
 
 sub process_proposal_array_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
+
     my $type                    = 'proposal';
     my $pricing_channel_updated = undef;
 
@@ -801,6 +808,7 @@ sub process_ask_event {
                         id       => $stash_data->{uuid},
                         longcode => $c->l($stash_data->{cache}->{longcode}),
                     },
+                    subscription => {id => $stash_data->{uuid}},
                 };
             }
         }
