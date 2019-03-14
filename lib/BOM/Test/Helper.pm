@@ -16,6 +16,8 @@ use Encode;
 use JSON::Schema;
 use Path::Tiny;
 use JSON::MaybeXS;
+use JSON::Validator;
+use JSON::Schema;
 use Data::Dumper;
 use Date::Utility;
 
@@ -172,14 +174,28 @@ sub reconnect {
 sub test_schema {
     my ($type, $data) = @_;
 
-    my $validator =
-        JSON::Schema->new(JSON::MaybeXS->new->decode(path($ENV{WEBSOCKET_API_REPO_PATH} . "/config/$version/$type/receive.json")->slurp_utf8));
-    my $result = $validator->validate($data);
-    ok $result, "$type response is valid";
-    if (not $result) {
-        diag Dumper(\$data);
-        diag " - $_" foreach $result->errors;
+    my $v4_schema_path = path($ENV{WEBSOCKET_API_REPO_PATH} . "/config/$version/$type/receive.json");
+    my $v4_validator   = JSON::Validator->new;
+    $v4_validator->schema(JSON::MaybeXS->new->decode($v4_schema_path->slurp_utf8));
+    $v4_validator = $v4_validator->coerce(1);
+    my @v4_result = $v4_validator->validate($data);
+
+    if (scalar @v4_result) {
+        diag 'Message is rejected by v4 validator:';
+        diag " - $_" foreach @v4_result;
+        diag 'Going to re-validate with v3 schema';
     }
+
+    #falling back to version 3 of JSON Schema
+    my $v3_schema_path = path($ENV{WEBSOCKET_API_REPO_PATH} . "/config/$version/draft-03/$type/receive.json");
+    my $v3_result      = JSON::Schema->new(JSON::MaybeXS->new->decode($v3_schema_path->slurp_utf8))->validate($data);
+
+    ok $v3_result, "$type response is accepted by v3 schema (after being rejected by v4)" or do {
+        diag Dumper(\$data);
+        diag 'V3 schema validation failed with:';
+        diag " - $_" foreach $v3_result->errors;
+    };
+
     return;
 }
 
