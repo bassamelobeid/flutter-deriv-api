@@ -12,7 +12,7 @@ use Getopt::Long;
 use Path::Tiny;
 use Date::Utility;
 use Log::Any qw($log);
-
+use Log::Any::Adapter 'Stderr';
 use constant MAX_FAIL_COUNT => 100;
 
 my $csv = Text::CSV->new({eol => "\n"})
