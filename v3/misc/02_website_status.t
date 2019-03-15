@@ -10,6 +10,10 @@ use Test::MockModule;
 use Mojo::Redis2;
 use Clone;
 use BOM::Config::Chronicle;
+use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
+
+#we need this because of calculating max exchange rates on currency config
+populate_exchange_rates();
 
 my $t = build_wsapi_test();
 $t = $t->send_ok({json => {website_status => 1}})->message_ok;

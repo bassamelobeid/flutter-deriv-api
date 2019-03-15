@@ -158,6 +158,9 @@ subtest 'paymentagent_withdraw' => sub {
 };
 
 subtest 'transfer between accounts' => sub {
+
+    populate_exchange_rates();
+
     my $client_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         email       => $client_usd->email,
@@ -166,11 +169,6 @@ subtest 'transfer between accounts' => sub {
     $client_btc->set_default_account('BTC');
     $user_client->add_client($client_btc);
     my $btc_token = BOM::Database::Model::AccessToken->new->create_token($client_btc->loginid, 'test token', ['read', 'payment']);
-
-    populate_exchange_rates({
-        USD => 1,
-        BTC => 6000,
-    });
 
     $t->await::authorize({authorize => $client_token});
     my $client_balance = $client_usd->default_account->balance;

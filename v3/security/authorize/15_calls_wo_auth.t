@@ -7,6 +7,7 @@ use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;
 use Test::MockModule;
 use BOM::Config::Runtime;
+use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 
 use await;
 
@@ -69,6 +70,8 @@ is_deeply $res->{states_list}->[0],
     text  => 'Johor'
     };
 test_schema('states_list', $res);
+
+populate_exchange_rates();
 
 ## website_status
 my (undef, $call_params) = call_mocked_client($t, {website_status => 1});
