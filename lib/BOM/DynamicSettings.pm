@@ -208,6 +208,7 @@ sub get_settings_by_group {
                 payments.transfer_between_accounts.minimum.default.fiat
                 payments.transfer_between_accounts.minimum.default.crypto
                 payments.transfer_between_accounts.minimum.by_currency
+                payments.transfer_between_accounts.maximum.default
                 payments.experimental_currencies_allowed
                 )
         ],
@@ -315,25 +316,32 @@ sub get_extra_validation {
         'payments.transfer_between_accounts.minimum.by_currency'     => \&_validate_transfer_min_by_currency,
         'payments.transfer_between_accounts.minimum.default.fiat'    => \&_validate_transfer_min_default,
         'payments.transfer_between_accounts.minimum.default.crypto'  => \&_validate_transfer_min_default,
-        'payments.transfer_between_accounts.limits.between_accounts' => \&_validate_transfer_min_default,
-        'payments.transfer_between_accounts.limits.MT5'              => \&_validate_transfer_min_default,
+        'payments.transfer_between_accounts.limits.between_accounts' => \&_validate_positive_number,
+        'payments.transfer_between_accounts.limits.MT5'              => \&_validate_positive_number,
+        'payments.transfer_between_accounts.maximum.default'         => \&_validate_positive_number,
         'payments.payment_limits'                                    => \&_validate_payment_min_by_staff,
     };
 
     return $setting_validators->{$setting};
 }
 
-=head2 _validate_transfer_min_default
+=head2 _validate_positive_number
 
-Validates the default minimum transfer amount to be a valid number.
+Validates the amount to be a positive valid number.
 
 =cut  
+
+sub _validate_positive_number {
+    my $input_data = shift;
+    die "Invalid numerical value $input_data" unless Scalar::Util::looks_like_number($input_data);
+    die "$input_data is less than or equal to 0" unless $input_data > 0;
+    return;
+}
 
 sub _validate_transfer_min_default {
     my ($new_value, $old_value, $key) = @_;
 
-    die "Invalid numerical value $new_value" unless Scalar::Util::looks_like_number($new_value);
-    die "$new_value is less than or equal to 0" unless $new_value > 0;
+    _validate_positive_number($new_value);
 
     return unless $key =~ /^payments.transfer_between_accounts.minimum.default.(.*)$/;
     my $type = $1;
