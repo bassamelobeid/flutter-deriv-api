@@ -7,6 +7,7 @@ use Test::Mojo;
 
 use BOM::Test::RPC::Client;
 use BOM::Config::CurrencyConfig;
+use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 subtest 'residence_list' => sub {
@@ -41,6 +42,8 @@ subtest 'states_list' => sub {
 };
 
 subtest 'currencies_config.transfer_between_accounts' => sub {
+
+    populate_exchange_rates();
     my $result = $c->call_ok(
         'website_status',
         {
@@ -56,6 +59,13 @@ subtest 'currencies_config.transfer_between_accounts' => sub {
         '==',
         $result->{currencies_config}->{$_}->{transfer_between_accounts}->{limits}->{min},
         "Transfer between account minimum is correct for $_"
+    ) for @all_currencies;
+
+    cmp_ok(
+        $currency_limits->{$_}->{max},
+        '==',
+        $result->{currencies_config}->{$_}->{transfer_between_accounts}->{limits}->{max},
+        "Transfer between account maximum is correct for $_"
     ) for @all_currencies;
 
     for my $currency (@all_currencies) {

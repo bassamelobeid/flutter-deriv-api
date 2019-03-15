@@ -66,6 +66,7 @@ my $custom_rates = {
     'BTC' => $btc_usd_rate,
     'UST' => 1
 };
+
 populate_exchange_rates();
 populate_exchange_rates($custom_rates);
 
@@ -176,6 +177,10 @@ subtest 'call params validation' => sub {
 };
 
 subtest 'validation' => sub {
+
+    #populate exchange reates for BOM::TEST redis server to be used on validation_transfer_between_accounts
+    populate_exchange_rates();
+
     # random loginid to make it fail
     $params->{token} = $token;
     $params->{args}->{account_from} = 'CR123';
@@ -287,24 +292,52 @@ subtest 'validation' => sub {
     $params->{args}->{account_from} = $client_cr->loginid;
     $params->{args}->{account_to}   = $cr_dummy->loginid;
 
-    my $min = BOM::Config::CurrencyConfig::transfer_between_accounts_limits()->{'BTC'}->{min};
-    $params->{args}->{amount} = financialrounding('amount', 'BTC', $min / 2);
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code crypto to crypto';
-    like $result->{error}->{message_to_client}, qr/This amount is too low. Please enter a minimum of/, 'Correct error message for invalid amount';
+    $params->{args}->{amount} = 0.400000001;
 
-    $params->{args}->{amount} = 0.500000001;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for invalid amount';
     like $result->{error}->{message_to_client},
         qr/Invalid amount. Amount provided can not have more than/,
         'Correct error message for amount with decimal places more than allowed per currency';
 
-    $params->{args}->{amount} = $min;
+    $params->{args}->{amount} = 0.02;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code crypto to crypto';
     is $result->{error}->{message_to_client}, 'Account transfers are not available within accounts with cryptocurrency as default currency.',
         'Correct error message for crypto to crypto';
+
+    # min/max should be calculated for transfer between different currency (fiat to crypto and vice versa)
+    $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        place_of_birth => 'id'
+    });
+
+    $user->add_client($client_cr);
+    $client_cr->set_default_account('USD');
+
+    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
+    $params->{args}->{currency}     = 'USD';
+    $params->{args}->{account_from} = $client_cr->loginid;
+    $params->{args}->{account_to}   = $cr_dummy->loginid;
+
+    my $min = BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1)->{'USD'}->{min};
+    $params->{args}->{amount} = financialrounding('amount', 'USD', $min - 0.01);
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+
+    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code crypto to crypto';
+    like $result->{error}->{message_to_client},
+        qr/Provided amount is not within permissible limits. Minimum transfer amount for USD currency is/,
+        'Correct error message for invalid minimum amount';
+
+    my $max = BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1)->{'USD'}->{max};
+    $params->{args}->{amount} = financialrounding('amount', 'USD', $max * 2);
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code crypto to crypto';
+    like $result->{error}->{message_to_client},
+        qr/Provided amount is not within permissible limits. Maximum transfer amount for USD currency is/,
+        'Correct error message for invalid maximum amount';
+
 };
 
 subtest $method => sub {
@@ -436,6 +469,8 @@ subtest $method => sub {
 };
 
 subtest 'transfer with fees' => sub {
+    populate_exchange_rates($custom_rates);
+
     $email         = 'new_transfer_email' . rand(999) . '@sample.com';
     $client_cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
@@ -1039,7 +1074,7 @@ subtest 'suspended currency transfers' => sub {
         BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies(['BTC']);
         my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError',
             "Transfer to suspended currency not allowed - correct error code")
-            ->error_message_is('Account transfers are not available between USD and BTC.',
+            ->error_message_is('Account transfers are not available between USD and BTC',
             'Transfer to suspended currency not allowed - correct error message');
     };
 
@@ -1054,7 +1089,7 @@ subtest 'suspended currency transfers' => sub {
 
         my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError',
             "Transfer from suspended currency not allowed - correct error code")
-            ->error_message_is('Account transfers are not available between BTC and USD.',
+            ->error_message_is('Account transfers are not available between BTC and USD',
             'Transfer from suspended currency not allowed - correct error message');
     };
 

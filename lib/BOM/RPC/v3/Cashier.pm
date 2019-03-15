@@ -351,13 +351,12 @@ rpc get_limits => sub {
     if (defined $client->default_account) {
         my $between_accounts_transfer_limit =
             BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts;
-        my $mt5_tranfer_limits = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5;
-
+        my $mt5_transfer_limits      = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5;
         my $client_internal_transfer = $client->get_today_transfer_summary()->{count};
         my $client_mt5_transfer      = $client->get_today_transfer_summary('mt5_transfer')->{count};
 
         my $available_internal_transfer = $between_accounts_transfer_limit - $client_internal_transfer;
-        my $available_mt5_transfer      = $mt5_tranfer_limits - $client_mt5_transfer;
+        my $available_mt5_transfer      = $mt5_transfer_limits - $client_mt5_transfer;
 
         $limit->{daily_transfers} = {
             'internal' => {
@@ -365,7 +364,7 @@ rpc get_limits => sub {
                 available => $available_internal_transfer > 0 ? $available_internal_transfer : 0,
             },
             'mt5' => {
-                allowed   => $mt5_tranfer_limits,
+                allowed   => $mt5_transfer_limits,
                 available => $available_mt5_transfer > 0 ? $available_mt5_transfer : 0
             }};
     }
@@ -1499,11 +1498,12 @@ sub _validate_transfer_between_accounts {
     return _transfer_between_accounts_error(localize('Your [_1] cashier is locked as per your request.', $client_to->loginid))
         if $client_to->cashier_setting_password;
 
-    my $min_allowed_amount = BOM::Config::CurrencyConfig::transfer_between_accounts_limits()->{$currency}->{min};
-
-    return _transfer_between_accounts_error(
-        localize('This amount is too low. Please enter a minimum of [_1] [_2].', formatnumber('amount', $currency, $min_allowed_amount), $currency))
-        if $amount < $min_allowed_amount;
+    # we don't allow transfer between these two currencies
+    if ($from_currency ne $to_currency) {
+        my $disabled_for_transfer_currencies = BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies;
+        return _transfer_between_accounts_error(localize('Account transfers are not available between [_1] and [_2]', $from_currency, $to_currency))
+            if first { $_ eq $from_currency or $_ eq $to_currency } @$disabled_for_transfer_currencies;
+    }
 
     my $err = validate_amount($amount, $currency);
     return _transfer_between_accounts_error($err) if $err;
@@ -1513,7 +1513,9 @@ sub _validate_transfer_between_accounts {
     # we don't allow fiat to fiat if they are different currency
     # this only happens when there is an internal transfer between MLT to MF, we only allow same currency transfer
     return _transfer_between_accounts_error(localize('Account transfers are not available for accounts with different currencies.'))
-        if (($from_currency_type eq $to_currency_type) and ($from_currency_type eq 'fiat') and ($currency ne $to_currency));
+        if (($from_currency_type eq $to_currency_type)
+        and ($from_currency_type eq 'fiat')
+        and ($currency ne $to_currency));
 
     return _transfer_between_accounts_error(localize('Transfers between fiat and crypto accounts are currently disabled.'))
         if BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts
@@ -1521,20 +1523,29 @@ sub _validate_transfer_between_accounts {
 
     # we don't allow crypto to crypto transfer
     return _transfer_between_accounts_error(localize('Account transfers are not available within accounts with cryptocurrency as default currency.'))
-        if (($from_currency_type eq $to_currency_type) and ($from_currency_type eq 'crypto'));
+        if (($from_currency_type eq $to_currency_type)
+        and ($from_currency_type eq 'crypto'));
 
-    # we don't allow transfer between these two currencies
-    if ($from_currency ne $to_currency) {
-        my $disabled_for_transfer_currencies = BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies;
-        return _transfer_between_accounts_error(localize('Account transfers are not available between [_1] and [_2].', $from_currency, $to_currency))
-            if first { $_ eq $from_currency or $_ eq $to_currency } @$disabled_for_transfer_currencies;
-    }
-
-    # check for internal transactions number limits
+# check for internal transactions number limits
     my $daily_transfer_limit  = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts;
     my $client_today_transfer = $current_client->get_today_transfer_summary();
     return _transfer_between_accounts_error(localize("Maximum of [_1] transfers allowed per day.", $daily_transfer_limit))
         unless $client_today_transfer->{count} < $daily_transfer_limit;
+
+    my $min_allowed_amount = BOM::Config::CurrencyConfig::transfer_between_accounts_limits()->{$currency}->{min};
+
+    return _transfer_between_accounts_error(
+        localize(
+            'Provided amount is not within permissible limits. Minimum transfer amount for [_1] currency is [_2].',
+            $currency, formatnumber('amount', $currency, $min_allowed_amount))) if $amount < $min_allowed_amount;
+
+    my $max_allowed_amount = BOM::Config::CurrencyConfig::transfer_between_accounts_limits()->{$currency}->{max};
+
+    return _transfer_between_accounts_error(
+        localize(
+            'Provided amount is not within permissible limits. Maximum transfer amount for [_1] currency is [_2].',
+            $currency, formatnumber('amount', $currency, $max_allowed_amount))
+    ) if (($amount > $max_allowed_amount) and ($from_currency_type ne $to_currency_type));
 
     return undef;
 }
