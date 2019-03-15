@@ -64,8 +64,8 @@ subtest 'produce_batch_contract - price check' => sub {
         delete $args->{bet_types};
         my $call = produce_contract({%$args, bet_type => 'CALL'})->ask_price;
         my $put  = produce_contract({%$args, bet_type => 'PUT'})->ask_price;
-        is $ask_prices->{CALL}->{'100.020'}->{ask_price}, $call, 'same call price';
-        is $ask_prices->{PUT}->{'100.020'}->{ask_price},  $put,  'same put price';
+        is $ask_prices->{CALL}->{'S20P'}->{ask_price}, $call, 'same call price';
+        is $ask_prices->{PUT}->{'S20P'}->{ask_price},  $put,  'same put price';
     }
     'ask_prices';
 
@@ -97,10 +97,10 @@ subtest 'produce_batch_contract - price check' => sub {
                 bet_type => 'PUT',
                 barrier  => 'S15P'
             })->ask_price;
-        is $ask_prices->{CALL}->{'100.020'}->{ask_price}, $call1, 'same call price';
-        is $ask_prices->{PUT}->{'100.020'}->{ask_price},  $put1,  'same put price';
-        is $ask_prices->{CALL}->{'100.015'}->{ask_price}, $call2, 'same call price';
-        is $ask_prices->{PUT}->{'100.015'}->{ask_price},  $put2,  'same put price';
+        is $ask_prices->{CALL}->{'S20P'}->{ask_price}, $call1, 'same call price';
+        is $ask_prices->{PUT}->{'S20P'}->{ask_price},  $put1,  'same put price';
+        is $ask_prices->{CALL}->{'S15P'}->{ask_price}, $call2, 'same call price';
+        is $ask_prices->{PUT}->{'S15P'}->{ask_price},  $put2,  'same put price';
     }
     'ask_prices';
 };
@@ -128,18 +128,18 @@ subtest 'produce_batch_contract - error check' => sub {
 
     my $batch      = produce_batch_contract($args);
     my $ask_prices = $batch->ask_prices;
-    ok !$ask_prices->{RANGE}->{'100.200-99.800'}->{error}{message_to_client};
-    is $ask_prices->{UPORDOWN}->{'100.200-99.800'}->{ask_price}, 2.61, 'ask price is 2.61 for barriers 100.200 & 99.800';
-    ok !$ask_prices->{RANGE}->{'100.250-98.750'}->{error}{message_to_client};
-    ok !$ask_prices->{UPORDOWN}->{'100.250-98.750'}->{error}{message_to_client};
+    ok !$ask_prices->{RANGE}->{'100.2:99.8'}->{error}{message_to_client};
+    is $ask_prices->{UPORDOWN}->{'100.2:99.8'}->{ask_price}, 2.61, 'ask price is 2.61 for barriers 100.200 & 99.800';
+    ok !$ask_prices->{RANGE}->{'100.25:98.75'}->{error}{message_to_client};
+    ok !$ask_prices->{UPORDOWN}->{'100.25:98.75'}->{error}{message_to_client};
 
     $args->{duration} = '1d';
     $batch            = produce_batch_contract($args);
     $ask_prices       = $batch->ask_prices;
-    cmp_ok $ask_prices->{RANGE}->{'100.200-99.800'}->{ask_price}, '==', 0.5, 'minimum ask price';
-    is_deeply($ask_prices->{UPORDOWN}->{'100.200-99.800'}->{error}{message_to_client}, ['This contract offers no return.'],);
-    is $ask_prices->{RANGE}->{'100.250-98.750'}->{ask_price},    2.41, 'correct ask price';
-    is $ask_prices->{UPORDOWN}->{'100.250-98.750'}->{ask_price}, 8.31, 'correct ask price';
+    cmp_ok $ask_prices->{RANGE}->{'100.2:99.8'}->{ask_price}, '==', 0.5, 'minimum ask price';
+    is_deeply($ask_prices->{UPORDOWN}->{'100.2:99.8'}->{error}{message_to_client}, ['This contract offers no return.'],);
+    is $ask_prices->{RANGE}->{'100.25:98.75'}->{ask_price},    2.41, 'correct ask price';
+    is $ask_prices->{UPORDOWN}->{'100.25:98.75'}->{ask_price}, 8.31, 'correct ask price';
 
     $args->{bet_types} = ['CALL', 'RANGE'];
     try {
