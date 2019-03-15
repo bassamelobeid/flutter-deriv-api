@@ -19,6 +19,7 @@ my $rates = {
     ETH => 490,
     UST => 1,
     USB => 1,
+    AUD => 1,
 };
 
 sub populate_exchange_rates {

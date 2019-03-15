@@ -27,6 +27,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::App;
 use Time::HiRes qw(tv_interval gettimeofday);
+use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 
 # populated in the main run() loop
 my $response;
@@ -404,6 +405,7 @@ sub _setup_market_data {
         BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($d->{symbol}, Date::Utility->new);
     }
 
+    populate_exchange_rates();
     return;
 }
 
