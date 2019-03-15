@@ -13,6 +13,7 @@ A repository of dynamic configurations set on currencies, like their minimum/max
 use strict;
 use warnings;
 use feature 'state';
+no indirect;
 
 use Try::Tiny;
 use JSON::MaybeUTF8;
@@ -20,7 +21,6 @@ use Log::Any qw($log);
 use Format::Util::Numbers qw(get_min_unit financialrounding);
 use ExchangeRates::CurrencyConverter qw/convert_currency/;
 use List::Util qw(any);
-use Format::Util::Numbers;
 use LandingCompany::Registry;
 use List::Util qw(max);
 
@@ -40,8 +40,8 @@ sub app_config {
 
 =head2 transfer_between_accounts_limits
 
-Transfer limits are returned as a {currency => {min => 1}, ... } hash ref (there aren't any predefined maximum limits for now).
-These values are extracted from app_config->payment.transfer_between_accounts.minimum, editable in backoffice Dynamic Settings page.
+Transfer limits are returned as a {currency => {min => 1, max => 2500}, ... } hash ref.
+These values are extracted from app_config->payment.transfer_between_accounts.minimum/maximum editable in backoffice Dynamic Settings page.
 
 =over4
 
@@ -67,28 +67,39 @@ sub transfer_between_accounts_limits {
 
     my $configs = app_config()->get([
         'payments.transfer_between_accounts.minimum.default.fiat', 'payments.transfer_between_accounts.minimum.default.crypto',
-        'payments.transfer_between_accounts.minimum.by_currency'
+        'payments.transfer_between_accounts.minimum.by_currency',  'payments.transfer_between_accounts.maximum.default'
     ]);
+
     my $configs_json = JSON::MaybeUTF8::decode_json_utf8($configs->{'payments.transfer_between_accounts.minimum.by_currency'});
 
-    my $currency_limits;
-    foreach (@all_currencies) {
-        my $type = LandingCompany::Registry::get_currency_type($_);
-        $type = 'fiat' if (LandingCompany::Registry::get_currency_definition($_)->{stable});
-        my $min = $configs_json->{$_} // $configs->{"payments.transfer_between_accounts.minimum.default.$type"};
-        my $lower_bound = $lower_bounds->{$_};
+    my $currency_limits = {};
+    foreach my $currency (@all_currencies) {
+        my $type = LandingCompany::Registry::get_currency_type($currency);
+        $type = 'fiat' if (LandingCompany::Registry::get_currency_definition($currency)->{stable});
+
+        my $min = $configs_json->{$currency} // $configs->{"payments.transfer_between_accounts.minimum.default.$type"};
+        my $lower_bound = $lower_bounds->{$currency};
+
         if ($min < $lower_bound) {
             $log->tracef("The %s transfer minimum of %d in app_config->payements.transfer_between_accounts.minimum was too low. Raised to %d",
-                $_, $min, $lower_bound);
+                $currency, $min, $lower_bound);
             $min = $lower_bound;
         }
-        $currency_limits->{$_} = {
-            min => 0 + Format::Util::Numbers::financialrounding('amount', $_, $min),
-        };
+
+        my $max = try {
+            return 0 +
+                financialrounding('amount', $currency,
+                convert_currency($configs->{'payments.transfer_between_accounts.maximum.default'}, 'USD', $currency));
+        }
+        catch { return undef; };
+
+        $currency_limits->{$currency}->{min} = 0 + financialrounding('amount', $currency, $min);
+        $currency_limits->{$currency}->{'max'} = $max if $max;
     }
 
     $currency_limits->{revision} = $current_revision;
     $currency_limits_cache = $currency_limits;
+
     return $currency_limits;
 }
 

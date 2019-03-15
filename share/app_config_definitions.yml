@@ -172,6 +172,15 @@ payments:
                   isa: Num
                   default: 0.002
                   global: 1
+        maximum:
+          isa: section
+          description: 'Transfer maximum amount'
+          contains:
+            default:
+              description: 'Maximum amount for transferring in USD'
+              isa: Num
+              default: 2500
+              global: 1
     experimental_currencies_allowed:
       description: "List of emails that allowed to deposite using experimental currencies"
       isa: ArrayRef

@@ -8,7 +8,6 @@ use Format::Util::Numbers qw(get_min_unit financialrounding);
 
 use BOM::Config::CurrencyConfig;
 use BOM::Config::Runtime;
-
 my %fake_config;
 my $revision = 1;
 
@@ -37,21 +36,32 @@ $mock_app_config->mock(
     });
 
 subtest 'transfer_between_accounts_limits' => sub {
+
+    my $mock_convert_currency = Test::MockModule->new('BOM::Config::CurrencyConfig', no_auto => 1);
+    $mock_convert_currency->mock(
+        'convert_currency' => sub {
+            my ($amt, $currency, $tocurrency, $seconds) = @_;
+            die "No rate available to convert GBP to USD" if ($tocurrency eq 'GBP');
+            return 1.2;
+        });
+
     my $minimum = {
         "USD" => 10,
         "GBP" => 11,
         "BTC" => 200,
         "UST" => 210
     };
+
     my $app_config = BOM::Config::Runtime->instance->app_config();
     $app_config->set({
         'payments.transfer_between_accounts.minimum.by_currency'    => JSON::MaybeUTF8::encode_json_utf8($minimum),
         'payments.transfer_between_accounts.minimum.default.crypto' => 9,
         'payments.transfer_between_accounts.minimum.default.fiat'   => 90,
+        'payments.transfer_between_accounts.maximum.default'        => 2500,
     });
 
     my @all_currencies  = LandingCompany::Registry::all_currencies();
-    my $transfer_limits = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
+    my $transfer_limits = BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1);
 
     foreach (@all_currencies) {
         my $type = LandingCompany::Registry::get_currency_type($_);
@@ -59,7 +69,19 @@ subtest 'transfer_between_accounts_limits' => sub {
         my $min_default = ($type eq 'crypto') ? 9 : 90;
 
         cmp_ok($transfer_limits->{$_}->{min}, '==', $minimum->{$_} // $min_default, "Transfer between account minimum is correct for $_");
+        if ($_ eq 'GBP') {
+            is($transfer_limits->{$_}->{max}, undef, "undefined as expected");
+        } else {
+            cmp_ok(
+                $transfer_limits->{$_}->{max},
+                '==',
+                Format::Util::Numbers::financialrounding('price', $_, 1.2),
+                "Transfer between account maximum is correct for $_"
+            );
+        }
     }
+    $mock_convert_currency->unmock_all();
+
 };
 
 subtest 'transfer_between_accounts_lower_bounds' => sub {
@@ -224,5 +246,4 @@ subtest 'exchange_rate_expiry' => sub {
 };
 
 $mock_app_config->unmock_all();
-
 done_testing();
