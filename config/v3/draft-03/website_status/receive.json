@@ -45,6 +45,10 @@
                                                     "type": "number",
                                                     "minimum": 0,
                                                     "required": "1"
+                                                },
+                                                "max": {
+                                                    "type": "number",
+                                                    "description": "Maximum allowed amount for transfer between accounts with different types of currencies"
                                                 }
                                             }
                                         },
