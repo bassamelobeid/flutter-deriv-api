@@ -887,11 +887,11 @@ sub _price_stream_results_adjustment {
             },
             stake_outside_range => sub {
                 my ($details) = @_;
-                return ('Minimum stake of [_1] and maximum payout of [_2].', $details->[0], $details->[1]);
+                return ('Minimum stake of [_1] and maximum payout of [_2]. Current stake is [_3].', $details->[0], $details->[1], $details->[2]);
             },
             payout_outside_range => sub {
                 my ($details) = @_;
-                return ('Minimum stake of [_1] and maximum payout of [_2].', $details->[0], $details->[1]);
+                return ('Minimum stake of [_1] and maximum payout of [_2]. Current payout is [_3].', $details->[0], $details->[1], $details->[2]);
             },
         };
         return {
