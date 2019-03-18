@@ -42,7 +42,7 @@ sub _get_user_fields {
 }
 
 sub _get_update_user_fields {
-    return (@common_fields, qw/login/);
+    return (@common_fields, qw/login rights/);
 }
 
 sub _get_mamm_update_user_fields {
