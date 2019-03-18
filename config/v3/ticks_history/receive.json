@@ -13,7 +13,6 @@
          "type" : "integer"
       },
       "candles" : {
-         "minItems" : "1",
          "type" : "array",
          "description" : "Array of OHLC (open/high/low/close) price values for the given time (only for style='candles')",
          "items" : {
