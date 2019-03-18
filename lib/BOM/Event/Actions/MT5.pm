@@ -52,12 +52,21 @@ sub sync_info {
     my $user = $client->user;
     my @update_operations;
 
-    # TODO: use $user->mt5_logins once it's fixed and it doesn't hit MT5
+    # If user is disabled MT5 will re-enable it again
+    # we have to access MT5 and get the previous user status
     for my $mt_login (sort grep { /^MT\d+$/ } $user->loginids) {
-        my $operation = BOM::MT5::User::Async::update_user({
-                login => do { $mt_login =~ /(\d+)/; $1 },
-                %{$client->get_mt5_details()}});
-
+        my ($login) = $mt_login =~ /(\d+)/
+            or die 'could not extract login information';
+        my $operation = BOM::MT5::User::Async::get_user($login)->then(
+            sub {
+                my $mt_user = shift;
+                # BOM::MT5::User::Async doesn't ->fail a future on MT5 errors
+                return Future->fail($mt_user->{error}) if $mt_user->{error};
+                return BOM::MT5::User::Async::update_user({
+                        login  => $login,
+                        rights => $mt_user->{rights},
+                        %{$client->get_mt5_details()}});
+            });
         push @update_operations, $operation;
     }
 
