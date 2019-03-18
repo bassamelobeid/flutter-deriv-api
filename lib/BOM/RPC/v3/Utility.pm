@@ -354,9 +354,8 @@ sub error_map {
         'duplicate email'     => localize(
             'Your provided email address is already in use by another Login ID. According to our terms and conditions, you may only register once through our site.'
         ),
-        'duplicate name DOB' => localize(
-            'Sorry, you seem to already have a real money account with us. Perhaps you have used a different email address when you registered it. For legal reasons we are not allowed to open multiple real money accounts per person.'
-        ),
+        'duplicate name DOB' =>
+            localize('Sorry, it looks like you already have a real money account with us. Only one real money account is allowed for each client.'),
         'too young'            => localize('Sorry, you are too young to open an account.'),
         'show risk disclaimer' => localize('Please agree to the risk disclaimer before proceeding.'),
         'insufficient score'   => localize(

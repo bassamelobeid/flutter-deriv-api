@@ -1265,9 +1265,8 @@ rpc set_settings => sub {
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'PermissionDenied',
-            message_to_client => localize(
-                'Sorry, you seem to already have a real money account with us. Perhaps you have used a different email address when you registered it. For legal reasons we are not allowed to open multiple real money accounts per person.'
-            )})
+            message_to_client => localize('Sorry, an account already exists with those details. Only one real money account is allowed per client.')})
+
         if (($args->{first_name} and $args->{first_name} ne $current_client->first_name)
         or ($args->{last_name} and $args->{last_name} ne $current_client->last_name)
         or ($args->{date_of_birth} and $args->{date_of_birth} ne $current_client->date_of_birth))
