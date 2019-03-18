@@ -1,117 +1,122 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "echo_req": {
-            "required": "1"
-        },
-        "get_settings": {
-            "type": "object",
-            "properties": {
-                "country": {
-                    "type": "string",
-                    "pattern": "^Indonesia$",
-                    "required": "1"
-                },
-                "salutation": {
-                    "type": "string",
-                    "pattern": "^Mr$",
-                    "required": "1"
-                },
-                "is_authenticated_payment_agent": {
-                    "type": "integer",
-                    "pattern": "^0$",
-                    "required": "1"
-                },
-                "country_code": {
-                    "type": "string",
-                    "pattern": "^id$",
-                    "required": "1"
-                },
-                "date_of_birth": {
-                    "type": "integer",
-                    "pattern": "^318124800$",
-                    "required": "1"
-                },
-                "address_state": {
-                    "type": "string",
-                    "pattern": "^BT$",
-                    "required": "1"
-                },
-                "address_postcode": {
-                    "type": "string",
-                    "pattern": "^123456$",
-                    "required": "1"
-                },
-                "phone": {
-                    "type": "string",
-                    "pattern": "^1234567890$",
-                    "required": "1"
-                },
-                "last_name": {
-                    "type": "string",
-                    "pattern": "^Pan$",
-                    "required": "1"
-                },
-                "email": {
-                    "type": "string",
-                    "pattern": "test@binary.com",
-                    "required": "1"
-                },
-                "address_line_2": {
-                    "type": "string",
-                    "pattern": "^Test Address Line 2$",
-                    "required": "1"
-                },
-                "address_city": {
-                    "type": "string",
-                    "pattern": "^Test City$",
-                    "required": "1"
-                },
-                "address_line_1": {
-                    "type": "string",
-                    "pattern": "^Test Address Line 1$",
-                    "required": "1"
-                },
-                "client_tnc_status": {
-                    "type": "string",
-                    "pattern": "^Version \\d{2} \\d{4}-\\d{2}-\\d{2}$",
-                    "required": "1"
-                },
-                "first_name": {
-                    "type": "string",
-                    "pattern": "^Peter$",
-                    "required": "1"
-                },
-                "email_consent": {
-                    "type": "integer",
-                    "pattern": "^(0|1)$",
-                    "required": "1"
-                },
-                "place_of_birth": {
-                    "type": "string"
-                },
-                "tax_residence": {
-                    "type": ""
-                },
-                "tax_identification_number": {
-                    "type": ""
-                },
-                "account_opening_reason": {
-                    "type": "string",
-                    "pattern": "^Speculative",
-                    "required": "1"
-                },
-                "citizen": {
-                    "type": "string"
-                }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "properties" : {
+      "get_settings" : {
+         "type" : "object",
+         "properties" : {
+            "address_state" : {
+               "pattern" : "^BT$",
+               "type" : "string"
             },
-            "required": "1"
-        },
-        "msg_type": {
-            "type": "string",
-            "pattern": "^get_settings$",
-            "required": "1"
-        }
-    }
+            "email_consent" : {
+               "pattern" : "^(0|1)$",
+               "type" : "integer"
+            },
+            "client_tnc_status" : {
+               "type" : "string",
+               "pattern" : "^Version \\d{2} \\d{4}-\\d{2}-\\d{2}$"
+            },
+            "date_of_birth" : {
+               "type" : "integer",
+               "pattern" : "^318124800$"
+            },
+            "country" : {
+               "pattern" : "^Indonesia$",
+               "type" : "string"
+            },
+            "place_of_birth" : {
+               "type" : "string"
+            },
+            "tax_identification_number" : {
+               "type" : ""
+            },
+            "email" : {
+               "pattern" : "test@binary.com",
+               "type" : "string"
+            },
+            "tax_residence" : {
+               "type" : ""
+            },
+            "address_postcode" : {
+               "pattern" : "^123456$",
+               "type" : "string"
+            },
+            "address_line_1" : {
+               "type" : "string",
+               "pattern" : "^Test Address Line 1$"
+            },
+            "last_name" : {
+               "type" : "string",
+               "pattern" : "^Pan$"
+            },
+            "citizen" : {
+               "type" : "string"
+            },
+            "address_line_2" : {
+               "type" : "string",
+               "pattern" : "^Test Address Line 2$"
+            },
+            "phone" : {
+               "type" : "string",
+               "pattern" : "^1234567890$"
+            },
+            "first_name" : {
+               "pattern" : "^Peter$",
+               "type" : "string"
+            },
+            "account_opening_reason" : {
+               "pattern" : "^Speculative",
+               "type" : "string"
+            },
+            "is_authenticated_payment_agent" : {
+               "pattern" : "^0$",
+               "type" : "integer"
+            },
+            "salutation" : {
+               "pattern" : "^Mr$",
+               "type" : "string"
+            },
+            "country_code" : {
+               "type" : "string",
+               "pattern" : "^id$"
+            },
+            "address_city" : {
+               "type" : "string",
+               "pattern" : "^Test City$"
+            }
+         },
+         "required" : [
+            "address_state",
+            "email_consent",
+            "client_tnc_status",
+            "date_of_birth",
+            "country",
+            "email",
+            "address_postcode",
+            "address_line_1",
+            "last_name",
+            "address_line_2",
+            "phone",
+            "first_name",
+            "account_opening_reason",
+            "is_authenticated_payment_agent",
+            "salutation",
+            "country_code",
+            "address_city"
+         ]
+      },
+      "msg_type" : {
+         "pattern" : "^get_settings$",
+         "type" : "string"
+      },
+      "echo_req" : {}
+   }
 }

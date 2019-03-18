@@ -1,374 +1,361 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "landing_company": {
-            "type": "object",
-            "required": "1",
-            "properties": {
-                "id": {
-                    "type": "string",
-                    "pattern": "^id$",
-                    "required": "1"
-                },
-                "name": {
-                    "type": "string",
-                    "pattern": "^Indonesia$",
-                    "required": "1"
-                },
-                "virtual_company": {
-                    "type": "string",
-                    "pattern": "^virtual$",
-                    "required": "1"
-                },
-                "gaming_company": {
-                    "type": "object",
-                    "required": "1",
-                    "properties": {
-                        "shortcode": {
-                            "type": "string",
-                            "pattern": "^costarica$",
-                            "required": "1"
-                        },
-                        "name": {
-                            "type": "string",
-                            "pattern": "^Binary \\(C\\.R\\.\\) S\\.A\\.$",
-                            "required": "1"
-                        },
-                        "address": {
-                            "type": "null",
-                            "items": {
-                                "type": "string"
-                            }
-                        },
-                        "country": {
-                            "type": "string",
-                            "pattern": "^Costa Rica$",
-                            "required": "1"
-                        },
-                        "legal_default_currency": {
-                            "type": "string",
-                            "pattern": "^USD$",
-                            "required": "1"
-                        },
-                        "legal_allowed_currencies": {
-                            "type": "array",
-                            "minItems": 5,
-                            "required": "1",
-                            "items": {
-                                "type": "string",
-                                "pattern": "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB)$",
-                                "required": "1"
-                            }
-                        },
-                        "legal_allowed_markets": {
-                            "type": "array",
-                            "minItems": 4,
-                            "required": "1",
-                            "items": {
-                                "type": "string",
-                                "pattern": "^(commodities|forex|indices|volidx)$",
-                                "required": "1"
-                            }
-                        },
-                        "legal_allowed_contract_categories": {
-                            "type": "array",
-                            "minItems": 6,
-                            "required": "1",
-                            "items": {
-                                "type": "string",
-                                "pattern": "^(asian|callput|callputequal|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|runs)$",
-                                "required": "1"
-                            }
-                        },
-                        "has_reality_check": {
-                            "type": "integer",
-                            "pattern": "^0$",
-                            "required": "1"
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "title" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "properties" : {
+      "landing_company" : {
+         "required" : [
+            "id",
+            "name",
+            "virtual_company"
+         ],
+         "properties" : {
+            "mt_financial_company" : {
+               "properties" : {
+                  "standard" : {
+                      "required": ["legal_allowed_markets", "legal_allowed_currencies", "has_reality_check", "shortcode", "legal_default_currency", "country", "address", "name", "legal_allowed_contract_categories"], 
+                      "type": "object", 
+                     "has_reality_check" : {
+                        "type" : "integer",
+                        "pattern" : "^0$"
+                     },
+                     "legal_default_currency" : {
+                        "pattern" : "^USD$",
+                        "type" : "string"
+                     },
+                     "country" : {
+                        "type" : "string",
+                        "pattern" : "^Republic of Vanuatu$"
+                     },
+                     "shortcode" : {
+                        "type" : "string",
+                        "pattern" : "^vanuatu$"
+                     },
+                     "legal_allowed_contract_categories" : {
+                        "minItems" : 1,
+                        "type" : "array",
+                        "items" : {
+                           "pattern" : "^callput$",
+                           "type" : "string"
                         }
-                    }
-                },
-                "financial_company": {
-                    "type": "object",
-                    "required": "1",
-                    "properties": {
-                        "shortcode": {
-                            "type": "string",
-                            "pattern": "^costarica$",
-                            "required": "1"
+                     },
+                     "address" : {
+                        "minItems" : 1,
+                        "items" : {
+                           "type" : "string"
                         },
-                        "name": {
-                            "type": "string",
-                            "pattern": "^Binary \\(C\\.R\\.\\) S\\.A\\.$",
-                            "required": "1"
+                        "type" : "array"
+                     },
+                     "name" : {
+                        "pattern" : "^Binary \\(V\\) Ltd$",
+                        "type" : "string"
+                     },
+                     "legal_allowed_markets" : {
+                        "items" : {
+                           "type" : "string",
+                           "pattern" : "^forex$"
                         },
-                        "address": {
-                            "type": "null",
-                            "items": {
-                                "type": "string"
-                            }
-                        },
-                        "country": {
-                            "type": "string",
-                            "pattern": "^Costa Rica$",
-                            "required": "1"
-                        },
-                        "legal_default_currency": {
-                            "type": "string",
-                            "pattern": "^USD$",
-                            "required": "1"
-                        },
-                        "legal_allowed_currencies": {
-                            "type": "array",
-                            "minItems": 5,
-                            "required": "1",
-                            "items": {
-                                "type": "string",
-                                "pattern": "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB)$",
-                                "required": "1"
-                            }
-                        },
-                        "legal_allowed_markets": {
-                            "type": "array",
-                            "minItems": 4,
-                            "required": "1",
-                            "items": {
-                                "type": "string",
-                                "pattern": "^(commodities|forex|indices|volidx)$",
-                                "required": "1"
-                            }
-                        },
-                        "legal_allowed_contract_categories": {
-                            "type": "array",
-                            "minItems": 6,
-                            "required": "1",
-                            "items": {
-                                "type": "string",
-                                "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|callputequal|runs)$",
-                                "required": "1"
-                            }
-                        },
-                        "has_reality_check": {
-                            "type": "integer",
-                            "pattern": "^0$",
-                            "required": "1"
+                        "type" : "array",
+                        "minItems" : 1
+                     },
+                     "legal_allowed_currencies" : {
+                        "minItems" : 1,
+                        "type" : "array",
+                        "items" : {
+                           "type" : "string",
+                           "pattern" : "^USD$"
                         }
-                    }
-                },
-                "mt_gaming_company": {
-                    "type": "object",
-                    "required": "1",
-                    "properties": {
-                        "standard": {
-                            "type": "object",
-                            "shortcode": {
-                                "type": "string",
-                                "pattern": "^costarica$",
-                                "required": "1"
-                            },
-                            "name": {
-                                "type": "string",
-                                "pattern": "^Binary \\(C\\.R\\.\\) S\\.A\\.$",
-                                "required": "1"
-                            },
-                            "address": {
-                                "type": "null",
-                                "items": {
-                                    "type": "string"
-                                }
-                            },
-                            "country": {
-                                "type": "string",
-                                "pattern": "^Costa Rica$",
-                                "required": "1"
-                            },
-                            "legal_default_currency": {
-                                "type": "string",
-                                "pattern": "^USD$",
-                                "required": "1"
-                            },
-                            "legal_allowed_currencies": {
-                                "type": "array",
-                                "minItems": 5,
-                                "required": "1",
-                                "items": {
-                                    "type": "string",
-                                    "pattern": "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|DAI|ETH|UST)$",
-                                    "required": "1"
-                                }
-                            },
-                            "legal_allowed_markets": {
-                                "type": "array",
-                                "minItems": 4,
-                                "required": "1",
-                                "items": {
-                                    "type": "string",
-                                    "pattern": "^(commodities|forex|indices|volidx)$",
-                                    "required": "1"
-                                }
-                            },
-                            "legal_allowed_contract_categories": {
-                                "type": "array",
-                                "minItems": 6,
-                                "required": "1",
-                                "items": {
-                                    "type": "string",
-                                    "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|callputequal)$",
-                                    "required": "1"
-                                }
-                            },
-                            "has_reality_check": {
-                                "type": "integer",
-                                "pattern": "^0$",
-                                "required": "1"
-                            }
-                        }
-                    }
-                },
-                "mt_financial_company": {
-                    "type": "object",
-                    "required": "1",
-                    "properties": {
-                        "advanced" : {
-                            "type": "object",
-                            "shortcode": {
-                                "type": "string",
-                                "pattern": "^labuan$",
-                                "required": "1"
-                            },
-                            "name": {
-                                "type": "string",
-                                "pattern": "^Binary \\(FX\\) Ltd$",
-                                "required": "1"
-                            },
-                            "address": {
-                                "type": "array",
-                                "required": "1",
-                                "items": {
-                                    "type": "string"
-                                }
-                            },
-                            "country": {
-                                "type": "string",
-                                "pattern": "^Malaysia Federation$",
-                                "required": "1"
-                            },
-                            "legal_default_currency": {
-                                "type": "string",
-                                "pattern": "^USD$",
-                                "required": "1"
-                            },
-                            "legal_allowed_currencies": {
-                                "type": "array",
-                                "minItems": 1,
-                                "required": "1",
-                                "items": {
-                                    "type": "string",
-                                    "pattern": "^USD$",
-                                    "required": "1"
-                                }
-                            },
-                            "legal_allowed_markets": {
-                                "type": "array",
-                                "minItems": 1,
-                                "required": "1",
-                                "items": {
-                                    "type": "string",
-                                    "pattern": "^forex$",
-                                    "required": "1"
-                                }
-                            },
-                            "legal_allowed_contract_categories": {
-                                "type": "array",
-                                "minItems": 1,
-                                "required": "1",
-                                "items": {
-                                    "type": "string",
-                                    "pattern": "^callput$",
-                                    "required": "1"
-                                }
-                            },
-                            "has_reality_check": {
-                                "type": "integer",
-                                "pattern": "^0$",
-                                "required": "0"
-                            }
+                     }
+                  },
+                  "advanced" : {
+                      "required": ["legal_allowed_markets", "legal_allowed_currencies", "has_reality_check", "shortcode", "legal_default_currency", "country", "address", "name", "legal_allowed_contract_categories"], 
+                     "type" : "object",
+                     "legal_allowed_markets" : {
+                        "required" : "1",
+                        "items" : {
+                           "type" : "string",
+                           "pattern" : "^forex$"
                         },
-                        "standard" : {
-                            "type": "object",
-                            "shortcode": {
-                                "type": "string",
-                                "pattern": "^vanuatu$",
-                                "required": "1"
-                            },
-                            "name": {
-                                "type": "string",
-                                "pattern": "^Binary \\(V\\) Ltd$",
-                                "required": "1"
-                            },
-                            "address": {
-                                "type": "array",
-                                "required": "1",
-                                "items": {
-                                    "type": "string"
-                                }
-                            },
-                            "country": {
-                                "type": "string",
-                                "pattern": "^Republic of Vanuatu$",
-                                "required": "1"
-                            },
-                            "legal_default_currency": {
-                                "type": "string",
-                                "pattern": "^USD$",
-                                "required": "1"
-                            },
-                            "legal_allowed_currencies": {
-                                "type": "array",
-                                "minItems": 1,
-                                "required": "1",
-                                "items": {
-                                    "type": "string",
-                                    "pattern": "^USD$",
-                                    "required": "1"
-                                }
-                            },
-                            "legal_allowed_markets": {
-                                "type": "array",
-                                "minItems": 1,
-                                "required": "1",
-                                "items": {
-                                    "type": "string",
-                                    "pattern": "^forex$",
-                                    "required": "1"
-                                }
-                            },
-                            "legal_allowed_contract_categories": {
-                                "type": "array",
-                                "minItems": 1,
-                                "required": "1",
-                                "items": {
-                                    "type": "string",
-                                    "pattern": "^callput$",
-                                    "required": "1"
-                                }
-                            },
-                            "has_reality_check": {
-                                "type": "integer",
-                                "pattern": "^0$",
-                                "required": "0"
-                            }
+                        "type" : "array",
+                        "minItems" : 1
+                     },
+                     "legal_allowed_currencies" : {
+                        "items" : {
+                           "type" : "string",
+                           "pattern" : "^USD$"
+                        },
+                        "minItems" : 1,
+                        "type" : "array"
+                     },
+                     "has_reality_check" : {
+                        "type" : "integer",
+                        "pattern" : "^0$"
+                     },
+                     "shortcode" : {
+                        "pattern" : "^labuan$",
+                        "type" : "string"
+                     },
+                     "legal_default_currency" : {
+                        "type" : "string",
+                        "pattern" : "^USD$"
+                     },
+                     "country" : {
+                        "type" : "string",
+                        "pattern" : "^Malaysia Federation$"
+                     },
+                     "address" : {
+                        "type" : "array",
+                        "items" : {
+                           "type" : "string"
                         }
-                    }
-                }
+                     },
+                     "name" : {
+                        "pattern" : "^Binary \\(FX\\) Ltd$",
+                        "type" : "string"
+                     },
+                     "legal_allowed_contract_categories" : {
+                        "items" : {
+                           "type" : "string",
+                           "pattern" : "^callput$"
+                        },
+                        "minItems" : 1,
+                        "type" : "array"
+                     }
+                  }
+               },
+               "type" : "object",
+               "required" : ["standard", "advanced"]
+            },
+            "mt_gaming_company" : {
+               "properties" : {
+                  "standard" : {
+                     "type" : "object",
+                     "legal_allowed_markets" : {
+                        "type" : "array",
+                        "minItems" : 4,
+                        "required" : "1",
+                        "items" : {
+                           "pattern" : "^(commodities|forex|indices|volidx)$",
+                           "required" : "1",
+                           "type" : "string"
+                        }
+                     },
+                     "legal_allowed_currencies" : {
+                        "required" : "1",
+                        "items" : {
+                           "type" : "string",
+                           "required" : "1",
+                           "pattern" : "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|DAI|ETH|UST)$"
+                        },
+                        "type" : "array",
+                        "minItems" : 5
+                     },
+                     "name" : {
+                        "type" : "string",
+                        "required" : "1",
+                        "pattern" : "^Binary \\(C\\.R\\.\\) S\\.A\\.$"
+                     },
+                     "address" : {
+                        "items" : {
+                           "type" : "string"
+                        },
+                        "type" : "null"
+                     },
+                     "legal_allowed_contract_categories" : {
+                        "type" : "array",
+                        "minItems" : 6,
+                        "required" : "1",
+                        "items" : {
+                           "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|callputequal)$",
+                           "required" : "1",
+                           "type" : "string"
+                        }
+                     },
+                     "has_reality_check" : {
+                        "type" : "integer",
+                        "required" : "1",
+                        "pattern" : "^0$"
+                     },
+                     "shortcode" : {
+                        "type" : "string",
+                        "pattern" : "^costarica$",
+                        "required" : "1"
+                     },
+                     "legal_default_currency" : {
+                        "type" : "string",
+                        "pattern" : "^USD$",
+                        "required" : "1"
+                     },
+                     "country" : {
+                        "pattern" : "^Costa Rica$",
+                        "required" : "1",
+                        "type" : "string"
+                     }
+                  }
+               },
+               "type" : "object",
+               "required" : "1"
+            },
+            "financial_company" : {
+               "required" : [
+                  "shortcode",
+                  "legal_default_currency",
+                  "country",
+                  "has_reality_check",
+                  "name",
+                  "legal_allowed_contract_categories",
+                  "legal_allowed_currencies",
+                  "legal_allowed_markets"
+               ],
+               "type" : "object",
+               "properties" : {
+                  "shortcode" : {
+                     "pattern" : "^costarica$",
+                     "type" : "string"
+                  },
+                  "legal_default_currency" : {
+                     "pattern" : "^USD$",
+                     "type" : "string"
+                  },
+                  "country" : {
+                     "pattern" : "^Costa Rica$",
+                     "type" : "string"
+                  },
+                  "has_reality_check" : {
+                     "pattern" : "^0$",
+                     "type" : "integer"
+                  },
+                  "address" : {
+                     "type" : "null",
+                     "items" : {
+                        "type" : "string"
+                     }
+                  },
+                  "name" : {
+                     "type" : "string",
+                     "pattern" : "^Binary \\(C\\.R\\.\\) S\\.A\\.$"
+                  },
+                  "legal_allowed_contract_categories" : {
+                     "items" : {
+                        "required" : "1",
+                        "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|callputequal|runs)$",
+                        "type" : "string"
+                     },
+                     "minItems" : 6,
+                     "type" : "array"
+                  },
+                  "legal_allowed_currencies" : {
+                     "items" : {
+                        "pattern" : "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB)$",
+                        "required" : "1",
+                        "type" : "string"
+                     },
+                     "minItems" : 5,
+                     "type" : "array"
+                  },
+                  "legal_allowed_markets" : {
+                     "items" : {
+                        "required" : "1",
+                        "pattern" : "^(commodities|forex|indices|volidx)$",
+                        "type" : "string"
+                     },
+                     "type" : "array",
+                     "minItems" : 4
+                  }
+               }
+            },
+            "gaming_company" : {
+               "type" : "object",
+               "properties" : {
+                  "legal_allowed_markets" : {
+                     "minItems" : 4,
+                     "type" : "array",
+                     "items" : {
+                        "type" : "string",
+                        "required" : "1",
+                        "pattern" : "^(commodities|forex|indices|volidx)$"
+                     }
+                  },
+                  "legal_allowed_currencies" : {
+                     "minItems" : 5,
+                     "type" : "array",
+                     "items" : {
+                        "type" : "string",
+                        "required" : "1",
+                        "pattern" : "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB)$"
+                     }
+                  },
+                  "country" : {
+                     "type" : "string",
+                     "pattern" : "^Costa Rica$"
+                  },
+                  "legal_default_currency" : {
+                     "pattern" : "^USD$",
+                     "type" : "string"
+                  },
+                  "shortcode" : {
+                     "type" : "string",
+                     "pattern" : "^costarica$"
+                  },
+                  "has_reality_check" : {
+                     "type" : "integer",
+                     "pattern" : "^0$"
+                  },
+                  "legal_allowed_contract_categories" : {
+                     "type" : "array",
+                     "minItems" : 6,
+                     "items" : {
+                        "pattern" : "^(asian|callput|callputequal|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|runs)$",
+                        "required" : "1",
+                        "type" : "string"
+                     }
+                  },
+                  "name" : {
+                     "type" : "string",
+                     "pattern" : "^Binary \\(C\\.R\\.\\) S\\.A\\.$"
+                  },
+                  "address" : {
+                     "items" : {
+                        "type" : "string"
+                     },
+                     "type" : "null"
+                  }
+               },
+               "required" : [
+                  "legal_allowed_markets",
+                  "legal_allowed_currencies",
+                  "country",
+                  "legal_default_currency",
+                  "shortcode",
+                  "has_reality_check",
+                  "legal_allowed_contract_categories",
+                  "name"
+               ]
+            },
+            "id" : {
+               "pattern" : "^id$",
+               "type" : "string"
+            },
+            "name" : {
+               "pattern" : "^Indonesia$",
+               "type" : "string"
+            },
+            "virtual_company" : {
+               "pattern" : "^virtual$",
+               "type" : "string"
             }
-        },
-        "echo_req": {
-            "required": "1"
-        },
-        "msg_type": {
-            "type": "string",
-            "required": "1"
-        }
-    }
+         },
+         "type" : "object"
+      },
+      "echo_req" : {},
+      "msg_type" : {
+         "type" : "string"
+      }
+   }
 }

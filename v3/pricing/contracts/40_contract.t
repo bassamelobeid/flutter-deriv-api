@@ -260,7 +260,7 @@ $res         = $t->await::buy({
     buy   => $proposal_id,
     price => 10000
 });
-is $res->{buy}->{buy_price}, '1.00';
+is $res->{buy}->{buy_price}, 1.00;
 
 $contractParameters{duration} = 100000000;
 $res = $t->await::buy({

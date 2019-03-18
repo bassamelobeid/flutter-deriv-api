@@ -1,52 +1,57 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "api_token": {
-      "type": "object",
-      "properties": {
-        "tokens": {
-          "type": "array",
-          "items": {
-              "type": "object",
-              "properties": {
-                  "scopes": {
-                      "minItems": 4,
-                      "items": {
-                        "type": "string",
-                        "pattern": "^(read|trade|payments|admin)$"
-                      },
-                      "required": "1"
-                  },
-                  "token": {
-                      "type": "string",
-                      "pattern": "^[_1]$",
-                      "required": "1"
-                  },
-                  "display_name": {
-                      "type": "string",
-                      "pattern": "^test$",
-                      "required": "1"
-                  },
-                  "last_used": {
-                      "type": ["string", "null"],
-                      "pattern": "^(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2})?$",
-                      "required": "1"
-                  }
-              }
-            },
-            "required": "1"
-        }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "description" : null,
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "properties" : {
+      "echo_req" : {},
+      "msg_type" : {
+         "pattern" : "^api_token$",
+         "type" : "string"
       },
-      "required": "1"
-    },
-    "echo_req": {
-        "required": "1"
-    },
-    "msg_type": {
-      "type": "string",
-      "pattern": "^api_token$",
-      "required": "1"
-    }
-  }
+      "api_token" : {
+         "required" : [
+            "tokens"
+         ],
+         "type" : "object",
+         "properties" : {
+            "tokens" : {
+               "type" : "array",
+               "items" : {
+                  "type" : "object",
+                  "required": ["token", "last_used", "scopes", "display_name"], 
+                  "properties" : {
+                     "display_name" : {
+                        "pattern" : "^test$",
+                        "type" : "string"
+                     },
+                     "scopes" : {
+                        "minItems" : 4,
+                        "items" : {
+                           "type" : "string",
+                           "pattern" : "^(read|trade|payments|admin)$"
+                        }
+                     },
+                     "last_used" : {
+                        "type" : [
+                           "string",
+                           "null"
+                        ],
+                        "pattern" : "^(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2})?$"
+                     },
+                     "token" : {
+                        "type" : "string",
+                        "pattern" : "^[_1]$"
+                     }
+                  }
+               }
+            }
+         }
+      }
+   }
 }

@@ -1,29 +1,34 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "echo_req": {
-            "required": "1"
-        },
-        "error": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string",
-                    "required": "1"
-                },
-                "code": {
-                    "type": "string",
-                    "pattern": "^AppRegister$",
-                    "required": "1"
-                }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "properties" : {
+      "msg_type" : {
+         "pattern" : "^app_register$",
+         "type" : "string"
+      },
+      "error" : {
+         "required" : [
+            "message",
+            "code"
+         ],
+         "properties" : {
+            "message" : {
+               "type" : "string"
             },
-            "required": "1"
-        },
-        "msg_type":{
-            "type": "string",
-            "pattern": "^app_register$",
-            "required": "1"
-        }
-    }
+            "code" : {
+               "pattern" : "^AppRegister$",
+               "type" : "string"
+            }
+         },
+         "type" : "object"
+      },
+      "echo_req" : {}
+   }
 }

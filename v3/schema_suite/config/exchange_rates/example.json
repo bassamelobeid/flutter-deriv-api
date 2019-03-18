@@ -1,4 +1,10 @@
 {
-    "exchange_rates": 1,
-    "base_currency": "USD"
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : null,
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : null,
+   "description" : null,
+   "exchange_rates" : 1,
+   "base_currency" : "USD"
 }

@@ -1,74 +1,79 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "echo_req": {
-        "required": "1"
-    },
-    "app_update": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string",
-          "pattern": "^Test$",
-          "required": "1"
-        },
-        "app_id": {
-          "type": "integer",
-          "required": "1"
-        },
-        "scopes": {
-          "type": "array",
-          "minItems": 3,
-          "maxItems": 3,
-          "items": {
-            "type": "string",
-            "pattern": "^(read|trade|payments)$"
-          },
-          "required": "1"
-        },
-        "redirect_uri": {
-          "type": "string",
-          "pattern": "^https\\:\/\/test\\-app\\.example\\.com\/redirect$",
-          "required": "1"
-        },
-        "verification_uri": {
-          "type": "string",
-          "pattern": "^https\\:\/\/test\\-app\\.example\\.com\/verify$",
-          "required": "1"
-        },
-        "homepage": {
-          "type": "string",
-          "pattern": "^https\\:\/\/test\\-app\\.example\\.com\/$",
-          "required": "1"
-        },
-        "github": {
-          "type": "string",
-          "pattern": "^https\\:\/\/github\\.com\/test_application\/app$",
-          "required": "1"
-        },
-        "appstore": {
-          "type": "string",
-          "pattern": "^https\\:\/\/itunes\\.apple\\.com\/test_application$",
-          "required": "1"
-        },
-        "googleplay": {
-          "type": "string",
-          "pattern": "^https:\/\/play\\.google\\.com\/store\/apps\/details\\?id=test\\.app$",
-          "required": "1"
-        },
-        "app_markup_percentage": {
-          "type": "number",
-          "pattern": "^2.5$",
-          "required": "1"
-        }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "title" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "properties" : {
+      "app_update" : {
+         "properties" : {
+            "googleplay" : {
+               "type" : "string",
+               "pattern" : "^https://play\\.google\\.com/store/apps/details\\?id=test\\.app$"
+            },
+            "github" : {
+               "pattern" : "^https\\://github\\.com/test_application/app$",
+               "type" : "string"
+            },
+            "app_id" : {
+               "type" : "integer"
+            },
+            "redirect_uri" : {
+               "pattern" : "^https\\://test\\-app\\.example\\.com/redirect$",
+               "type" : "string"
+            },
+            "scopes" : {
+               "minItems" : 3,
+               "type" : "array",
+               "items" : {
+                  "type" : "string",
+                  "pattern" : "^(read|trade|payments)$"
+               },
+               "maxItems" : 3
+            },
+            "name" : {
+               "pattern" : "^Test$",
+               "type" : "string"
+            },
+            "homepage" : {
+               "pattern" : "^https\\://test\\-app\\.example\\.com/$",
+               "type" : "string"
+            },
+            "app_markup_percentage" : {
+               "pattern" : "^2.5$",
+               "type" : "number"
+            },
+            "appstore" : {
+               "type" : "string",
+               "pattern" : "^https\\://itunes\\.apple\\.com/test_application$"
+            },
+            "verification_uri" : {
+               "type" : "string",
+               "pattern" : "^https\\://test\\-app\\.example\\.com/verify$"
+            }
+         },
+         "type" : "object",
+         "required" : [
+            "googleplay",
+            "github",
+            "app_id",
+            "redirect_uri",
+            "scopes",
+            "name",
+            "homepage",
+            "app_markup_percentage",
+            "appstore",
+            "verification_uri"
+         ]
       },
-      "required": "1"
-    },
-    "msg_type": {
-      "type": "string",
-      "pattern": "^app_update$",
-      "required": "1"
-    }
-  }
+      "echo_req" : {},
+      "msg_type" : {
+         "pattern" : "^app_update$",
+         "type" : "string"
+      }
+   }
 }

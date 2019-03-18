@@ -1,19 +1,23 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "echo_req": {
-      "required": "1"
-    },
-    "copy_start": {
-      "type": "integer",
-      "pattern": "^1$",
-      "required": "1"
-    },
-    "msg_type": {
-      "type": "string",
-      "pattern": "^copy_start$",
-      "required": "1"
-    }
-  }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "echo_req",
+      "msg_type",
+      "copy_start"
+   ],
+   "title" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "description" : null,
+   "properties" : {
+      "echo_req" : {},
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^copy_start$"
+      },
+      "copy_start" : {
+         "pattern" : "^1$",
+         "type" : "integer"
+      }
+   }
 }

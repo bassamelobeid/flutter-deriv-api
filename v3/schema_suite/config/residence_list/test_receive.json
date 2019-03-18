@@ -1,36 +1,39 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "residence_list": {
-            "type": "array",
-            "required": "1",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "phone_idd": {
-                        "type": "string",
-                        "pattern": "^\\d+$"
-                    },
-                    "text": {
-                        "type": "string",
-                        "required": "1"
-                    },
-                    "value": {
-                        "type": "string",
-                        "pattern": "^[a-z]{2}$",
-                        "required": "1"
-                    }
-                }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "residence_list",
+      "msg_type",
+      "echo_req"
+   ],
+   "description" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "title" : null,
+   "properties" : {
+      "residence_list" : {
+         "items" : {
+            "type" : "object",
+            "required": ["text", "value"], 
+            "properties" : {
+               "phone_idd" : {
+                  "pattern" : "^\\d+$",
+                  "type" : "string"
+               },
+               "text" : {
+                  "type" : "string"
+               },
+               "value" : {
+                  "type" : "string",
+                  "pattern" : "^[a-z]{2}$"
+               }
             }
-        },
-        "echo_req": {
-            "required": "1"
-        },
-        "msg_type": {
-            "type": "string",
-            "pattern": "^residence_list$",
-                                "required": "1"
-        }
-    }
+         },
+         "type" : "array"
+      },
+      "msg_type" : {
+         "pattern" : "^residence_list$",
+         "type" : "string"
+      },
+      "echo_req" : {}
+   }
 }

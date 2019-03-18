@@ -1,30 +1,35 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "error": {
-            "type": "object",
-            "required": "1",
-            "properties": {
-                "code": {
-                    "type": "string",
-                    "pattern": "^InvalidSymbol$",
-                    "required": "1"
-                },
-                "message": {
-                    "type": "string",
-                    "pattern": "^Symbol INVALID invalid$",
-                    "required": "1"
-                }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "title" : null,
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "properties" : {
+      "echo_req" : {},
+      "error" : {
+         "type" : "object",
+         "properties" : {
+            "message" : {
+               "pattern" : "^Symbol INVALID invalid$",
+               "type" : "string"
+            },
+            "code" : {
+               "pattern" : "^InvalidSymbol$",
+               "type" : "string"
             }
-        },
-        "echo_req": {
-            "required": "1"
-        },
-        "msg_type": {
-            "type": "string",
-            "pattern": "^proposal$",
-            "required": "1"
-        }
-    }
+         },
+         "required" : [
+            "message",
+            "code"
+         ]
+      },
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^proposal$"
+      }
+   }
 }

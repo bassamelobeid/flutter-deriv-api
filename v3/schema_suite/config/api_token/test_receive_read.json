@@ -1,52 +1,57 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "api_token": {
-      "type": "object",
-      "properties": {
-        "tokens": {
-          "type": "array",
-          "items": {
-              "type": "object",
-              "properties": {
-                  "scopes": {
-                      "minItems": 1,
-                      "items": {
-                        "type": "string",
-                        "pattern": "^read$"
-                      },
-                      "required": "1"
-                  },
-                  "token": {
-                      "type": "string",
-                      "pattern": "^[_1]$",
-                      "required": "1"
-                  },
-                  "display_name": {
-                      "type": "string",
-                      "pattern": "^test$",
-                      "required": "1"
-                  },
-                  "last_used": {
-                      "type": ["string", "null"],
-                      "pattern": "^(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2})?$",
-                      "required": "1"
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "title" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "description" : null,
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "properties" : {
+      "api_token" : {
+         "type" : "object",
+         "properties" : {
+            "tokens" : {
+               "type" : "array",
+               "items" : {
+                  "type" : "object",
+                  "properties" : {
+                  "required": ["token", "last_used", "scopes", "display_name"], 
+                     "token" : {
+                        "type" : "string",
+                        "pattern" : "^[_1]$"
+                     },
+                     "last_used" : {
+                        "pattern" : "^(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2})?$",
+                        "type" : [
+                           "string",
+                           "null"
+                        ]
+                     },
+                     "display_name" : {
+                        "type" : "string",
+                        "pattern" : "^test$"
+                     },
+                     "scopes" : {
+                        "items" : {
+                           "pattern" : "^read$",
+                           "type" : "string"
+                        },
+                        "minItems" : 1
+                     }
                   }
-              }
-            },
-            "required": "1"
-        }
+               }
+            }
+         },
+         "required" : [
+            "tokens"
+         ]
       },
-      "required": "1"
-    },
-    "echo_req": {
-        "required": "1"
-    },
-    "msg_type": {
-      "type": "string",
-      "pattern": "^api_token$",
-      "required": "1"
-    }
-  }
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^api_token$"
+      },
+      "echo_req" : {}
+   }
 }

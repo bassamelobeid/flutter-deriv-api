@@ -1,37 +1,43 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "echo_req": {
-        "required": "1"
-    },
-    "set_financial_assessment": {
-      "type": "object",
-      "title": "Financial Assessment Scores",
-      "description": "The financial assessment score assigned to the submitted financial assessment",
-      "properties": {
-        "total_score": {
-          "type": "integer",
-          "required" : 1
-        },
-        "cfd_score": {
-          "type": "integer",
-          "required" : 1
-        },
-        "financial_information_score": {
-          "type": "integer",
-          "required" : 1
-        },
-        "trading_score": {
-          "type": "integer",
-          "required" : 1
-        }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "description" : null,
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "properties" : {
+      "msg_type" : {
+         "pattern" : "^set_financial_assessment$",
+         "type" : "string"
+      },
+      "echo_req" : {},
+      "set_financial_assessment" : {
+         "title" : "Financial Assessment Scores",
+         "type" : "object",
+         "properties" : {
+            "financial_information_score" : {
+               "type" : "integer"
+            },
+            "cfd_score" : {
+               "type" : "integer"
+            },
+            "trading_score" : {
+               "type" : "integer"
+            },
+            "total_score" : {
+               "type" : "integer"
+            }
+         },
+         "description" : "The financial assessment score assigned to the submitted financial assessment",
+         "required" : [
+            "financial_information_score",
+            "cfd_score",
+            "trading_score",
+            "total_score"
+         ]
       }
-    },
-    "msg_type": {
-      "type": "string",
-      "pattern": "^set_financial_assessment$",
-      "required": "1"
-    }
-  }
+   }
 }

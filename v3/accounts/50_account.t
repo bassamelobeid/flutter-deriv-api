@@ -170,8 +170,8 @@ subtest 'account_statistics' => sub {
         account_statistics => 1,
     });
     ok($account_stats->{account_statistics});
-    is($account_stats->{account_statistics}->{total_deposits},    '1000.00');
-    is($account_stats->{account_statistics}->{total_withdrawals}, '15.00');
+    is($account_stats->{account_statistics}->{total_deposits},    1000.00);
+    is($account_stats->{account_statistics}->{total_withdrawals}, 15.00);
     is($account_stats->{account_statistics}->{currency},          'USD');
     test_schema('account_statistics', $account_stats);
 

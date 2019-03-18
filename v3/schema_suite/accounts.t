@@ -15,13 +15,16 @@ my $suite = start(
 );
 
 set_language 'EN';
+warn $suite->get_token('test@test.com');
+die;
+
 
 # VIRTUAL ACCOUNT OPENING FOR (CR)
 test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test@binary.com', 'account_opening';
 test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
     $suite->get_token('test@binary.com'), 'test@binary.com', 'id';
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.json',
-    $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test@binary.com';
+$suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test@binary.com';
 fail_test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
     $suite->get_token('test@binary.com'), 'test@binary.com', 'id';
 
@@ -88,7 +91,6 @@ test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test
 # READ SCOPE CALLS (CR) BEFORE CHANGE
 test_sendrecv 'get_limits/test_send.json',   'get_limits/test_receive_cr.json';
 test_sendrecv 'get_settings/test_send.json', 'get_settings/test_receive_cr_before.json';
-die;
 # ADMIN SCOPE CALLS (CR)
 test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json',       'USD';
 test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive_error.json', 'XXX';

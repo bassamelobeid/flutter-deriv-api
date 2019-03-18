@@ -1,68 +1,63 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "active_symbols": {
-            "type": "array",
-            "required": "1",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "market": {
-                        "type": "string",
-                        "pattern": "^[_2]$",
-                        "required": "1"
-                    },
-                    "market_display_name": {
-                        "type": "string",
-                        "required": "1"
-                    },
-                    "submarket": {
-                        "type": "string",
-                        "pattern": "^[_3]$",
-                        "required": "1"
-                    },
-                    "submarket_display_name": {
-                        "type": "string",
-                        "required": "1"
-                    },
-                    "symbol": {
-                        "type": "string",
-                        "required": "1"
-                    },
-                    "symbol_type": {
-                        "type": "string",
-                        "required": "1"
-                    },
-                    "display_name": {
-                        "type": "string",
-                        "required": "1"
-                    },
-                    "exchange_is_open": {
-                        "type": "integer",
-                        "pattern": "^(0|1)$",
-                        "required": "1"
-                    },
-                    "is_trading_suspended": {
-                        "type": "integer",
-                        "pattern": "^(0|1)$",
-                        "required": "1"
-                    },
-                    "pip": {
-                        "type": "string",
-                        "pattern": "^0\\.0{1,4}1$",
-                        "required": "1"
-                    }
-                }
-            }
-        },
-        "echo_req": {
-            "required": "1"
-        },
-        "msg_type": {
-            "type": "string",
-            "pattern": "^active_symbols$",
-            "required": "1"
-        }
-    }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "active_symbols",
+      "echo_req",
+      "msg_type"
+   ],
+   "description" : null,
+   "title" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "properties" : {
+      "active_symbols" : {
+         "items" : {
+             "required": ["submarket", "market_display_name", "is_trading_suspended", "exchange_is_open", "submarket_display_name", "display_name", "pip", "symbol", "market", "symbol_type"], 
+            "properties" : {
+               "submarket" : {
+                  "pattern" : "^[_3]$",
+                  "type" : "string"
+               },
+               "market_display_name" : {
+                  "type" : "string"
+               },
+               "is_trading_suspended" : {
+                  "pattern" : "^(0|1)$",
+                  "type" : "integer"
+               },
+               "exchange_is_open" : {
+                  "pattern" : "^(0|1)$",
+                  "type" : "integer"
+               },
+               "submarket_display_name" : {
+                  "type" : "string"
+               },
+               "display_name" : {
+                  "type" : "string"
+               },
+               "pip" : {
+                  "type" : "string",
+                  "pattern" : "^0\\.0{1,4}1$"
+               },
+               "symbol" : {
+                  "type" : "string"
+               },
+               "market" : {
+                  "type" : "string",
+                  "pattern" : "^[_2]$"
+               },
+               "symbol_type" : {
+                  "type" : "string"
+               }
+            },
+            "type" : "object"
+         },
+         "type" : "array"
+      },
+      "echo_req" : {},
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^active_symbols$"
+      }
+   }
 }

@@ -1,71 +1,82 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "echo_req": {
-        "required": "1"
-    },
-    "app_list": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-            "name": {
-              "type": "string",
-              "pattern": "^.+$",
-              "required": "1"
-            },
-            "app_id": {
-              "type": "integer",
-              "pattern": "(?!^[_1]$)(^.*$)",
-              "required": "1"
-            },
-            "scopes": {
-              "type": "array",
-              "minItem": 1,
-              "maxItem": 4,
-              "items": {
-                "type": "string",
-                "pattern": "^(read|trade|payments|admin)$"
-              },
-              "required": "1"
-            },
-            "redirect_uri": {
-              "type": "string",
-              "required": "1"
-            },
-            "verification_uri": {
-              "type": ["string", "null"],
-              "required": "1"
-            },
-            "homepage": {
-              "type": ["string", "null"],
-              "required": "1"
-            },
-            "github": {
-              "type": ["string", "null"],
-              "required": "1"
-            },
-            "appstore": {
-              "type": ["string", "null"],
-              "required": "1"
-            },
-            "googleplay": {
-              "type": ["string", "null"],
-              "required": "1"
-            },
-            "app_markup_percentage": {
-              "type": "number",
-              "required": "1"
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "echo_req",
+      "app_list",
+      "msg_type"
+   ],
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "description" : null,
+   "properties" : {
+      "echo_req" : {},
+      "app_list" : {
+         "items" : {
+             "required": ["verification_uri", "appstore", "homepage", "app_markup_percentage", "scopes", "name", "redirect_uri", "github", "googleplay", "app_id"],
+            "type" : "object",
+            "properties" : {
+               "googleplay" : {
+                  "type" : [
+                     "string",
+                     "null"
+                  ]
+               },
+               "github" : {
+                  "type" : [
+                     "string",
+                     "null"
+                  ]
+               },
+               "app_id" : {
+                  "pattern" : "(?!^[_1]$)(^.*$)",
+                  "type" : "integer"
+               },
+               "redirect_uri" : {
+                  "type" : "string"
+               },
+               "scopes" : {
+                  "minItem" : 1,
+                  "maxItem" : 4,
+                  "items" : {
+                     "pattern" : "^(read|trade|payments|admin)$",
+                     "type" : "string"
+                  },
+                  "type" : "array"
+               },
+               "name" : {
+                  "pattern" : "^.+$",
+                  "type" : "string"
+               },
+               "homepage" : {
+                  "type" : [
+                     "string",
+                     "null"
+                  ],
+                  "required" : "1"
+               },
+               "app_markup_percentage" : {
+                  "type" : "number"
+               },
+               "appstore" : {
+                  "type" : [
+                     "string",
+                     "null"
+                  ]
+               },
+               "verification_uri" : {
+                  "type" : [
+                     "string",
+                     "null"
+                  ]
+               }
             }
-        }
+         },
+         "type" : "array"
       },
-      "required": "1"
-    },
-    "msg_type": {
-      "type": "string",
-      "pattern": "^app_list$",
-      "required": "1"
-    }
-  }
+      "msg_type" : {
+         "pattern" : "^app_list$",
+         "type" : "string"
+      }
+   }
 }

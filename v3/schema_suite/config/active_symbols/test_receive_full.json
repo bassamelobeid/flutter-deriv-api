@@ -1,98 +1,94 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "active_symbols": {
-            "type": "array",
-            "required": "1",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "market": {
-                        "type": "string",
-                        "required": "1"
-                    },
-                    "market_display_name": {
-                        "type": "string",
-                        "required": "1"
-                    },
-                    "submarket": {
-                        "type": "string",
-                        "required": "1"
-                    },
-                    "submarket_display_name": {
-                        "type": "string",
-                        "required": "1"
-                    },
-                    "symbol": {
-                        "type": "string",
-                        "required": "1"
-                    },
-                    "symbol_type": {
-                        "type": "string",
-                        "required": "1"
-                    },
-                    "display_name": {
-                        "type": "string",
-                        "required": "1"
-                    },
-                    "exchange_name": {
-                        "type": "string",
-                        "required": "1"
-                    },
-                    "exchange_is_open": {
-                        "type": ["integer", "null"],
-                        "pattern": "^(0|1)$"
-                    },
-                    "quoted_currency_symbol": {
-                        "type": ["string", "null"],
-                        "pattern": "^(|[A-Z]{3}|[A-Z]{6})$"
-                    },
-                    "pip": {
-                        "type": "string",
-                        "pattern": "^0\\.0{1,4}1$",
-                        "required": "1"
-                    },
-                    "spot": {
-                        "type": "string",
-                        "pattern": "^(|\\d+\\.\\d+)$",
-                        "required": "1"
-                    },
-                    "spot_age": {
-                        "type": "number",
-                        "pattern": "^(|\\d+)$",
-                        "required": "1"
-                    },
-                    "spot_time": {
-                        "type": "string",
-                        "pattern": "^(|\\d{10})$",
-                        "required": "1"
-                    },
-                    "delay_amount": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "required": "1"
-                    },
-                    "intraday_interval_minutes": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "required": "1"
-                    },
-                    "is_trading_suspended": {
-                        "type": "integer",
-                        "pattern": "^(0|1)$",
-                        "required": "1"
-                    }
-                }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "description" : null,
+   "required" : [
+      "msg_type",
+      "active_symbols",
+      "echo_req"
+   ],
+   "properties" : {
+      "msg_type" : {
+         "pattern" : "^active_symbols$",
+         "type" : "string"
+      },
+      "active_symbols" : {
+         "items" : {
+            "type" : "object",
+             "required": ["submarket", "market_display_name", "is_trading_suspended", "exchange_is_open", "submarket_display_name", "display_name", "pip", "symbol", "market", "symbol_type"], 
+            "properties" : {
+               "submarket_display_name" : {
+                  "type" : "string"
+               },
+               "pip" : {
+                  "type" : "string",
+                  "pattern" : "^0\\.0{1,4}1$"
+               },
+               "delay_amount" : {
+                  "type" : "integer",
+                  "minimum" : 0
+               },
+               "submarket" : {
+                  "type" : "string"
+               },
+               "intraday_interval_minutes" : {
+                  "type" : "integer",
+                  "minimum" : 0
+               },
+               "market_display_name" : {
+                  "type" : "string"
+               },
+               "symbol_type" : {
+                  "type" : "string"
+               },
+               "symbol" : {
+                  "type" : "string"
+               },
+               "market" : {
+                  "type" : "string"
+               },
+               "quoted_currency_symbol" : {
+                  "type" : [
+                     "string",
+                     "null"
+                  ],
+                  "pattern" : "^(|[A-Z]{3}|[A-Z]{6})$"
+               },
+               "exchange_is_open" : {
+                  "type" : [
+                     "integer",
+                     "null"
+                  ],
+                  "pattern" : "^(0|1)$"
+               },
+               "spot_time" : {
+                  "pattern" : "^(|\\d{10})$",
+                  "type" : "string"
+               },
+               "display_name" : {
+                  "type" : "string"
+               },
+               "is_trading_suspended" : {
+                  "type" : "integer",
+                  "pattern" : "^(0|1)$"
+               },
+               "exchange_name" : {
+                  "type" : "string"
+               },
+               "spot_age" : {
+                  "pattern" : "^(|\\d+)$",
+                  "type" : "number"
+               },
+               "spot" : {
+                  "pattern" : "^(|\\d+\\.\\d+)$",
+                  "type" : "string"
+               }
             }
-        },
-        "echo_req": {
-            "required": "1"
-        },
-        "msg_type": {
-            "type": "string",
-            "pattern": "^active_symbols$",
-            "required": "1"
-        }
-    }
+         },
+         "type" : "array"
+      },
+      "echo_req" : {}
+   }
 }

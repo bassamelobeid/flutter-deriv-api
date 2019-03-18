@@ -1,29 +1,34 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "error": {
-            "type": "object",
-            "required": "1",
-            "properties": {
-                "code": {
-                    "type": "string",
-                    "pattern": "^InputValidationFailed$",
-                    "required": "1"
-                },
-                "message": {
-                    "type": "string",
-                    "required": "1"
-                }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "description" : null,
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "properties" : {
+      "echo_req" : {},
+      "error" : {
+         "required" : [
+            "message",
+            "code"
+         ],
+         "properties" : {
+            "message" : {
+               "type" : "string"
+            },
+            "code" : {
+               "type" : "string",
+               "pattern" : "^InputValidationFailed$"
             }
-        },
-        "echo_req": {
-            "required": "1"
-        },
-        "msg_type": {
-            "type": "string",
-            "pattern": "^landing_company_details$",
-            "required": "1"
-        }
-    }
+         },
+         "type" : "object"
+      },
+      "msg_type" : {
+         "pattern" : "^landing_company_details$",
+         "type" : "string"
+      }
+   }
 }

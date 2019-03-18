@@ -1,19 +1,22 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "echo_req": {
-        "required": "1"
-    },
-    "logout": {
-      "type": "integer",
-      "pattern": "^1$",
-      "required": "1"
-    },
-    "msg_type": {
-        "type": "string",
-        "pattern": "^logout$",
-        "required": "1"
-    }
-  }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "logout",
+      "echo_req",
+      "msg_type"
+   ],
+   "description" : null,
+   "type" : "object",
+   "title" : null,
+   "properties" : {
+      "logout" : {
+         "pattern" : "^1$",
+         "type" : "integer"
+      },
+      "echo_req" : {},
+      "msg_type" : {
+         "pattern" : "^logout$",
+         "type" : "string"
+      }
+   }
 }

@@ -1,29 +1,34 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "echo_req": {
-            "required": "1"
-        },
-        "error": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string",
-                    "required": "1"
-                },
-                "code": {
-                    "type": "string",
-                    "pattern": "^ASK_SELF_EXCLUSION_MAX_TURNOVER_SET$",
-                    "required": "1"
-                }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "description" : null,
+   "properties" : {
+      "echo_req" : {},
+      "error" : {
+         "properties" : {
+            "code" : {
+               "type" : "string",
+               "pattern" : "^ASK_SELF_EXCLUSION_MAX_TURNOVER_SET$"
             },
-            "required": "1"
-        },
-        "msg_type":{
-            "type": "string",
-            "pattern": "^cashier$",
-            "required": "1"
-        }
-    }
+            "message" : {
+               "type" : "string"
+            }
+         },
+         "type" : "object",
+         "required" : [
+            "code",
+            "message"
+         ]
+      },
+      "msg_type" : {
+         "pattern" : "^cashier$",
+         "type" : "string"
+      }
+   }
 }

@@ -1,35 +1,40 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "echo_req": {
-            "required": "1"
-        },
-        "balance": {
-            "type": "object",
-            "required": "1",
-            "properties": {
-                "balance": {
-                    "type": "number",
-                    "pattern": "^[_1]$",
-                    "required": "1"
-                },
-                "currency": {
-                    "type": "string",
-                    "pattern": "^[_2]$",
-                    "required": "1"
-                },
-                "loginid": {
-                    "type": "string",
-                    "pattern": "^[_3]$",
-                    "required": "1"
-                }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "properties" : {
+      "balance" : {
+         "required" : [
+            "loginid",
+            "balance",
+            "currency"
+         ],
+         "type" : "object",
+         "properties" : {
+            "loginid" : {
+               "pattern" : "^[_3]$",
+               "type" : "string"
+            },
+            "balance" : {
+               "type" : "number",
+               "pattern" : "^[_1]$"
+            },
+            "currency" : {
+               "type" : "string",
+               "pattern" : "^[_2]$"
             }
-        },
-        "msg_type": {
-            "type": "string",
-            "pattern": "^balance$",
-            "required": "1"
-        }
-    }
+         }
+      },
+      "msg_type" : {
+         "pattern" : "^balance$",
+         "type" : "string"
+      },
+      "echo_req" : {}
+   }
 }

@@ -1,58 +1,63 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "echo_req": {
-        "required": "1"
-    },
-    "reality_check": {
-      "type": "object",
-      "properties": {
-        "start_time": {
-          "type": "integer",
-          "required": "1"
-        },
-        "loginid": {
-          "type": "string",
-          "pattern": "^MLT\\d+$",
-          "required": "1"
-        },
-        "currency": {
-          "type": "string",
-          "pattern": "^[_1]$",
-          "required": "1"
-        },
-        "buy_count": {
-          "type": "integer",
-          "required": "1"
-        },
-        "buy_amount": {
-          "type": "number",
-          "required": "1"
-        },
-        "sell_count": {
-          "type": "integer",
-          "required": "1"
-        },
-        "sell_amount": {
-          "type": "number",
-          "required": "1"
-        },
-        "potential_profit": {
-          "type": "number",
-          "required": "1"
-        },
-        "open_contract_count": {
-          "type": "integer",
-          "required": "1"
-        }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "title" : null,
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "properties" : {
+      "reality_check" : {
+         "required" : [
+            "sell_amount",
+            "start_time",
+            "buy_count",
+            "sell_count",
+            "potential_profit",
+            "loginid",
+            "open_contract_count",
+            "currency",
+            "buy_amount"
+         ],
+         "type" : "object",
+         "properties" : {
+            "sell_amount" : {
+               "type" : "number"
+            },
+            "start_time" : {
+               "type" : "integer"
+            },
+            "buy_count" : {
+               "type" : "integer"
+            },
+            "sell_count" : {
+               "type" : "integer"
+            },
+            "potential_profit" : {
+               "type" : "number"
+            },
+            "loginid" : {
+               "pattern" : "^MLT\\d+$",
+               "type" : "string"
+            },
+            "open_contract_count" : {
+               "type" : "integer"
+            },
+            "currency" : {
+               "type" : "string",
+               "pattern" : "^[_1]$"
+            },
+            "buy_amount" : {
+               "type" : "number"
+            }
+         }
       },
-      "required": "1"
-    },
-    "msg_type": {
-      "type": "string",
-      "pattern": "^reality_check$",
-      "required": "1"
-    }
-  }
+      "echo_req" : {},
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^reality_check$"
+      }
+   }
 }

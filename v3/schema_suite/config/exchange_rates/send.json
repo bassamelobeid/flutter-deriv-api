@@ -3,18 +3,17 @@
   "type": "object",
   "title": "Get Exchange Rates",
   "description": "Retrieves the exchange rates from a base currency to all currencies supported by the system.",
+  "required" : ["exchange_rates", "base_currency"],
   "properties": {
     "exchange_rates": {
       "type": "integer",
       "pattern": "^1$",
-      "description": "Must be 1",
-      "required": "1"
+      "description": "Must be 1"
     },
     "base_currency": {
       "type": "string",
       "pattern": "^[A-Z]{3}$",
-      "description": "Base currency (can be obtained from payout_currencies call)",
-      "required" : "1"
+      "description": "Base currency (can be obtained from payout_currencies call)"
     },
     "passthrough": {
       "type": "object",

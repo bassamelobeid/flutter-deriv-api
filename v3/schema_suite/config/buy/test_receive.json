@@ -1,60 +1,65 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "echo_req": {
-      "required": 1
-    },
-    "buy": {
-      "type": "object",
-      "properties": {
-        "balance_after": {
-          "type": "number",
-          "pattern": "^[_2]$",
-          "required": 1
-        },
-        "longcode": {
-          "type": "string",
-          "required": 1
-        },
-        "shortcode": {
-          "type": "string",
-          "required": 1
-        },
-        "start_time": {
-          "type": "integer",
-          "pattern": "^\\d{10}$",
-          "required": 1
-        },
-        "contract_id": {
-          "type": "integer",
-          "required": 1
-        },
-        "buy_price": {
-          "type": "number",
-          "required": 1
-        },
-        "purchase_time": {
-          "type": "integer",
-          "pattern": "^\\d{10}$",
-          "required": 1
-        },
-        "transaction_id": {
-          "type": "integer",
-          "required": 1
-        },
-        "payout": {
-            "type": "number",
-            "pattern": "^100$",
-            "required": 1
-        }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "title" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "properties" : {
+      "buy" : {
+         "required" : [
+            "transaction_id",
+            "buy_price",
+            "balance_after",
+            "longcode",
+            "start_time",
+            "contract_id",
+            "shortcode",
+            "purchase_time",
+            "payout"
+         ],
+         "properties" : {
+            "transaction_id" : {
+               "type" : "integer"
+            },
+            "buy_price" : {
+               "type" : "number"
+            },
+            "balance_after" : {
+               "type" : "number",
+               "pattern" : "^[_2]$"
+            },
+            "longcode" : {
+               "type" : "string"
+            },
+            "start_time" : {
+               "pattern" : "^\\d{10}$",
+               "type" : "integer"
+            },
+            "contract_id" : {
+               "type" : "integer"
+            },
+            "shortcode" : {
+               "type" : "string"
+            },
+            "purchase_time" : {
+               "pattern" : "^\\d{10}$",
+               "type" : "integer"
+            },
+            "payout" : {
+               "type" : "number",
+               "pattern" : "^100$"
+            }
+         },
+         "type" : "object"
       },
-      "required": 1
-    },
-    "msg_type": {
-      "type": "string",
-      "pattern":"^buy$",
-      "required": 1
-    }
-  }
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^buy$"
+      },
+      "echo_req" : {}
+   }
 }

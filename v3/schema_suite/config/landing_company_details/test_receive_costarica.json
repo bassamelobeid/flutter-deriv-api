@@ -1,78 +1,80 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "landing_company_details": {
-            "type": "object",
-            "required": "1",
-            "properties": {
-                "shortcode": {
-                    "type": "string",
-                    "pattern": "^[_1]$",
-                    "required": "1"
-                },
-                "name": {
-                    "type": "string",
-                    "pattern": "^Binary \\(C\\.R\\.\\) S\\.A\\.$",
-                    "required": "1"
-                },
-                "address": {
-                    "type": "null"
-                },
-                "country": {
-                    "type": "string",
-                    "pattern": "^Costa Rica$",
-                    "required": "1"
-                },
-                "legal_default_currency": {
-                    "type": "string",
-                    "pattern": "^USD$",
-                    "required": "1"
-                },
-                "legal_allowed_currencies": {
-                    "type": "array",
-                    "minItems": 7,
-                    "required": "1",
-                    "items": {
-                        "type": "string",
-                        "pattern": "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB)$",
-                        "required": "1"
-                    }
-                },
-                "legal_allowed_markets": {
-                    "type": "array",
-                    "minItems": 4,
-                    "required": "1",
-                    "items": {
-                        "type": "string",
-                        "pattern": "^(commodities|forex|indices|volidx)$",
-                        "required": "1"
-                    }
-                },
-                "legal_allowed_contract_categories": {
-                    "type": "array",
-                    "minItems": 6,
-                    "required": "1",
-                    "items": {
-                        "type": "string",
-                        "pattern": "^(asian|callput|callputequal|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|runs)$",
-                        "required": "1"
-                    }
-                },
-                "has_reality_check": {
-                    "type": "integer",
-                    "pattern": "^0$",
-                    "required": "1"
-                }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "title" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "description" : null,
+   "properties" : {
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^landing_company_details$"
+      },
+      "echo_req" : {},
+      "landing_company_details" : {
+         "properties" : {
+            "legal_allowed_currencies" : {
+               "items" : {
+                  "type" : "string",
+                  "pattern" : "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB)$"
+               },
+               "type" : "array",
+               "minItems" : 7
+            },
+            "legal_allowed_markets" : {
+               "minItems" : 4,
+               "type" : "array",
+               "items" : {
+                  "pattern" : "^(commodities|forex|indices|volidx)$",
+                  "type" : "string"
+               }
+            },
+            "legal_default_currency" : {
+               "pattern" : "^USD$",
+               "type" : "string"
+            },
+            "country" : {
+               "pattern" : "^Costa Rica$",
+               "type" : "string"
+            },
+            "shortcode" : {
+               "pattern" : "^[_1]$",
+               "type" : "string"
+            },
+            "has_reality_check" : {
+               "pattern" : "^0$",
+               "type" : "integer"
+            },
+            "legal_allowed_contract_categories" : {
+               "minItems" : 6,
+               "type" : "array",
+               "items" : {
+                  "type" : "string",
+                  "pattern" : "^(asian|callput|callputequal|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|runs)$"
+               }
+            },
+            "address" : {
+               "type" : "null"
+            },
+            "name" : {
+               "pattern" : "^Binary \\(C\\.R\\.\\) S\\.A\\.$",
+               "type" : "string"
             }
-        },
-        "echo_req": {
-            "required": "1"
-        },
-        "msg_type": {
-            "type": "string",
-            "pattern": "^landing_company_details$",
-            "required": "1"
-        }
-    }
+         },
+         "type" : "object",
+         "required" : [
+            "legal_allowed_currencies",
+            "legal_allowed_markets",
+            "legal_default_currency",
+            "country",
+            "shortcode",
+            "has_reality_check",
+            "legal_allowed_contract_categories",
+            "name"
+         ]
+      }
+   }
 }

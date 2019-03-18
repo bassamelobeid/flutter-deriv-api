@@ -1,60 +1,65 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "proposal": {
-            "type": "object",
-            "required": "1",
-            "properties" : {
-                "longcode": {
-                    "type": "string",
-                    "pattern": "^[_6]$",
-                    "required": "1"
-                },
-                "ask_price": {
-                    "type": "number",
-                    "pattern": "^[_7]$",
-                    "required": "1"
-                },
-                "display_value": {
-                    "type": "number",
-                    "pattern": "^[_8]$",
-                    "required": "1"
-                },
-                "date_start": {
-                    "type": "number",
-                    "pattern": "^\\d+$",
-                    "required": "1"
-                },
-                "id": {
-                    "type": "string",
-                    "pattern": "[\\d\\w-]+$",
-                    "required": "1"
-                },
-                "payout": {
-                    "type": "number",
-                    "pattern": "^100$",
-                    "required": "1"
-                },
-                "spot": {
-                    "type": "number",
-                    "pattern": "^[_9]$",
-                    "required": "1"
-                },
-                "spot_time": {
-                    "type": "number",
-                    "pattern": "^\\d+$",
-                    "required": "1"
-                }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "description" : null,
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "properties" : {
+      "proposal" : {
+         "type" : "object",
+         "properties" : {
+            "longcode" : {
+               "type" : "string",
+               "pattern" : "^[_6]$"
+            },
+            "id" : {
+               "pattern" : "[\\d\\w-]+$",
+               "type" : "string"
+            },
+            "display_value" : {
+               "type" : "number",
+               "pattern" : "^[_8]$"
+            },
+            "spot_time" : {
+               "type" : "number",
+               "pattern" : "^\\d+$"
+            },
+            "spot" : {
+               "pattern" : "^[_9]$",
+               "type" : "number"
+            },
+            "ask_price" : {
+               "pattern" : "^[_7]$",
+               "type" : "number"
+            },
+            "date_start" : {
+               "type" : "number",
+               "pattern" : "^\\d+$"
+            },
+            "payout" : {
+               "type" : "number",
+               "pattern" : "^100$"
             }
-        },
-        "echo_req": {
-            "required": "1"
-        },
-        "msg_type": {
-            "type": "string",
-            "pattern": "^proposal$",
-            "required": "1"
-        }
-    }
+         },
+         "required" : [
+            "longcode",
+            "id",
+            "display_value",
+            "spot_time",
+            "spot",
+            "ask_price",
+            "date_start",
+            "payout"
+         ]
+      },
+      "msg_type" : {
+         "pattern" : "^proposal$",
+         "type" : "string"
+      },
+      "echo_req" : {}
+   }
 }

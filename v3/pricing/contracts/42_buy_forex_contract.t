@@ -253,7 +253,7 @@ SKIP: {
             buy   => $proposal_id,
             price => $buy_price
         });
-        is $res->{buy}->{buy_price}, '100.00', 'Buy with proposal id: Buy price is matching 100';
+        is $res->{buy}->{buy_price}, 100.00, 'Buy with proposal id: Buy price is matching 100';
         ok $res->{buy}->{payout} > 100, 'Buy with proposal id: Payout is greater than 100';
         $proposal_1 = $t->await::proposal({
             proposal => 1,
@@ -265,7 +265,7 @@ SKIP: {
             buy   => $proposal_id,
             price => 10000
         });
-        is $res->{buy}->{buy_price}, '100.00', 'Buy with proposal id: Buy price is 100';
+        is $res->{buy}->{buy_price}, 100.00, 'Buy with proposal id: Buy price is 100';
         ok $res->{buy}->{payout} > 100, 'Buy with proposal id: Payout is greater than 100';
 
         $proposal_1 = $t->await::proposal({
@@ -291,7 +291,7 @@ SKIP: {
             parameters => {%contract},
         });
 
-        is $res->{buy}->{buy_price}, '100.00', 'Buy with defined contract parameters: Buy price is 100';
+        is $res->{buy}->{buy_price}, 100.00, 'Buy with defined contract parameters: Buy price is 100';
         ok $res->{buy}->{payout} > 100, 'Buy with defined contract parameters: Payout is greater than 100';
         $res = $t->await::buy({
             buy        => 1,
@@ -299,7 +299,7 @@ SKIP: {
             parameters => {%contract},
         });
 
-        is $res->{buy}->{buy_price}, '100.00', 'Buy with defined contract parameters: Buy price is 100';
+        is $res->{buy}->{buy_price}, 100.00, 'Buy with defined contract parameters: Buy price is 100';
         ok $res->{buy}->{payout} > 100, 'Buy with defined contract parameters: Payout is greater than 100';
 
         $res = $t->await::buy({

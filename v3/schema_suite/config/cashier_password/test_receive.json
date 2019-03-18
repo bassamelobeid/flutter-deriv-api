@@ -1,19 +1,23 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "cashier_password": {
-      "type": "integer",
-      "pattern": "^[_1]$",
-      "required": "1"
-    },
-    "echo_req": {
-      "required": "1"
-    },
-    "msg_type": {
-      "type": "string",
-      "pattern": "^cashier_password$",
-      "required": "1"
-    }
-  }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "title" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "description" : null,
+   "required" : [
+      "msg_type",
+      "cashier_password",
+      "echo_req"
+   ],
+   "properties" : {
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^cashier_password$"
+      },
+      "cashier_password" : {
+         "type" : "integer",
+         "pattern" : "^[_1]$"
+      },
+      "echo_req" : {}
+   }
 }

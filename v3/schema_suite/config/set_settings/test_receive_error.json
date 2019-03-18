@@ -1,29 +1,34 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "echo_req": {
-            "required": "1"
-        },
-        "error": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string",
-                    "required": "1"
-                },
-                "code": {
-                    "type": "string",
-                    "pattern": "^PermissionDenied$",
-                    "required": "1"
-                }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "properties" : {
+      "msg_type" : {
+         "pattern" : "^set_settings$",
+         "type" : "string"
+      },
+      "error" : {
+         "properties" : {
+            "code" : {
+               "pattern" : "^PermissionDenied$",
+               "type" : "string"
             },
-            "required": "1"
-        },
-        "msg_type":{
-            "type": "string",
-            "pattern": "^set_settings$",
-            "required": "1"
-        }
-    }
+            "message" : {
+               "type" : "string"
+            }
+         },
+         "type" : "object",
+         "required" : [
+            "code",
+            "message"
+         ]
+      },
+      "echo_req" : {}
+   }
 }

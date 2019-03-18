@@ -1,78 +1,80 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "landing_company_details": {
-            "type": "object",
-            "required": "1",
-            "properties": {
-                "shortcode": {
-                    "type": "string",
-                    "pattern": "^[_1]$",
-                    "required": "1"
-                },
-                "name": {
-                    "type": "string",
-                    "pattern": "^Binary Ltd$",
-                    "required": "1"
-                },
-                "address": {
-                    "type": "null"
-                },
-                "country": {
-                    "type": "string",
-                    "pattern": "^Bahamas$",
-                    "required": "1"
-                },
-                "legal_default_currency": {
-                    "type": "string",
-                    "pattern": "^USD$",
-                    "required": "1"
-                },
-                "legal_allowed_currencies": {
-                    "type": "array",
-                    "minItems": 1,
-                    "required": "1",
-                    "items": {
-                        "type": "string",
-                        "pattern": "^USD$",
-                        "required": "1"
-                    }
-                },
-                "legal_allowed_markets": {
-                    "type": "array",
-                    "minItems": 4,
-                    "required": "1",
-                    "items": {
-                        "type": "string",
-                        "pattern": "^(commodities|forex|indices|volidx)$",
-                        "required": "1"
-                    }
-                },
-                "legal_allowed_contract_categories": {
-                    "type": "array",
-                    "minItems": 6,
-                    "required": "1",
-                    "items": {
-                        "type": "string",
-                        "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|callputequal|runs)$",
-                        "required": "1"
-                    }
-                },
-                "has_reality_check": {
-                    "type": "integer",
-                    "pattern": "^0$",
-                    "required": "1"
-                }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "description" : null,
+   "properties" : {
+      "echo_req" : {},
+      "msg_type" : {
+         "pattern" : "^landing_company_details$",
+         "type" : "string"
+      },
+      "landing_company_details" : {
+         "type" : "object",
+         "properties" : {
+            "legal_allowed_currencies" : {
+               "minItems" : 1,
+               "type" : "array",
+               "items" : {
+                  "pattern" : "^USD$",
+                  "type" : "string"
+               }
+            },
+            "legal_allowed_markets" : {
+               "items" : {
+                  "pattern" : "^(commodities|forex|indices|volidx)$",
+                  "type" : "string"
+               },
+               "minItems" : 4,
+               "type" : "array"
+            },
+            "legal_allowed_contract_categories" : {
+               "items" : {
+                  "type" : "string",
+                  "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|callputequal|runs)$"
+               },
+               "minItems" : 6,
+               "type" : "array"
+            },
+            "address" : {
+               "type" : "null"
+            },
+            "name" : {
+               "type" : "string",
+               "pattern" : "^Binary Ltd$"
+            },
+            "legal_default_currency" : {
+               "type" : "string",
+               "pattern" : "^USD$"
+            },
+            "country" : {
+               "type" : "string",
+               "pattern" : "^Bahamas$"
+            },
+            "shortcode" : {
+               "type" : "string",
+               "pattern" : "^[_1]$"
+            },
+            "has_reality_check" : {
+               "pattern" : "^0$",
+               "type" : "integer"
             }
-        },
-        "echo_req": {
-            "required": "1"
-        },
-        "msg_type": {
-            "type": "string",
-            "pattern": "^landing_company_details$",
-            "required": "1"
-        }
-    }
+         },
+         "required" : [
+            "legal_allowed_currencies",
+            "legal_allowed_markets",
+            "legal_allowed_contract_categories",
+            "name",
+            "legal_default_currency",
+            "country",
+            "shortcode",
+            "has_reality_check"
+         ]
+      }
+   }
 }

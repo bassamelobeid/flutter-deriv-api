@@ -1,44 +1,51 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "echo_req": {
-      "required": "1"
-    },
-    "history": {
-      "type": "object",
-      "required": "1",
-      "properties": {
-        "times": {
-          "type": ["array","null"],
-          "maxItems": 10,
-          "minItems": 10,
-          "required": "1",
-          "items":
-            {
-              "type": "integer",
-              "pattern": "^\\d{10}$",
-              "required": "1"
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "title" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "description" : null,
+   "properties" : {
+      "echo_req" : {},
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^history$"
+      },
+      "history" : {
+         "required" : [
+            "times",
+            "prices"
+         ],
+         "type" : "object",
+         "properties" : {
+            "times" : {
+               "type" : [
+                  "array",
+                  "null"
+               ],
+               "minItems" : 10,
+               "items" : {
+                  "pattern" : "^\\d{10}$",
+                  "type" : "integer"
+               },
+               "maxItems" : 10
+            },
+            "prices" : {
+               "items" : {
+                  "pattern" : "^\\d+\\.\\d+$",
+                  "type" : "string"
+               },
+               "maxItems" : 10,
+               "minItems" : 10,
+               "type" : [
+                  "array",
+                  "null"
+               ]
             }
-        },
-        "prices": {
-          "type": ["array","null"],
-          "maxItems": 10,
-          "minItems": 10,
-          "required": "1",
-          "items":
-            {
-              "type": "string",
-              "pattern": "^\\d+\\.\\d+$",
-              "required": "1"
-            }
-        }
+         }
       }
-    },
-    "msg_type": {
-      "type": "string",
-      "pattern": "^history$",
-      "required": "1"
-    }
-  }
+   }
 }

@@ -1,29 +1,34 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "echo_req": {
-            "required": "1"
-        },
-        "error": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string",
-                    "required": "1"
-                },
-                "code": {
-                    "type": "string",
-                    "pattern": "^show risk disclaimer$",
-                    "required": "1"
-                }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "additionalProperties" : null,
+   "type" : "object",
+   "title" : null,
+   "description" : null,
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "properties" : {
+      "echo_req" : {},
+      "error" : {
+         "properties" : {
+            "message" : {
+               "type" : "string"
             },
-            "required": "1"
-        },
-        "msg_type":{
-            "type": "string",
-            "pattern": "^new_account_maltainvest$",
-            "required": "1"
-        }
-    }
+            "code" : {
+               "pattern" : "^show risk disclaimer$",
+               "type" : "string"
+            }
+         },
+         "type" : "object",
+         "required" : [
+            "message",
+            "code"
+         ]
+      },
+      "msg_type" : {
+         "pattern" : "^new_account_maltainvest$",
+         "type" : "string"
+      }
+   }
 }
