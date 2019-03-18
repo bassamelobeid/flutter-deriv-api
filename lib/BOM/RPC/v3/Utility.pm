@@ -469,7 +469,7 @@ sub validate_make_new_account {
             # send error as account opening for maltainvest has separate call
             return create_error({
                     code              => 'InvalidAccount',
-                    message_to_client => $error_map->{'invalid'}}) if ($financial_company and any { $_ eq $financial_company } qw(maltainvest));
+                    message_to_client => $error_map->{'invalid'}}) if ($financial_company and $financial_company eq 'maltainvest');
         } elsif ($account_type eq 'financial' and ($financial_company and $financial_company ne 'maltainvest')) {
             return create_error({
                     code              => 'InvalidAccount',
@@ -522,10 +522,6 @@ sub validate_make_new_account {
         }
     }
 
-    my $error = create_error({
-            code              => 'NewAccountLimitReached',
-            message_to_client => localize('You have created all accounts available to you.')});
-
     # filter siblings by landing company as we don't want to check cross
     # landing company siblings, for example MF should check only its
     # corresponding siblings not MLT one
@@ -544,13 +540,11 @@ sub validate_make_new_account {
         return _currency_type_error($is_currency_allowed->{message}) unless $is_currency_allowed->{allowed};
     }
 
-    # check if all currencies are exhausted i.e.
-    # - if client has one type of fiat currency don't allow them to open another
-    # - if client has all of allowed cryptocurrency
-    my @available_currencies = get_available_currencies($siblings, $landing_company_name);
-
     # Check if client can create anymore accounts, if currency is available. Otherwise, return error
-    return $error unless @available_currencies;
+    return create_error({
+            code              => 'NewAccountLimitReached',
+            message_to_client => localize('You have created all accounts available to you.')}
+    ) unless get_available_currencies($siblings, $landing_company_name);
 
     return undef;
 }
