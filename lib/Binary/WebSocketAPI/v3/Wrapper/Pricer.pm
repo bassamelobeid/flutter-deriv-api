@@ -82,7 +82,7 @@ sub proposal {
                 my ($rpc_response, $api_response, $req_storage) = @_;
                 return $api_response if $rpc_response->{error};
 
-                $api_response->{passthrough} = $req_storage->{args}->{passthrough};
+                $api_response->{passthrough} = $req_storage->{args}->{passthrough} if defined($req_storage->{args}->{passthrough});
                 if (my $uuid = $req_storage->{uuid}) {
                     $api_response->{proposal}->{id} = $uuid;
                     $api_response->{subscription}->{id} = $uuid if $req_storage->{args}->{subscribe};
