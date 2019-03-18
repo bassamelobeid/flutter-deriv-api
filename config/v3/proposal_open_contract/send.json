@@ -31,7 +31,6 @@
          "enum" : [
             1
          ],
-         "type" : "integer",
          "description" : "Must be 1"
       }
    }

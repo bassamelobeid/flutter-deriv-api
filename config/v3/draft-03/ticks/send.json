@@ -17,10 +17,8 @@
       "description": "The short symbol name or array of symbols (obtained from active_symbols call)."
     },
     "subscribe": {
-      "type": "integer",
       "description": "If set to 1, will send updates whenever a new spot price is received.",
-      "maximum": 1,
-      "minimum": 1
+      "enum": [1]
      },
     "passthrough": {
       "type": "object",

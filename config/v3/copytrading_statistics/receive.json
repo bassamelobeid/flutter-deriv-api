@@ -49,7 +49,7 @@
                         }
                     },
 
-                    "minProperties" : 1
+                    "minProperties" : 0
                 },
                 "performance_probability" : {
                     "type" : "number",
@@ -106,7 +106,7 @@
                         }
                     },
                     "type" : "object",
-                    "minProperties" : 1,
+                    "minProperties" : 0,
                     "description" : "Represents the net change in equity per year."
                 }
             }

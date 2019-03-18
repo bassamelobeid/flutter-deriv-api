@@ -55,7 +55,7 @@
       },
       "date_to" : {
          "maximum" : 9999999999,
-         "minimum" : 1,
+         "minimum" : 0,
          "description" : "Optional end date (epoch)",
          "type" : "integer"
       }

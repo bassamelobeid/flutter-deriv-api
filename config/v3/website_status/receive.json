@@ -49,6 +49,12 @@
                                             "properties": {
                                                 "min": {
                                                     "type": "number",
+                                                    "minimum": 0,
+                                                    "required": "1"
+                                                },
+                                                "max": {
+                                                    "type": "number",
+                                                    "description": "Maximum allowed amount for transfer between accounts with different types of currencies",
                                                     "minimum": 0
                                                 }
                                             }
@@ -161,13 +167,16 @@
         },
         "subscription" : {
             "title" : "Subscription information",
-            "description" : "For subscription requests only.",
+            "description" : "For subscription requests only",
             "type" : "object",
+            "required" : [
+                "id"
+            ],
             "properties": {
-               "id" : {
-                "description": "The subscription identifier of the data to be streamed.",
-                "type" : "string"
-               }
+                "id" : {
+                    "description": "A per-connection unique identifier. Can be passed to the forget API call to unsubscribe.",
+                    "type" : "string"
+                }
             }
         }
     }

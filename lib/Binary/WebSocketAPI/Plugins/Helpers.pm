@@ -206,8 +206,9 @@ sub register {
                                 proposals => \%proposal_array,
                                 id        => $pa_uuid,
                             },
-                            echo_req => $proposal_array_subscriptions->{$pa_uuid}{args},
-                            msg_type => 'proposal_array',
+                            echo_req     => $proposal_array_subscriptions->{$pa_uuid}{args},
+                            msg_type     => 'proposal_array',
+                            subscription => {id => $pa_uuid},
                         };
                         $weak_c->send({json => $results}, {args => $proposal_array_subscriptions->{$pa_uuid}{args}});
                     }

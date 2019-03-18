@@ -183,6 +183,7 @@ sub handle_message {
                     ? (req_id => $arguments->{req_id})
                     : (),
                     $msg_type => $result,
+                    subscription => {id => $self->uuid},
                 }});
     }
 

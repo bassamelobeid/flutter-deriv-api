@@ -176,13 +176,16 @@ sub ticks {
                     symbol => $symbol,
                 },
                 success => sub {
-                    my ($c, undef, $req_storage) = @_;
+                    my ($c, $api_response, $req_storage) = @_;
                     $req_storage->{id} = _feed_channel_subscribe($c, $req_storage->{symbol}, 'tick', $req_storage->{args});
                 },
                 response => sub {
                     my ($rpc_response, $api_response, $req_storage) = @_;
                     return $api_response if $rpc_response->{error};
-                    unless ($req_storage->{id}) {
+
+                    if ($req_storage->{id}) {
+                        $api_response->{subscription}->{id} = $req_storage->{id};
+                    } else {
                         $api_response =
                             $c->new_error('tick', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $req_storage->{symbol}));
                     }

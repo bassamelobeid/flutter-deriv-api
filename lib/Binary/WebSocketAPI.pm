@@ -236,6 +236,7 @@ sub startup {
                 after_got_rpc_response => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::subscribe_transaction_channel,
                 error                  => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::balance_error_handler,
                 success                => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::balance_success_handler,
+                response               => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::balance_response_handler,
             }
         ],
 

@@ -193,6 +193,7 @@ sub _update_transaction {
             contract_id    => $payload->{financial_market_bet_id},
             ($payload->{currency_code} ? (currency => $payload->{currency_code}) : ()),
         },
+        $id ? (subscription => {id => $id}) : (),
     };
 
     if (($payload->{referrer_type} // '') ne 'financial_market_bet') {
@@ -253,7 +254,9 @@ sub _update_balance {
             loginid  => $c->stash('loginid'),
             currency => $c->stash('currency'),
             balance  => formatnumber('amount', $c->stash('currency'), $payload->{balance_after}),
-        }};
+        },
+        $id ? (subscription => {id => $id}) : (),
+    };
 
     $c->send({json => $details}) if $c->tx;
     return;

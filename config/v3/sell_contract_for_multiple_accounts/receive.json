@@ -36,7 +36,6 @@
                         "additionalProperties" : false,
                         "required" : [
                             "reference_id",
-                            "contract_shortcode",
                             "sell_price",
                             "balance_after",
                             "transaction_id",
@@ -50,10 +49,6 @@
                            "reference_id" : {
                               "description" : "Internal transaction identifier for the corresponding transaction",
                               "type" : "integer"
-                           },
-                           "contract_shortcode" : {
-                              "description" : "Internal contract code for the sold contract",
-                              "type" : "string"
                            },
                            "balance_after" : {
                               "type" : "number",
