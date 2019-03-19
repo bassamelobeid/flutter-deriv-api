@@ -23,39 +23,39 @@
          ],
          "properties" : {
             "max_losses" : {
-               "pattern" : "^5000$",
+               "enum" : [5000],
                "type" : "integer"
             },
             "max_7day_losses" : {
-               "pattern" : "^400$",
+               "enum" : [400],
                "type" : "integer"
             },
             "session_duration_limit" : {
-               "pattern" : "^36120$",
+               "enum" : [36120],
                "type" : "integer"
             },
             "max_turnover" : {
-               "pattern" : "^3000$",
+               "enum" : [3000],
                "type" : "integer"
             },
             "max_open_bets" : {
-               "pattern" : "^60$",
+               "enum" : [60],
                "type" : "integer"
             },
             "max_30day_losses" : {
-               "pattern" : "^50100$",
+               "enum" : [50100],
                "type" : "integer"
             },
             "max_balance" : {
                "type" : "integer",
-               "pattern" : "^1000$"
+               "enum" : [1000]
             },
             "max_30day_turnover" : {
-               "pattern" : "^7000$",
+               "enum" : [7000],
                "type" : "integer"
             },
             "max_7day_turnover" : {
-               "pattern" : "^20$",
+               "enum" : [20],
                "type" : "integer"
             }
          },

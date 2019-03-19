@@ -1,12 +1,12 @@
 {
    "$schema" : "http://json-schema.org/draft-04/schema#",
    "description" : null,
-   "additionalProperties" : null,
    "type" : "object",
    "title" : null,
    "required" : [
       "echo_req",
-      "msg_type"
+      "msg_type",
+      "new_account_virtual" 
    ],
    "properties" : {
       "new_account_virtual" : {

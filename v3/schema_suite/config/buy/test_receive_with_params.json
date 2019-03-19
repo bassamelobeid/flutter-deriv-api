@@ -13,7 +13,7 @@
          "properties" : {
             "payout" : {
                "type" : "number",
-               "pattern" : "^[_3]"
+               "enum" : [[_3]]
             },
             "purchase_time" : {
                "type" : "integer",
@@ -36,7 +36,7 @@
                "type" : "number"
             },
             "buy_price" : {
-               "pattern" : "^[_2]",
+               "enum" : [[_2]],
                "type" : "number"
             },
             "transaction_id" : {

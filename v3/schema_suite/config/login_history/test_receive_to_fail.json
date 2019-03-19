@@ -20,7 +20,7 @@
              "required": ["status", "action", "environment", "time"],
             "properties" : {
                "status" : {
-                  "pattern" : "^0$",
+                  "enum" : [0],
                   "type" : "integer"
                },
                "action" : {

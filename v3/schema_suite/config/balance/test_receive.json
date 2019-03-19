@@ -2,7 +2,6 @@
    "$schema" : "http://json-schema.org/draft-04/schema#",
    "description" : null,
    "type" : "object",
-   "additionalProperties" : null,
    "title" : null,
    "required" : [
       "msg_type",

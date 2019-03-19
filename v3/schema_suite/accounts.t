@@ -15,8 +15,6 @@ my $suite = start(
 );
 
 set_language 'EN';
-warn $suite->get_token('test@test.com');
-die;
 
 
 # VIRTUAL ACCOUNT OPENING FOR (CR)
@@ -25,9 +23,8 @@ test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/
     $suite->get_token('test@binary.com'), 'test@binary.com', 'id';
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.json',
 $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test@binary.com';
-fail_test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
-    $suite->get_token('test@binary.com'), 'test@binary.com', 'id';
-
+#fail_test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
+#    $suite->get_token('test@binary.com'), 'test@binary.com', 'id';
 # READ SCOPE CALLS (VRTC)
 test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '10000', 'USD', $suite->get_stashed('authorize/authorize/loginid');
 test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', 'USD',       1;
@@ -45,10 +42,13 @@ test_sendrecv_params 'buy/test_send.json', 'buy/test_receive.json', $suite->get_
 test_last_stream_params 1, 'balance/test_receive.json', '99\\\\d{2}\\\\.\\\\d{2}', 'USD', $suite->get_stashed('authorize/authorize/loginid');
 test_sendrecv_params 'buy/test_send_with_params.json', 'buy/test_receive_with_params.json', 'payout', '5.15', '10';
 test_sendrecv_params 'buy/test_send_with_params.json', 'buy/test_receive_with_params.json', 'stake',  '10',   '19.43';
+test_sendrecv 'proposal/test_send_buy.json', 'proposal/test_receive_buy.json';
 test_sendrecv_params 'buy_contract_for_multiple_accounts/test_send_invalid_token.json',
     'buy_contract_for_multiple_accounts/test_receive_invalid_token.json',
-    $suite->get_stashed('proposal/id'), $suite->get_stashed('new_account_real/new_account_real/oauth_token'), 'dummy1234';
+    $suite->get_stashed('proposal/proposal/id'), $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'dummy1234';
 
+finish;
+exit;
 # Buy Lookbacks
 test_sendrecv_params 'buy/test_send_lookback_with_params.json', 'buy/test_receive_lookback_with_params.json', 'unit', '154.86', '0';
 

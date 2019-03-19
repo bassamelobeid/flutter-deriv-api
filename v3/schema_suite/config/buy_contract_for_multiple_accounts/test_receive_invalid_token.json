@@ -1,7 +1,6 @@
 {
    "$schema" : "http://json-schema.org/draft-04/schema#",
    "title" : "Buy a Contract for multiple Accounts Receive",
-   "additionalProperties" : null,
    "type" : "object",
    "description" : "A message with transaction results is received",
    "required" : null,
