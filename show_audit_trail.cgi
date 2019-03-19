@@ -96,6 +96,11 @@ for ($category) {
                 query  => "client_loginid = ?",
                 params => [$loginid],
             },
+            {
+                table  => 'account',
+                query  => "client_loginid = ?",
+                params => [$loginid],
+            },
         );
     } elsif (/^payment_agent$/) {
         @tables = ({
