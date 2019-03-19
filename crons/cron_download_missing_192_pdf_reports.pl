@@ -30,12 +30,15 @@ for my $broker (qw/MF MX/) {
         );
 
         try {
-            if (not $xml_exists) {
-                request_proveid($loginid);
-            } elsif (not $pdf_exists) {
-                request_pdf($broker, $loginid);
-            } else {
-                remove_pending_status($loginid);
+            my $client = get_client($loginid);
+            unless ($xml_exists) {
+                request_proveid($client);
+            }
+            $client->status->clear_proveid_pending;
+            my $unwelcome = $client->status->unwelcome;
+            $client->status->clear_unwelcome if $unwelcome and $unwelcome->{reason} =~ /^FailedExperian/;
+            if ($xml_exists and not $pdf_exists) {
+                request_pdf($broker, $loginid, $client);
             }
         }
         catch {
@@ -63,7 +66,7 @@ sub find_loginids_with_pending_experian {
         fixup => sub {
             $_->selectall_arrayref(<<'SQL', {Slice => {}}) });
 SELECT client_loginid FROM betonmarkets.client_status
-WHERE status_code = 'proveid_pending' AND last_modified_date >= NOW() - INTERVAL '12 hour';
+WHERE status_code = 'proveid_pending' AND last_modified_date >= NOW() - INTERVAL '1 hour';
 SQL
 
     return [grep { $_ =~ /$broker/ } map { $_->{client_loginid} } @$result];
@@ -79,7 +82,7 @@ sub get_filename {
 }
 
 sub request_pdf {
-    my ($broker, $loginid) = @_;
+    my ($broker, $loginid, $client) = @_;
 
     my $result_as_xml = path(
         get_filename(
@@ -88,9 +91,7 @@ sub request_pdf {
             type    => 'xml'
         ))->slurp_utf8;
 
-    my $client = get_client($loginid);
-
-    try {
+    return try {
         BOM::Platform::ProveID->new(
             client        => $client,
             xml_result    => $result_as_xml,
@@ -100,30 +101,15 @@ sub request_pdf {
     catch {
         die "Failed to save Experian pdf for " . $client->loginid . ": $_";
     };
-
-    return remove_pending_status($loginid);
 }
 
 sub request_proveid {
-    my ($loginid) = @_;
+    my ($client) = @_;
 
-    my $client = get_client($loginid);
-
-    BOM::Platform::Client::IDAuthentication->new(
+    return BOM::Platform::Client::IDAuthentication->new(
         client        => $client,
         force_recheck => 1
-    )->_proveid;
-
-    # Remove pending status to prevent ProveID search for the next cron schedule
-    return remove_pending_status($loginid);
-}
-
-sub remove_pending_status {
-    my $loginid = shift;
-
-    my $client = get_client($loginid);
-
-    return $client->status->clear_proveid_pending;
+    )->proveid;
 }
 
 sub get_client {
