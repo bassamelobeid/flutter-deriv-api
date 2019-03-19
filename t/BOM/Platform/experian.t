@@ -179,7 +179,7 @@ if ($ARGV[0] and $ARGV[0] eq '-uat') {
 
         # PDF downloads don't work with UAT
         $mock->mock(
-            _get_pdf_result  => sub { return 1; },
+            get_pdf_result   => sub { return 1; },
             _save_pdf_result => sub { return 1; });
 
         subtest 'Valid Auth' => sub {

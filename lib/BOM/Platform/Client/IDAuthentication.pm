@@ -42,62 +42,35 @@ sub run_authentication {
 
     my $action_mapping = {
         age_verified => \&_age_verified,
-        proveid      => \&_proveid,
         fully_auth   => \&_fully_auth,
+        proveid      => \&proveid,
     };
 
-    for my $req (@$requirements) {
-        unless (exists $action_mapping->{$req}) {
-            warn "Invalid requirement";
-            next;
+    return try {
+        for my $req (@$requirements) {
+            unless (exists $action_mapping->{$req}) {
+                warn "Invalid requirement";
+                next;
+            }
+            $action_mapping->{$req}->($self);
         }
-        $action_mapping->{$req}->($self);
     }
-
-    return;
+    catch {
+        warn "First deposit authentication failed: $_";
+    };
 }
 
-=head2 _age_verified
-
-Checks if client is age verified, if not, set cashier lock on client
-
-=cut
-
-sub _age_verified {
-    my $self    = shift;
-    my $client  = $self->client;
-    my $loginid = $client->loginid;
-
-    if (!$client->status->age_verification && !$client->has_valid_documents) {
-        $client->status->set('cashier_locked', 'system', 'Age verification is needed after first deposit.');
-        $self->_request_id_authentication();
-    }
-
-    return undef;
-}
-
-=head2 _fully_auth
-
-Checks if client is fully authenticated, if not, set client as unwelcome
-
-=cut
-
-sub _fully_auth {
-    my $self   = shift;
-    my $client = $self->client;
-
-    $client->status->set("unwelcome", "system", "Client was not fully authenticated before making first deposit") unless $client->fully_authenticated;
-
-    return undef;
-}
-
-=head2 _proveid
+=head2 proveid
 
 Checks the proveid results of the client from Experian
 
+=over 4
+
+=item * C<should_die> - Boolean, if set, the proveid will die on failure
+
 =cut
 
-sub _proveid {
+sub proveid {
     my $self    = shift;
     my $client  = $self->client;
     my $loginid = $client->loginid;
@@ -106,7 +79,6 @@ sub _proveid {
 
     my $prove_id_result = $self->_fetch_proveid;
 
-    return undef unless $prove_id_result;
     my $xml = XML::LibXML->new()->parse_string($prove_id_result);
 
     my ($credit_reference_summary) = $xml->findnodes('/Search/Result/CreditReference/CreditReferenceSummary');
@@ -151,6 +123,40 @@ sub _proveid {
     }
 }
 
+=head2 _age_verified
+
+Checks if client is age verified, if not, set cashier lock on client
+
+=cut
+
+sub _age_verified {
+    my $self    = shift;
+    my $client  = $self->client;
+    my $loginid = $client->loginid;
+
+    if (!$client->status->age_verification && !$client->has_valid_documents) {
+        $client->status->set('cashier_locked', 'system', 'Age verification is needed after first deposit.');
+        $self->_request_id_authentication();
+    }
+
+    return undef;
+}
+
+=head2 _fully_auth
+
+Checks if client is fully authenticated, if not, set client as unwelcome
+
+=cut
+
+sub _fully_auth {
+    my $self   = shift;
+    my $client = $self->client;
+
+    $client->status->set("unwelcome", "system", "Client was not fully authenticated before making first deposit") unless $client->fully_authenticated;
+
+    return undef;
+}
+
 =head2 _fetch_proveid
 
 Fetches the proveid result of the client from Experian through BOM::Platform::ProveID
@@ -162,54 +168,60 @@ sub _fetch_proveid {
     my $client  = $self->client;
     my $loginid = $client->loginid;
 
+    # TODO: Remove this once results are uploaded to S3
+    # If we're on a server which doesn't have a /db directory it's pointless to
+    # request ProveID, let's set the proveid_pending flag and hope that the cron
+    # job picks it up in 1 hour.
+    unless (-d '/db') {
+        $client->status->set('proveid_requested', 'system', 'ProveID request has been made for this account.');
+        $client->status->set('unwelcome',         'system', 'FailedExperian - Experian checks could not run, waiting for cron to run them in 1 hour.');
+        $client->status->set('proveid_pending',   'system', 'This server does not have the ProveID files, asking the cron to authenticate in 1 hour');
+        die 'ProveID cannot run because /db does not exist';
+    }
+
     my $result;
-    my $successful_request;
     try {
         $client->status->set('proveid_requested', 'system', 'ProveID request has been made for this account.');
 
         $result = BOM::Platform::ProveID->new(client => $self->client)->get_result;
-
-        $successful_request = 1;
     }
     catch {
         my $error = $_;
 
-        if ($error =~ /^50[01]/
-            ) # ErrorCode 500 and 501 are Search Errors according to Appendix B of https://github.com/regentmarkets/third_party_API_docs/blob/master/AML/20160520%20Experian%20ID%20Search%20XML%20API%20v1.22.pdf
-        {
+        # ErrorCode 500 and 501 are Search Errors according to Appendix B of https://github.com/regentmarkets/third_party_API_docs/blob/master/AML/20160520%20Experian%20ID%20Search%20XML%20API%20v1.22.pdf
+        if ($error =~ /^50[01]/) {
             # We don't retry when there is a search error (no entry or otherwise)
             $client->status->set('unwelcome', 'system', 'No entry for this client found in Experian database.');
             $self->_request_id_authentication();
-            $successful_request = 1;    # Successful request made, even if response is invalid
-        } else {
-            # We set this flag for when the ProveID request fails and "cron_download_missing_192_pdf_reports.pl" will retry ProveID requests for these accounts every 12 hours
-            $client->status->set('proveid_pending', 'system', 'Experian request failed and will be attempted again within 12 hours.');
-            $client->status->set('unwelcome', 'system', 'FailedExperian - Experian request failed and will be attempted again within 12 hours.');
+            return undef;    # Do not die, if the client was not found
+        }
 
-            my $brand   = Brands->new(name => request()->brand);
-            my $loginid = $self->client->loginid;
-            my $message = <<EOM;
+        # We set this flag for when the ProveID request fails and "cron_download_missing_192_pdf_reports.pl" will retry ProveID requests for these accounts every 1 hours
+        $client->status->set('proveid_pending', 'system', 'Experian request failed and will be attempted again within 1 hour.');
+        $client->status->set('unwelcome',       'system', 'FailedExperian - Experian request failed and will be attempted again within 1 hour.');
+
+        my $brand   = Brands->new(name => request()->brand);
+        my $loginid = $self->client->loginid;
+        my $message = <<EOM;
 There was an error during Experian request.
 Error is: $error
 Client: $loginid
 EOM
-            send_email({
-                    from    => $brand->emails('compliance'),
-                    to      => $brand->emails('compliance'),
-                    subject => "Experian request error for client $loginid",
-                    message => [$message]});
-            $successful_request = 0;
-        }
+        send_email({
+                from    => $brand->emails('compliance'),
+                to      => $brand->emails('compliance'),
+                subject => "Experian request error for client $loginid",
+                message => [$message]});
+
+        die 'Failed to contact the ProveID server';
     };
 
-    if ($successful_request) {
-        # On successful requests, we clear this status so the cron job will not retry ProveID requests on this account
-        $client->status->clear_proveid_pending;
+    # On successful requests, we clear this status so the cron job will not retry ProveID requests on this account
+    $client->status->clear_proveid_pending;
 
-        # Clear unwelcome status set from failing Experian request
-        my $unwelcome_status = $client->status->unwelcome;
-        $client->status->clear_unwelcome if ($unwelcome_status && $unwelcome_status->{reason} =~ /^FailedExperian/);
-    }
+    # Clear unwelcome status set from failing Experian request
+    my $unwelcome_status = $client->status->unwelcome;
+    $client->status->clear_unwelcome if ($unwelcome_status && $unwelcome_status->{reason} =~ /^FailedExperian/);
 
     return $result;
 }

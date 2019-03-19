@@ -239,7 +239,7 @@ sub get_result {
 
     $self->_save_xml_result;
     try {
-        $self->_get_pdf_result;
+        $self->get_pdf_result;
     }
     catch {
         warn "$_";
@@ -310,7 +310,7 @@ sub _save_xml_result {
     return 1;
 }
 
-=head2  _get_pdf_result
+=head2  get_pdf_result
 
 Called as part of C<get_result>
 
@@ -318,7 +318,7 @@ Logins to C<experian_url> with C<username>, C<password> and the SSL key/cert for
 
 =cut
 
-sub _get_pdf_result {
+sub get_pdf_result {
     my $self = shift;
 
     my $xml = $self->xml_parser->parse_string($self->xml_result);

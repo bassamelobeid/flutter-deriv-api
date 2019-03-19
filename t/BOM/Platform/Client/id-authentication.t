@@ -169,7 +169,7 @@ subtest 'MX accounts' => sub {
 
         my $c = create_client('MX', undef, {residence => 'de'});
 
-        my $v = BOM::Platform::Client::IDAuthentication->new(client => $c)->_proveid;
+        my $v = BOM::Platform::Client::IDAuthentication->new(client => $c)->proveid;
         is($v, undef, "run_authentication for Non-gb residence ok");
 
     };
@@ -289,7 +289,10 @@ subtest 'MX accounts' => sub {
                 die '501: No Match Found';
             });
 
-        $v->run_authentication;
+        {
+            $SIG{'__WARN__'} = sub { like shift, qr/^First deposit authentication failed/};
+            $v->run_authentication;
+        };
 
         ok !$v->client->status->disabled, "Not disabled due to no entry";
         ok $v->client->status->unwelcome,         "Unwelcome due to no entry";
