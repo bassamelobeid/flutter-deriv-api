@@ -6,6 +6,7 @@ use warnings;
 use Test::MockModule;
 use Test::More;
 use Test::Warnings;
+use Test::Exception;
 use Date::Utility;
 use JSON::MaybeXS;
 use Math::Util::CalculatedValue::Validatable;
@@ -464,6 +465,44 @@ subtest 'flexible commission check for different markets' => sub {
     test_flexible_commission 'frxUSDJPY', 'forex',       10000;
     test_flexible_commission 'frxXAUUSD', 'commodities', 10000;
     test_flexible_commission 'FCHI',      'indices',     10000;
+};
+
+subtest 'Commission for Runs is 4.8%' => sub {
+    my $now = Date::Utility->new;
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'currency',
+        {
+            symbol        => 'USD',
+            recorded_date => $now
+        });
+
+    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        epoch      => $now->epoch,
+        quote      => 99
+    });
+    my $args = {
+        bet_type     => 'RUNLOW',
+        date_start   => $now,
+        date_pricing => $now,
+        underlying   => 'R_100',
+        currency     => 'USD',
+        payout       => 100,
+        barrier      => 'S0P',
+        duration     => undef,
+    };
+
+    foreach my $tick_number (2 .. 5) {
+        $args->{duration} = $tick_number . 't';
+        my $c = produce_contract($args);
+        # 4.8% of the theo_probability
+        my $expected = 4.8 * (1.0 / 2**$tick_number);
+        is $c->commission_markup->amount, $expected, 'base commission for runs is correct';
+    }
+    foreach my $tick_number (1, 6, 7, 8, 9, 10) {
+        $args->{duration} = $tick_number . 't';
+        throws_ok { produce_contract($args)->commission_markup } "BOM::Product::Exception", 'duration not supported in runs';
+    }
 };
 
 subtest 'non ATM volatility indices variable commission structure' => sub {

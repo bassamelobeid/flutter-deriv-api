@@ -31,6 +31,7 @@ use BOM::Product::Pricing::Greeks::BlackScholes;
 use BOM::Config::Runtime;
 use BOM::Product::ContractVol;
 use BOM::Market::DataDecimate;
+use BOM::Product::Exception;
 use BOM::Config;
 
 ## ATTRIBUTES  #######################
@@ -642,6 +643,33 @@ sub _build_base_commission {
         and $pricing_hour <= 16)
     {
         $underlying_base = 0.03;
+    }
+
+    if (not $self->for_sale and $self->market->name eq 'volidx' and $self->tick_expiry and $self->category_code eq 'runs') {
+        # For Runs the theo probability decreases sharply with an increase in number of ticks,
+        # hence a fixed % of payout as commission makes contracts fairly expensive.
+        # As an example a 1.5% commission on payout for a 5-tick contract would result in a 48% charge on theo price (e.g  `0.015/(1/2^5) == 0.48` or 48%).
+        # This is when generally a 5 tick Rise/Fall contract has a commission around 3% of the theo price.
+
+        # For Runs, we aim for a 4.8% constant commission in relation to theo probability (e.g `commission/theo = 0.048`, with `theo = 1/2^tick_count`).
+        my $consistent_commission = [
+            undef,
+            undef,
+            0.012,     # 2 ticks
+            0.006,     # 3 ticks
+            0.003,     # 4 ticks
+            0.0015,    # 5 ticks
+        ]->[$self->selected_tick];
+
+        unless ($consistent_commission) {
+            # We need to cater for commission if we decided to extend duration of 'runs'
+            return BOM::Product::Exception->throw(
+                error_code => 'InvalidTickExpiry',
+                error_args => [$self->code],
+            );
+        }
+
+        $underlying_base = $consistent_commission;
     }
 
     return $underlying_base * $per_market_scaling / 100;

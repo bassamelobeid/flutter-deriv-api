@@ -35,7 +35,7 @@ my $args = {
     date_start   => $now,
     date_pricing => $now,
     underlying   => 'R_100',
-    duration     => '1t',
+    duration     => '2t',
     currency     => 'USD',
     payout       => 100,
     barrier      => 'S0P',
@@ -45,14 +45,14 @@ subtest 'RUNLOW - config check' => sub {
     my $c = produce_contract($args);
     is $c->code,                'RUNLOW',                         'code - RUNLOW';
     is $c->pricing_engine_name, 'Pricing::Engine::HighLow::Runs', 'engine - Pricing::Engine::HighLow::Runs';
-    is $c->tick_count,          1,                                'tick count is 1';
-    is $c->selected_tick,       1,                                'selected_tick is 1';
+    is $c->tick_count,          2,                                'tick count is 2';
+    is $c->selected_tick,       2,                                'selected_tick is 2';
     is $c->barrier->as_absolute, '99.00', 'barrier is equals to current spot';
     ok $c->theo_probability->amount;
 };
 
 subtest 'RUNLOW - probability check' => sub {
-    foreach my $tick_number (1 .. 5) {
+    foreach my $tick_number (2 .. 5) {
         $args->{duration} = $tick_number . 't';
         my $c = produce_contract($args);
         ok abs($c->theo_probability->amount - 1 / (2**$tick_number)) < 0.0000001, 'correct theo probability for tick_count(' . $tick_number . ')';
