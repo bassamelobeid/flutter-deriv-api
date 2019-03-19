@@ -16,10 +16,7 @@ sub go {
     my $crdr   = $params{crdr}   || die;
     my $broker = $params{broker} || die;
 
-    my $yyyymm = $params{yyyymm} || do {
-        my $now = Date::Utility->new->minus_time_interval('1mo');
-        sprintf '%s-%02s', $now->year, $now->month;
-    };
+    my $yyyymm = $params{yyyymm} || die;
 
     # The start date is the first day of that month
     my $start_date = Date::Utility->new("${yyyymm}-01");
@@ -97,7 +94,6 @@ sub go {
         from transaction.account acc
         join betonmarkets.client cli on acc.client_loginid = cli.loginid
         join payment.payment p on p.account_id = acc.id
-        inner join transaction.transaction trx on trx.payment_id = p.id -- TODO: remove this line once we can assert each payment.payment has a corresponding transaction.transaction row
         left join payment.doughflow dw on dw.payment_id = p.id
         where
             p.payment_time >= ?                 -- b4
@@ -145,14 +141,22 @@ HERE
 }
 
 sub run {
-
+    my %params = @_;
     STDOUT->autoflush(1);    # flushes stdout progress report faster
-    for my $broker (qw/ MLT MX MF CR CH /) {
-        for my $crdr ('debit', 'credit') {
+
+    my $date = $params{date} || do {
+        my $now = Date::Utility->new->minus_time_interval('1mo');
+        sprintf '%s-%02s', $now->year, $now->month;
+    };
+
+    printf "Generating reports for date: %s...\n", $date;
+    for my $broker (@{$params{brokers} // [qw/ MLT MX MF CR CH /]}) {
+        for my $crdr (@{$params{report} // [qw/ debit credit /]}) {
             printf "%5s / %6s: %s.. ", $broker, $crdr, scalar(localtime);
             my $rows = go
                 broker => $broker,
-                crdr   => $crdr;
+                crdr   => $crdr,
+                yyyymm => $date;
             printf "%7d records\n", $rows;
 
         }
