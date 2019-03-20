@@ -43,8 +43,7 @@
                "type" : "integer"
             },
             "shortcode" : {
-               "type" : "string",
-               "enum": ["qwe"]
+               "type" : "string"
             },
             "purchase_time" : {
                "pattern" : "^\\d{10}$",

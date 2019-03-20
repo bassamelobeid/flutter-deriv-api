@@ -22,7 +22,6 @@
                   "type" : "string"
                },
                "symbol_type" : {
-                  "required" : "1"
                },
                "submarket" : {
                   "type" : "string"
@@ -32,18 +31,19 @@
                },
                "is_trading_suspended" : {
                   "type" : "integer",
-                  "pattern" : "^(0|1)$"
+                  "enum" : [0,1]
                },
                "submarket_display_name" : {
                   "type" : "string"
                },
                "exchange_is_open" : {
                   "type" : "integer",
-                  "pattern" : "^(0|1)$"
+                  "enum" : [0,1]
                },
                "pip" : {
-                  "pattern" : "^0\\.0{1,4}1$",
-                  "type" : "string"
+                  "type" : "number",
+                  "minimum": 0.00001,
+                  "maximum": 0.01
                },
                "display_name" : {
                   "type" : "string"

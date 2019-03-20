@@ -47,8 +47,6 @@ test_sendrecv_params 'buy_contract_for_multiple_accounts/test_send_invalid_token
     'buy_contract_for_multiple_accounts/test_receive_invalid_token.json',
     $suite->get_stashed('proposal/proposal/id'), $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'dummy1234';
 
-finish;
-exit;
 # Buy Lookbacks
 test_sendrecv_params 'buy/test_send_lookback_with_params.json', 'buy/test_receive_lookback_with_params.json', 'unit', '154.86', '0';
 

@@ -36,8 +36,9 @@
                   "type" : "string"
                },
                "pip" : {
-                  "type" : "string",
-                  "pattern" : "^0\\.0{1,4}1$"
+                  "type" : "number",
+                  "minimum": 0.00001,
+                  "maximum": 0.01
                },
                "symbol" : {
                   "type" : "string"

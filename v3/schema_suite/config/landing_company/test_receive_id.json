@@ -77,7 +77,6 @@
                       "required": ["legal_allowed_markets", "legal_allowed_currencies", "has_reality_check", "shortcode", "legal_default_currency", "country", "address", "name", "legal_allowed_contract_categories"], 
                      "type" : "object",
                      "legal_allowed_markets" : {
-                        "required" : "1",
                         "items" : {
                            "type" : "string",
                            "pattern" : "^forex$"
@@ -139,18 +138,14 @@
                      "legal_allowed_markets" : {
                         "type" : "array",
                         "minItems" : 4,
-                        "required" : "1",
                         "items" : {
                            "pattern" : "^(commodities|forex|indices|volidx)$",
-                           "required" : "1",
                            "type" : "string"
                         }
                      },
                      "legal_allowed_currencies" : {
-                        "required" : "1",
                         "items" : {
                            "type" : "string",
-                           "required" : "1",
                            "pattern" : "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|DAI|ETH|UST)$"
                         },
                         "type" : "array",
@@ -158,7 +153,6 @@
                      },
                      "name" : {
                         "type" : "string",
-                        "required" : "1",
                         "pattern" : "^Binary \\(C\\.R\\.\\) S\\.A\\.$"
                      },
                      "address" : {
@@ -170,37 +164,30 @@
                      "legal_allowed_contract_categories" : {
                         "type" : "array",
                         "minItems" : 6,
-                        "required" : "1",
                         "items" : {
                            "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|callputequal)$",
-                           "required" : "1",
                            "type" : "string"
                         }
                      },
                      "has_reality_check" : {
                         "type" : "integer",
-                        "required" : "1",
                         "pattern" : "^0$"
                      },
                      "shortcode" : {
                         "type" : "string",
-                        "pattern" : "^costarica$",
-                        "required" : "1"
+                        "pattern" : "^costarica$"
                      },
                      "legal_default_currency" : {
                         "type" : "string",
-                        "pattern" : "^USD$",
-                        "required" : "1"
+                        "pattern" : "^USD$"
                      },
                      "country" : {
                         "pattern" : "^Costa Rica$",
-                        "required" : "1",
                         "type" : "string"
                      }
                   }
                },
-               "type" : "object",
-               "required" : "1"
+               "type" : "object"
             },
             "financial_company" : {
                "required" : [
@@ -243,7 +230,6 @@
                   },
                   "legal_allowed_contract_categories" : {
                      "items" : {
-                        "required" : "1",
                         "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|callputequal|runs)$",
                         "type" : "string"
                      },
@@ -253,7 +239,6 @@
                   "legal_allowed_currencies" : {
                      "items" : {
                         "pattern" : "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB)$",
-                        "required" : "1",
                         "type" : "string"
                      },
                      "minItems" : 5,
@@ -261,7 +246,6 @@
                   },
                   "legal_allowed_markets" : {
                      "items" : {
-                        "required" : "1",
                         "pattern" : "^(commodities|forex|indices|volidx)$",
                         "type" : "string"
                      },
@@ -278,7 +262,6 @@
                      "type" : "array",
                      "items" : {
                         "type" : "string",
-                        "required" : "1",
                         "pattern" : "^(commodities|forex|indices|volidx)$"
                      }
                   },
@@ -287,7 +270,6 @@
                      "type" : "array",
                      "items" : {
                         "type" : "string",
-                        "required" : "1",
                         "pattern" : "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB)$"
                      }
                   },
@@ -312,7 +294,6 @@
                      "minItems" : 6,
                      "items" : {
                         "pattern" : "^(asian|callput|callputequal|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|runs)$",
-                        "required" : "1",
                         "type" : "string"
                      }
                   },

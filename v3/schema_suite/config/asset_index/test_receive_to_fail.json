@@ -17,19 +17,13 @@
       "asset_index" : {
          "type" : "array",
          "items" : {
-             "required": ["type", 
+             "required": ["type"], 
             "items" : [
                {
-                  "type" : "string",
-                  "required" : "1"
-               },
-               {
-                  "required" : "1",
                   "type" : "string"
                },
                {
                   "type" : "array",
-                  "required" : "1",
                   "items" : {
                      "minItems" : 2,
                      "type" : "array",

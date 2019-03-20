@@ -22,7 +22,7 @@
                         "description" : "Token returned"
                      },
                      "message_to_client" : {
-                        "type" : "string",
+                        "type" : ["string",null],
                         "description" : "Message to client"
                      }
                   },

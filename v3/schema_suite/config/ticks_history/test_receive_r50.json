@@ -28,15 +28,13 @@
                ],
                "minItems" : 10,
                "items" : {
-                  "pattern" : "^\\d{10}$",
                   "type" : "integer"
                },
                "maxItems" : 10
             },
             "prices" : {
                "items" : {
-                  "pattern" : "^\\d+\\.\\d+$",
-                  "type" : "string"
+                  "type" : "number"
                },
                "maxItems" : 10,
                "minItems" : 10,

@@ -193,6 +193,16 @@
          },
          "type" : "object"
       },
+      "subscription": {
+          "required": ["id"],
+          "type": "object",
+          "properties": {
+              "id" : {
+                  "type" : "string"
+              }
+          }
+      },
+
       "msg_type" : {
          "type" : "string",
          "description" : "website_status"
