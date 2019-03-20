@@ -29,7 +29,7 @@ sub _test_schema {
 
     my $validator  = JSON::Validator->new();
     $validator->schema(JSON::MaybeXS->new->decode($expected_json_schema));
-    $validator->coerce(strings => 1, numbers =>1, booleans => 1);
+    #   $validator->coerce(strings => 1, numbers =>1, booleans => 1);
 
     my @error      = $validator->validate($result);
     my $test_level = $Test::Builder::Level;
