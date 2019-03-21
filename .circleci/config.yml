@@ -42,7 +42,6 @@ jobs:
     <<: *6
     steps:
     - *1
-    - checkout
     - *2
     - *3
     - *4
