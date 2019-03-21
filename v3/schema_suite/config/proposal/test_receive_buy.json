@@ -27,8 +27,7 @@
          "type" : "object",
          "properties" : {
             "display_value" : {
-               "pattern" : "\\d*\\.\\d{2}",
-               "type" : "number"
+               "type" : "string"
             },
             "longcode" : {
                "type" : "string"
@@ -38,24 +37,20 @@
                "type" : "string"
             },
             "spot_time" : {
-               "type" : "integer",
-               "pattern" : "^\\d{10}$"
+               "type" : "integer"
             },
             "spot" : {
-               "type" : "number",
-               "pattern" : "^\\d*\\.\\d*$"
+               "type" : "number"
             },
             "ask_price" : {
-               "pattern" : "\\d*\\.\\d*",
                "type" : "number"
             },
             "date_start" : {
-               "pattern" : "^\\d{10}$",
                "type" : "integer"
             },
             "payout" : {
                "type" : "number",
-               "pattern" : "^100$"
+               "enum" : [100]
             }
          }
       }

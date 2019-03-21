@@ -147,7 +147,7 @@ test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
 
 # R_100 Lookbacks
 test_sendrecv_params 'proposal/test_send_lookback.json', 'proposal/test_receive_lookback.json',
-    'LBFLOATCALL', 'R_100', '15', 'm', '', 'Win USD 10 times Volatility 100 Index\'s close minus low over the next 15 minutes.', 2750,
+    'LBFLOATCALL', 'R_100', '15', 'm', '', 'Win USD 10 times Volatility 100 Index\'s close minus low over the next 15 minutes.', '2750.00',
     '2750.00', 65258.19;
 
 # R_100 touch tick trade

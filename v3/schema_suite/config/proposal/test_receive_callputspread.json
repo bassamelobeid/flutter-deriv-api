@@ -27,32 +27,28 @@
                "pattern" : "^[_8]$"
             },
             "display_value" : {
-               "type" : "number",
+               "type" : "string",
                "pattern" : "^[_10]$"
             },
             "spot_time" : {
-               "type" : "number",
-               "pattern" : "^\\d+$"
+               "type" : "number"
             },
             "id" : {
                "type" : "string",
                "pattern" : "[\\d\\w-]+$"
             },
             "payout" : {
-               "type" : "number",
-               "pattern" : "^[_1]$"
+               "type" : "number"
             },
             "date_start" : {
-               "pattern" : "^\\d+$",
                "type" : "number"
             },
             "ask_price" : {
-               "type" : "number",
-               "pattern" : "^[_9]$"
+               "type" : "number"
             },
             "spot" : {
                "type" : "number",
-               "pattern" : "^[_11]$"
+               "enum" : [[_11]]
             }
          }
       },

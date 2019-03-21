@@ -23,7 +23,7 @@
          "type" : "object",
          "properties" : {
             "display_value" : {
-               "type" : "number",
+               "type" : "string",
                "pattern" : "^[_9]$"
             },
             "id" : {
@@ -35,24 +35,21 @@
                "pattern" : "^[_7]$"
             },
             "spot_time" : {
-               "pattern" : "^\\d+$",
                "type" : "number"
             },
             "ask_price" : {
-               "pattern" : "^[_8]$",
                "type" : "number"
             },
             "spot" : {
                "type" : "number",
-               "pattern" : "^[_10]$"
+               "enum" : [[_10]]
             },
             "payout" : {
-               "pattern" : "^100$",
+               "enum" : [100],
                "type" : "number"
             },
             "date_start" : {
-               "type" : "number",
-               "pattern" : "^\\d+$"
+               "type" : "number"
             }
          }
       },
