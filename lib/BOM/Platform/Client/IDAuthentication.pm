@@ -174,8 +174,8 @@ sub _fetch_proveid {
     # job picks it up in 1 hour.
     unless (-d '/db') {
         $client->status->set('proveid_requested', 'system', 'ProveID request has been made for this account.');
-        $client->status->set('unwelcome',         'system', 'FailedExperian - Experian checks could not run, waiting for cron to run them in 1 hour.');
-        $client->status->set('proveid_pending',   'system', 'This server does not have the ProveID files, asking the cron to authenticate in 1 hour');
+        $client->status->set('unwelcome',       'system', 'FailedExperian - Experian checks could not run, waiting for cron to run them in 1 hour.');
+        $client->status->set('proveid_pending', 'system', 'This server does not have the ProveID files, asking the cron to authenticate in 1 hour');
         die 'ProveID cannot run because /db does not exist';
     }
 

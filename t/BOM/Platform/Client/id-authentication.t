@@ -290,7 +290,7 @@ subtest 'MX accounts' => sub {
             });
 
         {
-            $SIG{'__WARN__'} = sub { like shift, qr/^First deposit authentication failed/};
+            $SIG{'__WARN__'} = sub { like shift, qr/^First deposit authentication failed/ };
             $v->run_authentication;
         };
 
