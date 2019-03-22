@@ -64,7 +64,8 @@ if ($bet) {
     $start =
           (request()->param('start')) ? Date::Utility->new(request()->param('start'))
         : (request()->param('purchase_time') and $bet->starts_as_forward_starting) ? Date::Utility->new(request()->param('purchase_time'))
-        :                                                                            $bet->date_start;
+        : ($bet->starts_as_forward_starting) ? $bet->date_start->minus_time_interval('1m')
+        :                                      $bet->date_start;
     $end =
           (request()->param('end')) ? Date::Utility->new(request()->param('end'))
         : ($bet->tick_expiry)       ? $bet->date_start->plus_time_interval($bet->_max_tick_expiry_duration)
