@@ -1466,7 +1466,7 @@ sub _validate_transfer_between_accounts {
         if (($lc_from->short ne $lc_to->short)
         and ($lc_from->short !~ /^(?:malta|maltainvest)$/ or $lc_to->short !~ /^(?:malta|maltainvest)$/));
 
-# error if currency is not legal for landing company
+    # error if currency is not legal for landing company
     return _transfer_between_accounts_error(localize('Currency provided is not valid for your account.'))
         if (not $lc_from->is_currency_legal($currency) or not $lc_to->is_currency_legal($currency));
 
@@ -1494,9 +1494,6 @@ sub _validate_transfer_between_accounts {
     # set same crypto for multiple account
     return _transfer_between_accounts_error(localize('Please set the currency for your existing account [_1].', $client_to->loginid))
         unless $to_currency;
-
-    return _transfer_between_accounts_error(localize('Your [_1] cashier is locked as per your request.', $client_to->loginid))
-        if $client_to->cashier_setting_password;
 
     # we don't allow transfer between these two currencies
     if ($from_currency ne $to_currency) {
@@ -1526,7 +1523,7 @@ sub _validate_transfer_between_accounts {
         if (($from_currency_type eq $to_currency_type)
         and ($from_currency_type eq 'crypto'));
 
-# check for internal transactions number limits
+    # check for internal transactions number limits
     my $daily_transfer_limit  = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts;
     my $client_today_transfer = $current_client->get_today_transfer_summary();
     return _transfer_between_accounts_error(localize("Maximum of [_1] transfers allowed per day.", $daily_transfer_limit))
