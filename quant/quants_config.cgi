@@ -250,15 +250,3 @@ BOM::Backoffice::Request::template()->process(
         update_error       => $update_error,
         delete_error       => $delete_error,
     }) || die BOM::Backoffice::Request::template()->error;
-
-Bar("Existing User Specific Limit");
-
-my @specific_limit_output = BOM::Database::Helper::UserSpecificLimit->new({db => $db})->select_user_specific_limit;
-
-BOM::Backoffice::Request::template()->process(
-    'backoffice/existing_user_specific_limit.html.tt',
-    {
-        profit_table_url => request()->url_for('backoffice/f_profit_table.cgi?loginID='),
-        url              => request()->url_for('backoffice/quant/quants_config.cgi'),
-        output           => \@specific_limit_output,
-    }) || die BOM::Backoffice::Request::template()->error;

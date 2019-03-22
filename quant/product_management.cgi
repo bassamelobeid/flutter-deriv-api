@@ -180,46 +180,6 @@ BOM::Backoffice::Request::template()->process(
         output => \@output,
     }) || die BOM::Backoffice::Request::template()->error;
 
-Bar("Custom Client Limits");
-
-my $custom_client_limits = $json->decode($app_config->get('quants.custom_client_profiles'));
-
-my @client_output;
-foreach my $client_loginid (keys %$custom_client_limits) {
-    my %data       = %{$custom_client_limits->{$client_loginid}};
-    my $reason     = $data{reason};
-    my $limits     = $data{custom_limits};
-    my $updated_by = $data{updated_by};
-    my $updated_on = $data{updated_on};
-    my @output;
-    foreach my $id (keys %$limits) {
-        my $output_ref;
-        my %copy = %{$limits->{$id}};
-        delete $copy{name};
-        my $profile = delete $copy{risk_profile};
-        $output_ref->{id}               = $id;
-        $output_ref->{payout_limit}     = $limit_profile->{$profile}{payout}{USD};
-        $output_ref->{turnover_limit}   = $limit_profile->{$profile}{turnover}{USD};
-        $output_ref->{condition_string} = join "\n", map { $_ . "[$copy{$_}] " } keys %copy;
-        push @output, $output_ref;
-    }
-    push @client_output,
-        +{
-        client_loginid => $client_loginid,
-        reason         => $reason,
-        updated_by     => $updated_by,
-        updated_on     => $updated_on,
-        @output ? (output => \@output) : (),
-        }
-        if @output;
-}
-
-BOM::Backoffice::Request::template()->process(
-    'backoffice/custom_client_limit.html.tt',
-    {
-        output => \@client_output,
-    }) || die BOM::Backoffice::Request::template()->error;
-
 Bar("Update Limit");
 
 BOM::Backoffice::Request::template()->process(

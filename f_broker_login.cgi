@@ -264,6 +264,15 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
 					</font></form>
 				</td>
 			</tr>
+			<tr>
+                               <td align="center" width="50%">
+					<p><b>EXISTING LIMITED CLIENTS</b></p>
+					<form action="~ . request()->url_for('backoffice/quant/client_limit.cgi') . qq~" method="post"><font size=2>
+						<b>$brokerselection</b>
+						&nbsp;<input type="submit" value="EXISTING LIMITED CLIENTS">
+					</font></form>
+				</td>
+                         </tr>
 		</tbody>
 	</table>~;
 }

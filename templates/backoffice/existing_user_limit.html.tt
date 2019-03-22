@@ -1,0 +1,66 @@
+<form id="user-limit-form">
+<table>
+    <tr>
+        <td><b>Binary user id &nbsp;</b></td>
+        <td><b>Client login id &nbsp;</b></td>
+        <td><b>Limit id (if applicable) &nbsp;</b></td>
+        <td><b>Limit type &nbsp;</b></td>
+        <td><b>Market type &nbsp;</b></td>
+        <td><b>Client type &nbsp;</b></td>
+        <td><b>Limit condition &nbsp;</b></td>
+        <td><b>Payout limit &nbsp;</b></td>
+        <td><b>Turnover limit &nbsp;</b></td>
+        <td><b>Potential loss limit &nbsp;</b></td>
+        <td><b>Realized loss limit &nbsp;</b></td>
+        <td><b>Expiry &nbsp;</b></td>
+        <td><b>Updated by &nbsp;</b></td>
+        <td><b>Updated on &nbsp;</b></td>
+        <td><b>Comment &nbsp;</b></td>
+    </tr>
+    [% FOREACH data IN output %]
+        <tr>
+            <td>[% data.binary_user_id %]</td>
+            <td>
+                [% FOREACH loginid IN data.client_id %]
+                    <a href="[% profit_table_url %][% loginid %]">[% loginid %]</a> &nbsp;
+                [% END %]
+            </td>
+            <td>[% data.limit_id %]</td>
+            <td>[% data.limit_type %]</td>
+            <td>[% data.market_type %]</td>
+            <td>[% data.client_type %]</td>
+            <td>[% data.limit_condition %]</td>
+            <td>[% data.payout_limit %]</td>
+            <td>[% data.turnover_limit %]</td>
+            <td>[% data.potential_loss_limit %]</td>
+            <td>[% data.realized_loss_limit %]</td>
+            <td>[% data.expiry %]</td>
+            <td>[% data.updated_by %]</td>
+            <td>[% data.updated_on %]</td>
+            <td>[% data.comment %]</td>
+            <td><button class="_user-limit-button" name="deleteclientlimit" value="[% data.client_id.join() %]-[% data.market_type %]-[% data.client_type %]-[% data.limit_id %]"</button>DELETE</td>
+        </tr>
+    [% END %]
+</table>
+</form>
+
+<script>
+// manually submit the form and refresh in 1 seconds.
+\$("._user-limit-button").click(function() {
+
+    var data = [{ name: \$(this).attr('name'), value: \$(this).attr('value') }];
+    \$(this).attr('disabled','disabled');
+    \$.ajax({
+           type: "POST",
+           url: "[% url | none %]",
+           data: \$.param(data),
+           success: function(data) {
+		setTimeout(function() {
+			window.location.reload(false);
+		}, 500);
+           },
+         });
+
+    return false;
+});
+</script>
