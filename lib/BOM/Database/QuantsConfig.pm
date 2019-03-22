@@ -104,19 +104,15 @@ sub _build_broker_code_mapper {
         my $write_info = $clientdb_config->{$short}{write};
         push @{$list_by_dbname{$write_info->{name}}}, $short;
     }
-
     my %map;
     foreach my $lc_list (values %list_by_dbname) {
-        # the idea is to map the first broker code from the first landing company list which connect to the same client database.
-        my $broker_code;
         foreach my $lc_name (@$lc_list) {
             my $lc = LandingCompany::Registry::get($lc_name) or next;
-            $broker_code //= $lc->{broker_codes}->[0];
-            last if $broker_code;
-        }
-        $map{$_} = $broker_code for @$lc_list;
-    }
 
+            my $broker_code = $lc->{broker_codes}->[0];
+            $map{$lc_name} = $broker_code if $broker_code;
+        }
+    }
     return \%map;
 }
 
@@ -700,7 +696,6 @@ sub _db_list {
 
     my $mapper = $self->broker_code_mapper;
     my @broker_codes = $landing_company eq 'default' ? uniq(values %$mapper) : ($mapper->{$landing_company});
-
     return [map { BOM::Database::ClientDB->new({broker_code => $_,})->db } @broker_codes];
 }
 
