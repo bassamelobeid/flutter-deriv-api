@@ -293,6 +293,26 @@
          "description" : "Latest price and other details for an open contract",
          "type" : "object"
       },
+      "tick_stream" : {
+                     "item" : {
+                        "properties" : {
+                           "tick" : {
+                              "description" : "The spot value at the given epoch.",
+                              "type" : [
+                                 "number",
+                                 "null"
+                              ]
+                           },
+                           "epoch" : {
+                              "type" : "integer",
+                              "description" : "Epoch time of a tick or the contract start or end time."
+                           }
+                        },
+                        "type" : "object"
+                     },
+         "description" : "Tick stream from entry to end time.",
+         "type" : "array"
+      },
       "profit" : {
          "description" : "The latest bid price minus buy price.",
          "type" : "number"
