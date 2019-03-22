@@ -873,6 +873,12 @@ sub _build_bid_response {
             $response->{$key . '_time'} = 0 + $contract_close_tick->epoch;
         }
     }
+
+    if ($contract->tick_expiry) {
+        $response->{tick_stream} =
+            [map { {epoch => $_->epoch, tick => $contract->underlying->pipsized_value($_->quote)} } @{$contract->get_ticks_for_tick_expiry}];
+    }
+
     return $response;
 }
 1;
