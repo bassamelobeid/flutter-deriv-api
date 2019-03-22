@@ -19,6 +19,8 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 
+my $json = JSON::MaybeXS->new;
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
     {
@@ -27,7 +29,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     });
 my $one_day = Date::Utility->new('2014-07-10 10:00:00');
 
-for (0 .. 5) {
+for (0 .. 1) {
     my $epoch = $one_day->epoch + $_ * 2;
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'R_100',
@@ -41,16 +43,40 @@ subtest 'tick expiry up&down' => sub {
         underlying   => 'R_100',
         bet_type     => 'CALL',
         date_start   => $one_day,
-        date_pricing => $one_day->plus_time_interval('4s'),
+        date_pricing => $one_day->plus_time_interval('2s'),
         duration     => '5t',
         currency     => 'USD',
         payout       => 100
     };
+
     my $c = produce_contract($args);
+
+    is scalar(@{$c->get_ticks_for_tick_expiry}), 1 , 'correct no of tick for streaming';
+
+    $args->{date_pricing} = $one_day->plus_time_interval('4s');
+
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        epoch      => $one_day->epoch + 2 * 2,
+        quote      => 100 + 2
+    });
+
+    $c = produce_contract($args);
     ok $c->tick_expiry, 'is tick expiry contract';
     is $c->tick_count, 5, 'number of ticks is 5';
     ok !$c->exit_tick,  'exit tick is undef when we only have 5 ticks';
     ok !$c->is_expired, 'not expired when exit tick is undef';
+
+    is scalar(@{$c->get_ticks_for_tick_expiry}), 2 , 'correct no of tick for streaming';    
+
+    for (3 .. 5) {
+      my $epoch = $one_day->epoch + $_ * 2;
+      BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        epoch      => $epoch,
+        quote      => 100 + $_
+      });
+    }
 
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'R_100',
@@ -64,10 +90,19 @@ subtest 'tick expiry up&down' => sub {
         quote      => 112
     });
 
+    $args->{date_pricing} = $one_day->plus_time_interval('6s');
+    $c = produce_contract($args);
+
+    my $expected3 = $json->decode(
+        '[{"epoch":1404986402,"tick":"101.00"},{"epoch":1404986404,"tick":"102.00"},{"tick":"103.00","epoch":1404986406}]'
+    );
+
     delete $args->{date_pricing};
     my $c2 = produce_contract($args);
     ok $c2->is_expired, 'contract is expired once exit tick is obtained';
     is $c2->exit_tick->quote, 111, 'exit tick is the 6th tick after contract start time';
+
+    is scalar(@{$c->get_ticks_for_tick_expiry}), 6 , 'correct no of tick for streaming';
 };
 
 my $new_day = $one_day->plus_time_interval('1d');
