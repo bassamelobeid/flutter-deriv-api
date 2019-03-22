@@ -14,7 +14,6 @@ use Brands;
 use BOM::Database::ClientDB;
 use BOM::Config;
 use BOM::Platform::Email qw(send_email);
-
 use Log::Any qw($log);
 use Log::Any::Adapter;
 
@@ -38,19 +37,12 @@ my $reports_path = shift or die "Provide path for storing files as an argument";
 # 1. Regulated broker codes (EU) has a higher priority
 # 2. The regulated broker codes have a smaller number of clients, in comparison to CR
 # Thus, it would be better to send the emails one at a time, with regulated ones first
-my @brokers = qw/MF MX MLT CR/;
+my @brokers = qw(MF MX MLT CR);
 
 my $sanctions = Data::Validate::Sanctions->new(sanction_file => BOM::Config::sanction_file);
 
 my $file_flag = path('/tmp/last_cron_sanctions_check_run');
 my $last_run = $file_flag->exists ? $file_flag->stat->mtime : 0;
-$sanctions->update_data();
-
-$file_flag->spew("Created by $0 PID $$");
-if (($last_run > $sanctions->last_updated()) && !$force) {
-    $log->infof('Exiting because sanctions appear up to date (file=%s)', $file_flag);
-    exit 0;
-}
 
 my %listdate;
 
@@ -107,7 +99,6 @@ sub do_report {
 }
 
 sub get_matched_clients_info_by_broker {
-
     my $broker = shift;
 
     my $dbic = BOM::Database::ClientDB->new({
@@ -115,49 +106,50 @@ sub get_matched_clients_info_by_broker {
             db_operation => 'write',
         })->db->dbic;
 
+    my $get_clients_from_pagination = sub {
+        my ($limit, $last_loginid) = @_;
+        my $clients = $dbic->run(
+            fixup => sub {
+                $_->selectall_arrayref(q{select * from betonmarkets.get_active_clients(?, ?, ?)}, {Slice => {}}, $broker, $limit, $last_loginid);
+            });
+        return $clients;
+    };
+
+    my $update_sanctions = sub {
+        my ($loginid, $matched) = @_;
+        $dbic->run(
+            fixup => sub {
+                my $sth = $_->prepare(q{select betonmarkets.update_client_sanctions_check(?, ?)});
+                $sth->execute($matched, $loginid);
+            });
+    };
+
     my @csv_rows;
-    my $csv_row;
-    my $client;
-    my $client_matched;
     my $sinfo;
 
-    $dbic->run(
-        fixup => sub {
+    my $last_loginid;
+    my $limit = 1000;
 
-            my $update_sanctions_check =
-                $_->prepare(q{UPDATE betonmarkets.sanctions_check SET result=?,tstmp=now(),type='C' WHERE client_loginid = ?});
+    while (my @clients = $get_clients_from_pagination->($limit, $last_loginid)->@*) {
+        for my $client (@clients) {
+            $sinfo = $sanctions->get_sanctioned_info($client->{first_name}, $client->{last_name}, $client->{date_of_birth});
+            $update_sanctions->($client->{loginid}, $sinfo->{matched} ? $sinfo->{list} : '');
+            next unless $sinfo->{matched};
 
-            my $query_filter = $_->prepare(
-                q{
-                SELECT broker_code, loginid, first_name, last_name, gender, date_of_birth, date_joined, residence, citizen
-                FROM betonmarkets.client
-                WHERE loginid ~ ('^' || ? || '\\d')
-                ORDER BY loginid
-            }
-            );
+            push
+                @csv_rows,
+                [
+                $sinfo->{name},
+                $sinfo->{list},
+                $listdate{$sinfo->{list}} //= Date::Utility->new($sanctions->last_updated($sinfo->{list}))->date,
+                $sinfo->{matched_dob},
+                (map { $client->{$_} // '' } qw(date_of_birth broker_code loginid first_name last_name gender date_joined residence citizen)),
+                $sinfo->{reason}];
 
-            $query_filter->execute($broker);
+        }
 
-            while ($client = $query_filter->fetchrow_hashref()) {
-
-                $sinfo = $sanctions->get_sanctioned_info($client->{first_name}, $client->{last_name}, $client->{date_of_birth});
-                $client_matched = $sinfo->{matched} ? $sinfo->{list} : '';
-
-                $update_sanctions_check->execute($client_matched, $client->{loginid});
-
-                next unless $sinfo->{matched};
-
-                $csv_row = [
-                    $sinfo->{name},
-                    $sinfo->{list},
-                    $listdate{$sinfo->{list}} //= Date::Utility->new($sanctions->last_updated($sinfo->{list}))->date,
-                    $sinfo->{matched_dob},
-                    (map { $client->{$_} // '' } qw(date_of_birth broker_code loginid first_name last_name gender date_joined residence citizen)),
-                    $sinfo->{reason}];
-
-                push @csv_rows, $csv_row;
-            }
-        });
+        $last_loginid = $clients[-1]->{loginid};
+    }
 
     return \@csv_rows;
 }
