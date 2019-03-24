@@ -6,11 +6,15 @@ use Test::Deep;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/build_wsapi_test/;
+use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 use Encode;
 
 use LandingCompany::Registry;
 
 use await;
+
+#we need this because of calculating max exchange rates on currency config
+populate_exchange_rates();
 
 subtest 'country information is returned in website_status' => sub {
     for my $country (qw(my jp ru cr)) {

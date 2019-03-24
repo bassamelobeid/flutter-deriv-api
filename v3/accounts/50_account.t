@@ -177,10 +177,44 @@ subtest 'account_statistics' => sub {
 
 };
 
-## balance
-my $balance = $t->await::balance({balance => 1});
-ok($balance->{balance});
-test_schema('balance', $balance);
+subtest 'balance' => sub {
+    my $res = $t->await::balance({balance => 1});
+    ok $res->{balance};
+    is $res->{balance}->{id}, undef, 'No id for non-subscribers';
+    is $res->{subscription}, undef, 'Not subscription id';
+    test_schema('balance', $res);
+
+    $res = $t->await::balance({
+        balance   => 1,
+        subscribe => 0,
+    });
+    ok $res->{balance};
+    is $res->{balance}->{id}, undef, 'No id for non-subscribers';
+    is $res->{subscription}, undef, 'Not subscription id';
+    test_schema('balance', $res);
+
+    $res = $t->await::balance({
+        balance   => 1,
+        subscribe => 1,
+    });
+
+    ok $res->{balance};
+    my $uuid = $res->{balance}->{id};
+    ok $uuid, 'There is an id after subscription';
+    is $res->{subscription}->{id}, $uuid, 'Subscription id with the same value';
+    test_schema('balance', $res);
+
+    $res = $t->await::balance({
+        balance   => 1,
+        subscribe => 1,
+    });
+    cmp_ok $res->{msg_type},, 'eq', 'balance';
+    cmp_ok $res->{error}->{code}, 'eq', 'AlreadySubscribed', 'AlreadySubscribed error expected';
+
+    my $data = $t->await::forget_all({forget_all => 'balance'});
+    is(scalar @{$data->{forget_all}}, 1, 'Correct number of subscriptions');
+    is $data->{forget_all}->[0], $uuid, 'Correct subscription id';
+};
 
 my $profit_table = $t->await::profit_table({
     profit_table => 1,

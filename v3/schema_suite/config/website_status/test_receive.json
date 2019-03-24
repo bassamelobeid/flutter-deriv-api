@@ -1,56 +1,73 @@
 {
-   "$schema" : "http://json-schema.org/draft-04/schema#",
-   "title" : "Website Status Response",
-   "additionalProperties" : null,
-   "type" : "object",
-   "description" : null,
-   "required" : [
-      "echo_req",
-      "msg_type"
-   ],
-   "properties" : {
-      "echo_req" : {
-         "description" : "Echo of the request made",
-         "title" : "Echo request"
-      },
-      "website_status" : {
-         "required" : [
-            "currencies_config",
-            "api_call_limits",
-            "supported_languages",
-            "site_status",
-            "terms_conditions_version",
-            "clients_country"
-         ],
-         "properties" : {
-            "currencies_config" : {
-               "type" : "object",
-               "patternProperties" : {
-                  "^[A-Z]{3,4}$" : {
-                     "type" : "object",
-                     "properties" : {
-                        "stake_default" : {
-                           "type" : "number",
-                           "minimum" : 0
-                        },
-                        "fractional_digits" : {
-                           "type" : "number"
-                        },
-                        "type" : {
-                           "enum" : [
-                              "fiat",
-                              "crypto"
-                           ]
-                        },
-                        "transfer_between_accounts" : {
-                           "type" : "object",
-                           "properties" : {
-                              "fees" : {
-                                 "patternProperties" : {
-                                    "^[A-Z]{3,4}$" : {
-                                       "minimum" : 0,
-                                       "type" : "number",
-                                       "maximum" : 7
+    "$schema" : "http://json-schema.org/draft-04/schema#",
+    "required" : [
+        "echo_req",
+        "msg_type"
+    ],
+    "type" : "object",
+    "description" : null,
+    "title" : "Website Status Response",
+    "properties" : {
+        "msg_type" : {
+            "description" : "website_status",
+            "type" : "string"
+        },
+        "website_status" : {
+            "required" : ["currencies_config", "api_call_limits", "supported_languages", "site_status", "terms_conditions_version", "clients_country"],
+            "properties" : {
+                "supported_languages" : {
+                    "description" : "Provides codes for languages supported",
+                    "type" : "array",
+                    "items" : {
+                        "type" : "string"
+                    }
+                },
+                "currencies_config": {
+                    "type": "object",
+                    "minProperties" :  1,
+                    "patternProperties": {
+                        "^[A-Z]{3,4}$": {
+                            "type": "object",
+                            "required": ["fractional_digits", "type", "stake_default", "transfer_between_accounts"],
+                            "properties": {
+                                "fractional_digits": {
+                                    "type": "number"
+                                },
+                                "type": {
+                                    "enum": ["fiat", "crypto"]
+                                },
+                                "stake_default": {
+                                    "type": "number",
+                                    "minimum": 0
+                                },
+                                "transfer_between_accounts": {
+                                    "type": "object",
+                                    "required": ["limits","fees"],
+                                    "properties": {
+                                        "limits": {
+                                            "type": "object",
+                                            "properties": {
+                                                "min": {
+                                                    "type": "number",
+                                                    "minimum": 0,
+                                                    "required": "1"
+                                                },
+                                                "max": {
+                                                    "type": "number",
+                                                    "required": "1"
+                                                }
+                                            }
+                                        },
+                                        "fees": {
+                                            "type": "object",
+                                            "patternProperties": {
+                                                "^[A-Z]{3,4}$": {
+                                                    "type": "number",
+                                                    "minimum": 0,
+                                                    "maximum": 7
+                                                }
+                                            }
+                                        }
                                     }
                                  },
                                  "type" : "object"
@@ -99,13 +116,6 @@
             "message" : {
                "description" : "Text for site status banner, contains problem description.  Shown only if set by the system",
                "type" : "string"
-            },
-            "supported_languages" : {
-               "items" : {
-                  "type" : "string"
-               },
-               "type" : "array",
-               "description" : "Provides codes for languages supported"
             },
             "api_call_limits" : {
                "properties" : {

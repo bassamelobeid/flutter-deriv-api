@@ -69,7 +69,10 @@ subtest 'ticks' => sub {
                 subscribe => "1"
             }})->message_ok;
     $res = $json->decode(Encode::decode_utf8($t->message->[1]));
-    is $res->{error}->{code}, undef , 'Should pass validation though string';
+    is $res->{error}->{code}, undef, 'Should pass validation though string';
+
+    ok my $id = $res->{tick}->{id}, 'There is a subscription id';
+    is $res->{subscription}->{id}, $id, 'The same subscription->id';
 
     # will fail because subscribe should only be 1
     $t->send_ok({
@@ -82,19 +85,25 @@ subtest 'ticks' => sub {
     is $res->{error}->{message}, 'Input validation failed: subscribe', 'Should return ticks validation error';
 
     $t->send_ok({json => {ticks => ['R_50', 'R_100']}});
+
     $t->send_ok({json => {ticks => 'R_50'}})->message_ok;
     $res = $json->decode(Encode::decode_utf8($t->message->[1]));
     is $res->{error}->{code}, 'AlreadySubscribed', 'Should return already subscribed error';
     is $res->{error}->{message}, 'You are already subscribed to R_50', 'Should return already subscribed error';
 
     my $res = $t->await::forget_all({forget_all => 'ticks'});
-    $t->send_ok({json => {ticks => 'R_12312312', subscribe => 1}})->message_ok;
+    $t->send_ok({
+            json => {
+                ticks     => 'R_12312312',
+                subscribe => 1
+            }})->message_ok;
     $res = $json->decode(Encode::decode_utf8($t->message->[1]));
     is $res->{error}->{code}, 'InvalidSymbol', 'Should return invalid symbol error';
 };
 
 subtest 'ticks_forget_one_sub' => sub {
     my $res = $t->await::forget_all({forget_all => 'ticks'});
+
     my $req1 = {
         "ticks_history" => "R_50",
         "granularity"   => 60,
@@ -112,20 +121,25 @@ subtest 'ticks_forget_one_sub' => sub {
     };
 
     $res = $t->await::candles($req1);
+    ok my $id1 = $res->{subscription}{id}, 'There is a subscription id';
+
     $res = $t->await::ohlc;
     cmp_ok $res->{msg_type}, 'eq', 'ohlc', "Recived ohlc response ok";
-
-    my $id1 = $res->{ohlc}{id};
-    ok $id1, "Subscription id ok";
+    is $res->{ohlc}{id}, $id1, "Subscription id ok";
+    is $res->{subscription}->{id}, $id1, 'The same subscription->id';
 
     $res = $t->await::history($req2);
     cmp_ok $res->{msg_type}, 'eq', 'history', "Recived tick history response ok";
+    my $id2 = $res->{subscription}->{id};
+    ok $id2, 'Second subscription id is ok';
 
     $res = $t->await::forget({forget => $id1});
     cmp_ok $res->{forget}, '==', 1, "One subscription deleted ok";
 
     $res = $t->await::tick;
     cmp_ok $res->{msg_type}, 'eq', 'tick', "Second supscription is ok";
+    is $res->{subscription}->{id}, $id2, 'Expected subscription id';
+    is $res->{tick}->{id},         $id2, 'The same tick id';
 
 };
 

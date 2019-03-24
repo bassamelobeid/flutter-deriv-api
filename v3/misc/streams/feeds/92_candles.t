@@ -2,8 +2,7 @@ use strict;
 use warnings;
 use Test::More;
 use Test::MockTime qw/:all/;
-use Encode;
-use JSON::MaybeXS;
+use JSON::MaybeUTF8 qw/encode_json_utf8 decode_json_utf8/;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
@@ -38,7 +37,7 @@ sub _create_tick {    #creates R_50 tick in redis channel FEED::R_50
         bid    => $i + 1,
         ohlc   => $ohlc_sample,
     };
-    BOM::Config::RedisReplicated::redis_write()->publish("FEED::$symbol", Encode::encode_utf8($json->encode($payload)));
+    BOM::Config::RedisReplicated::redis_write()->publish("FEED::$symbol", encode_json_utf8($payload));
 }
 
 my $t = build_wsapi_test();
@@ -53,7 +52,7 @@ $res = $t->send_ok({
             style         => "candles",
             subscribe     => 1
         }})->message_ok;
-$res = $json->decode(Encode::decode_utf8($res->message->[1]));
+$res = decode_json_utf8($res->message->[1]);
 
 test_schema('ticks_history', $res);
 
@@ -77,7 +76,7 @@ unless ($pid) {
 
 for (my $i = 0; $i < 2; $i++) {
     $t->message_ok;
-    $res = $json->decode(Encode::decode_utf8($t->message->[1]));
+    $res = decode_json_utf8($t->message->[1]);
 
     ok $res->{ohlc}->{open} =~ /\d+\.\d{4,}/
         && $res->{ohlc}->{high} =~ /\d+\.\d{4,}/

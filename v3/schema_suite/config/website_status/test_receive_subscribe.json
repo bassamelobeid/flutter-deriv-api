@@ -1,217 +1,177 @@
 {
-   "$schema" : "http://json-schema.org/draft-04/schema#",
-   "required" : [
-      "echo_req",
-      "msg_type"
-   ],
-   "title" : "Website Status Response",
-   "additionalProperties" : null,
-   "type" : "object",
-   "description" : null,
-   "properties" : {
-      "subscription" : {
-         "title" : "Subscription information",
-         "type" : "object",
-         "description" : "For subscription requests only.",
-         "properties" : {
-            "id" : {
-               "description" : "The subscription identifier of the data to be streamed.",
-               "type" : "string"
-            }
-         }
-      },
-      "echo_req" : {
-         "title" : "Echo request",
-         "description" : "Echo of the request made"
-      },
-      "req_id" : {
-         "description" : "Optional field send in request to map to response, present only when request contains req_id",
-         "type" : "integer"
-      },
-      "website_status" : {
-         "required" : [
-            "currencies_config",
-            "api_call_limits",
-            "supported_languages",
-            "site_status",
-            "terms_conditions_version",
-            "clients_country",
-            "subscription"
-         ],
-         "properties" : {
-            "terms_conditions_version" : {
-               "type" : "string",
-               "description" : "Latest terms and conditions version"
-            },
-            "currencies_config" : {
-               "minProperties" : 1,
-               "patternProperties" : {
-                  "^[A-Z]{3,4}$" : {
-                     "properties" : {
-                        "type" : {
-                           "enum" : [
-                              "fiat",
-                              "crypto"
-                           ]
-                        },
-                        "fractional_digits" : {
-                           "type" : "number"
-                        },
-                        "transfer_between_accounts" : {
-                           "properties" : {
-                              "fees" : {
-                                 "patternProperties" : {
-                                    "^[A-Z]{3,4}$" : {
-                                       "minimum" : 0,
-                                       "type" : "number",
-                                       "maximum" : 7
+    "$schema" : "http://json-schema.org/draft-04/schema#",
+    "required" : [
+        "echo_req",
+        "msg_type"
+    ],
+    "type" : "object",
+    "description" : null,
+    "title" : "Website Status Response",
+    "properties" : {
+        "msg_type" : {
+            "description" : "website_status",
+            "type" : "string"
+        },
+        "website_status" : {
+            "required" : ["currencies_config", "api_call_limits", "supported_languages", "site_status", "terms_conditions_version", "clients_country", "subscription"],
+            "properties" : {
+                "supported_languages" : {
+                    "description" : "Provides codes for languages supported",
+                    "type" : "array",
+                    "items" : {
+                        "type" : "string"
+                    }
+                },
+                "currencies_config": {
+                    "type": "object",
+                    "minProperties" :  1,
+                    "patternProperties": {
+                        "^[A-Z]{3,4}$": {
+                            "type": "object",
+                            "required": ["fractional_digits", "type", "stake_default", "transfer_between_accounts"],
+                            "properties": {
+                                "fractional_digits": {
+                                    "type": "number"
+                                },
+                                "type": {
+                                    "enum": ["fiat", "crypto"]
+                                },
+                                "stake_default": {
+                                    "type": "number",
+                                    "minimum": 0
+                                },
+                                "transfer_between_accounts": {
+                                    "type": "object",
+                                    "required": ["limits","fees"],
+                                    "properties": {
+                                        "limits": {
+                                            "type": "object",
+                                            "properties": {
+                                                "min": {
+                                                    "type": "number",
+                                                    "minimum": 0
+                                                }
+                                            }
+                                        },
+                                        "fees": {
+                                            "type": "object",
+                                            "patternProperties": {
+                                                "^[A-Z]{3,4}$": {
+                                                    "type": "number",
+                                                    "minimum": 0,
+                                                    "maximum": 7
+                                                }
+                                            }
+                                        }
                                     }
-                                 },
-                                 "type" : "object"
-                              },
-                              "limits" : {
-                                 "properties" : {
-                                    "min" : {
-                                       "minimum" : 0,
-                                       "type" : "number"
-                                    }
-                                 },
-                                 "type" : "object"
-                              }
-                           },
-                           "type" : "object",
-                           "required" : [
-                              "limits",
-                              "fees"
-                           ]
-                        },
-                        "stake_default" : {
-                           "type" : "number",
-                           "minimum" : 0
+                                }
+                            }
                         }
-                     },
-                     "type" : "object",
-                     "required" : [
-                        "fractional_digits",
-                        "type",
-                        "stake_default",
-                        "transfer_between_accounts"
-                     ]
-                  }
-               },
-               "type" : "object"
-            },
-            "clients_country" : {
-               "type" : "string",
-               "description" : "Country code of connected IP"
-            },
-            "site_status" : {
-               "enum" : [
-                  "up",
-                  "down"
-               ],
-               "description" : "Current status of the site. up or down"
-            },
-            "message" : {
-               "description" : "Text for site status banner, contains problem description.  Shown only if set by the system",
-               "type" : "string"
-            },
-            "api_call_limits" : {
-               "properties" : {
-                  "max_requests_outcome" : {
-                     "type" : "object",
-                     "properties" : {
-                        "minutely" : {
-                           "type" : "number"
+                    }
+                },
+                "api_call_limits": {
+                    "type": "object",
+                    "required": ["max_proposal_subscription", "max_requests_pricing","max_requests_outcome","max_requests_general"],
+                    "properties": {
+                        "max_proposal_subscription": {
+                            "type": "object",
+                            "required": ["max","applies_to"],
+                            "properties": {
+                                "max": {
+                                    "type": "number"
+                                },
+                                "applies_to": {
+                                    "type": "string"
+                                }
+                            }
                         },
-                        "applies_to" : {
-                           "type" : "string"
+                        "max_requests_pricing": {
+                            "type": "object",
+                            "required": ["minutely","hourly", "applies_to"],
+                            "properties": {
+                                "minutely": {
+                                    "type": "number"
+                                },
+                                "hourly": {
+                                    "type": "number"
+                                },
+                                "applies_to": {
+                                    "type": "string"
+                                }
+                            }
                         },
-                        "hourly" : {
-                           "type" : "number"
+                        "max_requests_outcome": {
+                            "type": "object",
+                            "required": ["minutely","hourly","applies_to"],
+                            "properties": {
+                                "minutely": {
+                                    "type": "number"
+                                },
+                                "hourly": {
+                                    "type": "number"
+                                },
+                                "applies_to": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "max_requests_general": {
+                            "type": "object",
+                            "required": ["minutely","hourly","applies_to"],
+                            "properties": {
+                                "minutely": {
+                                    "type": "number"
+                                },
+                                "hourly": {
+                                    "type": "number"
+                                },
+                                "applies_to": {
+                                    "type": "string"
+                                }
+                            }
                         }
-                     },
-                     "required" : [
-                        "minutely",
-                        "hourly",
-                        "applies_to"
-                     ]
-                  },
-                  "max_requests_pricing" : {
-                     "type" : "object",
-                     "properties" : {
-                        "applies_to" : {
-                           "type" : "string"
-                        },
-                        "minutely" : {
-                           "type" : "number"
-                        },
-                        "hourly" : {
-                           "type" : "number"
-                        }
-                     },
-                     "required" : [
-                        "minutely",
-                        "hourly",
-                        "applies_to"
-                     ]
-                  },
-                  "max_proposal_subscription" : {
-                     "type" : "object",
-                     "properties" : {
-                        "applies_to" : {
-                           "type" : "string"
-                        },
-                        "max" : {
-                           "type" : "number"
-                        }
-                     },
-                     "required" : [
-                        "max",
-                        "applies_to"
-                     ]
-                  },
-                  "max_requestes_general" : {
-                     "required" : [
-                        "minutely",
-                        "hourly",
-                        "applies_to"
-                     ],
-                     "properties" : {
-                        "hourly" : {
-                           "type" : "number"
-                        },
-                        "applies_to" : {
-                           "type" : "string"
-                        },
-                        "minutely" : {
-                           "type" : "number"
-                        }
-                     },
-                     "type" : "object"
-                  }
-               },
-               "type" : "object",
-               "required" : [
-                  "max_proposal_subscription",
-                  "max_requests_pricing",
-                  "max_requests_outcome",
-                  "max_requestes_general"
-               ]
+                    }
+
+                },
+                "site_status" : {
+                    "enum": ["up", "down"],
+                    "description" : "Current status of the site. up or down"
+                },
+                "clients_country" : {
+                    "type" : "string",
+                    "description" : "Country code of connected IP"
+                },
+                "terms_conditions_version" : {
+                    "description" : "Latest terms and conditions version",
+                    "type" : "string"
+                },
+                "message": {
+                    "type":"string",
+                    "description": "Text for site status banner, contains problem description.  Shown only if set by the system"
+                }
             },
-            "supported_languages" : {
-               "type" : "array",
-               "description" : "Provides codes for languages supported",
-               "items" : {
-                  "type" : "string"
+            "type" : "object"
+        },
+        "req_id" : {
+            "description" : "Optional field send in request to map to response, present only when request contains req_id",
+            "type" : "integer"
+        },
+        "echo_req" : {
+            "description" : "Echo of the request made",
+            "title" : "Echo request"
+        },
+        "subscription" : {
+            "title" : "Subscription information",
+            "description" : "For subscription requests only.",
+            "type" : "object",
+            "required": 1,
+            "properties": {
+               "id" : {
+                "description": "A stream id that can be used to cancel this stream using the Forget request.",
+                "type" : "string",
+                "required" : 1
                }
             }
-         },
-         "type" : "object"
-      },
-      "msg_type" : {
-         "type" : "string",
-         "description" : "website_status"
-      }
-   }
+        }
+    }
 }

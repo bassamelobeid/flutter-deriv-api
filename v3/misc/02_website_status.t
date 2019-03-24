@@ -1,8 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use Encode;
-use JSON::MaybeXS;
+use JSON::MaybeUTF8 qw/decode_json_utf8/;
 use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
@@ -11,11 +10,14 @@ use Test::MockModule;
 use Mojo::Redis2;
 use Clone;
 use BOM::Config::Chronicle;
+use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 
-my $json = JSON::MaybeXS->new;
-my $t    = build_wsapi_test();
+#we need this because of calculating max exchange rates on currency config
+populate_exchange_rates();
+
+my $t = build_wsapi_test();
 $t = $t->send_ok({json => {website_status => 1}})->message_ok;
-my $res = $json->decode(Encode::decode_utf8($t->message->[1]));
+my $res = decode_json_utf8($t->message->[1]);
 
 my $reader = BOM::Config::Chronicle::get_chronicle_reader();
 my $writer = BOM::Config::Chronicle::get_chronicle_writer();
@@ -39,7 +41,7 @@ $t = $t->send_ok({
             website_status => 1,
             subscribe      => 1
         }})->message_ok;
-$res = $json->decode(Encode::decode_utf8($t->message->[1]));
+$res = decode_json_utf8($t->message->[1]);
 is $res->{error}->{code}, undef, 'No duplicate subscription error';
 is $res->{subscription}->{id}, $uuid, 'The same id is returned';
 
@@ -48,11 +50,13 @@ $t = $t->send_ok({
             website_status => 1,
             subscribe      => 0
         }})->message_ok;
-$res = $json->decode(Encode::decode_utf8($t->message->[1]));
-is $res->{subscription}->{id}, undef, 'No subscription id for non-subscribe requests.';
+
+$res = decode_json_utf8($t->message->[1]);
+is $res->{subscription}, undef, 'No subscription key for non-subscribe requests.';
 
 $t = $t->send_ok({json => {forget_all => 'website_status'}})->message_ok;
-$res = $json->decode(Encode::decode_utf8($t->message->[1]));
+$res = decode_json_utf8($t->message->[1]);
+
 is $res->{forget_all}->[0], $uuid, 'The same id returned by forget_all';
 
 $t = $t->send_ok({
@@ -60,21 +64,21 @@ $t = $t->send_ok({
             website_status => 1,
             subscribe      => 0
         }})->message_ok;
-$res = $json->decode(Encode::decode_utf8($t->message->[1]));
-is $res->{subscription}->{id}, undef, 'No subscription ids after forget_all';
+$res = decode_json_utf8($t->message->[1]);
+is $res->{subscription}, undef, 'No subscription key after forget_all';
 
 $t = $t->send_ok({
         json => {
             website_status => 1,
             subscribe      => 1
         }})->message_ok;
-$res = $json->decode(Encode::decode_utf8($t->message->[1]));
+$res = decode_json_utf8($t->message->[1]);
 cmp_ok $uuid, 'ne', $res->{subscription}->{id}, 'New subscription id is issued';
 $uuid = $res->{subscription}->{id};
 
 $t = $t->send_ok({json => {forget => $uuid}})->message_ok;
-$res = $json->decode(Encode::decode_utf8($t->message->[1]));
-is $res->{subscription}->{id}, undef, 'No subscription ids after forget one';
+$res = decode_json_utf8($t->message->[1]);
+is $res->{subscription}, undef, 'No subscription after forget one';
 
 # The followind does NOT work on travis, as rpc lauched as separate process
 # my $time_mock =  Test::MockModule->new('App::Config::Chronicle');
@@ -83,7 +87,7 @@ is $res->{subscription}->{id}, undef, 'No subscription ids after forget one';
 # wait app-cconfig refresh
 sleep 11;
 $t = $t->send_ok({json => {website_status => 1}})->message_ok;
-$res = $json->decode(Encode::decode_utf8($t->message->[1]));
+$res = decode_json_utf8($t->message->[1]);
 
 is $res->{website_status}->{terms_conditions_version}, $updated_tcv, 'It should return updated terms_conditions_version';
 
