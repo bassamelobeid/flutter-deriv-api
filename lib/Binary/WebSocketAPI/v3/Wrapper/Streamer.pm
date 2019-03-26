@@ -177,7 +177,7 @@ sub ticks {
                 },
                 success => sub {
                     my ($c, $api_response, $req_storage) = @_;
-                    $req_storage->{id} = _feed_channel_subscribe($c, $req_storage->{symbol}, 'tick', $req_storage->{args});
+                    $req_storage->{id} = _feed_channel_subscribe($c, $req_storage->{symbol}, 'tick', $req_storage);
                 },
                 response => sub {
                     my ($rpc_response, $api_response, $req_storage) = @_;
@@ -313,7 +313,9 @@ sub ticks_history {
                         my $uuid = $worker->uuid();
                         $rpc_response->{data}->{subscription}->{id} = $uuid if $uuid;
                     }
-
+                    
+ my $after_got_rpc_response_hook  = delete($req_storage->{after_got_rpc_response})  || [];                        
+ $_->($c, $req_storage, $rpc_response) for @$after_got_rpc_response_hook;
                     return {
                         msg_type => $rpc_response->{type},
                         %{$rpc_response->{data}}};
@@ -323,7 +325,7 @@ sub ticks_history {
 
     # subscribe first with flag of cache_only passed as 1 to indicate to cache the feed data
     if ($args->{subscribe}) {
-        if (not _feed_channel_subscribe($c, $args->{ticks_history}, $publish, $args, $callback, 1)) {
+        if (not _feed_channel_subscribe($c, $args->{ticks_history}, $publish, $req_storage, $callback, 1)) {
             return $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
         }
     } else {
@@ -334,8 +336,8 @@ sub ticks_history {
 }
 
 sub _feed_channel_subscribe {
-    my ($c, $symbol, $type, $args, $callback, $cache_only) = @_;
-
+    my ($c, $symbol, $type, $request_storage, $callback, $cache_only) = @_;
+    my $args = $request_storage->{args};
     my $feed_channel_type = $c->stash('feed_channel_type') // {};
 
     my $key    = "$symbol;$type";
@@ -352,6 +354,7 @@ sub _feed_channel_subscribe {
         c          => $c,
         type       => $type,
         args       => $args,
+        request_storage => $request_storage,
         symbol     => $symbol,
         uuid       => $uuid,
         cache_only => $cache_only || 0,
