@@ -20,8 +20,7 @@ use BOM::Pricing::v3::Contract;
 use Volatility::LinearCache;
 
 use constant {
-    DURATION_DONT_PRICE_SAME_SPOT                        => 10,
-    DURATION_RETURN_SAME_PRICE_ON_SAME_SPOT_FOR_PRIORITY => 2,
+    DURATION_DONT_PRICE_SAME_SPOT => 10,
 };
 
 sub new { return bless {@_[1 .. $#_]}, $_[0] }
@@ -75,15 +74,11 @@ sub process_job {
 
     # For plain queue, if we have request for a price, and tick has not changed since last one, and it was not more
     # than 10 seconds ago - just ignore it.
-    # However, if it was not more than 2 sec, return the existing price back (for priority pricer transition/removal)
     if (    $current_spot_ts == $last_price_ts
         and $current_time - $last_price_ts <= DURATION_DONT_PRICE_SAME_SPOT)
     {
         stats_inc("pricer_daemon.skipped_duplicate_spot", {tags => $self->tags});
         return undef;
-    } elsif ($current_time - $last_price_ts <= DURATION_RETURN_SAME_PRICE_ON_SAME_SPOT_FOR_PRIORITY) {
-        stats_inc("pricer_daemon.existing_price_used", {tags => $self->tags});
-        return $last_priced_contract->{contract};
     }
 
     my $r = BOM::Platform::Context::Request->new({language => $params->{language} // 'EN'});
@@ -98,7 +93,8 @@ sub process_job {
     # when it reaches here, contract is considered priced.
     $redis->set(
         $next => encode_json_utf8({
-                time     => $current_time,
+                time => $response->{current_spot_time}
+                , # don't use $current_time here since we are using this time to check if we want to skip repricing contract with the same spot price.
                 contract => $response,
             }
         ),
