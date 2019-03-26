@@ -38,6 +38,7 @@ $tester->publish(
     tick => \@active_symbols,
 );
 
+
 for my $method ( qw(ticks ticks_history) ) {
 
     subtest "Subscriptions for $method" => sub {
@@ -45,14 +46,17 @@ for my $method ( qw(ticks ticks_history) ) {
         my @requests = map { make_request($method, $_) } @active_symbols;
 
         Future->needs_all(
-            # simple subscription to one symbol
+            $tester->ticks_invalid_symbol( method => $method ),
+            
+            # subscribe to everything on one connection
             $tester->subscribe(
                 subscription_list => \@requests,
                 concurrent        => scalar @requests,
             ),
 
             # subscribe to everything on different connections
-            $tester->subscribe_multiple_times(
+            # todo - reduce the max_response_delay
+            $tester_large_delay->subscribe_multiple_times(
                 count             => 2,
                 subscription_list => \@requests,
                 concurrent        => scalar @requests,
@@ -69,11 +73,16 @@ for my $method ( qw(ticks ticks_history) ) {
                 concurrent        => $chunk_size,
             )->get
         }
+        
+        # This must not be run in parellel with other tests, because it pauses the publisher
+        $tester->ticks_feed_gap( method => $method )->get;
     }
 }
 
 sub make_request {
     return { $_[0] => { $_[0] => $_[1], $_[0] eq 'ticks_history' ? ( end => 'latest' ) : () } };
 }
+
+$tester->run_sanity_checks;
 
 done_testing;
