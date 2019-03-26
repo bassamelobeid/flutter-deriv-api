@@ -258,7 +258,7 @@ sub _update_balance {
         $id ? (subscription => {id => $id}) : (),
     };
 
-    $c->send({json => $details}) if $c->tx;
+    $c->send({json => $details},$self->request_storage) if $c->tx;
     return;
 }
 

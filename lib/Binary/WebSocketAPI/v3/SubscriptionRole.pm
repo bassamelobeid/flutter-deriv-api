@@ -56,6 +56,14 @@ has args => (
     required => 1,
 );
 
+=head2 request_storage
+
+=cut
+
+has request_storage => (
+    is       => 'ro',
+    required => 0,
+);
 =head2 uuid
 
 =cut

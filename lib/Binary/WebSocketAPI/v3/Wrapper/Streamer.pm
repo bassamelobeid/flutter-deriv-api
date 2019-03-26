@@ -379,8 +379,8 @@ sub feed_channel_unsubscribe {
 }
 
 sub transaction_channel {
-    my ($c, $action, $account_id, $type, $args, $contract_id) = @_;
-
+    my ($c, $action, $account_id, $type, $request_storage, $contract_id) = @_;
+    my $args = $request_storage->{args};
     $contract_id //= $args->{contract_id};
     my $channel = $c->stash('transaction_channel');
 
@@ -395,6 +395,7 @@ sub transaction_channel {
             type        => $type,
             contract_id => $contract_id,
             args        => $args,
+            request_storage => $request_storage, 
             uuid        => $uuid,
         );
         $worker->subscribe;
