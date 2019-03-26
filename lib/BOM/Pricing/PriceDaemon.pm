@@ -93,8 +93,9 @@ sub process_job {
     # when it reaches here, contract is considered priced.
     $redis->set(
         $next => encode_json_utf8({
-                time => $response->{current_spot_time}
-                , # don't use $current_time here since we are using this time to check if we want to skip repricing contract with the same spot price.
+                # - for proposal open contract, don't use $current_time here since we are using this time to check if we want to skip repricing contract with the same spot price.
+                # - for proposal, because $response doesn't have current_spot_time, we will resort to $current_time
+                time => $response->{current_spot_time} // $current_time,
                 contract => $response,
             }
         ),
