@@ -94,10 +94,9 @@ sub redis_record_mt5_transfer {
         $redis->incrbyfloat($redis_key, $input_data->{amount_in_USD});
     } else {
         $redis->set($redis_key, $input_data->{amount_in_USD});
+        # set duration to expire in 14 days
+        $redis->expire($redis_key, SECONDS_IN_DAY * DAYS_TO_EXPIRE);
     }
-
-    # set duration to expire in 14 days
-    $redis->expire($redis_key, SECONDS_IN_DAY * DAYS_TO_EXPIRE);
 
     my $total_amount = $redis->get($redis_key);
 
@@ -105,6 +104,7 @@ sub redis_record_mt5_transfer {
         notifiy_compliance_mt5_over8K({
                 loginid      => $loginid,
                 mt5_id       => $mt5_id,
+                ttl          => $redis->ttl($redis_key),
                 action       => $input_data->{action},
                 total_amount => sprintf("%.2f", $total_amount)});
 
@@ -120,6 +120,11 @@ sub notifiy_compliance_mt5_over8K {
     my $brands                 = Brands->new();
     my $system_email           = $brands->emails('system');
     my $compliance_alert_email = $brands->emails('compliance_alert');
+
+    my $seconds_passed_since_start = (SECONDS_IN_DAY * DAYS_TO_EXPIRE) - $data->{ttl};
+    my $start_time_epoch           = (Date::Utility->new()->epoch()) - $seconds_passed_since_start;
+    $data->{start_date} = Date::Utility->new($start_time_epoch)->datetime();
+    $data->{end_date}   = Date::Utility->new()->datetime();
 
     my $email_subject = 'VN - International currency transfers reporting obligation';
 

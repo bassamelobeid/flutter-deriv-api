@@ -19,6 +19,14 @@
    <td style="text-align:left">[% loginid %]</td>
   </tr>
   <tr>
+   <th scope="row">Start Date:</th>
+   <td style="text-align:left">[% start_date %]</td>
+  </tr>
+  <tr>
+   <th scope="row">End Date:</th>
+   <td style="text-align:left">[% end_date %]</td>
+  </tr>
+  <tr>
    <th scope="row">MT5 Loginid:</th>
    <td style="text-align:left">[% mt5_id %]</td>
   </tr>
