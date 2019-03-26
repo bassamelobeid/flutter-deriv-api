@@ -74,7 +74,7 @@ test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
     '100', 'CALL', 'frxUSDJPY', '5', 't', 'Win payout if USD/JPY after 5 ticks is strictly higher than entry spot.', '55.29', '55.29', 97.140;
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
     '100', 'CALL', 'frxUSDJPY', '3', 'm', 'Win payout if USD/JPY is strictly higher than entry spot at 3 minutes after contract start time.',
-    '54.22', '54.22', 97.140;
+    57, '57.00', 97.140;
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
     '100', 'CALL', 'frxUSDJPY', '1', 'h', 'Win payout if USD/JPY is strictly higher than entry spot at 1 hour after contract start time.', '56.99',
     '56.99', '97.140';

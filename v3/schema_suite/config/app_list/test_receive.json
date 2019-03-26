@@ -52,8 +52,7 @@
                   "type" : [
                      "string",
                      "null"
-                  ],
-                  "required" : "1"
+                  ]
                },
                "app_markup_percentage" : {
                   "type" : "number"

@@ -18,26 +18,23 @@
       "oauth_apps" : {
          "items" : {
             "type" : "object",
+            "required": ["last_used", "name", "app_id", "scopes", "app_markup_percentage"],
             "properties" : {
                "last_used" : {
-                  "required" : "1",
                   "type" : [
                      "string",
                      "null"
                   ]
                },
                "name" : {
-                  "type" : "string",
-                  "required" : "1"
+                  "type" : "string"
                },
                "app_id" : {
-                  "type" : "integer",
-                  "required" : "1"
+                  "type" : "integer"
                },
                "scopes" : {
                   "minItems" : 1,
                   "type" : "array",
-                  "required" : "1",
                   "items" : {
                      "pattern" : "^(read|trade|payments|admin)$",
                      "type" : "string"
@@ -45,8 +42,7 @@
                   "maxItems" : 4
                },
                "app_markup_percentage" : {
-                  "type" : "number",
-                  "required" : "1"
+                  "type" : "number"
                }
             }
          },

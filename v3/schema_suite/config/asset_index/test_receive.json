@@ -19,15 +19,12 @@
          "items" : {
             "items" : [
                {
-                  "type" : "string",
-                  "required" : "1"
+                  "type" : "string"
                },
                {
-                  "type" : "string",
-                  "required" : "1"
+                  "type" : "string"
                },
                {
-                  "required" : "1",
                   "items" : {
                      "type" : "array",
                      "minItems" : 4,
@@ -41,7 +38,8 @@
             ],
             "additionalItems" : false,
             "uniqueItems" : true,
-            "type" : "array"
+            "type" : "array",
+            "required": ["items"]
          },
          "type" : "array"
       }

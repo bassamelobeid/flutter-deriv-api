@@ -17,8 +17,8 @@
                "pattern" : "^[_2]$"
             },
             "is_virtual" : {
-               "type" : "string",
-               "pattern" : "^0$"
+               "type" : "number",
+               "enum" :[0] 
             },
             "landing_company_name" : {
                "type" : "string",
@@ -26,7 +26,7 @@
             },
             "balance" : {
                "type" : "number",
-               "pattern" : "^0.00$"
+               "enum" : [0] 
             },
             "account_list" : {
                "type" : "array",
@@ -43,10 +43,10 @@
                      },
                      "is_virtual" : {
                         "type" : "integer",
-                        "pattern" : "^(1|0)$"
+                        "enum" : [0,1]
                      },
                      "is_disabled" : {
-                        "pattern" : "^(1|0)$",
+                        "enum" : [0,1],
                         "type" : "integer"
                      },
                      "excluded_until" : {

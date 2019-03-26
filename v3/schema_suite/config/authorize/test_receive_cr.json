@@ -22,15 +22,15 @@
                "type" : "string"
             },
             "is_virtual" : {
-               "pattern" : "^0$",
-               "type" : "string"
+               "enum" : [0],
+               "type" : "integer"
             },
             "landing_company_name" : {
                "type" : "string",
                "pattern" : "^costarica$"
             },
             "balance" : {
-               "pattern" : "^0.00$",
+               "enum" : [0],
                "type" : "number"
             },
             "scopes" : {
@@ -59,11 +59,11 @@
                         "pattern" : "^[A-Z]{2,4}\\d+$"
                      },
                      "is_virtual" : {
-                        "pattern" : "^(1|0)$",
+                        "enum" : [0,1],
                         "type" : "integer"
                      },
                      "is_disabled" : {
-                        "pattern" : "^(1|0)$",
+                        "enum" : [0,1],
                         "type" : "integer"
                      }
                   }

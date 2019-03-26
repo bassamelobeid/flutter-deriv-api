@@ -1,68 +1,67 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
+    "required" : ["echo_req", "msg_type", "subscription"],
     "properties": {
         "proposal": {
             "type": "object",
-            "required": "1",
+         "required" : [
+            "ask_price",
+            "spot",
+            "date_start",
+            "payout",
+            "display_value",
+            "longcode",
+            "id",
+            "spot_time"
+         ],
             "properties" : {
                 "longcode": {
                     "type": "string",
-                    "pattern": "^[_6]$",
-                    "required": "1"
+                    "pattern": "^[_6]$"
                 },
                 "ask_price": {
                     "type": "number",
-                    "pattern": "^[_7]$",
-                    "required": "1"
+                    "pattern": "^[_7]$"
                 },
                 "display_value": {
-                    "type": "number",
-                    "pattern": "^[_8]$",
-                    "required": "1"
+                    "type": "string",
+                    "pattern": "^[_8]$"
                 },
                 "date_start": {
                     "type": "number",
-                    "pattern": "^\\d+$",
-                    "required": "1"
+                    "pattern": "^\\d+$"
                 },
                 "id": {
                     "type": "string",
-                    "pattern": "[\\d\\w-]+$",
-                    "required": "1"
+                    "pattern": "[\\d\\w-]+$"
                 },
                 "payout": {
                     "type": "number",
-                    "pattern": "^[_1]$",
-                    "required": "1"
+                    "pattern": "^[_1]$"
                 },
                 "spot": {
                     "type": "number",
-                    "pattern": "^[_9]$",
-                    "required": "1"
+                    "pattern": "^[_9]$"
                 },
                 "spot_time": {
                     "type": "number",
-                    "pattern": "^\\d+$",
-                    "required": "1"
+                    "pattern": "^\\d+$"
                 }
             }
         },
         "echo_req": {
-            "required": "1"
         },
         "msg_type": {
             "type": "string",
-            "pattern": "^proposal$",
-            "required": "1"
+            "pattern": "^proposal$"
         },
         "subscription": {
             "type": "object",
-            "required": "1",
+            "required": ["id"],
             "properties": {
                 "id": {
-                    "type": "string",
-                    "required": "1"
+                    "type": "string"
                 }
             }
         }

@@ -2,7 +2,8 @@
     "$schema" : "http://json-schema.org/draft-04/schema#",
     "required" : [
         "echo_req",
-        "msg_type"
+        "msg_type",
+        "subscription"
     ],
     "type" : "object",
     "description" : null,
@@ -164,12 +165,11 @@
             "title" : "Subscription information",
             "description" : "For subscription requests only.",
             "type" : "object",
-            "required": 1,
+            "required": ["id"],
             "properties": {
                "id" : {
                 "description": "A stream id that can be used to cancel this stream using the Forget request.",
-                "type" : "string",
-                "required" : 1
+                "type" : "string"
                }
             }
         }

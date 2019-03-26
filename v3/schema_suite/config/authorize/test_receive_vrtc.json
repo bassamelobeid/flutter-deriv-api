@@ -52,7 +52,7 @@
                }
             },
             "balance" : {
-               "pattern" : "^10000.00$",
+               "enum" : [10000],
                "type" : "number"
             },
             "landing_company_name" : {
@@ -60,8 +60,8 @@
                "pattern" : "^virtual$"
             },
             "is_virtual" : {
-               "type" : "string",
-               "pattern" : "^1$"
+               "type" : "number",
+               "enum" : [1]
             },
             "email" : {
                "type" : "string",

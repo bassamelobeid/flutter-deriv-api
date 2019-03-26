@@ -48,7 +48,7 @@
                "items" : {
                   "properties" : {
                      "is_disabled" : {
-                        "pattern" : "^(1|0)$",
+                        "enum" : [1,0],
                         "type" : "integer"
                      },
                      "landing_company_name" : {
@@ -60,7 +60,7 @@
                      },
                      "is_virtual" : {
                         "type" : "integer",
-                        "pattern" : "^(1|0)$"
+                        "enum" : [1,0]
                      },
                      "currency" : {
                         "type" : "string"
@@ -88,15 +88,15 @@
             },
             "balance" : {
                "type" : "number",
-               "pattern" : "^0.00$"
+               "enum" : [0]
             },
             "email" : {
                "type" : "string",
                "pattern" : "^[_2]$"
             },
             "is_virtual" : {
-               "pattern" : "^0$",
-               "type" : "string"
+               "enum" : [0],
+               "type" : "integer"
             },
             "landing_company_name" : {
                "pattern" : "^malta$",

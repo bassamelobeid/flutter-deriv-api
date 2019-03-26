@@ -39,7 +39,7 @@ test_sendrecv 'balance/test_send_subscribe.json', 'balance/test_receive.json',
     start_stream_id => 1;
 test_sendrecv 'proposal/test_send_buy.json', 'proposal/test_receive_buy.json';
 test_sendrecv_params 'buy/test_send.json',   'buy/test_receive.json', $suite->get_stashed('proposal/proposal/id'), '99\\\\d{2}\\\\.\\\\d{2}';
-test_last_stream_params 1,                   'balance/test_receive_subscribe.json', '99\\\\d{2}\\\\.\\\\d{2}', 'USD',
+test_last_stream_params 1,                   'balance/test_receive_subscribe.json', 9948.51,  'USD',
     $suite->get_stashed('authorize/authorize/loginid');
 test_sendrecv_params 'buy/test_send_with_params.json', 'buy/test_receive_with_params.json', 'payout', '5.15', '10';
 test_sendrecv_params 'buy/test_send_with_params.json', 'buy/test_receive_with_params.json', 'stake',  '10',   '19.43';
