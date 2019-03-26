@@ -313,9 +313,9 @@ sub ticks_history {
                         my $uuid = $worker->uuid();
                         $rpc_response->{data}->{subscription}->{id} = $uuid if $uuid;
                     }
-                    
- my $after_got_rpc_response_hook  = delete($req_storage->{after_got_rpc_response})  || [];                        
- $_->($c, $req_storage, $rpc_response) for @$after_got_rpc_response_hook;
+
+                    my $after_got_rpc_response_hook = delete($req_storage->{after_got_rpc_response}) || [];
+                    $_->($c, $req_storage, $rpc_response) for @$after_got_rpc_response_hook;
                     return {
                         msg_type => $rpc_response->{type},
                         %{$rpc_response->{data}}};
@@ -351,13 +351,13 @@ sub _feed_channel_subscribe {
     my $uuid = _generate_uuid_string();
 
     my $worker = Binary::WebSocketAPI::v3::Subscription::Feed->new(
-        c          => $c,
-        type       => $type,
-        args       => $args,
+        c               => $c,
+        type            => $type,
+        args            => $args,
         request_storage => $request_storage,
-        symbol     => $symbol,
-        uuid       => $uuid,
-        cache_only => $cache_only || 0,
+        symbol          => $symbol,
+        uuid            => $uuid,
+        cache_only      => $cache_only || 0,
     );
 
     $feed_channel_type->{$key} = $worker;
@@ -393,13 +393,13 @@ sub transaction_channel {
         # TODO move uuid to subscription::transaction
         my $uuid   = _generate_uuid_string();
         my $worker = Binary::WebSocketAPI::v3::Subscription::Transaction->new(
-            c           => $c,
-            account_id  => $account_id,
-            type        => $type,
-            contract_id => $contract_id,
-            args        => $args,
-            request_storage => $request_storage, 
-            uuid        => $uuid,
+            c               => $c,
+            account_id      => $account_id,
+            type            => $type,
+            contract_id     => $contract_id,
+            args            => $args,
+            request_storage => $request_storage,
+            uuid            => $uuid,
         );
         $worker->subscribe;
         $channel->{$type} = $worker;

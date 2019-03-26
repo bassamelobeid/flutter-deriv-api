@@ -68,9 +68,7 @@ Currently it is used for adding a subscription attribute to the JSON.
 sub balance_response_handler {
     my ($rpc_response, $api_response, $req_storage) = @_;
 
-
     $api_response->{passthrough} = $req_storage->{args}->{passthrough};
-
 
     return $api_response if $rpc_response->{error};
     if (my $uuid = $rpc_response->{id}) {

@@ -9,7 +9,7 @@
    "title" : "Realtime Balance",
    
    "properties" : {
-      "msg_type" : {
+      "mysg_type" : {
          "description" : "balance",
          "type" : "string"
       },

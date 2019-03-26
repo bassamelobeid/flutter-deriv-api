@@ -185,8 +185,9 @@ sub handle_message {
                     $msg_type => $result,
                     subscription => {id => $self->uuid},
                 },
-              $self->request_storage 
-            });
+            },
+            $self->request_storage
+        );
     }
 
     return;
