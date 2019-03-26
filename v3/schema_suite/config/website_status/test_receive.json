@@ -68,157 +68,154 @@
                                             }
                                         }
                                     }
-                                 },
-                                 "type" : "object"
-                              },
-                              "limits" : {
-                                 "type" : "object",
-                                 "properties" : {
+                                }
+                            },
+                            "limits" : {
+                                "type" : "object",
+                                "properties" : {
                                     "min" : {
-                                       "type" : "number",
-                                       "minimum" : 0
+                                        "type" : "number",
+                                        "minimum" : 0
                                     }
-                                 }
-                              }
-                           },
-                           "required" : [
-                              "limits",
-                              "fees"
-                           ]
-                        }
-                     },
-                     "required" : [
-                        "fractional_digits",
-                        "type",
-                        "stake_default",
-                        "transfer_between_accounts"
-                     ]
-                  }
-               },
-               "minProperties" : 1
-            },
-            "terms_conditions_version" : {
-               "description" : "Latest terms and conditions version",
-               "type" : "string"
-            },
-            "site_status" : {
-               "enum" : [
-                  "up",
-                  "down"
-               ],
-               "description" : "Current status of the site. up or down"
-            },
-            "clients_country" : {
-               "description" : "Country code of connected IP",
-               "type" : "string"
-            },
-            "message" : {
-               "description" : "Text for site status banner, contains problem description.  Shown only if set by the system",
-               "type" : "string"
-            },
-            "api_call_limits" : {
-               "properties" : {
-                  "max_requestes_general" : {
-                     "required" : [
-                        "minutely",
-                        "hourly",
-                        "applies_to"
-                     ],
-                     "type" : "object",
-                     "properties" : {
-                        "hourly" : {
-                           "type" : "number"
+                                }
+                            }
                         },
-                        "applies_to" : {
-                           "type" : "string"
-                        },
-                        "minutely" : {
-                           "type" : "number"
-                        }
-                     }
-                  },
-                  "max_proposal_subscription" : {
-                     "properties" : {
-                        "applies_to" : {
-                           "type" : "string"
-                        },
-                        "max" : {
-                           "type" : "number"
-                        }
-                     },
-                     "type" : "object",
-                     "required" : [
-                        "max",
-                        "applies_to"
-                     ]
-                  },
-                  "max_requests_pricing" : {
-                     "type" : "object",
-                     "properties" : {
-                        "minutely" : {
-                           "type" : "number"
-                        },
-                        "applies_to" : {
-                           "type" : "string"
-                        },
-                        "hourly" : {
-                           "type" : "number"
-                        }
-                     },
-                     "required" : [
-                        "minutely",
-                        "hourly",
-                        "applies_to"
-                     ]
-                  },
-                  "max_requests_outcome" : {
-                     "required" : [
-                        "minutely",
-                        "hourly",
-                        "applies_to"
-                     ],
-                     "type" : "object",
-                     "properties" : {
-                        "hourly" : {
-                           "type" : "number"
-                        },
-                        "minutely" : {
-                           "type" : "number"
-                        },
-                        "applies_to" : {
-                           "type" : "string"
-                        }
-                     }
-                  }
-               },
-               "type" : "object",
-               "required" : [
-                  "max_proposal_subscription",
-                  "max_requests_pricing",
-                  "max_requests_outcome",
-                  "max_requestes_general"
-               ]
+                        "required" : [
+                            "limits",
+                            "fees"
+                        ]
+                    }
+                },
+                "required" : [
+                    "fractional_digits",
+                    "type",
+                    "stake_default",
+                    "transfer_between_accounts"
+                ]
             }
-         },
-         "type" : "object"
-      },
-      "subscription": {
-          "required": ["id"],
-          "type": "object",
-          "properties": {
-              "id" : {
-                  "type" : "string"
-              }
-          }
-      },
+        },
+        "minProperties" : 1
+    },
+    "terms_conditions_version" : {
+        "description" : "Latest terms and conditions version",
+        "type" : "string"
+    },
+    "site_status" : {
+        "enum" : [
+            "up",
+            "down"
+        ],
+        "description" : "Current status of the site. up or down"
+    },
+    "clients_country" : {
+        "description" : "Country code of connected IP",
+        "type" : "string"
+    },
+    "message" : {
+        "description" : "Text for site status banner, contains problem description.  Shown only if set by the system",
+        "type" : "string"
+    },
+    "api_call_limits" : {
+        "properties" : {
+            "max_requestes_general" : {
+                "required" : [
+                    "minutely",
+                    "hourly",
+                    "applies_to"
+                ],
+                "type" : "object",
+                "properties" : {
+                    "hourly" : {
+                        "type" : "number"
+                    },
+                    "applies_to" : {
+                        "type" : "string"
+                    },
+                    "minutely" : {
+                        "type" : "number"
+                    }
+                }
+            },
+            "max_proposal_subscription" : {
+                "properties" : {
+                    "applies_to" : {
+                        "type" : "string"
+                    },
+                    "max" : {
+                        "type" : "number"
+                    }
+                },
+                "type" : "object",
+                "required" : [
+                    "max",
+                    "applies_to"
+                ]
+            },
+            "max_requests_pricing" : {
+                "type" : "object",
+                "properties" : {
+                    "minutely" : {
+                        "type" : "number"
+                    },
+                    "applies_to" : {
+                        "type" : "string"
+                    },
+                    "hourly" : {
+                        "type" : "number"
+                    }
+                },
+                "required" : [
+                    "minutely",
+                    "hourly",
+                    "applies_to"
+                ]
+            },
+            "max_requests_outcome" : {
+                "required" : [
+                    "minutely",
+                    "hourly",
+                    "applies_to"
+                ],
+                "type" : "object",
+                "properties" : {
+                    "hourly" : {
+                        "type" : "number"
+                    },
+                    "minutely" : {
+                        "type" : "number"
+                    },
+                    "applies_to" : {
+                        "type" : "string"
+                    }
+                }
+            }
+        },
+        "type" : "object",
+        "required" : [
+            "max_proposal_subscription",
+            "max_requests_pricing",
+            "max_requests_outcome",
+            "max_requestes_general"
+        ]
 
-      "msg_type" : {
-         "type" : "string",
-         "description" : "website_status"
-      },
-      "req_id" : {
-         "description" : "Optional field send in request to map to response, present only when request contains req_id",
-         "type" : "integer"
-      }
-   }
+    },
+    "subscription": {
+        "required": ["id"],
+        "type": "object",
+        "properties": {
+            "id" : {
+                "type" : "string"
+            }
+        }
+    },
+
+    "msg_type" : {
+        "type" : "string",
+        "description" : "website_status"
+    },
+    "req_id" : {
+        "description" : "Optional field send in request to map to response, present only when request contains req_id",
+        "type" : "integer"
+    }
 }
+

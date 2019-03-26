@@ -1,20 +1,5 @@
 {
-   "$schema" : "http://json-schema.org/draft-04/schema#",
-   "description" : null,
-   "title" : null,
-   "additionalProperties" : null,
-   "type" : null,
-   "required" : null,
-   "parameters" : {
-      "duration_unit" : "t",
-      "symbol" : "R_10",
-      "amount" : 10,
-      "price" : 10000,
-      "currency" : "USD",
-      "basis" : "payout",
-      "contract_type" : "TICKHIGH",
-      "duration" : 5
-   },
    "price" : 10000,
-   "buy" : 1
+   "buy" : 1,
+   "parameters":{"asdasd" :2 }
 }

@@ -1,6 +1,6 @@
 {
    "$schema" : "http://json-schema.org/draft-04/schema#",
-   "required" : null,
+   "required" : ["error"],
    "description" : null,
    "type" : "object",
    "title" : null,
@@ -19,7 +19,7 @@
                "type" : "object",
                "[_1]" : {
                   "type" : "string",
-                  "pattern" : "the schema does not allow additional properties"
+                  "pattern" : "the yschema does not allow additional properties"
                }
             }
          },

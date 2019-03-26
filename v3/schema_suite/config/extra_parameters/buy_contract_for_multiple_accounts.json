@@ -1,10 +1,4 @@
 {
-   "$schema" : "http://json-schema.org/draft-04/schema#",
-   "required" : null,
-   "additionalProperties" : null,
-   "title" : null,
-   "type" : null,
-   "description" : null,
    "parameters" : {
       "duration_unit" : "t",
       "symbol" : "R_10",

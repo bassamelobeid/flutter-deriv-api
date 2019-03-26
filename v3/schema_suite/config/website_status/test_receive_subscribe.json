@@ -14,7 +14,7 @@
             "type" : "string"
         },
         "website_status" : {
-            "required" : ["currencies_config", "api_call_limits", "supported_languages", "site_status", "terms_conditions_version", "clients_country", "subscription"],
+            "required" : ["currencies_config", "api_call_limits", "supported_languages", "site_status", "terms_conditions_version", "clients_country"],
             "properties" : {
                 "supported_languages" : {
                     "description" : "Provides codes for languages supported",
@@ -72,7 +72,7 @@
                 },
                 "api_call_limits": {
                     "type": "object",
-                    "required": ["max_proposal_subscription", "max_requests_pricing","max_requests_outcome","max_requests_general"],
+                    "required": ["max_proposal_subscription", "max_requests_pricing","max_requests_outcome","max_requestes_general"],
                     "properties": {
                         "max_proposal_subscription": {
                             "type": "object",
@@ -116,7 +116,7 @@
                                 }
                             }
                         },
-                        "max_requests_general": {
+                        "max_requestes_general": {
                             "type": "object",
                             "required": ["minutely","hourly","applies_to"],
                             "properties": {
