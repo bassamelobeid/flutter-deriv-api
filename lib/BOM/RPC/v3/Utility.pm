@@ -208,6 +208,7 @@ sub invalid_email {
 sub invalid_duration {
     return create_error({
             code              => 'OfferingsValidationError',
+            details           => {field => 'duration'},
             message_to_client => localize('Trading is not offered for this duration.')});
 }
 

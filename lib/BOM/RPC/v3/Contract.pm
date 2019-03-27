@@ -63,6 +63,7 @@ sub is_invalid_market_time {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'MarketIsClosed',
             message_to_client => localize('This market is presently closed.'),
+            details           => {field => 'symbol'},
         });
     }
 
