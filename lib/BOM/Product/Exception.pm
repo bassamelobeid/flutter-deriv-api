@@ -42,6 +42,17 @@ has error_args => (
     default => sub { [] },
 );
 
+=head2 details
+
+An arbitrary optional HashRef to pass the error details.
+
+=cut
+
+has details => (
+    is       => 'ro',
+    required => 0,
+);
+
 sub BUILD {
     my $self = shift;
 

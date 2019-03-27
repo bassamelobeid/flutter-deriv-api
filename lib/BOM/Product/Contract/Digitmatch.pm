@@ -26,6 +26,7 @@ sub _build_barrier {
 
     return BOM::Product::Exception->throw(
         error_code => 'MissingRequiredDigit',
+        details    => {field => 'barrier'},
     ) if (not looks_like_number($self->supplied_barrier));
 
     return BOM::Product::Contract::Strike::Digit->new(supplied_barrier => $self->supplied_barrier);

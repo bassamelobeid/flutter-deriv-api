@@ -109,6 +109,7 @@ subtest 'trading hours' => sub {
     ok !$c->is_valid_to_buy, 'not valid to buy';
     is_deeply(($c->primary_validation_error)[0]->{message_to_client},
         ['This market is presently closed. Try out the Volatility Indices which are always open.']);
+    is_deeply $c->primary_validation_error->{details}, {field => 'symbol'}, 'error detials is not correct';
 
     my $hsi_open         = $weekday->plus_time_interval('1h30m');
     my $hsi_time         = $hsi_open->plus_time_interval('11m');
@@ -128,6 +129,7 @@ subtest 'trading hours' => sub {
     ok !$c->is_valid_to_buy, 'not valid to buy';
     is_deeply(($c->primary_validation_error)[0]->{message_to_client},
         ['This market is presently closed. Try out the Volatility Indices which are always open.']);
+    is_deeply $c->primary_validation_error->{details}, {field => 'symbol'}, 'error detials is not correct';
 
     # for forward starting
     $args->{date_pricing} = $hsi_open->minus_time_interval('20m');
@@ -137,6 +139,7 @@ subtest 'trading hours' => sub {
     ok !$c->is_valid_to_buy, 'not valid to buy';
     is_deeply(($c->primary_validation_error)[0]->{message_to_client},
         ['The market must be open at the start time. Try out the Volatility Indices which are always open.']);
+    is_deeply $c->primary_validation_error->{details}, {field => 'date_start'}, 'error detials is not correct';
     $args->{date_start} = $hsi_open->plus_time_interval('11m');
     $c = produce_contract($args);
     ok $c->is_forward_starting, 'forward starting';
@@ -154,6 +157,7 @@ subtest 'trading hours' => sub {
     $c = produce_contract($args);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Contract must expire during trading hours.']);
+    is_deeply $c->primary_validation_error->{details}, {field => 'duration'}, 'error detials is not correct';
 };
 
 subtest 'invalid expiry time for multiday contracts' => sub {
@@ -177,6 +181,7 @@ subtest 'invalid expiry time for multiday contracts' => sub {
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like(($c->primary_validation_error)[0]->{message}, qr/daily expiry must expire at close/, 'throws error');
+    is_deeply $c->primary_validation_error->{details}, {field => 'date_expiry'}, 'error detials is not correct';
     $bet_params->{date_expiry} = $now->truncate_to_day->plus_time_interval('1d23h59m59s');
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
@@ -208,6 +213,7 @@ subtest 'intraday must be same day' => sub {
     ok $c->underlying->intradays_must_be_same_day, 'intraday must be same day';
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like(($c->primary_validation_error)[0]->{message}, qr/Intraday duration must expire on same day/, 'throws error');
+    is_deeply $c->primary_validation_error->{details}, {field => 'duration'}, 'error detials is not correct';
 
     $bet_params->{underlying} = 'R_100';
     $c = produce_contract($bet_params);
@@ -266,6 +272,7 @@ subtest 'too many holiday for multiday indices contracts' => sub {
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like($c->primary_validation_error->message, qr/Not enough trading days for calendar days/, 'throws error');
+    is_deeply $c->primary_validation_error->{details}, {field => 'date_expiry'}, 'error detials is not correct';
     $bet_params->{barrier} = 'S0P';
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';

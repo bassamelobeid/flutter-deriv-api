@@ -80,6 +80,7 @@ around _validate_start_and_expiry_date => sub {
         return {
             message => 'Invalid contract expiry[' . $self->date_expiry->datetime . '] for multi-barrier at ' . $self->date_pricing->datetime . '.',
             message_to_client => [$ERROR_MAPPING->{InvalidExpiryTime}],
+            details           => {field => defined($self->duration) ? 'duration' : 'date_expiry'},
         };
     }
 
@@ -106,9 +107,15 @@ override _validate_barrier_type => sub {
 
     foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
         if (defined $self->$barrier and $self->$barrier->barrier_type ne 'absolute') {
+            my %field_for = (
+                'high_barrier' => 'barrier',
+                'low_barrier'  => 'barrier2',
+                'barrier'      => 'barrier',
+            );
             return {
                 message           => 'barrier should be absolute',
                 message_to_client => [$ERROR_MAPPING->{PredefinedNeedAbsoluteBarrier}],
+                details           => {field => $field_for{$barrier}},
             };
         }
     }
@@ -137,6 +144,7 @@ sub _subvalidate_single_barrier {
                 . '] for multi-barrier at '
                 . $self->date_pricing->datetime . '.',
             message_to_client => [$ERROR_MAPPING->{InvalidBarrier}],
+            details           => {field => 'barrier'},
         };
     }
 
@@ -173,6 +181,7 @@ sub _subvalidate_double_barrier {
                 . '] for multi-barrier at '
                 . $self->date_pricing->datetime . '.',
             message_to_client => [$ERROR_MAPPING->{InvalidBarrier}],
+            details           => {field => 'barrier'},
         };
     }
 

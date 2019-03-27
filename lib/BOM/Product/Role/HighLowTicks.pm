@@ -15,6 +15,7 @@ sub BUILD {
     if (!isint $self->selected_tick) {
         BOM::Product::Exception->throw(
             error_code => 'IntegerSelectedTickRequired',
+            details    => {field => 'selected_tick'},
         );
     }
 
@@ -22,6 +23,7 @@ sub BUILD {
         BOM::Product::Exception->throw(
             error_code => 'SelectedTickNumberLimits',
             error_args => [MIN_SELECTED_TICK, MAX_SELECTED_TICK],
+            details    => {field => 'duration'},
         );
     }
 
@@ -51,6 +53,7 @@ sub _build_selected_tick {
 
     return BOM::Product::Exception->throw(
         error_code => 'MissingRequiredSelectedTick',
+        details    => {field => 'selected_tick'},
     );
 }
 

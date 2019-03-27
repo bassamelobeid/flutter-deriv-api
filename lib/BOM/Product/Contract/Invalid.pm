@@ -42,13 +42,19 @@ sub longcode {
 sub _price_from_prob {
     my $self = shift;
 
-    return BOM::Product::Exception->throw(error_code => 'InvalidContractType');
+    return BOM::Product::Exception->throw(
+        error_code => 'InvalidContractType',
+        details    => {field => 'contract_type'},
+    );
 }
 
 sub shortcode {
     my $self = shift;
 
-    return BOM::Product::Exception->throw(error_code => 'InvalidContractType');
+    return BOM::Product::Exception->throw(
+        error_code => 'InvalidContractType',
+        details    => {field => 'contract_type'},
+    );
 }
 
 sub is_expired              { return 1; }
@@ -65,6 +71,7 @@ sub is_valid_to_buy {
     $self->_add_error({
         message           => 'Invalid legacy contract',
         message_to_client => [get_error_mapping()->{CannotValidateContract}],
+        details           => {},
     });
     return 0;
 }
@@ -74,6 +81,7 @@ sub is_valid_to_sell {
     $self->_add_error({
         message           => 'Invalid legacy contract',
         message_to_client => [get_error_mapping()->{CannotValidateContract}],
+        details           => {},
     });
     return 0;
 }

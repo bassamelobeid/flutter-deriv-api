@@ -12,6 +12,7 @@ sub ticks_to_expiry {
     return BOM::Product::Exception->throw(
         error_code => 'InvalidTickExpiry',
         error_args => [$self->code],
+        details    => {field => 'duration'},
     );
 }
 
@@ -43,7 +44,7 @@ sub check_expiry_conditions {
 sub _build_barrier {
     my $self = shift;
 
-    return $self->make_barrier($self->spot_min_max($self->date_start_plus_1s)->{high});
+    return $self->make_barrier($self->spot_min_max($self->date_start_plus_1s)->{high}, {barrier_kind => 'high'});
 }
 
 no Moose;

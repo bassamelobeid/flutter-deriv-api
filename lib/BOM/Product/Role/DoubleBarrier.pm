@@ -19,6 +19,7 @@ sub BUILD {
                 severity          => 5,
                 message           => 'High and low barriers inverted',
                 message_to_client => [$ERROR_MAPPING->{InvalidHighBarrier}],
+                details           => {field => 'barrier'},
             });
             $self->low_barrier($barrier1);
             $self->high_barrier($barrier2);
@@ -27,11 +28,12 @@ sub BUILD {
                 severity          => 100,
                 message           => 'High and low barriers must be different',
                 message_to_client => [$ERROR_MAPPING->{SameBarriersNotAllowed}],
+                details           => {field => 'barrier'},
             });
             # these are dummy barriers that so that the calculation will not die
-            my $min_barrier      = $self->underlying->market->integer_barrier ? 1 : $self->pip_size;
-            my $new_low_barrier  = $self->make_barrier($barrier1->as_absolute - $min_barrier);
-            my $new_high_barrier = $self->make_barrier($barrier2->as_absolute + $min_barrier);
+            my $min_barrier = $self->underlying->market->integer_barrier ? 1 : $self->pip_size;
+            my $new_low_barrier  = $self->make_barrier($barrier1->as_absolute - $min_barrier, {barrier_kind => 'high'});
+            my $new_high_barrier = $self->make_barrier($barrier2->as_absolute + $min_barrier, {barrier_kind => 'low'});
             $self->low_barrier($new_low_barrier);
             $self->high_barrier($new_high_barrier);
 
@@ -53,7 +55,7 @@ has high_barrier => (
 sub _build_high_barrier {
     my $self = shift;
 
-    my $high_barrier = $self->make_barrier($self->supplied_high_barrier);
+    my $high_barrier = $self->make_barrier($self->supplied_high_barrier, {barrier_kind => 'high'});
     return $high_barrier;
 }
 
@@ -67,7 +69,7 @@ has low_barrier => (
 sub _build_low_barrier {
     my $self = shift;
 
-    my $low_barrier = $self->make_barrier($self->supplied_low_barrier);
+    my $low_barrier = $self->make_barrier($self->supplied_low_barrier, {barrier_kind => 'low'});
     return $low_barrier;
 }
 has barriers_for_pricing => (
@@ -98,6 +100,7 @@ sub _validate_barrier {
             severity          => 100,
             message           => 'At least one barrier is undefined on double barrier contract.',
             message_to_client => [$ERROR_MAPPING->{InvalidBarrier}],
+            details           => {field => defined $high_barrier ? 'barrier2' : 'barrier'},
         };
     }
     if ($high_barrier->supplied_type ne $low_barrier->supplied_type) {
@@ -105,6 +108,7 @@ sub _validate_barrier {
             severity          => 5,
             message           => 'Mixed absolute and relative barriers',
             message_to_client => [$ERROR_MAPPING->{NonDeterminedBarriers}],
+            details           => {field => 'barrier2'},
         };
     }
     if ($self->is_path_dependent) {
@@ -122,6 +126,7 @@ sub _validate_barrier {
                     . $low_barrier->as_absolute . "]",
                 severity          => 1,
                 message_to_client => [$ERROR_MAPPING->{InvalidBarrierRange}],
+                details           => {field => $high_barrier->as_absolute <= $current_spot ? 'barrier' : 'barrier2'},
             };
         } elsif (not $self->for_sale and (abs($high_pip_move) < $min_allowed or abs($low_pip_move) < $min_allowed)) {
             return {
@@ -134,6 +139,7 @@ sub _validate_barrier {
                     . $min_allowed . "]",
                 severity          => 1,
                 message_to_client => [$ERROR_MAPPING->{InvalidBarrierForSpot}, $min_allowed],
+                details           => {field => abs($high_pip_move) < $min_allowed ? 'barrier' : 'barrier2'},
             };
         }
     }
@@ -154,9 +160,9 @@ sub _validate_barrier {
                     . $max_move . "]",
                 severity          => 91,
                 message_to_client => ($label eq 'low')
-                ? [$ERROR_MAPPING->{InvalidLowBarrrierRange}]
-                : [$ERROR_MAPPING->{InvalidHighLowBarrrierRange}],
-                ,
+                ? [$ERROR_MAPPING->{InvalidLowBarrierRange}]
+                : [$ERROR_MAPPING->{InvalidHighLowBarrierRange}],
+                details => {field => ($label eq 'low') ? 'barrier2' : 'barrier'},
             };
         }
     }

@@ -140,7 +140,9 @@ sub ask_prices {
             } else {
                 $contract_info->{error} = {
                     code              => 'ContractValidationError',
-                    message_to_client => [BOM::Product::Static::get_error_mapping()->{CannotValidateContract}]};
+                    message_to_client => [BOM::Product::Static::get_error_mapping()->{CannotValidateContract}],
+                    details           => {},
+                };
             }
             # When the date_expiry is smaller than date_start, we can not price, display the payout|stake on error message
             if ($contract->date_expiry->epoch <= $contract->date_start->epoch) {

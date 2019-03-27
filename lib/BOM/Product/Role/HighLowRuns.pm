@@ -11,7 +11,10 @@ sub BUILD {
     my $self = shift;
 
     if (not $self->for_sale and defined $self->supplied_barrier and $self->supplied_barrier !~ /^S0P$/) {
-        BOM::Product::Exception->throw(error_code => 'InvalidBarrier');
+        BOM::Product::Exception->throw(
+            error_code => 'InvalidBarrier',
+            details    => {field => 'barrier'},
+        );
     }
 
     return;
@@ -24,7 +27,10 @@ has selected_tick => (
 
 sub _build_selected_tick {
     my $self = shift;
-    return $self->tick_count // BOM::Product::Exception->throw(error_code => 'TradingDurationNotAllowed');
+    return $self->tick_count // BOM::Product::Exception->throw(
+        error_code => 'TradingDurationNotAllowed',
+        details    => {field => 'duration'},
+    );
 }
 
 sub ticks_to_expiry {

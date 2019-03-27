@@ -16,12 +16,12 @@ sub ticks_to_expiry {
 }
 
 sub _build_barrier {
-    my $self    = shift;
-    my $barrier = $self->make_barrier($self->supplied_barrier);
+    my $self = shift;
+    my $barrier = $self->make_barrier($self->supplied_barrier, {barrier_kind => 'high'});
 
     if ($self->reset_spot and $self->reset_spot->quote > $barrier->as_absolute) {
         #If it is OTM, reset to a new barrier
-        $barrier = $self->make_barrier($self->reset_spot->quote);
+        $barrier = $self->make_barrier($self->reset_spot->quote, {barrier_kind => 'high'});
     }
 
     return $barrier;

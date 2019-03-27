@@ -166,6 +166,7 @@ sub _validate_offerings {
         return {
             message           => 'All trading suspended on system',
             message_to_client => $message_to_client,
+            details           => {},
         };
     }
 
@@ -177,6 +178,7 @@ sub _validate_offerings {
         return {
             message           => "Trading suspended for contract type [code: " . $contract_code . "]",
             message_to_client => $message_to_client,
+            details           => {field => 'contract_type'},
         };
     }
 
@@ -184,6 +186,7 @@ sub _validate_offerings {
         return {
             message           => "Underlying trades suspended [symbol: " . $underlying->symbol . "]",
             message_to_client => $message_to_client,
+            details           => {field => 'symbol'},
         };
     }
 
@@ -246,6 +249,7 @@ sub _validate_feed {
         return {
             message           => "No realtime data [symbol: " . $underlying->symbol . "]",
             message_to_client => [$ERROR_MAPPING->{MissingTickMarketData}],
+            details           => {field => 'symbol'},
         };
     } elsif ($self->trading_calendar->is_open_at($underlying->exchange, $self->date_pricing)
         && $self->date_pricing->epoch - $self->maximum_feed_delay_seconds > $self->current_tick->epoch)
@@ -253,6 +257,7 @@ sub _validate_feed {
         return {
             message           => "Quote too old [symbol: " . $underlying->symbol . "]",
             message_to_client => [$ERROR_MAPPING->{OldMarketData}],
+            details           => {field => 'symbol'},
         };
     }
 
@@ -278,6 +283,7 @@ sub _validate_price {
                 return {
                     message           => "Empty or zero stake [stake: " . $details->[0] . "]",
                     message_to_client => [$ERROR_MAPPING->{InvalidStake}],
+                    details           => {field => 'amount'},
                 };
             },
             stake_outside_range => sub {
@@ -286,6 +292,7 @@ sub _validate_price {
                 return {
                     message           => 'stake is not within limits ' . "[stake: " . $details->[0] . "] " . "[min: " . $details->[1] . "] ",
                     message_to_client => [$ERROR_MAPPING->{StakeLimits}, @$params],
+                    details           => {field => 'amount'},
                 };
             },
             payout_outside_range => sub {
@@ -294,6 +301,7 @@ sub _validate_price {
                 return {
                     message => 'payout amount outside acceptable range ' . "[given: " . $details->[0] . "] " . "[max: " . $details->[1] . "]",
                     message_to_client => [$ERROR_MAPPING->{PayoutLimits}, @$params],
+                    details => {field => 'amount'},
                 };
             },
             payout_too_many_places => sub {
@@ -301,6 +309,7 @@ sub _validate_price {
                 return {
                     message => 'payout amount has too many decimal places ' . "[permitted: " . $details->[0] . "] [payout: " . $details->[1] . "]",
                     message_to_client => [$ERROR_MAPPING->{IncorrectPayoutDecimals}, $details->[0]],
+                    details => {field => 'amount'},
                 };
             },
             stake_too_many_places => sub {
@@ -308,6 +317,7 @@ sub _validate_price {
                 return {
                     message => 'stake amount has too many decimal places ' . "[permitted: " . $details->[0] . "] [payout: " . $details->[1] . "]",
                     message_to_client => [$ERROR_MAPPING->{IncorrectStakeDecimals}, $details->[0]],
+                    details => {field => 'amount'},
                 };
             },
             stake_same_as_payout => sub {
@@ -315,6 +325,7 @@ sub _validate_price {
                 return {
                     message           => 'stake same as payout',
                     message_to_client => [$ERROR_MAPPING->{NoReturn}],
+                    details           => {},
                 };
             },
         }->{$res->{error_code}}->($details);
@@ -340,9 +351,15 @@ sub _validate_barrier_type {
         # For intraday, the barrier can be absolute or relative.
         if (defined $self->$barrier and $self->$barrier->barrier_type ne 'absolute') {
 
+            my %field_for = (
+                'low_barrier'  => 'barrier2',
+                'high_barrier' => 'barrier',
+                'barrier'      => 'barrier',
+            );
             return {
                 message           => 'barrier should be absolute for multi-day contracts',
                 message_to_client => [$ERROR_MAPPING->{NeedAbsoluteBarrier}],
+                details           => {field => $field_for{$barrier}},
             };
         }
     }
@@ -362,21 +379,25 @@ sub _validate_input_parameters {
         return {
             message           => 'Start and Expiry times are the same ' . "[start: " . $epoch_start . "] " . "[expiry: " . $epoch_expiry . "]",
             message_to_client => [$ERROR_MAPPING->{SameExpiryStartTime}],
+            details           => {field => defined($self->duration) ? 'duration' : 'date_expiry'},
         };
     } elsif ($epoch_expiry < $epoch_start) {
         return {
             message           => 'Start must be before expiry ' . "[start: " . $epoch_start . "] " . "[expiry: " . $epoch_expiry . "]",
             message_to_client => [$ERROR_MAPPING->{PastExpiryTime}],
+            details           => {field => 'date_expiry'},
         };
     } elsif (not $self->for_sale and $epoch_start < $when_epoch) {
         return {
             message           => 'starts in the past ' . "[start: " . $epoch_start . "] " . "[now: " . $when_epoch . "]",
             message_to_client => [$ERROR_MAPPING->{PastStartTime}],
+            details           => {field => 'date_start'},
         };
     } elsif (not $self->is_forward_starting and $epoch_start > $when_epoch) {
         return {
             message           => "Forward time for non-forward-starting contract type [code: " . $self->code . "]",
             message_to_client => [$ERROR_MAPPING->{FutureStartTime}],
+            details           => {field => 'date_start'},
         };
     } elsif ($self->is_forward_starting and not $self->for_sale) {
         # Intraday cannot be bought in the 5 mins before the bet starts, unless we've built it for that purpose.
@@ -385,6 +406,7 @@ sub _validate_input_parameters {
             return {
                 message           => "forward-starting blackout [blackout: " . $fs_blackout_seconds . "s]",
                 message_to_client => [$ERROR_MAPPING->{ForwardStartTime}],
+                details           => {field => 'date_start'},
             };
         }
     } elsif ($self->is_after_settlement) {
@@ -403,6 +425,7 @@ sub _validate_input_parameters {
                     . "[underlying_symbol: "
                     . $self->underlying->symbol . "]",
                 message_to_client => [$ERROR_MAPPING->{TradingDayEndExpiry}],
+                details           => {field => defined($self->duration) ? 'duration' : 'date_expiry'},
             };
         }
     }
@@ -413,11 +436,13 @@ sub _validate_input_parameters {
             return {
                 message           => 'below minimum allowed multiplier',
                 message_to_client => [$ERROR_MAPPING->{MinimumMultiplier} . ' ' . $self->minimum_multiplier . '.'],
+                details           => {field => 'amount'},
             };
         } elsif (not isint($self->multiplier * 1000)) {
             return {
                 message           => 'Multiplier cannot be more than 3 decimal places.',
                 message_to_client => [$ERROR_MAPPING->{MultiplierDecimalPlace}],
+                details           => {field => 'amount'},
             };
         }
     }
@@ -427,6 +452,7 @@ sub _validate_input_parameters {
             return {
                 message           => 'Non atm barrier for reset contract is not allowed.',
                 message_to_client => [$ERROR_MAPPING->{ResetBarrierError}],
+                details           => {field => 'barrier'},
             };
         }
 
@@ -434,6 +460,7 @@ sub _validate_input_parameters {
             return {
                 message           => 'Fixed expiry for reset contract is not allowed.',
                 message_to_client => [$ERROR_MAPPING->{ResetFixedExpiryError}],
+                details           => {field => 'date_expiry'},
             };
         }
     }
@@ -443,6 +470,7 @@ sub _validate_input_parameters {
         return {
             message           => 'payout currency not supported',
             message_to_client => [$ERROR_MAPPING->{InvalidPayoutCurrency}],
+            details           => {field => 'currency'},
         };
     }
 
@@ -472,20 +500,23 @@ sub _validate_trading_times {
             }
             $volidx_flag = any { $_ eq 'volidx' } @markets;
         }
-        my $message;
+        my $error_code;
         if ($volidx_flag) {
-            $message = $self->is_forward_starting ? $ERROR_MAPPING->{MarketNotOpenTryVolatility} : $ERROR_MAPPING->{MarketIsClosedTryVolatility};
+            $error_code = $self->is_forward_starting ? 'MarketNotOpenTryVolatility' : 'MarketIsClosedTryVolatility';
         } else {
-            $message = $self->is_forward_starting ? $ERROR_MAPPING->{MarketNotOpen} : $ERROR_MAPPING->{MarketIsClosed};
+            $error_code = $self->is_forward_starting ? 'MarketNotOpen' : 'MarketIsClosed';
         }
 
         return {
             message => 'underlying is closed at start ' . "[symbol: " . $underlying->symbol . "] " . "[start: " . $date_start->datetime . "]",
-            message_to_client => [$message]};
+            message_to_client => [$ERROR_MAPPING->{$error_code}],
+            details           => {field => $self->is_forward_starting ? 'date_start' : 'symbol'},
+        };
     } elsif (not $calendar->trades_on($exchange, $date_expiry)) {
         return ({
             message           => "Exchange is closed on expiry date [expiry: " . $date_expiry->date . "]",
             message_to_client => [$ERROR_MAPPING->{TradingDayExpiry}],
+            details           => {field => defined($self->duration) ? 'duration' : 'date_expiry'},
         });
     }
 
@@ -494,11 +525,13 @@ sub _validate_trading_times {
             return {
                 message => 'underlying closed at expiry ' . "[symbol: " . $underlying->symbol . "] " . "[expiry: " . $date_expiry->datetime . "]",
                 message_to_client => [$ERROR_MAPPING->{TradingHoursExpiry}],
+                details           => {field => defined($self->duration) ? 'duration' : 'date_expiry'},
             };
         } elsif ($underlying->intradays_must_be_same_day and $calendar->closing_on($exchange, $date_start)->epoch < $date_expiry->epoch) {
             return {
                 message           => "Intraday duration must expire on same day [symbol: " . $underlying->symbol . "]",
                 message_to_client => [$ERROR_MAPPING->{SameTradingDayExpiry}],
+                details           => {field => defined($self->duration) ? 'duration' : 'date_expiry'},
             };
         }
     } elsif ($self->expiry_daily and not $self->is_atm_bet) {
@@ -521,7 +554,7 @@ sub _validate_trading_times {
             return {
                 message => 'Not enough trading days for calendar days ' . "[trading: " . $trading_days . "] " . "[calendar: " . $calendar_days . "]",
                 message_to_client => $message,
-            };
+                $self->for_sale ? () : (details => {field => defined($self->duration) ? 'duration' : 'date_expiry'})};
         }
     }
 
@@ -571,6 +604,7 @@ sub _validate_start_and_expiry_date {
         return {
             message           => 'Cannot expire at end of day',
             message_to_client => [$ERROR_MAPPING->{InvalidExpiryTime}],
+            details           => {field => defined($self->duration) ? 'duration' : 'date_expiry'},
         };
     }
 
@@ -579,10 +613,10 @@ sub _validate_start_and_expiry_date {
     #Note: Please don't change the message for expiry blackout (specifically, the 'expire' word) unless you have
     #updated the check in this method which updates end_epoch
     my @blackout_checks = (
-        [[$start_epoch], $self->date_start_blackouts,  $ERROR_MAPPING->{TradingNotAvailable}],
-        [[$end_epoch],   $self->date_expiry_blackouts, $ERROR_MAPPING->{ContractExpiryNotAllowed}],
-        [[$start_epoch, $end_epoch], $self->market_risk_blackouts, $ERROR_MAPPING->{TradingNotAvailable}],
-        [[$start_epoch, $end_epoch], $self->forward_blackouts,     $ERROR_MAPPING->{TradingNotAvailable}],
+        [[$start_epoch], $self->date_start_blackouts,  'TradingNotAvailable'],
+        [[$end_epoch],   $self->date_expiry_blackouts, 'ContractExpiryNotAllowed'],
+        [[$start_epoch, $end_epoch], $self->market_risk_blackouts, 'TradingNotAvailable'],
+        [[$start_epoch, $end_epoch], $self->forward_blackouts,     'TradingNotAvailable'],
     );
 
     # disable contracts with duration < 5 hours at 21:00 to 24:00GMT due to quiet period.
@@ -594,22 +628,22 @@ sub _validate_start_and_expiry_date {
             my $pricing_date = $self->date_pricing->date;
             push @blackout_checks,
                 [
-                [$start_epoch],
-                [[map { Date::Utility->new($pricing_date)->plus_time_interval($_)->epoch } qw(21h 23h59m59s)]],
-                $ERROR_MAPPING->{TradingSuspendedSpecificHours}];
+                [$start_epoch], [[map { Date::Utility->new($pricing_date)->plus_time_interval($_)->epoch } qw(21h 23h59m59s)]],
+                'TradingSuspendedSpecificHours'
+                ];
         }
     }
 
     foreach my $blackout (@blackout_checks) {
-        my ($epochs, $periods, $message_to_client) = @{$blackout}[0 .. 2];
+        my ($epochs, $periods, $error_code) = @{$blackout}[0 .. 2];
         my @args = ();
         foreach my $period (@$periods) {
             my $start_epoch = $period->[0];
             my $end_epoch   = $period->[1];
 
-            $end_epoch++ if ($message_to_client =~ /expire/);
+            $end_epoch++ if ($error_code eq 'ContractExpiryNotAllowed');
 
-            if (first { $_ >= $start_epoch and $_ < $end_epoch } @$epochs) {
+            if (my $epoch = first { $_ >= $start_epoch and $_ < $end_epoch } @$epochs) {
                 my $start = Date::Utility->new($period->[0]);
                 my $end   = Date::Utility->new($period->[1]);
                 if ($start->day_of_year == $end->day_of_year) {
@@ -617,6 +651,10 @@ sub _validate_start_and_expiry_date {
                 } else {
                     push @args, ($start->date, $end->date);
                 }
+
+                my $field = defined($self->duration) ? 'duration' : 'date_expiry';
+                $field = 'date_start' if $error_code eq 'TradingNotAvailable' && $epoch == $epochs->[0];
+
                 return {
                     message => 'blackout period '
                         . "[symbol: "
@@ -624,7 +662,8 @@ sub _validate_start_and_expiry_date {
                         . "[from: "
                         . $period->[0] . "] " . "[to: "
                         . $period->[1] . "]",
-                    message_to_client => [$message_to_client, @args],
+                    message_to_client => [$ERROR_MAPPING->{$error_code}, @args],
+                    details => {field => $field},
                 };
             }
         }
@@ -645,6 +684,7 @@ sub _validate_volsurface {
         return {
             message           => "Volsurface has smile flags [symbol: " . $self->underlying->symbol . "]",
             message_to_client => [$ERROR_MAPPING->{MissingVolatilityMarketData}],
+            details           => {field => 'symbol'},
         };
     }
 
@@ -674,6 +714,7 @@ sub _validate_volsurface {
                 . "[max: "
                 . $exceeded . "]",
             message_to_client => [$ERROR_MAPPING->{OutdatedVolatilityData}],
+            details           => {field => 'symbol'},
         };
     }
 
@@ -696,6 +737,7 @@ sub _validate_volsurface {
                     . "[surface reference: "
                     . $volsurface->spot_reference . "]",
                 message_to_client => [$ERROR_MAPPING->{MissingSpotMarketData}],
+                details           => {field => 'symbol'},
             };
         }
     }

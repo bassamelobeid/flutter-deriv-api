@@ -153,6 +153,7 @@ sub _build_pricing_vol {
         $self->_add_error({
             message           => $volatility_error,
             message_to_client => [$ERROR_MAPPING->{MissingVolatilityMarketData}],
+            details           => {field => 'symbol'},
         });
     }
 
@@ -160,6 +161,7 @@ sub _build_pricing_vol {
         $self->_add_error({
             message           => 'Zero or negative volatility. Invalidate price.',
             message_to_client => [$ERROR_MAPPING->{InvalidVolatility}],
+            details           => {},
         });
     }
 

@@ -78,6 +78,7 @@ subtest 'invalid start and expiry time' => sub {
     $c                          = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like($c->primary_validation_error->{message}, qr/starts in the past/, 'start < now');
+    is $c->primary_validation_error->{details}->{field}, 'date_start', 'error detials is not correct';
     $bet_params->{for_sale} = 1;
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy if it is a recreated contract';
@@ -92,6 +93,7 @@ subtest 'invalid start and expiry time' => sub {
         qr/Forward time for non-forward-starting contract type/,
         'start > now for non forward starting contract type'
     );
+    is $c->primary_validation_error->{details}->{field}, 'date_start', 'error detials is not correct';
     $bet_params->{bet_type} = 'CALL';
     $bet_params->{barrier}  = 'S0P';
     $c                      = produce_contract($bet_params);
@@ -100,6 +102,7 @@ subtest 'invalid start and expiry time' => sub {
     $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like($c->primary_validation_error->{message}, qr/forward-starting blackout/, 'forward starting blackout');
+    is $c->primary_validation_error->{details}->{field}, 'date_start', 'error detials is not correct';
     $bet_params->{date_start} = $now->epoch + 5 * 60;
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
@@ -171,6 +174,7 @@ subtest 'absolute barrier for a non-intraday contract' => sub {
     my $c = produce_contract($bet_params2);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like($c->primary_validation_error->{message}, qr/Absolute barrier cannot be zero/, 'Absolute barrier cannot be zero');
+    is $c->primary_validation_error->{details}->{field}, 'barrier', 'error detials is not correct';
 
     $bet_params2->{barrier} = 101;
     $c = produce_contract($bet_params2);
@@ -213,6 +217,7 @@ subtest 'invalid barrier for tick expiry' => sub {
     ok $c->tick_expiry, 'tick expiry';
     ok !$c->is_valid_to_buy, 'invalid to buy for frxUSDJPY';
     like($c->primary_validation_error->{message}, qr/Intend to buy tick expiry contract/, 'tick expiry barrier check');
+    is $c->primary_validation_error->{details}->{field}, 'barrier', 'error detials is not correct';
 };
 
 subtest 'invalid barrier type' => sub {
@@ -237,6 +242,7 @@ subtest 'invalid barrier type' => sub {
         qr/barrier should be absolute for multi-day contracts/,
         'multi-day non ATM barrier must be absolute'
     );
+    is $c->primary_validation_error->{details}->{field}, 'barrier', 'error detials is not correct';
     $bet_params->{duration} = '1h';
     $bet_params->{barrier}  = 100;
     $c                      = produce_contract($bet_params);
@@ -263,6 +269,7 @@ subtest 'invalid payout currency' => sub {
     ok !$c->is_valid_to_buy, 'invalid to buy';
     ok $c->invalid_user_input, 'invalid input set to true';
     like($c->primary_validation_error->{message}, qr/payout currency not supported/, 'payout currency not supported');
+    is $c->primary_validation_error->{details}->{field}, 'currency', 'error detials is not correct';
 };
 
 subtest 'stable crypto as payout currency' => sub {

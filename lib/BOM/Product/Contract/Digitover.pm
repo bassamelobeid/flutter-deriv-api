@@ -26,6 +26,7 @@ sub _build_barrier {
 
     return BOM::Product::Exception->throw(
         error_code => 'MissingRequiredDigit',
+        details    => {field => 'barrier'},
     ) if (not looks_like_number($self->supplied_barrier));
 
     return BOM::Product::Contract::Strike::Digit->new(supplied_barrier => $self->supplied_barrier);
@@ -59,6 +60,7 @@ sub _validate_barrier {
             severity          => 100,
             message           => 'No winning digits ' . "[code: " . $self->code . "] " . "[selection: " . $barrier . "]",
             message_to_client => [BOM::Product::Static::get_error_mapping()->{DigitOutOfRange}, $barrier_range[0], $barrier_range[-1]],
+            details => {field => 'barrier'},
         };
     }
 

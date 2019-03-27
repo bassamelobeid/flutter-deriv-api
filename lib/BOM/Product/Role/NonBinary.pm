@@ -53,6 +53,7 @@ override _validate_price => sub {
         return {
             message           => 'Lookbacks ask price can not be zero .',
             message_to_client => [$ERROR_MAPPING->{InvalidNonBinaryPrice}],
+            details           => {field => 'amount'},
         };
     }
 
@@ -60,6 +61,7 @@ override _validate_price => sub {
         return {
             message           => 'buy price is equals to payout',
             message_to_client => [$ERROR_MAPPING->{NoReturn}],
+            details           => {},
         };
     }
 
@@ -76,6 +78,7 @@ override _validate_price => sub {
         return {
             message           => 'payout exceeded maximum allowed',
             message_to_client => [$ERROR_MAPPING->{PayoutLimitExceeded}, $payout_max],
+            details           => {field => 'amount'},
         };
     }
 

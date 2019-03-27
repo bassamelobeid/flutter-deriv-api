@@ -104,8 +104,10 @@ sub supplied_barrier_type {
 
     if ($self->two_barriers) {
         # die here to prevent exception thrown later in pip sizing non interger barrier.
-        BOM::Product::Exception->throw(error_code => 'InvalidBarrierDifferentType')
-            if $self->high_barrier->supplied_type ne $self->low_barrier->supplied_type;
+        BOM::Product::Exception->throw(
+            error_code => 'InvalidBarrierDifferentType',
+            details    => {field => 'barrier2'},
+        ) if $self->high_barrier->supplied_type ne $self->low_barrier->supplied_type;
         return $self->high_barrier->supplied_type;
     }
     return $self->barrier->supplied_type;
@@ -605,6 +607,7 @@ sub _build_basis_tick {
         $self->_add_error({
             message           => "Waiting for entry tick [symbol: " . $self->underlying->symbol . "]",
             message_to_client => [$potential_error],
+            details           => {},
         });
     }
 
@@ -831,6 +834,7 @@ sub _build_exit_tick {
                     . "[expiry: "
                     . $entry_tick_date->datetime . "]",
                 message_to_client => [$ERROR_MAPPING->{CrossMarketIntraday}],
+                details           => {field => 'duration'},
             });
         }
     }
@@ -1219,7 +1223,9 @@ sub validate_inputs {
     foreach my $param (keys %$inputs) {
         return BOM::Product::Exception->throw(
             error_code => 'InvalidInput',
-            error_args => [$param, $inputs->{bet_type}]) if exists $invalid_inputs->{$param};
+            error_args => [$param, $inputs->{bet_type}],
+            details    => {},
+        ) if exists $invalid_inputs->{$param};
     }
 
     return undef;

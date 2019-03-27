@@ -12,6 +12,7 @@ sub ticks_to_expiry {
     return BOM::Product::Exception->throw(
         error_code => 'InvalidTickExpiry',
         error_args => [$self->code],
+        details    => {field => 'duration'},
     );
 }
 
@@ -40,13 +41,13 @@ override two_barriers => sub {
 sub _build_low_barrier {
     my $self = shift;
 
-    return $self->make_barrier($self->spot_min_max($self->date_start_plus_1s)->{low});
+    return $self->make_barrier($self->spot_min_max($self->date_start_plus_1s)->{low}, {barrier_kind => 'low'});
 }
 
 sub _build_high_barrier {
     my $self = shift;
 
-    return $self->make_barrier($self->spot_min_max($self->date_start_plus_1s)->{high});
+    return $self->make_barrier($self->spot_min_max($self->date_start_plus_1s)->{high}, {barrier_kind => 'high'});
 }
 
 no Moose;

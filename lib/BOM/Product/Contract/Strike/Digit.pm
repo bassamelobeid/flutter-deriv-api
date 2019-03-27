@@ -24,6 +24,7 @@ sub BUILD {
             severity          => 110,
             message           => 'invalid supplied barrier format for digits',
             message_to_client => [BOM::Product::Static::get_error_mapping()->{BarrierNotInRange}, 0, 9],
+            details => {field => 'barrier'},
         });
         # setting supplied barrier to zero
         $self->_set_supplied_barrier(0);

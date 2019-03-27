@@ -62,6 +62,12 @@ has barrier_type => (
     lazy_build => 1,
 );
 
+has barrier_kind => (
+    is         => 'ro',
+    isa        => 'Str',
+    lazy_build => 1,
+);
+
 sub _build_supplied_type {
     my $self = shift;
 
@@ -81,6 +87,15 @@ sub _build_barrier_type {
         return 'absolute';
     }
     return 'relative';
+}
+
+sub _build_barrier_kind {
+    my $self = shift;
+
+    if ($self->supplied_type eq 'low') {
+        return 'low';
+    }
+    return 'high';
 }
 
 has [qw(as_relative as_absolute)] => (
@@ -127,6 +142,7 @@ sub _build_as_absolute {
                 severity          => 100,
                 message           => "Non-positive barrier [value: $value]",
                 message_to_client => [BOM::Product::Static::get_error_mapping()->{NegativeContractBarrier}],
+                details           => {field => $self->barrier_kind eq 'low' ? 'barrier2' : 'barrier'},
             });
             $value = 10 * $underlying->pip_size;
         }

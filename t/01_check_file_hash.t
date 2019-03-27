@@ -8,7 +8,7 @@ use Digest::SHA1;
 my %file_details = (
     risefall => {
         filename => module_path('BOM::Product::Contract::Upordown'),
-        hash     => '018a7db139fa86d7009dbfb539d5e5b3f1231ce5'
+        hash     => '718a90caf16ba6cf9e9de8047dfc27aed8efa5d2'
     },
     higherlower => {
         filename => module_path('BOM::Product::Contract::Call'),
@@ -20,11 +20,11 @@ my %file_details = (
     },
     staysbetweengoesout => {
         filename => module_path('BOM::Product::Contract::Range'),
-        hash     => '17f60d52c307c5071064f59dc15dc40fd4da68e7'
+        hash     => 'ff57e16f5671a7715bbfd6270895d5772c6d4767'
     },
     endsbetweenout => {
         filename => module_path('BOM::Product::Contract::Expirymisse'),
-        hash     => 'fb6015bd64af11f1d0198c3f2e75aab7d101041d'
+        hash     => '7db442786004654b27e8fa69a88e9f7a88987fc0'
     },
     asians => {
         filename => module_path('Pricing::Engine::BlackScholes'),
@@ -32,7 +32,7 @@ my %file_details = (
     },
     digitsmatchdiffers => {
         filename => module_path('BOM::Product::Contract::Digitmatch'),
-        hash     => 'cf9f4b3a847a8055c0f69ff4dc0f2758be439ab6'
+        hash     => 'f96de1a7db1c4b9f56fadac0b75b61ea97c9e31c'
     },
     digitsevenodd => {
         filename => module_path('BOM::Product::Contract::Digiteven'),
@@ -40,11 +40,11 @@ my %file_details = (
     },
     digitsoverunder => {
         filename => module_path('BOM::Product::Contract::Digitover'),
-        hash     => 'f55b758fc8e17ac4bdb69471f0e717fb2bee4e54'
+        hash     => '79b75f97ca29499afe3eb84238bede377cd47b9d'
     },
     lookbacks => {
         filename => module_path('BOM::Product::Contract::Lbfloatcall'),
-        hash     => 'cfabe639268b3ded0da8c50e3827ef96f7e93e8f'
+        hash     => '0c3926d2dd6b95b5fd2588426aff8058558281ba'
     },
     highlowtick => {
         filename => module_path('BOM::Product::Contract::Tickhigh'),
@@ -56,7 +56,7 @@ my %file_details = (
     },
     resetcallput => {
         filename => module_path('BOM::Product::Contract::Resetcall'),
-        hash     => 'e719f87985ee4d75bbdc33ee5f587ef9df26783c'
+        hash     => 'b014732c10c1b467cca90ede6c02ae1952e8a9c1'
     },
     calleputte => {
         filename => module_path('BOM::Product::Contract::Calle'),

@@ -46,16 +46,23 @@ sub BUILD {
     my $system_defined_barrier = grep { $_->{category}->code eq 'lookback' } @$contract_types;
 
     if ($barrier_type_count > 0 and $barrier_type_count < scalar(@$contract_types)) {
-        BOM::Product::Exception->throw(error_code => 'InvalidBarrierMixedBarrier');
+        BOM::Product::Exception->throw(
+            error_code => 'InvalidBarrierMixedBarrier',
+        );
     }
 
     # $barrier_type_count == 0, single barrier contract
     # $barrier_type_count == @$c_types, double barrier contract
     unless ($system_defined_barrier) {
-        BOM::Product::Exception->throw(error_code => 'InvalidBarrierSingle') if ($barrier_type_count == 0 and grep { ref $_ } @$barriers);
+        BOM::Product::Exception->throw(
+            error_code => 'InvalidBarrierSingle',
+            details    => {field => 'barrier'},
+        ) if ($barrier_type_count == 0 and grep { ref $_ } @$barriers);
 
-        BOM::Product::Exception->throw(error_code => 'InvalidBarrierDouble')
-            if ($barrier_type_count == scalar(@$contract_types) and grep { ref($_) ne 'HASH' or scalar(keys %$_) != 2 } @$barriers);
+        BOM::Product::Exception->throw(
+            error_code => 'InvalidBarrierDouble',
+            details    => {field => 'barrier'},
+        ) if ($barrier_type_count == scalar(@$contract_types) and grep { ref($_) ne 'HASH' or scalar(keys %$_) != 2 } @$barriers);
     }
 
     return;
@@ -77,7 +84,10 @@ sub _build_contract_types {
     } elsif ($p->{bet_type}) {
         $c_types = [$p->{bet_type}];
     } else {
-        BOM::Product::Exception->throw(error_code => 'MissingRequiredBetType');
+        BOM::Product::Exception->throw(
+            error_code => 'MissingRequiredBetType',
+            details    => {field => 'contract_type'},
+        );
     }
 
     return [map { $self->_initialize_contract_config($_) } @$c_types];
@@ -140,6 +150,7 @@ sub process {
                 BOM::Product::Exception->throw(
                     error_code => $error_code,
                     error_args => \@allowed,
+                    details    => {field => 'basis'},
                 );
             }
         }
@@ -180,8 +191,14 @@ sub _initialize_contract_parameters {
     # always build shortcode
     delete $pp->{shortcode};
 
-    BOM::Product::Exception->throw(error_code => 'MissingRequiredCurrency')   unless $pp->{currency};
-    BOM::Product::Exception->throw(error_code => 'MissingRequiredUnderlying') unless $pp->{underlying};
+    BOM::Product::Exception->throw(
+        error_code => 'MissingRequiredCurrency',
+        details    => {field => 'currency'},
+    ) unless $pp->{currency};
+    BOM::Product::Exception->throw(
+        error_code => 'MissingRequiredUnderlying',
+        details    => {field => 'symbol'},
+    ) unless $pp->{underlying};
 
     # set date start if not given. If we want to price a contract starting now, date_start should never be provided!
     unless ($pp->{date_start}) {
@@ -269,14 +286,20 @@ sub _initialize_contract_parameters {
             }
         }
         catch {
-            BOM::Product::Exception->throw(error_code => 'TradingDurationNotAllowed');
+            BOM::Product::Exception->throw(
+                error_code => 'TradingDurationNotAllowed',
+                details    => {field => 'duration'},
+            );
         }
     }
 
     $pp->{date_start} //= 1;    # Error conditions if it's not legacy or run, I guess.
 
     if ($pp->{bet_type} and $pp->{bet_type} ne 'Invalid' and not $pp->{date_expiry}) {
-        BOM::Product::Exception->throw(error_code => 'MissingRequiredExpiry');
+        BOM::Product::Exception->throw(
+            error_code => 'MissingRequiredExpiry',
+            details    => {field => 'duration'},
+        );
     }
 
     return $pp;
@@ -285,7 +308,10 @@ sub _initialize_contract_parameters {
 sub _initialize_contract_config {
     my ($self, $c_type) = @_;
 
-    BOM::Product::Exception->throw(error_code => 'MissingRequiredBetType') unless $c_type;
+    BOM::Product::Exception->throw(
+        error_code => 'MissingRequiredBetType',
+        details    => {field => 'contract_type'},
+    ) unless $c_type;
 
     my $contract_type_config = Finance::Contract::Category::get_all_contract_types();
 

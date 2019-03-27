@@ -129,20 +129,32 @@ sub _validate_input_parameters {
 
     return if $params->{bet_type} =~ /INVALID/i or $params->{for_sale};
 
-    BOM::Product::Exception->throw(error_code => 'MissingRequiredStart')
-        unless $params->{date_start};    # date_expiry is validated in BOM::Product::Categorizer
+    BOM::Product::Exception->throw(
+        error_code => 'MissingRequiredStart',
+        details    => {field => 'date_start'},
+    ) unless $params->{date_start};    # date_expiry is validated in BOM::Product::Categorizer
 
-    BOM::Product::Exception->throw(error_code => 'MissingRequiredMultiplier')
-        if ($params->{category}->code eq 'lookback' and not defined $params->{multiplier});
+    BOM::Product::Exception->throw(
+        error_code => 'MissingRequiredMultiplier',
+        details    => {field => 'amount'},
+    ) if ($params->{category}->code eq 'lookback' and not defined $params->{multiplier});
 
-    BOM::Product::Exception->throw(error_code => 'MissingTradingPeriodStart')
-        if (($params->{product_type} // '') eq 'multi_barrier' and not $params->{trading_period_start});
+    BOM::Product::Exception->throw(
+        error_code => 'MissingTradingPeriodStart',
+        details    => {field => 'trading_period_start'},
+    ) if (($params->{product_type} // '') eq 'multi_barrier' and not $params->{trading_period_start});
 
     my $start  = Date::Utility->new($params->{date_start});
     my $expiry = Date::Utility->new($params->{date_expiry});
 
-    BOM::Product::Exception->throw(error_code => 'SameExpiryStartTime') if $start->epoch == $expiry->epoch;
-    BOM::Product::Exception->throw(error_code => 'PastExpiryTime')      if $expiry->is_before($start);
+    BOM::Product::Exception->throw(
+        error_code => 'SameExpiryStartTime',
+        details    => {field => defined($params->{duration}) ? 'duration' : 'date_expiry'},
+    ) if $start->epoch == $expiry->epoch;
+    BOM::Product::Exception->throw(
+        error_code => 'PastExpiryTime',
+        details    => {field => 'date_expiry'},
+    ) if $expiry->is_before($start);
 
     # hard-coded costarica because that's the widest offerings range we have.
     my $lc        = LandingCompany::Registry::get('costarica');
@@ -158,7 +170,10 @@ sub _validate_input_parameters {
         or $offerings->config->{suspend_buy}{$us};
 
     unless (any { $us eq $_ } $offerings->values_for_key('underlying_symbol')) {
-        BOM::Product::Exception->throw(error_code => 'InvalidInputAsset');
+        BOM::Product::Exception->throw(
+            error_code => 'InvalidInputAsset',
+            details    => {field => 'symbol'},
+        );
     }
 
     return;

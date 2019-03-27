@@ -75,6 +75,7 @@ subtest 'open contracts - missing current tick & quote too old' => sub {
         ok !$c->is_expired,      'contract not expired';
         ok !$c->is_valid_to_buy, 'not valid to buy';
         like($c->primary_validation_error->{message}, qr/No realtime data/, 'no realtime data message');
+        is $c->primary_validation_error->{details}->{field}, 'symbol', 'error detials is not correct';
         $old_tick = Postgres::FeedDB::Spot::Tick->new({
             underlying => 'frxUSDJPY',
             epoch      => $delay->epoch,
@@ -89,6 +90,7 @@ subtest 'open contracts - missing current tick & quote too old' => sub {
         $c = produce_contract($bet_params);
         ok !$c->is_valid_to_buy, 'not valid to buy';
         like($c->primary_validation_error->{message}, qr/Quote too old/, 'no realtime data message');
+        is $c->primary_validation_error->{details}->{field}, 'symbol', 'error detials is not correct';
         $bet_params->{current_tick} = $tick;
         $c = produce_contract($bet_params);
         ok $c->is_valid_to_buy, 'valid to buy';

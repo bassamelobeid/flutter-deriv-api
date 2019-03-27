@@ -26,6 +26,7 @@ sub make_barrier {
             severity          => 100,
             message           => 'Undefined barrier',
             message_to_client => [$ERROR_MAPPING->{InvalidBarrierUndef}],
+            details           => {field => $extra_params->{barrier_kind} eq 'low' ? 'barrier2' : 'barrier'},
         });
     }
 
@@ -38,6 +39,7 @@ sub make_barrier {
             severity          => 100,
             message           => 'Barrier is not an integer',
             message_to_client => [$ERROR_MAPPING->{IntegerBarrierRequired}],
+            details           => {field => $extra_params->{barrier_kind} eq 'low' ? 'barrier2' : 'barrier'},
         });
     }
 
@@ -48,6 +50,7 @@ sub make_barrier {
             severity          => 100,
             message           => 'Intend to buy tick expiry contract with absolute barrier.',
             message_to_client => [$ERROR_MAPPING->{InvalidBarrier}],
+            details           => {field => $extra_params->{barrier_kind} eq 'low' ? 'barrier2' : 'barrier'},
         });
     }
 

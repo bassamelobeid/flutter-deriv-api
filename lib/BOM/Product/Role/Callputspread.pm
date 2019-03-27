@@ -147,6 +147,7 @@ sub ticks_to_expiry {
     return BOM::Product::Exception->throw(
         error_code => 'InvalidTickExpiry',
         error_args => [$self->code],
+        details    => {field => 'duration'},
     );
 }
 

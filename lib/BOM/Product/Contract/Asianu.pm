@@ -49,7 +49,12 @@ sub _build_barrier {
     my $barrier;
     if ($self->supplied_barrier) {
         my $custom_pipsize = $self->underlying->pip_size / 10;
-        $barrier = $self->make_barrier($self->supplied_barrier, {custom_pipsize => $custom_pipsize});
+        $barrier = $self->make_barrier(
+            $self->supplied_barrier,
+            {
+                custom_pipsize => $custom_pipsize,
+                barrier_kind   => 'high',
+            });
     }
 
     return $barrier;

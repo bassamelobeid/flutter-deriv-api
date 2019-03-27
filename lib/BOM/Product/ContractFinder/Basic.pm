@@ -92,18 +92,18 @@ sub decorate {
                 $o->{barrier} = _default_barrier({
                     underlying   => $underlying,
                     duration     => $o->{min_contract_duration},
-                    barrier_type => 'high'
+                    barrier_kind => 'high'
                 });
             } else {
                 $o->{high_barrier} = _default_barrier({
                     underlying   => $underlying,
                     duration     => $o->{min_contract_duration},
-                    barrier_type => 'high'
+                    barrier_kind => 'high'
                 });
                 $o->{low_barrier} = _default_barrier({
                     underlying   => $underlying,
                     duration     => $o->{min_contract_duration},
-                    barrier_type => 'low'
+                    barrier_kind => 'low'
                 });
             }
         }
@@ -115,8 +115,8 @@ sub decorate {
 sub _default_barrier {
     my $args = shift;
 
-    my ($underlying, $duration, $barrier_type) = @{$args}{'underlying', 'duration', 'barrier_type'};
-    my $option_type = $barrier_type eq 'low' ? 'VANILLA_PUT' : 'VANILLA_CALL';
+    my ($underlying, $duration, $barrier_kind) = @{$args}{'underlying', 'duration', 'barrier_kind'};
+    my $option_type = $barrier_kind eq 'low' ? 'VANILLA_PUT' : 'VANILLA_CALL';
     $duration =~ s/t//g;
     $duration = Time::Duration::Concise->new(interval => $duration)->seconds;
 
@@ -146,6 +146,7 @@ sub _default_barrier {
         underlying       => $underlying,
         basis_tick       => $current_tick,
         supplied_barrier => $approximate_barrier,
+        barrier_kind     => $barrier_kind,
     );
 
     my $barrier = $duration >= 86400 ? $strike->as_absolute : $strike->as_difference;

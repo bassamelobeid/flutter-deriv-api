@@ -19,8 +19,8 @@ has barrier => (
 );
 
 sub _build_barrier {
-    my $self    = shift;
-    my $barrier = $self->make_barrier($self->supplied_barrier);
+    my $self = shift;
+    my $barrier = $self->make_barrier($self->supplied_barrier, {barrier_kind => 'low'});
     return $barrier;
 }
 has barriers_for_pricing => (
@@ -56,6 +56,7 @@ sub _validate_barrier {
             message           => 'Absolute barrier cannot be zero',
             severity          => 1,
             message_to_client => [$ERROR_MAPPING->{ZeroAbsoluteBarrier}],
+            details           => {field => 'barrier'},
         };
     } elsif ($abs_barrier and $current_spot and ($abs_barrier > $max_move * $current_spot or $abs_barrier < $min_move * $current_spot)) {
         return {
@@ -68,6 +69,7 @@ sub _validate_barrier {
                 . $max_move . "]",
             severity          => 91,
             message_to_client => [$ERROR_MAPPING->{BarrierOutOfRange}],
+            details           => {field => 'barrier'},
         };
     } elsif (not $self->for_sale and $self->is_path_dependent and abs($pip_move) < $self->minimum_allowable_move) {
         return {
@@ -78,6 +80,7 @@ sub _validate_barrier {
                 . $pip_move . "]",
             severity          => 1,
             message_to_client => [$ERROR_MAPPING->{InvalidBarrierForSpot}, $self->minimum_allowable_move],
+            details           => {field => 'barrier'},
         };
     }
 
