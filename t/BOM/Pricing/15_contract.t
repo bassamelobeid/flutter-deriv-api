@@ -235,6 +235,29 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         'Expiry time cannot be equal to start time.',
         'errors response is correct when date_expiry = date_start with payout_type is stake'
     );
+    $params = {
+        'amount_type' => 'payout',
+        'date_start'  => 0,
+        'currency'    => 'USD',
+        'barriers'    => ['126.144', '126.194', '126.244', '126.294', '126.344', '126.394', '126.444'],
+        'bet_types'      => ['ASIAND', 'ASIANU'],
+        'underlying'     => 'R_50',
+        'fixed_expiry'   => 1,
+        'proposal_array' => 1,
+        'duration_unit'  => 's',
+        'amount'         => 1000,
+        'date_expiry'    => Date::Utility->new()->epoch + 1800,
+        'country_code'   => 'jp'
+    };
+
+    $result = BOM::Pricing::v3::Contract::_get_ask($params);
+    is($result->{error}{code}, 'OfferingsValidationError', 'throw useful error because there is no asiand_intraday_fixed_expiry now');
+    is(
+        $result->{error}{message_to_client},
+        'Trading is not offered for this duration.',
+        'throw useful error because there is no asiand_intraday_fixed_expiry now'
+    );
+
 };
 
 subtest 'send_ask - invalid symbol' => sub {
