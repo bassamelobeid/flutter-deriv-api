@@ -32,7 +32,6 @@ use Brands;
 use Quant::Framework;
 use LandingCompany::Registry;
 use Finance::Contract::Longcode qw(shortcode_to_longcode);
-use LandingCompany::Registry;
 
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::ProveID;
