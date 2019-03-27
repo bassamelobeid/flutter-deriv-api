@@ -187,6 +187,7 @@ subtest 'get_ask' => sub {
             error => {
                 message_to_client => 'Missing required contract parameters (bet_type).',
                 code              => "ContractCreationFailure",
+                details           => {field => 'contract_type'},
             }
         },
         'ContractCreationFailure with empty parameters'

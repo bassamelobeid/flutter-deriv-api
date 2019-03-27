@@ -41,6 +41,7 @@ sub _create_error {
         error => {
             code              => $args->{code},
             message_to_client => $args->{message_to_client},
+            $args->{details} ? (details => $args->{details}) : (),
             $args->{message} ? (message => $args->{message}) : (),
         }};
 }
@@ -122,9 +123,12 @@ sub _get_ask {
     }
     catch {
         my $message_to_client = _get_error_message($_, $args_copy);
+        my $details = _get_error_details($_);
         $response = BOM::Pricing::v3::Utility::create_error({
-                code              => 'ContractCreationFailure',
-                message_to_client => localize(@$message_to_client)});
+            code              => 'ContractCreationFailure',
+            message_to_client => localize(@$message_to_client),
+            $details ? (details => $details) : (),
+        });
     };
     return $response if $response;
 
@@ -134,9 +138,12 @@ sub _get_ask {
         }
         catch {
             my $message_to_client = _get_error_message($_, $args_copy);
+            my $details = _get_error_details($_);
             BOM::Pricing::v3::Utility::create_error({
-                    code              => 'ContractCreationFailure',
-                    message_to_client => localize(@$message_to_client)});
+                code              => 'ContractCreationFailure',
+                message_to_client => localize(@$message_to_client),
+                $details ? (details => $details) : (),
+            });
         };
 
         return $batch_response;
@@ -164,9 +171,10 @@ sub _get_ask {
                         country_code    => $country_code
                     })))
         {
-            my ($message_to_client, $code);
+            my ($message_to_client, $code, $details);
 
             if (my $pve = $contract->primary_validation_error) {
+                $details           = $pve->details;
                 $message_to_client = localize($pve->message_to_client);
                 $code              = "ContractBuyValidationError";
             } else {
@@ -177,6 +185,7 @@ sub _get_ask {
             $response = _create_error({
                 message_to_client => $message_to_client,
                 code              => $code,
+                $details ? (details => $details) : (),
             });
 
             # proposal_array streaming could get error on a first call
@@ -462,6 +471,7 @@ sub send_ask {
         return BOM::Pricing::v3::Utility::create_error({
             code              => 'BarrierValidationError',
             message_to_client => localize("barrier2 is not allowed for reset contract."),
+            details           => {field => 'barrier2'},
         });
     }
 
@@ -606,6 +616,15 @@ sub _log_exception {
     return;
 }
 
+sub _get_error_details {
+    my $reason = shift;
+
+    return $reason->details if (blessed($reason) && $reason->isa('BOM::Product::Exception'));
+    return $reason->{details} if ref($reason) eq 'HASH';
+
+    return;
+}
+
 sub _get_error_message {
     my ($reason, $args_copy, $log_exception) = @_;
 
@@ -652,17 +671,22 @@ sub _validate_offerings {
 
         die 'Could not find offerings for ' . $args_copy->{country_code} unless $offerings_obj;
         if (my $error = $offerings_obj->validate_offerings($contract->metadata($args_copy->{action}))) {
+            my $details = _get_error_details($error);
             $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'OfferingsValidationError',
                 message_to_client => localize(@{$error->{message_to_client}}),
+                $details ? (details => $details) : (),
             });
         }
     }
     catch {
         my $message_to_client = _get_error_message($_, $args_copy);
+        my $details = _get_error_details($_);
         $response = BOM::Pricing::v3::Utility::create_error({
-                code              => 'OfferingsValidationFailure',
-                message_to_client => localize(@$message_to_client)});
+            code              => 'OfferingsValidationFailure',
+            message_to_client => localize(@$message_to_client),
+            $details ? (details => $details) : (),
+        });
     };
 
     return $response;
