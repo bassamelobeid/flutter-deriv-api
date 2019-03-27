@@ -157,10 +157,20 @@ jobs:
         name: Run subscription tests
     - store_test_results:
         path: /var/tmp/test-output
+  update_docs:
+    <<: *6
+    steps:
+    - *1
+    - *2
+    - run:
+        <<: *5
+        command: |
+          script/websocket_schema_update.sh
+        name: Update developer.binary.com schema documentation
 version: 2
 workflows:
   build-workflow:
-    jobs: &7
+    jobs:
     - structure:
         context: perl
     - accounts:
@@ -176,7 +186,23 @@ workflows:
     - subscriptions:
         context: perl
   daily:
-    jobs: *7
+    jobs:
+    - structure:
+        context: perl
+    - accounts:
+        context: perl
+    - security:
+        context: perl
+    - pricing:
+        context: perl
+    - misc:
+        context: perl
+    - schema:
+        context: perl
+    - subscriptions:
+        context: perl
+    - update_docs:
+        context: perl
     triggers:
     - schedule:
         cron: 36 20 * * *
