@@ -161,6 +161,7 @@ sub port {
     $ENV{BOM_TEST_RATE_LIMITATIONS} = '/home/git/regentmarkets/bom-test/lib/BOM/Test/WebsocketAPI/' . 'rate_limitations.yml';
 
     my $binary = Binary::WebSocketAPI->new();
+    $binary->log(Mojo::Log->new(level => 'debug')) if $self->ws_debug;
     $self->{daemon} = Mojo::Server::Daemon->new(
         app    => $binary,
         listen => ["http://127.0.0.1"]);
