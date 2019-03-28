@@ -86,7 +86,7 @@ sub BrokerPresentation {
 sub Bar {
     my ($bartext) = @_;
 
-    $bartext = uc(encode_entities($bartext));
+    $bartext = uc($bartext);
 
     BarEnd();    #see sub below
 

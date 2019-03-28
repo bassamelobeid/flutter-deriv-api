@@ -7,7 +7,6 @@ use Data::Compare;
 use Encode;
 use HTML::Entities;
 use JSON::MaybeXS;
-use JSON::MaybeUTF8;
 use Text::CSV;
 use Try::Tiny;
 use feature 'state';
@@ -61,9 +60,13 @@ sub save_settings {
                 next SAVESETTING unless grep { $s eq $_ } @{$settings_in_group};
                 my ($new_value, $display_value);
                 try {
-                    ($new_value, $display_value) = parse_and_refine_setting($settings->{$s}, $app_config->get_data_type($s));
+                    my $field_type = $app_config->get_data_type($s);
+                    ($new_value, $display_value) = parse_and_refine_setting($settings->{$s}, $field_type);
                     my $old_value = $app_config->get($s);
-                    my $compare = Data::Compare->new($new_value, $old_value);
+                    my $compare =
+                        $field_type eq 'json_string'
+                        ? Data::Compare->new(JSON::MaybeXS->new->decode($new_value), JSON::MaybeXS->new->decode($old_value))
+                        : Data::Compare->new($new_value,                             $old_value);
 
                     if (not $compare->Cmp) {
                         my $extra_validation = get_extra_validation($s);
@@ -286,13 +289,11 @@ sub parse_and_refine_setting {
         try {
             if (defined $input_value) {
                 my $decoded = JSON::MaybeXS->new->decode($input_value);
-                $input_value = Encode::encode_utf8(
-                    JSON::MaybeXS->new(
-                        pretty    => 1,
-                        canonical => 1,
-                    )->encode($decoded));
+                $display_value = JSON::MaybeXS->new(
+                    pretty    => 1,
+                    canonical => 1,
+                )->encode($decoded);
             }
-            $display_value = $input_value;
         }
         catch {
             die 'JSON string is not well-formatted.';
@@ -376,7 +377,7 @@ Validates json string containing the minimum payment limit per staff
 sub _validate_payment_min_by_staff {
     my $input_string = shift;
 
-    my $json_config = JSON::MaybeUTF8::decode_json_utf8($input_string);
+    my $json_config = JSON::MaybeXS->new->decode($input_string);
 
     foreach my $user_name (keys %$json_config) {
         my $amount = $json_config->{$user_name};
@@ -396,7 +397,7 @@ validates the minimum values to be well-frmatted for displaying.
 sub _validate_transfer_min_by_currency {
     my $new_string = shift;
 
-    my $json_config    = JSON::MaybeUTF8::decode_json_utf8($new_string);
+    my $json_config    = JSON::MaybeXS->new->decode($new_string);
     my @all_currencies = LandingCompany::Registry::all_currencies();
 
     foreach my $currency (keys %$json_config) {

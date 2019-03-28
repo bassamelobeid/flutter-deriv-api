@@ -13,17 +13,19 @@ BOM::Backoffice::Sysinit::init();
 use BOM::Config::Chronicle;
 use Date::Utility;
 use Quant::Framework::Calendar;
+use BOM::Backoffice::Request qw(request);
 
 PrintContentType();
 
+my %input = %{request()->params};
+
 # Upload holiday files
-my $cgi           = CGI->new;
-my $calendar_type = $cgi->param('calendar-type');
+my $calendar_type = $input{'calendar-type'};
 my $calendar_hash;
 my $calendar_name;
 
-if ($cgi->param('upload_excel')) {
-    my $file     = $cgi->param('filetoupload');
+if ($input{upload_excel}) {
+    my $file     = $input{filetoupload};
     my $fh       = File::Temp->new(SUFFIX => '.csv');
     my $filename = $fh->filename;
     copy($file, $filename);
@@ -32,39 +34,39 @@ if ($cgi->param('upload_excel')) {
     # since partial_trading is handled separately in the function below, calendar_name is set to holidays
     $calendar_name = 'holidays';
     _save_early_closes_calendar($calendar_hash->{early_closes_data}) if defined $calendar_hash->{early_closes_data};
-} elsif ($cgi->param('manual_holiday_upload')) {
+} elsif ($input{manual_holiday_upload}) {
     $calendar_name = 'holidays';
     $calendar_type = 'manual_' . $calendar_type;
-    my $symbol_str   = $cgi->param('symbol');
+    my $symbol_str   = $input{symbol};
     my @symbols      = split ' ', $symbol_str;
-    my $holiday_date = $cgi->param('holiday_date');
-    my $holiday_desc = $cgi->param('holiday_desc');
+    my $holiday_date = $input{holiday_date};
+    my $holiday_desc = $input{holiday_desc};
     # sanity check
     die "Incomplete entry\n" unless ($symbol_str and $holiday_date and $holiday_desc);
     my $existing = {};
-    $existing = BOM::Config::Chronicle::get_chronicle_reader()->get('holidays', 'manual_holidays') unless $cgi->param('delete');
+    $existing = BOM::Config::Chronicle::get_chronicle_reader()->get('holidays', 'manual_holidays') unless $input{delete};
     my $date_key = Date::Utility->new($holiday_date)->truncate_to_day->epoch;
     $existing->{$date_key}{$holiday_desc} = [uniq(@symbols, @{$existing->{$date_key}{$holiday_desc} // []})];
     $calendar_hash->{calendar} = $existing;
 
-} elsif ($cgi->param('manual_partial_trading_upload')) {
+} elsif ($input{manual_partial_trading_upload}) {
     $calendar_name = 'partial_trading';
     $calendar_type = 'manual_' . $calendar_type;
-    my $symbol_str  = $cgi->param('symbol');
+    my $symbol_str  = $input{symbol};
     my @symbols     = split ' ', $symbol_str;
-    my $date        = $cgi->param('date');
-    my $time        = $cgi->param('time');
-    my $description = $cgi->param('description');
+    my $date        = $input{date};
+    my $time        = $input{time};
+    my $description = $input{description};
     # sanity check
     die "Incomplete entry\n" unless ($symbol_str and $date and $time and $description);
     my $existing = {};
-    $existing = BOM::Config::Chronicle::get_chronicle_reader()->get($calendar_name, $calendar_type) unless $cgi->param('delete');
+    $existing = BOM::Config::Chronicle::get_chronicle_reader()->get($calendar_name, $calendar_type) unless $input{delete};
     my $date_key = Date::Utility->new($date)->truncate_to_day->epoch;
     $existing->{$date_key}{$time} = [uniq(@symbols, @{$existing->{$date_key}{$time} // []})];
     $calendar_hash->{calendar} = $existing;
 }
 
-my $action = $cgi->param('delete') ? 'delete_entry' : 'save';
+my $action = $input{delete} ? 'delete_entry' : 'save';
 save_calendar($calendar_hash->{calendar}, $calendar_name, $calendar_type, $action);
 
 sub save_calendar {

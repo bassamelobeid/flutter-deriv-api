@@ -3,6 +3,7 @@ package BOM::Backoffice::PlackApp;
 
 use strict;
 use warnings;
+binmode STDERR, ':encoding(UTF-8)';
 
 use Try::Tiny::Except ();    # preload: see BOM::Backoffice::Sysinit
 use Email::Address::UseXS;   # preload

@@ -174,12 +174,11 @@ sub _build_params {
             my @values = @{$params->{$param}};
             $params->{$param} = [];
             foreach my $value (@values) {
-                $value = Encode::decode('UTF-8', $value) unless Encode::is_utf8($value);
+                $value = Encode::decode('UTF-8', $value);
                 push @{$params->{$param}}, $value;
             }
         } else {
-            $params->{$param} = Encode::decode('UTF-8', $params->{$param}) unless Encode::is_utf8($params->{$param});
-            $params->{$param} = $params->{$param};
+            $params->{$param} = Encode::decode('UTF-8', $params->{$param});
         }
     }
 

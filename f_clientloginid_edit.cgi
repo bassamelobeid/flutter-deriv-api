@@ -235,8 +235,9 @@ if ($input{whattodo} eq 'uploadID') {
         my $filetoupload    = $cgi->upload('FILE_' . $i);
         my $page_type       = $cgi->param('page_type_' . $i);
         my $expiration_date = $cgi->param('expiration_date_' . $i);
-        my $document_id     = encode_entities($cgi->param('document_id_' . $i) // '');
-        my $comments        = encode_entities($cgi->param('comments_' . $i) // '');
+        my $document_id     = $input{'document_id_' . $i} // '';
+        my $comments        = $input{'comments_' . $i} // '';
+
         if (length($document_id) > 30) {
             $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Document id is too long.</p><br />";
             next;
@@ -575,7 +576,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         CLIENT_KEY:
         foreach my $key (keys %input) {
             if (my ($document_field, $id) = $key =~ /^(expiration_date|comments|document_id)_([0-9]+)$/) {
-                my $val = encode_entities($input{$key} // '') || next CLIENT_KEY;
+                my $val = $input{$key} // '' || next CLIENT_KEY;
                 my ($doc) = grep { $_->id eq $id } $cli->client_authentication_document;    # Rose
                 next CLIENT_KEY unless $doc;
                 my $new_value;

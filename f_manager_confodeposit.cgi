@@ -31,8 +31,7 @@ PrintContentType();
 
 print qq[<style>p {margin: 12px}</style>];
 
-my $cgi    = CGI->new;
-my %params = $cgi->Vars;
+my %params = %{request()->params};
 
 for (qw/account amount currency ttype range/) {
     next if $params{$_};
