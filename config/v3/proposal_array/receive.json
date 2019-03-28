@@ -10,7 +10,7 @@
    "description" : "Latest price and other details for a given contract",
    "properties" : {
       "proposal_array" : {
-          "required" : ["id", "date_start", "proposals", "spot_time" ], 
+          "required" : ["id",  "proposals" ], 
          "spot" : {
             "description" : "Spot value (if there are no exchange data-feed licensing restrictions for the underlying symbol). Example: 9874.52",
             "type" : "number"
@@ -30,6 +30,7 @@
             "description" : "Latest price and other details for available contracts",
             "type" : "object",
             "title" : "Multiple Price Proposal Response",
+            "oneOf":[{ 
             "patternProperties" : {
                "^\\w{2,30}$" : {
                   "required" : ["payout", "ask_require", "longcode", "display_value" ], 
@@ -72,7 +73,11 @@
                   "description" : "Multiple Price Proposal Result",
                   "type" : "array"
                }
-            }
+            }}, 
+            { 
+                "properties" :{
+                    "CALLE" : { "type" : "array"}
+            }}]
          },
          "spot_time" : {
             "description" : "Timestamp for latest spot (epoch time). Example: 1439999052",
