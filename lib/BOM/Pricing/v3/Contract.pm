@@ -907,8 +907,16 @@ sub _build_bid_response {
     }
 
     if ($contract->tick_expiry) {
+        my @all_ticks = @{$contract->get_ticks_for_tick_expiry};
+
+        # for path dependent contract, there should be no more tick after hit tick
+        # because the contract technically has expired
+        if ($contract->is_path_dependent and $contract->hit_tick) {
+            @all_ticks = grep { $_->epoch <= $contract->hit_tick->epoch } @all_ticks;
+        }
+
         $response->{tick_stream} =
-            [map { {epoch => $_->epoch, tick => $contract->underlying->pipsized_value($_->quote)} } @{$contract->get_ticks_for_tick_expiry}];
+            [map { {epoch => $_->epoch, tick => $contract->underlying->pipsized_value($_->quote)} } @all_ticks];
     }
 
     return $response;
