@@ -9,19 +9,19 @@ use Date::Utility;
 use JSON::MaybeXS;
 use LandingCompany::Registry;
 use f_brokerincludeall;
-
+use BOM::Backoffice::Auth0;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::QuantsConfigHelper;
-
 BOM::Backoffice::Sysinit::init();
-my $json = JSON::MaybeXS->new;
+my $json  = JSON::MaybeXS->new;
+my $staff = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 if (request()->param('save_limit')) {
     my %args = map { $_ => request()->param($_) }
         qw(market new_market expiry_type contract_group underlying_symbol landing_company barrier_type limit_type limit_amount comment start_time end_time);
 
-    print $json->encode(BOM::Backoffice::QuantsConfigHelper::save_limit(\%args));
+    print $json->encode(BOM::Backoffice::QuantsConfigHelper::save_limit(\%args, $staff));
 }
 
 if (request()->param('delete_market_group')) {
@@ -33,7 +33,7 @@ if (request()->param('delete_limit')) {
     my %args =
         map { $_ => request()->param($_) }
         qw(market expiry_type contract_group underlying_symbol landing_company barrier_type type limit_type start_time end_time);
-    print $json->encode(BOM::Backoffice::QuantsConfigHelper::delete_limit(\%args));
+    print $json->encode(BOM::Backoffice::QuantsConfigHelper::delete_limit(\%args, $staff));
 }
 
 if (request()->param('update_contract_group')) {
@@ -48,10 +48,10 @@ if (request()->param('update_market_group')) {
 
 if (request()->param('save_threshold')) {
     my %args = map { $_ => request()->param($_) } qw(limit_type threshold_amount);
-    print $json->encode(BOM::Backoffice::QuantsConfigHelper::save_threshold(\%args));
+    print $json->encode(BOM::Backoffice::QuantsConfigHelper::save_threshold(\%args, $staff));
 }
 
 if (request()->param('update_config_switch')) {
     my %args = map { $_ => request()->param($_) } qw(limit_type limit_status);
-    print $json->encode(BOM::Backoffice::QuantsConfigHelper::update_config_switch(\%args));
+    print $json->encode(BOM::Backoffice::QuantsConfigHelper::update_config_switch(\%args, $staff));
 }

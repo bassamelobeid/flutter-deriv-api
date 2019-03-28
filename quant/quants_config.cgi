@@ -21,10 +21,10 @@ use BOM::Database::Helper::UserSpecificLimit;
 use List::MoreUtils qw(uniq);
 use Scalar::Util qw(looks_like_number);
 use BOM::Config::Runtime;
-
+use BOM::Backoffice::QuantsAuditLog;
 BOM::Backoffice::Sysinit::init();
 my $json = JSON::MaybeXS->new;
-
+my $args_content;
 PrintContentType();
 BrokerPresentation('Quants Risk Management Tool');
 
@@ -191,6 +191,20 @@ if ($r->params->{'new_user_limit'}) {
         $update_error = 'Market Type and Client Type are required parameters with restricted values';
     }
 
+    BOM::Backoffice::QuantsAuditLog::log($staff, "updatenewclientlimit",
+              "client_lodinid:"
+            . $r->params->{'client_loginid'}
+            . " potential_loss:"
+            . $r->params->{'potential_loss'}
+            . " realized_loss:"
+            . $r->params->{'realized_loss'}
+            . " client_type:"
+            . $r->params->{client_type}
+            . " market_type:"
+            . $r->params->{market_type}
+            . " expiry:"
+            . $r->params->{expiry});
+
     BOM::Database::Helper::UserSpecificLimit->new({
             db             => $db,
             client_loginid => $r->params->{'client_loginid'},
@@ -210,6 +224,9 @@ if ($r->params->{'delete_limit'}) {
         $delete_error = 'Market Type and Client Type are required parameters with restricted values';
     }
 
+    $args_content = join(q{, }, map { qq{$_ => $r->params->{$_}} } keys %{$r->params});
+    BOM::Backoffice::QuantsAuditLog::log($staff, "deleteclientlimit", $args_content);
+
     BOM::Database::Helper::UserSpecificLimit->new({
             db             => $db,
             client_loginid => $r->params->{'client_loginid'},
@@ -227,6 +244,10 @@ if ($r->params->{'delete_multiple'}) {
     foreach my $data (@$ids) {
         my ($client_id, $market_type, $client_type) = split '-', $data;
         my @multiple = split(' ', $client_id);
+
+        BOM::Backoffice::QuantsAuditLog::log($staff, "deletemultipleclientlimit",
+            "id" . $multiple[0] . "client_type[$client_type] market_type[$market_type]");
+
         BOM::Database::Helper::UserSpecificLimit->new({
                 db             => $db,
                 client_loginid => $multiple[0],    # first client_loginid will do

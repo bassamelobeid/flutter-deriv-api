@@ -13,6 +13,8 @@ use LandingCompany::Registry;
 use BOM::Config::RedisReplicated;
 
 use BOM::Backoffice::Request;
+use BOM::Backoffice::QuantsAuditLog;
+use BOM::Backoffice::Cookie;
 use BOM::MarketData qw(create_underlying_db create_underlying);
 use BOM::Config::Chronicle;
 use BOM::Config::Runtime;
@@ -20,7 +22,6 @@ use Quant::Framework::VolSurface::Delta;
 use Quant::Framework;
 use Finance::Exchange;
 use Math::Business::BlackScholesMerton::NonBinaries;
-
 my $json = JSON::MaybeXS->new;
 
 sub get_economic_events_for_date {
@@ -99,7 +100,8 @@ sub get_info {
 }
 
 sub delete_by_id {
-    my $id = shift;
+    my $id    = shift;
+    my $staff = shift;
 
     return _err("ID is not found.") unless ($id);
 
@@ -112,6 +114,8 @@ sub delete_by_id {
     return _err('Economic event not found with [' . $id . ']') unless $deleted;
 
     _regenerate($eec->get_all_events());
+
+    BOM::Backoffice::QuantsAuditLog::log($staff, "deleteeconomicevent", "Event_name: " . $deleted->{event_name} . " id: $id");
 
     return get_info($deleted);
 }
@@ -136,11 +140,16 @@ sub update_by_id {
 
     _regenerate($eec->get_all_events());
 
+    my $args_content = join(q{, }, map { qq{$_ => $args->{custom}->{$ul}->{$_}} } keys %{$args->{custom}->{$ul}});
+    BOM::Backoffice::QuantsAuditLog::log($args->{staff}, "updateeconomicevent",
+        "Event_name: " . $updated->{event_name} . " id: " . $args->{id} . " $args_content");
+
     return get_info($updated);
 }
 
 sub save_new_event {
-    my $args = shift;
+    my $args  = shift;
+    my $staff = shift;
     my $error;
 
     if (not $args->{release_date}) {
@@ -161,17 +170,22 @@ sub save_new_event {
 
     _regenerate($eec->get_all_events());
 
+    BOM::Backoffice::QuantsAuditLog::log($staff, "savedneweconomicevent", "Event_name: " . $added->{event_name});
+
     return get_info($added);
 }
 
 sub restore_by_id {
-    my $id = shift;
+    my $id    = shift;
+    my $staff = shift;
 
     my $eec = _eec();
 
     my $restored = $eec->restore_event($id);
 
     return _err('Failed to restore event.') unless $restored;
+
+    BOM::Backoffice::QuantsAuditLog::log($staff, "restoredconomicevent", "Event_name: " . $restored->{event_name});
 
     _regenerate($eec->get_all_events());
 

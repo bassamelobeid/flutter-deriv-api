@@ -13,9 +13,12 @@ use Finance::Contract::Category;
 use Try::Tiny;
 use YAML::XS qw(LoadFile);
 use List::Util qw(uniq);
+use BOM::Backoffice::Auth0;
+use BOM::Backoffice::QuantsAuditLog;
 
 sub save_limit {
-    my $args = shift;
+    my $args  = shift;
+    my $staff = shift;
 
     for my $key (keys %$args) {
         next if !defined $args->{$key};
@@ -55,6 +58,10 @@ sub save_limit {
         }
 
         $qc->set_global_limit(\%new_args);
+
+        my $args_content = join(q{, }, map { qq{$_ => $args->{$_}} } keys %{$args});
+        BOM::Backoffice::QuantsAuditLog::log($staff, "setnewgloballimit", $args_content);
+
         my $decorated_limit = decorate_for_display($qc->get_all_global_limit(['default']));
         my $pending_group   = decorate_for_pending_market_group($qc->get_pending_market_group(['default']));
         +{
@@ -74,17 +81,22 @@ sub save_limit {
 }
 
 sub delete_limit {
-    my $args = shift;
+    my $args  = shift;
+    my $staff = shift;
 
     my $limits = try {
         my $qc = BOM::Database::QuantsConfig->new();
         $qc->delete_global_limit($args);
+
         my $decorated_data = decorate_for_display($qc->get_all_global_limit(['default']));
         +{data => $decorated_data};
     }
     catch {
         +{error => $_};
     };
+
+    my $args_content = join(q{, }, map { qq{$_ => $args->{$_}} } keys %$args);
+    BOM::Backoffice::QuantsAuditLog::log($staff, "deletegloballimit", $args_content);
 
     return $limits;
 }
@@ -262,8 +274,8 @@ sub decorate_for_pending_market_group {
 }
 
 sub save_threshold {
-    my $args = shift;
-
+    my $args   = shift;
+    my $staff  = shift;
     my $amount = $args->{threshold_amount};
 
     unless (defined $amount) {
@@ -289,11 +301,14 @@ sub save_threshold {
         +{error => 'Failed setting threshold. Please check log.'}
     };
 
+    BOM::Backoffice::QuantsAuditLog::log($staff, "updategloballimitthreshold", "threshold[$key_name] new amount[$amount]");
+
     return $output;
 }
 
 sub update_config_switch {
-    my $args = shift;
+    my $args  = shift;
+    my $staff = shift;
 
     my $type   = $args->{limit_type};
     my $switch = $args->{limit_status};
@@ -311,6 +326,8 @@ sub update_config_switch {
         warn $_;
         +{error => 'Failed to update config status. Please check log.'}
     };
+
+    BOM::Backoffice::QuantsAuditLog::log($staff, "updategloballimitconfigswitch", "content: app_config[$key_name] new_status[$switch]");
 
     return $output;
 }

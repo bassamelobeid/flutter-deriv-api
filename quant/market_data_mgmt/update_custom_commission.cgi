@@ -4,12 +4,13 @@ package main;
 use strict;
 use warnings;
 use open qw[ :encoding(UTF-8) ];
-use lib qw(/home/git/regentmarkets/bom-backoffice /home/git/regentmarkets/bom/cgi/oop);
+use lib qw(/home/git/regentmarkets/bom-backoffice);
 
 use JSON::MaybeXS;
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::CustomCommissionTool;
 use BOM::Backoffice::Auth0;
+use BOM::Backoffice::QuantsAuditLog;
 BOM::Backoffice::Sysinit::init();
 my $json  = JSON::MaybeXS->new;
 my $staff = BOM::Backoffice::Auth0::from_cookie()->{nickname};
@@ -33,10 +34,26 @@ my $args = {
     ATM               => request()->param('ATM'),
 };
 
+my $args_content;
+
+foreach my $key (keys %$args) {
+
+    $args_content .= "$key => $args->{$key}, " if defined($args->{$key});
+
+}
+
 if (request()->param('save_config')) {
-    print $json->encode(BOM::Backoffice::CustomCommissionTool::save_commission($args));
+
+    my $commission = BOM::Backoffice::CustomCommissionTool::save_commission($args);
+    print $json->encode($commission);
+
+    BOM::Backoffice::QuantsAuditLog::log($staff, "savecommission", $args_content) if not $commission->{error};
 }
 
 if (request()->param('delete_config')) {
-    print $json->encode(BOM::Backoffice::CustomCommissionTool::delete_commission($args->{name}));
+
+    my $commission = BOM::Backoffice::CustomCommissionTool::delete_commission($args->{name});
+    print $json->encode($commission);
+    BOM::Backoffice::QuantsAuditLog::log($staff, "deletecommission", $args_content) if not $commission->{error};
+
 }

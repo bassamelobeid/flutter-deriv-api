@@ -13,6 +13,11 @@ BOM::Backoffice::Sysinit::init();
 use BOM::Config::Chronicle;
 use Date::Utility;
 use Quant::Framework::Calendar;
+use BOM::Backoffice::Auth0;
+use BOM::Backoffice::QuantsAuditLog;
+PrintContentType();
+
+my $staff = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 use BOM::Backoffice::Request qw(request);
 
 PrintContentType();
@@ -33,7 +38,7 @@ if ($input{upload_excel}) {
     $calendar_hash = Bloomberg::BloombergCalendar::parse_calendar($filename, $type_to_parser);
     # since partial_trading is handled separately in the function below, calendar_name is set to holidays
     $calendar_name = 'holidays';
-    _save_early_closes_calendar($calendar_hash->{early_closes_data}) if defined $calendar_hash->{early_closes_data};
+    _save_early_closes_calendar($calendar_hash->{early_closes_data}, $staff) if defined $calendar_hash->{early_closes_data};
 } elsif ($input{manual_holiday_upload}) {
     $calendar_name = 'holidays';
     $calendar_type = 'manual_' . $calendar_type;
@@ -67,10 +72,10 @@ if ($input{upload_excel}) {
 }
 
 my $action = $input{delete} ? 'delete_entry' : 'save';
-save_calendar($calendar_hash->{calendar}, $calendar_name, $calendar_type, $action);
+save_calendar($calendar_hash->{calendar}, $calendar_name, $calendar_type, $action, $staff);
 
 sub save_calendar {
-    my ($calendar, $calendar_name, $calendar_type, $action) = @_;
+    my ($calendar, $calendar_name, $calendar_type, $action, $staff) = @_;
 
     my $updated = Quant::Framework::Calendar->new(
         recorded_date    => Date::Utility->new,
@@ -80,13 +85,13 @@ sub save_calendar {
         chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
     )->$action;
-
+    BOM::Backoffice::QuantsAuditLog::log($staff, 'save_calendar', "Upload calendar[$calendar_name] type[$calendar_type]");
     return $updated;
 }
 
 # format data for early_closes data from our source.
 sub _save_early_closes_calendar {
-    my $data = shift;
+    my ($data, $staff) = @_;
     my $calendar_data;
     my $calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
     foreach my $exchange_name (keys %$data) {
@@ -117,6 +122,8 @@ sub _save_early_closes_calendar {
         type             => 'early_closes',
         calendar         => $calendar_data,
     )->save;
+
+    BOM::Backoffice::QuantsAuditLog::log($staff, 'save_calendar', "Manually update partial trading calendar");
     return;
 }
 

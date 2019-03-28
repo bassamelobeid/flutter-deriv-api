@@ -16,7 +16,7 @@ use Array::Utils qw(:all);
 use Date::Utility;
 use Scalar::Util;
 use List::Util;
-
+use BOM::Backoffice::QuantsAuditLog;
 use BOM::Platform::Email qw(send_email);
 use BOM::Config::Runtime;
 use BOM::Config::CurrencyConfig;
@@ -74,6 +74,7 @@ sub save_settings {
                         send_email_notification($new_value, $old_value, $s) if ($s =~ /quants/ and ($s =~ /suspend/ or $s =~ /disabled/));
                         $values_to_set->{$s} = $new_value;
                         $message .= join('', '<div id="saved">Set ', encode_entities($s), ' to ', encode_entities($display_value), '</div>');
+
                     }
                 }
                 catch {
@@ -88,6 +89,17 @@ sub save_settings {
                 $message .= '<div id="error">NOT saving global settings due to data problems.</div>';
             } else {
                 try {
+                    my $log_content;
+
+                    foreach my $key (keys %{$values_to_set}) {
+
+                        my ($value, $display_value) = parse_and_refine_setting($settings->{$key}, $app_config->get_data_type($key));
+                        $log_content .= "$key => $display_value ,";
+
+                    }
+
+                    my $staff = BOM::Backoffice::Cookie::get_staff();
+                    BOM::Backoffice::QuantsAuditLog::log($staff, "updatedynamicsettingpage", $log_content);
                     $app_config->set($values_to_set);
                     $message .= '<div id="saved">Saved global settings to environment, offerings updated</div>';
                 }

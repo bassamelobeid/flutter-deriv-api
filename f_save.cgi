@@ -28,6 +28,8 @@ use BOM::Backoffice::Sysinit ();
 use BOM::User::AuditLog;
 use BOM::Backoffice::Utility qw( master_live_server_error);
 BOM::Backoffice::Sysinit::init();
+use BOM::Backoffice::Auth0;
+use BOM::Backoffice::QuantsAuditLog;
 
 PrintContentType();
 
@@ -41,7 +43,6 @@ my $can_delete;
 # Check file name
 my $ok = 0;
 my $overridefilename;
-
 my $file_broker_code;
 my @removed_lines = ();
 
@@ -142,7 +143,9 @@ if ($filen eq 'editvol') {
             print "<P>" . encode_entities($error_message) . "</P>";
         } else {
             print "<P>Surface for " . encode_entities($vol_update_symbol) . " being saved</P>";
-            $surface->save;
+            my $error;
+            eval { $surface->save } or $error = $@;
+            BOM::Backoffice::QuantsAuditLog::log($clerk, "editvol_$vol_update_symbol", $text) if not $error;
         }
     }
 
@@ -194,7 +197,11 @@ if ($filen =~ m!^vol/master(\w{3}(?:-\w{3})?)\.interest$!) {
         chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
     );
-    $rates_obj->save;
+
+    my $error;
+    eval { $rates_obj->save } or $error = $@;
+    BOM::Backoffice::QuantsAuditLog::log($clerk, "editinterestrate_$symbol", $text) if not $error;
+
 }
 
 if (not $overridefilename) {

@@ -14,6 +14,8 @@ use BOM::Config;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use Bloomberg::FileDownloader;
 use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::QuantsAuditLog;
+use BOM::Backoffice::Auth0;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -21,7 +23,7 @@ PrintContentType();
 my $cgi      = CGI->new;
 my $filename = $cgi->param('filename');
 my $content  = $cgi->param('bbdl_file_content');
-
+my $staff    = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 Bar("Upload a file to BBDL");
 
 #don't allow from devserver, to avoid uploading wrong files
@@ -56,6 +58,8 @@ if (length($filename) >= 25) {
             . '] to server['
             . ']. Your response file is '
             . encode_entities($replyfile) . '</p>';
+        BOM::Backoffice::QuantsAuditLog::log($staff, 'manuallyuploadbbdlrequest', $content);
+
     }
 
     print $message;

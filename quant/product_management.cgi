@@ -22,6 +22,7 @@ use BOM::Config;
 use BOM::Platform::RiskProfile;
 use BOM::Config::Runtime;
 use BOM::Platform::Email qw(send_email);
+use BOM::Backoffice::QuantsAuditLog;
 BOM::Backoffice::Sysinit::init();
 my $json = JSON::MaybeXS->new(
     pretty    => 1,
@@ -31,6 +32,7 @@ my $json = JSON::MaybeXS->new(
 PrintContentType();
 BrokerPresentation('Product Management');
 
+my $args_content;
 my $staff            = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $r                = request();
 my $limit_profile    = BOM::Config::quants()->{risk_profile};
@@ -108,12 +110,19 @@ if ($r->param('update_limit')) {
         $current_client_profiles->{$id}->{updated_by}                 = $staff;
         $current_client_profiles->{$id}->{updated_on}                 = Date::Utility->new->date;
         $app_config->set({'quants.custom_client_profiles' => $json->encode($current_client_profiles)});
+
+        $args_content = join(q{, }, map { qq{$_ =>  $current_client_profiles->{$id}->{$_}} } keys %{$current_client_profiles->{$id}});
+        BOM::Backoffice::QuantsAuditLog::log($staff, "updateclientlimitviaPMS clientid:$id", $args_content);
+
     } else {
         $ref{updated_by}                       = $staff;
         $ref{updated_on}                       = Date::Utility->new->date;
         $current_product_profiles->{$uniq_key} = \%ref;
         send_notification_email(\%ref, 'Disable') if ($profile and $profile eq 'no_business');
         $app_config->set({'quants.custom_product_profiles' => $json->encode($current_product_profiles)});
+
+        $args_content = join(q{, }, map { qq{$_ => $ref{$_}} } keys %ref);
+        BOM::Backoffice::QuantsAuditLog::log($staff, "updatecustomlimitviaPMS", $args_content);
     }
 
 }
@@ -125,11 +134,20 @@ if ($r->param('delete_limit')) {
     if (my $client_loginid = $r->param('client_loginid')) {
         delete $current_client_profiles->{$client_loginid}->{custom_limits}->{$id};
         $app_config->set({'quants.custom_client_profiles' => $json->encode($current_client_profiles)});
+
+        $args_content =
+            join(q{, }, map { qq{$_ =>  $current_client_profiles->{$client_loginid}->{$_}} } keys %{$current_client_profiles->{$client_loginid}});
+        BOM::Backoffice::QuantsAuditLog::log($staff, "deleteclientlimitviaPMS clientid: $client_loginid", $args_content);
+
     } else {
         send_notification_email($current_product_profiles->{$id}, 'Enable')
             if exists $current_product_profiles->{$id}->{risk_profile} and $current_product_profiles->{$id}->{risk_profile} eq 'no_business';
+
+        $args_content = join(q{, }, map { qq{$_ =>  $current_product_profiles->{$id}->{$_}} } keys %{$current_product_profiles->{$id}});
+        BOM::Backoffice::QuantsAuditLog::log($staff, "deletecustomlimitviaPMS id:$id", $args_content);
         delete $current_product_profiles->{$id};
         $app_config->set({'quants.custom_product_profiles' => $json->encode($current_product_profiles)});
+
     }
 }
 
@@ -137,6 +155,11 @@ if ($r->param('delete_client')) {
     my $client_loginid = $r->param('client_loginid');
     delete $current_client_profiles->{$client_loginid};
     $app_config->set({'quants.custom_client_profiles' => $json->encode($current_client_profiles)});
+
+    $args_content =
+        join(q{, }, map { qq{$_ =>  $current_client_profiles->{$client_loginid}->{$_}} } keys %{$current_client_profiles->{$client_loginid}});
+    BOM::Backoffice::QuantsAuditLog::log($staff, "deleteclientlimitviaPMS: $client_loginid", $args_content);
+
 }
 
 Bar("Limit Definitions");

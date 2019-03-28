@@ -24,7 +24,7 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use BOM::Product::ContractFactory qw( produce_contract );
-
+use BOM::Backoffice::QuantsAuditLog;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -42,9 +42,8 @@ my $qty      = request()->param('qty');
 my $bet_ref  = request()->param('ref');
 my $subject;
 my @body;
-my $brand = Brands->new(name => request()->brand);
-my $to = $brand->emails('alert_quants');
-
+my $brand            = Brands->new(name => request()->brand);
+my $to               = $brand->emails('alert_quants');
 my $encoded_loginID  = encode_entities($loginID);
 my $encoded_currency = encode_entities($currency);
 my $encoded_broker   = encode_entities($broker);
@@ -116,6 +115,12 @@ if (request()->param('whattodo') eq 'closeatzero') {
             . request()->param('DCcode') . " ["
             . request()->param('comment')
             . "] $ENV{'REMOTE_ADDR'}");
+
+    BOM::Backoffice::QuantsAuditLog::log(
+        $clerk,
+        "manuallyclosecontractatzeroprice",
+        "content: Manually closed the contract [Ref: $bet_ref] at price $currency 0 for client[$loginID]"
+    );
 
     Bar("Done");
     print "Done!<P>

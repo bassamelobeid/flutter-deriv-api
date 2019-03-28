@@ -14,7 +14,8 @@ use BOM::Config;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use Bloomberg::FileDownloader;
 use Bloomberg::RequestFiles;
-
+use BOM::Backoffice::QuantsAuditLog;
+use BOM::Backoffice::Auth0;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -22,7 +23,6 @@ PrintContentType();
 my $cgi       = CGI->new;
 my $frequency = $cgi->param('frequency');
 my $type      = $cgi->param('type');
-
 Bar("BBDL RequestFiles Upload");
 
 #don't allow from devserver, to avoid uploading wrong files
@@ -31,9 +31,9 @@ if (not BOM::Config::on_production()) {
     code_exit_BO();
 }
 
-my $bbdl = Bloomberg::FileDownloader->new();
-my $sftp = $bbdl->login;
-
+my $bbdl         = Bloomberg::FileDownloader->new();
+my $sftp         = $bbdl->login;
+my $staff        = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $request_file = Bloomberg::RequestFiles->new();
 
 my @files;
@@ -46,6 +46,9 @@ if ($type eq 'request') {
     $request_file->generate_cancel_files($frequency);
     @files = map { 'c_' . $_ } @{$request_file->master_request_files};
 }
+
+my $todo = $type eq 'request' ? 'uploadbbdlmasterrequestfiles' : 'cancelbbdlmasterrequestfiles';
+BOM::Backoffice::QuantsAuditLog::log($staff, $todo, 'upload BBDL file');
 
 my $temp_dir = '/tmp';
 foreach my $file (@files) {

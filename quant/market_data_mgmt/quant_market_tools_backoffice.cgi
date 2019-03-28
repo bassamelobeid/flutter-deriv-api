@@ -24,8 +24,10 @@ use BOM::Backoffice::Utility;
 use Date::Utility;
 use BOM::Backoffice::Request qw(request);
 use Quant::Framework::CorrelationMatrix;
-use BOM::MarketDataAutoUpdater::Forex;
+use BOM::Backoffice::Auth0;
+use BOM::Backoffice::QuantsAuditLog;
 my $broker = request()->broker_code;
+my $staff  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 if ($broker !~ /^\w+$/) { die "Bad broker code $broker in $0"; }
 
@@ -44,6 +46,7 @@ if (request()->param('whattodo') and request()->param('whattodo') eq 'process_di
     my $filetoupload             = $cgi->param('filetoupload');
     my $update_discrete_dividend = request()->param('update_discrete_dividend');
     print process_dividend($filetoupload, $update_discrete_dividend);
+    BOM::Backoffice::QuantsAuditLog::log($staff, "uploaddividendfile", "Uploading $filetoupload");
 }
 
 Bar("Upload Correlations");
@@ -67,6 +70,7 @@ if (request()->param('whattodo') and request()->param('whattodo') eq 'process_su
     });
     $correlation_matrix->correlations($data);
     $correlation_matrix->save;
+    BOM::Backoffice::QuantsAuditLog::log($staff, "uploadcorrelationfile", "Uploading $filetoupload");
     print join "<p> ", @to_print;
 }
 
