@@ -35,7 +35,7 @@ default: &6
     image: regentmarkets/debian-ci:stable
     user: nobody
   shell: /bin/bash -leo pipefail
-  working_directory: /home/git/regentmarkets/bom-affiliates
+  working_directory: /home/git/regentmarkets/bom-myaffiliates
 jobs:
   core:
     <<: *6
