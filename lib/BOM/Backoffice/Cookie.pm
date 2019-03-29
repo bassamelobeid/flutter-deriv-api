@@ -34,7 +34,7 @@ sub expire_cookies {
 }
 
 sub get_staff {
-    return get_cookie('staff');
+    die 'broken'
 }
 
 sub get_auth_token {
