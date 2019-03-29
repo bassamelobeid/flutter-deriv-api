@@ -104,9 +104,13 @@ sub generate {
         next if !grep { $broker_code =~ $_ } qw(CR MLT MX MF);
         my $bet_params = shortcode_to_parameters($open_fmb->{short_code}, $open_fmb->{currency_code});
         $bet_params->{date_pricing} = $pricing_date;
-        my ($bet, $underlying);
+        my ($bet, $underlying, $bid_price);
 
-        try { $bet = produce_contract($bet_params); $underlying = $bet->underlying; }
+        try {
+            $bet        = produce_contract($bet_params);
+            $underlying = $bet->underlying;
+            $bid_price  = $bet->bid_price;
+        }
         catch {
 
             $ignored++;
@@ -118,7 +122,7 @@ sub generate {
         };
 
         my $underlying_symbol = $underlying->symbol;
-
+        my $bid_price_in_usd = $self->amount_in_usd($bid_price, $bet->currency);
         if (   not $bet->underlying->spot
             or $bet->is_expired
             or $bet->date_start->is_after($pricing_date)
@@ -129,9 +133,8 @@ sub generate {
             $csv->print(
                 $ignored_fh,
                 [
-                    $open_fmb->{transaction_id}, $open_fmb->{client_loginid},
-                    $open_fmb->{short_code},     $open_fmb->{currency_code},
-                    $self->amount_in_usd($bet->bid_price, $bet->currency), 'Out_of_scope'
+                    $open_fmb->{transaction_id}, $open_fmb->{client_loginid}, $open_fmb->{short_code},
+                    $open_fmb->{currency_code},  $bid_price_in_usd,           'Out_of_scope'
                 ]);
 
             next FMB;
@@ -147,12 +150,8 @@ sub generate {
             });
 
         }
-        $csv->print(
-            $raw_fh,
-            [
-                $open_fmb->{transaction_id}, $open_fmb->{client_loginid},
-                $open_fmb->{short_code},     $open_fmb->{currency_code},
-                $self->amount_in_usd($bet->bid_price, $bet->currency)]);
+        $csv->print($raw_fh,
+            [$open_fmb->{transaction_id}, $open_fmb->{client_loginid}, $open_fmb->{short_code}, $open_fmb->{currency_code}, $bid_price_in_usd]);
         my @prices_in_usd = $self->_calculate_grid_for_max_exposure($bet);
 
         my $usd_buy_price = $self->amount_in_usd($open_fmb->{buy_price}, $bet->currency);
