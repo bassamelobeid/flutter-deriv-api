@@ -9,6 +9,7 @@ use Data::Dumper;
 use JSON::MaybeXS;
 use Test::More;
 use JSON::Validator;
+
 sub BUILD {
     my ($self, $args) = @_;
 
@@ -27,7 +28,7 @@ sub BUILD {
 sub _test_schema {
     my ($self, $result, $expected_json_schema, $descr, $should_be_failed) = @_;
 
-    my $validator  = JSON::Validator->new();
+    my $validator = JSON::Validator->new();
     $validator->schema(JSON::MaybeXS->new->decode($expected_json_schema));
     #   $validator->coerce(strings => 1, numbers =>1, booleans => 1);
 
@@ -38,7 +39,7 @@ sub _test_schema {
         ok(scalar(@error), "$descr response is valid while it must fail.");
         if (!@error) {
             diag Dumper({'Got response' => $result});
-            }
+        }
     } else {
         ok !scalar(@error), "$descr response is valid";
         if (@error) {

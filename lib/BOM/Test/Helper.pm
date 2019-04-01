@@ -176,11 +176,12 @@ sub test_schema {
 
     my $v4_schema_path = path($ENV{WEBSOCKET_API_REPO_PATH} . "/config/$version/$type/receive.json");
     my $v4_validator   = JSON::Validator->new;
-    my $schema = JSON::MaybeXS->new->decode($v4_schema_path->slurp_utf8);
+    my $schema         = JSON::MaybeXS->new->decode($v4_schema_path->slurp_utf8);
     $v4_validator->schema(JSON::MaybeXS->new->decode($v4_schema_path->slurp_utf8));
     my @v4_result = $v4_validator->validate($data);
 
-    ok !(scalar @v4_result), "$type response validated OK by V4 schema - ".$schema->{title} or do {;
+    ok !(scalar @v4_result), "$type response validated OK by V4 schema - " . $schema->{title} or do {
+        ;
         diag 'Message is rejected by v4 validator:';
         diag " - $_" foreach @v4_result;
         diag "Received Data \n" . Dumper($data);
