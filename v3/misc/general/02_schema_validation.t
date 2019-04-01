@@ -18,24 +18,6 @@ my $caller_info = {
 };
 my $json = JSON::MaybeXS->new();
 
-subtest v4_fail_v3_pass => sub {
-    my $args = $json->decode('{"ticks":1}');
-    my $errors = Binary::WebSocketAPI::Hooks::_validate_schema_error(encode_schemas('ticks'), $args, $caller_info);
-    is($errors, undef, 'No error when v4 fails but v3 passes ticks');
-    $log->contains_ok(qr/oneOf Expected string or array, got number/, "Logged tick failure expecting string got number");
-
-    $args = $json->decode('{"buy":"asdfasdfadfadsf", "price": 123}');
-    $errors = Binary::WebSocketAPI::Hooks::_validate_schema_error(encode_schemas('buy'), $args, $caller_info);
-    like($errors->{details}->{buy}, qr/does not match/, 'Error when v4 fails and  v3 also fails');
-
-    my ($schema, $schema_v3) = encode_schemas('authorize');
-    $schema->{'required'} = ['authorize', 'add_to_login_history'];
-    $args = $json->decode('{"authorize":"asdfasdfadfadsf"}');
-    $errors = Binary::WebSocketAPI::Hooks::_validate_schema_error($schema, $schema_v3, $args, $caller_info);
-    $log->contains_ok(qr/authorize => \"### Sensitive ###\"/, "Masked Sensitive information in  Log");
-
-};
-
 subtest mask_tokens => sub {
 
     my $schema = {
