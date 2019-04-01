@@ -198,7 +198,7 @@ sub _update_transaction {
 
     if (($payload->{referrer_type} // '') ne 'financial_market_bet') {
         $details->{transaction}->{transaction_time} = Date::Utility->new($payload->{payment_time})->epoch;
-        $c->send({json => $details});
+        $c->send({json => $details},$self->request_storage);
         return;
     }
 
