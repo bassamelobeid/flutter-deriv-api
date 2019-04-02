@@ -18,7 +18,7 @@ my $loginID         = uc(request()->param('loginID'));
 my $encoded_loginID = encode_entities($loginID);
 PrintContentType();
 BrokerPresentation('Quant Query', '', '');
-my $staff = BOM::Backoffice::Auth0::from_cookie();
+my $staff = BOM::Backoffice::Auth0::get_staff();
 
 if ($loginID !~ /^(\D+)(\d+)$/) {
     print "Error : wrong loginID ($encoded_loginID) could not get client instance";

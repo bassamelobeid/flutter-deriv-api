@@ -15,7 +15,7 @@ use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::QuantsConfigHelper;
 BOM::Backoffice::Sysinit::init();
 my $json  = JSON::MaybeXS->new;
-my $staff = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $staff = BOM::Backoffice::Auth0::get_staffname();
 
 if (request()->param('save_limit')) {
     my %args = map { $_ => request()->param($_) }

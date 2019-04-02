@@ -36,7 +36,7 @@ if (request()->param('action') ne 'DOWNLOAD CSV') {
 }
 
 my $broker = encode_entities(request()->broker_code // "");
-my $clerk = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $clerk = BOM::Backoffice::Auth0::get_staffname();
 
 my $home_link = request()->url_for('backoffice/f_viewclientsubset.cgi');
 my @header    = (

@@ -18,7 +18,7 @@ PrintContentType();
 BrokerPresentation("CLIENT LOGINID ADMIN");
 
 my $broker = request()->broker_code;
-my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $clerk  = BOM::Backoffice::Auth0::get_staffname();
 
 if ($broker eq 'FOG') {
     $broker = request()->broker_code;

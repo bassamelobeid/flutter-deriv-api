@@ -47,7 +47,7 @@ catch {
 };
 
 my $broker = request()->broker_code;
-my $staff  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $staff  = BOM::Backoffice::Auth0::get_staffname();
 # Currency is utilised in Deposit and Withdrawal views accordingly
 # to distinguish information among supported cryptocurrencies.
 my $currency = request()->param('currency') // 'BTC';

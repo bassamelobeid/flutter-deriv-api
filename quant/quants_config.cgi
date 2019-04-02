@@ -28,7 +28,7 @@ my $args_content;
 PrintContentType();
 BrokerPresentation('Quants Risk Management Tool');
 
-my $staff  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $staff  = BOM::Backoffice::Auth0::get_staffname();
 my $r      = request();
 my $broker = $r->broker_code;
 

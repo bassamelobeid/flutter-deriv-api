@@ -16,7 +16,7 @@ PrintContentType();
 BrokerPresentation("CLIENT ANONYMIZATION");
 
 my $input = request()->params;
-my $clerk = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $clerk = BOM::Backoffice::Auth0::get_staffname();
 
 Bar("MAKE DUAL CONTROL CODE");
 print

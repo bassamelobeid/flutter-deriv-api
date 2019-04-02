@@ -15,7 +15,7 @@ PrintContentType();
 BrokerPresentation('BACKOFFICE ACCOUNTS');
 my $broker           = request()->broker_code;
 my $encoded_broker   = encode_entities($broker);
-my $clerk            = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $clerk            = BOM::Backoffice::Auth0::get_staffname();
 my $currency_options = get_currency_options();
 
 if (length($broker) < 2) {

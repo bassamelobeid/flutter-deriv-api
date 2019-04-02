@@ -8,6 +8,8 @@ use BOM::Config;
 use BOM::User::AuditLog;
 use BOM::Config::RedisReplicated;
 
+use BOM::Backoffice::Utility;
+
 sub exchange_code_for_token {
     my $code = shift;
 
@@ -47,28 +49,18 @@ sub login {
     my $user = BOM::Backoffice::Auth0::user_by_access_token($access_token);
     if ($user) {
         $user->{token} = $access_token;
-        BOM::Config::RedisReplicated::redis_write()->set("BINARYBOLOGIN::" . $user->{nickname}, encode_json_utf8($user));
-        BOM::Config::RedisReplicated::redis_write()->expire("BINARYBOLOGIN::" . $user->{nickname}, 24 * 3600);
+        BOM::Config::RedisReplicated::redis_write()->set("BINARYBOLOGIN::" . $access_token, encode_json_utf8($user));
+        BOM::Config::RedisReplicated::redis_write()->expire("BINARYBOLOGIN::" . $access_token, 24 * 3600);
 
         return $user;
     }
     return;
 }
 
-sub from_cookie {
-    my $staff = BOM::Backoffice::Cookie::get_staff();
-
-    my $user;
-    if ($staff and $user = BOM::Config::RedisReplicated::redis_read()->get("BINARYBOLOGIN::" . $staff)) {
-        return decode_json_utf8($user);
-    }
-    return;
-}
-
 sub logout {
-    my $staff = BOM::Backoffice::Cookie::get_staff();
+    my $staff = get_staff();
 
-    if ($staff and BOM::Config::RedisReplicated::redis_write()->del("BINARYBOLOGIN::" . $staff)) {
+    if ($staff and BOM::Config::RedisReplicated::redis_write()->del("BINARYBOLOGIN::" . $staff->{token})) {
         print 'you are logged out.';
     }
     print 'no login found.';
@@ -76,27 +68,68 @@ sub logout {
 }
 
 sub has_authorisation {
-    my $groups     = shift;
-    my $staff      = BOM::Backoffice::Cookie::get_staff();
-    my $auth_token = BOM::Backoffice::Cookie::get_auth_token();
-    return unless ($staff and $auth_token);
+    my $groups = shift;
+    my $staff  = get_staff();
 
-    my $cache = BOM::Config::RedisReplicated::redis_read()->get("BINARYBOLOGIN::" . $staff);
-    my $user;
-    if ($cache and $user = decode_json_utf8($cache) and $user->{token} = $auth_token) {
-        BOM::Config::RedisReplicated::redis_write()->expire("BINARYBOLOGIN::" . $staff, 24 * 3600);
+    my $staffname = $staff->{nickname};
+    if ($staff) {
         if (not $groups or not BOM::Config::on_production()) {
             return 1;
         }
-        foreach my $g (@{$user->{groups}}) {
+        foreach my $g (@{$staff->{groups}}) {
             if (grep { /^$g$/ } @{$groups}) {
-                BOM::User::AuditLog::log('successful request for ' . join(',', @{$groups}), '', $staff);
+                BOM::User::AuditLog::log('successful request for ' . join(',', @{$groups}), '', $staffname);
                 return 1;
             }
         }
     }
-    BOM::User::AuditLog::log('failed request for ' . join(',', @{$groups}), '', $staff);
-    return;
+    BOM::User::AuditLog::log('failed request for ' . join(',', @{$groups}), '', $staffname);
+    return 0;
+}
+
+=head2 check_staff
+
+Will get the logged in staff info from the Redis server or return C<undef>.
+
+=cut
+
+sub check_staff {
+    my $auth_token = BOM::Backoffice::Cookie::get_auth_token();
+
+    return undef unless $auth_token;
+
+    my $cache = BOM::Config::RedisReplicated::redis_read()->get("BINARYBOLOGIN::" . $auth_token);
+
+    return undef unless $cache;
+
+    my $staff = decode_json_utf8($cache);
+
+    die 'Something wrong, token does not match Redis' unless $staff->{token} eq $auth_token;
+
+    return $staff;
+}
+
+=head2 get_staffname
+
+Gets the current logged in staff, if there isn't one, returns C<undef>.
+
+=cut
+
+sub get_staffname {
+    my $staff = get_staff();
+
+    return $staff ? $staff->{nickname} : undef;
+}
+
+=head2 get_staff
+
+Check if a staff is logged in, redirect to the login page otherwise.
+
+=cut
+
+sub get_staff {
+    BOM::Backoffice::Utility::redirect_login() unless my $staff = check_staff();
+    return $staff;
 }
 
 1;

@@ -23,7 +23,7 @@ PrintContentType();
 my $cgi      = CGI->new;
 my $filename = $cgi->param('filename');
 my $content  = $cgi->param('bbdl_file_content');
-my $staff    = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $staff    = BOM::Backoffice::Auth0::get_staffname();
 Bar("Upload a file to BBDL");
 
 #don't allow from devserver, to avoid uploading wrong files

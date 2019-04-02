@@ -15,7 +15,6 @@ use BOM::Config::Runtime;
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::PlackHelpers qw( http_redirect PrintContentType );
 use BOM::Backoffice::Request qw(request);
-use BOM::StaffPages;
 use BOM::Config;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -43,7 +42,6 @@ if (defined(request()->param('backprice'))) {
     PrintContentType({'cookies' => $bo_cookies});
 } elsif ($try_to_login and my $staff = BOM::Backoffice::Auth0::login(request()->param('access_token'))) {
     my $bo_cookies = BOM::Backoffice::Cookie::build_cookies({
-        staff      => $staff->{nickname},
         auth_token => request()->param('access_token'),
     });
 
@@ -55,11 +53,7 @@ if (defined(request()->param('backprice'))) {
     BOM::Backoffice::Auth0::logout();
     print '<script>window.location = "' . request()->url_for('backoffice/login.cgi') . '"</script>';
     code_exit_BO();
-} elsif (not BOM::Backoffice::Auth0::from_cookie()) {
-    PrintContentType();
-    BOM::StaffPages->instance->login();
-    code_exit_BO();
-} else {
+} elsif (BOM::Backoffice::Auth0::get_staff()) {
     http_redirect(request()->url_for("backoffice/f_broker_login.cgi"));
 }
 BrokerPresentation('STAFF LOGIN PAGE');

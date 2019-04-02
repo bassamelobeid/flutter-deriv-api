@@ -10,7 +10,6 @@ use BOM::Config;
 use BOM::Config::Runtime;
 use Format::Util::Strings qw( set_selected_item );
 use BOM::Backoffice::Auth0;
-use BOM::StaffPages;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use LandingCompany;
 use Brands;
@@ -90,13 +89,9 @@ sub show_form_result {
     return 1;
 }
 
-if (not BOM::Backoffice::Auth0::from_cookie()) {
-    PrintContentType();
-    BOM::StaffPages->instance->login();
-    code_exit_BO();
-} else {
-    PrintContentType();
-}
+# Check if a staff is logged in
+BOM::Backoffice::Auth0::get_staff();
+PrintContentType();
 
 my $action = request()->param('action');
 if ($action and $action eq 'BLOCK APP') {

@@ -7,7 +7,7 @@ use Date::Utility;
 
 BOM::Backoffice::Sysinit::init();
 my $input = request()->params;
-my $clerk = BOM::Backoffice::Cookie::get_staff();
+my $clerk = BOM::Backoffice::Auth0::get_staffname();
 
 Bar("Make dual control code");
 

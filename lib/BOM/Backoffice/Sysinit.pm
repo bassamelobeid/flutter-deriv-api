@@ -165,8 +165,9 @@ sub init {
                 alarm 0;
             });
 
-        $ENV{AUDIT_STAFF_NAME} = BOM::Backoffice::Cookie::get_staff();    ## no critic (RequireLocalizedPunctuationVars)
-        $ENV{AUDIT_STAFF_IP}   = request()->client_ip;                    ## no critic (RequireLocalizedPunctuationVars)
+        my $staff = BOM::Backoffice::Auth0::check_staff();
+        @ENV{qw(AUDIT_STAFF_NAME AUDIT_STAFF_IP)} = ('unauthenticated', request()->client_ip);    ## no critic (RequireLocalizedPunctuationVars)
+        $ENV{AUDIT_STAFF_NAME} = $staff->{nickname} if $staff;                                    ## no critic (RequireLocalizedPunctuationVars)
 
         request()->http_handler($http_handler);
 
@@ -217,8 +218,9 @@ sub log_bo_access {
         }
     }
     $l //= '(no parameters)';
-    my $staffname = BOM::Backoffice::Cookie::get_staff();
-    $staffname ||= 'unauthenticated';
+    my $staffname = 'unauthenticated';
+    my $staff     = BOM::Backoffice::Auth0::check_staff();
+    $staffname = $staff->{nickname} if $staff;
     my $s = $0;
     $s =~ s{^\Q/home/website/www}{};
     my $log = BOM::Backoffice::Config::config()->{log}->{staff};
@@ -235,11 +237,11 @@ sub log_bo_access {
 sub _show_error_and_exit {
     my $error   = shift;
     my $timenow = Date::Utility->new->datetime;
-    my $cookie  = BOM::Backoffice::Auth0::from_cookie();
-    warn "_show_error_and_exit: $error (IP: " . request()->client_ip . '), user: ' . ($cookie ? $cookie->{nickname} : '-');
+    my $staff   = BOM::Backoffice::Auth0::check_staff();
+    warn "_show_error_and_exit: $error (IP: " . request()->client_ip . '), user: ' . ($staff ? $staff->{nickname} : '-');
     # this can be duplicated for ALARM message, but not an issue
     PrintContentType();
-    if ($cookie) {
+    if ($staff) {
         # user is logged in, but access is not enabled;
         print '<div id="page_timeout_notice" class="aligncenter">'
             . '<p class="normalfonterror">'
@@ -252,17 +254,7 @@ sub _show_error_and_exit {
             . '</div>';
     } else {
         # user is not logged in, redirect him to login page
-        my $login = request()->url_for("backoffice/f_broker_login.cgi", {_r => rand()});
-        print <<EOF;
-<script language=javascript>
-function redirect(){
-  window.location = "$login";
-}
-</script>
-<body onload="redirect()">
-redirecting...
-</body>
-EOF
+        BOM::Backoffice::Utility::redirect_login();
     }
     BOM::Backoffice::Request::request_completed();
     exit;

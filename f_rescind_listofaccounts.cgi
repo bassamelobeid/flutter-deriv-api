@@ -17,7 +17,7 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation("RESCIND LIST OF ACCOUNTS");
 
-my $clerk = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $clerk = BOM::Backoffice::Auth0::get_staffname();
 
 my $listaccounts = request()->param('listaccounts');
 my $message = request()->param('message') || 'Account closed.';

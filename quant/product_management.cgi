@@ -33,7 +33,7 @@ PrintContentType();
 BrokerPresentation('Product Management');
 
 my $args_content;
-my $staff            = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $staff            = BOM::Backoffice::Auth0::get_staffname();
 my $r                = request();
 my $limit_profile    = BOM::Config::quants()->{risk_profile};
 my $app_config       = BOM::Config::Runtime->instance->app_config;

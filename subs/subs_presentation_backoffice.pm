@@ -47,7 +47,7 @@ sub BrokerPresentation {
     print
         '<body class="BlueTopBack" marginheight="0" marginwidth="0" topmargin="0" bottommargin="0" leftmargin="0" rightmargin="0" style="margin:0px;">';
 
-    my $staff = BOM::Backoffice::Auth0::from_cookie() ? BOM::Backoffice::Auth0::from_cookie()->{nickname} : '';
+    my $staff = BOM::Backoffice::Auth0::check_staff() ? BOM::Backoffice::Auth0::check_staff()->{nickname} : '';
 
     print "
 

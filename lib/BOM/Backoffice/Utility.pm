@@ -3,6 +3,11 @@ package BOM::Backoffice::Utility;
 use strict;
 use warnings;
 
+use BOM::Backoffice::PlackHelpers qw( http_redirect PrintContentType );
+use BOM::Backoffice::Request qw(request);
+use BOM::StaffPages;
+use Try::Tiny;
+
 use Exporter qw(import export_to_level);
 
 our @EXPORT_OK = qw(get_languages master_live_server_error);
@@ -27,6 +32,24 @@ sub master_live_server_error {
     return main::code_exit_BO(
         "WARNING! You are not on the Master Live Server. Please go to the following link: https://collector01.binary.com/d/backoffice/f_broker_login.cgi"
     );
+}
+
+sub redirect_login {
+    try {
+        PrintContentType();
+        BOM::StaffPages->instance->login();
+    }
+    catch {
+        my $login = request()->url_for("backoffice/f_broker_login.cgi", {_r => rand()});
+        print <<EOF;
+<script>
+    window.location = "$login";
+</script>
+EOF
+
+    };
+    main::code_exit_BO();
+    return;
 }
 
 1;

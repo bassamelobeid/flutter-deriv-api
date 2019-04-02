@@ -98,7 +98,7 @@ sub save_settings {
 
                     }
 
-                    my $staff = BOM::Backoffice::Cookie::get_staff();
+                    my $staff = BOM::Backoffice::Auth0::get_staffname();
                     BOM::Backoffice::QuantsAuditLog::log($staff, "updatedynamicsettingpage", $log_content);
                     $app_config->set($values_to_set);
                     $message .= '<div id="saved">Saved global settings to environment, offerings updated</div>';
@@ -469,7 +469,7 @@ sub send_email_notification {
 
     my $disable_type =
         $for eq 'quants.features.suspend_contract_types' ? 'Contract_type' : $for eq 'quants.markets.disabled' ? 'Market' : 'Underlying';
-    my $staff   = BOM::Backoffice::Cookie::get_staff();
+    my $staff   = BOM::Backoffice::Auth0::get_staffname();
     my @message = "$enable_disable the following offering:";
     push @message, "$disable_type: " . join(",", @different);
     push @message, "By $staff on " . Date::Utility->new->datetime;

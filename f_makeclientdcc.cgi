@@ -14,7 +14,7 @@ BOM::Backoffice::Sysinit::init();
 
 use BOM::User::Client;
 
-my $clerk = BOM::Backoffice::Cookie::get_staff();
+my $clerk = BOM::Backoffice::Auth0::get_staffname();
 
 Bar("Make dual control code");
 

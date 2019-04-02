@@ -27,7 +27,7 @@ use Quant::Framework::CorrelationMatrix;
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::QuantsAuditLog;
 my $broker = request()->broker_code;
-my $staff  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $staff  = BOM::Backoffice::Auth0::get_staffname();
 
 if ($broker !~ /^\w+$/) { die "Bad broker code $broker in $0"; }
 

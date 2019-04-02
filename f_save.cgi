@@ -57,7 +57,7 @@ if ($ok == 0) {
 master_live_server_error() unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}}));
 
 my $broker = request()->broker_code;
-my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $clerk  = BOM::Backoffice::Auth0::get_staffname();
 
 $text =~ s/\r\n/\n/g;
 $text =~ s/\n\r/\n/g;

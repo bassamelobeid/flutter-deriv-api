@@ -33,7 +33,7 @@ if (not BOM::Config::on_production()) {
 
 my $bbdl         = Bloomberg::FileDownloader->new();
 my $sftp         = $bbdl->login;
-my $staff        = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $staff        = BOM::Backoffice::Auth0::get_staffname();
 my $request_file = Bloomberg::RequestFiles->new();
 
 my @files;

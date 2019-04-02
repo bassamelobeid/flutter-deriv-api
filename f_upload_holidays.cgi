@@ -17,7 +17,7 @@ use BOM::Backoffice::Auth0;
 use BOM::Backoffice::QuantsAuditLog;
 PrintContentType();
 
-my $staff = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $staff = BOM::Backoffice::Auth0::get_staffname();
 use BOM::Backoffice::Request qw(request);
 
 PrintContentType();

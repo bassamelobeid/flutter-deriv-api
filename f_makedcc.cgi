@@ -20,7 +20,7 @@ use BOM::Backoffice::Cookie;
 use LandingCompany::Registry;
 BOM::Backoffice::Sysinit::init();
 
-my $staff = BOM::Backoffice::Cookie::get_staff();
+my $staff = BOM::Backoffice::Auth0::get_staffname();
 
 Bar("Make dual control code");
 

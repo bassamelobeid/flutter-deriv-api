@@ -60,8 +60,7 @@ my $reference_id      = delete $params{reference_id};
 my $encoded_loginID   = encode_entities($loginID);
 my $encoded_toLoginID = encode_entities($toLoginID);
 
-my $staff = BOM::Backoffice::Auth0::from_cookie();
-my $clerk = $staff->{nickname};
+my $clerk = BOM::Backoffice::Auth0::get_staffname();
 
 unless ($curr =~ /^[A-Z]{3}$/ && LandingCompany::Registry::get_currency_type($curr)) {
     print "Invalid currency, please check: " . encode_entities($curr);

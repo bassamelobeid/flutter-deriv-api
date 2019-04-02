@@ -31,7 +31,7 @@ PrintContentType();
 BrokerPresentation("Client's Email Details");
 Bar("View / Edit Client's Email");
 
-my $clerk = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $clerk = BOM::Backoffice::Auth0::get_staffname();
 my $now   = Date::Utility->new;
 
 my %input         = %{request()->params};

@@ -42,7 +42,7 @@ my $expired_unsold = current_unsaleable($broker_db);
 
 if (request()->param('perform_actions')) {
     try {
-        my $staff_name = BOM::Backoffice::Cookie::get_staff();
+        my $staff_name = BOM::Backoffice::Auth0::get_staffname();
         die 'Do not know who you are; cannot proceed' unless $staff_name;
         foreach my $todo (grep { /^fmb_/ } (keys %{request()->params})) {
             my $action = request()->param($todo);

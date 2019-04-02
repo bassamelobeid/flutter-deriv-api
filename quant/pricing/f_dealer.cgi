@@ -31,7 +31,7 @@ PrintContentType();
 
 BrokerPresentation('DEALER/LARGE BETS');
 my $broker = request()->broker_code;
-my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $clerk  = BOM::Backoffice::Auth0::get_staffname();
 my $now    = Date::Utility->new;
 # Get inputs
 my $loginID  = request()->param('loginid');

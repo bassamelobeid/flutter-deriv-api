@@ -13,7 +13,7 @@ use BOM::Backoffice::Auth0;
 use BOM::Backoffice::QuantsAuditLog;
 BOM::Backoffice::Sysinit::init();
 my $json  = JSON::MaybeXS->new;
-my $staff = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $staff = BOM::Backoffice::Auth0::get_staffname();
 
 my $args = {
     staff             => $staff,

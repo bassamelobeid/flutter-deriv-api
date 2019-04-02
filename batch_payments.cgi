@@ -38,7 +38,7 @@ if (BOM::Config::Runtime->instance->app_config->system->suspend->payments) {
 
 my $cgi               = CGI->new;
 my $broker            = request()->broker_code;
-my $clerk             = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $clerk             = BOM::Backoffice::Auth0::get_staffname();
 my $confirm           = $cgi->param('confirm');
 my $preview           = $cgi->param('preview');
 my $payments_csv_file = $cgi->param('payments_csv_file') || sprintf '/tmp/batch_payments_%d.csv', rand(1_000_000);

@@ -12,7 +12,7 @@ use BOM::Backoffice::EconomicEventTool;
 use BOM::Backoffice::PricePreview;
 use BOM::Backoffice::Auth0;
 BOM::Backoffice::Sysinit::init();
-my $staff = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $staff = BOM::Backoffice::Auth0::get_staffname();
 my $json  = JSON::MaybeXS->new;
 ## Updates economic event list
 if (request()->param('get_event')) {

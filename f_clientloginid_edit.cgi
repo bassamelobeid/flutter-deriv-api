@@ -95,7 +95,7 @@ my @mt_logins = sort grep { /^MT\d+$/ } $user->loginids;
 my $is_virtual_only = (@user_clients == 1 and @mt_logins == 0 and $client->is_virtual);
 my $broker          = $client->broker;
 my $encoded_broker  = encode_entities($broker);
-my $clerk           = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $clerk           = BOM::Backoffice::Auth0::get_staffname();
 
 if ($input{del_document_list}) {
     my $documents = $input{del_document_list};

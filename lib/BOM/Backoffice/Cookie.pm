@@ -5,10 +5,12 @@ use strict;
 
 use CGI::Cookie;
 use CGI::Util;
-use BOM::Backoffice::Request qw(request);
 use BOM::Config;
+use JSON::MaybeUTF8 qw(:v1);
 
-my @base_cookies_list = qw/staff auth_token/;
+use BOM::Backoffice::Request qw(request);
+
+my @base_cookies_list = qw/auth_token/;
 
 sub _build_cookie {
     return CGI::cookie(
@@ -31,10 +33,6 @@ sub build_cookies {
 # expire cookies, by setting "expires" in the past
 sub expire_cookies {
     return [map { _build_cookie($_, undef, '-1d') } @base_cookies_list];
-}
-
-sub get_staff {
-    die 'broken';
 }
 
 sub get_auth_token {
