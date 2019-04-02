@@ -66,6 +66,11 @@ sub domain {
     return $config;
 }
 
+sub s3 {
+    state $config = YAML::XS::LoadFile('/etc/rmg/s3.yml');
+    return $config;
+}
+
 sub sanction_file {
     return "/var/lib/binary/sanctions.yml";
 }
