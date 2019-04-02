@@ -40,7 +40,7 @@ if (my $il = request()->param('investigate_list')) {
     $il = [$il] unless ref $il;
 
     my @message = (
-        sprintf("%s: %s %s (%s)", map { $client->$_ // '' } (qw(loginid email full_name residence))),
+        $client->loginid,
         sprintf(
             "%s",
             request()->url_for(
