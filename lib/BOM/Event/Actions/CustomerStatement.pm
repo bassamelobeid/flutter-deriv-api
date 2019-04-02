@@ -6,10 +6,10 @@ use warnings;
 no indirect;
 
 use Try::Tiny;
-use Log::Any qw($log), default_adapter => 'Stderr';
 use Email::Stuffer;
 use Date::Utility;
 use List::UtilsBy qw( rev_nsort_by );
+use Log::Any qw($log);
 
 use BOM::User::Client;
 use BOM::Transaction;

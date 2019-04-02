@@ -9,6 +9,7 @@ use DataDog::DogStatsd::Helper qw(stats_inc);
 use JSON::MaybeUTF8 qw(:v1);
 use Try::Tiny;
 
+use BOM::Event::Actions::Client;
 use BOM::Event::Actions::Customerio;
 use BOM::Event::Actions::CustomerStatement;
 use BOM::Event::Actions::MT5;
@@ -37,6 +38,8 @@ my $action_mapping = {
     new_financial_mt5_signup => \&BOM::Event::Actions::MT5::new_financial_mt5_signup,
     anonymize_client         => \&BOM::Event::Actions::Anonymization::start,
     send_mt5_disable_csv     => \&BOM::Event::Actions::MT5::send_mt5_disable_csv,
+    document_upload          => \&BOM::Event::Actions::Client::document_upload,
+    ready_for_authentication => \&BOM::Event::Actions::Client::ready_for_authentication,
 };
 
 =head1 METHODS

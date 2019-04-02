@@ -42,9 +42,10 @@ Process the task sequentially for fixed amount of time.
 sub run {
     my ($self, $queue_name) = @_;
 
+    my $loop = IO::Async::Loop->new;
     while (1) {
         run_once($queue_name);
-        sleep QUEUE_WAIT_DURATION;
+        $loop->delay_future(after => QUEUE_WAIT_DURATION)->get;
     }
 
     return;

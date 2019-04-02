@@ -8,7 +8,6 @@ no indirect;
 use Try::Tiny;
 
 use Log::Any qw($log);
-use Log::Any::Adapter qw(Stderr), log_level => $ENV{BOM_LOG_LEVEL} // 'info';
 
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Context qw(localize);
@@ -18,9 +17,7 @@ use BOM::MT5::User::Async;
 use BOM::Config::RedisReplicated;
 
 use Brands;
-use Cache::RedisDB;
 use Email::Stuffer;
-use RedisDB;
 use YAML::XS;
 use Date::Utility;
 use Text::CSV;
