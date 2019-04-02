@@ -203,7 +203,7 @@ sub validate_account_details {
     if ($args->{secret_answer} xor $args->{secret_question}) {
         return {
             error             => 'PermissionDenied',
-            message_to_client => localize("Need both secret_question and secret_answer")};
+            message_to_client => localize("Need both secret question and secret answer.")};
     }
 
     return {error => 'InvalidPlaceOfBirth'}
