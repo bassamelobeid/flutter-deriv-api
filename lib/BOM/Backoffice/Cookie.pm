@@ -34,7 +34,7 @@ sub expire_cookies {
 }
 
 sub get_staff {
-    die 'broken'
+    die 'broken';
 }
 
 sub get_auth_token {
