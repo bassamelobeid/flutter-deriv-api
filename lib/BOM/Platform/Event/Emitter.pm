@@ -35,6 +35,12 @@ use redis to store events as FIFO queue
 
 use constant TIMEOUT => 5;
 
+my %event_queue_mapping = (
+    email_statement          => 'STATEMENTS_QUEUE',
+    document_upload          => 'DOCUMENT_AUTHENTICATION_QUEUE',
+    ready_for_authentication => 'DOCUMENT_AUTHENTICATION_QUEUE'
+);
+
 my $config = LoadFile($ENV{BINARY_EVENT_REDIS_CONFIG} // '/etc/rmg/ws-redis.yml');
 my $connections = {};
 
@@ -169,9 +175,7 @@ Bind event name to its queue
 =cut
 
 sub _queue_name {
-    my $event = shift;
-    return 'STATEMENTS_QUEUE' if $event eq 'email_statement';
-    return 'GENERIC_EVENTS_QUEUE';
+    return $event_queue_mapping{+shift} // 'GENERIC_EVENTS_QUEUE';
 }
 
 1;
