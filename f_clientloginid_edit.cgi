@@ -18,6 +18,7 @@ use f_brokerincludeall;
 
 use BOM::User::Client;
 
+use BOM::Config;
 use BOM::Config::Runtime;
 use BOM::Backoffice::Request qw(request);
 use BOM::User;
@@ -229,7 +230,7 @@ if ($input{whattodo} eq 'uploadID') {
     my $result         = "";
 
     my @futures;
-    my $s3_client = BOM::Platform::S3Client->new(BOM::Backoffice::Config::config()->{document_auth_s3});
+    my $s3_client = BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth});
     foreach my $i (1 .. 4) {
         my $doctype         = $cgi->param('doctype_' . $i);
         my $filetoupload    = $cgi->upload('FILE_' . $i);
@@ -360,6 +361,12 @@ if ($input{whattodo} eq 'uploadID') {
                     warn $err . $_;
                 };
                 return Future->fail("Database Falure: " . $err) if $err;
+                BOM::Platform::Event::Emitter::emit(
+                    'document_upload',
+                    {
+                        loginid => $loginid,
+                        file_id => $file_id,
+                    });
                 return Future->done();
             });
         $future->set_label($new_file_name);
