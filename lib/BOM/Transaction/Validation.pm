@@ -344,15 +344,17 @@ sub _slippage {
     my $what_changed = $p->{action} eq 'sell' ? 'sell price' : undef;
     $what_changed //= ($self->transaction->amount_type eq 'payout' or $self->transaction->amount_type eq 'multiplier') ? 'price' : 'payout';
     my ($market_moved, $contract) =
-        (localize('The underlying market has moved too much since you priced the contract. '), $self->transaction->contract);
+        (localize('The underlying market has moved too much since you priced the contract.'), $self->transaction->contract);
     my $currency = $contract->currency;
-    $market_moved .= localize(
+    $market_moved =
+        $market_moved . ' '
+        . localize(
         'The contract [_4] has changed from [_1][_2] to [_1][_3].',
         $currency,
         formatnumber('amount', $currency, $p->{amount}),
         formatnumber('amount', $currency, $p->{recomputed_amount}),
         $what_changed
-    );
+        );
 
     #Record failed transaction here.
     for my $c (@{$self->clients}) {
@@ -599,9 +601,7 @@ sub _validate_payout_limit {
                 -mesg              => $client->loginid . ' payout [' . $payout . '] over custom limit[' . $custom_limit . ']',
                 -message_to_client => ($custom_limit == 0)
                 ? localize('This contract is unavailable on this account.')
-                : localize(
-                    'This contract is limited to ' . formatnumber('amount', $contract->currency, $custom_limit) . ' payout on this account.'
-                ),
+                : localize('This contract is limited to [_1] payout on this account.', formatnumber('amount', $contract->currency, $custom_limit)),
             );
         }
     }

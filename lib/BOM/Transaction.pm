@@ -490,7 +490,7 @@ sub prepare_bet_data_for_buy {
         return Error::Base->cuss(
             -type              => 'UnsupportedBetClass',
             -mesg              => "Unsupported bet class $bet_params->{bet_class}",
-            -message_to_client => BOM::Platform::Context::localize("Unsupported bet class $bet_params->{bet_class}"),
+            -message_to_client => BOM::Platform::Context::localize("Unsupported bet class [_1].", $bet_params->{bet_class}),
         );
     }
     my $quants_bet_variables;
