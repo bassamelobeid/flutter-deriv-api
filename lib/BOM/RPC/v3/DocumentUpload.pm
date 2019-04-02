@@ -6,6 +6,7 @@ use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (localize);
 use Date::Utility;
 use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Event::Emitter;
 use Syntax::Keyword::Try;
 use feature 'state';
 use base qw(Exporter);
@@ -102,6 +103,12 @@ sub successful_upload {
 
     return $args unless $status_changed;
 
+    BOM::Platform::Event::Emitter::emit(
+        'document_upload',
+        {
+            loginid => $client_id,
+            file_id => $args->{file_id},
+        });
     my $email_body = "New document was uploaded for the account: " . $client_id;
 
     send_email({
