@@ -1018,14 +1018,14 @@ rpc set_settings => sub {
             if ($args->{$detail} && $current_client->$detail) {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'PermissionDenied',
-                        message_to_client => localize("Already have a $detail.")});
+                        message_to_client => localize("Already have a [_1].", $detail)});
             }
         }
 
         if ($args->{secret_answer} xor $args->{secret_question}) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'PermissionDenied',
-                    message_to_client => localize("Need both secret_question and secret_answer")});
+                    message_to_client => localize("Need both secret question and secret answer.")});
         }
 
         if ($args->{account_opening_reason}) {
@@ -1546,7 +1546,7 @@ rpc set_self_exclusion => sub {
         if ($args{$field} and $args{$field} !~ /^\d{0,20}(?:\.\d{0,$decimals})?$/) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'InputValidationFailed',
-                    message_to_client => localize("Input validation failed: $field"),
+                    message_to_client => localize("Input validation failed: [_1].", $field),
                     details           => {
                         $field => "Please input a valid number.",
                     },
