@@ -23,8 +23,8 @@ test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/
     $suite->get_token('test@binary.com'), 'test@binary.com', 'id';
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.json',
 $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test@binary.com';
-#fail_test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
-#    $suite->get_token('test@binary.com'), 'test@binary.com', 'id';
+fail_test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
+    $suite->get_token('test@binary.com'), 'test@binary.com', 'id';
 # READ SCOPE CALLS (VRTC)
 test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '10000', 'USD', $suite->get_stashed('authorize/authorize/loginid');
 test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', 'USD',       1;
@@ -38,7 +38,7 @@ test_sendrecv 'balance/test_send_subscribe.json', 'balance/test_receive.json',
     template_values => ['10000', 'USD', $suite->get_stashed('authorize/authorize/loginid')],
     start_stream_id => 1;
 test_sendrecv 'proposal/test_send_buy.json', 'proposal/test_receive_buy.json';
-test_sendrecv_params 'buy/test_send.json',   'buy/test_receive.json', $suite->get_stashed('proposal/proposal/id'), '99\\\\d{2}\\\\.\\\\d{2}';
+test_sendrecv_params 'buy/test_send.json',   'buy/test_receive.json', $suite->get_stashed('proposal/proposal/id'), 9948.51;
 test_last_stream_params 1,                   'balance/test_receive_subscribe.json', 9948.51,  'USD',
     $suite->get_stashed('authorize/authorize/loginid');
 test_sendrecv_params 'buy/test_send_with_params.json', 'buy/test_receive_with_params.json', 'payout', '5.15', '10';
@@ -186,7 +186,6 @@ test_sendrecv_params 'get_financial_assessment/test_send.json', 'get_financial_a
     $suite->get_stashed('set_financial_assessment/set_financial_assessment/cfd_score'),
     $suite->get_stashed('set_financial_assessment/set_financial_assessment/trading_score'),
     $suite->get_stashed('set_financial_assessment/set_financial_assessment/financial_information_score');
-
 fail_test_sendrecv 'logout/test_send_to_fail.json', 'logout/test_receive.json';
 test_sendrecv 'logout/test_send.json',              'logout/test_receive.json';
 

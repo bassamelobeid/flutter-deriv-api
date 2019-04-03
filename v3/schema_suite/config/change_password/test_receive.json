@@ -13,7 +13,7 @@
       "echo_req" : {},
       "change_password" : {
          "type" : "integer",
-         "pattern" : "^1$"
+         "enum" : [1]
       },
       "msg_type" : {
          "pattern" : "^change_password$",

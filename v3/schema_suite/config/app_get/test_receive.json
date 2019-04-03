@@ -37,7 +37,7 @@
             },
             "app_id" : {
                "type" : "integer",
-               "pattern" : "^[_1]$"
+               "enum" : [[_1]]
             },
             "appstore" : {
                "pattern" : "^https\\://itunes\\.apple\\.com/test_app$",
@@ -66,7 +66,7 @@
             },
             "app_markup_percentage" : {
                "type" : "number",
-               "pattern" : "^1.5$"
+               "enum" : [1.5]
             }
          },
          "type" : "object"

@@ -16,8 +16,7 @@
                "enum" : [[_3]]
             },
             "purchase_time" : {
-               "type" : "integer",
-               "pattern" : "^\\d{10}$"
+               "type" : "integer"
             },
             "shortcode" : {
                "type" : "string"
@@ -26,8 +25,7 @@
                "type" : "integer"
             },
             "start_time" : {
-               "type" : "integer",
-               "pattern" : "^\\d{10}$"
+               "type" : "integer"
             },
             "longcode" : {
                "type" : "string"

@@ -41,7 +41,7 @@
             },
             "has_reality_check" : {
                "type" : "integer",
-               "pattern" : "^1$"
+               "enum" : [1]
             },
             "address" : {
                "items" : {

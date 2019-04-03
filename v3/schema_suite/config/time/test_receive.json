@@ -17,7 +17,7 @@
       "echo_req" : {},
       "time" : {
          "type" : "integer",
-         "pattern" : "^\\d{10}$"
+         "minimum" : 1000000000
       }
    }
 }

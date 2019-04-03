@@ -30,7 +30,7 @@
             "financial_information_score" : {
                "description" : "Financial Information Score",
                "type" : "integer",
-               "pattern" : "^[_4]$"
+               "enum" : [[_4]]
             },
             "forex_trading_experience" : {
                "type" : "string",
@@ -43,12 +43,12 @@
             "trading_score" : {
                "type" : "integer",
                "description" : "Trading Experience Score",
-               "pattern" : "^[_3]$"
+               "enum" : [[_3]]
             },
             "total_score" : {
                "description" : "Total Score",
                "type" : "integer",
-               "pattern" : "^[_1]$"
+               "enum" : [[_1]]
             },
             "net_income" : {
                "pattern" : "^\\$25\\,000 \\- \\$50\\,000$",
@@ -91,7 +91,7 @@
                "pattern" : "^Less than \\$25\\,000$"
             },
             "cfd_score" : {
-               "pattern" : "^[_2]$",
+               "enum" : [[_2]],
                "description" : "CFD Score",
                "type" : "integer"
             }

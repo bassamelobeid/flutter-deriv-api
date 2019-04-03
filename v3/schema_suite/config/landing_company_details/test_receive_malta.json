@@ -46,7 +46,7 @@
                "type" : "string"
             },
             "has_reality_check" : {
-               "pattern" : "^1$",
+               "enum" : [1],
                "type" : "integer"
             },
             "legal_allowed_contract_categories" : {

@@ -11,7 +11,7 @@
    "title" : null,
    "properties" : {
       "verify_email" : {
-         "pattern" : "^1$",
+         "enum" : [1],
          "type" : "integer"
       },
       "msg_type" : {

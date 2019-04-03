@@ -15,24 +15,23 @@
             "last_12months_profitable_trades" : {
                "type" : "number",
                "requred" : 1,
-               "pattern" : "^0$"
+               "enum" : [0]
             },
             "trades_profitable" : {
                "requred" : 1,
                "type" : "number",
-               "pattern" : "^0$"
+               "enum" : [0]
             },
             "active_since" : {
-               "pattern" : "^\\d+$",
                "type" : "integer"
             },
             "total_trades" : {
-               "pattern" : "^0$",
+               "enum" : [0],
                "type" : "integer",
                "requred" : 1
             },
             "avg_profit" : {
-               "pattern" : "^0$",
+               "enum" : [0],
                "type" : "number",
                "requred" : 1
             },
@@ -47,14 +46,14 @@
                "properties" : {}
             },
             "avg_loss" : {
-               "pattern" : "^0$",
+               "enum" : [0],
                "type" : "number",
                "requred" : 1
             },
             "avg_duration" : {
                "requred" : 1,
                "type" : "integer",
-               "pattern" : "^0$"
+               "enum" : [0]
             },
             "yearly_profitable_trades" : {
                "type" : "object",

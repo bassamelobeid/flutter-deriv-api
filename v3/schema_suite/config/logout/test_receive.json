@@ -10,7 +10,7 @@
    "title" : null,
    "properties" : {
       "logout" : {
-         "pattern" : "^1$",
+         "enum" : [1],
          "type" : "integer"
       },
       "echo_req" : {},

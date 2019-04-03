@@ -17,7 +17,7 @@
                "properties" : {
                   "is_enabled" : {
                      "type" : "integer",
-                     "pattern" : "^(0|1)$"
+                     "enum" : [0,1]
                   }
                },
                "type" : "object",

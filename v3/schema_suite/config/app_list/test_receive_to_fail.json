@@ -51,7 +51,7 @@
                   "type" : "string"
                },
                "app_id" : {
-                  "pattern" : "(?!^[_1]$)(^.*$)",
+                  "enum" : [[_1]],
                   "type" : "integer"
                }
             },

@@ -22,7 +22,7 @@
             "properties" : {
                "status" : {
                   "type" : "integer",
-                  "pattern" : "^1$"
+                  "enum" : [1]
                },
                "action" : {
                   "type" : "string"

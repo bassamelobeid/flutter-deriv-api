@@ -16,7 +16,7 @@
          "pattern" : "^copy_start$"
       },
       "copy_start" : {
-         "pattern" : "^1$",
+         "enum" : [1],
          "type" : "integer"
       }
    }

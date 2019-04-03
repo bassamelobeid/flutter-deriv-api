@@ -44,7 +44,7 @@
                "type" : "string"
             },
             "app_markup_percentage" : {
-               "pattern" : "^2.5$",
+               "enum" : [2.5],
                "type" : "number"
             },
             "appstore" : {

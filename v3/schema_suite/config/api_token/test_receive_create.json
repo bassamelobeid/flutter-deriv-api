@@ -54,7 +54,7 @@
             },
             "new_token" : {
                "type" : "integer",
-               "pattern" : "^1$"
+               "enum" : [1]
             }
          }
       }

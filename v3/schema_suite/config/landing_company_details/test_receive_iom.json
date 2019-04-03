@@ -53,7 +53,7 @@
                "minItems" : 6
             },
             "has_reality_check" : {
-               "pattern" : "^1$",
+               "enum" : [1],
                "type" : "integer"
             },
             "shortcode" : {

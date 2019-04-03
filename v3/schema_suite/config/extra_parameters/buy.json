@@ -1,5 +1,14 @@
 {
-   "price" : 10000,
-   "buy" : 1,
-   "parameters":{"asdasd" :2 }
+  "buy": 1,
+  "price": 10000,
+  "parameters": {
+    "amount": 10,
+    "basis": "payout",
+    "contract_type": "TICKHIGH",
+    "currency": "USD",
+    "symbol": "R_10",
+    "duration": 5,
+    "duration_unit": "t",
+    "price" : 10000
+  }
 }

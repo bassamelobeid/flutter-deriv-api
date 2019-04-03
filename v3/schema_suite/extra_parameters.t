@@ -11,7 +11,7 @@ use BOM::Test::Suite::DSL;
 my $json       = JSON::MaybeXS->new;
 my $SCHEMA_DIR = '/home/git/regentmarkets/binary-websocket-api/config/v3/';
 
-#subtest 'Check specfic calls' => sub {
+subtest 'Check specfic calls' => sub {
 
     my $suite = start(
         title             => "extra_parameters.t",
@@ -33,7 +33,7 @@ my $SCHEMA_DIR = '/home/git/regentmarkets/binary-websocket-api/config/v3/';
         $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token');
 
     test_sendrecv_params 'extra_parameters/proposal_array.json', 'extra_parameters/error.json', '.*barriers.0';
-    #};
+    };
 
 subtest 'Nested objects in all calls' => sub {
     for my $call_name (path($SCHEMA_DIR)->children) {

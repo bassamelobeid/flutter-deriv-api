@@ -18,7 +18,7 @@
          "type" : "object",
          "properties" : {
             "delete_token" : {
-               "pattern" : "^1$",
+               "enum" : [1],
                "type" : "integer"
             },
             "tokens" : {

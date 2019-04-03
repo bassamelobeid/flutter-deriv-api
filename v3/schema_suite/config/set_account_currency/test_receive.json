@@ -16,7 +16,7 @@
       },
       "set_account_currency" : {
          "type" : "integer",
-         "pattern" : "^1$"
+         "enum" : [1]
       },
       "echo_req" : {}
    }

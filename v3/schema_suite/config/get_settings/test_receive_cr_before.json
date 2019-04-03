@@ -51,12 +51,12 @@
                "pattern" : "^3002$"
             },
             "email_consent" : {
-               "pattern" : "^(0|1)$",
+               "enum" : [0,1],
                "type" : "integer"
             },
             "date_of_birth" : {
                "type" : "integer",
-               "pattern" : "^318124800$"
+               "enum" : [318124800]
             },
             "client_tnc_status" : {
                "type" : "string",

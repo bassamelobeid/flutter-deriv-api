@@ -16,7 +16,7 @@
       },
       "echo_req" : {},
       "set_self_exclusion" : {
-         "pattern" : "^1$",
+         "enum" : [1],
          "type" : "integer"
       }
    }

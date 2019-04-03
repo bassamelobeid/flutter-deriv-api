@@ -22,7 +22,7 @@
             },
             "balance" : {
                "type" : "number",
-               "pattern" : "^[_1]$"
+               "enum" : [[_1]]
             },
             "currency" : {
                "type" : "string",

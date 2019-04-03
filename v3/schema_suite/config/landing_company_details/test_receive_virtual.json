@@ -61,7 +61,7 @@
                "pattern" : "^[_1]$"
             },
             "has_reality_check" : {
-               "pattern" : "^0$",
+               "enum" : [0],
                "type" : "integer"
             }
          },

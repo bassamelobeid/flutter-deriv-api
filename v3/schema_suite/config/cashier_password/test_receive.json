@@ -16,7 +16,7 @@
       },
       "cashier_password" : {
          "type" : "integer",
-         "pattern" : "^[_1]$"
+         "enum" : [[_1]]
       },
       "echo_req" : {}
    }

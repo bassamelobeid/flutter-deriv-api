@@ -61,7 +61,7 @@
                      "integer",
                      "null"
                   ],
-                  "pattern" : "^(0|1)$"
+                  "enum" : [0,1]
                },
                "spot_time" : {
                   "pattern" : "^(|\\d{10})$",
@@ -72,13 +72,12 @@
                },
                "is_trading_suspended" : {
                   "type" : "integer",
-                  "pattern" : "^(0|1)$"
+                  "enum" : [0,1]
                },
                "exchange_name" : {
                   "type" : "string"
                },
                "spot_age" : {
-                  "pattern" : "^(|\\d+)$",
                   "type" : "number"
                },
                "spot" : {

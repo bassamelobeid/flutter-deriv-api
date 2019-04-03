@@ -34,22 +34,20 @@
                "type" : "number"
             },
             "start_time" : {
-               "type" : "integer",
-               "pattern" : "^\\d{10}$"
+               "type" : "integer"
             },
             "transaction_id" : {
                "type" : "integer"
             },
             "buy_price" : {
                "type" : "number",
-               "pattern" : "^[_2]"
+               "enum" : [[_2]]
             },
             "purchase_time" : {
-               "pattern" : "^\\d{10}$",
                "type" : "integer"
             },
             "payout" : {
-               "pattern" : "^[_3]",
+               "enum" : [[_3]],
                "type" : "number"
             },
             "shortcode" : {

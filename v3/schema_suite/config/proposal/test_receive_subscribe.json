@@ -5,16 +5,16 @@
     "properties": {
         "proposal": {
             "type": "object",
-         "required" : [
-            "ask_price",
-            "spot",
-            "date_start",
-            "payout",
-            "display_value",
-            "longcode",
-            "id",
-            "spot_time"
-         ],
+            "required" : [
+                "ask_price",
+                "spot",
+                "date_start",
+                "payout",
+                "display_value",
+                "longcode",
+                "id",
+                "spot_time"
+            ],
             "properties" : {
                 "longcode": {
                     "type": "string",
@@ -22,15 +22,14 @@
                 },
                 "ask_price": {
                     "type": "number",
-                    "pattern": "^[_7]$"
+                    "enum": [[_7]]
                 },
                 "display_value": {
                     "type": "string",
                     "pattern": "^[_8]$"
                 },
                 "date_start": {
-                    "type": "number",
-                    "pattern": "^\\d+$"
+                    "type": "number"
                 },
                 "id": {
                     "type": "string",
@@ -38,30 +37,30 @@
                 },
                 "payout": {
                     "type": "number",
-                    "pattern": "^[_1]$"
+                    "enum": [[_1]]
                 },
                 "spot": {
                     "type": "number",
-                    "pattern": "^[_9]$"
+                    "enum": [[_9]]
                 },
                 "spot_time": {
-                    "type": "number",
-                    "pattern": "^\\d+$"
+                    "type": "number"
+
                 }
-            }
-        },
-        "echo_req": {
-        },
-        "msg_type": {
-            "type": "string",
-            "pattern": "^proposal$"
-        },
-        "subscription": {
-            "type": "object",
-            "required": ["id"],
-            "properties": {
-                "id": {
-                    "type": "string"
+            },
+            "echo_req": {
+            },
+            "msg_type": {
+                "type": "string",
+                "pattern": "^proposal$"
+            },
+            "subscription": {
+                "type": "object",
+                "required": ["id"],
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    }
                 }
             }
         }

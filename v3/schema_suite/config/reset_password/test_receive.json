@@ -12,7 +12,7 @@
    "properties" : {
       "reset_password" : {
          "type" : "integer",
-         "pattern" : "^1$"
+         "enum" : [1]
       },
       "echo_req" : {},
       "msg_type" : {

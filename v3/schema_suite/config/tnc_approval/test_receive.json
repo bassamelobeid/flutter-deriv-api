@@ -16,7 +16,7 @@
          "type" : "string"
       },
       "tnc_approval" : {
-         "pattern" : "^1$",
+         "enum" : [1],
          "type" : "integer"
       }
    }

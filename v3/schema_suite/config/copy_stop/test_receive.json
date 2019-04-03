@@ -17,7 +17,7 @@
       },
       "copy_stop" : {
          "type" : "integer",
-         "pattern" : "^1$"
+         "enum" : [1]
       }
    }
 }
