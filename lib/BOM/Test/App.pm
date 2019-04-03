@@ -30,8 +30,7 @@ sub _test_schema {
 
     my $validator = JSON::Validator->new();
     $validator->schema(JSON::MaybeXS->new->decode($expected_json_schema));
-    #   $validator->coerce(strings => 1, numbers =>1, booleans => 1);
-
+    #It is not intended that any coercion is done here as results should already be coerced and match schema's
     my @error      = $validator->validate($result);
     my $test_level = $Test::Builder::Level;
     local $Test::Builder::Level = $test_level + 3;

@@ -17,7 +17,6 @@ use JSON::Schema;
 use Path::Tiny;
 use JSON::MaybeXS;
 use JSON::Validator;
-use JSON::Schema;
 use Data::Dumper;
 use Date::Utility;
 
@@ -181,7 +180,6 @@ sub test_schema {
     my @v4_result = $v4_validator->validate($data);
 
     ok !(scalar @v4_result), "$type response validated OK by V4 schema - " . $schema->{title} or do {
-        ;
         diag 'Message is rejected by v4 validator:';
         diag " - $_" foreach @v4_result;
         diag "Received Data \n" . Dumper($data);
