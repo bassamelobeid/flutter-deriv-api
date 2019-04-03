@@ -38,10 +38,11 @@ sub subscribe_transaction_channel {
 
     my $args = $req_storage->{args};
     return undef unless exists $args->{subscribe} and $args->{subscribe};
+
     my $account_id = $c->stash('account_id');
     my $id = Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'subscribe', $account_id, 'balance', $req_storage);
-
     $req_storage->{transaction_channel_id} = $id if $id;
+
     return undef;
 }
 
