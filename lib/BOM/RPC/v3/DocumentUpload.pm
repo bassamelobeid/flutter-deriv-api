@@ -101,14 +101,15 @@ sub successful_upload {
         return create_upload_error();
     };
 
-    return $args unless $status_changed;
-
     BOM::Platform::Event::Emitter::emit(
         'document_upload',
         {
             loginid => $client_id,
             file_id => $args->{file_id},
         });
+
+    return $args unless $status_changed;
+
     my $email_body = "New document was uploaded for the account: " . $client_id;
 
     send_email({
