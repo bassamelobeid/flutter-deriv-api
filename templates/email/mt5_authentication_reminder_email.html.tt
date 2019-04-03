@@ -4,7 +4,7 @@
 
 <p><strong>[% l("You may ignore this email if you have sent us your documents.") %]</strong></p>
 
-<p>[% l("Please authenticate your account by") %] <a href="[% "https://www.binary.com/en/user/settings/detailsws.html" %]">[% l("updating your tax information") %]</a> [% l("and uploading the following documents:") %]
+<p>[% l("Please authenticate your account by [_1]updating your tax information[_2] and uploading the following documents:", '<a href="https://www.binary.com/en/user/settings/detailsws.html">', '</a>') | none %]
 <ul>
     <li>[% l("A copy of a valid driving licence, identity card, or passport (front and back)") %]</li>
     <li>[% l("A copy of a utility bill or bank statement issued within the past six months") %]</li>
@@ -12,11 +12,11 @@
 </ul>
 </p>
 
-<p>[% l("You may upload the copies of all required documents directly from your real money account at") %] <a href="[% "https://www.binary.com/en/user/authenticate.html" %]">https://www.binary.com/en/user/authenticate.html</a></p>
+<p>[% l("You may upload the copies of all required documents directly from your real money account at [_1].", '<a href="https://www.binary.com/en/user/authenticate.html">https://www.binary.com/en/user/authenticate.html</a>') | none %]</p>
 
 <p><strong>[% l("Kindly note that if we don't receive your documents by [_1], your account will be disabled and any open position that you may have on the MT5 platform will be closed.", last_date) %]</strong></p>
 
-<p>[% l("If you need further clarification or assistance, please contact us at") %] <a href="[% "mailto:support@binary.com" %]">[% ("support@binary.com.")%]</a></p>
+<p>[% l("If you need further clarification or assistance, please contact us at [_1].", '<a href="mailto:support@binary.com">support@binary.com</a>') | none %]</p>
 
 <p>[% l("Regards,") %]<br>
 [% l("Binary.com") %]</p>
