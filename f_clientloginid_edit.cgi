@@ -915,6 +915,8 @@ print qq[<form action="$self_post?loginID=$encoded_loginid" id="clientInfoForm" 
     <input type="submit" value="Save Client Details">
     <input type="hidden" name="broker" value="$encoded_broker">];
 
+# Get latest client object to make sure it contains updated client info (after editing client details form)
+$client = BOM::User::Client->new({loginid => $loginid});
 print_client_details($client, $is_virtual_only);
 
 my $INPUT_SELECTOR = 'input:not([type="hidden"]):not([type="submit"]):not([type="reset"]):not([type="button"])';

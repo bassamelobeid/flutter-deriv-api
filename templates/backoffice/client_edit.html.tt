@@ -236,49 +236,27 @@ table#client_edit td{
         <td>
             <select name="client_aml_risk_classification">
                 [% FOREACH risk_classification = risk_classification_options %]
-                    [% IF risk_classification.value == client.aml_risk_classification %]
-                        <option value="[% risk_classification.value %]" selected="selected">[% risk_classification.details %]</option>
-                    [% ELSE %]
-                        <option value="[% risk_classification.value %]">[% risk_classification.details %]</option>
-                    [% END %]
+                    <option value="[% risk_classification.value %]" [% IF risk_classification.value == client.aml_risk_classification %] selected="selected" [% END %]>[% risk_classification.details %]</option>
                 [% END %]
             </select>
-            Current risk classification: [% client.aml_risk_classification %]
         </td>
     </tr>
     <tr>
         <td class="label">ID Authentication</td>
         [%
             authentication_options = [
-                {'value' => '', 'details' => 'Please select to update' }
-                {'value' => 'CLEAR_ALL', 'details' => 'Not authenticated' }
-                {'value' => 'ID_DOCUMENT', 'details' => 'Authenticated with scans' }
-                {'value' => 'ID_NOTARIZED', 'details' => 'Authenticated with Notarized docs' }
-                {'value' => 'NEEDS_ACTION', 'details' => 'Needs Action' }
+                {'value' => '', 'short_name' => '', 'details' => 'Please select to update' }
+                {'value' => 'CLEAR_ALL', 'short_name' => 'no', 'details' => 'Not authenticated' }
+                {'value' => 'ID_DOCUMENT', 'short_name' => 'scans', 'details' => 'Authenticated with scans' }
+                {'value' => 'ID_NOTARIZED', 'short_name' => 'notarized','details' => 'Authenticated with Notarized docs' }
+                {'value' => 'NEEDS_ACTION',  'short_name' => 'needs_action', 'details' => 'Needs Action' }
            ];
-	   authentication_status = client.authentication_status;
+           authentication_status = client.authentication_status;
         %]
         <td id="verification">:
-        Current methods:
-            [% SWITCH authentication_status %]
-                [% CASE "scans" %]
-                    Authenticated with scans
-                [% CASE "notarized" %]
-                    Authenticated with Notarized docs
-                [% CASE "under_review" %]
-                    Under Review
-                [% CASE "needs_action" %]
-                    Needs Action
-                [% CASE %]
-                    Not authenticated
-            [% END %]
-            <select name="client_authentication">
+            <select name="client_authentication" onchange="update_age_verification(this.value)">
                 [% FOREACH authentication = authentication_options %]
-                    [% IF  authentication.value == '' %]
-                        <option value="[% authentication.value %]" selected="selected">[% authentication.details %]</option>
-                    [% ELSE %]
-                        <option value="[% authentication.value %]">[% authentication.details %]</option>
-                    [% END %]
+                    <option value="[% authentication.value %]" [% IF authentication.short_name == authentication_status %]selected="selected"[% END %]>[% authentication.details %]</option>
                 [% END %]
             </select>
 
@@ -340,17 +318,7 @@ IF client_for_prove
     <tr>
         <td class="label">Age Verified</td>
         <td>:
-            [% IF client.status.age_verification %]
-                YES
-            [% ELSE %]
-                NO
-            [% END %]
-        </td>
-    </tr>
-    <tr>
-        <td class="label">Set Status Age Verified</td>
-        <td>:
-            <select name="age_verification">
+            <select name="age_verification" id="age_verification">
                 [% client_age_verified = client.status.age_verification %]
                 <option value="yes" [% IF client_age_verified %]selected="selected"[% END %]>YES</option>
                 <option value="no" [% UNLESS client_age_verified %]selected="selected"[% END %]>NO</option>
@@ -581,6 +549,18 @@ function get_checked_files() {
     } else {
         alert('No files selected');
         return false;
+    }
+}
+
+function update_age_verification(auth_status) {
+    var age_verification_status = [% IF client_age_verified %] 'yes' [% ELSE %] 'no' [% END %];
+    var age_verification_element = document.getElementById('age_verification');
+    age_verification_element.value = (auth_status == 'ID_DOCUMENT' || auth_status == 'ID_NOTARIZED') ? 'yes' : age_verification_status;
+    if (age_verification_element.value !== age_verification_status) {
+        age_verification_element.classList.add('data-changed');
+    }
+    else {
+        age_verification_element.classList.remove('data-changed');
     }
 }
 </script>
