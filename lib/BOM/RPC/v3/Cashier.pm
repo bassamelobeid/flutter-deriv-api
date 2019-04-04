@@ -162,19 +162,25 @@ rpc "cashier", sub {
             );
         }
 
-        if ($errortext =~ /(province|country|city|street|pcode|phone|email)/) {
-            my $field = $1;
+        if (my @error_fields = ($errortext =~ /(province|country|city|street|pcode|phone|email)/g)) {
 
             # map to our form fields
-            $field = "postcode"     if $field eq 'pcode';
-            $field = "addressline1" if $field eq 'street';
-            $field = "residence"    if $field eq 'country';
+            my %mapping = (
+                province => "address_state",
+                country  => "residence",
+                city     => "address_city",
+                street   => "address_line_1",
+                pcode    => "address_postcode"
+            );
+
+            for my $field (@error_fields) {
+                $field = $mapping{$field} // $field;
+            }
 
             return BOM::RPC::v3::Utility::create_error({
-                code              => 'ASK_FIX_DETAILS',
-                message_to_client => localize('There was a problem validating your personal details.'),
-                details           => $field
-            });
+                    code              => 'ASK_FIX_DETAILS',
+                    message_to_client => localize('There was a problem validating your personal details.'),
+                    details           => {fields => \@error_fields}});
         }
 
         if ($errortext =~ /customer too old/) {

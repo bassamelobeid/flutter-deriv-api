@@ -1268,6 +1268,7 @@ subtest $method => sub {
         $result,
         {
             'country'                        => 'Indonesia',
+            'residence'                      => 'Indonesia',
             'salutation'                     => 'MR',
             'is_authenticated_payment_agent' => '0',
             'country_code'                   => 'id',
@@ -1303,6 +1304,7 @@ subtest $method => sub {
         {
             'email'             => 'abc@binary.com',
             'country'           => 'Indonesia',
+            'residence'         => 'Indonesia',
             'country_code'      => 'id',
             'email_consent'     => '0',
             'has_secret_answer' => '1',

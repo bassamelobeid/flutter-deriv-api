@@ -937,8 +937,10 @@ rpc get_settings => sub {
     my $user              = $client->user;
 
     return {
-        email         => $client->email,
-        country       => $country,
+        email     => $client->email,
+        country   => $country,
+        residence => $country
+        , # Everywhere else in our responses to FE, we pass the residence key instead of country. However, we need to still pass in country for backwards compatibility.
         country_code  => $country_code,
         email_consent => ($user and $user->{email_consent}) ? 1 : 0,
         has_secret_answer => ($client->secret_answer) ? 1 : 0,
