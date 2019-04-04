@@ -110,16 +110,21 @@ sub generate {
             $bet        = produce_contract($bet_params);
             $underlying = $bet->underlying;
             $bid_price  = $bet->bid_price;
+            # We need to make sure that we return a true value here, since
+            # we use the result of the try/catch block to decide whether to
+            # proceed
+            1;
         }
         catch {
+            my $err = $_;
+            $err = $err->{error_code} if ref($err) eq 'HASH' and exists $err->{error_code};
 
             $ignored++;
             $csv->print($ignored_fh,
-                [$open_fmb->{transaction_id}, $open_fmb->{client_loginid}, $open_fmb->{short_code}, $open_fmb->{currency_code}, $_->{error_code}]);
-
-            next FMB;
-
-        };
+                [$open_fmb->{transaction_id}, $open_fmb->{client_loginid}, $open_fmb->{short_code}, $open_fmb->{currency_code}, $err]);
+            # Make sure the catch sub returns zero so we skip any further processing
+            0;
+        } or next FMB;
 
         my $underlying_symbol = $underlying->symbol;
         my $bid_price_in_usd = $self->amount_in_usd($bid_price, $bet->currency);
