@@ -368,7 +368,7 @@ sub _login {
     );
 
     # send when client already has login session(s) and its not backoffice (app_id = 4, as we impersonate from backoffice using read only tokens)
-    if ($app->{id} ne '4' and _oauth_model()->has_other_login_sessions($client->loginid)) {
+    if ($app->{id} ne '4') {
         try {
             if ($last_login and exists $last_login->{environment}) {
                 my ($old_env, $user_agent, $r) =
