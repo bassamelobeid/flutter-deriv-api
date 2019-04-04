@@ -66,9 +66,7 @@ sub PrintContentType {
     );
 
     my $lang = request()->language;
-    if ($lang) {
-        $http_handler->print_header('Content-Language' => lc $lang);
-    }
+    $http_handler->print_header('Content-Language' => CGI::Util::escape(lc $lang));
 
     if (exists $params->{'cookies'} && ref $params->{'cookies'} eq 'ARRAY' && scalar @{$params->{'cookies'}} > 0) {
         _header_set_cookie($params->{'cookies'});
@@ -85,13 +83,16 @@ sub _header_set_cookie {
     my %existing_cookies = CGI::Cookie->fetch;
     my @cookies          = sort grep { $_ } @$cookies;
 
+    # Cookies passed here are made via CGI::Cookie, which are already escaped;
+    # still, verify existing cookie values which we explicitly escape:
     COOKIE:
     foreach my $cookie (@cookies) {
+        die 'given bad cookie to bake' unless ref $cookie eq 'CGI::Cookie';
         foreach my $key (keys %existing_cookies) {
-            my $chk = $key . '=' . CGI::Util::escape($existing_cookies{$key}->value // ' ');
+            my $chk = CGI::Util::escape($key) . '=' . CGI::Util::escape($existing_cookies{$key}->value // ' ');
             next COOKIE if $cookie =~ /^$chk;/;
         }
-        request()->http_handler->print_header_add('Set-Cookie' => $cookie);
+        request()->http_handler->print_header('Set-Cookie' => $cookie);
     }
     return;
 }
@@ -106,10 +107,10 @@ sub PrintContentType_XSendfile {
     $http_handler->print_content_type($content_type);
     my $basename = $download_name || $filename;
     $basename =~ s!.*/!!;
-    $http_handler->print_header('Content-Disposition' => 'inline; filename=' . $basename);
+    $http_handler->print_header('Content-Disposition' => 'inline; filename=' . CGI::Util::escape($basename));
     $http_handler->print_header('Cache-control'       => "private, no-cache, must-revalidate");
 
-    $http_handler->print_header('X-Accel-Redirect' => '/-/download' . $filename);
+    $http_handler->print_header('X-Accel-Redirect' => '/-/download' . CGI::Util::escape($filename));
     $http_handler->status(200);
     return;
 }
@@ -130,19 +131,8 @@ sub PrintContentType_excel {
 
     my $http_handler = request()->http_handler;
     $http_handler->print_content_type("application/vnd.ms-excel");
-    $http_handler->print_header('Content-Disposition' => 'attachment; filename=' . $filename . ($size ? ';size=' . $size : ''));
-    $http_handler->print_header('Cache-control' => "private, no-cache, must-revalidate");
-    $http_handler->status(200);
-    return;
-}
-
-sub PrintContentType_image {
-    my ($img_format) = @_;
-
-    local $\ = '';
-
-    my $http_handler = request()->http_handler;
-    $http_handler->print_content_type("image/$img_format");
+    $http_handler->print_header(
+        'Content-Disposition' => 'attachment; filename=' . CGI::Util::escape($filename) . ($size ? ';size=' . CGI::Util::escape($size) : ''));
     $http_handler->print_header('Cache-control' => "private, no-cache, must-revalidate");
     $http_handler->status(200);
     return;

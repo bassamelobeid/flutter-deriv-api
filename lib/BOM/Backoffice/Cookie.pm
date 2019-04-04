@@ -32,7 +32,7 @@ sub build_cookies {
 
 # expire cookies, by setting "expires" in the past
 sub expire_cookies {
-    return [map { _build_cookie($_, undef, '-1d') } @base_cookies_list];
+    return [map { _build_cookie($_, '', '-1d') } @base_cookies_list];
 }
 
 sub get_auth_token {

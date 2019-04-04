@@ -205,8 +205,7 @@ sub path        { return $_[0]->{env}->{PATH_INFO} || '/' }
 sub script_name { return $_[0]->{env}->{SCRIPT_NAME} }
 
 BEGIN {
-    *print_header_add = \&Plack::App::CGIBin::Streaming::Request::print_header;
-    *print            = \&Plack::App::CGIBin::Streaming::Request::print_content;
+    *print = \&Plack::App::CGIBin::Streaming::Request::print_content;
 }
 
 sub print_content_type {
