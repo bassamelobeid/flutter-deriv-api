@@ -133,7 +133,7 @@ subtest 'handling client data that require munging' => sub {
     $df_client = BOM::Platform::Client::DoughFlowClient->register_and_return_new_client($client_details1);
 
     is($df_client->CustName, 'a aX',                    'munged CustName correct');
-    is($df_client->Street,   'X',                       'munged Street correct');
+    is($df_client->Street,   '',                        'munged Street correct');
     is($df_client->City,     'aX',                      'City correct');
     is($df_client->Province, '',                        'If we are not in the US,CA,AU,GB, we cant munge this appropriately.');
     is($df_client->Country,  'AF',                      'Country correct');

@@ -76,7 +76,9 @@ sub CustName {
     my $self = shift;
 
     my $name = $self->first_name . ' ' . $self->last_name;
-    $name .= 'X' while length $name < 4;    # pads the name out to 4 characters.
+    if ($name ne " ") { # We should not pad a non-existent name. That would mask doughflow errors.
+        $name .= 'X' while length $name < 4;    # pads the name out to 4 characters.
+    }
     return $name;
 }
 
@@ -106,7 +108,7 @@ sub _parse_address {
 
 # Street
 # The trimmed Street must be more than 1 character long
-sub Street { return shift->address_1 || 'X' }
+sub Street { return shift->address_1 }
 
 # City
 # The trimmed City name must be at least 2 characters long
@@ -121,7 +123,9 @@ sub City {
             unless $self->{'_parsed_address_error'};
     }
 
-    $city .= 'X' while length $city < 2;    # pads the name out to 2 characters.
+    if ($city) { # We should not pad a non-existent city. That would mask doughflow errors.
+        $city .= 'X' while length $city < 2;    # pads the name out to 2 characters.
+    }
     return $city;
 }
 
