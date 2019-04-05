@@ -485,4 +485,9 @@ sub is_payment_agents_suspended_in_country {
     return any { $_ eq $country } @$suspended_countries;
 }
 
+sub get_mt5_loginids {
+    my $self = shift;
+    return grep { $_ =~ MT5_REGEX } $self->loginids;
+}
+
 1;

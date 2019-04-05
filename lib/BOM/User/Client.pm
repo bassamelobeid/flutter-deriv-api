@@ -27,6 +27,7 @@ use ExchangeRates::CurrencyConverter qw(convert_currency);
 
 use BOM::Platform::Account::Real::default;
 
+use BOM::Database::ClientDB;
 use BOM::User::Client::Payments;
 use BOM::User::Client::PaymentAgent;
 use BOM::User::Client::Status;
@@ -1092,4 +1093,20 @@ sub is_region_eu {
     }
 
 }
+
+=head2 get_open_contracts
+
+Returns the list of open contracts for a given client
+
+=cut
+
+sub get_open_contracts {
+    my $client = shift;
+
+    return BOM::Database::ClientDB->new({
+            client_loginid => $client->loginid,
+            operation      => 'replica',
+        })->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client->loginid, $client->currency, 'false']);
+}
+
 1;
