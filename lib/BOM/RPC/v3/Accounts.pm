@@ -42,6 +42,7 @@ use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Token;
 use BOM::Transaction;
+use BOM::MT5::User::Async;
 use BOM::Config;
 use BOM::User::Password;
 use BOM::Database::DataMapper::FinancialMarketBet;
@@ -52,7 +53,6 @@ use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
 use BOM::Config::Runtime;
 use BOM::Config::ContractPricingLimits qw(market_pricing_limits);
-use BOM::Platform::Event::Emitter;
 
 use constant DEFAULT_STATEMENT_LIMIT => 100;
 
@@ -1881,6 +1881,90 @@ rpc login_history => sub {
     }
 
     return {records => [@history]};
+};
+
+rpc account_closure => sub {
+    my $params = shift;
+
+    my $client = $params->{client};
+    my $args   = $params->{args};
+
+    my $closing_reason = $args->{reason};
+
+    my $user = $client->user;
+    my @accounts_to_disable = $user->clients(include_disabled => 0);
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'ReasonNotSpecified',
+            message_to_client => localize('Please specify the reasons for closing your accounts.')}) if $closing_reason =~ /^\s*$/;
+
+    # This for-loop is for balance validation and open positions checking
+    # No account is to be disabled if there is at least one real-account with balance
+    foreach my $client (@accounts_to_disable) {
+        next if ($client->is_virtual || !$client->account);
+
+        return BOM::RPC::v3::Utility::create_error({
+                code => 'AccountHasOpenPositions',
+                message_to_client =>
+                    localize('There are open positions in your accounts. Please make sure all positions are closed before proceeding.')}
+        ) if @{$client->get_open_contracts};
+
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'RealAccountHasBalance',
+                message_to_client => localize('Your accounts still have funds. Please withdraw all funds before proceeding.')}
+        ) if $client->account->balance > 0;
+    }
+
+    foreach my $mt5_loginid ($user->get_mt5_loginids) {
+        $mt5_loginid =~ s/\D//g;
+        my $mt5_user = BOM::MT5::User::Async::get_user($mt5_loginid)->get;
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'MT5AccountHasBalance',
+                message_to_client => localize('Your MT5 accounts still have funds. Please withdraw all funds before proceeding.')}
+        ) if (($mt5_user->{group} =~ /^real/) && ($mt5_user->{balance} > 0));
+    }
+
+    # This for-loop is for disabling the accounts
+    # If an error occurs, it will be emailed to CS to disable manually
+    my $loginids_disabled_success = '';
+    my $loginids_disabled_failed  = '';
+
+    my $loginid = $client->loginid;
+    my $error;
+
+    foreach my $client (@accounts_to_disable) {
+        try {
+            $client->status->set('disabled', $loginid, $closing_reason);
+            $loginids_disabled_success .= $client->loginid . ' ';
+        }
+        catch {
+            $error = BOM::RPC::v3::Utility::client_error();
+            $loginids_disabled_failed .= $client->loginid . ' ';
+        };
+    }
+
+    # Return error if NO loginids have been disabled
+    return $error if ($error && $loginids_disabled_success eq '');
+
+    my $data_closure = {
+        closing_reason    => $closing_reason,
+        loginid           => $loginid,
+        loginids_disabled => $loginids_disabled_success,
+        loginids_failed   => $loginids_disabled_failed
+    };
+
+    my $data_email_consent = {
+        loginid       => $loginid,
+        email_consent => 0
+    };
+
+    # Remove email consents for the user (and update the clients as well)
+    $user->update_email_fields(email_consent => $data_email_consent->{email_consent});
+    BOM::Platform::Event::Emitter::emit('email_consent', $data_email_consent);
+
+    BOM::Platform::Event::Emitter::emit('account_closure', $data_closure);
+
+    return {status => 1};
 };
 
 rpc set_account_currency => sub {

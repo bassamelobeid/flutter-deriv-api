@@ -26,6 +26,7 @@ use BOM::Database::Model::AccessToken;
 use BOM::RPC::v3::Utility;
 use BOM::User::Password;
 use BOM::User;
+use BOM::User::Client;
 use BOM::Config;
 use BOM::MT5::User::Async;
 
@@ -72,6 +73,7 @@ my $hash_pwd    = BOM::User::Password::hashpw($password);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
 });
+
 $test_client->email($email);
 $test_client->save;
 
@@ -88,6 +90,13 @@ my $user         = BOM::User->create(
 );
 $user->add_client($test_client);
 $user->add_client($test_client_vr);
+
+my $test_client_cr_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'VRTC',
+});
+
+$test_client_cr_vr->email('sample@binary.com');
+$test_client_cr_vr->save;
 
 my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
@@ -107,6 +116,8 @@ my $user_cr = BOM::User->create(
     email    => 'sample@binary.com',
     password => $hash_pwd
 );
+
+$user_cr->add_client($test_client_cr_vr);
 $user_cr->add_client($test_client_cr);
 $user_cr->add_client($test_client_cr_2);
 
@@ -1312,6 +1323,134 @@ subtest $method => sub {
         },
         'vr client return less messages'
     );
+};
+
+$method = 'account_closure';
+subtest $method => sub {
+    my $args = {
+        "account_closure" => 1,
+        "reason"          => 'Financial concerns'
+    };
+
+    my $email = 'def456@email.com';
+
+    # Create user
+    my $user = BOM::User->create(
+        email    => $email,
+        password => $hash_pwd
+    );
+
+    my $new_client_handler = sub {
+        my ($broker_code, $currency) = @_;
+        $currency //= 'USD';
+
+        my $new_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => $broker_code});
+
+        $new_client->set_default_account($currency);
+        $new_client->email($email);
+        $new_client->save;
+        $user->add_client($new_client);
+
+        return $new_client;
+    };
+
+    my $payment_handler = sub {
+        my ($client, $amount) = @_;
+
+        $client->payment_legacy_payment(
+            currency     => $client->currency,
+            amount       => $amount,
+            remark       => 'testing',
+            payment_type => 'ewallet'
+        );
+
+        return 1;
+    };
+
+    # Create VR client
+    my $test_client_vr = $new_client_handler->('VRTC');
+
+    # Create CR client (first)
+    my $test_client = $new_client_handler->('CR');
+
+    # Tokens
+    my $token = $m->create_token($test_client->loginid, 'test token');
+
+    my $res = $c->tcall(
+        $method,
+        {
+            token => $token,
+            args  => $args
+        });
+
+    # Test with single real account (no balance)
+    # Test with virtual account
+    is($res->{status}, 1, 'Successfully received request');
+    ok($test_client_vr->status->disabled, 'Virtual account disabled');
+    ok($test_client->status->disabled,    'CR account disabled');
+
+    $test_client_vr->status->clear_disabled;
+    $test_client->status->clear_disabled;
+
+    ok(!$test_client->status->disabled, 'CR account is enabled back again');
+
+    $payment_handler->($test_client, 1);
+
+    $res = $c->tcall(
+        $method,
+        {
+            token => $token,
+            args  => $args
+        });
+
+    # Test with single real account (balance)
+    is($res->{error}->{code}, 'RealAccountHasBalance', 'Correct error code');
+    ok(!$test_client->status->disabled,    'CR account is not disabled');
+    ok(!$test_client_vr->status->disabled, 'Virtual account is also not disabled');
+
+    my $test_client_2 = $new_client_handler->('CR', 'BTC');
+    $payment_handler->($test_client,   -1);
+    $payment_handler->($test_client_2, 1);
+
+    $res = $c->tcall(
+        $method,
+        {
+            token => $token,
+            args  => $args
+        });
+
+    # Test with real siblings account (balance)
+    is($res->{error}->{code}, 'RealAccountHasBalance', 'Correct error code');
+    is(
+        $res->{error}->{message_to_client},
+        'Your accounts still have funds. Please withdraw all funds before proceeding.',
+        'Correct error message for sibling account'
+    );
+    is($test_client->account->balance, '0.00', 'CR (USD) has no balance');
+    ok(!$test_client->status->disabled,   'CR account is not disabled');
+    ok(!$test_client_2->status->disabled, 'Sibling account is also not disabled');
+
+    # Test with siblings account (has balance)
+    $payment_handler->($test_client_2, -1);
+
+    $res = $c->tcall(
+        $method,
+        {
+            token => $token,
+            args  => $args
+        });
+
+    $test_client_vr = BOM::User::Client->new({loginid => $test_client_vr->loginid});
+    $test_client    = BOM::User::Client->new({loginid => $test_client->loginid});
+    $test_client_2  = BOM::User::Client->new({loginid => $test_client_2->loginid});
+
+    my $disabled_hashref = $test_client_2->status->disabled;
+
+    is($res->{status},                  1,                     'Successfully received request');
+    is($disabled_hashref->{reason},     $args->{reason},       'Correct message for reason');
+    is($disabled_hashref->{staff_name}, $test_client->loginid, 'Correct loginid');
+    ok($test_client_vr->status->disabled, 'Virtual account disabled');
+    ok($test_client->status->disabled,    'CR account disabled');
 };
 
 $method = 'set_financial_assessment';
