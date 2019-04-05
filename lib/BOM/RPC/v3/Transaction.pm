@@ -124,9 +124,6 @@ rpc buy => sub {
 
     my ($source, $contract_parameters, $args, $payout) = @{$params}{qw/source contract_parameters args payout/};
 
-    my $args_error = BOM::RPC::v3::Utility::contract_args_check($args);
-    return $args_error if $args_error;
-
     my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($client, @validation_checks);
     return $validation_error if $validation_error;
 
@@ -261,9 +258,6 @@ rpc buy_contract_for_multiple_accounts => sub {
 
     my $args = $params->{args};
     my $tokens = $args->{tokens} // [];
-
-    my $args_error = BOM::RPC::v3::Utility::contract_args_check($args);
-    return $args_error if $args_error;
 
     my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($client, @validation_checks);
     return $validation_error if $validation_error;

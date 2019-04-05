@@ -60,15 +60,6 @@ use constant LONGCODE_REDIS_BATCH => 20;
 # However, it's a config file held outside the repo, so we also don't want to let it get too old.
 use constant RATES_FILE_CACHE_TIME => 120;
 
-# Maximum values for contract durations; larger ones can cause timeouts/warnings in Date::Utility
-my %DURATION_LIMITS = (
-    d => 365,
-    h => 168,     # 1 week
-    m => 1440,    # 1 day
-    s => 3600,    # 1 hour
-    t => 10
-);
-
 # For transfers, defines the oldest rates allowed for currency conversion per currency type
 use constant CURRENCY_CONVERSION_MAX_AGE_FIAT   => 3600 * 24;    # 1 day
 use constant CURRENCY_CONVERSION_MAX_AGE_CRYPTO => 3600;
@@ -120,16 +111,6 @@ sub validation_checks {
                 message_to_client => $err->{-message_to_client},
             }) if defined $err and ref $err eq "Error::Base";
     }
-
-    return undef;
-}
-
-sub contract_args_check {
-    my $args = shift;
-
-    my $duration_unit = $args->{duration_unit} ? lc $args->{duration_unit} : '';
-
-    return invalid_duration() if ($args->{duration} // 0) > ($DURATION_LIMITS{$duration_unit} // 'inf');
 
     return undef;
 }
@@ -202,13 +183,6 @@ sub invalid_email {
     return create_error({
             code              => 'InvalidEmail',
             message_to_client => localize('This email address is invalid.')});
-}
-
-sub invalid_duration {
-    return create_error({
-            code              => 'OfferingsValidationError',
-            details           => {field => 'duration'},
-            message_to_client => localize('Trading is not offered for this duration.')});
 }
 
 # Start this at zero to ensure we always load on first call.

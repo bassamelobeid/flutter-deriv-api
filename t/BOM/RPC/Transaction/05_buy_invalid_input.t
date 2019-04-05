@@ -45,20 +45,15 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 $client->deposit_virtual_funds;
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
-my $params = {
-    language            => 'EN',
-    token               => $token,
-    source              => 1,
-    contract_parameters => {
-        "proposal"      => 1,
-        "amount"        => "100",
-        "basis"         => "payout",
-        "contract_type" => "CALL",
-        "currency"      => "USD",
-        "duration"      => "5000000000000000",
-        "duration_unit" => "d",
-        "symbol"        => "R_50",
-    },
+my $ask_params = {
+    "proposal"      => 1,
+    "amount"        => "100",
+    "basis"         => "payout",
+    "contract_type" => "CALL",
+    "currency"      => "USD",
+    "duration"      => 50000000000000,
+    "duration_unit" => "d",
+    "symbol"        => "R_50",
 };
 
 my $params_invalid_symbol = {
@@ -77,16 +72,35 @@ my $params_invalid_symbol = {
     },
 };
 
+my $buy_params = {
+    args                => {price => 100},
+    contract_parameters => {
+        amount                => 100,
+        app_markup_percentage => 1,
+        basis                 => "stake",
+        contract_type         => "CALL",
+        currency              => "USD",
+        duration              => 50000000000000,
+        duration_unit         => "s",
+        proposal              => 1,
+        symbol                => "R_50"
+    },
+    language => "EN",
+    source   => 1,
+    token    => $token
+};
+
 subtest 'buy with invalid duration using contract_parameters' => sub {
     my (undef, $txn_con) = Test::BOM::RPC::Contract::prepare_contract(client => $client);
-    $params->{args}{price} = $txn_con->contract->ask_price;
-    $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'correct error code');
+    $buy_params->{args}{price} = $txn_con->contract->ask_price;
+    # use Data::Dumper::Concise;
+    # my $cc =
+    $c->call_ok('buy', $buy_params)->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'correct error code');
+    # warn Dumper $cc->result;
 };
 
 subtest 'get proposal with invalid days duration' => sub {
-    my $ask_params = {args => $params->{contract_parameters}};
-
-    $c->call_ok('send_ask', $ask_params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError', 'correct error code');
+    $c->call_ok('send_ask', {args => $ask_params})->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'correct error code');
 };
 
 subtest 'get proposal with invalid symbol' => sub {
@@ -97,113 +111,84 @@ subtest 'get proposal with invalid symbol' => sub {
 };
 
 subtest 'buy with invalid days duration' => sub {
-    my $buy_params = {
-        token => $token,
-        args  => $params->{contract_parameters}};
-
-    $c->call_ok('buy', $buy_params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError', 'correct error code');
+    $c->call_ok('buy', $buy_params)->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'correct error code');
 };
 
-subtest 'buy_contract_for_multiple_accounts with invalid days duration' => sub {
-    my $buy_params = {
-        token => $token,
-        args  => $params->{contract_parameters}};
-
-    $c->call_ok('buy_contract_for_multiple_accounts', $buy_params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError');
-};
-
-$params->{contract_parameters}{duration_unit} = 'h';
+$buy_params->{contract_parameters}{duration_unit} = 'h';
+$ask_params->{duration_unit} = 'h';
 
 subtest 'get proposal with invalid hours duration' => sub {
-    my $ask_params = {args => $params->{contract_parameters}};
-
-    $c->call_ok('send_ask', $ask_params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError', 'correct error code');
+    $c->call_ok('send_ask', {args => $ask_params})->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'correct error code');
 };
 
 subtest 'buy with invalid hours duration' => sub {
-    my $buy_params = {
-        token => $token,
-        args  => $params->{contract_parameters}};
-
-    $c->call_ok('buy', $buy_params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError', 'correct error code');
+    $c->call_ok('buy', $buy_params)->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'correct error code');
 };
 
-$params->{contract_parameters}{duration_unit} = 'm';
+$buy_params->{contract_parameters}{duration_unit} = 'm';
+$ask_params->{duration_unit} = 'm';
 
 subtest 'get proposal with invalid minutes duration' => sub {
-    my $ask_params = {args => $params->{contract_parameters}};
-
-    $c->call_ok('send_ask', $ask_params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError', 'correct error code');
+    $c->call_ok('send_ask', {args => $ask_params})->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'correct error code');
 };
 
 subtest 'buy with invalid minutes duration' => sub {
-    my $buy_params = {
-        token => $token,
-        args  => $params->{contract_parameters}};
-
-    $c->call_ok('buy', $buy_params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError', 'correct error code');
+    $c->call_ok('buy', $buy_params)->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'correct error code');
 };
 
-$params->{contract_parameters}{duration_unit} = 's';
+$buy_params->{contract_parameters}{duration_unit} = 's';
+$ask_params->{duration_unit} = 's';
 
 subtest 'get proposal with invalid seconds duration' => sub {
-    my $ask_params = {args => $params->{contract_parameters}};
-
-    $c->call_ok('send_ask', $ask_params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError');
+    $c->call_ok('send_ask', {args => $ask_params})->has_no_system_error->has_error->error_code_is('ContractCreationFailure');
 };
 
 subtest 'buy with invalid seconds duration' => sub {
-    my $buy_params = {
-        token => $token,
-        args  => $params->{contract_parameters}};
-
-    $c->call_ok('buy', $buy_params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError', 'correct error code');
+    $c->call_ok('buy', $buy_params)->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'correct error code');
 };
 
-$params->{contract_parameters}{duration_unit} = 't';
+$buy_params->{contract_parameters}{duration_unit} = 't';
+$ask_params->{duration_unit} = 't';
 
 subtest 'get proposal with invalid ticks duration' => sub {
-    my $ask_params = {args => $params->{contract_parameters}};
-
-    $c->call_ok('send_ask', $ask_params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError', 'correct error code');
+    $c->call_ok('send_ask', {args => $ask_params})->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'correct error code');
 };
 
 subtest 'buy with invalid ticks duration' => sub {
-    my $buy_params = {
-        token => $token,
-        args  => $params->{contract_parameters}};
-
-    $c->call_ok('buy', $buy_params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError', 'correct error code');
+    $c->call_ok('buy', $buy_params)->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'correct error code');
 };
 
 subtest 'buy with invalid expiry date' => sub {
-    delete $params->{contract_parameters}{duration};
-    delete $params->{contract_parameters}{duration_unit};
-    $params->{contract_parameters}{date_expiry} = Date::Utility->new->epoch + 9999999999;
-    $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('InvalidtoBuy', 'correct error code');
+    delete $buy_params->{contract_parameters}{duration};
+    delete $buy_params->{contract_parameters}{duration_unit};
+    $buy_params->{contract_parameters}{date_expiry} = Date::Utility->new->epoch + 9999999999;
+    $c->call_ok('buy', $buy_params)->has_no_system_error->has_error->error_code_is('InvalidtoBuy', 'correct error code');
 };
 
 subtest 'get proposal with invalid expiry date' => sub {
-    my $ask_params = {args => $params->{contract_parameters}};
+    delete $ask_params->{duration};
+    delete $ask_params->{duration_unit};
+    $ask_params->{date_expiry} = Date::Utility->new->epoch + 9999999999;
 
-    $c->call_ok('send_ask', $ask_params)->has_no_system_error->has_error->error_code_is('OfferingsValidationError', 'correct error code');
+    $c->call_ok('send_ask', {args => $ask_params})->has_no_system_error->has_error->error_code_is('OfferingsValidationError', 'correct error code');
 };
 
 subtest 'get digitmatch proposal with invalid input' => sub {
-    $params->{contract_parameters}{contract_type} = 'DIGITMATCH';
-    $params->{contract_parameters}{duration}      = '5';
-    $params->{contract_parameters}{duration_unit} = 't';
-    $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'correct error code')->error_message_is(
+    $buy_params->{contract_parameters}{contract_type} = 'DIGITMATCH';
+    $buy_params->{contract_parameters}{duration}      = '5';
+    $buy_params->{contract_parameters}{duration_unit} = 't';
+    $c->call_ok('buy', $buy_params)->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'correct error code')
+        ->error_message_is(
         'Missing required contract parameters (last digit prediction for digit contracts).',
         'Missing required contract parameters (last digit prediction for digit contracts).'
-    );
+        );
 };
 
 subtest 'get digitmatch proposal with invalid duration' => sub {
-    $params->{contract_parameters}{duration}      = '5';
-    $params->{contract_parameters}{duration_unit} = 'd';
-    $params->{contract_parameters}{barrier}       = '1';
-    $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('InvalidOfferings', 'correct error code')
+    $buy_params->{contract_parameters}{duration}      = '5';
+    $buy_params->{contract_parameters}{duration_unit} = 'd';
+    $buy_params->{contract_parameters}{barrier}       = '1';
+    $c->call_ok('buy', $buy_params)->has_no_system_error->has_error->error_code_is('InvalidOfferings', 'correct error code')
         ->error_message_is('Trading is not offered for this duration.', 'Trading is not offered for this duration.');
 
 };

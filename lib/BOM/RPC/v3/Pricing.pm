@@ -9,14 +9,7 @@ use BOM::RPC::Registry '-dsl';
 use BOM::Pricing::v3::Contract;
 use BOM::Pricing::v3::MarketData;
 
-rpc send_ask => sub {
-    my $params = shift;
-
-    my $args_error = BOM::RPC::v3::Utility::contract_args_check($params->{args});
-    return $args_error if $args_error;
-
-    return BOM::Pricing::v3::Contract::send_ask($params);
-};
+rpc send_ask => \&BOM::Pricing::v3::Contract::send_ask;
 
 rpc get_bid => \&BOM::Pricing::v3::Contract::get_bid;
 
