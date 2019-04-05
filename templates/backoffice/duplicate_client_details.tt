@@ -1,0 +1,33 @@
+<head>
+    <title>Duplicated Client Detected</title>
+</head>
+
+<body>
+<center><font size="2" face="verdana">
+<p style="color:red"><strong>ERROR ! Duplicated Account suspected"</strong></p>
+
+<p>Details of duplicated account:</p>
+
+<table border="0" cellpadding="1" cellspacing="1" width="90%" style="text-align:left; padding:0.5em 0;">
+    <tr>
+        <th align="right">Login ID: </th>
+        <td>[% loginid %]</td>
+    <tr>
+    <tr>
+        <th align="right">First Name: </th>
+        <td>[% first_name %]</td>
+    <tr>
+    <tr>
+        <th align="right">Last Name: </th>
+        <td>[% last_name %]</td>
+    <tr>
+    <tr>
+        <th align="right">DOB: </th>
+        <td>[% date_of_birth %]</td>
+    <tr>
+</table>
+
+<p><a href=[% self_link %]>&laquo;Return to Client Details<a/></p>
+
+</center>
+</body>
