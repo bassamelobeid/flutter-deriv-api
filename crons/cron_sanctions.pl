@@ -53,7 +53,20 @@ sub do_report {
     my $result;
     my $brand = Brands->new(name => 'binary');
 
-    my $today_date = Date::Utility::today()->date;
+    my $today_date           = Date::Utility::today()->date;
+    my $last_sanction_update = $sanctions->last_updated();
+    if (($last_run > $last_sanction_update) && !$force) {
+        my $last_date                 = Date::Utility->new()->datetime_ddmmmyy_hhmmss_TZ;
+        my $last_sanction_update_date = Date::Utility->new($last_sanction_update)->datetime_ddmmmyy_hhmmss_TZ;
+        send_email({
+            from    => $brand->emails('support'),
+            to      => join(',', $brand->emails('compliance'), 'sysadmin@binary.com'),
+            subject => "No sanctions changes for $today_date",
+            message => ["Last sanction list update : $last_sanction_update_date \n" . "Last sanction cron ran : $last_date"],
+        });
+
+        return undef;
+    }
 
     my @headers =
         (
@@ -94,6 +107,8 @@ sub do_report {
             attachment => $filename->canonpath,
         });
     }
+
+    $file_flag->spew_utf8("Created by $0 PID $$");
 
     return undef;
 }
