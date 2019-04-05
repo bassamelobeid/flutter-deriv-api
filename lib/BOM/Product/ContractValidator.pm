@@ -90,7 +90,7 @@ sub _confirm_validity {
     # Add any new validation methods here.
     # Looking them up can be too slow for pricing speed constraints.
     # This is the default list of validations.
-    my @validation_methods = qw(_validate_input_parameters _validate_offerings _validate_start_and_expiry_date);
+    my @validation_methods = qw(_validate_offerings _validate_input_parameters _validate_start_and_expiry_date);
     push @validation_methods, qw(_validate_trading_times) unless $self->underlying->always_available;
     push @validation_methods, '_validate_barrier'         unless $args->{skip_barrier_validation};
     push @validation_methods, '_validate_barrier_type'    unless $self->for_sale;

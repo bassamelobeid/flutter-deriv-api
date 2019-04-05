@@ -1139,10 +1139,7 @@ sub metadata {
         } elsif (not $contract->expiry_daily) {
             $contract->remaining_time->seconds;
         } else {
-            my $calendar = $contract->trading_calendar;
-            my $exchange = $contract->underlying->exchange;
-            $calendar->trading_date_for($exchange, $contract->date_expiry)
-                ->days_between($calendar->trading_date_for($exchange, $contract->date_start));
+            $contract->date_expiry->days_between($contract->date_start);
         }
     };
 
