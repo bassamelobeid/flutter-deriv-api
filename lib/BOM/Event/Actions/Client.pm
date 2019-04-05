@@ -5,16 +5,20 @@ use warnings;
 
 no indirect;
 
-use Try::Tiny;
-
 use Log::Any qw($log);
 use IO::Async::Loop;
 use Net::Async::HTTP;
 use WebService::Async::Onfido;
 use Locale::Codes::Country qw(country_code2code);
 use DataDog::DogStatsd::Helper;
+use Brands;
+use Try::Tiny;
+use Template::AutoFilter;
 
 use BOM::Config;
+use BOM::Platform::Context qw(localize);
+use BOM::Platform::Email qw(send_email);
+use BOM::User;
 use BOM::User::Client;
 use BOM::Database::ClientDB;
 use BOM::Platform::S3Client;
@@ -470,6 +474,95 @@ SQL
         };
         $doc;
     };
+}
+
+=head2 account_closure_event
+
+Send email to CS that a client has closed their accounts.
+
+=cut
+
+sub account_closure {
+
+    my $data = shift;
+
+    my $brands        = Brands->new();
+    my $system_email  = $brands->emails('system');
+    my $support_email = $brands->emails('support');
+
+    _send_email_account_closure_cs($data, $system_email, $support_email);
+
+    _send_email_account_closure_client($data->{loginid}, $support_email);
+
+    return undef;
+
+}
+
+sub _send_email_account_closure_cs {
+
+    my ($data, $system_email, $support_email) = @_;
+
+    my $loginid = $data->{loginid};
+    my $user = BOM::User->new(loginid => $loginid);
+
+    my @mt5_loginids = grep { $_ =~ qr/^MT[0-9]+$/ } $user->loginids;
+    my $mt5_loginids_string = @mt5_loginids ? join ",", @mt5_loginids : undef;
+
+    my $data_tt = {
+        loginid               => $loginid,
+        successfully_disabled => $data->{loginids_disabled},
+        failed_disabled       => $data->{loginids_failed},
+        mt5_loginids_string   => $mt5_loginids_string,
+        reasoning             => $data->{closing_reason}};
+
+    my $email_subject = "Account closure done by $loginid";
+
+    # Send email to CS
+    my $tt = Template::AutoFilter->new({
+        ABSOLUTE => 1,
+        ENCODING => 'utf8'
+    });
+
+    return try {
+        $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/account_closure.html.tt', $data_tt, \my $html);
+        die "Template error: @{[$tt->error]}" if $tt->error;
+
+        die "failed to send email to CS for Account closure ($loginid)"
+            unless Email::Stuffer->from($system_email)->to($support_email)->subject($email_subject)->html_body($html)->send();
+
+        undef;
+    }
+    catch {
+        $log->warn($_);
+        undef;
+    };
+}
+
+sub _send_email_account_closure_client {
+    my ($loginid, $support_email) = @_;
+
+    my $client = BOM::User::Client->new({loginid => $loginid});
+
+    my $client_email_template = localize(
+        "\
+        <p><b>We're sorry you're leaving.</b></p>
+        <p>You have requested to close your Binary.com accounts. This is to confirm that all your accounts have been terminated successfully.</p>
+        <p>Thank you.</p>
+        Team Binary.com
+        "
+    );
+
+    send_email({
+        from                  => $support_email,
+        to                    => $client->email,
+        subject               => localize("We're sorry you're leaving"),
+        message               => [$client_email_template],
+        use_email_template    => 1,
+        email_content_is_html => 1,
+        skip_text2html        => 1
+    });
+
+    return undef;
 }
 
 1;

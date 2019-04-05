@@ -13,6 +13,7 @@ use BOM::Event::Actions::Client;
 use BOM::Event::Actions::Customerio;
 use BOM::Event::Actions::CustomerStatement;
 use BOM::Event::Actions::MT5;
+use BOM::Event::Actions::Client;
 
 =head1 NAME
 
@@ -40,6 +41,7 @@ my $action_mapping = {
     send_mt5_disable_csv     => \&BOM::Event::Actions::MT5::send_mt5_disable_csv,
     document_upload          => \&BOM::Event::Actions::Client::document_upload,
     ready_for_authentication => \&BOM::Event::Actions::Client::ready_for_authentication,
+    account_closure          => \&BOM::Event::Actions::Client::account_closure
 };
 
 =head1 METHODS

@@ -171,14 +171,15 @@ sub new_financial_mt5_signup {
     my $language = lc($data->{language} // 'en');
 
     my $client_email_template = localize(
-        "<p>Dear [_1],</p>
+        "\
+        <p>Dear [_1],</p>
     <p>Thank you for registering your MetaTrader 5 account.</p>
     <p>We are legally required to verify each client's identity and address. Therefore, we kindly request that you authenticate your account by submitting the following documents:
     <ul><li>A copy of a valid driving licence, identity card, or passport (front and back)</li><li>A copy of a utility bill or bank statement issued within the past six months</li><li>A photo of yourself (selfie) holding your driving licence, identity card, or passport</li></ul>
     </p>
     <p>Please <a href=\"https://www.binary.com/[_2]/user/authenticate.html\">upload scanned copies</a> of the above documents within five days of receipt of this email to keep your MT5 account active.</p>
     <p>We look forward to hearing from you soon.</p>
-    <p>Regards,<p>
+    <p>Regards,</p>
     Binary.com
     ", $client->full_name, $language
     );
