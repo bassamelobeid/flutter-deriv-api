@@ -428,6 +428,7 @@ sub startup {
                 require_auth => 'admin',
                 stash_params => [qw/ server_name client_ip user_agent /]}
         ],
+        ['account_closure', {require_auth => 'admin'}],
         [
             'mt5_login_list',
             {
