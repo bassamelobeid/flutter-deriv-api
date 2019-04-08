@@ -20,7 +20,7 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 
-my $loginID = request()->param('show');
+my $loginID = encode_entities(request()->param('show'));
 BrokerPresentation('ISSUE NEW PASSWORD TO ' . $loginID);
 
 # Issue new password to client

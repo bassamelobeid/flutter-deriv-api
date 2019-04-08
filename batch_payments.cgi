@@ -50,7 +50,7 @@ Bar('Batch Credit/Debit to Clients Accounts');
 
 if ($preview) {
     if ($cgi->param('payments_csv') !~ /csv$/) {
-        print "<br><br><br><h3>Provided file ", $cgi->param('payments_csv'),
+        print "<br><br><br><h3>Provided file ", encode_entities($cgi->param('payments_csv')),
             " is not a CSV file.<br>Please, save it as <u>CSV (comma-separated values) file</u> in Excel first</h3>";
         code_exit_BO();
     }
