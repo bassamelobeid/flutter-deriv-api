@@ -105,7 +105,7 @@ sub commission_per_unit {
 sub app_markup_per_unit {
     my $self = shift;
 
-    return $self->pricing_engine->theo_price * $self->app_markup_percentage;
+    return $self->pricing_engine->theo_price * $self->app_markup_percentage / 100;
 }
 
 1;

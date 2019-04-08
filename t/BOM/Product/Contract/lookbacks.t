@@ -71,6 +71,11 @@ subtest 'lbfloatcall' => sub {
     is $c->payouttime,   'end';
     is $c->code,         'LBFLOATCALL';
     is $c->pricing_code, 'LBFLOATCALL';
+    
+    is $c->ask_price , 0.86, 'Correct ask price with app markup';
+    $args->{app_markup_percentage} = 5;
+    $c = produce_contract($args);
+    is $c->ask_price , 0.9, 'Correct ask price with app markup';
 
     ok !$c->is_path_dependent;
     isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
