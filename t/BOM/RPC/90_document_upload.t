@@ -13,7 +13,7 @@ use Email::Stuffer::TestLinks;
 use List::Util qw( all );
 use BOM::RPC::v3::DocumentUpload qw(MAX_FILE_SIZE);
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 
 # Set up clients
 

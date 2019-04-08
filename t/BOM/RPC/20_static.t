@@ -9,7 +9,7 @@ use BOM::Test::RPC::Client;
 use BOM::Config::CurrencyConfig;
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 subtest 'residence_list' => sub {
     my $result = $c->call_ok('residence_list', {language => 'EN'})->has_no_system_error->result;
     my ($cn) = grep { $_->{value} eq 'cn' } @$result;

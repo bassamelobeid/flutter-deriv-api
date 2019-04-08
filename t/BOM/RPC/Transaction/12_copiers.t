@@ -54,7 +54,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 impact       => 1,
                 event_name   => 'FOMC',
             }]});
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 
 ####################################################################
 # Setup clients

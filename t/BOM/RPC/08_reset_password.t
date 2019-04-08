@@ -42,7 +42,7 @@ subtest 'check_login_vrtc' => sub {
 
 my $new_password = 'jskjD8292923';
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 
 my $expected_result = {
     status => 1,

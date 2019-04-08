@@ -43,7 +43,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             }]});
 
 $client->deposit_virtual_funds;
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 
 my $ask_params = {
     "proposal"      => 1,

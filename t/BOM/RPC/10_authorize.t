@@ -66,7 +66,7 @@ my ($token_duplicated) = $oauth->store_access_token_only(1, $test_client_duplica
 
 is $test_client->default_account, undef, 'new client has no default account';
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 
 my $email_mx = 'dummy_mx@binary.com';
 

@@ -43,7 +43,7 @@ my $params = {
 my ($t, $c);
 subtest 'Initialization' => sub {
     lives_ok {
-        $t = Test::Mojo->new('BOM::RPC');
+        $t = Test::Mojo->new('BOM::RPC::Transport::HTTP');
         $c = BOM::Test::RPC::Client->new(ua => $t->app->ua);
     }
     'Initial RPC server and client connection';

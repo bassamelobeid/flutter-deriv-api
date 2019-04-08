@@ -22,7 +22,7 @@ use BOM::User;
 use BOM::Config::Runtime;
 use BOM::Config::RedisReplicated;
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 my $json = JSON::MaybeXS->new;
 
 my $runtime_system = BOM::Config::Runtime->instance->app_config->system;

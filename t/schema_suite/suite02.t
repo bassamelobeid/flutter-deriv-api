@@ -10,7 +10,7 @@ use BOM::Test::Suite::DSL;
 
 my $suite = start(
     title             => "suite02.t",
-    test_app          => 'BOM::RPC',
+    test_app          => 'BOM::RPC::Transport::HTTP',
     suite_schema_path => __DIR__ . '/config/',
 );
 sub _get_token   { return $suite->get_token(@_); }

@@ -25,7 +25,7 @@ my $loginid = $client->loginid;
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
 $client->deposit_virtual_funds;
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',

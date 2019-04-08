@@ -100,7 +100,7 @@ $res = BOM::RPC::v3::Accounts::api_token({
 is scalar(@{$res->{tokens}}), 2, '2nd token created';
 $test_token = $res->{tokens}->[1]->{token};
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 my $params = {
     language   => 'EN',
     token      => $test_token,

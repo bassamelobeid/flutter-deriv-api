@@ -27,7 +27,7 @@ $client->deposit_virtual_funds;
 
 my $loginid = $client->loginid;
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
-my $app = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $app = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 my $now = Date::Utility->new('10-Mar-2015');
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(

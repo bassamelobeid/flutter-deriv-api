@@ -14,7 +14,7 @@ use BOM::Database::Model::OAuth;
 use BOM::User::Password;
 use Email::Stuffer::TestLinks;
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 
 my $email          = 'r@binary.com';
 my $password       = 'jskjd8292922';

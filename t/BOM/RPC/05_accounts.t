@@ -250,7 +250,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 # test begin
-my $t      = Test::Mojo->new('BOM::RPC');
+my $t      = Test::Mojo->new('BOM::RPC::Transport::HTTP');
 my $c      = MojoX::JSON::RPC::Client->new(ua => $t->app->ua);
 my $method = 'payout_currencies';
 subtest $method => sub {

@@ -18,7 +18,7 @@ my $user = BOM::User->create(
     password => 'jskjd8292922',
 );
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code    => 'CR',
     citizen        => 'at',
@@ -133,7 +133,7 @@ subtest 'new account' => sub {
         );
         $user->add_client($test_client);
 
-        $c     = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+        $c     = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
         $m     = BOM::Database::Model::AccessToken->new;
         $token = $m->create_token($test_client->loginid, 'test token 2');
 

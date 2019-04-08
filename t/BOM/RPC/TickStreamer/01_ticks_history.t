@@ -36,7 +36,7 @@ my $params = {
 my $now = Date::Utility->new('2012-03-14 07:00:00');
 set_fixed_time($now->epoch);
 
-$t = Test::Mojo->new('BOM::RPC');
+$t = Test::Mojo->new('BOM::RPC::Transport::HTTP');
 $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
 
 my $feed_dir = File::Temp->newdir;

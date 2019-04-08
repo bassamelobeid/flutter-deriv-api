@@ -20,7 +20,7 @@ use BOM::Config::Runtime;
 
 use ExchangeRates::CurrencyConverter qw/in_usd convert_currency/;
 
-my $c              = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c              = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 my $payment_limits = BOM::Config::payment_limits();
 my $method         = 'get_limits';
 my $params         = {token => '12345'};

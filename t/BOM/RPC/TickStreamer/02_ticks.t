@@ -18,7 +18,7 @@ my $method = 'ticks';
 
 my $params = {language => 'EN'};
 
-$t = Test::Mojo->new('BOM::RPC');
+$t = Test::Mojo->new('BOM::RPC::Transport::HTTP');
 $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
 
 subtest 'validate_ticks' => sub {

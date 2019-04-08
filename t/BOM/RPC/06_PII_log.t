@@ -11,7 +11,7 @@ my $check_pass = Test::MockModule->new('BOM::RPC::v3::Utility');
 $check_pass->mock('_check_password', sub { die "in new account for test" });
 
 subtest 'log detailed error message' => sub {
-    my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+    my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 
     local $ENV{LOG_DETAILED_EXCEPTION} = 1;
     like(
@@ -32,7 +32,7 @@ subtest 'log detailed error message' => sub {
 };
 
 subtest 'log normal error message' => sub {
-    my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+    my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 
     local $ENV{LOG_DETAILED_EXCEPTION} = 0;
     like(

@@ -14,7 +14,7 @@ use utf8;
 use Data::Dumper;
 use BOM::Config::Runtime;
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 
 my $email = 'dummy@binary.com';
 my $user  = BOM::User->create(

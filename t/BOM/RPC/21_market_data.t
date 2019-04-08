@@ -16,7 +16,7 @@ use BOM::Test::RPC::Client;
 use BOM::RPC::v3::MarketData;
 use Email::Stuffer::TestLinks;
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 
 my ($base, $result);
 subtest 'invalid currency' => sub {

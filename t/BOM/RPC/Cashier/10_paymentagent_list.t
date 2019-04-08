@@ -71,7 +71,7 @@ $pa_client->payment_agent({
 });
 $pa_client->save;
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 
 my $method = 'paymentagent_list';
 
