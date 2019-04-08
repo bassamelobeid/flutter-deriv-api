@@ -60,7 +60,7 @@ sub do_report {
         my $last_sanction_update_date = Date::Utility->new($last_sanction_update)->datetime_ddmmmyy_hhmmss_TZ;
         send_email({
             from    => $brand->emails('support'),
-            to      => join(',', $brand->emails('compliance'), 'sysadmin@binary.com'),
+            to      => $brand->emails('compliance'),
             subject => "No sanctions changes for $today_date",
             message => ["Last sanction list update : $last_sanction_update_date \n" . "Last sanction cron ran : $last_date"],
         });
@@ -102,7 +102,7 @@ sub do_report {
 
         send_email({
             from       => $brand->emails('support'),
-            to         => join(',', $brand->emails('compliance'), 'sysadmin@binary.com'),
+            to         => $brand->emails('compliance'),
             subject    => 'Sanction list for ' . $broker . ' at ' . $today_date,
             attachment => $filename->canonpath,
         });
