@@ -37,7 +37,6 @@ my $permissions = {
 
     'monthly_client_report.cgi'   => ['Accounts'],
     'monthly_payments_report.cgi' => ['Accounts'],
-    'f_show.cgi'                  => ['Accounts'],
     'f_accountingreports.cgi'     => ['Accounts'],
     'aggregate_balance.cgi'       => ['Accounts'],
 
@@ -86,7 +85,6 @@ my $permissions = {
     'f_dynamic_settings.cgi'    => ['Quants',   'IT'],    # it has extra internal logic inside
 
     'f_save.cgi'                                                              => ['Quants'],
-    'f_formatdailysummary.cgi'                                                => ['Quants'],
     'f_upload_holidays.cgi'                                                   => ['Quants'],
     'f_bet_iv.cgi'                                                            => ['Quants'],
     'f_bbdl_download.cgi'                                                     => ['Quants'],

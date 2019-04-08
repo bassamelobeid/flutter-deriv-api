@@ -21,6 +21,7 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('ACCOUNTING REPORTS');
+
 my $broker           = request()->broker_code;
 my $all_currencies   = request()->available_currencies;
 my $currency_options = get_currency_options();
@@ -39,55 +40,6 @@ print "<input type=hidden name=broker value=$encoded_broker>";
 print 'Month: <input type=text size=12 name=month value="' . $now->months_ahead(0) . '">';
 print "<br /><input type=\"submit\" value=\"Daily Turnover Report\"> CLICK ONLY ONCE! Be patient if slow to respond.";
 print "</form>";
-
-# DAILY SUMMARY FILES
-Bar("DailySummary files");
-
-print "The DailySummary files are generated once a day, and are in CSV format.  You can import them into Excel.";
-
-my $RECENTDAYS;
-foreach my $currl (@{$all_currencies}) {
-    my $fileext = ($currl eq 'USD') ? '' : ".$currl";
-
-    for (my $i = 0; $i < 90; $i++) {
-        my $day          = Date::Utility->new($now->epoch - 86400 * $i)->date_ddmmmyy;
-        my $summary_file = "$dbloc/f_broker/$broker/dailysummary/$day.summary$fileext";
-        if (-e $summary_file) {
-            $RECENTDAYS .= "<OPTION value='$summary_file'>$day$fileext";
-        }
-    }
-
-    #end of years
-    for (my $year_number = 0; $year_number <= $now->year_in_two_digit; $year_number++) {
-        my $year = sprintf '%02d', $year_number;
-        my $summary_file = "$dbloc/f_broker/$broker/dailysummary/31-Dec-$year.summary$fileext";
-        if (-e $summary_file) {
-            $RECENTDAYS .= "<OPTION value='$summary_file'>31-Dec-$year$fileext";
-        }
-
-        $summary_file = "$dbloc/f_broker/$broker/dailysummary/1-Jan-$year.summary$fileext";
-        if (-e $summary_file) {
-            $RECENTDAYS .= "<OPTION value='$summary_file'>1-Jan-$year$fileext";
-        }
-    }
-}
-
-print "<form action=\""
-    . request()->url_for('backoffice/f_show.cgi')
-    . "\" method=\"get\">"
-    . "<b>Reference date :</b> <select name=\"show\">$RECENTDAYS</select>"
-    . "<input type=\"submit\" value=\"View Dailysummary File\">"
-    . "</form>";
-
-print "<form action=\""
-    . request()->url_for('backoffice/f_formatdailysummary.cgi')
-    . "\" method=\"get\">"
-    . "Reference date : <select name=\"show\">$RECENTDAYS</select>"
-    . "<input type=checkbox name=displayport value=yes>Display portfolio"
-    . "<br />Output <input type=text size=6 value='30' name=outputlargest> largest clients only"
-    . "<br />*or* view only these clients : <input type=text size=20 name=viewonlylist> (list loginIDs separated by spaces)"
-    . "<input type=\"submit\" value=\"View Dailysummary File in Table format\">"
-    . "</form>";
 
 Bar("Monthly Client Reports");
 {
