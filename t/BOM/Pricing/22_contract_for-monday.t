@@ -35,7 +35,7 @@ my @params = (
         },
     });
 
-$t = Test::Mojo->new('BOM::RPC');
+$t = Test::Mojo->new('BOM::RPC::Transport::HTTP');
 $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
 set_absolute_time(Date::Utility->new('2017-11-20 00:15:00')->epoch);
 

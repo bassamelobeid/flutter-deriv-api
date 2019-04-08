@@ -6,7 +6,7 @@ use Test::Most;
 use Test::Mojo;
 use Data::Dumper;
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 
 my $method = 'trading_times';
 subtest $method => sub {

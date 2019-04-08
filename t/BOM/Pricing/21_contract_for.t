@@ -37,7 +37,7 @@ my @params = (
         },
     });
 
-$t = Test::Mojo->new('BOM::RPC');
+$t = Test::Mojo->new('BOM::RPC::Transport::HTTP');
 $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
 
 subtest "Request $method" => sub {

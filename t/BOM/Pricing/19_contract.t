@@ -61,7 +61,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $now
     }) for qw (frxAUDCAD frxUSDCAD frxAUDUSD);
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 request(BOM::Platform::Context::Request->new(params => {}));
 
 create_ticks([100, $now->epoch - 899, 'R_50']);
