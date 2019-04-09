@@ -13,9 +13,13 @@ Bar("Make dual control code");
 
 # Error checks
 
-code_exit_BO("Please provide a transaction type.")   unless $input->{transtype};
-code_exit_BO("Invalid transaction type")             unless ($input->{transtype} =~ /^Anonymize client|Delete customerio record$/);
+code_exit_BO("Please provide a transaction type.") unless $input->{transtype};
+code_exit_BO("Invalid transaction type") unless ($input->{transtype} =~ /^Anonymize client|Delete customerio record|Edit affiliates token$/);
 code_exit_BO("ERROR: Please provide client loginid") unless ($input->{clientloginid});
+
+$input->{clientloginid} = trim(uc $input->{clientloginid});
+my $well_formatted = check_client_login_id($input->{clientloginid});
+code_exit_BO("Invalid loginid provided!") unless $well_formatted;
 
 my $client = BOM::User::Client::get_instance({
     'loginid'    => uc($input->{'clientloginid'}),

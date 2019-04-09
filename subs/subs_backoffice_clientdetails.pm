@@ -849,4 +849,10 @@ sub get_client_phone_country {
     return $client_phone_country;
 }
 
+sub check_client_login_id {
+    my ($loginid) = @_;
+
+    return ($loginid =~ m/[A-Z]{2,4}[\d]{4,10}$/) ? 1 : 0;
+}
+
 1;

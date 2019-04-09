@@ -1,0 +1,34 @@
+[% WRAPPER layout title='MAKE DUAL CONTROL CODE' %]
+    <form id='generateDCC' action="[% request.url_for('backoffice/f_client_anonymization_dcc.cgi') | none %]" method='get' class='bo_ajax_form'>
+        <input type='hidden' name='l' value='EN'><br>
+        <input type='hidden' name='transtype' value='Edit affiliates token'>
+        Loginid : <input type='text' name='clientloginid' placeholder='required' value='[% loginid %]'>
+        <br><br><input type='submit' value='Make Dual Control Code (by [% clerk %] )'>
+    </form>
+[% END %]
+
+[% WRAPPER layout title="CLIENT AFFILIATE INFO" %]
+    <form id='EditclientAffiliatesToken' action="[% request.url_for('backoffice/f_change_affiliates_token.cgi') | none %]" method='post'>
+        <input type='hidden' name='l' value='EN'>
+        Loginid : <input type='text' name='ClientLoginid' placeholder='required' value='[% ClientLoginid %]'>
+        Affiliate Token : <input type='text' name='affiliate_token' placeholder='required' value='[% affiliate_token %]'>
+        <br><br>DCC : <input type='text' name='DCcode' placeholder='required' value='[% prev_dcc %]'>
+        <br><br><input type='checkbox' name='verification' value='true'> I understand this action is irreversible ([% clerk %])
+        <br><br><input type='submit' name='EditAffiliatesToken' value='Edit affiliates token'/>
+    </form>
+[% END %]
+
+[% BLOCK layout %]
+    <table class="BlackCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="97%">
+        <tbody>
+            <tr class="Blacklabel">
+                <td class="whitelabel" colspan="2">[% title %]</td>
+            </tr>
+            <tr>
+                <td align="left" style="padding-left: 10px;">
+                [% content | none %]
+                </td>
+            </tr>
+        </tbody>
+    </table>
+[% END %]

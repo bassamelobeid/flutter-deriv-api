@@ -69,7 +69,7 @@ table#client_edit td{
     </tr>
     <tr>
         <td class="label">&nbsp;</td>
-        <td>: <input type="text" name="myaffiliates_token" value="" /></td>
+         <td>: <a href="[% request.url_for('backoffice/f_change_affiliates_token.cgi', {loginid => client.loginid , affiliate_token = client.myaffiliates_token }) %]">Edit Affiliate Token</a></td>
     </tr>
     <tr>
         <td class="label">Affiliate Token</td>

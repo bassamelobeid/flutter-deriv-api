@@ -671,10 +671,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 $cli->aml_risk_classification($input{$key});
             }
 
-            if ($key eq 'myaffiliates_token' and $input{$key}) {
-                $cli->myaffiliates_token($input{$key});
-            }
-
             if ($input{mifir_id} and $cli->mifir_id eq '' and $broker eq 'MF') {
                 code_exit_BO(
                     "<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $encoded_loginid: MIFIR_ID line too long</p>"

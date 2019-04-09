@@ -107,4 +107,9 @@ sub _get_display_message {
     return "<p><h2>$message</h2></p>";
 }
 
+sub _get_display_error_message {
+    my $message = shift;
+    return "<p><h2><font color=red>$message</font></h2></p>";
+}
+
 code_exit_BO();
