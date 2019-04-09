@@ -17,7 +17,8 @@ my $chunks = 5;
 my $loop = IO::Async::Loop->new;
 $loop->add(
     my $tester = BOM::Test::WebsocketAPI->new(
-        timeout             => 300,
+        timeout             => 500,
+        max_response_delay  => 0.5, # 500ms
         ticks_history_count => 5,
     ),
 );
@@ -26,7 +27,7 @@ $loop->add(
     my $tester_large_delay = BOM::Test::WebsocketAPI->new(
         timeout             => 300,
         ticks_history_count => 5,
-        max_response_delay  => 1,
+        max_response_delay  => 1, # 1s
     ),
 );
 
