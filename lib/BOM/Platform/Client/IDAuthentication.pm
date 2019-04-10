@@ -86,13 +86,17 @@ sub proveid {
     my ($report_summary)           = $xml->findnodes('/Search/Result/Summary/ReportSummary/DatablocksSummary');
 
     my $matches = {};
+    
+    my @tags_to_match = ("Deceased", "PEP", "BOE", "OFAC");
 
-    $matches->{"Deceased"} = $credit_reference_summary->findnodes('DeceasedMatch')->[0]->textContent() || 0;
-    $matches->{"Fraud"} =
-        $report_summary->findnodes('//DatablockSummary[Name="Fraud"]/Decision')->[0]->textContent() || 0;
-    $matches->{"PEP"}  = $credit_reference_summary->findnodes('PEPMatch')->[0]->textContent()  || 0;
-    $matches->{"BOE"}  = $credit_reference_summary->findnodes('BOEMatch')->[0]->textContent()  || 0;
-    $matches->{"OFAC"} = $credit_reference_summary->findnodes('OFACMatch')->[0]->textContent() || 0;
+    for my $tag (@tags_to_match) {
+        try {
+            $matches->{$tag} = $credit_reference_summary->findnodes($tag . "Match")->[0]->textContent() || 0;
+        } catch {
+            $matches->{$tag} = 0;
+            warn $_;
+        };
+    }
 
     my @invalid_matches = grep { $matches->{$_} > 0 } keys %$matches;
 

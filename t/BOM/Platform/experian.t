@@ -84,7 +84,7 @@ subtest 'Request Tags' => sub {
 
 subtest 'Response' => sub {
 
-    my $entries = [map { "Experian$_" } qw(Valid InsufficientDOB Fraud Deceased OFSI PEP BOE InsufficientUKGC)];
+    my $entries = [map { "Experian$_" } qw(Valid InsufficientDOB Deceased OFSI PEP BOE InsufficientUKGC)];
     my $xml_fld = "/home/git/regentmarkets/bom-test/data/Experian/SavedXML/";
     my $pdf_fld = "/home/git/regentmarkets/bom-test/data/Experian/PDF/";
 
@@ -130,7 +130,7 @@ subtest 'Response' => sub {
 subtest 'Replace Existing Result' => sub {
     my $client  = create_client("MX");
     my $loginid = $client->loginid;
-    $client->first_name('ExperianFraud');
+    $client->first_name('ExperianBOE');
 
     BOM::Platform::ProveID->new(client => $client)->get_result;
 

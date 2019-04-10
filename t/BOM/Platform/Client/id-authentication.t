@@ -175,7 +175,7 @@ subtest 'MX accounts' => sub {
     };
     subtest "Invalid ProveID Matches" => sub {
         my $base_dir = "/home/git/regentmarkets/bom-test/data/Experian/SavedXML/";
-        my @invalid_matches = ("ExperianFraud", "ExperianDeceased", "ExperianOFSI", "ExperianPEP", "ExperianBOE");
+        my @invalid_matches = ("ExperianDeceased", "ExperianOFSI", "ExperianPEP", "ExperianBOE");
 
         for my $match (@invalid_matches) {
             subtest "$match" => sub {

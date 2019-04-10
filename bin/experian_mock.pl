@@ -16,7 +16,7 @@ use Digest::SHA qw/hmac_sha256_base64/;
 
 plugin "RenderFile";
 
-my $entries = [map { "Experian$_" } qw(Valid InsufficientDOB Fraud Deceased OFSI PEP BOE Fault InsufficientUKGC)];
+my $entries = [map { "Experian$_" } qw(Valid InsufficientDOB Deceased OFSI PEP BOE Fault InsufficientUKGC)];
 
 sub _generate_hash {
     my $timestamp = shift;

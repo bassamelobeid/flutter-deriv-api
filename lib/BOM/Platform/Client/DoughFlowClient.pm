@@ -76,7 +76,7 @@ sub CustName {
     my $self = shift;
 
     my $name = $self->first_name . ' ' . $self->last_name;
-    if ($name ne " ") { # We should not pad a non-existent name. That would mask doughflow errors.
+    if ($name ne " ") {    # We should not pad a non-existent name. That would mask doughflow errors.
         $name .= 'X' while length $name < 4;    # pads the name out to 4 characters.
     }
     return $name;
@@ -123,7 +123,7 @@ sub City {
             unless $self->{'_parsed_address_error'};
     }
 
-    if ($city) { # We should not pad a non-existent city. That would mask doughflow errors.
+    if ($city) {    # We should not pad a non-existent city. That would mask doughflow errors.
         $city .= 'X' while length $city < 2;    # pads the name out to 2 characters.
     }
     return $city;
