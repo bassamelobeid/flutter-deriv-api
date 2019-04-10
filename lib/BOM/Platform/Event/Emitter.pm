@@ -38,7 +38,8 @@ use constant TIMEOUT => 5;
 my %event_queue_mapping = (
     email_statement          => 'STATEMENTS_QUEUE',
     document_upload          => 'DOCUMENT_AUTHENTICATION_QUEUE',
-    ready_for_authentication => 'DOCUMENT_AUTHENTICATION_QUEUE'
+    ready_for_authentication => 'DOCUMENT_AUTHENTICATION_QUEUE',
+    client_verification      => 'DOCUMENT_AUTHENTICATION_QUEUE'
 );
 
 my $config = LoadFile($ENV{BINARY_EVENT_REDIS_CONFIG} // '/etc/rmg/ws-redis.yml');
