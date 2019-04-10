@@ -56,6 +56,7 @@ use Postgres::FeedDB::Spot::Tick;
 
 use BOM::Config::Chronicle;
 use BOM::MarketData::Types;
+use BOM::Market::DataDecimate;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Platform::RiskProfile;
 use BOM::Product::Types;
@@ -494,7 +495,9 @@ sub expected_date_expiry {
 
     return $self->date_expiry unless $self->tick_expiry;
     return Date::Utility->new($self->reset_time) if $self->category_code eq 'reset';
-    return $self->date_start->plus_time_interval($self->tick_count * $self->market->expected_tick_frequency);
+
+    # use $self->tick_count -1 here to ensure that settlement ticks are from the database
+    return $self->date_start->plus_time_interval(($self->tick_count - 1) * $self->market->expected_tick_frequency);
 }
 
 # INTERNAL METHODS
@@ -778,16 +781,26 @@ sub _build_apply_market_inefficient_limit {
 sub get_ticks_for_tick_expiry {
     my $self = shift;
 
-    my $ticks = $self->underlying->ticks_in_between_start_limit({
+    # before expected expiry, get it from cache
+    if ($self->date_pricing->is_before($self->expected_date_expiry) and not $self->is_path_dependent) {
+        my $tick_hashes = BOM::Market::DataDecimate->new({market => $self->market->name})->tick_cache_get_num_ticks({
+                underlying  => $self->underlying,
+                start_epoch => $self->date_start->epoch + 1,
+                num         => $self->ticks_to_expiry,
+            }) // [];
+        return [map { Postgres::FeedDB::Spot::Tick->new($_) } @$tick_hashes];
+    }
+
+    return $self->underlying->ticks_in_between_start_limit({
         start_time => $self->date_start->epoch + 1,
         limit      => $self->ticks_to_expiry
     });
-
-    return $ticks;
 }
 
 sub _build_exit_tick {
     my $self = shift;
+
+    return if $self->pricing_new;
 
     my $underlying = $self->underlying;
     my $exit_tick;
