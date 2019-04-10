@@ -30,7 +30,8 @@ my $calendar_hash;
 my $calendar_name;
 
 if ($input{upload_excel}) {
-    my $file     = $input{filetoupload};
+    my $cgi      = CGI->new;
+    my $file     = $cgi->param('filetoupload');
     my $fh       = File::Temp->new(SUFFIX => '.csv');
     my $filename = $fh->filename;
     copy($file, $filename);
