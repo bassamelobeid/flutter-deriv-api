@@ -40,8 +40,6 @@ use Finance::MIFIR::CONCAT qw(mifir_concat);
 use BOM::Platform::S3Client;
 use Media::Type::Simple;
 
-use constant MAX_FILE_SIZE => 8 * 2**20;
-
 BOM::Backoffice::Sysinit::init();
 
 my %input = %{request()->params};
@@ -239,63 +237,10 @@ if ($input{whattodo} eq 'uploadID') {
         my $document_id     = $input{'document_id_' . $i} // '';
         my $comments        = $input{'comments_' . $i} // '';
 
-        if (length($document_id) > 30) {
-            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Document id is too long.</p><br />";
-            next;
-        }
-        if (length($comments) > 255) {
-            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Comments are too long.</p><br />";
-            next;
-        }
+        next unless $filetoupload;
 
-        if (not $filetoupload) {
-            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: No file is selected for uploading.</p><br />"
-                if ($i == 1);
-            next;
-        }
-
-        if ($doctype =~ /passport|proofid|driverslicense/ && $document_id eq '') {
-            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Missing document_id for $doctype</p><br />";
-            next;
-        }
-
-        if ($doctype =~ /passport|proofid|driverslicense/ && $expiration_date eq '') {
-            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Missing date for $doctype</p><br />";
-            next;
-        }
-
-        if ($expiration_date ne '') {
-            my ($current_date, $submitted_date, $error);
-            $current_date = Date::Utility->new();
-            try {
-                $submitted_date = Date::Utility->new($expiration_date);
-            }
-            catch {
-                $error = (split "\n", $_)[0];    #handle Date::Utility's confess() call
-            };
-            if ($error) {
-                $result .=
-                    "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Expiration date($expiration_date) error: $error</p><br />";
-                next;
-            } elsif ($submitted_date->is_before($current_date) || $submitted_date->is_same_as($current_date)) {
-                $result .=
-                    "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Expiration date should be greater than current date </p><br />";
-                next;
-            }
-
-        }
-
-        if ($doctype =~ /passport|proofid/) {    # citizenship may only be changed when uploading passport or proofid
-            if ($docnationality and $docnationality =~ /^[a-z]{2}$/i) {
-                $client->citizen($docnationality);
-            } else {
-                $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error: Please select correct nationality</p><br />";
-                next;
-            }
-        } elsif (!$client->citizen) {            # client citizenship presents when uploading docs (for all broker codes)
-            $result .=
-                "<br /><p style=\"color:red; font-weight:bold;\">Error: Please update client citizenship before uploading documents.</p><br />";
-            next;
+        if ($docnationality and $docnationality =~ /^[a-z]{2}$/i) {
+            $client->citizen($docnationality);
         }
 
         unless ($client->get_db eq 'write') {
@@ -305,13 +250,6 @@ if ($input{whattodo} eq 'uploadID') {
         if (not $client->save) {
             print "<p style=\"color:red; font-weight:bold;\">Failed to save client citizenship.</p>";
             code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
-        }
-
-        my $file_size = (stat($filetoupload))[7];
-        if ($file_size > MAX_FILE_SIZE) {
-            $result .=
-                "<br /><p style=\"color:red; font-weight:bold;\">Error: File $i: Exceeds maximum file size (" . MAX_FILE_SIZE . " bytes).</p><br />";
-            next;
         }
 
         my $file_checksum         = Digest::MD5->new->addfile($filetoupload)->hexdigest;

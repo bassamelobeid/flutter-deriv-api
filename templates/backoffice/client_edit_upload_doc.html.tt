@@ -1,5 +1,5 @@
 <br />
-<form enctype="multipart/form-data" ACTION="[% self_post %]" method="POST">
+<form enctype="multipart/form-data" ACTION="[% self_post %]" method="POST" onsubmit="return validate_document_info()">
   <label for="docnationalityselect">Nationality (as per identity document, it can be different from residence, updates only with Passport and Proof ID upload)</label>
   <select id="docnationalityselect" name="docnationality">
     <option value="">Please select</option>
@@ -38,7 +38,7 @@
     <option value="back">Back Side</option>
     <option value="photo">Photo</option>
   </select>
-  <input type="FILE" name="FILE_[% n %]" style="width: 150px">
+  <input type="FILE" name="FILE_[% n %]" style="width: 150px" onchange="file_size_validation(this)">
   Expiration date:<input type="text" size=11 name="expiration_date_[% n %]" placeholder="YYYY-MM-DD">
   Document ID:<input type="text" size=11 maxlength="30" name="document_id_[% n %]" placeholder="Document ID">
   Comments:<input type="text" size=25 maxlength="255" name="comments_[% n %]" placeholder="optional, up to 255 characters">
@@ -50,3 +50,105 @@
   <input type="hidden" name="loginID" value="[% loginid %]">
   <input type=submit value="Upload new ID doc.">
 </form>
+<script type="text/javascript" language="javascript">
+
+function file_size_validation(file) {
+  var FileSize = file.files[0].size / (1024 * 1024);
+  
+  // Maximum is 8MB
+  var max_size = 8;
+  if(FileSize > max_size) {
+    alert ("Exceeds maximum size of " + max_size + "MB");
+    file.value = "";
+  }
+}
+
+function validate_document_info() {
+  
+  var get_value = function(elm_name) {
+    return (document.getElementsByName(elm_name)[0] || {}).value;
+  }
+  
+  var error_msg = "";
+  var regex_poi = /(passport|proofid|driverslicense)/i;
+  var nationality = document.getElementsByName('docnationality')[0].value;
+  var is_file_uploaded = false;
+  
+  for (var i = 1; i <= 4; i++) {
+    
+    var file_comments_errors = "";
+    
+    var doc_type = get_value('doctype_' + i);
+    var expiry_date = get_value('expiration_date_' + i);
+    var comments = get_value('comments_' + i);
+    var doc_id = get_value('document_id_' + i);
+    var page_type = get_value('page_type_' + i);
+    
+    var regex_match = doc_type.match(regex_poi);
+    
+    // Check if file uploaded (if not, proceed to next file)
+    if(!get_value('FILE_' + i)) {
+      
+      if (expiry_date || doc_id || comments) {
+        file_comments_errors = "Please upload a file for File " + i + "\n\n";
+        error_msg += file_comments_errors;
+      }
+      
+      continue;
+    }
+    
+    is_file_uploaded = true;
+    
+    // POI validation
+    if(regex_match) {
+      if(!nationality) {
+        file_comments_errors += "Nationality is required.\n";
+      }
+      
+      if(!page_type) {
+        file_comments_errors += "Page type is not selected.\n";
+      }
+      
+      if(!expiry_date) {
+        file_comments_errors += "Expiry date is required.\n";
+      }
+  
+      if(!doc_id) {
+        file_comments_errors += "Document ID is required.\n";
+      }
+    }
+    
+    if(expiry_date) {
+      expiry_date = new Date(expiry_date);
+      
+      if(expiry_date === 'Invalid Date' || (expiry_date <= new Date())) {
+        file_comments_errors += "Invalid expiry date entered.\n"
+      }
+    }
+    
+    if (doc_id.length > 30) {
+      file_comments_errors += "Document ID is too long.\n";
+    }
+    
+    if(comments.length > 255) {
+      file_comments_errors += "Comments are too long.";
+    }
+    
+    if (file_comments_errors !== "") {
+      error_msg += "Document upload failed for File " + i + ": \n\n" + file_comments_errors + "\n\n";
+    }
+    
+  }
+  
+  if(!is_file_uploaded) {
+    error_msg = "No file is selected for uploading.";
+  }
+  
+  if (error_msg !== "") {
+    alert(error_msg);
+    return false;
+  }
+  
+  return true;
+}
+</script>
