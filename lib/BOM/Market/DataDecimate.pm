@@ -108,23 +108,25 @@ sub tick_cache_get_num_ticks {
     my $underlying = $args->{underlying};
     my $num        = $args->{num};
     my $end_time   = $args->{end_epoch};
+    my $start_time = $args->{start_epoch};
     my $backprice  = $args->{backprice} // 0;
 
-    my $ticks;
     if ($backprice) {
-        $ticks = $underlying->ticks_in_between_end_limit({
-            end_time => $end_time,
-            limit    => $num,
-        });
-    } else {
-        $ticks = $self->_get_num_data_from_cache({
-            symbol    => $underlying->symbol,
-            end_epoch => $end_time,
-            num       => $num,
-        });
+        return $end_time ? $underlying->ticks_in_between_end_limit({
+                end_time => $end_time,
+                limit    => $num,
+            }
+            ) : $start_time ? $underlying->ticks_in_between_start_limit({
+                start_time => $start_time,
+                limit      => $num,
+            }) : [];
     }
 
-    return $ticks;
+    return $self->_get_num_data_from_cache({
+        symbol => $underlying->symbol,
+        ($end_time ? (end_epoch => $end_time) : $start_time ? (start_epoch => $start_time) : ()),
+        num => $num,
+    });
 }
 
 =head2 sampling_frequency
@@ -337,11 +339,14 @@ sub _get_num_data_from_cache {
 
     my $symbol = $args->{symbol};
     my $end    = $args->{end_epoch};
+    my $start  = $args->{start_epoch};
     my $num    = $args->{num};
 
-    my @res;
-
-    @res = map { $self->decoder->decode($_) } reverse @{$self->redis_read->zrevrangebyscore($self->_make_key($symbol, 0), $end, 0, 'LIMIT', 0, $num)};
+    my $ticks =
+          $end ? $self->redis_read->zrevrangebyscore($self->_make_key($symbol, 0), $end, 0, 'LIMIT', 0, $num)
+        : $start ? $self->redis_read->zrangebyscore($self->_make_key($symbol, 0), $start, '+inf', 'LIMIT', 0, $num)
+        :          [];
+    my @res = map { $self->decoder->decode($_) } reverse @$ticks;
 
     return \@res;
 }
