@@ -23,12 +23,12 @@
                 },
                 "date_start": {
                     "type": "number",
-                    "pattern": "^\\d+$",
+                    "pattern": "^[0-9]+$",
                     "required": "1"
                 },
                 "id": {
                     "type": "string",
-                    "pattern": "[\\d\\w-]+$",
+                    "pattern": "^[0-9\\w-]+$",
                     "required": "1"
                 },
                 "payout": {
@@ -43,7 +43,7 @@
                 },
                 "spot_time": {
                     "type": "number",
-                    "pattern": "^\\d+$",
+                    "pattern": "^[0-9]+$",
                     "required": "1"
                 }
             }

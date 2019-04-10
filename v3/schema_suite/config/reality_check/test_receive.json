@@ -14,7 +14,7 @@
         },
         "loginid": {
           "type": "string",
-          "pattern": "^MLT\\d+$",
+          "pattern": "^MLT[0-9]+$",
           "required": "1"
         },
         "currency": {

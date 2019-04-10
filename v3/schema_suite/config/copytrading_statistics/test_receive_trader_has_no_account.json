@@ -10,7 +10,7 @@
       "properties": {
         "active_since": {
           "type": "integer",
-          "pattern": "^\\d+$",
+          "pattern": "^[0-9]+$",
           "required": 1
         },
         "monthly_profitable_trades": {

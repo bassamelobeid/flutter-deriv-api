@@ -25,7 +25,7 @@
         },
         "loginid": {
           "type": "string",
-          "pattern": "^CR\\d+$",
+          "pattern": "^CR[0-9]+$",
           "required": "1"
         },
         "is_virtual": {
@@ -87,7 +87,7 @@
               },
               "loginid": {
                 "type": "string",
-                "pattern": "^[A-Z]{2,4}\\d+$"
+                "pattern": "^[A-Z]{2,4}[0-9]+$"
               }
             }
           }

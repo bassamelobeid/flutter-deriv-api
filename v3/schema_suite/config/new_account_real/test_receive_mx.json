@@ -10,7 +10,7 @@
             "properties": {
                 "client_id": {
                     "type": "string",
-                    "pattern": "^MX\\d+$",
+                    "pattern": "^MX[0-9]+$",
                     "required": "1"
                 },
                 "landing_company": {

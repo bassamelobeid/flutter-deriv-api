@@ -14,27 +14,27 @@
         },
         "spot": {
           "type": "number",
-          "pattern": "^\\d*\\.\\d*$",
+          "pattern": "^[0-9]*\\.[0-9]*$",
           "required": 1
         },
         "spot_time": {
           "type": "integer",
-          "pattern": "^\\d{10}$",
+          "pattern": "^[0-9]{10}$",
           "required": 1
         },
         "ask_price": {
           "type": "number",
-          "pattern": "\\d*\\.\\d*",
+          "pattern": "[0-9]*\\.[0-9]*",
           "required": 1
         },
         "display_value": {
           "type": "number",
-          "pattern": "\\d*\\.\\d{2}",
+          "pattern": "[0-9]*\\.[0-9]{2}",
           "required": 1
         },
         "date_start": {
           "type": "integer",
-          "pattern": "^\\d{10}$",
+          "pattern": "^[0-9]{10}$",
           "required": 1
         },
         "id": {

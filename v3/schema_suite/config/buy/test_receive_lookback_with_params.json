@@ -22,7 +22,7 @@
         },
         "start_time": {
           "type": "integer",
-          "pattern": "^\\d{10}$",
+          "pattern": "^[0-9]{10}$",
           "required": 1
         },
         "contract_id": {
@@ -36,7 +36,7 @@
         },
         "purchase_time": {
           "type": "integer",
-          "pattern": "^\\d{10}$",
+          "pattern": "^[0-9]{10}$",
           "required": 1
         },
         "transaction_id": {

@@ -10,7 +10,7 @@
       "properties": {
         "client_id": {
           "type": "string",
-          "pattern": "^VRTC\\d+$",
+          "pattern": "^VRTC[0-9]+$",
           "required": "1"
         },
         "email": {

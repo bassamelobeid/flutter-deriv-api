@@ -17,7 +17,7 @@
           "items":
             {
               "type": "integer",
-              "pattern": "^\\d{10}$",
+              "pattern": "^[0-9]{10}$",
               "required": "1"
             }
         },
@@ -29,7 +29,7 @@
           "items":
             {
               "type": "string",
-              "pattern": "^\\d+\\.\\d+$",
+              "pattern": "^[0-9]+\\.[0-9]+$",
               "required": "1"
             }
         }
