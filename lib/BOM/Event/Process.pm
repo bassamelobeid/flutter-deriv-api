@@ -41,6 +41,7 @@ my $action_mapping = {
     send_mt5_disable_csv     => \&BOM::Event::Actions::MT5::send_mt5_disable_csv,
     document_upload          => \&BOM::Event::Actions::Client::document_upload,
     ready_for_authentication => \&BOM::Event::Actions::Client::ready_for_authentication,
+    client_verification      => \&BOM::Event::Actions::Client::client_verification,
     account_closure          => \&BOM::Event::Actions::Client::account_closure
 };
 

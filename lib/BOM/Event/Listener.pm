@@ -42,6 +42,11 @@ Process the task sequentially for fixed amount of time.
 sub run {
     my ($self, $queue_name) = @_;
 
+    # We let the existing code in Future.pm track timing,
+    # this allows us to rely on a single ->on_ready callback
+    # to send information to Datadog.
+    $Future::TIMES = 1;
+
     my $loop = IO::Async::Loop->new;
     while (1) {
         run_once($queue_name);
