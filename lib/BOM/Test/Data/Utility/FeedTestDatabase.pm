@@ -21,6 +21,10 @@ BEGIN {
     die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
 }
 
+my $encoder = Sereal::Encoder->new({
+    canonical => 1,
+});
+
 sub _db_name {
     my $db_postfix = $ENV{DB_POSTFIX} // '';
     return "feed$db_postfix";
@@ -89,13 +93,9 @@ sub create_realtime_tick {
 sub create_historical_ticks {
     my $args = shift;
 
-    my $tick_data = LoadFile('/home/git/regentmarkets/bom-test/data/suite_ticks.yml')->{DECIMATE_frxUSDJPY_15s_DEC};
-    my $encoder   = Sereal::Encoder->new({
-        canonical => 1,
-    });
-
+    my $tick_data          = LoadFile('/home/git/regentmarkets/bom-test/data/suite_ticks.yml')->{DECIMATE_frxUSDJPY_15s_DEC};
     my $default_underlying = $args->{underlying} // 'frxUSDJPY';
-    my $default_start      = $args->{epoch}      // time;
+    my $default_start      = $args->{epoch} // time;
     my $key                = "DECIMATE_" . $default_underlying . "_15s_DEC";
 
     my $redis = BOM::Config::RedisReplicated::redis_write();
@@ -104,6 +104,20 @@ sub create_historical_ticks {
         $redis->zadd($key, $tick->{epoch}, $encoder->encode($tick));
         $default_start -= 15;
     }
+
+    return;
+}
+
+sub create_redis_ticks {
+    my $args = shift;
+
+    my $ticks             = $args->{ticks}      // die 'ticks are required.';
+    my $underlying_symbol = $args->{underlying} // die 'underlying is required.';
+    my $type  = $args->{type} eq 'decimate' ? '_15s_DEC' : '_31m_FULL';
+    my $redis = BOM::Config::RedisReplicated::redis_write();
+    my $key   = 'DECIMATE_' . $underlying_symbol . $type;
+
+    $redis->zadd($key, $_->{epoch}, $encoder->encode($_)) for @$ticks;
 
     return;
 }
@@ -148,7 +162,22 @@ EOD
 
         });
 
-    return Postgres::FeedDB::Spot::Tick->new(\%defaults);
+    # create tick in database
+    my $tick = Postgres::FeedDB::Spot::Tick->new(\%defaults);
+
+    # create redis ticks
+    if ($args->{create_redis_tick}) {
+        $defaults{count}          = 1;
+        $defaults{decimate_epoch} = $defaults{epoch};
+
+        create_redis_ticks({
+            underlying => $defaults{underlying},
+            type       => 'full',
+            ticks      => [\%defaults],
+        });
+    }
+
+    return $tick;
 }
 
 sub create_ohlc_daily {
