@@ -84,12 +84,23 @@ sub delete_limit {
     my $args  = shift;
     my $staff = shift;
 
+    my $deleted = 0;
+
     my $limits = try {
-        my $qc = BOM::Database::QuantsConfig->new();
+        my $qc             = BOM::Database::QuantsConfig->new();
+        my $decorated_data = decorate_for_display($qc->get_all_global_limit(['default']));
+        my $records_len    = scalar(@{$decorated_data->{records}});
+
         $qc->delete_global_limit($args);
 
-        my $decorated_data = decorate_for_display($qc->get_all_global_limit(['default']));
-        +{data => $decorated_data};
+        $decorated_data = decorate_for_display($qc->get_all_global_limit(['default']));
+
+        $deleted = $records_len - scalar(@{$decorated_data->{records}});
+
+        +{
+            data    => $decorated_data,
+            deleted => $deleted
+        };
     }
     catch {
         +{error => $_};
@@ -430,6 +441,26 @@ sub delete_market_group {
     };
 
     return $groups;
+}
+
+sub get_global_config_status {
+    my $app_config       = BOM::Config::Runtime->instance->app_config;
+    my $quants_config    = BOM::Database::QuantsConfig->new();
+    my $supported_config = $quants_config->supported_config_type;
+
+    my @config_status;
+    foreach my $per_type (qw/per_landing_company per_user/) {
+        foreach my $config_name (keys %{$supported_config->{$per_type}}) {
+            my $method = 'enable_' . $config_name;
+            push @config_status,
+                +{
+                key          => $config_name,
+                display_name => $supported_config->{$per_type}{$config_name},
+                status       => $app_config->quants->$method,
+                };
+        }
+    }
+    return @config_status;
 }
 
 1;

@@ -40,18 +40,7 @@ $old_config = 1 if $data_in_redis->{_rev} ne $app_config->data_set->{version};
 my $quants_config    = BOM::Database::QuantsConfig->new();
 my $supported_config = $quants_config->supported_config_type;
 
-my @config_status;
-foreach my $per_type (qw/per_landing_company per_user/) {
-    foreach my $config_name (keys %{$supported_config->{$per_type}}) {
-        my $method = 'enable_' . $config_name;
-        push @config_status,
-            +{
-            key          => $config_name,
-            display_name => $supported_config->{$per_type}{$config_name},
-            status       => $app_config->quants->$method,
-            };
-    }
-}
+my @config_status = BOM::Backoffice::QuantsConfigHelper::get_global_config_status();
 
 Bar('Quants Config Switch');
 
