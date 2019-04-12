@@ -1904,29 +1904,47 @@ rpc account_closure => sub {
 
     # This for-loop is for balance validation and open positions checking
     # No account is to be disabled if there is at least one real-account with balance
+
+    my %accounts_with_positions;
+    my %accounts_with_balance;
     foreach my $client (@accounts_to_disable) {
         next if ($client->is_virtual || !$client->account);
 
-        return BOM::RPC::v3::Utility::create_error({
-                code => 'AccountHasOpenPositions',
-                message_to_client =>
-                    localize('There are open positions in your accounts. Please make sure all positions are closed before proceeding.')}
-        ) if @{$client->get_open_contracts};
+        my $number_open_contracts = scalar @{$client->get_open_contracts};
+        my $balance               = $client->account->balance;
 
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'RealAccountHasBalance',
-                message_to_client => localize('Your accounts still have funds. Please withdraw all funds before proceeding.')}
-        ) if $client->account->balance > 0;
+        $accounts_with_positions{$client->loginid} = $number_open_contracts if $number_open_contracts;
+        $accounts_with_balance{$client->loginid} = {
+            balance  => $balance,
+            currency => $client->currency
+        } if $balance > 0;
     }
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'AccountHasOpenPositions',
+            message_to_client => localize(
+                'Please ensure all positions in your account(s) are closed before proceeding: [_1].',
+                join(', ', keys %accounts_with_positions)
+            ),
+            details => {accounts => \%accounts_with_positions}}) if %accounts_with_positions;
 
     foreach my $mt5_loginid ($user->get_mt5_loginids) {
         $mt5_loginid =~ s/\D//g;
         my $mt5_user = BOM::MT5::User::Async::get_user($mt5_loginid)->get;
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'MT5AccountHasBalance',
-                message_to_client => localize('Your MT5 accounts still have funds. Please withdraw all funds before proceeding.')}
-        ) if (($mt5_user->{group} =~ /^real/) && ($mt5_user->{balance} > 0));
+
+        # TODO :: Include mt5 currency when we have better access to that data. FE will be mapping that for now (they already make a mt5_login_list API call every page)
+        $accounts_with_balance{"MT" . $mt5_loginid} = {
+            balance  => $mt5_user->{balance},
+            currency => ""
+            }
+            if (($mt5_user->{group} =~ /^real/) && ($mt5_user->{balance} > 0));
     }
+
+    return BOM::RPC::v3::Utility::create_error({
+            code => 'ExistingAccountHasBalance',
+            message_to_client =>
+                localize('Please withdraw all funds from your account(s) before proceeding: [_1].', join(', ', keys %accounts_with_balance)),
+            details => {accounts => \%accounts_with_balance}}) if %accounts_with_balance;
 
     # This for-loop is for disabling the accounts
     # If an error occurs, it will be emailed to CS to disable manually
