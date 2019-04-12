@@ -780,6 +780,19 @@ sub get_payment_agent_registration_form {
             'options' => _select_yes_no(),
         )};
 
+    # Input field for pa_listed
+    my $input_field_pa_listed = {
+        'label' => {
+            'text' => localize('LISTED PAYMENT AGENT?'),
+            'for'  => 'pa_listed'
+        },
+        'input' => HTML::FormBuilder::Select->new(
+            'id'      => 'pa_listed',
+            'name'    => 'pa_listed',
+            'values'  => ['0'],
+            'options' => _select_yes_no(),
+        )};
+
     my $input_hidden_field_whattodo = {
         'id'    => 'whattodo',
         'name'  => 'whattodo',
@@ -849,6 +862,9 @@ sub get_payment_agent_registration_form {
     }
     if ($input_field_pa_auth) {
         $fieldset->add_field($input_field_pa_auth);
+    }
+    if ($input_field_pa_listed) {
+        $fieldset->add_field($input_field_pa_listed);
     }
     $fieldset->add_field($hidden_fields);
     $fieldset->add_field($input_submit_button);

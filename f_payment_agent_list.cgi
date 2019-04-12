@@ -16,7 +16,11 @@ my $action            = request()->param('submit') // '';
 my $selected_country  = request()->param("country") // '';
 my $selected_currency = request()->param("currency") // 'USD';
 if ($action and $action eq 'submit') {
-    $result = BOM::User::Client::PaymentAgent->get_payment_agents($selected_country, $broker, $selected_currency);
+    $result = BOM::User::Client::PaymentAgent->get_payment_agents(
+        country_code => $selected_country,
+        broker_code  => $broker,
+        currency     => $selected_currency,
+    );
 }
 
 BrokerPresentation("Authorized Payment Agent List");

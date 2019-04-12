@@ -58,6 +58,7 @@ if ($whattodo eq 'show') {
         pa_min_withdrawal  => $pa->min_withdrawal,
         pa_info            => $pa->information,
         pa_auth            => ($pa->is_authenticated ? 'yes' : 'no'),
+        pa_listed          => ($pa->is_listed ? 'yes' : 'no'),
         pa_supported_banks => $pa->supported_banks,
     };
 
@@ -107,6 +108,7 @@ if ($whattodo eq 'show') {
     $pa->information(request()->param('pa_info'));
     $pa->supported_banks(request()->param('pa_supported_banks'));
     $pa->is_authenticated(request()->param('pa_auth') eq 'yes');
+    $pa->is_listed(request()->param('pa_listed') eq 'yes');
     $pa->currency_code($currency);
 
     $pa->save || die "failed to save payment_agent!";

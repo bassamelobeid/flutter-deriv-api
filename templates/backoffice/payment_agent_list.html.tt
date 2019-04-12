@@ -41,6 +41,7 @@ Select country
         <th>URL</th>
         <th>Max Withdrawal</th>
         <th>Min Withdrawal</th> 
+        <th>Is Listed</th> 
         <th>Information</th>
         <th>Summary</th>
         <th>Commission_deposit</th>
@@ -68,6 +69,7 @@ Select country
             <td>[% records.$entry.url %]</td>
             <td>[% records.$entry.max_withdrawal %]</td>
             <td>[% records.$entry.min_withdrawal %]</td>
+            <td>[% records.$entry.is_listed ? 'Yes' : 'No' %]</td>
             <td>[% records.$entry.information %]</td>
             <td>[% records.$entry.summary %]</td>
             <td>[% records.$entry.commission_deposit %]</td>
