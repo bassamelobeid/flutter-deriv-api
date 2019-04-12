@@ -10,6 +10,7 @@ use JSON::MaybeXS;
 use Try::Tiny;
 use List::Util qw(max);
 use Scalar::Util qw(looks_like_number);
+use Date::Utility;
 
 my $json = JSON::MaybeXS->new;
 
@@ -46,6 +47,11 @@ sub _check_value {
 
 sub save_commission {
     my $args = shift;
+
+    my $now = Date::Utility->new();
+    if (Date::Utility->new($args->{start_time})->is_before($now) or Date::Utility->new($args->{end_time})->is_before($now)) {
+        return _err("Start time and end time should not be in the past");
+    }
 
     for (qw(ITM OTM)) {
         if (my $err = _check_value($_, $args)) {
