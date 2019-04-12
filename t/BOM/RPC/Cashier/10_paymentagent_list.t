@@ -85,8 +85,9 @@ subtest 'paymentagent_list RPC call' => sub {
 
     my $expected_result = {
         stash => {
-            app_markup_percentage => '0',
-            valid_source          => 1
+            app_markup_percentage      => 0,
+            valid_source               => 1,
+            source_bypass_verification => 0
         },
         'available_countries' => [['id', 'Indonesia',], ['', undef]],
         'list' => [{
@@ -128,8 +129,9 @@ subtest 'paymentagent_list RPC call' => sub {
 
     $expected_result = {
         stash => {
-            app_markup_percentage => '0',
-            valid_source          => 1
+            app_markup_percentage      => 0,
+            valid_source               => 1,
+            source_bypass_verification => 0
         },
         'available_countries' => [['id', 'Indonesia',], ['', undef]],
         'list' => [{
@@ -197,8 +199,9 @@ subtest 'suspend countries' => sub {
 
     my $empty_result = {
         stash => {
-            app_markup_percentage => '0',
-            valid_source          => 1
+            app_markup_percentage      => 0,
+            valid_source               => 1,
+            source_bypass_verification => 0
         },
         'available_countries' => [['id', 'Indonesia',], ['', undef]],
         'list' => [],
@@ -206,8 +209,9 @@ subtest 'suspend countries' => sub {
 
     my $full_result = {
         stash => {
-            app_markup_percentage => '0',
-            valid_source          => 1
+            app_markup_percentage      => 0,
+            valid_source               => 1,
+            source_bypass_verification => 0
         },
         'available_countries' => [['id', 'Indonesia',], ['af', 'Afghanistan',], ['', undef]],
         'list' => [{
@@ -230,8 +234,9 @@ subtest 'suspend countries' => sub {
 
     my $empty_plus_agent_result = {
         stash => {
-            app_markup_percentage => '0',
-            valid_source          => 1
+            app_markup_percentage      => 0,
+            valid_source               => 1,
+            source_bypass_verification => 0
         },
         'available_countries' => [['id', 'Indonesia',], ['', undef]],
         'list' => [{

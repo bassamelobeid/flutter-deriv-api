@@ -38,8 +38,9 @@ my @params = (
 
 my $expected_result = {
     stash => {
-        app_markup_percentage => '0',
-        valid_source          => 1
+        app_markup_percentage      => 0,
+        valid_source               => 1,
+        source_bypass_verification => 0
     },
     status => 1
 };

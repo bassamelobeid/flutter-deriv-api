@@ -772,15 +772,19 @@ sub _is_pa_residence_exclusion {
 rpc paymentagent_withdraw => sub {
     my $params = shift;
 
-    my $source = $params->{source};
-    my $client = $params->{client};
+    my $source                     = $params->{source};
+    my $source_bypass_verification = $params->{source_bypass_verification} // 0;
+    my $client                     = $params->{client};
 
     return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
 
     my ($website_name, $args) = @{$params}{qw/website_name args/};
 
-    # expire token only when its not dry run
-    unless ($args->{dry_run}) {
+    # validate token
+    # - when its not dry run
+    # - when bypass flag is not set for an app id
+    my $dry_run = $args->{dry_run} // 0;
+    if ($dry_run == 0 and $source_bypass_verification == 0) {
         my $err =
             BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $client->email, 'paymentagent_withdraw')->{error};
         if ($err) {
