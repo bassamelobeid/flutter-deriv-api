@@ -1400,6 +1400,36 @@ subtest $method => sub {
 
     ok(!$test_client->status->disabled, 'CR account is enabled back again');
 
+    subtest "Open Contracts" => sub {
+        my $mock = Test::MockModule->new('BOM::User::Client');
+        $mock->mock(
+            get_open_contracts => sub {
+                return [1];
+            });
+
+        $res = $c->tcall(
+            $method,
+            {
+                token => $token,
+                args  => $args
+            });
+
+        is($res->{error}->{code}, 'AccountHasOpenPositions', 'Correct error code');
+        my $loginid = $test_client->loginid;
+        is(
+            $res->{error}->{message_to_client},
+            "Please ensure all positions in your account(s) are closed before proceeding: $loginid.",
+            "Correct error message"
+        );
+        is_deeply($res->{error}->{details}, {accounts => {$loginid => 1}}, "Correct error details");
+        ok(!$test_client->status->disabled,    'CR account is not disabled');
+        ok(!$test_client_vr->status->disabled, 'Virtual account is also not disabled');
+
+        $mock->unmock_all;
+        $test_client_vr->status->clear_disabled;
+        $test_client->status->clear_disabled;
+    };
+
     $payment_handler->($test_client, 1);
 
     $res = $c->tcall(
@@ -1410,7 +1440,7 @@ subtest $method => sub {
         });
 
     # Test with single real account (balance)
-    is($res->{error}->{code}, 'RealAccountHasBalance', 'Correct error code');
+    is($res->{error}->{code}, 'ExistingAccountHasBalance', 'Correct error code');
     ok(!$test_client->status->disabled,    'CR account is not disabled');
     ok(!$test_client_vr->status->disabled, 'Virtual account is also not disabled');
 
@@ -1426,11 +1456,23 @@ subtest $method => sub {
         });
 
     # Test with real siblings account (balance)
-    is($res->{error}->{code}, 'RealAccountHasBalance', 'Correct error code');
+    my $loginid = $test_client_2->loginid;
+    is($res->{error}->{code}, 'ExistingAccountHasBalance', 'Correct error code');
     is(
         $res->{error}->{message_to_client},
-        'Your accounts still have funds. Please withdraw all funds before proceeding.',
+        "Please withdraw all funds from your account(s) before proceeding: $loginid.",
         'Correct error message for sibling account'
+    );
+    is_deeply(
+        $res->{error}->{details},
+        {
+            accounts => {
+                $loginid => {
+                    balance  => "1.00000000",
+                    currency => 'BTC'
+                }}
+        },
+        'Correct array in details'
     );
     is($test_client->account->balance, '0.00', 'CR (USD) has no balance');
     ok(!$test_client->status->disabled,   'CR account is not disabled');
