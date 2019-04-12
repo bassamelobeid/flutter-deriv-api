@@ -373,10 +373,6 @@ sub get_bid {
     };
     return $response if $response;
 
-    # rare case: no tics between date_start and date_expiry.
-    # underlying will return exit_tick preceding date_start
-    return _data_disruption_error() if $contract->exit_tick and $contract->date_start->epoch > $contract->exit_tick->epoch;
-
     if ($contract->is_legacy) {
         return BOM::Pricing::v3::Utility::create_error({
             message_to_client => localize($contract->longcode),
@@ -384,13 +380,21 @@ sub get_bid {
         });
     }
 
-    return _data_disruption_error() if ((not $contract->may_settle_automatically) and $contract->missing_market_data);
-
     my $tv = [Time::HiRes::gettimeofday()];
     try {
         $params->{validation_params}->{landing_company} = $landing_company;
 
         my $valid_to_sell = _is_valid_to_sell($contract, $params->{validation_params}, $country_code);
+
+        # we want to return immediately with a complete response in case of a data disruption because
+        # we might now have a valid entry and exit tick.
+        if (not $valid_to_sell->{is_valid_to_sell} and $contract->require_manual_settlement) {
+            $response = BOM::Pricing::v3::Utility::create_error({
+                code              => "GetProposalFailure",
+                message_to_client => $valid_to_sell->{validation_error},
+            });
+            return;
+        }
 
         $response = _build_bid_response({
                 contract         => $contract,
@@ -647,14 +651,6 @@ sub _get_error_message {
     return ['Cannot create contract'];
 }
 
-sub _data_disruption_error {
-    return BOM::Pricing::v3::Utility::create_error({
-            code              => "GetProposalFailure",
-            message_to_client => localize(
-                'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'
-            )});
-}
-
 sub _validate_offerings {
     my ($contract, $args_copy) = @_;
 
@@ -781,8 +777,9 @@ Returns a contract proposal response as a  Hashref
 =cut
 
 sub _build_bid_response {
-    my ($params) = @_;
-    my $contract = $params->{contract};
+    my ($params)           = @_;
+    my $contract           = $params->{contract};
+    my $is_valid_to_settle = $contract->is_settleable;
 
     # "0 +" converts string into number. This was added to ensure some fields return the value as number instead of string
     my $response = {
@@ -803,7 +800,7 @@ sub _build_bid_response {
         shortcode           => $contract->shortcode,
         contract_type       => $contract->code,
         bid_price           => formatnumber('price', $contract->currency, $contract->bid_price),
-        is_settleable       => $contract->is_settleable,
+        is_settleable       => $is_valid_to_settle,
         barrier_count       => $contract->two_barriers ? 2 : 1,
     };
 
@@ -855,9 +852,9 @@ sub _build_bid_response {
         $response->{exit_tick_time} = 0 + $contract->exit_tick->epoch;
     }
 
-    if ($contract->is_settleable || $contract->is_sold) {
+    if ($is_valid_to_settle || $contract->is_sold) {
         my $localized_audit_details;
-        my $ad = $contract->audit_details;
+        my $ad = $contract->audit_details($params->{sell_time});
         foreach my $key (sort keys %$ad) {
             my @details = @{$ad->{$key}};
             foreach my $detail (@details) {
@@ -884,17 +881,17 @@ sub _build_bid_response {
     # contract expire before the expiry time
     if ($params->{sell_time} and $params->{sell_time} < $contract->date_expiry->epoch) {
         if (    $contract->is_path_dependent
-            and $contract->hit_tick
-            and $contract->hit_tick->epoch <= $contract->date_expiry->epoch)
+            and $contract->close_tick
+            and $contract->close_tick->epoch <= $contract->date_expiry->epoch)
         {
-            $contract_close_tick = $contract->hit_tick;
+            $contract_close_tick = $contract->close_tick;
         }
         # client sold early
         $contract_close_tick = $contract->underlying->tick_at($params->{sell_time}, {allow_inconsistent => 1})
             unless defined $contract_close_tick;
     } elsif ($contract->is_expired) {
         # it could be that the contract is not sold until/after expiry for path dependent
-        $contract_close_tick = $contract->hit_tick if $contract->is_path_dependent;
+        $contract_close_tick = $contract->close_tick if $contract->is_path_dependent;
         $contract_close_tick = $contract->exit_tick if not $contract_close_tick and $contract->exit_tick;
     }
 
