@@ -93,6 +93,7 @@ foreach my $pair (@valid_test_pairs) {
     subtest $test_name => sub {
         copy_trading_test_routine($pair->[0], $pair->[1]);
     };
+
 }
 
 ####################################################################
@@ -263,9 +264,12 @@ sub copy_trading_test_routine {
                 trader_id => $trader->loginid,
             });
         is(scalar @$copiers, 1, 'get_trade_copiers');
-        is($copiers->[0], $copier->loginid, 'trade copier is correct');
+        is($copiers->[0], $copier->loginid . ' !', 'trade copier is correct');
         note explain $copiers;
     };
+
+    get_copiers_traders_tokens($trader);
+    get_copiers_traders_tokens($copier);
 
     subtest 'Unfollow' => sub {
         stop_copy_trade($trader, $copier);
@@ -475,4 +479,16 @@ sub copytrading_statistics {
     return $res;
 }
 
+sub get_copiers_traders_tokens {
+    use Data::Dumper;
+    $Data::Dumper::Maxdepth = 3;
+    my $client = shift;
+    my $params = {
+        token => $tokens{$client->loginid},
+        %default_call_params
+    };
+
+    my $res = $c->call_ok('get_copiers_traders_tokens', $params)->result;
+    is Dumper($res), $client->loginid, 'get_copiers_traders_tokens';
+}
 done_testing;

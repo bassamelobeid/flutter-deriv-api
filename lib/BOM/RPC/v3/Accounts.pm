@@ -2117,7 +2117,9 @@ rpc get_copiers_traders_tokens => sub {
     my $params = shift;
 
     my $current_client = $params->{client};
+    #use Data::Dumper;$Data::Dumper::Maxdepth = 2;
 
+    warn $current_client->broker_code . ' : '  . $current_client->loginid;
     my $copiers_data_mapper = BOM::Database::DataMapper::Copier->new({
         broker_code => $current_client->broker_code,
         operation   => 'replica'
