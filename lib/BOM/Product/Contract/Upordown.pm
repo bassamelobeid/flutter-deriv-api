@@ -19,21 +19,10 @@ sub ticks_to_expiry {
 sub check_expiry_conditions {
     my $self = shift;
 
-    my ($high, $low, $expired) = $self->get_high_low_for_contract_period();
-    if (defined $high and defined $low) {
-        my $value        = 0;
-        my $high_barrier = $self->high_barrier->as_absolute;
-        my $low_barrier  = $self->low_barrier->as_absolute;
-        if ($high >= $high_barrier or $low <= $low_barrier) {
-            $expired = 1;
-            $value   = $self->payout;
-        } elsif ($expired) {
-            $value = 0;
-        }
-        $self->value($value);
-    }
+    my $value = $self->hit_tick ? $self->payout : 0;
+    $self->value($value);
 
-    return $expired;
+    return;
 }
 
 no Moose;

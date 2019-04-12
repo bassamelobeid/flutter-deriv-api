@@ -74,41 +74,31 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                         volatility => $vol,
                     })};
 
-            #we only price ATM contracts for financial instruments with flat vol-surface
-            @barriers = ({barrier => 'S0P'}) if (($ul->symbol eq 'frxBROUSD' or $ul->symbol eq 'WLDEUR') and $ul->market->name ne 'volidx');
+            foreach my $contract_type ($offerings_obj->query({contract_category => $contract_category}, ['contract_type'])) {
+                my $args = {
+                    bet_type     => $contract_type,
+                    underlying   => $ul,
+                    date_start   => $now,
+                    date_pricing => $now,
+                    duration     => $duration . 's',
+                    currency     => $payout_currency,
+                    payout       => 1000,
+                    barrier      => 'S0P',
+                };
 
-            foreach my $barrier (@barriers) {
-                my %equal = (
-                    CALLE        => 1,
-                    PUTE         => 1,
-                    EXPIRYMISSE  => 1,
-                    EXPIRYRANGEE => 1,
-                );
-                foreach my $contract_type (grep { !$equal{$_} } $offerings_obj->query({contract_category => $contract_category}, ['contract_type'])) {
-                    my $args = {
-                        bet_type     => $contract_type,
-                        underlying   => $ul,
-                        date_start   => $now,
-                        date_pricing => $now,
-                        duration     => $duration . 's',
-                        currency     => $payout_currency,
-                        payout       => 1000,
-                    };
+                my $c = produce_contract($args);
+                isa_ok $c->pricing_engine_name, 'Pricing::Engine::Reset';
 
-                    my $c = produce_contract($args);
-                    isa_ok $c->pricing_engine_name, 'Pricing::Engine::Reset';
-
-                    my @codes = ($c->code, $c->underlying->symbol, $c->date_start->epoch, $c->date_expiry->epoch);
-                    if ($c->category->two_barriers) {
-                        push @codes, ($c->high_barrier->as_absolute, $c->low_barrier->as_absolute);
-                    } else {
-                        push @codes, $c->barrier->as_absolute;
-                    }
-                    my $code = join '_', @codes;
-
-                    is roundnear(0.00001, $c->theo_price), roundnear(0.00001, $expectation->{$code}), 'theo price matches [' . $code . ']';
-                    $expectation->{$code} = $c->theo_price;
+                my @codes = ($c->code, $c->underlying->symbol, $c->date_start->epoch, $c->date_expiry->epoch);
+                if ($c->category->two_barriers) {
+                    push @codes, ($c->high_barrier->as_absolute, $c->low_barrier->as_absolute);
+                } else {
+                    push @codes, $c->barrier->as_absolute;
                 }
+                my $code = join '_', @codes;
+
+                is roundnear(0.00001, $c->theo_price), roundnear(0.00001, $expectation->{$code}), 'theo price matches [' . $code . ']';
+                $expectation->{$code} = $c->theo_price;
             }
         }
     }

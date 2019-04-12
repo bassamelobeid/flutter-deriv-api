@@ -23,7 +23,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     });
 
 subtest 'config' => sub {
-    _create_ticks([['R_100', $now->epoch - 1, 100], ['R_100', $now->epoch + 1, 100.10]]);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch - 1, 'R_100'], [100.10, $now->epoch + 1, 'R_100']);
     my $c = produce_contract({
         bet_type     => 'CALLSPREAD',
         underlying   => 'R_100',
@@ -48,58 +48,8 @@ subtest 'config' => sub {
     isa_ok $c->low_barrier,    'BOM::Product::Contract::Strike';
 };
 
-subtest 'expiry conditions' => sub {
-    _create_ticks([['R_100', $now->epoch - 1, 100], ['R_100', $now->epoch + 1, 100.10]]);
-    my $expiry = $now->plus_time_interval('2m');
-    my $args   = {
-        bet_type     => 'CALLSPREAD',
-        underlying   => 'R_100',
-        date_start   => $now,
-        date_pricing => $now,
-        date_expiry  => $expiry,
-        high_barrier => 100.11,
-        low_barrier  => 99.01,
-        currency     => 'USD',
-        payout       => 100,
-    };
-    my $c = produce_contract($args);
-    ok !$c->is_expired, 'not expired';
-    $args->{date_pricing} = $expiry;
-    $c = produce_contract($args);
-    ok $c->is_expired, 'expired without exit tick';
-    is $c->exit_tick->quote, '100.1', 'exit tick is the latest available tick (100.1)';
-    ok !$c->is_settleable, 'cannot be settled';
-    _create_ticks([['R_100', $expiry->epoch, 99], ['R_100', $expiry->epoch + 1, 100.10]]);
-    $c = produce_contract($args);
-    ok $c->is_expired, 'expired';
-    is $c->exit_tick->quote, '99', 'exit tick is 99';
-    ok $c->is_settleable, 'can be settled';
-
-    $args->{high_barrier} = 101;
-    $args->{low_barrier}  = 99;
-    _create_ticks([['R_100', $expiry->epoch, 100], ['R_100', $expiry->epoch + 1, 100.10]]);
-    $c = produce_contract($args);
-    is $c->multiplier, 50, 'multiplier is 50 for a payout of 100 where the barriers are 101, 99';
-    ok $c->is_expired, 'expired';
-    ok $c->is_settleable, 'can be settled';
-    is $c->exit_tick->quote, 100, 'exit tick is 100';
-    is $c->value, 50, 'value of contract is 50';
-    _create_ticks([['R_100', $expiry->epoch, 102], ['R_100', $expiry->epoch + 1, 100.10]]);
-    $c = produce_contract($args);
-    ok $c->is_expired,    'expired';
-    ok $c->is_settleable, 'can be settled';
-    is $c->exit_tick->quote, 102, 'exit tick is 102';
-    is $c->value, 100, 'value of contract is 100';
-    _create_ticks([['R_100', $expiry->epoch, 98], ['R_100', $expiry->epoch + 1, 100.10]]);
-    $c = produce_contract($args);
-    ok $c->is_expired,    'expired';
-    ok $c->is_settleable, 'can be settled';
-    is $c->exit_tick->quote, 98, 'exit tick is 98';
-    is $c->value, 0, 'value of contract is 0';
-};
-
 subtest 'ask/bid price' => sub {
-    _create_ticks([['R_100', $now->epoch - 1, 100], ['R_100', $now->epoch + 1, 100.10]]);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch - 1, 'R_100'], [100.10, $now->epoch + 1, 'R_100']);
     my $expiry = $now->plus_time_interval('2m');
     my $args   = {
         bet_type     => 'CALLSPREAD',
@@ -119,20 +69,5 @@ subtest 'ask/bid price' => sub {
     cmp_ok $c->ask_price,       '==',              93.67, 'correct ask price';
     cmp_ok $c->bid_price,       '==',              90.9, 'correct bid price';
 };
-
-sub _create_ticks {
-    my $ticks = shift;
-
-    BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
-    foreach my $t (@$ticks) {
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            underlying => $t->[0],
-            epoch      => $t->[1],
-            quote      => $t->[2],
-        });
-    }
-
-    return;
-}
 
 done_testing();

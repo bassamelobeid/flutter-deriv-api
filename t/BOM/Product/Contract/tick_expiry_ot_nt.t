@@ -158,6 +158,8 @@ subtest 'tick expiry one touch no touch' => sub {
     $c = produce_contract($args);
     ok $c->is_expired, 'Here is the last one, 5th tick after entry tick';
     ok $c->hit_tick,   'hit tick';
+    ok $c->exit_tick, 'exit tick';
+    cmp_ok $c->exit_tick->quote, '==', 108;
     cmp_ok $c->hit_tick->quote, '==', 108;
     is $c->current_tick->quote, 108,  'correct current tick';
 

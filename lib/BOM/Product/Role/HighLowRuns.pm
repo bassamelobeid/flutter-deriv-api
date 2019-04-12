@@ -46,20 +46,20 @@ sub _build_greek_engine {
     return BOM::Product::Pricing::Greeks::ZeroGreek->new({bet => shift});
 }
 
-# get ticks from redis cache.
-sub _get_ticks_since_start {
+has _all_ticks => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build__all_ticks {
     my $self = shift;
 
-    # contract is only started when entry tick is defined.
     return [] unless $self->entry_tick;
 
-    my $from  = $self->date_start->epoch + 1;                      # first tick is next tick
-    my $ticks = $self->underlying->ticks_in_between_start_limit({
-        start_time => $from,
+    return $self->underlying->ticks_in_between_start_limit({
+        start_time => $self->date_start->epoch + 1,
         limit      => $self->ticks_to_expiry,
     });
-
-    return $ticks;
 }
 
 sub get_impermissible_inputs {
@@ -70,12 +70,4 @@ sub get_impermissible_inputs {
     };
 }
 
-has _hit_tick => (
-    is => 'rw',
-);
-
-sub _build_hit_tick {
-    my $self = shift;
-    return $self->_hit_tick();
-}
 1;

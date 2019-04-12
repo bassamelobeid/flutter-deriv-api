@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 5;
+use Test::More;
 use Test::Warnings;
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -117,51 +117,6 @@ subtest 'PUT variations' => sub {
     'pricing engine selection';
 };
 
-subtest 'entry conditions' => sub {
-    $args->{date_pricing} = $now->plus_time_interval('1s');
-    my $c = produce_contract($args);
-    ok !$c->pricing_new;
-    ok !$c->is_forward_starting;
-    ok $c->entry_tick, 'has entry tick';
-    is $c->entry_tick->epoch, $now->epoch + 1, 'got the right entry tick for contract starting now';
-};
-
-subtest 'expiry conditions' => sub {
-    $args->{date_pricing} = $now->plus_time_interval('1s');
-    my $c = produce_contract($args);
-    ok !$c->is_expired, 'not expired';
-    cmp_ok $c->value, '==', 0, 'value 0';
-    $args->{duration}     = '10m';
-    $args->{date_start}   = $now;
-    $args->{date_pricing} = $now->plus_time_interval('10m');
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'frxUSDJPY',
-        epoch      => $now->epoch + 509,
-        quote      => 100,
-    });
-    $c = produce_contract($args);
-    ok $c->exit_tick, 'has exit tick';
-    ok !$c->is_valid_exit_tick, 'is not a valid exit tick';
-    ok $c->is_expired, 'is expired';
-    ok !$c->is_settleable,    'is not settleable as there is no valid exit tick';
-    ok !$c->is_valid_to_sell, 'is not valid to sell';
-    like($c->primary_validation_error->message, qr/exit tick is undefined/, 'throws error');
-    cmp_ok $c->value, '==', 10;
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'frxUSDJPY',
-        epoch      => $now->epoch + 601,
-        quote      => 101,
-    });
-    $c = produce_contract($args);
-    ok $c->is_expired,         'expired';
-    ok $c->exit_tick,          'has exit tick';
-    ok $c->is_valid_exit_tick, 'is an valid exit tick';
-    ok $c->is_settleable,      'is settleable as there is valid tick';
-    ok $c->is_valid_to_sell,   'is valid to sell';
-    ok $c->exit_tick->quote < $c->barrier->as_absolute;
-    cmp_ok $c->value, '==', $c->payout, 'full payout';
-};
-
 subtest 'shortcodes' => sub {
     lives_ok {
         my $c =
@@ -212,3 +167,4 @@ subtest 'shortcodes' => sub {
     }
     'builds shortcode from params for spot put';
 };
+done_testing();

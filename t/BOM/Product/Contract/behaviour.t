@@ -56,7 +56,7 @@ my $bet_params = {
 };
 
 subtest 'prices at different times' => sub {
-    create_ticks(([100, $now->epoch - 1, 'R_100']));
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(([100, $now->epoch - 1, 'R_100']));
     my $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
     ok $c->pricing_new,     'pricing new';
@@ -65,7 +65,7 @@ subtest 'prices at different times' => sub {
     is $c->pricing_spot + 0, 100, 'pricing spot is current spot';
     ok $c->ask_price, 'can price';
 
-    create_ticks(([101, $now->epoch, 'R_100'], [103, $now->epoch + 1, 'R_100']));
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(([101, $now->epoch, 'R_100'], [103, $now->epoch + 1, 'R_100']));
     $bet_params->{date_start}   = $now->epoch - 1;
     $bet_params->{date_pricing} = $now->epoch + 61;
     $c                          = produce_contract($bet_params);
@@ -80,7 +80,7 @@ subtest 'prices at different times' => sub {
 
 subtest 'entry tick == exit tick' => sub {
     my $contract_duration = 5 * 60;
-    create_ticks(([101, $now->epoch - 2, 'R_100'], [103, $now->epoch + $contract_duration, 'R_100']));
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(([101, $now->epoch - 2, 'R_100'], [103, $now->epoch + $contract_duration, 'R_100']));
     $bet_params->{date_start}   = $now;
     $bet_params->{duration}     = $contract_duration . 's';
     $bet_params->{date_pricing} = $now->epoch + $contract_duration + 1;
@@ -94,7 +94,7 @@ subtest 'entry tick == exit tick' => sub {
 
 subtest 'entry tick before contract start (only forward starting contracts)' => sub {
     my $contract_duration = 5 * 60;
-    create_ticks(([101, $now->epoch - 2, 'R_100'], [103, $now->epoch + $contract_duration, 'R_100']));
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(([101, $now->epoch - 2, 'R_100'], [103, $now->epoch + $contract_duration, 'R_100']));
     $bet_params->{date_start}                 = $now;
     $bet_params->{duration}                   = $contract_duration . 's';
     $bet_params->{is_forward_starting}        = 1;
@@ -108,7 +108,7 @@ subtest 'entry tick before contract start (only forward starting contracts)' => 
 };
 
 subtest 'waiting for entry tick' => sub {
-    create_ticks();
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks();
     $bet_params->{date_start}   = $now;
     $bet_params->{date_pricing} = $now->epoch + 1;
     $bet_params->{duration}     = '1h';
@@ -117,7 +117,7 @@ subtest 'waiting for entry tick' => sub {
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_sell, 'not valid to sell';
     like($c->primary_validation_error->message, qr/Waiting for entry tick/, 'throws error');
-    create_ticks([101, $now->epoch + 1, 'R_100']);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([101, $now->epoch + 1, 'R_100']);
     $c = produce_contract($bet_params);
     ok $c->entry_tick,       'entry tick defined';
     ok $c->is_valid_to_sell, 'valid to sell';
@@ -133,20 +133,56 @@ subtest 'waiting for entry tick' => sub {
 };
 
 subtest 'tick expiry contract settlement' => sub {
-    create_ticks([100, $now->epoch - 1, 'R_100'], [101, $now->epoch + 1, 'R_100']);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch - 1, 'R_100'], [101, $now->epoch + 301, 'R_100']);
     $bet_params->{date_start}   = $now;
     $bet_params->{duration}     = '5t';
     $bet_params->{date_pricing} = $now->epoch + 301;
     my $c = produce_contract($bet_params);
     ok $c->tick_expiry, 'tick expiry contract';
-    ok !$c->is_expired, 'not expired';
+    ok $c->is_expired, 'contract expired after 5 minutes of contract start time even without required ticks';
+    ok $c->entry_tick,  'has entry tick';
+    ok $c->is_after_expiry,     'is after expiry';
+    ok $c->is_after_settlement, 'is after settlement';
+    ok !$c->is_valid_to_sell, 'not valid to sell';
+    ok $c->require_manual_settlement, 'requires manual settlement';
+    like($c->primary_validation_error->message, qr/Entry tick came after the maximum delay/, 'throws error');
+
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch - 1, 'R_100'], [101, $now->epoch + 1, 'R_100']);
+    $bet_params->{date_start}   = $now;
+    $bet_params->{duration}     = '5t';
+    $bet_params->{date_pricing} = $now->epoch + 301;
+    $c = produce_contract($bet_params);
+    ok $c->tick_expiry, 'tick expiry contract';
+    ok $c->is_expired, 'contract expired after 5 minutes of contract start time even without required ticks';
     ok !$c->exit_tick,  'no exit tick';
     ok $c->is_after_expiry,     'is after expiry';
     ok $c->is_after_settlement, 'is after settlement';
     ok !$c->is_valid_to_sell, 'not valid to sell';
-    like($c->primary_validation_error->message, qr/exit tick undefined after 5 minutes of contract start/, 'throws error');
+    ok $c->require_manual_settlement, 'requires manual settlement';
+    like($c->primary_validation_error->message, qr/Contract has started. Exit tick came after the maximum delay/, 'throws error');
 
-    create_ticks(
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+        [100, $now->epoch - 1,   'R_100'],
+        [101, $now->epoch + 1,   'R_100'],
+        [102, $now->epoch + 2,   'R_100'],
+        [103, $now->epoch + 3,   'R_100'],
+        [104, $now->epoch + 4,   'R_100'],
+        [105, $now->epoch + 5,   'R_100'],
+        [106, $now->epoch + 301, 'R_100']);
+    $bet_params->{date_start}   = $now;
+    $bet_params->{duration}     = '5t';
+    $bet_params->{date_pricing} = $now->epoch + 301;
+    $c                          = produce_contract($bet_params);
+    ok $c->tick_expiry,         'tick expiry contract';
+    ok $c->is_expired,          'is expired';
+    ok $c->exit_tick,           'has exit tick';
+    ok $c->is_after_expiry,     'is after expiry';
+    ok $c->is_after_settlement, 'is after settlement';
+    ok !$c->is_valid_to_sell, 'not valid to sell';
+    ok $c->require_manual_settlement, 'requires manual settlement';
+    like($c->primary_validation_error->message, qr/Contract has started. Exit tick came after the maximum delay/, 'throws error');
+
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
         [100, $now->epoch - 1,   'R_100'],
         [101, $now->epoch + 1,   'R_100'],
         [101, $now->epoch + 2,   'R_100'],
@@ -166,44 +202,44 @@ subtest 'tick expiry contract settlement' => sub {
 
 subtest 'intraday duration contract settlement' => sub {
     delete $bet_params->{is_forward_starting};
-    create_ticks([101, $now->epoch - 1, 'R_100'], [102, $now->epoch + 301, 'R_100'], [103, $now->epoch + 302, 'R_100']);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([101, $now->epoch - 1, 'R_100'], [102, $now->epoch + 301, 'R_100'], [103, $now->epoch + 302, 'R_100']);
     $bet_params->{date_start}   = $now;
     $bet_params->{duration}     = '5m';
     $bet_params->{date_pricing} = $now->epoch + 301;
     my $c = produce_contract($bet_params);
     ok $c->is_expired, 'is expired';
     ok !$c->is_valid_to_sell, 'not valid to sell';
-    ok $c->missing_market_data, 'missing market data if entry tick is undef after expiry';
+    ok $c->require_manual_settlement, 'missing market data if entry tick is undef after expiry';
     like($c->primary_validation_error->message, qr/entry tick is after exit tick/, 'throws error');
 
-    create_ticks([101, $now->epoch + 1, 'R_100'], [102, $now->epoch + 301, 'R_100']);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([101, $now->epoch + 1, 'R_100'], [102, $now->epoch + 301, 'R_100']);
     $bet_params->{date_start}   = $now;
     $bet_params->{duration}     = '5m';
     $bet_params->{date_pricing} = $now->epoch + 301;
     $c                          = produce_contract($bet_params);
     ok $c->is_expired, 'is expired';
     ok !$c->is_valid_to_sell, 'not valid to sell';
-    ok $c->missing_market_data, 'missing market data if entry tick is undef after expiry';
+    ok $c->require_manual_settlement, 'missing market data if entry tick is undef after expiry';
     like($c->primary_validation_error->message, qr/only one tick throughout contract period/, 'throws error');
 
-    create_ticks([100, $now->epoch - 1, 'R_100']);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch - 1, 'R_100']);
     $c = produce_contract($bet_params);
     ok $c->is_after_settlement, 'after expiry';
     ok !$c->entry_tick,       'no entry tick';
     ok !$c->is_valid_to_sell, 'not valid to sell';
-    ok $c->missing_market_data, 'missing market data if entry tick is undef after expiry';
+    ok $c->require_manual_settlement, 'missing market data if entry tick is undef after expiry';
     like($c->primary_validation_error->message, qr/entry tick is undefined/, 'throws error');
 
-    create_ticks([101, $now->epoch + 1, 'R_100']);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([101, $now->epoch + 1, 'R_100']);
     $c = produce_contract($bet_params);
     ok $c->is_after_expiry, 'after expiry';
     ok $c->is_expired,      'it is expireable';
-    ok !$c->is_settleable, 'it is not settleable as no exit tick';
+    ok !$c->is_valid_to_sell,    'not valid to sell';
     ok $c->is_after_settlement, 'after settlement';
     ok $c->exit_tick,           'there is exit tick';
-    ok !$c->is_valid_to_sell,    'not valid to sell';
-    ok !$c->missing_market_data, 'no missing market data while waiting for exit tick after expiry';
-    like($c->primary_validation_error->message, qr/exit tick is undefined/, 'throws error');
+    ok !$c->require_manual_settlement, 'no missing market data while waiting for exit tick after expiry';
+    ok $c->waiting_for_settlement_tick, 'waiting for settlement tick';
+    like($c->primary_validation_error->message, qr/exit tick is inconsistent/, 'throws error');
 };
 
 subtest 'longcode misbehaving for daily contracts' => sub {
@@ -220,7 +256,7 @@ subtest 'longcode misbehaving for daily contracts' => sub {
 };
 
 subtest 'longcode of daily contracts crossing Thursday 21GMT expiring on Friday' => sub {
-    create_ticks([166.26, 1463020000, 'frxGBPUSD'], [166.27, 1463087154, 'frxGBPUSD']);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([166.26, 1463020000, 'frxGBPUSD'], [166.27, 1463087154, 'frxGBPUSD']);
     my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463087154_1463173200_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->expiry_daily, 'multiday contract';
@@ -282,7 +318,7 @@ subtest 'longcode of 22 hours contract from Thursday 3GMT' => sub {
 };
 
 subtest 'longcode of index daily contracts' => sub {
-    create_ticks([166.27, 1469523600, 'GDAXI']);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([166.27, 1469523600, 'GDAXI']);
     my $c = produce_contract('PUT_GDAXI_166.27_1469523600_1469633400_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->expiry_daily, 'is daily contract';
@@ -301,7 +337,7 @@ subtest 'longcode of index daily contracts' => sub {
 };
 
 subtest 'longcode of daily contract on early close day' => sub {
-    create_ticks([166.27, 1482332400, 'frxGBPUSD'], [166.27, 1482429600, 'frxGBPUSD']);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([166.27, 1482332400, 'frxGBPUSD'], [166.27, 1482429600, 'frxGBPUSD']);
     my $c = produce_contract('PUT_FRXGBPUSD_166.27_1482332400_1482429600_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->expiry_daily, 'is a multiday contract';
@@ -311,7 +347,7 @@ subtest 'longcode of daily contract on early close day' => sub {
 };
 
 subtest 'longcode of intraday contracts' => sub {
-    create_ticks([166.27, 1463126400, 'frxGBPUSD'], [166.27, 1463173200, 'frxGBPUSD']);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([166.27, 1463126400, 'frxGBPUSD'], [166.27, 1463173200, 'frxGBPUSD']);
     my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463126400_1463173200_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->is_intraday, 'is an contract';
@@ -330,7 +366,7 @@ subtest 'longcode of intraday contracts' => sub {
 
 subtest 'ATM and non ATM switches on sellback' => sub {
     my $now = Date::Utility->new;
-    create_ticks([101, $now->epoch, 'R_100'], [100, $now->epoch + 1, 'R_100'], [100.1, $now->epoch + 2, 'R_100'], [100, $now->epoch + 3, 'R_100']);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([101, $now->epoch, 'R_100'], [100, $now->epoch + 1, 'R_100'], [100.1, $now->epoch + 2, 'R_100'], [100, $now->epoch + 3, 'R_100']);
     $bet_params->{duration}     = '15m';
     $bet_params->{date_start}   = $now;
     $bet_params->{date_pricing} = $now->epoch + 2;
@@ -351,7 +387,7 @@ subtest 'ATM and non ATM switches on sellback' => sub {
 
 subtest 'expiry condition for range' => sub {
     my $now = Date::Utility->new;
-    create_ticks(
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
         [100, $now->epoch,      'R_100'],
         [101, $now->epoch + 1,  'R_100'],
         [103, $now->epoch + 3,  'R_100'],
@@ -395,7 +431,7 @@ subtest 'expiry condition for range' => sub {
 
 subtest 'expiry condition for upordown' => sub {
     my $now = Date::Utility->new;
-    create_ticks(
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
         [100, $now->epoch,      'R_100'],
         [101, $now->epoch + 1,  'R_100'],
         [103, $now->epoch + 3,  'R_100'],
@@ -439,20 +475,3 @@ subtest 'expiry condition for upordown' => sub {
 
 done_testing;
 
-sub create_ticks {
-    my @ticks = @_;
-
-    Cache::RedisDB->flushall;
-    BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
-
-    for my $tick (@ticks) {
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            quote      => $tick->[0],
-            epoch      => $tick->[1],
-            underlying => $tick->[2],
-        });
-    }
-    Time::HiRes::sleep(0.1);
-
-    return;
-}

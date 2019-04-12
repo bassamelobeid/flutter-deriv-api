@@ -87,7 +87,8 @@ my $config = {
         PastExpiryTime                => 'Expiry time cannot be in the past.',
         PastStartTime                 => 'Start time is in the past.',
         PredefinedNeedAbsoluteBarrier => 'Contracts with predefined barrier would need an absolute barrier.',
-        RefundBuyForMissingData       => 'The buy price of this contract will be refunded due to missing market data.',
+        RefundBuyForMissingData =>
+            'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.',
         ResaleNotOffered              => 'Resale of this contract is not offered.',
         ResaleNotOfferedHolidays      => 'Resale of this contract is not offered due to market holidays during contract period.',
         ResetBarrierError             => 'Non atm barrier is not allowed for reset contract.',

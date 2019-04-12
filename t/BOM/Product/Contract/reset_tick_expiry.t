@@ -44,7 +44,8 @@ subtest 'tick expiry reset' => sub {
         date_pricing => $one_day->plus_time_interval('4s'),
         duration     => '5t',
         currency     => 'USD',
-        payout       => 100
+        payout       => 100,
+        barrier      => 'S0P',
     };
     my $c = produce_contract($args);
     ok $c->tick_expiry, 'is tick expiry contract';

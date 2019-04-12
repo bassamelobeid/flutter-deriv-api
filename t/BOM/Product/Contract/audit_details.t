@@ -15,23 +15,6 @@ use BOM::Product::ContractFactory qw(produce_contract);
 
 my $json = JSON::MaybeXS->new;
 
-sub create_ticks {
-    my @ticks = @_;
-
-    Cache::RedisDB->flushall;
-    BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
-
-    for my $tick (@ticks) {
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            quote      => $tick->[0],
-            epoch      => $tick->[1],
-            underlying => $tick->[2],
-        });
-    }
-
-    return;
-}
-
 my $now    = Date::Utility->new('2017-10-10');
 my $expiry = $now->plus_time_interval('15m');
 my $args   = {
@@ -55,7 +38,7 @@ subtest 'when there is tick at start & expiry' => sub {
     my @before =
         map { [100 + 0.001 * $_, $now->epoch + $_, 'frxUSDJPY'] } (-2 .. 2);
     my @after = map { [100 + 0.001 * $_, $expiry->epoch + $_, 'frxUSDJPY'] } (-2 .. 2);
-    create_ticks(@before, @after);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(@before, @after);
     my $c = produce_contract({%$args, date_pricing => $expiry});
     ok $c->is_expired,         'contract expired';
     ok $c->is_valid_exit_tick, 'contract has valid exit tick';
@@ -71,7 +54,7 @@ subtest 'there are ticks with same quote' => sub {
     my @after = map { [100 + 0.001 * $_, $expiry->epoch + $_, 'frxUSDJPY'] } (-2 .. 2);
     $before[3][0] = $before[2][0];
     $after[3][0]  = $after[2][0];
-    create_ticks(@before, @after);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(@before, @after);
     my $c = produce_contract({%$args, date_pricing => $expiry});
     ok $c->is_expired,         'contract expired';
     ok $c->is_valid_exit_tick, 'contract has valid exit tick';
@@ -85,7 +68,7 @@ subtest 'no tick at start & expiry' => sub {
     my @before =
         map { [100, $now->epoch + $_, 'frxUSDJPY'] } (-2, -1, 1, 2);
     my @after = map { [100 + 0.001 * $_, $expiry->epoch + $_, 'frxUSDJPY'] } (-2, -1, 1, 2);
-    create_ticks(@before, @after);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(@before, @after);
     my $c = produce_contract({%$args, date_pricing => $expiry});
 
     ok $c->is_expired,         'contract expired';
@@ -100,7 +83,7 @@ subtest 'expiry daily' => sub {
     my $expiry = $now->truncate_to_day->plus_time_interval('23h59m59s');
     my @before = map { [100 + 0.001 * $_, $now->epoch + $_, 'frxUSDJPY'] } (-2, -1, 1, 2);
     my @after  = map { [100 + 0.001 * $_, $expiry->epoch + $_, 'frxUSDJPY'] } (-2, -1, 1, 2);
-    create_ticks(@before, @after);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(@before, @after);
     my $c = produce_contract({
         %$args,
         date_pricing => $expiry,
@@ -118,7 +101,7 @@ subtest 'expiry daily' => sub {
 
 subtest 'sold after start' => sub {
     my @before = map { [100 + 0.001 * $_, $now->epoch + $_, 'frxUSDJPY'] } (-2, -1, 1, 2);
-    create_ticks(@before);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(@before);
     my $c = produce_contract({
         %$args,
         is_sold     => 1,
@@ -135,7 +118,7 @@ subtest 'sold after start' => sub {
 
 subtest 'forward starting sold after start' => sub {
     my @before = map { [100 + 0.001 * $_, $now->epoch + $_, 'frxUSDJPY'] } (-2, -1, 1, 2);
-    create_ticks(@before);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(@before);
     my $c = produce_contract({
         %$args,
         is_sold                    => 1,
@@ -156,7 +139,7 @@ subtest 'path dependent hit' => sub {
     $args->{bet_type}     = 'NOTOUCH';
     $args->{date_pricing} = $now->epoch + 2;
     my @before = map { [100 + 0.001 * $_, $now->epoch + $_, 'frxUSDJPY'] } (-2, -1, 1, 2);
-    create_ticks(@before);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(@before);
     my $c = produce_contract($args);
     ok $c->is_expired, 'is expired';
     ok $c->hit_tick,   'hit tick is defined';
@@ -173,7 +156,7 @@ subtest 'path dependent expires unhit' => sub {
     $args->{date_pricing} = $args->{date_expiry};
     my @before = map { [100 + 0.001 * $_, $now->epoch + $_,    'frxUSDJPY'] } (-2, -1, 1, 2);
     my @after  = map { [100 + 0.001 * $_, $expiry->epoch + $_, 'frxUSDJPY'] } (-2, -1, 1, 2);
-    create_ticks(@before, @after);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(@before, @after);
     my $c = produce_contract($args);
     ok $c->is_expired, 'is expired';
     ok !$c->hit_tick, 'hit tick is defined';

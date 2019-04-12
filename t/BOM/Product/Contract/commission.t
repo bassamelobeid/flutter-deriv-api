@@ -13,8 +13,14 @@ use Math::Util::CalculatedValue::Validatable;
 use Format::Util::Numbers qw/roundcommon/;
 
 use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
+my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => "fake",
+    quote      => 100,
+    epoch      => time,
+});
 my $mocked_decimate = Test::MockModule->new('BOM::Market::DataDecimate');
 $mocked_decimate->mock(
     'get',
@@ -88,47 +94,52 @@ subtest 'payout' => sub {
         currency        => 'USD',
         payout          => $payout,
         base_commission => 0.001,
+        current_tick    => $current_tick,
     });
     is $c->commission_markup->amount, $min_commission_markup, 'commission_markup amount is floored 0.002 when payout is 10';
 
     foreach my $underlying (qw(frxUSDJPY frxXAUUSD FCHI)) {
         $c = produce_contract({
-            bet_type   => 'CALL',
-            underlying => $underlying,
-            barrier    => 'S0P',
-            duration   => '10m',
-            currency   => 'USD',
-            payout     => $payout,
+            bet_type     => 'CALL',
+            underlying   => $underlying,
+            barrier      => 'S0P',
+            duration     => '10m',
+            currency     => 'USD',
+            payout       => $payout,
+            current_tick => $current_tick,
         });
         ok $c->ask_price > 5, $underlying . ' intraday atm contract price is not floor to 20%';
 
         $c = produce_contract({
-            bet_type   => 'CALL',
-            underlying => $underlying,
-            barrier    => 'S500P',
-            duration   => '1h',
-            currency   => 'USD',
-            payout     => $payout,
+            bet_type     => 'CALL',
+            underlying   => $underlying,
+            barrier      => 'S500P',
+            duration     => '1h',
+            currency     => 'USD',
+            payout       => $payout,
+            current_tick => $current_tick,
         });
         ok $c->ask_price < 0.5 * $payout, $underlying . ' intraday non atm contract is not floored to 20%';
 
         $c = produce_contract({
-            bet_type   => 'CALL',
-            underlying => $underlying,
-            barrier    => 'S0P',
-            duration   => '6d',
-            currency   => 'USD',
-            payout     => $payout,
+            bet_type     => 'CALL',
+            underlying   => $underlying,
+            barrier      => 'S0P',
+            duration     => '6d',
+            currency     => 'USD',
+            payout       => $payout,
+            current_tick => $current_tick,
         });
         ok $c->ask_price > 0.2 * $payout, $underlying . ' daily atm contract price is floored to 20%. In fact ATM will never reach 20%.';
 
         $c = produce_contract({
-            bet_type   => 'CALL',
-            underlying => $underlying,
-            barrier    => 'S10000000P',
-            duration   => '8d',
-            currency   => 'USD',
-            payout     => $payout,
+            bet_type     => 'CALL',
+            underlying   => $underlying,
+            barrier      => 'S10000000P',
+            duration     => '8d',
+            currency     => 'USD',
+            payout       => $payout,
+            current_tick => $current_tick,
         });
         cmp_ok $c->ask_price, '==', $c->otm_threshold * $payout, $underlying . ' daily non atm contract price is floor to otm threshold';
     }
@@ -142,6 +153,7 @@ subtest 'payout' => sub {
         payout               => 1000,
         product_type         => 'multi_barrier',
         trading_period_start => time,
+        current_tick         => $current_tick,
     });
 
     cmp_ok $c->ask_price, '==', 0.05 * 1000, 'Forex intraday non atm contract for multibarrier is floored to 5%';
@@ -155,29 +167,32 @@ subtest 'payout' => sub {
         payout               => 1000,
         product_type         => 'multi_barrier',
         trading_period_start => time,
+        current_tick         => $current_tick,
     });
     cmp_ok $c->ask_price, '==', 0.05 * 1000, 'Forex daily non atm contract for multibarrier is floored to 5%';
 
     $c = produce_contract({
-        bet_type   => 'CALL',
-        underlying => 'R_100',
-        barrier    => 'S10000P',
-        duration   => '10m',
-        currency   => 'USD',
-        payout     => $payout,
+        bet_type     => 'CALL',
+        underlying   => 'R_100',
+        barrier      => 'S10000P',
+        duration     => '10m',
+        currency     => 'USD',
+        payout       => $payout,
+        current_tick => $current_tick,
     });
 
-    cmp_ok $c->ask_price, '>', 0.2 * $payout, 'VolIdx intraday non atm contract price is not floor 20%.';
+    cmp_ok $c->ask_price, '<', 0.2 * $payout, 'VolIdx intraday non atm contract price is not floor 20%.';
 
     $c = produce_contract({
-        bet_type   => 'CALL',
-        underlying => 'R_100',
-        barrier    => 'S10000P',
-        duration   => '1d',
-        currency   => 'USD',
-        payout     => $payout,
+        bet_type     => 'CALL',
+        underlying   => 'R_100',
+        barrier      => 'S10000P',
+        duration     => '1d',
+        currency     => 'USD',
+        payout       => $payout,
+        current_tick => $current_tick,
     });
-    cmp_ok $c->ask_price, '>', 0.2 * $payout, 'VolIdx daily non atm contract price is not floor 20%.';
+    cmp_ok $c->ask_price, '<', 0.2 * $payout, 'VolIdx daily non atm contract price is not floor 20%.';
 };
 
 subtest 'stake' => sub {
@@ -200,6 +215,7 @@ subtest 'stake' => sub {
         amount           => $stake,
         theo_probability => $theo_probability,
         base_commission  => $base_commission,
+        current_tick     => $current_tick,
     });
     is $c->payout, 0.96, 'payout is re-adjusted to 0.96 to get a minimum commission of 2 cents';
 
@@ -219,6 +235,7 @@ subtest 'stake' => sub {
         amount           => $stake,
         theo_probability => $theo_probability,
         base_commission  => $base_commission,
+        current_tick     => $current_tick,
     });
     cmp_ok $c->payout, '==', 20, "Random's payout is re-adjusted to 20 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
 
@@ -232,6 +249,7 @@ subtest 'stake' => sub {
         amount           => $stake,
         theo_probability => $theo_probability,
         base_commission  => $base_commission,
+        current_tick     => $current_tick,
     });
     cmp_ok $c->payout, '==', 10, "Forex's payout is re-adjusted to 10 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
 
@@ -245,6 +263,7 @@ subtest 'stake' => sub {
         amount           => $stake,
         theo_probability => $theo_probability,
         base_commission  => $base_commission,
+        current_tick     => $current_tick,
     });
     cmp_ok $c->payout, '==', 5, "Commodities' payout is re-adjusted to 5 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
 
@@ -258,75 +277,82 @@ subtest 'stake' => sub {
         amount           => $stake,
         theo_probability => $theo_probability,
         base_commission  => $base_commission,
+        current_tick     => $current_tick,
     });
     cmp_ok $c->payout, '==', 5, "Indices' payout is re-adjusted to 5 as corresponds to minimum ask prob of " . $c->market->deep_otm_threshold;
 
     $c = produce_contract({
-        bet_type    => 'CALL',
-        underlying  => 'frxUSDJPY',
-        barrier     => 'S0P',
-        duration    => '10m',
-        currency    => 'USD',
-        amount_type => 'stake',
-        amount      => $stake,
+        bet_type     => 'CALL',
+        underlying   => 'frxUSDJPY',
+        barrier      => 'S0P',
+        duration     => '10m',
+        currency     => 'USD',
+        amount_type  => 'stake',
+        amount       => $stake,
+        current_tick => $current_tick,
     });
     is $c->payout, roundcommon(0.01, $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
         'Forex intraday atm contract payout is not floor';
 
     $c = produce_contract({
-        bet_type    => 'CALL',
-        underlying  => 'frxUSDJPY',
-        barrier     => 'S500P',
-        duration    => '10m',
-        currency    => 'USD',
-        amount_type => 'stake',
-        amount      => $stake,
+        bet_type     => 'CALL',
+        underlying   => 'frxUSDJPY',
+        barrier      => 'S500P',
+        duration     => '10m',
+        currency     => 'USD',
+        amount_type  => 'stake',
+        amount       => $stake,
+        current_tick => $current_tick,
     });
     cmp_ok $c->payout, '!=', roundcommon(0.01, $stake / 0.2), 'Forex intraday non atm contract payout is not floored to 20% ';
 
     $c = produce_contract({
-        bet_type    => 'CALL',
-        underlying  => 'frxUSDJPY',
-        barrier     => 'S1000P',
-        duration    => '8d',
-        currency    => 'USD',
-        amount_type => 'stake',
-        amount      => $stake,
+        bet_type     => 'CALL',
+        underlying   => 'frxUSDJPY',
+        barrier      => 'S1000P',
+        duration     => '8d',
+        currency     => 'USD',
+        amount_type  => 'stake',
+        amount       => $stake,
+        current_tick => $current_tick,
     });
     is $c->payout, roundcommon(0.01, $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
         'Forex daily (> 7 days) non atm contract payout is not floor';
 
     $c = produce_contract({
-        bet_type    => 'CALL',
-        underlying  => 'frxUSDJPY',
-        barrier     => 'S0P',
-        duration    => '6d',
-        currency    => 'USD',
-        amount_type => 'stake',
-        amount      => $stake,
+        bet_type     => 'CALL',
+        underlying   => 'frxUSDJPY',
+        barrier      => 'S0P',
+        duration     => '6d',
+        currency     => 'USD',
+        amount_type  => 'stake',
+        amount       => $stake,
+        current_tick => $current_tick,
     });
     is $c->payout, roundcommon(0.01, $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
         'Forex daily (< 7 days) atm contract payout is not floor';
 
     $c = produce_contract({
-        bet_type    => 'CALL',
-        underlying  => 'frxUSDJPY',
-        barrier     => 'S500000P',
-        duration    => '6d',
-        currency    => 'USD',
-        amount_type => 'stake',
-        amount      => $stake,
+        bet_type     => 'CALL',
+        underlying   => 'frxUSDJPY',
+        barrier      => 'S500000P',
+        duration     => '6d',
+        currency     => 'USD',
+        amount_type  => 'stake',
+        amount       => $stake,
+        current_tick => $current_tick,
     });
     is $c->payout, roundcommon(0.01, $stake / $c->otm_threshold), 'Forex daily (< 7 days) non atm contract payout is floor to otm threshold';
 
     $c = produce_contract({
-        bet_type    => 'CALL',
-        underlying  => 'R_100',
-        barrier     => 'S100P',
-        duration    => '10m',
-        currency    => 'USD',
-        amount_type => 'stake',
-        amount      => $stake,
+        bet_type     => 'CALL',
+        underlying   => 'R_100',
+        barrier      => 'S100P',
+        duration     => '10m',
+        currency     => 'USD',
+        amount_type  => 'stake',
+        amount       => $stake,
+        current_tick => $current_tick,
     });
     is $c->payout, roundcommon(0.01, $stake / ($c->theo_probability->amount + $c->commission_from_stake)),
         'VolIdx intraday non atm contract payout is not floor';
@@ -396,6 +422,7 @@ subtest 'new commission structure' => sub {
                 amount           => $stake,
                 base_commission  => $base_commission,
                 theo_probability => $fake_theo,
+                current_tick     => $current_tick,
             });
             is $c->payout, roundcommon(0.01, $data->{payout}), 'correct payout amount';
         }
@@ -418,6 +445,7 @@ subtest 'commission for multibarrier' => sub {
         amount_type      => 'payout',
         currency         => 'USD',
         theo_probability => $fake_theo,
+        current_tick     => $current_tick,
     };
     my $c = produce_contract($args);
     is $c->commission_markup->amount, $c->base_commission, 'at 1000 USD commission markup is base commission';
@@ -430,13 +458,14 @@ sub test_flexible_commission {
     my ($symbol, $market, $scaling) = @_;
 
     my $args = {
-        bet_type    => 'CALL',
-        underlying  => $symbol,
-        barrier     => 'S0P',
-        duration    => '1d',
-        amount      => 1000,
-        amount_type => 'payout',
-        currency    => 'USD',
+        bet_type     => 'CALL',
+        underlying   => $symbol,
+        barrier      => 'S0P',
+        duration     => '1d',
+        amount       => 1000,
+        amount_type  => 'payout',
+        currency     => 'USD',
+        current_tick => $current_tick,
     };
 
     BOM::Config::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->$market(100);
@@ -509,12 +538,13 @@ subtest 'non ATM volatility indices variable commission structure' => sub {
     BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"yyy": {"market": "volidx", "commission": "0.1", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}}');
     my $args = {
-        bet_type   => "CALL",
-        underlying => 'R_100',
-        duration   => '59s',
-        payout     => 100,
-        currency   => 'USD',
-        barrier    => 'S10P',
+        bet_type     => "CALL",
+        underlying   => 'R_100',
+        duration     => '59s',
+        payout       => 100,
+        currency     => 'USD',
+        barrier      => 'S10P',
+        current_tick => $current_tick,
     };
     my $c = produce_contract($args);
     is $c->base_commission, 10, 'base commission is 10% if custom commission is matched';

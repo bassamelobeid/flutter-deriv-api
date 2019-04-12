@@ -23,7 +23,7 @@ has disable_trading_at_quiet_period => (
     default => 1,
 );
 
-has missing_market_data => (
+has [qw(require_manual_settlement waiting_for_settlement_tick)] => (
     is      => 'rw',
     isa     => 'Bool',
     default => 0
@@ -47,6 +47,61 @@ sub is_valid_to_sell {
     my $self = shift;
     my $args = shift;
 
+    my $valid = $self->_confirm_sell_validity($args);
+
+    return $self->_report_validation_stats('sell', $valid);
+}
+
+sub _is_valid_to_settle {
+    my $self = shift;
+
+    my $message;
+    # We have a separate conditions for tick expiry contracts because the settlement is based purely on ticks.
+    # But, we also apply a rule to refund contract where it does not fulfill the settlement condition within 5 minutes
+    # after the contract start time.
+    if ($self->tick_expiry) {
+        my $max_delay = $self->_max_tick_expiry_duration->seconds;
+        if (not $self->entry_tick or $self->entry_tick->epoch - $self->date_start->epoch > $max_delay) {
+            $message = 'Entry tick came after the maximum delay [' . $max_delay . ']';
+        } elsif (not $self->exit_tick or $self->exit_tick->epoch - $self->date_start->epoch > $max_delay) {
+            $message = 'Contract has started. Exit tick came after the maximum delay [' . $max_delay . ']';
+        }
+    } else {
+        # The rule of thumb for intraday or multi-day contracts is if we have an entry and an exit tick in the correct order, we will settle the contract.
+        if (not $self->entry_tick) {
+            $message = 'entry tick is undefined';
+        } elsif ($self->exit_tick and not $self->is_valid_exit_tick) {
+            # There is pre-settlement exit tick which is not a valid exit tick for settlement
+            $message = 'exit tick is inconsistent';
+            $self->waiting_for_settlement_tick(1);
+        } elsif ($self->entry_tick and $self->exit_tick and $self->entry_tick->epoch == $self->exit_tick->epoch) {
+            $message = 'only one tick throughout contract period';
+        } elsif ($self->entry_tick and $self->exit_tick and $self->entry_tick->epoch > $self->exit_tick->epoch) {
+            $message = 'entry tick is after exit tick';
+        } elsif ($self->is_path_dependent and not $self->ok_through_expiry) {
+            $message = 'inconsistent close for period';
+            $self->waiting_for_settlement_tick(1);
+        }
+    }
+
+    # if no settlement fault message is set, then we are considered good to go!
+    return 1 unless $message;
+
+    $self->_add_error({
+        message => $message,
+        message_to_client =>
+            ($self->waiting_for_settlement_tick ? [$ERROR_MAPPING->{WaitForContractSettlement}] : [$ERROR_MAPPING->{RefundBuyForMissingData}]),
+    });
+
+    $self->require_manual_settlement(1) unless $self->waiting_for_settlement_tick;
+
+    return 0;
+}
+
+sub _confirm_sell_validity {
+    my ($self, $args) = @_;
+
+    # if the contract is sold (early close by client), then is_valid_to_sell is false
     if ($self->is_sold) {
         $self->_add_error({
             message           => 'Contract already sold',
@@ -55,29 +110,56 @@ sub is_valid_to_sell {
         return 0;
     }
 
-    if ($self->is_after_settlement) {
-        if (my ($ref, $hold_for_exit_tick) = $self->_validate_settlement_conditions) {
-            $self->missing_market_data(1) if not $hold_for_exit_tick;
-            $self->_add_error($ref);
-        }
-    } elsif ($self->is_after_expiry) {
+    # Because of indices where we get the official OHLC from the exchange, settlement time is always
+    # 3 hours after the market close. Hence, there's a difference in date_expiry & date_settlement.
+    #
+    # This is not applicable for tick expiry contracts.
+    if (not $self->tick_expiry and ($self->date_pricing->is_same_as($self->date_expiry) or $self->is_after_expiry) and not $self->is_after_settlement)
+    {
         $self->_add_error({
-
-                message           => 'waiting for settlement',
-                message_to_client => [$ERROR_MAPPING->{WaitForContractSettlement}],
+            message           => 'waiting for settlement',
+            message_to_client => [$ERROR_MAPPING->{WaitForContractSettlement}],
         });
+        return 0;
+    }
 
-    } elsif (not $self->is_expired) {
-        if (my $ref = $self->_validate_entry_tick) {
-            $self->_add_error($ref);
+    # check for entry condition when contract has started for forward starting contracts
+    if (    $self->starts_as_forward_starting
+        and $self->entry_tick
+        and ($self->date_start->epoch - $self->entry_tick->epoch > $self->underlying->max_suspend_trading_feed_delay->seconds))
+    {
+        # A start now contract will not be bought if we have missing feed.
+        # We are doing the same thing for forward starting contracts.
+        $self->_add_error({
+            message           => 'entry tick is too old',
+            message_to_client => [$ERROR_MAPPING->{RefundBuyForMissingData}],
+        });
+        $self->require_manual_settlement(1);
 
+        return 0;
+    }
+
+    # check for valid settlement conditions if the contract has passed the settlement time.
+    if ($self->is_after_settlement) {
+        return $self->_is_valid_to_settle;
+    }
+
+    if (not $self->is_expired) {
+        # if entry_tick is undefined (because it is the next tick), show the correct error message to client
+        if (not($self->entry_tick or $self->starts_as_forward_starting)) {
+            $self->_add_error({
+                message           => "Waiting for entry tick [symbol: " . $self->underlying->symbol . "]",
+                message_to_client => [$ERROR_MAPPING->{EntryTickMissing}],
+            });
+            return 0;
         } elsif (not $self->opposite_contract_for_sale->is_valid_to_buy($args)) {
             # Their errors are our errors, now!
             $self->_add_error($self->opposite_contract_for_sale->primary_validation_error);
+            return 0;
         }
     }
-    my $passes_validation = $self->primary_validation_error ? 0 : 1;
-    return $self->_report_validation_stats('sell', $passes_validation);
+
+    return 1;
 }
 
 sub _confirm_validity {
@@ -109,51 +191,6 @@ sub _confirm_validity {
 }
 
 # PRIVATE method.
-sub _validate_settlement_conditions {
-    my $self = shift;
-
-    my $message;
-    my $hold_for_exit_tick = 0;
-    if ($self->tick_expiry) {
-        if (not $self->exit_tick) {
-            $message = 'exit tick undefined after 5 minutes of contract start';
-        } elsif ($self->exit_tick->epoch - $self->date_start->epoch > $self->_max_tick_expiry_duration->seconds) {
-            $message = 'no ticks within 5 minutes after contract start';
-        }
-    } else {
-        # intraday or daily expiry
-        if (not $self->entry_tick) {
-            $message = 'entry tick is undefined';
-        } elsif ($self->is_forward_starting
-            and ($self->date_start->epoch - $self->entry_tick->epoch > $self->underlying->max_suspend_trading_feed_delay->seconds))
-        {
-            # A start now contract will not be bought if we have missing feed.
-            # We are doing the same thing for forward starting contracts.
-            $message = 'entry tick is too old';
-        } elsif ($self->exit_tick and not $self->is_valid_exit_tick) {
-            # There is pre-settlement exit tick which is not a valid exit tick for settlement
-            $message            = 'exit tick is undefined';
-            $hold_for_exit_tick = 1;
-        } elsif ($self->entry_tick->epoch == $self->exit_tick->epoch) {
-            $message = 'only one tick throughout contract period';
-        } elsif ($self->entry_tick->epoch > $self->exit_tick->epoch) {
-            $message = 'entry tick is after exit tick';
-        }
-    }
-
-    return if not $message;
-
-    my $refund = [$ERROR_MAPPING->{RefundBuyForMissingData}];
-    my $wait   = [$ERROR_MAPPING->{WaitForContractSettlement}];
-
-    my $ref = {
-        message           => $message,
-        message_to_client => ($hold_for_exit_tick ? $wait : $refund),
-    };
-
-    return ($ref, $hold_for_exit_tick);
-}
-
 # Validation methods.
 
 # Is this underlying or contract is disabled/suspended from trading.

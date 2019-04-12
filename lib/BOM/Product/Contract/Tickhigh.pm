@@ -2,46 +2,67 @@ package BOM::Product::Contract::Tickhigh;
 
 use Moose;
 extends 'BOM::Product::Contract';
-with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::AmericanExpiry', 'BOM::Product::Role::HighLowTicks';
-
-use List::Util qw/any/;
+with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier',
+    'BOM::Product::Role::AmericanExpiry' => {-excludes => ['_build_hit_tick']},
+    'BOM::Product::Role::HighLowTicks';
 
 use Pricing::Engine::HighLowTicks;
 
 use BOM::Product::Pricing::Greeks::ZeroGreek;
 
 sub check_expiry_conditions {
-
     my $self = shift;
 
-    my $ticks = $self->underlying->ticks_in_between_start_limit({
-        start_time => $self->date_start->epoch + 1,
-        limit      => $self->ticks_to_expiry,
-    });
+    my $value = $self->hit_tick ? 0 : $self->payout;
+    $self->value($value);
 
-    my $number_of_ticks = scalar(@$ticks);
+    return;
+}
 
-    # Do not evaluate until we have the selected tick
-    return 0 if $number_of_ticks < $self->selected_tick;
+sub _build_hit_tick {
+    my $self = shift;
 
-    # If there's no tick yet, the contract is not expired.
     return 0 unless $self->barrier;
 
-    # selected quote is not the highest.
-    if ($self->calculate_highlow_hit_tick) {
-        $self->value(0);
-        return 1;    # contract expired
+    my $selected_quote = $self->barrier->as_absolute;
+    my $ticks          = $self->_all_ticks;
+
+    my $hit_tick;
+    # Returns the first tick that is higher than barrier.
+    foreach my $tick (@$ticks) {
+        if ($tick->{quote} > $selected_quote) {
+            $hit_tick = $tick;
+            last;
+        }
     }
 
-    # we already have the full set of ticks, but no tick is higher than selected.
-    if ($number_of_ticks == $self->ticks_to_expiry) {
-        $self->value($self->payout);
-        return 1;
+    return $hit_tick;
+}
+
+has highest_tick => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_highest_tick {
+    my $self = shift;
+
+    my $ticks = $self->_all_ticks;
+
+    # if we don't have all the ticks, we can't decide which is the highest
+    return if scalar(@$ticks) != $self->ticks_to_expiry;
+
+    my $highest;
+    foreach my $tick (@$ticks) {
+        unless ($highest) {
+            $highest = $tick;
+            next;
+        }
+
+        $highest = $tick if (defined $tick->{quote} and $tick->{quote} > $highest->{quote});
     }
 
-    # not expired, still waiting for ticks.
-    return 0;
-
+    return $highest;
 }
 
 sub _validate_barrier {

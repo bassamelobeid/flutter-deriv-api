@@ -49,7 +49,8 @@ subtest 'tick expiry up&down' => sub {
         date_pricing => $one_day->plus_time_interval('2s'),
         duration     => '5t',
         currency     => 'USD',
-        payout       => 100
+        payout       => 100,
+        barrier      => 'S0P',
     };
 
     my $c = produce_contract($args);

@@ -4,12 +4,29 @@ use Moose::Role;
 use List::Util qw(first);
 
 use BOM::Product::Static;
+use BOM::Product::Exception;
 
 with 'BOM::Product::Role::BarrierBuilder';
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
-has supplied_barrier => (is => 'ro');
+has supplied_barrier => (
+    is         => 'ro',
+    lazy_build => 1
+);
+
+sub _build_supplied_barrier {
+    my $self = shift;
+
+    # don't throw an exception if we're not expecting a barrier
+    return undef unless $self->has_user_defined_barrier;
+
+    return BOM::Product::Exception->throw(
+        error_code => 'MissingRequiredDigit',
+    ) if ($self->category_code eq 'digits');
+
+    return BOM::Product::Exception->throw(error_code => 'InvalidBarrierSingle');
+}
 
 has barrier => (
     is      => 'ro',

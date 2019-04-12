@@ -58,7 +58,7 @@ my $bet_params = {
 };
 
 subtest 'minimum lookback price and rounding strategy' => sub {
-    create_ticks(([100, $now->epoch - 1, 'R_100']));
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(([100, $now->epoch - 1, 'R_100']));
     my $c = produce_contract($bet_params);
 
     ok $c->ask_price, 'can price';
@@ -80,21 +80,3 @@ subtest 'minimum lookback price and rounding strategy' => sub {
 };
 
 done_testing;
-
-sub create_ticks {
-    my @ticks = @_;
-
-    Cache::RedisDB->flushall;
-    BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
-
-    for my $tick (@ticks) {
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            quote      => $tick->[0],
-            epoch      => $tick->[1],
-            underlying => $tick->[2],
-        });
-    }
-    Time::HiRes::sleep(0.1);
-
-    return;
-}

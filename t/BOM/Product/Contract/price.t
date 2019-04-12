@@ -36,7 +36,7 @@ my $c = produce_contract({
     date_pricing => $start_time->epoch + 61,
 });
 
-create_ticks(
+BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
     [100, $start_time->epoch,                  'R_100'],
     [101, $start_time->epoch + 1,              'R_100'],
     [102, $start_time->epoch + 5,              'R_100'],
@@ -50,7 +50,7 @@ $c = produce_contract({
     date_pricing => $start_time->epoch + 61,
 });
 
-create_ticks(
+BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
     [100, $start_time->epoch,                  'R_100'],
     [101, $start_time->epoch + 1,              'R_100'],
     [102, $start_time->epoch + 5,              'R_100'],
@@ -64,7 +64,7 @@ $c = produce_contract({
     date_pricing => $start_time->epoch,
 });
 
-create_ticks([100, $start_time->epoch, 'R_100']);
+BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $start_time->epoch, 'R_100']);
 
 ok $c->ask_price, 'ask price of a contract at beginning';
 
@@ -74,24 +74,6 @@ $c = produce_contract({
     date_pricing => $start_time->epoch + 10,
 });
 
-create_ticks([100, $start_time->epoch, 'R_100'], [101, $start_time->epoch + 1, 'R_100'], [80, $start_time->epoch + 5, 'R_100']);
+BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $start_time->epoch, 'R_100'], [101, $start_time->epoch + 1, 'R_100'], [80, $start_time->epoch + 5, 'R_100']);
 
 ok $c->bid_price, 'bid price for not expired contract';
-
-sub create_ticks {
-    my @ticks = @_;
-
-    Cache::RedisDB->flushall;
-    BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
-
-    for my $tick (@ticks) {
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            quote      => $tick->[0],
-            epoch      => $tick->[1],
-            underlying => $tick->[2],
-        });
-    }
-    Time::HiRes::sleep(0.1);
-
-    return;
-}

@@ -155,7 +155,12 @@ subtest 'Forward starting.' => sub {
     # 1am tomorrow.
     my $date_start  = Date::Utility->new(Date::Utility->new->truncate_to_day->epoch + 86400 + 3600);
     my $date_expiry = Date::Utility->new($date_start->epoch + 600);
-    my $bet         = produce_contract({
+    my $tick        = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        epoch      => $date_start->epoch,
+        quote      => 100
+    });
+    my $bet = produce_contract({
         bet_type                   => 'PUT',
         date_start                 => $date_start,
         date_expiry                => $date_expiry,
@@ -165,6 +170,8 @@ subtest 'Forward starting.' => sub {
         current_spot               => 70000,
         is_forward_starting        => 1,
         starts_as_forward_starting => 1,
+        barrier                    => 'S0P',
+        current_tick               => $tick,
     });
 
     ok(looks_like_number($bet->bid_price), 'Bid price is a number.');

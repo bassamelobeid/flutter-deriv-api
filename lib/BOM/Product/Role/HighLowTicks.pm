@@ -63,6 +63,11 @@ around supplied_barrier => sub {
 
     # barrier is undef on asians before the contract starts.
     return if $self->pricing_new;
+    return $self->_selected_tick ? $self->_selected_tick->{quote} : undef;
+};
+
+sub _selected_tick {
+    my $self = shift;
 
     my $hmt               = $self->selected_tick;
     my @ticks_since_start = @{
@@ -73,8 +78,8 @@ around supplied_barrier => sub {
 
     return unless @ticks_since_start;
     return if $hmt != @ticks_since_start;
-    return $ticks_since_start[-1]->{quote};
-};
+    return $ticks_since_start[-1];
+}
 
 around '_build_barrier' => sub {
     my $orig = shift;
@@ -104,6 +109,22 @@ sub get_impermissible_inputs {
         'barrier'  => 1,
         'barrier2' => 1,
     };
+}
+
+has _all_ticks => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build__all_ticks {
+    my $self = shift;
+
+    return [] unless $self->entry_tick;
+
+    return $self->underlying->ticks_in_between_start_limit({
+        start_time => $self->date_start->epoch + 1,
+        limit      => $self->ticks_to_expiry,
+    });
 }
 
 1;

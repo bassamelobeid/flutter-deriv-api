@@ -333,16 +333,6 @@ True for obsolete contract types, see L<BOM::Product::Contract::Invalid>.
 
 sub is_legacy { return 0 }
 
-=head2 is_settleable
-
-Returns true if the contract is settleable.
-
-To be able to settle, it need pass the settlement time and has valid exit tick
-
-=cut
-
-sub is_settleable { die "Calling ->is_settleable on a ::Contract instance" }
-
 sub may_settle_automatically {
     my $self = shift;
 
@@ -429,8 +419,10 @@ sub expiry_daily {
 
 When the contract was settled (can be C<undef>).
 
+
 =cut
 
+#TODO: We should remove the concept of date_settlement in our system once all the open contracts for indices close
 sub date_settlement {
     my $self     = shift;
     my $end_date = $self->date_expiry;
@@ -984,7 +976,7 @@ sub pricing_details {
 }
 
 sub audit_details {
-    my $self = shift;
+    my ($self, $sell_time) = @_;
 
     # If there's no entry tick, practically the contract hasn't started.
     return {} unless $self->entry_tick;
@@ -1013,13 +1005,17 @@ sub audit_details {
 
     # only contract_start audit details if contract is sold early.
     # path dependent could hit early, we will check if it is sold early or hit in the next condition.
-    return $details if $self->is_sold && !$self->is_path_dependent && $self->date_pricing->is_before($self->date_expiry);
+    my $sell_date = $sell_time ? Date::Utility->new($sell_time) : undef;
+    my $manual_sellback = 0;
+    $manual_sellback = $sell_date->is_before($self->date_expiry) if $sell_date;
+    return $details if $self->is_sold && $manual_sellback && !$self->is_path_dependent;
 
     # no contract_end audit details if settlement conditions is not fulfilled.
-    return $details unless $self->is_settleable;
+    return $details unless $self->is_expired;
+    return $details if $self->waiting_for_settlement_tick;
 
-    if ($self->is_path_dependent && $self->hit_tick) {
-        my $hit_tick = $self->hit_tick;
+    if ($self->is_path_dependent && $self->close_tick) {
+        my $hit_tick = $self->close_tick;
         $details->{contract_end} = [{
                 # "0 +" converts string into number. This was added to ensure some fields return the value as number instead of string
                 epoch => 0 + $hit_tick->epoch,
@@ -1075,7 +1071,10 @@ sub _get_tick_details {
     #Extra logic to highlight highlowticks
     my $selected_epoch;
     if ($self->category_code eq 'highlowticks') {
-        $selected_epoch = ($self->hit_tick) ? $self->hit_tick->epoch : $self->entry_tick->epoch + 2 * ($self->selected_tick - 1);
+        $selected_epoch =
+              ($self->code eq 'TICKHIGH' and $self->highest_tick) ? $self->highest_tick->epoch
+            : ($self->code eq 'TICKLOW'  and $self->lowest_tick)  ? $self->lowest_tick->epoch
+            :                                                       undef;
     }
 
     my @details;
@@ -1101,7 +1100,7 @@ sub _get_tick_details {
 
         #Extra logic to highlight highlowticks
         if ($self->category_code eq 'highlowticks') {
-            if ($t->epoch == $selected_epoch) {
+            if (defined $selected_epoch and $t->epoch == $selected_epoch) {
                 my $tick_name = ($self->bet_type eq 'TICKHIGH') ? $GENERIC_MAPPING->{highest_spot} : $GENERIC_MAPPING->{lowest_spot};
                 if ($t_details->{name}) {
                     $t_details->{name} = [$GENERIC_MAPPING->{time_and_spot}, $t_details->{name}, $tick_name];
@@ -1246,6 +1245,15 @@ sub allowed_amount_type {
         stake  => 1,
         payout => 1,
     };
+}
+
+# Please do not extend code with $contract->is_settleable function. This function will be removed.
+# To check if an open contract can be settled, use $self->is_expired and $self->is_valid_to_sell.
+sub is_settleable {
+    my $self = shift;
+
+    return 1 if $self->is_sold;
+    return ($self->is_expired and $self->is_valid_to_sell);
 }
 
 =head2 invalid_user_input

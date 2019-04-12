@@ -3,12 +3,12 @@ package BOM::Product::Role::AmericanExpiry;
 use Moose::Role;
 use BOM::Product::Static;
 
-use List::Util qw/any first/;
+use Postgres::FeedDB::Spot::Tick;
+use List::Util qw/min max/;
 use Scalar::Util qw/looks_like_number/;
 
 override is_expired => sub {
-    my $self       = shift;
-    my $is_expired = $self->check_expiry_conditions;
+    my $self = shift;
 
     if ($self->has_user_defined_barrier) {
         my @barriers = $self->two_barriers ? ($self->supplied_high_barrier, $self->supplied_low_barrier) : ($self->supplied_barrier);
@@ -21,21 +21,17 @@ override is_expired => sub {
             });
             # Was expired at start, making it an unfair bet, so value goes to 0 without regard to bet conditions.
             $self->value(0);
-            $is_expired = 1;
+            return 1;
         }
     }
 
-    return $is_expired;
-};
+    if ($self->hit_tick or $self->is_after_expiry) {
+        $self->check_expiry_conditions;
+        return 1;
+    }
 
-override is_settleable => sub {
-    my $self = shift;
+    return 0;
 
-    # only settleable if it is hit or when it has a valid exit tick.
-    # Do not settle if it is at pre-settlement stage
-    my $is_settleable = ($self->is_expired and ($self->hit_tick or ($self->exit_tick and $self->is_valid_exit_tick))) ? 1 : 0;
-
-    return $is_settleable;
 };
 
 has hit_tick => (
@@ -48,136 +44,116 @@ has hit_tick => (
 sub _build_hit_tick {
     my $self = shift;
 
-    my $tick;
+    my $start_time     = $self->date_start->epoch + 1;
+    my %hit_conditions = (
+        start_time => $start_time,
+        end_time   => max($start_time, min($self->date_pricing->epoch, $self->date_expiry->epoch)),
+    );
 
-    if ($self->is_expired && (($self->payouttime ne 'hit' xor $self->value))) {
-        my %hit_conditions =
-            ($self->two_barriers)
-            ? (
-            higher => $self->high_barrier->as_absolute,
-            lower  => $self->low_barrier->as_absolute,
-            )
-            : ($self->barrier->pip_difference > 0) ? (higher => $self->barrier->as_absolute)
-            :                                        (lower => $self->barrier->as_absolute);
-
-        # do not include current tick as the contract starts at next tick.
-        $hit_conditions{start_time} = $self->date_start->epoch + 1;
-        $hit_conditions{end_time}   = $self->date_expiry;
-
-        if ($self->tick_expiry) {
-            $tick = $self->get_tick_expiry_hit_tick(%hit_conditions);
-        } else {
-            $tick = $self->underlying->breaching_tick(%hit_conditions);
-        }
+    if ($self->two_barriers) {
+        $hit_conditions{higher} = $self->high_barrier->as_absolute;
+        $hit_conditions{lower}  = $self->low_barrier->as_absolute;
+    } elsif ($self->barrier->pip_difference > 0) {
+        $hit_conditions{higher} = $self->barrier->as_absolute;
+    } else {
+        $hit_conditions{lower} = $self->barrier->as_absolute;
     }
 
-    return $tick;
+    return $self->_get_tick_expiry_hit_tick(%hit_conditions)  if $self->tick_expiry;
+    return $self->underlying->breaching_tick(%hit_conditions) if $self->is_intraday;
+    # TODO: remove this when we are no longer dependent on official ohlc for settlement.
+    return $self->_get_hit_tick_from_ohlc(%hit_conditions);
 }
 
-sub get_tick_expiry_hit_tick {
+has ok_through_expiry => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_ok_through_expiry {
+    my $self = shift;
+
+    return 0 unless $self->is_after_expiry;
+    return 0 unless $self->exit_tick;
+    return 0 if $self->expiry_type eq 'intraday' and $self->exit_tick->quote != $self->_ohlc_for_contract_period->{close};
+    return 1;
+}
+
+sub close_tick {
+    my $self = shift;
+
+    return $self->hit_tick if ($self->category->code ne 'highlowticks');
+
+    if ($self->hit_tick and $self->_selected_tick) {
+        return $self->hit_tick->epoch < $self->_selected_tick->epoch ? $self->_selected_tick : $self->hit_tick;
+    }
+
+    return;
+}
+
+sub _get_tick_expiry_hit_tick {
     my ($self, %args) = @_;
 
     my @ticks_since_start = @{$self->get_ticks_for_tick_expiry};
     my $tick;
 
-    if ($self->bet_type eq 'TICKHIGH' or $self->bet_type eq 'TICKLOW') {
-        return $self->calculate_highlow_hit_tick;
-    } else {
-        for (my $i = 1; $i <= $#ticks_since_start; $i++) {
-            if (   (defined $args{higher} and $ticks_since_start[$i]->quote >= $args{higher})
-                or (defined $args{lower} and $ticks_since_start[$i]->quote <= $args{lower}))
-            {
-                $tick = $ticks_since_start[$i];
-                last;
-            }
+    for (my $i = 1; $i <= $#ticks_since_start; $i++) {
+        if (   (defined $args{higher} and $ticks_since_start[$i]->quote >= $args{higher})
+            or (defined $args{lower} and $ticks_since_start[$i]->quote <= $args{lower}))
+        {
+            $tick = $ticks_since_start[$i];
+            last;
         }
     }
+
     return $tick;
 }
 
-sub get_high_low_for_contract_period {
+has _ohlc_for_contract_period => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build__ohlc_for_contract_period {
     my $self = shift;
 
-    my ($high, $low, $close);
-    my $ok_through_expiry = 0;                                     # Must be confirmed.
-    my $exit_tick = $self->is_after_expiry && $self->exit_tick;    # Can still be undef if the tick is not yet in the DB.
-    if (not $self->pricing_new and $self->entry_tick and $self->entry_tick->epoch < $self->date_pricing->epoch) {
-        my $start_epoch = $self->date_start->epoch + 1;            # exlusive of tick at contract start.
+    # exlusive of tick at contract start.
+    my $start_epoch = $self->date_start->epoch + 1;
 
-        my $end_epoch;
-
-        if ($self->date_pricing->is_after($self->date_expiry)) {
-            # For daily contract, to include the official ohlc on the expiry date, you should include the full day of the expiry date [ie is how our db is handling daily ohlc]. Otherwise, it will just include unofficial ohlc on the expiry date
-            # In Postgres::FeedDB::Spot::DatabaseAPI::get_ohlc_data_for_period, it will move the day to end of the day.
-
-            $end_epoch = $self->expiry_daily ? $self->date_expiry->truncate_to_day->epoch : $self->date_settlement->epoch;
-        } else {
-            $end_epoch = $self->date_pricing->epoch;
-        }
-
-        ($high, $low, $close) = @{
-            $self->underlying->get_high_low_for_period({
-                    start => $start_epoch,
-                    end   => $end_epoch,
-                })}{'high', 'low', 'close'};
-        # The two intraday queries run off different tables, so we have to make sure our consistent
-        # exit tick was included. expiry_daily may have differences, but should be fine anyway.
-        $ok_through_expiry = 1 if ($exit_tick and $close and ($self->expiry_daily or $exit_tick->quote == $close));
+    my $end_epoch = max($self->date_pricing->epoch, $start_epoch);
+    if ($self->date_pricing->is_after($self->date_expiry)) {
+        # For daily contract, to include the official ohlc on the expiry date, you should include the full day of the expiry date [ie is how our db is handling daily ohlc].
+        # Otherwise, it will just include unofficial ohlc on the expiry date.
+        # In Postgres::FeedDB::Spot::DatabaseAPI::get_ohlc_data_for_period, it will move the day to end of the day.
+        $end_epoch = $self->expiry_daily ? $self->date_expiry->truncate_to_day->epoch : $self->date_settlement->epoch;
     }
 
-    return ($high, $low, $ok_through_expiry);
-}
-
-# For highlow contract, the analogy is like notouch. If there is no hit tick , client wins.
-# There will be a hit tick ,if there is a tick higher/lower than the selected tick.
-sub calculate_highlow_hit_tick {
-    my $self = shift;
-
-    # Logic for defining hit tick here
-
-    my $ticks = $self->underlying->ticks_in_between_start_limit({
-        start_time => $self->date_start->epoch + 1,
-        limit      => $self->ticks_to_expiry,
+    return $self->underlying->get_high_low_for_period({
+        start => $start_epoch,
+        end   => $end_epoch,
     });
 
-    return 0 unless $self->barrier;
-
-    my $selected_quote = $self->barrier->as_absolute;
-
-    my $hit_tick;
-
-    if ($self->bet_type eq 'TICKHIGH') {
-        # Return the highest tick as the hit_tick
-        if (any { $_->{quote} > $selected_quote } @$ticks) {
-            $hit_tick = $ticks->[0];
-            my $index = 1;
-            for my $current_tick (@$ticks) {
-                if ($current_tick->{quote} > $selected_quote and $current_tick->{quote} > $hit_tick->{quote}) {
-                    $hit_tick = $current_tick;
-                    last if $index > $self->selected_tick;
-                }
-                last if $index == $self->selected_tick and $hit_tick->{quote} > $selected_quote;
-                $index++;
-            }
-            return $hit_tick;
-        }
-    } elsif ($self->bet_type eq 'TICKLOW') {
-        # selected quote is not the lowest.
-        if (any { $_->{quote} < $selected_quote } @$ticks) {
-            $hit_tick = $ticks->[0];
-            my $index = 1;
-            for my $current_tick (@$ticks) {
-                if ($current_tick->{quote} < $selected_quote and $current_tick->{quote} < $hit_tick->{quote}) {
-                    $hit_tick = $current_tick;
-                    last if $index > $self->selected_tick;
-                }
-                last if $index == $self->selected_tick and $hit_tick->{quote} < $selected_quote;
-                $index++;
-            }
-            return $hit_tick;
-        }
-    }
-    return undef;
 }
 
+sub _get_hit_tick_from_ohlc {
+    my ($self, %args) = @_;
+
+    my $ohlc = $self->_ohlc_for_contract_period;
+    my $hit_quote;
+
+    if ($args{higher} and $ohlc->{high} and $ohlc->{high} >= $args{higher}) {
+        $hit_quote = $ohlc->{high};
+    } elsif ($args{lower} and $ohlc->{low} and $ohlc->{low} <= $args{lower}) {
+        $hit_quote = $ohlc->{low};
+    }
+
+    # since ohlc has no timestamp on the tick, we will have to use the end of period
+    return Postgres::FeedDB::Spot::Tick->new({
+            symbol => $self->underlying->symbol,
+            epoch  => $args{end_time},
+            quote  => $hit_quote,
+        }) if defined $hit_quote;
+
+    return;
+}
 1;

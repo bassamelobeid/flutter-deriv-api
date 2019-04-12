@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 6;
+use Test::More;
 use Test::Warnings;
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -164,51 +164,6 @@ subtest 'call variations' => sub {
         isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
     }
     'pricing engine selection';
-};
-
-subtest 'entry conditions' => sub {
-    $args->{date_pricing} = $now->plus_time_interval('1s');
-    my $c = produce_contract($args);
-    ok !$c->pricing_new;
-    ok !$c->is_forward_starting;
-    ok $c->entry_tick, 'has entry tick';
-    is $c->entry_tick->epoch, $now->epoch + 1, 'got the right entry tick for contract starting now';
-};
-
-subtest 'expiry conditions' => sub {
-    $args->{date_pricing} = $now->plus_time_interval('1s');
-    my $c = produce_contract($args);
-    ok !$c->is_expired, 'not expired';
-    cmp_ok $c->value, '==', 0, 'value 0';
-    $args->{duration}     = '10m';
-    $args->{date_start}   = $now;
-    $args->{date_pricing} = $now->plus_time_interval('10m');
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'frxUSDJPY',
-        epoch      => $now->epoch + 509,
-        quote      => 100.00,
-    });
-    $c = produce_contract($args);
-    ok $c->exit_tick, 'There is exit tick';
-    ok !$c->is_valid_exit_tick, 'The exit tick is not valid';
-    ok $c->is_expired, 'Is expired';
-    ok !$c->is_settleable,    'It is not settleable as there is no valid exit tick';
-    ok !$c->is_valid_to_sell, 'It is not valid to sell due to no valid exit tick';
-    like($c->primary_validation_error->message, qr/exit tick is undefined/, 'throws error');
-    cmp_ok $c->value, '==', 10;
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'frxUSDJPY',
-        epoch      => $now->epoch + 601,
-        quote      => 101,
-    });
-    $c = produce_contract($args);
-    ok $c->is_expired,         'expired';
-    ok $c->exit_tick,          'has exit tick';
-    ok $c->is_valid_exit_tick, 'is valid exit tick';
-    ok $c->is_settleable,      'is settleable';
-    ok $c->is_valid_to_sell,   'is valid to sell';
-    ok $c->exit_tick->quote == $c->barrier->as_absolute;
-    cmp_ok $c->value, '==', $c->payout, 'full payout';
 };
 
 subtest 'shortcodes' => sub {
@@ -478,4 +433,4 @@ subtest 'call pricing engine equal tie markup' => sub {
     'no equal tie for R_100';
 
 };
-
+done_testing();

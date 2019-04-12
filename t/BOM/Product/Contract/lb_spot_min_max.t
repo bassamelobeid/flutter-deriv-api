@@ -89,7 +89,7 @@ $decimate_cache->_update($decimate_cache->redis_write, $key, $now->epoch + 1, $d
 
 subtest 'spot min max lbfloatcall' => sub {
 
-    create_ticks(([100, $now->epoch - 1, 'R_100']));
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(([100, $now->epoch - 1, 'R_100']));
     my $c = produce_contract($bet_params);
 
     is $c->pricing_spot, 100, 'pricing spot is available';
@@ -97,7 +97,7 @@ subtest 'spot min max lbfloatcall' => sub {
     is $c->spot_min_max($c->date_start_plus_1s)->{high}, 100, 'spot max is available';
     ok $c->ask_price, 'can price';
 
-    create_ticks(([101, $now->epoch, 'R_100'], [103, $now->epoch + 1, 'R_100']));
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(([101, $now->epoch, 'R_100'], [103, $now->epoch + 1, 'R_100']));
     $bet_params->{date_start}   = $now->epoch - 1;
     $bet_params->{date_pricing} = $now->epoch + 61;
     $c                          = produce_contract($bet_params);
@@ -136,21 +136,3 @@ subtest 'spot min max lbhighlow' => sub {
 };
 
 done_testing;
-
-sub create_ticks {
-    my @ticks = @_;
-
-    Cache::RedisDB->flushall;
-    BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
-
-    for my $tick (@ticks) {
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            quote      => $tick->[0],
-            epoch      => $tick->[1],
-            underlying => $tick->[2],
-        });
-    }
-    Time::HiRes::sleep(0.1);
-
-    return;
-}

@@ -96,7 +96,7 @@ subtest 'get_high_low_for_contract_period' => sub {
     $args->{date_settlement} = $ul->calendar->get_exchange_open_times($ul->exchange, Date::Utility->new('2015-11-10'), 'daily_settlement');
 
     my $c = produce_contract($args);
-    my ($high, $low) = $c->get_high_low_for_contract_period;
+    my ($high, $low) = @{$c->_ohlc_for_contract_period}{'high','low'};
 
     cmp_ok $high, '==', 15000, 'correct high low';
     cmp_ok $low,  '==', 10000, 'correct high low';
@@ -108,7 +108,7 @@ subtest 'get_high_low_for_contract_period' => sub {
     $p->{date_pricing} = Date::Utility->new('2015-11-10 16:30:00');
     my $c1 = produce_contract($p);
 
-    ($high, $low) = $c1->get_high_low_for_contract_period;
+    ($high, $low) = @{$c1->_ohlc_for_contract_period}{'high','low'};
 
     cmp_ok $high, '==', 14000, 'correct high low';
     cmp_ok $low,  '==', 10000, 'correct high low';

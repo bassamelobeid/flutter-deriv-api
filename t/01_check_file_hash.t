@@ -8,7 +8,7 @@ use Digest::SHA1;
 my %file_details = (
     risefall => {
         filename => module_path('BOM::Product::Contract::Upordown'),
-        hash     => '718a90caf16ba6cf9e9de8047dfc27aed8efa5d2'
+        hash     => 'e0bd58ca569f2e833783aac14846a55d8eae79fb'
     },
     higherlower => {
         filename => module_path('BOM::Product::Contract::Call'),
@@ -16,11 +16,11 @@ my %file_details = (
     },
     touchnotouch => {
         filename => module_path('BOM::Product::Contract::Onetouch'),
-        hash     => 'f628998eed1f254d217916abb70bef2b83f3f17d'
+        hash     => 'b630d17b6f4e12e9579e019258f1400f5562cf68'
     },
     staysbetweengoesout => {
         filename => module_path('BOM::Product::Contract::Range'),
-        hash     => 'ff57e16f5671a7715bbfd6270895d5772c6d4767'
+        hash     => 'ad03ad5c11e407b6add951305670a593224ab02c'
     },
     endsbetweenout => {
         filename => module_path('BOM::Product::Contract::Expirymisse'),
@@ -48,7 +48,7 @@ my %file_details = (
     },
     highlowtick => {
         filename => module_path('BOM::Product::Contract::Tickhigh'),
-        hash     => 'ab0ed946bc7c35560238201b5f63ef0a889a3402'
+        hash     => '2d3e7b4217bf909bd2f0cebc1f3abd2acfad8858'
     },
     callputspread => {
         filename => module_path('BOM::Product::Contract::Callspread'),
