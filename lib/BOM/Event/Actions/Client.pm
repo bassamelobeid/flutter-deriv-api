@@ -362,7 +362,7 @@ sub ready_for_authentication {
 
         $log->infof('Have %d documents for applicant %s', 0 + @documents, $applicant_id);
 
-        my ($doc) = rev_nsort_by {
+        my ($doc, $poa_doc) = rev_nsort_by {
             ($_->side eq 'front' ? 10 : 1) * ($ONFIDO_DOCUMENT_TYPE_PRIORITY{$_->type} // 0)
         }
         @documents;
@@ -395,6 +395,14 @@ sub ready_for_authentication {
                         variant   => 'standard',
                         documents => [$doc->id],
                     },
+                    # We also submit a POA document to see if we can extract any information from it
+                    (
+                        $poa_doc
+                        ? {
+                            name      => 'document',
+                            documents => [$poa_doc->id],
+                            }
+                        : ())
                 ],
                 # async flag if true will queue checks for processing and
                 # return a response immediately
@@ -475,7 +483,7 @@ sub client_verification {
                                 my ($addr) = @_;
                                 $log->infof('Smartystreets verification status: %s', $addr->status);
                                 $log->debugf('Address info back from SmartyStreets is %s', {%$addr});
-                                unless ($addr->accuracy_at_least('street')) {
+                                unless ($addr->accuracy_at_least('locality')) {
                                     $log->warnf('Inaccurate address - only verified to %s precision', $addr->address_precision);
                                     return Future->done;
                                 }
