@@ -219,6 +219,16 @@ subtest 'create account' => sub {
     $details = BOM::Platform::Account::Real::default::validate_account_details(\%t_details, $vr_client, $broker, 1);
     is $details->{error}, undef, 'no error for empty place of birth';
 
+    $real_acc = BOM::Platform::Account::Real::default::create_account({
+        from_client => $vr_client,
+        user        => $user,
+        details     => \%t_details,
+        country     => $vr_client->residence,
+    });
+
+    ok $real_acc->{error}, 'check duplicated phone';
+
+    $t_details{phone} = '+8201111' . int(rand(999));
     # real acc
     lives_ok {
         $real_acc = BOM::Platform::Account::Real::default::create_account({
@@ -252,6 +262,7 @@ subtest 'create account' => sub {
         'create VR account';
 
         is($social_login_user->{has_social_signup}, 1, 'social login user has social signup flag');
+        $real_client_details{phone} = '+8201122' . int(rand(999));
 
         my %details = (
             %real_client_details,
@@ -334,6 +345,7 @@ sub create_mf_acc {
     $details{broker_code}     = 'MF';
     $details{first_name}      = 'MF_' . $from_client->broker;
     $details{client_password} = $from_client->password;
+    $details{phone}           = '+8201234' . int(rand(999));
 
     my $params = \%financial_data;
     $params->{accept_risk} = 1;
