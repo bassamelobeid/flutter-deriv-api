@@ -221,8 +221,9 @@ sub verify_app {
 
     return {
         stash => {
-            valid_source          => $app_id,
-            app_markup_percentage => $app->{app_markup_percentage} // 0
+            valid_source               => $app_id,
+            app_markup_percentage      => $app->{app_markup_percentage} // 0,
+            source_bypass_verification => $app->{bypass_verification} // 0
         }};
 }
 

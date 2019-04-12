@@ -24,8 +24,9 @@ my $expected_result = {
         code              => 'InvalidToken',
     },
     stash => {
-        app_markup_percentage => '0',
-        valid_source          => 1
+        app_markup_percentage      => 0,
+        valid_source               => 1,
+        source_bypass_verification => 0
     },
 };
 
@@ -130,8 +131,9 @@ subtest 'Sell expired contract' => sub {
     $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result_is_deeply({
             count => 1,
             stash => {
-                app_markup_percentage => '0',
-                valid_source          => 1
+                app_markup_percentage      => 0,
+                valid_source               => 1,
+                source_bypass_verification => 0
             }
         },
         'It should return counts of sold contracts'
@@ -145,8 +147,9 @@ subtest 'Sell expired contract' => sub {
     $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result_is_deeply({
             count => 0,
             stash => {
-                app_markup_percentage => '0',
-                valid_source          => 1
+                app_markup_percentage      => 0,
+                valid_source               => 1,
+                source_bypass_verification => 0
             }
         },
         'It should return 0 if there are not expired contracts'

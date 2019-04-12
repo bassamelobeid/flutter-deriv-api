@@ -894,7 +894,11 @@ subtest $method => sub {
         'authenticated, no deposits so it will not prompt for authentication'
     );
 
+    # Authenticated clients are automatically age_verified. This following test exists for legacy clients.
     $mocked_client->mock('has_deposits', sub { return 1 });
+    my $mocked_status = Test::MockModule->new(ref($test_client->status));
+    $mocked_status->mock('age_verification', sub { return 0 });
+
     cmp_deeply(
         $c->tcall($method, {token => $token1}),
         {
@@ -904,6 +908,8 @@ subtest $method => sub {
         },
         'authenticated, has deposits but no age verified status so validation triggered and generated an exception so it will ask to authenticate'
     );
+
+    $mocked_status->unmock('age_verification');
 
     $test_client->status->set('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
 
@@ -1680,7 +1686,6 @@ subtest $method => sub {
         address_line_2  => 'address line 2',
         address_city    => 'address city',
         address_state   => 'BA',
-        phone           => '2345678',
         secret_question => 'testq',
         secret_answer   => 'testa',
         place_of_birth  => undef,
@@ -1724,8 +1729,8 @@ subtest $method => sub {
 
     $params->{args}{place_of_birth} = 'xx';
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Please enter a valid place of birth.', 'place_of_birth no exists');
-
     $params->{args}{place_of_birth} = 'de';
+
     is($c->tcall($method, $params)->{status}, 1, 'can update without sending all required fields');
 
     is($c->tcall($method, $params)->{status}, 1, 'can send set_settings with same value');
