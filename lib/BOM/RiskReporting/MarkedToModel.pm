@@ -43,6 +43,8 @@ use BOM::Backoffice::Request;
 use ExchangeRates::CurrencyConverter qw (in_usd);
 use BOM::Transaction;
 
+use constant SECONDS_PAST_CONTRACT_EXPIRY => 15;
+
 # This report will only be run on the MLS.
 sub generate {
     my $self = shift;
@@ -63,11 +65,14 @@ sub generate {
         gamma => 0,
     );
 
-    my $total_expired = 0;
-    my $error_count   = 0;
-    my $last_fmb_id   = 0;
+    my $total_expired             = 0;
+    my $error_count               = 0;
+    my $last_fmb_id               = 0;
+    my $waiting_for_settlement    = 0;
+    my $require_manual_settlement = 0;
+    my @manually_settle_fmbid     = ();
     my %cached_underlyings;
-    my $mail_content = '';
+    my @mail_content;
 
     # Before starting pricing we'd like to make sure we'll have the ticks we need.
     # They'll all still be priced at that second, though.
@@ -102,16 +107,37 @@ sub generate {
                         my $value = $self->amount_in_usd($current_value, $open_fmb->{currency_code});
                         $totals{value} += $value;
 
-                        if ($bet->is_settleable) {
+                        if ($bet->is_expired) {
                             $total_expired++;
-                            $dbh->do(qq{INSERT INTO accounting.expired_unsold (financial_market_bet_id, market_price) VALUES(?,?)},
-                                undef, $open_fmb_id, $value);
-                            # We only sell the contracts that already expired for 10+ seconds #
-                            # Those other contracts will be sold by expiryd #
-                            if (time - $bet->date_expiry->epoch > 15) {
-                                $open_fmb->{market_price}                                           = $value;
-                                $open_fmb->{bet}                                                    = $bet;
-                                $open_bets_expired_ref->{$open_fmb->{client_loginid}}{$open_fmb_id} = $open_fmb;
+                            if ($bet->is_valid_to_sell) {
+                                # We only sell the contracts that already expired for more than SECONDS_PAST_CONTRACT_EXPIRY seconds #
+                                # Those other contracts will be sold by expiryd #
+                                if (time - $bet->date_expiry->epoch > SECONDS_PAST_CONTRACT_EXPIRY) {
+                                    $open_fmb->{market_price}                                           = $value;
+                                    $open_fmb->{bet}                                                    = $bet;
+                                    $open_bets_expired_ref->{$open_fmb->{client_loginid}}{$open_fmb_id} = $open_fmb;
+                                }
+                            } elsif ($bet->require_manual_settlement) {
+                                $require_manual_settlement++;
+                                push @manually_settle_fmbid, +{
+                                    loginid   => $open_fmb->{client_loginid},
+                                    ref       => $open_fmb->{transaction_id},
+                                    fmb_id    => $open_fmb_id,
+                                    buy_price => $open_fmb->{buy_price},
+                                    currency  => $open_fmb->{currency_code},
+                                    shortcode => $bet->shortcode,
+                                    payout    => $bet->payout,
+                                    reason    => $bet->primary_validation_error->message,
+                                    # TODO: bb_lookup is a bloomberg lookup symbol that is no longer required in manual settlement page.
+                                    # This will be removed in a separate card.
+                                    bb_lookup => '--',
+                                };
+                                $dbh->do(qq{INSERT INTO accounting.expired_unsold (financial_market_bet_id, market_price) VALUES(?,?)},
+                                    undef, $open_fmb_id, $value);
+                            } elsif ($bet->waiting_for_settlement_tick) {
+                                $waiting_for_settlement++;
+                            } else {
+                                push @mail_content, "Contract expired but could not be settled [$last_fmb_id,  $open_fmb->{short_code}]";
                             }
                         } else {
                             # spreaed does not have greeks
@@ -124,7 +150,7 @@ sub generate {
                     }
                     catch {
                         $error_count++;
-                        $mail_content .= "Unable to process bet [ $last_fmb_id, " . $open_fmb->{short_code} . ", $_ ]\n";
+                        push @mail_content, "Unable to process bet [ $last_fmb_id, " . $open_fmb->{short_code} . ", $_ ]";
                     };
                 }
 
@@ -136,12 +162,13 @@ sub generate {
                     map { $totals{$_} } qw(value delta theta vega gamma)
                 );
 
-                if ($mail_content and $self->send_alerts) {
+                if (@mail_content and $self->send_alerts) {
                     my $from    = 'Risk reporting <risk-reporting@binary.com>';
                     my $to      = 'Quants <x-quants-alert@binary.com>';
                     my $subject = 'Problem in MtM bets pricing';
+                    my $body    = join "\n", @mail_content;
 
-                    Email::Stuffer->from($from)->to($to)->subject($subject)->text_body($mail_content)->send
+                    Email::Stuffer->from($from)->to($to)->subject($subject)->text_body($body)->send
                         || warn "Sending email from $from to $to subject $subject failed";
                 }
 
@@ -154,18 +181,21 @@ sub generate {
 
     $self->cache_daily_turnover($pricing_date);
 
-    $self->sell_expired_contracts($open_bets_expired_ref);
+    $self->sell_expired_contracts($open_bets_expired_ref, \@manually_settle_fmbid);
 
     return {
-        full_count => $howmany,
-        errors     => $error_count,
-        expired    => $total_expired
+        full_count                => $howmany,
+        errors                    => $error_count,
+        expired                   => $total_expired,
+        waiting_for_settlement    => $waiting_for_settlement,
+        require_manual_settlement => $require_manual_settlement,
     };
 }
 
 sub sell_expired_contracts {
-    my $self          = shift;
-    my $open_bets_ref = shift;
+    my $self                  = shift;
+    my $open_bets_ref         = shift;
+    my $manually_settle_fmbid = shift;
 
     # Now deal with them one by one.
 
@@ -246,6 +276,10 @@ sub sell_expired_contracts {
                     . " and error was $_\n";
             }
         }
+    }
+
+    if (@$manually_settle_fmbid) {
+        push @error_lines, @$manually_settle_fmbid;
     }
 
     if (scalar @error_lines) {
