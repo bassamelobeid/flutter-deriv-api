@@ -25,6 +25,7 @@ __PACKAGE__->meta->setup(
         supported_banks       => { type => 'varchar', length => 500 },
         min_withdrawal        => { type => 'numeric' },
         max_withdrawal        => { type => 'numeric' },
+        is_listed             => { type => 'boolean', default => 'true', not_null => 1 },
     ],
 
     primary_key_columns => [ 'client_loginid' ],

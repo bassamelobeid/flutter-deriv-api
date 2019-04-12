@@ -31,15 +31,14 @@ get all authenticated payment agent
 =cut
 
 sub get_authenticated_payment_agents {
-    my $self = shift;
-    my $args = shift;
-    my ($target_country, $currency_code) = @{$args}{qw/target_country currency_code/};
+    my ($self, %args) = @_;
+    my ($target_country, $currency_code, $is_listed) = @args{qw/target_country currency_code is_listed/};
 
     my $dbic = $self->db->dbic;
     return $dbic->run(
         fixup => sub {
-            my $authenticated_pa_sth = $_->prepare('SELECT * FROM betonmarkets.get_payment_agents_by_country(?, ?, ?)');
-            $authenticated_pa_sth->execute($target_country, 't', $currency_code);
+            my $authenticated_pa_sth = $_->prepare('SELECT * FROM betonmarkets.get_payment_agents_by_country(?, ?, ?, ?)');
+            $authenticated_pa_sth->execute($target_country, 't', $currency_code, $is_listed);
 
             return $authenticated_pa_sth->fetchall_hashref('client_loginid');
         });
