@@ -1448,7 +1448,10 @@ sub sell_expired_contracts {
             } else {
                 my $cpve = $contract->primary_validation_error;
                 if ($cpve) {
-                    my ($error_msg, $reason) = !$contract->is_settleable ? ('NotExpired', 'not expired') : (_normalize_error($cpve), $cpve->message);
+                    my ($error_msg, $reason) =
+                         !($contract->is_expired and $contract->is_valid_to_sell)
+                        ? ('NotExpired', 'not expired')
+                        : (_normalize_error($cpve), $cpve->message);
                     $stats_failure{$logging_class}{$error_msg}++;
                     $failure->{reason} = $reason;
                 } else {
