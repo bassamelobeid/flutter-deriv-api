@@ -44,8 +44,9 @@ my $old_balance = $account->balance;
 sub expected_result {
     return {
         stash => {
-            app_markup_percentage => '0',
-            valid_source          => 1
+            app_markup_percentage      => 0,
+            valid_source               => 1,
+            source_bypass_verification => 0
         },
         currency => 'USD',
         amount   => shift

@@ -94,18 +94,19 @@ subtest $method => sub {
     $params->{token} = $token;
     my $expected_result = {
         'stash' => {
-            app_markup_percentage  => '0',
-            valid_source           => 1,
-            'email'                => 'dummy@binary.com',
-            'scopes'               => ['read', 'admin', 'trade', 'payments'],
-            'country'              => 'id',
-            'loginid'              => $test_client->loginid,
-            'token'                => $token,
-            'token_type'           => 'oauth_token',
-            'account_id'           => '',
-            'currency'             => '',
-            'landing_company_name' => 'costarica',
-            'is_virtual'           => '0'
+            app_markup_percentage      => 0,
+            valid_source               => 1,
+            source_bypass_verification => 0,
+            'email'                    => 'dummy@binary.com',
+            'scopes'                   => ['read', 'admin', 'trade', 'payments'],
+            'country'                  => 'id',
+            'loginid'                  => $test_client->loginid,
+            'token'                    => $token,
+            'token_type'               => 'oauth_token',
+            'account_id'               => '',
+            'currency'                 => '',
+            'landing_company_name'     => 'costarica',
+            'is_virtual'               => '0'
         },
         'currency'                      => '',
         'email'                         => 'dummy@binary.com',
@@ -297,8 +298,9 @@ subtest 'logout' => sub {
     $c->call_ok('logout', $params)->has_no_error->result_is_deeply({
             status => 1,
             stash  => {
-                app_markup_percentage => '0',
-                valid_source          => 1
+                app_markup_percentage      => 0,
+                valid_source               => 1,
+                source_bypass_verification => 0
             }});
 
     #check login history
@@ -339,8 +341,9 @@ subtest 'logout' => sub {
     $c->call_ok('logout', $params)->has_no_error->result_is_deeply({
             status => 1,
             stash  => {
-                app_markup_percentage => '0',
-                valid_source          => 1
+                app_markup_percentage      => 0,
+                valid_source               => 1,
+                source_bypass_verification => 0
             }});
 
     my $history_records_new = $c->call_ok(

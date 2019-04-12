@@ -47,8 +47,9 @@ my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::
 my $expected_result = {
     status => 1,
     stash  => {
-        app_markup_percentage => '0',
-        valid_source          => 1
+        app_markup_percentage      => 0,
+        valid_source               => 1,
+        source_bypass_verification => 0
     },
 };
 
