@@ -158,25 +158,7 @@ sub get_duplicate_client {
     my $self = shift;
     my $args = shift;
 
-    my $dupe_sql = "
-    SELECT
-        c.loginid,
-        c.first_name,
-        c.last_name,
-        c.date_of_birth,
-        c.email
-    FROM
-        betonmarkets.client c
-    LEFT JOIN betonmarkets.client_status s ON s.client_loginid = c.loginid AND 
-        s.status_code = 'duplicate_account'
-    WHERE
-        UPPER(TRIM(BOTH ' ' FROM c.first_name))=(TRIM(BOTH ' ' FROM ?)) AND
-        UPPER(TRIM(BOTH ' ' FROM c.last_name))=(TRIM(BOTH ' ' FROM ?)) AND
-        c.date_of_birth=? AND
-        c.email<>? AND
-        c.broker_code=? AND 
-        s.id IS NULL        
-";
+    my $dupe_sql    = "SELECT * FROM get_duplicate_client(?,?,?,?,?,?)";
     my $dbic        = $self->db->dbic;
     my @dupe_record = $dbic->run(
         fixup => sub {
@@ -186,6 +168,7 @@ sub get_duplicate_client {
             $dupe_sth->bind_param(3, $args->{date_of_birth});
             $dupe_sth->bind_param(4, $args->{email});
             $dupe_sth->bind_param(5, $self->broker_code);
+            $dupe_sth->bind_param(6, $args->{phone});
             $dupe_sth->execute();
             return $dupe_sth->fetchrow_array();
         });
