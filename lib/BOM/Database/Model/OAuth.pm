@@ -36,7 +36,7 @@ sub verify_app {
     my $app = $self->dbic->run(
         fixup => sub {
             $_->selectrow_hashref("
-        SELECT id, name, redirect_uri, scopes, app_markup_percentage FROM oauth.apps WHERE id = ? AND active
+        SELECT id, name, redirect_uri, scopes, app_markup_percentage, bypass_verification FROM oauth.apps WHERE id = ? AND active
     ", undef, $app_id);
         });
     return unless $app;
@@ -183,7 +183,7 @@ sub create_app {
         });
     $result->{scopes} = __parse_array($result->{scopes});
     $result->{app_id} = $result->{id};
-    delete @$result{qw(binary_user_id stamp id)};
+    delete @$result{qw(binary_user_id stamp id bypass_verification)};
     return $result;
 }
 
@@ -237,7 +237,7 @@ sub update_app {
 
     $updated_app->{scopes} = __parse_array($updated_app->{scopes});
     $updated_app->{app_id} = $updated_app->{id};
-    delete @$updated_app{qw(binary_user_id stamp id)};
+    delete @$updated_app{qw(binary_user_id stamp id bypass_verification)};
 
     return $updated_app;
 }
