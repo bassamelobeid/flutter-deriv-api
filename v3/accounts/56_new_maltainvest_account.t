@@ -115,6 +115,7 @@ subtest 'VR upgrade to MF - Germany' => sub {
         delete $details{new_account_real};
         $details{first_name} = 'first name DE';
         $details{residence}  = 'de';
+        $details{phone} = '+62123456001';
 
         my $res = $t->await::new_account_maltainvest(\%details);
         ok($res->{new_account_maltainvest});
@@ -145,6 +146,7 @@ subtest 'CR client cannot upgrade to MF' => sub {
         my %details = %client_details;
         $details{first_name} = 'first name ID';
         $details{residence}  = 'id';
+        $details{phone} = '+62123456001';
 
         my $res = $t->await::new_account_real(\%details);
         ok($res->{new_account_real});
@@ -182,6 +184,7 @@ subtest 'MX client can upgrade to MF' => sub {
         my %details = %client_details;
         $details{first_name} = 'first name GB';
         $details{residence}  = 'gb';
+        $details{phone} = '+62123456001';
 
         my $res = $t->await::new_account_real(\%details);
         ok($res->{new_account_real});

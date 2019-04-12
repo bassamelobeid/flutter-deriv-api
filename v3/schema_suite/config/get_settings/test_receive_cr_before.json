@@ -45,7 +45,7 @@
                 },
                 "phone": {
                     "type": "string",
-                    "pattern": "^\\+6123456789$",
+                    "pattern": "^\\+?((-|\\s)*[0-9]){8,35}$",
                     "required": "1"
                 },
                 "citizen": {

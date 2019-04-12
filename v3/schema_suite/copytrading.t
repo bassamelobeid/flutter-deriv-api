@@ -24,7 +24,7 @@ test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.js
     $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'trader@binary.com';
 
 # TRADER REAL ACCOUNT OPENING (CR)
-test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_cr.json', 'Peter', 'id';
+test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_cr.json', 'Peter', 'id', '+69876543000';
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_cr.json',
     $suite->get_stashed('new_account_real/new_account_real/oauth_token'), 'trader@binary.com', 'Peter';
 
@@ -59,7 +59,7 @@ test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.js
     $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'copier@binary.com';
 
 # COPIER REAL ACCOUNT OPENING (CR)
-test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_cr.json', 'Vasya', 'id';
+test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_cr.json', 'Vasya', 'id', '+69876543001';
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_cr.json',
     $suite->get_stashed('new_account_real/new_account_real/oauth_token'), 'copier@binary.com', 'Vasya';
 
