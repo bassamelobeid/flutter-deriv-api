@@ -49,6 +49,8 @@ Takes the following parameters:
 
 =item C<$currency> - Three letter currency code. For example USD.
 
+=item C<$is_listed> - Indicate which payment agents you want to retrieve. whether they appear on binary site or not or both. For example ('t','f', NULL)
+
 =back
 
 Returns a  list of C<BOM::User::Client::PaymentAgent> objects.
@@ -56,11 +58,17 @@ Returns a  list of C<BOM::User::Client::PaymentAgent> objects.
 =cut
 
 sub get_payment_agents {
-    my ($class, $country_code, $broker_code, $currency) = @_;
+    my ($self, %args) = @_;
+
+    my ($country_code, $broker_code, $currency, $is_listed) = @args{qw/ country_code broker_code currency is_listed/};
+
     die "Broker code should be specified" unless (defined($country_code) and defined($broker_code));
-    my $query_args = {target_country => $country_code};
-    $query_args->{currency_code} = $currency if $currency;
+    my %query_args = (
+        target_country => $country_code,
+        is_listed      => $is_listed
+    );
+    $query_args{currency_code} = $currency if $currency;
     my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => $broker_code});
-    return $payment_agent_mapper->get_authenticated_payment_agents($query_args);
+    return $payment_agent_mapper->get_authenticated_payment_agents(%query_args);
 }
 1;
