@@ -405,7 +405,7 @@ rpc "paymentagent_list",
         $_->[1] = Brands->new(name => request()->brand)->countries_instance->countries->localized_code2country($_->[0], $language);
     }
 
-    my $available_payment_agents = _get_available_payment_agents($target_country, $broker_code, $args->{currency}, $loginid);
+    my $available_payment_agents = _get_available_payment_agents($target_country, $broker_code, $args->{currency}, $loginid, 1);
 
     my $payment_agent_table_row = [];
     foreach my $loginid (keys %{$available_payment_agents}) {
@@ -723,7 +723,7 @@ The [_4] team.', $currency, $amount, encode_entities($payment_agent->payment_age
 
 =head2 _get_available_payment_agents
 
-	my $available_agents = _get_available_payment_agents('id', 'CR', 'USD', 'CR90000');
+	my $available_agents = _get_available_payment_agents('id', 'CR', 'USD', 'CR90000', 1);
 
 Returns a hash reference containing authenticated payment agents available for the input search criteria.
 
@@ -739,14 +739,21 @@ It gets the following args:
 
 =item * client_loginid (optional), it is used for retrieving payment agents with previous transfer/withdrawal with a C<client> when the feature is suspended in the C<country> of residence.
 
+=item * is_listed
+
 =back
 
 =cut
 
 sub _get_available_payment_agents {
-    my ($country, $broker_code, $currency, $loginid) = @_;
+    my ($country, $broker_code, $currency, $loginid, $is_listed) = @_;
     my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => $broker_code});
-    my $authenticated_paymentagent_agents = BOM::User::Client::PaymentAgent->get_payment_agents($country, $broker_code, $currency);
+    my $authenticated_paymentagent_agents = BOM::User::Client::PaymentAgent->get_payment_agents(
+        country_code => $country,
+        broker_code  => $broker_code,
+        currency     => $currency,
+        is_listed    => $is_listed,
+    );
 
     #if payment agents are suspended in client's country, we will keep only those agents that the client has previously transfered money with.
     if (is_payment_agents_suspended_in_country($country)) {
@@ -837,7 +844,7 @@ rpc paymentagent_withdraw => sub {
     my $authenticated_pa;
     if ($client->residence) {
         my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => $client->broker});
-        $authenticated_pa = $payment_agent_mapper->get_authenticated_payment_agents({target_country => $client->residence});
+        $authenticated_pa = $payment_agent_mapper->get_authenticated_payment_agents(target_country => $client->residence);
     }
 
     return $error_sub->(localize('The payment agent facility is currently not available in your country.'))
