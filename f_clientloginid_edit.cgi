@@ -475,6 +475,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             first_name    => $dup_account_details[1],
             last_name     => $dup_account_details[2],
             date_of_birth => $dup_account_details[3],
+            phone         => $dup_account_details[5],
             self_link     => $self_href
         };
 

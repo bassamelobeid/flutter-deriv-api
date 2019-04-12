@@ -12,19 +12,24 @@
     <tr>
         <th align="right">Login ID: </th>
         <td>[% loginid %]</td>
-    <tr>
+    </tr>
     <tr>
         <th align="right">First Name: </th>
         <td>[% first_name %]</td>
-    <tr>
+    </tr>
     <tr>
         <th align="right">Last Name: </th>
         <td>[% last_name %]</td>
-    <tr>
+    </tr>
     <tr>
         <th align="right">DOB: </th>
         <td>[% date_of_birth %]</td>
+    </tr>
     <tr>
+        <th align="right">Phone: </th>
+        <td>[% phone %]</td>
+    </tr>
+
 </table>
 
 <p><a href=[% self_link %]>&laquo;Return to Client Details<a/></p>
