@@ -1686,7 +1686,6 @@ subtest $method => sub {
         address_line_2  => 'address line 2',
         address_city    => 'address city',
         address_state   => 'BA',
-        phone           => '2345678',
         secret_question => 'testq',
         secret_answer   => 'testa',
         place_of_birth  => undef,
@@ -1730,8 +1729,8 @@ subtest $method => sub {
 
     $params->{args}{place_of_birth} = 'xx';
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Please enter a valid place of birth.', 'place_of_birth no exists');
-
     $params->{args}{place_of_birth} = 'de';
+
     is($c->tcall($method, $params)->{status}, 1, 'can update without sending all required fields');
 
     is($c->tcall($method, $params)->{status}, 1, 'can send set_settings with same value');

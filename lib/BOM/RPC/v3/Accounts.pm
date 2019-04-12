@@ -1265,19 +1265,23 @@ rpc set_settings => sub {
     my $secret_answer          = $args->{secret_answer} ? BOM::User::Utility::encrypt_secret_answer($args->{secret_answer}) : '';
     my $secret_question        = $args->{secret_question} // '';
 
+    my $dup_details = {
+        first_name    => $first_name,
+        last_name     => $last_name,
+        date_of_birth => $date_of_birth,
+        email         => $current_client->email,
+    };
+    $dup_details->{phone} = $phone if $phone ne $current_client->phone;
     return BOM::RPC::v3::Utility::create_error({
             code              => 'PermissionDenied',
             message_to_client => localize('Sorry, an account already exists with those details. Only one real money account is allowed per client.')})
 
         if (($args->{first_name} and $args->{first_name} ne $current_client->first_name)
         or ($args->{last_name} and $args->{last_name} ne $current_client->last_name)
+        or $dup_details->{phone}
         or ($args->{date_of_birth} and $args->{date_of_birth} ne $current_client->date_of_birth))
-        and BOM::Database::ClientDB->new({broker_code => $current_client->broker_code})->get_duplicate_client({
-            first_name    => $first_name,
-            last_name     => $last_name,
-            date_of_birth => $date_of_birth,
-            email         => $current_client->email,
-        });
+
+        and BOM::Database::ClientDB->new({broker_code => $current_client->broker_code})->get_duplicate_client($dup_details);
 
     my $cil_message;
     #citizenship is mandatory for some clients,so we shouldnt let them to remove it

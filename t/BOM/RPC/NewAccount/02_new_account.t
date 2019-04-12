@@ -282,6 +282,7 @@ subtest $method => sub {
             first_name    => 'James' . rand(999),
             last_name     => 'Brown' . rand(999),
             date_of_birth => '1960-01-02',
+            phone         => '+79272075' . int(rand(999)),
         };
 
         @{$params->{args}}{keys %$client_cr} = values %$client_cr;
