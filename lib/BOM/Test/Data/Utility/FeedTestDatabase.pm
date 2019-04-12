@@ -180,6 +180,29 @@ EOD
     return $tick;
 }
 
+=head2 flush_and_create_ticks
+
+Flush feed database and create ticks
+
+=cut
+
+sub flush_and_create_ticks {
+    my @ticks = @_;
+
+    Cache::RedisDB->flushall;
+    BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
+
+    for my $tick (@ticks) {
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            quote      => $tick->[0],
+            epoch      => $tick->[1],
+            underlying => $tick->[2],
+        });
+    }
+
+    return;
+}
+
 sub create_ohlc_daily {
     my $args = shift;
 
@@ -216,7 +239,7 @@ EOD
             $sth->bind_param(4, $defaults{high});
             $sth->bind_param(5, $defaults{low});
             $sth->bind_param(6, $defaults{close});
-            $sth->bind_param(7, 1);
+            $sth->bind_param(7, $defaults{official});
             $sth->execute();
         });
 
