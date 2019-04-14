@@ -95,6 +95,7 @@ subtest 'new MX real account' => sub {
     $details{residence} = 'gb';
     $details{citizen}   = 'gb';
     $details{first_name} .= '-gb';
+    $details{phone} = '+60334567891';
 
     subtest 'UK client - invalid postcode' => sub {
         my $res = $t->await::new_account_real({%details, address_postcode => ''});
@@ -131,6 +132,8 @@ subtest 'new MLT real account' => sub {
     $details{residence} = 'nl';
     $details{first_name} .= '-nl';
     $details{citizen} = 'nl';
+    $details{phone}   = '+60334567892';
+
     my $res = $t->await::new_account_real(\%details);
     ok($res->{new_account_real});
     test_schema('new_account_real', $res);
@@ -157,6 +160,7 @@ subtest 'create account failed' => sub {
         my %details = %client_details;
         $details{residence} = 'id';
         $details{first_name} .= '-id';
+        $details{phone} = '+60334567893';
 
         my $res = $t->await::new_account_real(\%details);
 
@@ -279,6 +283,7 @@ subtest 'new_real_account with currency provided' => sub {
 
     $details{currency}  = 'USD';
     $details{last_name} = 'Torvalds';
+    $details{phone}     = '+60334567894';
     my $res = $t->await::new_account_real(\%details);
     $compiled_checks->($res, \%details);
 
