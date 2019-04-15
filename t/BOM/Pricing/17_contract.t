@@ -246,8 +246,9 @@ subtest $method => sub {
             'date_expiry'  => $now->epoch - 50,
             'barrier'      => '76.8996',
             stash          => {
-                valid_source          => 1,
-                app_markup_percentage => 0,
+                valid_source               => 1,
+                source_bypass_verification => 0,
+                app_markup_percentage      => 0,
             },
         },
         'result is ok'

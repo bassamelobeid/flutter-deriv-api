@@ -145,8 +145,9 @@ subtest $method => sub {
             'date_expiry'  => '1127285670',
             'barrier'      => 'S29054P',
             stash          => {
-                valid_source          => 1,
-                app_markup_percentage => 0
+                valid_source               => 1,
+                source_bypass_verification => 0,
+                app_markup_percentage      => 0
             }
         },
         'result is ok'
