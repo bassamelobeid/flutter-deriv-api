@@ -25,7 +25,7 @@ Takes the following arguments as named parameters
 
 =back
 
-Returns an integer with the count of copiers. 
+Returns an integer with the count of copiers.
 
 =cut
 
@@ -50,8 +50,8 @@ Takes the following arguments as named parameters
 
 Returns an ArrayRef with the following  ArrayRef
 
-    [ 
-        [copier_id, traderid, traders token] , 
+    [
+        [copier_id, traderid, traders token] ,
     ]
 
 =cut
@@ -63,7 +63,7 @@ sub get_copiers_tokens_all {
         SELECT DISTINCT copier_id, trader_id, trader_token
           FROM betonmarkets.copiers
          WHERE trader_id = $1
-         ORDER BY copier_id    
+         ORDER BY copier_id
     };
 
     my @binds = ($args->{trader_id});
@@ -85,20 +85,20 @@ sub get_trade_copiers {
 
 =head2 get_traders_tokens_all
 
-Returns a list of traders a copier is following including Invalid tokens. 
+Returns a list of traders a copier is following including Invalid tokens.
 
 Takes the following arguments as named parameters
 
 =over 4
 
-=item  copier_id :   The client_id of the copier. 
+=item  copier_id :   The client_id of the copier.
 
 =back
 
 Returns an ArrayRef with an ArrayRef  of copy trader details
 
-    [ 
-        [   trader_id, copier_id, traders token] , 
+    [
+        [   trader_id, copier_id, traders token] ,
     ]
 
 =cut
@@ -118,18 +118,18 @@ sub get_traders_tokens_all {
     return $res;
 }
 
-=head2 get_traders 
+=head2 get_traders
 
-Gets an ArrayRef of traders for a copier  with valid tokens 
+Gets an ArrayRef of traders for a copier  with valid tokens
 Takes the following arguments as named parameters
 
 =over 4
 
-=item  copier_id :   The client_id of the copier. 
+=item  copier_id :   The client_id of the copier.
 
 =back
 
-Returns an ArrayRef of unique trader client id with valid tokens. 
+Returns an ArrayRef of unique trader client id with valid tokens.
 
 =cut
 
@@ -143,7 +143,7 @@ sub get_traders {
 
 =head2 delete_copiers
 
-Deletes copier tokens from the database 
+Deletes copier tokens from the database
 
 Takes the following arguments as named parameters
 
@@ -158,7 +158,7 @@ Takes the following arguments as named parameters
 
 =back
 
-Returns number of rows deleted. 
+Returns number of rows deleted.
 
 =cut
 
@@ -209,3 +209,27 @@ BOM::Database::DataMapper::Copier
 Currently has methods that return data structures associated with trader copiers.
 
 =cut
+
+sub get_traders_all {
+    my ($self, $args) = @_;
+
+    my $sql = q{
+        SELECT trader_id, trader_token, array_agg(trade_type), array_agg(asset),min_trade_stake,max_trade_stake
+        FROM betonmarkets.copiers
+        WHERE copier_id = $1
+        GROUP BY trader_id, trader_token, min_trade_stake, max_trade_stake
+    };
+
+    my @binds = ($args->{copier_id});
+    my $res   = $self->db->dbic->run(fixup => sub { $_->selectall_arrayref($sql, undef, @binds) });
+    my @res   = map { {
+            loginid         => $_->[0],
+            token           => $_->[1],
+            trade_types     => $_->[2],
+            assets          => $_->[3],
+            min_trade_stake => $_->[4],
+            max_trade_stake => $_->[5]}
+    } @$res;
+
+    return \@res;
+}
