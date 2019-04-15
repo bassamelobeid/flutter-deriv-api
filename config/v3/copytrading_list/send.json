@@ -3,12 +3,12 @@
    "type" : "object",
    "description" : "get trading copiers or traders tokens",
    "required" : [
-      "get_copiers_traders_tokens"
+      "copytrading_list"
    ],
    "additionalProperties" : false,
    "title" : "Get copiers traders tokens",
    "properties" : {
-      "get_copiers_traders_tokens" : {
+      "copytrading_list" : {
          "enum" : [
             1
          ],

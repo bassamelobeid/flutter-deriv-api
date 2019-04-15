@@ -462,7 +462,7 @@ sub startup {
                 stash_params => [qw/ server_name client_ip user_agent /]}
         ],
         ['copytrading_statistics'],
-        ['get_copiers_traders_tokens', {require_auth => 'read'}],
+        ['copytrading_list', {require_auth => 'admin'}],
 
         [
             'document_upload',
