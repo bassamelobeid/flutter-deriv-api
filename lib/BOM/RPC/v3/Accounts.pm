@@ -2117,7 +2117,7 @@ rpc reality_check => sub {
     return $summary;
 };
 
-rpc get_copiers_traders_tokens => sub {
+rpc copytrading_list => sub {
     my $params = shift;
 
     my $current_client = $params->{client};
@@ -2128,10 +2128,11 @@ rpc get_copiers_traders_tokens => sub {
     });
 
     my $copiers = $copiers_data_mapper->get_copiers_tokens_all({trader_id => $current_client->loginid});
-    my $traders = $copiers_data_mapper->get_traders_tokens_all({copier_id => $current_client->loginid});
+    my @copiers = map { {loginid=>$_->[0]} } @$copiers;
+    my $traders = $copiers_data_mapper->get_traders_all({copier_id => $current_client->loginid});
 
     return {
-        copiers => $copiers,
+        copiers => \@copiers,
         traders => $traders
     };
 };

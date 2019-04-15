@@ -268,7 +268,7 @@ sub copy_trading_test_routine {
         note explain $copiers;
     };
 
-    test_get_copiers_traders_tokens($trader, $copier->loginid);
+    test_copytrading_list($trader, $copier->loginid);
 
     subtest 'Unfollow' => sub {
         stop_copy_trade($trader, $copier);
@@ -478,7 +478,7 @@ sub copytrading_statistics {
     return $res;
 }
 
-sub test_get_copiers_traders_tokens {
+sub test_copytrading_list {
     my $client = shift;
     my $loginid = shift;
 
@@ -487,8 +487,8 @@ sub test_get_copiers_traders_tokens {
         %default_call_params
     };
 
-    my $res = $c->call_ok('get_copiers_traders_tokens', $params)->result;
-    is $res->{copiers}[0][0], $loginid, 'get_copiers_traders_tokens';
+    my $res = $c->call_ok('copytrading_list', $params)->result;
+    is $res->{copiers}[0][0], $loginid, 'copytrading_list';
 }
 
 done_testing;
