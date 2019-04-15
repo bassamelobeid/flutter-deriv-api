@@ -196,17 +196,18 @@ sub _filter_invalid_tokens {
     return [uniq @copiers];
 }
 
-no Moose;
-__PACKAGE__->meta->make_immutable;
-1;
+=head2 get_traders_all
 
-=head1 NAME
+Gets an HashRef of traders and details for a copier
+Takes the following arguments as named parameters
 
-BOM::Database::DataMapper::Copier
+=over 4
 
-=head1 DESCRIPTION
+=item  copier_id :   The client_id of the copier.
 
-Currently has methods that return data structures associated with trader copiers.
+=back
+
+Returns an HashRef of unique trader client id and details.
 
 =cut
 
@@ -233,3 +234,17 @@ sub get_traders_all {
 
     return \@res;
 }
+
+no Moose;
+__PACKAGE__->meta->make_immutable;
+1;
+
+=head1 NAME
+
+BOM::Database::DataMapper::Copier
+
+=head1 DESCRIPTION
+
+Currently has methods that return data structures associated with trader copiers.
+
+=cut
