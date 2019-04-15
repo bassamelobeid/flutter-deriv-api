@@ -4,6 +4,7 @@ no indirect;
 
 use strict;
 use warnings;
+use feature 'state';
 
 =head1 NAME
 
@@ -34,11 +35,13 @@ use JSON::MaybeUTF8 qw(:v1);
 use Syntax::Keyword::Try;
 use Test::More;
 use curry;
+use Try::Tiny;
 
 use BOM::Test;
 use Binary::API::Mapping::Response;
 use BOM::Test::Data::Utility::FeedTestDatabase;
 use Finance::Underlying;
+use BOM::Test::WebsocketAPI::Redis qw/shared_redis ws_redis_master/;
 
 our %handlers;
 
@@ -60,63 +63,6 @@ sub configure {
         $self->{$k} = delete $args{$k} if exists $args{$k};
     }
     return $self->next::method(%args);
-}
-
-=head1 ACCESSORS
-
-=head2 redis_config
-
-Use C<BOM_TEST_REDIS_REPLICATED> to override the config.
-
-=cut
-
-sub redis_config { return YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/chronicle.yml') }
-
-=head2 redis_password
-
-The password to the redis connection, read from C<WS_REDIS_PASSWORD> environment
-variable.
-
-=cut
-
-sub redis_password { return $ENV{WS_REDIS_PASSWORD} }
-
-=head2 redis_endpoint
-
-Location of redis server for publishing subscription events.
-
-=cut
-
-sub redis_endpoint {
-    my ($self) = @_;
-
-    my $redis_config = $self->redis_config;
-
-    return $ENV{WS_REDIS_ENDPOINT} // 'redis://' . $redis_config->{write}->{host} . ':' . $redis_config->{write}->{port};
-}
-
-=head2 redis
-
-Redis client for publishing events, created on demand.
-
-=cut
-
-sub redis {
-    my $self = shift;
-
-    return $self->{redis} if exists $self->{redis};
-
-    my $redis_endpoint = $self->redis_endpoint;
-    $log->infof("Redis endpoint is [%s]", $redis_endpoint);
-
-    $self->loop->add(
-        my $redis = Net::Async::Redis->new(
-            uri => $redis_endpoint,
-            (defined($self->redis_password) ? (auth => $self->redis_password) : ()),
-        ),
-    );
-
-    return $self->{redis} = $redis->connected->transform(done => sub { $redis });
 }
 
 =head2 ticks_history_count
@@ -200,6 +146,31 @@ sub handler {
     return $handlers{$name} = $code;
 }
 
+=head2 website_status
+
+Start publishing simulated website_status update events.
+Returns the website_status message just published.
+
+=over 4
+
+=item * C<@symbols> - List of symbols
+
+=back
+
+=cut
+
+sub website_status {
+    my ($self, @requests) = @_;
+
+    return undef unless @requests;
+
+    push $self->to_publish->{website_status}->@*, @requests;
+
+    $self->start_publish;
+
+    return $self->published->{website_status};
+}
+
 =head2 tick
 
 Start publishing simulated tick events for symbol(s).
@@ -273,6 +244,34 @@ Same as calling L<transaction>.
 =cut
 
 sub balance { return shift->transaction(@_) }
+
+=head2 website_status handler
+
+The code that handles publishing website_status into redis.
+
+=cut
+
+handler website_status => sub {
+    my ($self, $params) = @_;
+
+    my $ws_status = $self->fake_website_status($params);
+
+    ws_redis_master->then(
+        $self->$curry::weak(
+            sub {
+                my ($self, $redis) = @_;
+
+                Future->wait_all(
+                    $redis->set('NOTIFY::broadcast::is_on', $ws_status->{site_status} eq 'up'),
+                    $redis->set('NOTIFY::broadcast::state', encode_json_utf8($ws_status)),
+                    )->then(
+                    sub {
+                        $self->publish('NOTIFY::broadcast::channel', 'website_status', $ws_status, ws_redis_master);
+                    });
+            }))->retain;
+
+    return undef;
+};
 
 =head2 tick handler
 
@@ -352,11 +351,13 @@ in C<published>
 =cut
 
 sub publish {
-    my ($self, $channel, $method, $payload) = @_;
+    my ($self, $channel, $method, $payload, $redis_client) = @_;
+
+    $redis_client //= shared_redis;
 
     $log->debugf('Publishing a %s, %s', $method, join ", ", map { $_ . ': ' . $payload->{$_} } sort keys $payload->%*);
 
-    $self->redis->then(
+    $redis_client->then(
         $self->$curry::weak(
             sub {
                 my ($self, $redis) = @_;
@@ -407,7 +408,9 @@ my $published_to_response_mapping = {
             price_daemon_cmd => 1,
             rpc_time         => 1,
             payout           => 1
-        }}};
+        },
+    },
+};
 
 =head2 published_to_response
 
@@ -694,6 +697,36 @@ sub fake_proposal_contracts {
     };
 
     return ([$key, $value]);
+}
+
+=over 4
+
+=head2 fake_website_status
+
+Creates C<website_status> messages that can be pushed into redis.
+Takes the following arguments:
+
+=over 4
+
+=item C<params> a hash ref contining website status attributes.
+
+=back
+
+Returns a hashref containing C<site_status> and C<passthrough>
+    
+
+=cut
+
+sub fake_website_status {
+    my ($self, $params) = @_;
+
+    return {
+        site_status => $params->{site_status} // 'up',
+        # a unique message is added, expecting to be delivered to website_status subscribers (needed for sanity checks).
+        passthrough => {
+            test_publisher_message => 'message #' . ++$self->{ws_counter},
+        },
+    };
 }
 
 1;

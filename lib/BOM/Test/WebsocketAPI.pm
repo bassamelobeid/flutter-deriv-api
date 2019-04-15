@@ -40,6 +40,7 @@ use Log::Any qw($log);
 use List::Util qw(shuffle);
 use curry;
 use Test::More;
+use feature 'state';
 
 use Binary::API::Mapping::Response;
 use Binary::WebSocketAPI;
@@ -47,6 +48,7 @@ use BOM::Test::RPC::BomRpc;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::Client qw(create_client);
+use BOM::Test::Helper qw/launch_redis/;
 use BOM::Database::Model::OAuth;
 use BOM::User;
 use BOM::Test::WebsocketAPI::Contexts;
@@ -148,6 +150,27 @@ sub ws_debug { return shift->{ws_debug} // 0 }
 
 =head2 port
 
+Launches master websocket redis server and keeps it object in a state variable.
+
+=cut
+
+sub load_ws_redis_server {
+    # A cache that keeps the test ws redis server instance.
+    state $ws_redis_server;
+
+    unless ($ws_redis_server) {
+        my ($path, $server) = launch_redis();
+        $ws_redis_server = {
+            path   => $path,
+            server => $server
+        };
+    }
+
+    return;
+}
+
+=head2 port
+
 Creates the Binary WebsocketAPI instance on demand and returns the used C<port>.
 
 =cut
@@ -159,6 +182,8 @@ sub port {
 
     ## no critic (RequireLocalizedPunctuationVars)
     $ENV{BOM_TEST_RATE_LIMITATIONS} = '/home/git/regentmarkets/bom-test/lib/BOM/Test/WebsocketAPI/' . 'rate_limitations.yml';
+
+    load_ws_redis_server();
 
     my $binary = Binary::WebSocketAPI->new();
     $binary->log(Mojo::Log->new(level => 'debug')) if $self->ws_debug;
