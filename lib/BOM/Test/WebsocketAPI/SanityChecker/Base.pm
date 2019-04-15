@@ -124,9 +124,13 @@ General sanity checks common between all responses
 sub general {
     my ($self, $response) = @_;
 
-    return 0 unless my $expected //= $self->published_response($response);
-    return 0 unless $self->time_travelling_response($response, $expected);
-    return 0 unless $self->too_old_response($response, $expected);
+    return 0 unless my $expected = $self->published_response($response);
+    unless ($self->is_sanity_ckeck_skipped($response->{type}, 'time_travelling_response')) {
+        return 0 unless $self->time_travelling_response($response, $expected);
+    }
+    unless ($self->is_sanity_ckeck_skipped($response->{type}, 'too_old_response')) {
+        return 0 unless $self->too_old_response($response, $expected);
+    }
 
     return 1;
 }

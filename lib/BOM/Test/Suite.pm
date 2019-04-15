@@ -7,7 +7,6 @@ use Data::Dumper;
 use BOM::Test::Time qw(set_date);    # should be on top
 
 use BOM::Test::Helper qw/build_test_R_50_data/;
-use Test::MockModule;
 use YAML::XS qw(LoadFile);
 use Scalar::Util;
 use Carp;

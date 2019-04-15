@@ -88,17 +88,34 @@ sub check {
             my $checker = $self->{$type} //= $class_name->new($self->tester, @sorted_resps,);
             my @responses_per_type = grep { !$_->is_error } $grouped{$type}->@*;
             for my $check ($self->checks_list->@*) {
-                my $skip_sanity_checks = $self->tester->skip_sanity_checks;
-                unless (ref($skip_sanity_checks) eq 'HASH'
-                    and exists $skip_sanity_checks->{$type}
-                    and grep { $_ eq $check } $skip_sanity_checks->{$type}->@*)
-                {
-                    $result &&= $checker->$check(@responses_per_type);
-                }
+                $result &&= $checker->$check(@responses_per_type) unless $self->is_sanity_ckeck_skipped($type, $check);
             }
         }
     }
     return $result;
+}
+
+=head1 METHODS
+
+=head2 is_sanity_ckeck_skipped
+
+Returns 1 if a sanity check is skipped for a certain API call by looking up the tester's C<skip_sanity_checks> attribute.
+It takes two arguments:
+
+=over 4
+
+=item * C<type> - the api call type as a string
+
+=item * C<check> - sanity check name as a string
+
+=back
+
+=cut
+
+sub is_sanity_ckeck_skipped {
+    my ($self, $type, $check) = @_;
+    my $skip_sanity_checks = $self->tester->skip_sanity_checks;
+    return (ref($skip_sanity_checks) eq 'HASH' and exists $skip_sanity_checks->{$type} and grep { $_ eq $check } $skip_sanity_checks->{$type}->@*);
 }
 
 =head1 METHODS
