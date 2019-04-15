@@ -80,7 +80,7 @@ subtest 'audit_details tick names translations' => sub {
         '<LOC>Win payout if tick 5 of <LOC>Volatility 50 Index</LOC> is the highest among all <LOC>5</LOC> ticks.</LOC>',
         '<LOC>Start Time</LOC>',
         '<LOC>Entry Spot</LOC>',
-        '<LOC><LOC>End Time</LOC> and <LOC>Exit Spot</LOC></LOC>'
+        '<LOC><LOC><LOC>End Time</LOC> and <LOC>Exit Spot</LOC></LOC> and <LOC>Highest Spot</LOC></LOC>'
     );
     check_results(
         $contract_low,
