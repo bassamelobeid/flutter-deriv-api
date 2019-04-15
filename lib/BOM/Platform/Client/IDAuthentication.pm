@@ -86,13 +86,14 @@ sub proveid {
     my ($report_summary)           = $xml->findnodes('/Search/Result/Summary/ReportSummary/DatablocksSummary');
 
     my $matches = {};
-    
+
     my @tags_to_match = ("Deceased", "PEP", "BOE", "OFAC");
 
     for my $tag (@tags_to_match) {
         try {
             $matches->{$tag} = $credit_reference_summary->findnodes($tag . "Match")->[0]->textContent() || 0;
-        } catch {
+        }
+        catch {
             $matches->{$tag} = 0;
             warn $_;
         };

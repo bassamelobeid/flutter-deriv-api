@@ -90,7 +90,7 @@ sub emit {
 
     if ($event_data) {
         my $queue_name = _queue_name($type);
-        my $queue_size = _write_connection()->rpush($queue_name, $event_data);
+        my $queue_size = _write_connection()->lpush($queue_name, $event_data);
         stats_gauge(lc "$queue_name.size", $queue_size) if $queue_size;
         return $queue_size;
     }
@@ -119,7 +119,7 @@ Event hash is in form of:
 sub get {
     my $queue_name = shift;
 
-    my $event_data = _read_connection()->blpop($queue_name, 1);
+    my $event_data = _read_connection()->brpop($queue_name, 1);
 
     my $decoded_data;
 
