@@ -33,8 +33,8 @@ $writer->set('app_settings', 'binary', {global => {cgi => {terms_conditions_vers
 is $reader->get('app_settings', 'binary')->{global}->{cgi}->{terms_conditions_version}, $updated_tcv, 'Chronickle should be updated';
 
 #Test website status subscription id
-my $uuid = $res->{subscription}->{id};
-ok $uuid, 'Already sunscribed (subscribe arg defaults to 1)';
+my $uuid = $res->{subscription};
+ok !$uuid, 'Is not subscribed (subscribe arg defaults to 0)';
 
 $t = $t->send_ok({
         json => {
@@ -42,8 +42,8 @@ $t = $t->send_ok({
             subscribe      => 1
         }})->message_ok;
 $res = decode_json_utf8($t->message->[1]);
-is $res->{error}->{code}, undef, 'No duplicate subscription error';
-is $res->{subscription}->{id}, $uuid, 'The same id is returned';
+ok !$res->{error}, 'No error when subscribing';
+ok $uuid = $res->{subscription}->{id}, 'Subscription id is returned';
 
 $t = $t->send_ok({
         json => {
@@ -53,6 +53,14 @@ $t = $t->send_ok({
 
 $res = decode_json_utf8($t->message->[1]);
 is $res->{subscription}, undef, 'No subscription key for non-subscribe requests.';
+
+$t = $t->send_ok({
+        json => {
+            website_status => 1,
+            subscribe      => 1
+        }})->message_ok;
+$res = decode_json_utf8($t->message->[1]);
+is $res->{error}->{code}, 'AlreadySubscribed', 'Correct error for duplicate subscription';
 
 $t = $t->send_ok({json => {forget_all => 'website_status'}})->message_ok;
 $res = decode_json_utf8($t->message->[1]);
@@ -78,7 +86,7 @@ $uuid = $res->{subscription}->{id};
 
 $t = $t->send_ok({json => {forget => $uuid}})->message_ok;
 $res = decode_json_utf8($t->message->[1]);
-is $res->{subscription}, undef, 'No subscription after forget one';
+is $res->{forget}, 1, 'Successfully forgotten';
 
 # The followind does NOT work on travis, as rpc lauched as separate process
 # my $time_mock =  Test::MockModule->new('App::Config::Chronicle');

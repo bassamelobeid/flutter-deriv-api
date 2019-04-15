@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use BOM::Test::Helper qw/build_mojo_test launch_redis/;
+use BOM::Test::Helper qw/build_mojo_test/;
 
 my $t = build_mojo_test(
     'Binary::WebSocketAPI',
