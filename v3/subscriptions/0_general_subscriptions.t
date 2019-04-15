@@ -15,16 +15,16 @@ use BOM::Test::WebsocketAPI;
 my $custom_req_id = 2000;
 
 my $skip_sanity_checks = {
-    balance     => [qw(schema_v4)], # balance.balance is string
-    transaction => [qw(schema_v4)], # transaction.amount, balance is string (can publish numbers to fix this, but then it affects balance method)
+    balance     => [qw(schema_v4)],    # balance.balance is string
+    transaction => [qw(schema_v4)],    # transaction.amount, balance is string (can publish numbers to fix this, but then it affects balance method)
 };
 
 my $loop = IO::Async::Loop->new;
 $loop->add(
     my $tester = BOM::Test::WebsocketAPI->new(
         timeout            => 300,
-        max_response_delay => 0.5, # 500ms
-        skip_sanity_checks => $skip_sanity_checks, # TODO: Remove once the API started sending the right types
+        max_response_delay => 1,                      # TODO: will be removed once long delays are fixed specially for website status call.
+        skip_sanity_checks => $skip_sanity_checks,    # TODO: Remove once the API started sending the right types.
     ),
 );
 
@@ -32,21 +32,25 @@ my $client = $tester->new_client;
 
 $tester->publish(
     transaction => [{
-        client  => $client,
-        actions => [qw(buy sell)],
-    }],
-    tick => [qw(R_100 R_25)],
+            client  => $client,
+            actions => [qw(buy sell)],
+        }
+    ],
+    tick           => [qw(R_100 R_25)],
+    website_status => [{site_status => 'up'}],
 );
 
-my @subscriptions = (
-    {
-        balance => { balance => 1 },
+my @subscriptions = ({
+        balance => {balance => 1},
     },
     {
-        transaction => { transaction => 1, subscribe => 0 },
+        transaction => {transaction => 1},
     },
     {
-        ticks => { ticks => 'R_25', req_id => ++$custom_req_id },
+        ticks => {
+            ticks  => 'R_25',
+            req_id => ++$custom_req_id
+        },
     },
     {
         ticks_history => {
@@ -57,39 +61,49 @@ my @subscriptions = (
             count         => 10
         },
     },
+    {website_status => {website_status => 1}},
 );
 
 my %subscription_args = (
     subscription_list => \@subscriptions,
-    token => $client->{token},
+    token             => $client->{token},
 );
 
 subtest 'General subscriptions: all combinations' => sub {
     Future->wait_all(
         $tester->subscribe(
             %subscription_args,
-            concurrent => scalar keys %subscription_args,
+            concurrent => scalar @subscriptions,
         ),
         $tester->subscribe_multiple_times(
             count      => 10,
-            concurrent => scalar keys %subscription_args,
+            concurrent => scalar @subscriptions,
             %subscription_args,
         ),
     )->get;
     Future->wait_all(
         $tester->subscribe_twice(
             %subscription_args,
-            concurrent => scalar keys %subscription_args,
+            concurrent => scalar @subscriptions,
         ),
         $tester->subscribe_after_request(
-            token             => $client->{token},
-            subscription_list => [ grep { (keys %$_)[0] =~ /balance|ticks_history/ } @subscriptions ],
-            concurrent => scalar keys %subscription_args,
+            token => $client->{token},
+            #filterning out API calls that don't support invocation without subsctiption (rejecting subscribe=0)
+            subscription_list => [grep { (keys %$_)[0] !~ /^(ticks|transaction)$/ } @subscriptions],
+            concurrent        => scalar @subscriptions,
         ),
-        (map {
-            $tester->multiple_subscriptions_forget_one(forget_all => $_, %subscription_args),
-            $tester->multiple_connections_forget_one  (forget_all => $_, %subscription_args),
-        } 0..1),
+        (
+            map {
+                $tester->multiple_subscriptions_forget_one(
+                    forget_all => $_,
+                    %subscription_args
+                    ),
+                    $tester->multiple_connections_forget_one(
+                    forget_all => $_,
+                    %subscription_args
+                    ),
+            } 0 .. 1
+        ),
     )->get;
 };
 

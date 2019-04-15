@@ -15,7 +15,6 @@ use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::FeedTestDatabase;
-use BOM::Test::Helper qw/launch_redis/;
 use BOM::Config::RedisReplicated;
 use BOM::Test::Helper qw/build_wsapi_test/;
 

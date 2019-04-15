@@ -35,6 +35,12 @@ my @active_symbols = $tester->active_symbols( streamable => 1 )->get;
 
 note "There are ".@active_symbols." active symbols";
 
+# In order to prevent test failures in the closing times of financial markets.
+if (@active_symbols < $chunks * 2){
+    $chunks = int (@active_symbols / 2);
+    note "Chunks count changed to ".$chunks." because active symbols are too few.";
+}
+
 $tester->publish(
     tick => \@active_symbols,
 );
