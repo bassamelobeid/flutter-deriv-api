@@ -134,7 +134,6 @@ sub buy_bet {
         # limits
         $limits ? Encode::encode_utf8($json->encode($limits)) : undef,
     );
-
     my $dbic_code = sub {
         # We want to evaluate the error message from PG.
         # So, don't allow DBD::Pg to mess it up.
