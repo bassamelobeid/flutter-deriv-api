@@ -32,7 +32,7 @@
          ],
          "properties" : {
             "copiers" : {
-               "description" : "copiers loginid",
+               "description" : "List of users who are currently copy trading the authenticated user",
                "type" : "array",
                "items" : {
                   "type" : "object",
@@ -48,7 +48,7 @@
             },
 
             "traders" : {
-               "description" : "traders loginid and token and details",
+               "description" : "List of traders being followed by the authenticated user",
                "type" : "array",
                "items" : {
                   "type" : "object",

@@ -6,7 +6,7 @@
       "copytrading_list"
    ],
    "additionalProperties" : false,
-   "title" : "Get copytrading info",
+   "title" : "Retrieves a list of active copiers and/or traders for Copy Trading",
    "properties" : {
       "copytrading_list" : {
          "enum" : [
