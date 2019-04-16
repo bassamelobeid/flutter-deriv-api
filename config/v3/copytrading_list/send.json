@@ -1,12 +1,12 @@
 {
    "$schema" : "http://json-schema.org/draft-04/schema#",
    "type" : "object",
-   "description" : "get trading copiers or traders tokens",
+   "description" : "Get copytrading info",
    "required" : [
       "copytrading_list"
    ],
    "additionalProperties" : false,
-   "title" : "Get copiers traders tokens",
+   "title" : "Get copytrading info",
    "properties" : {
       "copytrading_list" : {
          "enum" : [
