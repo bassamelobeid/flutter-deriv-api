@@ -93,7 +93,6 @@ foreach my $pair (@valid_test_pairs) {
     subtest $test_name => sub {
         copy_trading_test_routine($pair->[0], $pair->[1]);
     };
-
 }
 
 ####################################################################
@@ -488,7 +487,8 @@ sub test_copytrading_list {
     };
 
     my $res = $c->call_ok('copytrading_list', $params)->result;
-    is $res->{copiers}[0][0], $loginid, 'copytrading_list';
+    is $res->{copiers}[0]{loginid}, $loginid, 'copytrading_list';
+
 }
 
 done_testing;
