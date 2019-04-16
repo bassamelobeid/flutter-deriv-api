@@ -2135,24 +2135,4 @@ rpc reality_check => sub {
     return $summary;
 };
 
-rpc copytrading_list => sub {
-    my $params = shift;
-
-    my $current_client = $params->{client};
-
-    my $copiers_data_mapper = BOM::Database::DataMapper::Copier->new({
-        broker_code => $current_client->broker_code,
-        operation   => 'replica'
-    });
-
-    my $copiers = $copiers_data_mapper->get_copiers_tokens_all({trader_id => $current_client->loginid});
-    my @copiers = map { {loginid=>$_->[0]} } @$copiers;
-    my $traders = $copiers_data_mapper->get_traders_all({copier_id => $current_client->loginid});
-
-    return {
-        copiers => \@copiers,
-        traders => $traders
-    };
-};
-
 1;
