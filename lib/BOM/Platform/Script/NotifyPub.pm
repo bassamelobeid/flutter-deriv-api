@@ -15,10 +15,9 @@ my $conn;
 
 sub run {
     $conn = _master_db_connections();
-
     my $forks = 0;
     my @cpid;
-    foreach my $ip (keys %{$conn}) {
+    foreach my $addr (keys %{$conn}) {
         my $pid = fork;
         if (not defined $pid) {
             die 'Could not fork';
@@ -27,15 +26,14 @@ sub run {
             $forks++;
             push @cpid, $pid;
         } else {
-            say "starting to listen to $ip";
+            say "starting to listen to $addr";
 
             while (1) {
                 try {
                     my $redis = _redis();
-                    my $dbh   = _db($ip);
+                    my $dbh   = _db($conn->{$addr});
 
                     $dbh->do("LISTEN transaction_watchers");
-
                     my $sel = IO::Select->new;
                     $sel->add($dbh->{pg_socket});
                     while ($sel->can_read) {
@@ -95,19 +93,27 @@ sub _master_db_connections {
     my $conn;
     foreach my $lc (keys %{$config}) {
         if (ref $config->{$lc}) {
-            $conn->{$config->{$lc}->{write}->{ip}} = $config->{password};
+            my $data = $config->{$lc}->{write};
+            $data->{dbname} = $data->{unit_test_dbname} if $ENV{DB_POSTFIX} and $ENV{DB_POSTFIX} eq '_test';
+            $data->{dbname}   //= 'regentmarkets';
+            $data->{password} //= $config->{password};
+            # conn contains a hash ref which contains conection details needed per database
+            $conn->{$data->{ip} . '/' . $data->{dbname}} = {
+                ip       => $data->{ip},
+                dbname   => $data->{dbname},
+                password => $data->{password},
+            };
         }
     }
     return $conn;
 }
 
 sub _db {
-    my $ip = shift;
-    my $db_postfix = $ENV{DB_POSTFIX} // '';
+    my $conn_info = shift;
     return DBI->connect(
-        "dbi:Pg:dbname=regentmarkets$db_postfix;host=$ip;port=5432;application_name=notify_pub;sslmode=require",
+        "dbi:Pg:dbname=$conn_info->{dbname};host=$conn_info->{ip};port=5432;application_name=notify_pub;sslmode=require",
         'write',
-        $conn->{$ip},
+        $conn_info->{password},
         {
             AutoCommit => 1,
             RaiseError => 1,

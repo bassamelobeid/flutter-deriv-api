@@ -68,15 +68,30 @@ sub _refresh_notification_cache {
 
 sub _master_db_connections {
     my $config = YAML::XS::LoadFile('/etc/rmg/clientdb.yml');
-    return map { ref $config->{$_} ? [$_, $config->{$_}->{write}->{ip}, $config->{password}] : () } keys %$config;
+    my $conn;
+    foreach my $lc (keys %{$config}) {
+        if (ref $config->{$lc}) {
+            my $data = $config->{$lc}->{write};
+            $data->{dbname} = $data->{unit_test_dbname} if $ENV{DB_POSTFIX} and $ENV{DB_POSTFIX} eq '_test';
+            $data->{dbname}   //= 'regentmarkets';
+            $data->{password} //= $config->{password};
+            # conn contains a hash ref which contains conection details needed per database
+            $conn->{$lc} = {
+                ip       => $data->{ip},
+                dbname   => $data->{dbname},
+                password => $data->{password},
+                lc       => $lc,
+            };
+        }
+    }
+    return $conn;
 }
 
 sub _db {
-    my ($ip, $pw) = @_;
-    my $db_postfix = $ENV{DB_POSTFIX} // '';
+    my $conn_info = shift;
     return DBI->connect(
-        "dbi:Pg:dbname=regentmarkets$db_postfix;host=$ip;port=5432;application_name=trade_warnings;sslmode=require",
-        write => $pw,
+        "dbi:Pg:dbname=$conn_info->{dbname};host=$conn_info->{ip};port=5432;application_name=trade_warnings;sslmode=require",
+        write => $conn_info->{password},
         {
             AutoCommit => 1,
             RaiseError => 1,
@@ -93,20 +108,25 @@ sub _redis {
 }
 
 sub run {
+    my $databases = shift;
+
     my %kids;
 
     local $SIG{INT} = sub {
         say "$$: Got signal: @_";
         foreach my $p (values %kids) {
-            next unless @$p > 3;
-            say "$$: Killing $p->[3] (lc: $p->[0])";
-            kill TERM => $p->[3];
+            next unless exists $p->{pid};
+            say "$$: Killing $p->{pid} (lc: $p->{lc})";
+            kill TERM => $p->{pid};
         }
     };
     local $SIG{TERM} = $SIG{INT};
 
-    foreach my $cf (_master_db_connections()) {
-        say "$$: setting up config $cf->[0]";
+    my $conn = _master_db_connections();
+    foreach my $lc (keys %{$conn}) {
+        say "$$: setting up config $lc";
+
+        my $connection_details = $conn->{$lc};
         my $pid;
         # yes, this `select` emulates `sleep`. But the built-in `sleep` can only
         # sleep for entire seconds. There is no point in loading an external module
@@ -118,37 +138,34 @@ sub run {
         # publishing such "best practices".
         select undef, undef, undef, 0.3 until defined($pid = fork);    ## no critic
         if ($pid) {                                                    # parent
-            $cf->[3] = $pid;
-            $kids{$pid} = $cf;
+            $connection_details->{pid} = $pid;
+            $kids{$pid} = $connection_details;
             next;
         }
-
         # although both @SIG{qw/TERM INT/} have been localized above
         # perlcritic is still complaining. Hence, no critic.
         $SIG{TERM} = $SIG{INT} = 'DEFAULT';    ## no critic
         %kids = ();
 
         # child
-        my ($lc, $ip, $pw) = @$cf;
-        say "$$: starting to listen on $ip ($lc)";
+        say "$$: starting to listen on $connection_details->{ip}/$connection_details->{dbname} ($lc)";
 
         while (1) {
             try {
                 my $redis = _redis();
-                my $dbh = _db($ip, $pw);
-
+                my $dbh   = _db($connection_details);
                 $dbh->do("LISTEN trade_warning");
-
                 my $sel = IO::Select->new;
                 $sel->add($dbh->{pg_socket});
                 while ($sel->can_read) {
                     while (my $notify = $dbh->pg_notifies) {
                         my ($name, $pid, $payload) = @$notify;
                         my $msg = $json->decode($payload);
-                        $msg->{landing_company} = $lc;
+                        $msg->{landing_company} = $connection_details->{lc};
                         _publish($redis, $msg);
                     }
                 }
+
             }
             catch {
                 warn "$0 ($$): saw exception: $_";
@@ -161,7 +178,7 @@ sub run {
     while (keys %kids) {
         my $pid = wait();
         my $cf  = delete $kids{$pid};
-        say "$$: Parent saw $pid ($cf->[0]) exiting" if $cf;
+        say "$$: Parent saw $pid ($cf->{lc}) exiting" if $cf;
     }
     return 0;
 }

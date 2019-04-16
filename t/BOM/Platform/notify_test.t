@@ -52,10 +52,11 @@ my $client    = BOM::User::Client->new({loginid => 'CR0021'});
 # for notify listening
 my $config = YAML::XS::LoadFile('/etc/rmg/clientdb.yml');
 my $ip     = $config->{costarica}->{write}->{ip};           # create_client creates CR clients
+my $db     = $config->{costarica}->{write}->{dbname};       # create_client creates CR clients
 my $pw     = $config->{password};
 
 my $listener = DBI->connect(
-    "dbi:Pg:dbname=regentmarkets@{[$ENV{DB_POSTFIX}//'']};host=$ip;port=5432;application_name=notify_pub",
+    "dbi:Pg:dbname=$db@{[$ENV{DB_POSTFIX}//'']};host=$ip;port=5432;application_name=notify_pub",
     'write', $pw,
     {
         AutoCommit => 1,
