@@ -1,10 +1,10 @@
-- inotify-daemon
 - postgres-auth
 - postgres-chronicle
 - postgres-client
 - postgres-feed
 - postgres-user
-- pricing-queue
-- pricing-daemon
 - redis
 - redis-replicated
+- pricing-queue
+- pricing-daemon
+- inotify-daemon
