@@ -6,7 +6,7 @@
    ],
 
    "title" : "copytrading info",
-   "description" : "Get copytrading info",
+   "description" : "Details of copiers and/or traders for Copy Trading",
    "type" : "object",
 
    "properties" : {
