@@ -10,6 +10,7 @@ use BOM::Test;
 use Test::More;
 use List::Util qw( max );
 use File::stat;
+use BOM::Config;
 
 requires '_db_name', '_post_import_operations', '_build__connection_parameters', '_db_migrations_dir';
 
@@ -58,7 +59,6 @@ sub db_handler {
 
 sub _migrate_changesets {
     my $self = shift;
-
     # first teminate all other connections
     my $pooler = $self->db_handler('pgbouncer');
     $pooler->{RaiseError}        = 1;
@@ -115,8 +115,9 @@ sub _migrate_changesets {
 
 sub _create_dbs {
     my $self = shift;
+    my $dbh  = $self->_kill_all_pg_connections;
 
-    my $dbh = $self->_kill_all_pg_connections;
+    local $SIG{__WARN__} = sub { warn @_ if $_[0] !~ /database ".*_test" does not exist, skipping/; };
     $self->_do_quoted($dbh, 'DROP DATABASE IF EXISTS %s', $self->_db_name);
     $self->_do_quoted($dbh, 'CREATE DATABASE %s',         $self->_db_name);
     $dbh->disconnect;
@@ -130,24 +131,8 @@ sub _create_dbs {
     $m->migrate();
 
     # apply DB functions
-    $m->psql(sort glob $self->_db_migrations_dir . '/functions/*.sql')
-        if -d $self->_db_migrations_dir . '/functions';
+    $m->psql(sort glob $self->_db_migrations_dir =~ s!/*$!/functions/*.sql!r) if (-d $self->_db_migrations_dir . 'functions');
 
-    # migrate for collectordb schema
-    if ($self->_db_migrations_dir =~ /bom-postgres-clientdb/) {
-        $m = DBIx::Migration->new({
-            dsn                 => $self->dsn,
-            dir                 => COLLECTOR_DB_DIR,
-            tablename_extension => 'collector',
-            username            => 'postgres',
-            password            => $self->_connection_parameters->{'password'},
-        });
-
-        $m->migrate();
-
-        # apply DB functions
-        $m->psql(sort glob COLLECTOR_DB_DIR . '/functions/*.sql') if -d COLLECTOR_DB_DIR . '/functions';
-    }
     if (-f $self->_db_migrations_dir . '/unit_test_dml.sql') {
         $m->psql({
                 before => "SET session_replication_role TO 'replica';\n",
@@ -156,7 +141,17 @@ sub _create_dbs {
             $self->_db_migrations_dir . '/unit_test_dml.sql'
         );
     }
-    # TODO the file devbox_server_user_mapping.sql was removed because it seems be useless. Will recover it back if necessary later.
+
+    ## TODO: This needs refactoring in the follow up cards ~ Jack
+    if ((-f $self->_db_migrations_dir . '/circleci_foreign_servers_for_testdb.sql') && BOM::Config::on_development()) {
+        $m->psql({
+                before => "SET session_replication_role TO 'replica';\n",
+                after  => ";\nSET session_replication_role TO 'origin';\n"
+            },
+            $self->_db_migrations_dir . '/circleci_foreign_servers_for_testdb.sql'
+        );
+    }
+
     if ((-f $self->_db_migrations_dir . '/devbox_foreign_servers_for_testdb.sql') && $self->_db_name =~ m/_test/) {
         $m->psql({
                 before => "SET session_replication_role TO 'replica';\n",
@@ -165,7 +160,6 @@ sub _create_dbs {
             $self->_db_migrations_dir . '/devbox_foreign_servers_for_testdb.sql'
         );
     }
-
     return $self->_create_template;
 }
 
@@ -224,13 +218,10 @@ sub _update_sequence_of {
 sub _restore_dbs_from_template {
     my $self = shift;
     return 0 unless $self->_is_template_usable;
-
     my $is_successful = 0;
     try {
         my $dbh = $self->_kill_all_pg_connections;
-
         my ($db_name, $tmpl_name) = ($self->_db_name, $self->_template_name);
-
         $self->_do_quoted($dbh, 'DROP DATABASE IF EXISTS %s', $db_name);
         $self->_do_quoted($dbh, 'CREATE DATABASE %s WITH TEMPLATE %s', $db_name, $tmpl_name);
         $dbh->disconnect;
@@ -248,7 +239,6 @@ sub _create_template {
 
     try {
         my $dbh = $self->_kill_all_pg_connections;
-
         # suppress 'NOTICE:  database ".*template" does not exist, skipping'
         local $SIG{__WARN__} = sub { warn @_ if $_[0] !~ /database ".*_template" does not exist, skipping/; };
 
@@ -262,7 +252,6 @@ sub _create_template {
     catch {
         note 'Creating the db template failed for ' . $self->_db_name . ' with error: ' . $_;
     };
-
     return;
 }
 

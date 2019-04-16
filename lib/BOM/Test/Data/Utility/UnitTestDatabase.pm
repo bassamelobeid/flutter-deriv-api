@@ -25,7 +25,7 @@ BEGIN {
 
 sub _db_name {
     my $db_postfix = $ENV{DB_POSTFIX} // '';
-    return 'regentmarkets' . $db_postfix;
+    return 'cr' . $db_postfix;
 }
 
 sub _db_migrations_dir {
@@ -48,7 +48,6 @@ sub _build__connection_parameters {
 
 sub _post_import_operations {
     my $self = shift;
-
     $self->_update_sequence_of({
         table    => 'transaction.account',
         sequence => 'account_serial',
@@ -361,7 +360,6 @@ sub setup_bet_market {
             my $sth = $_->prepare("INSERT INTO bet.market VALUES(?,?,?,?)");
             $sth->execute(@$_) foreach @data;
         });
-
     return;
 }
 
@@ -380,6 +378,7 @@ sub import {
         __PACKAGE__->instance->prepare_unit_test_database;
         setup_bet_market() unless exists $options{':exclude_bet_market_setup'};
         require BOM::Test::Data::Utility::UserTestDatabase;
+
         BOM::Test::Data::Utility::UserTestDatabase->import(':init');
     }
 
