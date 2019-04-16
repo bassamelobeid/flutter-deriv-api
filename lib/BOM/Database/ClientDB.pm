@@ -72,13 +72,23 @@ BEGIN {
 }
 
 sub _build_db {
-    my $self = shift;
-
+    my $self   = shift;
     my $domain = $environment->{$self->broker_code};
     # We are relying on the wording of this message in other places. If you are
     # tempted to change anything here, please make sure to find those places and
     # change them as well.
     die "No such domain with the broker code " . $self->broker_code . "\n" unless $domain;
+
+    my $db_postfix = $ENV{DB_POSTFIX} // '';
+
+    # TODO: This part should not be around once we have unit_test cluster ~ JACK
+    # redirect all of our client testcases to costarica except for collector
+    $domain = ((
+            (BOM::Config::on_qa() and $db_postfix eq '_test')
+                or BOM::Config::on_development())
+            and $self->{operation} ne 'collector'
+    ) ? 'costarica' : $domain;
+
     my $type = $self->operation;
 
     my @db_params = (
@@ -86,7 +96,6 @@ sub _build_db {
         type   => $type
     );
 
-    my $db_postfix = $ENV{DB_POSTFIX} // '';
     if (not BOM::Database::Rose::DB->registry->entry_exists(@db_params)) {
         BOM::Database::Rose::DB->register_db(
             domain   => $domain,

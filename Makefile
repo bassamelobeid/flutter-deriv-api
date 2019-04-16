@@ -28,4 +28,4 @@ tidy:
 #  The hash randomization changes since Perl 5.18 (which we revert back to the old behavior via this variable.) Refer https://perldoc.perl.org/perl5180delta.html#Hash-overhaul
 orm_files:
 	perl -MBOM::Test -MBOM::Test::Data::Utility::UnitTestDatabase=:init -e0
-	PERL_HASH_SEED=0 PGPORT=5432 bin/rose_generation regentmarkets_test --all
+	PERL_HASH_SEED=0 PGPORT=5432 bin/rose_generation clientdb_template --all

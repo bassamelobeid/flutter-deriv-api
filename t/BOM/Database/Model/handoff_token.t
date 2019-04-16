@@ -16,7 +16,7 @@ my $expiry            = time + 50;
 
 lives_ok {
     $connection_builder = BOM::Database::ClientDB->new({
-        broker_code => 'FOG',
+        broker_code => 'CR',
     });
 
     $handoff_token = BOM::Database::Model::HandoffToken->new({
