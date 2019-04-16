@@ -100,4 +100,11 @@ sub on_qa {
     return env() =~ /^qa/;
 }
 
+# This function should not be around, development environment is legacy
+# This needs further discussion to make sure all agree to remove this environment
+# TODO: ~Jack
+sub on_development {
+    return env() =~ /^development/;
+}
+
 1;
