@@ -456,6 +456,36 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         $client->promo_code_status($input{promo_code_status});
     }
 
+    my %new_dob = _get_new_dob({
+        client => $client,
+        input  => \%input
+    });
+    my $combined_new_dob = sprintf("%04d-%02d-%02d", $new_dob{'dob_year'}, $new_dob{'dob_month'}, $new_dob{'dob_day'});
+    my @dup_account_details = BOM::Database::ClientDB->new({broker_code => $input{broker}})->get_duplicate_client({
+        exclude_status => ['duplicate_account', 'disabled'],
+        first_name    => $input{first_name} // $client->first_name,
+        last_name     => $input{last_name}  // $client->last_name,
+        date_of_birth => $combined_new_dob  // $client->date_of_birth,
+        phone         => $input{phone}      // $client->phone,
+        email         => $client->email
+    });
+
+    if (@dup_account_details) {
+        my $data = {
+            loginid       => $dup_account_details[0],
+            first_name    => $dup_account_details[1],
+            last_name     => $dup_account_details[2],
+            date_of_birth => $dup_account_details[3],
+            phone         => $dup_account_details[5],
+            self_link     => $self_href
+        };
+
+        BOM::Backoffice::Request::template()->process('backoffice/duplicate_client_details.tt', $data)
+            or die BOM::Backoffice::Request::template()->error();
+
+        code_exit_BO();
+    }
+
     # Updates that apply to both active client and its corresponding clients
     foreach my $cli (@clients_to_update) {
         # Prevent last_name and first_name from being set blank
@@ -1085,6 +1115,30 @@ sub obfuscate_token {
     my $t = shift;
     $t =~ s/(.*)(.{4})$/('*' x length $1).$2/e;
     return $t;
+}
+
+sub _get_new_dob {
+    my $data      = shift;
+    my $client    = $data->{client};
+    my $input     = $data->{input};
+    my $self_href = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $client->loginid});
+
+    my @dob_fields = ('dob_year', 'dob_month', 'dob_day');
+    my @dob_keys = grep { /dob_/ } keys %$input;
+
+    # splits the client's dob out into [0] - year, [1] - month, [2] - day
+    my @dob_values = ($client->date_of_birth // '') =~ /([0-9]+)-([0-9]+)-([0-9]+)/;
+
+    my %new_dob = map { $dob_fields[$_] => $dob_values[$_] } 0 .. $#dob_fields;
+
+    $new_dob{$_} = $input->{$_} for @dob_keys;
+
+    if (grep { !$_ } values %new_dob) {
+        print qq{<p style="color:red">Error: Date of birth cannot be empty.</p>};
+        code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
+    }
+
+    return %new_dob;
 }
 
 code_exit_BO();
