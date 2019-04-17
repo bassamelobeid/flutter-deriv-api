@@ -107,7 +107,7 @@ is 0 + @token, 4, 'got 4 tokens';
 subtest 'normal contract', sub {
     my @balances = balances @cl;
     my (undef, $txn) = Test::BOM::RPC::Contract::prepare_contract(client => $clm);
-
+    push @token, ('Invalid Token');
     my $result = BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts {
         client              => $clm,
         token_details       => $clm_token_details,
@@ -149,7 +149,11 @@ subtest 'normal contract', sub {
     }
 
     is $result->[2]->{code}, 'InsufficientBalance', 'token[2]: InsufficientBalance';
+    like  $result->[2]->{message_to_client}, qr/Your account balance/, 'token[2]: Insufficent  Balance  Message';
     is $result->[3]->{code}, 'PermissionDenied',    'token[3]: PermissionDenied';
+    is $result->[3]->{message_to_client}, 'Permission denied, requires trade scope.',    'token[3]: Permission Denied Message';
+    is $result->[4]->{code}, 'InvalidToken',    'token[4]: InvalidToken';
+    is $result->[4]->{message_to_client}, 'Invalid token',    'token[4]: Invalid Token Message';
 
     $balances[0] -= $result->[0]->{buy_price};
     $balances[1] -= $result->[1]->{buy_price};
