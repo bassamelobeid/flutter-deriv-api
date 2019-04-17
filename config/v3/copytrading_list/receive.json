@@ -5,7 +5,7 @@
       "msg_type"
    ],
 
-   "title" : "copytrading info",
+   "title" : "copytrading list",
    "description" : "Details of copiers and/or traders for Copy Trading",
    "type" : "object",
 
