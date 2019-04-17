@@ -162,12 +162,29 @@ sub getall_arrayref {
     return \@result;
 }
 
-# methods from BOM::Database::DataMapper::Client
+=head2 get_duplicate_client
+
+methods from BOM::Database::DataMapper::Client
+
+This method will return clients which have the same details as provided 
+
+Excludes:
+    
+=over 4
+
+=item  - Those marked with statuses passed in the "exclude_status" parameter
+
+=item  - Client with the same email
+
+=back
+
+=cut
+
 sub get_duplicate_client {
     my $self = shift;
     my $args = shift;
 
-    my $dupe_sql    = "SELECT * FROM get_duplicate_client(?,?,?,?,?,?)";
+    my $dupe_sql    = "SELECT * FROM get_duplicate_client(?,?,?,?,?,?,?)";
     my $dbic        = $self->db->dbic;
     my @dupe_record = $dbic->run(
         fixup => sub {
@@ -178,6 +195,7 @@ sub get_duplicate_client {
             $dupe_sth->bind_param(4, $args->{email});
             $dupe_sth->bind_param(5, $self->broker_code);
             $dupe_sth->bind_param(6, $args->{phone});
+            $dupe_sth->bind_param(7, $args->{exclude_status} // ['duplicate_account']);
             $dupe_sth->execute();
             return $dupe_sth->fetchrow_array();
         });
