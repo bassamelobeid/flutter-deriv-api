@@ -83,8 +83,7 @@ subtest 'Request Tags' => sub {
 };
 
 subtest 'Response' => sub {
-
-    my $entries = [map { "Experian$_" } qw(Valid InsufficientDOB Deceased OFSI PEP BOE InsufficientUKGC)];
+    my $entries = [map { "Experian$_" } qw(Valid InsufficientDOB Deceased OFSI PEP BOE InsufficientUKGC Blank)];
     my $xml_fld = "/home/git/regentmarkets/bom-test/data/Experian/SavedXML/";
     my $pdf_fld = "/home/git/regentmarkets/bom-test/data/Experian/PDF/";
 

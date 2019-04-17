@@ -81,9 +81,15 @@ sub proveid {
 
     my $xml = XML::LibXML->new()->parse_string($prove_id_result);
 
+    my ($credit_reference)         = $xml->findnodes('/Search/Result/CreditReference');
     my ($credit_reference_summary) = $xml->findnodes('/Search/Result/CreditReference/CreditReferenceSummary');
     my ($kyc_summary)              = $xml->findnodes('/Search/Result/Summary/KYCSummary');
     my ($report_summary)           = $xml->findnodes('/Search/Result/Summary/ReportSummary/DatablocksSummary');
+
+    if (($credit_reference->getAttribute('Type') =~ /NoMatch|Error/) || (!$kyc_summary->hasChildNodes)) {
+        $self->_process_not_found;
+        return undef;
+    }
 
     my $matches = {};
 
@@ -195,9 +201,7 @@ sub _fetch_proveid {
 
         # ErrorCode 500 and 501 are Search Errors according to Appendix B of https://github.com/regentmarkets/third_party_API_docs/blob/master/AML/20160520%20Experian%20ID%20Search%20XML%20API%20v1.22.pdf
         if ($error =~ /^50[01]/) {
-            # We don't retry when there is a search error (no entry or otherwise)
-            $client->status->set('unwelcome', 'system', 'No entry for this client found in Experian database.');
-            $self->_request_id_authentication();
+            $self->_process_not_found;
             return undef;    # Do not die, if the client was not found
         }
 
@@ -300,6 +304,23 @@ sub _notify_cs {
 
     my $client = $self->client;
     $client->add_note($subject, $client->loginid . ' ' . $body);
+
+    return undef;
+}
+
+=head _process_not_found
+
+Handles client which has no entry found in Experian's database
+
+=cut
+
+sub _process_not_found {
+    my $self   = shift;
+    my $client = $self->client;
+
+    $client->status->set('unwelcome', 'system', 'No entry for this client found in Experian database.');
+    $client->status->clear_proveid_pending;
+    $self->_request_id_authentication();
 
     return undef;
 }

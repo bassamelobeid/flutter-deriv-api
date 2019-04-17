@@ -277,28 +277,59 @@ subtest 'MX accounts' => sub {
 
     };
     subtest "No Experian entry found" => sub {
-        my $c = create_client('MX', undef, {residence => 'gb'});
+        subtest "Error 501" => sub {
+            my $c = create_client('MX', undef, {residence => 'gb'});
 
-        my $loginid      = $c->loginid;
-        my $client_email = $c->email;
-        $emails = {};
+            my $loginid      = $c->loginid;
+            my $client_email = $c->email;
+            $emails = {};
 
-        my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
-        $proveid_mock->mock(
-            get_result => sub {
-                die '501: No Match Found';
-            });
+            my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
+            $proveid_mock->mock(
+                get_result => sub {
+                    die '501: No Match Found';
+                });
 
-        {
-            $SIG{'__WARN__'} = sub { like shift, qr/^First deposit authentication failed/ };
-            $v->run_authentication;
+            {
+                $SIG{'__WARN__'} = sub { like shift, qr/^First deposit authentication failed/ };
+                $v->run_authentication;
+            };
+
+            ok !$v->client->status->disabled, "Not disabled due to no entry";
+            ok $v->client->status->unwelcome,         "Unwelcome due to no entry";
+            ok $v->client->status->proveid_requested, "ProveID requested";
+
+            is($emails->{$client_email}, "Documents are required to verify your identity", "Client received email");
         };
+        subtest "Blank Response" => sub {
+            my $c = create_client('MX', undef, {residence => 'gb'});
 
-        ok !$v->client->status->disabled, "Not disabled due to no entry";
-        ok $v->client->status->unwelcome,         "Unwelcome due to no entry";
-        ok $v->client->status->proveid_requested, "ProveID requested";
+            my $loginid      = $c->loginid;
+            my $client_email = $c->email;
+            $emails = {};
 
-        is($emails->{$client_email}, "Documents are required to verify your identity", "Client received email");
+            my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
+
+            my $file_path = "/home/git/regentmarkets/bom-test/data/Experian/SavedXML/ExperianBlank.xml";
+
+            $proveid_mock->mock(
+                get_result => sub {
+                    open my $fh, '<', $file_path;
+                    read $fh, my $file_content, -s $fh;
+                    return $file_content;
+                });
+
+            {
+                $SIG{'__WARN__'} = sub { like shift, qr/^First deposit authentication failed/ };
+                $v->run_authentication;
+            };
+
+            ok !$v->client->status->disabled, "Not disabled due to no entry";
+            ok $v->client->status->unwelcome,         "Unwelcome due to no entry";
+            ok $v->client->status->proveid_requested, "ProveID requested";
+
+            is($emails->{$client_email}, "Documents are required to verify your identity", "Client received email");
+        };
     };
     subtest "Error connecting to Experian" => sub {
         my $c = create_client('MX', undef, {residence => 'gb'});
