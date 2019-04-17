@@ -346,7 +346,9 @@ sub _get_num_data_from_cache {
           $end ? $self->redis_read->zrevrangebyscore($self->_make_key($symbol, 0), $end, 0, 'LIMIT', 0, $num)
         : $start ? $self->redis_read->zrangebyscore($self->_make_key($symbol, 0), $start, '+inf', 'LIMIT', 0, $num)
         :          [];
-    my @res = map { $self->decoder->decode($_) } reverse @$ticks;
+
+    @$ticks = reverse @$ticks if $end;
+    my @res = map { $self->decoder->decode($_) } @$ticks;
 
     return \@res;
 }
