@@ -23,15 +23,14 @@ use BOM::Database::ClientDB;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
-my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+my $mock_contract   = Test::MockModule->new('BOM::Product::Contract');
 
 $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
+$mock_validation->mock(_validate_date_pricing => sub { note "mocked Transaction::Validation->_validate_date_pricing returning nothing"; () });
+$mock_validation->mock(_is_valid_to_buy       => sub { note "mocked Transaction::Validation->_is_valid_to_buy returning nothing";       () });
 $mock_validation->mock(
-_validate_date_pricing => sub { note "mocked Transaction::Validation->_validate_date_pricing returning nothing"; () });
-$mock_validation->mock(_is_valid_to_buy => sub { note "mocked Transaction::Validation->_is_valid_to_buy returning nothing"; () });
-            $mock_validation->mock(_validate_trade_pricing_adjustment =>
-                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
+    _validate_trade_pricing_adjustment => sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
 
 my $now               = Date::Utility->new;
 my $underlying_symbol = 'R_100';
@@ -213,8 +212,8 @@ subtest 'buy - runhigh' => sub {
             plan tests => 20;
             cmp_ok $fmb->{id}, '>', 0, 'id';
             is $fmb->{account_id}, $acc_usd->id, 'account_id';
-            is $fmb->{bet_class}, 'runs', 'bet_class';
-            is $fmb->{bet_type},  'RUNHIGH',             'bet_type';
+            is $fmb->{bet_class}, 'runs',    'bet_class';
+            is $fmb->{bet_type},  'RUNHIGH', 'bet_type';
             is $fmb->{buy_price} + 0, 50, 'buy_price';
             is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
             cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
@@ -224,12 +223,12 @@ subtest 'buy - runhigh' => sub {
             cmp_ok $fmb->{payout_price} + 0, '==', 100, 'payout_price';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
             like $fmb->{remark},   qr/\btrade\[50\.00000\]/, 'remark';
-            is $fmb->{sell_price}, undef,                     'sell_price';
-            is $fmb->{sell_time},  undef,                     'sell_time';
+            is $fmb->{sell_price}, undef,                    'sell_price';
+            is $fmb->{sell_time},  undef,                    'sell_time';
             cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
             like $fmb->{short_code}, qr/RUNHIGH/, 'short_code';
             cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
-            is $fmb->{tick_count},        2,  'tick_count';
+            is $fmb->{tick_count},        2,       'tick_count';
             is $fmb->{underlying_symbol}, 'R_100', 'underlying_symbol';
         };
 
@@ -238,7 +237,7 @@ subtest 'buy - runhigh' => sub {
         subtest 'chld row', sub {
             plan tests => 3;
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{selected_tick},       2, 'selected_tick';
+            is $chld->{selected_tick},    2,     'selected_tick';
             is $chld->{relative_barrier}, 'S0P', 'relative_barrier';
         };
 
@@ -327,8 +326,8 @@ subtest 'buy - runlow' => sub {
             plan tests => 20;
             cmp_ok $fmb->{id}, '>', 0, 'id';
             is $fmb->{account_id}, $acc_usd->id, 'account_id';
-            is $fmb->{bet_class}, 'runs', 'bet_class';
-            is $fmb->{bet_type},  'RUNLOW',             'bet_type';
+            is $fmb->{bet_class}, 'runs',   'bet_class';
+            is $fmb->{bet_type},  'RUNLOW', 'bet_type';
             is $fmb->{buy_price} + 0, 50, 'buy_price';
             is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
             cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
@@ -338,12 +337,12 @@ subtest 'buy - runlow' => sub {
             cmp_ok $fmb->{payout_price} + 0, '==', 100, 'payout_price';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
             like $fmb->{remark},   qr/\btrade\[50\.00000\]/, 'remark';
-            is $fmb->{sell_price}, undef,                     'sell_price';
-            is $fmb->{sell_time},  undef,                     'sell_time';
+            is $fmb->{sell_price}, undef,                    'sell_price';
+            is $fmb->{sell_time},  undef,                    'sell_time';
             cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
             like $fmb->{short_code}, qr/RUNLOW/, 'short_code';
             cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
-            is $fmb->{tick_count},        2,  'tick_count';
+            is $fmb->{tick_count},        2,       'tick_count';
             is $fmb->{underlying_symbol}, 'R_100', 'underlying_symbol';
         };
 
@@ -352,7 +351,7 @@ subtest 'buy - runlow' => sub {
         subtest 'chld row', sub {
             plan tests => 3;
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{selected_tick},       2, 'selected_tick';
+            is $chld->{selected_tick},    2,     'selected_tick';
             is $chld->{relative_barrier}, 'S0P', 'relative_barrier';
         };
 

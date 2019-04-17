@@ -360,8 +360,9 @@ subtest 'batch-buy success 2', sub {
         my $expected = [
             {code => 'ignore'},
             {
-                code  => 'InvalidLoginid',
-                error => 'Invalid loginid',
+                code              => 'InvalidLoginid',
+                error             => 'Invalid loginid',
+                message_to_client => 'Invalid loginid',
             },
             {code => 'ignore'},
         ];

@@ -664,7 +664,11 @@ sub batch_buy {
 
     my %per_broker;
     for my $m (@{$self->multiple}) {
-        next if $m->{code};
+        if ($m->{code}) {
+            $m->{message_to_client} = $m->{error} if defined $m->{error};
+            next;
+        }
+
         push @{$per_broker{$m->{client}->broker_code}}, $m;
     }
 
@@ -702,10 +706,11 @@ sub batch_buy {
                             ? $ref->($self, $el->{client}, $res->{e_description})
                             : $ref
                         );
-                        $el->{code}  = $error->{-type};
-                        $el->{error} = $error->{-message_to_client};
+                        $el->{code}              = $error->{-type};
+                        $el->{error}             = $error->{-message_to_client};
+                        $el->{message_to_client} = $error->{-message_to_client};
                     } else {
-                        @{$el}{qw/code error/} = @general_error;
+                        @{$el}{qw/code message_to_client/} = @general_error;
                     }
                 } else {
                     $el->{fmb} = $res->{fmb};
@@ -884,7 +889,10 @@ sub sell_by_shortcode {
 
     my %per_broker;
     for my $m (@{$self->multiple}) {
-        next if $m->{code};
+        if ($m->{code}) {
+            $m->{-message_to_client} = $m->{message_to_client} if defined $m->{message_to_client};
+            next;
+        }
         push @{$per_broker{$m->{client}->broker_code}}, $m;
     }
 
@@ -917,9 +925,10 @@ sub sell_by_shortcode {
                             ? $ref->($self, $r->{client}, $res_row->{e_description})
                             : $ref
                         );
+                        $r->{code}              = $error->{-type};
+                        $r->{message_to_client} = $error->{-message_to_client};
+                        $r->{error}             = $error->{-message_to_client};
 
-                        $r->{code}  = $error->{-type};
-                        $r->{error} = $error->{-message_to_client};
                     } else {
                         @{$r}{qw/code error/} = ('UnexpectedError' . $ecode, BOM::Platform::Context::localize('An unexpected error occurred'));
                     }

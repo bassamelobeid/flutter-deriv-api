@@ -368,7 +368,9 @@ subtest 'buy a bet with zero price', sub {
         });
 
         my $error = $txn->buy;
-        is $error->{-message_to_client}, 'The underlying market has moved too much since you priced the contract. The contract price has changed from USD0.00 to USD2.50.', 'slippage error';
+        is $error->{-message_to_client},
+            'The underlying market has moved too much since you priced the contract. The contract price has changed from USD0.00 to USD2.50.',
+            'slippage error';
     }
     'survived';
 };
