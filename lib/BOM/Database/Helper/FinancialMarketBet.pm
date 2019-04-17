@@ -135,10 +135,6 @@ sub buy_bet {
         $limits ? Encode::encode_utf8($json->encode($limits)) : undef,
     );
     my $dbic_code = sub {
-        # We want to evaluate the error message from PG.
-        # So, don't allow DBD::Pg to mess it up.
-        # Same as "\set VERBOSITY terse" in psql.
-        local $_->{pg_errorlevel} = 0;
 
         # NOTE, the parens around v_fmb and v_trans in the SQL statement
         #       are necessary.

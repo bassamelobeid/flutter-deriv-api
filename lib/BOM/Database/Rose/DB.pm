@@ -60,10 +60,11 @@ sub _handle_errors {
     $error_message ||= '[None Passed]';
     $state         ||= "[none]";
 
-    # Exceptions are really ugly. They obfuscate the control flow
-    # just like "goto" or even worse.
-    # These exceptions are supposed to be caught
-    die [$state, $dbh->errstr] if $state =~ /^BI...$/;
+    ## For our self-generated errors, we do not need the full context in the error message
+    if ($state =~ /^BI...$/) {
+        (my $clean_message = $dbh->errstr) =~ s/\nCONTEXT:.+//s;
+        die [$state, $clean_message];
+    }
 
     warn "DB Error Severity: $severity, $error_message. SQLSTATE=$state. Error=$err";
 
