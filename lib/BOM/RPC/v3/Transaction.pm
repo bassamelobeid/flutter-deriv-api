@@ -340,7 +340,7 @@ rpc buy_contract_for_multiple_accounts => sub {
         my $new = {};
         if (exists $el->{code}) {
             @{$new}{qw/token code message_to_client/} =
-                @{$el}{qw/token code error/};
+                @{$el}{qw/token code message_to_client/};
         } else {
             $new->{token}          = $el->{token};
             $new->{transaction_id} = $el->{txn}->{id};
@@ -459,7 +459,7 @@ rpc sell_contract_for_multiple_accounts => sub {
         my $new = {};
         if (exists $row->{code}) {
             @{$new}{qw/token code message_to_client/} =
-                @{$row}{qw/token code error/};
+                @{$row}{qw/token code message_to_client/};
         } else {
             $new = +{
                 transaction_id => $row->{tnx}{id},

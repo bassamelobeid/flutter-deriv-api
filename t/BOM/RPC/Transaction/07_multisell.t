@@ -133,7 +133,7 @@ my $shortcode = $result->[0]->{shortcode};
 
 my $mock_txn = Test::MockModule->new('BOM::Transaction');
 $mock_txn->mock(_is_valid_to_sell => sub { });
-
+push(@token, 'An Invalid Token');
 $result = BOM::RPC::v3::Transaction::sell_contract_for_multiple_accounts({
         client => $clm,
         source => 1,
@@ -145,14 +145,14 @@ $result = BOM::RPC::v3::Transaction::sell_contract_for_multiple_accounts({
     });
 
 $result = $result->{result};
-
 ok(delete $buy_trx_ids->{$_->{reference_id}}) for grep { $_->{reference_id} } @$result;
-
 ok(scalar keys %$buy_trx_ids == 0);
 is($result->[2]->{code}, 'NoOpenPosition', 'contract not found code');
 is($result->[2]->{message_to_client}, 'This contract was not found among your open positions.', 'contract not found code');
 ok($result->[2]->{token}, 'contract not found token');
 is($result->[3]->{code}, 'PermissionDenied', 'permission denied code');
+is($result->[3]->{message_to_client},  'Permission denied, requires trade scope.', 'correct message for Permission Denied ');
 ok($result->[3]->{token}, 'permission denied token');
+is($result->[4]->{message_to_client}, 'Invalid token', 'correct message for Invalid Token');
 
 done_testing;
