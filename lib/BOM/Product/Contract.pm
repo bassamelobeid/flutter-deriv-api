@@ -989,7 +989,27 @@ sub audit_details {
     # no audit because such contracts are settled by CS team
     return {} if $self->exit_tick and $start_epoch > $self->exit_tick->epoch;
 
-    my $details = {
+    my $details;
+
+    if ($self->tick_expiry) {
+        $details = {
+            all_ticks => $self->_get_tick_details({
+                    requested_epoch => {
+                        value => 0 + $start_epoch,
+                        name  => [$GENERIC_MAPPING->{start_time}],
+                    },
+                    quote => {
+                        value => 0 + $self->entry_tick->quote,
+                        epoch => 0 + $self->entry_tick->epoch,
+                        name  => [$GENERIC_MAPPING->{entry_spot_cap}],
+                    }}
+            ),
+        };
+
+        return $details;
+    }
+
+    $details = {
         contract_start => $self->_get_tick_details({
                 requested_epoch => {
                     value => 0 + $start_epoch,
@@ -1054,19 +1074,33 @@ sub _get_tick_details {
     my $quote_epoch = 0 + $args->{quote}{epoch};
     my $quote_name  = $args->{quote}{name};
 
-    # tick frequency is a problem here. Hence, using two calls to ensure we get
-    # the desired number of ticks if they are in the database.
+    my $limit = ($self->tick_expiry) ? 2 : 3;
+
+    my @ticks_all;
+    my @ticks_after;
+    if ($self->tick_expiry) {
+        my @tmp_ticks = @{
+            $self->underlying->ticks_in_between_start_limit({
+                    start_time => $epoch + 1,
+                    limit      => $self->ticks_to_expiry + 1,
+                })};
+        push @ticks_all, @tmp_ticks;
+    } else {
+        my @tmp_ticks = @{
+            $self->underlying->ticks_in_between_start_limit({
+                    start_time => $epoch + 1,
+                    limit      => 3,
+                })};
+        push @ticks_after, @tmp_ticks;
+    }
+
     my @ticks_before = reverse @{
         $self->underlying->ticks_in_between_end_limit({
                 end_time => 0 + $epoch,
-                limit    => 3,
+                limit    => $limit,
             })};
-    my @ticks_after = @{
-        $self->underlying->ticks_in_between_start_limit({
-                start_time => $epoch + 1,
-                limit      => 3,
-            })};
-    my @ticks = (@ticks_before, @ticks_after);
+
+    my @ticks = $self->tick_expiry ? (@ticks_before, @ticks_all) : (@ticks_before, @ticks_after);
 
     #Extra logic to highlight highlowticks
     my $selected_epoch;
@@ -1079,9 +1113,8 @@ sub _get_tick_details {
 
     my @details;
     for (my $i = 0; $i <= $#ticks; $i++) {
-        my $t  = $ticks[$i];
-        my $t2 = $ticks[$i + 1];
-
+        my $t         = $ticks[$i];
+        my $t2        = $ticks[$i + 1];
         my $t_details = {
             epoch => 0 + $t->epoch,
             tick  => $self->underlying->pipsized_value($t->quote),
@@ -1095,6 +1128,28 @@ sub _get_tick_details {
             $t_details->{flag} = "highlight_time";
         } elsif ($t->epoch == $quote_epoch) {
             $t_details->{name} = $quote_name;
+            $t_details->{flag} = "highlight_tick";
+        }
+
+        if ($self->tick_expiry && $self->is_path_dependent && $self->close_tick) {
+            if ($t->epoch == $self->close_tick->epoch) {
+                $t_details->{name} = [$GENERIC_MAPPING->{time_and_spot}, $GENERIC_MAPPING->{end_time}, $GENERIC_MAPPING->{exit_spot}];
+                $t_details->{name} = [
+                    $GENERIC_MAPPING->{time_and_spot},
+                    [$GENERIC_MAPPING->{time_and_spot}, $GENERIC_MAPPING->{entry_spot_cap}, $GENERIC_MAPPING->{end_time}],
+                    $GENERIC_MAPPING->{exit_spot}]
+                    if ($self->entry_tick->epoch == $self->close_tick->epoch);
+                $t_details->{flag} = "highlight_tick";
+            }
+        } elsif ($self->tick_expiry && $self->exit_tick && $t->epoch == $self->exit_tick->epoch) {
+            $t_details->{name} = [$GENERIC_MAPPING->{exit_spot}];
+            $t_details->{name} = [$GENERIC_MAPPING->{time_and_spot}, $GENERIC_MAPPING->{end_time}, $GENERIC_MAPPING->{exit_spot}]
+                if ($self->date_expiry->epoch == $self->exit_tick->epoch);
+            $t_details->{name} = [
+                $GENERIC_MAPPING->{time_and_spot},
+                [$GENERIC_MAPPING->{time_and_spot}, $GENERIC_MAPPING->{entry_spot_cap}, $GENERIC_MAPPING->{end_time}],
+                $GENERIC_MAPPING->{exit_spot}]
+                if ($self->entry_tick->epoch == $self->exit_tick->epoch);
             $t_details->{flag} = "highlight_tick";
         }
 
