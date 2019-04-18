@@ -1,0 +1,68 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "title" : "copytrading list",
+   "description" : "Details of copiers and/or traders for Copy Trading",
+   "type" : "object",
+
+   "properties" : {
+      "echo_req" : {
+         "required" : 1,
+         "pattern" : "copytrading_list"
+      },
+
+      "msg_type" : {
+         "type" : "string",
+         "required" : 1,
+         "pattern" : "copytrading_list"
+      },
+      "copytrading_list" : {
+         "title" : "copytrading list",
+         "description" : "trading copiers or traders info",
+         "type" : "object",
+         "properties" : {
+            "copiers" : {
+               "required" : 1,
+               "description" : "List of users who are currently copy trading the authenticated user",
+               "type" : "array",
+               "maxItems" : 0
+            },
+            "traders" : {
+               "required" : 1,
+               "description" : "List of users who are currently copy trading the authenticated user",
+               "type" : "array",
+               "items" : {
+                  "type" : "object",
+                  "properties" : {
+                    "loginid" : {
+                       "type" : "string"
+                    },
+                    "token" : {
+                       "type" : "string"
+                    },
+                    "assets" : {
+                       "type" : "array",
+                       "items" : {
+                           "type" : "string"
+                        }
+                    },
+                    "trade_types" : {
+                       "type" : "array",
+                       "items" : {
+                           "type" : "string"
+                        }
+                    },
+                    "max_trade_stake" : {
+                       "type" : ["number", "null"]
+                    },
+                    "min_trade_stake" : {
+                       "type" : ["number", "null"]
+                    }
+                 }
+
+               }
+
+            }
+         }
+      }
+   }
+}
