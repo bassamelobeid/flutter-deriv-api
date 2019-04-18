@@ -179,29 +179,10 @@ sub eod_market_values_of_month {
     my $month_first_day = shift;
     my $dbic            = $self->db->dbic;
 
-    my $sql = q{
-        SELECT
-            FLOOR(
-                extract(epoch from calculation_time) / 86400
-            ) * 86400 as calculation_time,
-
-            last(market_value ORDER BY calculation_time) as market_value
-        FROM
-            accounting.historical_marked_to_market
-        WHERE
-            calculation_time >= ?::date - interval '1 day'
-            AND calculation_time < ?::date + interval '1 month'
-        GROUP BY
-            FLOOR(
-                extract(epoch from calculation_time) / 86400
-            )
-    };
-
     return $dbic->run(
         fixup => sub {
-            my $sth = $_->prepare($sql);
-            $sth->execute($month_first_day, $month_first_day);
-
+            my $sth = $_->prepare(q{SELECT * FROM get_last_market_value_of_day(?)});
+            $sth->execute($month_first_day);
             return $sth->fetchall_hashref('calculation_time');
 
         });
