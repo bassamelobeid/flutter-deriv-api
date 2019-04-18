@@ -72,10 +72,10 @@
                          }
                      },
                      "max_trade_stake" : {
-                        "type" : "number"
+                        "type" : ["number", "null"]
                      },
                      "min_trade_stake" : {
-                        "type" : "number"
+                        "type" : ["number", "null"]
                      }
                   }
                }
