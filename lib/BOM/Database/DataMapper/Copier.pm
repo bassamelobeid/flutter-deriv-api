@@ -120,7 +120,7 @@ sub get_traders_tokens_all {
 
 =head2 get_traders
 
-Gets an ArrayRef of traders for a copier  with valid tokens
+Gets an ArrayRef of traders for a copier with valid tokens
 Takes the following arguments as named parameters
 
 =over 4
@@ -215,24 +215,13 @@ sub get_traders_all {
     my ($self, $args) = @_;
 
     my $sql = q{
-        SELECT trader_id, trader_token, array_agg(trade_type), array_agg(asset),min_trade_stake,max_trade_stake
-        FROM betonmarkets.copiers
-        WHERE copier_id = $1
-        GROUP BY trader_id, trader_token, min_trade_stake, max_trade_stake
+        SELECT * FROM get_traders_all(?)
     };
 
     my @binds = ($args->{copier_id});
-    my $res   = $self->db->dbic->run(fixup => sub { $_->selectall_arrayref($sql, undef, @binds) });
-    my @res   = map { {
-            loginid         => $_->[0],
-            token           => $_->[1],
-            trade_types     => $_->[2],
-            assets          => $_->[3],
-            min_trade_stake => $_->[4],
-            max_trade_stake => $_->[5]}
-    } @$res;
+    my $res = $self->db->dbic->run(fixup => sub { $_->selectall_arrayref($sql, {Slice => {}}, @binds) });
 
-    return \@res;
+    return $res;
 }
 
 no Moose;
