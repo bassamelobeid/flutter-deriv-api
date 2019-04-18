@@ -158,10 +158,13 @@ rpc copytrading_list => sub {
         operation   => 'replica'
     });
 
-    my $copiers = $copiers_data_mapper->get_copiers_tokens_all({trader_id => $current_client->loginid});
-    my @copiers = map { {loginid => $_->[0]} } @$copiers;
-    my $traders = $copiers_data_mapper->get_traders_all({copier_id => $current_client->loginid});
+    my $copiers_tokens = $copiers_data_mapper->get_copiers_tokens_all({trader_id => $current_client->loginid});
+    my @copiers = map { {loginid => $_->[0]} } @$copiers_tokens;
 
+    my $traders = [];
+    unless (scalar @copiers) {
+        $traders = $copiers_data_mapper->get_traders_all({copier_id => $current_client->loginid});
+    }
     return {
         copiers => \@copiers,
         traders => $traders
