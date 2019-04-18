@@ -52,7 +52,7 @@ unless ($pid) {
     Test::Warnings->import(':no_end_test');
 
     sleep 1;
-    for (1 .. 3) {
+    for (1 .. 4) {
         _create_tick(700 + $_, 'R_50');
         _create_tick(700 + $_, 'R_100');
         sleep 1;
@@ -102,6 +102,8 @@ subtest 'ticks' => sub {
 };
 
 subtest 'ticks_forget_one_sub' => sub {
+    
+    sleep 1;
     my $res = $t->await::forget_all({forget_all => 'ticks'});
 
     my $req1 = {
