@@ -215,7 +215,7 @@ sub get_traders_all {
     my ($self, $args) = @_;
 
     my $sql = q{
-        SELECT * FROM get_traders_all(?)
+        SELECT * FROM betonmarkets.get_traders_all(?)
     };
 
     my @binds = ($args->{copier_id});
