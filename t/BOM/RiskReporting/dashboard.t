@@ -3,6 +3,7 @@ use warnings;
 use Test::More;
 
 use BOM::RiskReporting::Dashboard;
+use BOM::Test::Data::Utility::UnitTestCollectorDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 use Date::Utility;
@@ -15,7 +16,6 @@ my %rates = map { $_ => 100 } ('BCH', 'EUR', 'BTC', 'GBP', 'LTC', 'ETH', 'AUD', 
 populate_exchange_rates(\%rates);
 
 my $dashboard = BOM::RiskReporting::Dashboard->new(
-    client => $test_client,
     start  => Date::Utility->new('2005-09-21 06:46:00'),
     end    => Date::Utility->new('2017-11-14 12:00:00'));
 

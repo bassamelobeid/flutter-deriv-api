@@ -69,12 +69,17 @@ table#client_edit td{
     </tr>
     <tr>
         <td class="label">&nbsp;</td>
-         <td>: <a href="[% request.url_for('backoffice/f_change_affiliates_token.cgi', {loginid => client.loginid , affiliate_token = client.myaffiliates_token }) %]">Edit Affiliate Token</a></td>
+         <td><a href="[% request.url_for('backoffice/f_change_affiliates_token.cgi', {loginid => client.loginid , affiliate_token = client.myaffiliates_token }) %]">Edit Affiliate Token</a></td>
     </tr>
     <tr>
         <td class="label">Affiliate Token</td>
-        <td>:[% client.myaffiliates_token %]
-            (This is the token <strong>currently registered</strong> with MyAffiliates.)</td>
+        <td>: 
+        [% IF client.myaffiliates_token %]
+            [% client.myaffiliates_token %] (This is the token <strong>currently registered</strong> with MyAffiliates.)
+        [% ELSE %]
+            None
+        [% END %]
+        </td>
     </tr>
 
     <tr>

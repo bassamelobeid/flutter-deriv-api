@@ -11,6 +11,7 @@ use Path::Tiny;
 
 use Email::Address::UseXS;
 use BOM::Test::Email qw/mailbox_clear mailbox_search/;
+use BOM::Test::Data::Utility::UnitTestCollectorDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -75,7 +76,7 @@ subtest 'realtime report generation' => sub {
     mailbox_clear();
 
     my $dm = BOM::Database::DataMapper::CollectorReporting->new({
-        broker_code => 'CR',
+        broker_code => 'FOG',
     });
 
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
