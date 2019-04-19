@@ -389,7 +389,7 @@ command dumpmem => sub {
     });
 };
 
-=head2
+=head2 divert
 
 Mark an app_id for diversion to a different server.
 
@@ -445,7 +445,7 @@ command divert => sub {
     return $f;
 };
 
-=head2
+=head2 block
 
 Block an app_id from connecting.
 
@@ -497,7 +497,7 @@ command block => sub {
     return $f;
 };
 
-=head2
+=head2 block_origin
 
 Block a domain from connecting.
 
@@ -540,6 +540,79 @@ command block_origin => sub {
                             $err,
                             redis => $origin,
                             $service
+                        );
+                    });
+            } else {
+                $f->done($rslt);
+            }
+        });
+    return $f;
+};
+
+=head2 logging
+
+To start/stop logging of certain RPC calls.
+
+=item * C<type> - Either of these: C<all>, C<method>, C<app_id> or C<loginid>
+
+=item * C<value> - Value to check against the type (omitted if type is C<all>).
+
+=item * C<action> - on/off
+
+Returns the logging configuration.
+
+=cut
+
+command logging => sub {
+    my ($self, $app, $type, $value, $action) = @_;
+    my $redis = ws_redis_master();
+    my $f     = Future::Mojo->new;
+    # all takes no value, only on/off
+    $action = $value if defined $type and $type eq 'all';
+    $redis->get(
+        'rpc::logging',
+        sub {
+            my ($redis, $err, $config) = @_;
+            if ($err) {
+                warn "Error reading RPC logging config from Redis: $err\n";
+                return $f->fail($err);
+            }
+            %Binary::WebSocketAPI::RPC_LOGGING = $json->decode(Encode::decode_utf8($config))->%* if $config;
+            my $rslt = {logging => \%Binary::WebSocketAPI::RPC_LOGGING};
+            if ($type) {
+                if ($type =~ /^(loginid|method|app_id)$/ and defined $value and defined $action) {
+                    if ($action eq 'on') {
+                        $Binary::WebSocketAPI::RPC_LOGGING{$type}{$value} = 1;
+                    } elsif ($action eq 'off') {
+                        delete $Binary::WebSocketAPI::RPC_LOGGING{$type}{$value};
+                        delete $Binary::WebSocketAPI::RPC_LOGGING{$type}
+                            unless $Binary::WebSocketAPI::RPC_LOGGING{$type}->%*;
+                    } else {
+                        return $f->fail("Action can be either on or off, passed: $action");
+                    }
+                } elsif ($type eq 'all') {
+                    if (defined $action and $action eq 'on') {
+                        $Binary::WebSocketAPI::RPC_LOGGING{$type} = 1;
+                    } else {
+                        delete $Binary::WebSocketAPI::RPC_LOGGING{$type};
+                    }
+                } else {
+                    return $f->fail("Usage: logging [type] [value] [action], passed: " . join(', ', $type, $value, $action));
+                }
+                $redis->set(
+                    'rpc::logging' => Encode::encode_utf8($json->encode(\%Binary::WebSocketAPI::RPC_LOGGING)),
+                    sub {
+                        my ($redis, $err) = @_;
+                        unless ($err) {
+                            $f->done($rslt);
+                            return;
+                        }
+                        warn "Redis error when setting RPC logging config - $err";
+                        $f->fail(
+                            $err,
+                            type   => $type,
+                            value  => $value,
+                            action => $action,
                         );
                     });
             } else {
