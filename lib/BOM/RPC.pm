@@ -143,7 +143,15 @@ sub wrap_rpc_sub {
                 if eval { $params->{client}->can('loginid') };
 
             my $error = "Exception when handling $method" . (defined $params->{client} ? " for $params->{client}." : '.');
-            $error .= " $_" if ($ENV{LOG_DETAILED_EXCEPTION});
+
+            if (   $ENV{LOG_DETAILED_EXCEPTION}
+                or exists $params->{logging}{all}
+                or exists $params->{logging}{method}{$method}
+                or exists $params->{logging}{loginid}{$params->{token_details}{loginid} // ''}
+                or exists $params->{logging}{app_id}{$params->{source} // ''})
+            {
+                $error .= " $_";
+            }
             warn $error;
 
             BOM::RPC::v3::Utility::create_error({
