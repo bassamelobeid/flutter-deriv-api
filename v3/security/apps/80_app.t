@@ -236,6 +236,7 @@ $t->finish_ok;
 
 ## cannot revoke without admin scope
 $t = build_wsapi_test();
+$t->send_ok({json => {ping => 1}})->message_ok;
 my $app_no_admin_id = $app_no_admin->{app_id};
 $oauth = BOM::Database::Model::OAuth->new;
 ok $oauth->confirm_scope($app_no_admin_id, $cr_1), 'confirm scope';
