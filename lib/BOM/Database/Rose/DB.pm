@@ -62,7 +62,7 @@ sub _handle_errors {
 
     ## For our self-generated errors, we do not need the full context in the error message
     if ($state =~ /^BI...$/) {
-        (my $clean_message = $dbh->errstr) =~ s/\nCONTEXT:.+//s;
+        (my $clean_message = $dbh->errstr) =~ s/\nCONTEXT:.+/\n\n/s;
         die [$state, $clean_message];
     }
 
