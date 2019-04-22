@@ -152,7 +152,7 @@ close proposal_open_contract stream if the contract sold
 sub _close_proposal_open_contract_stream {
     my ($self, $payload) = @_;
     my $c           = $self->c;
-    my $args        = $self->args;
+    my $request_storage = $self->request_storage;
     my $contract_id = $self->contract_id;
     my $uuid        = $self->type;
 
@@ -163,7 +163,7 @@ sub _close_proposal_open_contract_stream {
         $payload->{sell_time} = Date::Utility->new($payload->{sell_time})->epoch;
         $payload->{uuid}      = $uuid;
 
-        Binary::WebSocketAPI::v3::Wrapper::Pricer::send_proposal_open_contract_last_time($c, $payload, $contract_id, $args);
+        Binary::WebSocketAPI::v3::Wrapper::Pricer::send_proposal_open_contract_last_time($c, $payload, $contract_id, $request_storage);
     }
     return;
 }
