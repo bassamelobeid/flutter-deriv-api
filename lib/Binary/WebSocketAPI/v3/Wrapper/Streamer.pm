@@ -70,7 +70,12 @@ sub website_status {
                     my $uuid           = $shared_info->{broadcast_notifications}{$connection_id}->{uuid};
 
                     if ($req_storage->{args}->{subscribe}) {
-                        $uuid = _generate_uuid_string() unless $uuid;
+                        if ($uuid) {
+                            return $c->new_error('website_status', 'AlreadySubscribed',
+                                $c->l('You are already subscribed to [_1]', 'website_status'));
+                        } else {
+                            $uuid = _generate_uuid_string();
+                        }
 
                         $shared_info->{broadcast_notifications}{$connection_id}{'c'}            = $c;
                         $shared_info->{broadcast_notifications}{$connection_id}{echo}           = $args;
@@ -96,13 +101,13 @@ sub website_status {
                     return {
                         website_status => $website_status,
                         msg_type       => 'website_status',
+                        #websocket test framework sets ws status in redis with a passthrough and expects to read it back.
+                        +($current_state->{passthrough} ? (passthrough => $current_state->{passthrough}) : ()),
                         ($uuid ? (subscription => {id => $uuid}) : ()),
                     };
                 }
             });
     };
-
-    $args->{subscribe} = 1 unless exists $args->{subscribe};
 
     if ($args->{subscribe} && !$shared_info->{broadcast_notifications}{$c + 0}->{uuid}) {
         $redis->subscribe([$channel_name], $callback);
@@ -152,7 +157,9 @@ sub send_notification {
                 json => {
                     website_status => $website_status,
                     echo_req       => $client_shared->{echo},
-                    msg_type       => 'website_status',
+                    #websocket test framework publishes ws status with a passthrough and expects to read it back.
+                    ($message->{passthrough} ? (passthrough => $message->{passthrough}) : ()),
+                    msg_type => 'website_status',
                     ($uuid ? (subscription => {id => $uuid}) : ()),
                 }});
     }

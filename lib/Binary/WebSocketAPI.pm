@@ -51,6 +51,9 @@ our %DIVERT_APP_IDS;
 our %BLOCK_APP_IDS;
 our %BLOCK_ORIGINS;
 
+# Keys are RPC calls that we want RPC to log, controlled by redis too.
+our %RPC_LOGGING;
+
 my $json = JSON::MaybeXS->new;
 
 sub apply_usergroup {
@@ -553,8 +556,9 @@ sub startup {
                 \&Binary::WebSocketAPI::Hooks::introspection_before_forward,
             ],
             before_call => [
-                \&Binary::WebSocketAPI::Hooks::add_app_id,   \&Binary::WebSocketAPI::Hooks::add_brand,
-                \&Binary::WebSocketAPI::Hooks::start_timing, \&Binary::WebSocketAPI::Hooks::cleanup_stored_contract_ids
+                \&Binary::WebSocketAPI::Hooks::add_app_id, \&Binary::WebSocketAPI::Hooks::add_log_config,
+                \&Binary::WebSocketAPI::Hooks::add_brand,  \&Binary::WebSocketAPI::Hooks::start_timing,
+                \&Binary::WebSocketAPI::Hooks::cleanup_stored_contract_ids
             ],
             before_get_rpc_response  => [\&Binary::WebSocketAPI::Hooks::log_call_timing],
             after_got_rpc_response   => [\&Binary::WebSocketAPI::Hooks::log_call_timing_connection, \&Binary::WebSocketAPI::Hooks::error_check],
@@ -618,6 +622,17 @@ sub startup {
             return unless $origins;
             warn "Have blocked origins, applying: $origins\n";
             %BLOCK_ORIGINS = %{$json->decode(Encode::decode_utf8($origins))};
+        });
+    $redis->get(
+        'rpc::logging',
+        sub {
+            my ($redis, $err, $logging) = @_;
+            if ($err) {
+                warn "Error reading RPC logging config from Redis: $err\n";
+                return;
+            }
+            %RPC_LOGGING = $logging ? $json->decode(Encode::decode_utf8($logging))->%* : ();
+            warn "Enabled logging for RPC: " . join(', ', keys %RPC_LOGGING) . "\n" if %RPC_LOGGING;
         });
     return;
 

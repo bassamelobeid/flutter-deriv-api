@@ -340,6 +340,12 @@ sub add_app_id {
     return;
 }
 
+sub add_log_config {
+    my ($c, $req_storage) = @_;
+    $req_storage->{call_params}->{logging} = \%Binary::WebSocketAPI::RPC_LOGGING;
+    return;
+}
+
 sub add_brand {
     my ($c, $req_storage) = @_;
     $req_storage->{call_params}->{brand} = $c->stash('brand');
