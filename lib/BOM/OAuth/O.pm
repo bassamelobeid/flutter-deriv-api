@@ -30,7 +30,8 @@ use BOM::User::AuditLog;
 use BOM::Platform::Context qw(localize);
 use BOM::OAuth::Static qw(get_message_mapping);
 
-use constant APP_ALLOWED_TO_RESET_PASSWORD => qw(1 14473 15284);
+use constant APPS_ALLOWED_TO_RESET_PASSWORD => qw(1 14473 15284);
+use constant APPS_LOGINS_RESTRICTED         => qw(16063);           # mobytrader
 
 sub authorize {
     my $c = shift;
@@ -55,29 +56,25 @@ sub authorize {
     # load available networks for brand
     $c->stash('login_providers' => Brands->new(name => $brand_name)->login_providers);
 
-    my $client;
-
+    my ($client, $filtered_clients);
     # try to retrieve client from session
-
     if (    $c->req->method eq 'POST'
         and ($c->csrf_token eq (defang($c->param('csrf_token')) // ''))
         and defang($c->param('login')))
     {
-
-        $client = $c->_login($app) or return;
+        $filtered_clients = $c->_login($app) or return;
+        $client = $filtered_clients->[0];
         $c->session('_is_logined', 1);
         $c->session('_loginid',    $client->loginid);
-
     } elsif ($c->req->method eq 'POST' and $c->session('_is_logined')) {
-
         # Get loginid from Mojo Session
-        $client = $c->_get_client;
-
+        $filtered_clients = $c->_get_client($app_id);
+        $client           = $filtered_clients->[0];
     } elsif ($c->session('_oneall_user_id')) {
-
         # Get client from Oneall Social Login.
         my $oneall_user_id = $c->session('_oneall_user_id');
-        $client = $c->_login($app, $oneall_user_id) or return;
+        $filtered_clients = $c->_login($app, $oneall_user_id) or return;
+        $client = $filtered_clients->[0];
         $c->session('_is_logined', 1);
         $c->session('_loginid',    $client->loginid);
     }
@@ -147,13 +144,13 @@ sub authorize {
     # Check if user has enabled 2FA authentication and this is not a scope request
     if ($user->{is_totp_enabled} && !$is_verified) {
         return $c->render(
-            template   => $brand_name . '/totp',
-            layout     => $brand_name,
+            template       => $brand_name . '/totp',
+            layout         => $brand_name,
             website_domain => _website_domain($app->{id}),
-            app        => $app,
-            error      => $otp_error,
-            r          => $c->stash('request'),
-            csrf_token => $c->csrf_token,
+            app            => $app,
+            error          => $otp_error,
+            r              => $c->stash('request'),
+            csrf_token     => $c->csrf_token,
         );
     }
 
@@ -167,7 +164,7 @@ sub authorize {
     {
         if (defang($c->param('confirm_scopes'))) {
             # approval on all loginids
-            foreach my $c1 ($user->clients) {
+            foreach my $c1 (@$filtered_clients) {
                 $is_all_approved = $oauth_model->confirm_scope($app_id, $c1->loginid);
             }
         } elsif ($c->param('cancel_scopes')) {
@@ -187,16 +184,15 @@ sub authorize {
 
     # show scope confirms if not yet approved
     # do not show the scope confirm screen if APP ID is 1
-
     return $c->render(
-        template   => $brand_name . '/scope_confirms',
-        layout     => $brand_name,
+        template       => $brand_name . '/scope_confirms',
+        layout         => $brand_name,
         website_domain => _website_domain($app->{id}),
-        app        => $app,
-        client     => $client,
-        scopes     => \@{$app->{scopes}},
-        r          => $c->stash('request'),
-        csrf_token => $c->csrf_token,
+        app            => $app,
+        client         => $client,
+        scopes         => \@{$app->{scopes}},
+        r              => $c->stash('request'),
+        csrf_token     => $c->csrf_token,
     ) unless $is_all_approved;
 
     # setting up client ip
@@ -211,7 +207,7 @@ sub authorize {
     # create tokens for all loginids
     my $i = 1;
     my @params;
-    foreach my $c1 ($user->clients) {
+    foreach my $c1 (@$filtered_clients) {
         my ($access_token) = $oauth_model->store_access_token_only($app_id, $c1->loginid, $ua_fingerprint);
         push @params,
             (
@@ -222,7 +218,8 @@ sub authorize {
         $i++;
     }
 
-    push @params, (state => $state) if defined $state;
+    push @params, (state => $state)
+        if defined $state;
 
     my $uri = Mojo::URL->new($redirect_uri);
     $uri->query(\@params);
@@ -242,7 +239,7 @@ sub authorize {
 sub _login {
     my ($c, $app, $oneall_user_id) = @_;
 
-    my ($user, $last_login, $err, $client);
+    my ($user, $last_login, $err, $client, @filtered_clients);
 
     my $email      = lc defang($c->param('email'));
     my $password   = $c->param('password');
@@ -260,7 +257,6 @@ sub _login {
                 $err = "INVALID_USER";
                 last;
             }
-
         } else {
             if (not $email or not Email::Valid->address($email)) {
                 $err = "INVALID_EMAIL";
@@ -287,15 +283,24 @@ sub _login {
                 $err = "NO_SOCIAL_SIGNUP";
                 last;
             }
-
         }
 
         if (BOM::Config::Runtime->instance->app_config->system->suspend->all_logins) {
-
             $err = "TEMP_DISABLED";
             BOM::User::AuditLog::log('system suspend all login', $user->{email});
             last;
         }
+
+        @filtered_clients = _filter_user_clients_by_app_id(
+            app_id => $app->{id},
+            user   => $user
+            )
+            or do {
+            $err = 'UNAUTHORIZED_ACCESS';
+            ();
+            };
+
+        last unless @filtered_clients;
 
         # get last login before current login to get last record
         $last_login = $user->get_last_successful_login_history();
@@ -308,18 +313,15 @@ sub _login {
 
         last if ($err = $result->{error});
 
-        my @clients = $user->clients;
-        $client = $clients[0];
-
+        $client = $filtered_clients[0];
         if (grep { $client->loginid =~ /^$_/ } @{BOM::Config::Runtime->instance->app_config->system->suspend->logins}) {
             $err = "TEMP_DISABLED";
-        } elsif ($client->status->disabled) {
+        } elsif ($client->status->is_login_disallowed or $client->status->disabled) {
             $err = "DISABLED";
         }
     }
 
     if ($err) {
-
         _stats_inc_error($brand_name, $err);
 
         $c->render(
@@ -337,7 +339,6 @@ sub _login {
         );
 
         return;
-
     }
 
     my $r       = $c->stash('request');
@@ -412,7 +413,7 @@ sub _login {
 
     # reset csrf_token
     delete $c->session->{csrf_token};
-    return $client;
+    return \@filtered_clients;
 }
 
 # fetch social login feature status from settings
@@ -423,7 +424,6 @@ sub _is_social_login_suspended {
 # determine availability status of social login feature
 sub _is_social_login_available {
     my $c = shift;
-
     return (not _is_social_login_suspended() and scalar @{$c->stash('login_providers')} > 0);
 }
 
@@ -464,15 +464,21 @@ sub _login_env {
 }
 
 sub _get_client {
-    my $c = shift;
+    my $c      = shift;
+    my $app_id = shift;
 
     my $client = BOM::User::Client->new({
         loginid      => $c->session('_loginid'),
         db_operation => 'replica'
     });
-    return undef if $client->status->disabled;
+    return [] if $client->status->disabled;
 
-    return $client;
+    my @filtered_clients = _filter_user_clients_by_app_id(
+        app_id => $app_id,
+        user   => $client->user
+    );
+
+    return \@filtered_clients;
 }
 
 sub _bad_request {
@@ -515,7 +521,7 @@ sub _is_reset_password_allowed {
 
     die "Invalid application id." unless $app_id;
 
-    return first { $_ == $app_id } APP_ALLOWED_TO_RESET_PASSWORD;
+    return first { $_ == $app_id } APPS_ALLOWED_TO_RESET_PASSWORD;
 }
 
 sub _website_domain {
@@ -526,6 +532,20 @@ sub _website_domain {
     return "binary.me" if $app_id == 15284;
 
     return "binary.com";
+}
+
+# TODO: Remove this when we agree to use all accounts for Mobytrader
+# Currently for soft launch we will just restrict to CR USD
+# hence this quick way
+sub _filter_user_clients_by_app_id {
+    my (%args) = @_;
+
+    my $app_id = $args{app_id};
+    my $user   = $args{user};
+
+    return $user->clients unless first { $_ == $app_id } APPS_LOGINS_RESTRICTED;
+
+    return grep { $_ and $_->account and ($_->account->currency_code() // '') eq 'USD' } $user->clients_for_landing_company('costarica');
 }
 
 1;

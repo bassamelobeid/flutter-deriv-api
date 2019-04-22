@@ -41,8 +41,9 @@ my $config = {
         INVALID_PROVIDER    => "The email address you provided is already registered with your [_1] account.",
         'duplicate email' =>
             "Your provided email address is already in use by another Login ID. According to our terms and conditions, you may only register once through our site.",
-        'InvalidBrand' => "Brand is invalid.",
-        'invalid'      => "Sorry, an error occurred. Please try again later."
+        'InvalidBrand'        => "Brand is invalid.",
+        'invalid'             => "Sorry, an error occurred. Please try again later.",
+        'UNAUTHORIZED_ACCESS' => 'Sorry, your account is not authorized to access this application.',
     },
 };
 

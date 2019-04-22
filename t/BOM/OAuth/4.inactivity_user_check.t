@@ -30,7 +30,7 @@ my $secret_key = BOM::User::TOTP->generate_key();
 my $hash_pwd   = BOM::User::Password::hashpw($password);
 my $client_cr  = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
-    email => $email
+    email       => $email
 });
 $client_cr->save;
 my $cr_loginid = $client_cr->loginid;
@@ -76,7 +76,6 @@ $mocked_oauth->mock(
     });
 
 $t = callPost($t, $email, $password, $csrf_token);
-
 
 sub callPost {
     my ($t, $email, $password, $csrf_token, $lang) = @_;
