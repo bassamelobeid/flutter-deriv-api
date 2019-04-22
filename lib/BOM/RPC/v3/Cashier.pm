@@ -439,7 +439,6 @@ rpc "paymentagent_list",
     };
 
 rpc paymentagent_transfer => sub {
-
     my $params = shift;
 
     my $source    = $params->{source};
@@ -771,9 +770,9 @@ sub _get_available_payment_agents {
 }
 
 sub _is_pa_residence_exclusion {
-    my $client               = shift;
+    my $paymentagent_client  = shift;
     my $residence_exclusions = BOM::Config::Runtime->instance->app_config->payments->payment_agent_residence_check_exclusion;
-    return ($client && (grep { $_ eq $client->email } @$residence_exclusions)) ? 1 : 0;
+    return ($paymentagent_client && (grep { $_ eq $paymentagent_client->email } @$residence_exclusions)) ? 1 : 0;
 }
 
 rpc paymentagent_withdraw => sub {
@@ -841,25 +840,29 @@ rpc paymentagent_withdraw => sub {
 
     return $error_sub->(localize('You cannot withdraw funds to the same account.')) if $client_loginid eq $paymentagent_loginid;
 
-    my $authenticated_pa;
-    if ($client->residence) {
-        my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => $client->broker});
-        $authenticated_pa = $payment_agent_mapper->get_authenticated_payment_agents(target_country => $client->residence);
-    }
-
-    return $error_sub->(localize('The payment agent facility is currently not available in your country.'))
-        if (not $client->residence or scalar keys %{$authenticated_pa} == 0);
-
-    return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.')) if $client->status->disabled;
-
     my $paymentagent = BOM::User::Client::PaymentAgent->new({
             'loginid'    => $paymentagent_loginid,
             db_operation => 'replica'
         }) or return $error_sub->(localize('The payment agent account does not exist.'));
+    my $pa_client = $paymentagent->client;
+
+    my $is_residence_excluded = _is_pa_residence_exclusion($pa_client);
+
+    my $authenticated_pa;
+    if (not $is_residence_excluded) {
+        if ($client->residence) {
+            my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => $client->broker});
+            $authenticated_pa = $payment_agent_mapper->get_authenticated_payment_agents(target_country => $client->residence);
+        }
+
+        return $error_sub->(localize('The payment agent facility is currently not available in your country.'))
+            if (not $client->residence or scalar keys %{$authenticated_pa} == 0);
+    }
+
+    return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.')) if $client->status->disabled;
 
     return $error_sub->(localize('Payment agent withdrawals are not allowed for specified accounts.')) if ($client->broker ne $paymentagent->broker);
 
-    my $pa_client = $paymentagent->client;
     return $error_sub->(
         localize('You cannot perform this action, as [_1] is not default currency for your account [_2].', $currency, $client->loginid))
         if ($client->currency ne $currency or not $client->default_account);
@@ -904,7 +907,7 @@ rpc paymentagent_withdraw => sub {
         if $pa_client->documents_expired;
 
     return $error_sub->(localize('You cannot withdraw from a payment agent in a different country of residence.'))
-        if $client->residence ne $pa_client->residence and not _is_pa_residence_exclusion($pa_client);
+        if $client->residence ne $pa_client->residence and not $is_residence_excluded;
 
     if (is_payment_agents_suspended_in_country($client->residence)) {
         my $available_payment_agents_for_client =

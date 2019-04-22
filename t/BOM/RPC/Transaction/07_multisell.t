@@ -151,7 +151,7 @@ is($result->[2]->{code}, 'NoOpenPosition', 'contract not found code');
 is($result->[2]->{message_to_client}, 'This contract was not found among your open positions.', 'contract not found code');
 ok($result->[2]->{token}, 'contract not found token');
 is($result->[3]->{code}, 'PermissionDenied', 'permission denied code');
-is($result->[3]->{message_to_client},  'Permission denied, requires trade scope.', 'correct message for Permission Denied ');
+is($result->[3]->{message_to_client}, 'Permission denied, requires trade scope.', 'correct message for Permission Denied ');
 ok($result->[3]->{token}, 'permission denied token');
 is($result->[4]->{message_to_client}, 'Invalid token', 'correct message for Invalid Token');
 
