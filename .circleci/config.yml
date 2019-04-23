@@ -33,7 +33,7 @@ default: &6
   - auth:
       password: $DOCKERHUB_PASSWORD
       username: circle4regentmarkets
-    image: regentmarkets/debian-ci:stable_temp
+    image: regentmarkets/debian-ci:stable
     user: nobody
   shell: /bin/bash -leo pipefail
   working_directory: /home/git/regentmarkets/bom-events
