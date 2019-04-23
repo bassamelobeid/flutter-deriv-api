@@ -23,7 +23,7 @@ my $loop = IO::Async::Loop->new;
 $loop->add(
     my $tester = BOM::Test::WebsocketAPI->new(
         timeout            => 300,
-        max_response_delay => 1,                      # TODO: will be removed once long delays are fixed specially for website status call.
+        max_response_delay => 3,                      # TODO: will be removed once long delays are fixed specially for website status call.
         skip_sanity_checks => $skip_sanity_checks,    # TODO: Remove once the API started sending the right types.
     ),
 );
