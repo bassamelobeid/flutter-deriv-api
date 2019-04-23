@@ -151,9 +151,9 @@ close proposal_open_contract stream if the contract sold
 
 sub _close_proposal_open_contract_stream {
     my ($self, $payload) = @_;
-    my $c           = $self->c;
-    my $contract_id = $self->contract_id;
-    my $uuid        = $self->type;
+    my $c               = $self->c;
+    my $contract_id     = $self->contract_id;
+    my $uuid            = $self->type;
 
     if (    exists $payload->{financial_market_bet_id}
         and $contract_id
