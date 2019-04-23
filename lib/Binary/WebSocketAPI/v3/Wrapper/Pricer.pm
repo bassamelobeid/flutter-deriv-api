@@ -18,6 +18,7 @@ use Clone::PP qw(clone);
 use List::UtilsBy qw(bundle_by);
 use List::Util qw(min none);
 use Format::Util::Numbers qw/formatnumber roundcommon/;
+use Path::Tiny;
 
 use Future::Mojo          ();
 use Future::Utils         ();
@@ -50,6 +51,9 @@ my %pricer_cmd_handler = (
     price => \&process_ask_event,
     bid   => \&process_bid_event,
 );
+
+
+my $poc_schema; 
 
 sub proposal {
     my ($c, $req_storage) = @_;
@@ -685,11 +689,12 @@ sub process_bid_event {
         # not storing req_storage in channel cache because it contains validation code
         # same is for process_ask_event.
         $results->{$type}->{validation_error} = $c->l($results->{$type}->{validation_error}) if ($results->{$type}->{validation_error});
-        use Path::Tiny qw(path);
-        my $poc_recieve_schema = path('/home/git/regentmarkets/binary-websocket-api/config/v3/proposal_open_contract/receive.json');
-        my $schema             = decode_json($poc_recieve_schema->slurp);
+        if (!$poc_schema) {
+            my $poc_recieve_schema = path('/home/git/regentmarkets/binary-websocket-api/config/v3/proposal_open_contract/receive.json');
+            $poc_schema             = decode_json($poc_recieve_schema->slurp);
+        }
         my $req_storage        = {
-            schema_receive => $schema,
+            schema_receive => $poc_schema,
             args           => $stash_data->{args}};
 
         $c->send({json => $results}, $req_storage);
