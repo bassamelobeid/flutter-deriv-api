@@ -73,14 +73,6 @@ has account_id => (
     required => 1,
 );
 
-=head2 request_storage
-
-Stores information from request like JSON validation files. 
-
-=cut 
-request_storage => (
-    is => 'ro'
-);
 
 sub subscription_manager {
     return Binary::WebSocketAPI::v3::SubscriptionManager->shared_redis_manager();
