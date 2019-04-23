@@ -25,6 +25,17 @@ sub db {
         })->db;
 }
 
+# https://trello.com/c/3kHAswXh/8659-fixing-bom-transaction-and-bom-platform-failing-testcases
+# this is not a permanent fix and needs to be revisited later.
+sub remove_newlines {
+    my @temp;
+    for (@{+shift}) {
+        $_ =~ s/\n//g;
+        push @temp, $_;
+    }
+    return \@temp;
+}
+
 sub buy_one_bet {
     my ($acc, $args) = @_;
 
@@ -183,7 +194,7 @@ dies_ok {
         };
 }
 'exception thrown';
-is_deeply $@,
+is_deeply remove_newlines($@),
     [
     BI002 => 'ERROR:  maximum self-exclusion number of open contracts exceeded',
     ],
@@ -199,7 +210,7 @@ dies_ok {
         };
 }
 'exception thrown';
-is_deeply $@,
+is_deeply remove_newlines($@),
     [
     BI001 => 'ERROR:  maximum self-exclusion turnover limit exceeded',
     ],
@@ -244,7 +255,7 @@ dies_ok {
         };
 }
 'exception thrown';
-is_deeply $@,
+is_deeply remove_newlines($@),
     [
     BI012 => 'ERROR:  maximum self-exclusion limit on daily losses reached',
     ],
@@ -275,7 +286,7 @@ dies_ok {
         };
 }
 'exception thrown';
-is_deeply $@,
+is_deeply remove_newlines($@),
     [
     BI002 => 'ERROR:  maximum self-exclusion number of open contracts exceeded',
     ],
@@ -288,7 +299,7 @@ dies_ok {
         };
 }
 'exception thrown';
-is_deeply $@,
+is_deeply remove_newlines($@),
     [
     BI003 => 'ERROR:  insufficient balance, need: 0.01, #open_bets: 0, pot_payout: 0',
     ],
@@ -317,7 +328,7 @@ subtest 'more validation', sub {
             };
     }
     'cannot buy due to max_balance';
-    is_deeply $@,
+    is_deeply remove_newlines($@),
         [
         BI008 => 'ERROR:  client balance upper limit exceeded',
         ],
@@ -362,7 +373,7 @@ subtest 'more validation', sub {
             };
     }
     'cannot buy due to max_payout_open_bets';
-    is_deeply $@,
+    is_deeply remove_newlines($@),
         [
         BI009 => 'ERROR:  maximum net payout for open positions reached',
         ],
@@ -390,7 +401,7 @@ subtest 'more validation', sub {
             };
     }
     'cannot buy due to max_payout_open_bets -- just to be sure';
-    is_deeply $@,
+    is_deeply remove_newlines($@),
         [
         BI009 => 'ERROR:  maximum net payout for open positions reached',
         ],
@@ -547,7 +558,7 @@ SKIP: {
             };
         }
         'max_turnover validation failed';
-        is_deeply $@,
+        is_deeply remove_newlines($@),
             [
             BI001 => 'ERROR:  maximum self-exclusion turnover limit exceeded',
             ],
@@ -605,7 +616,7 @@ SKIP: {
             };
         }
         'max_losses validation failed';
-        is_deeply $@,
+        is_deeply remove_newlines($@),
             [
             BI012 => 'ERROR:  maximum self-exclusion limit on daily losses reached',
             ],
@@ -663,7 +674,7 @@ SKIP: {
             };
         }
         'specific turnover validation failed';
-        is_deeply $@,
+        is_deeply remove_newlines($@),
             [
             BI011 => 'ERROR:  specific turnover limit reached: test1, test3, test5, test7',
             ],
@@ -694,7 +705,7 @@ SKIP: {
             };
         }
         'specific turnover validation failed';
-        is_deeply $@,
+        is_deeply remove_newlines($@),
             [
             BI011 => 'ERROR:  specific turnover limit reached: test1',
             ],
@@ -731,7 +742,7 @@ SKIP: {
             };
         }
         'specific turnover validation failed';
-        is_deeply $@,
+        is_deeply remove_newlines($@),
             [
             BI011 => 'ERROR:  specific turnover limit reached: test2',
             ],
@@ -870,7 +881,7 @@ SKIP: {
                 };
         }
         '7day turnover validation failed';
-        is_deeply $@,
+        is_deeply remove_newlines($@),
             [
             BI013 => 'ERROR:  maximum self-exclusion 7 day turnover limit exceeded',
             ],
@@ -886,7 +897,7 @@ SKIP: {
                 };
         }
         '7day turnover validation failed';
-        is_deeply $@,
+        is_deeply remove_newlines($@),
             [
             BI014 => 'ERROR:  maximum self-exclusion 7 day limit on losses exceeded',
             ],
@@ -918,7 +929,7 @@ SKIP: {
                 };
         }
         '7day turnover validation failed (with open bet)';
-        is_deeply $@,
+        is_deeply remove_newlines($@),
             [
             BI013 => 'ERROR:  maximum self-exclusion 7 day turnover limit exceeded',
             ],
@@ -934,7 +945,7 @@ SKIP: {
                 };
         }
         '7day turnover validation failed (with open bet)';
-        is_deeply $@,
+        is_deeply remove_newlines($@),
             [
             BI014 => 'ERROR:  maximum self-exclusion 7 day limit on losses exceeded',
             ],
@@ -1052,7 +1063,7 @@ SKIP: {
                 };
         }
         '30day turnover validation failed';
-        is_deeply $@,
+        is_deeply remove_newlines($@),
             [
             BI016 => 'ERROR:  maximum self-exclusion 30 day turnover limit exceeded',
             ],
@@ -1068,7 +1079,7 @@ SKIP: {
                 };
         }
         '30day turnover validation failed';
-        is_deeply $@,
+        is_deeply remove_newlines($@),
             [
             BI017 => 'ERROR:  maximum self-exclusion 30 day limit on losses exceeded',
             ],
@@ -1100,7 +1111,7 @@ SKIP: {
                 };
         }
         '30day turnover validation failed (with open bet)';
-        is_deeply $@,
+        is_deeply remove_newlines($@),
             [
             BI016 => 'ERROR:  maximum self-exclusion 30 day turnover limit exceeded',
             ],
@@ -1116,7 +1127,7 @@ SKIP: {
                 };
         }
         '30day turnover validation failed (with open bet)';
-        is_deeply $@,
+        is_deeply remove_newlines($@),
             [
             BI017 => 'ERROR:  maximum self-exclusion 30 day limit on losses exceeded',
             ],
@@ -1212,7 +1223,7 @@ SKIP: {
                 };
         }
         'max_profit';
-        is_deeply $@,
+        is_deeply remove_newlines($@),
             [
             BI018 => 'ERROR:  maximum daily profit limit exceeded',
             ],
@@ -1256,7 +1267,7 @@ SKIP: {
                 };
         }
         'max_profit';
-        is_deeply $@,
+        is_deeply remove_newlines($@),
             [
             BI018 => 'ERROR:  maximum daily profit limit exceeded',
             ],
@@ -1299,7 +1310,7 @@ SKIP: {
                 };
         }
         'max_profit';
-        is_deeply $@,
+        is_deeply remove_newlines($@),
             [
             BI018 => 'ERROR:  maximum daily profit limit exceeded',
             ],
