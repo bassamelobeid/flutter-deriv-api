@@ -152,7 +152,6 @@ close proposal_open_contract stream if the contract sold
 sub _close_proposal_open_contract_stream {
     my ($self, $payload) = @_;
     my $c           = $self->c;
-    my $args        = $self->args;
     my $contract_id = $self->contract_id;
     my $uuid        = $self->type;
 
@@ -163,7 +162,7 @@ sub _close_proposal_open_contract_stream {
         $payload->{sell_time} = Date::Utility->new($payload->{sell_time})->epoch;
         $payload->{uuid}      = $uuid;
 
-        Binary::WebSocketAPI::v3::Wrapper::Pricer::send_proposal_open_contract_last_time($c, $payload, $contract_id, $args);
+       Binary::WebSocketAPI::v3::Wrapper::Pricer::send_proposal_open_contract_last_time($c, $payload, $contract_id, $self->request_storage);
     }
     return;
 }
@@ -309,10 +308,10 @@ sub _create_poc_stream {
                     sell_price      => undef,
                     sell_time       => undef,
                 });
-
+            $self->req_storage->{args} = $poc_args;
             # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
             Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'subscribe', $payload->{account_id},
-                $uuid, $poc_args, $payload->{financial_market_bet_id})
+                $uuid, $self->req_storage, $payload->{financial_market_bet_id})
                 if $uuid;
             return Future->done;
         });

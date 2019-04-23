@@ -14,6 +14,7 @@ use JSON::MaybeXS;
 use Scalar::Util qw (looks_like_number refaddr weaken);
 use List::Util qw(any);
 use Format::Util::Numbers qw(formatnumber);
+use Path::Tiny; 
 
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::System;
@@ -22,6 +23,12 @@ use Binary::WebSocketAPI::v3::Subscription::Transaction;
 use Binary::WebSocketAPI::v3::Subscription::Feed;
 
 my $json = JSON::MaybeXS->new;
+
+
+#tick_history if subscribed returns 1 "tick_history" response then starts returning "ticks"
+#this global variable stores the tick return json schema
+my $tick_receive_schema;
+
 
 sub get_status_msg {
     my ($c, $status_code) = @_;
@@ -323,15 +330,20 @@ sub ticks_history {
 
                     my $after_got_rpc_response_hook = delete($req_storage->{after_got_rpc_response}) || [];
                     $_->($c, $req_storage, $rpc_response) for @$after_got_rpc_response_hook;
-                    return {
+                    $c->send ({
                         msg_type => $rpc_response->{type},
-                        %{$rpc_response->{data}}};
+                        %{$rpc_response->{data}}}, $req_storage);
                 }
             });
     };
 
     # subscribe first with flag of cache_only passed as 1 to indicate to cache the feed data
     if ($args->{subscribe}) {
+        if (!$tick_receive_schema) { 
+           my $schema_file = path('/home/git/regentmarkets/binary-websocket-api/config/v3/ticks/receive.json');
+           $tick_receive_schema = $json->decode($schema_file->slurp);
+       }
+       $req_storage->{schema_receive} = $tick_receive_schema;
         if (not _feed_channel_subscribe($c, $args->{ticks_history}, $publish, $req_storage, $callback, 1)) {
             return $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
         }

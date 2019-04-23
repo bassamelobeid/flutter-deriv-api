@@ -354,9 +354,9 @@
                     "description" : "[Only for lookback trades] Multiplier applies when calculating the final payoff for each type of lookback. e.g. (Exit spot – Lowest historical price) * multiplier = Payout",
                     "type" : "number"
                 },
-                "echo_req" : {
-                    "title" : "Echo request",
-                    "description" : "Echo of the request made"
+                "profit_percentage" : {
+                    "description" : "Profit in percentage.",
+                    "type" : "number"
                 },
                 "reset_time" : {
                     "description" : "[Only for reset trades] The epoch time of a barrier reset. Example: 1446629000",
@@ -369,9 +369,9 @@
             "type" : "integer",
             "description" : "Optional field send in request to map to response, present only when request contains req_id"
         },
-        "profit_percentage" : {
-            "description" : "Profit in percentage.",
-            "type" : "number"
+        "echo_req" : {
+            "title" : "Echo request",
+            "description" : "Echo of the request made"
         },
         "subscription" : {
             "title" : "Subscription information",

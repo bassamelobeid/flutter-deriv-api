@@ -369,7 +369,7 @@ sub proposal_open_contract {
 
     if ($args->{subscribe} && !$args->{contract_id}) {
         ### we can catch buy only if subscribed on transaction stream
-        Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'subscribe', $c->stash('account_id'), 'poc', $args)
+        Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'subscribe', $c->stash('account_id'), 'poc', $req_storage)
             if $c->stash('account_id');
         ### we need stream only in subscribed workers
         # we should not overwrite the previous subscriber.
@@ -488,7 +488,7 @@ sub _process_proposal_open_contract_response {
                     # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
                     Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel(
                         $c, 'subscribe', delete $contract->{account_id},    # should not go to client
-                        $uuid, $args, $contract->{contract_id});
+                        $uuid, $req_storage, $contract->{contract_id});
                 }
             }
             my $result = {$uuid ? (id => $uuid) : (), %{$contract}};
@@ -685,8 +685,12 @@ sub process_bid_event {
         # not storing req_storage in channel cache because it contains validation code
         # same is for process_ask_event.
         $results->{$type}->{validation_error} = $c->l($results->{$type}->{validation_error}) if ($results->{$type}->{validation_error});
+        use Path::Tiny qw(path);
+        my $poc_recieve_schema = path('/home/git/regentmarkets/binary-websocket-api/config/v3/proposal_open_contract/receive.json');
+        my $schema = decode_json($poc_recieve_schema->slurp);
+        my $req_storage = {schema_receive => $schema, args =>$stash_data->{args}};
 
-        $c->send({json => $results}, {args => $stash_data->{args}});
+        $c->send({json => $results}, $req_storage);
     }
     return;
 }
@@ -904,7 +908,8 @@ sub _price_stream_results_adjustment {
 # we're finishing POC stream on contract is sold (called from _close_proposal_open_contract_stream in Streamer.pm)
 #
 sub send_proposal_open_contract_last_time {
-    my ($c, $args, $contract_id, $stash_data) = @_;
+    my ($c, $args, $contract_id, $req_storage) = @_;
+    my $stash_data = $req_storage->{args};
     Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $args->{uuid});
     # we don't want to end up with new subscribtion
     delete $stash_data->{subscribe} if exists $stash_data->{subscribe};
@@ -912,11 +917,12 @@ sub send_proposal_open_contract_last_time {
     $c->stash('proposal_open_contracts_subscribed' => 0)
         if $c->stash('proposal_open_contracts_subscribed')
         && ($c->stash('proposal_open_contracts_subscribed')->{req_id} // 0) == ($stash_data->{req_id} // 0);
-
+    
     $c->call_rpc({
-            args        => $stash_data,
+            args        => $req_storage->{args},
             method      => 'proposal_open_contract',
             msg_type    => 'proposal_open_contract',
+            schema_receive => $req_storage->{schema_receive},
             call_params => {
                 token       => $c->stash('token'),
                 contract_id => $contract_id

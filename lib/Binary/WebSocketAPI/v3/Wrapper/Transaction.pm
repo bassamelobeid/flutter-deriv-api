@@ -56,7 +56,8 @@ sub buy_set_poc_subscription_id {
 }
 
 sub _subscribe_to_contract {
-    my ($c, $contract_details, $req_args) = @_;
+    my ($c, $contract_details, $req_storage) = @_;
+    my $req_args = $req_storage->{call_params}->{args};
 
     my $contract = {map { $_ => $contract_details->{$_} }
             qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode)};
@@ -74,7 +75,7 @@ sub _subscribe_to_contract {
     # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
     Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel(
         $c, 'subscribe', $account_id,    # should not go to client
-        $uuid, $args, $contract_id
+        $uuid, $req_storage, $contract_id
     );
 
     return $uuid;
