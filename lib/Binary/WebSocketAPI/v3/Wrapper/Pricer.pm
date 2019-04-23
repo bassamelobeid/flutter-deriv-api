@@ -687,8 +687,10 @@ sub process_bid_event {
         $results->{$type}->{validation_error} = $c->l($results->{$type}->{validation_error}) if ($results->{$type}->{validation_error});
         use Path::Tiny qw(path);
         my $poc_recieve_schema = path('/home/git/regentmarkets/binary-websocket-api/config/v3/proposal_open_contract/receive.json');
-        my $schema = decode_json($poc_recieve_schema->slurp);
-        my $req_storage = {schema_receive => $schema, args =>$stash_data->{args}};
+        my $schema             = decode_json($poc_recieve_schema->slurp);
+        my $req_storage        = {
+            schema_receive => $schema,
+            args           => $stash_data->{args}};
 
         $c->send({json => $results}, $req_storage);
     }
@@ -917,13 +919,13 @@ sub send_proposal_open_contract_last_time {
     $c->stash('proposal_open_contracts_subscribed' => 0)
         if $c->stash('proposal_open_contracts_subscribed')
         && ($c->stash('proposal_open_contracts_subscribed')->{req_id} // 0) == ($stash_data->{req_id} // 0);
-    
+
     $c->call_rpc({
-            args        => $req_storage->{args},
-            method      => 'proposal_open_contract',
-            msg_type    => 'proposal_open_contract',
+            args           => $req_storage->{args},
+            method         => 'proposal_open_contract',
+            msg_type       => 'proposal_open_contract',
             schema_receive => $req_storage->{schema_receive},
-            call_params => {
+            call_params    => {
                 token       => $c->stash('token'),
                 contract_id => $contract_id
             },

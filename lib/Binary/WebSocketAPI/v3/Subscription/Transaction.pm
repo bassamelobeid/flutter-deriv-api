@@ -73,6 +73,15 @@ has account_id => (
     required => 1,
 );
 
+=head2 request_storage
+
+Stores information from request like JSON validation files. 
+
+=cut 
+request_storage => (
+    is => 'ro'
+);
+
 sub subscription_manager {
     return Binary::WebSocketAPI::v3::SubscriptionManager->shared_redis_manager();
 }
@@ -151,9 +160,9 @@ close proposal_open_contract stream if the contract sold
 
 sub _close_proposal_open_contract_stream {
     my ($self, $payload) = @_;
-    my $c               = $self->c;
-    my $contract_id     = $self->contract_id;
-    my $uuid            = $self->type;
+    my $c           = $self->c;
+    my $contract_id = $self->contract_id;
+    my $uuid        = $self->type;
 
     if (    exists $payload->{financial_market_bet_id}
         and $contract_id
@@ -162,7 +171,7 @@ sub _close_proposal_open_contract_stream {
         $payload->{sell_time} = Date::Utility->new($payload->{sell_time})->epoch;
         $payload->{uuid}      = $uuid;
 
-       Binary::WebSocketAPI::v3::Wrapper::Pricer::send_proposal_open_contract_last_time($c, $payload, $contract_id, $self->request_storage);
+        Binary::WebSocketAPI::v3::Wrapper::Pricer::send_proposal_open_contract_last_time($c, $payload, $contract_id, $self->request_storage);
     }
     return;
 }
@@ -308,10 +317,10 @@ sub _create_poc_stream {
                     sell_price      => undef,
                     sell_time       => undef,
                 });
-            $self->req_storage->{args} = $poc_args;
+            $self->request_storage->{args} = $poc_args;
             # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
             Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'subscribe', $payload->{account_id},
-                $uuid, $self->req_storage, $payload->{financial_market_bet_id})
+                $uuid, $self->request_storage, $payload->{financial_market_bet_id})
                 if $uuid;
             return Future->done;
         });
