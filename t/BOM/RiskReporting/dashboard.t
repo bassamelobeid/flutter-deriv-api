@@ -16,8 +16,8 @@ my %rates = map { $_ => 100 } ('BCH', 'EUR', 'BTC', 'GBP', 'LTC', 'ETH', 'AUD', 
 populate_exchange_rates(\%rates);
 
 my $dashboard = BOM::RiskReporting::Dashboard->new(
-    start  => Date::Utility->new('2005-09-21 06:46:00'),
-    end    => Date::Utility->new('2017-11-14 12:00:00'));
+    start => Date::Utility->new('2005-09-21 06:46:00'),
+    end   => Date::Utility->new('2017-11-14 12:00:00'));
 
 my $report = $dashboard->_payment_and_profit_report;
 is_deeply([sort keys %$report], ['big_deposits', 'big_losers', 'big_winners', 'big_withdrawals', 'watched'], "keys correct");

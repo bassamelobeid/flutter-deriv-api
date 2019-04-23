@@ -54,13 +54,13 @@ BOM::Backoffice::Request::template()->process(
 if ($input->{EditAffiliatesToken}) {
 
     #Error checking
-    code_exit_BO(_get_display_error_message("ERROR: Please provide client loginid"))         unless $input->{ClientLoginid};
-    code_exit_BO(_get_display_error_message("ERROR: Please provide client affiliate token")) unless $input->{affiliate_token};
-    code_exit_BO(_get_display_error_message("ERROR: Please provide a dual control code"))    unless $input->{DCcode};
-    code_exit_BO(_get_display_error_message("ERROR: You must check the verification box"))   unless $input->{verification};
+    code_exit_BO(_get_display_error_message("ERROR: Please provide client loginid"))       unless $input->{ClientLoginid};
+    code_exit_BO(_get_display_error_message("ERROR: Please provide a dual control code"))  unless $input->{DCcode};
+    code_exit_BO(_get_display_error_message("ERROR: You must check the verification box")) unless $input->{verification};
 
     code_exit_BO(_get_display_error_message("ERROR: Invalid operation")) unless $input->{EditAffiliatesToken} eq 'Edit affiliates token';
-    code_exit_BO(_get_display_error_message("ERROR: Invalid affiliate_token provided!")) unless $affiliate_token =~ m/^[a-zA-Z0-9-_]+$/;
+    code_exit_BO(_get_display_error_message("ERROR: Invalid affiliate_token provided!"))
+        if $affiliate_token and $affiliate_token !~ m/^[a-zA-Z0-9-_]+$/;
 
     my $ClientLoginid  = trim(uc $input->{ClientLoginid});
     my $well_formatted = check_client_login_id($ClientLoginid);
@@ -94,7 +94,7 @@ if ($input->{EditAffiliatesToken}) {
         next if ($cli->loginid =~ /^MT\d+$/);
 
         # Update myaffiliates_token
-        $cli->myaffiliates_token($input->{'affiliate_token'});
+        $cli->myaffiliates_token($affiliate_token);
 
         if (not $cli->save) {
             code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $ClientLoginid</p></p>");
