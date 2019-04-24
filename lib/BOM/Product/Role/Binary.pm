@@ -85,7 +85,16 @@ sub _build_payout {
         $payout = $self->price_calculator->payout;
     }
     catch {
-        if ($_ =~ /Illegal division by zero/ and defined $self->supplied_barrier and $self->supplied_barrier == 0) {
+        if (
+            $_ =~ /Illegal division by zero/
+            and (
+                (defined $self->supplied_barrier and looks_like_number($self->supplied_barrier) and $self->supplied_barrier == 0)
+                or (    defined $self->supplied_high_barrier
+                    and defined $self->supplied_low_barrier
+                    and looks_like_number($self->supplied_high_barrier)
+                    and looks_like_number($self->supplied_low_barrier)
+                    and ($self->supplied_high_barrier == 0 or $self->supplied_low_barrier == 0))))
+        {
             $payout = 0;
         }
 
