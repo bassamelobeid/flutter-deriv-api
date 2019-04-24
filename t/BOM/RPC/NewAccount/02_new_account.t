@@ -24,6 +24,13 @@ use BOM::Test::Helper::FinancialAssessment;
 
 use utf8;
 
+my %emitted;
+my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_events->mock('emit', sub { 
+    my ($type, $data) = @_;
+    $emitted{$type.'_'.$data->{loginid}}++;
+});
+
 my $email = 'test' . rand(999) . '@binary.com';
 my ($t, $rpc_ct);
 my ($method, $params, $client_details);
@@ -112,6 +119,8 @@ subtest $method => sub {
         @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
     is $resp_loginid, $new_loginid, 'correct oauth token';
 
+    ok $emitted{"register_details_$resp_loginid"}, "register_details event emitted";
+
     subtest 'European client - de' => sub {
         my $vr_email = 'new_email' . rand(999) . '@binary.com';
         $params->{args}->{verification_code} = BOM::Platform::Token->new(
@@ -124,10 +133,13 @@ subtest $method => sub {
             ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
             ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
 
+        ok $emitted{'register_details_'.$rpc_ct->result->{client_id}}, "register_details event emitted";
+
         $user = BOM::User->new(
             email => $vr_email,
         );
         is $user->{email_consent}, 0, 'email consent for new account is 0 for european clients - de';
+        
     };
 
     subtest 'European client - gb' => sub {
@@ -141,6 +153,8 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
             ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
             ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
+
+        ok $emitted{'register_details_'.$rpc_ct->result->{client_id}}, "register_details event emitted";
 
         $user = BOM::User->new(
             email => $vr_email,
@@ -238,6 +252,8 @@ subtest $method => sub {
 
         my $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^CR\d+$/, 'new CR loginid';
+
+        ok $emitted{"register_details_$new_loginid"}, "register_details event emitted";
 
         my ($resp_loginid, $t, $uaf) =
             @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
@@ -536,6 +552,8 @@ subtest $method => sub {
         my ($resp_loginid, $t, $uaf) =
             @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
         is $resp_loginid, $new_loginid, 'correct oauth token';
+
+        ok $emitted{"register_details_$new_loginid"}, "register_details event emitted";
     };
 
     my $client_mlt;
@@ -662,6 +680,9 @@ subtest $method => sub {
         is($result->{tax_residence}, 'de,nl', 'MF client has tax residence set');
         $result = $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token_mf})->result;
         isnt(keys %$result, 0, 'MF client has financial assessment set');
+        
+        ok $emitted{"register_details_$new_loginid"}, "register_details event emitted";
+        
     };
 
     subtest 'Create a new account maltainvest from a virtual account' => sub {
@@ -708,6 +729,8 @@ subtest $method => sub {
 
         my $result = $rpc_ct->call_ok($method, $params)->result;
         ok $result->{client_id}, "Create an MF account after have a MX account";
+        
+        ok $emitted{'register_details_'.$result->{client_id}}, "register_details event emitted";        
 
         #create a virtual de client
         $email = 'virtual_de_email' . rand(999) . '@binary.com';
@@ -736,6 +759,8 @@ subtest $method => sub {
 
         $result = $rpc_ct->call_ok($method, $params)->result;
         ok $result->{client_id}, "Germany users can create MF account from the virtual account";
+        
+        ok $emitted{'register_details_'.$result->{client_id}}, "register_details event emitted";
     };
 };
 
