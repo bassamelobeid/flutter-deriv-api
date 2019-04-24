@@ -81,9 +81,13 @@ rpc "new_account_virtual",
     my $client  = $acc->{client};
     my $account = $client->default_account;
     my $user    = $acc->{user};
-    
-    BOM::Platform::Event::Emitter::emit( 'register_details', { loginid => $client->loginid, language => $params->{language} });
-    
+
+    BOM::Platform::Event::Emitter::emit(
+        'register_details',
+        {
+            loginid  => $client->loginid,
+            language => $params->{language}});
+
     $user->add_login_history(
         action      => 'login',
         environment => BOM::RPC::v3::Utility::login_env($params),
@@ -309,7 +313,11 @@ rpc new_account_real => sub {
         return $currency_set_result if $currency_set_result->{error};
     }
 
-    BOM::Platform::Event::Emitter::emit( 'register_details', { loginid => $new_client->loginid, language => $params->{language} });
+    BOM::Platform::Event::Emitter::emit(
+        'register_details',
+        {
+            loginid  => $new_client->loginid,
+            language => $params->{language}});
 
     $user->add_login_history(
         action      => 'login',
@@ -423,7 +431,11 @@ rpc new_account_maltainvest => sub {
     return $error if $error;
 
     # This is here for consistency, although it will currently do nothing because email_consent default is false for MF
-    BOM::Platform::Event::Emitter::emit( 'register_details', { loginid => $new_client->loginid, language => $params->{language} });
+    BOM::Platform::Event::Emitter::emit(
+        'register_details',
+        {
+            loginid  => $new_client->loginid,
+            language => $params->{language}});
 
     $user->add_login_history(
         action      => 'login',
