@@ -36,7 +36,15 @@ sub register_details {
 
     return undef unless $client;
 
-    return _connect_and_update_customerio_record(_get_details_structure($client, $data));
+    return undef unless $client->user->email_consent;
+
+    return _connect_and_update_customerio_record(
+        loginid => $client->loginid,
+        details => _get_details_structure(
+            client          => $client,
+            customerio_data => $data,
+            new_account     => 1
+        ));
 }
 
 =head2 email_consent
@@ -143,6 +151,7 @@ sub _get_details_structure {
         country_code => $client->residence // '',
         country => $client->residence ? Locale::Country::code2country($client->residence) : '',
         is_region_eu => $client->is_region_eu,
+        new_account  => $details{new_account} ? 1 : 0,
 
         # remove these before passing
         loginid => $client->loginid,
