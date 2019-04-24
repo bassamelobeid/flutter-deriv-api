@@ -47,8 +47,7 @@
         </tr>
         <tr><td>Exchange symbol</td><td> : <INPUT type="text" name="symbol"></td><td>(e.g. NYSE TSE)</td></tr>
         <tr><td>Date</td><td> : <INPUT type="text" name="date"></td><td>(e.g. 12-Dec-2014)</td></tr>
-        <tr><td>Time</td><td> : <INPUT type="text" name="time"></td><td>(e.g. 2h30m)</td></tr>
-        <tr><td>Description</td><td> : <INPUT type="text" name="description"></td><td>(e.g. New Year's Eve)</td></tr>
+        <tr><td>Time</td><td> : <INPUT type="text" name="time"></td><td>(e.g. XXhYYm format, example 12h30m)</td></tr>
         <tr><td></td><td><INPUT type="submit" name='save' value="save"></td></tr>
         <tr><td></td><td><INPUT type="submit" name='delete' value="delete"></td></tr>
     </table>

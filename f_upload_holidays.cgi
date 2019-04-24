@@ -58,13 +58,17 @@ if ($input{upload_excel}) {
 } elsif ($input{manual_partial_trading_upload}) {
     $calendar_name = 'partial_trading';
     $calendar_type = 'manual_' . $calendar_type;
-    my $symbol_str  = $input{symbol};
-    my @symbols     = split ' ', $symbol_str;
-    my $date        = $input{date};
-    my $time        = $input{time};
-    my $description = $input{description};
+    my $symbol_str = $input{symbol};
+    my @symbols    = split ' ', $symbol_str;
+    my $date       = $input{date};
+    my $time       = $input{time};
+
     # sanity check
-    die "Incomplete entry\n" unless ($symbol_str and $date and $time and $description);
+    die "Incomplete entry\n" unless ($symbol_str and $date and $time);
+
+    my $time_regex = qr/^(?:(?:[0-1][0-9])|(?:[2][0-3]))h(?:[0-5][0-9])m$/;
+    die "Invalid time format" if $time !~ $time_regex;
+
     my $existing = {};
     $existing = BOM::Config::Chronicle::get_chronicle_reader()->get($calendar_name, $calendar_type) unless $input{delete};
     my $date_key = Date::Utility->new($date)->truncate_to_day->epoch;
