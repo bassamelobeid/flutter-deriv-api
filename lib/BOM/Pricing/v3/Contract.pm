@@ -266,12 +266,11 @@ sub handle_batch_contract {
     return $offerings_error if $offerings_error && !$ask_prices;
 
     for my $contract_type (sort keys %$ask_prices) {
-        for my $barrier (@{$p2->{barriers}}) {
+        for my $contract (grep { $_->{bet_type} eq $contract_type } @{$batch_contract->_contracts}) {
             my $key =
-                ref($barrier)
-                ? $batch_contract->underlying->pipsized_value($barrier->{barrier}) . '-'
-                . $batch_contract->underlying->pipsized_value($barrier->{barrier2})
-                : $batch_contract->underlying->pipsized_value($barrier);
+                $contract->two_barriers
+                ? ($contract->high_barrier->as_absolute) . '-' . ($contract->low_barrier->as_absolute)
+                : ($contract->barrier->as_absolute);
             warn "Could not find barrier for key $key, available barriers: " . join ',', sort keys %{$ask_prices->{$contract_type}}
                 if !exists $ask_prices->{$contract_type}{$key} && !$offerings_error;
             my $price = $ask_prices->{$contract_type}{$key} // {};
@@ -287,14 +286,23 @@ sub handle_batch_contract {
                         }
                     },
                 };
-                if (ref($barrier)) {
-                    $new_error->{error}{details}{barrier}  = $batch_contract->underlying->pipsized_value($barrier->{barrier});
-                    $new_error->{error}{details}{barrier2} = $batch_contract->underlying->pipsized_value($barrier->{barrie2});
-                } else {
-                    $new_error->{error}{details}{barrier} = $batch_contract->underlying->pipsized_value($barrier);
-                }
                 $price = $new_error;
             }
+            if (exists $price->{error}) {
+                if ($contract->two_barriers) {
+                    $price->{error}{details}{barrier}  = $contract->high_barrier->as_absolute;
+                    $price->{error}{details}{barrier2} = $contract->low_barrier->as_absolute;
+
+                    $price->{error}{details}{supplied_barrier}  = $contract->high_barrier->supplied_barrier;
+                    $price->{error}{details}{supplied_barrier2} = $contract->low_barrier->supplied_barrier;
+                } else {
+                    $price->{error}{details}{barrier}          = $contract->barrier->as_absolute;
+                    $price->{error}{details}{supplied_barrier} = $contract->barrier->supplied_barrier;
+                }
+                $price->{error}->{message_to_client} = localize($price->{error}->{message_to_client});
+            }
+            $price->{longcode} = $price->{longcode} ? localize($price->{longcode}) : '';
+
             push @{$proposals->{$contract_type}}, $price;
         }
     }
