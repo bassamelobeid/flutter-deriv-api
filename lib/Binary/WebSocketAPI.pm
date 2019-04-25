@@ -465,6 +465,8 @@ sub startup {
                 stash_params => [qw/ server_name client_ip user_agent /]}
         ],
         ['copytrading_statistics'],
+        ['copytrading_list', {require_auth => 'admin'}],
+
         [
             'document_upload',
             {
