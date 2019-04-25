@@ -267,6 +267,8 @@ sub copy_trading_test_routine {
         note explain $copiers;
     };
 
+    test_copytrading_list($trader, $copier->loginid);
+
     subtest 'Unfollow' => sub {
         stop_copy_trade($trader, $copier);
 
@@ -473,6 +475,20 @@ sub copytrading_statistics {
             %default_call_params
         })->has_no_error->result;
     return $res;
+}
+
+sub test_copytrading_list {
+    my $client = shift;
+    my $loginid = shift;
+
+    my $params = {
+        token => $tokens{$client->loginid},
+        %default_call_params
+    };
+
+    my $res = $c->call_ok('copytrading_list', $params)->result;
+    is $res->{copiers}[0]{loginid}, $loginid, 'copytrading_list';
+
 }
 
 done_testing;
