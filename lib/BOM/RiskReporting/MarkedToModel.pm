@@ -135,7 +135,30 @@ sub generate {
                                 $dbh->do(qq{INSERT INTO accounting.expired_unsold (financial_market_bet_id, market_price) VALUES(?,?)},
                                     undef, $open_fmb_id, $value);
                             } elsif ($bet->waiting_for_settlement_tick) {
-                                $waiting_for_settlement++;
+                                # If settlement tick does not update after a day, that is something wrong. Manual settlement is needed.
+                                if ((Date::Utility->new->epoch - $bet->date_expiry->epoch) < 60 * 60 * 24) {
+
+                                    $waiting_for_settlement++;
+
+                                } else {
+                                    $require_manual_settlement++;
+                                    push @manually_settle_fmbid, +{
+                                        loginid   => $open_fmb->{client_loginid},
+                                        ref       => $open_fmb->{transaction_id},
+                                        fmb_id    => $open_fmb_id,
+                                        buy_price => $open_fmb->{buy_price},
+                                        currency  => $open_fmb->{currency_code},
+                                        shortcode => $bet->shortcode,
+                                        payout    => $bet->payout,
+                                        reason    => "Settlement tick is missing. Please check. ",
+                                        # TODO: bb_lookup is a bloomberg lookup symbol that is no longer required in manual settlement page.
+                                        # This will be removed in a separate card.
+                                        bb_lookup => '--',
+                                    };
+                                    $dbh->do(qq{INSERT INTO accounting.expired_unsold (financial_market_bet_id, market_price) VALUES(?,?)},
+                                        undef, $open_fmb_id, $value);
+
+                                }
                             } else {
                                 push @mail_content, "Contract expired but could not be settled [$last_fmb_id,  $open_fmb->{short_code}]";
                             }
