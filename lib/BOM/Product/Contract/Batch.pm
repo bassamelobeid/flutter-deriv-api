@@ -126,10 +126,13 @@ sub ask_prices {
             $contract_info->{theo_probability} = $contract->theo_probability->amount;
             $contract_info->{display_value}    = $contract->ask_price;
             if ($contract->two_barriers) {
-                $contract_info->{barrier}  = ($contract->high_barrier->as_absolute);
-                $contract_info->{barrier2} = ($contract->low_barrier->as_absolute);
+                $contract_info->{barrier}           = ($contract->high_barrier->as_absolute);
+                $contract_info->{barrier2}          = ($contract->low_barrier->as_absolute);
+                $contract_info->{supplied_barrier}  = ($contract->high_barrier->supplied_barrier);
+                $contract_info->{supplied_barrier2} = ($contract->low_barrier->supplied_barrier);
             } else {
-                $contract_info->{barrier} = ($contract->barrier->as_absolute);
+                $contract_info->{barrier}          = ($contract->barrier->as_absolute);
+                $contract_info->{supplied_barrier} = ($contract->barrier->supplied_barrier);
             }
         } else {
             if (my $pve = $contract->primary_validation_error) {
