@@ -14,7 +14,9 @@ echo '{"lock":true}' | curl -X POST -d '@-' -H "Content-Type: application/json" 
 git config user.name "Automated translations build"
 git config user.email "sysadmin@binary.com"
 git checkout translations
+git fetch origin
 git pull --rebase
+git merge origin/master
 
 # This is the build itself - note that Redis may
 # need to be running, since we load various modules
