@@ -176,7 +176,6 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
             }
         }
 
-        $rpc_response->{error}{details}{longcode} = $rpc_response->{longcode} if $rpc_response->{error};
         $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $cache);
         if ($req_storage->{args}{subscribe}) {    # we are in subscr mode, so remember the sequence of streams
             my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions');
@@ -241,7 +240,10 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                             country_code          => $c->stash('country_code'),
                             proposal_array        => 1,
                         },
-                        error    => $create_price_channel,
+                        error => sub {
+                            my $c = shift;
+                            Binary::WebSocketAPI::v3::Wrapper::System::_forget_proposal_array($c, $uuid);
+                        },
                         success  => $create_price_channel,
                         response => sub {
                             my ($rpc_response, $api_response, $req_storage) = @_;
@@ -281,7 +283,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                         my $res = {
                             json => {
                                 echo_req => $req_storage->{args},
-                                error    => $err,
+                                error    => $err->{error},
                                 msg_type => $msg_type,
                                 map { ; $_ => $req_storage->{args}{$_} } grep { $req_storage->{args}{$_} } qw(req_id passthrough),
                             }};
@@ -306,10 +308,14 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                                         $price->{error}{details}{longcode} = $c->l(delete $price->{longcode});
                                         $price->{error}{details}{display_value} += 0;
                                         $price->{error}{details}{payout}        += 0;
+                                        delete $price->{error}{details}{supplied_barrier};
+                                        delete $price->{error}{details}{supplied_barrier2};
                                     } else {
                                         $price->{longcode} = $c->l($price->{longcode});
                                         $price->{payout}   = $req_storage->{args}{amount};
                                         delete $price->{theo_probability};
+                                        delete $price->{supplied_barrier};
+                                        delete $price->{supplied_barrier2};
                                     }
                                 }
                                 warn "Barrier mismatch - expected " . @expected_barriers . " but had " . @prices unless @prices == @expected_barriers;
@@ -724,8 +730,10 @@ sub process_proposal_array_event {
                     } elsif (exists $price->{error}) {
                         return $price;
                     } else {
-                        my $barrier_key                 = _make_barrier_key($price);
-                        my $theo_probability            = delete $price->{theo_probability};
+                        my $barrier_key      = _make_barrier_key($price);
+                        my $theo_probability = delete $price->{theo_probability};
+                        delete $price->{supplied_barrier};
+                        delete $price->{supplied_barrier2};
                         my $stashed_contract_parameters = $stash_data->{cache}{$contract_type}{$barrier_key};
                         $stashed_contract_parameters->{contract_parameters}{currency} ||= $stash_data->{args}{currency};
                         $stashed_contract_parameters->{contract_parameters}{$stashed_contract_parameters->{contract_parameters}{amount_type}} =
@@ -1010,7 +1018,12 @@ sub _unique_barriers {
 sub _make_barrier_key {
     my ($barrier) = @_;
     return $barrier unless ref $barrier;
-    return join ':', $barrier->{barrier}, $barrier->{barrier2} // ();
+    # In proposal_array we use barriers to order proposals[] array responses.
+    # Even if it's a relative barrier, for that Contract->handle_batch_contract also sends the supplied barrier back.
+    if (exists $barrier->{supplied_barrier}) {
+        return join ':', $barrier->{supplied_barrier}, $barrier->{supplied_barrier2} // ();
+    }
+    return join ':', $barrier->{barrier} // (), $barrier->{barrier2} // ();
 }
 
 1;
