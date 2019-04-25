@@ -148,6 +148,29 @@ rpc copy_stop => sub {
     return {status => 1};
 };
 
+rpc copytrading_list => sub {
+    my $params = shift;
+
+    my $current_client = $params->{client};
+
+    my $copiers_data_mapper = BOM::Database::DataMapper::Copier->new({
+        broker_code => $current_client->broker_code,
+        operation   => 'replica'
+    });
+
+    my $copiers_tokens = $copiers_data_mapper->get_copiers_tokens_all({trader_id => $current_client->loginid});
+    my @copiers = map { {loginid => $_->[0]} } @$copiers_tokens;
+
+    my $traders = [];
+    unless (scalar @copiers) {
+        $traders = $copiers_data_mapper->get_traders_all({copier_id => $current_client->loginid});
+    }
+    return {
+        copiers => \@copiers,
+        traders => $traders
+    };
+};
+
 1;
 
 __END__
