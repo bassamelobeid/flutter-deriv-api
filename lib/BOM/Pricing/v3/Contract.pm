@@ -216,7 +216,10 @@ sub _get_ask {
             }
 
             unless ($contract->is_binary) {
-                $response->{contract_parameters}->{skip_stream_results_adjustment} = 1;
+                $response->{contract_parameters}->{non_binary_results_adjustment} = 1;
+                $response->{contract_parameters}->{theo_price}                    = $contract->theo_price;
+                $response->{contract_parameters}->{multiplier}                    = $contract->multiplier if not $contract->user_defined_multiplier;
+                $response->{contract_parameters}->{maximum_ask_price} = $contract->maximum_ask_price if $contract->can('maximum_ask_price');
             }
 
             if ($contract->underlying->feed_license eq 'realtime') {
@@ -499,8 +502,17 @@ sub send_ask {
 
     #price_stream_results_adjustment is based on theo_probability and is very binary-option specifics.
     #We do no have the concept of probabilty for the non binary options.
-    $params->{args}->{skip_stream_results_adjustment} = $response->{contract_parameters}->{skip_stream_results_adjustment}
-        if exists $response->{contract_parameters}->{skip_stream_results_adjustment};
+    $params->{args}->{non_binary_results_adjustment} = $response->{contract_parameters}->{non_binary_results_adjustment}
+        if exists $response->{contract_parameters}->{non_binary_results_adjustment};
+
+    $params->{args}->{theo_price} = $response->{contract_parameters}->{theo_price}
+        if exists $response->{contract_parameters}->{theo_price};
+
+    $params->{args}->{multiplier} = $response->{contract_parameters}->{multiplier}
+        if exists $response->{contract_parameters}->{multiplier};
+
+    $params->{args}->{maximum_ask_price} = $response->{contract_parameters}->{maximum_ask_price}
+        if exists $response->{contract_parameters}->{maximum_ask_price};
 
     $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
 
