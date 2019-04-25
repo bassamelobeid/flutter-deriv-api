@@ -66,7 +66,12 @@ test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_cr.json
 $suite->free_gift($suite->get_stashed('new_account_real/new_account_real/client_id'));
 test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', 10000, 'USD', $suite->get_stashed('authorize/authorize/loginid');
 
+test_sendrecv_params 'copytrading_list/test_send.json', 'copytrading_list/test_receive_empty.json';
+
 test_sendrecv_params 'copy_start/test_send.json', 'copy_start/test_receive.json', $suite->get_stashed('api_token/api_token/tokens/0/token');
+
+test_sendrecv_params 'copytrading_list/test_send.json', 'copytrading_list/test_receive_trader.json';
+
 test_sendrecv_params 'copy_stop/test_send.json',  'copy_stop/test_receive.json',  $suite->get_stashed('api_token/api_token/tokens/0/token');
 
 finish;
