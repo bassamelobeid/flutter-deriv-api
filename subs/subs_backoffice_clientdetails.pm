@@ -282,6 +282,7 @@ sub print_client_details {
         tax_residences_countries_name      => $tax_residences_countries_name,
         cashier_allow_payment_agent_status => $client->status->pa_withdrawal_explicitly_allowed,
         can_change_residence               => $is_virtual_only,
+        address_verification_status        => $client->status->address_verified,
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})

@@ -525,6 +525,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             /;
         exists $input{$_} && $cli->$_($input{$_}) for @simple_updates;
 
+        $cli->status->clear_address_verified() if (any { exists $input{$_} } qw(address_1 address_2 city state postcode));
+
         my $tax_residence;
         if (exists $input{tax_residence}) {
             # Filter keys for tax residence

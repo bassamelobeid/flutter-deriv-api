@@ -32,6 +32,16 @@ table#client_edit td{
     font-weight: bold;
     display: inline-block;
 }
+#greenrcorner {
+  background: #228B22;
+  border-radius: 25px;
+  margin: 8px;
+  padding: 4px;
+  align: center;
+  width: fit-content;
+  color: white;
+  border-bottom: 1px black;
+}
 </style>
 
 [% yes_no_options = [{value => 1, text => 'yes'} {value => 0, text => 'no'}] %]
@@ -138,6 +148,12 @@ table#client_edit td{
     <tr>
         <td class="small_header" colspan="2">#Postal address</td>
     </tr>
+    [% IF address_verification_status %]
+        <tr>
+            <td class="label">Status : </td>
+            <td><span id="greenrcorner">Address Verified</span></td>
+        </tr>
+    [% END %]
     <tr>
         <td class="label">Address 1</td>
         <td>: <input type="text" name="address_1" value="[% client.address_1 %]" size="50" /> [% client.address_1 %]</td>
