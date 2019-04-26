@@ -417,6 +417,11 @@ system:
           isa: ArrayRef
           default: []
           global: 1
+        onfido:
+          description: "Suspend Onfido"
+          isa: Bool
+          default: 0
+          global: 1
     directory:
       description: "Configuration for system wide directories"
       isa: section
