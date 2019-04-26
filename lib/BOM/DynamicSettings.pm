@@ -193,6 +193,7 @@ sub get_settings_by_group {
                 system.suspend.mt5_withdrawals
                 system.suspend.transfer_between_accounts
                 system.suspend.transfer_currencies
+                system.suspend.onfido
                 )
         ],
         quant => [qw(
