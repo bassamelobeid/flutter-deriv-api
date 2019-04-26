@@ -1298,25 +1298,27 @@ rpc set_settings => sub {
                 message_to_client => localize('Sorry, our service is not available for your country of citizenship.')});
     }
 
-    if ((
-               ($address1 and $address1 ne $current_client->address_1)
-            or ($address2 ne $current_client->address_2)
-            or ($addressTown ne $current_client->city)
-            or ($addressState ne $current_client->state)
-            or ($addressPostcode ne $current_client->postcode))
-        and $current_client->fully_authenticated
-        )
+    if (   ($address1 and $address1 ne $current_client->address_1)
+        or ($address2 ne $current_client->address_2)
+        or ($addressTown ne $current_client->city)
+        or ($addressState ne $current_client->state)
+        or ($addressPostcode ne $current_client->postcode))
     {
-        $cil_message =
-              'Authenticated client ['
-            . $current_client->loginid
-            . '] updated his/her address from ['
-            . join(' ',
-            $current_client->address_1,
-            $current_client->address_2,
-            $current_client->city, $current_client->state, $current_client->postcode)
-            . '] to ['
-            . join(' ', $address1, $address2, $addressTown, $addressState, $addressPostcode) . ']';
+        # clear address verifies status if there is changes in address
+        $current_client->status->clear_address_verified;
+
+        if ($current_client->fully_authenticated) {
+            $cil_message =
+                  'Authenticated client ['
+                . $current_client->loginid
+                . '] updated his/her address from ['
+                . join(' ',
+                $current_client->address_1,
+                $current_client->address_2,
+                $current_client->city, $current_client->state, $current_client->postcode)
+                . '] to ['
+                . join(' ', $address1, $address2, $addressTown, $addressState, $addressPostcode) . ']';
+        }
     }
 
     # only allowed to set for maltainvest, costarica and only
