@@ -49,6 +49,7 @@ sub run {
 
     my $loop = IO::Async::Loop->new;
     while (1) {
+        BOM::Config::Runtime->instance->app_config->check_for_update;
         run_once($queue_name);
         $loop->delay_future(after => QUEUE_WAIT_DURATION)->get;
     }

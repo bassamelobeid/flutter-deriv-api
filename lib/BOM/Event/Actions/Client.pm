@@ -178,6 +178,8 @@ information to process this client.
 sub document_upload {
     my ($args) = @_;
 
+    return if (BOM::Config::Runtime->instance->app_config->system->suspend->onfido);
+
     return try {
         my $loginid = $args->{loginid}
             or die 'No client login ID supplied?';
