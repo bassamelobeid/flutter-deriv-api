@@ -491,7 +491,7 @@ sub client_verification {
                                 }
                                 _update_client_status(
                                     loginid => $loginid,
-                                    status  => 'authenticated_with_scans',
+                                    status  => 'address_verified',
                                     message => 'SmartyStreets - address verified'
                                 );
                             }
