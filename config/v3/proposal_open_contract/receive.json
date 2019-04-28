@@ -203,7 +203,7 @@
                 },
                 "display_value" : {
                     "description" : "Example: 5.14, same as ask_price",
-                    "type" : "number"
+                    "type" : "string"
                 },
                 "entry_tick_time" : {
                     "type" : "integer",
