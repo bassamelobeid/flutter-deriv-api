@@ -339,7 +339,7 @@ sub ticks_history {
     if ($args->{subscribe}) {
         if (!$tick_receive_schema) {
             my $schema_file = path('/home/git/regentmarkets/binary-websocket-api/config/v3/ticks/receive.json');
-            $tick_receive_schema = $json->decode($schema_file->slurp);
+            $tick_receive_schema = decode_json_text($schema_file->slurp_utf8);
         }
         $req_storage->{schema_receive} = $tick_receive_schema;
         if (not _feed_channel_subscribe($c, $args->{ticks_history}, $publish, $req_storage, $callback, 1)) {
