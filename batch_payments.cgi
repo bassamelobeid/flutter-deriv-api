@@ -231,7 +231,7 @@ read_csv_row_and_callback(
                     warn "Not able to unset payment agent explicity allowed flag for " . $client->loginid;
                 };
             }
-            $row{remark} = sprintf "OK transaction reference id: %d", $trx->id;
+            $row{remark} = sprintf "OK transaction reference id: %d", $trx->{id};
         } else {
             $row{remark} = "OK to $action [Preview only]";
         }
