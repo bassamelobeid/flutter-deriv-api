@@ -68,11 +68,18 @@ sub add_req_data {
     my (undef, $req_storage, $api_response) = @_;
 
     my $args = {};
+    if (ref($api_response) ne 'HASH') {
+        use Data::Dumper::Concise;
+        warn Dumper($api_response);
+    }
     if ($req_storage) {
         $args = $req_storage->{origin_args} || $req_storage->{args};
         $api_response->{echo_req} = $args;
-    } elsif ($api_response->{echo_req}) {
+    } elsif (defined $api_response->{echo_req}) {
         $args = $api_response->{echo_req};
+    } else {
+        use Data::Dumper::Concise;
+        warn Dumper($api_response);
     }
     $api_response->{req_id}      = $args->{req_id}      if defined $args->{req_id};
     $api_response->{passthrough} = $args->{passthrough} if defined $args->{passthrough};

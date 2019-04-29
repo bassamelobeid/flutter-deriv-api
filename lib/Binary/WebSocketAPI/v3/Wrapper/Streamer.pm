@@ -321,6 +321,9 @@ sub ticks_history {
                         # TODO chylli to viewer: should we delete it if we used cache directly but not do a subscription? that is, we run callback directly, without subscribing ? I guess we shouldn't delete it
                         $worker->clear_cache;
                         $worker->cache_only(0);
+                        my $schema_file = path('/home/git/regentmarkets/binary-websocket-api/config/v3/ticks_history/receive.json');
+                        $tick_receive_schema = decode_json($schema_file->slurp_utf8);
+                        $req_storage->{schema_receive} = $tick_receive_schema;
 
                         my $uuid = $worker->uuid();
                         $rpc_response->{data}->{subscription}->{id} = $uuid if $uuid;
@@ -337,9 +340,9 @@ sub ticks_history {
 
     # subscribe first with flag of cache_only passed as 1 to indicate to cache the feed data
     if ($args->{subscribe}) {
-        if (!$tick_receive_schema) {
+        if (!$tick_receive_schema || !defined($tick_receive_schema->{properties}->{tick})) {
             my $schema_file = path('/home/git/regentmarkets/binary-websocket-api/config/v3/ticks/receive.json');
-            $tick_receive_schema = decode_json_text($schema_file->slurp_utf8);
+            $tick_receive_schema = decode_json($schema_file->slurp_utf8);
         }
         $req_storage->{schema_receive} = $tick_receive_schema;
         if (not _feed_channel_subscribe($c, $args->{ticks_history}, $publish, $req_storage, $callback, 1)) {

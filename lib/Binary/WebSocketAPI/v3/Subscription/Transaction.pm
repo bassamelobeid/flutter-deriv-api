@@ -73,7 +73,6 @@ has account_id => (
     required => 1,
 );
 
-
 sub subscription_manager {
     return Binary::WebSocketAPI::v3::SubscriptionManager->shared_redis_manager();
 }

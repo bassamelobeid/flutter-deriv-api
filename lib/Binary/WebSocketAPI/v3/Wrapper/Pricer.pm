@@ -52,8 +52,7 @@ my %pricer_cmd_handler = (
     bid   => \&process_bid_event,
 );
 
-
-my $poc_schema; 
+my $poc_schema;
 
 sub proposal {
     my ($c, $req_storage) = @_;
@@ -691,9 +690,9 @@ sub process_bid_event {
         $results->{$type}->{validation_error} = $c->l($results->{$type}->{validation_error}) if ($results->{$type}->{validation_error});
         if (!$poc_schema) {
             my $poc_receive_schema = path('/home/git/regentmarkets/binary-websocket-api/config/v3/proposal_open_contract/receive.json');
-            $poc_schema             = decode_json_text($poc_receive_schema->slurp_utf8);
+            $poc_schema = decode_json_text($poc_receive_schema->slurp_utf8);
         }
-        my $req_storage        = {
+        my $req_storage = {
             schema_receive => $poc_schema,
             args           => $stash_data->{args}};
 
