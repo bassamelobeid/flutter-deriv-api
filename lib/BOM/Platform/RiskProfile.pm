@@ -242,9 +242,13 @@ sub get_turnover_limit_parameters {
             if ($_->{underlying_symbol}) {
                 $params->{symbols} = [split ',', $_->{underlying_symbol}];
             } elsif ($_->{submarket}) {
-                $params->{symbols} = [$offerings_obj->query({submarket => $_->{submarket}}, ['underlying_symbol'])];
+                my $submarket = $_->{submarket};
+                $submarket =~ s/\s//g;
+                $params->{symbols} = [$offerings_obj->query({submarket => [split ',', $submarket]}, ['underlying_symbol'])];
             } elsif ($_->{market}) {
-                $params->{symbols} = [$offerings_obj->query({market => $_->{market}}, ['underlying_symbol'])];
+                my $market = $_->{market};
+                $market =~ s/\s//g;
+                $params->{symbols} = [$offerings_obj->query({market => [split ',', $market]}, ['underlying_symbol'])];
             }
 
             if ($_->{contract_category}) {
