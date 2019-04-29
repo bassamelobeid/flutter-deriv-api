@@ -18,16 +18,13 @@ for my $broker (qw/MF MX/) {
     my $pending_loginids = find_loginids_with_pending_experian($broker);
 
     for my $loginid (@$pending_loginids) {
-        my $xml_exists = -e get_filename(
-            broker  => $broker,
-            loginid => $loginid,
-            type    => 'xml'
+        my $client  = get_client($loginid);
+        my $proveid = BOM::Platform::ProveID->new(
+            client        => $client,
+            search_option => $so
         );
-        my $pdf_exists = -e get_filename(
-            broker  => $broker,
-            loginid => $loginid,
-            type    => 'pdf'
-        );
+        my $xml_exists = $proveid->has_saved_xml;
+        my $pdf_exists = $proveid->has_saved_pdf;
 
         try {
             my $client = get_client($loginid);
@@ -38,7 +35,7 @@ for my $broker (qw/MF MX/) {
             my $unwelcome = $client->status->unwelcome;
             $client->status->clear_unwelcome if $unwelcome and $unwelcome->{reason} =~ /^FailedExperian/;
             if ($xml_exists and not $pdf_exists) {
-                request_pdf($broker, $loginid, $client);
+                request_pdf($broker, $client);
             }
         }
         catch {
@@ -72,35 +69,19 @@ SQL
     return [grep { $_ =~ /$broker/ } map { $_->{client_loginid} } @$result];
 }
 
-sub get_filename {
-    my %args = @_;
-    my ($broker, $loginid, $type) = @args{qw/broker loginid type/};
-
-    my $extension = $type eq 'pdf' ? '.pdf' : '';
-
-    return "$accounts_dir/$broker/192com_authentication/$type/$loginid.$so$extension";
-}
-
 sub request_pdf {
-    my ($broker, $loginid, $client) = @_;
+    my ($broker, $client) = @_;
 
-    my $result_as_xml = path(
-        get_filename(
-            broker  => $broker,
-            loginid => $loginid,
-            type    => 'xml'
-        ))->slurp_utf8;
-
-    return try {
+    try {
         BOM::Platform::ProveID->new(
             client        => $client,
-            xml_result    => $result_as_xml,
             search_option => $so
         )->get_pdf_result;
     }
     catch {
         die "Failed to save Experian pdf for " . $client->loginid . ": $_";
     };
+    return;
 }
 
 sub request_proveid {

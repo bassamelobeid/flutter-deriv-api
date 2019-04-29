@@ -291,33 +291,31 @@ table#client_edit td{
                     "There are no uploaded documents for $client.loginid - $client.full_name";
                 END
             %]
-[%
-IF client_for_prove
-%]
+            [%  IF client_for_prove %]
             <br/>
             [%
                 raw_url  = 'backoffice/view_192_raw_response.cgi';
                 doc_url  = 'backoffice/download_document.cgi';
                 args     = { loginID => client_for_prove.loginid };
                 pdf_args = { broker => client_for_prove.broker, category => '192_result' };
-                FOREACH auth_request IN [ proveID ];
             %]
 	            [%
-                    option = auth_request.search_option;
-                    IF auth_request.client.status.proveid_requested || auth_request.has_saved_xml;
+                    option = proveID.search_option;
+                    IF proveID.client.status.proveid_requested || proveID.has_saved_xml;
                 %]
                     [%
-                        IF auth_request.has_saved_xml;
+                        IF proveID.has_saved_xml;
                         args.search_option = option;
                         args.raw = 0; href_rpt = request.url_for(raw_url, args );
-                        args.raw = 1; href_xml = request.url_for(raw_url, args );
+                        args.raw = 1; href_xml = proveID.xml_url || request.url_for(raw_url, args );
                         pdf_args.path = "pdf/${client_for_prove.loginid}.${option}.pdf";
-                    %]
+                        href_pdf = proveID.pdf_url || request.url_for(doc_url, pdf_args);
+                     %]
                         An Experian <span class="lspace">[% option %]</span> request <span class="lspace">has</span> been done.
                         <a class="lspace" target="_blank" href="[% href_rpt | none %]">[Report]</a>
                         <a class="lspace" target="_blank" href="[% href_xml | none %]">[XML]</a>
-                        [% IF auth_request.has_saved_pdf %]
-                            <a class="lspace" target="_blank" href="[% request.url_for(doc_url, pdf_args) | none %]">[PDF]</a>
+                        [% IF proveID.has_saved_pdf %]
+                        <a class="lspace" target="_blank" href="[% href_pdf | none %] ">[PDF]</a>
                         [% END %]
                     [% ELSE %]
 		                <b>ProveID requested, but resulting xml file doesn't exist or has been deleted. Please try again later or resend the ProveID request</b>
@@ -328,12 +326,11 @@ IF client_for_prove
                     <br/>
             [%  END %]
                 <input type="submit" name="do_id_check" value="Submit a new ProveID request"/>
-            [% IF auth_request.has_saved_pdf or auth_request.has_saved_xml %]
+            [% IF proveID.has_saved_xml or proveID.has_saved_pdf %]
             <br/>
                 <input type="submit" name="delete_existing_192" value="Delete existing Experian results"/>
             <br/>
             [% END %]
-[% END %]
         </td>
     </tr>
     <tr>

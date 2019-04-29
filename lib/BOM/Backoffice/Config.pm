@@ -6,12 +6,12 @@ use strict;
 use feature "state";
 use YAML::XS;
 use BOM::Backoffice::Request;
+use BOM::Config;
 use Exporter 'import';
 our @EXPORT_OK = qw(get_tmp_path_or_die);
 
 sub config {
-    state $config = YAML::XS::LoadFile('/etc/rmg/backoffice.yml');
-    return $config;
+    return BOM::Config::backoffice();
 }
 
 #
