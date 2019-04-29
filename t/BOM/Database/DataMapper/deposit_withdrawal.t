@@ -59,7 +59,7 @@ subtest 'get total withdrawal' => sub {
         amount       => -100,
         payment_type => 'virtual_credit',
         remark       => 'virtual money withdrawal',
-        payment_time => $thirty_days_before->epoch
+        payment_time => $thirty_days_before->datetime
     );
 
     cmp_ok($payment_data_mapper->get_total_withdrawal(), '==', 100, 'check total withdrawal after 1st withdrawal');

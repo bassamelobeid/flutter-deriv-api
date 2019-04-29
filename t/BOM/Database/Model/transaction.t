@@ -29,7 +29,7 @@ lives_ok {
 
 my $transaction;
 my $transaction_id;
-my $payment;
+my $payment_id;
 
 lives_ok {
     $transaction = $client->payment_legacy_payment(
@@ -38,8 +38,8 @@ lives_ok {
         payment_type => 'adjustment',
         remark       => 'Comment field',
     );
-    $transaction_id = $transaction->id;
-    $payment        = $transaction->payment;
+    $transaction_id = $transaction->{id};
+    $payment_id     = $transaction->{payment_id};
 }
 'expect to load the account even with account_id instead of id';
 
@@ -61,7 +61,7 @@ cmp_ok(
     $BOM::Database::Model::Constants::DEPOSIT,
     'Check if it load the account properly action_type'
 );
-cmp_ok($transaction->transaction_record->payment_id,    '==', $payment->id, 'Check if it load the account properly payment_id');
+cmp_ok($transaction->transaction_record->payment_id,    '==', $payment_id, 'Check if it load the account properly payment_id');
 cmp_ok($transaction->transaction_record->staff_loginid, 'eq', 'system',     'Check if it load the account properly staff_loginid');
 # note.. we used to test transaction-remark here, but we never writes that for payments,
 # so the new payment handlers don't write it.
