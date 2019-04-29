@@ -28,6 +28,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Helper::Client qw(top_up);
 use BOM::Platform::Client::IDAuthentication;
 
 use BOM::MarketData qw(create_underlying_db);
@@ -204,71 +205,6 @@ sub create_client {
         secret_answer    => BOM::User::Utility::encrypt_secret_answer('is that'),
         date_of_birth    => '1945-08-06',
     );
-}
-
-sub top_up {
-    my ($c, $cur, $amount) = @_;
-
-    my $fdp = $c->is_first_deposit_pending;
-    my $acc = $c->account($cur);
-
-    my ($pm) = $acc->add_payment({
-        amount               => $amount,
-        payment_gateway_code => "legacy_payment",
-        payment_type_code    => "ewallet",
-        status               => "OK",
-        staff_loginid        => "test",
-        remark               => __FILE__ . ':' . __LINE__,
-    });
-    $pm->legacy_payment({legacy_type => "ewallet"});
-    my ($trx) = $pm->add_transaction({
-        account_id    => $acc->id,
-        amount        => $amount,
-        staff_loginid => "test",
-        remark        => __FILE__ . ':' . __LINE__,
-        referrer_type => "payment",
-        action_type   => ($amount > 0 ? "deposit" : "withdrawal"),
-        quantity      => 1,
-    });
-    $pm->save(cascade => 1);
-    $trx->load;    # to re-read (get balance_after)
-
-    BOM::Platform::Client::IDAuthentication->new(client => $c)->run_authentication
-        if $fdp;
-
-    note $c->loginid . "'s balance is now $cur " . $trx->balance_after . "\n";
-}
-
-sub free_gift {
-    my ($c, $cur, $amount) = @_;
-
-    my $fdp  = $c->is_first_deposit_pending;
-    my $acc  = $c->account($cur);
-    my ($pm) = $acc->add_payment({
-        amount               => $amount,
-        payment_gateway_code => "free_gift",
-        payment_type_code    => "free_gift",
-        status               => "OK",
-        staff_loginid        => "test",
-        remark               => __FILE__ . ':' . __LINE__,
-    });
-    $pm->free_gift({reason => "test"});
-    my ($trx) = $pm->add_transaction({
-        account_id    => $acc->id,
-        amount        => $amount,
-        staff_loginid => "test",
-        remark        => __FILE__ . ':' . __LINE__,
-        referrer_type => "payment",
-        action_type   => ($amount > 0 ? "deposit" : "withdrawal"),
-        quantity      => 1,
-    });
-    $pm->save(cascade => 1);
-    $trx->load;    # to re-read (get balance_after)
-
-    BOM::Platform::Client::IDAuthentication->new(client => $c)->run_authentication
-        if $fdp;
-
-    note $c->loginid . "'s balance is now $cur " . $trx->balance_after . "\n";
 }
 
 sub get_transaction_from_db {
