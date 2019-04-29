@@ -35,6 +35,11 @@ sub third_party {
     return $config;
 }
 
+sub backoffice {
+    state $config = YAML::XS::LoadFile('/etc/rmg/backoffice.yml');
+    return $config;
+}
+
 sub quants {
     state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/quants_config.yml');
     return $config;
