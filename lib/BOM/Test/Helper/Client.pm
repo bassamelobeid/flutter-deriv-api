@@ -42,33 +42,22 @@ sub top_up {
     # postgres so we can mock the date.
     my $date = Date::Utility->new()->datetime_yyyymmdd_hhmmss;
 
-    my ($pm) = $acc->add_payment({
-        amount               => $amount,
-        payment_gateway_code => "legacy_payment",
-        payment_type_code    => $payment_type,
-        status               => "OK",
-        staff_loginid        => "test",
-        remark               => __FILE__ . ':' . __LINE__,
-        payment_time         => $date
-    });
-    $pm->legacy_payment({legacy_type => $payment_type});
-    my ($trx) = $pm->add_transaction({
-        account_id       => $acc->id,
+    my ($trx) = $c->payment_legacy_payment(
         amount           => $amount,
+        currency         => $cur,
+        payment_type     => $payment_type,
+        status           => "OK",
         staff_loginid    => "test",
         remark           => __FILE__ . ':' . __LINE__,
-        referrer_type    => "payment",
-        action_type      => ($amount > 0 ? "deposit" : "withdrawal"),
-        quantity         => 1,
+        payment_time     => $date,
+        account_id       => $acc->id,
         transaction_time => $date
-    });
-    $pm->save(cascade => 1);
-    $trx->load;    # to re-read (get balance_after)
+    );
 
     BOM::Platform::Client::IDAuthentication->new(client => $c)->run_authentication
         if $fdp;
 
-    note $c->loginid . "'s balance is now $cur " . $trx->balance_after . "\n";
+    note $c->loginid . "'s balance is now $cur " . $trx->{balance_after} . "\n";
     return;
 }
 
