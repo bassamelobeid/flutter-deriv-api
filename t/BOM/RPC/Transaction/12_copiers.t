@@ -478,7 +478,7 @@ sub copytrading_statistics {
 }
 
 sub test_copytrading_list {
-    my $client = shift;
+    my $client  = shift;
     my $loginid = shift;
 
     my $params = {

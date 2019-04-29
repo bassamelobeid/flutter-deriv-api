@@ -840,26 +840,18 @@ rpc paymentagent_withdraw => sub {
 
     return $error_sub->(localize('You cannot withdraw funds to the same account.')) if $client_loginid eq $paymentagent_loginid;
 
+    return $error_sub->(localize('You cannot perform this action, please set your residence.')) unless $client->residence;
+
+    return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.')) if $client->status->disabled;
     my $paymentagent = BOM::User::Client::PaymentAgent->new({
             'loginid'    => $paymentagent_loginid,
             db_operation => 'replica'
         }) or return $error_sub->(localize('The payment agent account does not exist.'));
+
     my $pa_client = $paymentagent->client;
-
-    my $is_residence_excluded = _is_pa_residence_exclusion($pa_client);
-
-    my $authenticated_pa;
-    if (not $is_residence_excluded) {
-        if ($client->residence) {
-            my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => $client->broker});
-            $authenticated_pa = $payment_agent_mapper->get_authenticated_payment_agents(target_country => $client->residence);
-        }
-
-        return $error_sub->(localize('The payment agent facility is currently not available in your country.'))
-            if (not $client->residence or scalar keys %{$authenticated_pa} == 0);
-    }
-
-    return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.')) if $client->status->disabled;
+    return $error_sub->(
+        localize("You cannot perform the withdrawal to account [_1], as the payment agent's account is not authorized.", $pa_client->loginid))
+        unless $paymentagent->is_authenticated;
 
     return $error_sub->(localize('Payment agent withdrawals are not allowed for specified accounts.')) if ($client->broker ne $paymentagent->broker);
 
@@ -907,7 +899,8 @@ rpc paymentagent_withdraw => sub {
         if $pa_client->documents_expired;
 
     return $error_sub->(localize('You cannot withdraw from a payment agent in a different country of residence.'))
-        if $client->residence ne $pa_client->residence and not $is_residence_excluded;
+        if not _is_pa_residence_exclusion($pa_client)
+        and $client->residence ne ($pa_client->residence // '');
 
     if (is_payment_agents_suspended_in_country($client->residence)) {
         my $available_payment_agents_for_client =

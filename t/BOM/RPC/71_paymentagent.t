@@ -935,13 +935,13 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         my $old_residence = $Alice->residence;
         $Alice->residence('');
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        like($res->{error}{message_to_client}, qr/not available in your country/, $test);
+        like($res->{error}{message_to_client}, qr/You cannot perform this action, please set your residence./, $test);
         $Alice->residence($old_residence);
 
         $test = q{Withdraw fails if payment agent facility not allowed in client's country};
         $Alice->residence('Walla Walla');
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        like($res->{error}{message_to_client}, qr/not available in your country/, $test);
+        like($res->{error}{message_to_client}, qr/Your profile appears to be incomplete. Please update your personal details to continue./, $test);
         $Alice->residence($old_residence);
 
         $test = 'Withdraw fails if client status = disabled';
