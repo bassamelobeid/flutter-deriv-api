@@ -13,6 +13,8 @@ use Path::Tiny;
 use Format::Util::Numbers qw/financialrounding formatnumber/;
 use Date::Utility;
 use ExchangeRates::CurrencyConverter qw/convert_currency/;
+use JSON::MaybeXS ();
+use Encode;
 
 use BOM::User::Client::PaymentNotificationQueue;
 use BOM::Database::ClientDB;
@@ -21,6 +23,8 @@ use BOM::Config;
 ## VERSION
 
 # NOTE.. this is a 'mix-in' of extra subs for BOM::User::Client.  It is not a distinct Class.
+
+my $json = JSON::MaybeXS->new;
 
 sub validate_payment {
     my ($self, %args) = @_;
@@ -243,27 +247,21 @@ sub payment_legacy_payment {
     my $account = $self->set_default_account($currency);
 
     die "cannot deal in $currency; clients currency is " . $account->currency_code() if $account->currency_code() ne $currency;
-    my ($payment) = $account->add_payment({
-        amount               => $amount,
-        payment_gateway_code => 'legacy_payment',
-        payment_type_code    => $payment_type,
-        status               => 'OK',
-        staff_loginid        => $staff,
-        remark               => $remark,
-        ($payment_time ? (payment_time => $payment_time) : ()),
-    });
-    $payment->legacy_payment({legacy_type => $payment_type});
-    my ($trx) = $payment->add_transaction({
-        account_id    => $account->id,
-        amount        => $amount,
-        staff_loginid => $staff,
-        referrer_type => 'payment',
-        action_type   => $action_type,
-        quantity      => 1,
-        source        => $source,
-        ($transaction_time ? (transaction_time => $transaction_time) : ()),
-    });
-    $payment->save(cascade => 1);
+
+    my ($trx) = $account->add_payment_transaction({
+            amount               => $amount,
+            payment_gateway_code => 'legacy_payment',
+            payment_type_code    => $payment_type,
+            status               => 'OK',
+            staff_loginid        => $staff,
+            remark               => $remark,
+            account_id           => $account->id,
+            source               => $source,
+            ($payment_time     ? (payment_time     => $payment_time)     : ()),
+            ($transaction_time ? (transaction_time => $transaction_time) : ()),
+        },
+        {});    # <- TODO: legacy_payment table is redundant
+
     BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'legacy',
         currency      => $currency,
@@ -272,7 +270,6 @@ sub payment_legacy_payment {
         amount        => $amount,
         payment_agent => $self->payment_agent ? 1 : 0,
     );
-    $trx->load;    # to re-read 'now' timestamps
 
     return $trx;
 }
@@ -346,50 +343,48 @@ sub payment_account_transfer {
         return $response;
     }
 
-    my ($fmPayment) = $fmAccount->add_payment({
+    # TODO: Interclient transfers ("Transfer Between Accounts") lacks
+    #       atomicity and is unsafe; we could potentially debit from one
+    #       account and fail to credit into the other. We need to
+    #       investigate a safe implementation or drop it altogether.
+    my ($fmTrx) = $fmAccount->add_payment_transaction({
         amount               => -$amount,
         payment_gateway_code => $gateway_code,
         payment_type_code    => 'internal_transfer',
         status               => 'OK',
         staff_loginid        => $fmStaff,
         remark               => $fmRemark,
-        transfer_fees        => $fees
+        account_id           => $fmAccount->id,
+        staff_loginid        => $fmStaff,
+        source               => $source,
+        transfer_fees        => $fees,
     });
-    my ($fmTrx) = $fmPayment->add_transaction({
-        account_id    => $fmAccount->id,
-        amount        => -$amount,
-        staff_loginid => $fmStaff,
-        referrer_type => 'payment',
-        action_type   => 'withdrawal',
-        quantity      => 1,
-        source        => $source,
-    });
-    my ($toPayment) = $toAccount->add_payment({
+
+    my ($toTrx) = $toAccount->add_payment_transaction({
         amount               => $to_amount,
         payment_gateway_code => $gateway_code,
         payment_type_code    => 'internal_transfer',
         status               => 'OK',
         staff_loginid        => $toStaff,
         remark               => $toRemark,
-    });
-    my ($toTrx) = $toPayment->add_transaction({
-        account_id    => $toAccount->id,
-        amount        => $to_amount,
-        staff_loginid => $toStaff,
-        referrer_type => 'payment',
-        action_type   => 'deposit',
-        quantity      => 1,
-        source        => $source,
+        account_id           => $toAccount->id,
+        staff_loginid        => $toStaff,
+        source               => $source,
     });
 
-    $fmPayment->save(cascade => 1);
-
-    $toPayment->save(cascade => 1);
-
-    return {transaction_id => $fmTrx->id};
+    return {transaction_id => $fmTrx->{id}};
 }
 
 sub payment_doughflow {
+    # Doughflow payments may charge payment fees in cases where
+    # clients deposit, did not trade and want their money back.
+    # To ensure the atomicity of both the doughflow payment and its
+    # corresponding payment fee, a seperate DB function that makes 2
+    # calls to add_payment_transaction is used.
+    #
+    # add_doughflow_payment returns a superset of add_payment_transaction,
+    # adding fee_transaction_id and fee_payment_id, so existing code can
+    # expect the same outputs as other payment methods in this file.
     my ($self, %args) = @_;
 
     my $currency     = $args{currency}     || die "no currency";
@@ -397,6 +392,7 @@ sub payment_doughflow {
     my $remark       = $args{remark}       || die "no remark";
     my $payment_type = $args{payment_type} || 'external_cashier';
     my $staff        = $args{staff}        || 'system';
+    my $payment_fee  = $args{payment_fee};
     my $source       = $args{source};
 
     my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
@@ -410,25 +406,12 @@ sub payment_doughflow {
     $doughflow_values{created_by}        ||= $staff;
     $doughflow_values{payment_processor} ||= 'unspecified';
 
-    my ($payment) = $account->add_payment({
-        amount               => $amount,
-        payment_gateway_code => 'doughflow',
-        payment_type_code    => $payment_type,
-        status               => 'OK',
-        staff_loginid        => $staff,
-        remark               => $remark,
-    });
-    $payment->doughflow(\%doughflow_values);
-    my ($trx) = $payment->add_transaction({
-        account_id    => $account->id,
-        amount        => $amount,
-        staff_loginid => $staff,
-        referrer_type => 'payment',
-        action_type   => $action_type,
-        quantity      => 1,
-        source        => $source,
-    });
-    $payment->save(cascade => 1);
+    my @bind_params = ($account->id, $amount, $payment_type, $staff, $remark, Encode::encode_utf8($json->encode(\%doughflow_values)), $payment_fee,);
+
+    my $trx = $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref("SELECT t.* from payment.add_doughflow_payment(?,?,?,?,?,?,?) t", undef, @bind_params);
+        });
 
     BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'doughflow',
@@ -438,7 +421,7 @@ sub payment_doughflow {
         amount        => $amount,
         payment_agent => $self->payment_agent ? 1 : 0,
     );
-    $trx->load;    # to re-read 'now' timestamps
+
     return $trx;
 }
 
@@ -455,26 +438,45 @@ sub payment_free_gift {
     my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
     my $account = $self->set_default_account($currency);
 
-    my $payment = $account->add_payment({
+    my ($trx) = $account->add_payment_transaction({
+            amount               => $amount,
+            payment_gateway_code => 'free_gift',
+            payment_type_code    => $payment_type,
+            status               => 'OK',
+            staff_loginid        => $staff,
+            remark               => $remark,
+            account_id           => $account->id,
+            source               => $source,
+        },
+        {reason => $remark});    # <- TODO: This is redundant; we are already storing remark in payments table.
+
+    return $trx;
+}
+
+sub payment_mt5_transfer {
+    my ($self, %args) = @_;
+
+    my $currency     = $args{currency}     || die "no currency";
+    my $amount       = $args{amount}       || die "no amount";
+    my $remark       = $args{remark}       || die "no remark";
+    my $payment_type = $args{payment_type} || 'mt5_transfer';
+    my $staff        = $args{staff}        || 'system';
+    my $fees         = $args{fees};
+    my $source       = $args{source};
+
+    my $account = $self->set_default_account($currency);
+
+    my ($trx) = $account->add_payment_transaction({
         amount               => $amount,
-        payment_gateway_code => 'free_gift',
+        payment_gateway_code => 'account_transfer',
         payment_type_code    => $payment_type,
         status               => 'OK',
         staff_loginid        => $staff,
         remark               => $remark,
+        account_id           => $account->id,
+        source               => $source,
+        transfer_fees        => $fees,
     });
-    $payment->free_gift({reason => $remark});
-    my ($trx) = $payment->add_transaction({
-        account_id    => $account->id,
-        amount        => $amount,
-        staff_loginid => $staff,
-        referrer_type => 'payment',
-        action_type   => $action_type,
-        quantity      => 1,
-        source        => $source,
-    });
-    $payment->save(cascade => 1);
-    $trx->load;    # to re-read 'now' timestamps
 
     return $trx;
 }
@@ -489,29 +491,19 @@ sub payment_payment_fee {
     my $staff        = $args{staff}        || 'system';
     my $source       = $args{source};
 
-    my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
     my $account = $self->set_default_account($currency);
 
-    my ($payment) = $account->add_payment({
-        amount               => $amount,
-        payment_gateway_code => 'payment_fee',
-        payment_type_code    => $payment_type,
-        status               => 'OK',
-        staff_loginid        => $staff,
-        remark               => $remark,
-    });
-    $payment->payment_fee({});
-    my ($trx) = $payment->add_transaction({
-        account_id    => $account->id,
-        amount        => $amount,
-        staff_loginid => $staff,
-        referrer_type => 'payment',
-        action_type   => $action_type,
-        quantity      => 1,
-        source        => $source,
-    });
-    $payment->save(cascade => 1);
-    $trx->load;    # to re-read 'now' timestamps
+    my ($trx) = $account->add_payment_transaction({
+            amount               => $amount,
+            payment_gateway_code => 'payment_fee',
+            payment_type_code    => $payment_type,
+            status               => 'OK',
+            staff_loginid        => $staff,
+            remark               => $remark,
+            account_id           => $account->id,
+            source               => $source,
+        },
+        {});    # <- TODO: we currently don't charge payment_fee; this table is redundant.
 
     return $trx;
 }
@@ -532,25 +524,19 @@ sub payment_bank_wire {
         grep { BOM::Database::AutoGenerated::Rose::BankWire->meta->column($_) }
         keys %args;
 
-    my ($payment) = $account->add_payment({
-        amount               => $amount,
-        payment_gateway_code => 'bank_wire',
-        payment_type_code    => 'bank_money_transfer',
-        status               => 'OK',
-        staff_loginid        => $staff,
-        remark               => $remark,
-    });
-    $payment->bank_wire(\%bank_wire_values);
-    my ($trx) = $payment->add_transaction({
-        account_id    => $account->id,
-        amount        => $amount,
-        staff_loginid => $staff,
-        referrer_type => 'payment',
-        action_type   => $action_type,
-        quantity      => 1,
-        source        => $source,
-    });
-    $payment->save(cascade => 1);
+    my ($trx) = $account->add_payment_transaction({
+            amount               => $amount,
+            payment_gateway_code => 'bank_wire',
+            payment_type_code    => 'bank_money_transfer',
+            status               => 'OK',
+            staff_loginid        => $staff,
+            remark               => $remark,
+            account_id           => $account->id,
+            source               => $source,
+        },
+        \%bank_wire_values
+    );
+
     BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'bankwire',
         currency      => $currency,
@@ -559,7 +545,6 @@ sub payment_bank_wire {
         amount        => $amount,
         payment_agent => $self->payment_agent ? 1 : 0,
     );
-    $trx->load;    # to re-read 'now' timestamps
 
     return $trx;
 }
@@ -577,26 +562,17 @@ sub payment_affiliate_reward {
     my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
     my $account = $self->set_default_account($currency);
 
-    my ($payment) = $account->add_payment({
-        amount               => $amount,
-        payment_gateway_code => 'affiliate_reward',
-        payment_type_code    => $payment_type,
-        status               => 'OK',
-        staff_loginid        => $staff,
-        remark               => $remark,
-    });
-    $payment->affiliate_reward({});
-    my ($trx) = $payment->add_transaction({
-        account_id    => $account->id,
-        amount        => $amount,
-        staff_loginid => $staff,
-        referrer_type => 'payment',
-        action_type   => $action_type,
-        quantity      => 1,
-        source        => $source,
-    });
-    $payment->save(cascade => 1);
-    $trx->load;    # to re-read 'now' timestamps
+    my ($trx) = $account->add_payment_transaction({
+            amount               => $amount,
+            payment_gateway_code => 'affiliate_reward',
+            payment_type_code    => $payment_type,
+            status               => 'OK',
+            staff_loginid        => $staff,
+            remark               => $remark,
+            account_id           => $account->id,
+            source               => $source,
+        },
+        {});    # <- TODO: affiliate_reward table is redundant
 
     if (exists $self->{mlt_affiliate_first_deposit} and $self->{mlt_affiliate_first_deposit}) {
         $self->status->set('cashier_locked', 'system', 'MLT client received an affiliate reward as first deposit');
@@ -626,27 +602,19 @@ sub payment_western_union {
     $wu_values{mtcn_number}     ||= '';
     $wu_values{payment_country} ||= '';
 
-    my ($payment) = $account->add_payment({
-        amount               => $amount,
-        payment_gateway_code => 'western_union',
-        payment_type_code    => $payment_type,
-        status               => 'OK',
-        staff_loginid        => $staff,
-        remark               => $remark,
-    });
+    my ($trx) = $account->add_payment_transaction({
+            amount               => $amount,
+            payment_gateway_code => 'western_union',
+            payment_type_code    => $payment_type,
+            status               => 'OK',
+            staff_loginid        => $staff,
+            remark               => $remark,
+            account_id           => $account->id,
+            source               => $source,
+        },
+        \%wu_values
+    );
 
-    $payment->western_union(\%wu_values);
-
-    my ($trx) = $payment->add_transaction({
-        account_id    => $account->id,
-        amount        => $amount,
-        staff_loginid => $staff,
-        referrer_type => 'payment',
-        action_type   => $action_type,
-        quantity      => 1,
-        source        => $source,
-    });
-    $payment->save(cascade => 1);
     BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'westernunion',
         currency      => $currency,
@@ -655,7 +623,6 @@ sub payment_western_union {
         amount        => $amount,
         payment_agent => $self->payment_agent ? 1 : 0,
     );
-    $trx->load;    # to re-read 'now' timestamps
 
     return $trx;
 }
@@ -670,28 +637,18 @@ sub payment_arbitrary_markup {
     my $staff        = $args{staff}        || 'system';
     my $source       = $args{source};
 
-    my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
     my $account = $self->set_default_account($currency);
 
-    my ($payment) = $account->add_payment({
+    my ($trx) = $account->add_payment_transaction({
         amount               => $amount,
         payment_gateway_code => 'arbitrary_markup',
         payment_type_code    => $payment_type,
         status               => 'OK',
         staff_loginid        => $staff,
         remark               => $remark,
+        account_id           => $account->id,
+        source               => $source,
     });
-    my ($trx) = $payment->add_transaction({
-        account_id    => $account->id,
-        amount        => $amount,
-        staff_loginid => $staff,
-        referrer_type => 'payment',
-        action_type   => $action_type,
-        quantity      => 1,
-        source        => $source,
-    });
-    $payment->save(cascade => 1);
-    $trx->load;    # to re-read 'now' timestamps
 
     return $trx;
 }

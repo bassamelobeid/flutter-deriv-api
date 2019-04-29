@@ -8,7 +8,7 @@ use Test::Warn;
 use Date::Utility;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw( create_client );
+use BOM::Test::Helper::Client qw( create_client top_up );
 
 use BOM::User::Client;
 use BOM::User::Client::Account;
@@ -32,30 +32,21 @@ my $account_existing = new_ok(
 
 is($account_existing->currency_code(), 'USD', 'Existing account fetched from DB');
 
+#create a transaction because it will fire a trigger to set balance on Account.
 ok(
-    my $new_payment = $account_existing->add_payment({
+    my ($txn) = $account_existing->add_payment_transaction({
             amount               => 100,
             payment_gateway_code => 'account_transfer',
             payment_type_code    => 'internal_transfer',
             status               => 'OK',
             staff_loginid        => 1,
-            remark               => 'test Payment'
+            remark               => 'test Payment',
+            account_id           => $account_existing->id,
+            source               => 1,
         }
     ),
     'Add payment'
 );
-
-#create a transaction because it will fire a trigger to set balance on Account.
-my ($txn) = $new_payment->add_transaction({
-    account_id    => $account_existing->id,
-    amount        => 100,
-    staff_loginid => 1,
-    referrer_type => 'payment',
-    action_type   => 'deposit',
-    quantity      => 1,
-    source        => 1,
-});
-$new_payment->save(cascade => 1);
 
 #Reload the Account again as the balance should have been set by the db trigger and the current version of the object wont be aware of it.
 my $account_with_payment = BOM::User::Client::Account->new(
@@ -73,29 +64,35 @@ subtest 'total_withdrawals' => sub {
         currency_code  => 'USD'
     );
 
+    top_up $client_two, 'USD', 200;
+
     is($account->total_withdrawals(), 0, "No payments have been made");
 
     ok(
-        $account->add_payment({
+        $account->add_payment_transaction({
                 amount               => -100,
                 payment_gateway_code => 'account_transfer',
                 payment_type_code    => 'internal_transfer',
                 status               => 'OK',
                 staff_loginid        => 1,
                 remark               => 'test Payment',
-                payment_time         => '2017-01-01 00:00:00'
+                payment_time         => '2017-01-01 00:00:00',
+                account_id           => $account->id,
+                source               => 1,
             }
         ),
         'Add payment'
     );
     ok(
-        $account->add_payment({
+        $account->add_payment_transaction({
                 amount               => -100,
                 payment_gateway_code => 'account_transfer',
                 payment_type_code    => 'internal_transfer',
                 status               => 'OK',
                 staff_loginid        => 1,
-                remark               => 'test Payment'
+                remark               => 'test Payment',
+                account_id           => $account->id,
+                source               => 1,
             }
         ),
         'Add payment'
@@ -112,38 +109,30 @@ subtest find_transaction => sub {
         client_loginid => $client->loginid,
         currency_code  => 'USD'
     );
+#create a transaction because it will fire a trigger to set balance on Account.
     ok(
-        my $new_payment = $account->add_payment({
+        my $txn = $account->add_payment_transaction({
                 amount               => 100,
                 payment_gateway_code => 'account_transfer',
                 payment_type_code    => 'internal_transfer',
                 status               => 'OK',
                 staff_loginid        => 1,
-                remark               => 'test Payment'
+                remark               => 'test Payment',
+                account_id           => $account->id,
+                source               => 1,
             }
         ),
         'Add payment'
     );
 
-#create a transaction because it will fire a trigger to set balance on Account.
-    my ($txn) = $new_payment->add_transaction({
-        account_id    => $account->id,
-        amount        => 100,
-        staff_loginid => 1,
-        referrer_type => 'payment',
-        action_type   => 'deposit',
-        quantity      => 1,
-        source        => 1,
-    });
-    $new_payment->save(cascade => 1);
     my $trx = $account->find_transaction(
         query => [
-            id            => $txn->id,
+            id            => $txn->{id},
             referrer_type => 'payment'
         ])->[0];
-    is($trx->amount * 1, 100, 'Returned the correct transaction');
+    is($trx->amount + 0, 100, 'Returned the correct transaction');
     my $testPayment = $trx->payment;
-    is($testPayment->amount, 100, 'Test getting Payment from Transaction OK');
+    is($testPayment->amount + 0, 100, 'Test getting Payment from Transaction OK');
 };
 
 subtest default_account => sub {
