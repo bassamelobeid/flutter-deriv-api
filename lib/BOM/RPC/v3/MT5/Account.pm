@@ -1039,7 +1039,7 @@ async_rpc mt5_deposit => sub {
             my $fees_currency     = $response->{fees_currency};
             my $fees_percent      = $response->{fees_percent};
             my $mt5_currency_code = $response->{mt5_currency_code};
-            my ($account, $payment, $txn, $comment, $error);
+            my ($txn, $comment, $error);
             try {
                 my $fee_calculated_by_percent = $response->{calculated_fee};
                 my $min_fee                   = $response->{min_fee};
@@ -1054,28 +1054,16 @@ async_rpc mt5_deposit => sub {
                 );
                 $comment = "$comment $additional_comment" if $additional_comment;
 
-                $account = $fm_client->set_default_account($fm_client->currency);
-                ($payment) = $account->add_payment({
-                    amount               => -$amount,
-                    payment_gateway_code => 'account_transfer',
-                    payment_type_code    => 'mt5_transfer',
-                    status               => 'OK',
-                    staff_loginid        => $fm_loginid,
-                    remark               => $comment,
-                    transfer_fees        => $fees
-                });
-                ($txn) = $payment->add_transaction({
-                    account_id    => $account->id,
-                    amount        => -$amount,
-                    staff_loginid => $fm_loginid,
-                    referrer_type => 'payment',
-                    action_type   => 'withdrawal',
-                    quantity      => 1,
-                    source        => $source,
-                });
-                $payment->save(cascade => 1);
+                ($txn) = $fm_client->payment_mt5_transfer(
+                    amount   => -$amount,
+                    currency => $fm_client->currency,
+                    staff    => $fm_loginid,
+                    remark   => $comment,
+                    fees     => $fees,
+                    source   => $source,
+                );
 
-                _record_mt5_transfer($fm_client->db->dbic, $payment->id, -$response->{mt5_amount}, $to_mt5, $response->{mt5_currency_code});
+                _record_mt5_transfer($fm_client->db->dbic, $txn->{payment_id}, -$response->{mt5_amount}, $to_mt5, $response->{mt5_currency_code});
             }
             catch {
                 $error = BOM::Transaction->format_error(err => $_);
@@ -1112,9 +1100,8 @@ async_rpc mt5_deposit => sub {
                     }
 
                     return Future->done({
-                        status                => 1,
-                        binary_transaction_id => $txn->id
-                    });
+                            status                => 1,
+                            binary_transaction_id => $txn->{id}});
                 });
         });
 };
@@ -1193,27 +1180,16 @@ async_rpc mt5_withdrawal => sub {
                     #   We might want to consider using Future->try somehow instead.
                     return try {
                         # deposit to Binary a/c
-                        my $account = $to_client->default_account;
-                        my ($payment) = $account->add_payment({
-                            amount               => $mt5_amount,
-                            payment_gateway_code => 'account_transfer',
-                            payment_type_code    => 'mt5_transfer',
-                            status               => 'OK',
-                            staff_loginid        => $to_loginid,
-                            remark               => $comment,
-                            transfer_fees        => $fees_in_client_currency
-                        });
-                        my ($txn) = $payment->add_transaction({
-                            account_id    => $account->id,
-                            amount        => $mt5_amount,
-                            staff_loginid => $to_loginid,
-                            referrer_type => 'payment',
-                            action_type   => 'deposit',
-                            quantity      => 1,
-                            source        => $source,
-                        });
-                        $payment->save(cascade => 1);
-                        _record_mt5_transfer($to_client->db->dbic, $payment->id, $amount, $fm_mt5, $mt5_currency_code);
+                        my ($txn) = $to_client->payment_mt5_transfer(
+                            amount   => $mt5_amount,
+                            currency => $to_client->currency,
+                            staff    => $to_loginid,
+                            remark   => $comment,
+                            fees     => $fees_in_client_currency,
+                            source   => $source,
+                        );
+
+                        _record_mt5_transfer($to_client->db->dbic, $txn->{payment_id}, $amount, $fm_mt5, $mt5_currency_code);
 
                         _store_transaction_redis({
                                 loginid       => $to_loginid,
@@ -1223,9 +1199,8 @@ async_rpc mt5_withdrawal => sub {
                             }) if ($mt5_group eq 'real\vanuatu_standard');
 
                         return Future->done({
-                            status                => 1,
-                            binary_transaction_id => $txn->id
-                        });
+                                status                => 1,
+                                binary_transaction_id => $txn->{id}});
                     }
                     catch {
                         my $error = BOM::Transaction->format_error(err => $_);
