@@ -80,11 +80,6 @@ sub comment {
     return $line;
 }
 
-sub fee_comment {
-    my ($c, $trx_id) = @_;
-    return 'Fee corresponding to ' . $c->type . ' Ref ' . $trx_id;
-}
-
 sub validate_params {
     my $c   = shift;
     my $log = $c->env->{log};
@@ -197,6 +192,7 @@ sub write_transaction_line {
         payment_processor => $payment_processor,
         transaction_id    => $transaction_id,
         ip_address        => $ip_address,
+        payment_fee       => $fee,
     );
 
     # Write the payment transaction
@@ -225,16 +221,11 @@ sub write_transaction_line {
     BOM::Platform::Client::IDAuthentication->new(client => $client)->run_authentication if $fdp;
 
     if ($fee) {
-        my $fee_trx = $client->payment_payment_fee(
-            %payment_args,
-            amount => -$fee,
-            remark => $c->fee_comment($trx->id),
-        );
-        $log->debug($c->type . " fee transaction complete, trx id " . $fee_trx->id);
+        $log->debug($c->type . " fee transaction complete, trx id " . $trx->{fee_transaction_id});
     }
 
-    $log->debug($c->type . " transaction complete, trx id " . $trx->id);
-    return $trx->id;
+    $log->debug($c->type . " transaction complete, trx id " . $trx->{id});
+    return $trx->{id};
 }
 
 sub check_predicates {
