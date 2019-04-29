@@ -94,6 +94,11 @@ sub upload {
         });
 }
 
+sub download {
+    my ($self, $file) = @_;
+    return $self->{s3}->get_object(key => $file);
+}
+
 sub _get_generator {
     my ($self, $expiry) = @_;
 
@@ -105,4 +110,17 @@ sub _get_generator {
     );
 }
 
+sub head_object {
+    my ($self, $filename) = @_;
+    return $self->{s3}->head_object(
+        key => $filename,
+    );
+}
+
+sub delete {
+    my ($self, $filename) = @_;
+    return $self->{s3}->delete_object(
+        key => $filename,
+    );
+}
 1;

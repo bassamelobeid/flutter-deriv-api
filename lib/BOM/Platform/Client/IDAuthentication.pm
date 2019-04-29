@@ -179,17 +179,6 @@ sub _fetch_proveid {
     my $client  = $self->client;
     my $loginid = $client->loginid;
 
-    # TODO: Remove this once results are uploaded to S3
-    # If we're on a server which doesn't have a /db directory it's pointless to
-    # request ProveID, let's set the proveid_pending flag and hope that the cron
-    # job picks it up in 1 hour.
-    unless (-d '/db') {
-        $client->status->set('proveid_requested', 'system', 'ProveID request has been made for this account.');
-        $client->status->set('unwelcome',       'system', 'FailedExperian - Experian checks could not run, waiting for cron to run them in 1 hour.');
-        $client->status->set('proveid_pending', 'system', 'This server does not have the ProveID files, asking the cron to authenticate in 1 hour');
-        die 'ProveID cannot run because /db does not exist';
-    }
-
     my $result;
     try {
         $client->status->set('proveid_requested', 'system', 'ProveID request has been made for this account.');

@@ -12,6 +12,21 @@ use Test::Exception;
 use Test::Deep;
 use File::Compare qw(compare);
 use XML::SemanticDiff;
+use Path::Tiny;
+
+my %cache;
+my $mock_s3 = Test::MockModule->new('BOM::Platform::S3Client');
+$mock_s3->mock(
+    'upload',
+    sub {
+        my ($self, $file_name, $file, $checksum) = @_;
+        $cache{$file_name} = path($file)->slurp;
+        return Future->done;
+    });
+$mock_s3->mock('download', sub { my ($self, $file) = @_; return exists $cache{$file} ? Future->done($cache{$file}) : Future->fail("no such file"); });
+$mock_s3->mock('head_object', sub { my ($self, $file) = @_; return exists $cache{$file} ? Future->done : Future->fail("no such file") });
+$mock_s3->mock('delete', sub { my ($self, $file) = @_; delete $cache{$file}; return Future->done(1) });
+
 subtest 'Constructor' => sub {
     subtest 'No Client' => sub {
         throws_ok(sub { BOM::Platform::ProveID->new() }, qr/Missing required arguments: client/, "Constructor dies with no client");
@@ -96,11 +111,16 @@ subtest 'Response' => sub {
 
             my $xml_file = $xml_fld . $entry . ".xml";
             my $pdf_file = $pdf_fld . $entry . ".pdf";
-            ok(BOM::Platform::ProveID->new(client => $client)->get_result, "get result response ok");
-
-            is(XML::SemanticDiff->new()->compare($xml_file, "/db/f_accounts/MX/192com_authentication/xml/" . $loginid . ".ProveID_KYC"),
-                0, "xml saved ok");
-            is(compare($pdf_file, "/db/f_accounts/MX/192com_authentication/pdf/" . $loginid . ".ProveID_KYC.pdf"), 0, "pdf saved ok");
+            my $proveid  = BOM::Platform::ProveID->new(client => $client);
+            ok(my $result = $proveid->get_result, "get result response ok");
+            my $tmp_xml_file = Path::Tiny::tempfile;
+            $tmp_xml_file->spew($result);
+            my $tmp_pdf_file = Path::Tiny::tempfile;
+            $tmp_pdf_file->spew($proveid->s3client->download($proveid->_pdf_file_name)->get);
+            $tmp_pdf_file->copy("/tmp/tmp_$entry.pdf");
+            is(XML::SemanticDiff->new()->compare($xml_file, "$tmp_xml_file"), 0, "xml saved ok");
+            is(compare($tmp_pdf_file, $pdf_file), 0, "pdf saved ok");
+            $proveid->delete_existing_reports;
         };
     }
 
@@ -120,7 +140,7 @@ subtest 'Response' => sub {
 
         throws_ok(
             sub { BOM::Platform::ProveID->new(client => $client)->get_result },
-            qr/Encountered SOAP Fault when sending xml request : Test Fault Code : Test Fault String/,
+            qr/Encountered SOAP Fault when sending XML request : Test Fault Code : Test Fault String/,
             "fault fails ok"
         );
         }
@@ -131,25 +151,76 @@ subtest 'Replace Existing Result' => sub {
     my $loginid = $client->loginid;
     $client->first_name('ExperianBOE');
 
-    BOM::Platform::ProveID->new(client => $client)->get_result;
-
+    my $proveid = BOM::Platform::ProveID->new(client => $client);
+    my $result = $proveid->get_result;
     $client->first_name('ExperianValid');
 
     # Run again to replace existing files
-    BOM::Platform::ProveID->new(client => $client)->get_result;
-
-    my $saved_xml = "/db/f_accounts/MX/192com_authentication/xml/" . $loginid . ".ProveID_KYC";
-    my $saved_pdf = "/db/f_accounts/MX/192com_authentication/pdf/" . $loginid . ".ProveID_KYC.pdf";
+    $result = BOM::Platform::ProveID->new(client => $client)->get_result;
+    my $tmp_file = Path::Tiny::tempfile;
 
     my $expected_xml = "/home/git/regentmarkets/bom-test/data/Experian/SavedXML/ExperianValid.xml";
-    my $expected_pdf = "/home/git/regentmarkets/bom-test/data/Experian/PDF/ExperianValid.pdf";
-    is(XML::SemanticDiff->new()->compare($saved_xml, $expected_xml), 0, "xml replaced ok");
-    is(compare($saved_pdf, $expected_pdf), 0, "pdf replaced ok");
+    $tmp_file->spew($result);
+    is(XML::SemanticDiff->new()->compare("$tmp_file", $expected_xml), 0, "xml replaced ok");
 
-    BOM::Platform::ProveID->new(client => $client)->delete_existing_reports;
+    $proveid = BOM::Platform::ProveID->new(client => $client);
+    $proveid->delete_existing_reports;
+    # test has_saved_xml etc
+    ok(!$proveid->has_saved_xml, 'saved xml deleted');
+};
 
-    is(-e $saved_xml, undef, "Deleted xml ok");
-    is(-e $saved_pdf, undef, "Deleted pdf ok");
+subtest 'Other ProveID Methods' => sub {
+    my $client  = create_client("MX");
+    my $loginid = $client->loginid;
+    $client->first_name('ExperianDeceased');
+
+    my $proveid = BOM::Platform::ProveID->new(client => $client);
+
+    ok(!$proveid->has_saved_xml, 'no saved xml yet');
+    ok(!$proveid->xml_result,    'no xml result yet');
+    ok(!$proveid->has_saved_pdf, 'no saved pdf yet');
+    is($proveid->_xml_file_name, "$loginid.ProveID_KYC.xml", 'test xml file name');
+    is($proveid->_pdf_file_name, "$loginid.ProveID_KYC.pdf", 'test pdf file name');
+    ok($proveid->xml_url, "there is xml url");
+    ok($proveid->pdf_url, "there is pdf url");
+
+    my $result = $proveid->get_result;
+    ok($proveid->has_saved_xml, 'has saved xml now');
+    ok(my $xml_result = $proveid->xml_result,    'has xml result now');
+    ok(my $pdf        = $proveid->has_saved_pdf, 'has saved pdf now');
+    $proveid = BOM::Platform::ProveID->new(client => $client);    # create a new object to test stored file
+    is($proveid->xml_result, $xml_result, 'xml result is ok');
+
+    # test back-compatible: read xml from s3 first
+    my $xml_folder = path("/tmp/xml");
+    $xml_folder->mkpath;
+    my $xml_file = $xml_folder->child($proveid->_file_name);
+    $xml_file->spew("hello world");
+    isnt(
+        BOM::Platform::ProveID->new(
+            client => $client,
+            folder => '/tmp'
+            )->xml_result,
+        "hello world",
+        "xml result will be fetched from s3 first"
+    );
+    delete $cache{$proveid->_xml_file_name};
+    is(
+        BOM::Platform::ProveID->new(
+            client => $client,
+            folder => '/tmp'
+            )->xml_result,
+        "hello world",
+        "xml result will then be fetched from local dir"
+    );
+
+    BOM::Platform::ProveID->new(
+        client => $client,
+        folder => '/tmp'
+    )->get_result;
+    ok(!$xml_file->exists,                       'local file dropped when we re-fetch the result');
+    ok(exists($cache{$proveid->_xml_file_name}), 'xml file stored on s3');
+    $proveid->delete_existing_reports;
 };
 
 # If run with -uat option (prove experian.t :: -uat), we will run tests against Experian's actual UAT server

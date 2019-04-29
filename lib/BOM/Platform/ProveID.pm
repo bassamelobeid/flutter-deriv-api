@@ -8,6 +8,7 @@ use warnings;
 
 use BOM::Config::Runtime;
 use BOM::Config;
+use BOM::Platform::S3Client;
 use Locale::Country;
 use Path::Tiny;
 use Try::Tiny;
@@ -19,6 +20,7 @@ use SOAP::Lite;
 use IO::Socket::SSL 'SSL_VERIFY_NONE';
 use Digest::SHA qw/hmac_sha256_base64/;
 use List::Util qw /first/;
+use Future;
 
 our $VERSION = '0.001';
 
@@ -67,23 +69,19 @@ has search_option => (
 
 =head2 xml_result
 
-The xml result received from the Experian request. 
+The XML result received from the Experian request. 
 
 =cut
 
 has xml_result => (
     is      => 'rw',
     lazy    => 1,
-    default => sub {
-        my $self = shift;
-        my $res = try { Path::Tiny::path($self->xml_folder . "/" . $self->file_name)->slurp } catch { return '' };
-
-        return $res;
-    });
+    builder => '_build_xml_result',
+);
 
 =head2 folder
 
-Path to where the xml and pdf results will be stored
+Path to where the XML and pdf results will be stored
 
 =cut
 
@@ -93,7 +91,7 @@ has folder => (
 
 =head2 xml_folder
 
-Path to where the xml result will be stored. Defaults to C<folder . "/xml"`.
+Path to where the XML result will be stored. Defaults to C<folder . "/xml"`.
 
 =cut
 
@@ -111,13 +109,33 @@ has pdf_folder => (
     is => 'lazy',
 );
 
-=head2 file_name
+=head2 _file_name
 
-The names of the saved xml and pdf file names. Defaults to C<$loginid . "." . $search_option>
+The base names of the saved XML and pdf file. Defaults to C<$loginid . "." . $search_option>
 
 =cut
 
-has file_name => (
+has _file_name => (
+    is => 'lazy',
+);
+
+=head2 _xml_file_name
+
+The name of the saved XML file.
+
+=cut
+
+has _xml_file_name => (
+    is => 'lazy',
+);
+
+=head2 _pdf_file_name
+
+The name of the saved pdf file
+
+=cut
+
+has _pdf_file_name => (
     is => 'lazy',
 );
 
@@ -193,7 +211,7 @@ has api_proxy => (
 
 =head2 experian_url
 
-Url of experian's website for PDF downloading.
+URL of experian's website for PDF downloading.
 
 =cut
 
@@ -203,13 +221,51 @@ has experian_url => (
 
 =head2 xml_parser
 
-Instance of L<XML::LibXML>. Used for parsing the xml result from Experian.
+Instance of L<XML::LibXML>. Used for parsing the XML result from Experian.
 
 =cut
 
 has xml_parser => (
     is      => 'ro',
     default => sub { return XML::LibXML->new; });
+
+=head2 s3client
+
+Instance of L<BOM::Platform::S3Client>. Used for storing XML and pdf files.
+
+=cut
+
+has s3client => (
+    is      => 'ro',
+    default => sub {
+        my $config = BOM::Config::backoffice()->{experian_document_s3} // {
+            aws_bucket            => 'test_bucket',
+            aws_region            => 'test_region',
+            aws_access_key_id     => 'test_id',
+            aws_secret_access_key => 'test_access_key',
+        };
+        return BOM::Platform::S3Client->new($config);
+    });
+
+=head2 xml_url
+
+URL of XML file on S3 server
+
+=cut
+
+has xml_url => (
+    is => 'lazy',
+);
+
+=head2 pdf_url
+
+URL of pdf file on S3 server
+
+=cut
+
+has pdf_url => (
+    is => 'lazy',
+);
 
 =head1 METHODS
 
@@ -228,7 +284,8 @@ Contructor. Client key/value pair is required, other key/value pairs are optiona
 
   my $xml_result = $experian_obj->get_result();
   
-Full wrapping function that makes the xml request, saves the xml result, saves the pdf result and returns the xml result.
+
+Full wrapping function that makes the XML request, saves the XML result, saves the pdf result and returns the XML result.
 
 =cut
 
@@ -236,7 +293,6 @@ sub get_result {
     my $self = shift;
 
     $self->get_xml_result;
-
     $self->_save_xml_result;
     try {
         $self->get_pdf_result;
@@ -248,11 +304,40 @@ sub get_result {
     return $self->xml_result;
 }
 
+=head2 upload_xml
+
+  my $future = $self->upload_xml;
+
+Upload XML file onto S3. Return a Future object
+
+=cut
+
+sub upload_xml {
+    my ($self) = @_;
+    die "requested XML result for uploading is not available" unless $self->xml_result;
+    my $tmp_file = Path::Tiny::tempfile;
+    $tmp_file->spew($self->xml_result);
+    return $self->_upload_file(xml => $tmp_file);
+}
+
+=head2 upload_pdf
+
+  my $future = $self->upload_pdf($pdffile);
+
+Generate pdf file (Path::Tiny object) from XML and upload pdf file onto S3. Return a Future object
+
+=cut
+
+sub upload_pdf {
+    my ($self, $pdf_file) = @_;
+    return $self->_upload_file(pdf => $pdf_file);
+}
+
 =head2 get_xml_result
 
   my $xml_result = $experian_obj->get_xml_result();
 
-Makes the Experian request and returns the xml result from Experian.
+Makes the Experian request and returns the XML result from Experian.
 
 =cut
 
@@ -269,7 +354,7 @@ sub get_xml_result {
 
     my $som = $soap->search(SOAP::Data->type('xml' => $request), $self->_2fa_header);
 
-    die "Encountered SOAP Fault when sending xml request : " . $som->faultcode . " : " . $som->faultstring if $som->fault;
+    die "Encountered SOAP Fault when sending XML request : " . $som->faultcode . " : " . $som->faultstring if $som->fault;
 
     my $result = $som->result;
     $self->xml_result($result);
@@ -277,16 +362,39 @@ sub get_xml_result {
     return 1;
 }
 
+=head2 _upload_file
+
+upload files onto S3.
+
+$type: xml or pdf
+$file: Path::Tiny object
+
+=cut
+
+sub _upload_file {
+    my ($self, $type, $file) = @_;
+    die "Type should be xml or pdf" unless $type && $type =~ /xml|pdf/;
+    die "File has to be a Path::Tiny object" unless $file && $file->isa('Path::Tiny');
+    my $file_name = $type eq 'xml' ? $self->_xml_file_name : $self->_pdf_file_name;
+    my $old_file  = $type eq 'xml' ? $self->_has_old_xml   : $self->_has_old_pdf;
+    my $checksum  = Digest::MD5->new->addfile($file->filehandle('<'))->hexdigest;
+    return $self->s3client->upload($file_name, "$file", $checksum)->then(
+        sub {
+            $old_file->remove if $old_file;
+            return Future->done(@_);
+        });
+}
+
 =head2 _save_xml_result
 
-Called as part of C<get_result>. Saves the xml result into C<xml_folder>. 
+Called as part of C<get_result>. Saves the XML result into C<xml_folder>. 
 
 =cut
 
 sub _save_xml_result {
     my $self = shift;
 
-    die "No xml request to save" unless $self->xml_result;
+    die "No XML request to save" unless $self->xml_result;
 
     my $xml = $self->xml_parser->parse_string($self->xml_result);
 
@@ -299,14 +407,7 @@ sub _save_xml_result {
             . $error_message_node->textContent();
     }
 
-    my $xml_report_filepath = $self->xml_folder . "/" . $self->file_name;
-
-    # Create directory if it doesn't exist
-    Path::Tiny::path($self->xml_folder)->mkpath unless -d -x $self->xml_folder;
-
-    # Path::Tiny spew overwrites any existing data
-    Path::Tiny::path($xml_report_filepath)->spew($self->xml_result);
-
+    $self->upload_xml->get;
     return 1;
 }
 
@@ -314,7 +415,7 @@ sub _save_xml_result {
 
 Called as part of C<get_result>
 
-Logins to C<experian_url> with C<username>, C<password> and the SSL key/cert for two factor authentication. Uses the C<OurReference> tag from the xml result to get the corresponding PDF. Then saves the PDF result into C<folder_pdf>
+Logins to C<experian_url> with C<username>, C<password> and the SSL key/cert for two factor authentication. Uses the C<OurReference> tag from the XML result to get the corresponding PDF. Then saves the PDF result into C<folder_pdf>
 
 =cut
 
@@ -350,11 +451,6 @@ sub get_pdf_result {
         die "Connection error: $err->{message}";
     }
 
-    my $pdf_report_filepath = $self->pdf_folder . "/" . $self->file_name . ".pdf";
-
-    # Create directory if it doesn't exist
-    Path::Tiny::path($self->pdf_folder)->mkpath unless -d -x $self->pdf_folder;
-
     my $dl_tx = $ua->get("$url/archive/index.cfm?event=archive.pdf&id=$our_ref");
 
     unless ($dl_tx->success) {
@@ -363,16 +459,17 @@ sub get_pdf_result {
         die "Connection error: $err->{message}";
     }
 
-    # move_to overwrites any existing data
-    $dl_tx->res->content->asset->move_to($pdf_report_filepath);
+    my $pdf_file = Path::Tiny::tempfile;
+    $dl_tx->res->content->asset->move_to($pdf_file);
+    $self->upload_pdf($pdf_file)->get;
     return 1;
 }
 
 =head2
-    
+
 The request structure is built based on Section 6 of L<Experian's API|https://github.com/regentmarkets/third_party_API_docs/blob/master/AML/20160520%20Experian%20ID%20Search%20XML%20API%20v1.22.pdf>
 
-The following methods are all part of the building of the xml
+The following methods are all part of the building of the XML
 
 =over
 
@@ -518,35 +615,63 @@ sub delete_existing_reports {
     my $self   = shift;
     my $client = $self->client;
 
-    my $xml_report_filepath = $self->xml_folder . "/" . $self->file_name;
-    my $pdf_report_filepath = $self->pdf_folder . "/" . $self->file_name . ".pdf";
+    my $xml_report_filepath = $self->xml_folder . "/" . $self->_file_name;
+    my $pdf_report_filepath = $self->pdf_folder . "/" . $self->_pdf_file_name;
 
     Path::Tiny::path($xml_report_filepath)->remove();
     Path::Tiny::path($pdf_report_filepath)->remove();
 
+    Future->wait_all(map { $self->s3client->delete($_) } ($self->_xml_file_name, $self->_pdf_file_name))->else_done(0)->get;
+
     return 1;
+}
+
+=head2 _has_old_xml
+
+Returns path object if there is a saved XML at $xml_folder . "/" . $file_name , else undef
+
+=cut
+
+sub _has_old_xml {
+    my $self    = shift;
+    my $old_xml = path($self->xml_folder . "/" . $self->_file_name);
+    return $old_xml->exists ? $old_xml : undef;
+}
+
+=head2 _has_old_pdf
+
+Returns path object if there is a saved PDF at $pdf_folder . "/" . $file_name, else undef
+
+=cut
+
+sub _has_old_pdf {
+    my $self    = shift;
+    my $old_pdf = path($self->pdf_folder . "/" . $self->_file_name);
+    return $old_pdf->exists ? $old_pdf : undef;
 }
 
 =head2 has_saved_xml
 
-Returns 1 if there is a saved xml at $xml_folder . "/" . $file_name
+Returns 1 if there is a saved XML at local dir or S3 server
 
 =cut
 
 sub has_saved_xml {
     my $self = shift;
-    return -e $self->xml_folder . "/" . $self->file_name;
+    return $self->_has_old_xml
+        || $self->s3client->head_object($self->_xml_file_name)->then_done(1)->else_done(0)->get;
 }
 
 =head2 has_saved_pdf
 
-Returns 1 if there is a saved pdf at $pdf_folder . "/" . $file_name . ".pdf";
+Returns 1 if there is a saved pdf at local dir or S3 server.
 
 =cut
 
 sub has_saved_pdf {
     my $self = shift;
-    return -e $self->pdf_folder . "/" . $self->file_name . ".pdf";
+    return $self->_has_old_pdf
+        || $self->s3client->head_object($self->_pdf_file_name)->then_done(1)->else_done(0)->get;
 }
 
 =head2 BUILDERS
@@ -558,11 +683,29 @@ These are the list of builders for some of the attributes of this module
 =item _build_folder
 =item _build_xml_folder
 =item _build_pdf_folder
-=item _build_file_name
+=item _build__file_name
+=item _build__xml_file_name
+=item _build__pdf_file_name
+=item _build_xml_url
+=item _build_pdf_url
 
 =back
 
 =cut
+
+sub _build_xml_result {
+    my $self = shift;
+    return '' unless $self->has_saved_xml;
+
+    my $s3_error;
+    my ($result) = $self->s3client->download($self->_xml_file_name)->else(sub { $s3_error = shift; Future->done('') })->get;
+
+    # for back compatible
+    $result ||= try { path($self->xml_folder . "/" . $self->_file_name)->slurp_utf8 } catch { return '' };
+
+    warn "There is no such experian document on either local dir or S3. Maybe S3 has problem: $s3_error" unless $result;
+    return $result;
+}
 
 sub _build_folder {
     my $self = shift;
@@ -581,9 +724,31 @@ sub _build_pdf_folder {
     return $self->folder . "/pdf";
 }
 
-sub _build_file_name {
+sub _build__file_name {
     my $self = shift;
     return $self->client->loginid . "." . $self->search_option;
+}
+
+sub _build__xml_file_name {
+    my $self = shift;
+    return $self->_file_name . '.xml';
+}
+
+sub _build__pdf_file_name {
+    my $self = shift;
+    return $self->_file_name . '.pdf';
+}
+
+sub _build_xml_url {
+    my $self = shift;
+    return undef if $self->_has_old_xml;
+    return $self->s3client->get_s3_url($self->_xml_file_name);
+}
+
+sub _build_pdf_url {
+    my $self = shift;
+    return undef if $self->_has_old_xml;
+    return $self->s3client->get_s3_url($self->_pdf_file_name);
 }
 
 1;
