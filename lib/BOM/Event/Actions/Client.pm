@@ -31,12 +31,15 @@ use Future::Utils qw(fmap0);
 use BOM::Config;
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Email qw(send_email);
+use Email::Stuffer;
 use BOM::User;
 use BOM::User::Client;
 use BOM::Database::ClientDB;
 use BOM::Platform::S3Client;
 use BOM::Platform::Event::Emitter;
 use BOM::Config::RedisReplicated;
+use Net::Async::Redis;
+use JSON::MaybeUTF8 'encode_json_utf8';
 
 # Number of seconds to allow for just the verification step.
 use constant VERIFICATION_TIMEOUT => 60;
@@ -48,6 +51,12 @@ use constant UPLOAD_TIMEOUT => 60;
 
 # Redis key namespace to store onfido applicant id
 use constant ONFIDO_APPLICANT_KEY_PREFIX => 'ONFIDO::APPLICANT::ID::';
+
+use constant ONFIDO_REQUESTS_LIMIT => $ENV{ONFIDO_REQUESTS_LIMIT} // 1000;
+use constant ONFIDO_LIMIT_TIMEOUT  => $ENV{ONFIDO_LIMIT_TIMEOUT}  // 60 * 60 * 24;
+use constant ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY => 'ONFIDO_AUTHENTICATION_REQUEST_CHECK';
+use constant ONFIDO_REQUEST_COUNT_KEY               => 'ONFIDO_REQUEST_COUNT';
+use constant ONFIDO_CHECK_EXCEEDED_KEY              => 'ONFIDO_CHECK_EXCEEDED';
 
 # Conversion from our database to the Onfido available fields
 my %ONFIDO_DOCUMENT_TYPE_MAPPING = (
@@ -151,6 +160,20 @@ my %ONFIDO_DOCUMENT_TYPE_PRIORITY = (
             $http;
             }
 
+    }
+
+    my $redis;
+
+    sub _redis {
+        return $redis //= do {
+            my $loop         = IO::Async::Loop->new;
+            my $redis_config = BOM::Config::RedisReplicated::redis_config('replicated', 'write');
+            my $redis        = Net::Async::Redis->new(
+                uri  => $redis_config->{uri},
+                auth => $redis_config->{password});
+            $loop->add($redis);
+            $redis;
+            }
     }
 }
 
@@ -371,58 +394,122 @@ sub ready_for_authentication {
 
         my $client = BOM::User::Client->new({loginid => $loginid});
         my $residence = uc(country_code2code($client->residence, 'alpha-2', 'alpha-3'));
-        Future->wait_any(
-            $loop->timeout_future(after => VERIFICATION_TIMEOUT)->on_fail(sub { $log->errorf('Time out waiting for Onfido verfication.') }),
-            $onfido->applicant_check(
-                applicant_id => $applicant_id,
-                # We don't want Onfido to start emailing people
-                suppress_form_emails => 1,
-                # Used for reporting and filtering in the web interface
-                tags => ['automated', $broker, $loginid, $residence],
-                # Note that there are additional report types which are not currently useful:
-                # - proof_of_address - only works for UK documents
-                # - street_level - involves posting a letter and requesting the user enter
-                # a verification code on the Onfido site
-                # plus others that would require the feature to be enabled on the account:
-                # - identity
-                # - watchlist
-                # for facial similarity we are passing document id for document
-                # that onfido will use to compare photo uploaded
-                reports => [{
-                        name      => 'document',
-                        documents => [$doc->id],
-                    },
-                    {
-                        name      => 'facial_similarity',
-                        variant   => 'standard',
-                        documents => [$doc->id],
-                    },
-                    # We also submit a POA document to see if we can extract any information from it
-                    (
-                        $poa_doc
-                        ? {
-                            name      => 'document',
-                            documents => [$poa_doc->id],
-                            }
-                        : ())
-                ],
-                # async flag if true will queue checks for processing and
-                # return a response immediately
-                async => 1,
-                # The type is always "express" since we are sending data via API.
-                # https://documentation.onfido.com/#check-types
-                type => 'express',
-                )->on_ready(
-                sub {
-                    my $f = shift;
-                    DataDog::DogStatsd::Helper::stats_timing("event.ready_for_authentication.onfido.applicant_check." . $f->state . ".elapsed",
-                        $f->elapsed,);
+
+        # INCR Onfido check request count in Redis
+        _redis()->connect->then(
+            sub {
+                return _redis()->hincrby(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_REQUEST_COUNT_KEY, 1);
+            }
+            )->then(
+            sub {
+                my $request_count = shift;
+
+                # Update DataDog Stats
+                DataDog::DogStatsd::Helper::stats_inc('event.ready_for_authentication.onfido.applicant_check.count');
+
+                if ($request_count == 1) {
+                    # set duration to expire in 1 day
+                    _redis()->expire(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_LIMIT_TIMEOUT)->retain();
                 }
-                )->on_fail(
-                sub {
-                    $log->errorf('An error occurred while processing Onfido verification: %s', join(' ', @_));
-                })
-            )->get
+                return Future->done($request_count);
+            }
+            )->then(
+            sub {
+                my $request_count = shift;
+
+                if ($request_count > ONFIDO_REQUESTS_LIMIT) {
+                    # NOTE: We do not send email again if we already send before
+                    my $redis_data = encode_json_utf8({
+                        creation_epoch => Date::Utility->new()->epoch,
+                        has_email_sent => 1
+                    });
+
+                    return _redis()->hsetnx(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_CHECK_EXCEEDED_KEY, $redis_data)->then(
+                        sub {
+
+                            return Future->done({
+                                request_count  => $request_count,
+                                limit_exceeded => 1,
+                                send_email     => shift
+                            });
+                        });
+                }
+                return Future->done({
+                    request_count  => $request_count,
+                    limit_exceeded => 0,
+                    send_email     => 0
+                });
+            }
+            )->then(
+            sub {
+                my $args = shift;
+                my ($request_count, $limit_exceeded, $send_email) = @{$args}{qw/request_count limit_exceeded send_email/};
+
+                if ($limit_exceeded) {
+                    if ($send_email) {
+                        _send_email_onfido_check_exceeded_cs($request_count);
+                    }
+
+                    return Future->fail('We exceeded our Onfido authentication check request per day');
+                } else {
+                    return Future->done();
+                }
+            }
+            )->then(
+            sub {
+                Future->wait_any(
+                    $loop->timeout_future(after => VERIFICATION_TIMEOUT)->on_fail(sub { $log->errorf('Time out waiting for Onfido verfication.') }),
+                    $onfido->applicant_check(
+                        applicant_id => $applicant_id,
+                        # We don't want Onfido to start emailing people
+                        suppress_form_emails => 1,
+                        # Used for reporting and filtering in the web interface
+                        tags => ['automated', $broker, $loginid, $residence],
+                        # Note that there are additional report types which are not currently useful:
+                        # - proof_of_address - only works for UK documents
+                        # - street_level - involves posting a letter and requesting the user enter
+                        # a verification code on the Onfido site
+                        # plus others that would require the feature to be enabled on the account:
+                        # - identity
+                        # - watchlist
+                        # for facial similarity we are passing document id for document
+                        # that onfido will use to compare photo uploaded
+                        reports => [{
+                                name      => 'document',
+                                documents => [$doc->id],
+                            },
+                            {
+                                name      => 'facial_similarity',
+                                variant   => 'standard',
+                                documents => [$doc->id],
+                            },
+                            # We also submit a POA document to see if we can extract any information from it
+                            (
+                                $poa_doc
+                                ? {
+                                    name      => 'document',
+                                    documents => [$poa_doc->id],
+                                    }
+                                : ())
+                        ],
+                        # async flag if true will queue checks for processing and
+                        # return a response immediately
+                        async => 1,
+                        # The type is always "express" since we are sending data via API.
+                        # https://documentation.onfido.com/#check-types
+                        type => 'express',
+                        )->on_ready(
+                        sub {
+                            my $f = shift;
+                            DataDog::DogStatsd::Helper::stats_timing(
+                                "event.ready_for_authentication.onfido.applicant_check." . $f->state . ".elapsed",
+                                $f->elapsed,);
+                        }
+                        )->on_fail(
+                        sub {
+                            $log->errorf('An error occurred while processing Onfido verification: %s', join(' ', @_));
+                        }));
+            })->get;
     }
     catch {
         $log->errorf('Failed to process Onfido verification: %s', $_);
@@ -744,4 +831,26 @@ sub _send_email_account_closure_client {
     return undef;
 }
 
+sub _send_email_onfido_check_exceeded_cs {
+    my $request_count        = shift;
+    my $brands               = Brands->new();
+    my $system_email         = $brands->emails('system');
+    my @email_recipient_list = ($brands->emails('support'), $brands->emails('compliance_alert'));
+    my $email_subject        = 'Onfido request count limit exceeded';
+    my $email_template       = "\
+        <p><b>IMPORTANT: We exceeded our Onfido authentication check request per day..</b></p>
+        <p>We have sent about $request_count requests which exceeds (" . ONFIDO_REQUESTS_LIMIT . "\)
+        our own request limit per day with Onfido server.</p>
+
+        Team Binary.com
+        ";
+
+    my $email_status = Email::Stuffer->from($system_email)->to(@email_recipient_list)->subject($email_subject)->html_body($email_template)->send();
+    unless ($email_status) {
+        $log->warn('failed to send Onfido check exceeded email.');
+        return {status_code => 0};
+    }
+
+    return 1;
+}
 1;
