@@ -12,13 +12,14 @@ Handles validation for cashier
 
 use strict;
 use warnings;
+no indirect;
 
 use Date::Utility;
 use Scalar::Util qw(looks_like_number);
 use ExchangeRates::CurrencyConverter qw/convert_currency/;
 use Format::Util::Numbers qw/get_min_unit financialrounding/;
 use Try::Tiny;
-no indirect;
+use List::Util qw(any);
 
 use Brands;
 use BOM::User::Client;
@@ -148,16 +149,36 @@ sub is_crypto_cashier_suspended {
 Returns true if the given currency is suspended in the crypto cashier. Only works for crypto currencies,
 this will die for fiat currencies such as USD / GBP.
 
+=over 4
+
+=item C<currency> Currency symbol
+
+=item C<action> deposit/withdrawal
+
+=back
+
+return true if the currency is currently suspended for the action
+
 =cut
 
 sub is_crypto_currency_suspended {
-    my $currency = shift or die "expected currency parameter";
+    my ($currency, $action) = @_;
+
+    die "expected currency type parameter" unless $currency;
 
     die "Failed to accept $currency as a cryptocurrency." if (LandingCompany::Registry::get_currency_type(uc $currency) // '') ne 'crypto';
 
     return 1 if BOM::Config::Runtime->instance->app_config->system->suspend->cryptocashier;
 
-    return BOM::Config::Runtime->instance->app_config->system->suspend->cryptocurrencies =~ /\Q$currency\E/;
+    my $first_check = BOM::Config::Runtime->instance->app_config->system->suspend->cryptocurrencies =~ /\Q$currency\E/;
+
+    if ($action) {
+        my $sub_action = "cryptocurrencies_$action";
+        my $second_check = any { $currency eq $_ } BOM::Config::Runtime->instance->app_config->system->suspend->$sub_action->@*;
+        return $first_check || $second_check;
+    }
+
+    return $first_check;
 }
 
 =head2 pre_withdrawal_validation
