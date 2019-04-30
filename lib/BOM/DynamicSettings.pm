@@ -183,6 +183,8 @@ sub get_settings_by_group {
                 system.suspend.cryptocashier
                 system.suspend.cashier
                 system.suspend.cryptocurrencies
+                system.suspend.cryptocurrencies_deposit
+                system.suspend.cryptocurrencies_withdrawal
                 system.suspend.new_accounts
                 system.suspend.expensive_api_calls
                 system.suspend.all_logins
@@ -343,7 +345,7 @@ sub get_extra_validation {
 
 Validates the amount to be a positive valid number.
 
-=cut  
+=cut
 
 sub _validate_positive_number {
     my $input_data = shift;
@@ -401,7 +403,7 @@ sub _validate_payment_min_by_staff {
 
 =head2 _validate_transfer_min_by_currency
 
-Validates json string containing the minimum transfer amount per currency. 
+Validates json string containing the minimum transfer amount per currency.
 It validates currency codes (hash keys) to be supported within the system; also
 validates the minimum values to be well-frmatted for displaying.
 
