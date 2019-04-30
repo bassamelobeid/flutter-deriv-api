@@ -363,9 +363,19 @@ system:
           default: 0
           global: 1
         cryptocurrencies:
-          description: "Suspend comma-separated list of currencies"
+          description: "Suspend comma-separated list of currencies, set this configuration if you want to disable all functionalities to this currency"
           isa: Str
           default: ""
+          global: 1
+        cryptocurrencies_deposit:
+          description: "Deposit suspend comma-separated list of currencies, set this configuration if you want to block just deposits"
+          isa: ArrayRef
+          default: []
+          global: 1
+        cryptocurrencies_withdrawal:
+          description: "Withdrawal suspend comma-separated list of currencies, set this configuration if you want to block just withdrawals"
+          isa: ArrayRef
+          default: []
           global: 1
         new_accounts:
           description: "Suspend opening new accounts"
