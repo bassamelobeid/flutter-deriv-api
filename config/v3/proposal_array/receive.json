@@ -75,8 +75,8 @@
                }
             }}, 
             { 
-                "properties" :{
-                    "CALLE" : { "type" : "array"}
+                "patternproperties" :{
+                    "^\\w{2,30}$" : { "type" : "array"}
             }}]
          },
          "spot_time" : {

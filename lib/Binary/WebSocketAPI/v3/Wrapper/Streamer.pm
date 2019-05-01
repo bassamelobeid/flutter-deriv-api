@@ -322,7 +322,7 @@ sub ticks_history {
                         $worker->clear_cache;
                         $worker->cache_only(0);
                         my $schema_file = path('/home/git/regentmarkets/binary-websocket-api/config/v3/ticks_history/receive.json');
-                        $tick_receive_schema = decode_json($schema_file->slurp_utf8);
+                        $tick_receive_schema = decode_json($schema_file->slurp);
                         $req_storage->{schema_receive} = $tick_receive_schema;
 
                         my $uuid = $worker->uuid();
@@ -342,7 +342,7 @@ sub ticks_history {
     if ($args->{subscribe}) {
         if (!$tick_receive_schema || !defined($tick_receive_schema->{properties}->{tick})) {
             my $schema_file = path('/home/git/regentmarkets/binary-websocket-api/config/v3/ticks/receive.json');
-            $tick_receive_schema = decode_json($schema_file->slurp_utf8);
+            $tick_receive_schema = decode_json($schema_file->slurp);
         }
         $req_storage->{schema_receive} = $tick_receive_schema;
         if (not _feed_channel_subscribe($c, $args->{ticks_history}, $publish, $req_storage, $callback, 1)) {
