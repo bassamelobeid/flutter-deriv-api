@@ -20,18 +20,6 @@ Bar("Make dual control code");
 
 my $now   = Date::Utility->new;
 my $input = request()->params;
-
-$input->{'reminder'} = defang($input->{'reminder'});
-
-if (length $input->{'reminder'} < 4) {
-    print "ERROR: your comment/reminder field is too short! (need 4 or more chars)";
-    code_exit_BO();
-}
-
-unless ($input->{clientemail}) {
-    print "Please provide email";
-    code_exit_BO();
-}
 unless ($input->{clientloginid}) {
     print "Please provide client loginid";
     code_exit_BO();
@@ -45,21 +33,37 @@ if (not $client) {
     print "ERROR: " . encode_entities($input->{'clientloginid'}) . " does not exist! Perhaps you made a typo?";
     code_exit_BO();
 }
+my $client_email = $client->email;
 
 if ($input->{'transtype'} =~ /^UPDATECLIENT/) {
+    $input->{'reminder'} = defang($input->{'reminder'});
+
+    if (length $input->{'reminder'} < 4) {
+        print "ERROR: your comment/reminder field is too short! (need 4 or more chars)";
+        code_exit_BO();
+    }
+
+    unless ($input->{clientemail}) {
+        print "Please provide email";
+        code_exit_BO();
+    }
+    $client_email = $input->{clientemail};
+}
+
+if ($input->{'transtype'} =~ /^UPDATECLIENT|Edit affiliates token/) {
     my $code = BOM::DualControl->new({
             staff           => $clerk,
-            transactiontype => $input->{'transtype'}})->client_control_code($input->{'clientemail'}, $client->binary_user_id);
+            transactiontype => $input->{'transtype'}})->client_control_code($client_email, $client->binary_user_id);
 
     my $message =
           "The dual control code created by $clerk  (for a "
         . $input->{'transtype'}
         . ") for "
-        . $input->{'clientemail'}
+        . $client_email
         . " is: $code This code is valid for 1 hour (from "
         . $now->datetime_ddmmmyy_hhmmss
-        . ") only. Reminder/comment: "
-        . $input->{'reminder'};
+        . ") only.";
+    $message .= " Reminder/comment: " . $input->{'reminder'} if $input->{'reminder'};
 
     BOM::User::AuditLog::log($message, '', $clerk);
 
@@ -73,9 +77,8 @@ if ($input->{'transtype'} =~ /^UPDATECLIENT/) {
         . 'Creator: '
         . $clerk . '<br>'
         . 'Email: '
-        . $input->{clientemail} . '<br>'
-        . 'Comment/reminder: '
-        . $input->{reminder} . '</p>';
+        . $client_email . '<br>';
+    print 'Comment/reminder: ' . $input->{reminder} . '</p>' if $input->{'reminder'};
 
     print "<p>Note: "
         . encode_entities($input->{'clientloginid'}) . " is "
@@ -83,7 +86,7 @@ if ($input->{'transtype'} =~ /^UPDATECLIENT/) {
         . encode_entities($client->first_name) . ' '
         . encode_entities($client->last_name)
         . ' current email is '
-        . encode_entities($client->email);
+        . encode_entities($client_email);
 } else {
     print "Transaction type is not valid";
 }

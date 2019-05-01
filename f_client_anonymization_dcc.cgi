@@ -13,8 +13,8 @@ Bar("Make dual control code");
 
 # Error checks
 
-code_exit_BO("Please provide a transaction type.") unless $input->{transtype};
-code_exit_BO("Invalid transaction type") unless ($input->{transtype} =~ /^Anonymize client|Delete customerio record|Edit affiliates token$/);
+code_exit_BO("Please provide a transaction type.")   unless $input->{transtype};
+code_exit_BO("Invalid transaction type")             unless ($input->{transtype} =~ /^Anonymize client|Delete customerio record/);
 code_exit_BO("ERROR: Please provide client loginid") unless ($input->{clientloginid});
 
 $input->{clientloginid} = trim(uc $input->{clientloginid});

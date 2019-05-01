@@ -69,11 +69,6 @@ if ($input->{EditAffiliatesToken}) {
         code_exit_BO(_get_display_error_message("ERROR: Affiliate Token is not available for this type of Accounts.!"));
     }
 
-    my $dcc_error = BOM::DualControl->new({
-            staff           => $clerk,
-            transactiontype => $input->{EditAffiliatesToken}})->validate_client_anonymization_control_code($input->{DCcode}, $ClientLoginid);
-    code_exit_BO(_get_display_error_message("ERROR: " . $dcc_error->get_mesg())) if $dcc_error;
-
     my $client = try { return BOM::User::Client->new({loginid => $ClientLoginid}) };
     code_exit_BO(
         qq[<p>ERROR: Client [$ClientLoginid] not found. </p>
@@ -81,6 +76,12 @@ if ($input->{EditAffiliatesToken}) {
                   Try Again: <input type="text" name="loginID" value="$ClientLoginid"></input>
                   </form>]
     ) unless $client;
+
+    my $dcc_error = BOM::DualControl->new({
+            staff           => $clerk,
+            transactiontype => $input->{EditAffiliatesToken}}
+    )->validate_client_control_code($input->{DCcode}, $client->email, $client->binary_user_id);
+    code_exit_BO(_get_display_error_message("ERROR: " . $dcc_error->get_mesg())) if $dcc_error;
 
     # Get User clients to update them
     my @clients_to_update;

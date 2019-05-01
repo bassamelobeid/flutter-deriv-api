@@ -1,5 +1,5 @@
 [% WRAPPER layout title='MAKE DUAL CONTROL CODE' %]
-    <form id='generateDCC' action="[% request.url_for('backoffice/f_client_anonymization_dcc.cgi') | none %]" method='get' class='bo_ajax_form'>
+    <form id='generateDCC' action="[% request.url_for('backoffice/f_makeclientdcc.cgi') | none %]" method='get' class='bo_ajax_form'>
         <input type='hidden' name='l' value='EN'><br>
         <input type='hidden' name='transtype' value='Edit affiliates token'>
         Loginid : <input type='text' name='clientloginid' placeholder='required' value='[% loginid %]'>
