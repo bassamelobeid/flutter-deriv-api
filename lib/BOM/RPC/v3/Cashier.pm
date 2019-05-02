@@ -483,17 +483,16 @@ rpc paymentagent_transfer => sub {
     my $payment_agent = $client_fm->payment_agent;
     return $error_sub->(localize('You are not authorized for transfers via payment agents.')) unless $payment_agent;
 
-    my $max_withdrawal = $payment_agent->max_withdrawal;
-    my $min_withdrawal = $payment_agent->min_withdrawal;
-    my $min_max        = BOM::Config::PaymentAgent::get_transfer_min_max($currency);
+    my $min_max = BOM::Config::PaymentAgent::get_transfer_min_max($currency);
 
-    return $error_sub->(localize("Invalid amount. Maximum is [_1].", $min_max->{maximum})) if ($amount > $min_max->{maximum});
+    my $max_withdrawal = $payment_agent->max_withdrawal // $min_max->{maximum};
+    my $min_withdrawal = $payment_agent->min_withdrawal // $min_max->{minimum};
+
     return $error_sub->(localize("Invalid amount. Maximum withdrawal allowed is [_1].", $max_withdrawal))
-        if ($max_withdrawal && $amount > $max_withdrawal);
+        if ($amount > $max_withdrawal);
 
-    return $error_sub->(localize('Invalid amount. Minimum is [_1].', $min_max->{minimum})) if ($amount < $min_max->{minimum});
     return $error_sub->(localize("Invalid amount. Minimum withdrawal allowed is [_1].", $min_withdrawal))
-        if ($min_withdrawal && $amount < $min_withdrawal);
+        if ($amount < $min_withdrawal);
 
     my $client_to = try { BOM::User::Client->new({loginid => $loginid_to, db_operation => 'write'}) }
         or return $error_sub->(localize('Login ID ([_1]) does not exist.', $loginid_to));

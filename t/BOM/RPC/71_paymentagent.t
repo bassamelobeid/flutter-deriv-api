@@ -286,7 +286,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         my $max           = $lim->{maximum};
         $testargs->{args}{amount} = $max * 2;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client}, "Invalid amount. Maximum is $max.", "$test ($max for $currency_type)");
+        is($res->{error}{message_to_client}, "Invalid amount. Maximum withdrawal allowed is $max.", "$test ($max for $currency_type)");
         reset_transfer_testargs();
 
         $test = 'Transfer fails if amount is over the payment agent maximum';
@@ -301,7 +301,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         my $min = $lim->{minimum};
         $testargs->{args}{amount} = $min * 0.5;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client}, "Invalid amount. Minimum is $min.", "$test ($min for $currency_type)");
+        is($res->{error}{message_to_client}, "Invalid amount. Minimum withdrawal allowed is $min.", "$test ($min for $currency_type)");
         reset_transfer_testargs();
 
         $test = 'Transfer fails if amount is under the payment agent minimum';
