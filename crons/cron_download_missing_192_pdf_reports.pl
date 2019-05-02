@@ -10,33 +10,24 @@ use BOM::Platform::ProveID;
 use BOM::Config::Runtime;
 use BOM::Platform::Client::IDAuthentication;
 use BOM::User::Client;
+use Date::Utility;
+use Time::Duration::Concise::Localize;
+
+use constant HOURS_TO_QUERY => 4;    # This cron runs every hour, but we will pick up clients with `proveid_pending` status set 4 hours in the past.
 
 my $accounts_dir = BOM::Config::Runtime->instance->app_config->system->directory->db . "/f_accounts";
-my $so = 'ProveID_KYC';    # At the time of writing this script this is the only search option we have
+my $search_option = 'ProveID_KYC';    # At the time of writing this script, this is the only search option we have
 
-for my $broker (qw/MF MX/) {
+for my $broker (qw(MX)) {
     my $pending_loginids = find_loginids_with_pending_experian($broker);
-
     for my $loginid (@$pending_loginids) {
-        my $client  = get_client($loginid);
-        my $proveid = BOM::Platform::ProveID->new(
-            client        => $client,
-            search_option => $so
-        );
-        my $xml_exists = $proveid->has_saved_xml;
-        my $pdf_exists = $proveid->has_saved_pdf;
 
         try {
             my $client = get_client($loginid);
-            unless ($xml_exists) {
-                request_proveid($client);
-            }
-            $client->status->clear_proveid_pending;
-            my $unwelcome = $client->status->unwelcome;
-            $client->status->clear_unwelcome if $unwelcome and $unwelcome->{reason} =~ /^FailedExperian/;
-            if ($xml_exists and not $pdf_exists) {
-                request_pdf($broker, $client);
-            }
+
+            BOM::Platform::Client::IDAuthentication->new(
+                client => $client,
+            )->proveid;
         }
         catch {
             warn "ProveID failed, $_";
@@ -58,39 +49,17 @@ sub get_db_for_broker {
 sub find_loginids_with_pending_experian {
     my $broker = shift;
     my $dbic   = get_db_for_broker($broker)->dbic;
+    my $time   = Date::Utility->new()->minus_time_interval(Time::Duration::Concise::Localize->new('interval' => HOURS_TO_QUERY . 'h'))
+        ->datetime_yyyymmdd_hhmmss;
 
     my $result = $dbic->run(
         fixup => sub {
-            $_->selectall_arrayref(<<'SQL', {Slice => {}}) });
+            $_->selectall_arrayref(<<'SQL', {Slice => {}}, $time) });
 SELECT client_loginid FROM betonmarkets.client_status
-WHERE status_code = 'proveid_pending' AND last_modified_date >= NOW() - INTERVAL '1 hour';
+WHERE status_code = 'proveid_pending' AND last_modified_date >= ?;
 SQL
 
     return [grep { $_ =~ /$broker/ } map { $_->{client_loginid} } @$result];
-}
-
-sub request_pdf {
-    my ($broker, $client) = @_;
-
-    try {
-        BOM::Platform::ProveID->new(
-            client        => $client,
-            search_option => $so
-        )->get_pdf_result;
-    }
-    catch {
-        die "Failed to save Experian pdf for " . $client->loginid . ": $_";
-    };
-    return;
-}
-
-sub request_proveid {
-    my ($client) = @_;
-
-    return BOM::Platform::Client::IDAuthentication->new(
-        client        => $client,
-        force_recheck => 1
-    )->proveid;
 }
 
 sub get_client {
