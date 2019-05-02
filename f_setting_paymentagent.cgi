@@ -5,6 +5,7 @@ use warnings;
 
 use Try::Tiny;
 use HTML::Entities;
+use Scalar::Util qw(looks_like_number);
 
 use BOM::User::Client::PaymentAgent;
 use BOM::User qw( is_payment_agents_suspended_in_country );
@@ -82,17 +83,19 @@ if ($whattodo eq 'show') {
 
     my $currency = $pa->currency_code // $client->default_account->currency_code;
 
+    my $max_withdrawal = request()->param('pa_max_withdrawal');
+    my $min_withdrawal = request()->param('pa_min_withdrawal');
+
+    code_exit_BO("Invalid amount: requested minimum amount must be greater than zero.")
+        if (looks_like_number($min_withdrawal) and $min_withdrawal <= 0);
+    code_exit_BO("Invalid amount: requested maximum amount must be greater than zero.")
+        if (looks_like_number($max_withdrawal) and $max_withdrawal <= 0);
+    code_exit_BO("Invalid amount: requested maximum amount must be greater than minimum amount.")
+        if (looks_like_number($max_withdrawal) and looks_like_number($min_withdrawal) and $max_withdrawal < $min_withdrawal);
+
     my $min_max = BOM::Config::PaymentAgent::get_transfer_min_max($currency);
-
-    my ($max_withdrawal, $min_withdrawal) =
-        (request()->param('pa_max_withdrawal') || $min_max->{maximum}, request()->param('pa_min_withdrawal') || $min_max->{minimum});
-
-    code_exit_BO(
-        "Invalid amount: requested maximum amount exceeds required transfer maximum amount for $currency. Maximum Amount: " . $min_max->{maximum})
-        if ($max_withdrawal > $min_max->{maximum});
-
-    code_exit_BO("Invalid amount: requested minimum amount is below required transfer minimum amount. Minimum Amount: " . $min_max->{minimum})
-        if ($min_withdrawal < $min_max->{minimum});
+    $max_withdrawal = $max_withdrawal || $min_max->{maximum};
+    $min_withdrawal = $min_withdrawal || $min_max->{minimum};
 
     # update payment agent file
     $pa->payment_agent_name(request()->param('pa_name'));
