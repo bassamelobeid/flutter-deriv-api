@@ -43,7 +43,7 @@ my $config = {
             "Your provided email address is already in use by another Login ID. According to our terms and conditions, you may only register once through our site.",
         'InvalidBrand'        => "Brand is invalid.",
         'invalid'             => "Sorry, an error occurred. Please try again later.",
-        'UNAUTHORIZED_ACCESS' => 'Sorry, your account is not authorized to access this application.',
+        'UNAUTHORIZED_ACCESS' => 'Sorry, your account is not authorized to access this application. Currently, only USD accounts are allowed.',
     },
 };
 
