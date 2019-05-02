@@ -78,6 +78,8 @@ sub proveid {
     return undef unless $client->residence eq 'gb';
 
     my $prove_id_result = $self->_fetch_proveid;
+    
+    return undef unless $prove_id_result;
 
     my $xml = XML::LibXML->new()->parse_string($prove_id_result);
 
@@ -189,7 +191,7 @@ sub _fetch_proveid {
         my $error = $_;
 
         # ErrorCode 500 and 501 are Search Errors according to Appendix B of https://github.com/regentmarkets/third_party_API_docs/blob/master/AML/20160520%20Experian%20ID%20Search%20XML%20API%20v1.22.pdf
-        if ($error =~ /^50[01]/) {
+        if ($error =~ /50[01]/) {
             $self->_process_not_found;
             return undef;    # Do not die, if the client was not found
         }
