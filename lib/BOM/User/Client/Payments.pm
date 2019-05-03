@@ -89,7 +89,7 @@ sub validate_payment {
         die "Invalid landing company - $lc\n" unless $lc_limits;
 
         # for CR & CH only check for lifetime limits (in client's currency)
-        if ($lc =~ /^(?:costarica|champion)$/) {
+        if ($lc =~ /^(?:svg|champion)$/) {
             # Withdrawals to date
             my $wd_epoch    = $account->total_withdrawals();
             my $lc_currency = $lc_limits->{currency};

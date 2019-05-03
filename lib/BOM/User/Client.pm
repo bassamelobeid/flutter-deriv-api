@@ -318,7 +318,7 @@ sub is_financial_assessment_complete {
     my $is_FI = is_section_complete($financial_assessment, 'financial_information');
     my $is_TE = is_section_complete($financial_assessment, 'trading_experience');
 
-    return 0 if ($sc eq 'costarica' and $aml eq 'high' and not $is_FI);
+    return 0 if ($sc eq 'svg' and $aml eq 'high' and not $is_FI);
     return 0 if ($sc eq 'maltainvest' and not($is_FI and $is_TE));
     return 0 if ($sc =~ /^iom|malta$/ and $aml eq 'high' and not $is_FI);
 
@@ -640,7 +640,7 @@ sub currency {
     }
 
     return 'GBP' if $self->residence eq 'gb';
-    return 'AUD' if $self->landing_company->short eq 'costarica' and $self->residence eq 'au';
+    return 'AUD' if $self->landing_company->short eq 'svg' and $self->residence eq 'au';
     return $self->landing_company->legal_default_currency;
 }
 

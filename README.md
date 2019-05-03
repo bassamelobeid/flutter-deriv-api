@@ -29,7 +29,7 @@ my $u = BOM::User->create(\%new_user_details);
 
 # Once you have a user, you'll need one or more clients to be able to log in or trade
 my %new_client_details = (
-    landing_company => 'costarica',
+    landing_company => 'svg',
 );
 my $c = $u->create_client(\%new_client_details);
 print $c->loginid; # should give something like CR1234

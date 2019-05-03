@@ -538,9 +538,9 @@ subtest 'clients_for_landing_company' => sub {
     $user = BOM::User->new(
         email => $email,
     );
-    my @clients = $user->clients_for_landing_company('costarica');
+    my @clients = $user->clients_for_landing_company('svg');
     is(scalar @clients, 2, "one cr account");
-    is_deeply([map { $_->landing_company->short } @clients], [('costarica') x 2], 'lc correct');
+    is_deeply([map { $_->landing_company->short } @clients], [('svg') x 2], 'lc correct');
     is_deeply([map { $_->loginid } @clients], [qw/CR10000 CR10001/], "clients are correct");
 };
 

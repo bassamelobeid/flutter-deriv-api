@@ -117,7 +117,7 @@ Takes one or more named parameters:
 
 =over 4
 
-=item * C<landing_company> - e.g. `costarica`
+=item * C<landing_company> - e.g. `svg`
 
 =back
 
@@ -206,7 +206,7 @@ sub clients {
 =head2 clients_for_landing_company
 
 get clients given special landing company short name.
-    $user->clients_for_landing_company('costarica');
+    $user->clients_for_landing_company('svg');
 
 =cut
 
@@ -220,7 +220,7 @@ sub clients_for_landing_company {
 
 =head2 bom_loginid_details
 
-get client non-mt5 login id details 
+get client non-mt5 login id details
 
 =cut
 
@@ -473,9 +473,9 @@ sub update_has_social_signup {
 =head2 is_payment_agents_suspended_in_country
 
  	my $suspended = is_payment_agents_suspended_in_country('ru');
- 	
+
  Tells if payment agent transfer is suspended in the input country.
- 
+
 =cut
 
 sub is_payment_agents_suspended_in_country {

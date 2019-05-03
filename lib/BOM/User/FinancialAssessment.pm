@@ -57,7 +57,7 @@ sub update_financial_assessment {
     # - Non-CR clients
     # - High risk CR with MT5 accounts
     my @client_ids = $user->loginids();
-    if (my @cr_clients = $user->clients_for_landing_company('costarica')) {
+    if (my @cr_clients = $user->clients_for_landing_company('svg')) {
 
         return _email_diffs_to_compliance($previous, $args, \@client_ids, $is_new_mf_client)
             if ((any { $_ =~ /^MT/ } @client_ids) && (any { $_->aml_risk_level eq 'high' } @cr_clients));
@@ -224,7 +224,7 @@ sub decode_fa {
 
 Show the Risk Disclosure warning message when the trading score is less than 8 or CFD score is less than 4
 
-=cut 
+=cut
 
 sub should_warn {
     my $fa = shift;
