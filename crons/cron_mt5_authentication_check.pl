@@ -119,8 +119,8 @@ my $present_day = Date::Utility::today();
 foreach my $id (@all_ids) {
     my $user = BOM::User->new(id => $id);
 
-    # real\\vanuatu or labuan is only for costarica clients
-    my @all_clients = $user->clients_for_landing_company('costarica');
+    # real\\vanuatu or labuan is only for svg clients
+    my @all_clients = $user->clients_for_landing_company('svg');
 
     # Filter disabled and duplicated accounts
     @all_clients = grep { !$_->status->disabled && !$_->status->duplicate_account } @all_clients;

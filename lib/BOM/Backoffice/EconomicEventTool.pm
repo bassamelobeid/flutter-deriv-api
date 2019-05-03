@@ -218,8 +218,8 @@ my @symbols;
 sub _get_affected_underlying_symbols {
     return @symbols if @symbols;
 
-    # default to costarica since it does not matter
-    my $offerings_obj = LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
+    # default to svg since it does not matter
+    my $offerings_obj = LandingCompany::Registry::get('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
     @symbols = $offerings_obj->query({submarket => 'major_pairs'}, ['underlying_symbol']);
     return @symbols;
 }

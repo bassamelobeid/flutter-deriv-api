@@ -77,9 +77,9 @@ sub allow_uplift_self_exclusion {
     # If exclude_until date has expired, Customer Support and Compliance team can remove the exclude_until date
     return 1 if ($after_exclusion_date and not $form_exclude_until_date);
 
-    # If exclude_until date has not expired and client is under Binary (CR) S.A.,
+    # If exclude_until date has not expired and client is under Binary (SVG) Ltd.,
     # then Customer Support and Compliance team can amend or remove the exclude_until date
-    return 1 if ($client->landing_company->short eq 'costarica');
+    return 1 if ($client->landing_company->short eq 'svg');
 
     # If exclude_until date has not expired and client is under Binary (Europe) Ltd, Binary (IOM) Ltd,
     # or Binary Investments (Europe) Ltd, then only Compliance team can amend or remove the exclude_until date
@@ -89,14 +89,14 @@ sub allow_uplift_self_exclusion {
     return 0;
 }
 
-=head2 
+=head2
 
 This sub returns any of the four: Pending, Approved, Rejected, None
 In terms of priority, rejected has higher priority than approved, and approved has higher priority than pending.
 In the worst case scenario, the client might have both professional_rejected and professional statuses
 In cases like this, we assume the client is rejected because there must be a reason why compliance rejected him/her in the first place.
 
-=cut 
+=cut
 
 sub get_professional_status {
 
@@ -268,7 +268,7 @@ sub print_client_details {
         secret_answer                  => $secret_answer,
         can_decode_secret_answer       => $can_decode_secret_answer,
         self_exclusion_enabled         => $self_exclusion_enabled,
-        show_allow_professional_client => ($client->landing_company->short =~ /^(?:costarica|maltainvest)$/) ? 1 : 0,
+        show_allow_professional_client => ($client->landing_company->short =~ /^(?:svg|maltainvest)$/) ? 1 : 0,
         professional_status            => get_professional_status($client),
         show_funds_message             => ($client->residence eq 'gb' and not $client->is_virtual) ? 1 : 0,
         show_risk_approval => ($client->landing_company->short eq 'maltainvest') ? 1 : 0,

@@ -56,7 +56,7 @@ if ($r->param('update_limit')) {
     my $non_binary_contract_limit = $r->param('non_binary_contract_limit');
 
     my @known_keys    = qw(contract_category market submarket underlying_symbol start_type expiry_type barrier_category landing_company);
-    my $offerings_obj = LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
+    my $offerings_obj = LandingCompany::Registry::get('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
     my %known_values  = map { $_ => [$offerings_obj->values_for_key($_)] } @known_keys;
 
     # there's no separate in offerings for intraday and ultra_short duration. So adding it here

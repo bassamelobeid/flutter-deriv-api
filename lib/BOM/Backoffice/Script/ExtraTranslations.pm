@@ -133,7 +133,7 @@ sub add_contract_categories {
     my $fh = $self->pot_append_fh;
     my @all_categories =
         map { Finance::Contract::Category->new($_) }
-        LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config)
+        LandingCompany::Registry::get('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config)
         ->values_for_key('contract_category');
 
     foreach my $contract_category (sort { $a->display_name cmp $b->display_name } grep { $_->display_name } @all_categories) {

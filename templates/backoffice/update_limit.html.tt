@@ -54,7 +54,7 @@
         <tr>
             <td>Landing Company: </td>
             <td><input type="text" name="landing_company" value=''></input></td>
-            <td> e.g. maltainvest | costarica</td>
+            <td> e.g. maltainvest | svg</td>
         </tr>
         <tr>
             <td>Non binary contract limit: </td>
