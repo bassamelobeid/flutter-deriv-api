@@ -16,6 +16,8 @@ use BOM::Test::Helper::Client qw(create_client);
 
 my $ul = Quant::Framework::Underlying->new('frxUSDJPY');
 
+my $landing_company = 'svg';
+
 subtest 'init' => sub {
     throws_ok { BOM::Platform::RiskProfile->new } qr/required/, 'throws if required args not provided';
     lives_ok {
@@ -25,7 +27,7 @@ subtest 'init' => sub {
             expiry_type                    => 'tick',
             currency                       => 'USD',
             barrier_category               => 'euro_atm',
-            landing_company                => 'costarica',
+            landing_company                => $landing_company,
             symbol                         => $ul->symbol,
             market_name                    => $ul->market->name,
             submarket_name                 => $ul->submarket->name,
@@ -42,7 +44,7 @@ my %args = (
     expiry_type                    => 'tick',
     currency                       => 'USD',
     barrier_category               => 'euro_atm',
-    landing_company                => 'costarica',
+    landing_company                => $landing_company,
     symbol                         => $ul->symbol,
     market_name                    => $ul->market->name,
     submarket_name                 => $ul->submarket->name,
@@ -81,7 +83,7 @@ subtest 'get_risk_profile' => sub {
         expiry_type                    => 'tick',
         currency                       => 'USD',
         barrier_category               => 'euro_atm',
-        landing_company                => 'costarica',
+        landing_company                => $landing_company,
         symbol                         => $ul->symbol,
         market_name                    => $ul->market->name,
         submarket_name                 => $ul->submarket->name,
@@ -123,9 +125,9 @@ subtest 'custom client profile' => sub {
     BOM::Config::Runtime->instance->app_config->quants->custom_client_profiles(
         '{"CR1": {"reason": "test XYZ", "custom_limits": {"xxx": {"market": "volidx", "risk_profile": "no_business", "name": "test custom"}}}}');
     my $rp = BOM::Platform::RiskProfile->new(%args);
-    my @cl_pr = $rp->get_client_profiles('CR2', 'costarica');
+    my @cl_pr = $rp->get_client_profiles('CR2', $landing_company);
     ok !@cl_pr, 'no custom client limit';
-    @cl_pr = $rp->get_client_profiles('CR1', 'costarica');
+    @cl_pr = $rp->get_client_profiles('CR1', $landing_company);
     ok @cl_pr, 'custom client limit';
 };
 
@@ -263,7 +265,7 @@ subtest 'check for risk_profile consistency' => sub {
                 expiry_type                    => 'tick',
                 currency                       => 'USD',
                 barrier_category               => 'euro_atm',
-                landing_company                => 'costarica',
+                landing_company                => $landing_company,
                 symbol                         => $ul->symbol,
                 market_name                    => $ul->market->name,
                 submarket_name                 => $ul->submarket->name,
@@ -286,7 +288,7 @@ subtest 'commission profile' => sub {
         expiry_type                    => 'tick',
         currency                       => 'USD',
         barrier_category               => 'euro_atm',
-        landing_company                => 'costarica',
+        landing_company                => $landing_company,
         symbol                         => $ul->symbol,
         market_name                    => $ul->market->name,
         submarket_name                 => $ul->submarket->name,
@@ -320,7 +322,7 @@ subtest 'precedence' => sub {
         expiry_type                    => 'tick',
         currency                       => 'USD',
         barrier_category               => 'euro_atm',
-        landing_company                => 'costarica',
+        landing_company                => $landing_company,
         symbol                         => $ul->symbol,
         market_name                    => $ul->market->name,
         submarket_name                 => $ul->submarket->name,

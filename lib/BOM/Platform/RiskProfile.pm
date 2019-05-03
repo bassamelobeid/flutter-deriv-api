@@ -303,7 +303,7 @@ sub get_current_profile_definitions {
         ($currency, $landing_company, $country_code) = ($client->currency, $client->landing_company->short, $client->residence);
     } else {
         # set some defaults here
-        ($currency, $landing_company) = ('USD', 'costarica');
+        ($currency, $landing_company) = ('USD', 'svg');
     }
 
     my $offerings_obj = _offerings_obj($landing_company, $country_code);
@@ -375,7 +375,7 @@ sub _match_conditions {
 }
 
 sub _offerings_obj {
-    my $landing_company_short = shift // 'costarica';
+    my $landing_company_short = shift // 'svg';
     my $country_code = shift;
 
     my $landing_company = LandingCompany::Registry::get($landing_company_short);

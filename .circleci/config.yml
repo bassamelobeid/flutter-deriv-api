@@ -31,7 +31,7 @@ default: &5
   - auth:
       password: $DOCKERHUB_PASSWORD
       username: circle4regentmarkets
-    image: regentmarkets/debian-ci:stable
+    image: regentmarkets/debian-ci:mohammad_add_svg
     user: nobody
   shell: /bin/bash -leo pipefail
   working_directory: /home/git/regentmarkets/bom-platform

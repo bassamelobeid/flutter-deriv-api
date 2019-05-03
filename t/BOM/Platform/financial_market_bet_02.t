@@ -1337,8 +1337,8 @@ subtest 'batch_buy', sub {
     use YAML::XS;
 
     my $config = YAML::XS::LoadFile('/etc/rmg/clientdb.yml');
-    my $ip     = $config->{costarica}->{write}->{ip};           # create_client creates CR clients
-    my $db     = $config->{costarica}->{write}->{dbname};       # create_client creates CR clients
+    my $ip     = $config->{svg}->{write}->{ip};                 # create_client creates CR clients
+    my $db     = $config->{svg}->{write}->{dbname};             # create_client creates CR clients
     my $pw     = $config->{password};
 
     my $listener = DBI->connect(
