@@ -58,7 +58,7 @@ sub BUILD {
     $self->_eec($eec);
 
     # we are only concern about the 9 forex pairs where we offer multi-barrier trading on.
-    my $offerings_obj = LandingCompany::Registry::get('costarica')->multi_barrier_offerings(BOM::Config::Runtime->instance->get_offerings_config);
+    my $offerings_obj = LandingCompany::Registry::get('svg')->multi_barrier_offerings(BOM::Config::Runtime->instance->get_offerings_config);
     my %symbols = map { $_ => 1 } $offerings_obj->values_for_key('underlying_symbol');
     $self->_symbols_to_perform_check(\%symbols);
 

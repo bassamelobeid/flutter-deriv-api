@@ -40,7 +40,7 @@ sub create_underlying_db {
     $result->chronicle_reader(BOM::Config::Chronicle::get_chronicle_reader);
     $result->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer);
     $result->quant_config($quant_config);
-    $result->offerings_flyby(LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config));
+    $result->offerings_flyby(LandingCompany::Registry::get('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config));
 
     return $result;
 }
