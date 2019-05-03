@@ -15,7 +15,7 @@ sub create_config {
 }
 
 sub delete_all_config {
-    BOM::Database::QuantsConfig->new->_db_list('costarica')->[0]->dbic->run(
+    BOM::Database::QuantsConfig->new->_db_list('svg')->[0]->dbic->run(
         fixup => sub {
             $_->do(
                 'DELETE FROM betonmarkets.symbol_global_potential_loss; DELETE FROM betonmarkets.symbol_global_potential_loss_market_defaults; DELETE from betonmarkets.market_global_potential_loss'
