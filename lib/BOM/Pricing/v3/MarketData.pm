@@ -181,8 +181,8 @@ sub asset_index {
         $country_code         = $client->residence;
     }
 
-    # Default to costarica, which returns the entire asset index, if no arg and not logged in
-    $landing_company_name //= 'costarica';
+    # Default to svg, which returns the entire asset index, if no arg and not logged in
+    $landing_company_name //= 'svg';
 
     for my $country_or_lc ($country_name, $landing_company_name) {
         next if not defined $country_or_lc;
@@ -256,7 +256,7 @@ Returns a hashref containing the following:
 sub generate_trading_times {
     my $date = shift;
 
-    my $offerings = LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
+    my $offerings = LandingCompany::Registry::get('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
     my $tree      = BOM::Product::Offerings::DisplayHelper->new(
         date      => $date,
         offerings => $offerings
@@ -310,7 +310,7 @@ Takes the following scalars:
 
 =item * country_code, a 2-letter country code (e.g. 'id')
 
-=item * landing_company_name, the name of a landing company (e.g. 'costarica')
+=item * landing_company_name, the name of a landing company (e.g. 'svg')
 
 =back
 

@@ -337,7 +337,7 @@ Takes the following arguments as parameters
 
 =item sell_price   Numeric Price at which contract was sold, only available when contract has been sold.
 
-=item app_markup_percentage 3rd party application markup percentage. 
+=item app_markup_percentage 3rd party application markup percentage.
 
 =item landing_company  String The landing company shortcode of the client.
 
@@ -587,7 +587,7 @@ sub contracts_for {
     my $args            = $params->{args};
     my $symbol          = $args->{contracts_for};
     my $currency        = $args->{currency} || 'USD';
-    my $landing_company = $args->{landing_company} // 'costarica';
+    my $landing_company = $args->{landing_company} // 'svg';
     my $product_type    = $args->{product_type};
     my $country_code    = $params->{country_code} // '';
 
@@ -689,7 +689,7 @@ sub _validate_offerings {
     }
 
     try {
-        my $landing_company = LandingCompany::Registry::get($args_copy->{landing_company} // 'costarica');
+        my $landing_company = LandingCompany::Registry::get($args_copy->{landing_company} // 'svg');
         my $method = $contract->is_parameters_predefined ? 'multi_barrier_offerings_for_country' : 'basic_offerings_for_country';
         my $offerings_obj = $landing_company->$method(delete $args_copy->{country_code} // '', BOM::Config::Runtime->instance->get_offerings_config);
 
@@ -727,11 +727,11 @@ Takes the following arguments as parameters
 
 =over 4
 
-=item  contract L<BOM::Product::Contract>::* type of contract varies depending on bet type   
+=item  contract L<BOM::Product::Contract>::* type of contract varies depending on bet type
 
 =item  validation_params A hashref  of attributes  used by the  contract validators in L<BOM::Product::ContractValidator>
 
-=item  country_code  2 letter International Country Code. 
+=item  country_code  2 letter International Country Code.
 
 =back
 
@@ -778,7 +778,7 @@ Takes the following arguments as named parameters
 
 =item contract_id  Integer internal identifier of the purchased Contract
 
-=item is_valid_to_sell Boolean Whether the contract can be sold back to Binary.com. 
+=item is_valid_to_sell Boolean Whether the contract can be sold back to Binary.com.
 
 =item is_sold  Boolean  Whether the contract is sold or not.
 
@@ -788,7 +788,7 @@ Takes the following arguments as named parameters
 
 =item sell_time   Integer Epoch time of when the contract was sold (only present for contracts already sold).
 
-=item validation_error  String   Message to be returned on a validation error. 
+=item validation_error  String   Message to be returned on a validation error.
 
 =back
 

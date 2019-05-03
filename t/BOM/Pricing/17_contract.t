@@ -195,7 +195,7 @@ subtest 'get_bid' => sub {
 
 my $method = 'get_contract_details';
 subtest $method => sub {
-    my $params = {landing_company => 'costarica'};
+    my $params = {landing_company => 'svg'};
 
     cmp_deeply([
             warnings {

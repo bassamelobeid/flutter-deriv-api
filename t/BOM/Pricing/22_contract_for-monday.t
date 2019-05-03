@@ -74,13 +74,13 @@ subtest "Request $method" => sub {
 
     $params[1]{args}{product_type}    = 'multi_barrier';
     $params[1]{args}{contracts_for}   = 'frxUSDJPY';
-    $params[1]{args}{landing_company} = 'costarica';
+    $params[1]{args}{landing_company} = 'svg';
 
     $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
     is_deeply [sort keys %{$result}],
         [sort qw/ available close open hit_count spot feed_license stash/],
-        'It should return contracts_for object for costarica';
-    ok @{$result->{available}}, 'It should return available contracts only for costarica';
+        'It should return contracts_for object for svg';
+    ok @{$result->{available}}, 'It should return available contracts only for svg';
     ok !grep { $_->{contract_type} =~ /^(CALL|PUTE|EXPIRYMISSE|EXPIRYRANGE)$/ } @{$result->{available}};
 
     is $result->{available}->[0]->{available_barriers}->[3], '500.000';

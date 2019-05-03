@@ -32,8 +32,8 @@ BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
 );
 
 initialize_realtime_ticks_db();
-my $now   = Date::Utility->new('2005-09-21 06:46:00');
-my $email = 'test@binary.com';
+my $now = Date::Utility->new('2005-09-21 06:46:00');
+my $landing_company = 'svg';
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
@@ -370,7 +370,7 @@ subtest 'get_bid' => sub {
         currency        => 'USD',
         is_sold         => 0,
         country_code    => 'cr',
-        landing_company => 'costarica',
+        landing_company => $landing_company,
     };
     $c->call_ok('get_bid', $params)->has_error->error_code_is('GetProposalFailure')
         ->error_message_is(
@@ -386,7 +386,7 @@ subtest 'get_bid' => sub {
         is_sold         => 0,
         sell_price      => $contract->payout,
         country_code    => 'cr',
-        landing_company => 'costarica',
+        landing_company => $landing_company,
     };
     my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     my @expected_keys = (qw(
@@ -432,7 +432,7 @@ subtest 'get_bid' => sub {
         is_sold         => 0,
         sell_price      => $contract->payout,
         country_code    => 'cr',
-        landing_company => 'costarica',
+        landing_company => $landing_company,
     };
 
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
@@ -462,7 +462,7 @@ subtest 'get_bid_skip_barrier_validation' => sub {
         is_sold         => 0,
         sell_price      => $contract->value,
         country_code    => 'cr',
-        landing_company => 'costarica',
+        landing_company => $landing_company,
     };
 
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
@@ -486,7 +486,7 @@ subtest 'get_bid_skip_barrier_validation' => sub {
 
 my $method = 'get_contract_details';
 subtest $method => sub {
-    my $params = {landing_company => 'costarica'};
+    my $params = {landing_company => $landing_company};
 
     cmp_deeply([
             warnings {
@@ -538,7 +538,7 @@ subtest $method => sub {
         contract_id     => $contract->id,
         currency        => 'USD',
         country_code    => 'cr',
-        landing_company => 'costarica',
+        landing_company => $landing_company,
     };
     my $res = $c->call_ok('get_bid', $params)->result;
     my $expected_result = {
@@ -588,7 +588,7 @@ subtest $method => sub {
         currency        => 'USD',
         is_sold         => 0,
         country_code    => 'cr',
-        landing_company => 'costarica',
+        landing_company => $landing_company,
     };
     $res = $c->call_ok('get_bid', $params)->result;
     $expected_result = {
@@ -622,7 +622,7 @@ subtest $method => sub {
         currency        => 'USD',
         is_sold         => 1,
         country_code    => 'cr',
-        landing_company => 'costarica',
+        landing_company => $landing_company,
     };
     $res = $c->call_ok('get_bid', $params)->result;
     $expected_result = {
@@ -696,7 +696,7 @@ subtest 'app_markup_percentage' => sub {
         sell_time             => undef,
         app_markup_percentage => 1,
         country_code          => 'cr',
-        landing_company       => 'costarica',
+        landing_company       => $landing_company,
     };
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
@@ -714,7 +714,7 @@ subtest 'app_markup_percentage' => sub {
         sell_time             => undef,
         app_markup_percentage => 1,
         country_code          => 'cr',
-        landing_company       => 'costarica',
+        landing_company       => $landing_company,
     };
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
@@ -732,7 +732,7 @@ subtest 'app_markup_percentage' => sub {
         sell_time             => undef,
         app_markup_percentage => 1,
         country_code          => 'cr',
-        landing_company       => 'costarica',
+        landing_company       => $landing_company,
     };
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
@@ -750,7 +750,7 @@ subtest 'app_markup_percentage' => sub {
         sell_time             => undef,
         app_markup_percentage => 1,
         country_code          => 'cr',
-        landing_company       => 'costarica',
+        landing_company       => $landing_company,
     };
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
@@ -826,7 +826,7 @@ subtest 'get_bid - expired contract' => sub {
         currency        => 'USD',
         is_sold         => 0,
         country_code    => 'cr',
-        landing_company => 'costarica',
+        landing_company => $landing_company,
     };
     my $result = $c->call_ok('get_bid', $params)->has_no_error->has_no_system_error->result;
     ok $result->{is_expired}, 'contract expired';
