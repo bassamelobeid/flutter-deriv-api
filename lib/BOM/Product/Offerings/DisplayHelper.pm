@@ -10,7 +10,7 @@ Help for getting insight into what is offered.
 
 To be deprecated in favor of LandingCompany::Offerings
 
-my $offerings = BOM::Product::Offerings::DisplayHelper->new(offerings => LandingCompany::Registry::get('costarica')->basic_offerings());
+my $offerings = BOM::Product::Offerings::DisplayHelper->new(offerings => LandingCompany::Registry::get('svg')->basic_offerings());
 
 =cut
 

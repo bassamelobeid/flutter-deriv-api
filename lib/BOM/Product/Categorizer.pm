@@ -243,7 +243,7 @@ sub _initialize_contract_parameters {
     }
 
     $pp->{starts_as_forward_starting} //= 0;
-    $pp->{landing_company}            //= 'costarica';
+    $pp->{landing_company}            //= 'svg';
 
     # hash reference reusef
     delete $pp->{expiry_daily};

@@ -10,7 +10,7 @@ use JSON::MaybeXS;
 
 #Update high and low of symbols for predefined periods.
 sub run {
-    my $offerings_obj = LandingCompany::Registry::get('costarica')->multi_barrier_offerings(BOM::Config::Runtime->instance->get_offerings_config);
+    my $offerings_obj = LandingCompany::Registry::get('svg')->multi_barrier_offerings(BOM::Config::Runtime->instance->get_offerings_config);
     my @symbols       = $offerings_obj->values_for_key('underlying_symbol');
 
     my $redis = BOM::Config::RedisReplicated::redis_feed();

@@ -67,24 +67,24 @@ subtest "predefined contracts for symbol" => sub {
         }) for qw(frxUSDJPY frxAUDCAD frxUSDCAD frxAUDUSD);
 
     my %expected = (
-        # costarica, japan
-        'frxUSDJPY-costarica-jp' => {
+        # svg, japan
+        'frxUSDJPY-svg-jp' => {
             contract_count => {
                 callputequal => 2,
                 callput      => 2
             },
             hit_count => 4,
         },
-        # costarica, canada
-        'frxUSDJPY-costarica-ca' => {
+        # svg, canada
+        'frxUSDJPY-svg-ca' => {
             hit_count => 0,
         },
-        # costarica, china
-        'frxUSDJPY-costarica-cn' => {
+        # svg, china
+        'frxUSDJPY-svg-cn' => {
             hit_count => 0,
         },
-        # costarica, no country
-        'frxUSDJPY-costarica' => {
+        # svg, no country
+        'frxUSDJPY-svg' => {
             contract_count => {
                 callputequal => 2,
                 callput      => 2
@@ -93,7 +93,7 @@ subtest "predefined contracts for symbol" => sub {
         },
         # malta, austria
         'frxUSDJPY-malta-at'     => {hit_count => 0},
-        'frxAUDCAD-costarica-id' => {hit_count => 0},
+        'frxAUDCAD-svg-id' => {hit_count => 0},
     );
     foreach my $key (keys %expected) {
         my ($u, $landing_company, $country_code) = split '-', $key;

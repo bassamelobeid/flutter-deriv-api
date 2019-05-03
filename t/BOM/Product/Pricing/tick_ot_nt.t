@@ -39,7 +39,7 @@ my $expected_theo_price = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pr
 my @underlying_symbols  = ('R_100');
 my $payout_currency     = 'USD';
 my $spot                = 1000;
-my $offerings_obj       = LandingCompany::Registry::get('costarica')->basic_offerings($offerings_cfg);
+my $offerings_obj       = LandingCompany::Registry::get('svg')->basic_offerings($offerings_cfg);
 
 foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
     Test::BOM::UnitTestPrice::create_pricing_data($ul->symbol, $payout_currency, $now);

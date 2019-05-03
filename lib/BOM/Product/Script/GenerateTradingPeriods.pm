@@ -26,7 +26,7 @@ sub _set_next_generation_time {
 
 sub run {
 
-    my $offerings_obj    = LandingCompany::Registry::get('costarica')->multi_barrier_offerings(BOM::Config::Runtime->instance->get_offerings_config);
+    my $offerings_obj    = LandingCompany::Registry::get('svg')->multi_barrier_offerings(BOM::Config::Runtime->instance->get_offerings_config);
     my @selected_symbols = $offerings_obj->values_for_key('underlying_symbol');
     my $chronicle_writer = BOM::Config::Chronicle::get_chronicle_writer();
     my $finder           = BOM::Product::ContractFinder->new;

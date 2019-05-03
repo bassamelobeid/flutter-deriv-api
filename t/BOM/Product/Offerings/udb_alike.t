@@ -21,7 +21,7 @@ subtest 'Sets match' => sub {
         'start_type'        => 'available_start_types',
         'barrier_category'  => 'available_barrier_categories',
     );
-    my $offerings_obj = LandingCompany::Registry::get('costarica')->basic_offerings($offerings_cfg);
+    my $offerings_obj = LandingCompany::Registry::get('svg')->basic_offerings($offerings_cfg);
 
     while (my ($po, $udb_method) = each(%po_to_udb_method)) {
         my @result = $offerings_obj->values_for_key($po);

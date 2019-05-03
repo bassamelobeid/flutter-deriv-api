@@ -66,7 +66,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
         quote      => $spot,
         epoch      => $now->epoch,
     });
-    my $offerings_obj = LandingCompany::Registry::get('costarica')->basic_offerings($offerings_cfg);
+    my $offerings_obj = LandingCompany::Registry::get('svg')->basic_offerings($offerings_cfg);
     foreach my $contract_category (grep { not $skip_category{$_} } $offerings_obj->query({underlying_symbol => $ul->symbol}, ['contract_category'])) {
         my $category_obj = Finance::Contract::Category->new($contract_category);
         my @duration = map { $_ * 86400 } (7, 14);

@@ -156,8 +156,8 @@ sub _validate_input_parameters {
         details    => {field => 'date_expiry'},
     ) if $expiry->is_before($start);
 
-    # hard-coded costarica because that's the widest offerings range we have.
-    my $lc        = LandingCompany::Registry::get('costarica');
+    # hard-coded svg because that's the widest offerings range we have.
+    my $lc        = LandingCompany::Registry::get('svg');
     my $offerings = $lc->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config());
 
     my $us = $params->{underlying}->symbol;
