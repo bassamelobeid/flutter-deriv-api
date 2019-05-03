@@ -35,12 +35,12 @@
         },
         "landing_company_name": {
           "type": "string",
-          "pattern": "^costarica$",
+          "pattern": "^svg$",
           "required": "1"
         },
         "landing_company_fullname": {
           "type": "string",
-          "pattern": "^Binary \\(C\\.R\\.\\) S\\.A\\.$",
+          "pattern": "^Binary \\(SVG\\) Ltd\\.$",
           "required": "1"
         },
         "country": {

@@ -111,7 +111,7 @@ $res = $t->await::landing_company({landing_company => 'de'});
 is($res->{msg_type}, 'landing_company');
 ok(ref $res->{landing_company});
 
-$res = $t->await::landing_company_details({landing_company_details => 'costarica'});
+$res = $t->await::landing_company_details({landing_company_details => 'svg'});
 is($res->{msg_type}, 'landing_company_details');
 ok(ref $res->{landing_company_details});
 
@@ -265,7 +265,7 @@ is($call_params->{currency},     'EUR');
 $rpc_response = {error => {code => 'error'}};
 $t->await::payout_currencies({payout_currencies => 1});
 $t->await::landing_company({landing_company => 'de'});
-$t->await::landing_company_details({landing_company_details => 'costarica'});
+$t->await::landing_company_details({landing_company_details => 'svg'});
 $t->await::statement({
     statement => 1,
     limit     => 54
