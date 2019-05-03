@@ -82,12 +82,12 @@ sub _build_db {
     my $db_postfix = $ENV{DB_POSTFIX} // '';
 
     # TODO: This part should not be around once we have unit_test cluster ~ JACK
-    # redirect all of our client testcases to costarica except for collector
+    # redirect all of our client testcases to svg except for collector
     $domain = ((
             (BOM::Config::on_qa() and $db_postfix eq '_test')
                 or BOM::Config::on_development())
             and $self->{operation} ne 'collector'
-    ) ? 'costarica' : $domain;
+    ) ? 'svg' : $domain;
 
     my $type = $self->operation;
 
@@ -166,10 +166,10 @@ sub getall_arrayref {
 
 methods from BOM::Database::DataMapper::Client
 
-This method will return clients which have the same details as provided 
+This method will return clients which have the same details as provided
 
 Excludes:
-    
+
 =over 4
 
 =item  - Those marked with statuses passed in the "exclude_status" parameter

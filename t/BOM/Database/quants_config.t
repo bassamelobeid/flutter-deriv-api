@@ -134,7 +134,7 @@ subtest 'set global' => sub {
             expiry_type     => ['daily', 'intraday'],
             barrier_type    => ['non_atm'],
             contract_group  => ['callput'],
-            landing_company => ['costarica'],
+            landing_company => ['svg'],
         },
         {
             limit_type   => 'global_potential_loss',
@@ -159,13 +159,13 @@ subtest 'set global' => sub {
 
 subtest 'exception for get_global_limit' => sub {
     throws_ok { $qc->get_global_limit() } qr/landing_company is undefined/, 'throws exception if landing_company is not specified';
-    throws_ok { $qc->get_global_limit({landing_company => 'costarica'}) } qr/limit_type is undefined/,
+    throws_ok { $qc->get_global_limit({landing_company => 'svg'}) } qr/limit_type is undefined/,
         'throws exception if limit_type is not specified';
-    throws_ok { $qc->get_global_limit({landing_company => 'costarica', limit_type => 'unknown'}) } qr/unsupported limit type/,
+    throws_ok { $qc->get_global_limit({landing_company => 'svg', limit_type => 'unknown'}) } qr/unsupported limit type/,
         'throws exception if limit_type is not supported';
     lives_ok {
         $qc->get_global_limit({
-                landing_company => 'costarica',
+                landing_company => 'svg',
                 limit_type      => 'global_potential_loss',
             })
     };
@@ -253,7 +253,7 @@ subtest 'get global limit' => sub {
     );
     foreach my $t (@test_cases) {
         my %input = %{$t->[0]};
-        $input{landing_company} = 'costarica';
+        $input{landing_company} = 'svg';
         is $qc->get_global_limit(\%input), $t->[1], "expected limit amount $t->[1] received for " . $json->encode($t->[0]);
     }
 };
@@ -286,7 +286,7 @@ subtest 'get all global limit' => sub {
                     'underlying_symbol'     => 'default',
                 }};
             my $test_data = {
-                costarica   => $common,
+                svg         => $common,
                 malta       => $common,
                 maltainvest => $common,
                 japan       => $common,
@@ -367,21 +367,21 @@ subtest 'get all global limit' => sub {
 
 subtest 'delete global limit' => sub {
     ok $qc->get_global_limit({
-            landing_company => 'costarica',
+            landing_company => 'svg',
             limit_type      => 'global_potential_loss'
         }
         ),
         'limit fetched';
-    lives_ok { $qc->delete_global_limit({type => 'market', landing_company => 'costarica', limit_type => 'global_potential_loss'}) } 'delete ok';
+    lives_ok { $qc->delete_global_limit({type => 'market', landing_company => 'svg', limit_type => 'global_potential_loss'}) } 'delete ok';
     my $res = $qc->get_global_limit({
-        landing_company => 'costarica',
+        landing_company => 'svg',
         limit_type      => 'global_potential_loss'
     });
     is $res, '110', 'deleted global but time period still exists';
     lives_ok {
         $qc->delete_global_limit({
                 type            => 'market',
-                landing_company => 'costarica',
+                landing_company => 'svg',
                 limit_type      => 'global_potential_loss',
                 start_time      => $test_start_time,
                 end_time        => $test_end_time
@@ -389,7 +389,7 @@ subtest 'delete global limit' => sub {
     }
     'delete ok';
     $res = $qc->get_global_limit({
-        landing_company => 'costarica',
+        landing_company => 'svg',
         limit_type      => 'global_potential_loss'
     });
     is $res, '', 'delete';

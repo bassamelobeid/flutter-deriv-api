@@ -11,7 +11,7 @@ BOM::Database::QuantsConfig - a class to get and set quants global limits
     my $qc = BOM::Database::QuantsConfig->new;
 
     # get limits
-    my $all_limits = $qc->get_all_global_limit(['costarica', 'malta']);
+    my $all_limits = $qc->get_all_global_limit(['svg', 'malta']);
     my $specific_limits = $qc->get_global_limit({market => 'forex', limit_type => 'global_potential_loss'});
 
     # set limits
@@ -87,7 +87,7 @@ has active_landing_company => (
     is      => 'ro',
     default => sub {
         {
-            costarica   => 1,
+            svg         => 1,
             iom         => 1,
             malta       => 1,
             maltainvest => 1,
@@ -298,12 +298,12 @@ get global limits with parameters. Valid parameters:
 - landing_company (required)
 - limit_type (required)
 
-->get_global_limit({
-    underlying_symbol => 'default',
-    market => 'forex',
-    limit_type => 'global_potential_loss',
-    landing_company => 'costarica',
-});
+    ->get_global_limit({
+        underlying_symbol => 'default',
+        market            => 'forex',
+        limit_type        => 'global_potential_loss',
+        landing_company   => 'svg',
+    });
 
 =cut
 
@@ -357,7 +357,7 @@ sub get_global_limit {
 Get all global limits for a landing company
 
 ->get_all_global_limit(['default']); # all landing company
-->get_all_global_limit(['costarica']); # costarica specific limits
+->get_all_global_limit(['svg']); # svg specific limits
 
 =cut
 
