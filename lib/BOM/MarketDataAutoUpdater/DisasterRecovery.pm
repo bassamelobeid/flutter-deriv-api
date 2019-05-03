@@ -252,7 +252,7 @@ sub _recover_interest_rate {
 sub _recover_volsurface {
     my $self = shift;
 
-    my $offerings    = LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
+    my $offerings    = LandingCompany::Registry::get('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
     my $params       = Finance::Asset->all_parameters;
     my @quanto       = grep { $params->{$_}->{quanto_only} } keys %$params;
     my %offered_list = map { $_ => 1 } ($offerings->values_for_key('underlying_symbol'), @quanto);

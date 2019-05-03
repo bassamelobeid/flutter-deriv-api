@@ -162,7 +162,7 @@ sub run {
     my $one_hour_after_rollover = $rollover_date->plus_time_interval('1h');
     my $surfaces_from_file      = $self->surfaces_from_file;
 
-    my @non_atm_symbol = LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config)
+    my @non_atm_symbol = LandingCompany::Registry::get('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config)
         ->query({barrier_category => ['euro_non_atm', 'american']}, ['underlying_symbol']);
 
     foreach my $symbol (@{$self->symbols_to_update}) {
