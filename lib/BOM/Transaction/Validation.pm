@@ -746,7 +746,7 @@ sub validate_tnc {
 sub compliance_checks {
     my ($self, $client) = (shift, shift);
 
-    # checks are not applicable for virtual, costarica and champion clients
+    # checks are not applicable for virtual, svg and champion clients
     return undef if $client->is_virtual;
     return undef if $client->landing_company->short eq 'champion';
 

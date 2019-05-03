@@ -18,7 +18,7 @@ my $fmb_mock = Test::MockModule->new('BOM::Database::Helper::FinancialMarketBet'
 my $client    = create_client();
 my $account   = $client->account('USD');
 my $db        = $client->db->dbic;
-my $database  = $client->db->database =~ s/costarica-write/cr/r;
+my $database  = $client->db->database =~ s/svg-write/cr/r;
 my $now       = Date::Utility->new;
 my $past_10s  = $now->minus_time_interval('10s');
 my $past_11s  = $now->minus_time_interval('11s');
