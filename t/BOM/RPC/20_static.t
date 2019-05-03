@@ -50,7 +50,7 @@ subtest 'currencies_config.transfer_between_accounts' => sub {
             language => 'EN',
             args     => {website_status => 1}})->has_no_system_error->has_no_error->result;
 
-    my @all_currencies  = keys %{LandingCompany::Registry::get('costarica')->legal_allowed_currencies};
+    my @all_currencies  = keys %{LandingCompany::Registry::get('svg')->legal_allowed_currencies};
     my $currency_limits = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
     my $currency_fees   = BOM::Config::CurrencyConfig::transfer_between_accounts_fees();
 

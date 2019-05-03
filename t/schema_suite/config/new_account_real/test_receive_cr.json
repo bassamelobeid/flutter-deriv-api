@@ -9,12 +9,12 @@
         },
         "landing_company": {
             "type": "string",
-            "pattern": "^Binary \\(C\\.R\\.\\) S\\.A\\.$",
+            "pattern": "^Binary \\(SVG\\) Ltd\\.$",
             "required": "1"
         },
         "landing_company_shortcode": {
             "type": "string",
-            "pattern": "^costarica$",
+            "pattern": "^svg$",
             "required": "1"
         },
         "oauth_token": {

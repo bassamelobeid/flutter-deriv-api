@@ -644,7 +644,7 @@ sub set_professional_status {
     my $error;
 
     # Set checks in variables
-    my $cr_mf_valid      = $client->landing_company->short =~ /^(?:costarica|maltainvest)$/;
+    my $cr_mf_valid      = $client->landing_company->short =~ /^(?:svg|maltainvest)$/;
     my $set_prof_status  = $professional && !$client->status->professional && $cr_mf_valid;
     my $set_prof_request = $professional_requested && !$client->status->professional_requested && $cr_mf_valid;
 
@@ -670,7 +670,7 @@ sub send_professional_requested_email {
     my $to_email = $brand->emails('compliance');
 
     # Notify customer support for non-CR clients who requested for professional status
-    $to_email .= ',' . $brand->emails('support') if ($landing_company_short ne 'costarica');
+    $to_email .= ',' . $brand->emails('support') if ($landing_company_short ne 'svg');
 
     return send_email({
         from    => $brand->emails('support'),

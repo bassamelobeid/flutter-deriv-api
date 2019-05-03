@@ -393,7 +393,7 @@ async_rpc mt5_new_account => sub {
                             warn 'Compliance email regarding Binary (Europe) Limited user with MT5 account(s) failed to send.'
                                 unless BOM::RPC::v3::Accounts::send_self_exclusion_notification($client, 'malta_with_mt5', $self_exclusion);
                         }
-                    } elsif ($account_type eq 'financial' && $client->landing_company->short eq 'costarica' && !$client->fully_authenticated) {
+                    } elsif ($account_type eq 'financial' && $client->landing_company->short eq 'svg' && !$client->fully_authenticated) {
 
                         _handle_new_financial_signup({
                                 loginid  => $client->loginid,
@@ -1425,7 +1425,7 @@ sub _mt5_validate_and_get_amount {
             $err = BOM::RPC::v3::Cashier::validate_amount($amount, $client_currency);
             return _make_error($error_code, $err) if $err;
 
-            # master groups are real\costarica_mamm_master and
+            # master groups are real\svg_mamm_master and
             # real\vanuatu_mamm_advanced_master
             return _make_error($error_code,
                 localize('Permission error. MT5 manager accounts are not allowed to withdraw as payments are processed manually.'))
@@ -1436,7 +1436,7 @@ sub _mt5_validate_and_get_amount {
             # support for champion please revisit this
             return _make_error($error_code, localize('Please authenticate your account.'))
                 if ($action eq 'withdrawal'
-                and ($mt5_group // '') !~ /^real\\costarica$/
+                and ($mt5_group // '') !~ /^real\\svg$/
                 and not $authorized_client->fully_authenticated);
 
             # Actual USD or EUR amount that will be deposited into the MT5 account.
@@ -1591,7 +1591,7 @@ sub _notify_for_locked_mt5 {
     return 1;
 }
 
-=head2 _record_mt5_transfer 
+=head2 _record_mt5_transfer
 
 Writes an entry into the mt5_transfer table
 Takes the following arguments as named parameters
@@ -1604,7 +1604,7 @@ Takes the following arguments as named parameters
 =item * mt5_account_id the clients MT5 account id
 =item * mt5_currency_code  Currency Code of the lcients MT5 account.
 
-=back 
+=back
 
 Returns 1
 
@@ -1616,7 +1616,7 @@ sub _record_mt5_transfer {
     $dbic->run(
         fixup => sub {
             my $sth = $_->prepare(
-                'INSERT INTO payment.mt5_transfer 
+                'INSERT INTO payment.mt5_transfer
             (payment_id, mt5_amount, mt5_account_id, mt5_currency_code)
             VALUES (?,?,?,?)'
             );
@@ -1629,7 +1629,7 @@ sub _record_mt5_transfer {
 
 Event handler for new financial mt5 accounts by un-authenticated clients
 
-=cut 
+=cut
 
 sub _handle_new_financial_signup {
     my $data = shift;

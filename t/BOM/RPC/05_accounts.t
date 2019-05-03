@@ -308,10 +308,10 @@ subtest $method => sub {
         },
         "no such landing company"
     );
-    my $result = $c->tcall($method, {args => {landing_company_details => 'costarica'}});
-    is($result->{name}, 'Binary (C.R.) S.A.', "details result ok");
+    my $result = $c->tcall($method, {args => {landing_company_details => 'svg'}});
+    is($result->{name}, 'Binary (SVG) Ltd.', "details result ok");
     cmp_bag([keys %{$result->{currency_config}->{volidx}}], [LandingCompany::Registry->new()->all_currencies()], "currency config ok");
-    ok(!(grep { !looks_like_number($_) } get_values($result->{currency_config})), 'limits for costarica are all numeric');
+    ok(!(grep { !looks_like_number($_) } get_values($result->{currency_config})), 'limits for svg are all numeric');
 
     $result = $c->tcall($method, {args => {landing_company_details => 'maltainvest'}});
     cmp_bag([keys %{$result->{currency_config}->{forex}}], ['USD', 'EUR', 'GBP'], "currency config for maltainvest ok");
@@ -2224,7 +2224,7 @@ subtest 'get and set self_exclusion' => sub {
         password => 'Efgh4567',
         email    => 'test.account@binary.com',
         name     => 'Test',
-        group    => 'real\costarica',
+        group    => 'real\svg',
         country  => 'Malta',
         balance  => '1234.56',
     );

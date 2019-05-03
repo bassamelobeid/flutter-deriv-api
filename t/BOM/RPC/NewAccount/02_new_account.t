@@ -115,7 +115,7 @@ subtest $method => sub {
     is $user->{gclid_url}, 'FQdb3wodOkkGBgCMrlnPq42q8C', 'gclid value returned as expected';
     is $user->{date_first_contact}, $date_first_contact, 'date first contact value returned as expected';
     is $user->{signup_device}, 'mobile', 'signup_device value returned as expected';
-    is $user->{email_consent}, 1,        'email consent for new account is 1 for residence under costarica';
+    is $user->{email_consent}, 1,        'email consent for new account is 1 for residence under svg';
 
     my ($resp_loginid, $t, $uaf) =
         @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
@@ -248,9 +248,9 @@ subtest $method => sub {
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
             sub { shift->{landing_company} },
-            'Binary (C.R.) S.A.',
+            'Binary (SVG) Ltd.',
             'It should return new account data'
-        )->result_value_is(sub { shift->{landing_company_shortcode} }, 'costarica', 'It should return new account data');
+        )->result_value_is(sub { shift->{landing_company_shortcode} }, 'svg', 'It should return new account data');
 
         my $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^CR\d+$/, 'new CR loginid';
@@ -266,10 +266,10 @@ subtest $method => sub {
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
             sub { shift->{landing_company} },
-            'Binary (C.R.) S.A.',
+            'Binary (SVG) Ltd.',
             'It should return new account data'
             )->result_value_is(sub { shift->{landing_company_shortcode} },
-            'costarica', 'It should return new account data if one of the account is marked as duplicate');
+            'svg', 'It should return new account data if one of the account is marked as duplicate');
         $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^CR\d+$/, 'new CR loginid';
     };

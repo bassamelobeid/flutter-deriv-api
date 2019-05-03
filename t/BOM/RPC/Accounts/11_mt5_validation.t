@@ -116,7 +116,7 @@ subtest 'new account' => sub {
     $params->{token} = $token;
 
     $c->call_ok($method, $params)
-        ->has_error->error_message_is('Permission denied.', 'Only costarica, malta, maltainvest and champion fx clients allowed.');
+        ->has_error->error_message_is('Permission denied.', 'Only svg, malta, maltainvest and champion fx clients allowed.');
 
     SKIP: {
         skip "Unable to Retrieve files from PHP MT5 Server Yet";

@@ -93,7 +93,7 @@ subtest "asset_index logged in - with arg" => _test_asset_index({
     $first_entry_mlt,
 );
 
-# Result should be Binary (C.R.) S.A.
+# Result should be Binary (SVG) Ltd.
 # Trades everything except, so should be 113 entries and first entry should
 #   be frxAUDJPY with 5 contract types.
 subtest "asset_index logged out - no arg" => _test_asset_index({language => 'EN'}, $entry_count_cr, $first_entry_cr_mf);

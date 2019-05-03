@@ -228,7 +228,7 @@ sub _get_professional_details_clients {
     my ($user, $args) = @_;
 
     # Filter out MF/CR clients
-    my @clients = map { $user->clients_for_landing_company($_) } qw/costarica maltainvest/;
+    my @clients = map { $user->clients_for_landing_company($_) } qw/svg maltainvest/;
 
     # Get the professional flags
     my $professional_status = any { $_->status->professional } @clients;

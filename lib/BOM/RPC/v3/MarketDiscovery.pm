@@ -24,7 +24,7 @@ use List::UtilsBy qw(sort_by);
 rpc active_symbols => sub {
     my $params = shift;
 
-    my $landing_company_name = $params->{args}->{landing_company} // 'costarica';
+    my $landing_company_name = $params->{args}->{landing_company} // 'svg';
     my $product_type         = $params->{args}->{product_type};
     my $language             = $params->{language} || 'EN';
     my $token_details        = $params->{token_details};

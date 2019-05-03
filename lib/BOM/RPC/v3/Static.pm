@@ -111,7 +111,7 @@ Takes a single C<$params> hashref containing the following keys:
 
 =back
 
-Returns an array of hashes, alphabetically sorted by the states in that country. 
+Returns an array of hashes, alphabetically sorted by the states in that country.
 
 Each hash contains the following keys:
 
@@ -145,7 +145,7 @@ sub _currencies_config {
     my $transfer_fees   = BOM::Config::CurrencyConfig::transfer_between_accounts_fees();
 
     # Get available currencies
-    my @all_currencies = keys %{LandingCompany::Registry::get('costarica')->legal_allowed_currencies};
+    my @all_currencies = keys %{LandingCompany::Registry::get('svg')->legal_allowed_currencies};
 
     my $suspended_currencies = BOM::RPC::v3::Utility::get_suspended_crypto_currencies();
 

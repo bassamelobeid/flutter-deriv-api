@@ -84,7 +84,7 @@ subtest 'CR - USD' => sub {
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
     # Load limits for CR, which is in USD
-    my $limits = $payment_limits->{withdrawal_limits}->{costarica};
+    my $limits = $payment_limits->{withdrawal_limits}->{svg};
 
     # Test for expected errors, such as invalid tokens
     subtest 'expected errors' => sub {
@@ -202,7 +202,7 @@ subtest 'CR-EUR' => sub {
     $params->{token} = $token;
 
     # Load limits for CR, which is in USD, then convert to EUR
-    my $limits         = $payment_limits->{withdrawal_limits}->{costarica};
+    my $limits         = $payment_limits->{withdrawal_limits}->{svg};
     my $limit_for_days = formatnumber('price', 'EUR', convert_currency($limits->{limit_for_days}, 'USD', 'EUR'));
     my $lifetime_limit = formatnumber('price', 'EUR', convert_currency($limits->{lifetime_limit}, 'USD', 'EUR'));
 
@@ -296,7 +296,7 @@ subtest 'CR-BTC' => sub {
     $params->{token} = $token;
 
     # Load limits for CR, which is in USD, then convert to BTC
-    my $limits         = $payment_limits->{withdrawal_limits}->{costarica};
+    my $limits         = $payment_limits->{withdrawal_limits}->{svg};
     my $limit_for_days = formatnumber('price', 'BTC', convert_currency($limits->{limit_for_days}, 'USD', 'BTC'));
     my $lifetime_limit = formatnumber('price', 'BTC', convert_currency($limits->{lifetime_limit}, 'USD', 'BTC'));
 

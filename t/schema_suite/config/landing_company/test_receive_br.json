@@ -23,12 +23,12 @@
             "properties": {
                 "shortcode": {
                     "type": "string",
-                    "pattern": "^costarica$",
+                    "pattern": "^svg$",
                     "required": "1"
                 },
                 "name": {
                     "type": "string",
-                    "pattern": "^Binary \\(C\\.R\\.\\) S\\.A\\.$",
+                    "pattern": "^Binary \\(SVG\\) Ltd\\.$",
                     "required": "1"
                 },
                 "address": {
@@ -39,7 +39,7 @@
                 },
                 "country": {
                     "type": "string",
-                    "pattern": "^Costa Rica$",
+                    "pattern": "^Saint Vincent and the Grenadines$",
                     "required": "1"
                 },
                 "legal_default_currency": {
@@ -90,12 +90,12 @@
             "properties": {
                 "shortcode": {
                     "type": "string",
-                    "pattern": "^costarica$",
+                    "pattern": "^svg$",
                     "required": "1"
                 },
                 "name": {
                     "type": "string",
-                    "pattern": "^Binary \\(C\\.R\\.\\) S\\.A\\.$",
+                    "pattern": "^Binary \\(SVG\\) Ltd\\.$",
                     "required": "1"
                 },
                 "address": {
@@ -106,7 +106,7 @@
                 },
                 "country": {
                     "type": "string",
-                    "pattern": "^Costa Rica$",
+                    "pattern": "^Saint Vincent and the Grenadines$",
                     "required": "1"
                 },
                 "legal_default_currency": {

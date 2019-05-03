@@ -100,7 +100,7 @@ $mock_cashier->mock(
 ## Used to force weekend/weekday, as there is date-dependent logic in Cashier.pm:
 my $mock_date_utility = Test::MockModule->new('Date::Utility');
 
-## Used to force non-costarica landing companies to allow payment agents:
+## Used to force non-svg landing companies to allow payment agents:
 my $mock_landingcompany = Test::MockModule->new('LandingCompany');
 
 ## Used to make sure verification tokens always pass:
@@ -646,7 +646,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         ## Landing company limit testing
         ##
 
-        $test = 'Transfer fails if amount is over the lifetime limit for landing company costarica';
+        $test = 'Transfer fails if amount is over the lifetime limit for landing company svg';
         ## For these tests, we need to know what the limits are:
         my $limit_transactions_per_day = $payment_transfer_limits->{transactions_per_day};
         my $limit_usd_per_day          = $payment_transfer_limits->{amount_in_usd_per_day};
@@ -675,7 +675,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         );
         reset_transfer_testargs();
 
-        $test = 'Transfer fails if amount is over the lifetime limit for landing company costarica (limit not shown)';
+        $test = 'Transfer fails if amount is over the lifetime limit for landing company svg (limit not shown)';
         modify_bom_config('payment_limits', 'withdrawal_limits/*/lifetime_limit = 2');
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{error}{message_to_client},

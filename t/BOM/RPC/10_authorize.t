@@ -92,6 +92,7 @@ subtest $method => sub {
 
     $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'check invalid token');
     $params->{token} = $token;
+    my $landing_company = 'svg';
     my $expected_result = {
         'stash' => {
             app_markup_percentage      => 0,
@@ -105,25 +106,25 @@ subtest $method => sub {
             'token_type'               => 'oauth_token',
             'account_id'               => '',
             'currency'                 => '',
-            'landing_company_name'     => 'costarica',
+            'landing_company_name'     => $landing_company,
             'is_virtual'               => '0'
         },
         'currency'                      => '',
         'email'                         => 'dummy@binary.com',
         'scopes'                        => ['read', 'admin', 'trade', 'payments'],
         'balance'                       => '0.00',
-        'landing_company_name'          => 'costarica',
+        'landing_company_name'          => $landing_company,
         'fullname'                      => $test_client->full_name,
         'loginid'                       => $test_client->loginid,
         'is_virtual'                    => '0',
         'country'                       => 'id',
-        'landing_company_fullname'      => 'Binary (C.R.) S.A.',
-        'upgradeable_landing_companies' => ['costarica'],
+        'landing_company_fullname'      => 'Binary (SVG) Ltd.',
+        'upgradeable_landing_companies' => [$landing_company],
         'account_list'                  => [{
                 'currency'             => '',
                 'is_disabled'          => '0',
                 'is_virtual'           => '0',
-                'landing_company_name' => 'costarica',
+                'landing_company_name' => $landing_company,
                 'loginid'              => $test_client->loginid
             },
             {
@@ -131,14 +132,14 @@ subtest $method => sub {
                 'excluded_until'       => $exclude_until,
                 'is_disabled'          => '0',
                 'is_virtual'           => '0',
-                'landing_company_name' => 'costarica',
+                'landing_company_name' => $landing_company,
                 'loginid'              => $self_excluded_client->loginid,
             },
             {
                 'currency'             => '',
                 'is_disabled'          => '1',
                 'is_virtual'           => '0',
-                'landing_company_name' => 'costarica',
+                'landing_company_name' => $landing_company,
                 'loginid'              => $test_client_disabled->loginid,
             }
             # Duplicated client must  not be returned

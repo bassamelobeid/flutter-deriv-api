@@ -25,14 +25,14 @@ my %DETAILS = (
     },
     email   => 'test.account@binary.com',
     name    => 'Test',
-    group   => 'real\costarica',
+    group   => 'real\svg',
     country => 'Malta',
     balance => '1234.56',
 );
 
 my %GROUP_DETAILS = (
     currency => 'USD',
-    group    => 'real\costarica',
+    group    => 'real\svg',
     leverage => 300
 );
 

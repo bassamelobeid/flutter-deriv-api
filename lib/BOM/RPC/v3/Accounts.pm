@@ -133,9 +133,9 @@ rpc "payout_currencies",
     # If the client has not yet selected currency - we will use list from his landing company
     # or we may have a landing company even if we're not logged in - typically this
     # is obtained from the GeoIP country code lookup. If we have one, use it.
-    my $lc = $client ? $client->landing_company : LandingCompany::Registry::get($params->{landing_company_name} || 'costarica');
+    my $lc = $client ? $client->landing_company : LandingCompany::Registry::get($params->{landing_company_name} || 'svg');
 
-    # ... but we fall back to Costa Rica as a useful default, since it has most
+    # ... but we fall back to `svg` as a useful default, since it has most
     # currencies enabled.
 
     # Remove cryptocurrencies that have been suspended
@@ -641,7 +641,7 @@ rpc get_account_status => sub {
     } elsif ($authentication_in_progress) {
         $prompt_client_to_authenticate = 1;
     } else {
-        if ($shortcode eq 'costarica' or $shortcode eq 'champion') {
+        if ($shortcode eq 'svg' or $shortcode eq 'champion') {
             # Our threshold is 4000 USD, but we want to include total across all the user's currencies
             my $total = sum0(
                 map { in_usd($_->default_account->balance, $_->currency) }
@@ -1164,7 +1164,7 @@ rpc set_settings => sub {
 
     return BOM::RPC::v3::Utility::permission_error()
         if $allow_copiers
-        and ($current_client->landing_company->short ne 'costarica' and not $current_client->is_virtual);
+        and ($current_client->landing_company->short ne 'svg' and not $current_client->is_virtual);
 
     if (
         $allow_copiers
@@ -1321,12 +1321,12 @@ rpc set_settings => sub {
         }
     }
 
-    # only allowed to set for maltainvest, costarica and only
+    # only allowed to set for maltainvest, svg and only
     # if professional status is not set or requested
     my $update_professional_status = sub {
         my ($client_obj) = @_;
         if (    $args->{request_professional_status}
-            and $client_obj->landing_company->short =~ /^(?:costarica|maltainvest)$/
+            and $client_obj->landing_company->short =~ /^(?:svg|maltainvest)$/
             and not($client_obj->status->professional or $client_obj->status->professional_requested))
         {
             $client_obj->status->multi_set_clear({

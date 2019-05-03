@@ -559,7 +559,7 @@ rpc paymentagent_transfer => sub {
     my ($lc_lifetime_limit, $lc_for_days, $lc_limit_for_days, $lc_currency) =
         @$lc_withdrawal_limits{qw/ lifetime_limit for_days limit_for_days currency/};
     ## For some landing companies, we only check the lifetime limits. Thus, we set limit_for_days to 0:
-    if ($lcshort =~ /^(?:costarica|japan|champion)$/) {
+    if ($lcshort =~ /^(?:svg|japan|champion)$/) {
         $lc_limit_for_days = 0;
     }
     ## We also need to convert these from the landing companies currency to the current currency
@@ -1128,7 +1128,7 @@ Takes the following list of arguments:
 
 =item fee_calculated_by_percent: the fee amount calculated directly by applying the fee percent alone.
 
-=back 
+=back
 
 Returns a string in one of the following forms:
 

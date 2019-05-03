@@ -72,13 +72,13 @@ sub _get_upgradeable_landing_companies {
     # Multiple CR account scenario:
     # - client's landing company is CR
     # - client can upgrade to other CR accounts, assuming no fiat currency OR other cryptocurrencies
-    if ($client->landing_company->short eq 'costarica') {
+    if ($client->landing_company->short eq 'svg') {
 
         # Get siblings of the current client
         my $siblings = $client->real_account_siblings_information;
 
         # Push to upgradeable_landing_companies, if possible to open another CR account
-        push @upgradeable_landing_companies, 'costarica'
+        push @upgradeable_landing_companies, 'svg'
             if BOM::RPC::v3::Utility::get_available_currencies($siblings, $client->landing_company->short);
     }
 

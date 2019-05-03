@@ -25,7 +25,7 @@ use BOM::Config::Runtime;
 sub is_invalid_symbol {
     my $symbol = shift;
     my @offerings =
-        LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config)
+        LandingCompany::Registry::get('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config)
         ->values_for_key('underlying_symbol');
     if (!$symbol || none { $symbol eq $_ } @offerings) {
 
