@@ -20,6 +20,7 @@ use Binary::WebSocketAPI::v3::Wrapper::Accounts;
 use Binary::WebSocketAPI::v3::Wrapper::Cashier;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
+use Binary::WebSocketAPI::v3::Wrapper::LandingCompany;
 use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections ws_redis_master |;
 
 use Encode;
@@ -206,16 +207,24 @@ sub startup {
         [
             'asset_index',
             {
-                stash_params => [qw/ token /],
+                before_forward => \&Binary::WebSocketAPI::v3::Wrapper::LandingCompany::map_landing_company,
+                stash_params   => [qw/ token /],
             }
         ],
         [
             'contracts_for',
             {
-                stash_params => [qw/ token /],
+                before_forward => \&Binary::WebSocketAPI::v3::Wrapper::LandingCompany::map_landing_company,
+                stash_params   => [qw/ token /],
             }
         ],
-        ['active_symbols', {stash_params => [qw/ token /]}],
+        [
+            'active_symbols',
+            {
+                before_forward => \&Binary::WebSocketAPI::v3::Wrapper::LandingCompany::map_landing_company,
+                stash_params   => [qw/ token /],
+            }
+        ],
 
         ['ticks',          {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::ticks}],
         ['ticks_history',  {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::ticks_history}],
@@ -230,7 +239,7 @@ sub startup {
         ['states_list'],
         ['payout_currencies', {stash_params => [qw/ token landing_company_name /]}],
         ['landing_company'],
-        ['landing_company_details'],
+        ['landing_company_details', {before_forward => \&Binary::WebSocketAPI::v3::Wrapper::LandingCompany::map_landing_company}],
         [
             'balance',
             {
