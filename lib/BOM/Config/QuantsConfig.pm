@@ -189,7 +189,7 @@ sub _validate {
     if ($key eq 'contract_type') {
         @valid = keys %{Finance::Contract::Category::get_all_contract_types()};
     } else {
-        my $offerings_obj = LandingCompany::Registry::get('costarica')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
+        my $offerings_obj = LandingCompany::Registry::get('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
         @valid = $offerings_obj->values_for_key($key);
     }
 

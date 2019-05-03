@@ -14,7 +14,7 @@ withdrawal_limits:
     currency: EUR
     limit_for_days: 2000
     lifetime_limit: 2000
-  costarica:                    # Client's own currency
+  svg:                          # Client's own currency
     for_days: 30
     currency: USD
     limit_for_days: 10000
