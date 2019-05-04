@@ -325,11 +325,15 @@ table#client_edit td{
                 [%  END %]
                     <br/>
             [%  END %]
-                <input type="submit" name="do_id_check" value="Submit a new ProveID request"/>
-            [% IF proveID.has_saved_xml or proveID.has_saved_pdf %]
-            <br/>
-                <input type="submit" name="delete_existing_192" value="Delete existing Experian results"/>
-            <br/>
+            [% IF client.broker == 'MX' %]
+                    <input type="submit" name="do_id_check" value="Submit a new ProveID request"/>
+                [% IF proveID.has_saved_xml or proveID.has_saved_pdf %]
+                <br/>
+                    <input type="submit" name="delete_existing_192" value="Delete existing Experian results"/>
+                <br/>
+                [% END %]
+            [% ELSE %]
+                Please go to the client's MX account to submit/delete proveID requests.
             [% END %]
         </td>
     </tr>
