@@ -8,35 +8,20 @@ use BOM::User::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client qw( create_client );
 
-my $BINARY_USER_ID = 1;
+my $cr_client      = create_client('CR', undef, {binary_user_id => 1});
+my $mx_client      = create_client('MX', undef, {binary_user_id => 2});
+my $mlt_client     = create_client('MLT', undef, {binary_user_id => 3});
 
-my $CR2002  = create_client('CR',  undef, {binary_user_id => $BINARY_USER_ID});
-my $MX0012  = create_client('MX',  undef, {binary_user_id => $BINARY_USER_ID});
-my $MLT0012 = create_client('MLT', undef, {binary_user_id => $BINARY_USER_ID});
-
-my %client = (
-    CR  => $CR2002,
-    MX  => $MX0012,
-    MLT => $MLT0012,
+my %clients_1 = (
+    CR  => $cr_client,
+    MX  => $mx_client,
+    MLT => $mlt_client,
 );
-
-$BINARY_USER_ID = 2;
-
-my $CR3003  = create_client('CR',  undef, {binary_user_id => $BINARY_USER_ID});
-my $MX0013  = create_client('MX',  undef, {binary_user_id => $BINARY_USER_ID});
-my $MLT0013 = create_client('MLT', undef, {binary_user_id => $BINARY_USER_ID});
-
-my %client_2 = (
-    CR  => $CR3003,
-    MX  => $MX0013,
-    MLT => $MLT0013,
-);
-
 subtest 'Age Verified' => sub {
     plan tests => 3;
-    foreach my $broker (qw(MX MLT CR)) {
+    foreach my $broker (keys %clients_1) {
         subtest "$broker client" => sub {
-            my $client = $client{$broker};
+            my $client = $clients_1{$broker};
 
             $client->status->set('age_verification', 'Darth Vader', 'Test Case');
             ok $client->status->age_verification, "Age verified by other sources";
@@ -67,28 +52,42 @@ subtest 'Age Verified' => sub {
     }
 };
 
-my $client = $client_2{'CR'};
+my $CR_SIBLINGS_2 =
+    [create_client('CR', undef, {binary_user_id => 4}), create_client('CR', undef, {binary_user_id => 4})];
+my $MX_SIBLINGS_2 =
+    [create_client('MX', undef, {binary_user_id => 5}), create_client('MX', undef, {binary_user_id => 5})];
+my $MLT_SIBLINGS_2 =
+    [create_client('MLT', undef, {binary_user_id => 6}), create_client('MLT', undef, {binary_user_id =>6 })];
+my %clients_2 = (
+    CR  => $CR_SIBLINGS_2,
+    MX  => $MX_SIBLINGS_2,
+    MLT => $MLT_SIBLINGS_2,
+);
 
-my ($doc) = $client->add_client_authentication_document({
-    document_type              => "passport",
-    document_format            => "PDF",
-    document_path              => '/tmp/test.pdf',
-    expiration_date            => '2008-03-03',
-    authentication_method_code => 'ID_DOCUMENT',
-    status                     => 'uploaded',
-    checksum                   => 'CE114E4501D2F4E2DCEA3E17B546F339'
-});
+# expire the first client in the group
+foreach my $broker_code (keys %clients_2) {
+    # expire first client
+    my $client = $clients_2{$broker_code}[0];
+    my ($doc) = $client->add_client_authentication_document({
+        document_type              => "passport",
+        document_format            => "PDF",
+        document_path              => '/tmp/test.pdf',
+        expiration_date            => '2008-03-03',
+        authentication_method_code => 'ID_DOCUMENT',
+        status                     => 'uploaded',
+        checksum                   => 'CE114E4501D2F4E2DCEA3E17B546F339'
+    });
+    $client->save;
+}
 
-$client->save;
-
-# If one client has documents expired, all the siblings are affected as well
+# if one sibling client expire, the rest of the siblings of that client should expire as well
 subtest 'Documents expiry test' => sub {
     plan tests => 3;
-    foreach my $broker (qw(MX MLT CR)) {
+    foreach my $broker (keys %clients_2) {
         subtest "$broker client" => sub {
-            my $client = $client_2{$broker};
-
-            ok $client->documents_expired, "Documents Expired";
+            foreach my $client ($clients_2{$broker}->@*) {
+                ok $client->documents_expired, "Documents Expired";
+            }
         };
     }
 };
