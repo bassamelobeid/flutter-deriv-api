@@ -52,11 +52,13 @@ use constant UPLOAD_TIMEOUT => 60;
 # Redis key namespace to store onfido applicant id
 use constant ONFIDO_APPLICANT_KEY_PREFIX => 'ONFIDO::APPLICANT::ID::';
 
+# Redis key namespace to store onfido results and link
 use constant ONFIDO_REQUESTS_LIMIT => $ENV{ONFIDO_REQUESTS_LIMIT} // 1000;
 use constant ONFIDO_LIMIT_TIMEOUT  => $ENV{ONFIDO_LIMIT_TIMEOUT}  // 60 * 60 * 24;
 use constant ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY => 'ONFIDO_AUTHENTICATION_REQUEST_CHECK';
 use constant ONFIDO_REQUEST_COUNT_KEY               => 'ONFIDO_REQUEST_COUNT';
 use constant ONFIDO_CHECK_EXCEEDED_KEY              => 'ONFIDO_CHECK_EXCEEDED';
+use constant ONFIDO_REPORT_KEY_PREFIX               => 'ONFIDO::REPORT::ID::';
 
 # Conversion from our database to the Onfido available fields
 my %ONFIDO_DOCUMENT_TYPE_MAPPING = (
@@ -523,8 +525,8 @@ sub client_verification {
     return try {
         my $url = $args->{check_url};
         $log->infof('Had client verification result %s with check URL %s', $args->{status}, $args->{check_url});
-        my ($applicant_id, $check_id) = $url =~ m{/applicants/([^/]+)/checks/([^/]+)} or die 'no check ID found';
 
+        my ($applicant_id, $check_id) = $url =~ m{/applicants/([^/]+)/checks/([^/]+)} or die 'no check ID found';
         _onfido()->check_get(
             check_id     => $check_id,
             applicant_id => $applicant_id,
@@ -539,6 +541,7 @@ sub client_verification {
                         clear        => 'pass',
                         rejected     => 'fail',
                         suspected    => 'fail',
+                        consider     => 'maybe',
                         caution      => 'maybe',
                         unidentified => 'maybe',
                     }->{$result // 'unknown'} // 'unknown';
@@ -551,6 +554,24 @@ sub client_verification {
 
                     my $client = BOM::User::Client->new({loginid => ($loginid // die 'no login ID provided?')});
                     $log->infof('Onfido check result for %s (applicant %s): %s (%s)', $loginid, $applicant_id, $result, $check_status);
+
+                    _redis()->connect->then(
+                        sub {
+                            _redis()->hmset(
+                                ONFIDO_REPORT_KEY_PREFIX . $client->binary_user_id,
+                                status => $check_status,
+                                url    => $check->results_uri
+                            );
+                        }
+                        )->then(
+                        sub {
+                            return Future->done(@_);
+                        }
+                        )->on_fail(
+                        sub {
+                            $log->errorf('Error occured when saving %s report data to Redis', $client->loginid);
+                        })->get;
+
                     my $age_verified;
                     my $address_verify = sub {
                         return Future->done unless $age_verified;
