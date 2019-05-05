@@ -365,14 +365,16 @@ if ($input{delete_existing_192}) {
 # TODO:  Once we switch to userdb, we will not need to loop through all clients
 if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     my @clients_to_update;
-    if ($is_virtual_only) {
+
+    unless ($client->is_virtual) {
+        # Save real clients only
+        push @clients_to_update, grep { not $_->is_virtual } @user_clients;
+    } elsif ($is_virtual_only) {
+
         # When there are no real accounts, CS still needs to be able to change the residence.
         # However, the code here enables them to change all client details. It is not a big
         # deal; virtual client details are not used once real clients are added.
         push @clients_to_update, $client;
-    } else {
-        # Save real clients only
-        push @clients_to_update, grep { not $_->is_virtual } @user_clients;
     }
 
     # Active client specific update details:
@@ -456,27 +458,20 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         $client->promo_code_status($input{promo_code_status});
     }
 
-    my %new_dob = _get_new_dob({
-        client => $client,
-        input  => \%input
-    });
-    my $combined_new_dob = sprintf("%04d-%02d-%02d", $new_dob{'dob_year'}, $new_dob{'dob_month'}, $new_dob{'dob_day'});
-    my @dup_account_details = BOM::Database::ClientDB->new({broker_code => $input{broker}})->get_duplicate_client({
-        exclude_status => ['duplicate_account', 'disabled'],
-        first_name    => $input{first_name} // $client->first_name,
-        last_name     => $input{last_name}  // $client->last_name,
-        date_of_birth => $combined_new_dob  // $client->date_of_birth,
-        phone         => $input{phone}      // $client->phone,
-        email         => $client->email
+    my $duplicate_account_details = _check_duplicates({
+        client               => $client,
+        input                => \%input,
+        only_virtual_account => $is_virtual_only
     });
 
-    if (@dup_account_details) {
+    if (@$duplicate_account_details) {
+
         my $data = {
-            loginid       => $dup_account_details[0],
-            first_name    => $dup_account_details[1],
-            last_name     => $dup_account_details[2],
-            date_of_birth => $dup_account_details[3],
-            phone         => $dup_account_details[5],
+            loginid       => $duplicate_account_details->[0],
+            first_name    => $duplicate_account_details->[1],
+            last_name     => $duplicate_account_details->[2],
+            date_of_birth => $duplicate_account_details->[3],
+            phone         => $duplicate_account_details->[5],
             self_link     => $self_href
         };
 
@@ -1119,10 +1114,13 @@ sub obfuscate_token {
     return $t;
 }
 
-sub _get_new_dob {
-    my $data      = shift;
-    my $client    = $data->{client};
-    my $input     = $data->{input};
+sub _check_duplicates {
+    my $data   = shift;
+    my $client = $data->{client};
+
+    return [] if $client->is_virtual;
+
+    my $input = $data->{input};
     my $self_href = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $client->loginid});
 
     my @dob_fields = ('dob_year', 'dob_month', 'dob_day');
@@ -1140,7 +1138,18 @@ sub _get_new_dob {
         code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
     }
 
-    return %new_dob;
+    my $combined_new_dob = sprintf("%04d-%02d-%02d", $new_dob{'dob_year'}, $new_dob{'dob_month'}, $new_dob{'dob_day'});
+
+    my @dup_account_details = BOM::Database::ClientDB->new({broker_code => $input->{broker}})->get_duplicate_client({
+        exclude_status => ['duplicate_account', 'disabled'],
+        first_name    => $input->{first_name} // $client->first_name,
+        last_name     => $input->{last_name}  // $client->last_name,
+        date_of_birth => $combined_new_dob    // $client->date_of_birth,
+        phone         => $input->{phone}      // $client->phone,
+        email         => $client->email
+    });
+
+    return \@dup_account_details;
 }
 
 code_exit_BO();
