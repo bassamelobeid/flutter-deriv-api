@@ -26,6 +26,9 @@ use BOM::Backoffice::FormAccounts;
 use BOM::Backoffice::Config;
 use BOM::Backoffice::Request qw(request);
 use BOM::Database::Model::HandoffToken;
+use BOM::Config::RedisReplicated;
+
+use constant ONFIDO_REPORT_KEY_PREFIX => 'ONFIDO::REPORT::ID::';
 
 sub get_currency_options {
     my $currency_options;
@@ -245,6 +248,8 @@ sub print_client_details {
         $tax_residences_countries_name = join ',', map { code2country($_) } @tax_residences;
     }
 
+    my %onfido_status = @{BOM::Config::RedisReplicated::redis_read()->hgetall(ONFIDO_REPORT_KEY_PREFIX . $client->binary_user_id)};
+
     my $template_param = {
         client                => $client,
         client_phone_country  => $client_phone_country,
@@ -283,6 +288,8 @@ sub print_client_details {
         cashier_allow_payment_agent_status => $client->status->pa_withdrawal_explicitly_allowed,
         can_change_residence               => $is_virtual_only,
         address_verification_status        => $client->status->address_verified,
+        onfido_check_status                => $onfido_status{status},
+        onfido_check_url                   => $onfido_status{url},
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})

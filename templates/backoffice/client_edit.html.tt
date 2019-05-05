@@ -32,7 +32,8 @@ table#client_edit td{
     font-weight: bold;
     display: inline-block;
 }
-#greenrcorner {
+
+.rcorner {
   background: #228B22;
   border-radius: 25px;
   margin: 8px;
@@ -151,7 +152,7 @@ table#client_edit td{
     [% IF address_verification_status %]
         <tr>
             <td class="label">Status : </td>
-            <td><span id="greenrcorner">Address Verified</span></td>
+            <td><span class="rcorner">Address Verified</span></td>
         </tr>
     [% END %]
     <tr>
@@ -241,6 +242,18 @@ table#client_edit td{
     </tr>
     <tr>
         <td class="small_header" colspan="2">#KYC/IDENTITY VERIFICATION</td>
+    </tr>
+    <tr>
+        <td class = 'label'>ONFIDO : </td>
+        <td>
+            [% IF onfido_check_status %]
+                <a href="[% onfido_check_url %]">
+                    [% onfido_check_status FILTER upper %]
+                </a>
+            [% ELSE %]
+                Check not performed
+            [% END %]
+        </td>
     </tr>
     <tr>
         <td class="label">AML Risk Classification</td>
