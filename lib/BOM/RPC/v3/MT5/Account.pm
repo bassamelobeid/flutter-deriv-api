@@ -34,6 +34,7 @@ use BOM::Database::ClientDB;
 use BOM::Config::Runtime;
 use BOM::Platform::Email;
 use BOM::Transaction;
+use BOM::User::FinancialAssessment qw(is_section_complete decode_fa);
 
 requires_auth();
 
@@ -299,12 +300,11 @@ async_rpc mt5_new_account => sub {
     my $group = _mt5_group($company_name, $account_type, $mt5_account_type, $manager_id, $client->currency);
     return permission_error_future() if $group eq '';
 
+    return create_error_future({
+            code              => 'FinancialAssessmentMandatory',
+            message_to_client => localize('Please complete financial assessment.')}) unless (_is_financial_assessment_complete($client, $group));
+
     if ($account_type eq 'financial') {
-
-        return create_error_future({
-                code              => 'FinancialAssessmentMandatory',
-                message_to_client => localize('Please complete financial assessment.')}) unless $client->is_financial_assessment_complete();
-
         # As per the following document: Automatic Exchange of Information,
         # Guide for Reporting Financial Institutions by the Vanuatu Competent Authority
         # we need to ask for tax details for selected countries
@@ -455,6 +455,36 @@ async_rpc mt5_new_account => sub {
                 });
         });
 };
+
+=head2 _is_financial_assessment_complete
+
+Checks the financial assessment requirements of creating an account in an MT5 group.
+
+Takes two argument:
+
+=over 4
+
+=item * $client: an instance of C<BOM::User::Client> representing a binary client onject.
+
+=item * $group: the target MT5 group.
+
+Returns 1 of the financial assemssments meet the requirements; otherwise returns 0.
+
+=cut
+
+sub _is_financial_assessment_complete {
+    my ($client, $mt5_group) = @_;
+
+    # this case doesn't follow the general rule (labuan and vanuatu are exclusively mt5 landing companies).
+    if ($mt5_group =~ /labuan|vanuatu/) {
+        my $financial_assessment = decode_fa($client->financial_assessment());
+        my $is_FI                = is_section_complete($financial_assessment, 'financial_information');
+        my $is_TE                = is_section_complete($financial_assessment, 'trading_experience');
+        ($is_FI and $is_TE) ? return 1 : return 0;
+    }
+
+    return $client->is_financial_assessment_complete();
+}
 
 sub _check_logins {
     my ($client, $logins) = @_;
