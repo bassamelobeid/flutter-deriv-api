@@ -255,6 +255,15 @@ try {
             amount => $signed_amount,
             staff  => $clerk,
         );
+
+        $client->increment_social_responsibility_values({
+                deposit_amount => $signed_amount,
+                deposit_count  => 1
+            })
+            if ($client->landing_company->social_responsibility_check_required
+            && $ttype eq 'CREDIT'
+            && $params{payment_type} eq 'bank_money_transfer');
+
         $client_pa_exp = $client;
     } elsif ($ttype eq 'TRANSFER') {
         $client->payment_account_transfer(
