@@ -201,6 +201,15 @@ sub write_transaction_line {
     if ($c->type eq 'deposit') {
         $fdp = $client->is_first_deposit_pending;
         $trx = $client->payment_doughflow(%payment_args);
+
+        # Social responsibility checks for MLT/MX clients
+        if ($client->landing_company->social_responsibility_check_required) {
+            $client->increment_social_responsibility_values({
+                deposit_amount => $amount,
+                deposit_count  => 1
+            });
+        }
+
     } elsif ($c->type eq 'withdrawal') {
         # Don't allow balances to ever go negative! Include any fee in this test.
         my $balance = $client->default_account->balance;
