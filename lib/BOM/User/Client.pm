@@ -13,7 +13,6 @@ use Email::Stuffer;
 use Date::Utility;
 use List::Util qw/all/;
 use Locale::Country::Extra;
-
 use Format::Util::Numbers qw(roundcommon);
 use BOM::Platform::Context qw (request);
 use Brands;
@@ -34,7 +33,7 @@ use BOM::User::Client::Status;
 use BOM::User::Client::Account;
 use BOM::User::FinancialAssessment qw(is_section_complete decode_fa);
 use BOM::User::Utility;
-
+use BOM::Platform::Event::Emitter;
 use BOM::Database::DataMapper::Account;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Transaction;
@@ -1107,6 +1106,34 @@ sub get_open_contracts {
             client_loginid => $client->loginid,
             operation      => 'replica',
         })->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client->loginid, $client->currency, 'false']);
+}
+
+=head2 increment_social_responsibility_values
+
+Pass in an hasref and increment the social responsibility values in redis
+
+=cut
+
+sub increment_social_responsibility_values {
+    my ($client, $sr_hashref) = @_;
+    my $loginid = $client->loginid;
+
+    my $hash_name  = 'social_responsibility';
+    my $event_name = $loginid . '_sr_check';
+
+    my $redis = BOM::Config::RedisReplicated::redis_write();
+
+    foreach my $attribute (keys %$sr_hashref) {
+        my $field_name = $loginid . '_' . $attribute;
+        my $value      = $sr_hashref->{$attribute};
+
+        $redis->hincrbyfloat($hash_name, $field_name, $value);
+    }
+
+    # This is only set once; there is no point to queue again and again
+    BOM::Platform::Event::Emitter::emit('social_responsibility_check', {loginid => $loginid}) if $redis->hsetnx($hash_name, $event_name, 1);
+
+    return undef;
 }
 
 1;
