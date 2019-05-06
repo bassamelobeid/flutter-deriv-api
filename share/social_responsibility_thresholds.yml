@@ -1,0 +1,38 @@
+# This yml file contains an array of hashrefs
+# Each hashref contains a list of threshold values
+# The threshold values below are given by the social responsibility team, based on the statistics collected from the last 3 years.
+# The regulation requirement for this comes from: https://www.gamblingcommission.gov.uk/PDF/Customer-interaction-%E2%80%93-guidance-for-remote-gambling-operators.pdf (Pages 2,4,6)
+
+# When client breaches thresholds (based on the hits_required), they are considered at-risk 
+# NOTE: Currently, this is applicable to MX-MLT (Last updated: 1st May, 2019)
+
+# Example: If a client has losses of 700, made 17 deposits, and deposits totalled at 850,
+# They have breached three threshold limits and fulfilled the number of hits required
+# to be classified at risk
+
+limits: [
+{
+    hits_required: 3,
+    losses: 650,
+    turnover: 20000,
+    num_contract: 850,
+    deposit_amount: 800,
+    deposit_count: 15
+},
+{
+    hits_required: 2,
+    losses: 850,
+    turnover: 25000,
+    num_contract: 1500,
+    deposit_amount: 1300,
+    deposit_count: 20
+},
+{
+    hits_required: 1,
+    losses: 1000,
+    turnover: 30000,
+    num_contract: 3000,
+    deposit_amount: 1800,
+    deposit_count: 30
+}
+]

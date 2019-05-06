@@ -85,6 +85,11 @@ sub financial_assessment_fields {
     return $config;
 }
 
+sub social_responsibility_thresholds {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/social_responsibility_thresholds.yml');
+    return $config;
+}
+
 {
     my $env = do {
         local @ARGV = ('/etc/rmg/environment');
