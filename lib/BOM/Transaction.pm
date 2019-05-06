@@ -563,6 +563,8 @@ sub buy {
 
     my $stats_data = $self->stats_start('buy');
 
+    my $client = $self->client;
+
     my ($error_status, $bet_data) = $self->prepare_buy($options{skip_validation});
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
@@ -570,11 +572,11 @@ sub buy {
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
         %$bet_data,
         account_data => {
-            client_loginid => $self->client->loginid,
+            client_loginid => $client->loginid,
             currency_code  => $self->contract->currency,
         },
         limits => $self->limits,
-        db     => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
+        db     => BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db,
     );
 
     my $error = 1;
@@ -588,7 +590,7 @@ sub buy {
     catch {
         # if $error_status is defined, return it
         # otherwise the function re-throws the exception
-        stats_inc('database.consistency.inverted_transaction', {tags => ['broker_code:' . $self->client->broker_code]});
+        stats_inc('database.consistency.inverted_transaction', {tags => ['broker_code:' . $client->broker_code]});
         $error_status = $self->_recover($_);
     };
     return $self->stats_stop($stats_data, $error_status) if $error_status;
@@ -606,6 +608,11 @@ sub buy {
     $self->balance_after($txn->{balance_after});
     $self->transaction_id($txn->{id});
     $self->contract_id($fmb->{id});
+
+    $client->increment_social_responsibility_values({
+            turnover     => $fmb->{buy_price},
+            num_contract => 1
+        }) if $client->landing_company->social_responsibility_check_required;
 
     enqueue_new_transaction(_get_params_for_expiryqueue($self));    # For soft realtime expiration notification.
 
@@ -823,8 +830,10 @@ sub sell {
     my ($error_status, $bet_data) = $self->prepare_sell($options{skip_validation});
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
+    my $client = $self->client;
+
     $bet_data->{account_data} = {
-        client_loginid => $self->client->loginid,
+        client_loginid => $client->loginid,
         currency_code  => $self->contract->currency,
     };
 
@@ -833,7 +842,7 @@ sub sell {
 
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
         %$bet_data,
-        db => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
+        db => BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db,
     );
 
     my $error = 1;
@@ -870,6 +879,14 @@ sub sell {
     $self->balance_after($txn->{balance_after});
     $self->transaction_id($txn->{id});
     $self->reference_id($buy_txn_id);
+
+    if ($client->landing_company->social_responsibility_check_required) {
+        my $loss = $fmb->{buy_price} - $fmb->{sell_price};
+
+        $client->increment_social_responsibility_values({
+            losses => $loss > 0 ? $loss : 0,
+        });
+    }
 
     return;
 }
@@ -936,6 +953,7 @@ sub sell_by_shortcode {
                     $r->{tnx}       = $res_row->{txn};
                     $r->{fmb}       = $res_row->{fmb};
                     $r->{buy_tr_id} = $res_row->{buy_tr_id};
+
                     $success++;
                 }
             }
@@ -1548,11 +1566,28 @@ sub sell_expired_contracts {
     my $skip_contract  = @$bets - @$sold;
     my $total_credited = 0;
     my %stats_success;
+
+    my $total_losses = 0;
+
+    my $sr_check_required = $client->landing_company->social_responsibility_check_required;
+
     for my $t (@$sold) {
+
+        my $fmb = $t->{fmb};
+
         $total_credited += $t->{txn}->{amount};
-        $stats_success{$t->{fmb}->{bet_class}}->[0]++;
-        $stats_success{$t->{fmb}->{bet_class}}->[1] += $t->{txn}->{amount};
+        $stats_success{$fmb->{bet_class}}->[0]++;
+        $stats_success{$fmb->{bet_class}}->[1] += $t->{txn}->{amount};
+
+        if ($sr_check_required) {
+            $total_losses += $fmb->{sell_price} + 0 ? 0 : $fmb->{buy_price};
+        }
     }
+
+    $client->increment_social_responsibility_values({
+            losses => $total_losses,
+        }) if $sr_check_required;
+
     for my $class (keys %stats_success) {
         stats_count("transaction.sell.success", $stats_success{$class}->[0], {tags => [@tags, "contract_class:$class"]});
     }
