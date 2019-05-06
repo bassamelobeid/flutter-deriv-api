@@ -182,7 +182,7 @@
                         "pattern" : "^USD$"
                      },
                      "country" : {
-                        "pattern" : "^Costa Rica$",
+                        "pattern" : "^Saint Vincent and the Grenadines^",
                         "type" : "string"
                      }
                   }
@@ -203,7 +203,7 @@
                "type" : "object",
                "properties" : {
                   "shortcode" : {
-                     "pattern" : "^costarica$",
+                     "pattern" : "^svg$",
                      "type" : "string"
                   },
                   "legal_default_currency" : {
@@ -211,7 +211,7 @@
                      "type" : "string"
                   },
                   "country" : {
-                     "pattern" : "^Costa Rica$",
+                     "pattern" : "^Saint Vincent and the Grenadines$",
                      "type" : "string"
                   },
                   "has_reality_check" : {
@@ -226,7 +226,7 @@
                   },
                   "name" : {
                      "type" : "string",
-                     "pattern" : "^Binary \\(C\\.R\\.\\) S\\.A\\.$"
+                     "pattern" : "^Binary \\(SVG\\) Ltd\\.$"
                   },
                   "legal_allowed_contract_categories" : {
                      "items" : {
@@ -275,7 +275,7 @@
                   },
                   "country" : {
                      "type" : "string",
-                     "pattern" : "^Costa Rica$"
+                     "pattern" : "^Saint Vincent and the Grenadines$"
                   },
                   "legal_default_currency" : {
                      "pattern" : "^USD$",
@@ -283,7 +283,7 @@
                   },
                   "shortcode" : {
                      "type" : "string",
-                     "pattern" : "^costarica$"
+                     "pattern" : "^svg$"
                   },
                   "has_reality_check" : {
                      "type" : "integer",
@@ -299,7 +299,7 @@
                   },
                   "name" : {
                      "type" : "string",
-                     "pattern" : "^Binary \\(C\\.R\\.\\) S\\.A\\.$"
+                     "pattern" : "^Binary \\(SVG\\) Ltd\\.$"
                   },
                   "address" : {
                      "items" : {

@@ -76,7 +76,7 @@
             },
             "landing_company_fullname" : {
                "type" : "string",
-               "pattern" : "^Binary \\(C\\.R\\.\\) S\\.A\\.$"
+               "pattern": "^Binary \\(SVG\\) Ltd\\.$"
             },
             "loginid" : {
                "pattern" : "^CR\\d+$",

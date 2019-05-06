@@ -37,7 +37,7 @@
                "type" : "string"
             },
             "country" : {
-               "pattern" : "^Costa Rica$",
+               "pattern" : "^Saint Vincent and the Grenadines$",
                "type" : "string"
             },
             "shortcode" : {
