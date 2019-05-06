@@ -37,9 +37,10 @@ sub get_sportsbook {
     # remove full-stops, to make sportsbook name short enough for DF (30 chars Max)
     $landing_company =~ s/\.//g;
 
+    $landing_company = 'Binary (CR) SA' if $landing_company =~ /SVG/;
     $sportsbook = $landing_company . ' ' . $currency;
 
-    # Becuase if lenght restrcition in DF part and time limit in our part, we are shortening our name dirty like this.
+    # Because if length restriction in DF part and time limit in our part, we are shortening our name dirty like this.
     if ($broker eq 'MF') {
         $sportsbook =~ s/\s\(Europe\)//g;
     }
