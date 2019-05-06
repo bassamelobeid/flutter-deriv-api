@@ -354,6 +354,26 @@
                     "description" : "[Only for lookback trades] Multiplier applies when calculating the final payoff for each type of lookback. e.g. (Exit spot – Lowest historical price) * multiplier = Payout",
                     "type" : "number"
                 },
+                "tick_stream" : {
+                    "item" : {
+                        "properties" : {
+                            "tick" : {
+                                "description" : "The spot value at the given epoch.",
+                                "type" : [
+                                    "number",
+                                    "null"
+                                ]
+                            },
+                            "epoch" : {
+                                "type" : "integer",
+                                "description" : "Epoch time of a tick or the contract start or end time."
+                            }
+                        },
+                        "type" : "object"
+                    },
+                    "description" : "Tick stream from entry to end time.",
+                    "type" : "array"
+                },
                 "profit_percentage" : {
                     "description" : "Profit in percentage.",
                     "type" : "number"
