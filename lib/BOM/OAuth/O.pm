@@ -545,7 +545,7 @@ sub _filter_user_clients_by_app_id {
 
     return $user->clients unless first { $_ == $app_id } APPS_LOGINS_RESTRICTED;
 
-    return grep { $_ and $_->account and ($_->account->currency_code() // '') eq 'USD' } $user->clients_for_landing_company('costarica');
+    return grep { $_ and $_->account and ($_->account->currency_code() // '') eq 'USD' } $user->clients_for_landing_company('svg');
 }
 
 1;
