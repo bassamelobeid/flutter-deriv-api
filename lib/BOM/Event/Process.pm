@@ -31,18 +31,19 @@ Based on type of event its associated method is invoked.
 =cut
 
 my $action_mapping = {
-    register_details         => \&BOM::Event::Actions::Customerio::register_details,
-    email_consent            => \&BOM::Event::Actions::Customerio::email_consent,
-    email_statement          => \&BOM::Event::Actions::CustomerStatement::email_statement,
-    sync_user_to_MT5         => \&BOM::Event::Actions::MT5::sync_info,
-    store_mt5_transaction    => \&BOM::Event::Actions::MT5::redis_record_mt5_transfer,
-    new_financial_mt5_signup => \&BOM::Event::Actions::MT5::new_financial_mt5_signup,
-    anonymize_client         => \&BOM::Event::Actions::Anonymization::start,
-    send_mt5_disable_csv     => \&BOM::Event::Actions::MT5::send_mt5_disable_csv,
-    document_upload          => \&BOM::Event::Actions::Client::document_upload,
-    ready_for_authentication => \&BOM::Event::Actions::Client::ready_for_authentication,
-    client_verification      => \&BOM::Event::Actions::Client::client_verification,
-    account_closure          => \&BOM::Event::Actions::Client::account_closure
+    register_details            => \&BOM::Event::Actions::Customerio::register_details,
+    email_consent               => \&BOM::Event::Actions::Customerio::email_consent,
+    email_statement             => \&BOM::Event::Actions::CustomerStatement::email_statement,
+    sync_user_to_MT5            => \&BOM::Event::Actions::MT5::sync_info,
+    store_mt5_transaction       => \&BOM::Event::Actions::MT5::redis_record_mt5_transfer,
+    new_financial_mt5_signup    => \&BOM::Event::Actions::MT5::new_financial_mt5_signup,
+    anonymize_client            => \&BOM::Event::Actions::Anonymization::start,
+    send_mt5_disable_csv        => \&BOM::Event::Actions::MT5::send_mt5_disable_csv,
+    document_upload             => \&BOM::Event::Actions::Client::document_upload,
+    ready_for_authentication    => \&BOM::Event::Actions::Client::ready_for_authentication,
+    client_verification         => \&BOM::Event::Actions::Client::client_verification,
+    account_closure             => \&BOM::Event::Actions::Client::account_closure,
+    social_responsibility_check => \&BOM::Event::Actions::Client::social_responsibility_check
 };
 
 =head1 METHODS

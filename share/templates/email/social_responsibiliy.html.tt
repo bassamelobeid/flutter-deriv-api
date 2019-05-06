@@ -1,0 +1,30 @@
+<style>
+ table {
+  padding-bottom: 2%;
+ }
+
+ th {
+  background-color: lightgray;
+ }
+
+ td {
+  text-align: center;
+ }
+</style>
+<h2>Client [% loginid %] has breached the following thresholds:</h2>
+<table>
+ <tbody>
+  <tr>
+   <th scope="col">Threshold attribute</th>
+   <th scope="col">Threshold value</th>
+   <th scope="col">Client value</th>
+  </tr>
+  [% FOREACH info IN breached_info -%]
+  <tr>
+    <td>[% info.attribute %]</td>
+    <td>[% info.threshold_val %]</td>
+    <td>[% info.client_val %]</td>
+  </tr>
+  [% END -%]
+ </tbody>
+</table>

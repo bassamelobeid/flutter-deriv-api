@@ -874,4 +874,105 @@ sub _send_email_onfido_check_exceeded_cs {
 
     return 1;
 }
+
+=head2 social_responsibility_check
+
+This check is to verify whether clients are at-risk in trading, and this check is done on an on-going basis. 
+The checks to be done are in the social_responsibility_check.yml file in bom-config. 
+If a client has breached certain thresholds, then an email will be sent to the 
+social responsibility team for further action. 
+After the email has been sent, the monitoring starts again.
+
+This is required as per the following document: https://www.gamblingcommission.gov.uk/PDF/Customer-interaction-%E2%80%93-guidance-for-remote-gambling-operators.pdf
+(Read pages 2,4,6)
+
+NOTE: This is for MX-MLT clients only (Last updated: 1st May, 2019)
+
+=cut
+
+sub social_responsibility_check {
+    my $data = shift;
+
+    my $loginid = $data->{loginid};
+
+    my $redis = BOM::Config::RedisReplicated::redis_write();
+
+    my $hash_key   = 'social_responsibility';
+    my $event_name = $loginid . '_sr_check';
+
+    my $client_sr_values = {};
+
+    foreach my $sr_key (qw/num_contract turnover losses deposit_amount deposit_count/) {
+        $client_sr_values->{$sr_key} = $redis->hget($hash_key, $loginid . '_' . $sr_key) // 0;
+    }
+
+    # Remove flag from redis
+    $redis->hdel($hash_key, $event_name);
+
+    foreach my $threshold_list (@{BOM::Config::social_responsibility_thresholds()->{limits}}) {
+
+        my $hits_required = $threshold_list->{hits_required};
+
+        my @breached_info;
+
+        my $hits = 0;
+
+        foreach my $attribute (keys %$client_sr_values) {
+
+            my $client_attribute_val = $client_sr_values->{$attribute};
+            my $threshold_val        = $threshold_list->{$attribute};
+
+            if ($client_attribute_val >= $threshold_val) {
+                push @breached_info,
+                    {
+                    attribute     => $attribute,
+                    client_val    => $client_attribute_val,
+                    threshold_val => $threshold_val
+                    };
+
+                $hits++;
+            }
+        }
+
+        last unless $hits;
+
+        if ($hits >= $hits_required) {
+
+            my $brands        = Brands->new();
+            my $system_email  = $brands->emails('system');
+            my $sr_email      = $brands->emails('social_responsibility');
+            my $email_subject = 'Social Responsibility Check required - ' . $loginid;
+
+            my $tt = Template::AutoFilter->new({
+                ABSOLUTE => 1,
+                ENCODING => 'utf8'
+            });
+
+            my $data = {
+                loginid       => $loginid,
+                breached_info => \@breached_info
+            };
+
+            # Remove keys from redis
+            $redis->hdel($hash_key, $loginid . '_' . $_) for keys %$client_sr_values;
+
+            return try {
+                $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/social_responsibiliy.html.tt', $data, \my $html);
+                die "Template error: @{[$tt->error]}" if $tt->error;
+
+                die "failed to send social responsibility email ($loginid)"
+                    unless Email::Stuffer->from($system_email)->to($sr_email)->subject($email_subject)->html_body($html)->send();
+
+                undef;
+            }
+            catch {
+                $log->warn($_);
+                undef;
+            };
+        }
+    }
+
+    return undef;
+}
+
 1;

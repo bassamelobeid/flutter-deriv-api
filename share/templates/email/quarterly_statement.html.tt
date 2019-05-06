@@ -95,8 +95,7 @@
 <table>
  <tbody>
   <tr>
-   <th scope="col">Trade Date
-    <th>
+     <th scope="col">Trade Date</th>
      <th scope="col">Reference ID</th>
      <th scope="col">Order Type</th>
      <th scope="col">Description</th>
