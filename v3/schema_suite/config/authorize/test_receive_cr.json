@@ -26,8 +26,7 @@
                "type" : "integer"
             },
             "landing_company_name" : {
-               "type" : "string",
-               "pattern" : "^costarica$"
+               "type" : "string"
             },
             "balance" : {
                "enum" : [0],

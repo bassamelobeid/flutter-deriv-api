@@ -14,9 +14,9 @@ use await;
 my $t = build_wsapi_test();
 
 # landing_company_details
-my $res = $t->await::landing_company_details({landing_company_details => 'costarica'});
+my $res = $t->await::landing_company_details({landing_company_details => 'svg'});
 ok $res->{landing_company_details};
-is $res->{landing_company_details}->{country}, 'Costa Rica';
+is $res->{landing_company_details}->{country}, 'Saint Vincent and the Grenadines';
 test_schema('landing_company_details', $res);
 
 $res = $t->await::landing_company_details({landing_company_details => 'iom'});

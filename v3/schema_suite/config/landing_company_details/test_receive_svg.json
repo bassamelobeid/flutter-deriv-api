@@ -60,7 +60,7 @@
                "type" : "null"
             },
             "name" : {
-               "pattern" : "^Binary \\(C\\.R\\.\\) S\\.A\\.$",
+               "pattern": "^Binary \\(SVG\\) Ltd\\.$",
                "type" : "string"
             }
          },

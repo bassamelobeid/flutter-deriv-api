@@ -18,10 +18,10 @@ set_language 'FR';
 
 # Doing a test that must fail
 fail_test_sendrecv 'payout_currencies/test_send.json',        'payout_currencies/test_receive_no_login_to_be_failed.json';
-fail_test_sendrecv_params 'active_symbols/test_send_lc.json', 'active_symbols/test_receive_lc.json', 'costarica', 'forex', 'major_pairs';
+fail_test_sendrecv_params 'active_symbols/test_send_lc.json', 'active_symbols/test_receive_lc.json', 'svg', 'forex', 'major_pairs';
 fail_test_sendrecv 'asset_index/test_send.json',              'asset_index/test_receive_to_fail.json';
 fail_test_sendrecv_params 'landing_company/test_send.json', 'landing_company/test_receive_de.json', 'id';
-fail_test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_costarica.json', 'virtual';
+fail_test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_svg.json', 'virtual';
 
 # Reconnect in English
 set_language 'EN';
@@ -32,7 +32,7 @@ test_sendrecv 'time/test_send.json', 'time/test_receive.json';
 test_sendrecv_params 'landing_company/test_send.json', "landing_company/test_receive_$_.json", $_ foreach qw( de id );
 
 test_sendrecv_params 'landing_company_details/test_send.json', "landing_company_details/test_receive_$_.json", $_
-    foreach qw( costarica virtual iom malta maltainvest );
+    foreach qw( svg virtual iom malta maltainvest );
 
 # This file doesn't follow the same naming pattern
 test_sendrecv_params 'landing_company_details/test_send.json', "landing_company_details/test_receive_error.json", 'unknown';
