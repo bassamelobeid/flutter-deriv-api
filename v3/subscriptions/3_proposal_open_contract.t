@@ -17,8 +17,7 @@ $loop->add(
     ),
 );
 
-my @subscriptions = (
-    {
+my @subscriptions = ({
         buy => {
             buy        => 1,
             price      => 10,

@@ -102,7 +102,7 @@ subtest 'ticks' => sub {
 };
 
 subtest 'ticks_forget_one_sub' => sub {
-    
+
     sleep 1;
     my $res = $t->await::forget_all({forget_all => 'ticks'});
 
