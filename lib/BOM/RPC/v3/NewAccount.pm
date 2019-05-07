@@ -78,6 +78,11 @@ rpc "new_account_virtual",
             code              => $acc->{error},
             message_to_client => BOM::RPC::v3::Utility::error_map()->{$acc->{error}}}) if $acc->{error};
 
+    # Check if it is from UK, instantly mark it as unwelcome
+    if (uc $acc->{client}->residence eq 'GB') {
+        $acc->{client}->status->set('unwelcome', 'SYSTEM', 'Pending proof of age');
+    }
+
     my $client  = $acc->{client};
     my $account = $client->default_account;
     my $user    = $acc->{user};

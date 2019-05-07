@@ -26,6 +26,8 @@ test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.js
     _get_stashed('new_account_virtual/oauth_token'), 'gb', 'test\\\\+mx@binary.com';
 
 # REAL ACCOUNT OPENING (MX)
+$SIG{'__WARN__'} = sub { like shift, qr/signup validation proveid fail:/ };    # proveid will fail for these test clients
+
 test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mx.json',
     _get_stashed('authorize/stash/token'), 'Example First Name MX', 'gb';
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_mx.json',

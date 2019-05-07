@@ -73,14 +73,20 @@ subtest 'Initialization' => sub {
 
 $method = 'new_account_virtual';
 subtest $method => sub {
-    $params->{args}->{client_password}   = '123';
+
+    my @invalid_passwords = ('123456', '123abc', '123ABC', '123Ab', 'ABCdef');
+
+    for my $pw (@invalid_passwords) {
+        $params->{args}->{client_password} = $pw;
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('PasswordError', 'If password is weak it should return error')
+            ->error_message_is('Password should be at least six characters, including lower and uppercase letters with numbers.',
+            'If password is weak it should return error_message');
+    }
+
+    $params->{args}->{client_password}   = '123Ab!';
     $params->{args}->{verification_code} = 'wrong token';
 
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('PasswordError', 'If password is weak it should return error')
-        ->error_message_is('Password should be at least six characters, including lower and uppercase letters with numbers.',
-        'If password is weak it should return error_message');
-
-    $params->{args}->{client_password} = 'verylongandhardpasswordDDD1!';
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('InvalidToken', 'If email verification_code is wrong it should return error')
         ->error_message_is('Your token has expired or is invalid.', 'If email verification_code is wrong it should return error_message');
@@ -233,6 +239,7 @@ subtest $method => sub {
         $params->{args}->{place_of_birth} = 'id';
 
         @{$params->{args}}{keys %$client_details} = values %$client_details;
+
         $params->{args}{citizen} = "at";
 
         # These are here because our test helper function "create_client" creates a virtual client with details such as first name which never happens in production. This causes the new_account_real call to fail as it checks against some details can't be changed but is checked against the details of the virtual account
