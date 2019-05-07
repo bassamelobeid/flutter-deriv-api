@@ -282,7 +282,7 @@ The code that handles publishing ticks into redis (and update ticks history).
 handler tick => sub {
     my ($self, $symbol) = @_;
     my $tick = $self->update_ticks_history($self->fake_tick($symbol));
-    return $self->publish("FEED::$symbol", tick => $tick) if $tick;
+    return $self->publish("DISTRIBUTOR_FEED::$symbol", tick => $tick) if $tick;
     return undef;
 };
 
@@ -388,11 +388,6 @@ sub add_to_published {
 
 # Global Variable used to map what is sent to what we expect when they differ.
 my $published_to_response_mapping = {
-    tick => {
-        rename_fields => {
-            spot => 'quote',
-        }
-    },
     transaction => {
         rename_fields => {
             action_type             => 'action',
@@ -492,7 +487,7 @@ sub update_ticks_history {
     my $state  = $self->publisher_state;
     my $symbol = $tick_to_publish->{symbol};
 
-    my $tick = {$tick_to_publish->%*, quote => $tick_to_publish->{spot}};
+    my $tick = {$tick_to_publish->%*};
 
     my $current_history = $state->{ticks_history}->{$symbol};
 
@@ -615,7 +610,7 @@ sub fake_tick {
         epoch  => time,
         bid    => $bid,
         ask    => $ask,
-        spot   => $ul->pipsized_value(($bid + $ask) / 2),
+        quote  => $ul->pipsized_value(($bid + $ask) / 2),
         ($options // {})->%*,
     };
 }
