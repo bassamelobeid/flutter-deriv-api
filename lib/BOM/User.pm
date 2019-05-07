@@ -253,6 +253,17 @@ sub bom_real_loginids {
     return grep { $_ !~ MT5_REGEX && $_ !~ VIRTUAL_REGEX } $self->loginids;
 }
 
+=head2 bom_virtual_loginid
+
+get non-mt5 virtual login id
+
+=cut
+
+sub bom_virtual_loginid {
+    my $self = shift;
+    return first { $_ =~ VIRTUAL_REGEX } $self->loginids;
+}
+
 #
 sub mt5_logins {
     my $self = shift;
