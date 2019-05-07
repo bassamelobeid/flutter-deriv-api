@@ -23,7 +23,7 @@ for my $symbol (qw/R_50 R_100/) {
     });
 }
 
-sub _create_tick {    #creates R_50 tick in redis channel FEED::R_50
+sub _create_tick {    #creates R_50 tick in redis channel DISTRIBUTOR_FEED::R_50
     my ($i, $symbol) = @_;
     $i      ||= 700;
     $symbol ||= 'R_50';
@@ -33,12 +33,12 @@ sub _create_tick {    #creates R_50 tick in redis channel FEED::R_50
     my $payload = {
         symbol => $symbol,
         epoch  => int(time),
-        spot   => $i,
+        quote  => $i,
         ask    => $i - 1,
         bid    => $i + 1,
         ohlc   => $ohlc_sample,
     };
-    BOM::Config::RedisReplicated::redis_write()->publish("FEED::$symbol", Encode::encode_utf8($json->encode($payload)));
+    BOM::Config::RedisReplicated::redis_write()->publish("DISTRIBUTOR_FEED::$symbol", Encode::encode_utf8($json->encode($payload)));
 }
 
 my $t = build_wsapi_test();
@@ -102,7 +102,7 @@ subtest 'ticks' => sub {
 };
 
 subtest 'ticks_forget_one_sub' => sub {
-    
+
     sleep 1;
     my $res = $t->await::forget_all({forget_all => 'ticks'});
 

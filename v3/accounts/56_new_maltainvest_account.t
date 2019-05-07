@@ -115,7 +115,7 @@ subtest 'VR upgrade to MF - Germany' => sub {
         delete $details{new_account_real};
         $details{first_name} = 'first name DE';
         $details{residence}  = 'de';
-        $details{phone} = '+62123456001';
+        $details{phone}      = '+62123456001';
 
         my $res = $t->await::new_account_maltainvest(\%details);
         ok($res->{new_account_maltainvest});
@@ -146,7 +146,7 @@ subtest 'CR client cannot upgrade to MF' => sub {
         my %details = %client_details;
         $details{first_name} = 'first name ID';
         $details{residence}  = 'id';
-        $details{phone} = '+62123456001';
+        $details{phone}      = '+62123456001';
 
         my $res = $t->await::new_account_real(\%details);
         ok($res->{new_account_real});
@@ -177,6 +177,7 @@ subtest 'MX client can upgrade to MF' => sub {
         residence       => 'gb',
         client_password => 'abc123',
     });
+
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
     $t->await::authorize({authorize => $token});
 
@@ -184,7 +185,7 @@ subtest 'MX client can upgrade to MF' => sub {
         my %details = %client_details;
         $details{first_name} = 'first name GB';
         $details{residence}  = 'gb';
-        $details{phone} = '+62123456001';
+        $details{phone}      = '+62123456001';
 
         my $res = $t->await::new_account_real(\%details);
         ok($res->{new_account_real});
@@ -193,18 +194,27 @@ subtest 'MX client can upgrade to MF' => sub {
         my $loginid = $res->{new_account_real}->{client_id};
         like($loginid, qr/^MX\d+$/, "got MX client $loginid");
 
+
         ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
         $t->await::authorize({authorize => $token});
-    };
 
-    subtest 'MX can upgrade to MF' => sub {
-        my %details = (%client_details, %$mf_details);
-        $details{residence} = 'gb';
-        delete $details{new_account_real};
-        my $res = $t->await::new_account_maltainvest(\%details);
+        subtest 'MX upgrade to MF' => sub {
+            my %details = (%client_details, %$mf_details);
+            $details{residence} = 'gb';
+            delete $details{new_account_real};
+            my $res = $t->await::new_account_maltainvest(\%details);
 
-        is($res->{msg_type}, 'new_account_maltainvest');
-        is($res->{error}->{code}, undef, "Allow MF upgrade for MX without KYC for unauthenticated client");
+            is($res->{msg_type}, 'new_account_maltainvest');
+            is($res->{error}->{code}, 'UnwelcomeAccount', "Unable to upgrade MX to MF due to unwelcome");
+
+            my $client = BOM::User::Client->new({loginid => $loginid});
+            $client->status->clear_unwelcome;
+
+            $res = $t->await::new_account_maltainvest(\%details);
+
+            is($res->{msg_type}, 'new_account_maltainvest');
+            is($res->{error}->{code}, undef, "MX upgrade to MF ok");
+        };
     };
 };
 
