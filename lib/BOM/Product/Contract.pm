@@ -770,7 +770,14 @@ sub _build_apply_market_inefficient_limit {
     return $self->market_is_inefficient && $self->priced_with_intraday_model;
 }
 
-sub get_ticks_for_tick_expiry {
+# this needs to be a lazy build attribute because
+# it determined the expiry condition of a contract.
+has get_ticks_for_tick_expiry => (
+    is         => 'ro',
+    lazy_build => 1
+);
+
+sub _build_get_ticks_for_tick_expiry {
     my $self = shift;
 
     # before expected expiry, get it from cache
