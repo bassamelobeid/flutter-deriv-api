@@ -152,6 +152,25 @@ sub reset_transfer_testargs {
     return;
 }
 
+sub authenticate_client {
+    my ($clientdbh, $loginid) = @_;
+
+    my $SQL = 'INSERT INTO betonmarkets.client_authentication_method
+            (client_loginid, authentication_method_code, status, description)
+            VALUES (?,?,?,?)';
+    my $sth_add_method = $clientdbh->prepare($SQL);
+
+    $sth_add_method->execute($loginid, 'ID_DOCUMENT', 'pass', 'Testing only');
+}
+
+sub deauthenticate_client {
+    my ($clientdbh, $loginid) = @_;
+
+    my $SQL               = 'DELETE FROM betonmarkets.client_authentication_method WHERE client_loginid = ?';
+    my $sth_delete_method = $clientdbh->prepare($SQL);
+    $sth_delete_method->execute($loginid);
+}
+
 ## This helps prevent cut-n-paste errors in this file:
 $mock_cashier->mock(
     'paymentagent_withdraw',
@@ -683,12 +702,9 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         reset_transfer_testargs();
 
         $test = 'Landing company limits are skipped if the client is fully authenticated';
-        $SQL  = 'INSERT INTO betonmarkets.client_authentication_method
-                (client_loginid, authentication_method_code, status, description)
-                VALUES (?,?,?,?)';
-        my $sth_add_method = $clientdbh->prepare($SQL);
 
-        $sth_add_method->execute($Alice_id, 'ID_DOCUMENT', 'pass', 'Testing only');
+        authenticate_client($clientdbh, $Alice_id);
+
         top_up $Alice, $test_currency => $test_amount;
         $Alice_balance += $test_amount;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
@@ -698,9 +714,8 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Bob_balance   = sprintf('%0.*f', $precision, $Bob_balance + $test_amount);
         $test_amount   = sprintf('%0.*f', $precision, $test_amount + $amount_boost);
         reset_transfer_testargs();
-        $SQL = 'DELETE FROM betonmarkets.client_authentication_method WHERE client_loginid = ?';
-        my $sth_delete_method = $clientdbh->prepare($SQL);
-        $sth_delete_method->execute($Alice_id);
+
+        deauthenticate_client($clientdbh, $Alice_id);
 
         $test = 'Transfer fails if amount is over the lifetime limit for landing company champion';
         ## Same as above, but we force the landing company to be champion
@@ -762,6 +777,9 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $SQL = 'DELETE FROM betonmarkets.client_status WHERE client_loginid = ?';
         my $sth_clear_stats = $clientdbh->prepare($SQL);
         $sth_clear_stats->execute($Alice_id);
+
+        # Simulate a case where wrong error message is displayed when payment agent is authenticated
+        authenticate_client($clientdbh, $Alice_id);
 
         $test = 'Transfer fails if amount exceeds client balance';
         modify_bom_config('payment_limits', 'withdrawal_limits/*/lifetime_limit = 100000');
