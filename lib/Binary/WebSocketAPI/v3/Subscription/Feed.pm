@@ -102,7 +102,7 @@ Please refer to L<Binary::WebSocketAPI::v3::SubscriptionRole/channel>
 
 =cut
 
-sub channel { return 'FEED::' . shift->symbol }
+sub channel { return 'DISTRIBUTOR_FEED::' . shift->symbol }
 
 =head2 handle_error
 
@@ -149,7 +149,7 @@ sub handle_message {
             id     => $self->uuid,
             symbol => $symbol,
             epoch  => 0 + $epoch,
-            quote  => $payload->{spot},
+            quote  => $payload->{quote},
             bid    => $payload->{bid},
             ask    => $payload->{ask}};
 
