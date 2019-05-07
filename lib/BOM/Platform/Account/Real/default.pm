@@ -16,6 +16,7 @@ use BOM::Database::ClientDB;
 use BOM::Config;
 use BOM::Config::Runtime;
 use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Client::IDAuthentication;
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Client::Sanctions;
 
@@ -133,6 +134,8 @@ sub after_register_client {
             'residence: ' . Locale::Country::code2country($client->residence));
         $client->add_note("MX Client [$client_loginid] - first name or last name less than 3 characters", "$notemsg\n");
     }
+
+    BOM::Platform::Client::IDAuthentication->new(client => $client)->run_validation('signup');
 
     BOM::User::Utility::set_gamstop_self_exclusion($client);
 

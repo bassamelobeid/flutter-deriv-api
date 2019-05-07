@@ -21,14 +21,15 @@ has client => (
 use constant NEEDED_MATCHES_FOR_UKGC_AUTH        => 2;
 use constant NEEDED_MATCHES_FOR_AGE_VERIFICATION => 1;
 
-=head2 run_authentication
+=head2 run_validation
 
-This is called for validation checks on first time deposits
+Takes in a client event name and runs the appropriate validations for that event
 
 =cut
 
-sub run_authentication {
-    my $self    = shift;
+sub run_validation {
+    my ($self, $event) = @_;
+
     my $client  = $self->client;
     my $loginid = $client->loginid;
 
@@ -36,28 +37,44 @@ sub run_authentication {
 
     my $landing_company = $client->landing_company;
 
-    $client->send_new_client_email() if ($landing_company->new_client_email_event eq 'first_deposit');
+    my $actions = $landing_company->actions->{$event};
 
-    my $requirements = $landing_company->first_deposit_requirements;
+    my %error_info = ();
 
     my $action_mapping = {
-        age_verified => \&_age_verified,
-        fully_auth   => \&_fully_auth,
-        proveid      => \&proveid,
+        age_verified     => '_age_verified',
+        fully_auth_check => '_fully_auth_check',
+        proveid          => 'proveid',
     };
 
-    return try {
-        for my $req (@$requirements) {
-            unless (exists $action_mapping->{$req}) {
-                warn "Invalid requirement";
-                next;
-            }
-            $action_mapping->{$req}->($self);
+    for my $action (@$actions) {
+        my $mapped_action = $action_mapping->{$action};
+        unless ($mapped_action) {
+            warn "Invalid requirement";
+            next;
         }
+
+        try {
+            $self->$mapped_action();
+        }
+        catch {
+            $error_info{$action} = $_;
+        };
     }
-    catch {
-        warn "First deposit authentication failed: $_";
-    };
+
+    warn "$loginid $event validation $_ fail: " . $error_info{$_} for keys %error_info;
+
+    return 1;
+}
+
+=head2 run_authentication
+
+This is called for validation checks on first time deposits. Deprecated for run_validation().
+
+=cut
+
+sub run_authentication {
+    return shift->run_validation('first_deposit');
 }
 
 =head2 proveid
@@ -78,7 +95,7 @@ sub proveid {
     return undef unless $client->residence eq 'gb';
 
     my $prove_id_result = $self->_fetch_proveid;
-    
+
     return undef unless $prove_id_result;
 
     my $xml = XML::LibXML->new()->parse_string($prove_id_result);
@@ -125,6 +142,9 @@ sub proveid {
     if ($dob_match >= NEEDED_MATCHES_FOR_AGE_VERIFICATION) {
         my $status_set_response =
             $client->status->set('age_verification', 'system', "Experian results are sufficient to mark client as age verified.");
+        my $vr_acc = BOM::User::Client->new({loginid => $client->user->bom_virtual_loginid});
+        $vr_acc->status->clear_unwelcome;
+        $vr_acc->status->set('age_verification', 'system', 'Experian results are sufficient to mark client as age verified.');
         if ($name_address_match >= NEEDED_MATCHES_FOR_UKGC_AUTH) {
             $status_set_response = $client->status->set('ukgc_authenticated', 'system', "Online verification passed");
         }
@@ -155,13 +175,13 @@ sub _age_verified {
     return undef;
 }
 
-=head2 _fully_auth
+=head2 _fully_auth_check
 
 Checks if client is fully authenticated, if not, set client as unwelcome
 
 =cut
 
-sub _fully_auth {
+sub _fully_auth_check {
     my $self   = shift;
     my $client = $self->client;
 

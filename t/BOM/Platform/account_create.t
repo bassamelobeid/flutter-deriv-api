@@ -287,9 +287,16 @@ subtest 'create account' => sub {
                 });
             }
             "create $broker_code account OK, after verify email";
-            my ($client, $user) = @{$real_acc}{qw/client user/};
-            is(defined $user,   1,            "Social login user with residence $user->residence has been created");
-            is($client->broker, $broker_code, "Successfully created real account $client->loginid");
+        } elsif ($broker_code eq 'MX') {
+            lives_ok {
+                $real_acc = BOM::Platform::Account::Real::default::create_account({
+                    from_client => $vr_client,
+                    user        => $social_login_user,
+                    details     => \%details,
+                    country     => $vr_client->residence,
+                });
+            }
+            "create $broker_code account OK, after verify email";
         } else {
             # Social login user may create default account
             lives_ok {
@@ -301,11 +308,11 @@ subtest 'create account' => sub {
                 });
             }
             "create $broker_code account OK, after verify email";
-
-            my ($client, $user) = @{$real_acc}{qw/client user/};
-            is(defined $user,   1,            "Social login user with residence $user->residence has been created");
-            is($client->broker, $broker_code, "Successfully created real account $client->loginid");
         }
+
+        my ($client, $user) = @{$real_acc}{qw/client user/};
+        is(defined $user,   1,            "Social login user with residence $user->residence has been created");
+        is($client->broker, $broker_code, "Successfully created real account $client->loginid");
     }
 };
 

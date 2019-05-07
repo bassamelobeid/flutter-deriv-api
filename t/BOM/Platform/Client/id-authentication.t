@@ -25,6 +25,8 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 my $xml              = XML::Simple->new;
 my $support_email    = 'support@binary.com';
 my $compliance_email = 'compliance@binary.com';
+my $password         = 'Abc123';
+my $hash_pwd         = BOM::User::Password::hashpw($password);
 
 sub email_list {
     my $transport = Email::Sender::Simple->default_transport;
@@ -53,18 +55,12 @@ subtest 'Virtual accounts' => sub {
 
 };
 subtest "CR accounts" => sub {
-    is(0 + email_list(), 0, 'have no emails to start with');
     my $c = create_client("CR");
 
     my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
     ok $v->client->is_first_deposit_pending, 'First deposit tracking for CR account';
 
     $v->run_authentication();
-
-    my @msgs = grep { $_->{to}[0] eq 'support-newaccount-notifications@binary.com' and $_->{subject} =~ qr/New Sign-Up/ } my @existing =
-        email_list();
-
-    ok(@msgs, "New sign up email received") or note explain \@existing;
 
     ok !$v->client->status->cashier_locked, "CR client not cashier locked following run_authentication";
     ok !$v->client->status->unwelcome,      "CR client not unwelcome following run_authentication";
@@ -179,13 +175,16 @@ subtest 'MX accounts' => sub {
 
         for my $match (@invalid_matches) {
             subtest "$match" => sub {
-                my $c = create_client('MX', undef, {residence => 'gb'});
+                my ($vr_client, $mx_client) =
+                    @{create_user_and_clients(['VRTC', 'MX'], 'mx_test_' . $match . '@binary.com', {residence => 'gb'})}{'VRTC', 'MX'};
 
-                my $loginid      = $c->loginid;
-                my $client_email = $c->email;
+                $vr_client->status->set('unwelcome', 'system', 'test');
+
+                my $loginid      = $mx_client->loginid;
+                my $client_email = $mx_client->email;
                 $emails = {};
 
-                my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
+                my $v = BOM::Platform::Client::IDAuthentication->new(client => $mx_client);
 
                 my $file_path = $base_dir . $match . ".xml";
 
@@ -195,10 +194,13 @@ subtest 'MX accounts' => sub {
                         read $fh, my $file_content, -s $fh;
                         return $file_content;
                     });
-                $v->run_authentication;
+                $v->run_validation('signup');
 
                 ok $v->client->status->disabled,          "Disabled due to $match";
                 ok $v->client->status->proveid_requested, "ProveID requested";
+
+                $vr_client = BOM::User::Client->new({loginid => $vr_client->loginid});
+                ok $vr_client->status->unwelcome, "VR still unwelcomed";
 
                 is($emails->{$support_email}, "Account $loginid disabled following Experian results", "CS received email");
                 is($emails->{$client_email},  "Documents are required to verify your identity",       "Client received email");
@@ -206,13 +208,15 @@ subtest 'MX accounts' => sub {
         }
     };
     subtest "Insufficient DOB Match in ProveID" => sub {
-        my $c = create_client('MX', undef, {residence => 'gb'});
+        my ($vr_client, $mx_client) = @{create_user_and_clients(['VRTC', 'MX'], 'mx_test_lowdob@binary.com', {residence => 'gb'})}{'VRTC', 'MX'};
 
-        my $loginid      = $c->loginid;
-        my $client_email = $c->email;
+        $vr_client->status->set('unwelcome', 'system', 'test');
+
+        my $loginid      = $mx_client->loginid;
+        my $client_email = $mx_client->email;
         $emails = {};
 
-        my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
+        my $v = BOM::Platform::Client::IDAuthentication->new(client => $mx_client);
 
         my $file_path = "/home/git/regentmarkets/bom-test/data/Experian/SavedXML/ExperianInsufficientDOB.xml";
 
@@ -223,18 +227,24 @@ subtest 'MX accounts' => sub {
                 return $file_content;
             });
 
-        $v->run_authentication;
+        $v->run_validation('signup');
 
         ok !$v->client->status->disabled, "Not disabled due to Insufficient DOB Match";
         ok $v->client->status->unwelcome,         "Unwelcome due to Insufficient DOB Match";
         ok $v->client->status->proveid_requested, "ProveID requested";
 
+        $vr_client = BOM::User::Client->new({loginid => $vr_client->loginid});
+        ok $vr_client->status->unwelcome, "VR still unwelcomed";
+
         is($emails->{$client_email}, "Documents are required to verify your identity", "Client received email");
     };
     subtest "Sufficient DOB, Sufficient UKGC" => sub {
-        my $c = create_client('MX', undef, {residence => 'gb'});
+        my ($vr_client, $mx_client) =
+            @{create_user_and_clients(['VRTC', 'MX'], 'mx_test_highdob_ukgc@binary.com', {residence => 'gb'})}{'VRTC', 'MX'};
 
-        my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
+        $vr_client->status->set('unwelcome', 'system', 'test');
+
+        my $v = BOM::Platform::Client::IDAuthentication->new(client => $mx_client);
 
         my $file_path = "/home/git/regentmarkets/bom-test/data/Experian/SavedXML/ExperianValid.xml";
 
@@ -245,20 +255,27 @@ subtest 'MX accounts' => sub {
                 return $file_content;
             });
 
-        $v->run_authentication;
+        $v->run_validation('signup');
 
         ok !$v->client->status->disabled,  "Not disabled due to sufficient DOB Match";
         ok !$v->client->status->unwelcome, "Not welcome due to sufficient DOB Match";
         ok $v->client->status->age_verification,   "Age verified due to suffiecient DOB Match";
         ok $v->client->status->ukgc_authenticated, "UKGC authenticated due to sufficient FullNameAndAddress Match";
         ok $v->client->status->proveid_requested,  "ProveID requested";
+
+        $vr_client = BOM::User::Client->new({loginid => $vr_client->loginid});
+        ok !$vr_client->status->unwelcome, "VR welcomed";
     };
+
     subtest "Sufficient DOB, Insufficient UKGC" => sub {
-        my $c = create_client('MX', undef, {residence => 'gb'});
+        my ($vr_client, $mx_client) =
+            @{create_user_and_clients(['VRTC', 'MX'], 'mx_test_highdob_no_ukgc@binary.com', {residence => 'gb'})}{'VRTC', 'MX'};
 
-        my $loginid = $c->loginid;
+        $vr_client->status->set('unwelcome', 'system', 'test');
 
-        my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
+        my $loginid = $mx_client->loginid;
+
+        my $v = BOM::Platform::Client::IDAuthentication->new(client => $mx_client);
 
         my $file_path = "/home/git/regentmarkets/bom-test/data/Experian/SavedXML/ExperianInsufficientUKGC.xml";
 
@@ -269,31 +286,33 @@ subtest 'MX accounts' => sub {
                 return $file_content;
             });
 
-        $v->run_authentication;
+        $v->run_validation('signup');
         ok !$v->client->status->disabled,           "Not disabled due to Insufficient DOB Match";
         ok !$v->client->status->unwelcome,          "Not welcome due to sufficient DOB Match";
         ok !$v->client->status->ukgc_authenticated, "Not ukgc authenticated due to insufficient FullNameAndAddress match";
         ok $v->client->status->proveid_requested, "ProveID requested";
 
+        $vr_client = BOM::User::Client->new({loginid => $vr_client->loginid});
+        ok !$vr_client->status->unwelcome, "VR welcomed";
+
     };
     subtest "No Experian entry found" => sub {
         subtest "Error 501" => sub {
-            my $c = create_client('MX', undef, {residence => 'gb'});
+            my ($vr_client, $mx_client) =
+                @{create_user_and_clients(['VRTC', 'MX'], 'mx_test_no_entry@binary.com', {residence => 'gb'})}{'VRTC', 'MX'};
 
-            my $loginid      = $c->loginid;
-            my $client_email = $c->email;
+            $vr_client->status->set('unwelcome', 'system', 'test');
+
+            my $loginid      = $mx_client->loginid;
+            my $client_email = $mx_client->email;
             $emails = {};
 
-            my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
+            my $v = BOM::Platform::Client::IDAuthentication->new(client => $mx_client);
             $proveid_mock->mock(
                 get_result => sub {
                     die '501: No Match Found';
                 });
-
-            {
-                $SIG{'__WARN__'} = sub { like shift, qr/^First deposit authentication failed/ };
-                $v->run_authentication;
-            };
+            $v->run_validation('signup');
 
             ok !$v->client->status->disabled, "Not disabled due to no entry";
             ok $v->client->status->unwelcome,         "Unwelcome due to no entry";
@@ -302,13 +321,15 @@ subtest 'MX accounts' => sub {
             is($emails->{$client_email}, "Documents are required to verify your identity", "Client received email");
         };
         subtest "Blank Response" => sub {
-            my $c = create_client('MX', undef, {residence => 'gb'});
+            my ($vr_client, $mx_client) = @{create_user_and_clients(['VRTC', 'MX'], 'mx_test_blank@binary.com', {residence => 'gb'})}{'VRTC', 'MX'};
 
-            my $loginid      = $c->loginid;
-            my $client_email = $c->email;
+            $vr_client->status->set('unwelcome', 'system', 'test');
+
+            my $loginid      = $mx_client->loginid;
+            my $client_email = $mx_client->email;
             $emails = {};
 
-            my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
+            my $v = BOM::Platform::Client::IDAuthentication->new(client => $mx_client);
 
             my $file_path = "/home/git/regentmarkets/bom-test/data/Experian/SavedXML/ExperianBlank.xml";
 
@@ -319,10 +340,7 @@ subtest 'MX accounts' => sub {
                     return $file_content;
                 });
 
-            {
-                $SIG{'__WARN__'} = sub { like shift, qr/^First deposit authentication failed/ };
-                $v->run_authentication;
-            };
+            $v->run_validation('signup');
 
             ok !$v->client->status->disabled, "Not disabled due to no entry";
             ok $v->client->status->unwelcome,         "Unwelcome due to no entry";
@@ -332,23 +350,30 @@ subtest 'MX accounts' => sub {
         };
     };
     subtest "Error connecting to Experian" => sub {
-        my $c = create_client('MX', undef, {residence => 'gb'});
+        my ($vr_client, $mx_client) =
+            @{create_user_and_clients(['VRTC', 'MX'], 'mx_test_connection_error@binary.com', {residence => 'gb'})}{'VRTC', 'MX'};
 
-        my $loginid = $c->loginid;
+        $vr_client->status->set('unwelcome', 'system', 'test');
+
+        my $loginid = $mx_client->loginid;
+
         $emails = {};
 
-        my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
+        my $v = BOM::Platform::Client::IDAuthentication->new(client => $mx_client);
         $proveid_mock->mock(
             get_result => sub {
                 die "Test Error";
             });
 
-        $v->run_authentication;
+        warning_like { $v->run_validation('signup'); } qr/^$loginid signup validation proveid fail:/, "ProveID fails correctly";
 
         ok !$v->client->status->disabled, "Not disabled due to failed request";
         ok $v->client->status->unwelcome,         "Unwelcome due to failed request";
         ok $v->client->status->proveid_requested, "ProveID requested";
         ok $v->client->status->proveid_pending,   "ProveID flag for retry set";
+
+        $vr_client = BOM::User::Client->new({loginid => $vr_client->loginid});
+        ok $vr_client->status->unwelcome, "VR still unwelcomed";
 
         is($emails->{$compliance_email}, "Experian request error for client $loginid", "CS received email");
     };
@@ -361,6 +386,27 @@ sub _send_email {
 
     $emails->{$to} = $subj;
     return 1;
+}
+
+sub create_user_and_clients {
+    my $brokers = shift;
+    my $email   = shift;
+    my $details = shift;
+
+    my $user = BOM::User->create(
+        email => $email // 'mx_test' . rand(999) . '@binary.com',
+        password => $hash_pwd
+    );
+
+    my $clients = {};
+
+    for my $broker (@$brokers) {
+        my $c = create_client($broker, undef, $details);
+        $clients->{$broker} = $c;
+        $user->add_client($c);
+    }
+
+    return $clients;
 }
 
 1;
