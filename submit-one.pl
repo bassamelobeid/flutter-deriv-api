@@ -5,7 +5,7 @@ use warnings;
 use IO::Async::Loop;
 use Job::Async;
 
-use JSON::MaybeXS;
+use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use Data::Dump 'pp';
 
 # usage:
@@ -18,8 +18,6 @@ use Data::Dump 'pp';
 #
 # $ perl submit-one.pl sleep seconds=5
 # { result => "success", success => 1 }
-
-my $json = JSON::MaybeXS->new;
 
 my $loop = IO::Async::Loop->new;
 $loop->add(
@@ -41,7 +39,7 @@ foreach( @ARGV ) {
     $args{$1} = $2;
 }
 
-my $jsonresult = $client->submit(name => $name, params => $json->encode(\%args))->get;
-my $result = $json->decode($jsonresult);
+my $jsonresult = $client->submit(name => $name, params => encode_json_utf8(\%args))->get;
+my $result = decode_json_utf8($jsonresult);
 
 print pp($result) . "\n";

@@ -32,6 +32,10 @@ use BOM::RPC::v3::DocumentUpload;
 use BOM::RPC::v3::Pricing;
 use BOM::RPC::v3::MarketData;
 
+# TODO(leonerd): Maybe guard this by a flag of some kind so it isn't loaded by
+# default?
+use BOM::RPC::v3::Debug;
+
 use constant REQUEST_ARGUMENTS_TO_BE_IGNORED => qw (req_id passthrough);
 
 # TODO(leonerd): this one RPC is unusual, coming from Utility.pm which doesn't
