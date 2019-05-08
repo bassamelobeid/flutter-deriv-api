@@ -483,10 +483,10 @@ rpc paymentagent_transfer => sub {
     my $payment_agent = $client_fm->payment_agent;
     return $error_sub->(localize('You are not authorized for transfers via payment agents.')) unless $payment_agent;
 
-    my $min_max = BOM::Config::PaymentAgent::get_transfer_min_max($currency);
-
-    my $max_withdrawal = $payment_agent->max_withdrawal // $min_max->{maximum};
-    my $min_withdrawal = $payment_agent->min_withdrawal // $min_max->{minimum};
+    my ($min_withdrawal, $max_withdrawal) = _get_paymentagent_limits(
+        payment_agent => $payment_agent,
+        currency      => $currency
+    );
 
     return $error_sub->(localize("Invalid amount. Maximum withdrawal allowed is [_1].", $max_withdrawal))
         if ($amount > $max_withdrawal);
@@ -862,10 +862,13 @@ rpc paymentagent_withdraw => sub {
         localize("You cannot perform this action, as [_1] is not default currency for payment agent account [_2].", $currency, $pa_client->loginid))
         if ($pa_client->currency ne $currency or not $pa_client->default_account);
 
-    my $min_max = BOM::Config::PaymentAgent::get_transfer_min_max($currency);
+    my ($min, $max) = _get_paymentagent_limits(
+        payment_agent => $paymentagent,
+        currency      => $currency
+    );
 
-    return $error_sub->(localize('Invalid amount. Minimum is [_1], maximum is [_2].', $min_max->{minimum}, $min_max->{maximum}))
-        if ($amount < $min_max->{minimum} || $amount > $min_max->{maximum});
+    return $error_sub->(localize('Invalid amount. Minimum is [_1], maximum is [_2].', $min, $max))
+        if ($amount < $min || $amount > $max);
 
     # check that the additional information does not exceeded the allowed limits
     return $error_sub->(localize('Further instructions must not exceed [_1] characters.', MAX_DESCRIPTION_LENGTH))
@@ -1572,6 +1575,14 @@ sub validate_amount {
         if (defined $precision and length($precision) > $num_of_decimals);
 
     return undef;
+}
+
+sub _get_paymentagent_limits {
+    my (%args) = @_;
+
+    my $min_max = BOM::Config::PaymentAgent::get_transfer_min_max($args{currency});
+
+    return ($args{payment_agent}->min_withdrawal // $min_max->{minimum}, $args{payment_agent}->max_withdrawal // $min_max->{maximum});
 }
 
 1;
