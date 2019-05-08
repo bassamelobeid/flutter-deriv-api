@@ -28,6 +28,7 @@ use BOM::Test::Helper qw/build_wsapi_test build_test_R_50_data/;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use BOM::MarketData qw(create_underlying);
+use BOM::Product::ContractFactory qw(produce_contract);
 
 use Quant::Framework;
 use BOM::Config::Chronicle;
@@ -157,6 +158,7 @@ $client->smart_payment(
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
 my $authorize = $t->await::authorize({authorize => $token});
+ok !$authorize->{error}, 'Authorized successfully';
 
 my ($req, $res, $start, $end);
 $req = {
@@ -173,9 +175,12 @@ $req = {
 
 my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
 my $underlying       = create_underlying('frxUSDJPY');
+$res = $t->await::proposal($req);
+my $quite_hour_error = ($res->{error}->{code} // '' eq 'ContractBuyValidationError') && ($res->{error}->{details}->{field} // '' eq 'duration');
+my $skip = !$trading_calendar->is_open_at($underlying->exchange, Date::Utility->new) || $quite_hour_error;
 
 SKIP: {
-    skip 'Forex test does not work on the weekends.', 1 if not $trading_calendar->is_open_at($underlying->exchange, Date::Utility->new);
+    skip 'Forex test does not work on the weekends and quite hours.', 1 if $skip;
     subtest 'forget' => sub {
         $t->await::forget_all({forget_all => 'proposal'});
         create_proposals();

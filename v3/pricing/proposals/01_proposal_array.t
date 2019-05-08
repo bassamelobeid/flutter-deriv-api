@@ -7,6 +7,7 @@ use Devel::Refcount qw(refcount);
 
 use Test::More;
 use Test::Deep;
+use Date::Utility;
 
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods);
@@ -18,6 +19,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Config::RedisReplicated;
 use BOM::Config::Chronicle;
 use BOM::MarketData qw(create_underlying);
+use BOM::Product::ContractFactory qw(produce_contract);
 
 use Sereal::Encoder;
 use Quant::Framework;
@@ -124,11 +126,13 @@ my $proposal_array_req_tpl = {
     'passthrough'          => {}};
 
 my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
-my $underlying       = create_underlying('frxUSDJPY');
-my $skip             = !$trading_calendar->is_open_at($underlying->exchange, Date::Utility->new);
+my $market_closed    = !$trading_calendar->is_open_at(create_underlying($symbol)->exchange, Date::Utility->new);
+my $no_offerings     = ($contracts_for->{error}{code} // '') eq 'InvalidSymbol';
+ok(Date::Utility->new->time_hhmmss ge '18:15:00' || Date::Utility->new->time_hhmmss lt '00:15:00' || $market_closed, "$symbol $pt is unavailable at this time") if $no_offerings;
+my $skip = $market_closed || $no_offerings;
 
 SKIP: {
-    skip 'Forex test does not work on the weekends.', 1 if $skip;
+    skip "Forex test does not work on the weekends or $symbol $pt contracts unavailability.", 1 if $skip;
     subtest 'allcombinations' => sub {
         for my $key (keys %$proposal_array_variants) {
             my ($ct1, $ct2) = split '_', $key;
@@ -172,7 +176,7 @@ my $barriers = $put->{available_barriers};
 my $fixed_bars = [map { {barrier => $_} } @$barriers];
 
 SKIP: {
-    skip 'Forex test does not work on the weekends.', 1 if $skip;
+    skip "Forex test does not work on the weekends or $symbol $pt contract unavailability.", 1 if $skip;
     if ($put->{trading_period}{date_expiry}{epoch} - Date::Utility->new->epoch <= 900) {
         $response = $t->await::proposal_array($proposal_array_req_tpl);
         is $response->{proposal_array}{proposals}{CALLE}[0]{error}{message}, 'Trading is not offered for this duration.',
