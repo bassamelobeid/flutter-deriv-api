@@ -194,7 +194,6 @@ subtest 'MX client can upgrade to MF' => sub {
         my $loginid = $res->{new_account_real}->{client_id};
         like($loginid, qr/^MX\d+$/, "got MX client $loginid");
 
-
         ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
         $t->await::authorize({authorize => $token});
 

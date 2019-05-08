@@ -118,6 +118,7 @@ subtest 'buy n check' => sub {
     is $data->{subscription}->{id},                    $data->{proposal_open_contract}->{id}, 'The same subscription id';
     is $data->{proposal_open_contract}->{contract_id}, $contract_id, 'got correct contract from proposal open contracts';
     test_schema('proposal_open_contract', $data);
+
 };
 
 subtest 'passthrough' => sub {

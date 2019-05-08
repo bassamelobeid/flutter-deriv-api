@@ -72,6 +72,6 @@ test_sendrecv_params 'copy_start/test_send.json', 'copy_start/test_receive.json'
 
 test_sendrecv_params 'copytrading_list/test_send.json', 'copytrading_list/test_receive_trader.json';
 
-test_sendrecv_params 'copy_stop/test_send.json',  'copy_stop/test_receive.json',  $suite->get_stashed('api_token/api_token/tokens/0/token');
+test_sendrecv_params 'copy_stop/test_send.json', 'copy_stop/test_receive.json', $suite->get_stashed('api_token/api_token/tokens/0/token');
 
 finish;
