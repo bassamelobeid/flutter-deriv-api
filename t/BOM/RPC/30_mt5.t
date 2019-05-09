@@ -124,7 +124,6 @@ my $token_vr = $m->create_token($test_client_vr->loginid, 'test token');
 BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
 subtest 'new account without basic details' => sub {
-
     my $method = 'mt5_new_account';
     my $params = {
         language => 'EN',
@@ -502,6 +501,9 @@ subtest 'investor password reset' => sub {
     my $method = 'mt5_password_reset';
     mailbox_clear();
 
+    my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return 'svg' });
+
     my $code = BOM::Platform::Token->new({
             email       => $DETAILS{email},
             expires_in  => 3600,
@@ -529,6 +531,7 @@ subtest 'investor password reset' => sub {
     );
     ok($msg, "email received");
 
+    $demo_account_mock->unmock;
 };
 
 subtest 'password check investor' => sub {
@@ -562,6 +565,9 @@ subtest 'deposit' => sub {
 
     set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
 
+    my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return 'svg' });
+
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_no_error('no error for mt5_deposit');
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
@@ -584,6 +590,8 @@ subtest 'deposit' => sub {
     $params->{args}{to_mt5} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_deposit wrong login')
         ->error_code_is('PermissionDenied', 'error code for mt5_deposit wrong login');
+
+    $demo_account_mock->unmock;
 };
 
 subtest 'virtual_deposit' => sub {
@@ -612,6 +620,7 @@ subtest 'virtual_deposit' => sub {
 
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $demo_account_mock->mock('_is_account_demo', sub { return 1 });
+    $demo_account_mock->mock('_fetch_mt5_lc',    sub { return 'iom' });
 
     $method = "mt5_deposit";
     my $deposit_demo_params = {
@@ -628,8 +637,8 @@ subtest 'virtual_deposit' => sub {
         'There was an error processing the request. You can only request additional funds if your demo account balance falls below USD 1000.00.',
         'Balance is higher');
 
-    $demo_account_mock->unmock;
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $demo_account_mock->unmock;
 
 };
 
@@ -653,13 +662,17 @@ subtest 'mx_deposit' => sub {
         },
     };
 
+    my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return 'maltainvest' });
+
     my $method = "mt5_deposit";
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_mx_client->loginid);
 
     $c->call_ok($method, $params_mx)->has_error('Cannot access MT5 as MX')
         ->error_code_is('MT5DepositError', 'Transfers to MT5 not allowed error_code')
-        ->error_message_is('There was an error processing the request. Please switch to your MF account to access MT5.');
+        ->error_message_is('There was an error processing the request. Please switch your account to access MT5.');
+    $demo_account_mock->unmock;
 };
 
 subtest 'mx_withdrawal' => sub {
@@ -684,10 +697,14 @@ subtest 'mx_withdrawal' => sub {
 
     my $method = "mt5_withdrawal";
 
+    my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return 'maltainvest' });
+
     BOM::RPC::v3::MT5::Account::reset_throttler($test_mx_client->loginid);
 
     $c->call_ok($method, $params_mx)->has_error('Cannot access MT5 as MX')->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')
-        ->error_message_is('There was an error processing the request. Please switch to your MF account to access MT5.');
+        ->error_message_is('There was an error processing the request. Please switch your account to access MT5.');
+    $demo_account_mock->unmock;
 };
 
 subtest 'withdrawal' => sub {
@@ -705,6 +722,9 @@ subtest 'withdrawal' => sub {
     };
 
     set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
+
+    my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return 'svg' });
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_no_error('no error for mt5_withdrawal');
@@ -729,6 +749,8 @@ subtest 'withdrawal' => sub {
     $params->{args}{from_mt5} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_withdrawal wrong login')
         ->error_code_is('PermissionDenied', 'error code for mt5_withdrawal wrong login');
+
+    $demo_account_mock->unmock;
 };
 
 subtest 'mf_withdrawal' => sub {
@@ -760,6 +782,9 @@ subtest 'mf_withdrawal' => sub {
 
     my $method = "mt5_withdrawal";
 
+    my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return 'maltainvest' });
+
     $c->call_ok($method, $params_mf)->has_error('Withdrawal request failed.')
         ->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')
         ->error_message_is('There was an error processing the request. Please authenticate your account.');
@@ -772,6 +797,7 @@ subtest 'mf_withdrawal' => sub {
     $c->call_ok($method, $params_mf)->has_no_error('no error for mt5_withdrawal');
 
     cmp_ok $test_mf_client->default_account->balance, '==', 350, "Correct balance after withdrawal";
+    $demo_account_mock->unmock;
 };
 
 subtest 'mf_deposit' => sub {
@@ -804,6 +830,9 @@ subtest 'mf_deposit' => sub {
 
     my $method = "mt5_deposit";
 
+    my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return 'maltainvest' });
+
     $c->call_ok($method, $params_mf)->has_error('Deposit request failed.')->error_code_is('MT5DepositError', 'error code is MT5DepositError')
         ->error_message_is('There was an error processing the request. Please authenticate your account.');
 
@@ -815,6 +844,7 @@ subtest 'mf_deposit' => sub {
     $c->call_ok($method, $params_mf)->has_no_error('no error for mt5_deposit');
 
     cmp_ok $test_mf_client->default_account->balance, '==', 650, "Correct balance after deposit";
+    $demo_account_mock->unmock;
 };
 
 subtest 'multi currency transfers' => sub {
@@ -835,6 +865,9 @@ subtest 'multi currency transfers' => sub {
     my $btc_test_amount = 0.1;
     my $ust_test_amount = 100;
     my $usd_test_amount = 100;
+
+    my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return 'svg' });
 
     my $deposit_params = {
         language => 'EN',
@@ -1082,6 +1115,7 @@ subtest 'multi currency transfers' => sub {
     };
 
     $mock_fees->unmock('transfer_between_accounts_fees');
+    $demo_account_mock->unmock;
 };
 
 subtest 'Transfers Limits' => sub {
@@ -1106,6 +1140,9 @@ subtest 'Transfers Limits' => sub {
             amount      => 1
         },
     };
+
+    my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return 'svg' });
 
     $c->call_ok('mt5_deposit', $deposit_params)->has_error('Transfers should have been stopped')
         ->error_code_is('MT5DepositError', 'Transfers limit - correct error code')
@@ -1147,6 +1184,7 @@ subtest 'Transfers Limits' => sub {
         ->error_message_is('There was an error processing the request. This amount is too low. Please enter a minimum of 107.54 USD.',
         'Lower bound - correct error message');
 
+    $demo_account_mock->unmock;
 };
 
 subtest 'Suspended Transfers Currencies' => sub {
@@ -1155,6 +1193,9 @@ subtest 'Suspended Transfers Currencies' => sub {
     $client_cr_btc->set_default_account('BTC');
     top_up $client_cr_btc, BTC => 10;
     $user->add_client($client_cr_btc);
+
+    my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return 'svg' });
 
     subtest 'it should stop transfer from suspended currency' => sub {
         my $deposit_params = {
@@ -1174,6 +1215,7 @@ subtest 'Suspended Transfers Currencies' => sub {
 
     };
     BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies([]);
+    $demo_account_mock->unmock;
 };
 
 sub _get_mt5transfer_from_transaction {

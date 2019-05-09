@@ -1499,6 +1499,14 @@ sub _get_self_exclusion_details {
         $get_self_exclusion->{session_duration_limit} = $self_exclusion->session_duration_limit
             if $self_exclusion->session_duration_limit;
 
+        if (my $until = $self_exclusion->max_deposit_end_date) {
+            $until = Date::Utility->new($until);
+            if (Date::Utility::today()->days_between($until) < 0 && $self_exclusion->max_deposit) {
+                $get_self_exclusion->{max_deposit}          = $self_exclusion->max_deposit;
+                $get_self_exclusion->{max_deposit_end_date} = $until->date;
+            }
+        }
+
         if (my $until = $self_exclusion->exclude_until) {
             $until = Date::Utility->new($until);
             if (Date::Utility::today()->days_between($until) < 0) {
@@ -1549,7 +1557,7 @@ rpc set_self_exclusion => sub {
     my %args = %{$params->{args}};
 
     my $decimals = Format::Util::Numbers::get_precision_config()->{price}->{$client->currency};
-    foreach my $field (qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover/) {
+    foreach my $field (qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_deposit/) {
         if ($args{$field} and $args{$field} !~ /^\d{0,20}(?:\.\d{0,$decimals})?$/) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'InputValidationFailed',
@@ -1564,7 +1572,7 @@ rpc set_self_exclusion => sub {
     # at least one setting should present in request
     my $args_count = 0;
     foreach my $field (
-        qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit exclude_until timeout_until/
+        qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit exclude_until timeout_until max_deposit max_deposit_end_date/
         )
     {
         $args_count++ if defined $args{$field};
@@ -1574,7 +1582,7 @@ rpc set_self_exclusion => sub {
             message_to_client => localize('Please provide at least one self-exclusion setting.')}) unless $args_count;
 
     foreach my $field (
-        qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit/
+        qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit max_deposit/
         )
     {
         # Client input
@@ -1647,6 +1655,33 @@ rpc set_self_exclusion => sub {
         delete $args{exclude_until};
     }
 
+    my $max_deposit_end_date = $args{max_deposit_end_date};
+    my $max_deposit          = $args{max_deposit};
+    if (defined $max_deposit_end_date && defined $max_deposit && $max_deposit_end_date =~ /^\d{4}\-\d{2}\-\d{2}$/) {
+        my $now = Date::Utility->new;
+        my ($exclusion_end, $exclusion_end_error);
+        try {
+            $exclusion_end = Date::Utility->new($max_deposit_end_date);
+        }
+        catch {
+            $exclusion_end_error = 1;
+        };
+        return $error_sub->(localize('Exclusion time conversion error.'), 'max_deposit_end_date') if $exclusion_end_error;
+
+        # checking for the exclude until date which must be larger than today's date
+        if ($exclusion_end->is_before($now)) {
+            return $error_sub->(localize('Deposit exclusion period must be after today.'), 'max_deposit_end_date');
+        }
+
+        # checking for the deposit exclusion period could not be more than 5 years
+        elsif ($exclusion_end->days_between($now) > 365 * 5 + 1) {
+            return $error_sub->(localize('Deposit exclusion period cannot be for more than five years.'), 'max_deposit_end_date');
+        }
+    } else {
+        delete $args{max_deposit_end_date};
+        delete $args{max_deposit};
+    }
+
     my $timeout_until = $args{timeout_until};
     if (defined $timeout_until and $timeout_until =~ /^\d+$/) {
         my $now           = Date::Utility->new;
@@ -1663,6 +1698,10 @@ rpc set_self_exclusion => sub {
         }
     } else {
         delete $args{timeout_until};
+    }
+
+    if ($max_deposit xor $max_deposit_end_date) {
+        return $error_sub->(localize('Both max_deposit and max_deposit_end_date must be provided to activate deposit limit.'), 'max_deposit');
     }
 
     if ($args{max_open_bets}) {
@@ -1704,6 +1743,12 @@ rpc set_self_exclusion => sub {
     if ($args{exclude_until}) {
         $client->set_exclusion->exclude_until($args{exclude_until});
     }
+    if ($max_deposit_end_date && $max_deposit) {
+        $client->set_exclusion->max_deposit_begin_date(Date::Utility->new->date);
+        $client->set_exclusion->max_deposit_end_date($args{max_deposit_end_date});
+        $client->set_exclusion->max_deposit($args{max_deposit});
+    }
+
 # Need to send email in 2 circumstances:
 #   - Any client sets a self exclusion period
 #   - Client under Binary (Europe) Limited with MT5 account(s) sets any of these settings
@@ -1730,7 +1775,7 @@ sub send_self_exclusion_notification {
     if ($type eq 'malta_with_mt5') {
         $message = "An MT5 account holder under the Binary (Europe) Limited landing company has set account limits.\n";
         @fields_to_email =
-            qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit exclude_until timeout_until/;
+            qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit exclude_until timeout_until max_deposit max_deposit_end_date/;
     } elsif ($type eq 'self_exclusion') {
         $message         = "A user has excluded themselves from the website.\n";
         @fields_to_email = qw/exclude_until/;

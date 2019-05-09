@@ -13,6 +13,7 @@ use Try::Tiny;
 use File::ShareDir;
 use Locale::Country::Extra;
 use Brands;
+use LandingCompany::Registry;
 use WebService::MyAffiliates;
 use Future::Utils qw(fmap1);
 use Format::Util::Numbers qw/financialrounding formatnumber/;
@@ -601,9 +602,11 @@ async_rpc mt5_get_settings => sub {
                     my ($group_details) = @_;
                     return Future->fail('MT5GetGroupError', $group_details->{error})
                         if (ref $group_details eq 'HASH' and $group_details->{error});
-                    $settings->{currency} = $group_details->{currency};
-                    $settings = _filter_settings($settings,
-                        qw/address balance city company country currency email group leverage login name phone phonePassword state zipCode/);
+                    $settings->{currency}        = $group_details->{currency};
+                    $settings->{landing_company} = $group_details->{company};
+                    $settings                    = _filter_settings($settings,
+                        qw/address balance city company country currency email group leverage login name phone phonePassword state zipCode landing_company/
+                    );
                     return Future->done($settings);
                 });
         });
@@ -1406,6 +1409,7 @@ sub _mt5_validate_and_get_amount {
             my $action = ($error_code =~ /Withdrawal/) ? 'withdrawal' : 'deposit';
 
             my $mt5_group    = $setting->{group};
+            my $mt5_lc       = _fetch_mt5_lc($setting);
             my $mt5_currency = $setting->{currency};
 
             # Check if id is a demo account
@@ -1450,7 +1454,7 @@ sub _mt5_validate_and_get_amount {
             } or return _make_error($error_code, localize('Invalid loginid - [_1].', $loginid));
 
             # Validate the binary client
-            my $err = _validate_client($client);
+            my $err = _validate_client($client, $mt5_lc);
             return _make_error($error_code, $err) if $err;
 
             my $client_currency = $client->account ? $client->account->currency_code() : undef;
@@ -1589,6 +1593,13 @@ sub _mt5_validate_and_get_amount {
         });
 }
 
+sub _fetch_mt5_lc {
+    my $settings = shift;
+    # somewhere in the user settings, the landing company name is set with a double space!
+    $settings->{landing_company} =~ s/\s+/ /g;
+    return LandingCompany::Registry::get_loaded_landing_companies()->{$settings->{landing_company}}->{short};
+}
+
 sub _mt5_has_open_positions {
     my $login = shift;
 
@@ -1671,20 +1682,33 @@ Validate the client account, which is involved in real-money deposit/withdrawal
 =cut
 
 sub _validate_client {
-    my ($client_obj) = @_;
+    my ($client_obj, $mt5_lc) = @_;
 
     my $loginid = $client_obj->loginid;
 
     # only for real money account
     return localize('Permission denied.') if ($client_obj->is_virtual);
 
-    # MX should not be able to deposit to, or withdraw from, MT5
-    return localize('Please switch to your MF account to access MT5.')
-        if ($client_obj->landing_company->short eq 'iom');
+    my $lc = $client_obj->landing_company->short;
+
+    # Landing companies listed below are an exception for this check as
+    # they have mutual agreement and it is allowed to transfer funds
+    # through gaming/financial MT5 accounts:
+    # - transfers between maltainvest and malta
+    # - svg, vanuatu, and labuan
+
+    unless (($lc eq 'svg' and ($mt5_lc eq 'vanuatu' or $mt5_lc eq 'labuan'))
+        or ($lc eq 'maltainvest' and $mt5_lc eq 'malta')
+        or ($lc eq 'malta'       and $mt5_lc eq 'maltainvest')
+        or $mt5_lc eq $lc)
+    {
+        # Otherwise, Financial accounts should not be able to deposit to, or withdraw from, gaming MT5
+        return localize('Please switch your account to access MT5.');
+    }
 
     # Deposits and withdrawals are blocked for non-authenticated MF clients
     return localize('Please authenticate your account.')
-        if ($client_obj->landing_company->short eq 'maltainvest' and not $client_obj->fully_authenticated);
+        if ($lc eq 'maltainvest' and not $client_obj->fully_authenticated);
 
     return localize('Your account [_1] is disabled.', $loginid) if ($client_obj->status->disabled);
 

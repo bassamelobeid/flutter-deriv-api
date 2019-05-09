@@ -77,7 +77,7 @@ $mocked_mt5->mock(
     },
     'get_group' => sub {
         return Future->done({
-            'group' => $mt5_account_info->{group} // 'demo\costarica',
+            'group' => $mt5_account_info->{group} // 'demo\svg',
             'currency' => 'USD',
             'leverage' => 500
         });
@@ -712,7 +712,7 @@ subtest 'MX account types' => sub {
     my $token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
 
     #demo accounts
-    create_mt5_account->($c, $token, $client, {account_type => 'demo'}, 'PermissionDenied', 'MX client cannot create gaming demo account');
+    create_mt5_account->($c, $token, $client, {account_type => 'demo'}, undef, 'MX client can create gaming demo account');
     create_mt5_account->(
         $c, $token, $client,
         {
@@ -732,7 +732,7 @@ subtest 'MX account types' => sub {
         'MX client cannot create advanced demo account'
     );
     #real accounts
-    create_mt5_account->($c, $token, $client, {account_type => 'gaming'}, 'PermissionDenied', 'MX client cannot create any real gaming account');
+    create_mt5_account->($c, $token, $client, {account_type => 'gaming'}, undef, 'MX client can create any real gaming account');
     create_mt5_account->(
         $c, $token, $client,
         {
