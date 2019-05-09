@@ -44,6 +44,8 @@ has hit_tick => (
 sub _build_hit_tick {
     my $self = shift;
 
+    return undef unless $self->entry_tick;
+
     my $start_time     = $self->date_start->epoch + 1;
     my %hit_conditions = (
         start_time => $start_time,

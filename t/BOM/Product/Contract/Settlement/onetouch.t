@@ -191,4 +191,23 @@ subtest 'multiday' => sub {
     };
 };
 
+subtest 'no entry tick when $contract->is_expired is called' => sub {
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, $symbol]);
+    my $args = {
+        bet_type     => 'ONETOUCH',
+        underlying   => 'R_100',
+        barrier      => 'S10P',
+        date_start   => $now,
+        date_pricing => $now->plus_time_interval(1),
+        duration     => '5m',
+        currency     => 'USD',
+        payout       => 10
+    };
+    my $c = produce_contract($args);
+    ok !$c->entry_tick, 'entry tick undefined';
+    # simulate next tick comes after entry tick was called
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, $symbol], [100, $now->epoch + 1, $symbol],);
+    ok !$c->is_expired, 'not expired';
+    ok !$c->hit_tick,   'no hit tick';
+};
 done_testing();
