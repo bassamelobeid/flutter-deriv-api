@@ -831,7 +831,7 @@ rpc paymentagent_withdraw => sub {
         unless $client->landing_company->allows_payment_agents;
 
     return $error_sub->(localize('You are not authorized for withdrawals via payment agents.'))
-        unless (BOM::Transaction::Validation->new({clients => [$client]})->allow_paymentagent_withdrawal($client));
+        unless ($source_bypass_verification or BOM::Transaction::Validation->new({clients => [$client]})->allow_paymentagent_withdrawal($client));
 
     return $error_sub->(localize('Your cashier is locked as per your request.')) if $client->cashier_setting_password;
 
