@@ -7,9 +7,7 @@ use Test::Mojo;
 use Test::Warn;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Email;
 use BOM::Database::Model::OAuth;
-use Email::Stuffer::TestLinks;
 use List::Util qw( all );
 use BOM::RPC::v3::DocumentUpload qw(MAX_FILE_SIZE);
 
@@ -213,23 +211,8 @@ sub finish_successful_upload {
         file_id => $file_id
     };
 
-    mailbox_clear();
-
     # Call successful upload
     my $result = $c->call_ok($method, $params)->has_no_error->result;
-
-    # Check mailbox for CS notification
-    my $client_id = uc $client->loginid;
-    if ($mail_expected) {
-        like(
-            get_notification_email($client_id)->{body},
-            qr/New document was uploaded for the account: $client_id/,
-            'CS notification email was sent successfully'
-        );
-    }
-    if (not $mail_expected) {
-        ok(!get_notification_email($client_id), 'CS notification email should only be sent once');
-    }
 
     # Check doc is updated in database properly
     my ($doc) = $client->find_client_authentication_document(query => [id => $result->{file_id}]);
@@ -267,16 +250,6 @@ sub customise_params {
             $params->{args}->{$key} = $custom_params->{args}->{$key};
         }
     }
-}
-
-sub get_notification_email {
-    my $client_id = shift;
-
-    my $msg = mailbox_search(
-        email   => 'authentications@binary.com',
-        subject => qr/New uploaded document for: $client_id/,
-    );
-    return $msg;
 }
 
 done_testing();

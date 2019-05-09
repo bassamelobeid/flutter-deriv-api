@@ -89,9 +89,8 @@ sub successful_upload {
 
     my $client_id = $client->loginid;
 
-    my $status_changed;
     try {
-        ($status_changed) = $client->db->dbic->run(
+        $client->db->dbic->run(
             ping => sub {
                 $_->selectrow_array('SELECT * FROM betonmarkets.set_document_under_review(?)', undef, $client_id);
             });
@@ -107,19 +106,6 @@ sub successful_upload {
             loginid => $client_id,
             file_id => $args->{file_id},
         });
-
-    return $args unless $status_changed;
-
-    my $email_body = "New document was uploaded for the account: " . $client_id;
-
-    send_email({
-        'from'                  => 'no-reply@binary.com',
-        'to'                    => 'authentications@binary.com',
-        'subject'               => 'New uploaded document for: ' . $client_id,
-        'message'               => [$email_body],
-        'use_email_template'    => 0,
-        'email_content_is_html' => 0
-    });
 
     return $args;
 }

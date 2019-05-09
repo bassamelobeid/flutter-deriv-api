@@ -686,8 +686,6 @@ rpc paymentagent_transfer => sub {
         payment_agent => 0,
     );
 
-    $client_to->send_new_client_email() unless $client_has_deposits;
-
     # sent email notification to client
     my $emailcontent = localize(
         'Dear [_1] [_2] [_3],',                  encode_entities($client_to->salutation),

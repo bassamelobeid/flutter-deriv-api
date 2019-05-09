@@ -385,6 +385,16 @@ async_rpc mt5_new_account => sub {
                     # eg: MT5 login: 1000, we store MT1000
                     $user->add_loginid('MT' . $mt5_login);
 
+                    BOM::Platform::Event::Emitter::emit(
+                        'new_mt5_signup',
+                        {
+                            loginid      => $client->loginid,
+                            account_type => $account_type,
+                            mt5_group    => $group,
+                            mt5_login_id => $mt5_login,
+                            cs_email     => $brand->emails('support'),
+                            language     => $params->{language}});
+
                     # Compliance team must be notified if a client under Binary (Europe) Limited
                     #   opens an MT5 account while having limitations on their account.
                     if ($client->landing_company->short eq 'malta' && $account_type ne 'demo') {
@@ -393,13 +403,6 @@ async_rpc mt5_new_account => sub {
                             warn 'Compliance email regarding Binary (Europe) Limited user with MT5 account(s) failed to send.'
                                 unless BOM::RPC::v3::Accounts::send_self_exclusion_notification($client, 'malta_with_mt5', $self_exclusion);
                         }
-                    } elsif ($account_type eq 'financial' && $client->landing_company->short eq 'svg' && !$client->fully_authenticated) {
-
-                        _handle_new_financial_signup({
-                                loginid  => $client->loginid,
-                                cs_email => $brand->emails('support'),
-                                language => $params->{language}});
-
                     }
 
                     my $balance = 0;
@@ -1653,18 +1656,6 @@ sub _record_mt5_transfer {
             $sth->execute($payment_id, $mt5_amount, $mt5_account_id, $mt5_currency_code);
         });
     return 1;
-}
-
-=head2 _handle_new_financial_signup
-
-Event handler for new financial mt5 accounts by un-authenticated clients
-
-=cut
-
-sub _handle_new_financial_signup {
-    my $data = shift;
-    BOM::Platform::Event::Emitter::emit('new_financial_mt5_signup', $data);
-    return undef;
 }
 
 sub _store_transaction_redis {

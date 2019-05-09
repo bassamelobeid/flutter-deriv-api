@@ -1304,8 +1304,7 @@ rpc set_settings => sub {
         or ($addressState ne $current_client->state)
         or ($addressPostcode ne $current_client->postcode))
     {
-        # clear address verifies status if there is changes in address
-        $current_client->status->clear_address_verified;
+        BOM::Platform::Event::Emitter::emit('verify_address', {loginid => $current_client->loginid});
 
         if ($current_client->fully_authenticated) {
             $cil_message =
