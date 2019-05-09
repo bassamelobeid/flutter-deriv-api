@@ -26,6 +26,7 @@ my $config = {
     pricer        => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml'),
     exchangerates => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-exchangerates.yml'),
     feed          => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_FEED}       // '/etc/rmg/redis-feed.yml'),
+    mt5_user      => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_MT5_USER}   // '/etc/rmg/redis-mt5user.yml'),
 };
 my $connections = {};
 
@@ -101,6 +102,14 @@ sub redis_feed {
 
 sub redis_feed_write {
     return _redis('feed', 'write', 10);
+}
+
+sub redis_mt5_user_write {
+    return _redis('mt5_user', 'write', 10);
+}
+
+sub redis_mt5_user {
+    return _redis('mt5_user', 'read', 10);
 }
 
 1;
