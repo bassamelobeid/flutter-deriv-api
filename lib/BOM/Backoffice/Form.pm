@@ -21,27 +21,31 @@ sub get_self_exclusion_form {
     my $loginID = $client->loginid;
 
     my (
-        $limit_max_ac_bal,     $limit_daily_turn_over, $limit_open_position,    $limit_daily_losses,
-        $limit_7day_turnover,  $limit_7day_losses,     $limit_session_duration, $limit_exclude_until,
-        $limit_30day_turnover, $limit_30day_losses,    $limit_timeout_until,
+        $limit_max_ac_bal,    $limit_daily_turn_over,  $limit_open_position, $limit_daily_losses,   $limit_7day_turnover,
+        $limit_7day_losses,   $limit_session_duration, $limit_exclude_until, $limit_30day_turnover, $limit_30day_losses,
+        $limit_timeout_until, $limit_max_deposit,      $limit_max_deposit_end_date
     );
     my $self_exclusion = $client->get_self_exclusion;
     my $se_map         = '{}';
     if ($self_exclusion) {
-        $limit_max_ac_bal       = $self_exclusion->max_balance;
-        $limit_daily_turn_over  = $self_exclusion->max_turnover;
-        $limit_open_position    = $self_exclusion->max_open_bets;
-        $limit_daily_losses     = $self_exclusion->max_losses;
-        $limit_7day_losses      = $self_exclusion->max_7day_losses;
-        $limit_7day_turnover    = $self_exclusion->max_7day_turnover;
-        $limit_30day_losses     = $self_exclusion->max_30day_losses;
-        $limit_30day_turnover   = $self_exclusion->max_30day_turnover;
-        $limit_session_duration = $self_exclusion->session_duration_limit;
-        $limit_exclude_until    = $self_exclusion->exclude_until;
-        $limit_timeout_until    = $self_exclusion->timeout_until;
+        $limit_max_ac_bal           = $self_exclusion->max_balance;
+        $limit_daily_turn_over      = $self_exclusion->max_turnover;
+        $limit_open_position        = $self_exclusion->max_open_bets;
+        $limit_daily_losses         = $self_exclusion->max_losses;
+        $limit_7day_losses          = $self_exclusion->max_7day_losses;
+        $limit_7day_turnover        = $self_exclusion->max_7day_turnover;
+        $limit_30day_losses         = $self_exclusion->max_30day_losses;
+        $limit_30day_turnover       = $self_exclusion->max_30day_turnover;
+        $limit_session_duration     = $self_exclusion->session_duration_limit;
+        $limit_exclude_until        = $self_exclusion->exclude_until;
+        $limit_timeout_until        = $self_exclusion->timeout_until;
+        $limit_max_deposit          = $self_exclusion->max_deposit;
+        $limit_max_deposit_end_date = $self_exclusion->max_deposit_end_date;
+
+        $limit_max_deposit_end_date = Date::Utility->new($limit_max_deposit_end_date)->date if $limit_max_deposit_end_date;
 
         if ($limit_exclude_until) {
-            $limit_exclude_until = Date::Utility->new($limit_exclude_until);
+            $limit_exclude_until = Date::Utility->new($limit_exclude_until)->date;
             # Don't uplift exclude_until date for clients under Binary (Europe) Ltd,
             # Binary (IOM) Ltd, or Binary Investments (Europe) Ltd upon expiry.
             # This is in compliance with Section 3.5.4 (5e) of the United Kingdom Gambling
@@ -68,17 +72,19 @@ sub get_self_exclusion_form {
         }
 
         $se_map = {
-            'MAXCASHBAL'         => $limit_max_ac_bal       // '',
-            'DAILYTURNOVERLIMIT' => $limit_daily_turn_over  // '',
-            'MAXOPENPOS'         => $limit_open_position    // '',
-            'DAILYLOSSLIMIT'     => $limit_daily_losses     // '',
-            '7DAYLOSSLIMIT'      => $limit_7day_losses      // '',
-            '7DAYTURNOVERLIMIT'  => $limit_7day_turnover    // '',
-            '30DAYLOSSLIMIT'     => $limit_30day_losses     // '',
-            '30DAYTURNOVERLIMIT' => $limit_30day_turnover   // '',
-            'SESSIONDURATION'    => $limit_session_duration // '',
-            'EXCLUDEUNTIL'       => $limit_exclude_until    // '',
-            'TIMEOUTUNTIL'       => $limit_timeout_until    // '',
+            'MAXCASHBAL'         => $limit_max_ac_bal           // '',
+            'DAILYTURNOVERLIMIT' => $limit_daily_turn_over      // '',
+            'MAXOPENPOS'         => $limit_open_position        // '',
+            'DAILYLOSSLIMIT'     => $limit_daily_losses         // '',
+            '7DAYLOSSLIMIT'      => $limit_7day_losses          // '',
+            '7DAYTURNOVERLIMIT'  => $limit_7day_turnover        // '',
+            '30DAYLOSSLIMIT'     => $limit_30day_losses         // '',
+            '30DAYTURNOVERLIMIT' => $limit_30day_turnover       // '',
+            'SESSIONDURATION'    => $limit_session_duration     // '',
+            'EXCLUDEUNTIL'       => $limit_exclude_until        // '',
+            'TIMEOUTUNTIL'       => $limit_timeout_until        // '',
+            'MAXDEPOSIT'         => $limit_max_deposit          // '',
+            'MAXDEPOSITDATE'     => $limit_max_deposit_end_date // '',
         };
         $se_map = JSON::MaybeXS->new->encode($se_map);
 
@@ -270,6 +276,55 @@ sub get_self_exclusion_form {
             'class' => 'hint',
             'text'  => localize('Maximum aggregate loss over a 30-day period.')}};
 
+    my $input_field_max_deposit_limit = {
+        'label' => {
+            'text' => localize('Maximum deposit'),
+            'for'  => 'MAXDEPOSIT',
+        },
+        'input' => {
+            'id'    => 'MAXDEPOSIT',
+            'name'  => 'MAXDEPOSIT',
+            'type'  => 'text',
+            'value' => $limit_max_deposit,
+        },
+        'validation' => [{
+                'type'    => 'regexp',
+                'regexp'  => $curr_regex,
+                'err_msg' => localize('Please enter a numeric value.'),
+            },
+        ],
+        'error' => {
+            'id'    => 'errorMAXDEPOSIT',
+            'class' => 'errorfield',
+        },
+        'comment' => {
+            'class' => 'hint',
+            'text'  => localize('Once maximum deposit limit is reached the client may longer deposit.')}};
+    my $input_field_max_deposit_end_date = {
+        'label' => {
+            'text' => localize('Maximum deposit limit expiry date'),
+            'for'  => 'MAXDEPOSITDATE',
+        },
+        'input' => {
+            'id'    => 'MAXDEPOSITDATE',
+            'name'  => 'MAXDEPOSITDATE',
+            'type'  => 'text',
+            'value' => $limit_max_deposit_end_date,
+        },
+        'validation' => [{
+                'type'    => 'regexp',
+                'regexp'  => '^(|\d{4}-\d\d-\d\d)$',
+                'err_msg' => localize('Please enter date in the format YYYY-MM-DD.'),
+            },
+        ],
+        'error' => {
+            'id'    => 'errorMAXDEPOSITDATE',
+            'class' => 'errorfield',
+        },
+        'comment' => {
+            'class' => 'hint',
+            'text'  => localize('Please enter date in the format YYYY-MM-DD.')}};
+
     #input field for Maximum number of open positions
     my $input_field_maximum_number_open_positions = {
         'label' => {
@@ -438,6 +493,8 @@ sub get_self_exclusion_form {
     $fieldset->add_field($input_field_session_duration);
     $fieldset->add_field($input_field_exclude_me);
     $fieldset->add_field($input_field_timeout_me);
+    $fieldset->add_field($input_field_max_deposit_limit);
+    $fieldset->add_field($input_field_max_deposit_end_date);
 
     $fieldset->add_field($input_hidden_fields);
     $fieldset->add_field($input_submit_button);
