@@ -25,6 +25,7 @@ use DataDog::DogStatsd::Helper;
 use Brands;
 use Try::Tiny;
 use Template::AutoFilter;
+use List::Util qw(any);
 use List::UtilsBy qw(rev_nsort_by);
 use Future::Utils qw(fmap0);
 
@@ -117,6 +118,9 @@ my %ONFIDO_DOCUMENT_TYPE_PRIORITY = (
     unknown                       => 0,
 );
 
+# List of document types that we use as proof of address
+my @POA_DOCUMENTS_TYPE = qw(proofaddress payslip bankstatement cardstatement);
+
 {
     my $onfido;
 
@@ -164,6 +168,18 @@ my %ONFIDO_DOCUMENT_TYPE_PRIORITY = (
 
     }
 
+    my $redis_mt5user;
+    # Provides an instance for communicating with the Onfido web API.
+    # Since we're adding this to our event loop, it's a singleton - we
+    # don't want to leak memory by creating new ones for every event.
+    sub _redis_mt5user_read {
+        return $redis_mt5user //= do {
+            my $loop = IO::Async::Loop->new;
+            $loop->add(my $redis = Net::Async::Redis->new(uri => BOM::Config::RedisReplicated::redis_config('mt5_user', 'read')->{uri}));
+            $redis;
+            }
+    }
+
     my $redis;
 
     sub _redis {
@@ -181,9 +197,9 @@ my %ONFIDO_DOCUMENT_TYPE_PRIORITY = (
 
 =head2 document_upload
 
-Called when we have a new document provided by the client.
+    Called when we have a new document provided by the client .
 
-These are typically received through one of two possible avenues:
+    These are typically received through one of two possible avenues :
 
 =over 4
 
@@ -214,6 +230,21 @@ sub document_upload {
         my $client = BOM::User::Client->new({loginid => $loginid})
             or die 'Could not instantiate client for login ID ' . $loginid;
 
+        my $redis_write = _redis();
+        $redis_write->connect->then(
+            sub {
+                return $redis_write->hsetnx('ADDRESS_VERIFICATION_TRIGGER', $client->binary_user_id, 1);
+            }
+            )->then(
+            sub {
+                my $is_not_triggered = shift;
+
+                # trigger address verification if not already address_verified
+                _address_verification(client => $client)->get if (not $client->status->address_verified and $is_not_triggered);
+
+                return Future->done;
+            })->retain;
+
         my $loop   = IO::Async::Loop->new;
         my $onfido = _onfido();
 
@@ -227,6 +258,11 @@ sub document_upload {
         );
         die 'Expired document ' . $document_entry->{expiration_date}
             if $document_entry->{expiration_date} and Date::Utility->new($document_entry->{expiration_date})->epoch < time;
+
+        _send_email_notification_for_poa(
+            document_entry => $document_entry,
+            client         => $client
+        )->get;
 
         # We have an overall timeout for this entire operation - it won't
         # limit any SQL queries, but all network operations should be covered.
@@ -394,13 +430,15 @@ sub ready_for_authentication {
         }
         @documents;
 
-        my $client = BOM::User::Client->new({loginid => $loginid});
+        my $client = BOM::User::Client->new({loginid => $loginid})
+            or die 'Could not instantiate client for login ID ' . $loginid;
         my $residence = uc(country_code2code($client->residence, 'alpha-2', 'alpha-3'));
 
         # INCR Onfido check request count in Redis
-        _redis()->connect->then(
+        my $redis_write = _redis();
+        $redis_write->connect->then(
             sub {
-                return _redis()->hincrby(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_REQUEST_COUNT_KEY, 1);
+                return $redis_write->hincrby(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_REQUEST_COUNT_KEY, 1);
             }
             )->then(
             sub {
@@ -411,7 +449,7 @@ sub ready_for_authentication {
 
                 if ($request_count == 1) {
                     # set duration to expire in 1 day
-                    _redis()->expire(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_LIMIT_TIMEOUT)->retain();
+                    $redis_write->expire(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_LIMIT_TIMEOUT)->retain();
                 }
                 return Future->done($request_count);
             }
@@ -426,7 +464,7 @@ sub ready_for_authentication {
                         has_email_sent => 1
                     });
 
-                    return _redis()->hsetnx(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_CHECK_EXCEEDED_KEY, $redis_data)->then(
+                    return $redis_write->hsetnx(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_CHECK_EXCEEDED_KEY, $redis_data)->then(
                         sub {
 
                             return Future->done({
@@ -552,12 +590,14 @@ sub client_verification {
                     my ($loginid) = grep { /^[A-Z]+[0-9]+$/ } @tags
                         or die "No login ID found in tags: @tags";
 
-                    my $client = BOM::User::Client->new({loginid => ($loginid // die 'no login ID provided?')});
+                    my $client = BOM::User::Client->new({loginid => $loginid})
+                        or die 'Could not instantiate client for login ID ' . $loginid;
                     $log->infof('Onfido check result for %s (applicant %s): %s (%s)', $loginid, $applicant_id, $result, $check_status);
 
-                    _redis()->connect->then(
+                    my $redis_write = _redis();
+                    $redis_write->connect->then(
                         sub {
-                            _redis()->hmset(
+                            $redis_write->hmset(
                                 ONFIDO_REPORT_KEY_PREFIX . $client->binary_user_id,
                                 status => $check_status,
                                 url    => $check->results_uri
@@ -572,50 +612,15 @@ sub client_verification {
                             $log->errorf('Error occured when saving %s report data to Redis', $client->loginid);
                         })->get;
 
-                    my $age_verified;
-                    my $address_verify = sub {
-                        return Future->done unless $age_verified;
-
-                        $log->infof('Verifying address');
-                        my %details = (
-                            freeform => join(' ',
-                                grep { length } $client->address_line_1, $client->address_line_2, $client->address_city,
-                                $client->address_state, $client->address_postcode),
-                            country => uc(country_code2code($client->residence, 'alpha-2', 'alpha-3')),
-                            # Need to pass this if you want to do verification
-                            geocode => 'true',
-                        );
-                        $log->infof('Address details %s', \%details);
-                        # Next step is an address check. Let's make sure that whatever they
-                        # are sending is valid at least to street level.
-                        _smartystreets()->verify(%details)->on_done(
-                            sub {
-                                my ($addr) = @_;
-                                $log->infof('Smartystreets verification status: %s', $addr->status);
-                                $log->debugf('Address info back from SmartyStreets is %s', {%$addr});
-                                unless ($addr->accuracy_at_least('locality')) {
-                                    $log->warnf('Inaccurate address - only verified to %s precision', $addr->address_precision);
-                                    return Future->done;
-                                }
-                                _update_client_status(
-                                    loginid => $loginid,
-                                    status  => 'address_verified',
-                                    message => 'SmartyStreets - address verified'
-                                );
-                            }
-                            )->on_fail(
-                            sub {
-                                $log->errorf('Address lookup failed for %s - %s', $loginid, $_[0]);
-                            });
-                    };
+                    # if overall result of check is pass then set status and
+                    # return early, else check individual report result
                     if ($check_status eq 'pass') {
-                        $age_verified = 1;
                         _update_client_status(
-                            loginid => $loginid,
+                            client  => $client,
                             status  => 'age_verification',
                             message => 'Onfido - age verified'
                         );
-                        return $address_verify->();
+                        return Future->done;
                     }
 
                     $check->reports
@@ -624,22 +629,24 @@ sub client_verification {
                         # that leads to sub optimal facial images and hence, it leads
                         # to lot of negatives for Onfido checks
                         # TODO: remove this check when we have fully integrated Onfido
-                        ->filter(name => 'document')->filter(result => 'clear')->first->each(
+                        ->filter(name => 'document')->as_list->then(
                         sub {
-                            ++$age_verified;
-                            _update_client_status(
-                                loginid => $loginid,
-                                status  => 'age_verification',
-                                message => 'Onfido - age verified'
-                            );
+                            my @reports = @_;
+                            if (any { $_->result eq 'clear' } @reports) {
+                                _update_client_status(
+                                    client  => $client,
+                                    status  => 'age_verification',
+                                    message => 'Onfido - age verified'
+                                );
+                            } else {
+                                _send_report_not_clear_status_email($loginid, @reports ? $reports[0]->result : 'blank');
+                            }
+
+                            return Future->done;
                         }
-                        )->completed->on_fail(
+                        )->on_fail(
                         sub {
                             $log->errorf('An error occurred while retrieving reports for client %s check %s: %s', $loginid, $check->id, $_[0]);
-                        }
-                        )->then($address_verify)->on_ready(
-                        sub {
-                            $log->infof('This part done');
                         });
                 }
                 catch {
@@ -651,6 +658,70 @@ sub client_verification {
     catch {
         $log->errorf('Exception while handling client verification result: %s', $_);
     }
+}
+
+=head2 verify_address
+
+This event is triggered once client or someone from backoffice
+have updated client address.
+
+It first clear existing address_verified status and then
+request again for new address.
+
+=cut
+
+sub verify_address {
+    my ($args) = @_;
+
+    my $loginid = $args->{loginid}
+        or die 'No client login ID supplied?';
+
+    my $client = BOM::User::Client->new({loginid => $loginid})
+        or die 'Could not instantiate client for login ID ' . $loginid;
+
+    # clear existing status
+    $client->status->clear_address_verified();
+
+    return _address_verification(client => $client)->get;
+}
+
+sub _address_verification {
+    my (%args) = @_;
+
+    my $client = $args{client};
+
+    $log->infof('Verifying address');
+    my %details = (
+        freeform => join(' ',
+            grep { length } $client->address_line_1, $client->address_line_2, $client->address_city,
+            $client->address_state, $client->address_postcode),
+        country => uc(country_code2code($client->residence, 'alpha-2', 'alpha-3')),
+        # Need to pass this if you want to do verification
+        geocode => 'true',
+    );
+    $log->infof('Address details %s', \%details);
+    # Next step is an address check. Let's make sure that whatever they
+    # are sending is valid at least to locality level.
+    return _smartystreets()->verify(%details)->on_done(
+        sub {
+            my ($addr) = @_;
+            $log->infof('Smartystreets verification status: %s', $addr->status);
+            $log->debugf('Address info back from SmartyStreets is %s', {%$addr});
+            unless ($addr->accuracy_at_least('locality')) {
+                $log->warnf('Inaccurate address - only verified to %s precision', $addr->address_precision);
+                return Future->done;
+            }
+            $log->infof('Address verified with accuracy of locality level by smartystreet.');
+            _update_client_status(
+                client  => $client,
+                status  => 'address_verified',
+                message => 'SmartyStreets - address verified'
+            );
+        }
+        )->on_fail(
+        sub {
+            $log->errorf('Address lookup failed for %s - %s', $client->loginid, $_[0]);
+        });
 }
 
 sub _get_onfido_applicant {
@@ -730,7 +801,8 @@ SELECT id,
    expiration_date,
    comments,
    document_id,
-   upload_date
+   upload_date,
+   document_type
 FROM betonmarkets.client_authentication_document
 WHERE client_loginid = ?
 AND status != 'uploading'
@@ -750,18 +822,9 @@ SQL
 sub _update_client_status {
     my (%args) = @_;
 
-    my $start = Time::HiRes::time();
-    my $client = BOM::User::Client->new({loginid => ($args{loginid} // die 'no login ID provided?')}) or die 'unknown client ' . $args{loginid};
-    $log->infof('Updating status on %s to %s (%s)', $args{loginid}, $args{status}, $args{message});
-    if ($args{status} eq 'authenticated_with_scans') {
-        $client->set_authentication('ID_DOCUMENT')->status('pass');
-        $client->save;
-    } else {
-        $client->status->set($args{status}, 'system', $args{message});
-    }
-
-    my $elapsed = Time::HiRes::time() - $start;
-    DataDog::DogStatsd::Helper::stats_timing("event.client_authentication.status.update.elapsed", $elapsed);
+    my $client = $args{client};
+    $log->infof('Updating status on %s to %s (%s)', $client->loginid, $args{status}, $args{message});
+    $client->status->set($args{status}, 'system', $args{message});
 
     return;
 }
@@ -852,6 +915,93 @@ sub _send_email_account_closure_client {
     return undef;
 }
 
+=head2 _send_report_not_clear_status_email
+
+Send email to CS when onfido return status is nor clear
+because of which we were not able to mark client as age_verified
+
+=cut
+
+sub _send_report_not_clear_status_email {
+    my $loginid = shift;
+    my $result  = shift;
+
+    my $email_subject = "Automated age verification failed for $loginid";
+
+    return try {
+        die "failed to send email to CS for automated age verification failure ($loginid)"
+            unless Email::Stuffer->from('no-reply@binary.com')->to('authentications@binary.com')->subject($email_subject)
+            ->text_body(
+            "We were unable to automatically mark client as age verified for client ($loginid), as onfido result was marked as $result. Please check and verify."
+            )->send();
+
+        undef;
+    }
+    catch {
+        $log->warn($_);
+        undef;
+    };
+}
+
+=head2 _send_email_notification_for_poa
+
+Send email to CS when client submits a proof of address
+document.
+
+- send only if client is not fully authenticated
+- send only if client has mt5 financial account
+
+need to extend later for all landing companies
+
+=cut
+
+sub _send_email_notification_for_poa {
+    my (%args) = @_;
+
+    my $document_entry = $args{document_entry};
+    my $client         = $args{client};
+
+    # no need to notify if document is not POA
+    return Future->done unless (any { $_ eq $document_entry->{document_type} } @POA_DOCUMENTS_TYPE);
+
+    # don't send email if client is already authenticated
+    return Future->done if $client->fully_authenticated();
+
+    my @mt_loginid_keys = map { /^MT(\d+)$/ ? "MT5_USER_GROUP::$1" : () } $client->user->loginids;
+
+    return Future->done unless scalar(@mt_loginid_keys);
+
+    my $redis_mt5_user = _redis_mt5user_read();
+    return $redis_mt5_user->connect->then(
+        sub {
+            $redis_mt5_user->mget(@mt_loginid_keys);
+        }
+        )->then(
+        sub {
+            my $mt5_groups = shift;
+
+            # loop through all mt5 loginids check
+            # mt5 group has advanced|standard then
+            # its considered as financial
+            if (any { $_ =~ /_standard|_advanced/ } @$mt5_groups) {
+                my $redis_write = _redis();
+                $redis_write->connect->then(
+                    sub {
+                        return $redis_write->hsetnx('EMAIL_NOTIFICATION_POA', $client->binary_user_id, 1);
+                    }
+                    )->then(
+                    sub {
+                        my $need_to_send_email = shift;
+                        Email::Stuffer->from('no-reply@binary.com')->to('authentications@binary.com')
+                            ->subject('New uploaded POA document for: ' . $client->loginid)
+                            ->text_body('New proof of address document was uploaded for ' . $client->loginid)->send()
+                            if $need_to_send_email;
+                        return Future->done;
+                    });
+            }
+        });
+}
+
 sub _send_email_onfido_check_exceeded_cs {
     my $request_count        = shift;
     my $brands               = Brands->new();
@@ -866,7 +1016,8 @@ sub _send_email_onfido_check_exceeded_cs {
         Team Binary.com
         ";
 
-    my $email_status = Email::Stuffer->from($system_email)->to(@email_recipient_list)->subject($email_subject)->html_body($email_template)->send();
+    my $email_status =
+        Email::Stuffer->from($system_email)->to(@email_recipient_list)->subject($email_subject)->html_body($email_template)->send();
     unless ($email_status) {
         $log->warn('failed to send Onfido check exceeded email.');
         return {status_code => 0};
