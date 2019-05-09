@@ -74,13 +74,7 @@ subtest 'MLT accounts' => sub {
         my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
         ok $v->client->is_first_deposit_pending, 'First deposit tracking for MLT account';
 
-        is(0 + email_list(), 0, 'have no emails to start with');
         $v->run_authentication;
-
-        my @msgs =
-            grep { $_->{to}[0] eq 'support-newaccount-notifications@binary.com' and $_->{subject} =~ qr/New Sign-Up/ } email_list();
-
-        is(@msgs, 0, 'No email received');
 
         ok !$v->client->fully_authenticated, 'Not fully authenticated';
         ok !$v->client->status->age_verification, 'Not age verified';
@@ -95,13 +89,7 @@ subtest 'MLT accounts' => sub {
 
         $v->client->status->set("age_verification");
 
-        is(0 + email_list(), 0, 'have no emails to start with');
         $v->run_authentication;
-
-        my @msgs =
-            grep { $_->{to}[0] eq 'support-newaccount-notifications@binary.com' and $_->{subject} =~ qr/New Sign-Up/ } email_list();
-
-        is(@msgs, 0, 'No email received');
 
         ok !$v->client->fully_authenticated, 'Not fully authenticated';
         ok !$v->client->status->unwelcome,      'Not unwelcome';

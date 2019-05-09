@@ -122,8 +122,6 @@ sub after_register_client {
     my $client_loginid = $client->loginid;
     my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);
 
-    $client->send_new_client_email($ip, $country) if ($client->landing_company->new_client_email_event eq 'signup');
-
     if ($client->landing_company->short eq 'iom'
         and (length $client->first_name < 3 or length $client->last_name < 3))
     {
