@@ -454,6 +454,31 @@ sub get_self_exclusion {
     return $excl;
 }
 
+sub get_limits_for_max_deposit {
+    my $self = shift;
+
+    my $excl = $self->get_self_exclusion;
+    return undef unless $excl;
+
+    my $max_deposit = $excl->max_deposit;
+    my $begin_date  = $excl->max_deposit_begin_date;
+    my $end_date    = $excl->max_deposit_end_date;
+    my $today       = Date::Utility->new;
+
+    undef $end_date if $end_date and Date::Utility->new($end_date)->is_before($today);
+    undef $begin_date  unless $end_date;
+    undef $max_deposit unless $end_date;
+
+    # No limits if any of the fields are missing
+    return undef unless $max_deposit and $begin_date and $end_date;
+
+    return +{
+        max_deposit => $max_deposit,
+        begin       => $begin_date->date,
+        end         => $end_date->date
+    };
+}
+
 sub get_limit_for_account_balance {
     my $self = shift;
 

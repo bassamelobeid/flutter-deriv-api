@@ -61,6 +61,28 @@ sub validate_payment {
         my $max_balance = $self->get_limit({'for' => 'account_balance'});
         die "Balance would exceed $max_balance limit [$currency] [" . $self->loginid . "] \n"
             if ($amount + $accbal) > $max_balance;
+
+        if ($self->landing_company->short eq 'iom') {
+            my $max_deposit_limits = $self->get_limits_for_max_deposit();
+
+            # Call get_total_deposit and validate against limits
+            if ($max_deposit_limits) {
+                my $deposit_over_period = $self->db->dbic->run(
+                    ping => sub {
+                        my $sth = $_->prepare('SELECT payment.get_total_deposit(?,?,?,?)');
+                        $sth->execute(
+                            $self->loginid,
+                            $max_deposit_limits->{begin},
+                            $max_deposit_limits->{end},
+                            "{mt5_transfer}"    # exclude mt5 transfers
+                        );
+                        return $sth->fetchrow_arrayref()->[0];
+                    });
+                die
+                    "Deposit exceeds limit [$max_deposit_limits->{max_deposit}]. Aggregated deposit over period [$deposit_over_period]. Current amount [$amount]."
+                    if ($deposit_over_period + $amount) > $max_deposit_limits->{max_deposit};
+            }
+        }
     }
 
     if ($action_type eq 'withdrawal') {
