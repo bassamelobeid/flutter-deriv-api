@@ -776,43 +776,6 @@ sub add_note {
     return Email::Stuffer->from($email_add)->to($email_add)->subject($subject)->text_body($content)->send_or_die;
 }
 
-=head2 send_new_client_email
-
-Send email to CS regarding the full name and address of client.
-Returns 1 upon success and 0 upon failure
-
-=cut
-
-sub send_new_client_email {
-
-    my ($self, $ip, $ip_country) = @_;
-
-    my $client_name    = $self->full_name;
-    my $client_loginid = $self->loginid;
-    my $user           = $self->user;
-    my $recent_login_env;
-    # login_history is sorted in descending order so selecting [0] means to select the latest login
-    $recent_login_env = $user->login_history(limit => 1)->[0]->{'environment'} if $user;
-
-    if ($recent_login_env) {
-        ($ip, $ip_country) = $recent_login_env =~ /IP=([0-9a-z\.:]+) IP_COUNTRY=([A-Z]{1,3})/;
-    }
-
-    my @address = map { $self->$_ } qw(address_1 address_2 city state postcode);
-
-    my $notemsg = <<EOF;
-$client_loginid - Name and Address
-
-
-         $client_name
-        @{[ join "\n\t\t" => @address, Locale::Country::code2country($self->residence) ]}
-
-IP was @{[ $ip // 'unknown' ]} (country @{[ $ip_country // 'unknown' ]})
-EOF
-
-    return $self->add_note("New Sign-Up Client [$client_loginid] - Name And Address Details", "$notemsg\n");
-}
-
 =pod
 
 =head2 get_promocode_dependent_limit
