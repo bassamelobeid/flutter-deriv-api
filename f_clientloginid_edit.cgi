@@ -9,17 +9,18 @@ use File::Copy;
 use HTML::Entities;
 use Try::Tiny;
 use Digest::MD5;
-use Cache::RedisDB;
+use Media::Type::Simple;
 
 use Brands;
 use LandingCompany::Registry;
+use Finance::MIFIR::CONCAT qw(mifir_concat);
 
 use f_brokerincludeall;
 
-use BOM::User::Client;
-
 use BOM::Config;
 use BOM::Config::Runtime;
+use BOM::User::Client;
+use BOM::Config::RedisReplicated;
 use BOM::Backoffice::Request qw(request);
 use BOM::User;
 use BOM::User::FinancialAssessment;
@@ -36,9 +37,7 @@ use BOM::Backoffice::FormAccounts;
 use BOM::Database::Model::AccessToken;
 use BOM::Backoffice::Config;
 use BOM::Database::DataMapper::Copier;
-use Finance::MIFIR::CONCAT qw(mifir_concat);
 use BOM::Platform::S3Client;
-use Media::Type::Simple;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -385,9 +384,16 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         # Remove existing status to make the auth methods mutually exclusive
         $_->delete for @{$client->client_authentication_method};
 
-        $client->set_authentication('ID_NOTARIZED')->status('pass')        if $auth_method eq 'ID_NOTARIZED';
-        $client->set_authentication('ID_DOCUMENT')->status('pass')         if $auth_method eq 'ID_DOCUMENT';
-        $client->set_authentication('ID_DOCUMENT')->status('needs_action') if $auth_method eq 'NEEDS_ACTION';
+        $client->set_authentication('ID_NOTARIZED')->status('pass') if $auth_method eq 'ID_NOTARIZED';
+        $client->set_authentication('ID_DOCUMENT')->status('pass')  if $auth_method eq 'ID_DOCUMENT';
+
+        if ($auth_method eq 'NEEDS_ACTION') {
+            $client->set_authentication('ID_DOCUMENT')->status('needs_action');
+            # if client is marked as needs action then we need to inform
+            # CS for new POA document hence we need to remove any
+            # key set for email already sent for POA
+            BOM::Config::RedisReplicated::redis_write()->hdel("EMAIL_NOTIFICATION_POA", $client->binary_user_id);
+        }
     }
     my @number_updates = qw/
         custom_max_acbal
@@ -520,8 +526,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             /;
         exists $input{$_} && $cli->$_($input{$_}) for @simple_updates;
 
-        $cli->status->clear_address_verified() if (any { exists $input{$_} } qw(address_1 address_2 city state postcode));
-
         my $tax_residence;
         if (exists $input{tax_residence}) {
             # Filter keys for tax residence
@@ -650,6 +654,9 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         print "<p style=\"color:#eeee00;\">$sync_error</p>" if $sync_error;
         BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $cli->loginid}) if ($cli->loginid eq $loginid);
     }
+
+    BOM::Platform::Event::Emitter::emit('verify_address', {loginid => $client->loginid})
+        if (any { exists $input{$_} } qw(address_1 address_2 city state postcode));
 }
 
 Bar("NAVIGATION");
@@ -850,13 +857,13 @@ foreach my $mt_ac (@mt_logins) {
     my ($id) = $mt_ac =~ /^MT(\d+)$/;
     print "<li>" . encode_entities($mt_ac);
     # If we have group information, display it
-    if (my $group = Cache::RedisDB->get('MT5_USER_GROUP', $id)) {
+    if (my $group = BOM::Config::RedisReplicated::redis_mt5_user()->get("MT5_USER_GROUP::$id")) {
         print " (" . encode_entities($group) . ")";
     } else {
         # ... and if we don't, queue up the request. This may lead to a few duplicates
         # in the queue - that's fine, we check each one to see if it's already
         # been processed.
-        Cache::RedisDB->redis->lpush('MT5_USER_GROUP_PENDING', join(':', $id, time));
+        BOM::Config::RedisReplicated::redis_mt5_user_write()->lpush('MT5_USER_GROUP_PENDING', join(':', $id, time));
         print ' (<span title="Try refreshing in a minute or so">no group info yet</span>)';
     }
     print "</li>";
