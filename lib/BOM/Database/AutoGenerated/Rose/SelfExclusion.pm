@@ -22,6 +22,9 @@ __PACKAGE__->meta->setup(
         max_30day_turnover     => { type => 'numeric' },
         max_30day_losses       => { type => 'numeric' },
         timeout_until          => { type => 'numeric' },
+        max_deposit            => { type => 'numeric' },
+        max_deposit_begin_date => { type => 'date' },
+        max_deposit_end_date   => { type => 'date' },
     ],
 
     primary_key_columns => [ 'client_loginid' ],
