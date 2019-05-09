@@ -58,7 +58,6 @@ sub is_invalid_license {
 
 sub is_invalid_market_time {
     my $ul = shift;
-
     unless (Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader())->is_open($ul->exchange)) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'MarketIsClosed',

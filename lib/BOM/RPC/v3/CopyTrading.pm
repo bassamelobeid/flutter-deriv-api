@@ -85,7 +85,7 @@ rpc copy_start => sub {
 
     my @assets = ref($args->{assets}) eq 'ARRAY' ? @{$args->{assets}} : $args->{assets};
     for my $symbol (grep { $_ } @assets) {
-        my $response = BOM::RPC::v3::Contract::validate_underlying($symbol);
+        my $response = BOM::RPC::v3::Contract::is_invalid_symbol($symbol);
         if ($response and exists $response->{error}) {
             return $response;
         }

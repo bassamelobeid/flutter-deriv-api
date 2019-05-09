@@ -215,6 +215,15 @@ subtest 'Revoke trader token' => sub {
     };
 };
 
+subtest 'Allow copy trade even if market is closed' => sub {
+    my $extra_args = {assets => ['frxUSDJPY', 'R_100']};
+    #set time to Sunday to simulate closed market
+    set_fixed_time(Date::Utility->new('2016-07-24')->epoch);
+    #should not throw an error for closing market
+    start_copy_trade($trader_CR, $copier_CR, $extra_args);
+    set_fixed_time(Date::Utility->new()->epoch);
+};
+
 ####################################################################
 # Helper methods
 ####################################################################
@@ -363,13 +372,13 @@ sub set_allow_copiers {
 }
 
 sub start_copy_trade {
-    my ($trader, $copier) = @_;
-
+    my ($trader, $copier, $extra_args) = @_;
     my $res = $c->call_ok(
         'copy_start',
         {
             args => {
                 copy_start => $tokens{$trader->loginid},
+                $extra_args ? %$extra_args : ()
             },
             token => $tokens{$copier->loginid},
             %default_call_params
@@ -379,7 +388,6 @@ sub start_copy_trade {
 
 sub start_copy_trade_with_error_code {
     my ($trader, $copier, $error_code, $error_msg, $extra_args) = @_;
-    $extra_args ||= {};
 
     my $trader_token = (defined $trader) ? $tokens{$trader->loginid} : "Invalid";
     my $copier_token = (defined $copier) ? $tokens{$copier->loginid} : "Invalid";
@@ -389,7 +397,7 @@ sub start_copy_trade_with_error_code {
         {
             args => {
                 copy_start => $trader_token,
-                %$extra_args
+                $extra_args ? %$extra_args : ()
             },
             token => $copier_token,
             %default_call_params
