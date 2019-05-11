@@ -871,6 +871,15 @@ foreach my $mt_ac (@mt_logins) {
 
 print "</ul>";
 
+eval {
+    my $mt5_log_size = BOM::Config::RedisReplicated::redis_mt5_user()->llen("MT5_USER_GROUP_PENDING");
+
+    print "<p style='color:red'>Note: MT5 groups might take time to appear, since there are "
+        . encode_entities($mt5_log_size)
+        . " item(s) being processed</p>"
+        if $mt5_log_size > 500;
+
+} or print encode_entities($@);
 my $log_args = {
     broker   => $broker,
     category => 'client_details',

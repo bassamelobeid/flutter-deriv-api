@@ -16,7 +16,7 @@ and caches the information in Redis.
 use IO::Async::Loop;
 
 use Net::Async::Redis;
-use Future::Utils qw(repeat);
+use Future::Utils qw(try_repeat);
 
 use BOM::Config::Runtime;
 use BOM::Config::RedisReplicated;
@@ -24,6 +24,7 @@ use BOM::MT5::User::Async;
 
 use Log::Any qw($log);
 use Log::Any::Adapter qw(Stdout), log_level => 'info';
+use DataDog::DogStatsd::Helper qw(stats_inc);
 
 my $loop = IO::Async::Loop->new;
 $loop->add(
@@ -46,7 +47,7 @@ sub group_for_user {
 }
 
 (
-    repeat {
+    try_repeat {
         $redis->brpop('MT5_USER_GROUP_PENDING', 60000)->then(
             sub {
                 my ($queue, $job) = @{$_[0]};
@@ -59,6 +60,7 @@ sub group_for_user {
 
                         if ($group) {
                             $log->debugf('Existing group found for ID [%s] - %s', $id, $group);
+                            stats_inc('mt5.group_populator.item_cached', 1);
                             return Future->done;
                         }
 
@@ -70,6 +72,7 @@ sub group_for_user {
                         group_for_user($id)->else(
                             sub {
                                 $log->errorf('Failure when retrieving group for [%s] - %s', $id, [@_]);
+                                stats_inc('mt5.group_populator.item_failed', 1);
                                 Future->done('failed to get group');
                             }
                             )->then(
@@ -82,6 +85,7 @@ sub group_for_user {
                                 # a negative cache.
                                 my $ttl = $group ? 7 * 86400 : 300;
                                 $group //= 'unknown';
+                                stats_inc('mt5.group_populator.item_processed', 1);
                                 $redis->set(
                                     $cache_key => $group,
                                     EX         => $ttl,
