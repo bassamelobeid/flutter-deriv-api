@@ -7,91 +7,52 @@ no indirect;
 use Test::More;
 use IO::Async::Loop;
 use Future::Utils qw( fmap0 );
+use feature qw(state);
 
 use Log::Any qw($log);
 use Log::Any::Adapter qw(Stdout), log_level => $ENV{LOG_LEVEL} // 'info';
 
 use BOM::Test::WebsocketAPI;
-my $chunks = 5;
+use BOM::Test::WebsocketAPI::Data qw( requests );
 
 my $loop = IO::Async::Loop->new;
 $loop->add(
     my $tester = BOM::Test::WebsocketAPI->new(
-        timeout             => 500,
-        max_response_delay  => 3,     # 3s
-        ticks_history_count => 5,
-    ),
-);
-
-$loop->add(
-    my $tester_large_delay = BOM::Test::WebsocketAPI->new(
         timeout             => 300,
-        ticks_history_count => 5,
-        max_response_delay  => 3,     # 3s
+        max_response_delay  => 10,
+        suite_params        => {
+            concurrent => 50,
+            requests => requests(
+                calls   => [qw(ticks ticks_history)],
+            ),
+        },
     ),
 );
 
-my @active_symbols = $tester->active_symbols(streamable => 1)->get;
+subtest "Tick Subscriptions: All Symbols" => sub {
+    Future->needs_all(
+        $tester->subscribe,
+        $tester->subscribe_multiple_times(count => 10),
+    )->get;
+};
 
-note "There are " . @active_symbols . " active symbols";
-
-# In order to prevent test failures in the closing times of financial markets.
-if (@active_symbols < $chunks * 2) {
-    $chunks = int(@active_symbols / 2);
-    note "Chunks count changed to " . $chunks . " because active symbols are too few.";
-}
-
-$tester->publish(
-    tick => \@active_symbols,
-);
-
-for my $method (qw(ticks ticks_history)) {
-
-    subtest "Subscriptions for $method" => sub {
-
-        my @requests = map { make_request($method, $_) } @active_symbols;
-
-        Future->needs_all(
-            $tester->ticks_invalid_symbol(method => $method),
-
-            # subscribe to everything on one connection
-            $tester->subscribe(
-                subscription_list => \@requests,
-                concurrent        => scalar @requests,
+subtest "Tick Subscriptions: Only R_* and frxUSD*" => sub {
+    $tester->configure(
+        suite_params        => {
+            concurrent => 50,
+            requests => requests(
+                calls   => [qw(ticks ticks_history)],
+                filter  => sub {
+                    shift->{params}->underlying->symbol =~ /R_.*|frxUSD.*/;
+                },
             ),
-
-            # subscribe to everything on different connections
-            # todo - reduce the max_response_delay
-            $tester_large_delay->subscribe_multiple_times(
-                count             => 2,
-                subscription_list => \@requests,
-                concurrent        => scalar @requests,
-            ),
-
-            # different req_id is ok
-            $tester->ticks_duplicate_subscribe_ok(method => $method),
-        )->get;
-
-        my $chunk_size = @requests / $chunks;
-        for my $i (0 .. $chunks - 1) {
-            $tester_large_delay->multiple_subscriptions_forget_one(
-                subscription_list => [@requests[$i * $chunk_size .. ($i * $chunk_size + $chunk_size - 1)]],
-                concurrent => $chunk_size,
-            )->get;
-        }
-
-        # This must not be run in parellel with other tests, because it pauses the publisher
-        $tester->ticks_feed_gap(method => $method)->get;
-        }
-}
-
-sub make_request {
-    return {
-        $_[0] => {
-            $_[0] => $_[1],
-            $_[0] eq 'ticks_history' ? (end => 'latest') : ()}};
-}
-
-$tester->run_sanity_checks;
+        });
+    Future->needs_all(
+        $tester->subscribe,
+        $tester->subscribe_multiple_times(count => 10),
+        $tester->multiple_subscriptions_forget_one,
+        $tester->multiple_connections_forget_one,
+    )->get;
+};
 
 done_testing;
