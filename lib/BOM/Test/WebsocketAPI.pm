@@ -42,39 +42,46 @@ use curry;
 use Test::More;
 use feature 'state';
 
+use Module::Load ();
+# Load All modules under these paths
+# See Devops::BinaryAPI::Tester
+use Module::Pluggable search_path =>
+    ['BOM::Test::WebsocketAPI::Contexts', 'BOM::Test::WebsocketAPI::Helpers', 'BOM::Test::WebsocketAPI::Tests', 'BOM::Test::WebsocketAPI::Template'];
+
+Module::Load::load($_) for sort __PACKAGE__->plugins;
+
 use Binary::API::Mapping::Response;
 use Binary::WebSocketAPI;
-use BOM::Test::RPC::BomRpc;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::Client qw(create_client);
 use BOM::Test::Helper qw/launch_redis/;
-use BOM::Database::Model::OAuth;
-use BOM::User;
 use BOM::Test::WebsocketAPI::Contexts;
 use BOM::Test::WebsocketAPI::SanityChecker;
 use BOM::Test::WebsocketAPI::Publisher;
+use BOM::Test::WebsocketAPI::MockRPC;
+use BOM::Test::WebsocketAPI::Data qw( requests );
+use BOM::Test::WebsocketAPI::Parameters qw( test_params );
 
-use Module::Load ();
-# Load All modules under these paths
-# See Devops::BinaryAPI::Tester
-use Module::Pluggable search_path => ['BOM::Test::WebsocketAPI::Contexts', 'BOM::Test::WebsocketAPI::Helpers', 'BOM::Test::WebsocketAPI::Tests',];
-
-Module::Load::load($_) for sort __PACKAGE__->plugins;
+my $default_suite_params = {
+    requests => requests(),
+    # Take the first client's token by default
+    token => test_params(qw(client))->{client}[0]->token,
+};
 
 sub configure {
     my ($self, %args) = @_;
-    for my $k (qw(
-        max_response_delay
-        skip_sanity_checks
-        ws_debug
-        ticks_history_count
-        sanity_checks_when_suite_completed
-        ))
-    {
+    for my $k (qw( max_response_delay skip_sanity_checks ws_log_level suite_params)) {
         $self->{$k} = delete $args{$k} if exists $args{$k};
     }
     return $self->next::method(%args);
+}
+
+sub _add_to_loop {
+    my ($self) = @_;
+
+    # Start publisher
+    return $self->publisher;
 }
 
 =head1 ACCESSORS
@@ -98,16 +105,6 @@ sub max_response_delay {
     return shift->{max_response_delay} // 0.15;    # sec
 }
 
-=head2 ticks_history_count
-
-Number of ticks history to generate for testing, default: 1000
-
-=cut
-
-sub ticks_history_count {
-    return shift->{ticks_history_count} // 1000;
-}
-
 =head2 skip_sanity_checks
 
 Accepts a C<hashref>, will selectively skip the sanity checks.
@@ -123,14 +120,6 @@ the test result to be noisy.
 
 sub skip_sanity_checks { return shift->{skip_sanity_checks} // {} }
 
-=head2 sanity_checks_when_suite_completed
-
-If set the sanity checks won't run after each C<suite> is C<completed>.
-
-=cut
-
-sub sanity_checks_when_suite_completed { return shift->{sanity_checks_when_suite_completed} // 0 }
-
 =head2 suite_responses
 
 List of C<suite> responses kept for doing sanity checks after the C<suite> is
@@ -140,13 +129,13 @@ C<completed>.
 
 sub suite_responses { return shift->{suite_responses} //= {} }
 
-=head2 ws_debug
+=head2 ws_log_level
 
-If set to C<1>, websocket debug output will be printed in test output
+Set the websocket log level (same as C<Mojo::Log> levels, default is C<error>.
 
 =cut
 
-sub ws_debug { return shift->{ws_debug} // 0 }
+sub ws_log_level { return shift->{ws_log_level} //= 'error' }
 
 =head2 port
 
@@ -186,7 +175,7 @@ sub port {
     load_ws_redis_server();
 
     my $binary = Binary::WebSocketAPI->new();
-    $binary->log(Mojo::Log->new(level => 'debug')) if $self->ws_debug;
+    $binary->log->level($self->ws_log_level);
     $self->{daemon} = Mojo::Server::Daemon->new(
         app    => $binary,
         listen => ["http://127.0.0.1"]);
@@ -210,43 +199,6 @@ sub endpoint {
     return $self->{endpoint} = $ENV{WS_TEST_ENDPOINT} // "ws://127.0.0.1:" . $self->port;
 }
 
-=head2 new_client
-
-Create a new binary user with a token.
-
-=cut
-
-sub new_client {
-    my ($self) = @_;
-
-    my $new_client = create_client;
-
-    my $email = join('', shuffle(split('', 'binarybinarybinary'))) . '@binary.com';
-    $new_client->email($email);
-    $new_client->save;
-
-    # For some reason needed, transaction subscription never happens if not done
-    $new_client->account('USD');
-
-    my $loginid = $new_client->loginid;
-    my $user    = BOM::User->create(
-        email    => $email,
-        password => 'Very strong password this is',
-    );
-    $user->add_client($new_client);
-
-    $new_client->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
-
-    $new_client->payment_legacy_payment(
-        currency     => 'USD',
-        amount       => 10000,
-        payment_type => 'free_gift',
-        remark       => 'A generous gift to our test client',
-    );
-
-    return $new_client;
-}
-
 =head2 publisher
 
 Returns a C<publisher> instance, which is used for publishing values to Redis
@@ -259,9 +211,9 @@ sub publisher {
 
     return $self->{publisher} if exists $self->{publisher};
 
-    $self->{publisher} = BOM::Test::WebsocketAPI::Publisher->new(ticks_history_count => $self->ticks_history_count);
+    $self->{publisher} = BOM::Test::WebsocketAPI::Publisher->new;
 
-    $self->loop->add($self->{publisher}) unless $self->{publisher}->loop;
+    $self->add_child($self->{publisher}) unless $self->{publisher}->loop;
 
     return $self->{publisher};
 }
@@ -278,27 +230,15 @@ sub sanity_checker {
     return $self->{sanity_checker} //= BOM::Test::WebsocketAPI::SanityChecker->new($self);
 }
 
-=head1 METHODS
+sub suite_params {
+    my ($self) = @_;
 
-=head2 publish
+    $self->{suite_params} //= {};
 
-Start publishing a group of requests
-
-    $tester->publish(
-        transaction => [{
-            account_id => ...
-        }],
-        tick => [...]);
-
-returns a list of published values for all requests
-
-=cut
-
-sub publish {
-    my ($self, %requests) = @_;
-
-    return [map { $self->publisher->$_($requests{$_}->@*) } keys %requests];
+    return {$default_suite_params->%*, $self->{suite_params}->%*,};
 }
+
+=head1 METHODS
 
 =head2 new_suite
 
@@ -311,23 +251,27 @@ sub new_suite {
 
     my $suite = $self->next::method;
 
-    if ($self->sanity_checks_when_suite_completed) {
-        return $suite->on_completed(
-            $self->$curry::weak(
-                sub {
-                    my ($self, $suite) = @_;
-
-                    subtest 'Sanity Checks' => sub {
-                        ok $self->sanity_checker->check($suite->responses, $self->skip_sanity_checks,), 'Sanity checks were successfully done';
-                    };
-                }));
-    }
     return $suite->on_completed(
         $self->$curry::weak(
             sub {
                 my ($self, $suite, $name) = @_;
                 $self->suite_responses->{$name} = $suite->responses;
             }));
+}
+
+=head2 call
+
+Overrides the parent call to add default parameters
+
+=cut
+
+sub call {
+    my ($self, $method, %args) = @_;
+
+    my $suite_params = $self->suite_params;
+    $args{$_} //= $suite_params->{$_} for keys $suite_params->%*;
+
+    return $self->next::method($method, %args);
 }
 
 sub run_sanity_checks {
@@ -342,5 +286,8 @@ sub run_sanity_checks {
 
     return;
 }
+
+# Suppress global destruction warnings
+$SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /global destruction/ };    ## no critic (Variables::RequireLocalizedPunctuationVars)
 
 1;

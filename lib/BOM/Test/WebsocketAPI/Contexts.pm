@@ -46,4 +46,42 @@ context restart_redis => sub {
     return $self;
 };
 
+context pause_publish => sub {
+    my ($self, $method) = @_;
+
+    $self->completed->on_done(
+        $self->$curry::weak(
+            sub {
+                shift->suite->tester->publisher->pause($method);
+            }));
+
+    return $self;
+};
+
+context resume_publish => sub {
+    my ($self, $method) = @_;
+
+    $self->completed->on_done(
+        $self->$curry::weak(
+            sub {
+                shift->suite->tester->publisher->resume($method);
+            }));
+
+    return $self;
+};
+
+context skip_until_publish_paused => sub {
+    my ($self, $method) = @_;
+
+    my $take_f = $self->source->skip_until(
+        $self->$curry::weak(
+            sub {
+                shift->suite->tester->publisher->is_paused($method);
+            }))->first->completed;
+
+    $self->{completed} = $self->completed->then(sub { $take_f });
+
+    return $self;
+};
+
 1;
