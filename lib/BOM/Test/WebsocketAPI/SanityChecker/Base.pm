@@ -158,7 +158,10 @@ Fails if the expected response is newer than the received response
 sub time_travelling_response {
     my ($self, $response, $expected) = @_;
     return fail 'Response was received before being published! expected: ' . join ", received: ", explain $expected, $response
-        if $response->arrival_time < $expected->arrival_time;
+        # Assuming max_response_delay is small, because there's a race condition
+        # don't want to see this error to often, otherwise, max_response_delay
+        # wasn't needed to be subtracted.
+        if $response->arrival_time < $expected->arrival_time - $self->tester->max_response_delay;
     return 1;
 }
 

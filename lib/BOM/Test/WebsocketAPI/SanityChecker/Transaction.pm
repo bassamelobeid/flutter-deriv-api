@@ -22,7 +22,7 @@ A collection of sanity checks for transaction, its called from within the C<Sani
 
 =cut
 
-use List::Util qw(all);
+use List::Util qw(all first);
 use Test::More;
 
 =head1 METHODS
@@ -47,7 +47,18 @@ sub published {
         return fail 'Transaction does not have a valid action: ' . (explain $transaction)[0]
             unless grep { $_ eq $transaction->body->{action} } @valid_actions;
 
-        return 0 unless $self->general($transaction);
+        return fail 'Response was not published: ' . (explain $transaction)[0]
+            unless my $expected = first {
+            ;
+            $_->body->transaction_id eq $transaction->body->transaction_id
+        }
+        $self->expected($transaction->type)->@*;
+        unless ($self->is_sanity_ckeck_skipped($transaction->{type}, 'time_travelling_response')) {
+            return 0 unless $self->time_travelling_response($transaction, $expected);
+        }
+        unless ($self->is_sanity_ckeck_skipped($transaction->{type}, 'too_old_response')) {
+            return 0 unless $self->too_old_response($transaction, $expected);
+        }
     }
 
     return 1;

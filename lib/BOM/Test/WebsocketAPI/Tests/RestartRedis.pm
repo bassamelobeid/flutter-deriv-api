@@ -1,11 +1,11 @@
-package BOM::Test::APITester::Tests::GeneralSubscriptions;
+package BOM::Test::WebsocketAPI::Tests::RestartRedis;
 
 no indirect;
 
 use strict;
 use warnings;
 
-use Future::Utils qw(try_repeat);
+use Future::Utils qw( try_repeat );
 
 use Devops::BinaryAPI::Tester::DSL;
 
@@ -27,17 +27,17 @@ not affected.
 suite restart_redis => sub {
     my ($suite, %args) = get_args(@_);
 
-    (try_repeat {
+    try_repeat {
         my ($method, $request) = shift->%*;
 
         $suite
-        ->connection($args{connection_params}->%*)
+        ->connection(exists $args{token} ? %args{token} : ())
         ->subscribe($method, $request)
         ->restart_redis
         ->take_latest
-        ->helper::log_method($method)
+        ->helper::log_method($request)
         ->completed
-    } foreach => [ $args{subscription_list}->@* ])
+    } foreach => [ $args{subscription_list}->@* ];
 };
 
 1;

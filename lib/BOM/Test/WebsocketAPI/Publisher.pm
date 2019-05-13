@@ -36,12 +36,13 @@ use Syntax::Keyword::Try;
 use Test::More;
 use curry;
 use Try::Tiny;
+use Future::Utils qw(fmap0);
 
 use BOM::Test;
 use Binary::API::Mapping::Response;
-use BOM::Test::Data::Utility::FeedTestDatabase;
-use Finance::Underlying;
 use BOM::Test::WebsocketAPI::Redis qw/shared_redis ws_redis_master/;
+use BOM::Test::WebsocketAPI::Data qw( publish_data publish_methods );
+use BOM::Test::WebsocketAPI::Parameters qw( test_params );
 
 our %handlers;
 
@@ -53,25 +54,16 @@ sub new {
 sub really_new {
     my $class = shift;
 
-    BOM::Test::Data::Utility::FeedTestDatabase->import(qw(:init));
-    return $class->SUPER::new(@_);
+    my $self = $class->SUPER::new(@_);
+
+    return $self;
 }
 
-sub configure {
-    my ($self, %args) = @_;
-    for my $k (qw(ticks_history_count)) {
-        $self->{$k} = delete $args{$k} if exists $args{$k};
-    }
-    return $self->next::method(%args);
+sub _add_to_loop {
+    my ($self) = @_;
+    # Start publishing
+    return $self->redis_timer;
 }
-
-=head2 ticks_history_count
-
-Number of ticks history to generate
-
-=cut
-
-sub ticks_history_count { return shift->{ticks_history_count} }
 
 =head2 published
 
@@ -81,14 +73,6 @@ generated based on the published values to Redis or DB, per method.
 =cut
 
 sub published { return shift->{published} //= {} }
-
-=head2 to_publish
-
-Stores the event types to be published.
-
-=cut
-
-sub to_publish { return shift->{to_publish} //= {} }
 
 =head2 ryu
 
@@ -101,21 +85,9 @@ sub ryu {
 
     return $self->{ryu} if exists $self->{ryu};
 
-    $self->loop->add(my $ryu = Ryu::Async->new,);
+    $self->add_child(my $ryu = Ryu::Async->new);
 
     return $self->{ryu} = $ryu;
-}
-
-=head2 redis_timer
-
-A timer which calls on_timer() every second, created on demand.
-
-=cut
-
-sub redis_timer {
-    my $self = shift;
-
-    return $self->{redis_timer} //= $self->start_publish;
 }
 
 =head2 publisher_state
@@ -128,6 +100,42 @@ across different calls to L<on_timer>.
 sub publisher_state { return shift->{publisher_state} //= {} }
 
 =head1 METHODS
+
+=head2 pause
+
+Pauses publishing for a given method.
+
+=cut
+
+sub pause {
+    my ($self, $method) = @_;
+
+    return $self->{paused}{$method} = 1;
+}
+
+=head2 resume
+
+Resumes publishing for a given method.
+
+=cut
+
+sub resume {
+    my ($self, $method) = @_;
+
+    return delete $self->{paused}{$method};
+}
+
+=head2 is_paused
+
+Returns true if publishing is paused for a given method.
+
+=cut
+
+sub is_paused {
+    my ($self, $method) = @_;
+
+    return exists $self->{paused}{$method};
+}
 
 =head2 handler
 
@@ -146,105 +154,6 @@ sub handler {
     return $handlers{$name} = $code;
 }
 
-=head2 website_status
-
-Start publishing simulated website_status update events.
-Returns the website_status message just published.
-
-=over 4
-
-=item * C<@symbols> - List of symbols
-
-=back
-
-=cut
-
-sub website_status {
-    my ($self, @requests) = @_;
-
-    return undef unless @requests;
-
-    push $self->to_publish->{website_status}->@*, @requests;
-
-    $self->start_publish;
-
-    return $self->published->{website_status};
-}
-
-=head2 tick
-
-Start publishing simulated tick events for symbol(s).
-Returns ticks already published.
-
-=over 4
-
-=item * C<@symbols> - List of symbols
-
-=back
-
-=cut
-
-sub tick {
-    my ($self, @requests) = @_;
-
-    return undef unless @requests;
-
-    push $self->to_publish->{tick}->@*, @requests;
-
-    $self->start_publish;
-
-    $self->generate_ticks_history(@requests);
-
-    return $self->published->{tick};
-}
-
-=head2 transaction
-
-Start publishing simulated transaction (and balance) events for an account ID.
-Returns transactions already published.
-
-Accepts a list of transaction information, which contains:
-
-=over 4
-
-=item * C<$client> - The L<BOM::User::Client> object to publish tx for
-
-=item * C<$actions> - An array ref of action types to publish
-
-=back
-
-    $publisher->transaction(
-        {
-            client  => $client,
-            actions => [qw(buy sell)],
-        },
-        ...
-    )
-
-=cut
-
-sub transaction {
-    my ($self, @requests) = @_;
-
-    return undef unless @requests;
-
-    push $self->to_publish->{transaction}->@*, @requests;
-
-    $self->start_publish;
-
-    $self->initial_balance(@requests);
-
-    return $self->published->{transaction};
-}
-
-=head2 balance
-
-Same as calling L<transaction>.
-
-=cut
-
-sub balance { return shift->transaction(@_) }
-
 =head2 website_status handler
 
 The code that handles publishing website_status into redis.
@@ -252,25 +161,19 @@ The code that handles publishing website_status into redis.
 =cut
 
 handler website_status => sub {
-    my ($self, $params) = @_;
+    my ($self, $key, $type, $payload) = @_;
 
-    my $ws_status = $self->fake_website_status($params);
-
-    ws_redis_master->then(
+    return ws_redis_master->then(
         $self->$curry::weak(
             sub {
                 my ($self, $redis) = @_;
 
-                Future->wait_all(
-                    $redis->set('NOTIFY::broadcast::is_on', $ws_status->{site_status} eq 'up'),
-                    $redis->set('NOTIFY::broadcast::state', encode_json_utf8($ws_status)),
-                    )->then(
+                Future->needs_all($redis->set('NOTIFY::broadcast::is_on', 1), $redis->set('NOTIFY::broadcast::state', encode_json_utf8($payload)),)
+                    ->then(
                     sub {
-                        $self->publish('NOTIFY::broadcast::channel', 'website_status', $ws_status, ws_redis_master);
+                        $self->publish($key, $type, $payload, ws_redis_master);
                     });
             }))->retain;
-
-    return undef;
 };
 
 =head2 tick handler
@@ -280,9 +183,12 @@ The code that handles publishing ticks into redis (and update ticks history).
 =cut
 
 handler tick => sub {
-    my ($self, $symbol) = @_;
-    my $tick = $self->update_ticks_history($self->fake_tick($symbol));
-    return $self->publish("DISTRIBUTOR_FEED::$symbol", tick => $tick) if $tick;
+    my ($self, $key, $type, $payload) = @_;
+
+    my $tick = $self->update_ticks_history($payload);
+
+    return $self->publish($key, $type => $tick) if $tick;
+
     return undef;
 };
 
@@ -293,51 +199,49 @@ The code that handles publishing transaction and balance to Redis.
 =cut
 
 handler transaction => sub {
-    my ($self,   $request) = @_;
-    my ($client, $actions) = $request->@{qw(client actions)};
+    my ($self, $key, $type, $transaction) = @_;
 
-    $self->publisher_state->{contract_id}++;
-    for my $action (@$actions) {
-        my $transaction = $self->generate_transaction($client, $action);
-        $self->publish('TXNUPDATE::transaction_' . $client->account->id, transaction => $transaction);
+    my $currency = $transaction->{currency_code};
+    my $loginid  = delete $transaction->{loginid};
 
-        # balance (each transaction update also updates the balance)
-        $self->add_to_published(
-            balance => {
-                balance  => $transaction->{balance_after},
-                currency => $client->currency,
-                loginid  => $client->loginid,
-            });
-    }
-    return undef;
+    return $self->publish($key, $type => $transaction)->on_done(
+        $self->$curry::weak(
+            sub {
+                my ($self) = @_;
+                # balance (each transaction update also updates the balance)
+                $self->add_to_published(
+                    balance => {
+                        balance  => $transaction->{balance_after},
+                        currency => $currency,
+                        loginid  => $loginid,
+                    });
+            }));
 };
 
 =head2 on_timer
 
-Called every second. Creates simulated events for everything currently in
-C<to_publish>
+Called every second. Creates simulated events for mock data received from
+C<publish_data> in C<BOM::Test::WebsocketAPI::Data>.
 
 =cut
 
 sub on_timer {
     my ($self) = @_;
 
-    for my $handler_name (keys %handlers) {
-        next unless exists $self->to_publish->{$handler_name};
-        for my $request ($self->to_publish->{$handler_name}->@*) {
-            $handlers{$handler_name}->($self, $request);
+    for my $type (publish_methods()) {
+        next if exists $self->{paused}{$type};
+        # The mock publish data is lazy loaded
+        my $data = publish_data($type) or next;
+
+        for my $key (keys $data->%*) {
+            for my $payload ($data->{$key}->@*) {
+                if (exists $handlers{$type}) {
+                    $handlers{$type}->($self, $key, $type => $payload);
+                } else {
+                    $self->publish($key, $type => $payload);
+                }
+            }
         }
-    }
-
-    for my $proposal ($self->to_publish->{proposal}->@*) {
-        #$proposal looks like [key, propsal_data ] here
-        my $base_spot = $proposal->[1]->{spot};
-        my $new_spot = sprintf('%.3f', $base_spot + rand(10));
-        $proposal->[1]->{payout} = 0;    #$new_spot + 3;
-
-        $proposal->[1]->{spot}      = $new_spot;
-        $proposal->[1]->{spot_time} = time;
-        $self->publish($proposal->[0], 'proposal', $proposal->[1]);
     }
 
     return undef;
@@ -357,7 +261,7 @@ sub publish {
 
     $log->debugf('Publishing a %s, %s', $method, join ", ", map { $_ . ': ' . $payload->{$_} } sort keys $payload->%*);
 
-    $redis_client->then(
+    return $redis_client->then(
         $self->$curry::weak(
             sub {
                 my ($self, $redis) = @_;
@@ -366,8 +270,6 @@ sub publish {
                         $self->add_to_published($method, $payload);
                     });
             }))->retain;
-
-    return undef;
 }
 
 =head2 add_to_published
@@ -440,29 +342,13 @@ sub published_to_response {
     return Binary::API::Mapping::Response->new($frame);
 }
 
-=head2 stop_publish
+=head2 redis_timer
 
-Stop publishing values to Redis
-
-=cut
-
-sub stop_publish {
-    my ($self) = @_;
-
-    return Future->done
-        unless exists $self->{redis_timer}
-        or $self->{redis_timer}->completed->is_ready;
-
-    return $self->redis_timer->finish;
-}
-
-=head2 start_publish
-
-Start publishing values to Redis
+Calls C<< $self->on_timer >> every second.
 
 =cut
 
-sub start_publish {
+sub redis_timer {
     my ($self) = @_;
 
     return $self->{redis_timer}
@@ -488,22 +374,17 @@ sub update_ticks_history {
     my $symbol = $tick_to_publish->{symbol};
 
     my $tick = {$tick_to_publish->%*};
-
-    my $current_history = $state->{ticks_history}->{$symbol};
+    my $current_history = $state->{ticks_history}{$symbol} // Binary::API::Mapping::Response->new({
+            echo_req => {
+                ticks_history => $symbol,
+            },
+            msg_type => 'history',
+            history  => (map { {times => $_->times, prices => $_->prices} } test_params(qw(ticks_history))->{ticks_history}[0]{$symbol}),
+        });
 
     my @history_times  = ($current_history ? $current_history->body->times->@*  : ());
     my @history_prices = ($current_history ? $current_history->body->prices->@* : ());
     return if first { $_ eq $tick->{epoch} } @history_times;
-
-    try {
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            underlying => $symbol,
-            $tick->%*,
-        });
-    }
-    catch {
-        $log->errorf('Unable to add history, (is the feed DB correctly initialized?) error: [%s]', $@);
-    };
 
     my $history = {
         times  => [@history_times,  $tick->{epoch}],
@@ -519,209 +400,6 @@ sub update_ticks_history {
     push $published_history->@*, $state->{ticks_history}->{$symbol};
 
     return $tick_to_publish;
-}
-
-=head2 generate_ticks_history
-
-Generate the initial ticks history in the database
-
-=cut
-
-sub generate_ticks_history {
-    my ($self, @requests) = @_;
-
-    for my $symbol (@requests) {
-        next if exists $self->to_publish->{history}->{$symbol};
-        $self->to_publish->{history}->{$symbol} = $symbol;
-        my $now = time;
-        for my $epoch (($now - $self->ticks_history_count) .. $now) {
-            $self->update_ticks_history($self->fake_tick($symbol, {epoch => $epoch}));
-        }
-    }
-    return undef;
-}
-
-=head2 initial_balance
-
-Add the expected value for the initial balance
-
-=cut
-
-sub initial_balance {
-    my ($self, @requests) = @_;
-
-    my $balances = $self->publisher_state->{balances} //= {};
-
-    for my $request (@requests) {
-        my $client     = $request->{client};
-        my $account_id = $client->account->id;
-
-        unless (exists $balances->{$account_id}) {
-            my $initial_balance = $client->account->balance;
-            $balances->{$account_id} = $initial_balance;
-            $self->add_to_published(
-                balance => {
-                    balance  => sprintf('%.2f', $initial_balance),
-                    currency => $client->currency,
-                    loginid  => $client->loginid,
-                });
-        }
-    }
-    return undef;
-}
-
-=head2 generate_transaction
-
-Generates transaction payloads given an action type
-
-=cut
-
-sub generate_transaction {
-    my ($self, $client, $action) = @_;
-
-    my $balances = $self->publisher_state->{balances} //= {};
-    my $signed_amount = 100 * rand() * ($action =~ /sell|deposit/ ? +1 : -1);
-    $balances->{$client->account->id} += $signed_amount;
-    return {
-        action_type             => $action,
-        id                      => ++$self->{transaction_id},
-        financial_market_bet_id => $self->publisher_state->{contract_id},
-        amount                  => sprintf('%.2f', $signed_amount),
-        balance_after           => sprintf('%.2f', $balances->{$client->account->id}),
-        payment_remark          => 'Description of the transaction',
-    };
-}
-
-=head2 fake_tick
-
-Returns a fake tick, accepts a hashref of optional override values.
-
-=cut
-
-sub fake_tick {
-    my ($self, $symbol, $options) = @_;
-
-    my $ul  = Finance::Underlying->by_symbol($symbol);
-    my $bid = $ul->pipsized_value(10 + (100 * rand));
-    my $ask = $ul->pipsized_value(10 + (100 * rand));
-    ($ask, $bid) = ($bid, $ask) unless $bid <= $ask;
-    return {
-        symbol => $symbol,
-        epoch  => time,
-        bid    => $bid,
-        ask    => $ask,
-        quote  => $ul->pipsized_value(($bid + $ask) / 2),
-        ($options // {})->%*,
-    };
-}
-
-=head2 proposal
-
-Generate proposal contracts from the supplied proposal requests
-
-Takes the following arguments as named parameters
-
-=over 4
-
-=item C<$self> 
-=item C<$proposal_requests> an ArrayRef of proposal subscription requests that you want contract data for. 
-
-=back
-
-Returns the published proposals
-
-=cut
-
-sub proposal {
-    my ($self, @proposal_requests) = @_;
-    return undef unless @proposal_requests;
-
-    my @fake_contracts = map { $self->fake_proposal_contracts($_) } @proposal_requests;
-    push $self->to_publish->{proposal}->@*, @fake_contracts;
-
-    $self->redis_timer;
-
-    return $self->published->{proposal};
-}
-
-=head2 fake_proposal_contracts
-
-Creates contracts that can pushed into redis for proposals, it uses the data from the proposal request
-to create the appropriate data. 
-Takes the following arguments as named parameters
-
-=over 4
-
-=item C<proposal>  string  either 'price' or 'buy'
-
-=back
-
-Returns an Arrayref 
-    
-    [key, value]
-
-=cut
-
-sub fake_proposal_contracts {
-    my ($self, $proposal_request) = @_;
-    my $time = time();
-    my $product_type = $proposal_request->{product_type} // 'basic';
-    my $key =
-          'PRICER_KEYS::["amount","1000","basis","payout","contract_type","'
-        . $proposal_request->{contract_type}
-        . '","country_code","aq","currency","'
-        . $proposal_request->{currency}
-        . '","duration","'
-        . $proposal_request->{duration}
-        . '","duration_unit","'
-        . $proposal_request->{duration_unit}
-        . '","landing_company",null,"price_daemon_cmd","price","product_type","'
-        . $product_type
-        . '","proposal","1","skips_price_validation","1","subscribe","1","symbol","'
-        . $proposal_request->{symbol} . '"]';
-    my $value = {
-        "ask_price"        => "537.10",
-        "longcode"         => "longcode",
-        "date_start"       => $proposal_request->{date_start} // $time,
-        "spot"             => "78.942",
-        "payout"           => "1000",
-        "spot_time"        => $time,
-        "display_value"    => "537.10",
-        "theo_probability" => 0.502096693150372,
-        "price_daemon_cmd" => "price"
-    };
-
-    return ([$key, $value]);
-}
-
-=over 4
-
-=head2 fake_website_status
-
-Creates C<website_status> messages that can be pushed into redis.
-Takes the following arguments:
-
-=over 4
-
-=item C<params> a hash ref contining website status attributes.
-
-=back
-
-Returns a hashref containing C<site_status> and C<passthrough>
-    
-
-=cut
-
-sub fake_website_status {
-    my ($self, $params) = @_;
-
-    return {
-        site_status => $params->{site_status} // 'up',
-        # a unique message is added, expecting to be delivered to website_status subscribers (needed for sanity checks).
-        passthrough => {
-            test_publisher_message => 'message #' . ++$self->{ws_counter},
-        },
-    };
 }
 
 1;
