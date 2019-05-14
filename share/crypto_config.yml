@@ -1,8 +1,8 @@
 BTC:
     withdrawal:
         timeout: "3d"
-        min_usd: 5
-        fee_limit_usd: 2
+        min_usd: 25
+        fee_limit_usd: 10
     confirmation:
         required_confirmations: 3
     protocol_cost: 0
@@ -37,8 +37,8 @@ ETH:
 UST:
     withdrawal:
         timeout: "3d"
-        min_usd: 5
-        fee_limit_usd: 2
+        min_usd: 25
+        fee_limit_usd: 10
     confirmation:
         required_confirmations: 3
     protocol_cost: 0.00000546
