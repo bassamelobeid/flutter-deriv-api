@@ -28,6 +28,7 @@ use Template::AutoFilter;
 use List::Util qw(any);
 use List::UtilsBy qw(rev_nsort_by);
 use Future::Utils qw(fmap0);
+use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
 
 use BOM::Config;
 use BOM::Platform::Context qw(localize);
@@ -51,7 +52,12 @@ use constant VERIFICATION_TIMEOUT => 60;
 use constant UPLOAD_TIMEOUT => 60;
 
 # Redis key namespace to store onfido applicant id
-use constant ONFIDO_APPLICANT_KEY_PREFIX => 'ONFIDO::APPLICANT::ID::';
+use constant ONFIDO_APPLICANT_KEY_PREFIX     => 'ONFIDO::APPLICANT::ID::';
+use constant ONFIDO_REQUEST_PER_USER_PREFIX  => 'ONFIDO::DAILY::REQUEST::PER::USER::';
+use constant ONFIDO_REQUEST_PER_USER_LIMIT   => $ENV{ONFIDO_REQUEST_PER_USER_LIMIT} // 3;
+use constant ONFIDO_REQUEST_PER_USER_TIMEOUT => $ENV{ONFIDO_REQUEST_PER_USER_TIMEOUT} // 24 * 60 * 60;
+use constant ONFIDO_PENDING_REQUEST_PREFIX   => 'ONFIDO::PENDING::REQUEST::';
+use constant ONFIDO_PENDING_REQUEST_TIMEOUT  => 20 * 60;
 
 # Redis key namespace to store onfido results and link
 use constant ONFIDO_REQUESTS_LIMIT => $ENV{ONFIDO_REQUESTS_LIMIT} // 1000;
@@ -432,24 +438,45 @@ sub ready_for_authentication {
 
         my $client = BOM::User::Client->new({loginid => $loginid})
             or die 'Could not instantiate client for login ID ' . $loginid;
+
+        if ($client->status->age_verification) {
+            $log->infof("Onfido request aborted because %s is already age-verified.", $loginid);
+            return Future->done("Onfido request aborted because $loginid is already age-verified.");
+        }
+
         my $residence = uc(country_code2code($client->residence, 'alpha-2', 'alpha-3'));
 
-        # INCR Onfido check request count in Redis
         my $redis_write = _redis();
+        my ($request_count, $user_request_count);
+        # INCR Onfido check request count in Redis
+
         $redis_write->connect->then(
             sub {
-                return $redis_write->hincrby(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_REQUEST_COUNT_KEY, 1);
+                return Future->needs_all(
+                    $redis_write->hget(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_REQUEST_COUNT_KEY),
+                    $redis_write->get(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id),
+                );
             }
             )->then(
             sub {
-                my $request_count = shift;
+                $request_count      = shift // 0;
+                $user_request_count = shift // 0;
 
                 # Update DataDog Stats
                 DataDog::DogStatsd::Helper::stats_inc('event.ready_for_authentication.onfido.applicant_check.count');
 
-                if ($request_count == 1) {
-                    # set duration to expire in 1 day
-                    $redis_write->expire(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_LIMIT_TIMEOUT)->retain();
+                if (!$args->{is_pending} && $user_request_count >= ONFIDO_REQUEST_PER_USER_LIMIT) {
+                    return $redis_write->ttl(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id)->then(
+                        sub {
+                            my $time_to_live = shift;
+
+                            $redis_write->expire(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id, ONFIDO_REQUEST_PER_USER_TIMEOUT)->retain()
+                                if ($time_to_live < 0);
+
+                            return Future->fail(
+                                "Onfido authentication requests limit ${\ONFIDO_REQUEST_PER_USER_LIMIT} is hit by $loginid (to be expired in $time_to_live seconds)."
+                            );
+                        });
                 }
                 return Future->done($request_count);
             }
@@ -457,7 +484,7 @@ sub ready_for_authentication {
             sub {
                 my $request_count = shift;
 
-                if ($request_count > ONFIDO_REQUESTS_LIMIT) {
+                if ($request_count >= ONFIDO_REQUESTS_LIMIT) {
                     # NOTE: We do not send email again if we already send before
                     my $redis_data = encode_json_utf8({
                         creation_epoch => Date::Utility->new()->epoch,
@@ -545,10 +572,53 @@ sub ready_for_authentication {
                                 "event.ready_for_authentication.onfido.applicant_check." . $f->state . ".elapsed",
                                 $f->elapsed,);
                         }
+                        )->on_done(
+                        sub {
+                            Future->needs_all(
+                                $redis_write->hincrby(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_REQUEST_COUNT_KEY, 1)->then(
+                                    sub {
+                                        return $redis_write->expire(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_LIMIT_TIMEOUT) if (shift == 1);
+
+                                        return Future->done;
+                                    }
+                                ),
+                                $redis_write->incr(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id)->then(
+                                    sub {
+                                        my $user_count = shift;
+                                        $log->infof("Onfido check request triggered for %s with current request count=%d on %s",
+                                            $loginid, $user_count, Date::Utility->new->datetime_ddmmmyy_hhmmss);
+
+                                        return $redis_write->expire(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id,
+                                            ONFIDO_REQUEST_PER_USER_TIMEOUT)
+                                            if ($user_count == 1);
+
+                                        return Future->done;
+                                    }
+                                ),
+                            )->retain;
+                        }
                         )->on_fail(
                         sub {
-                            $log->errorf('An error occurred while processing Onfido verification: %s', join(' ', @_));
-                        }));
+                            my ($type, $message, $response, $request) = @_;
+
+                            my $error_type = ($response and $response->content) ? decode_json_utf8($response->content)->{error}->{type} : '';
+
+                            if ($error_type eq 'incomplete_checks') {
+                                $log->debugf(
+                                    'There is an existing request running for login_id: %s. The currenct request is pending until it finishes.',
+                                    $loginid);
+                                $args->{is_pending} = 1;
+                                $redis_write->set(ONFIDO_PENDING_REQUEST_PREFIX . $client->binary_user_id, encode_json_utf8($args))->then(
+                                    sub {
+                                        $redis_write->expire(ONFIDO_PENDING_REQUEST_PREFIX . $client->binary_user_id, ONFIDO_PENDING_REQUEST_TIMEOUT);
+                                    })->retain;
+
+                            } else {
+                                $log->errorf('An error occurred while processing Onfido verification: %s', join(' ', @_));
+                            }
+                        }
+                        ),
+                    )    # wait_any
             })->get;
     }
     catch {
@@ -560,6 +630,7 @@ sub ready_for_authentication {
 sub client_verification {
     my ($args) = @_;
     $log->infof('Client verification with %s', $args);
+
     return try {
         my $url = $args->{check_url};
         $log->infof('Had client verification result %s with check URL %s', $args->{status}, $args->{check_url});
@@ -573,7 +644,6 @@ sub client_verification {
                 my ($check) = @_;
                 try {
                     my $result = $check->result;
-
                     # Map to something that can be standardised across other systems
                     my $check_status = {
                         clear        => 'pass',
@@ -611,6 +681,17 @@ sub client_verification {
                         sub {
                             $log->errorf('Error occured when saving %s report data to Redis', $client->loginid);
                         })->get;
+
+                    my $pending_key = ONFIDO_PENDING_REQUEST_PREFIX . $client->binary_user_id;
+                    $redis_write->get($pending_key)->then(
+                        sub {
+                            my $args = shift;
+                            if (($check_status ne 'pass') and $args) {
+                                $log->infof('Onfido check failed. Resending the last pending request: %s', $args);
+                                BOM::Platform::Event::Emitter::emit(ready_for_authentication => decode_json_utf8($args));
+                            }
+                            $redis_write->del($pending_key);
+                        })->retain;
 
                     # if overall result of check is pass then set status and
                     # return early, else check individual report result
