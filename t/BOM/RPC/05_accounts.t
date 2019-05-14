@@ -36,6 +36,7 @@ use BOM::MarketData::Types;
 
 package MojoX::JSON::RPC::Client;
 use Test::More;    # import ok again into this namespace
+use Data::Dumper;
 
 sub tcall {
     my $self   = shift;
@@ -1666,6 +1667,16 @@ subtest $method => sub {
 
 $method = 'set_settings';
 subtest $method => sub {
+
+    my $emitted;
+    my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    $mock_events->mock(
+        'emit',
+        sub {
+            my ($type, $data) = @_;
+            $emitted->{$type} = $data;
+        });
+
     is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
 
     is(
@@ -1774,6 +1785,11 @@ subtest $method => sub {
     $params->{args}{place_of_birth} = 'de';
 
     is($c->tcall($method, $params)->{status}, 1, 'can update without sending all required fields');
+    ok($emitted->{sync_onfido_details}, 'event exists');
+
+    my $event_data = delete $emitted->{sync_onfido_details};
+    is($event_data->{loginid},          'MF90000000', 'Correct loginid');
+    is($emitted->{sync_onfido_details}, undef,        'sync_onfido_details event does not exists');
 
     is($c->tcall($method, $params)->{status}, 1, 'can send set_settings with same value');
     {

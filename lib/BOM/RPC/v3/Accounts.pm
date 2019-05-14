@@ -1388,6 +1388,9 @@ rpc set_settings => sub {
             if ($set_status);
     }
 
+    # Send request to update onfido details
+    BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $current_client->loginid});
+
     if ($cil_message) {
         $current_client->add_note('Update Address Notification', $cil_message);
     }
