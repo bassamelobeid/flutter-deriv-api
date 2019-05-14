@@ -20,18 +20,21 @@ suite publish_gap => sub {
     fmap0 {
         my ($method, $request) = $_->%*;
 
-		my $published_method = $method;
-		$published_method = 'proposal_open_contract' if $method eq 'buy';
-		$published_method = 'tick' if $method =~ /tick/;
+        my $published_method = $method;
+        $published_method = 'proposal_open_contract' if $method eq 'buy';
+        return Future->done if $method eq 'ticks_history';
+        $published_method = 'tick' if $method eq 'ticks';
 
         $context
         ->subscribe($method, $request)
-		->pause_publish($published_method)
-		->skip_until_publish_paused($published_method)
-		->timeout_ok(2, sub { shift->take_latest })
-		->resume_publish($published_method)
-		->take_latest
-		->helper::log_method($request)
+        ->pause_publish($published_method)
+        ->skip_until_publish_paused($published_method)
+        # Wait 1 second to make sure no previous publish will be received
+        ->chain(sub { shift->completed->then(sub { $suite->tester->loop->delay_future(after => 2) }) })
+        ->timeout_ok(2, sub { shift->take_latest })
+        ->resume_publish($published_method)
+        ->take_latest
+        ->helper::log_method($request)
         ->completed
     } foreach => [$requests->@*], concurrent => scalar($requests->@*);
 };
