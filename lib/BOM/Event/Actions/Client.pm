@@ -660,6 +660,44 @@ sub client_verification {
     }
 }
 
+=head2 sync_onfido_details
+
+Sync the client details from our system with Onfido
+
+=cut
+
+sub sync_onfido_details {
+    my $data = shift;
+
+    return if (BOM::Config::Runtime->instance->app_config->system->suspend->onfido);
+
+    return try {
+
+        my $loginid = $data->{loginid} or die 'No loginid supplied';
+        my $client = BOM::User::Client->new({loginid => $loginid});
+
+        my $applicant_id = BOM::Config::RedisReplicated::redis_read()->get(ONFIDO_APPLICANT_KEY_PREFIX . $client->binary_user_id);
+
+        # Only for users that are registered in onfido
+        return Future->done() unless $applicant_id;
+
+        # Instantiate client and onfido object
+        my $client_details_onfido = _client_onfido_details($client);
+
+        $client_details_onfido->{applicant_id} = $applicant_id;
+
+        _onfido()->applicant_update(%$client_details_onfido)->then(
+            sub {
+                Future->done(shift);
+            })->get;
+
+    }
+    catch {
+        $log->errorf('Failed to update deatils in Onfido: %s', $_);
+        return Future->done;
+    };
+}
+
 =head2 verify_address
 
 This event is triggered once client or someone from backoffice
@@ -747,22 +785,8 @@ sub _get_onfido_applicant {
         }
         )->else(
         sub {
-            $onfido->applicant_create(
-                (map { $_ => $client->$_ } qw(first_name last_name email)),
-                title   => $client->salutation,
-                dob     => $client->date_of_birth,
-                country => uc(country_code2code($client->place_of_birth, 'alpha-2', 'alpha-3')),
-                # Multiple addresses are supported by Onfido. We only want to set up a single one.
-                addresses => [{
-                        building_number => $client->address_line_1,
-                        street          => $client->address_line_2,
-                        town            => $client->address_city,
-                        state           => $client->address_state,
-                        postcode        => $client->address_postcode,
-                        country         => uc(country_code2code($client->residence, 'alpha-2', 'alpha-3')),
-                    }
-                ],
-                )->then(
+            my $client_details_onfido = _client_onfido_details($client);
+            $onfido->applicant_create(%$client_details_onfido)->then(
                 sub {
                     my $applicant = shift;
                     BOM::Config::RedisReplicated::redis_write()->set(ONFIDO_APPLICANT_KEY_PREFIX . $client->binary_user_id, $applicant->id);
@@ -1124,6 +1148,31 @@ sub social_responsibility_check {
     }
 
     return undef;
+}
+
+=head2 _client_onfido_details
+
+Generate the list of client personal details needed for Onfido API
+
+=cut
+
+sub _client_onfido_details {
+    my $client = shift;
+
+    return {
+        (map { $_ => $client->$_ } qw(first_name last_name email)),
+        title   => $client->salutation,
+        dob     => $client->date_of_birth,
+        country => uc(country_code2code($client->place_of_birth, 'alpha-2', 'alpha-3')),
+        # Multiple addresses are supported by Onfido. We only want to set up a single one.
+        addresses => [{
+                building_number => $client->address_line_1,
+                street          => $client->address_line_2,
+                town            => $client->address_city,
+                state           => $client->address_state,
+                postcode        => $client->address_postcode,
+                country         => uc(country_code2code($client->residence, 'alpha-2', 'alpha-3')),
+            }]};
 }
 
 1;

@@ -44,7 +44,8 @@ my $action_mapping = {
     client_verification         => \&BOM::Event::Actions::Client::client_verification,
     verify_address              => \&BOM::Event::Actions::Client::verify_address,
     account_closure             => \&BOM::Event::Actions::Client::account_closure,
-    social_responsibility_check => \&BOM::Event::Actions::Client::social_responsibility_check
+    social_responsibility_check => \&BOM::Event::Actions::Client::social_responsibility_check,
+    sync_onfido_details         => \&BOM::Event::Actions::Client::sync_onfido_details
 };
 
 =head1 METHODS
