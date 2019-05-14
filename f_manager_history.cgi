@@ -98,23 +98,24 @@ my $total_withdrawals;
 # Fetch and display gross deposits and gross withdrawals
 my $action = request()->param('action');
 if (defined $action && $action eq "gross_transactions") {
-    if (!$client->account) {
+    if (my $account = $client->account) {
+        try {
+            ($total_deposits, $total_withdrawals) = $clientdb->db->dbic->run(
+                fixup => sub {
+                    my $statement = $_->prepare("SELECT * FROM betonmarkets.get_total_deposits_and_withdrawals(?)");
+                    $statement->execute($account->id);
+                    return @{$statement->fetchrow_arrayref};
+                });
+            $total_deposits    = formatnumber('amount', $currency, $total_deposits);
+            $total_withdrawals = formatnumber('amount', $currency, $total_withdrawals);
+        }
+        catch {
+            warn "Error caught : $_\n";
+            print "<div style='color:red' class='center-aligned'>Error: Unable to fetch total deposits/withdrawals </div>";
+        };
+    } else {
         print "<div style='color:red' class='center-aligned'>Error: Client $loginID does not have currency set. </div>";
     }
-    try {
-        ($total_deposits, $total_withdrawals) = $clientdb->db->dbic->run(
-            fixup => sub {
-                my $statement = $_->prepare("SELECT * FROM betonmarkets.get_total_deposits_and_withdrawals(?)");
-                $statement->execute($client->account->id);
-                return @{$statement->fetchrow_arrayref};
-            });
-        $total_deposits    = formatnumber('amount', $currency, $total_deposits);
-        $total_withdrawals = formatnumber('amount', $currency, $total_withdrawals);
-    }
-    catch {
-        warn "Error caught : $_\n";
-        print "<div style='color:red' class='center-aligned'>Error: Unable to fetch total deposits/withdrawals </div>";
-    };
 }
 
 # print other untrusted section warning in backoffice
