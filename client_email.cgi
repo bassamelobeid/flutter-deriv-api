@@ -138,7 +138,9 @@ if ($email ne $new_email) {
         . ") $ENV{REMOTE_ADDR}";
     BOM::User::AuditLog::log($msg, $new_email, $clerk);
 
-    BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $user->get_default_client->loginid});
+    my $default_client_loginid = $user->get_default_client->loginid;
+    BOM::Platform::Event::Emitter::emit('sync_user_to_MT5',    {loginid => $default_client_loginid});
+    BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $default_client_loginid});
     BOM::Backoffice::Request::template()->process(
         'backoffice/client_email.html.tt',
         {

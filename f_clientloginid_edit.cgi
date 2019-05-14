@@ -655,6 +655,9 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $cli->loginid}) if ($cli->loginid eq $loginid);
     }
 
+    # Sync onfido with latest updates
+    BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $client->loginid});
+
     BOM::Platform::Event::Emitter::emit('verify_address', {loginid => $client->loginid})
         if (any { exists $input{$_} } qw(address_1 address_2 city state postcode));
 }
