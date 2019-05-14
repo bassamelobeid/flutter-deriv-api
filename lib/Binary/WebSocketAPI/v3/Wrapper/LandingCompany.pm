@@ -3,6 +3,8 @@ package Binary::WebSocketAPI::v3::Wrapper::LandingCompany;
 use strict;
 use warnings;
 
+use DataDog::DogStatsd::Helper qw(stats_inc);
+
 =head2 map_landing_company
 
 Maps the landing company in requests from C<costarica> to C<svg>.
@@ -22,10 +24,12 @@ This should be removed once we drop supporting C<costarica>.
 =cut
 
 sub map_landing_company {
-    my (undef, $req_storage) = @_;
+    my ($c, $req_storage) = @_;
 
     for my $lc (qw(landing_company landing_company_details)) {
-        $req_storage->{args}->{$lc} =~ s/^costarica$/svg/ if exists $req_storage->{args}->{$lc};
+        if (exists $req_storage->{args}->{$lc} && $req_storage->{args}->{$lc} =~ s/^costarica$/svg/) {
+            stats_inc('bom_websocket_api.v_3.costarica_request', {tags => [$req_storage->{name}, 'app_id:' . ($c->app_id // 'undef')]});
+        }
     }
 
     return;
