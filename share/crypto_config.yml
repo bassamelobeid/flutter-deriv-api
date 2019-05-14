@@ -5,6 +5,10 @@ BTC:
         fee_limit_usd: 10
     confirmation:
         required_confirmations: 3
+    subscription:
+        timeout: 100
+        msg_timeout: 3600
+        rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 8
 LTC:
@@ -14,6 +18,10 @@ LTC:
         fee_limit_usd: 2
     confirmation:
         required_confirmations: 3
+    subscription:
+        timeout: 100
+        msg_timeout: 3600
+        rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 8
 BCH:
@@ -23,6 +31,10 @@ BCH:
         fee_limit_usd: 2
     confirmation:
         required_confirmations: 3
+    subscription:
+        timeout: 100
+        msg_timeout: 3600
+        rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 8
 ETH:
@@ -32,6 +44,10 @@ ETH:
         fee_limit_usd: 2
     confirmation:
         required_confirmations: 3
+    subscription:
+        timeout: 100
+        msg_timeout: 3600
+        rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 18
 UST:
@@ -41,6 +57,10 @@ UST:
         fee_limit_usd: 10
     confirmation:
         required_confirmations: 3
+    subscription:
+        timeout: 100
+        msg_timeout: 3600
+        rpc_timeout: 100
     protocol_cost: 0.00000546
     decimal_places: 8
 USB:
