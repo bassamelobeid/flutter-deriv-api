@@ -45,7 +45,7 @@ sub get_self_exclusion_form {
         $limit_max_deposit_end_date = Date::Utility->new($limit_max_deposit_end_date)->date if $limit_max_deposit_end_date;
 
         if ($limit_exclude_until) {
-            $limit_exclude_until = Date::Utility->new($limit_exclude_until)->date;
+            $limit_exclude_until = Date::Utility->new($limit_exclude_until);
             # Don't uplift exclude_until date for clients under Binary (Europe) Ltd,
             # Binary (IOM) Ltd, or Binary Investments (Europe) Ltd upon expiry.
             # This is in compliance with Section 3.5.4 (5e) of the United Kingdom Gambling
