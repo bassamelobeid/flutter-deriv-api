@@ -10,6 +10,9 @@ use Test::MockModule;
 
 use await;
 
+my $mock_hook = Test::MockModule->new('Binary::WebSocketAPI::Hooks');
+$mock_hook->mock('_handle_error', sub { my ($c, $all_data) = @_; $c->finish(1007 => 'mock_test'); return; });
+
 my $system = Test::MockModule->new('Binary::WebSocketAPI::v3::Wrapper::System');
 $system->mock('server_time', sub { +{msg_type => 'time', time => ('1' x 600000)} });
 
