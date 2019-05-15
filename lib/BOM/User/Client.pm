@@ -933,14 +933,6 @@ sub is_available {
     return 1;
 }
 
-sub cookie_string {
-    my $self = shift;
-
-    my $str = join(':', $self->loginid, $self->is_virtual ? 'V' : 'R', $self->status->disabled ? 'D' : 'E');
-
-    return $str;
-}
-
 sub real_account_siblings_information {
     my ($self, %args) = @_;
     my $include_disabled = $args{include_disabled} // 1;

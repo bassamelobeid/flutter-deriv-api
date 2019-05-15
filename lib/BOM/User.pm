@@ -192,11 +192,6 @@ sub clients {
 
     my @clients = @{$self->get_clients_in_sorted_order};
 
-    my @parts;
-    push @parts, $_->cookie_string foreach (@clients);
-
-    $self->{_cookie_val} = join('+', @parts);
-
     # todo should be refactor
     @clients = grep { not $_->status->disabled } @clients unless $args{include_disabled};
 
@@ -282,12 +277,6 @@ sub mt5_logins {
     }
 
     return @mt5_logins;
-}
-
-sub loginid_list_cookie_val {
-    my $self = shift;
-    $self->{_cookie_val} || $self->clients;
-    return $self->{_cookie_val};
 }
 
 sub get_last_successful_login_history {
