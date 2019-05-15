@@ -18,6 +18,9 @@ use Clone;
 use Log::Any '$schema_log', category => 'schema_log';
 use Log::Any::Adapter;
 Log::Any::Adapter->set({category => 'schema_log'}, 'File', '/var/lib/binary/v4_v3_schema_fails.log');
+use Log::Any qw($log);
+use DataDog::DogStatsd::Helper qw(stats_inc);
+
 my $json = JSON::MaybeXS->new;
 
 sub start_timing {
@@ -369,13 +372,15 @@ sub on_client_connect {
     Scalar::Util::weaken($c->app->active_connections->{$c} = $c);
 
     $c->app->stat->{cumulative_client_connections}++;
-    $c->on(sanity_failed => \&_on_sanity_failed);
+    $c->on(encoding_error => \&_handle_error);
+    $c->on(sanity_failed  => \&_on_sanity_failed);
 
     return;
 }
 
 sub on_client_disconnect {
     my ($c) = @_;
+
     warn "Client disconnect request but $c is not in active connection list" unless exists $c->app->active_connections->{$c};
     forget_all($c);
 
@@ -542,4 +547,21 @@ sub _validate_schema_error {
         };
     }
 }
+
+sub _handle_error {
+    my ($c, $all_data) = @_;
+    my $app_id = $c->{stash}->{source};
+
+    my %error_mapping = (
+        INVALID_UTF8    => 'websocket_proxy.utf8_decoding.failure',
+        INVALID_UNICODE => 'websocket_proxy.unicode_normalisation.failure',
+        INVALID_JSON    => 'websocket_proxy.malformed_json.failure'
+    );
+
+    stats_inc($error_mapping{$all_data->{details}->{error_code}}, {tags => ['error_code:1007']});
+    $log->errorf("[ERROR - %s] APP ID: %s Details: %s", $all_data->{details}->{error_code}, $app_id, $all_data->{details}->{reason});
+    $c->finish;
+    return;
+}
+
 1;
