@@ -10,13 +10,11 @@ use Date::Utility;
 use Try::Tiny;
 use Digest::MD5 qw(md5_hex);
 use Email::Valid;
-use Mojo::Util qw(url_escape);
 use List::Util qw(any first);
 use HTML::Entities;
 use Format::Util::Strings qw( defang );
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
-use LandingCompany::Registry;
 use Brands;
 
 use BOM::Config::Runtime;
@@ -341,33 +339,6 @@ sub _login {
         return;
     }
 
-    my $r       = $c->stash('request');
-    my $options = {
-        domain  => $r->cookie_domain,
-        secure  => ($r->cookie_domain eq '127.0.0.1') ? 0 : 1,
-        path    => '/',
-        expires => time + 86400 * 60,
-    };
-
-    $c->cookie(
-        email => url_escape($user->{email}),
-        $options
-    );
-    $c->cookie(
-        loginid_list => url_escape($user->loginid_list_cookie_val),
-        $options
-    );
-    $c->_set_reality_check_cookie($user, $options);
-
-    $c->cookie(
-        loginid => $client->loginid,
-        $options
-    );
-    $c->cookie(
-        residence => $client->residence,
-        $options
-    );
-
     # send when client already has login session(s) and its not backoffice (app_id = 4, as we impersonate from backoffice using read only tokens)
     if ($app->{id} ne '4') {
         try {
@@ -429,25 +400,6 @@ sub _is_social_login_available {
 
 sub _oauth_model {
     return BOM::Database::Model::OAuth->new;
-}
-
-sub _set_reality_check_cookie {
-    my ($c, $user, $options) = @_;
-
-    my $r = $c->stash('request');
-
-    # set this cookie only once
-    return if $r->cookie('reality_check');
-
-    return unless any { LandingCompany::Registry->get_by_broker($_->broker_code)->has_reality_check } $user->clients;
-
-    my $default_reality_check_interval_in_minutes = 60;
-    $c->cookie(
-        'reality_check' => url_escape($default_reality_check_interval_in_minutes . ',' . time),
-        $options
-    );
-
-    return;
 }
 
 sub _login_env {
