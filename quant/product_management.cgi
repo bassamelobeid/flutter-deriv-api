@@ -10,7 +10,8 @@ use Digest::MD5 qw(md5_hex);
 use HTML::Entities;
 use JSON::MaybeXS;
 use LandingCompany::Registry;
-use List::Util qw(first);
+use List::Util qw(first all);
+use Text::Trim qw(trim);
 use f_brokerincludeall;
 use Try::Tiny;
 
@@ -55,7 +56,7 @@ if ($r->param('update_limit')) {
     my $contract_category         = $r->param('contract_category');
     my $non_binary_contract_limit = $r->param('non_binary_contract_limit');
 
-    my @known_keys    = qw(contract_category market submarket underlying_symbol start_type expiry_type barrier_category landing_company);
+    my @known_keys    = qw(contract_category market submarket underlying_symbol start_type expiry_type barrier_category landing_company risk_profile);
     my $offerings_obj = LandingCompany::Registry::get('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
     my %known_values  = map { $_ => [$offerings_obj->values_for_key($_)] } @known_keys;
 
@@ -63,13 +64,25 @@ if ($r->param('update_limit')) {
     push @{$known_values{expiry_type}}, 'ultra_short';
     # landing company is not part of offerings object.
     $known_values{landing_company} = [map { $_->short } LandingCompany::Registry::all()];
+    $known_values{risk_profile} = [keys %known_profiles];
     my %ref;
 
     foreach my $key (@known_keys) {
         if (my $value = $r->param($key)) {
-            if (first { $value =~ $_ } @{$known_values{$key}}) {
-                # we should not allow more than one value for risk_profile
-                code_exit_BO('You could not specify multiple value for ' . $key) if not $allowed_multiple{$key} and $value =~ /,/;
+            $value = trim($value);
+            if ($allowed_multiple{$key}) {
+                for my $elem (split ',', $value) {
+                    unless (first { $elem eq $_ } @{$known_values{$key}}) {
+                        code_exit_BO("Unrecognized value[" . encode_entities($r->param($key)) . "] for $key. Nothing is updated!!");
+                    }
+                    $ref{$key} = $value;
+                }
+            } elsif (
+                first {
+                    $value eq $_
+                }
+                @{$known_values{$key}})
+            {
                 $ref{$key} = $value;
             } else {
                 code_exit_BO("Unrecognized value[" . encode_entities($r->param($key)) . "] for $key. Nothing is updated!!");
@@ -80,16 +93,24 @@ if ($r->param('update_limit')) {
     my $uniq_key = substr(md5_hex(sort { $a cmp $b } values %ref), 0, 16);
 
     # if we just want to add client into watchlist, custom conditions is not needed
-    my $has_custom_conditions = keys %ref;
+    my $has_custom_conditions = keys(%ref);
     if (my $custom_name = $r->param('custom_name')) {
         $ref{name} = $custom_name;
-        $ref{non_binary_contract_limit} = $non_binary_contract_limit if $contract_category eq 'lookback';
-    } elsif ($has_custom_conditions) {
+        if ($contract_category eq 'lookback') {
+            if (0 + $non_binary_contract_limit eq $non_binary_contract_limit) {
+                $ref{non_binary_contract_limit} = $non_binary_contract_limit;
+            } else {
+                code_exit_BO('Non binary contract limit must be number.');
+            }
+        }
+    } elsif ($has_custom_conditions || !$r->param('client_loginid')) {
         code_exit_BO('Name is required.');
     }
 
     my $profile    = $r->param('risk_profile');
     my $commission = $r->param('commission');
+    $profile    = trim $profile    if defined $profile;
+    $commission = trim $commission if defined $commission;
 
     if ($profile and $commission) {
         code_exit_BO('You can only set risk_profile or commission in one entry');
@@ -97,7 +118,10 @@ if ($r->param('update_limit')) {
 
     if ($profile and $known_profiles{$profile}) {
         $ref{risk_profile} = $profile;
-    } elsif ($commission) {
+    } elsif (defined $commission) {
+        if ((0 + $commission ne $commission) || $commission < 0 || $commission > 1) {
+            code_exit_BO('Commission must be in [0,1] range.');
+        }
         $ref{commission} = $commission;
     } elsif ($has_custom_conditions and $contract_category ne 'lookback') {
         code_exit_BO('Unrecognize risk profile.');
@@ -187,7 +211,7 @@ foreach my $id (sort { $custom_limits->{$b}->{updated_on} cmp $custom_limits->{$
     $output_ref->{name}       = delete $copy{name};
     $output_ref->{updated_by} = delete $copy{updated_by};
     $output_ref->{updated_on} = delete $copy{updated_on};
-    my $profile = delete $copy{risk_profile};
+    my $profile = $copy{risk_profile};
 
     if ($profile) {
         $output_ref->{payout_limit}   = $limit_profile->{$profile}{payout}{USD};

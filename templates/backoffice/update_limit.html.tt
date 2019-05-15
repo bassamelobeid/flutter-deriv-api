@@ -59,7 +59,7 @@
         <tr>
             <td>Non binary contract limit: </td>
             <td><input type="text" name="non_binary_contract_limit" value=''></input></td>
-            <td> No of open contracts for non binary options. e.g. 5</td>
+            <td> No of open contracts for non binary options. e.g. 5 (applied only if contract_category is lookback)</td>
         </tr>
         <tr>
             <td>Client loginid: </td>
