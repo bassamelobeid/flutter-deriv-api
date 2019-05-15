@@ -299,7 +299,7 @@ sub get_self_exclusion_form {
         },
         'comment' => {
             'class' => 'hint',
-            'text'  => localize('Once maximum deposit limit is reached the client may longer deposit.')}};
+            'text'  => localize('Once maximum deposit limit is reached the client may no longer deposit.')}};
     my $input_field_max_deposit_end_date = {
         'label' => {
             'text' => localize('Maximum deposit limit expiry date'),
