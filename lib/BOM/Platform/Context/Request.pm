@@ -9,10 +9,6 @@ use BOM::Config::Runtime;
 
 with 'BOM::Platform::Context::Request::Builders';
 
-has 'cookies' => (
-    is => 'ro',
-);
-
 has 'mojo_request' => (
     is => 'ro',
 );
@@ -44,12 +40,6 @@ has 'language' => (
     lazy_build => 1,
 );
 
-has cookie_domain => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_build_cookie_domain'
-);
-
 has 'params' => (
     is         => 'ro',
     lazy_build => 1,
@@ -63,24 +53,6 @@ has 'brand' => (
 has '_ip' => (
     is => 'ro',
 );
-
-sub cookie {
-    my $self = shift;
-    my $name = shift;
-
-    if ($self->mojo_request) {
-        my $cookie = $self->mojo_request->cookie($name);
-        if ($cookie) {
-            return URL::Encode::url_decode($cookie->value);
-        }
-    }
-
-    if ($self->cookies) {
-        return $self->cookies->{$name};
-    }
-
-    return;
-}
 
 sub param {
     my $self = shift;
@@ -124,14 +96,6 @@ sub _build_http_method {
     return "";
 }
 
-sub _build_cookie_domain {
-    my $self   = shift;
-    my $domain = $self->domain_name;
-    return $domain if $domain eq '127.0.0.1';
-    $domain =~ s/^[^.]+\.([^.]+\..+)/$1/;
-    return "." . $domain;
-}
-
 sub _build_domain_name {
     my $self = shift;
 
@@ -150,8 +114,6 @@ sub _build_language {
     my $language;
     if ($self->param('l')) {
         $language = $self->param('l');
-    } elsif ($self->cookie('language')) {
-        $language = $self->cookie('language');
     }
 
     # while we have url ?l=EN and POST with l=EN, it goes to ARRAY

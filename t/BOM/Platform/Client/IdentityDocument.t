@@ -8,9 +8,9 @@ use BOM::User::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client qw( create_client );
 
-my $cr_client      = create_client('CR', undef, {binary_user_id => 1});
-my $mx_client      = create_client('MX', undef, {binary_user_id => 2});
-my $mlt_client     = create_client('MLT', undef, {binary_user_id => 3});
+my $cr_client  = create_client('CR',  undef, {binary_user_id => 1});
+my $mx_client  = create_client('MX',  undef, {binary_user_id => 2});
+my $mlt_client = create_client('MLT', undef, {binary_user_id => 3});
 
 my %clients_1 = (
     CR  => $cr_client,
@@ -57,7 +57,7 @@ my $CR_SIBLINGS_2 =
 my $MX_SIBLINGS_2 =
     [create_client('MX', undef, {binary_user_id => 5}), create_client('MX', undef, {binary_user_id => 5})];
 my $MLT_SIBLINGS_2 =
-    [create_client('MLT', undef, {binary_user_id => 6}), create_client('MLT', undef, {binary_user_id =>6 })];
+    [create_client('MLT', undef, {binary_user_id => 6}), create_client('MLT', undef, {binary_user_id => 6})];
 my %clients_2 = (
     CR  => $CR_SIBLINGS_2,
     MX  => $MX_SIBLINGS_2,

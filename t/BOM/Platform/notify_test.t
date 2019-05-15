@@ -51,8 +51,8 @@ my $client    = BOM::User::Client->new({loginid => 'CR0021'});
 
 # for notify listening
 my $config = YAML::XS::LoadFile('/etc/rmg/clientdb.yml');
-my $ip     = $config->{svg}->{write}->{ip};           # create_client creates CR clients
-my $db     = $config->{svg}->{write}->{dbname};       # create_client creates CR clients
+my $ip     = $config->{svg}->{write}->{ip};                 # create_client creates CR clients
+my $db     = $config->{svg}->{write}->{dbname};             # create_client creates CR clients
 my $pw     = $config->{password};
 
 my $listener = DBI->connect(

@@ -136,8 +136,7 @@ sub mock_request_for {
     $request_mock->set_always('params',  $params_mock);
     $request_mock->set_always('method',  $method);
     $request_mock->mock('param', sub { shift; return $params_mock->param(@_); });
-    $request_mock->mock('cookie', sub { return; });
-    $request_mock->mock('env',    sub { {} });
+    $request_mock->mock('env', sub { {} });
 
     return $request_mock;
 }
