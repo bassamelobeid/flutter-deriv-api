@@ -125,41 +125,6 @@ Returns any of the following:
 
 =cut
 
-sub get_mt5_logins {
-    my ($client, $user) = @_;
-
-    $user ||= $client->user;
-
-    my $f = fmap1 {
-        shift =~ /^MT(\d+)$/;
-        my $login = $1;
-        return mt5_get_settings({
-                client => $client,
-                args   => {login => $login}}
-            )->then(
-            sub {
-                my ($setting) = @_;
-                $setting = _filter_settings($setting, qw/balance company country currency email group leverage login name/);
-                return Future->needs_all(
-                    mt5_mamm({
-                            client => $client,
-                            args   => {login => $login}}
-                    ),
-                    Future->done($setting));
-            }
-            )->then(
-            sub {
-                my ($mamm, $setting) = @_;
-                @{$setting}{keys %$mamm} = values %$mamm;
-                return Future->done($setting);
-            });
-    }
-    foreach        => [$user->mt5_logins],
-        concurrent => 4;
-# purely to keep perlcritic+perltidy happy :(
-    return $f;
-}
-
 async_rpc mt5_login_list => sub {
     my $params = shift;
 
@@ -174,6 +139,42 @@ async_rpc mt5_login_list => sub {
             return Future->done(\@logins);
         });
 };
+
+sub get_mt5_logins {
+    my ($client, $user) = @_;
+
+    $user ||= $client->user;
+
+    my $f = fmap1 {
+        shift =~ /^MT(\d+)$/;
+        my $login = $1;
+        return mt5_get_settings({
+                client => $client,
+                args   => {login => $login}}
+            )->then(
+            sub {
+                my ($setting) = @_;
+                $setting = _filter_settings($setting, qw/balance country currency email group leverage login name/);
+                return Future->needs_all(
+                    mt5_mamm({
+                            client => $client,
+                            args   => {login => $login}}
+                    ),
+                    Future->done($setting));
+            }
+            )->then(
+            sub {
+                my ($mamm, $setting) = @_;
+                @{$setting}{keys %$mamm} = values %$mamm;
+                $setting->{mamm_status} = delete $setting->{status};
+                return Future->done($setting);
+            });
+    }
+    foreach        => [$user->mt5_logins],
+        concurrent => 4;
+# purely to keep perlcritic+perltidy happy :(
+    return $f;
+}
 
 # limit number of requests to once per minute
 sub _throttle {
