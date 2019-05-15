@@ -1704,7 +1704,10 @@ rpc set_self_exclusion => sub {
     }
 
     if ($max_deposit xor $max_deposit_end_date) {
-        return $error_sub->(localize('Both max_deposit and max_deposit_end_date must be provided to activate deposit limit.'), 'max_deposit');
+        return $error_sub->(
+            localize('Both [_1] and [_2] must be provided to activate deposit limit.', 'max_deposit', 'max_deposit_end_date'),
+            'max_deposit'
+        );
     }
 
     if ($args{max_open_bets}) {
