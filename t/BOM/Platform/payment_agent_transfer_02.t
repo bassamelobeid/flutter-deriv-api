@@ -54,7 +54,7 @@ subtest 'get_today_client_payment_agent_transfer_total_amount' => sub {
 };
 
 subtest 'is_agent_to_client params in transfer/withdrawal' => sub {
-    throws_ok {
+    dies_ok {
         $pa_client->payment_account_transfer(
             toClient     => $client,
             currency     => 'USD',
@@ -62,10 +62,11 @@ subtest 'is_agent_to_client params in transfer/withdrawal' => sub {
             fees         => 0,
             gateway_code => 'payment_agent_transfer',
         );
-    }
-    qr/Invalid payment agent loginid./, 'Correct error code with no value (defaults to 0)';
+    };
 
-    throws_ok {
+    is_deeply $@, ['BI201', 'ERROR:  Invalid payment agent loginid.'], 'Correct error code with no value (defaults to 0)';
+
+    dies_ok {
         $pa_client->payment_account_transfer(
             toClient           => $client,
             currency           => 'USD',
@@ -75,7 +76,8 @@ subtest 'is_agent_to_client params in transfer/withdrawal' => sub {
             is_agent_to_client => 0
         );
     }
-    qr/Invalid payment agent loginid./, 'Correct error code when value is wrong (for payment agent to client)';
+
+    is_deeply $@, ['BI201', 'ERROR:  Invalid payment agent loginid.'], 'Correct error code when value is wrong (for payment agent to client)';
 };
 
 subtest 'PA withdrawal with long further instructions by client' => sub {
