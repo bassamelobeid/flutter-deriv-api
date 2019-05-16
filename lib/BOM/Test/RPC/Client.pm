@@ -103,6 +103,14 @@ sub error_message_is {
     return $self;
 }
 
+sub error_internal_message_like {
+    my ($self, $expected, $description) = @_;
+    my $result = $self->result    || {};
+    my $error  = $result->{error} || {};
+    $self->_test('like', $error->{message}, $expected, $description);
+    return $self;
+}
+
 sub error_details_is {
     my ($self, $expected, $description) = @_;
     my $result = $self->result    || {};
