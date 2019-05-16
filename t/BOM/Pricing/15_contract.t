@@ -32,7 +32,7 @@ BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
 );
 
 initialize_realtime_ticks_db();
-my $now = Date::Utility->new('2005-09-21 06:46:00');
+my $now             = Date::Utility->new('2005-09-21 06:46:00');
 my $landing_company = 'svg';
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
