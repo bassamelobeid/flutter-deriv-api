@@ -43,14 +43,6 @@ my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
 
 $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
 
-# https://trello.com/c/3kHAswXh/8659-fixing-bom-transaction-and-bom-platform-failing-testcases
-# this is not a permanent fix and needs to be revisited later.
-sub remove_newlines {
-    my $temp = shift;
-    $temp =~ s/\n//g;
-    return $temp;
-}
-
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_})
     for ('EUR', 'USD', 'JPY', 'JPY-EUR', 'EUR-JPY', 'EUR-USD', 'WLDUSD');
@@ -234,10 +226,10 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
             skip 'no error', 6
                 if (not defined $error or ref $error ne 'Error::Base');
 
-            is remove_newlines($error->get_type), 'tick_expiry_engine_turnover_limitExceeded', 'error is tick_expiry_engine_turnover_limit';
+            is $error->get_type, 'tick_expiry_engine_turnover_limitExceeded', 'error is tick_expiry_engine_turnover_limit';
 
             is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
-            is remove_newlines($error->{-mesg}), 'Exceeds turnover limit on tick_expiry_engine_turnover_limit', 'mesg';
+            is $error->{-mesg}, 'Exceeds turnover limit on tick_expiry_engine_turnover_limit', 'mesg';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
@@ -357,10 +349,10 @@ subtest 'asian_daily_turnover_limit', sub {
             skip 'no error', 6
                 if (not defined $error or ref $error ne 'Error::Base');
 
-            is remove_newlines($error->get_type), 'asian_turnover_limitExceeded', 'error is asian_turnover_limit';
+            is $error->get_type, 'asian_turnover_limitExceeded', 'error is asian_turnover_limit';
 
             is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
-            is remove_newlines($error->{-mesg}), 'Exceeds turnover limit on asian_turnover_limit', 'mesg';
+            is $error->{-mesg}, 'Exceeds turnover limit on asian_turnover_limit', 'mesg';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
@@ -490,11 +482,11 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             skip 'no error', 6
                 if (not defined $error or ref $error ne 'Error::Base');
 
-            is remove_newlines($error->get_type), 'intraday_spot_index_turnover_limitExceeded', 'error is intraday_spot_index_turnover_limit';
+            is $error->get_type, 'intraday_spot_index_turnover_limitExceeded', 'error is intraday_spot_index_turnover_limit';
 
             is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
             $error->{-mesg} =~ s/\n//g;
-            is remove_newlines($error->{-mesg}), 'Exceeds turnover limit on intraday_spot_index_turnover_limit', 'mesg';
+            is $error->{-mesg}, 'Exceeds turnover limit on intraday_spot_index_turnover_limit', 'mesg';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
@@ -645,10 +637,10 @@ subtest 'smartfx_turnover_limit', sub {
             skip 'no error', 6
                 if (not defined $error or ref $error ne 'Error::Base');
 
-            is remove_newlines($error->get_type), 'smart_fx_turnover_limitExceeded', 'error is smart_fx_turnover_limit';
+            is $error->get_type, 'smart_fx_turnover_limitExceeded', 'error is smart_fx_turnover_limit';
 
             is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
-            is remove_newlines($error->{-mesg}), 'Exceeds turnover limit on smart_fx_turnover_limit', 'mesg';
+            is $error->{-mesg}, 'Exceeds turnover limit on smart_fx_turnover_limit', 'mesg';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
@@ -770,7 +762,7 @@ subtest 'custom client limit' => sub {
             skip 'no error', 6
                 if (not defined $error or ref $error ne 'Error::Base');
 
-            is remove_newlines($error->get_type), 'NoBusiness', 'error is NoBusiness';
+            is $error->get_type, 'NoBusiness', 'error is NoBusiness';
 
             is $error->{-message_to_client}, 'This contract is unavailable on this account.', 'message_to_client';
             like($error->{-mesg}, qr/^\D+\d+ manually disabled by quants$/, 'mesg');
@@ -884,10 +876,10 @@ subtest 'non atm turnover checks' => sub {
             skip 'no error', 6
                 if (not defined $error or ref $error ne 'Error::Base');
 
-            is remove_newlines($error->get_type), 'tick_expiry_nonatm_turnover_limitExceeded', 'error is tick_expiry_nonatm_turnover_limit';
+            is $error->get_type, 'tick_expiry_nonatm_turnover_limitExceeded', 'error is tick_expiry_nonatm_turnover_limit';
 
             is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
-            is remove_newlines($error->{-mesg}), 'Exceeds turnover limit on tick_expiry_nonatm_turnover_limit', 'mesg';
+            is $error->{-mesg}, 'Exceeds turnover limit on tick_expiry_nonatm_turnover_limit', 'mesg';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
