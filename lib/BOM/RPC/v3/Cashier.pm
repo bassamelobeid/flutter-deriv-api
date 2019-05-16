@@ -184,22 +184,9 @@ rpc "cashier", sub {
                     details           => {fields => \@error_fields}});
         }
 
-        if ($errortext =~ /customer too old/) {
-            $client->add_note('DOUGHFLOW_AGE_LIMIT_EXCEEDED',
-                      "The Doughflow server refused to process the request due to customer age.\n"
-                    . "There is currently a hardcoded limit on their system which rejects anyone over 100 years old.\n"
-                    . "If the client's details have been confirmed as valid, we will need to raise this issue with\n"
-                    . "the Doughflow support team.\n"
-                    . "Loginid: $client_loginid\n"
-                    . "Doughflow response: [$errortext]");
-
-            return $error_sub->(
-                localize(
-                    'Sorry, there was a problem validating your personal information with our payment processor. Please verify that your date of birth was input correctly in your account settings.'
-                ),
-                'Error with DF CreateCustomer API loginid[' . $df_client->loginid . '] error[' . $errortext . ']'
-            );
-        }
+        # check if the client is too old or too young to use doughflow
+        my $age_error = _age_error($client, $error_sub, $errortext);
+        return $age_error if $age_error;
 
         warn "Unknown Doughflow error: $errortext\n";
         DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.doughflow_failure.count', {tags => ["action:$action"]});
@@ -238,6 +225,54 @@ rpc "cashier", sub {
     BOM::User::AuditLog::log('redirecting to doughflow', $df_client->loginid);
     return $url;
 };
+
+=head2 _age_error
+
+check if the doughflow error is related to the customer age
+if yes, it will send an email and return the error in case of
+the age to be over 110 or below 18.
+
+=over 4
+
+=item* C<loginid> client login ID
+
+=item* C<error> doughflow error string
+
+=back
+
+C<undef> for errors not related to the customer's age.
+error hashref for errors related to the customers age.
+
+=cut
+
+sub _age_error {
+    my ($client, $error_sub, $error) = @_;
+
+    my $message =
+          "The Doughflow server refused to process the request due to customer age.\n"
+        . "There is currently a hardcoded limit on their system which rejects anyone %s years old.\n"
+        . "If the client's details have been confirmed as valid, we will need to raise this issue with\n"
+        . "the Doughflow support team.\n"
+        . "Loginid: %s\n"
+        . "Doughflow response: [%s]";
+
+    if ($error =~ /customer underage/) {
+        # https://github.com/regentmarkets/doughflow/blob/5f425951d3af40b6d98ac6ab115c2a668d6f9783/Websites/Cashier/CreateCustomer.asp#L147
+        $client->add_note('DOUGHFLOW_MIN_AGE_LIMIT_EXCEEDED', sprintf($message, 'under 18', $client->loginid, $error));
+    } elsif ($error =~ /customer too old/) {
+        # https://github.com/regentmarkets/doughflow/blob/5f425951d3af40b6d98ac6ab115c2a668d6f9783/Websites/Cashier/CreateCustomer.asp#L150
+        $client->add_note('DOUGHFLOW_AGE_LIMIT_EXCEEDED', sprintf($message, 'over 110', $client->loginid, $error));
+    } else {
+        return undef;
+    }
+
+    return $error_sub->(
+        localize(
+            'Sorry, there was a problem validating your personal information with our payment processor. Please verify that your date of birth was input correctly in your account settings.'
+        ),
+        'Error with DF CreateCustomer API loginid[' . $client->loginid . '] error[' . $error . ']'
+    );
+}
 
 sub _get_handoff_token_key {
     my $loginid = shift;
