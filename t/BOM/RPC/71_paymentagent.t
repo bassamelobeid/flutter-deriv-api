@@ -303,9 +303,10 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         my $currency_type = LandingCompany::Registry::get_currency_type($test_currency);      ## e.g. "fiat"
         my $lim           = BOM::Config::payment_agent()->{payment_limits}{$currency_type};
         my $max           = $lim->{maximum};
+        my $min           = $lim->{minimum};
         $testargs->{args}{amount} = $max * 2;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client}, "Invalid amount. Maximum withdrawal allowed is $max.", "$test ($max for $currency_type)");
+        is($res->{error}{message_to_client}, "Invalid amount. Minimum is $min, maximum is $max.", "$test ($max for $currency_type)");
         reset_transfer_testargs();
 
         $test = 'Transfer fails if amount is over the payment agent maximum';
@@ -313,21 +314,20 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         my $max_amount = $test_amount / 2;
         $Alice->payment_agent->max_withdrawal($max_amount);
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client}, "Invalid amount. Maximum withdrawal allowed is $max_amount.", $test);
+        is($res->{error}{message_to_client}, "Invalid amount. Minimum is $min, maximum is $max_amount.", $test);
         $Alice->payment_agent->max_withdrawal(undef);
 
-        $test = 'Transfer fails is amount is under the landing company minimum';
-        my $min = $lim->{minimum};
+        $test                     = 'Transfer fails is amount is under the landing company minimum';
         $testargs->{args}{amount} = $min * 0.5;
-        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client}, "Invalid amount. Minimum withdrawal allowed is $min.", "$test ($min for $currency_type)");
+        $res                      = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        is($res->{error}{message_to_client}, "Invalid amount. Minimum is $min, maximum is $max.", "$test ($min for $currency_type)");
         reset_transfer_testargs();
 
         $test = 'Transfer fails if amount is under the payment agent minimum';
         my $min_amount = $test_amount * 2;
         $Alice->payment_agent->min_withdrawal($min_amount);
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client}, "Invalid amount. Minimum withdrawal allowed is $min_amount.", $test);
+        is($res->{error}{message_to_client}, "Invalid amount. Minimum is $min_amount, maximum is $max.", $test);
         $Alice->payment_agent->min_withdrawal(undef);
 
         $test = 'Transfer fails if missing required details (place_of_birth)';
