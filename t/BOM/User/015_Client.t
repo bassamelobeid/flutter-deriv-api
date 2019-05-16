@@ -25,7 +25,7 @@ is($client->status->address_verified, undef, "Address is not yet verified");
 lives_ok { $client->status->set('address_verified', $clerk, $reason) };
 
 # client has address verified status
-ok (defined $client->status->address_verified , "client is address_verified");
+ok(defined $client->status->address_verified, "client is address_verified");
 
 # re-read to check if details are the same
 my $address_verified_status = $client->status->address_verified;

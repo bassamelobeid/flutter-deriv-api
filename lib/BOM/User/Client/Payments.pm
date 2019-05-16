@@ -340,28 +340,21 @@ sub payment_account_transfer {
         # here we rely on ->set_default_account above
         # which makes sure the `write` database is used.
         my $response;
-        try {
-            my $records = $dbic->run(
-                ping => sub {
-                    my $sth = $_->prepare('SELECT (v_from_trans).id FROM payment.payment_account_transfer(?,?,?,?,?,?,?, ?,?,?,?,?,?, ?,?,?)');
-                    $sth->execute(
-                        $fmClient->loginid,  $toClient->loginid, $currency,    $amount, $to_amount, $fmStaff,
-                        $toStaff,            $fmRemark,          $toRemark,    $source, $fees,      $gateway_code,
-                        $is_agent_to_client, $lc_lifetime_limit, $lc_for_days, $lc_limit_for_days
-                    );
-                    return $sth->fetchall_arrayref({});
-                });
-            if (scalar @{$records}) {
-                $response->{transaction_id} = $records->[0]->{id};
-            }
+        my $records = $dbic->run(
+            # Error handling for code below is tricky; it returns a string for normal DB  errors,
+            # and an array ref for custom DB errors (starts with "BI").
+            ping => sub {
+                my $sth = $_->prepare('SELECT (v_from_trans).id FROM payment.payment_account_transfer(?,?,?,?,?,?,?, ?,?,?,?,?,?, ?,?,?)');
+                $sth->execute(
+                    $fmClient->loginid,  $toClient->loginid, $currency,    $amount, $to_amount, $fmStaff,
+                    $toStaff,            $fmRemark,          $toRemark,    $source, $fees,      $gateway_code,
+                    $is_agent_to_client, $lc_lifetime_limit, $lc_for_days, $lc_limit_for_days
+                );
+                return $sth->fetchall_arrayref({});
+            });
+        if (scalar @{$records}) {
+            $response->{transaction_id} = $records->[0]->{id};
         }
-        catch {
-            if (ref eq 'ARRAY') {
-                die "@$_";
-            } else {
-                die $_;
-            }
-        };
         return $response;
     }
 
