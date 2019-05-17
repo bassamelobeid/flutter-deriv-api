@@ -10,12 +10,11 @@ use HTML::Entities;
 use List::MoreUtils qw(any);
 use Try::Tiny;
 use f_brokerincludeall;
+use ExchangeRates::CurrencyConverter qw(convert_currency);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
-use BOM::MarketData qw(create_underlying_db);
-use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-
+use BOM::Config;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -82,18 +81,26 @@ print "<form action=\""
 
 Bar("USEFUL EXCHANGE RATES");
 
-print "The following exchange rates are from our live data feed. They are live rates as of right now (" . Date::Utility->new->datetime . ")" . "<ul>";
+print "The following exchange rates are from our exchange rates listener. They are live rates as of right now ("
+    . Date::Utility->new->datetime . ")" . "<ul>";
 
-foreach my $curr (qw(frxGBPUSD frxEURUSD frxUSDHKD frxAUDUSD frxGBPHKD frxAUDHKD frxEURHKD cryBTCUSD)) {
-    my $underlying = create_underlying($curr);
+my $currency_pairs = BOM::Config::currency_pairs_backoffice()->{currency_pairs};
+
+foreach my $pair (@$currency_pairs) {
+
+    my $pair_name = join '/', @$pair;
+    my $underlying_spot = convert_currency(1.00, @$pair);
+
     try {
-        print "<li>" . $underlying->display_name . " : " . $underlying->spot . "</li>";
+        print "<li>" . $pair_name . " : " . $underlying_spot . "</li>";
     }
     catch {
-        warn "Failed to get exchange rate for $curr - $_\n";
-        print '<li>' . $underlying->display_name . ': <span style="color:red;">ERROR</span></li>';
+        warn "Failed to get exchange rate for $pair_name - $_\n";
+        print '<li>' . $pair_name . ': <span style="color:red;">ERROR</span></li>';
     }
+
 }
+
 print "</ul>";
 
 print "<p>Inter-bank interest rates (from BBDL=Bloomberg Data License):</p>";
