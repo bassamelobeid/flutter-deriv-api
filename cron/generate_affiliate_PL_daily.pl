@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+no indirect;
 
 use Getopt::Long;
 use Path::Tiny;
@@ -10,6 +11,7 @@ use IO::Async::Loop;
 use Try::Tiny;
 use Archive::Zip qw( :ERROR_CODES );
 use Net::Async::Webservice::S3;
+use DataDog::DogStatsd;
 use Amazon::S3::SignedURLGenerator;
 
 use Brands;
@@ -26,6 +28,7 @@ my $to_date = Date::Utility->new(time - 86400);
 my $from_date = Date::Utility->new('01-' . $to_date->month_as_string . '-' . $to_date->year);
 
 my $reporter        = BOM::MyAffiliates::ActivityReporter->new();
+my $statsd          = DataDog::DogStatsd->new;
 my $processing_date = Date::Utility->new($from_date->epoch);
 
 my $output_dir = BOM::Config::Runtime->instance->app_config->system->directory->db . '/myaffiliates/';
@@ -43,7 +46,7 @@ while ($to_date->days_between($processing_date) >= 0) {
         $processing_date = Date::Utility->new($processing_date->epoch + 86400);
         next;
     }
-
+    try {
     my @csv = $reporter->activity_for_date_as_csv($processing_date->date_ddmmmyy);
 
     # Date, Player, P&L, Deposits, Runbet Turnover, Intraday Turnover, Other Turnover
@@ -54,11 +57,18 @@ while ($to_date->days_between($processing_date) >= 0) {
     }
     path($output_filename)->spew_utf8(@lines);
     $zip->addFile($output_filename, path($output_filename)->basename);
+    } catch {
+         my $error = shift;
+         $statsd->event('Failed to generate MyAffiliates PL report', "MyAffiliates PL report failed to generate csv files due: $error");
+    };
 
     $processing_date = Date::Utility->new($processing_date->epoch + 86400);
 }
 
-die "unable to create zip file at: ${\$output_zip_path->stringify}" unless ($zip->writeToFileNamed($output_zip_path->stringify) == AZ_OK);
+unless ($zip->writeToFileNamed($output_zip_path->stringify) == AZ_OK) {
+    $statsd->event('Failed to generate MyAffiliates PL report', "MyAffiliates PL report failed to generate zip archive");
+    die "unable to create zip file at: ${\$output_zip_path->stringify}" 
+}
 
 my $config = LoadFile('/etc/rmg/third_party.yml')->{myaffiliates};
 my $loop   = IO::Async::Loop->new;
@@ -93,5 +103,7 @@ try {
     });
 }
 catch {
-    die "Failed to upload reports to s3. Error is $_. No email was sent.";
+    my $error = shift;
+    $statsd->event('Failed to generate MyAffiliates PL report', "MyAffiliates PL report failed to upload to S3 due: $error");
+    die "Failed to upload reports to s3. Error is shift. No email was sent.";
 };

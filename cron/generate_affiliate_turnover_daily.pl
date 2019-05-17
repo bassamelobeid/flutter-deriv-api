@@ -1,7 +1,9 @@
 use strict;
 use warnings;
+no indirect;
 
 use Path::Tiny;
+use Try::Tiny;
 use Date::Utility;
 
 use Brands;
@@ -9,11 +11,19 @@ use Brands;
 use BOM::MyAffiliates::TurnoverReporter;
 use BOM::Config::Runtime;
 use BOM::Platform::Email qw/send_email/;
+use DataDog::DogStatsd;
 
 my $reporter        = BOM::MyAffiliates::TurnoverReporter->new();
+my $statsd          = DataDog::DogStatsd->new;
 my $processing_date = Date::Utility->new(time - 86400);
+my @csv;
 
-my @csv = $reporter->activity_for_date_as_csv($processing_date->date_ddmmmyy);
+try {
+    @csv = $reporter->activity_for_date_as_csv($processing_date->date_ddmmmyy);
+} catch {
+    my $error = shift;
+    $statsd->event('Turnover Report Failed', "TurnoverReporter failed to generate csv files due: $error");
+}
 
 exit unless @csv;
 
@@ -28,16 +38,23 @@ foreach my $line (@csv) {
     chomp $line;
     push @lines, $line . "\n" if $line;
 }
-path($output_filename)->spew_utf8(@lines);
 
-my $brand = Brands->new();
-# email CSV out for reporting purposes
-send_email({
-    from       => $brand->emails('system'),
-    to         => $brand->emails('affiliates'),
-    subject    => 'CRON generate_affiliate_turnover_daily ' . ' for date ' . $processing_date->date_yyyymmdd,
-    message    => ['Find attached the CSV that was generated.'],
-    attachment => $output_filename,
-});
+# in case if write was not successful
+try {
+    path($output_filename)->spew_utf8(@lines);
+    
+    my $brand = Brands->new();
+    # email CSV out for reporting purposes
+    send_email({
+        from       => $brand->emails('system'),
+        to         => $brand->emails('affiliates'),
+        subject    => 'CRON generate_affiliate_turnover_daily ' . ' for date ' . $processing_date->date_yyyymmdd,
+        message    => ['Find attached the CSV that was generated.'],
+        attachment => $output_filename,
+    });
+} catch {
+    my $error = shift;
+    $statsd->event('Turnover Report Failed', "TurnoverReporter failed to write and send the csv files due: $error");
+};
 
 1;
