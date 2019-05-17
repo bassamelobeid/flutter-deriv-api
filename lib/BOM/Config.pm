@@ -40,6 +40,11 @@ sub backoffice {
     return $config;
 }
 
+sub currency_pairs_backoffice {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/currency_config.yml');
+    return $config;
+}
+
 sub quants {
     state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/quants_config.yml');
     return $config;

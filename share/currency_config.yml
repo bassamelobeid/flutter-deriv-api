@@ -1,0 +1,4 @@
+# This yml contains a list of currency pairs used by our accounts/payments
+# in the backoffice system. Each pair is denoted by [currency1,currency2]
+
+currency_pairs: [['GBP','USD'],['EUR','USD'],['USD','HKD'],['AUD','USD'],['GBP','HKD'],['AUD','HKD'],['EUR','HKD'],['BTC','USD']]
