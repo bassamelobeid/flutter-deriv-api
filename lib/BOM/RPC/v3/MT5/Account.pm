@@ -19,6 +19,7 @@ use Future::Utils qw(fmap1);
 use Format::Util::Numbers qw/financialrounding formatnumber/;
 use ExchangeRates::CurrencyConverter qw/convert_currency/;
 use JSON::MaybeXS;
+use DataDog::DogStatsd::Helper qw(stats_inc);
 
 use BOM::RPC::Registry '-dsl';
 
@@ -369,7 +370,15 @@ async_rpc mt5_new_account => sub {
 
                     # populate mt5 agent account from manager id if applicable
                     # else get one associated with affiliate token
-                    $args->{agent} = $manager_id // _get_mt5_account_from_affiliate_token($client->myaffiliates_token);
+                    if ($manager_id) {
+                        $args->{agent} = $manager_id;
+                    } elsif ($client->myaffiliates_token) {
+                        my $agent_login = _get_mt5_account_from_affiliate_token($client->myaffiliates_token);
+                        $args->{agent} = $agent_login if $agent_login;
+                        warn "Failed to link " . $client->loginid . " MT5 account with myaffiliates token " . $client->myaffiliates_token
+                            unless $agent_login;
+                    }
+
                     return BOM::MT5::User::Async::create_user($args);
                 }
                 )->then(
@@ -1363,12 +1372,26 @@ sub _get_mt5_account_from_affiliate_token {
             pass    => BOM::Config::third_party()->{myaffiliates}->{pass},
             host    => BOM::Config::third_party()->{myaffiliates}->{host},
             timeout => 10
-        ) or return;
+            )
+            or do {
+            stats_inc('myaffiliates.mt5.failure.connect', 1);
+            return 0;
+            };
 
-        my $user_id = $aff->get_affiliate_id_from_token($token) or return;
-        my $user = $aff->get_user($user_id) or return;
+        my $user_id = $aff->get_affiliate_id_from_token($token) or do {
+            stats_inc('myaffiliates.mt5.failure.get_aff_id', 1);
+            return 0;
+        };
 
-        my $affiliate_variables = $user->{USER_VARIABLES}->{VARIABLE} or return;
+        my $user = $aff->get_user($user_id) or do {
+            stats_inc('myaffiliates.mt5.failure.get_user', 1);
+            return 0;
+        };
+
+        my $affiliate_variables = $user->{USER_VARIABLES}->{VARIABLE} or do {
+            stats_inc('myaffiliates.mt5.failure.no_info', 1);
+            return 0;
+        };
         $affiliate_variables = [$affiliate_variables]
             unless ref($affiliate_variables) eq 'ARRAY';
 
