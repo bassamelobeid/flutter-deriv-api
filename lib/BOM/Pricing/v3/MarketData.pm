@@ -19,13 +19,13 @@ use Date::Utility;
 use Time::Duration::Concise::Localize;
 use Try::Tiny;
 use List::MoreUtils qw(uniq);
-use Locale::Country::Extra;
 
 use BOM::User::Client;
 use BOM::Platform::Context qw (localize);
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 use BOM::Product::Offerings::DisplayHelper;
+use BOM::Product::Offerings::TradingDuration qw(generate_trading_durations);
 use LandingCompany::Registry;
 
 sub _get_cache {
@@ -40,7 +40,8 @@ sub _get_cache {
 }
 
 sub _set_cache {
-    my ($name, $value) = @_;
+    my ($name, $value, $cache_time) = @_;
+    $cache_time = $cache_time // 86400;
     BOM::Config::Chronicle::get_chronicle_writer()->set(
         'OFFERINGS',
         $name,
@@ -49,7 +50,8 @@ sub _set_cache {
             value  => $value,
         },
         Date::Utility->new(),
-        0, 86400,
+        0,
+        $cache_time,
     );
     return;
 }
@@ -166,35 +168,61 @@ sub asset_index {
     my $language             = $params->{language} // 'en';
     my $country_code         = $params->{country_code} // '';
 
-    my $country_name = $country_code ? Locale::Country::Extra->new->country_from_code($country_code) : '';
-
     my $token_details = $params->{token_details};
 
     # Set landing company with logged in client details if no arg passed
     if ($token_details and exists $token_details->{loginid} and not $landing_company_name) {
-        my $client = BOM::User::Client->new({
-            loginid      => $token_details->{loginid},
-            db_operation => 'replica',
-        });
-        # override the details here since we already have a client.
-        $landing_company_name = $client->landing_company->short;
-        $country_code         = $client->residence;
+        ($landing_company_name, $country_code) = _get_info_from_token($token_details);
     }
 
     # Default to svg, which returns the entire asset index, if no arg and not logged in
     $landing_company_name //= 'svg';
 
-    for my $country_or_lc ($country_name, $landing_company_name) {
-        next if not defined $country_or_lc;
-        my $cache_key = $country_or_lc . '_asset_index_' . $language;
-        if (my $cache = _get_cache($cache_key)) {
-            return $cache;
+    return generate_asset_index($country_code, $landing_company_name, $language);
+}
+
+sub trading_durations {
+    my $params               = shift;
+    my $landing_company_name = $params->{args}{landing_company};
+    my $language             = $params->{language} // 'en';
+    my $country_code         = $params->{country_code} // '';
+
+    my $token_details = $params->{token_details};
+    # Set landing company with logged in client details if no arg passed
+    if ($token_details and exists $token_details->{loginid} and not $landing_company_name) {
+        ($landing_company_name, $country_code) = _get_info_from_token($token_details);
+    }
+
+    $landing_company_name //= 'svg';
+
+    my $offerings = _get_offerings($country_code, $landing_company_name);
+
+    my $key = join '_', ($offerings->name, 'trading_durations', $language);
+
+    if (my $cache = _get_cache($key)) {
+        return $cache;
+    }
+
+    my $trading_durations = generate_trading_durations($offerings);
+
+    # localize
+    foreach my $data (@$trading_durations) {
+        $data->{market}->{display_name}    = localize($data->{market}->{display_name});
+        $data->{submarket}->{display_name} = localize($data->{submarket}->{display_name});
+        foreach my $sub_data (@{$data->{data}}) {
+            foreach my $trade_durations (@{$sub_data->{trade_durations}}) {
+                $trade_durations->{trade_type}->{display_name} = localize($trade_durations->{trade_type}->{display_name});
+                foreach my $duration (@{$trade_durations->{durations}}) {
+                    $duration->{display_name} = localize($duration->{display_name});
+                }
+            }
         }
     }
 
-    my ($cached, $cache_key) = generate_asset_index($country_code, $landing_company_name, $language);
-    _set_cache($cache_key, $cached);
-    return $cached;
+    my $ttl = (60 - Date::Utility->new->minute) * 60;
+    _set_cache($key, $trading_durations, $ttl);
+
+    return $trading_durations;
 }
 
 =head2 generate_trading_times
@@ -343,9 +371,12 @@ Returns an arrayref, where each array element contains the following values (in 
 sub generate_asset_index {
     my ($country_code, $landing_company_name, $language) = @_;
 
-    my $config          = BOM::Config::Runtime->instance->get_offerings_config;
-    my $landing_company = LandingCompany::Registry::get($landing_company_name);
-    my $offerings       = $landing_company->basic_offerings_for_country($country_code, $config);
+    my $offerings = _get_offerings($country_code, $landing_company_name);
+    my $key = join '_', ($offerings->name, 'asset_index', $language);
+
+    if (my $cache = _get_cache($key)) {
+        return $cache;
+    }
 
     my $asset_index = BOM::Product::Offerings::DisplayHelper->new(offerings => $offerings)->decorate_tree(
         markets => {
@@ -459,9 +490,10 @@ sub generate_asset_index {
             }
         }
     }
-    my $cache_key = $offerings->name . '_asset_index_' . $language;
 
-    return (\@data, $cache_key);
+    _set_cache($key, \@data);
+
+    return \@data;
 }
 
 sub _get_permitted_expiries {
@@ -511,5 +543,26 @@ sub _get_config_key {
     $string .= "]";
 
     return $string;
+}
+
+sub _get_info_from_token {
+    my $token_details = shift;
+
+    my $client = BOM::User::Client->new({
+        loginid      => $token_details->{loginid},
+        db_operation => 'replica',
+    });
+    # override the details here since we already have a client.
+    return ($client->landing_company->short, $client->residence);
+}
+
+sub _get_offerings {
+    my ($country_code, $landing_company_name) = @_;
+
+    my $config          = BOM::Config::Runtime->instance->get_offerings_config;
+    my $landing_company = LandingCompany::Registry::get($landing_company_name);
+
+    return $landing_company->basic_offerings_for_country($country_code, $config);
+
 }
 1;
