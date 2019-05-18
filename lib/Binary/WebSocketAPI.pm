@@ -205,6 +205,12 @@ sub startup {
         ],
         ['trading_times'],
         [
+            'trading_durations',
+            {
+                stash_params => [qw/ token /],
+            }
+        ],
+        [
             'asset_index',
             {
                 before_forward => \&Binary::WebSocketAPI::v3::Wrapper::LandingCompany::map_landing_company,
