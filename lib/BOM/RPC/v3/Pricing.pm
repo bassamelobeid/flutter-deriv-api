@@ -21,4 +21,6 @@ rpc trading_times => \&BOM::Pricing::v3::MarketData::trading_times;
 
 rpc asset_index => \&BOM::Pricing::v3::MarketData::asset_index;
 
+rpc trading_durations => \&BOM::Pricing::v3::MarketData::trading_durations;
+
 1;
