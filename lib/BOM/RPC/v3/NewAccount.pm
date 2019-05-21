@@ -150,6 +150,7 @@ rpc "verify_email",
     my $params = shift;
 
     my $email = lc $params->{args}->{verify_email};
+    my $args  = $params->{args};
     return BOM::RPC::v3::Utility::invalid_email() unless Email::Valid->address($email);
 
     my $type = $params->{args}->{type};
@@ -160,6 +161,8 @@ rpc "verify_email",
         })->token;
 
     my $loginid = $params->{token_details} ? $params->{token_details}->{loginid} : undef;
+    my $extra_url_params = {};
+    $extra_url_params = $args->{url_parameters} if defined $args->{url_parameters};
 
     my $verification = email_verification({
         code             => $code,
@@ -168,6 +171,7 @@ rpc "verify_email",
         language         => $params->{language},
         source           => $params->{source},
         app_name         => get_app_name($params->{source}),
+        %$extra_url_params
     });
 
     my $email_already_exist = BOM::User->new(

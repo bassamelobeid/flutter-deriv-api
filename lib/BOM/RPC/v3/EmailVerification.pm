@@ -3,9 +3,62 @@ package BOM::RPC::v3::EmailVerification;
 use strict;
 use warnings;
 
-use Exporter;
-use vars qw(@ISA @EXPORT_OK);
 use BOM::Platform::Context qw(localize);
+
+use Exporter qw(import export_to_level);
+our @EXPORT_OK = qw(email_verification);
+
+=head2 email_verification
+
+Description: Creates verification email messages  for the different verification types that are called using the verify_email api call. 
+Takes the following arguments as named parameters
+
+=over 4
+
+=item * C<code> - the one-off link verification code 
+
+=item * C<website_name> The name of the website the verification request came from
+
+=item * C<verification_uri> The base string of the url to build the link from 
+
+=item * C<language> the language of the client 
+
+=item * C<source> the app_id of the requesting application. 
+
+=item * C<app_name>  the application name associated with the application id 
+
+=back
+
+=head3 optional attributes, 
+
+These following named parameters are optional and come from the attributes of the verify_email/url_parameters api call,  these are appended to the 
+url used in the verification email. 
+
+=over 4
+
+=item * C<date_first_contact>  string [Optional] Date of first contact, format: yyyy-mm-dd in GMT timezone.
+
+=item * C<gclid_url> string [Optional] Google Click Identifier to track source.
+
+=item * C<residence> string 2-letter country code (obtained from residence_list call).
+
+=item * C<utm_medium> string [Optional] Identifies the medium the link was used upon such as: email, CPC, or other methods of sharing.
+
+=item * C<utm_source> string [Optional] Identifies the source of traffic such as: search engine, newsletter, or other referral.
+
+=item * C<signup_devicem> mobile | desktop [Optional] Show whether user has used mobile or desktop.
+
+=item * C<affiliate_token> string [Optional] Affiliate token, within 32 characters.
+
+=item * C<verification_code> string Email verification code (received from a verify_email call, which must be done first).
+
+=item * C<utm_campaign> string [Optional] Identifies a specific product promotion or strategic campaign such as a spring sale or other promotions.
+
+=back
+
+Returns a Hash Reference of subroutines  used in the calling code, e.g. C<< email_verification()->{account_opening_new}->() >>
+
+=cut
 
 sub email_verification {
     my $args = shift;
@@ -16,11 +69,6 @@ sub email_verification {
     my $language         = $args->{language};
     my $source           = $args->{source};
     my $app_name         = $args->{app_name};
-
-    my $gen_verify_link = sub {
-        my $action = shift;
-        return "$verification_uri?action=$action&lang=$language&code=$code";
-    };
 
     my $password_reset_url = 'https://www.'
         # Redirect Binary.me and Binary Desktop to binary.me
@@ -35,7 +83,7 @@ sub email_verification {
                 message => $verification_uri
                 ? localize(
                     '<p style="font-weight: bold;">Thank you for signing up for a virtual account!</p><p>Click the following link to verify your account:</p><p><a href="[_1]">[_1]</a></p><p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p>Enjoy trading with us on [_2].</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                    $gen_verify_link->('signup'),
+                    _build_verification_url('signup', $args),
                     $website_name
                     )
                 : localize(
@@ -76,7 +124,7 @@ sub email_verification {
                 $verification_uri
                 ? localize(
                 '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by clicking the link below:</p><p><a href="[_1]">[_1]</a></p><p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                $gen_verify_link->('payment_withdraw'),
+                _build_verification_url('payment_withdraw', $args),
                 $website_name
                 )
                 : localize(
@@ -88,7 +136,7 @@ sub email_verification {
                 $verification_uri
                 ? localize(
                 '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by clicking the link below:</p><p><a href="[_1]">[_1]</a></p><p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                $gen_verify_link->('payment_agent_withdraw'),
+                _build_verification_url('payment_agent_withdraw', $args),
                 $website_name
                 )
                 : localize(
@@ -107,7 +155,7 @@ sub email_verification {
                 message => $verification_uri
                 ? localize(
                     '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Before we can help you change your password, please help us to verify your identity by clicking the link below:</p><p><a href="[_1]">[_1]</a></p><p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                    $gen_verify_link->('reset_password'),
+                    _build_verification_url('reset_password', $args),
                     $website_name
                     )
                 : localize(
@@ -123,7 +171,7 @@ sub email_verification {
                 message => $verification_uri
                 ? localize(
                     '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Before we can help you change your MT5 password, please help us to verify your identity by clicking the link below:</p><p><a href="[_1]">[_1]</a></p><p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                    $gen_verify_link->('mt5_password_reset'),
+                    _build_verification_url('mt5_password_reset', $args),
                     $website_name
                     )
                 : localize(
@@ -136,7 +184,30 @@ sub email_verification {
     };
 }
 
-@ISA       = qw(Exporter);
-@EXPORT_OK = qw(email_verification);
+=head2 _build_verification_uri
+
+Description: builds the verifiation URl with optional UTM parameters
+Takes the following arguments as parameters
+
+=over 4
+
+=item * C<$action>  The type of action this verification applies to, sent in by the API call
+
+=item * C<$args>  A hash ref of arguments, that build the rest of the url "language" and "code" are required , utm_source utm_campaign utm_medium signup_device gclid_url date_first_contact affiliate_token are optional. 
+
+=back
+
+Returns   string representation of the URL. 
+
+=cut
+
+sub _build_verification_url {
+    my ($action, $args) = @_;
+    my $extra_params_string = '';
+    foreach my $extra_param (qw( utm_source utm_campaign utm_medium signup_device gclid_url date_first_contact affiliate_token)) {
+        $extra_params_string .= "&$extra_param=" . $args->{$extra_param} if defined($args->{$extra_param});
+    }
+    return "$args->{verification_uri}?action=$action&lang=$args->{language}&code=$args->{code}$extra_params_string";
+}
 
 1;

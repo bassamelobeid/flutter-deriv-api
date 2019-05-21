@@ -114,4 +114,37 @@ subtest 'Password Reset Verification' => sub {
         'Password Reset with verification URI';
 };
 
+subtest 'Build Verification  URL' => sub {
+
+    ## no utm params supplied
+    my $args = {
+        verification_uri => "http://www.fred.com",
+        language         => 'Eng',
+        code             => "Thisisthecode"
+    };
+    my $result = BOM::RPC::v3::EmailVerification::_build_verification_url('action_test', $args);
+    is($result, 'http://www.fred.com?action=action_test&lang=Eng&code=Thisisthecode', "url creation with no UTM params set correct");
+
+    ## with utm params
+
+    $args = {
+        verification_uri   => "http://www.fred.com",
+        language           => 'Eng',
+        code               => "Thisisthecode",
+        utm_source         => "google",
+        utm_medium         => 'email',
+        utm_campaign       => 'Grand_Opening',
+        signup_device      => 'mobile',
+        gclid_url          => 'adasd.sd',
+        date_first_contact => '20150301',
+        affiliate_token    => 'asdasd123',
+    };
+    $result = BOM::RPC::v3::EmailVerification::_build_verification_url('action_test', $args);
+    is(
+        $result,
+        'http://www.fred.com?action=action_test&lang=Eng&code=Thisisthecode&utm_source=google&utm_campaign=Grand_Opening&utm_medium=email&signup_device=mobile&gclid_url=adasd.sd&date_first_contact=20150301&affiliate_token=asdasd123',
+        "url creation with UTM params set correct"
+    );
+};
+
 done_testing();
