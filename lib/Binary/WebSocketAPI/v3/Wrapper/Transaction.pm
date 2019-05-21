@@ -14,7 +14,7 @@ sub buy_get_single_contract {
 
     my $contract_details = delete $api_response->{contract_details};
 
-    $req_storage->{uuid} = _subscribe_to_contract($c, $contract_details, $req_storage->{call_params}->{args})
+    $req_storage->{uuid} = _subscribe_to_contract($c, $contract_details, $req_storage)
         if $req_storage->{call_params}->{args}->{subscribe};
 
     buy_store_last_contract_id($c, $api_response);
@@ -58,7 +58,6 @@ sub buy_set_poc_subscription_id {
 sub _subscribe_to_contract {
     my ($c, $contract_details, $req_storage) = @_;
     my $req_args = $req_storage->{call_params}->{args};
-
     my $contract = {map { $_ => $contract_details->{$_} }
             qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode)};
 
