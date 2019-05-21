@@ -26,7 +26,7 @@ sub set_pending_transaction {
     # generally a sweep transaction in the future it can help
     # in the recon report.
     unless ($res) {
-        $log->debugf("Transaction not found: %s", $transaction->{hash});
+        $log->warnf("Transaction not found: %s", $transaction->{hash});
         return undef;
     }
 
@@ -34,7 +34,7 @@ sub set_pending_transaction {
     # have the transaction and add it to payment.payment and transaction.transaction
     # as we are doing bom-postgres-clientdb/config/sql/functions/061_ctc_confirm_deposit.sql
     if ($res->{status} ne 'NEW') {
-        $log->debugf("Address already confirmed for transaction: %s", $transaction->{hash});
+        $log->warnf("Address already confirmed for transaction: %s", $transaction->{hash});
         return undef;
     }
 
@@ -42,17 +42,17 @@ sub set_pending_transaction {
     # a different currency, we need to change the currency in the DATABASE and set
     # the transaction as pending.
     if ($res->{currency_code} ne $transaction->{currency}) {
-        $log->debugf("Invalid currency for transaction: %s", $transaction->{hash});
+        $log->warnf("Invalid currency for transaction: %s", $transaction->{hash});
         return undef;
     }
 
     # ignore amount 0
     unless ($transaction->{amount} > 0) {
-        $log->debugf("Amount is zero for transaction: %s", $transaction->{hash});
+        $log->warnf("Amount is zero for transaction: %s", $transaction->{hash});
         return undef;
     }
 
-    $dbic->run(
+    my $result = $dbic->run(
         ping => sub {
             $_->selectrow_array(
                 'SELECT payment.ctc_set_deposit_pending(?, ?, ?, ?)',
@@ -62,6 +62,12 @@ sub set_pending_transaction {
                 $transaction->{hash});
         });
 
+    unless ($result) {
+        $log->warnf("Can't set the status to pending for tx: %s", $transaction->{hash});
+        return undef;
+    }
+
+    $log->infof("Transaction status changed to pending: %s", $transaction->{hash});
     return 1;
 }
 
