@@ -204,10 +204,11 @@ sub _update_transaction {
     $details->{transaction}->{transaction_time} = Date::Utility->new($payload->{sell_time} || $payload->{purchase_time})->epoch;
 
     $c->call_rpc({
-            args        => $args,
-            msg_type    => 'transaction',
-            method      => 'get_contract_details',
-            call_params => {
+            schema_receive => $self->request_storage->{schema_receive},
+            args           => $args,
+            msg_type       => 'transaction',
+            method         => 'get_contract_details',
+            call_params    => {
                 token           => $c->stash('token'),
                 short_code      => $payload->{short_code},
                 currency        => $payload->{currency_code},
