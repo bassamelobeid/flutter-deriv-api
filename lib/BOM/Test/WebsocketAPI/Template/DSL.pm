@@ -194,6 +194,9 @@ sub req_key {
     # longcode has its args in short_codes :'(
     return key({$request->%{qw(short_codes)}}) if exists $request->{short_codes};
 
+    # transaction has its shortcode out of the args
+    return key({$request->%{qw(shortcode)}}) if exists $request->{args} and exists $request->{args}{shortcode};
+
     my $req = $request->{args} // $request // die 'Invalid RPC request';
 
     # Shallow clone

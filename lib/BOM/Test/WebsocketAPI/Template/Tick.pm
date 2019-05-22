@@ -41,7 +41,7 @@ publish tick => sub {
             epoch  => time,
             bid    => $bid,
             ask    => $ask,
-            spot   => $_->underlying->pipsized_value(($bid + $ask) / 2),
+            quote   => $_->underlying->pipsized_value(($bid + $ask) / 2),
         },
     };
 };
