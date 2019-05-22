@@ -943,6 +943,15 @@ sub send_proposal_open_contract_last_time {
     Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $args->{uuid});
     # we don't want to end up with new subscribtion
     delete $stash_data->{subscribe} if exists $stash_data->{subscribe};
+    
+    # if this was triggered by a buy call it will now be  poc result and therfore have the wrong schmemas loaded. 
+
+    if (!$poc_schema) {
+        my $poc_receive_schema = path('/home/git/regentmarkets/binary-websocket-api/config/v3/proposal_open_contract/receive.json');
+        $poc_schema = decode_json($poc_receive_schema->slurp);
+    }
+   $req_storage->{schema_receive} = $poc_schema;
+
     # We should also clear stash data, otherwise the args in stash data will become 'not subscribe' (deleted by previous line) and will block the future subscribe
     $c->stash('proposal_open_contracts_subscribed' => 0)
         if $c->stash('proposal_open_contracts_subscribed')
