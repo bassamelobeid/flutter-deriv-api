@@ -18,8 +18,6 @@ $loop->add(
         timeout            => 300,
         max_response_delay => 10,
         skip_sanity_checks => {
-            balance     => [qw(schema_v4)],    # balance.balance is string
-            transaction => [qw(schema_v4 schema_v3)],    # transaction.amount, balance is string
             website_status => [qw(published check_duplicates)],  # Response can be overlapping between publishes
         },
         suite_params => {
