@@ -140,20 +140,24 @@ sub proveid {
     my $name_address_match = ($kyc_summary->findnodes("FullNameAndAddress/Count"))[0]->textContent();
 
     if ($dob_match >= NEEDED_MATCHES_FOR_AGE_VERIFICATION) {
-        my $status_set_response =
-            $client->status->set('age_verification', 'system', "Experian results are sufficient to mark client as age verified.");
+        $client->status->set('age_verification', 'system', "Experian results are sufficient to mark client as age verified.");
         my $vr_acc = BOM::User::Client->new({loginid => $client->user->bom_virtual_loginid});
         $vr_acc->status->clear_unwelcome;
         $vr_acc->status->set('age_verification', 'system', 'Experian results are sufficient to mark client as age verified.');
         if ($name_address_match >= NEEDED_MATCHES_FOR_UKGC_AUTH) {
-            $status_set_response = $client->status->set('ukgc_authenticated', 'system', "Online verification passed");
+            $client->status->set('ukgc_authenticated', 'system', "Online verification passed");
+        } else {
+            $client->status->set('unwelcome', 'system', "Experian results are insufficient to enable deposits.");
+            
+            $self->_request_id_authentication();
         }
-        return $status_set_response;
     } else {
         $client->status->set('unwelcome', 'system', "Experian results are insufficient to mark client as age verified.");
 
-        return $self->_request_id_authentication();
+        $self->_request_id_authentication();
     }
+    
+    return undef;
 }
 
 =head2 _age_verified
@@ -267,19 +271,20 @@ sub _request_id_authentication {
     my $body = localize(<<'EOM', $client_name, $brand->website_name, $support_email);
 Dear [_1],
 
-We are writing to you regarding your account with [_2].
+Thank you for creating your [_2] account!
 
-We are legally required to verify that clients are over the age of 18, and so we request that you forward scanned copies of one of the following to [_3]:
+As the next step, we’ll need to authenticate your account with proof of your identity and address. To help us with this, please forward scanned copies of the following to [_3]:
 
-- Valid Passport or Driving licence or National ID card
+- Valid passport, driving licence, or national ID card
+- Bank statement or utility bill (phone bills are not accepted)
 
-In order to comply with licencing regulations, you will be unable to make further deposits or withdrawals or to trade with your account until we receive this document.
+After authentication is complete, your account will be enabled for trading, deposits, and withdrawals.
 
-We look forward to hearing from you soon.
+Thank you for choosing [_2]!
 
-Kind regards,
+Sincerely,
+Team [_2]
 
-[_2]
 EOM
 
     return send_email({

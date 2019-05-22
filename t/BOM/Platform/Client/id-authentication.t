@@ -246,7 +246,7 @@ subtest 'MX accounts' => sub {
         $v->run_validation('signup');
 
         ok !$v->client->status->disabled,  "Not disabled due to sufficient DOB Match";
-        ok !$v->client->status->unwelcome, "Not welcome due to sufficient DOB Match";
+        ok !$v->client->status->unwelcome, "Not unwelcome due to sufficient FullNameAndAddress Match";
         ok $v->client->status->age_verification,   "Age verified due to suffiecient DOB Match";
         ok $v->client->status->ukgc_authenticated, "UKGC authenticated due to sufficient FullNameAndAddress Match";
         ok $v->client->status->proveid_requested,  "ProveID requested";
@@ -275,8 +275,8 @@ subtest 'MX accounts' => sub {
             });
 
         $v->run_validation('signup');
-        ok !$v->client->status->disabled,           "Not disabled due to Insufficient DOB Match";
-        ok !$v->client->status->unwelcome,          "Not welcome due to sufficient DOB Match";
+        ok !$v->client->status->disabled, "Not disabled due to Insufficient DOB Match";
+        ok $v->client->status->unwelcome, "Unwelcome due to insufficient DOB Match";
         ok !$v->client->status->ukgc_authenticated, "Not ukgc authenticated due to insufficient FullNameAndAddress match";
         ok $v->client->status->proveid_requested, "ProveID requested";
 
