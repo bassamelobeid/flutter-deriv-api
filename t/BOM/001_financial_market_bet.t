@@ -97,6 +97,7 @@ $new_client->payment_free_gift(
     remark   => 'free gift',
 );
 
+my $amount_type = 'payout';
 my $start_time  = Date::Utility->new->epoch;
 my $contract    = produce_contract('CALL_R_50_100_' . $start_time . '_5T_S0P_0', 'USD');
 my $p           = $contract->build_parameters;
@@ -113,9 +114,10 @@ my $tick = Postgres::FeedDB::Spot::Tick->new($tick_params);
 $p->{date_pricing} = $start_time;
 $p->{current_tick} = $tick;
 $contract          = produce_contract($p);
+
 my $transaction = BOM::Transaction->new({
     price         => $contract->ask_price,
-    amount_type   => $p->{amount_type},
+    amount_type   => $amount_type,
     client        => $new_client,
     contract      => $contract,
     purchase_date => $contract->date_start,
@@ -142,7 +144,7 @@ my $transaction_2 = BOM::Transaction->new({
     client        => $new_client,
     contract      => $contract_2,
     purchase_date => $start_time_2,
-    amount_type   => $p_2->{amount_type},
+    amount_type   => $amount_type,
 });
 my $b = $transaction_2->buy;
 
@@ -164,7 +166,7 @@ $contract_3          = produce_contract($p_3);
 my $transaction_3 = BOM::Transaction->new({
     price         => $contract_3->ask_price,
     client        => $new_client,
-    amount_type   => $p_3->{amount_type},
+    amount_type   => $amount_type,
     contract      => $contract_3,
     purchase_date => $contract_3->date_start,
 });
@@ -186,7 +188,7 @@ $contract_4          = produce_contract($p_4);
 my $transaction_4 = BOM::Transaction->new({
     price         => $contract_4->ask_price,
     client        => $new_client,
-    amount_type   => $p_4->{amount_type},
+    amount_type   => $amount_type,
     contract      => $contract_4,
     purchase_date => $contract_4->date_start,
 });
@@ -249,7 +251,7 @@ my $transaction_5 = BOM::Transaction->new({
     price         => 70,
     client        => $new_client,
     contract      => $contract_5,
-    amount_type   => $p_5->{amount_type},
+    amount_type   => $amount_type,
     purchase_date => $start_time_5,
 });
 
@@ -275,7 +277,7 @@ my $transaction_6 = BOM::Transaction->new({
     client        => $new_client,
     contract      => $contract_6,
     purchase_date => $start_time_6,
-    amount_type   => $p_6->{amount_type},
+    amount_type   => $amount_type,
 });
 isnt $transaction_6->buy(skip_validation => 1), 'undef', 'successful buy';
 

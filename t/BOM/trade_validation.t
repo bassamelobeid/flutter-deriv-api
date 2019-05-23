@@ -267,6 +267,7 @@ subtest 'contract date pricing Validation' => sub {
 
     my $contract = produce_contract({
         underlying   => create_underlying('frxUSDJPY'),
+        barrier      => 'S0P',
         bet_type     => 'CALL',
         currency     => 'GBP',
         payout       => 100,
@@ -313,6 +314,7 @@ subtest 'valid currency test' => sub {
             date_start   => $now,
             date_expiry  => $now->epoch + 300,
             date_pricing => Date::Utility->new($now->epoch - 100),
+            barrier      => 'S0P',
         });
 
         my $transaction = BOM::Transaction->new({
@@ -348,6 +350,7 @@ subtest 'valid currency test' => sub {
             date_start   => $now,
             date_expiry  => $now->epoch + 300,
             date_pricing => Date::Utility->new($now->epoch - 100),
+            barrier      => 'S0P',
         });
 
         my $transaction = BOM::Transaction->new({
@@ -388,6 +391,7 @@ subtest 'valid currency test' => sub {
             date_start   => $now,
             date_expiry  => $now->epoch + 300,
             date_pricing => Date::Utility->new($now->epoch - 100),
+            barrier      => 'S0P',
         });
 
         my $transaction = BOM::Transaction->new({
