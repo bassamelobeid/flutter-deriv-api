@@ -239,17 +239,26 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         'amount_type' => 'payout',
         'date_start'  => 0,
         'currency'    => 'USD',
-        'barriers'    => ['126.144', '126.194', '126.244', '126.294', '126.344', '126.394', '126.444'],
-        'bet_types'      => ['ASIAND', 'ASIANU'],
+        'barriers'    => [
+            {barrier => '126.144'},
+            {barrier => '126.194'},
+            {barrier => '126.244'},
+            {barrier => '126.294'},
+            {barrier => '126.344'},
+            {barrier => '126.394'},
+            {barrier => '126.444'}
+        ],
+        'bet_types'      => ['CALL', 'PUT'],
         'underlying'     => 'R_50',
-        'fixed_expiry'   => 1,
         'proposal_array' => 1,
-        'duration_unit'  => 's',
+        'duration'       => '1s',
         'amount'         => 1000,
-        'date_expiry'    => Date::Utility->new()->epoch + 1800,
         'country_code'   => 'jp'
     };
 
+    my $mocked_batch = Test::MockModule->new('BOM::Product::Contract::Batch');
+    # just to simulate offerings error on proposal array
+    $mocked_batch->mock('ask_prices', sub { die });
     $result = BOM::Pricing::v3::Contract::_get_ask($params);
     is($result->{error}{code}, 'OfferingsValidationError', 'throw useful error because there is no asiand_intraday_fixed_expiry now');
     is(
@@ -311,7 +320,7 @@ subtest 'send_ask' => sub {
                         ->error_message_is('Missing required contract parameters (bet_type).');
                 }
             ],
-            bag(re('Use of uninitialized value'), re('Use of uninitialized value')),
+            bag(re('Use of uninitialized value')),
             'missing bet_type when checking contract_type'
         );
 
@@ -323,7 +332,7 @@ subtest 'send_ask' => sub {
                         ->error_message_is('Unable to price the contract.');
                 }
             ],
-            bag(re('mock _get_ask dying'), re('Use of uninitialized value'), re('Use of uninitialized value')),
+            bag(re('mock _get_ask dying'), re('Use of uninitialized value')),
             'have expected warnings when _get_ask dies'
         );
     }

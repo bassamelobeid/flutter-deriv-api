@@ -63,21 +63,14 @@ sub prepare_ask {
         $p2{low_barrier}  = delete $p2{barrier2};
         $p2{high_barrier} = delete $p2{barrier};
     } elsif (
-        !grep {
-            /^(ASIAN|DIGITEVEN|DIGITODD|DIGITMATCH|DIGITDIFF|TICKHIGH|TICKLOW|LBFLOATCALL|LBFLOATPUT|LBHIGHLOW)/
+        grep {
+            /^(?:RUNHIGH|RUNLOW|RESETCALL|RESETPUT|(?:CALL|PUT)E?)$/
         } @contract_types
         )
     {
-        $p2{barrier} //= 'S0P';
         delete $p2{barrier2};
-
-        if (    grep { /^(CALL|PUT)E?$/ } @contract_types
-            and looks_like_number($p2{barrier})
-            and $p2{barrier} == 0)
-        {
-            $p2{barrier} = 'S0P';
-        }
-
+        # set to S0P if barrier is undef
+        $p2{barrier} //= 'S0P';
     }
 
     $p2{underlying} = delete $p2{symbol};
