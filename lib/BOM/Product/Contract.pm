@@ -1287,21 +1287,6 @@ sub _build_priced_with_intraday_model {
     return ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex');
 }
 
-# Subroutine to validate that keys are valid
-sub validate_inputs {
-    my ($self, $inputs, $invalid_inputs) = @_;
-
-    foreach my $param (keys %$inputs) {
-        return BOM::Product::Exception->throw(
-            error_code => 'InvalidInput',
-            error_args => [$param, $inputs->{bet_type}],
-            details    => {},
-        ) if exists $invalid_inputs->{$param};
-    }
-
-    return undef;
-}
-
 sub allowed_amount_type {
     return {
         stake  => 1,

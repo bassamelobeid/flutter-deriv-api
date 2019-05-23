@@ -53,7 +53,7 @@ my $bet_params = {
     date_pricing => $now,
     duration     => '15m',
     currency     => 'USD',
-    multiplier   => 1,
+    amount       => 1,
     amount_type  => 'multiplier'
 };
 
@@ -64,14 +64,14 @@ subtest 'minimum lookback price and rounding strategy' => sub {
     ok $c->ask_price, 'can price';
     is $c->ask_price, 0.5, 'ok. Min price of 0.50';
 
-    $bet_params->{multiplier} = 1.9;
+    $bet_params->{amount} = 1.9;
 
     $c = produce_contract($bet_params);
 
     ok $c->ask_price, 'can price';
     is $c->ask_price, 0.95, 'ok. correct price when multiplier is 1.9';
 
-    $bet_params->{multiplier} = 19;
+    $bet_params->{amount} = 19;
 
     $c = produce_contract($bet_params);
 

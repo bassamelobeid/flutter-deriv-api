@@ -101,7 +101,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                         date_pricing => $now,
                         duration     => $duration . 's',
                         currency     => $payout_currency,
-                        multiplier   => 1,
+                        amount       => $ul->symbol eq 'R_50' ? 5 : 1,
                         amount_type  => 'multiplier',
                     };
 

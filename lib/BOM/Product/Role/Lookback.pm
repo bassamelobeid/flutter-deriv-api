@@ -6,14 +6,11 @@ with 'BOM::Product::Role::NonBinary';
 use Time::Duration::Concise;
 use List::Util qw(min max first);
 use Format::Util::Numbers qw/financialrounding/;
-use YAML::XS qw(LoadFile);
 use LandingCompany::Commission qw(get_underlying_base_commission);
 use LandingCompany::Registry;
 
 use BOM::Product::Static;
 use BOM::Market::DataDecimate;
-
-my $minimum_multiplier_config = LoadFile('/home/git/regentmarkets/bom/config/files/lookback_minimum_multiplier.yml');
 
 use constant {
     MINIMUM_ASK_PRICE_PER_UNIT  => 0.50,
@@ -78,45 +75,6 @@ sub minimum_commission_per_unit {
     return MINIMUM_COMMISSION_PER_UNIT;
 }
 
-=head2 minimum_multiplier
-
-The minimum allowed unit.
-
-=cut
-
-has minimum_multiplier => (
-    is         => 'ro',
-    isa        => 'Num',
-    lazy_build => 1,
-);
-
-=head2 factor
-
-This is the cryptocurrency factor. Currently set to 0.01.
-
-=cut
-
-has factor => (
-    is         => 'ro',
-    isa        => 'Num',
-    lazy_build => 1,
-);
-
-sub _build_factor {
-    my $self          = shift;
-    my $currency_type = LandingCompany::Registry::get_currency_type($self->currency);
-    my $factor        = $currency_type eq 'crypto' ? $minimum_multiplier_config->{'crypto_factor'} : 1;
-    return $factor;
-}
-
-sub _build_minimum_multiplier {
-    my $self               = shift;
-    my $symbol             = $self->underlying->symbol;
-    my $minimum_multiplier = $minimum_multiplier_config->{$symbol} / $self->factor;
-
-    return $minimum_multiplier // 0;
-}
-
 sub get_ohlc_for_period {
     my $self = shift;
 
@@ -167,19 +125,5 @@ override shortcode => sub {
 
     return uc join '_', @shortcode_elements;
 };
-
-override allowed_amount_type => sub {
-    return {
-        multiplier => 1,
-    };
-};
-
-sub get_impermissible_inputs {
-    return {
-        # Contract-irrelevant inputs
-        'barrier'  => 1,
-        'barrier2' => 1,
-    };
-}
 
 1;

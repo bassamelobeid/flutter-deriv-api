@@ -9,6 +9,7 @@ use Test::Exception;
 use Date::Utility;
 use Format::Util::Numbers qw/roundcommon/;
 
+use Try::Tiny;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
@@ -118,24 +119,11 @@ subtest 'touch' => sub {
             barrier      => '0',
         };
 
-        my $c = produce_contract($args_err);
-        isa_ok $c, 'BOM::Product::Contract::Onetouch';
-        is $c->payout, 0;
-
-        $c->is_valid_to_sell;    #just to trigger validation
-        like($c->primary_validation_error->message, qr/Path-dependent barrier at spot at start/, 'throws error');
-
-        delete $args_err->{amount};
-        delete $args_err->{amount_type};
-
-        $args_err->{payout} = 13;
-
-        $c = produce_contract($args_err);
-        isa_ok $c, 'BOM::Product::Contract::Onetouch';
-        is $c->payout, 13;
-
-        $c->is_valid_to_sell;    #just to trigger validation
-        like($c->primary_validation_error->message, qr/Path-dependent barrier at spot at start/, 'throws error');
+        try { produce_contract($args_err) }
+        catch {
+            isa_ok $_, 'BOM::Product::Exception';
+            is $_->message_to_client->[0], 'Barrier cannot be zero.', 'throws exception when absolute barrier is zero';
+        };
     }
     'zero barrier error';
 };

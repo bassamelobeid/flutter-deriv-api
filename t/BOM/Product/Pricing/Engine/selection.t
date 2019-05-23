@@ -45,7 +45,7 @@ subtest 'test everything' => sub {
     foreach my $symbol (LandingCompany::Registry::get('svg')->basic_offerings($offerings_cfg)->values_for_key('underlying_symbol')) {
         foreach my $ref (@{BOM::Product::ContractFinder->new->basic_contracts_for({symbol => $symbol})->{available}}) {
             my (%barriers, %selected_tick);
-            if ($ref->{contract_category} eq 'digits') {
+            if ($ref->{contract_category} eq 'digits' and $ref->{contract_type} !~ /(?:odd|even)/i) {
                 %barriers = (barrier => 1);
             } elsif ($ref->{contract_category} eq 'highlowticks') {
                 %selected_tick = (selected_tick => 1);
@@ -67,7 +67,7 @@ subtest 'test everything' => sub {
                 payout       => 100,
             };
             if (List::Util::any { $ref->{contract_type} eq $_ } qw(LBFLOATCALL LBFLOATPUT LBHIGHLOW)) {
-                $contract_args->{multiplier}  = 1;
+                $contract_args->{multiplier}  = 5;
                 $contract_args->{amount_type} = 'multiplier';
             } elsif (
                 List::Util::any {
@@ -77,11 +77,12 @@ subtest 'test everything' => sub {
                 )
             {
                 $contract_args->{selected_tick} = 1;
-            } elsif ($ref->{contract_type} eq 'RUNHIGH' or $ref->{contract_type} eq 'RUNLOW') {
+            } elsif ($ref->{contract_category} eq 'runs' or ($ref->{contract_category} =~ /callput/ and $ref->{barrier_category} eq 'euro_atm')) {
                 $contract_args->{barrier} = 'S0P';
             } else {
                 $contract_args = {%$contract_args, %barriers};
             }
+
             my $c = produce_contract($contract_args);
 
             next unless exists $expected->{$c->shortcode};

@@ -50,8 +50,7 @@ subtest 'prices' => sub {
         amount      => 100,
         date_start  => time,
         underlying  => 'R_50',
-        tick_expiry => 1,
-        tick_count  => 10,
+        duration    => '10t',
         amount_type => 'payout',
         barrier     => 5,
     };
@@ -86,7 +85,7 @@ subtest 'prices' => sub {
     foreach my $bt_code (sort keys %expectations) {
         subtest $bt_code => sub {
 
-            my $c = produce_contract({%$params, bet_type => $bt_code});
+            my $c = produce_contract({%$params, bet_type => $bt_code, ($bt_code =~ /(?:ODD|EVEN)/ ? (barrier => undef) : ())});
 
             my $expect = $expectations{$bt_code};
 
@@ -118,8 +117,7 @@ subtest 'invalid selections' => sub {
         date_start   => $now,
         date_pricing => $now,
         underlying   => 'R_50',
-        tick_expiry  => 1,
-        tick_count   => 10,
+        duration     => '10t',
         amount_type  => 'payout',
     };
 

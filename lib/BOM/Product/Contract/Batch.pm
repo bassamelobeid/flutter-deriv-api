@@ -18,11 +18,21 @@ A little optimization in market data handling is done here, where the contracts 
 
 =head1 USAGE
 
-    my $batch = BOM::Product::Contract::Batch->new(parameters => {
-        bet_types => ['CALL', 'PUT'],
-        barriers => ['S0P', 'S10P', 'S-10P'],
-        ...
-    });
+    my $batch = BOM::Product::Contract::Batch->new(
+        parameters => [
+            {
+                bet_type => 'CALL',
+                underlying => 'R_100',
+                ...
+            },
+            {
+                bet_type => 'PUT',
+                underlying => 'R_100',
+                ...
+            }
+        ],
+        produce_contract_ref => sub {},
+    );
 
     $batch->ask_prices;
 
@@ -33,56 +43,53 @@ has parameters => (
     required => 1,
 );
 
-has _contracts => (
-    is         => 'ro',
-    lazy_build => 1,
+has produce_contract_ref => (
+    is       => 'ro',
+    required => 1,
 );
 
-has underlying => (
-    is         => 'ro',
-    lazy_build => 1,
-    handles    => [qw(market pip_size)],
-);
-
-sub _build_underlying {
-    my ($self) = @_;
-    return $self->_contracts->[0]->underlying;
-}
-
-sub _build__contracts {
+sub BUILD {
     my $self = shift;
 
-    my $method_ref = delete $self->parameters->{_produce_contract_ref};
-    # Categorizer's process always returns ARRAYREF
-    my $params = BOM::Product::Categorizer->new(parameters => $self->parameters)->process();
+    my @contracts;
+    my %shared_contract_info;
+    foreach my $params (@{$self->parameters}) {
+        my $contract = $self->produce_contract_ref->(+{%$params, %shared_contract_info});
+        unless (%shared_contract_info) {
+            %shared_contract_info = (
+                current_tick          => $contract->current_tick,
+                q_rate                => $contract->q_rate,
+                r_rate                => $contract->r_rate,
+                volsurface            => $contract->volsurface,
+                date_start            => $contract->date_start,
+                pricing_new           => $contract->pricing_new,
+                app_markup_percentage => $contract->app_markup_percentage,
+                staking_limits        => $contract->staking_limits,
+                deep_otm_threshold    => $contract->otm_threshold,
+                base_commission       => $contract->base_commission,
+                underlying            => $contract->underlying,
+            );
 
-    my $first_param = shift @$params;
-    $first_param->{processed} = 1;
-    my $first_contract = $method_ref->($first_param);
-
-    my %similar_market_data = (
-        current_tick => $first_contract->current_tick,
-        q_rate       => $first_contract->q_rate,
-        r_rate       => $first_contract->r_rate,
-        volsurface   => $first_contract->volsurface,
-    );
-
-    if ($first_contract->priced_with_intraday_model) {
-        # intraday model uses intradayfx volatility which is the same across barriers
-        $similar_market_data{pricing_vol}          = $first_contract->pricing_vol;
-        $similar_market_data{empirical_volsurface} = $first_contract->empirical_volsurface;
-        $similar_market_data{long_term_prediction} = $first_contract->long_term_prediction;
-    } else {
-        $similar_market_data{volsurface} = $first_contract->volsurface;
+            if ($contract->priced_with_intraday_model) {
+                # intraday model uses intradayfx volatility which is the same across barriers
+                $shared_contract_info{pricing_vol}          = $contract->pricing_vol;
+                $shared_contract_info{empirical_volsurface} = $contract->empirical_volsurface;
+                $shared_contract_info{long_term_prediction} = $contract->long_term_prediction;
+            }
+        }
+        push @contracts, $contract;
     }
 
-    my @contracts = ($first_contract);
-    foreach my $param (@$params) {
-        push @contracts, $method_ref->(+{%$param, %similar_market_data, processed => 1});
-    }
+    $self->_shared_contract_info(\%shared_contract_info);
+    $self->_contracts(\@contracts);
 
-    return \@contracts;
+    return;
 }
+
+has [qw(_contracts _shared_contract_info)] => (
+    is       => 'rw',
+    init_arg => undef,
+);
 
 =head2 ask_prices
 
@@ -179,20 +186,24 @@ sub ask_prices {
 }
 
 sub market_details {
-    my ($self) = @_;
-    # We use the first contract to determine metadata that will be common
-    # across all our contracts - underlying, dates, spot values etc.
-    my ($contract) = @{$self->_contracts};
-    my %details = (
-        spot_time             => $contract->current_tick->epoch,
-        date_start            => $contract->date_start->epoch,
-        app_markup_percentage => $contract->app_markup_percentage,
-        staking_limits        => $contract->staking_limits,
-        deep_otm_threshold    => $contract->otm_threshold,
-        base_commission       => $contract->base_commission,
-    );
-    $details{spot} = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
-    return \%details;
+    my $self = shift;
+
+    my $shared = $self->_shared_contract_info();
+
+    return {
+        ($shared->{current_tick} ? (spot_time => $shared->{current_tick}->epoch) : ()),
+        date_start            => $shared->{date_start}->epoch,
+        app_markup_percentage => $shared->{app_markup_percentage},
+        staking_limits        => $shared->{staking_limits},
+        deep_otm_threshold    => $shared->{otm_threshold},
+        base_commission       => $shared->{base_commission},
+        ($shared->{underlying}->feed_license eq 'realtime' ? (spot => $shared->{current_tick}->quote) : ()),
+    };
+}
+
+sub underlying {
+    my $self = shift;
+    return $self->_shared_contract_info->{underlying};
 }
 
 no Moose;

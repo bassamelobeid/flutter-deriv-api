@@ -199,16 +199,10 @@ subtest 'tick expiry one touch no touch' => sub {
         barrier      => '+2.0'
     };
 
-# Here we simulate proposal by using duration instead of tick_expiry and tick_count
+    # Here we simulate proposal by using duration instead of tick_expiry and tick_count
+    $args->{date_pricing} = $one_day->plus_time_interval('2s');
 
     my $c = produce_contract($args);
-
-    $args->{date_pricing} = $one_day->plus_time_interval('2s');
-    delete $args->{duration};
-    $args->{tick_expiry} = 1;
-    $args->{tick_count}  = 5;
-
-    $c = produce_contract($args);
     ok !$c->is_expired, 'We are at the same second as the entry tick';
 
     $args->{barrier} = '+1.0';

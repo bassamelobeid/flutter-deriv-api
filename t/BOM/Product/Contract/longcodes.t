@@ -170,39 +170,6 @@ subtest 'longcode with \'difference\' as barrier' => sub {
         ]);
 };
 
-subtest 'zero barrier' => sub {
-    my $now  = Date::Utility->new('2016-10-19 10:00:00');
-    my $tick = Postgres::FeedDB::Spot::Tick->new({
-        underlying => 'R_100',
-        quote      => 100,
-        epoch      => $now->epoch
-    });
-    my $c = produce_contract({
-        bet_type     => 'CALL',
-        underlying   => 'R_100',
-        date_start   => $now->plus_time_interval('10m'),
-        date_pricing => $now,
-        duration     => '10m',
-        currency     => 'USD',
-        barrier      => 0,
-        payout       => 10,
-        fixed_expiry => 1,
-        current_tick => $tick,
-    });
-    is_deeply(
-        $c->longcode,
-        [
-            'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
-            ['Volatility 100 Index'],
-            ['2016-10-19 10:10:00 GMT'],
-            {
-                class => 'Time::Duration::Concise::Localize',
-                value => 10 * 60
-            },
-            '0.00'
-        ]);
-};
-
 subtest 'intraday duration longcode variation' => sub {
     my $now  = Date::Utility->new('2016-10-19 10:00:00');
     my $tick = Postgres::FeedDB::Spot::Tick->new({
@@ -217,7 +184,7 @@ subtest 'intraday duration longcode variation' => sub {
         date_pricing => $now,
         duration     => '10m1s',
         currency     => 'USD',
-        barrier      => 0,
+        barrier      => 'S0P',
         payout       => 10,
         fixed_expiry => 1,
         current_tick => $tick,
@@ -233,8 +200,7 @@ subtest 'intraday duration longcode variation' => sub {
                 class => 'Time::Duration::Concise::Localize',
                 value => 10 * 60 + 1
             },
-            '0.00'
-        ]);
+            ['entry spot']]);
 
     $c = produce_contract({%$args, duration => '10h1s'});
     is_deeply(
@@ -247,8 +213,7 @@ subtest 'intraday duration longcode variation' => sub {
                 class => 'Time::Duration::Concise::Localize',
                 value => 10 * 3600 + 1
             },
-            '0.00'
-        ]);
+            ['entry spot']]);
 };
 
 subtest 'legacy shortcode to longcode' => sub {

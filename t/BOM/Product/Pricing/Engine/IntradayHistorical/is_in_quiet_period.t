@@ -25,6 +25,7 @@ subtest 'is_in_quiet_period' => sub {
         duration     => '1h',
         barrier      => 'S0P',
         currency     => 'USD',
+        payout       => 100,
     };
     my $c = produce_contract($contract_args);
     ok $c->pricing_engine->is_in_quiet_period($traded_start->minus_time_interval('1s')), 'quiet period if it is 1 second before traded period';

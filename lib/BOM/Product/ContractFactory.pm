@@ -80,15 +80,8 @@ sub produce_contract {
 
     my $params_ref = {%{_args_to_ref($build_arg, $maybe_currency, $maybe_sold)}};
 
-    _validate_contract_specific_parameters($params_ref)
-        if (not $params_ref->{for_sale});
+    $params_ref = BOM::Product::Categorizer->new(parameters => $params_ref)->get();
 
-    unless ($params_ref->{processed}) {
-        # Categorizer's process always returns ARRAYREF, and here we will have and need only one element in this array
-        $params_ref = BOM::Product::Categorizer->new(parameters => $params_ref)->process()->[0];
-    }
-
-    $params_ref->{payout_currency_type} //= LandingCompany::Registry::get_currency_type($params_ref->{currency});
     _validate_input_parameters($params_ref);
 
     my $product_type = $params_ref->{product_type} // 'basic';
@@ -118,10 +111,51 @@ sub produce_contract {
 }
 
 sub produce_batch_contract {
-    my $build_args = shift;
+    my $args = shift;
 
-    $build_args->{_produce_contract_ref} = \&produce_contract;
-    return BOM::Product::Contract::Batch->new(parameters => $build_args);
+    # it is not nice to change the input parameters
+    my $build_args = {%$args};
+
+    # ideally we shouldn't be doing it here but the interface is not standardized!
+    $build_args->{bet_types} = [$build_args->{bet_type}] if $build_args->{bet_type} and not $build_args->{bet_types};
+    BOM::Product::Exception->throw(
+        error_code => 'MissingRequiredBetType',
+        details    => {field => ''},
+    ) if (not $build_args->{bet_types} or ref $build_args->{bet_types} ne 'ARRAY');
+
+    BOM::Product::Exception->throw(
+        error_code => 'InvalidBarrierUndef',
+        details    => {field => ''},
+    ) if (not $build_args->{barriers} or ref $build_args->{barriers} ne 'ARRAY');
+
+    my @contract_parameters = ();
+    my $contract_types      = delete $build_args->{bet_types};
+    my $barriers            = delete $build_args->{barriers};
+
+    foreach my $contract_type (@$contract_types) {
+        foreach my $barrier (@$barriers) {
+            my %params = %$build_args;
+            $params{bet_type} = $contract_type;
+
+            if (ref $barrier eq 'HASH') {
+                if (exists $barrier->{barrier} and exists $barrier->{barrier2}) {
+                    $params{supplied_high_barrier} = $barrier->{barrier};
+                    $params{supplied_low_barrier}  = $barrier->{barrier2};
+                } elsif (exists $barrier->{barrier}) {
+                    $params{supplied_barrier} = $barrier->{barrier};
+                }
+            } else {
+                $params{supplied_barrier} = $barrier;
+            }
+
+            push @contract_parameters, \%params;
+        }
+    }
+
+    return BOM::Product::Contract::Batch->new(
+        parameters           => \@contract_parameters,
+        produce_contract_ref => \&produce_contract
+    );
 }
 
 sub _validate_input_parameters {
@@ -133,11 +167,6 @@ sub _validate_input_parameters {
         error_code => 'MissingRequiredStart',
         details    => {field => 'date_start'},
     ) unless $params->{date_start};    # date_expiry is validated in BOM::Product::Categorizer
-
-    BOM::Product::Exception->throw(
-        error_code => 'MissingRequiredMultiplier',
-        details    => {field => 'amount'},
-    ) if ($params->{category}->code eq 'lookback' and not defined $params->{multiplier});
 
     BOM::Product::Exception->throw(
         error_code => 'MissingTradingPeriodStart',
@@ -177,24 +206,6 @@ sub _validate_input_parameters {
     }
 
     return;
-}
-
-# Sub to validate parameters that are specific to contracts.
-sub _validate_contract_specific_parameters {
-    my $params = shift;
-    # Get allowed params from asset
-
-    my $product_name = $params->{bet_type};    # TICKHIGH or TICKLOW
-
-    my $product_class;
-    $product_class = "BOM::Product::Contract::" . ucfirst lc $product_name if defined $product_name;
-
-    if ($product_class and $product_class->can('get_impermissible_inputs')) {
-        my $impermissible_inputs = $product_class->get_impermissible_inputs();
-        BOM::Product::Contract->validate_inputs($params, $impermissible_inputs);
-    }
-
-    return undef;
 }
 
 sub _args_to_ref {
@@ -249,6 +260,10 @@ sub make_similar_contract {
     }
     delete $changes->{priced_at};
 
+    # since we are only allowing either, we will remove $build_parameters{date_expiry}
+    if ($changes->{duration} and $build_parameters{date_expiry}) {
+        delete $build_parameters{date_expiry};
+    }
     # Sooner or later this should have some more knowledge of what can and
     # should be built, but for now we use this naive parameter switching.
     foreach my $key (keys %$changes) {

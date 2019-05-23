@@ -62,12 +62,4 @@ sub _build__all_ticks {
     });
 }
 
-sub get_impermissible_inputs {
-    return {
-        # Contract-irrelevant inputs
-        'barrier2'      => 1,
-        'selected_tick' => 1,
-    };
-}
-
 1;

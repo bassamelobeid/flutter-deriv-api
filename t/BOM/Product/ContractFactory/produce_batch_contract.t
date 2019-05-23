@@ -7,8 +7,8 @@ use Test::More;
 use Test::Exception;
 use Test::Warnings;
 use BOM::Product::ContractFactory qw(produce_batch_contract produce_contract);
-use Try::Tiny;
 
+use Try::Tiny;
 use Test::MockModule;
 use Postgres::FeedDB::Spot::Tick;
 use BOM::Test::Data::Utility::UnitTestRedis;
@@ -47,9 +47,9 @@ my $fake_tick = Postgres::FeedDB::Spot::Tick->new({
 
 subtest 'produce_batch_contract - price check' => sub {
     my $args = {
-        bet_types    => ['CALL', 'PUT'],
-        underlying   => 'frxUSDJPY',
-        barrier      => 'S20P',
+        bet_types  => ['CALL', 'PUT'],
+        underlying => 'frxUSDJPY',
+        barriers     => [{barrier => 'S20P'}],
         date_start   => $now,
         date_pricing => $now,
         duration     => '1h',
@@ -62,8 +62,16 @@ subtest 'produce_batch_contract - price check' => sub {
         my $batch      = produce_batch_contract($args);
         my $ask_prices = $batch->ask_prices;
         delete $args->{bet_types};
-        my $call = produce_contract({%$args, bet_type => 'CALL'})->ask_price;
-        my $put  = produce_contract({%$args, bet_type => 'PUT'})->ask_price;
+        my $call = produce_contract({
+                %$args,
+                barrier  => 'S20P',
+                bet_type => 'CALL'
+            })->ask_price;
+        my $put = produce_contract({
+                %$args,
+                barrier  => 'S20P',
+                bet_type => 'PUT'
+            })->ask_price;
         is $ask_prices->{CALL}->{'100.020'}->{ask_price}, $call, 'same call price';
         is $ask_prices->{PUT}->{'100.020'}->{ask_price},  $put,  'same put price';
     }
@@ -71,7 +79,7 @@ subtest 'produce_batch_contract - price check' => sub {
 
     lives_ok {
         $args->{bet_types} = ['CALL', 'PUT'];
-        $args->{barriers}  = ['S20P', 'S15P'];
+        $args->{barriers} = [{barrier => 'S20P'}, {barrier => 'S15P'}];
         delete $args->{barrier};
         my $batch      = produce_batch_contract($args);
         my $ask_prices = $batch->ask_prices;
@@ -148,12 +156,12 @@ subtest 'produce_batch_contract - error check' => sub {
     }
     catch {
         isa_ok $_, 'BOM::Product::Exception';
-        is $_->message_to_client->[0], 'Invalid barrier (Contract can have only one type of barrier).';
+        is $_->message_to_client->[0], 'Invalid barrier (Single barrier input is expected).';
     };
 
     $args->{bet_types} = ['CALL', 'ONETOUCH'];
     $args->{barriers} = [
-        100.12,
+        {barrier => 100.12},
         {
             barrier  => 100.12,
             barrier2 => 99.20

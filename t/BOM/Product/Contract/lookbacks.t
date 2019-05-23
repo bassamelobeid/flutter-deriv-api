@@ -58,7 +58,7 @@ my $args = {
     date_pricing => $now,
     duration     => '1h',
     currency     => 'USD',
-    multiplier   => 1,
+    amount       => 1,
     amount_type  => 'multiplier',
 };
 
@@ -71,11 +71,11 @@ subtest 'lbfloatcall' => sub {
     is $c->payouttime,   'end';
     is $c->code,         'LBFLOATCALL';
     is $c->pricing_code, 'LBFLOATCALL';
-    
-    is $c->ask_price , 0.86, 'Correct ask price with app markup';
+
+    is $c->ask_price, 0.86, 'Correct ask price with app markup';
     $args->{app_markup_percentage} = 5;
     $c = produce_contract($args);
-    is $c->ask_price , 0.9, 'Correct ask price with app markup';
+    is $c->ask_price, 0.9, 'Correct ask price with app markup';
 
     ok !$c->is_path_dependent;
     isa_ok $c->pricing_engine, 'Pricing::Engine::Lookback';
@@ -105,7 +105,7 @@ subtest 'lbfloatcall' => sub {
     }
     catch {
         isa_ok $_, 'BOM::Product::Exception';
-        is $_->error_code, "InvalidInput";
+        is $_->error_code, "BarrierNotAllowed";
     };
 
     delete $args->{barrier};
@@ -199,7 +199,7 @@ subtest 'spot_min and spot_max checks' => sub {
         date_pricing => $now,
         duration     => '1h',
         currency     => 'USD',
-        multiplier   => 1,
+        amount       => 1,
         amount_type  => 'multiplier',
     };
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -244,7 +244,7 @@ subtest 'lookback expiry conditions' => sub {
             date_pricing => $expiry->epoch + 1,
             date_expiry  => $expiry,
             currency     => 'USD',
-            multiplier   => 1,
+            amount       => 1,
             amount_type  => 'multiplier',
         };
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -298,7 +298,7 @@ subtest 'do not floor ask price on bid' => sub {
         date_pricing => $now,
         date_expiry  => $now->plus_time_interval('1m'),
         currency     => 'USD',
-        multiplier   => 1,
+        amount       => 1,
         amount_type  => 'multiplier',
     });
 

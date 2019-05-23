@@ -73,7 +73,6 @@ subtest 'shortcodes' => sub {
                 %$sb_args,
                 duration     => '5m',
                 date_pricing => $now - 300,
-                date_expiry  => '2018-07-11 10:00:00',
                 fixed_expiry => 1
             },
             'CALL_FRXUSDJPY_100_1531180800F_1531181100F_S0P_0',
@@ -103,7 +102,6 @@ subtest 'shortcodes' => sub {
             'EXPIRYMISS_R_100_USD100_1531180800_1531181100_S105P_S-210P'
         ],    # 5 minutes ATM EXPIRYMISS
         [{
-## Please see file perltidy.ERR
                 %$db_args,
                 duration     => '5m',
                 date_pricing => $now - 300
@@ -115,7 +113,6 @@ subtest 'shortcodes' => sub {
                 %$db_args,
                 duration     => '5m',
                 date_pricing => $now - 300,
-                date_expiry  => '2018-07-11 10:00:00',
                 fixed_expiry => 1
             },
             'EXPIRYMISS_R_100_100_1531180800_1531181100F_S105P_S-210P',

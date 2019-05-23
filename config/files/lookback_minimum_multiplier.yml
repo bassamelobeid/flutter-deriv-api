@@ -5,7 +5,8 @@
 #based on the latest spot on Feb 1st 2018 6:18pm MYT as below
 #
 #The miminum multiplier below are for fiat. For cryptos, we will divide below numbers by 100;
-crypto_factor: 100
+crypto: 100
+fiat: 1
 #
 #R_10 : 9557.251
 #R_25 : 3040.307

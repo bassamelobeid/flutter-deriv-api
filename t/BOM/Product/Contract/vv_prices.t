@@ -72,6 +72,7 @@ my $params = {
     duration     => '7d',
     currency     => 'USD',
     barrier      => 98,
+    payout       => 100,
 };
 my $c = produce_contract($params);
 like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';

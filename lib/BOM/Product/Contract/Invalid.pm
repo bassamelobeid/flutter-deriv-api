@@ -26,6 +26,7 @@ has 'code' => (
 # as invalid (expiry == start).
 has 'date_expiry' => (
     is         => 'ro',
+    coerce     => 1,
     isa        => 'date_object',
     lazy_build => 1,
 );

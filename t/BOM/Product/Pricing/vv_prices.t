@@ -76,6 +76,13 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                         payout       => 1000,
                         %$barrier,
                     };
+
+                    if (exists $args->{high_barrier} and exists $args->{low_barrier} and $args->{high_barrier} < $args->{low_barrier}) {
+                        my ($h, $l) = ($args->{high_barrier}, $args->{low_barrier});
+                        $args->{high_barrier} = $l;
+                        $args->{low_barrier} = $h;
+                    }
+
                     lives_ok {
                         my $c = produce_contract($args);
                         my @codes = ($c->code, $c->underlying->symbol, $c->date_start->epoch, $c->date_expiry->epoch);

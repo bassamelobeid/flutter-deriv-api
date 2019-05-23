@@ -51,10 +51,8 @@ subtest 'prices' => sub {
         amount        => 100,
         date_start    => time,
         underlying    => 'R_50',
-        tick_expiry   => 1,
-        tick_count    => 10,
+        duration      => '10t',
         amount_type   => 'payout',
-        selected_tick => 5,
         selected_tick => 3,
     };
 

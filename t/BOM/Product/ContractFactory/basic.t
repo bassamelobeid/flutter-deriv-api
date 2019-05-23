@@ -59,13 +59,13 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 subtest 'produce_contract' => sub {
     my $contract_params = {
-        bet_type   => 'PUT',
-        duration   => '4t',
-        underlying => 'frxUSDJPY',
-        payout     => '1',
-        currency   => 'USD',
-        barrier    => 108.26,
-        current_spot => 100,                                                    
+        bet_type     => 'PUT',
+        duration     => '4t',
+        underlying   => 'frxUSDJPY',
+        payout       => '1',
+        currency     => 'USD',
+        barrier      => 108.26,
+        current_spot => 100,
 
     };
     my $contract;
@@ -75,7 +75,7 @@ subtest 'produce_contract' => sub {
     }
     'produce a contract';
 
-    is to_json([$contract->payout]), '[1]','payout is number';
+    is to_json([$contract->payout]), '[1]', 'payout is number';
 };
 
 subtest 'produce_contract exception' => sub {
@@ -88,15 +88,19 @@ subtest 'produce_contract exception' => sub {
         barrier    => 108.26,
     };
 
-    foreach my $undef ({bet_type => undef}, {duration => undef}, {underlying => undef}, {currency => undef}) {
+    foreach my $undef (
+        [{bet_type   => undef}, 'Missing required contract parameters (bet_type).'],
+        [{duration   => undef}, 'Please specify either duration or date_expiry.'],
+        [{underlying => undef}, 'Missing required contract parameters (underlying).'],
+        [{currency   => undef}, 'Missing required contract parameters (currency).'])
+    {
         try {
-            produce_contract({%$contract_params, %$undef});
+            produce_contract({%$contract_params, %{$undef->[0]}});
         }
         catch {
             isa_ok $_, 'BOM::Product::Exception';
-            my $missing = (keys %$undef)[0];
-            $missing = $missing eq 'duration' ? 'date_expiry or duration' : $missing;
-            is $_->message_to_client->[0], "Missing required contract parameters ($missing).";
+            my $missing = (keys %{$undef->[0]})[0];
+            is $_->message_to_client->[0], $undef->[1];
         }
     }
 };

@@ -30,21 +30,19 @@ subtest 'shortcode_to_parameters' => sub {
 
     my $call = shortcode_to_parameters('CALL_frxUSDJPY_100.00_1352351000_1352354600_S1P_S2P', 'USD');
     my $expected = {
-        underlying   => $frxUSDJPY,
-        high_barrier => 'S1P',
-        shortcode    => 'CALL_frxUSDJPY_100.00_1352351000_1352354600_S1P_S2P',
-        low_barrier  => 'S2P',
-        date_expiry  => '1352354600',
-        bet_type     => 'CALL',
-        currency     => 'USD',
-        date_start   => '1352351000',
-        prediction   => undef,
-        amount_type  => 'payout',
-        amount       => '100.00',
-        fixed_expiry => undef,
-        tick_count   => undef,
-        tick_expiry  => undef,
-        is_sold      => 0
+        underlying                 => $frxUSDJPY,
+        high_barrier               => 'S1P',
+        shortcode                  => 'CALL_frxUSDJPY_100.00_1352351000_1352354600_S1P_S2P',
+        low_barrier                => 'S2P',
+        date_expiry                => '1352354600',
+        bet_type                   => 'CALL',
+        currency                   => 'USD',
+        date_start                 => '1352351000',
+        amount_type                => 'payout',
+        amount                     => '100.00',
+        fixed_expiry               => undef,
+        is_sold                    => 0,
+        starts_as_forward_starting => 0,
     };
     cmp_deeply($call, $expected, 'CALL shortcode.');
 
@@ -57,40 +55,36 @@ subtest 'shortcode_to_parameters' => sub {
 
     my $tickup = shortcode_to_parameters('CALL_frxUSDJPY_100.00_1352351000_9T_0_0', 'USD');
     $expected = {
-        underlying   => $frxUSDJPY,
-        barrier      => '0',
-        shortcode    => 'CALL_frxUSDJPY_100.00_1352351000_9T_0_0',
-        date_expiry  => undef,
-        bet_type     => 'CALL',
-        currency     => 'USD',
-        date_start   => '1352351000',
-        prediction   => undef,
-        amount_type  => 'payout',
-        amount       => '100.00',
-        fixed_expiry => undef,
-        tick_count   => 9,
-        tick_expiry  => 1,
-        is_sold      => 0
+        underlying                 => $frxUSDJPY,
+        barrier                    => '0',
+        shortcode                  => 'CALL_frxUSDJPY_100.00_1352351000_9T_0_0',
+        bet_type                   => 'CALL',
+        currency                   => 'USD',
+        date_start                 => '1352351000',
+        amount_type                => 'payout',
+        amount                     => '100.00',
+        fixed_expiry               => undef,
+        duration                   => '9t',
+        is_sold                    => 0,
+        starts_as_forward_starting => 0,
     };
     cmp_deeply($tickup, $expected, 'FLASH tick expiry shortcode.');
 
     $call = shortcode_to_parameters('CALL_frxUSDJPY_100.00_1352351000_1352354600_S1P_S2P', 'USD', 1);
     $expected = {
-        underlying   => $frxUSDJPY,
-        high_barrier => 'S1P',
-        shortcode    => 'CALL_frxUSDJPY_100.00_1352351000_1352354600_S1P_S2P',
-        low_barrier  => 'S2P',
-        date_expiry  => '1352354600',
-        bet_type     => 'CALL',
-        currency     => 'USD',
-        date_start   => '1352351000',
-        prediction   => undef,
-        amount_type  => 'payout',
-        amount       => '100.00',
-        fixed_expiry => undef,
-        tick_count   => undef,
-        tick_expiry  => undef,
-        is_sold      => 1
+        underlying                 => $frxUSDJPY,
+        high_barrier               => 'S1P',
+        shortcode                  => 'CALL_frxUSDJPY_100.00_1352351000_1352354600_S1P_S2P',
+        low_barrier                => 'S2P',
+        date_expiry                => '1352354600',
+        bet_type                   => 'CALL',
+        currency                   => 'USD',
+        date_start                 => '1352351000',
+        amount_type                => 'payout',
+        amount                     => '100.00',
+        fixed_expiry               => undef,
+        is_sold                    => 1,
+        starts_as_forward_starting => 0,
     };
     cmp_deeply($call, $expected, 'CALL shortcode. for is_sold');
 };

@@ -63,17 +63,8 @@ subtest 'tick expiry one touch no touch' => sub {
     is $c->date_expiry->epoch, 1404986410, 'expected date expiry';
     is $c->date_start->epoch,  1404986400, 'expected date start';
 
-# Here we simulate the proposal open contract by using tick_expiry and tick_count
+    # Here we simulate the proposal open contract by using tick_expiry and tick_count
     $args->{date_pricing} = $one_day->plus_time_interval('2s');
-    delete $args->{duration};
-    $args->{tick_expiry} = 1;
-    $args->{tick_count}  = 5;
-
-    $c = produce_contract($args);
-    ok $c->tick_expiry, 'is tick expiry contract';
-    is $c->tick_count, 5, 'number of ticks is 5';
-    ok !$c->is_expired, 'We are at the same second as the entry tick';
-
     $args->{barrier} = '+1.0';
     $c = produce_contract($args);
     ok !$c->is_expired, 'We are at the same second as the entry tick';
@@ -84,9 +75,9 @@ subtest 'tick expiry one touch no touch' => sub {
     is $c->entry_tick->quote,  101,        'correct entry tick';
 
     my %expected_bid_price = (
-        2 => 43.44,
-        3 => 34.11,
-        4 => 18.06,
+        2 => 41.94,
+        3 => 32.61,
+        4 => 16.56,
         5 => 53.64,
     );
 

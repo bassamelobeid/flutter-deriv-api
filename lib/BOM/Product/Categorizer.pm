@@ -6,28 +6,40 @@ no indirect;
 
 =head1 NAME
 
-BOM::Product::Categorizer
+BOM::Product::Categorizer - A module that initializes and validates contract input parameters.
 
-=head1 DESCRIPTION
+=head1 USAGE
 
-A class to describe a contract based on the input parameters.
+    use BOM::Product::Categorizer;
 
-One of the optimizations that we want to do in pricing is to load market data prior to contract object creation.
-To achieve that, we need to extract some contract information to determine which market data to load, hence this class was created.
-
-But we are not there yet because there's a lot of refactoring needed to have the desired interface.
+    my $contract_parameters = BOM::Product::Categorizer->new(parameters => {
+        bet_type => 'CALL',
+        underlying => 'frxUSDJPY',
+        duration => '5m',
+        barrier => 'S0P',
+        currency => 'USD',
+        amount_type => 'payout',
+        amount => 100,
+    })->get();
 
 =cut
 
 use Date::Utility;
 use Quant::Framework;
 use Finance::Contract::Category;
-use List::Util qw(all);
+use Carp qw(croak);
+use List::Util qw(any);
+use Scalar::Util qw(looks_like_number blessed);
+use Scalar::Util::Numeric qw(isint);
+use Machine::Epsilon;
 
-use BOM::Config::Chronicle;
 use BOM::MarketData qw(create_underlying);
-use Finance::Contract::Category;
 use BOM::Product::Exception;
+use LandingCompany::Registry;
+use YAML::XS qw(LoadFile);
+
+my $epsilon                   = machine_epsilon();
+my $minimum_multiplier_config = LoadFile('/home/git/regentmarkets/bom/config/files/lookback_minimum_multiplier.yml');
 
 has parameters => (
     is       => 'ro',
@@ -35,314 +47,385 @@ has parameters => (
     required => 1,
 );
 
+# just to make sure we don't change the input parameters
+has _parameters => (
+    is       => 'rw',
+    init_arg => undef,
+);
+
 sub BUILD {
     my $self = shift;
 
-    my $contract_types = $self->contract_types;
-    my $barriers       = $self->barriers;
-
-    my $barrier_type_count = grep { $_->{category}->two_barriers } @$contract_types;
-
-    my $system_defined_barrier = grep { $_->{category}->code eq 'lookback' } @$contract_types;
-
-    if ($barrier_type_count > 0 and $barrier_type_count < scalar(@$contract_types)) {
-        BOM::Product::Exception->throw(
-            error_code => 'InvalidBarrierMixedBarrier',
-        );
-    }
-
-    # $barrier_type_count == 0, single barrier contract
-    # $barrier_type_count == @$c_types, double barrier contract
-    unless ($system_defined_barrier) {
-        BOM::Product::Exception->throw(
-            error_code => 'InvalidBarrierSingle',
-            details    => {field => 'barrier'},
-        ) if ($barrier_type_count == 0 and grep { ref $_ } @$barriers);
-
-        BOM::Product::Exception->throw(
-            error_code => 'InvalidBarrierDouble',
-            details    => {field => 'barrier'},
-        ) if ($barrier_type_count == scalar(@$contract_types) and grep { ref($_) ne 'HASH' or scalar(keys %$_) != 2 } @$barriers);
-    }
+    my %copy = %{$self->parameters};
+    $self->_parameters(\%copy);
 
     return;
 }
 
-has [qw(contract_types barriers)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
+=head2 get
 
-sub _build_contract_types {
+The only public method in this module. This gives you the initialized contract parameters in a hash reference.
+
+=cut
+
+sub get {
     my $self = shift;
 
-    my $p = $self->parameters;
+    $self->_initialize_contract_type();
 
-    my $c_types;
-    if ($p->{bet_types}) {
-        $c_types = $p->{bet_types};
-    } elsif ($p->{bet_type}) {
-        $c_types = [$p->{bet_type}];
-    } else {
+    # there's no point proceeding if contract type is invalid
+    if ($self->_parameters->{bet_type} ne 'INVALID') {
+        $self->_initialize_barrier();
+        $self->_initialize_underlying();
+        $self->_initialize_other_parameters();
+    }
+
+    delete $self->_parameters->{build_parameters};
+    $self->_parameters->{build_parameters} = {%{$self->_parameters}};
+
+    return $self->_parameters;
+}
+
+sub _initialize_contract_type {
+    my $self = shift;
+
+    my $params = $self->_parameters;
+
+    unless ($params->{bet_type}) {
         BOM::Product::Exception->throw(
             error_code => 'MissingRequiredBetType',
             details    => {field => 'contract_type'},
         );
     }
 
-    return [map { $self->_initialize_contract_config($_) } @$c_types];
+    # just in case we have someone who doesn't know it needs to be all caps!
+    $params->{bet_type} = uc $params->{bet_type};
+    my $contract_type_config = Finance::Contract::Category::get_all_contract_types();
+
+    unless (exists $contract_type_config->{$params->{bet_type}}) {
+        $params->{bet_type} = 'INVALID';
+        return;
+    }
+
+    my $contract_type = $params->{bet_type};
+    my %c_type_config = %{$contract_type_config->{$contract_type}};
+
+    $params->{$_} = $c_type_config{$_} for keys %c_type_config;
+
+    unless ($params->{category}) {
+        # not using BOM::Product::Exception here because it is not user defined input
+        croak "category not defined for $contract_type";
+    }
+
+    $params->{category} = Finance::Contract::Category->new($params->{category});
+
+    return;
 }
 
-sub _build_barriers {
+sub _initialize_barrier {
     my $self = shift;
 
-    my $p = $self->parameters;
+    my $params = $self->_parameters;
 
-    return $p->{barriers} if $p->{barriers};
+    # first check if we are expecting any barrier for this contract type
+    unless ($params->{has_user_defined_barrier}) {
+        # barrier(s) on contracts for sale is built by us so they can be exempted.
+        my @available_barriers = ('barrier', 'high_barrier', 'low_barrier');
+        if (not $params->{for_sale} and any { $params->{$_} or $params->{'supplied_' . $_} } @available_barriers) {
+            BOM::Product::Exception->throw(
+                error_code => 'BarrierNotAllowed',
+                details    => {field => 'barrier'},
+            );
+        }
+        # if we build this contract for sale, do some cleanup here.
+        delete $params->{$_} for @available_barriers;
+        return;
+    }
 
     # double barrier contract
-    foreach my $pair (['high_barrier', 'low_barrier'], ['supplied_high_barrier', 'supplied_low_barrier']) {
-        if (exists $p->{$pair->[0]} and exists $p->{$pair->[1]}) {
-            return [{
-                    barrier  => $p->{$pair->[0]},
-                    barrier2 => $p->{$pair->[1]}}];
+    if ($params->{category}->two_barriers) {
+        my ($high_barrier, $low_barrier);
+        if (exists $params->{high_barrier} and exists $params->{low_barrier}) {
+            ($high_barrier, $low_barrier) = @{$params}{'high_barrier', 'low_barrier'};
+        } elsif (exists $params->{supplied_high_barrier} and exists $params->{supplied_low_barrier}) {
+            ($high_barrier, $low_barrier) = @{$params}{'supplied_high_barrier', 'supplied_low_barrier'};
+        } else {
+            BOM::Product::Exception->throw(
+                error_code => 'InvalidBarrierDouble',
+                details    => {field => 'barrier'},
+            );
         }
-    }
 
-    foreach my $type ('barrier', 'supplied_barrier') {
-        # single barrier contract
-        if (exists $p->{$type}) {
-            return [$p->{$type}];
-        }
-    }
-
-    return [];
-}
-
-sub process {
-    my $self = shift;
-
-    my $c_types  = $self->contract_types;
-    my $barriers = $self->barriers;
-
-    my @params;
-    my $contract_params = $self->_initialize_contract_parameters();
-
-    foreach my $c_type (@$c_types) {
-        my $contract_class      = 'BOM::Product::Contract::' . ucfirst lc $c_type->{bet_type};
-        my $allowed_amount_type = $contract_class->allowed_amount_type;
-
-        # due to the huge number of test cases where we pass in a payout, we will have to have this outer if condition
-        if ($contract_params->{amount_type} and defined $contract_params->{amount}) {
-            if ($allowed_amount_type->{$contract_params->{amount_type}}) {
-                # if amount_type and amount are defined, give them priority.
-                if ($contract_params->{amount_type} eq 'payout') {
-                    $contract_params->{payout} = $contract_params->{amount};
-                } elsif ($contract_params->{amount_type} eq 'stake') {
-                    $contract_params->{ask_price} = $contract_params->{amount};
-                } else {
-                    $contract_params->{payout} = 0;    # if we don't know what it is, set payout to zero
-                }
-
-            } else {
-                my @allowed = keys %$allowed_amount_type;
-                my $error_code = scalar(@allowed) > 1 ? 'WrongAmountTypeTwo' : 'WrongAmountTypeOne';
+        # looks_like_number can be 0 or +0
+        if (looks_like_number($high_barrier) and looks_like_number($low_barrier)) {
+            my $regex = qr/^(\+|\-)/;
+            if (($high_barrier =~ /$regex/ and $low_barrier !~ /$regex/) or ($high_barrier !~ /$regex/ and $low_barrier =~ /$regex/)) {
+                # mixed absolute and relative
                 BOM::Product::Exception->throw(
-                    error_code => $error_code,
-                    error_args => \@allowed,
-                    details    => {field => 'basis'},
+                    error_code => 'InvalidBarrierMixedBarrier',
+                    details    => {field => 'barrier'},
+                );
+            } elsif ($high_barrier !~ /$regex/) {
+                if ($high_barrier == 0 or $low_barrier == 0) {
+                    BOM::Product::Exception->throw(
+                        error_code => 'ZeroAbsoluteBarrier',
+                        details    => {field => ($high_barrier == 0 ? 'barrier' : 'barrier2')},
+                    );
+                } elsif (abs($high_barrier - $low_barrier) < $epsilon) {
+                    BOM::Product::Exception->throw(
+                        error_code => 'InvalidHighBarrier',
+                        details    => {field => 'barrier'},
+                    );
+                }
+            } elsif ($high_barrier < $low_barrier) {
+                BOM::Product::Exception->throw(
+                    error_code => 'InvalidHighBarrier',
+                    details    => {field => 'barrier'},
                 );
             }
         }
 
-        # if stake is defined, set it to ask_price.
-        if ($contract_params->{stake}) {
-            $contract_params->{ask_price} = $contract_params->{stake};
+        # house keeping
+        delete $params->{$_} for qw(high_barrier low_barrier);
+        $params->{supplied_high_barrier} = $high_barrier;
+        $params->{supplied_low_barrier}  = $low_barrier;
+    } else {
+        if (exists $params->{high_barrier} and exists $params->{low_barrier}) {
+            BOM::Product::Exception->throw(
+                error_code => 'InvalidBarrierSingle',
+                details    => {field => 'barrier'},
+            );
+        }
+        my $barrier = $params->{barrier} // $params->{supplied_barrier};
+        if (not defined $barrier) {
+            my $error_code = $params->{category}->code eq 'digits' ? 'MissingRequiredDigit' : 'InvalidBarrierSingle';
+            BOM::Product::Exception->throw(
+                error_code => $error_code,
+                details    => {field => 'barrier'},
+            );
+        } elsif (looks_like_number($barrier) and $params->{category}->has_financial_barrier and $barrier !~ /^(\+|\-)/ and $barrier == 0) {
+            BOM::Product::Exception->throw(
+                error_code => 'ZeroAbsoluteBarrier',
+                details    => {field => 'barrier'},
+            );
         }
 
-        unless (defined $contract_params->{payout} or defined $contract_params->{ask_price}) {
-            $contract_params->{payout} = 0;    # last safety net
-        }
+        # house keeping
+        delete $params->{barrier};
+        $params->{supplied_barrier} = $barrier;
+    }
 
-        if (@$barriers) {
-            foreach my $barrier (@$barriers) {
-                my $barrier_info = $self->_initialize_barrier($barrier);
-                my $clone = {%$contract_params, %$c_type, %$barrier_info};
-                # just to make sure nothing gets pass through
-                delete $clone->{$_} for qw(bet_types barriers barrier high_barrier low_barrier);
-                $clone->{build_parameters} = {%$clone};
-                push @params, $clone;
-            }
-        } else {
-            my $clone = {%$contract_params, %$c_type};
-            # sometimes barriers could be undefined
-            $clone->{build_parameters} = {%$clone};
-            push @params, $clone;
+    return;
+}
+
+sub _initialize_underlying {
+    my $self = shift;
+
+    my $params = $self->_parameters;
+
+    BOM::Product::Exception->throw(
+        error_code => 'MissingRequiredUnderlying',
+        details    => {field => 'symbol'},
+    ) unless $params->{underlying};
+
+    if (!(blessed $params->{underlying} and $params->{underlying}->isa('Quant::Framework::Underlying'))) {
+        $params->{underlying} = create_underlying($params->{underlying});
+    }
+
+    # if underlying is not defined, then some settings are default to 'config'
+    if ($params->{underlying}->market eq 'config') {
+        BOM::Product::Exception->throw(
+            error_code => 'InvalidInputAsset',
+            details    => {field => 'symbol'},
+        );
+    }
+
+    # If they gave us a date for start and pricing, then we need to create_underlying using that.
+    # date_pricing is set for back-pricing purposes
+    if (exists $params->{date_pricing}) {
+        $params->{date_pricing} = Date::Utility->new($params->{date_pricing});
+        if (not($params->{underlying}->for_date and $params->{underlying}->for_date->is_same_as($params->{date_pricing}))) {
+            $params->{underlying} = create_underlying($params->{underlying}->symbol, $params->{date_pricing});
         }
     }
 
-    return \@params;
+    return;
 }
 
-sub _initialize_contract_parameters {
+sub _initialize_other_parameters {
     my $self = shift;
-    my $pp   = {%{$self->parameters}};
 
-    # always build shortcode
-    delete $pp->{shortcode};
+    my $params = $self->_parameters;
+
+    # house keeping.
+    delete $params->{shortcode};
+    delete $params->{expiry_daily};
+    delete $params->{is_intraday};
 
     BOM::Product::Exception->throw(
         error_code => 'MissingRequiredCurrency',
         details    => {field => 'currency'},
-    ) unless $pp->{currency};
-    BOM::Product::Exception->throw(
-        error_code => 'MissingRequiredUnderlying',
-        details    => {field => 'symbol'},
-    ) unless $pp->{underlying};
+    ) unless $params->{currency};
 
     # set date start if not given. If we want to price a contract starting now, date_start should never be provided!
-    unless ($pp->{date_start}) {
+    unless ($params->{date_start}) {
         # An undefined or missing date_start implies that we want a bet which starts now.
-        $pp->{date_start} = Date::Utility->new;
+        $params->{date_start} = Date::Utility->new;
         # Force date_pricing to be similarly set, but make sure we know below that we did this, for speed reasons.
-        $pp->{pricing_new} = 1;
+        $params->{pricing_new} = 1;
     } else {
-        $pp->{date_start} = Date::Utility->new($pp->{date_start});
+        $params->{date_start} = Date::Utility->new($params->{date_start});
     }
 
-    if (defined $pp->{date_pricing}) {
-        $pp->{date_pricing} = Date::Utility->new($pp->{date_pricing});
+    # if both are present, we will throw an error
+    if (exists $params->{duration} and exists $params->{date_expiry}) {
+        BOM::Product::Exception->throw(
+            error_code => 'EitherDurationOrExpiry',
+            details    => {field => ''},
+        );
     }
 
-    if (!(blessed $pp->{underlying} and $pp->{underlying}->isa('Quant::Framework::Underlying'))) {
-        $pp->{underlying} = create_underlying($pp->{underlying}, $pp->{date_pricing});
-    }
-
-    # If they gave us a date for start and pricing, then we need to do some magic.
-    if ($pp->{date_pricing}) {
-        if (not($pp->{underlying}->for_date and $pp->{underlying}->for_date->is_same_as($pp->{date_pricing}))) {
-            $pp->{underlying} = create_underlying($pp->{underlying}->symbol, $pp->{date_pricing});
-        }
-    }
-
-    if (defined $pp->{date_expiry}) {
+    if (defined $params->{date_expiry}) {
         # to support legacy shortcode where expiry date is date string in dd-mmm-yy format
-        if (Date::Utility::is_ddmmmyy($pp->{date_expiry})) {
-            my $exchange    = $pp->{underlying}->exchange;
-            my $date_expiry = Date::Utility->new($pp->{date_expiry});
-            if (my $closing = $self->_trading_calendar->closing_on($exchange, $date_expiry)) {
-                $pp->{date_expiry} = $closing;
-            } else {
-                my $regular_close =
-                    $self->_trading_calendar->closing_on($exchange, $self->_trading_calendar->regular_trading_day_after($exchange, $date_expiry));
-                $pp->{date_expiry} = Date::Utility->new($date_expiry->date_yyyymmdd . ' ' . $regular_close->time_hhmmss);
+        if (Date::Utility::is_ddmmmyy($params->{date_expiry})) {
+            my $exchange = $params->{underlying}->exchange;
+            $params->{date_expiry} = $self->_trading_calendar->closing_on($exchange, Date::Utility->new($params->{date_expiry}));
+            # contract bought expires on a non-trading day
+            unless ($params->{date_expiry}) {
+                BOM::Product::Exception->throw(
+                    error_code => 'TradingDayExpiry',
+                    details    => {field => $params->{duration} ? 'duration' : 'date_expiry'},
+                );
             }
         } else {
-            $pp->{date_expiry} = Date::Utility->new($pp->{date_expiry});
+            $params->{date_expiry} = Date::Utility->new($params->{date_expiry});
         }
     }
 
-    $pp->{starts_as_forward_starting} //= 0;
-    $pp->{landing_company}            //= 'svg';
+    #TODO: remove this
+    $params->{landing_company} //= 'svg';
+    $params->{payout_currency_type} //= LandingCompany::Registry::get_currency_type($params->{currency});
 
-    # hash reference reusef
-    delete $pp->{expiry_daily};
-    delete $pp->{is_intraday};
-
-    if (defined $pp->{tick_expiry}) {
-        my $interval = 2 * $pp->{tick_count};
-        $pp->{date_expiry} = $pp->{date_start}->plus_time_interval($interval);
-    }
-
-    if (defined $pp->{duration}) {
-        try {
-            if (my ($number_of_ticks) = $pp->{duration} =~ /([0-9]+)t$/) {
-                $pp->{tick_expiry} = 1;
-                $pp->{tick_count}  = $number_of_ticks;
-                $pp->{date_expiry} = $pp->{date_start}->plus_time_interval(2 * $pp->{tick_count});
-            } else {
-                # The thinking here is that duration is only added on purpose, but
-                # date_expiry might be hanging around from a poorly reused hashref.
-                my $duration    = $pp->{duration};
-                my $underlying  = $pp->{underlying};
-                my $start_epoch = $pp->{date_start}->epoch;
-                my $expiry;
-                if ($duration =~ /d$/) {
-                    # Since we return the day AFTER, we pass one day ahead of expiry.
-                    my $expiry_date = Date::Utility->new($start_epoch)->plus_time_interval($duration);
-                    # Daily bet expires at the end of day, so here you go
-                    if (my $closing = $self->_trading_calendar->closing_on($underlying->exchange, $expiry_date)) {
-                        $expiry = $closing->epoch;
-                    } else {
-                        $expiry = $expiry_date->epoch;
-                        my $regular_day = $self->_trading_calendar->regular_trading_day_after($underlying->exchange, $expiry_date);
-                        my $regular_close = $self->_trading_calendar->closing_on($underlying->exchange, $regular_day);
-                        $expiry = Date::Utility->new($expiry_date->date_yyyymmdd . ' ' . $regular_close->time_hhmmss)->epoch;
-                    }
-                } else {
-                    $expiry = $start_epoch + Time::Duration::Concise->new(interval => $duration)->seconds;
-                }
-                $pp->{date_expiry} = Date::Utility->new($expiry);
-            }
-        }
-        catch {
+    if (defined $params->{duration}) {
+        my $duration = delete $params->{duration};
+        if ($duration !~ /[0-9]+(t|m|d|s|h)/) {
             BOM::Product::Exception->throw(
                 error_code => 'TradingDurationNotAllowed',
                 details    => {field => 'duration'},
             );
+        } else {
+            # sanity check for duration. Date::Utility throws exception if you're trying
+            # to create an object that's too ridiculous far in the future.
+            try {
+                my ($duration_amount, $duration_unit) = $duration =~ /([0-9]+)(t|m|d|s|h)/;
+                my $interval = $duration;
+                $interval = $duration_amount * 2 if $duration_unit eq 't';
+                $params->{date_start}->plus_time_interval($interval);
+            }
+            catch {
+                BOM::Product::Exception->throw(
+                    error_code => 'TradingDurationNotAllowed',
+                    details    => {field => 'duration'});
+            };
+            if (my ($tick_count) = $duration =~ /^([0-9]+)t$/) {
+                $params->{tick_expiry} = 1;
+                $params->{tick_count}  = $tick_count;
+                $params->{date_expiry} = $params->{date_start}->plus_time_interval(2 * $params->{tick_count});
+            } else {
+                my $underlying  = $params->{underlying};
+                my $start_epoch = $params->{date_start};
+                $params->{date_expiry} = $start_epoch->plus_time_interval($duration);
+
+                if ($duration =~ /d$/) {
+                    # Daily bet expires at the end of day, so here you go
+                    if (my $closing = $self->_trading_calendar->closing_on($underlying->exchange, $params->{date_expiry})) {
+                        $params->{date_expiry} = $closing;
+                    } else {
+                        my $regular_day = $self->_trading_calendar->regular_trading_day_after($underlying->exchange, $params->{date_expiry});
+                        my $regular_close = $self->_trading_calendar->closing_on($underlying->exchange, $regular_day);
+                        $params->{date_expiry} = Date::Utility->new($params->{date_expiry}->date_yyyymmdd . ' ' . $regular_close->time_hhmmss);
+                    }
+                }
+            }
         }
     }
 
-    $pp->{date_start} //= 1;    # Error conditions if it's not legacy or run, I guess.
-
-    if ($pp->{bet_type} and $pp->{bet_type} ne 'Invalid' and not $pp->{date_expiry}) {
+    unless (exists $params->{date_start}) {
         BOM::Product::Exception->throw(
-            error_code => 'MissingRequiredExpiry',
+            error_code => 'MissingRequiredStart',
+            details    => {field => 'date_start'},
+        );
+    }
+
+    if ($params->{category}->has_user_defined_expiry and not $params->{date_expiry}) {
+        BOM::Product::Exception->throw(
+            error_code => 'EitherDurationOrExpiry',
             details    => {field => 'duration'},
         );
     }
 
-    return $pp;
-}
-
-sub _initialize_contract_config {
-    my ($self, $c_type) = @_;
-
-    BOM::Product::Exception->throw(
-        error_code => 'MissingRequiredBetType',
-        details    => {field => 'contract_type'},
-    ) unless $c_type;
-
-    my $contract_type_config = Finance::Contract::Category::get_all_contract_types();
-
-    my $params;
-
-    if (not exists $contract_type_config->{$c_type}) {
-        $c_type = 'INVALID';
+    if (exists $params->{payout} and exists $params->{stake}) {
+        BOM::Product::Exception->throw(
+            error_code => 'EitherPayoutOrStake',
+            details    => {field => 'basis'},
+        );
     }
 
-    my %c_type_config = %{$contract_type_config->{$c_type}};
-
-    $params->{$_} = $c_type_config{$_} for keys %c_type_config;
-    $params->{bet_type} = $c_type;
-    $params->{category} = Finance::Contract::Category->new($params->{category}) if $params->{category};
-
-    return $params;
-}
-
-sub _initialize_barrier {
-    my ($self, $barrier) = @_;
-
-    my $barrier_info;
-    # if it is a hash reference, we will treat it as a double barrier contract.
-    if (ref $barrier eq 'HASH') {
-        $barrier_info->{supplied_high_barrier} = $barrier->{barrier};
-        $barrier_info->{supplied_low_barrier}  = $barrier->{barrier2};
-    } else {
-        $barrier_info->{supplied_barrier} = $barrier;
+    # these are for the sake of not fixing every unit tests!
+    if (exists $params->{stake}) {
+        $params->{amount}      = delete $params->{stake};
+        $params->{amount_type} = 'stake';
+    } elsif (exists $params->{multiplier}) {
+        $params->{amount}      = delete $params->{multiplier};
+        $params->{amount_type} = 'multiplier';
+    } elsif (exists $params->{payout}) {
+        $params->{amount}      = delete $params->{payout};
+        $params->{amount_type} = 'payout';
     }
 
-    return $barrier_info;
+    unless (exists $params->{amount_type} and exists $params->{amount}) {
+        my $error_code = $params->{category}->code eq 'lookback' ? 'MissingRequiredMultiplier' : 'EitherPayoutOrStake';
+        BOM::Product::Exception->throw(
+            error_code => $error_code,
+            details    => {field => 'amount'},
+        );
+    }
+
+    my @allowed = @{$params->{category}->supported_amount_type};
+    if (not any { $params->{amount_type} eq $_ } @allowed) {
+        my $error_code = scalar(@allowed) > 1 ? 'WrongAmountTypeTwo' : 'WrongAmountTypeOne';
+        BOM::Product::Exception->throw(
+            error_code => $error_code,
+            error_args => \@allowed,
+            details    => {field => 'basis'},
+        );
+    }
+
+    my $minimum_multiplier;
+    $minimum_multiplier = $minimum_multiplier_config->{$params->{underlying}->symbol} / $minimum_multiplier_config->{$params->{payout_currency_type}}
+        if $params->{category}->has_minimum_multiplier;
+
+    if (defined $minimum_multiplier) {
+        # multiplier has non-zero minimum
+        if ($params->{amount} < $minimum_multiplier) {
+            BOM::Product::Exception->throw(
+                error_code => 'MinimumMultiplier',
+                error_args => [$minimum_multiplier],
+                details    => {field => 'amount'},
+            );
+        }
+    } elsif ($params->{amount} <= 0) {
+        BOM::Product::Exception->throw(
+            error_code => 'InvalidStake',
+            details    => {field => 'amount'});
+    }
+
+    # only do this conversion here.
+    $params->{amount_type} = 'ask_price' if $params->{amount_type} eq 'stake';
+    $params->{$params->{amount_type}} = $params->{amount};
+    delete $params->{$_} for qw(amount amount_type);
+
+    return;
 }
 
 has _trading_calendar => (
@@ -353,7 +436,7 @@ has _trading_calendar => (
 sub _build__trading_calendar {
     my $self = shift;
 
-    my $for_date = $self->parameters->{date_pricing} ? Date::Utility->new($self->parameters->{date_pricing}) : undef;
+    my $for_date = $self->_parameters->{date_pricing} ? Date::Utility->new($self->_parameters->{date_pricing}) : undef;
     return Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader($for_date), $for_date);
 }
 

@@ -75,7 +75,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 event_name   => 'FOMC',
             }]});
 
-use BOM::Product::ContractFactory qw( produce_contract );
 
 my $res;
 subtest 'Numbers and stuff.' => sub {
@@ -137,7 +136,7 @@ subtest 'Probabilities etc.' => sub {
         high_barrier => 110.0,
         low_barrier  => 106.0,
         current_spot => 109.87,
-        currency     => 'JPY',
+        currency     => 'USD',
     };
 
     my $bet = produce_contract($bet_params);

@@ -6,8 +6,6 @@ use warnings;
 use Time::HiRes;
 use Date::Utility;
 use List::Util qw(any first);
-use Scalar::Util::Numeric qw(isint);
-use Format::Util::Numbers;
 
 use LandingCompany::Registry;
 
@@ -15,8 +13,8 @@ use BOM::Config::Runtime;
 use BOM::Config;
 use BOM::Product::Static;
 
-my $supported_payout_currencies = Format::Util::Numbers::get_precision_config()->{amount};
-my $ERROR_MAPPING               = BOM::Product::Static::get_error_mapping();
+my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
+my %all_currencies = map { $_ => 1 } LandingCompany::Registry::all_currencies();
 
 has disable_trading_at_quiet_period => (
     is      => 'ro',
@@ -196,6 +194,14 @@ sub _confirm_validity {
 # Is this underlying or contract is disabled/suspended from trading.
 sub _validate_offerings {
     my $self = shift;
+
+    # available payout currency
+    unless ($all_currencies{$self->currency}) {
+        BOM::Product::Exception->throw(
+            error_code => 'InvalidPayoutCurrency',
+            details    => {field => 'currency'},
+        );
+    }
 
     my $message_to_client = $self->for_sale ? [$ERROR_MAPPING->{ResaleNotOffered}] : [$ERROR_MAPPING->{TradeTemporarilyUnavailable}];
 
@@ -467,23 +473,6 @@ sub _validate_input_parameters {
         }
     }
 
-    if ($self->category_code eq 'lookback') {
-
-        if ($self->multiplier < $self->minimum_multiplier) {
-            return {
-                message           => 'below minimum allowed multiplier',
-                message_to_client => [$ERROR_MAPPING->{MinimumMultiplier} . ' ' . $self->minimum_multiplier . '.'],
-                details           => {field => 'amount'},
-            };
-        } elsif (not isint($self->multiplier * 1000)) {
-            return {
-                message           => 'Multiplier cannot be more than 3 decimal places.',
-                message_to_client => [$ERROR_MAPPING->{MultiplierDecimalPlace}],
-                details           => {field => 'amount'},
-            };
-        }
-    }
-
     if ($self->category_code eq 'reset' and not $self->for_sale) {
         if ($self->supplied_barrier ne 'S0P') {
             return {
@@ -500,15 +489,6 @@ sub _validate_input_parameters {
                 details           => {field => 'date_expiry'},
             };
         }
-    }
-
-    unless ($supported_payout_currencies->{$self->currency}) {
-        $self->invalid_user_input(1);
-        return {
-            message           => 'payout currency not supported',
-            message_to_client => [$ERROR_MAPPING->{InvalidPayoutCurrency}],
-            details           => {field => 'currency'},
-        };
     }
 
     return;
