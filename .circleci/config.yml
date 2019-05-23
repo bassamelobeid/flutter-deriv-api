@@ -45,7 +45,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -61,7 +60,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -77,7 +75,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -93,7 +90,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -109,7 +105,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -125,7 +120,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -141,7 +135,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -157,7 +150,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -173,7 +165,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -190,7 +181,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -207,7 +197,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -224,7 +213,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -241,7 +229,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -258,7 +245,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -275,7 +261,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -292,7 +277,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -309,7 +293,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -326,7 +309,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -343,7 +325,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -360,7 +341,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -377,7 +357,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -394,7 +373,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -411,7 +389,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -428,7 +405,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -445,7 +421,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -462,7 +437,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
@@ -479,7 +453,6 @@ jobs:
     <<: *default
     steps:
       - *ssh_keys
-      - checkout
       - *git
       - *services
       - *wait_services
