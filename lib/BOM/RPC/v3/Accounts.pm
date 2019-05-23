@@ -1388,6 +1388,20 @@ rpc set_settings => sub {
             if ($set_status);
     }
 
+    # When a trader stop being a trader, need to delete from clientdb betonmarkets.copiers
+    if (defined $allow_copiers and $allow_copiers == 0) {
+        my $copier = BOM::Database::DataMapper::Copier->new(
+            broker_code => $current_client->broker_code,
+            operation   => 'write'
+        );
+
+        if (scalar @{$copier->get_copiers_tokens_all({trader_id => $current_client->loginid}) || []}) {
+            $copier->delete_copiers({
+                trader_id => $current_client->loginid,
+                match_all => 1
+            });
+        }
+    }
     # Send request to update onfido details
     BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $current_client->loginid});
 
@@ -1832,6 +1846,16 @@ rpc api_token => sub {
     my $m = BOM::Database::Model::AccessToken->new;
     my $rtn;
     if ($args->{delete_token}) {
+        # When a token is deleted from authdb, it need to be deleted from clientdb betonmarkets.copiers
+        BOM::Database::DataMapper::Copier->new({
+                broker_code => $client->broker_code,
+                operation   => 'write'
+            }
+            )->delete_copiers({
+                match_all => 1,
+                trader_id => $client->loginid,
+                token     => $args->{delete_token}});
+
         $m->remove_by_token($args->{delete_token}, $client->loginid);
         $rtn->{delete_token} = 1;
         # send notification to cancel streaming, if we add more streaming

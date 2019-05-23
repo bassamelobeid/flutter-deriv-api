@@ -15,6 +15,8 @@ use BOM::User::Client;
 use BOM::RPC::v3::Accounts;
 use BOM::Database::Model::AccessToken;
 use Email::Stuffer::TestLinks;
+use BOM::Platform::Copier;
+use BOM::Database::DataMapper::Copier;
 
 # cleanup
 BOM::Database::Model::AccessToken->new->dbic->dbh->do("
@@ -22,6 +24,8 @@ BOM::Database::Model::AccessToken->new->dbic->dbh->do("
 ") foreach ('auth.access_token');
 
 my $client = create_test_user();
+
+my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 
 my $res = BOM::RPC::v3::Accounts::api_token({
     client => $client,
@@ -41,6 +45,11 @@ is scalar(@{$res->{tokens}}), 1, '1 token created';
 my $test_token = $res->{tokens}->[0];
 is $test_token->{display_name}, 'Test Token';
 
+my $copiers_data_mapper=create_test_copier($client, $test_token->{token});
+my $traders_tokens = $copiers_data_mapper->get_traders_tokens_all({copier_id=>'CR10001'});
+is scalar(@$traders_tokens), 1, 'get tokens in copiers table';
+
+
 # delete token
 $res = BOM::RPC::v3::Accounts::api_token({
         client => $client,
@@ -50,6 +59,9 @@ $res = BOM::RPC::v3::Accounts::api_token({
     });
 ok $res->{delete_token};
 is_deeply($res->{tokens}, [], 'empty');
+
+$traders_tokens = $copiers_data_mapper->get_traders_tokens_all({copier_id=>'CR10001'});
+is_deeply $traders_tokens , [] , 'traders tokens also deleted';
 
 ## re-create
 $res = BOM::RPC::v3::Accounts::api_token({
@@ -100,7 +112,6 @@ $res = BOM::RPC::v3::Accounts::api_token({
 is scalar(@{$res->{tokens}}), 2, '2nd token created';
 $test_token = $res->{tokens}->[1]->{token};
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 my $params = {
     language   => 'EN',
     token      => $test_token,
@@ -112,5 +123,27 @@ $c->call_ok('authorize', $params)->has_no_error;
 $params->{client_ip} = '1.2.1.1';
 $c->call_ok('authorize', $params)
     ->has_error->error_message_is('Token is not valid for current ip address.', 'check invalid token as ip is different from registered one');
+
+sub create_test_copier{
+    my ($client, $test_token) = @_;
+    my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        first_name  => 'test'
+    });
+
+    BOM::Platform::Copier->update_or_create({
+        trader_id    => $client->loginid,
+        copier_id    => 'CR10001',
+        broker       => $client->broker_code,
+        trader_token => $test_token,
+    });
+
+    my $copiers_data_mapper = BOM::Database::DataMapper::Copier->new({
+        broker_code => $client->broker_code,
+        operation   => 'replica'
+    });
+
+    return $copiers_data_mapper;
+}
 
 done_testing();
