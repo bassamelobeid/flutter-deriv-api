@@ -137,7 +137,8 @@ rpc buy => sub {
     #no of contracts. Internally for non-binary we will use multiplier.
     #If we use amount, this will create confusion with the amount use for
     #binary contract.
-    $contract_parameters->{multiplier} = $contract_parameters->{amount} if $contract_parameters->{amount_type} eq 'multiplier';
+    $contract_parameters->{multiplier} = $contract_parameters->{amount}
+        if $contract_parameters->{amount_type} and $contract_parameters->{amount_type} eq 'multiplier';
 
     my $error = BOM::RPC::v3::Contract::validate_barrier($contract_parameters);
     return $error if $error->{error};
@@ -153,7 +154,7 @@ rpc buy => sub {
     return $error if $error;
 
     #Temporary fix to skip amount validation for lookback.
-    $error = _validate_amount($amount, $currency) if ($contract_parameters->{bet_type} !~ /$nonbinary_list/);
+    $error = _validate_amount($amount, $currency) if ($contract_parameters->{bet_type} and $contract_parameters->{bet_type} !~ /$nonbinary_list/);
     return $error if $error;
 
     if (defined $price and defined $amount and defined $amount_type and $amount_type eq 'stake') {

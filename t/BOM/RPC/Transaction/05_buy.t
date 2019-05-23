@@ -64,7 +64,7 @@ subtest 'buy' => sub {
     {
         local $SIG{'__WARN__'} = sub {
             my $msg = shift;
-            if ($msg !~ /Use of uninitialized value in pattern match/) {
+            if ($msg !~ /Use of uninitialized value \$_ in pattern match/) {
                 print STDERR $msg;
             }
         };

@@ -92,6 +92,7 @@ sub validate_barrier {
     my $contract_parameters = shift;
 
     return undef if (defined $contract_parameters->{barrier} && $contract_parameters->{barrier} eq 'S0P');
+    return undef unless exists $contract_parameters->{barrier} or exists $contract_parameters->{barrier2};
 
     # Get the number of digits of the underlying pipsize.
     create_underlying($contract_parameters->{underlying})->pip_size =~ /\.([0-9]+)/;

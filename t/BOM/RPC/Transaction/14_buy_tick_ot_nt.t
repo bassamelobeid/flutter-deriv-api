@@ -64,7 +64,7 @@ subtest 'buy' => sub {
     {
         local $SIG{'__WARN__'} = sub {
             my $msg = shift;
-            if ($msg !~ /Use of uninitialized value in pattern match/) {
+            if ($msg !~ /Use of uninitialized value \$_ in pattern match/) {
                 print STDERR $msg;
             }
         };
@@ -153,6 +153,7 @@ subtest 'buy' => sub {
     $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('InvalidPrice', 'Invalid precision for price');
 
     $params->{args}{price} = "0.95";
+    delete $params->{contract_parameters}->{payout};
     $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
     ok $result->{contract_id},    'buy response has contract id';
     ok $result->{transaction_id}, 'buy response has transaction id';

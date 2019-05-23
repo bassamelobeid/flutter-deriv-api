@@ -92,11 +92,7 @@ my $buy_params = {
 
 subtest 'buy with invalid duration using contract_parameters' => sub {
     my (undef, $txn_con) = Test::BOM::RPC::Contract::prepare_contract(client => $client);
-    $buy_params->{args}{price} = $txn_con->contract->ask_price;
-    # use Data::Dumper::Concise;
-    # my $cc =
     $c->call_ok('buy', $buy_params)->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'correct error code');
-    # warn Dumper $cc->result;
 };
 
 subtest 'get proposal with invalid days duration' => sub {
@@ -188,6 +184,7 @@ subtest 'get digitmatch proposal with invalid duration' => sub {
     $buy_params->{contract_parameters}{duration}      = '5';
     $buy_params->{contract_parameters}{duration_unit} = 'd';
     $buy_params->{contract_parameters}{barrier}       = '1';
+    delete $buy_params->{contract_parameters}{date_expiry};
     $c->call_ok('buy', $buy_params)->has_no_system_error->has_error->error_code_is('InvalidOfferings', 'correct error code')
         ->error_message_is('Trading is not offered for this duration.', 'Trading is not offered for this duration.');
 
