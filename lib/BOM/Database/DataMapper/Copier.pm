@@ -156,6 +156,8 @@ Takes the following arguments as named parameters
 
 =item  token  token representing the copy
 
+=item  match_all flag to turn NULL into '*' for delete_copiers db functions
+
 =back
 
 Returns number of rows deleted.
@@ -164,6 +166,10 @@ Returns number of rows deleted.
 
 sub delete_copiers {
     my ($self, $args) = @_;
+    if ($args->{match_all}) {
+        map { $args->{$_} ||= '*' } qw/trader_id copier_id token/;
+    }
+
     my $rows_affected = $self->db->dbic->run(
         ping => sub {
             my $rows_affected = $_->do('SELECT FROM betonmarkets.delete_copiers(?::VARCHAR(12),?::VARCHAR(12),?::TEXT)',
