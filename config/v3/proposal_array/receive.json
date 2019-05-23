@@ -1,4 +1,5 @@
 {
+	
    "$schema" : "http://json-schema.org/draft-04/schema#",
    
    "title" : "Multiple Price Proposal Response",
@@ -11,13 +12,14 @@
    "properties" : {
       "proposal_array" : {
           "required" : ["id",  "proposals" ], 
-         "spot" : {
-            "description" : "Spot value (if there are no exchange data-feed licensing restrictions for the underlying symbol). Example: 9874.52",
-            "type" : "number"
-         },
          "type" : "object",
          "description" : "Latest price and other details for a given contract",
          "title" : "Price Proposal for Multiple Contracts Response",
+         "properties" : {
+           "spot" : {
+            "description" : "Spot value (if there are no exchange data-feed licensing restrictions for the underlying symbol). Example: 9874.52",
+            "type" : "number"
+         },
          "id" : {
             "type" : "string",
             "description" : "A stream id that can be used to cancel this stream using the Forget request. Example: 1d6651e7d599bce6c54bd71a8283e579"
@@ -30,13 +32,14 @@
             "description" : "Latest price and other details for available contracts",
             "type" : "object",
             "title" : "Multiple Price Proposal Response",
-            "oneOf":[{ 
             "patternProperties" : {
                "^\\w{2,30}$" : {
-                  "required" : ["payout", "ask_require", "longcode", "display_value" ], 
+                  "description" : "Multiple Price Proposal Result",
+                  "type" : "array",
                   "items" : {
                      "type" : "object",
                      "description" : "Price Proposal result",
+                  "required" : ["payout", "ask_price", "longcode", "display_value" ], 
                      "properties" : {
                         "error" : {
                            "description" : "Error message",
@@ -69,15 +72,9 @@
                            "type" : "string"
                         }
                      }
-                  },
-                  "description" : "Multiple Price Proposal Result",
-                  "type" : "array"
+                  }
                }
-            }}, 
-            { 
-                "patternproperties" :{
-                    "^\\w{2,30}$" : { "type" : "array"}
-            }}]
+            } 
          },
          "spot_time" : {
             "description" : "Timestamp for latest spot (epoch time). Example: 1439999052",
@@ -110,5 +107,7 @@
             }
          }
      }
+      }
    }
 }
+
