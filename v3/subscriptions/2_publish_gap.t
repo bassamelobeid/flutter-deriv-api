@@ -16,21 +16,21 @@ use BOM::Test::WebsocketAPI::Data qw( requests );
 my $loop = IO::Async::Loop->new;
 $loop->add(
     my $tester = BOM::Test::WebsocketAPI->new(
-		suite_params => {
-			requests => requests(
-				filter => sub {
-					state $count;
-					my $params = delete $_[0]->{params};
-					my ($call) = $_[0]->%*;
-					++$count->{$call} == 1;
-				},
-			),
-		}
-	),
+        suite_params => {
+            requests => requests(
+                filter => sub {
+                    state $count;
+                    my $params = delete $_[0]->{params};
+                    my ($call) = $_[0]->%*;
+                    ++$count->{$call} == 1;
+                },
+            ),
+        }
+    ),
 );
 
 subtest 'Publish gap test - all calls in parallel' => sub {
-	$tester->publish_gap->get;
+    $tester->publish_gap->get;
 };
 
 done_testing;

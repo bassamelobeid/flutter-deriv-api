@@ -18,9 +18,9 @@ $loop->add(
         timeout            => 300,
         max_response_delay => 10,
         skip_sanity_checks => {
-            balance     => [qw(schema_v4)],    # balance.balance is string
-            transaction => [qw(schema_v4 schema_v3)],    # transaction.amount, balance is string
-            website_status => [qw(published check_duplicates)],  # Response can be overlapping between publishes
+            balance        => [qw(schema_v4)],                     # balance.balance is string
+            transaction    => [qw(schema_v4 schema_v3)],           # transaction.amount, balance is string
+            website_status => [qw(published check_duplicates)],    # Response can be overlapping between publishes
         },
         suite_params => {
             requests => requests(
@@ -29,7 +29,7 @@ $loop->add(
                     $params = $params->contract if $params->contract;
                     return 1 unless $params->underlying;
                     # Checking R_100 only, for faster tests.
-                    $params->underlying->symbol eq 'R_100'
+                    $params->underlying->symbol eq 'R_100';
                 },
             ),
             concurrent => 50,

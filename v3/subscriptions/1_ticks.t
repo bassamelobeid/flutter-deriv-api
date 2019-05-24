@@ -18,31 +18,28 @@ use BOM::Test::WebsocketAPI::Data qw( requests );
 my $loop = IO::Async::Loop->new;
 $loop->add(
     my $tester = BOM::Test::WebsocketAPI->new(
-        timeout             => 300,
-        max_response_delay  => 10,
-        suite_params        => {
+        timeout            => 300,
+        max_response_delay => 10,
+        suite_params       => {
             concurrent => 50,
-            requests => requests(
-                calls   => [qw(ticks ticks_history)],
+            requests   => requests(
+                calls => [qw(ticks ticks_history)],
             ),
         },
     ),
 );
 
 subtest "Tick Subscriptions: All Symbols" => sub {
-    Future->needs_all(
-        $tester->subscribe,
-        $tester->subscribe_multiple_times(count => 10),
-    )->get;
+    Future->needs_all($tester->subscribe, $tester->subscribe_multiple_times(count => 10),)->get;
 };
 
 subtest "Tick Subscriptions: Only R_* and frxUSD*" => sub {
     $tester->configure(
-        suite_params        => {
+        suite_params => {
             concurrent => 50,
-            requests => requests(
-                calls   => [qw(ticks ticks_history)],
-                filter  => sub {
+            requests   => requests(
+                calls  => [qw(ticks ticks_history)],
+                filter => sub {
                     shift->{params}->underlying->symbol =~ /R_.*|frxUSD.*/;
                 },
             ),

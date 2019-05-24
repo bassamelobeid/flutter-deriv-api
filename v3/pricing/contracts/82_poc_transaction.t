@@ -103,7 +103,7 @@ subtest 'subscribe that poc stream again and test' => sub {
     my $poc_uuid = $data->{subscription}{id};
     ok($poc_uuid, "poc stream subscribed");
     test_subscriptions($c, 1);
-    my @result = parse_result($c);
+    my @result    = parse_result($c);
     my @poc_uuids = @{$result[-1]};
     is($poc_uuids[0], $poc_uuid, "that poc uuid is in the stash");    #---------------
 };

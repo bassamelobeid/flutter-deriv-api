@@ -83,7 +83,9 @@ $contracts_for = $t->await::contracts_for({
 my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
 my $market_closed    = !$trading_calendar->is_open_at(create_underlying('frxUSDJPY')->exchange, Date::Utility->new);
 my $no_offerings     = ($contracts_for->{error}{code} // '') eq 'InvalidSymbol';
-ok(Date::Utility->new->time_hhmmss ge '18:15:00' || Date::Utility->new->time_hhmmss lt '00:15:00' || $market_closed, "frxUSDJPY multi barrier is unavailable at this time") if $no_offerings;
+ok(Date::Utility->new->time_hhmmss ge '18:15:00' || Date::Utility->new->time_hhmmss lt '00:15:00' || $market_closed,
+    "frxUSDJPY multi barrier is unavailable at this time")
+    if $no_offerings;
 my $skip = $market_closed || $no_offerings;
 
 SKIP: {
