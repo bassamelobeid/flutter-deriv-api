@@ -1059,7 +1059,7 @@ sub print_fa_table {
     print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
     print '</thead><tbody>';
     for my $key (keys %section) {
-        my $answer = $section{$key}->{answer} // 'N/A';
+        my $answer = $section{$key}->{answer} // 'Client did not answer this question.';
         print '<tr><td>' . $section{$key}->{label} . '</td><td>' . $answer . '</td><td>' . $section{$key}->{score} . '</td></tr>';
     }
     print '</tbody></table></br>';
