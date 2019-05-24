@@ -17,7 +17,6 @@ use Price::Calculator;
 use Clone::PP qw(clone);
 use List::UtilsBy qw(bundle_by);
 use List::Util qw(min none);
-use Path::Tiny;
 use Format::Util::Numbers qw/formatnumber roundcommon financialrounding/;
 
 use Future::Mojo          ();
@@ -51,11 +50,9 @@ my %pricer_cmd_handler = (
     bid   => \&process_bid_event,
 );
 
-my $schemas_base = '/home/git/regentmarkets/binary-websocket-api/config/v3/';
     
 
 
-my %schema_cache;
 
 sub proposal {
     my ($c, $req_storage) = @_;
@@ -230,11 +227,8 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                 my $args = {%{$req_storage->{args}}};
                 $args->{contract_type} = [@contract_types];
                 $args->{barriers}      = $barriers;
-
                 my $f = Future::Mojo->new;
                 $c->call_rpc({
-                        schema_receive    => $req_storage->{schema_receive},
-                        schema_receive_v3 => $req_storage->{schema_receive_v3},
                         args              => $args,
                         method            => 'send_ask',
                         msg_type          => 'proposal',
@@ -352,8 +346,6 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                             ($req_storage->{args}->{subscribe} and $uuid) ? (subscription => {id => $uuid}) : (),
                             msg_type => $msg_type,
                             map { ; $_ => $req_storage->{args}{$_} } grep { $req_storage->{args}{$_} } qw(req_id passthrough),
-                            schema_receive => $req_storage->{schema_receive},
-
                         }};
                     $c->send($res) if $c and $c->tx;    # connection could be gone
                 }
@@ -699,13 +691,7 @@ sub process_bid_event {
         # not storing req_storage in channel cache because it contains validation code
         # same is for process_ask_event.
         $results->{$type}->{validation_error} = $c->l($results->{$type}->{validation_error}) if ($results->{$type}->{validation_error});
-        my $schemas  = _load_schemas('proposal_open_contract', $stash_data->{args});
-        my $req_storage = {
-                schema_receive => $schemas->{schema_receive},
-                schema_receive_v3 => $schemas->{schema_receive_v3},
-                args => $stash_data->{args}
-            };
-        $c->send({json => $results}, $req_storage);
+        $c->send({json => $results}, {args => $stash_data->{args}});
     }
     return;
 
@@ -841,14 +827,8 @@ sub process_ask_event {
         }
 
 
-        my $schemas  = _load_schemas('proposal');
-        my $req_storage = {
-                schema_receive => $schemas->{schema_receive},
-                schema_receive_v3 => $schemas->{schema_receive_v3},
-                args => $stash_data->{args}
-            };
         delete @{$results->{$type}}{qw(contract_parameters rpc_time)} if $results->{$type};
-        $c->send({json => $results}, $req_storage);
+        $c->send({json => $results}, {args => $stash_data->{args}});
     }
     return $pricing_channel_updated;
 }
@@ -956,10 +936,6 @@ sub send_proposal_open_contract_last_time {
     # we don't want to end up with new subscribtion
     delete $stash_data->{subscribe} if exists $stash_data->{subscribe};
 
-    # if this was triggered by a buy call it will now be  poc result and therfore have the wrong schmemas loaded.
-
-    my $schemas  = _load_schemas('proposal_open_contract', $stash_data->{args});
-
     # We should also clear stash data, otherwise the args in stash data will become 'not subscribe' (deleted by previous line) and will block the future subscribe
     $c->stash('proposal_open_contracts_subscribed' => 0)
         if $c->stash('proposal_open_contracts_subscribed')
@@ -969,8 +945,6 @@ sub send_proposal_open_contract_last_time {
             args           => $req_storage->{args},
             method         => 'proposal_open_contract',
             msg_type       => 'proposal_open_contract',
-            schema_receive => $schemas->{schema_receive},
-            schema_receive_v3 => $schemas->{schema_receive_v3},
             call_params    => {
                 token       => $c->stash('token'),
                 contract_id => $contract_id
@@ -1055,38 +1029,5 @@ sub _make_barrier_key {
     return join ':', $barrier->{barrier} // (), $barrier->{barrier2} // ();
 }
 
-=head2 _load_schemas
-
-Description
-Gets  the json validation schemas (v3 and v4) for the call types so  we can pass to send so that they are processed by the hooks.
-This is required as they are not stashed. 
-
-=over 4
-
-=item  * C<request_type>   string - the name of the request type eg 'Proposal_array'
-
-=back
- 
-Returns  a hashRef   
-            
-            {
-                schema_receive => hashref of version 4 schema, 
-                schema_receive_v3 => hashref of version 3 schema, 
-            }
-               
-=cut
-
-sub _load_schemas {
-    my ($request_type) = @_;
-    my %schemas;
-    if (!$schema_cache{$request_type}) {
-        my $receive_schema = path($schemas_base.$request_type.'/receive.json');
-        $schemas{schema_receive} =  decode_json($receive_schema->slurp);
-        $receive_schema = path($schemas_base.'draft-03/'.$request_type.'/receive.json');
-        $schemas{schema_receive_v3} =  decode_json($receive_schema->slurp);
-        $schema_cache{$request_type} = \%schemas;
-    }
-    return $schema_cache{$request_type},
-}
 
 1;

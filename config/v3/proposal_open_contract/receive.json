@@ -37,12 +37,14 @@
                     ]
                 },
                 "high_barrier" : {
-                    "type" : "number",
-                    "description" : "High barrier of the contract (if any). Example: 42.123"
+                    "description" : "High barrier of the contract (if any). Example: 42.123",
+                    "type" : "string",
+                    "pattern" : "^[+-]?[0-9]+\\.?[0-9]*$"
                 },
                 "low_barrier" : {
-                    "type" : "number",
-                    "description" : "Low barrier of the contract (if any). Example: 40.132"
+                    "description" : "Low barrier of the contract (if any). Example: 40.132",
+                    "type" : "string",
+                    "pattern" : "^[+-]?[0-9]+\\.?[0-9]*$"
                 },
                 "sell_spot_time" : {
                     "type" : "integer",
@@ -137,7 +139,8 @@
                 },
                 "barrier" : {
                     "description" : "Barrier of the contract (if any). Example: 42.123",
-                    "type" : "number"
+                    "type" : "string",
+                    "pattern" : "^[+-]?[0-9]+\\.?[0-9]*$"
                 },
                 "date_expiry" : {
                     "description" : "Expiry date (epoch) of the Contract. Example: 1446629000. Please note that it is not applicable for tick trade contracts.",
