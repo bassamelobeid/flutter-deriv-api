@@ -144,7 +144,7 @@ publish transaction => sub {
     my $tx_published = $_->global->{tx_published}{$contract} //= {};
     $tx_published->{count}++;
 
-    if ($tx_published->{count} == 1) {
+    if ($tx_published->{count} < $sell_at) {
         # Buy
     } elsif ($tx_published->{count} == $sell_at) {
         # Sell
