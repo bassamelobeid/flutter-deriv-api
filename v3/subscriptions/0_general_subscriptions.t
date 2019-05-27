@@ -42,8 +42,10 @@ subtest 'General subscriptions: All calls in parallel' => sub {
         $tester->subscribe,
         $tester->subscribe_multiple_times(count => 10),
         $tester->subscribe_after_request,
-        $tester->multiple_subscriptions_forget_one,
-        $tester->multiple_connections_forget_one,
+        $tester->multiple_subscriptions_forget,
+        $tester->multiple_subscriptions_forget_all,
+        $tester->multiple_connections_forget,
+        $tester->multiple_connections_forget_all,
     )->get;
 };
 

@@ -47,8 +47,10 @@ subtest "Tick Subscriptions: Only R_* and frxUSD*" => sub {
     Future->needs_all(
         $tester->subscribe,
         $tester->subscribe_multiple_times(count => 10),
-        $tester->multiple_subscriptions_forget_one,
-        $tester->multiple_connections_forget_one,
+        $tester->multiple_subscriptions_forget,
+        $tester->multiple_subscriptions_forget_all,
+        $tester->multiple_connections_forget,
+        $tester->multiple_connections_forget_all,
     )->get;
 };
 
