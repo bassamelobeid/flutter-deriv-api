@@ -1351,9 +1351,9 @@ expected_result:
       commission_markup: 0.035
       duration: 8d
       price_engine: Pricing::Engine::EuropeanDigitalSlope
-      risk_markup: 0.0293
+      risk_markup: 0.0294
       spot: 102.454
-      theo_prob: 0.5789
+      theo_prob: 0.5798
       total_markup: 0.0489
     NOTOUCH:
       ask_prob: 0.3544
@@ -1361,18 +1361,18 @@ expected_result:
       commission_markup: 0.035
       duration: 12d
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
-      risk_markup: 0.0204
+      risk_markup: 0.0205
       spot: 102.454
-      theo_prob: 0.3398
+      theo_prob: 0.3411
       total_markup: 0.0425
     RANGE:
-      ask_prob: 0.2724
+      ask_prob: 0.2729
       barrier: 103
       barrier2: 101.338
       commission_markup: 0.035
       duration: 7d
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
-      risk_markup: 0.0525
+      risk_markup: 0.0526
       spot: 102.454
-      theo_prob: 0.2724
+      theo_prob: 0.2729
       total_markup: 0.0784
