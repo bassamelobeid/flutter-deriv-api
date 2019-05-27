@@ -152,6 +152,7 @@ close proposal_open_contract stream if the contract sold
 sub _close_proposal_open_contract_stream {
     my ($self, $payload) = @_;
     my $c           = $self->c;
+    my $args        = $self->args;
     my $contract_id = $self->contract_id;
     my $uuid        = $self->type;
 
@@ -162,7 +163,7 @@ sub _close_proposal_open_contract_stream {
         $payload->{sell_time} = Date::Utility->new($payload->{sell_time})->epoch;
         $payload->{uuid}      = $uuid;
 
-        Binary::WebSocketAPI::v3::Wrapper::Pricer::send_proposal_open_contract_last_time($c, $payload, $contract_id, $self->request_storage);
+        Binary::WebSocketAPI::v3::Wrapper::Pricer::send_proposal_open_contract_last_time($c, $payload, $contract_id, $args);
     }
     return;
 }
@@ -197,18 +198,17 @@ sub _update_transaction {
 
     if (($payload->{referrer_type} // '') ne 'financial_market_bet') {
         $details->{transaction}->{transaction_time} = Date::Utility->new($payload->{payment_time})->epoch;
-        $c->send({json => $details}, $self->request_storage);
+        $c->send({json => $details});
         return;
     }
 
     $details->{transaction}->{transaction_time} = Date::Utility->new($payload->{sell_time} || $payload->{purchase_time})->epoch;
 
     $c->call_rpc({
-            schema_receive => $self->request_storage->{schema_receive},
-            args           => $args,
-            msg_type       => 'transaction',
-            method         => 'get_contract_details',
-            call_params    => {
+            args        => $args,
+            msg_type    => 'transaction',
+            method      => 'get_contract_details',
+            call_params => {
                 token           => $c->stash('token'),
                 short_code      => $payload->{short_code},
                 currency        => $payload->{currency_code},
@@ -309,10 +309,10 @@ sub _create_poc_stream {
                     sell_price      => undef,
                     sell_time       => undef,
                 });
-            $self->request_storage->{args} = $poc_args;
+
             # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
             Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'subscribe', $payload->{account_id},
-                $uuid, $self->request_storage, $payload->{financial_market_bet_id})
+                $uuid, $poc_args, $payload->{financial_market_bet_id})
                 if $uuid;
             return Future->done;
         });

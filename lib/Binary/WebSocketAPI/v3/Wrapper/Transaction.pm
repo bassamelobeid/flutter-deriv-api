@@ -14,7 +14,7 @@ sub buy_get_single_contract {
 
     my $contract_details = delete $api_response->{contract_details};
 
-    $req_storage->{uuid} = _subscribe_to_contract($c, $contract_details, $req_storage)
+    $req_storage->{uuid} = _subscribe_to_contract($c, $contract_details, $req_storage->{call_params}->{args})
         if $req_storage->{call_params}->{args}->{subscribe};
 
     buy_store_last_contract_id($c, $api_response);
@@ -56,8 +56,8 @@ sub buy_set_poc_subscription_id {
 }
 
 sub _subscribe_to_contract {
-    my ($c, $contract_details, $req_storage) = @_;
-    my $req_args = $req_storage->{call_params}->{args};
+    my ($c, $contract_details, $req_args) = @_;
+
     my $contract = {map { $_ => $contract_details->{$_} }
             qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode)};
 
@@ -74,7 +74,7 @@ sub _subscribe_to_contract {
     # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
     Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel(
         $c, 'subscribe', $account_id,    # should not go to client
-        $uuid, $req_storage, $contract_id
+        $uuid, $args, $contract_id
     );
 
     return $uuid;
@@ -133,8 +133,7 @@ sub transaction {
     if ($account_id) {
         if (    exists $args->{subscribe}
             and $args->{subscribe} eq '1'
-            and
-            (not $id = Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'subscribe', $account_id, 'transaction', $req_storage)))
+            and (not $id = Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'subscribe', $account_id, 'transaction', $args)))
         {
             return $c->new_error('transaction', 'AlreadySubscribed', $c->l('You are already subscribed to transaction updates.'));
         }

@@ -42,6 +42,7 @@ use constant PARALLEL_RPC_TIMEOUT => 20;
 use constant BARRIERS_PER_BATCH => 16;
 
 # Sanity check - if we have more than this many barriers, reject
+# the request entirely.
 use constant BARRIER_LIMIT => 16;
 
 my $json               = JSON::MaybeXS->new->allow_blessed;
@@ -88,7 +89,6 @@ sub proposal {
                 } else {
                     $api_response = $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to proposal.'));
                 }
-
                 return $api_response;
             },
         });
@@ -110,6 +110,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
     my $msg_type       = 'proposal_array';
     my $barriers_order = {};
     my @barriers       = @{$req_storage->{args}->{barriers}};
+
     if (@barriers > BARRIER_LIMIT) {
         my $error = $c->new_error('proposal_array', 'TooManyBarriers', $c->l('Too many barriers were requested.'));
         $c->send({json => $error}, $req_storage);
@@ -223,12 +224,15 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                 my $args = {%{$req_storage->{args}}};
                 $args->{contract_type} = [@contract_types];
                 $args->{barriers}      = $barriers;
+
                 my $f = Future::Mojo->new;
                 $c->call_rpc({
-                        args        => $args,
-                        method      => 'send_ask',
-                        msg_type    => 'proposal',
-                        call_params => {
+                        schema_receive    => $req_storage->{schema_receive},
+                        schema_receive_v3 => $req_storage->{schema_receive_v3},
+                        args              => $args,
+                        method            => 'send_ask',
+                        msg_type          => 'proposal',
+                        call_params       => {
                             token                 => $c->stash('token'),
                             language              => $c->stash('language'),
                             app_markup_percentage => $c->stash('app_markup_percentage'),
@@ -371,7 +375,7 @@ sub proposal_open_contract {
 
     if ($args->{subscribe} && !$args->{contract_id}) {
         ### we can catch buy only if subscribed on transaction stream
-        Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'subscribe', $c->stash('account_id'), 'poc', $req_storage)
+        Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'subscribe', $c->stash('account_id'), 'poc', $args)
             if $c->stash('account_id');
         ### we need stream only in subscribed workers
         # we should not overwrite the previous subscriber.
@@ -490,7 +494,7 @@ sub _process_proposal_open_contract_response {
                     # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
                     Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel(
                         $c, 'subscribe', delete $contract->{account_id},    # should not go to client
-                        $uuid, $req_storage, $contract->{contract_id});
+                        $uuid, $args, $contract->{contract_id});
                 }
             }
             my $result = {$uuid ? (id => $uuid) : (), %{$contract}};
@@ -687,10 +691,10 @@ sub process_bid_event {
         # not storing req_storage in channel cache because it contains validation code
         # same is for process_ask_event.
         $results->{$type}->{validation_error} = $c->l($results->{$type}->{validation_error}) if ($results->{$type}->{validation_error});
+
         $c->send({json => $results}, {args => $stash_data->{args}});
     }
     return;
-
 }
 
 sub process_proposal_array_event {
@@ -780,6 +784,7 @@ sub process_ask_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
     my $type                    = 'proposal';
     my $pricing_channel_updated = undef;
+
     return process_proposal_array_event($c, $response, $redis_channel, $pricing_channel) if exists $response->{proposals};
 
     my $theo_probability = delete $response->{theo_probability};
@@ -821,7 +826,6 @@ sub process_ask_event {
                 method => $type,
             };
         }
-
         delete @{$results->{$type}}{qw(contract_parameters rpc_time)} if $results->{$type};
         $c->send({json => $results}, {args => $stash_data->{args}});
     }
@@ -925,19 +929,17 @@ sub _price_stream_results_adjustment {
 # we're finishing POC stream on contract is sold (called from _close_proposal_open_contract_stream in Streamer.pm)
 #
 sub send_proposal_open_contract_last_time {
-    my ($c, $args, $contract_id, $req_storage) = @_;
-    my $stash_data = $req_storage->{args};
+    my ($c, $args, $contract_id, $stash_data) = @_;
     Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $args->{uuid});
     # we don't want to end up with new subscribtion
     delete $stash_data->{subscribe} if exists $stash_data->{subscribe};
-
     # We should also clear stash data, otherwise the args in stash data will become 'not subscribe' (deleted by previous line) and will block the future subscribe
     $c->stash('proposal_open_contracts_subscribed' => 0)
         if $c->stash('proposal_open_contracts_subscribed')
         && ($c->stash('proposal_open_contracts_subscribed')->{req_id} // 0) == ($stash_data->{req_id} // 0);
 
     $c->call_rpc({
-            args        => $req_storage->{args},
+            args        => $stash_data,
             method      => 'proposal_open_contract',
             msg_type    => 'proposal_open_contract',
             call_params => {

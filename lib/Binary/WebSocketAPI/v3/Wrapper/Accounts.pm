@@ -37,12 +37,12 @@ sub subscribe_transaction_channel {
     my ($c, $req_storage) = @_;
 
     my $args = $req_storage->{args};
+
     return undef unless exists $args->{subscribe} and $args->{subscribe};
-
     my $account_id = $c->stash('account_id');
-    my $id = Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'subscribe', $account_id, 'balance', $req_storage);
-    $req_storage->{transaction_channel_id} = $id if $id;
+    my $id = Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'subscribe', $account_id, 'balance', $args);
 
+    $req_storage->{transaction_channel_id} = $id if $id;
     return undef;
 }
 
@@ -54,7 +54,6 @@ sub balance_error_handler {
 
 sub balance_success_handler {
     my ($c, $rpc_response, $req_storage) = @_;
-
     $rpc_response->{id} = $req_storage->{transaction_channel_id} if $req_storage->{transaction_channel_id};
     return;
 }

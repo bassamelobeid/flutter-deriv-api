@@ -12,7 +12,7 @@ Binary::WebSocketAPI::v3::Subscription::Feed - The class that handle feed channe
     my $worker = Binary::WebSocketAPI::v3::Subscription::Feed->new(
         c          => $c,
         type       => $type,
-        request_storage => $request_storage,
+        args       => $args,
         symbol     => $symbol,
         uuid       => $uuid,
         cache_only => $cache_only || 0,
@@ -171,6 +171,7 @@ sub handle_message {
         };
 
     }
+
     if ($cache_only) {
         $cache->{$epoch} = $result;
     } else {
@@ -183,10 +184,7 @@ sub handle_message {
                     : (),
                     $msg_type => $result,
                     subscription => {id => $self->uuid},
-                },
-            },
-            $self->request_storage
-        );
+                }});
     }
 
     return;

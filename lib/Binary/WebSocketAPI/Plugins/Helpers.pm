@@ -10,8 +10,7 @@ use Sys::Hostname;
 use Scalar::Util ();
 use IO::Async::Loop;
 use curry;
-use Path::Tiny;
-use JSON::MaybeXS;
+
 use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
@@ -23,9 +22,6 @@ use Locale::Maketext::ManyPluralForms {
     '_auto'   => 1,
     '_decode' => 1,
 };
-
-# A global var to cache the loading of the proposal_array schemas.
-my $proposal_array_schema;
 
 # List of all country codes supported as VPN address overrides. Anything in
 # this list can be passed as `X-Client-Country` by the Electron application
@@ -154,16 +150,6 @@ sub register {
         proposal_array_collector => sub {
             my $c = shift;
             Scalar::Util::weaken(my $weak_c = $c);
-            if (!$proposal_array_schema) {
-
-                my $schemas_base   = '/home/git/regentmarkets/binary-websocket-api/config/v3/';
-                my $receive_schema = path($schemas_base . 'proposal_array/receive.json');
-                my %schemas;
-                $schemas{schema_receive}    = decode_json($receive_schema->slurp);
-                $receive_schema             = path($schemas_base . 'draft-03/proposal_array/receive.json');
-                $schemas{schema_receive_v3} = decode_json($receive_schema->slurp);
-                $proposal_array_schema      = \%schemas;
-            }
             # send proposal_array stream messages collected from appropriate proposal streams
             my $proposal_array_loop_id_keeper;
             $proposal_array_loop_id_keeper = Mojo::IOLoop->recurring(
@@ -224,15 +210,8 @@ sub register {
                             msg_type     => 'proposal_array',
                             subscription => {id => $pa_uuid},
                         };
-                        $weak_c->send(
-                            {json => $results},
-                            {
-                                args              => $proposal_array_subscriptions->{$pa_uuid}{args},
-                                schema_receive    => $proposal_array_schema->{schema_receive},
-                                schema_receive_v3 => $proposal_array_schema->{schema_receive_v3},
-                            });
+                        $weak_c->send({json => $results}, {args => $proposal_array_subscriptions->{$pa_uuid}{args}});
                     }
-
                     $weak_c->stash('proposal_array_subscriptions' => $proposal_array_subscriptions)
                         if scalar(@pa_keys) != scalar(keys %{$proposal_array_subscriptions});
                     return;

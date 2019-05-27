@@ -14,7 +14,6 @@ use JSON::MaybeXS;
 use Scalar::Util qw (looks_like_number refaddr weaken);
 use List::Util qw(any);
 use Format::Util::Numbers qw(formatnumber);
-use Path::Tiny;
 
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::System;
@@ -23,10 +22,6 @@ use Binary::WebSocketAPI::v3::Subscription::Transaction;
 use Binary::WebSocketAPI::v3::Subscription::Feed;
 
 my $json = JSON::MaybeXS->new;
-
-#tick_history if subscribed returns 1 "tick_history" response then starts returning "ticks"
-#this global variable stores the tick return json schema
-my $tick_receive_schema;
 
 sub get_status_msg {
     my ($c, $status_code) = @_;
@@ -189,7 +184,7 @@ sub ticks {
                 },
                 success => sub {
                     my ($c, $api_response, $req_storage) = @_;
-                    $req_storage->{id} = _feed_channel_subscribe($c, $req_storage->{symbol}, 'tick', $req_storage);
+                    $req_storage->{id} = _feed_channel_subscribe($c, $req_storage->{symbol}, 'tick', $req_storage->{args});
                 },
                 response => sub {
                     my ($rpc_response, $api_response, $req_storage) = @_;
@@ -321,16 +316,11 @@ sub ticks_history {
                         # TODO chylli to viewer: should we delete it if we used cache directly but not do a subscription? that is, we run callback directly, without subscribing ? I guess we shouldn't delete it
                         $worker->clear_cache;
                         $worker->cache_only(0);
-                        my $schema_file = path('/home/git/regentmarkets/binary-websocket-api/config/v3/ticks_history/receive.json');
-                        $tick_receive_schema = decode_json($schema_file->slurp);
-                        $req_storage->{schema_receive} = $tick_receive_schema;
 
                         my $uuid = $worker->uuid();
                         $rpc_response->{data}->{subscription}->{id} = $uuid if $uuid;
                     }
 
-                    my $after_got_rpc_response_hook = delete($req_storage->{after_got_rpc_response}) || [];
-                    $_->($c, $req_storage, $rpc_response) for @$after_got_rpc_response_hook;
                     return {
                         msg_type => $rpc_response->{type},
                         %{$rpc_response->{data}}};
@@ -340,12 +330,7 @@ sub ticks_history {
 
     # subscribe first with flag of cache_only passed as 1 to indicate to cache the feed data
     if ($args->{subscribe}) {
-        if (!$tick_receive_schema || !defined($tick_receive_schema->{properties}->{tick})) {
-            my $schema_file = path('/home/git/regentmarkets/binary-websocket-api/config/v3/ticks/receive.json');
-            $tick_receive_schema = decode_json($schema_file->slurp);
-        }
-        $req_storage->{schema_receive} = $tick_receive_schema;
-        if (not _feed_channel_subscribe($c, $args->{ticks_history}, $publish, $req_storage, $callback, 1)) {
+        if (not _feed_channel_subscribe($c, $args->{ticks_history}, $publish, $args, $callback, 1)) {
             return $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
         }
     } else {
@@ -356,8 +341,8 @@ sub ticks_history {
 }
 
 sub _feed_channel_subscribe {
-    my ($c, $symbol, $type, $request_storage, $callback, $cache_only) = @_;
-    my $args = $request_storage->{args};
+    my ($c, $symbol, $type, $args, $callback, $cache_only) = @_;
+
     my $feed_channel_type = $c->stash('feed_channel_type') // {};
 
     my $key    = "$symbol;$type";
@@ -371,13 +356,12 @@ sub _feed_channel_subscribe {
     my $uuid = _generate_uuid_string();
 
     my $worker = Binary::WebSocketAPI::v3::Subscription::Feed->new(
-        c               => $c,
-        type            => $type,
-        args            => $args,
-        request_storage => $request_storage,
-        symbol          => $symbol,
-        uuid            => $uuid,
-        cache_only      => $cache_only || 0,
+        c          => $c,
+        type       => $type,
+        args       => $args,
+        symbol     => $symbol,
+        uuid       => $uuid,
+        cache_only => $cache_only || 0,
     );
 
     $feed_channel_type->{$key} = $worker;
@@ -402,8 +386,8 @@ sub feed_channel_unsubscribe {
 }
 
 sub transaction_channel {
-    my ($c, $action, $account_id, $type, $request_storage, $contract_id) = @_;
-    my $args = $request_storage->{args};
+    my ($c, $action, $account_id, $type, $args, $contract_id) = @_;
+
     $contract_id //= $args->{contract_id};
     my $channel = $c->stash('transaction_channel');
 
@@ -413,13 +397,12 @@ sub transaction_channel {
         # TODO move uuid to subscription::transaction
         my $uuid   = _generate_uuid_string();
         my $worker = Binary::WebSocketAPI::v3::Subscription::Transaction->new(
-            c               => $c,
-            account_id      => $account_id,
-            type            => $type,
-            contract_id     => $contract_id,
-            args            => $args,
-            request_storage => $request_storage,
-            uuid            => $uuid,
+            c           => $c,
+            account_id  => $account_id,
+            type        => $type,
+            contract_id => $contract_id,
+            args        => $args,
+            uuid        => $uuid,
         );
         $worker->subscribe;
         $channel->{$type} = $worker;
