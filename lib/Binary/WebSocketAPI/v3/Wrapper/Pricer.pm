@@ -50,10 +50,6 @@ my %pricer_cmd_handler = (
     bid   => \&process_bid_event,
 );
 
-    
-
-
-
 sub proposal {
     my ($c, $req_storage) = @_;
 
@@ -92,7 +88,7 @@ sub proposal {
                 } else {
                     $api_response = $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to proposal.'));
                 }
-                
+
                 return $api_response;
             },
         });
@@ -229,10 +225,10 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                 $args->{barriers}      = $barriers;
                 my $f = Future::Mojo->new;
                 $c->call_rpc({
-                        args              => $args,
-                        method            => 'send_ask',
-                        msg_type          => 'proposal',
-                        call_params       => {
+                        args        => $args,
+                        method      => 'send_ask',
+                        msg_type    => 'proposal',
+                        call_params => {
                             token                 => $c->stash('token'),
                             language              => $c->stash('language'),
                             app_markup_percentage => $c->stash('app_markup_percentage'),
@@ -826,7 +822,6 @@ sub process_ask_event {
             };
         }
 
-
         delete @{$results->{$type}}{qw(contract_parameters rpc_time)} if $results->{$type};
         $c->send({json => $results}, {args => $stash_data->{args}});
     }
@@ -942,10 +937,10 @@ sub send_proposal_open_contract_last_time {
         && ($c->stash('proposal_open_contracts_subscribed')->{req_id} // 0) == ($stash_data->{req_id} // 0);
 
     $c->call_rpc({
-            args           => $req_storage->{args},
-            method         => 'proposal_open_contract',
-            msg_type       => 'proposal_open_contract',
-            call_params    => {
+            args        => $req_storage->{args},
+            method      => 'proposal_open_contract',
+            msg_type    => 'proposal_open_contract',
+            call_params => {
                 token       => $c->stash('token'),
                 contract_id => $contract_id
             },
@@ -1028,6 +1023,5 @@ sub _make_barrier_key {
     }
     return join ':', $barrier->{barrier} // (), $barrier->{barrier2} // ();
 }
-
 
 1;

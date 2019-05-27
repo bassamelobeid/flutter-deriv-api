@@ -20,15 +20,14 @@ use Log::Any::Adapter;
 Log::Any::Adapter->set({category => 'schema_log'}, 'File', '/var/lib/binary/v4_v3_schema_fails.log');
 use Log::Any qw($log);
 use DataDog::DogStatsd::Helper qw(stats_inc);
-use Path::Tiny ;
-#  module is loaded on server start and shared across connections 
-#  %schema_cache is added onto as each unique request type is received. 
-#  by the _load_schemas sub in this module 
+use Path::Tiny;
+#  module is loaded on server start and shared across connections
+#  %schema_cache is added onto as each unique request type is received.
+#  by the _load_schemas sub in this module
 my %schema_cache;
 my $schemas_base = '/home/git/regentmarkets/binary-websocket-api/config/v3/';
 
 my $json = JSON::MaybeXS->new;
-
 
 =head2 _load_schemas
 
@@ -54,35 +53,34 @@ Returns  a hashRef
 sub _load_schemas {
     my ($request_type) = @_;
     my %schemas;
-    #sometimes the msg_type does not match the schema dir name 
+    #sometimes the msg_type does not match the schema dir name
     #mapped here msg_type on the left directory on the right
     my %schema_mapping = (
-        tick => 'ticks',
+        tick    => 'ticks',
         history => 'ticks_history',
         candles => 'ticks_history',
-        ohlc  => 'ticks_history',
+        ohlc    => 'ticks_history',
 
     );
-    $request_type = $schema_mapping{$request_type}|| $request_type ;
+    $request_type = $schema_mapping{$request_type} || $request_type;
     if (!$schema_cache{$request_type}) {
-        warn ("loaded $request_type from file");        
-        my $schema_path = $schemas_base.$request_type.'/receive.json';
-        if (! -e $schema_path) {
-            $schema_log->error('no schema found  for '.$request_type);
-            warn('no schema found  for '.$request_type);
-            return {schema_receive => {}, schema_receive_v3 => {}};
+        my $schema_path = $schemas_base . $request_type . '/receive.json';
+        if (!-e $schema_path) {
+            $schema_log->error('no schema found  for ' . $request_type);
+            warn('no schema found  for ' . $request_type);
+            return {
+                schema_receive    => {},
+                schema_receive_v3 => {}};
         }
         my $receive_schema = path($schema_path);
-        $schemas{schema_receive} =  decode_json($receive_schema->slurp);
-        
-        $schema_path = $schemas_base.'draft-03/'.$request_type.'/receive.json';
-        $schemas{schema_receive_v3} =  (-e $schema_path )?decode_json(path($schema_path)->slurp):{};
+        $schemas{schema_receive} = decode_json($receive_schema->slurp);
+
+        $schema_path = $schemas_base . 'draft-03/' . $request_type . '/receive.json';
+        $schemas{schema_receive_v3} = (-e $schema_path) ? decode_json(path($schema_path)->slurp) : {};
         $schema_cache{$request_type} = \%schemas;
     }
-    return $schema_cache{$request_type},
+    return $schema_cache{$request_type},;
 }
-
-
 
 sub start_timing {
     my (undef, $req_storage) = @_;
@@ -340,7 +338,7 @@ sub output_validation {
     }
     my $schemas;
     if ($api_response->{msg_type}) {
-       $schemas =  _load_schemas($api_response->{msg_type})
+        $schemas = _load_schemas($api_response->{msg_type})
 
     }
 
@@ -352,8 +350,8 @@ sub output_validation {
         my $error_msg = join(" - ", (map { "$_:$error->{details}{$_}" } keys %{$error->{details}}), @{$error->{general}});
         $c->app->log->warn("Invalid output parameter for [ " . $json->encode($api_response) . " error: $error_msg ]");
         %$api_response = %{
-        $c->new_error($req_storage->{msg_type} || $req_storage->{name},
-        'OutputValidationFailed', $c->l("Output validation failed: ") . $error_msg)};
+            $c->new_error($req_storage->{msg_type} || $req_storage->{name},
+                'OutputValidationFailed', $c->l("Output validation failed: ") . $error_msg)};
     }
 
     return;

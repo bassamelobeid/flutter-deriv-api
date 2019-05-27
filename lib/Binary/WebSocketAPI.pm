@@ -505,18 +505,18 @@ sub startup {
     for my $action (@$actions) {
         my $action_name = $action->[0];
         my $f           = '/home/git/regentmarkets/binary-websocket-api/config/v3';
-        my $schema_send =  $json->decode(path("$f/$action_name/send.json")->slurp_utf8);
+        my $schema_send = $json->decode(path("$f/$action_name/send.json")->slurp_utf8);
         my $draft3_path = "$f/draft-03/$action_name";
-        my ($schema_send_v3, $schema_receive_v3);
-        
+        my $schema_send_v3;
+
         # it is possible that a new v4 schema could be added without a corresponding v3 schema so check here.
         if (-e $draft3_path) {
-            $schema_send_v3= $json->decode(path("$draft3_path/send.json")->slurp_utf8);
+            $schema_send_v3 = $json->decode(path("$draft3_path/send.json")->slurp_utf8);
         }
 
         my $action_options = $action->[1] ||= {};
         $action_options->{schema_send}    = $schema_send;
-        $action_options->{schema_send_v3}    = $schema_send_v3;
+        $action_options->{schema_send_v3} = $schema_send_v3;
         $action_options->{stash_params} ||= [];
         push @{$action_options->{stash_params}}, qw( language country_code );
 
@@ -590,7 +590,7 @@ sub startup {
             finish_connection => \&Binary::WebSocketAPI::Hooks::on_client_disconnect,
 
             # helper config
-            url => \&Binary::WebSocketAPI::Hooks::assign_rpc_url,                       # make url for manually called actions
+            url     => \&Binary::WebSocketAPI::Hooks::assign_rpc_url,                   # make url for manually called actions
             actions => $actions,
             # Skip check sanity to password fields
             skip_check_sanity => qr/password/,
