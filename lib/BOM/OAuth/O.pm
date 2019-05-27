@@ -96,8 +96,14 @@ sub authorize {
         return if Date::Utility->new($date_first_contact)->is_after(Date::Utility->today);
         $c->session(date_first_contact => Date::Utility->new->date_yyyymmdd);
     };
-    my $signup_device = $c->param('signup_device') // '';
-    $c->session(signup_device => $signup_device) if $signup_device and $signup_device =~ /^\w+$/;
+
+    $c->session(signup_device      => $c->param('signup_device'))   if ($c->param('signup_device')   // '') =~ /^\w+$/;
+    # the regexes for the following fields should be the same as new_account_virtual send schema
+    $c->session(myaffiliates_token => $c->param('affiliate_token')) if ($c->param('affiliate_token') // '') =~ /^\w{1,32}$/;
+    $c->session(gclid_url          => $c->param('gclid_url'))       if ($c->param('gclid_url')       // '') =~ /^[\w\s\.\-_]{1,100}$/;
+    $c->session(utm_medium         => $c->param('utm_medium'))      if ($c->param('utm_medium')      // '') =~ /^[\w\s\.\-_]{1,100}$/;
+    $c->session(utm_source         => $c->param('utm_source'))      if ($c->param('utm_source')      // '') =~ /^[\w\s\.\-_]{1,100}$/;
+    $c->session(utm_campaign       => $c->param('utm_campaign'))    if ($c->param('utm_campaign')    // '') =~ /^[\w\s\.\-_]{1,100}$/;
 
     # detect and validate social_login param if provided
     if (my $method = $c->param('social_signup')) {

@@ -102,7 +102,12 @@ sub callback {
             brand              => $brand_name,
             residence          => $residence,
             date_first_contact => $c->session('date_first_contact'),
-            signup_device      => $c->session('signup_device'));
+            signup_device      => $c->session('signup_device'),
+            myaffiliates_token => $c->session('myaffiliates_token'),
+            gclid_url          => $c->session('gclid_url'),
+            utm_medium         => $c->session('utm_medium'),
+            utm_source         => $c->session('utm_source'),
+            utm_campaign       => $c->session('utm_campaign'));
         if ($account->{error}) {
             my $error_msg =
                 ($account->{error} eq 'invalid residence')
@@ -195,8 +200,8 @@ sub __create_virtual_account {
         residence         => $user_details{residence},
     };
 
-    $details->{date_first_contact} = $user_details{date_first_contact} if $user_details{date_first_contact};
-    $details->{signup_device}      = $user_details{signup_device}      if $user_details{signup_device};
+    $details->{$_} = $user_details{$_}
+        for grep { $user_details{$_} } qw (date_first_contact signup_device myaffiliates_token gclid_url utm_medium utm_source utm_campaign);
 
     return BOM::Platform::Account::Virtual::create_account({details => $details});
 }
