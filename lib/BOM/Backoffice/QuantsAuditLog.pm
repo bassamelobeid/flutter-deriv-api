@@ -4,10 +4,8 @@ use strict;
 use warnings;
 
 use Encode;
-use JSON::MaybeXS;
 use Date::Utility;
-
-my $json = JSON::MaybeXS->new;
+use JSON::MaybeUTF8 qw(:v1);
 
 sub log {    ## no critic (ProhibitBuiltinHomonyms)
     my ($staff, $do, $changes) = @_;
@@ -22,7 +20,7 @@ sub log {    ## no critic (ProhibitBuiltinHomonyms)
     );
 
     open(my $fh, ">>", "/var/log/fixedodds/quants_audit.log");
-    print $fh $json->encode(\@to_log);
+    print $fh encode_json_utf8(\@to_log);
     print $fh "\n";
     close $fh;
 
