@@ -331,16 +331,15 @@ sub get_doc_auth_s3_conf {
 
 sub output_validation {
     my ($c, $req_storage, $api_response) = @_;
-    #no validation done of top level errors EG "unrecognised request etc.
+
+    # No validation done of top level errors EG "unrecognised request etc.
     if (ref $api_response eq 'HASH' and exists $api_response->{error}) {
         return if exists $api_response->{error}{code};
     }
+
     my $schemas;
     if ($api_response->{msg_type}) {
-        use Data::Dumper::Concise;
-        warn Dumper($api_response) if $api_response->{msg_type} eq 'error';
-        $schemas = _load_schemas($api_response->{msg_type})
-
+        $schemas = _load_schemas($api_response->{msg_type});
     }
 
     my $caller_info = {
