@@ -895,7 +895,7 @@ sub _build_bid_response {
     if ($params->{sell_time} and $params->{sell_time} < $contract->date_expiry->epoch) {
         if (    $contract->is_path_dependent
             and $contract->close_tick
-            and $contract->close_tick->epoch <= $contract->date_expiry->epoch)
+            and $contract->close_tick->epoch <= $params->{sell_time})
         {
             $contract_close_tick = $contract->close_tick;
         }
