@@ -169,25 +169,57 @@ subtest 'multiday' => sub {
         ok !$c->require_manual_settlement, 'does not require manual settlement';
     };
 
-    subtest 'NOTOUCH - expired with OHLC data' => sub {
-        BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily({
-            underlying => $symbol,
-            epoch      => $args->{date_start}->truncate_to_day->plus_time_interval('1d')->epoch,
-            open       => 100,
-            high       => 101,
-            low        => 99,
-            close      => 100,
-            official   => 0,
-        });
-        my $c = produce_contract({%$args, date_pricing => $args->{date_start}->truncate_to_day->plus_time_interval('1d23h59m59s')->epoch});
+    subtest 'NOTOUCH - consistent exit tick after expiry' => sub {
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100, $now->epoch + 1,                                                 $symbol],
+            [102, $now->epoch + 2,                                                 $symbol],
+            [103, $now->epoch + 5,                                                 $symbol],
+            [100, $now->truncate_to_day->plus_time_interval('1d23h59m59s')->epoch, $symbol]);
+        my $c = produce_contract({%$args, date_pricing => $args->{date_start}->epoch + 2});
         ok $c->expiry_daily, 'multi-day contract';
         ok $c->is_expired,   'is expired';
-        is $c->hit_tick->quote, 102, 'hit tick is 102';
+        ok $c->hit_tick,     'has hit tick';
+        is $c->hit_tick->quote, '102', 'hit tick is 102';
+        is $c->hit_tick->epoch, $now->epoch + 2, 'hit tick epoch is correct';
+
+        $c = produce_contract({
+            %$args,
+            date_pricing => $args->{date_start}->epoch + 5,
+            is_sold      => 1,
+            sell_time    => $now->epoch + 2
+        });
+        ok $c->expiry_daily, 'multi-day contract';
+        ok $c->is_expired,   'is expired';
+        ok $c->hit_tick,     'has hit tick';
+        is $c->hit_tick->quote, '102', 'hit tick is 102';
+        is $c->hit_tick->epoch, $now->epoch + 2, 'hit tick epoch is correct';
+    };
+
+    subtest 'NOTOUCH - hit at expiry' => sub {
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100, $now->epoch + 1,                                                 $symbol],
+            [101, $now->truncate_to_day->plus_time_interval('1d23h59m59s')->epoch, $symbol],
+        );
+        my $c = produce_contract({%$args, date_pricing => $args->{date_start}->truncate_to_day->plus_time_interval('2d')->epoch});
+        ok $c->expiry_daily, 'multi-day contract';
+        ok $c->is_expired,   'is expired';
+        is $c->hit_tick->quote, 101, 'hit tick is 101';
+        ok $c->ok_through_expiry, 'ok through expiry';
+        ok !$c->is_valid_to_sell, 'valid to sell';
+        ok $c->waiting_for_settlement_tick, 'waiting for settlement tick';
+        ok !$c->require_manual_settlement, 'does not require manual settlement';
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100, $now->epoch + 1,                                                 $symbol],
+            [101, $now->truncate_to_day->plus_time_interval('1d23h59m59s')->epoch, $symbol],
+            [100, $now->truncate_to_day->plus_time_interval('2d')->epoch,          $symbol],
+        );
+        $c = produce_contract({%$args, date_pricing => $args->{date_start}->truncate_to_day->plus_time_interval('2d')->epoch});
+        ok $c->expiry_daily, 'multi-day contract';
+        ok $c->is_expired,   'is expired';
+        is $c->hit_tick->quote, 101, 'hit tick is 101';
         ok $c->ok_through_expiry, 'ok through expiry';
         ok $c->is_valid_to_sell,  'valid to sell';
-        ok !$c->waiting_for_settlement_tick, 'waiting for settlement tick';
-        ok !$c->require_manual_settlement,   'does not require manual settlement';
-        is $c->value, 0, 'loss - because high > barrier';
+        is $c->value,             0, 'loss - because high > barrier';
     };
 };
 

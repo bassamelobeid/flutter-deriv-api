@@ -47,9 +47,10 @@ sub _build_hit_tick {
     return undef unless $self->entry_tick;
 
     my $start_time     = $self->date_start->epoch + 1;
+    my $end_time       = max($start_time, min($self->date_pricing->epoch, $self->date_expiry->epoch));
     my %hit_conditions = (
         start_time => $start_time,
-        end_time   => max($start_time, min($self->date_pricing->epoch, $self->date_expiry->epoch)),
+        end_time   => $end_time,
     );
 
     if ($self->two_barriers) {
@@ -61,10 +62,8 @@ sub _build_hit_tick {
         $hit_conditions{lower} = $self->barrier->as_absolute;
     }
 
-    return $self->_get_tick_expiry_hit_tick(%hit_conditions)  if $self->tick_expiry;
-    return $self->underlying->breaching_tick(%hit_conditions) if $self->is_intraday;
-    # TODO: remove this when we are no longer dependent on official ohlc for settlement.
-    return $self->_get_hit_tick_from_ohlc(%hit_conditions);
+    return $self->_get_tick_expiry_hit_tick(%hit_conditions) if $self->tick_expiry;
+    return $self->underlying->breaching_tick(%hit_conditions);
 }
 
 has ok_through_expiry => (
@@ -135,27 +134,5 @@ sub _build__ohlc_for_contract_period {
         end   => $end_epoch,
     });
 
-}
-
-sub _get_hit_tick_from_ohlc {
-    my ($self, %args) = @_;
-
-    my $ohlc = $self->_ohlc_for_contract_period;
-    my $hit_quote;
-
-    if ($args{higher} and $ohlc->{high} and $ohlc->{high} >= $args{higher}) {
-        $hit_quote = $ohlc->{high};
-    } elsif ($args{lower} and $ohlc->{low} and $ohlc->{low} <= $args{lower}) {
-        $hit_quote = $ohlc->{low};
-    }
-
-    # since ohlc has no timestamp on the tick, we will have to use the end of period
-    return Postgres::FeedDB::Spot::Tick->new({
-            symbol => $self->underlying->symbol,
-            epoch  => $args{end_time},
-            quote  => $hit_quote,
-        }) if defined $hit_quote;
-
-    return;
 }
 1;
