@@ -28,12 +28,6 @@ subtest $method => sub {
 
     my ($indices) = grep { $_->{symbol} eq 'AEX' } @$result;
     is_deeply([sort keys %$indices], [sort @$expected_keys], 'result has correct keys');
-
-    $params->{country_code} = 'ca';    #canada
-    $result = $c->call_ok($method, $params)->has_no_system_error->result;
-    my $no_world_index = !grep { $_->{symbol} =~ /^WLD/ } @{$result};
-    ok($no_world_index, 'no world indices for canada');
-
     delete $params->{country_code};
     $params->{args}{active_symbols} = 'full';
     push @$expected_keys, qw(exchange_name delay_amount quoted_currency_symbol intraday_interval_minutes spot spot_time spot_age);
