@@ -42,7 +42,7 @@ my %event_queue_mapping = (
     client_verification      => 'DOCUMENT_AUTHENTICATION_QUEUE'
 );
 
-my $config = LoadFile($ENV{BINARY_EVENT_REDIS_CONFIG} // '/etc/rmg/ws-redis.yml');
+my $config = LoadFile($ENV{BINARY_EVENT_REDIS_CONFIG} // '/etc/rmg/redis-events.yml');
 my $connections = {};
 
 =head1 METHODS
