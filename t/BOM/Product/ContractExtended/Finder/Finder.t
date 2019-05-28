@@ -77,7 +77,7 @@ subtest "predefined contracts for symbol" => sub {
         },
         # svg, canada
         'frxUSDJPY-svg-ca' => {
-            hit_count => 0,
+            hit_count => 4,
         },
         # svg, china
         'frxUSDJPY-svg-cn' => {
