@@ -62,7 +62,10 @@ sub save_log_staff_difflog {
     if (not -d $log_dir) {
         system("mkdir $log_dir");
     }
-    if (-s "$log_dir/$staff.difflog" > 500000) {
+
+    my $size = -s "$log_dir/$staff.difflog";
+
+    if (defined $size and $size > 500000) {
         system("mv $log_dir/$staff.difflog $log_dir/$staff.difflog.1");
     }
 
