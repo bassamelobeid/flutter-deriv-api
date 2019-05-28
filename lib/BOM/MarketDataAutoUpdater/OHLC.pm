@@ -57,6 +57,8 @@ sub run {
         exclude_disabled  => 1,
     );
 
+    my @symbols_to_skip = qw/cryBTCUSD cryLTCUSD cryETHUSD/;
+
     my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
 
     foreach my $file (@files) {
@@ -77,6 +79,9 @@ sub run {
             next unless $bb_symbol;
 
             my $bom_underlying_symbol = $bloomberg_to_binary{$bb_symbol};
+
+            next if (grep { $_ eq $bom_underlying_symbol } (@symbols_to_skip));
+
             unless ($bom_underlying_symbol) {
                 push @{$report->{error}}, "Unregconized bloomberg symbol[$bb_symbol]";
                 next;
