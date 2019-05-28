@@ -1,38 +1,21 @@
 #!/bin/bash
 
-if [ $# -ne 2 ]; then
-	echo "Usage: $0 database service"
-	echo "example: $0 clientdb vr01"
+# a bash script that takes in 3 params
+# 1 - postfix of database repo bom-postgres-POSTFIX
+# 2 - dbname
+# 3 - dbport
+
+if [ $# -ne 3 ]; then
+	echo "Usage: $0 reponame dbname port"
+	echo "example: $0 clientdb vr 5432"
 	exit 1
 fi
 
-REPO_PATH_BASE=/home/git/regentmarkets/bom-postgres-
+REPO_PATH=/home/git/regentmarkets/bom-postgres-$1
 
-PORT=5432
-DB_NAME=regentmarkets
-REPO_PATH=$REPO_PATH_BASE'clientdb'
-
-case $1 in 
-	clientdb ) ;;
-	userdb )
-		PORT=5436
-		DB_NAME=users
-		REPO_PATH=$REPO_PATH_BASE'userdb'
-	;;
-	authdb )
-		PORT=5435
-		DB_NAME=auth
-		REPO_PATH=$REPO_PATH_BASE'authdb'
-	;;
-	* )
-		echo "Unknown database name: $1"
-		exit 1
-	;;
-esac
-
-SERVICE=$2
-
-sudo -u pgadmin pg_dump --schema-only --quote-all-identifiers -p $PORT $DB_NAME | \
+# generate schema for database
+sudo -u postgres pg_dump --schema-only --quote-all-identifiers --dbname=$2 --port=$3 | \
 	sed '/^--/d' | sed '/^\s*$/d' | \
-	/home/git/regentmarkets/bom-postgres/bin/parse_schema --path $REPO_PATH --service $SERVICE \
+	/home/git/regentmarkets/bom-postgres/bin/parse_schema --path $REPO_PATH --dbname $2 --port $3\
 	&& git diff --color $REPO_PATH'/schema'  | cat
+

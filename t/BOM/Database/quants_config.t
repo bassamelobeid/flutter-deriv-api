@@ -159,8 +159,7 @@ subtest 'set global' => sub {
 
 subtest 'exception for get_global_limit' => sub {
     throws_ok { $qc->get_global_limit() } qr/landing_company is undefined/, 'throws exception if landing_company is not specified';
-    throws_ok { $qc->get_global_limit({landing_company => 'svg'}) } qr/limit_type is undefined/,
-        'throws exception if limit_type is not specified';
+    throws_ok { $qc->get_global_limit({landing_company => 'svg'}) } qr/limit_type is undefined/, 'throws exception if limit_type is not specified';
     throws_ok { $qc->get_global_limit({landing_company => 'svg', limit_type => 'unknown'}) } qr/unsupported limit type/,
         'throws exception if limit_type is not supported';
     lives_ok {

@@ -6,40 +6,18 @@ use warnings;
 use Getopt::Long qw(GetOptions);
 Getopt::Long::Configure qw(gnu_getopt);
 
-use Path::Tiny;
-use DBIx::Connector::Pg;
-
 # parse command line options
-my ($path, $service);
+my ($path, $dbname, $port);
 
 GetOptions(
     'path|p=s'    => \$path,
-    'service|s=s' => \$service
-) or die 'Usage $0 --path <path> --service <service>';
+    'dbname|d=s' => \$dbname,
+    'port|p=s' => \$port
+) or die 'Usage $0 --path <path> --dbname <dbname> --port <port>';
 
-my $dbc = DBIx::Connector::Pg->new("dbi:Pg:service=$service", '', '');
-# check for constraint that uses user defined functions
-my $has_dependent_constraint = $dbc->run(
-    fixup => sub {
-        $_->selectall_hashref("SELECT c.conname::information_schema.sql_identifier AS constraint_name,\
-                                    c.conrelid::regclass AS constraint_table,\
-                                    p.oid::regproc AS function_name,\
-                                    p.prorettype::regtype AS function_type,\
-                                    pg_get_function_arguments(p.oid::regproc) AS function_arguments\
-                                    FROM pg_namespace nc,\
-                                         pg_constraint c,\
-                                         pg_depend d,\
-                                         pg_proc p,\
-                                         pg_namespace np\
-                                    WHERE nc.oid = c.connamespace AND c.contype = 'c'::\"char\" \
-                                          AND c.oid = d.objid AND d.classid = 'pg_constraint'::regclass::oid\
-                                          AND d.refobjid = p.oid AND d.refclassid = 'pg_proc'::regclass::oid\
-                                          AND p.pronamespace = np.oid;",
-        'constraint_table', {});
-    });
-    
+my $has_dependent_constraint = _extract_dependent_constraint();
+
 $/ = ';';
-
 while (<STDIN>) {
     my $line = $_;
     if ($line =~ /CREATE TABLE "(\w+)"."(\w+)"/) {
@@ -63,12 +41,11 @@ while (<STDIN>) {
         _write("constraints", $1, $2, $line, 1);
     } elsif ($line =~ /CREATE FUNCTION "(\w+)"."(\w+)"(?:\w|\s|\W)+AS(.*\$)(?:\w|\s|\W)?/) {
         my ($schema, $function_name, $end_pattern) = ($1, $2, $3);
-        my $function_def = $dbc->run(fixup => sub {
-            $_->selectcol_arrayref(
-                "select pg_get_functiondef(f.oid) as def from (select oid from pg_proc where proname = ? and pronamespace = ?::regnamespace) as f;",
-                undef, $function_name, $schema);
-        });
-        my $function_def_text = join ";\n", @$function_def;
+        my $function_def_text = `sudo -u postgres psql --dbname $dbname --port $port -A -F --no-align --pset="tuples_only=on" << 'EOF'
+           SELECT string_agg(pg_get_functiondef(f.oid), e';\n') AS def
+           FROM (SELECT oid FROM pg_proc
+           WHERE proname = '$function_name' AND pronamespace = '$schema'::regnamespace) AS f;
+EOF`;
         _write("functions", $schema, $function_name, $function_def_text);
         #skip sub def lines
         while (my $next_line = <STDIN>) {
@@ -115,18 +92,65 @@ while (<STDIN>) {
 
 }
 
+sub _extract_dependent_constraint {
+
+    my $result =  `sudo -u postgres psql --dbname $dbname --port $port -F ! --no-align --pset="footer=off" << 'EOF'
+          SELECT c.conname::information_schema.sql_identifier AS constraint_name,
+              c.conrelid::regclass AS constraint_table,
+              p.oid::regproc AS function_name,
+              p.prorettype::regtype AS function_type,
+              pg_get_function_arguments(p.oid::regproc) AS function_arguments
+          FROM pg_namespace nc,
+              pg_constraint c,
+              pg_depend d,
+              pg_proc p,
+              pg_namespace np
+          WHERE nc.oid = c.connamespace AND c.contype = 'c'::"char"
+              AND c.oid = d.objid AND d.classid = 'pg_constraint'::regclass::oid
+              AND d.refobjid = p.oid AND d.refclassid = 'pg_proc'::regclass::oid
+              AND p.pronamespace = np.oid;
+EOF`;
+
+    my @lines = split /\n/, $result;
+    # shift the headers
+    my @headers = _get_tokenize_values(shift @lines);
+    # no result from query, therefore does not have any dependent constraint
+    return {} unless @lines;
+
+    my $constraints = {};
+    foreach my $line (@lines) {
+        my @tokens = _get_tokenize_values($line);
+        my %c = map { $headers[$_] => $tokens[$_] } (0 .. $#headers);
+        $constraints->{$c{constraint_table}} = \%c;
+    }
+
+    return $constraints;
+}
+
+sub _get_tokenize_values {
+    my @tokens = split /!/, shift;
+    map { $_ =~ s/^\s+|\s+$//g } @tokens;
+    return @tokens;
+}
+
 sub _write {
     my ($object_type, $schema_name, $object_name, $definition, $append) = @_;
     # path will always looks like `/home/git/regentmarkets/bom-postgres-*/schema`
-    my $file_path = path($path)->child('schema')->child($object_type)->child($schema_name)->child($object_name . '.sql');
-    $file_path->parent->mkpath;
+
+    my $dir_path = "$path/schema/$object_type/$schema_name";
+    my $file_path = "$dir_path/$object_name.sql";
+
+    `mkdir -p -v $dir_path && touch $file_path`;
 
     $definition =~ s/^\n//;
     $definition .= "\n\n";
-    
-    $append ? $file_path->append_utf8($definition) : $file_path->spew_utf8($definition);
-}
 
+    my $fh;
+    $append ? open($fh, '>>:encoding(UTF-8)', $file_path) : open($fh, '>:encoding(UTF-8)', $file_path);
+    print $fh $definition;
+
+    return;
+}
 
 sub _get_dummy_func_def {
     my ($name, $args, $return_type) = @_;

@@ -62,7 +62,7 @@ cmp_ok(
     'Check if it load the account properly action_type'
 );
 cmp_ok($transaction->transaction_record->payment_id,    '==', $payment_id, 'Check if it load the account properly payment_id');
-cmp_ok($transaction->transaction_record->staff_loginid, 'eq', 'system',     'Check if it load the account properly staff_loginid');
+cmp_ok($transaction->transaction_record->staff_loginid, 'eq', 'system',    'Check if it load the account properly staff_loginid');
 # note.. we used to test transaction-remark here, but we never writes that for payments,
 # so the new payment handlers don't write it.
 cmp_ok($transaction->transaction_record->payment->remark, 'eq', 'Comment field', 'Check if it load the account properly remark');
