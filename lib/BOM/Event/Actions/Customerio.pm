@@ -6,6 +6,7 @@ use warnings;
 use Locale::Country;
 use Mojo::URL;
 use Mojo::UserAgent;
+use Date::Utility;
 
 use BOM::User::Client;
 use BOM::Config;

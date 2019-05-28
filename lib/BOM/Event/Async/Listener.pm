@@ -5,7 +5,6 @@ use warnings;
 
 use Log::Any qw($log);
 
-use Date::Utility;
 use BOM::Platform::Event::Emitter;
 use BOM::Event::Process;
 use BOM::Event::Async::QueueHandler;

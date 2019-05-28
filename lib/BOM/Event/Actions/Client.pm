@@ -17,9 +17,6 @@ no indirect;
 
 use Log::Any qw($log);
 use IO::Async::Loop;
-use Net::Async::HTTP;
-use WebService::Async::Onfido;
-use WebService::Async::SmartyStreets;
 use Locale::Codes::Country qw(country_code2code);
 use DataDog::DogStatsd::Helper;
 use Brands;
@@ -28,7 +25,9 @@ use Template::AutoFilter;
 use List::Util qw(any);
 use List::UtilsBy qw(rev_nsort_by);
 use Future::Utils qw(fmap0);
+use Future::AsyncAwait;
 use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
+use Date::Utility;
 
 use BOM::Config;
 use BOM::Platform::Context qw(localize);
@@ -40,8 +39,7 @@ use BOM::Database::ClientDB;
 use BOM::Platform::S3Client;
 use BOM::Platform::Event::Emitter;
 use BOM::Config::RedisReplicated;
-use Net::Async::Redis;
-use JSON::MaybeUTF8 'encode_json_utf8';
+use BOM::Event::Services;
 
 # Number of seconds to allow for just the verification step.
 use constant VERIFICATION_TIMEOUT => 60;
@@ -61,11 +59,17 @@ use constant ONFIDO_PENDING_REQUEST_TIMEOUT  => 20 * 60;
 
 # Redis key namespace to store onfido results and link
 use constant ONFIDO_REQUESTS_LIMIT => $ENV{ONFIDO_REQUESTS_LIMIT} // 1000;
-use constant ONFIDO_LIMIT_TIMEOUT  => $ENV{ONFIDO_LIMIT_TIMEOUT}  // 60 * 60 * 24;
+use constant ONFIDO_LIMIT_TIMEOUT  => $ENV{ONFIDO_LIMIT_TIMEOUT}  // 24 * 60 * 60;
 use constant ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY => 'ONFIDO_AUTHENTICATION_REQUEST_CHECK';
 use constant ONFIDO_REQUEST_COUNT_KEY               => 'ONFIDO_REQUEST_COUNT';
 use constant ONFIDO_CHECK_EXCEEDED_KEY              => 'ONFIDO_CHECK_EXCEEDED';
 use constant ONFIDO_REPORT_KEY_PREFIX               => 'ONFIDO::REPORT::ID::';
+
+use constant ONFIDO_SUPPORTED_COUNTRIES_KEY                    => 'ONFIDO_SUPPORTED_COUNTRIES';
+use constant ONFIDO_SUPPORTED_COUNTRIES_URL                    => 'https://documentation.onfido.com/identityISOsupported.json';
+use constant ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT                => $ENV{ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT} // 7 * 86400;                     # 1 week
+use constant ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_PREFIX  => 'ONFIDO::UNSUPPORTED::COUNTRY::EMAIL::PER::USER::';
+use constant ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_TIMEOUT => $ENV{ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_TIMEOUT} // 24 * 60 * 60;
 
 # Conversion from our database to the Onfido available fields
 my %ONFIDO_DOCUMENT_TYPE_MAPPING = (
@@ -127,77 +131,39 @@ my %ONFIDO_DOCUMENT_TYPE_PRIORITY = (
 # List of document types that we use as proof of address
 my @POA_DOCUMENTS_TYPE = qw(proofaddress payslip bankstatement cardstatement);
 
-{
-    my $onfido;
+my $loop = IO::Async::Loop->new;
+$loop->add(my $services = BOM::Event::Services->new);
 
+{
     # Provides an instance for communicating with the Onfido web API.
     # Since we're adding this to our event loop, it's a singleton - we
     # don't want to leak memory by creating new ones for every event.
     sub _onfido {
-        return $onfido //= do {
-            my $loop = IO::Async::Loop->new;
-            $loop->add(my $api = WebService::Async::Onfido->new(token => BOM::Config::third_party()->{onfido}->{authorization_token}));
-            $api;
-            }
+        return $services->onfido();
     }
-
-    my $smartystreets;
 
     sub _smartystreets {
-        return $smartystreets //= do {
-            # Will use the shared singleton loop
-            my $loop = IO::Async::Loop->new;
-            $loop->add(
-                my $api = WebService::Async::SmartyStreets->new(
-                    international_auth_id => BOM::Config::third_party()->{smartystreets}->{auth_id},
-                    international_token   => BOM::Config::third_party()->{smartystreets}->{token},
-                ));
-            $api;
-            }
+        return $services->smartystreets();
     }
-
-    my $http;
 
     sub _http {
-        return $http //= do {
-            my $loop = IO::Async::Loop->new;
-            my $http = Net::Async::HTTP->new(
-                fail_on_error  => 1,
-                pipeline       => 0,
-                decode_content => 1,
-                stall_timeout  => 30,
-                user_agent     => 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:66.0)',
-            );
-            $loop->add($http);
-            $http;
-            }
-
+        return $services->http();
     }
 
-    my $redis_mt5user;
-    # Provides an instance for communicating with the Onfido web API.
-    # Since we're adding this to our event loop, it's a singleton - we
-    # don't want to leak memory by creating new ones for every event.
     sub _redis_mt5user_read {
-        return $redis_mt5user //= do {
-            my $loop = IO::Async::Loop->new;
-            $loop->add(my $redis = Net::Async::Redis->new(uri => BOM::Config::RedisReplicated::redis_config('mt5_user', 'read')->{uri}));
-            $redis;
-            }
+        return $services->redis_mt5user();
     }
 
-    my $redis;
+    sub _redis_events_read {
+        return $services->redis_events_read();
+    }
 
-    sub _redis {
-        return $redis //= do {
-            my $loop         = IO::Async::Loop->new;
-            my $redis_config = BOM::Config::RedisReplicated::redis_config('replicated', 'write');
-            my $redis        = Net::Async::Redis->new(
-                uri  => $redis_config->{uri},
-                auth => $redis_config->{password});
-            $loop->add($redis);
-            $redis;
-            }
+    sub _redis_events_write {
+        return $services->redis_events_write();
+    }
+
+    sub _redis_replicated_write {
+        return $services->redis_replicated_write();
     }
 }
 
@@ -236,10 +202,10 @@ sub document_upload {
         my $client = BOM::User::Client->new({loginid => $loginid})
             or die 'Could not instantiate client for login ID ' . $loginid;
 
-        my $redis_write = _redis();
-        $redis_write->connect->then(
+        my $redis_events_write = _redis_events_write();
+        $redis_events_write->connect->then(
             sub {
-                return $redis_write->hsetnx('ADDRESS_VERIFICATION_TRIGGER', $client->binary_user_id, 1);
+                return $redis_events_write->hsetnx('ADDRESS_VERIFICATION_TRIGGER', $client->binary_user_id, 1);
             }
             )->then(
             sub {
@@ -250,9 +216,6 @@ sub document_upload {
 
                 return Future->done;
             })->retain;
-
-        my $loop   = IO::Async::Loop->new;
-        my $onfido = _onfido();
 
         $log->debugf('Applying Onfido verification process for client %s', $loginid);
         my $file_data = $args->{content};
@@ -269,6 +232,9 @@ sub document_upload {
             document_entry => $document_entry,
             client         => $client
         )->get;
+
+        my $loop   = IO::Async::Loop->new;
+        my $onfido = _onfido();
 
         # We have an overall timeout for this entire operation - it won't
         # limit any SQL queries, but all network operations should be covered.
@@ -305,6 +271,14 @@ sub document_upload {
                 )->then(
                 sub {
                     my ($applicant, $file_data) = @_;
+
+                    return Future->fail('No applicant created for '
+                            . $client->loginid
+                            . ' with place of birth '
+                            . $client->place_of_birth
+                            . ' and residence '
+                            . $client->residence)
+                        unless $applicant;
 
                     $log->debugf('Applicant created: %s, uploading %d bytes for document', $applicant->id, length($file_data));
 
@@ -383,11 +357,11 @@ sub document_upload {
                 sub {
                     my ($err, $category, @details) = @_;
 
-                    $log->errorf('An error occurred while uploading document to Onfido: %s', $err) unless $category eq 'http';
+                    $log->errorf('An error occurred while uploading document to Onfido: %s', $err) unless ($category // '') eq 'http';
 
                     # details is in res, req form
                     my ($res) = @details;
-                    $log->errorf('An error occurred while uploading document to Onfido: %s with response %s', $err, $res->content);
+                    $log->errorf('An error occurred while uploading document to Onfido: %s with response %s', $err, ($res ? $res->content : ''));
                 })
             )->get
     }
@@ -446,15 +420,14 @@ sub ready_for_authentication {
 
         my $residence = uc(country_code2code($client->residence, 'alpha-2', 'alpha-3'));
 
-        my $redis_write = _redis();
         my ($request_count, $user_request_count);
+        my $redis_events_write = _redis_events_write();
         # INCR Onfido check request count in Redis
-
-        $redis_write->connect->then(
+        $redis_events_write->connect->then(
             sub {
                 return Future->needs_all(
-                    $redis_write->hget(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_REQUEST_COUNT_KEY),
-                    $redis_write->get(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id),
+                    $redis_events_write->hget(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_REQUEST_COUNT_KEY),
+                    $redis_events_write->get(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id),
                 );
             }
             )->then(
@@ -466,11 +439,12 @@ sub ready_for_authentication {
                 DataDog::DogStatsd::Helper::stats_inc('event.ready_for_authentication.onfido.applicant_check.count');
 
                 if (!$args->{is_pending} && $user_request_count >= ONFIDO_REQUEST_PER_USER_LIMIT) {
-                    return $redis_write->ttl(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id)->then(
+                    return $redis_events_write->ttl(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id)->then(
                         sub {
                             my $time_to_live = shift;
 
-                            $redis_write->expire(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id, ONFIDO_REQUEST_PER_USER_TIMEOUT)->retain()
+                            $redis_events_write->expire(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id, ONFIDO_REQUEST_PER_USER_TIMEOUT)
+                                ->retain()
                                 if ($time_to_live < 0);
 
                             return Future->fail(
@@ -491,7 +465,7 @@ sub ready_for_authentication {
                         has_email_sent => 1
                     });
 
-                    return $redis_write->hsetnx(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_CHECK_EXCEEDED_KEY, $redis_data)->then(
+                    return $redis_events_write->hsetnx(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_CHECK_EXCEEDED_KEY, $redis_data)->then(
                         sub {
 
                             return Future->done({
@@ -575,20 +549,21 @@ sub ready_for_authentication {
                         )->on_done(
                         sub {
                             Future->needs_all(
-                                $redis_write->hincrby(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_REQUEST_COUNT_KEY, 1)->then(
+                                $redis_events_write->hincrby(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_REQUEST_COUNT_KEY, 1)->then(
                                     sub {
-                                        return $redis_write->expire(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_LIMIT_TIMEOUT) if (shift == 1);
+                                        return $redis_events_write->expire(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_LIMIT_TIMEOUT)
+                                            if (shift == 1);
 
                                         return Future->done;
                                     }
                                 ),
-                                $redis_write->incr(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id)->then(
+                                $redis_events_write->incr(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id)->then(
                                     sub {
                                         my $user_count = shift;
-                                        $log->infof("Onfido check request triggered for %s with current request count=%d on %s",
+                                        $log->debugf("Onfido check request triggered for %s with current request count=%d on %s",
                                             $loginid, $user_count, Date::Utility->new->datetime_ddmmmyy_hhmmss);
 
-                                        return $redis_write->expire(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id,
+                                        return $redis_events_write->expire(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id,
                                             ONFIDO_REQUEST_PER_USER_TIMEOUT)
                                             if ($user_count == 1);
 
@@ -608,9 +583,10 @@ sub ready_for_authentication {
                                     'There is an existing request running for login_id: %s. The currenct request is pending until it finishes.',
                                     $loginid);
                                 $args->{is_pending} = 1;
-                                $redis_write->set(ONFIDO_PENDING_REQUEST_PREFIX . $client->binary_user_id, encode_json_utf8($args))->then(
+                                $redis_events_write->set(ONFIDO_PENDING_REQUEST_PREFIX . $client->binary_user_id, encode_json_utf8($args))->then(
                                     sub {
-                                        $redis_write->expire(ONFIDO_PENDING_REQUEST_PREFIX . $client->binary_user_id, ONFIDO_PENDING_REQUEST_TIMEOUT);
+                                        $redis_events_write->expire(ONFIDO_PENDING_REQUEST_PREFIX . $client->binary_user_id,
+                                            ONFIDO_PENDING_REQUEST_TIMEOUT);
                                     })->retain;
 
                             } else {
@@ -664,10 +640,10 @@ sub client_verification {
                         or die 'Could not instantiate client for login ID ' . $loginid;
                     $log->infof('Onfido check result for %s (applicant %s): %s (%s)', $loginid, $applicant_id, $result, $check_status);
 
-                    my $redis_write = _redis();
-                    $redis_write->connect->then(
+                    my $redis_events_write = _redis_events_write();
+                    $redis_events_write->connect->then(
                         sub {
-                            $redis_write->hmset(
+                            $redis_events_write->hmset(
                                 ONFIDO_REPORT_KEY_PREFIX . $client->binary_user_id,
                                 status => $check_status,
                                 url    => $check->results_uri
@@ -683,14 +659,17 @@ sub client_verification {
                         })->get;
 
                     my $pending_key = ONFIDO_PENDING_REQUEST_PREFIX . $client->binary_user_id;
-                    $redis_write->get($pending_key)->then(
+                    $redis_events_write->get($pending_key)->then(
                         sub {
                             my $args = shift;
                             if (($check_status ne 'pass') and $args) {
-                                $log->infof('Onfido check failed. Resending the last pending request: %s', $args);
+                                $log->debugf('Onfido check failed. Resending the last pending request: %s', $args);
                                 BOM::Platform::Event::Emitter::emit(ready_for_authentication => decode_json_utf8($args));
                             }
-                            $redis_write->del($pending_key);
+                            $redis_events_write->del($pending_key)->then(
+                                sub {
+                                    $log->debugf('Onfido pending key cleared');
+                                });
                         })->retain;
 
                     # if overall result of check is pass then set status and
@@ -810,75 +789,158 @@ sub _address_verification {
     my $client = $args{client};
 
     $log->infof('Verifying address');
+
+    my $freeform = join(' ',
+        grep { length } $client->address_line_1,
+        $client->address_line_2, $client->address_city, $client->address_state, $client->address_postcode);
+
     my %details = (
-        freeform => join(' ',
-            grep { length } $client->address_line_1, $client->address_line_2, $client->address_city,
-            $client->address_state, $client->address_postcode),
-        country => uc(country_code2code($client->residence, 'alpha-2', 'alpha-3')),
+        freeform => $freeform,
+        country  => uc(country_code2code($client->residence, 'alpha-2', 'alpha-3')),
         # Need to pass this if you want to do verification
         geocode => 'true',
     );
     $log->infof('Address details %s', \%details);
-    # Next step is an address check. Let's make sure that whatever they
-    # are sending is valid at least to locality level.
-    return _smartystreets()->verify(%details)->on_done(
+
+    my $redis_events_read = _redis_events_read();
+    return $redis_events_read->connect->then(
         sub {
-            my ($addr) = @_;
-            $log->infof('Smartystreets verification status: %s', $addr->status);
-            $log->debugf('Address info back from SmartyStreets is %s', {%$addr});
-            unless ($addr->accuracy_at_least('locality')) {
-                $log->warnf('Inaccurate address - only verified to %s precision', $addr->address_precision);
+            $redis_events_read->hget('ADDRESS_VERIFICATION_RESULT' . $client->binary_user_id, $freeform . ($client->residence // ''));
+        }
+        )->then(
+        sub {
+            my $check_already_performed = shift;
+
+            if ($check_already_performed) {
+                $log->debugf('Returning as address verification already performed for same details.');
                 return Future->done;
             }
-            $log->infof('Address verified with accuracy of locality level by smartystreet.');
-            _update_client_status(
-                client  => $client,
-                status  => 'address_verified',
-                message => 'SmartyStreets - address verified'
-            );
-        }
-        )->on_fail(
-        sub {
-            $log->errorf('Address lookup failed for %s - %s', $client->loginid, $_[0]);
+
+            # Next step is an address check. Let's make sure that whatever they
+            # are sending is valid at least to locality level.
+            return _smartystreets()->verify(%details)->on_done(
+                sub {
+                    my ($addr) = @_;
+
+                    my $status = $addr->status;
+                    $log->infof('Smartystreets verification status: %s', $status);
+                    $log->debugf('Address info back from SmartyStreets is %s', {%$addr});
+
+                    unless ($addr->accuracy_at_least('locality')) {
+                        DataDog::DogStatsd::Helper::stats_inc('smartystreet.verification.failure', {tags => [$status]});
+                        $log->warnf('Inaccurate address - only verified to %s precision', $addr->address_precision);
+                        return Future->done;
+                    }
+
+                    DataDog::DogStatsd::Helper::stats_inc('smartystreet.verification.success', {tags => [$status]});
+                    $log->infof('Address verified with accuracy of locality level by smartystreet.');
+
+                    _update_client_status(
+                        client  => $client,
+                        status  => 'address_verified',
+                        message => 'SmartyStreets - address verified'
+                    );
+
+                    my $redis_events_write = _redis_events_write();
+                    $redis_events_write->connect->then(
+                        sub {
+                            $redis_events_write->hset('ADDRESS_VERIFICATION_RESULT' . $client->binary_user_id,
+                                $freeform . ($client->residence // ''), $status);
+                        })->retain;
+
+                    return Future->done;
+                }
+                )->on_fail(
+                sub {
+                    $log->errorf('Address lookup failed for %s - %s', $client->loginid, $_[0]);
+                    return Future->fail;
+                }
+                )->on_ready(
+                sub {
+                    my $f = shift;
+                    DataDog::DogStatsd::Helper::stats_timing("event.address_verification.smartystreet.verify." . $f->state . ".elapsed", $f->elapsed);
+                });
         });
 }
 
-sub _get_onfido_applicant {
+=head2 _is_supported_country
+
+Check if the passed country is supported by Onfido.
+
+=over 4
+
+=item * C<$country> - two letter country code to check for Onfido support
+
+=back
+
+=cut
+
+async sub _is_supported_country {
+    my ($country) = @_;
+
+    my $countries_list;
+    my $redis_events_read = _redis_events_read();
+    await $redis_events_read->connect;
+
+    $countries_list = await $redis_events_read->get(ONFIDO_SUPPORTED_COUNTRIES_KEY);
+    if ($countries_list) {
+        $countries_list = decode_json_utf8($countries_list);
+    } else {
+        my $onfido_countries = await _http()->GET(ONFIDO_SUPPORTED_COUNTRIES_URL);
+        if ($onfido_countries) {
+            $onfido_countries = decode_json_utf8($onfido_countries->content);
+            $countries_list->{uc(country_code2code($_->{alpha3}, 'alpha-3', 'alpha-2'))} = $_->{supported_identity_report} + 0 for @$onfido_countries;
+
+            my $redis_events_write = _redis_events_write();
+            await $redis_events_write->connect;
+            await $redis_events_write->set(ONFIDO_SUPPORTED_COUNTRIES_KEY, encode_json_utf8($countries_list));
+            await $redis_events_write->expire(ONFIDO_SUPPORTED_COUNTRIES_KEY, ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT);
+        }
+    }
+
+    return $countries_list->{uc $country} // 0;
+}
+
+async sub _get_onfido_applicant {
     my (%args) = @_;
 
     my $client = $args{client};
     my $onfido = $args{onfido};
 
-    return Future->call(
-        sub {
-            my $applicant_id = BOM::Config::RedisReplicated::redis_read()->get(ONFIDO_APPLICANT_KEY_PREFIX . $client->binary_user_id);
-            Future->fail() unless $applicant_id;
+    my $country = $client->place_of_birth // $client->residence;
+    my $is_supported_country = _is_supported_country($country)->get;
+    unless ($is_supported_country) {
+        DataDog::DogStatsd::Helper::stats_inc('onfido.unsupported_country', {tags => [$country]});
+        await _send_email_onfido_unsupported_country_cs($client);
+        $log->debugf('Document not uploaded to Onfido as client is from list of countries not supported by Onfido');
+        return undef;
+    }
 
-            Future->done($applicant_id);
-        }
-        )->then(
-        sub {
-            my $applicant_id = shift;
-            $onfido->applicant_get(applicant_id => $applicant_id)->then(
-                sub {
-                    Future->done(shift);
-                });
-        }
-        )->else(
-        sub {
-            my $client_details_onfido = _client_onfido_details($client);
-            $onfido->applicant_create(%$client_details_onfido)->then(
-                sub {
-                    my $applicant = shift;
-                    BOM::Config::RedisReplicated::redis_write()->set(ONFIDO_APPLICANT_KEY_PREFIX . $client->binary_user_id, $applicant->id);
-                    Future->done($applicant);
-                }
-                )->on_ready(
-                sub {
-                    my $f = shift;
-                    DataDog::DogStatsd::Helper::stats_timing("event.document_upload.onfido.applicant_create." . $f->state . ".elapsed", $f->elapsed,);
-                });
-        });
+    my $redis_events_read = _redis_events_read();
+    await $redis_events_read->connect;
+    my $applicant_id = await $redis_events_read->get(ONFIDO_APPLICANT_KEY_PREFIX . $client->binary_user_id);
+
+    if ($applicant_id) {
+        $log->debugf('Applicant id already exists, returning that instead of creating new one');
+        return await $onfido->applicant_get(applicant_id => $applicant_id);
+    }
+
+    my $start     = Time::HiRes::time();
+    my $applicant = await $onfido->applicant_create(%{_client_onfido_details($client)});
+    my $elapsed   = Time::HiRes::time() - $start;
+
+    if ($applicant) {
+        DataDog::DogStatsd::Helper::stats_timing("event.document_upload.onfido.applicant_create.done.elapsed", $elapsed);
+
+        my $redis_events_write = _redis_events_write();
+        await $redis_events_write->connect;
+
+        await $redis_events_write->set(ONFIDO_APPLICANT_KEY_PREFIX . $client->binary_user_id, $applicant->id);
+    } else {
+        DataDog::DogStatsd::Helper::stats_timing("event.document_upload.onfido.applicant_create.failed.elapsed", $elapsed);
+    }
+
+    return $applicant;
 }
 
 sub _get_document_details {
@@ -1060,51 +1122,60 @@ need to extend later for all landing companies
 
 =cut
 
-sub _send_email_notification_for_poa {
+async sub _send_email_notification_for_poa {
     my (%args) = @_;
 
     my $document_entry = $args{document_entry};
     my $client         = $args{client};
 
     # no need to notify if document is not POA
-    return Future->done unless (any { $_ eq $document_entry->{document_type} } @POA_DOCUMENTS_TYPE);
+    return undef unless (any { $_ eq $document_entry->{document_type} } @POA_DOCUMENTS_TYPE);
 
     # don't send email if client is already authenticated
-    return Future->done if $client->fully_authenticated();
+    return undef if $client->fully_authenticated();
+
+    my $send_poa_email = sub {
+        my $redis_replicated_write = _redis_replicated_write();
+        $redis_replicated_write->connect->then(
+            sub {
+                $redis_replicated_write->hsetnx('EMAIL_NOTIFICATION_POA', $client->binary_user_id, 1);
+            }
+            )->then(
+            sub {
+                my $need_to_send_email = shift;
+                # using replicated one
+                # as this key is used in backoffice as well
+                Email::Stuffer->from('no-reply@binary.com')->to('authentications@binary.com')
+                    ->subject('New uploaded POA document for: ' . $client->loginid)
+                    ->text_body('New proof of address document was uploaded for ' . $client->loginid)->send()
+                    if $need_to_send_email;
+            });
+    };
+
+    # send email for landing company other than costarica
+    # TODO: remove this landing company check
+    # when we enable it for all landing companies
+    # this should be a config in landing company
+    unless ($client->landing_company->short eq 'svg') {
+        $send_poa_email->()->retain;
+        return undef;
+    }
 
     my @mt_loginid_keys = map { /^MT(\d+)$/ ? "MT5_USER_GROUP::$1" : () } $client->user->loginids;
 
-    return Future->done unless scalar(@mt_loginid_keys);
+    return undef unless scalar(@mt_loginid_keys);
 
     my $redis_mt5_user = _redis_mt5user_read();
-    return $redis_mt5_user->connect->then(
-        sub {
-            $redis_mt5_user->mget(@mt_loginid_keys);
-        }
-        )->then(
-        sub {
-            my $mt5_groups = shift;
+    await $redis_mt5_user->connect;
+    my $mt5_groups = await $redis_mt5_user->mget(@mt_loginid_keys);
 
-            # loop through all mt5 loginids check
-            # mt5 group has advanced|standard then
-            # its considered as financial
-            if (any { $_ =~ /_standard|_advanced/ } @$mt5_groups) {
-                my $redis_write = _redis();
-                $redis_write->connect->then(
-                    sub {
-                        return $redis_write->hsetnx('EMAIL_NOTIFICATION_POA', $client->binary_user_id, 1);
-                    }
-                    )->then(
-                    sub {
-                        my $need_to_send_email = shift;
-                        Email::Stuffer->from('no-reply@binary.com')->to('authentications@binary.com')
-                            ->subject('New uploaded POA document for: ' . $client->loginid)
-                            ->text_body('New proof of address document was uploaded for ' . $client->loginid)->send()
-                            if $need_to_send_email;
-                        return Future->done;
-                    });
-            }
-        });
+    # loop through all mt5 loginids check
+    # mt5 group has advanced|standard then
+    # its considered as financial
+    if (any { $_ =~ /_standard|_advanced/ } @$mt5_groups) {
+        $send_poa_email->()->retain;
+    }
+    return undef;
 }
 
 sub _send_email_onfido_check_exceeded_cs {
@@ -1125,7 +1196,50 @@ sub _send_email_onfido_check_exceeded_cs {
         Email::Stuffer->from($system_email)->to(@email_recipient_list)->subject($email_subject)->html_body($email_template)->send();
     unless ($email_status) {
         $log->warn('failed to send Onfido check exceeded email.');
-        return {status_code => 0};
+        return 0;
+    }
+
+    return 1;
+}
+
+=head2 _send_email_onfido_unsupported_country_cs
+
+Send email to CS when Onfido does not support the client's country.
+
+=cut
+
+async sub _send_email_onfido_unsupported_country_cs {
+    my ($client) = @_;
+
+    # Prevent sending multiple emails for the same user
+    my $redis_key         = ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_PREFIX . $client->binary_user_id;
+    my $redis_events_read = _redis_events_read();
+    await $redis_events_read->connect;
+    return undef if await $redis_events_read->exists($redis_key);
+
+    my $email_subject  = "Automated age verification failed for " . $client->loginid;
+    my $email_template = "\
+        <p>Client residence is not supported by Onfido. Please verify age of client manually.</p>
+        <p>
+            <b>loginid:</b> " . $client->loginid . "\
+            <b>place of birth:</b> " . $client->place_of_birth . "\
+            <b>residence:</b> " . $client->residence . "\
+        </p>
+
+        Team Binary.com
+        ";
+
+    my $email_status =
+        Email::Stuffer->from('no-reply@binary.com')->to('authentications@binary.com')->subject($email_subject)->html_body($email_template)->send();
+
+    if ($email_status) {
+        my $redis_events_write = _redis_events_write();
+        await $redis_events_write->connect;
+        await $redis_events_write->set($redis_key, 1);
+        await $redis_events_write->expire($redis_key, ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_TIMEOUT);
+    } else {
+        $log->warn('failed to send Onfido unsupported country email.');
+        return 0;
     }
 
     return 1;
@@ -1133,10 +1247,10 @@ sub _send_email_onfido_check_exceeded_cs {
 
 =head2 social_responsibility_check
 
-This check is to verify whether clients are at-risk in trading, and this check is done on an on-going basis. 
-The checks to be done are in the social_responsibility_check.yml file in bom-config. 
-If a client has breached certain thresholds, then an email will be sent to the 
-social responsibility team for further action. 
+This check is to verify whether clients are at-risk in trading, and this check is done on an on-going basis.
+The checks to be done are in the social_responsibility_check.yml file in bom-config.
+If a client has breached certain thresholds, then an email will be sent to the
+social responsibility team for further action.
 After the email has been sent, the monitoring starts again.
 
 This is required as per the following document: https://www.gamblingcommission.gov.uk/PDF/Customer-interaction-%E2%80%93-guidance-for-remote-gambling-operators.pdf

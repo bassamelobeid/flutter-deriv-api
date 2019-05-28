@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-use Log::Any::Adapter qw(Stderr), log_level => 'debug';
+use Log::Any::Adapter qw(Stderr), log_level => 'info';
 
 use Log::Any qw($log);
 use BOM::Event::Listener;
