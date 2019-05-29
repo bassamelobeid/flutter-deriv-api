@@ -338,7 +338,7 @@
                     "type" : "number"
                 },
                 "tick_stream" : {
-                    "item" : {
+                    "items" : {
                         "properties" : {
                             "tick" : {
                                 "description" : "The spot value at the given epoch.",
