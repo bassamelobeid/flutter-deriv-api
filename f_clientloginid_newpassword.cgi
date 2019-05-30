@@ -33,8 +33,10 @@ my $client = BOM::User::Client::get_instance({
         'loginid'    => uc $loginID,
         db_operation => 'replica'
     }) || die "[f_clientloginid_newpassword cgi] bad client $loginID";
-my $email       = $client->email;
-my $client_name = $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
+
+my $email            = $client->email;
+my $client_name      = $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
+my $has_social_login = $client->user->{has_social_signup};
 
 if (not $email) {
     print 'Invalid account: email address not set';
@@ -51,9 +53,19 @@ my $lang = request()->language;
 my $link = "https://www.binary.com/" . lc($lang) . "/redirect.html?action=reset_password&lang=$lang&code=$token";
 
 my $lost_pass_email;
+
 my $brand = Brands->new(name => request()->brand);
 
-BOM::Backoffice::Request::template()->process("email/lost_password.html.tt", {link => $link}, \$lost_pass_email);
+my $email_template = $has_social_login ? "email/lost_password_has_social_login.html.tt" : "email/lost_password.html.tt";
+
+BOM::Backoffice::Request::template()->process(
+    $email_template,
+    {
+        link        => $link,
+        client_name => $client_name =~ /^ *$/ ? 'there' : $client_name,
+    },
+    \$lost_pass_email
+);
 
 # email link to client
 Bar('emailing change password link to ' . $loginID);
@@ -63,7 +75,7 @@ print '<p class="success_message">Emailing change password link to ' . encode_en
 my $result = send_email({
     from                  => $brand->emails('support'),
     to                    => $email,
-    subject               => localize('New Password Request'),
+    subject               => localize('Reset your Binary.com account password'),
     message               => [$lost_pass_email,],
     template_loginid      => $loginID,
     use_email_template    => 1,
