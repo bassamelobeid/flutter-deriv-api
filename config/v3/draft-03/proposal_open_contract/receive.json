@@ -189,7 +189,7 @@
                         "contract_start": {
                             "type": "array",
                             "description": "Ticks around contract start time.",
-                            "item": {
+                            "items": {
                                 "type": "object",
                                 "properties": {
                                     "epoch": {
@@ -214,7 +214,7 @@
                         "contract_end": {
                             "type": "array",
                             "description": "Ticks around contract end time.",
-                            "item": {
+                            "items": {
                                 "type": "object",
                                 "properties": {
                                     "epoch": {
@@ -239,7 +239,7 @@
                     "all_ticks" : {
                         "type" : "array",
                         "description" : "Ticks for tick expiry contract from start time till expiry.",
-                        "item" : {
+                        "items" : {
                             "properties" : {
                                 "epoch" : {
                                     "type" : "integer",
