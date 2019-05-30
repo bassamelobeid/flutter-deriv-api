@@ -163,7 +163,6 @@ rpc "verify_email",
     my $loginid = $params->{token_details} ? $params->{token_details}->{loginid} : undef;
     my $extra_url_params = {};
     $extra_url_params = $args->{url_parameters} if defined $args->{url_parameters};
-
     my $verification = email_verification({
         code             => $code,
         website_name     => $params->{website_name},
@@ -199,7 +198,7 @@ rpc "verify_email",
         request_email($email, $verification->{payment_withdraw}->($type_call)) unless $skip_email;
     };
 
-    if ($email_already_exist and $type eq 'reset_password' and not $email_already_exist->{has_social_signup}) {
+    if ($email_already_exist and $type eq 'reset_password') {
         request_email($email, $verification->{reset_password}->());
     } elsif ($type eq 'account_opening') {
         unless ($email_already_exist) {

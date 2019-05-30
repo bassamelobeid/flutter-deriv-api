@@ -26,7 +26,7 @@ use DataDog::DogStatsd::Helper qw(stats_timing stats_inc stats_gauge);
 use Time::HiRes;
 use Time::Duration::Concise::Localize;
 use Format::Util::Numbers qw/formatnumber/;
-use JSON::MaybeUTF8 qw/encode_json_utf8/;
+use JSON::MaybeUTF8 qw/encode_json_utf8 decode_json_utf8/;
 
 use Brands;
 use Quant::Framework;
@@ -46,6 +46,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Client::CashierValidation;
 use BOM::MarketData qw(create_underlying);
 use BOM::Platform::Event::Emitter;
+use BOM::User;
 
 use Exporter qw(import export_to_level);
 our @EXPORT_OK = qw(longcode);
@@ -806,6 +807,30 @@ sub check_ip_country {
     }
 
     return undef;
+}
+
+=head2 check_ip_country
+
+Gets user by passing the VERIFICATION TOKEN
+
+Checks and gets the data stored in redis with the token
+
+Returns undef if the token is not found
+
+=cut 
+
+sub get_user_by_token {
+    my $token = shift;
+    my $redis = BOM::Config::RedisReplicated::redis_read();
+    my $user;
+
+    if (my $token_details = decode_json_utf8($redis->get("VERIFICATION_TOKEN::$token"))) {
+        $user = BOM::User->new(
+            email => $token_details->{email},
+        );
+    }
+
+    return $user;
 }
 
 1;

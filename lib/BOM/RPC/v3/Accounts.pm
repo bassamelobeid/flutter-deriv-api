@@ -869,10 +869,6 @@ rpc "reset_password",
     # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
     my $client = $clients[0];
 
-    # we do not want to leak out any internal information so always return status of 1
-    # we do not want this call to continue running if user signed up using oneall
-    return {status => 1} if $user->{has_social_signup};
-
     unless ($client->is_virtual) {
         unless ($args->{date_of_birth}) {
             return BOM::RPC::v3::Utility::create_error({
@@ -899,6 +895,16 @@ rpc "reset_password",
         $obj->password($new_password);
         $obj->save;
         $oauth->revoke_tokens_by_loginid($obj->loginid);
+    }
+
+    # if user have social signup and decided to proceed, update has_social_signup to false
+    if ($user->{has_social_signup}) {
+        # remove social signup flag
+        $user->update_has_social_signup(0);
+        #remove all other social accounts
+        my $user_connect = BOM::Database::Model::UserConnect->new;
+        my @providers    = $user_connect->get_connects_by_user_id($user->{id});
+        $user_connect->remove_connect($user->{id}, $_) for @providers;
     }
 
     BOM::User::AuditLog::log('password has been reset', $email, $args->{verification_code});

@@ -4,12 +4,28 @@ use warnings;
 use BOM::RPC::v3::EmailVerification qw(email_verification);
 use Test::Most;
 use Email::Stuffer::TestLinks;
+use Brands;
+use Test::MockModule;
+use BOM::RPC::v3::Utility;
+use BOM::User;
+use BOM::User::Client;
 
 my $code             = 'RANDOM_CODE';
 my $website_name     = 'My website name';
 my $verification_uri = 'https://www.example.com/verify';
 my $language         = 'EN';
 my $source           = 1;
+my $support_mail     = Brands->new()->emails('support');
+
+my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
+$mock_utility->mock(
+    'get_user_by_token',
+    sub {
+        return bless {has_social_signup => 1}, 'BOM::User';
+    });
+
+my $user_mocked = Test::MockModule->new('BOM::User');
+$user_mocked->mock('clients', sub { bless {}, 'BOM::User::Client' });
 
 sub get_verification_uri {
     my $action = shift;
@@ -20,9 +36,11 @@ sub get_verification_uri {
 my $messages = {
     reset_password => {
         with_link =>
-            '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Before we can help you change your password, please help us to verify your identity by clicking the link below:</p>[_1]<p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
+            '<p style="line-height:200%;color:#333333;font-size:15px;">Hello [_1],</p><p>We received a request to reset your password. If it was you, you may <a href="[_2]">reset your password now.<a></p><p>Not you? Unsure? <a href="https://www.binary.com/en/contact.html">Please let us know right away.</a></p><p style="color:#333333;font-size:15px;">Thank you for trading with us.<br/>[_3]</p>',
+        with_link_sociallogin =>
+            '<p style="line-height:200%;color:#333333;font-size:15px;">Hello [_1],</p><p>We received a request to reset your password. If it was you, we\'d be glad to help.</p><p>Before we proceed, we noticed you are logged in using your &#91Google/Facebook&#93 account. Please note that if you reset your password, your social account login will be deactivated. If you wish to keep your social account login, you would need to remember your &#91Google/Facebook&#93 account password.</p><p>If you\'re ready, <a href="[_2]">reset your password now.<a></p><p>Not you? Unsure? <a href="https://www.binary.com/en/contact.html">Please let us know right away.</a></p><p style="color:#333333;font-size:15px;">Thank you for trading with us.<br/>[_3]</p>',
         with_token =>
-            '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Before we can help you change your password, please help us to verify your identity by entering the following verification token into the password reset form:<p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
+            '<p style="line-height:200%;color:#333333;font-size:15px;">Hello [_1],</p><p>We received a request to reset your password. Please use the token below to create your new password.</p><p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_2]</span></p><p>Not you? Unsure? <a href="https://www.binary.com/en/contact.html">Please let us know right away.</a></p><p style="color:#333333;font-size:15px;">Thank you for trading with us.<br/>[_3]</p>',
     },
     account_opening_new => {
         with_link =>
@@ -45,18 +63,32 @@ my $messages = {
 };
 
 sub get_verification_message {
-    my ($message_name, $action) = @_;
+    my ($message_name, $action, $social_login) = @_;
 
     my $uri               = get_verification_uri($action)      if $action;
     my $verification_link = "<p><a href=\"$uri\">$uri</a></p>" if $action;
 
     my $verification_way = $action ? $verification_link : $code;
 
-    my $message = $messages->{$message_name}->{$action ? 'with_link' : 'with_token'};
+    my $message;
+    # This change is due to the addition fuction of allowing client to reset password
+    # even they have social login
+    if ($social_login) {
+        $message = $messages->{$message_name}->{with_link_sociallogin};
+    } else {
+        $message = $messages->{$message_name}->{$action ? 'with_link' : 'with_token'};
+    }
 
-    $message =~ s/\[_1\]/$verification_way/g;
-    $message =~ s/\[_2\]/$website_name/g;
-
+    # This addtion is due to introduction of new email, which have slight different format
+    # than the previous
+    if ($message_name eq 'reset_password') {
+        $message =~ s/\[_1\]/there/g;
+        $action ? $message =~ s/\[_2\]/$uri/g : $message =~ s/\[_2\]/$verification_way/g;
+        $message =~ s/\[_3\]/$website_name/g;
+    } else {
+        $message =~ s/\[_1\]/$verification_way/g;
+        $message =~ s/\[_2\]/$website_name/g;
+    }
     return $message;
 }
 
@@ -71,6 +103,26 @@ sub get_verification {
         ($with_link ? (verification_uri => $verification_uri) : ()),
     });
 }
+
+subtest 'Password Reset Verification' => sub {
+    my $verification = get_verification();
+
+    is $verification->{reset_password}->()->{subject}, "Reset your $website_name account password", 'reset password verification subject';
+    is $verification->{reset_password}->()->{message}, get_verification_message('reset_password'), 'Password Reset with token';
+
+    $verification = get_verification(1);
+
+    is $verification->{reset_password}->()->{message}, get_verification_message('reset_password', 'reset_password', 1),
+        'Password Reset with verification URI (social login)';
+
+    $mock_utility->unmock_all();
+    $mock_utility->mock('get_user_by_token', sub { return; });
+
+    $verification = get_verification(1);
+
+    is $verification->{reset_password}->()->{message}, get_verification_message('reset_password', 'reset_password'),
+        'Password Reset with verification URI';
+};
 
 subtest 'Account Opening (new) Verification' => sub {
     my $verification = get_verification();
@@ -100,18 +152,6 @@ subtest 'Payment Withdraw Verification' => sub {
         'Payment Withdraw with verification URI';
     is $verification->{payment_withdraw}->('payment_agent_withdraw')->{message},
         get_verification_message('payment_agent_withdraw', 'payment_agent_withdraw'), 'Payment Agent Withdraw with verification URI';
-};
-
-subtest 'Password Reset Verification' => sub {
-    my $verification = get_verification();
-
-    is $verification->{reset_password}->()->{subject}, "$website_name New Password Request", 'reset password verification subject';
-    is $verification->{reset_password}->()->{message}, get_verification_message('reset_password'), 'Password Reset with token';
-
-    $verification = get_verification(1);
-
-    is $verification->{reset_password}->()->{message}, get_verification_message('reset_password', 'reset_password'),
-        'Password Reset with verification URI';
 };
 
 subtest 'Build Verification  URL' => sub {
