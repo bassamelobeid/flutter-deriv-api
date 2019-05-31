@@ -12,6 +12,8 @@ use List::UtilsBy qw(extract_by);
 use JSON::MaybeUTF8 qw(:v1);
 use Log::Any qw($log);
 use Try::Tiny;
+use YAML::XS;
+use RedisDB;
 
 use BOM::Config::RedisReplicated;
 
@@ -95,10 +97,11 @@ sub _build_redis {
     };
 }
 
-# second redis client used for priority queue
+# second redis client used for priority queue subscription
 sub _build_redis_priority {
     return try {
-        BOM::Config::RedisReplicated::redis_pricer();
+        my %config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml')->{write}->%*;
+        return RedisDB->new(%config);
     }
     catch {
         sleep(3);
@@ -202,12 +205,12 @@ sub _subscribe_priority_queue {
     my $self = shift;
 
     $log->trace('subscribing to high_priority_prices channel...');
-    $self->redis->subscribe(
+    $self->redis_priority->subscribe(
         high_priority_prices => sub {
             my (undef, $channel, $pattern, $message) = @_;
             stats_inc('pricer_daemon.priority_queue.recv', {tags => ['tag:' . $self->internal_ip]});
             $log->debug('received message, updating pricer_jobs_priority: ', {message => $message});
-            $self->redis_priority->lpush('pricer_jobs_priority', $message);
+            $self->redis->lpush('pricer_jobs_priority', $message);
             $log->debug('pricer_jobs_priority updated.');
             stats_inc('pricer_daemon.priority_queue.send', {tags => ['tag:' . $self->internal_ip]});
         });
@@ -226,7 +229,7 @@ sub _process_priority_queue {
 
     $log->trace('processing priority price_queue...');
     try {
-        $self->redis->get_reply();
+        $self->redis_priority->get_reply();
     }
     catch {
         $log->warnf("Caught error on priority queue subscription: %s", $_);

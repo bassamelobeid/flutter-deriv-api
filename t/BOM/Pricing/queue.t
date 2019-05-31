@@ -7,7 +7,8 @@ use Test::Exception;
 use Test::Warnings qw(warnings);
 
 use Time::HiRes;
-use Test::RedisDB;
+use YAML::XS;
+use RedisDB;
 
 my (%stats, %tags);
 
@@ -31,8 +32,8 @@ is_deeply(\%tags,  {}, 'start with no tags');
 
 use BOM::Pricing::Queue;
 
-my $server = Test::RedisDB->new;
-my $redis  = $server->redisdb_client;
+# use a separate redis client for this test
+my $redis = RedisDB->new(YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml')->{write}->%*);
 my $queue;
 
 # Sample pricer jobs
@@ -45,15 +46,9 @@ my @keys = (
 
 subtest 'normal flow' => sub {
     $queue = new_ok(
-        'BOM::Pricing::Queue',
-        [
-            redis    => $redis,
-            priority => 0
-        ],
+        'BOM::Pricing::Queue', [ priority => 0, internal_ip => '1.2.3.4'],
         'New BOM::Pricing::Queue processor'
     );
-
-    ok($queue->internal_ip, 'retrieved internal IP from environment');
 
     $redis->set($_ => 1) for @keys;
     $queue->process;
@@ -94,17 +89,12 @@ subtest 'sleeping to next second' => sub {
 };
 
 subtest 'priority_queue' => sub {
-    # 2 redis clients needed for priority mode, main "redis" one is used for subscribe so can't be used for anything else e.g. llen below
     $queue = new_ok(
-        'BOM::Pricing::Queue',
-        [
-            priority       => 1,
-            redis          => $server->redisdb_client,
-            redis_priority => $redis
-        ],
-        'New priority BOM::Pricing::Queue processor'
+        'BOM::Pricing::Queue', [priority => 1, , internal_ip => '1.2.3.4'],
+        'New priority BOM::Pricing::Queue processor' 
     );
-    $server->redisdb_client->publish('high_priority_prices', $_) for @keys;
+
+    $redis->publish('high_priority_prices', $_) for @keys;
     $queue->process for (1 .. 5);
     is($redis->llen('pricer_jobs_priority'),        @keys, 'keys added to pricer_jobs_priority queue');
     is($stats{'pricer_daemon.priority_queue.recv'}, @keys, 'receive stats updated in statsd');
