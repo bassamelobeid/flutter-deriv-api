@@ -96,7 +96,7 @@ sub _generate_report {
 
                         try {
                             my $contract = produce_contract($bet->{short_code}, $currency);
-                            $theo = $contract->theo_price;
+                            $theo = $contract->is_binary ? $contract->theo_price : $contract->theo_price * $contract->multiplier;
                             return 0;
                         }
                         catch {
