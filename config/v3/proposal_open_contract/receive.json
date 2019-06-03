@@ -139,7 +139,7 @@
                 },
                 "barrier" : {
                     "description" : "Barrier of the contract (if any). Example: 42.123",
-                    "type" : "string",
+                    "type" : ["string", null],
                     "pattern" : "^[+-]?[0-9]+\\.?[0-9]*$"
                 },
                 "date_expiry" : {
