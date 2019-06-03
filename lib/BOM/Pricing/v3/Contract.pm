@@ -852,6 +852,8 @@ sub _build_bid_response {
         if ($contract->two_barriers) {
             $response->{high_barrier} = $contract->high_barrier->as_absolute;
             $response->{low_barrier}  = $contract->low_barrier->as_absolute;
+        } elsif (!$contract->uses_barrier) {
+            $response->{barrier} = undef;
         } elsif ($contract->barrier) {
             $response->{barrier} = $contract->barrier->as_absolute;
         }
