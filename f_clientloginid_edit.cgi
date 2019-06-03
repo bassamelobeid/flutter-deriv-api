@@ -363,6 +363,12 @@ if ($input{delete_existing_192}) {
 # SAVE DETAILS
 # TODO:  Once we switch to userdb, we will not need to loop through all clients
 if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
+
+    _assemble_dob_input({
+        client => $client,
+        input  => \%input,
+    });
+
     my @clients_to_update;
 
     unless ($client->is_virtual) {
@@ -464,27 +470,33 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         $client->promo_code_status($input{promo_code_status});
     }
 
-    my $duplicate_account_details = _check_duplicates({
-        client               => $client,
-        input                => \%input,
-        only_virtual_account => $is_virtual_only
-    });
+    if (   ($input{first_name} and $input{first_name} ne $client->first_name)
+        or ($input{last_name}     and $input{last_name} ne $client->last_name)
+        or ($input{phone}         and $input{phone} ne $client->phone)
+        or ($input{date_of_birth} and $input{date_of_birth} ne $client->date_of_birth))
+    {
+        my $duplicate_account_details = _check_duplicates({
+            client               => $client,
+            input                => \%input,
+            only_virtual_account => $is_virtual_only
+        });
 
-    if (@$duplicate_account_details) {
+        if (@$duplicate_account_details) {
 
-        my $data = {
-            loginid       => $duplicate_account_details->[0],
-            first_name    => $duplicate_account_details->[1],
-            last_name     => $duplicate_account_details->[2],
-            date_of_birth => $duplicate_account_details->[3],
-            phone         => $duplicate_account_details->[5],
-            self_link     => $self_href
-        };
+            my $data = {
+                loginid       => $duplicate_account_details->[0],
+                first_name    => $duplicate_account_details->[1],
+                last_name     => $duplicate_account_details->[2],
+                date_of_birth => $duplicate_account_details->[3],
+                phone         => $duplicate_account_details->[5],
+                self_link     => $self_href
+            };
 
-        BOM::Backoffice::Request::template()->process('backoffice/duplicate_client_details.tt', $data)
-            or die BOM::Backoffice::Request::template()->error();
+            BOM::Backoffice::Request::template()->process('backoffice/duplicate_client_details.tt', $data)
+                or die BOM::Backoffice::Request::template()->error();
 
-        code_exit_BO();
+            code_exit_BO();
+        }
     }
 
     # Updates that apply to both active client and its corresponding clients
@@ -534,19 +546,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $tax_residence = join(",", sort grep { length } @tax_residence_multiple);
         }
 
-        if (my @dob_keys = grep { /dob_/ } keys %input) {
-            my @dob_fields = map { 'dob_' . $_ } qw/year month day/;
-            my @dob_values = ($cli->date_of_birth // '') =~ /([0-9]+)-([0-9]+)-([0-9]+)/;
-            my %current_dob = map { $dob_fields[$_] => $dob_values[$_] } 0 .. $#dob_fields;
-
-            $current_dob{$_} = $input{$_} for @dob_keys;
-
-            if (grep { !$_ } values %current_dob) {
-                print qq{<p style="color:red">Error: Date of birth cannot be empty.</p>};
-                code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
-            } else {
-                $cli->date_of_birth(sprintf "%04d-%02d-%02d", $current_dob{'dob_year'}, $current_dob{'dob_month'}, $current_dob{'dob_day'});
-            }
+        if ($input{date_of_birth}) {
+            $cli->date_of_birth($input{date_of_birth});
         }
 
         CLIENT_KEY:
@@ -1129,18 +1130,39 @@ sub _delete_copiers {
 
 sub obfuscate_token {
     my $t = shift;
+
     $t =~ s/(.*)(.{4})$/('*' x length $1).$2/e;
     return $t;
+
 }
 
 sub _check_duplicates {
-    my $data   = shift;
+    my $data = shift;
+
     my $client = $data->{client};
 
     return [] if $client->is_virtual;
 
     my $input = $data->{input};
-    my $self_href = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $client->loginid});
+
+    my @dup_account_details = BOM::Database::ClientDB->new({broker_code => $input->{broker}})->get_duplicate_client({
+        exclude_status => ['duplicate_account', 'disabled'],
+        first_name    => $input->{first_name}    // $client->first_name,
+        last_name     => $input->{last_name}     // $client->last_name,
+        date_of_birth => $input->{date_of_birth} // $client->date_of_birth,
+        phone         => $input->{phone}         // $client->phone,
+        email         => $client->email
+    });
+
+    return \@dup_account_details;
+}
+
+# Appends date_of_birth to input hashref, assembled from 3 fields and
+# using existing client dob if not is added.
+sub _assemble_dob_input {
+    my $data   = shift;
+    my $client = $data->{client};
+    my $input  = $data->{input};
 
     my @dob_fields = ('dob_year', 'dob_month', 'dob_day');
     my @dob_keys = grep { /dob_/ } keys %$input;
@@ -1153,22 +1175,16 @@ sub _check_duplicates {
     $new_dob{$_} = $input->{$_} for @dob_keys;
 
     if (grep { !$_ } values %new_dob) {
+        my $self_href = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $client->loginid});
         print qq{<p style="color:red">Error: Date of birth cannot be empty.</p>};
         code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
     }
 
     my $combined_new_dob = sprintf("%04d-%02d-%02d", $new_dob{'dob_year'}, $new_dob{'dob_month'}, $new_dob{'dob_day'});
 
-    my @dup_account_details = BOM::Database::ClientDB->new({broker_code => $input->{broker}})->get_duplicate_client({
-        exclude_status => ['duplicate_account', 'disabled'],
-        first_name    => $input->{first_name} // $client->first_name,
-        last_name     => $input->{last_name}  // $client->last_name,
-        date_of_birth => $combined_new_dob    // $client->date_of_birth,
-        phone         => $input->{phone}      // $client->phone,
-        email         => $client->email
-    });
+    $input->{date_of_birth} = $combined_new_dob;
 
-    return \@dup_account_details;
+    return undef;
 }
 
 code_exit_BO();
