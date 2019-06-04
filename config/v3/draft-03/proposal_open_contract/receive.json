@@ -15,15 +15,15 @@
             "description": "Latest price and other details for an open contract",
             "properties": {
                 "high_barrier": {
-                    "type": "number",
+                    "type": "string",
                     "description": "High barrier of the contract (if any). Example: 42.123"
                 },
                 "low_barrier": {
-                    "type": "number",
+                    "type": "string",
                     "description": "Low barrier of the contract (if any). Example: 40.132"
                 },
                 "barrier": {
-                    "type": "number",
+                    "type": ["string",null],
                     "description": "Barrier of the contract (if any). Example: 42.123"
                 },
                 "barrier_count": {
