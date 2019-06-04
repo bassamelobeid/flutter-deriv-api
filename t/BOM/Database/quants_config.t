@@ -391,7 +391,7 @@ subtest 'delete global limit' => sub {
         landing_company => 'svg',
         limit_type      => 'global_potential_loss'
     });
-    is $res, '', 'delete';
+    is $res, undef, 'delete';
 };
 
 my $client  = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});

@@ -347,7 +347,7 @@ sub get_global_limit {
             return $record;
         });
 
-    return '' if !defined $row;
+    return undef if !defined $row;
     my ($rank, $limit) = split /,/ => $row;
     return $limit;
 }
