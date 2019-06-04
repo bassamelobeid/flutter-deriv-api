@@ -160,6 +160,7 @@ rpc authorize => sub {
     my $account = $client->default_account;
     return {
         fullname => $client->full_name,
+        user_id  => $client->binary_user_id,
         loginid  => $client->loginid,
         balance  => $account ? formatnumber('amount', $account->currency_code(), $account->balance) : '0.00',
         currency => ($account ? $account->currency_code() : ''),

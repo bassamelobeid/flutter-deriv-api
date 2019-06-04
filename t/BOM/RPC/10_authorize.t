@@ -115,6 +115,7 @@ subtest $method => sub {
         'balance'                       => '0.00',
         'landing_company_name'          => $landing_company,
         'fullname'                      => $test_client->full_name,
+        'user_id'                       => $test_client->binary_user_id,
         'loginid'                       => $test_client->loginid,
         'is_virtual'                    => '0',
         'country'                       => 'id',
