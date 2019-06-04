@@ -22,6 +22,7 @@ $client->save;
 $client->set_default_account('USD');
 
 my $loginid = $client->loginid;
+my $user_id = $client->binary_user_id;
 my $user    = BOM::User->create(
     email    => $email,
     password => '1234',
@@ -33,6 +34,7 @@ my $token = BOM::Database::Model::AccessToken->new->create_token($loginid, 'Test
 my $authorize = $t->await::authorize({authorize => $token});
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $loginid;
+is $authorize->{authorize}->{user_id}, $user_id;
 test_schema('authorize', $authorize);
 
 ## it's ok after authorize

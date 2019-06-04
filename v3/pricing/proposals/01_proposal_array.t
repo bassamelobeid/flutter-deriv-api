@@ -220,7 +220,7 @@ SKIP: {
             $proposal_array_req_tpl->{barriers}      = [{barrier => 111}];
             $proposal_array_req_tpl->{contract_type} = ['CALLE'];
             $proposal_array_req_tpl->{product_type}  = 'multi_barrier';
-            $proposal_array_req_tpl->{currency}  = 'USD';
+            $proposal_array_req_tpl->{currency}      = 'USD';
             $response                                = $t->await::proposal_array($proposal_array_req_tpl);
             test_schema('proposal_array', $response);
 
