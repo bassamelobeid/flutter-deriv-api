@@ -140,16 +140,16 @@ sub startup {
             ) unless $app_id;
 
             return $c->render(
-                json   => {error => 'SystemMaintenance'},
-                status => 500
+                json   => {error => 'AccessRestricted'},
+                status => 403
             ) if exists $BLOCK_APP_IDS{$app_id};
 
             my $request_origin = $c->tx->req->headers->origin // '';
             $request_origin = 'https://' . $request_origin unless $request_origin =~ /^https?:/;
             my $uri = URI->new($request_origin);
             return $c->render(
-                json   => {error => 'SystemMaintenance'},
-                status => 500
+                json   => {error => 'AccessRestricted'},
+                status => 403
             ) if exists $BLOCK_ORIGINS{$uri->host};
 
             my $client_ip = $c->client_ip;
