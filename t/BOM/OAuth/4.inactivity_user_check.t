@@ -72,7 +72,7 @@ $mocked_oauth->mock(
     'send_email',
     sub {
         my $arg = shift;
-        is $arg->{subject}, 'New Sign-In Activity Detected', 'New Sign-In Activity Detected';
+        is $arg->{subject}, 'Security alert: New sign-in activity', 'Unrecognised Sign-in email subject';
     });
 
 $t = callPost($t, $email, $password, $csrf_token);

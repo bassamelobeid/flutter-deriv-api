@@ -115,7 +115,8 @@ $mocked_stuffer->mock(
 $t = callPost($t, $email, $password, $csrf_token, "ID");
 my @deliveries = $transport->deliveries;
 my $semail     = $deliveries[-1]{email};
-like($semail->get_header('Subject'), qr/Aktivitas Pengaksesan Baru Terdeteksi/, "email subject ID validation");
+# this test can be added back when we have an updated translation
+# like($semail->get_header('Subject'), qr/Aktivitas Pengaksesan Baru Terdeteksi/, "email subject ID validation");
 like($semail->get_body, qr/$email|ID/i, "email ID validation");
 
 done_testing();

@@ -1,0 +1,33 @@
+[% l( "Hello[_1],<br/><br/>We detected a new sign-in on your account.", client_name ) %]
+<br/><br/>
+<table>
+<tr>
+<td style='vertical-align:top;text-align:left;'><strong>[% l( 'Location:' ) %]</strong>&nbsp;&nbsp;</td>
+<td style='vertical-align:top; text-align:left;'>[% country %]</td>
+</tr>
+[% IF device %]
+<tr>
+<td style='vertical-align:top;text-align:left;'><strong>[% l( 'Device:' ) %]</strong>&nbsp;&nbsp;</td>
+<td style='vertical-align:top; text-align:left;'>[% l( device ) %]</td>
+</tr>
+[% END %]
+[% IF browser %]
+<tr>
+<td style='vertical-align:top;text-align:left;'><strong>[% l( 'Browser:' ) %]</strong>&nbsp;&nbsp;</td>
+<td style='vertical-align:top; text-align:left;'>[% l( browser ) %]</td>
+</tr>
+[% END %]
+[% IF app.id != 1 %]
+<tr>
+<td style='vertical-align:top;text-align:left;'><strong>[% l( 'Application:' ) %]</strong>&nbsp;&nbsp;</td>
+<td style='vertical-align:top; text-align:left;'>[% app.name %]</td>
+</tr>
+[% END %]
+</table>
+<br/>
+[% l( 'If this wasn\'t you, please <a href="https://www.binary.com/en/contact.html">let us know</a> right away.') %]
+<br/><br/>
+Thank you.<br/>
+Team Binary.com
+
+

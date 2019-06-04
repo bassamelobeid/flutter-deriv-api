@@ -14,6 +14,7 @@ use List::Util qw(any first);
 use HTML::Entities;
 use Format::Util::Strings qw( defang );
 use DataDog::DogStatsd::Helper qw(stats_inc);
+use HTTP::BrowserDetect;
 
 use Brands;
 
@@ -97,7 +98,7 @@ sub authorize {
         $c->session(date_first_contact => Date::Utility->new->date_yyyymmdd);
     };
 
-    $c->session(signup_device      => $c->param('signup_device'))   if ($c->param('signup_device')   // '') =~ /^\w+$/;
+    $c->session(signup_device => $c->param('signup_device')) if ($c->param('signup_device') // '') =~ /^\w+$/;
     # the regexes for the following fields should be the same as new_account_virtual send schema
     $c->session(myaffiliates_token => $c->param('affiliate_token')) if ($c->param('affiliate_token') // '') =~ /^\w{1,32}$/;
     $c->session(gclid_url          => $c->param('gclid_url'))       if ($c->param('gclid_url')       // '') =~ /^[\w\s\.\-_]{1,100}$/;
@@ -347,6 +348,7 @@ sub _login {
 
     # send when client already has login session(s) and its not backoffice (app_id = 4, as we impersonate from backoffice using read only tokens)
     if ($app->{id} ne '4') {
+
         try {
             if ($last_login and exists $last_login->{environment}) {
                 my ($old_env, $user_agent, $r) =
@@ -360,28 +362,32 @@ sub _login {
                 if (($old_ip ne $new_ip or $old_env->{country} ne $country_code)
                     and $old_env->{user_agent} ne $user_agent)
                 {
-                    my $message;
-                    if ($app->{id} eq '1') {
-                        $message = localize(
-                            get_message_mapping()->{ADDITIONAL_SIGNIN},
-                            $client->email, $r->client_ip,
-                            $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
-                            encode_entities($user_agent));
-                    } else {
-                        $message = localize(
-                            get_message_mapping()->{ADDITIONAL_SIGNIN_THIRD_PARTY},
-                            $client->email, $r->client_ip, $country_code, encode_entities($user_agent),
-                            $app->{name});
+                    my $bd   = HTTP::BrowserDetect->new($user_agent);
+                    my $tt   = Template->new(ABSOLUTE => 1);
+                    my $data = {
+                        client_name => $client->first_name ? ' ' . $client->first_name . ' ' . $client->last_name : '',
+                        country => $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
+                        device  => $bd->device                                                             // $bd->os_string,
+                        browser => $bd->browser_string,
+                        app     => $app,
+                        l       => \&localize
+                    };
+
+                    $tt->process('/home/git/regentmarkets/bom-oauth/templates/email/new_signin.html.tt', $data, \my $message);
+                    if ($tt->error) {
+                        warn "Template error: " . $tt->error;
+                        return;
                     }
 
                     send_email({
                         from                  => $brand->emails('support'),
                         to                    => $client->email,
-                        subject               => localize(get_message_mapping()->{NEW_SIGNIN_ACTIVITY}),
+                        subject               => localize(get_message_mapping()->{NEW_SIGNIN_SUBJECT}),
                         message               => [$message],
                         use_email_template    => 1,
                         email_content_is_html => 1,
                         template_loginid      => $client->loginid,
+                        skip_text2html        => 1
                     });
                 }
             }
