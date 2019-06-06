@@ -499,6 +499,7 @@ sub _process_proposal_open_contract_response {
             }
             my $result = {$uuid ? (id => $uuid) : (), %{$contract}};
             delete $result->{rpc_time};
+            delete $result->{account_id};
             $c->send({
                     json => {
                         msg_type               => 'proposal_open_contract',
@@ -948,6 +949,10 @@ sub send_proposal_open_contract_last_time {
             },
             rpc_response_cb => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
+
+                for my $each_contract (keys %{$rpc_response}) {
+                    delete $rpc_response->{$each_contract}->{account_id};
+                }
                 return {
                     proposal_open_contract => $rpc_response->{$contract_id} || {},
                     msg_type => 'proposal_open_contract',
