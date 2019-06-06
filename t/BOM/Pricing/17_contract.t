@@ -286,20 +286,20 @@ subtest 'get_ask' => sub {
         multiplier            => 100,
         'payout'              => '0',
         'contract_parameters' => {
-            'deep_otm_threshold'             => '0.025',
-            'duration'                       => '15m',
-            'bet_type'                       => 'LBFLOATCALL',
-            'underlying'                     => 'R_50',
-            'currency'                       => 'USD',
-            base_commission                  => '0.02',
-            'amount'                         => '100',
-            'amount_type'                    => 'multiplier',
-            'app_markup_percentage'          => 0,
-            'proposal'                       => 1,
-            'date_start'                     => ignore(),
-            non_binary_results_adjustment    => 1,
-            'theo_price'                     => '1.9914570080649',
-            'landing_company'                => 'virtual'
+            'deep_otm_threshold'          => '0.025',
+            'duration'                    => '15m',
+            'bet_type'                    => 'LBFLOATCALL',
+            'underlying'                  => 'R_50',
+            'currency'                    => 'USD',
+            base_commission               => '0.02',
+            'amount'                      => '100',
+            'amount_type'                 => 'multiplier',
+            'app_markup_percentage'       => 0,
+            'proposal'                    => 1,
+            'date_start'                  => ignore(),
+            non_binary_results_adjustment => 1,
+            'theo_price'                  => '1.9914570080649',
+            'landing_company'             => 'virtual'
         }};
 
     cmp_deeply($result, $expected, 'the left values are all right');

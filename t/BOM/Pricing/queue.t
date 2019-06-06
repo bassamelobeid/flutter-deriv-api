@@ -46,7 +46,11 @@ my @keys = (
 
 subtest 'normal flow' => sub {
     $queue = new_ok(
-        'BOM::Pricing::Queue', [ priority => 0, internal_ip => '1.2.3.4'],
+        'BOM::Pricing::Queue',
+        [
+            priority    => 0,
+            internal_ip => '1.2.3.4'
+        ],
         'New BOM::Pricing::Queue processor'
     );
 
@@ -90,8 +94,12 @@ subtest 'sleeping to next second' => sub {
 
 subtest 'priority_queue' => sub {
     $queue = new_ok(
-        'BOM::Pricing::Queue', [priority => 1, , internal_ip => '1.2.3.4'],
-        'New priority BOM::Pricing::Queue processor' 
+        'BOM::Pricing::Queue',
+        [
+            priority => 1,
+            , internal_ip => '1.2.3.4'
+        ],
+        'New priority BOM::Pricing::Queue processor'
     );
 
     $redis->publish('high_priority_prices', $_) for @keys;

@@ -816,7 +816,10 @@ sub _build_bid_response {
         is_settleable       => $is_valid_to_settle,
         barrier_count       => $contract->two_barriers ? 2 : 1,
     };
-
+    if (!$contract->uses_barrier) {
+        $response->{barrier_count} = 0;
+        $response->{barrier}       = undef;
+    }
     $response->{reset_time} = 0 + $contract->reset_spot->epoch if $contract->reset_spot;
     $response->{multiplier} = $contract->multiplier unless ($contract->is_binary);
     $response->{validation_error} = localize($params->{validation_error}) unless $params->{is_valid_to_sell};
@@ -843,7 +846,7 @@ sub _build_bid_response {
         $response->{status} = 'open';
     }
 
-    if ($contract->entry_spot) {
+    if ($contract->entry_spot && $contract->uses_barrier) {
         my $entry_spot = $contract->underlying->pipsized_value($contract->entry_spot);
         $response->{entry_tick}      = $entry_spot;
         $response->{entry_spot}      = $entry_spot;
@@ -852,8 +855,6 @@ sub _build_bid_response {
         if ($contract->two_barriers) {
             $response->{high_barrier} = $contract->high_barrier->as_absolute;
             $response->{low_barrier}  = $contract->low_barrier->as_absolute;
-        } elsif (!$contract->uses_barrier) {
-            $response->{barrier} = undef;
         } elsif ($contract->barrier) {
             $response->{barrier} = $contract->barrier->as_absolute;
         }
