@@ -94,7 +94,7 @@ subtest 'tick expiry up&down' => sub {
     is $c2->exit_tick->quote, 111, 'exit tick is the 6th tick after contract start time';
 
     my $expected = $json->decode(
-'{"all_ticks":[{"name":["Start Time"],"flag":"highlight_time","epoch":1404986400,"tick":"100.00"},{"flag":"highlight_tick","epoch":1404986402,"name":["Entry Spot"],"tick":"101.00"},{"tick":"102.00","epoch":1404986404},{"tick":"103.00","epoch":1404986406},{"tick":"104.00","epoch":1404986408},{"tick":"105.00","epoch":1404986410},{"name":["[_1] and [_2]","End Time","Exit Spot"],"epoch":1404986412,"flag":"highlight_tick","tick":"111.00"},{"epoch":1404986414,"tick":"112.00"}]}'
+        '{"all_ticks":[{"name":["Start Time"],"flag":"highlight_time","epoch":1404986400,"tick":"100.00"},{"flag":"highlight_tick","epoch":1404986402,"name":["Entry Spot"],"tick":"101.00"},{"tick":"102.00","epoch":1404986404},{"tick":"103.00","epoch":1404986406},{"tick":"104.00","epoch":1404986408},{"tick":"105.00","epoch":1404986410},{"name":["[_1] and [_2]","End Time","Exit Spot"],"epoch":1404986412,"flag":"highlight_tick","tick":"111.00"},{"epoch":1404986414,"tick":"112.00"}]}'
     );
 
     is_deeply($c2->audit_details, $expected, 'audit details as expected');
@@ -140,7 +140,7 @@ subtest 'tick expiry digits' => sub {
     is $c2->exit_tick->quote, 111, 'exit tick is the 6th tick after contract start time';
 
     my $expected = $json->decode(
-	'{"all_ticks":[{"tick":"112.00","epoch":1404986414},{"flag":"highlight_time","epoch":1405072800,"name":["Start Time"],"tick":"100.00"},{"tick":"101.00","epoch":1405072802,"flag":"highlight_tick","name":["Entry Spot"]},{"tick":"102.00","epoch":1405072804},{"tick":"103.00","epoch":1405072806},{"tick":"104.00","epoch":1405072808},{"flag":"highlight_tick","epoch":1405072810,"name":["[_1] and [_2]","End Time","Exit Spot"],"tick":"111.00"},{"epoch":1405072812,"tick":"112.00"}]}'
+        '{"all_ticks":[{"tick":"112.00","epoch":1404986414},{"flag":"highlight_time","epoch":1405072800,"name":["Start Time"],"tick":"100.00"},{"tick":"101.00","epoch":1405072802,"flag":"highlight_tick","name":["Entry Spot"]},{"tick":"102.00","epoch":1405072804},{"tick":"103.00","epoch":1405072806},{"tick":"104.00","epoch":1405072808},{"flag":"highlight_tick","epoch":1405072810,"name":["[_1] and [_2]","End Time","Exit Spot"],"tick":"111.00"},{"epoch":1405072812,"tick":"112.00"}]}'
     );
 
     is_deeply($c2->audit_details, $expected, 'audit details as expected');
@@ -168,7 +168,7 @@ subtest 'asian' => sub {
         ok $c->is_after_settlement, 'is expired';
 
         my $expected = $json->decode(
-		'{"all_ticks":[{"name":["Entry Spot"],"flag":"highlight_tick","epoch":1310631889,"tick":"101.0000"},{"flag":"highlight_tick","epoch":1310631891,"name":["[_1] and [_2]","End Time","Exit Spot"],"tick":"102.0000"},{"tick":"103.0000","epoch":1310631893}]}'
+            '{"all_ticks":[{"name":["Entry Spot"],"flag":"highlight_tick","epoch":1310631889,"tick":"101.0000"},{"flag":"highlight_tick","epoch":1310631891,"name":["[_1] and [_2]","End Time","Exit Spot"],"tick":"102.0000"},{"tick":"103.0000","epoch":1310631893}]}'
         );
 
         is_deeply($c->audit_details, $expected, 'audit details as expected');
@@ -259,8 +259,8 @@ subtest 'tick expiry one touch no touch' => sub {
     ok $c->is_expired, 'Here is the last one, 5th tick after entry tick';
 
     my $expected = $json->decode(
-	'{"all_ticks":[{"tick":"100.00","epoch":1423562400,"flag":"highlight_time","name":["Start Time"]},{"tick":"101.00","epoch":1423562402,"flag":"highlight_tick","name":["Entry Spot"]},{"tick":"103.00","epoch":1423562404},{"tick":"104.00","epoch":1423562406},{"tick":"105.00","epoch":1423562408},{"epoch":1423562410,"tick":"106.00"},{"tick":"108.00","epoch":1423562412,"flag":"highlight_tick","name":["[_1] and [_2]","End Time","Exit Spot"]}]}'
-	);
+        '{"all_ticks":[{"tick":"100.00","epoch":1423562400,"flag":"highlight_time","name":["Start Time"]},{"tick":"101.00","epoch":1423562402,"flag":"highlight_tick","name":["Entry Spot"]},{"tick":"103.00","epoch":1423562404},{"tick":"104.00","epoch":1423562406},{"tick":"105.00","epoch":1423562408},{"epoch":1423562410,"tick":"106.00"},{"tick":"108.00","epoch":1423562412,"flag":"highlight_tick","name":["[_1] and [_2]","End Time","Exit Spot"]}]}'
+    );
 
     is_deeply($c->audit_details, $expected, 'audit details as expected');
 };
@@ -340,7 +340,6 @@ subtest 'runs audit details' => sub {
             . ',"tick":"104.00"},{"epoch":'
             . ($now->epoch + 6)
             . ',"tick":"105.00","name":["[_1] and [_2]","End Time","Exit Spot"],"flag":"highlight_tick"}]}');
-
 
     is_deeply($c->audit_details, $expected, 'audit details as expected');
 };

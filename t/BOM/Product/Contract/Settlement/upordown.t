@@ -46,13 +46,13 @@ subtest 'intraday' => sub {
         my $mocked_c = Test::MockModule->new('BOM::Product::Contract::Upordown');
         $mocked_c->mock('_ohlc_for_contract_period', sub { return {high => 100, low => 99, close => 100} });
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
-            [100, $now->epoch + 1,   $symbol],
-            [99.91,  $now->epoch + 2,   $symbol],
-            [100, $now->epoch + 301, $symbol]);
+            [100,   $now->epoch + 1,   $symbol],
+            [99.91, $now->epoch + 2,   $symbol],
+            [100,   $now->epoch + 301, $symbol]);
         my $c = produce_contract({%$args, date_pricing => $args->{date_start}->plus_time_interval($args->{duration} . '1s')});
         ok $c->is_expired, 'is expired';
         is $c->high_barrier->as_absolute, '100.10', 'high barrier is 100.10';
-        is $c->low_barrier->as_absolute, '99.90', 'low barrier is 99.90';
+        is $c->low_barrier->as_absolute,  '99.90',  'low barrier is 99.90';
         ok !$c->ok_through_expiry, 'not ok through expiry';
         ok !$c->is_valid_to_sell,  'not valid to sell';
         ok !$c->hit_tick,          'no hit tick';
@@ -63,13 +63,13 @@ subtest 'intraday' => sub {
 
     subtest 'UPORDOWN - Does not touch the barrier and ok through expiry. Contract will be settled as a loss.' => sub {
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
-            [100, $now->epoch + 1,                         $symbol],
-            [99.91,  $now->epoch + 2,                         $symbol],
-            [100, $now->plus_time_interval('5m1s')->epoch, $symbol]);
+            [100,   $now->epoch + 1,                         $symbol],
+            [99.91, $now->epoch + 2,                         $symbol],
+            [100,   $now->plus_time_interval('5m1s')->epoch, $symbol]);
         my $c = produce_contract({%$args, date_pricing => $args->{date_start}->plus_time_interval($args->{duration} . '1s')});
-        ok $c->is_expired,        'is expired';
+        ok $c->is_expired, 'is expired';
         is $c->high_barrier->as_absolute, '100.10', 'high barrier is 100.10';
-        is $c->low_barrier->as_absolute, '99.90', 'low barrier is 99.90';
+        is $c->low_barrier->as_absolute,  '99.90',  'low barrier is 99.90';
         ok $c->ok_through_expiry, 'ok through expiry';
         ok !$c->hit_tick, 'no hit tick';
         ok $c->is_valid_to_sell, 'valid to sell';
@@ -84,7 +84,7 @@ subtest 'intraday' => sub {
         my $c = produce_contract({%$args, date_pricing => $args->{date_start}->plus_time_interval('2s')});
         ok $c->is_expired, 'is expired';
         is $c->high_barrier->as_absolute, '100.10', 'high barrier is 100.10';
-        is $c->low_barrier->as_absolute, '99.90', 'low barrier is 99.90';
+        is $c->low_barrier->as_absolute,  '99.90',  'low barrier is 99.90';
         ok !$c->ok_through_expiry, 'not ok through expiry';
         is $c->hit_tick->quote, 100.1, 'hit tick is 100.1';
         ok $c->is_valid_to_sell, 'valid to sell';
@@ -99,7 +99,7 @@ subtest 'intraday' => sub {
         my $c = produce_contract({%$args, date_pricing => $args->{date_start}->plus_time_interval('2s')});
         ok $c->is_expired, 'is expired';
         is $c->high_barrier->as_absolute, '100.10', 'high barrier is 100.10';
-        is $c->low_barrier->as_absolute, '99.90', 'low barrier is 99.90';
+        is $c->low_barrier->as_absolute,  '99.90',  'low barrier is 99.90';
         ok !$c->ok_through_expiry, 'not ok through expiry';
         is $c->hit_tick->quote, 99.9, 'hit tick is 99.9';
         ok $c->is_valid_to_sell, 'valid to sell';

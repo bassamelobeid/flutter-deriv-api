@@ -172,7 +172,6 @@ has trading_calendar => (
     builder => '_build_trading_calendar',
 );
 
-
 =head2 uses_barrier
 
  Indicates if the contract uses barriers or not.  Used to send undef as the barrier via the api if false. 
@@ -182,9 +181,9 @@ has trading_calendar => (
 =cut 
 
 has uses_barrier => (
-   is  => 'ro', 
-   isa => 'Bool',
-   default => 1, 
+    is      => 'ro',
+    isa     => 'Bool',
+    default => 1,
 );
 
 sub _build_trading_calendar {

@@ -75,7 +75,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 event_name   => 'FOMC',
             }]});
 
-
 my $res;
 subtest 'Numbers and stuff.' => sub {
 

@@ -9,8 +9,7 @@ use Pricing::Engine::Digits;
 use BOM::Product::Contract::Strike::Digit;
 use BOM::Product::Pricing::Greeks::ZeroGreek;
 
-
-has '+uses_barrier' => (default => 0 );
+has '+uses_barrier' => (default => 0);
 
 sub ticks_to_expiry {
     return shift->tick_count;

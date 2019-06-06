@@ -43,7 +43,7 @@ my $cv = Math::Util::CalculatedValue::Validatable->new({
 my $mock_intraday = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
 
 #$mock_intraday->mock('intraday_delta_correction', sub { $cv });
-$mock_intraday->mock('intraday_vega_correction',  sub { $cv });
+$mock_intraday->mock('intraday_vega_correction', sub { $cv });
 
 subtest 'inefficient craziness' => sub {
     my $bet_params = {
