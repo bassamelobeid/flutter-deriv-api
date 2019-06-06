@@ -53,6 +53,7 @@ $client->save;
 $client->set_default_account('USD');
 
 my $loginid = $client->loginid;
+my $user_id = $client->binary_user_id;
 my $user    = BOM::User->create(
     email    => $email,
     password => '1234',
@@ -66,6 +67,7 @@ $authorize = $t->await::authorize({authorize => $token});
 is $authorize->{msg_type}, 'authorize';
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $loginid;
+is $authorize->{authorize}->{user_id}, $user_id;
 is $authorize->{authorize}->{country}, 'id', 'return correct country';
 test_schema('authorize', $authorize);
 is $stash->{loginid}, $loginid, 'Test stash data';
