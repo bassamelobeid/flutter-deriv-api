@@ -44,7 +44,9 @@ suite buy_then_sell_contract => sub {
         ->connection(token => $args{token})
         ->subscribe(buy => $request)
         ->take_until(sub {
-            shift->{body}->{is_sold}
+            my $response = shift;
+
+            $response->isa('Binary::API::OpenContract') && $response->is_sold;
         })
         ->expect_done(sub {
             my $buy_response = shift;
@@ -52,19 +54,19 @@ suite buy_then_sell_contract => sub {
             my @poc_reponses = @_;
             
             # Check buy response
-            ok ($buy_response->{body}->{contract_id}, "Contract '" . 
-            $buy_response->{body}->{longcode} . 
+            ok ($buy_response->contract_id, "Contract '" . 
+            $buy_response->longcode . 
             "' is purchased at buy price " . 
-            $sell_response->{body}->{buy_price});
+            $sell_response->buy_price);
 
             # Check proposal_open_contract response
-            ok ($_->{body}->{is_sold} == 0)  for (@poc_reponses);
+            ok ($_->is_sold == 0)  for (@poc_reponses);
             
             # Check sell response
-            ok ($sell_response->{body}->{is_sold} == 1, 
-            "Contract '" . $sell_response->{body}->{longcode} . 
+            ok ($sell_response->is_sold == 1, 
+            "Contract '" . $sell_response->longcode . 
             "' is sold at bid price: " . 
-            $sell_response->{body}->{bid_price});
+            $sell_response->bid_price);
             
         })
         ->timeout_ok(5, sub {
