@@ -1172,7 +1172,7 @@ async sub _send_email_notification_for_poa {
     # loop through all mt5 loginids check
     # mt5 group has advanced|standard then
     # its considered as financial
-    if (any { $_ =~ /_standard|_advanced/ } @$mt5_groups) {
+    if (any { defined && /_standard|_advanced/ } @$mt5_groups) {
         $send_poa_email->()->retain;
     }
     return undef;
