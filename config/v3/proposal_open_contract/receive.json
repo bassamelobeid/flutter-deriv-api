@@ -139,8 +139,7 @@
                 },
                 "barrier" : {
                     "description" : "Barrier of the contract (if any). Example: 42.123",
-                    "type" : ["string", null],
-                    "pattern" : "^[+-]?[0-9]+\\.?[0-9]*$"
+                    "type" : ["string", null]
                 },
                 "date_expiry" : {
                     "description" : "Expiry date (epoch) of the Contract. Example: 1446629000. Please note that it is not applicable for tick trade contracts.",
