@@ -846,7 +846,7 @@ sub _build_bid_response {
         $response->{status} = 'open';
     }
 
-    if ($contract->entry_spot && $contract->uses_barrier) {
+    if ($contract->entry_spot) {
         my $entry_spot = $contract->underlying->pipsized_value($contract->entry_spot);
         $response->{entry_tick}      = $entry_spot;
         $response->{entry_spot}      = $entry_spot;
@@ -855,7 +855,7 @@ sub _build_bid_response {
         if ($contract->two_barriers) {
             $response->{high_barrier} = $contract->high_barrier->as_absolute;
             $response->{low_barrier}  = $contract->low_barrier->as_absolute;
-        } elsif ($contract->barrier) {
+        } elsif ($contract->barrier && $contract->uses_barrier) {
             $response->{barrier} = $contract->barrier->as_absolute;
         }
     }
