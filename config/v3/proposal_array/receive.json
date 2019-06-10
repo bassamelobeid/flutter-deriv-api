@@ -80,7 +80,7 @@
                   },
                   {
                     "type": "object",
-                    "additionalProperties": false,
+                    "additionalProperties": true,
                     "required": [
                       "error"
                     ],
