@@ -91,7 +91,7 @@ sub group_for_user {
                                     EX         => $ttl,
                                     )->on_done(
                                     sub {
-                                        $log->infof('Cached ID [%s] group [%s]', $id, $group);
+                                        $log->debugf('Cached ID [%s] group [%s]', $id, $group);
                                     });
                             });
                     });
