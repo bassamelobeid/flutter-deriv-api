@@ -2,11 +2,16 @@
 use strict;
 use warnings;
 
-use Log::Any::Adapter qw(Stderr), log_level => 'info';
-
+use Getopt::Long 'GetOptions';
 use Log::Any qw($log);
+use Log::Any::Adapter;
 use BOM::Event::Listener;
 
-$log->infof('Starting document listener');
+GetOptions
+    'log-level=s' => \my $log_level;
+
+Log::Any::Adapter->set('Stderr', log_level => $log_level // 'info');
+
+$log->debugf('Starting document listener');
 BOM::Event::Listener->run('DOCUMENT_AUTHENTICATION_QUEUE');
-$log->infof('Ending document listener');
+$log->debugf('Ending document listener');

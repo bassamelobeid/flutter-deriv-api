@@ -64,7 +64,7 @@ sub set_pending_transaction {
             return undef;
         }
 
-        $log->infof("Transaction status changed to pending: %s", $transaction->{hash});
+        $log->debugf("Transaction status changed to pending: %s", $transaction->{hash});
     }
     catch {
         $log->errorf("Subscription error: %s", $_);

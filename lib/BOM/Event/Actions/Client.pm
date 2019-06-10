@@ -403,7 +403,7 @@ sub ready_for_authentication {
 
         my @documents = $onfido->document_list(applicant_id => $applicant_id)->get;
 
-        $log->infof('Have %d documents for applicant %s', 0 + @documents, $applicant_id);
+        $log->debugf('Have %d documents for applicant %s', 0 + @documents, $applicant_id);
 
         my ($doc, $poa_doc) = rev_nsort_by {
             ($_->side eq 'front' ? 10 : 1) * ($ONFIDO_DOCUMENT_TYPE_PRIORITY{$_->type} // 0)
@@ -414,7 +414,7 @@ sub ready_for_authentication {
             or die 'Could not instantiate client for login ID ' . $loginid;
 
         if ($client->status->age_verification) {
-            $log->infof("Onfido request aborted because %s is already age-verified.", $loginid);
+            $log->debugf("Onfido request aborted because %s is already age-verified.", $loginid);
             return Future->done("Onfido request aborted because $loginid is already age-verified.");
         }
 
@@ -605,11 +605,11 @@ sub ready_for_authentication {
 
 sub client_verification {
     my ($args) = @_;
-    $log->infof('Client verification with %s', $args);
+    $log->debugf('Client verification with %s', $args);
 
     return try {
         my $url = $args->{check_url};
-        $log->infof('Had client verification result %s with check URL %s', $args->{status}, $args->{check_url});
+        $log->debugf('Had client verification result %s with check URL %s', $args->{status}, $args->{check_url});
 
         my ($applicant_id, $check_id) = $url =~ m{/applicants/([^/]+)/checks/([^/]+)} or die 'no check ID found';
         _onfido()->check_get(
@@ -638,7 +638,7 @@ sub client_verification {
 
                     my $client = BOM::User::Client->new({loginid => $loginid})
                         or die 'Could not instantiate client for login ID ' . $loginid;
-                    $log->infof('Onfido check result for %s (applicant %s): %s (%s)', $loginid, $applicant_id, $result, $check_status);
+                    $log->debugf('Onfido check result for %s (applicant %s): %s (%s)', $loginid, $applicant_id, $result, $check_status);
 
                     my $redis_events_write = _redis_events_write();
                     $redis_events_write->connect->then(
@@ -788,7 +788,7 @@ sub _address_verification {
 
     my $client = $args{client};
 
-    $log->infof('Verifying address');
+    $log->debugf('Verifying address');
 
     my $freeform = join(' ',
         grep { length } $client->address_line_1,
@@ -800,7 +800,7 @@ sub _address_verification {
         # Need to pass this if you want to do verification
         geocode => 'true',
     );
-    $log->infof('Address details %s', \%details);
+    $log->debugf('Address details %s', \%details);
 
     my $redis_events_read = _redis_events_read();
     return $redis_events_read->connect->then(
@@ -823,7 +823,7 @@ sub _address_verification {
                     my ($addr) = @_;
 
                     my $status = $addr->status;
-                    $log->infof('Smartystreets verification status: %s', $status);
+                    $log->debugf('Smartystreets verification status: %s', $status);
                     $log->debugf('Address info back from SmartyStreets is %s', {%$addr});
 
                     unless ($addr->accuracy_at_least('locality')) {
@@ -833,7 +833,7 @@ sub _address_verification {
                     }
 
                     DataDog::DogStatsd::Helper::stats_inc('smartystreet.verification.success', {tags => [$status]});
-                    $log->infof('Address verified with accuracy of locality level by smartystreet.');
+                    $log->debugf('Address verified with accuracy of locality level by smartystreet.');
 
                     _update_client_status(
                         client  => $client,
@@ -990,7 +990,7 @@ sub _update_client_status {
     my (%args) = @_;
 
     my $client = $args{client};
-    $log->infof('Updating status on %s to %s (%s)', $client->loginid, $args{status}, $args{message});
+    $log->debugf('Updating status on %s to %s (%s)', $client->loginid, $args{status}, $args{message});
     $client->status->set($args{status}, 'system', $args{message});
 
     return;
