@@ -348,7 +348,7 @@ sub output_validation {
     my $error = _validate_schema_error($schemas->{schema_receive}, $schemas->{schema_receive_v3}, $api_response, $caller_info);
     if ($error) {
         my $error_msg = join(" - ", (map { "$_:$error->{details}{$_}" } keys %{$error->{details}}), @{$error->{general}});
-        $c->app->log->warn("Invalid output parameter for [ " . $json->encode($api_response) . " error: $error_msg ]");
+        $c->app->log->error("Schema validation failed for our own output [ " . $json->encode($api_response) . " error: $error_msg ], make sure backend are aware of this error!, schema may need adjusting");
         %$api_response = %{
             $c->new_error($req_storage->{msg_type} || $req_storage->{name},
                 'OutputValidationFailed', $c->l("Output validation failed: ") . $error_msg)};
