@@ -1,0 +1,41 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "additionalProperties": false,
+    "title": "Service Token Request",
+    "description": "Retrieves the authorization token for the specified service.",
+    "type": "object",
+    "required": [
+        "service_token",
+        "service",
+        "referrer"
+    ],
+    "properties": {
+        "service_token": {
+            "type": "integer",
+            "enum": [
+                1
+            ],
+            "description": "Must be 1."
+        },
+        "service": {
+            "type": "string",
+            "enum": [
+                "onfido"
+            ],
+            "description": "The service name to retrieve the token for."
+        },
+        "referrer": {
+            "type": "string",
+            "pattern": "^https?://[0-9a-zA-Z\\.-]+\\/[\\%\\/\\w \\.-]*$",
+            "description": "The URL of the web page where the Web SDK will be used."
+        },
+        "req_id": {
+            "type": "integer",
+            "description": "[Optional] Used to map request to response."
+        },
+        "passthrough": {
+            "type": "object",
+            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the echo_req output field."
+        }
+    }
+}
