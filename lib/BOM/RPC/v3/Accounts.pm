@@ -53,6 +53,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
 use BOM::Config::Runtime;
 use BOM::Config::ContractPricingLimits qw(market_pricing_limits);
+use BOM::RPC::v3::Services;
 
 use constant DEFAULT_STATEMENT_LIMIT => 100;
 
@@ -579,6 +580,8 @@ Returns a hashref with following items
 =item * C<currency> - Currency in which the balance is being represented. E.g. : BTC
 
 =item * C<balance> - Balance for the default account. E.g. : 100.00
+
+=back
 
 =cut
 
@@ -1908,6 +1911,25 @@ rpc api_token => sub {
     $rtn->{tokens} = $m->get_tokens_by_loginid($client->loginid);
 
     return $rtn;
+};
+
+async_rpc service_token => sub {
+    my $params = shift;
+
+    my ($client, $args) = @{$params}{qw/client args/};
+
+    return BOM::RPC::v3::Services::service_token($client, $args)->then(
+        sub {
+            my ($result) = @_;
+            if ($result->{error}) {
+                return Future->done($result->{error});
+            } else {
+                return Future->done({
+                    token   => $result->{token},
+                    service => $args->{service},
+                });
+            }
+        });
 };
 
 rpc tnc_approval => sub {

@@ -817,7 +817,7 @@ Checks and gets the data stored in redis with the token
 
 Returns undef if the token is not found
 
-=cut 
+=cut
 
 sub get_user_by_token {
     my $token = shift;
