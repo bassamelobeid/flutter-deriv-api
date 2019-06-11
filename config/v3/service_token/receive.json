@@ -1,0 +1,47 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Service Token Response",
+    "description": "A message with Service Token",
+    "type": "object",
+    "required": [
+        "echo_req",
+        "msg_type"
+    ],
+    "properties": {
+        "service_token": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "The object containing the retrieved token",
+            "required": [
+                "token",
+                "service"
+            ],
+            "properties": {
+                "token": {
+                    "type": "string",
+                    "description": "Retrieved token for the requested service."
+                },
+                "service": {
+                    "type": "string",
+                    "enum": [
+                        "onfido"
+                    ],
+                    "description": "Name of the service that token is retrieved for."
+                }
+            }
+        },
+        "echo_req": {
+            "type": "object",
+            "title": "Echo request",
+            "description": "Echo of the request made."
+        },
+        "msg_type": {
+            "type": "string",
+            "description": "service_token"
+        },
+        "req_id": {
+            "type": "integer",
+            "description": "ID used to map request to response, present only when the request contains req_id."
+        }
+    }
+}

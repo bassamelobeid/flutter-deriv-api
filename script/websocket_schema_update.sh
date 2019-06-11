@@ -13,6 +13,7 @@ git config --local user.name "CircleCI"
 rsync /home/git/regentmarkets/binary-websocket-api/config /tmp/websockets/ --delete -a
 rm -fvr /tmp/websockets/config/*/change_password
 rm -fvr /tmp/websockets/config/*/reset_password
+rm -fvr /tmp/websockets/config/*/service_token
 
 # Show what we're changing - anyone can easily check version control for this,
 # but this diff usually is not too long.
@@ -26,4 +27,3 @@ git add -A
 X="$(git commit -m "JSON Schema Update")" ||
 tee /dev/stderr <<<"$X" | grep -q 'nothing to commit'
 git push origin HEAD
-
