@@ -66,7 +66,6 @@ use constant ONFIDO_CHECK_EXCEEDED_KEY              => 'ONFIDO_CHECK_EXCEEDED';
 use constant ONFIDO_REPORT_KEY_PREFIX               => 'ONFIDO::REPORT::ID::';
 
 use constant ONFIDO_SUPPORTED_COUNTRIES_KEY                    => 'ONFIDO_SUPPORTED_COUNTRIES';
-use constant ONFIDO_SUPPORTED_COUNTRIES_URL                    => 'https://documentation.onfido.com/identityISOsupported.json';
 use constant ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT                => $ENV{ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT} // 7 * 86400;                     # 1 week
 use constant ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_PREFIX  => 'ONFIDO::UNSUPPORTED::COUNTRY::EMAIL::PER::USER::';
 use constant ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_TIMEOUT => $ENV{ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_TIMEOUT} // 24 * 60 * 60;
@@ -863,7 +862,7 @@ sub _address_verification {
         });
 }
 
-=head2 _is_supported_country
+=head2 _is_supported_country_onfido
 
 Check if the passed country is supported by Onfido.
 
@@ -875,8 +874,8 @@ Check if the passed country is supported by Onfido.
 
 =cut
 
-async sub _is_supported_country {
-    my ($country) = @_;
+async sub _is_supported_country_onfido {
+    my ($country, $onfido) = @_;
 
     my $countries_list;
     my $redis_events_read = _redis_events_read();
@@ -886,11 +885,8 @@ async sub _is_supported_country {
     if ($countries_list) {
         $countries_list = decode_json_utf8($countries_list);
     } else {
-        my $onfido_countries = await _http()->GET(ONFIDO_SUPPORTED_COUNTRIES_URL);
-        if ($onfido_countries) {
-            $onfido_countries = decode_json_utf8($onfido_countries->content);
-            $countries_list->{uc(country_code2code($_->{alpha3}, 'alpha-3', 'alpha-2'))} = $_->{supported_identity_report} + 0 for @$onfido_countries;
-
+        $countries_list = await $onfido->countries_list();
+        if ($countries_list) {
             my $redis_events_write = _redis_events_write();
             await $redis_events_write->connect;
             await $redis_events_write->set(ONFIDO_SUPPORTED_COUNTRIES_KEY, encode_json_utf8($countries_list));
@@ -908,7 +904,7 @@ async sub _get_onfido_applicant {
     my $onfido = $args{onfido};
 
     my $country = $client->place_of_birth // $client->residence;
-    my $is_supported_country = _is_supported_country($country)->get;
+    my $is_supported_country = _is_supported_country_onfido($country, $onfido)->get;
     unless ($is_supported_country) {
         DataDog::DogStatsd::Helper::stats_inc('onfido.unsupported_country', {tags => [$country]});
         await _send_email_onfido_unsupported_country_cs($client);
