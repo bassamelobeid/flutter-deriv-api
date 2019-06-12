@@ -45,7 +45,7 @@ sub published {
 
     for my $transaction (@transactions) {
         return fail 'Transaction does not have a valid action: ' . (explain $transaction)[0]
-            unless grep { $_ eq $transaction->body->{action} } @valid_actions;
+            unless grep { $_ eq $transaction->body->action } @valid_actions;
 
         return fail 'Response was not published: ' . (explain $transaction)[0]
             unless my $expected = first {
@@ -53,10 +53,10 @@ sub published {
             $_->body->transaction_id eq $transaction->body->transaction_id
         }
         $self->expected($transaction->type)->@*;
-        unless ($self->is_sanity_ckeck_skipped($transaction->{type}, 'time_travelling_response')) {
+        unless ($self->is_sanity_ckeck_skipped($transaction->type, 'time_travelling_response')) {
             return 0 unless $self->time_travelling_response($transaction, $expected);
         }
-        unless ($self->is_sanity_ckeck_skipped($transaction->{type}, 'too_old_response')) {
+        unless ($self->is_sanity_ckeck_skipped($transaction->type, 'too_old_response')) {
             return 0 unless $self->too_old_response($transaction, $expected);
         }
     }
