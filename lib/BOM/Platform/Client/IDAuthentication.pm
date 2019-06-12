@@ -148,7 +148,7 @@ sub proveid {
             $client->status->set('ukgc_authenticated', 'system', "Online verification passed");
         } else {
             $client->status->set('unwelcome', 'system', "Experian results are insufficient to enable deposits.");
-            
+
             $self->_request_id_authentication();
         }
     } else {
@@ -156,7 +156,7 @@ sub proveid {
 
         $self->_request_id_authentication();
     }
-    
+
     return undef;
 }
 

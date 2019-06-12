@@ -164,6 +164,9 @@ return true if the currency is currently suspended for the action
 sub is_crypto_currency_suspended {
     my ($currency, $action) = @_;
 
+    # if payment is suspended crypto is suspended too
+    return 1 if is_payment_suspended();
+
     die "expected currency type parameter" unless $currency;
 
     die "Failed to accept $currency as a cryptocurrency." if (LandingCompany::Registry::get_currency_type(uc $currency) // '') ne 'crypto';
