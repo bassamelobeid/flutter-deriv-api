@@ -40,6 +40,7 @@ use BOM::Platform::S3Client;
 use BOM::Platform::Event::Emitter;
 use BOM::Config::RedisReplicated;
 use BOM::Event::Services;
+use Encode qw(decode_utf8 encode_utf8);
 
 # Number of seconds to allow for just the verification step.
 use constant VERIFICATION_TIMEOUT => 60;
@@ -804,7 +805,8 @@ sub _address_verification {
     my $redis_events_read = _redis_events_read();
     return $redis_events_read->connect->then(
         sub {
-            $redis_events_read->hget('ADDRESS_VERIFICATION_RESULT' . $client->binary_user_id, $freeform . ($client->residence // ''));
+            $redis_events_read->hget('ADDRESS_VERIFICATION_RESULT' . $client->binary_user_id,
+                encode_utf8(join(' ', ($freeform, ($client->residence // '')))));
         }
         )->then(
         sub {
@@ -844,7 +846,7 @@ sub _address_verification {
                     $redis_events_write->connect->then(
                         sub {
                             $redis_events_write->hset('ADDRESS_VERIFICATION_RESULT' . $client->binary_user_id,
-                                $freeform . ($client->residence // ''), $status);
+                                encode_utf8(join(' ', ($freeform, ($client->residence // '')))), $status);
                         })->retain;
 
                     return Future->done;
