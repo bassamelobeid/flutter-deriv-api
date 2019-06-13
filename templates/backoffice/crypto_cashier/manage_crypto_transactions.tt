@@ -75,6 +75,9 @@
     </tbody>
 </table>
 <br/>
+[% IF view_action == 'withdrawals' and transactions.size > 0 %]
+    <p>The estimation fee is done before we send the transaction so it can have a small difference from the final fee.</p>
+[% END %]
 [% IF transactions.size == 0 %]
     <p>There are no such transactions.</p>
 [% ELSE %]
@@ -101,11 +104,11 @@
                 [% END %]
                 <td><table><tbody>
                     <tr><td>
-                        <b>Address</b>: 
+                        <b>Address</b>:
                         [% address_link(addr = trx.address) %]
                     </td></tr>
                     <tr><td>
-                        <b>Blockchain ID</b>: 
+                        <b>Blockchain ID</b>:
                         [% transaction_link(tx = trx.blockchain_txn) %]
                     </td></tr>
                 </tbody></table></td>
