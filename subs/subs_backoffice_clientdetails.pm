@@ -248,7 +248,7 @@ sub print_client_details {
         $tax_residences_countries_name = join ',', map { code2country($_) } @tax_residences;
     }
 
-    my %onfido_status = @{BOM::Config::RedisReplicated::redis_read()->hgetall(ONFIDO_REPORT_KEY_PREFIX . $client->binary_user_id)};
+    my %onfido_status = @{BOM::Config::RedisReplicated::redis_events()->hgetall(ONFIDO_REPORT_KEY_PREFIX . $client->binary_user_id)};
 
     my $template_param = {
         client                => $client,
