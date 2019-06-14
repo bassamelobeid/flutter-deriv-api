@@ -7,101 +7,118 @@ no indirect;
 use BOM::Test::WebsocketAPI::Template::DSL;
 
 request proposal_array => sub {
-    my $pa = $_->proposal_array->{$_->underlying->symbol};
+    my $pa = $_->proposal_array;
     return {
         proposal_array => 1,
-        basis          => 'stake',
-        amount         => 10,
-        currency       => $_->currency,
-        symbol         => $_->underlying->symbol,
-        duration       => 5,
-        duration_unit  => 'd',
+        symbol         => $pa->underlying->symbol,
         contract_type  => [$pa->contract_types->@*],
         barriers       => [map { {barrier => $_} } $pa->barriers->@*],
+        basis          => $pa->basis,
+        amount         => $pa->amount,
+        currency       => $pa->client->currency,
+        duration       => $pa->duration,
+        duration_unit  => $pa->duration_unit,
     };
     },
-    qw(currency proposal_array underlying);
+    qw(proposal_array);
 
 rpc_request send_ask => sub {
+    my $pa = $_->proposal_array;
     return {
-        'currency'       => $_->currency,
-        'contract_type'  => [$_->proposal_array->{$_->underlying->symbol}->contract_types->@*],
-        'symbol'         => $_->underlying->symbol,
-        'basis'          => 'stake',
-        'proposal_array' => 1,
-        'duration_unit'  => 'd',
-        'amount'         => 10,
-        'barriers'       => [$_->proposal_array->{$_->underlying->symbol}->barriers->@*],
-        'duration'       => 5
+        proposal_array             => 1,
+        brand                      => 'binary',
+        landing_company            => $pa->client->landing_company_name,
+        app_markup_percentage      => '0',
+        source                     => '1',
+        source_bypass_verification => 0,
+        logging                    => {},
+        country_code               => 'aq',
+        language                   => 'EN',
+        valid_source               => '1',
+        token                      => $pa->client->token,
+        args                       => {
+            currency       => $pa->client->currency,
+            contract_type  => [$pa->contract_types->@*],
+            symbol         => $pa->underlying->symbol,
+            basis          => 'stake',
+            proposal_array => 1,
+            duration_unit  => 'd',
+            amount         => 10,
+            barriers       => [$pa->barriers->@*],
+            req_id         => 3,
+            subscribe      => 1,
+            duration       => 5
+        },
     };
     },
-    qw(currency country proposal_array underlying);
+    qw(proposal_array);
 
 rpc_response send_ask => sub {
-    my $symbol       = $_->underlying->symbol;
-    my $display_name = $_->underlying->display_name;
-    my $pa           = $_->proposal_array->{$symbol};
+    my $pa           = $_->proposal_array;
+    my $symbol       = $pa->underlying->symbol;
+    my $display_name = $pa->underlying->display_name;
+    my $now          = time;
     return {
-        'proposals' => {
+        proposals => {
             map {
                 my $contract_type = $_;
                 $contract_type => [
                     map { {
-                            'display_value'    => 10,
-                            'supplied_barrier' => $_,
-                            'barrier'          => $_,
-                            'theo_probability' => '' . rand,
-                            'ask_price'        => 10,
-                            'longcode'         => sprintf(
-                                'Win payout if %s is strictly %s than %s at close on 2019-05-08.',
-                                $display_name, $contract_type eq 'CALL' ? 'higher' : 'lower', $_
-                            )}
+                            display_value    => 10,
+                            supplied_barrier => $_,
+                            barrier          => $_,
+                            theo_probability => '' . rand,
+                            ask_price        => 10,
+                            longcode         => $pa->longcodes->{$contract_type}{$_}}
                     } $pa->barriers->@*
                     ]
             } $pa->contract_types->@*
         },
-        'contract_parameters' => {
-            'subscribe'      => 1,
-            'proposal_array' => 1,
-            'date_start'     => 1556853241,
-            'barriers'       => [
+        contract_parameters => {
+            subscribe      => 1,
+            proposal_array => 1,
+            date_start     => $now,
+            barriers       => [
                 map {
                     '' . $_
                 } $pa->barriers->@*
             ],
-            'app_markup_percentage' => '0',
-            'currency'              => $_->currency,
-            'base_commission'       => '0.015',
-            'spot'                  => '6474.13',
-            'staking_limits'        => {
-                'max' => 50000,
-                'min' => '0.35'
+            app_markup_percentage => '0',
+            currency              => $pa->client->currency,
+            base_commission       => '0.015',
+            spot                  => '6474.13',
+            staking_limits        => {
+                max => 50000,
+                min => '0.35'
             },
-            'duration'           => '5d',
-            'spot_time'          => 1556853240,
-            'amount'             => 10,
-            'amount_type'        => 'stake',
-            'underlying'         => $symbol,
-            'bet_types'          => [$pa->contract_types->@*],
-            'deep_otm_threshold' => '0.025'
+            duration           => '5d',
+            spot_time          => $now,
+            amount             => 10,
+            amount_type        => 'stake',
+            underlying         => $symbol,
+            bet_types          => [$pa->contract_types->@*],
+            deep_otm_threshold => '0.025'
         },
-        'rpc_time' => '38.201'
+        rpc_time => '38.201'
     };
 };
 
 publish proposal_array => sub {
-    my $symbol       = $_->underlying->symbol;
-    my $display_name = $_->underlying->display_name;
-    my $pa           = $_->proposal_array->{$symbol};
+    my $pa           = $_->proposal_array;
+    my $symbol       = $pa->underlying->symbol;
+    my $display_name = $pa->underlying->display_name;
     return {
         sprintf(
-            'PRICER_KEYS::["amount","1000","barriers",[%s],"basis","payout","contract_type",[%s],"country_code","%s","currency","%s","duration","5","duration_unit","d","landing_company",%s,"price_daemon_cmd","price","proposal_array","1","skips_price_validation","1","subscribe","1","symbol","%s"]',
+            'PRICER_KEYS::["amount","1000","barriers",[%s],"basis","payout","contract_type",[%s],"country_code","%s","currency","%s","duration","%s","duration_unit","%s","landing_company","%s","price_daemon_cmd","price","proposal_array","1","skips_price_validation","1","subscribe","1","symbol","%s"]',
 
             join(',', map { "\"$_\"" } $pa->barriers->@*),
             join(',', map { "\"$_\"" } $pa->contract_types->@*),
-            $_->@{qw(country currency)},
-            $_->country eq 'aq' ? 'null' : '"svg"',
-            $_->underlying->symbol
+            $pa->client->country,
+            $pa->client->currency,
+            $pa->duration,
+            $pa->duration_unit,
+            $pa->client->landing_company_name,
+            $pa->underlying->symbol
             ) => {
 
             rpc_time  => 62.07,
@@ -110,15 +127,12 @@ publish proposal_array => sub {
                     my $contract_type = $_;
                     $contract_type => [
                         map { {
-                                'display_value'    => 10,
-                                'supplied_barrier' => $_,
-                                'barrier'          => $_,
-                                'theo_probability' => rand,
-                                'ask_price'        => 10,
-                                'longcode'         => sprintf(
-                                    'Win payout if %s is strictly %s than %s at close on 2019-05-08.',
-                                    $display_name, $contract_type eq 'CALL' ? 'higher' : 'lower', $_
-                                )}
+                                display_value    => 10,
+                                supplied_barrier => $_,
+                                barrier          => $_,
+                                theo_probability => rand,
+                                ask_price        => 10,
+                                longcode         => $pa->longcodes->{$contract_type}{$_}}
                         } $pa->barriers->@*
                         ]
                 } $pa->contract_types->@*

@@ -379,7 +379,11 @@ sub update_ticks_history {
                 ticks_history => $symbol,
             },
             msg_type => 'history',
-            history  => (map { {times => $_->times, prices => $_->prices} } test_params(qw(ticks_history))->{ticks_history}[0]{$symbol}),
+            history  => {(
+                    map { (times => $_->times, prices => $_->prices) }
+                    grep { $_->underlying->symbol eq $symbol } test_params()->{ticks_history}->@*
+                )
+            },
         });
 
     my @history_times  = ($current_history ? $current_history->body->times->@*  : ());

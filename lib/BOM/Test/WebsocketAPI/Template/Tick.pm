@@ -15,16 +15,24 @@ request ticks => sub {
 
 rpc_request ticks => sub {
     return {
-        'ticks' => $_->underlying->symbol,
-    };
+        logging                    => {},
+        valid_source               => '1',
+        brand                      => 'binary',
+        source_bypass_verification => 0,
+        symbol                     => $_->underlying->symbol,
+        source                     => '1',
+        args                       => {
+            ticks  => $_->underlying->symbol,
+            req_id => 2
+        }};
     },
     qw(underlying);
 
 rpc_response ticks => sub {
     my $pip_size = log(1 / $_->underlying->pip_size) / log(10);
     return {
-        'stash' => {
-            $_->underlying->symbol . '_display_decimals' => $pip_size,
+        stash => {
+            $_->underlying->symbol . _display_decimals => $pip_size,
         },
     };
 };
@@ -41,7 +49,7 @@ publish tick => sub {
             epoch  => time,
             bid    => $bid,
             ask    => $ask,
-            spot   => $_->underlying->pipsized_value(($bid + $ask) / 2),
+            quote  => $_->underlying->pipsized_value(($bid + $ask) / 2),
         },
     };
 };

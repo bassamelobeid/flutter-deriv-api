@@ -7,22 +7,25 @@ no indirect;
 use BOM::Test::WebsocketAPI::Template::DSL;
 
 rpc_request longcode => sub {
-    my $shortcode = sprintf('%s_%s_20.43_1557198681_1557705599_S0P_0', $_->contract_type, $_->underlying->symbol);
+    my $contract = $_->contract;
     return {
-        short_codes => $shortcode,
-    };
+        'short_codes'                => [$contract->shortcode],
+        'valid_source'               => '1',
+        'source_bypass_verification' => 0,
+        'language'                   => 'EN',
+        'brand'                      => 'binary',
+        'currency'                   => 'USD',
+        'args'                       => {},
+        'source'                     => '1',
+        'logging'                    => {}};
     },
-    qw(currency contract_type underlying);
+    qw(contract);
 
 rpc_response longcode => sub {
-    my $shortcode = sprintf('%s_%s_20.43_1557198681_1557705599_S0P_0', $_->contract_type, $_->underlying->symbol);
+    my $contract = $_->contract;
     return {
-        'longcodes' => {
-            $shortcode => sprintf(
-                'Win payout if %s is strictly %s than entry spot at close on 2019-04-29.',
-                $_->underlying->display_name,
-                $_->contract_type eq 'CALL' ? 'higher' : 'lower'
-            )}};
+        longcodes => {$contract->shortcode => $contract->longcode},
+    };
 };
 
 1;

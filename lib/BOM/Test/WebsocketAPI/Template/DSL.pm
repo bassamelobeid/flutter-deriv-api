@@ -57,17 +57,18 @@ our @ISA    = qw( Exporter );
 our @EXPORT = qw( request rpc_request rpc_response publish );    ## no critic (Modules::ProhibitAutomaticExportation)
 
 use BOM::Test::WebsocketAPI::Parameters qw( expand_params );
+use Clone qw(clone);
 
 # Keeps the serialized rpc_request keys to params mapping
-our $rpc_requests;
+my $rpc_requests;
 # Params used to generate publish data, added dynamically by rpc responses.
-our $publish_params;
+my $publish_params;
 # Used for finding the handler module for given RPC request.
-our $rpc_req_to_module;
+my $rpc_req_to_module;
 # Used for finding the publish callbacks provided by a module and given a type.
-our $module_to_publish_cb;
+my $module_to_publish_cb;
 # RPC response callbacks registered per module
-our $rpc_response_cb;
+my $rpc_response_cb;
 
 =head2 request
 
@@ -170,10 +171,10 @@ sub wrap_rpc_response {
     my ($request, $response) = @_;
 
     return bless({
-            'rpc_response' => {
-                'jsonrpc' => '2.0',
-                'result'  => {$response->%*},
-                'id'      => $request->{id}}
+            rpc_response => {
+                jsonrpc => '2.0',
+                result  => {$response->%*},
+                id      => $request->{id}}
         },
         'MojoX::JSON::RPC::Client::ReturnObject'
     );
@@ -189,21 +190,32 @@ objects using their contents.
 sub req_key {
     my ($request) = @_;
 
+    # We don't want to touch the request
+    $request = clone($request);
+
     $request = $request->{params} if exists $request->{params};
 
-    # longcode has its args in short_codes :'(
-    return key({$request->%{qw(short_codes)}}) if exists $request->{short_codes};
+    # No assumptions on the information provided for wsapi
+    delete $request->{args}{$_} for qw(req_id subscribe passthrough);
 
-    my $req = $request->{args} // $request // die 'Invalid RPC request';
+    # Delete information that's not expected to change the behavior of RPC
+    # If you want any field listed below to uniquely identify your requests
+    # remove it from here.
+    delete $request->{$_} for qw(
+        user_agent
+        country_code
+        brand
+        logging
+        language
+        app_markup_percentage
+        source_bypass_verification
+        valid_source
+        ua_fingerprint
+        source
+        client_ip
+    );
 
-    # Shallow clone
-    $req = {$req->%*};
-
-    delete $req->{req_id};
-    delete $req->{subscribe};
-    delete $req->{passthrough};
-
-    return key($req);
+    return key($request);
 }
 
 =head2 rpc_response
@@ -224,7 +236,16 @@ $BOM::Test::WebsocketAPI::Data::rpc_response = sub {
 
     my $module = $rpc_req_to_module->{$req_key};
 
-    die "No params available for RPC request: $req_key" unless $module;
+    return wrap_rpc_response(
+        $request,
+        {
+            error => {
+                code              => 'MockResponseNotFound',
+                message_to_client => 'Cannot find mock RPC response for the given'
+                    . ' request, please create an rpc_request in the corresponding'
+                    . ' BOM::Test::WebsocketAPI::Template::[RequestType]',
+            },
+        }) unless $module;
 
     # Scalar, but used for to set $_
     for ($rpc_requests->{$req_key}) {
