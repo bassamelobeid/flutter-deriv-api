@@ -74,6 +74,9 @@ $c = produce_contract({
     date_pricing => $start_time->epoch + 10,
 });
 
-BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $start_time->epoch, 'R_100'], [101, $start_time->epoch + 1, 'R_100'], [80, $start_time->epoch + 5, 'R_100']);
+BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+    [100, $start_time->epoch,     'R_100'],
+    [101, $start_time->epoch + 1, 'R_100'],
+    [80,  $start_time->epoch + 5, 'R_100']);
 
 ok $c->bid_price, 'bid price for not expired contract';

@@ -85,7 +85,10 @@ subtest 'prices' => sub {
     foreach my $bt_code (sort keys %expectations) {
         subtest $bt_code => sub {
 
-            my $c = produce_contract({%$params, bet_type => $bt_code, ($bt_code =~ /(?:ODD|EVEN)/ ? (barrier => undef) : ())});
+            my $c = produce_contract({
+                    %$params,
+                    bet_type => $bt_code,
+                    ($bt_code =~ /(?:ODD|EVEN)/ ? (barrier => undef) : ())});
 
             my $expect = $expectations{$bt_code};
 

@@ -36,7 +36,7 @@ my %file_details = (
     },
     digitsevenodd => {
         filename => module_path('BOM::Product::Contract::Digiteven'),
-        hash     => 'e8d9cd5170b51cf079cdeda84f71191c477f5b7f'
+        hash     => 'c99dc348275f3cbee36089b153834e488b262bee'
     },
     digitsoverunder => {
         filename => module_path('BOM::Product::Contract::Digitover'),

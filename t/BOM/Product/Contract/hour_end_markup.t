@@ -249,7 +249,7 @@ subtest 'test discount for current spot closer to previous high' => sub {
     is $c->pricing_engine->hour_end_markup->peek_amount('hour_end_discount'), 0, 'no discount for PUT at X1=-0.6';
     $args->{bet_type} = 'CALL';
     $c = produce_contract($args);
- 
+
     is $c->pricing_engine->hour_end_markup->peek_amount('hour_end_discount'), -0.01, '0.01 discount for CALL at X1=-0.6';
     $mocked->mock(
         '_x1',

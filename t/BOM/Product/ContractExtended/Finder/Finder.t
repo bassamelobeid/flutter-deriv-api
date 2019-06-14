@@ -92,8 +92,8 @@ subtest "predefined contracts for symbol" => sub {
             hit_count => 4,
         },
         # malta, austria
-        'frxUSDJPY-malta-at'     => {hit_count => 0},
-        'frxAUDCAD-svg-id' => {hit_count => 0},
+        'frxUSDJPY-malta-at' => {hit_count => 0},
+        'frxAUDCAD-svg-id'   => {hit_count => 0},
     );
     foreach my $key (keys %expected) {
         my ($u, $landing_company, $country_code) = split '-', $key;

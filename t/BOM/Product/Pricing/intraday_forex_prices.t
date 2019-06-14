@@ -162,7 +162,12 @@ subtest 'prices without economic events' => sub {
                 ok abs($base->base_amount - $exp->[1]) < 1e-9,
                     'correct bs probability [' . $key . '] exp [' . $exp->[1] . '] got [' . $base->base_amount . ']';
                 ok abs($c->pricing_engine->risk_markup->peek_amount('intraday_mean_reversion_markup') - $exp->[2]) < 1e-9,
-                    'correct mean reversion markup [' . $key . '] exp [' . $exp->[2] . '] got [' . $c->pricing_engine->risk_markup->peek_amount('intraday_mean_reversion_markup') . ']';
+                      'correct mean reversion markup ['
+                    . $key
+                    . '] exp ['
+                    . $exp->[2]
+                    . '] got ['
+                    . $c->pricing_engine->risk_markup->peek_amount('intraday_mean_reversion_markup') . ']';
                 ok abs($base->peek_amount('intraday_vega_correction') - $exp->[3]) < 1e-9,
                     'correct vega correction [' . $key . '] exp [' . $exp->[3] . '] got [' . $base->peek_amount('intraday_vega_correction') . ']';
                 ok abs($c->pricing_engine->risk_markup->amount - $exp->[4]) < 1e-9,
@@ -195,7 +200,12 @@ subtest 'atm prices without economic events' => sub {
                 ok abs($base->base_amount - $exp->[1]) < 1e-9,
                     'correct bs probability [' . $key . '] exp [' . $exp->[1] . '] got [' . $base->base_amount . ']';
                 ok abs($c->pricing_engine->risk_markup->peek_amount('intraday_mean_reversion_markup') - $exp->[2]) < 1e-9,
-                    'correct mean reversion markup [' . $key . '] exp [' . $exp->[2] . '] got [' . $c->pricing_engine->risk_markup->peek_amount('intraday_mean_reversion_markup') . ']';
+                      'correct mean reversion markup ['
+                    . $key
+                    . '] exp ['
+                    . $exp->[2]
+                    . '] got ['
+                    . $c->pricing_engine->risk_markup->peek_amount('intraday_mean_reversion_markup') . ']';
                 ok abs($base->peek_amount('intraday_vega_correction') - $exp->[3]) < 1e-9,
                     'correct vega correction [' . $key . '] exp [' . $exp->[3] . '] got [' . $base->peek_amount('intraday_vega_correction') . ']';
                 ok abs($c->pricing_engine->risk_markup->amount - $exp->[4]) < 1e-9,
@@ -243,7 +253,12 @@ subtest 'prices with economic events' => sub {
                 ok abs($base->base_amount - $exp->[1]) < 1e-9,
                     'correct bs probability [' . $key . '] exp [' . $exp->[1] . '] got [' . $base->base_amount . ']';
                 ok abs($c->pricing_engine->risk_markup->peek_amount('intraday_mean_reversion_markup') - $exp->[2]) < 1e-9,
-                    'correct mean reversion markup [' . $key . '] exp [' . $exp->[2] . '] got [' . $c->pricing_engine->risk_markup->peek_amount('intraday_mean_reversion_markup') . ']';
+                      'correct mean reversion markup ['
+                    . $key
+                    . '] exp ['
+                    . $exp->[2]
+                    . '] got ['
+                    . $c->pricing_engine->risk_markup->peek_amount('intraday_mean_reversion_markup') . ']';
                 ok abs($base->peek_amount('intraday_vega_correction') - $exp->[3]) < 1e-9,
                     'correct vega correction [' . $key . '] exp [' . $exp->[3] . '] got [' . $base->peek_amount('intraday_vega_correction') . ']';
                 ok abs($c->pricing_engine->risk_markup->amount - $exp->[4]) < 1e-9,
@@ -276,7 +291,12 @@ subtest 'atm prices with economic events' => sub {
                 ok abs($base->base_amount - $exp->[1]) < 1e-9,
                     'correct bs probability [' . $key . '] exp [' . $exp->[1] . '] got [' . $base->base_amount . ']';
                 ok abs($c->pricing_engine->risk_markup->peek_amount('intraday_mean_reversion_markup') - $exp->[2]) < 1e-9,
-                    'correct mean reversion markup [' . $key . '] exp [' . $exp->[2] . '] got [' . $c->pricing_engine->risk_markup->peek_amount('intraday_mean_reversion_markup') . ']';
+                      'correct mean reversion markup ['
+                    . $key
+                    . '] exp ['
+                    . $exp->[2]
+                    . '] got ['
+                    . $c->pricing_engine->risk_markup->peek_amount('intraday_mean_reversion_markup') . ']';
                 ok abs($base->peek_amount('intraday_vega_correction') - $exp->[3]) < 1e-9,
                     'correct vega correction [' . $key . '] exp [' . $exp->[3] . '] got [' . $base->peek_amount('intraday_vega_correction') . ']';
                 ok abs($c->pricing_engine->risk_markup->amount - $exp->[4]) < 1e-9,
