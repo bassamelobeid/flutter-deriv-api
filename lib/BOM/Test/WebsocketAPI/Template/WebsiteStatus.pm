@@ -14,8 +14,17 @@ request website_status => sub {
 
 rpc_request website_status => sub {
     return {
-        'website_status' => 1,
-    };
+        logging                    => {},
+        country_code               => 'aq',
+        brand                      => 'binary',
+        valid_source               => '1',
+        source                     => '1',
+        source_bypass_verification => 0,
+        args                       => {
+            website_status => 1,
+            subscribe      => 1,
+            req_id         => 2
+        }};
 };
 
 publish website_status => sub {

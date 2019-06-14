@@ -22,16 +22,13 @@ subscription, those calls are stored in the C<BOM::Test::WebsocketAPI::Data>.
 use BOM::Test::WebsocketAPI::Data qw( rpc_response );
 use MojoX::JSON::RPC::Client;
 
-my $original_call = \&MojoX::JSON::RPC::Client::call;
-
 {
     no warnings qw(redefine);    ## no critic (ProhibitNoWarnings)
 
     *MojoX::JSON::RPC::Client::call = sub {
         my ($self, $uri, $body, $callback) = @_;
-        # Fall back to original RPC call if there is no mock data available
-        return $original_call->(@_) unless my $rpc_response = rpc_response($body);
-        $callback->($rpc_response);
+
+        return $callback->(rpc_response($body));
     };
 };
 

@@ -54,19 +54,19 @@ use Binary::API::Mapping::Response;
 use Binary::WebSocketAPI;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw(create_client);
 use BOM::Test::Helper qw/launch_redis/;
 use BOM::Test::WebsocketAPI::Contexts;
 use BOM::Test::WebsocketAPI::SanityChecker;
 use BOM::Test::WebsocketAPI::Publisher;
 use BOM::Test::WebsocketAPI::MockRPC;
 use BOM::Test::WebsocketAPI::Data qw( requests );
-use BOM::Test::WebsocketAPI::Parameters qw( test_params );
+use BOM::Test::WebsocketAPI::Parameters qw( clients );
 
+# Take the first client by default
+my $client               = clients()->[0];
 my $default_suite_params = {
-    requests => requests(),
-    # Take the first client's token by default
-    token => test_params(qw(client))->{client}[0]->token,
+    requests => requests(client => $client),
+    token    => $client->token,
 };
 
 sub configure {

@@ -13,27 +13,35 @@ request transaction => sub {
 };
 
 rpc_request transaction => sub {
+    my $contract = $_->contract;
     return {
-        args => {
-            transaction => 1,
+        currency                   => $contract->client->currency,
+        short_code                 => $contract->shortcode,
+        source_bypass_verification => 0,
+        source                     => '1',
+        brand                      => 'binary',
+        landing_company            => $contract->client->landing_company_name,
+        token                      => $contract->client->token,
+        args                       => {
+            req_id      => 4,
+            subscribe   => 1,
+            transaction => 1
         },
-        shortcode => sprintf('%s_%s_20.43_1557198681_1557705599_S0P_0', $_->contract->contract_type, $_->contract->underlying->symbol)};
+        valid_source => '1',
+        language     => 'EN',
+        logging      => {},
+    };
     },
     qw(contract);
 
 rpc_response transaction => sub {
-
     my $contract = $_->contract;
     {
-        'longcode' => sprintf(
-            'Win payout if %s is strictly %s than entry spot at close on 2019-04-29.',
-            $contract->underlying->display_name,
-            $contract->contract_type eq 'CALL' ? 'higher' : 'lower'
-        ),
-        'display_name' => $contract->underlying->display_name,
-        'date_expiry'  => 1557705599,
-        'symbol'       => $contract->underlying->symbol,
-        barrier        => 'S0P'
+        longcode     => $contract->longcode,
+        display_name => $contract->underlying->display_name,
+        date_expiry  => $contract->date_expiry,
+        symbol       => $contract->underlying->symbol,
+        barrier      => $contract->barrier
     };
 };
 
