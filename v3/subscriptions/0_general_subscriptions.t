@@ -24,10 +24,20 @@ $loop->add(
             requests => requests(
                 filter => sub {
                     my $params = shift->{params};
-                    $params = $params->contract if $params->contract;
-                    return 1 unless $params->underlying;
+                    my $symbol;
+                    if ($params->contract) {
+                        $symbol = $params->contract->underlying->symbol;
+                    } elsif ($params->ticks_history) {
+                        $symbol = $params->ticks_history->underlying->symbol;
+                    } elsif ($params->proposal_array) {
+                        $symbol = $params->proposal_array->underlying->symbol;
+                    } elsif ($params->underlying) {
+                        $symbol = $params->underlying->symbol;
+                    } else {
+                        return 1;
+                    }
                     # Checking R_100 only, for faster tests.
-                    $params->underlying->symbol eq 'R_100';
+                    $symbol eq 'R_100';
                 },
             ),
             concurrent => 50,
@@ -37,8 +47,9 @@ $loop->add(
 
 subtest 'General subscriptions: All calls in parallel' => sub {
     Future->needs_all(
-        $tester->subscribe,
         $tester->subscribe_multiple_times(count => 10),
+        $tester->subscribe_twice,
+        $tester->subscribe,
         $tester->subscribe_after_request,
         $tester->multiple_subscriptions_forget,
         $tester->multiple_subscriptions_forget_all,
