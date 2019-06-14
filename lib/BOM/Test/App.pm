@@ -8,6 +8,7 @@ use Moo;
 use Data::Dumper;
 use JSON::MaybeXS;
 use Test::More;
+use JSON::Validator;
 
 sub BUILD {
     my ($self, $args) = @_;
@@ -27,21 +28,22 @@ sub BUILD {
 sub _test_schema {
     my ($self, $result, $expected_json_schema, $descr, $should_be_failed) = @_;
 
-    my $validator  = JSON::Schema->new(JSON::MaybeXS->new->decode($expected_json_schema));
-    my $valid      = $validator->validate($result);
+    my $validator = JSON::Validator->new();
+    $validator->schema(JSON::MaybeXS->new->decode($expected_json_schema));
+    #It is not intended that any coercion is done here as results should already be coerced and match schema's
+    my @error      = $validator->validate($result);
     my $test_level = $Test::Builder::Level;
     local $Test::Builder::Level = $test_level + 3;
     if ($should_be_failed) {
-        ok(!$valid, "$descr response is valid while it must fail.");
-        if ($valid) {
+        ok(scalar(@error), "$descr response is valid while it must fail.");
+        if (!@error) {
             diag Dumper({'Got response' => $result});
-            diag " - $_" foreach $valid->errors;
         }
     } else {
-        ok $valid, "$descr response is valid";
-        if (not $valid) {
+        ok !scalar(@error), "$descr response is valid";
+        if (@error) {
             diag Dumper({'Got response' => $result});
-            diag " - $_" foreach $valid->errors;
+            diag " - $_" foreach @error;
         }
     }
     return $result;
