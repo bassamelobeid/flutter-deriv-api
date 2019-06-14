@@ -736,7 +736,7 @@ sub sync_onfido_details {
         my $loginid = $data->{loginid} or die 'No loginid supplied';
         my $client = BOM::User::Client->new({loginid => $loginid});
 
-        my $applicant_id = BOM::Config::RedisReplicated::redis_read()->get(ONFIDO_APPLICANT_KEY_PREFIX . $client->binary_user_id);
+        my $applicant_id = BOM::Config::RedisReplicated::redis_events_read()->get(ONFIDO_APPLICANT_KEY_PREFIX . $client->binary_user_id);
 
         # Only for users that are registered in onfido
         return Future->done() unless $applicant_id;
