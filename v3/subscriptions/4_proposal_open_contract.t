@@ -14,28 +14,32 @@ use Log::Any::Adapter qw(Stdout), log_level => $ENV{LOG_LEVEL} // 'info';
 
 use BOM::Test::WebsocketAPI;
 use BOM::Test::WebsocketAPI::Data qw( requests );
+use BOM::Test::WebsocketAPI::Parameters qw( clients );
 
 my $loop = IO::Async::Loop->new;
 $loop->add(
     my $tester = BOM::Test::WebsocketAPI->new(
         timeout            => 300,
         max_response_delay => 10,
+        suite_params => {
+            concurrent => 50,
+        },
     ),
 );
 
 subtest "Buy subscribtions: Only R_* and frxUSD*" => sub {
-    $tester->configure(
-        suite_params => {
-            concurrent => 50,
+    Future->needs_all(map {;
+        $tester->buy_then_sell_contract(
             requests   => requests(
+                client => $_,
                 calls  => [qw(buy)],
                 filter => sub {
                     shift->{params}->contract->underlying->symbol =~ /R_.*|frxUSD.*/;
                 }
             ),
-        },
-    );
-    $tester->buy_then_sell_contract->get;
+            token => $_->token,
+        )
+    } clients()->@*)->get;
 };
 
 done_testing;
