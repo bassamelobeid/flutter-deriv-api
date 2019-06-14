@@ -1,40 +1,45 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "echo_req": {
-            "required": "1"
-        },
-        "new_account_real": {
-            "type": "object",
-            "properties": {
-                "client_id": {
-                    "type": "string",
-                    "pattern": "^MX[0-9]+$",
-                    "required": "1"
-                },
-                "landing_company": {
-                    "type": "string",
-                    "pattern": "^Binary \\(IOM\\) Ltd$",
-                    "required": "1"
-                },
-                "landing_company_shortcode": {
-                    "type": "string",
-                    "pattern": "^iom$",
-                    "required": "1"
-                },
-                "oauth_token": {
-                    "type": "string",
-                    "pattern": "^.{32}$",
-                    "required": "1"
-                }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "additionalProperties" : null,
+   "type" : "object",
+   "title" : null,
+   "description" : null,
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "properties" : {
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^new_account_real$"
+      },
+      "echo_req" : {},
+      "new_account_real" : {
+         "required" : [
+            "landing_company",
+            "landing_company_shortcode",
+            "oauth_token",
+            "client_id"
+         ],
+         "properties" : {
+            "landing_company" : {
+               "type" : "string",
+               "pattern" : "^Binary \\(IOM\\) Ltd$"
             },
-            "required": "1"
-        },
-        "msg_type": {
-            "type": "string",
-            "pattern": "^new_account_real$",
-            "required": "1"
-        }
-    }
+            "landing_company_shortcode" : {
+               "pattern" : "^iom$",
+               "type" : "string"
+            },
+            "oauth_token" : {
+               "type" : "string",
+               "pattern" : "^.{32}$"
+            },
+            "client_id" : {
+               "type" : "string",
+               "pattern" : "^MX\\d+$"
+            }
+         },
+         "type" : "object"
+      }
+   }
 }

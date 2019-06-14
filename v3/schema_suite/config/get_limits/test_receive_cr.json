@@ -1,138 +1,170 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "echo_req": {
-            "required": "1"
-        },
-        "get_limits": {
-            "type": "object",
-            "properties": {
-                "account_balance": {
-                  "type": "number",
-                  "pattern": "^300000.00$",
-                  "required": "1"
-                },
-                "lifetime_limit": {
-                  "type": "number",
-                  "pattern": "^10000.00$",
-                  "required": "1"
-                },
-                "market_specific": {
-                  "type": "object",
-                  "properties": {
-                      "commodities": {
-                          "type": "array",
-                          "items": {
-                              "type": "object",
-                              "properties": {
-                                  "name": {
-                                      "type": "string",
-                                      "pattern": "^Commodities$"
-                                  },
-                                  "turnover_limit": {
-                                      "type": "number",
-                                      "pattern": "^50000.00$"
-                                  }
-                              }
-                          },
-                          "required": "1"
-                      },
-                      "forex": {
-                          "type": "array",
-                          "items": {
-                              "type": "object",
-                              "properties": {
-                                  "name": {
-                                      "type": "string",
-                                      "pattern": "^(Major Pairs|Minor Pairs|Smart FX)$"
-                                  },
-                                  "turnover_limit": {
-                                      "type": "number",
-                                      "pattern": "^(100000.00|50000.00)$"
-                                  }
-                              }
-                          },
-                          "required": "1"
-                      },
-                      "indices": {
-                          "type": "array",
-                          "items": {
-                              "type": "object",
-                              "properties": {
-                                  "name": {
-                                      "type": "string",
-                                      "pattern": "^Indices$"
-                                  },
-                                  "turnover_limit": {
-                                      "type": "number",
-                                      "pattern": "^100000.00$"
-                                  }
-                              }
-                          },
-                          "required": "1"
-                      },
-                      "volidx": {
-                          "type": "array",
-                          "items": {
-                              "type": "object",
-                              "properties": {
-                                  "name": {
-                                      "type": "string",
-                                      "pattern": "^Volatility Indices$"
-                                  },
-                                  "turnover_limit": {
-                                      "type": "number",
-                                      "pattern": "^500000.00$"
-                                  }
-                              }
-                          },
-                          "required": "1"
-                      }
-                  }
-                },
-                "num_of_days": {
-                  "type": "integer",
-                  "pattern": "^30$",
-                  "required": "1"
-                },
-                "num_of_days_limit": {
-                  "type": "number",
-                  "pattern": "^10000.00$",
-                  "required": "1"
-                },
-                "open_positions": {
-                  "type": "integer",
-                  "pattern": "^100$",
-                  "required": "1"
-                },
-                "payout": {
-                  "type": "number",
-                  "pattern": "^50000.00$",
-                  "required": "1"
-                },
-                "remainder": {
-                  "type": "number",
-                  "pattern": "^10000.00$",
-                  "required": "1"
-                },
-                "withdrawal_for_x_days_monetary": {
-                  "type": "number",
-                  "pattern": "^0.00$",
-                  "required": "1"
-                },
-                "withdrawal_since_inception_monetary": {
-                  "type": "number",
-                  "pattern": "^0.00$",
-                  "required": "1"
-                }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "description" : null,
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "properties" : {
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^get_limits$"
+      },
+      "get_limits" : {
+         "properties" : {
+            "withdrawal_since_inception_monetary" : {
+               "enum" : [
+                  0
+               ],
+               "type" : "number"
             },
-            "required": "1"
-        },
-        "msg_type":{
-            "type": "string",
-            "pattern": "^get_limits$",
-            "required": "1"
-        }
-    }
+            "payout" : {
+               "enum" : [
+                  50000
+               ],
+               "type" : "number"
+            },
+            "remainder" : {
+               "enum" : [
+                  10000
+               ],
+               "type" : "number"
+            },
+            "num_of_days" : {
+               "enum" : [
+                  30
+               ],
+               "type" : "integer"
+            },
+            "withdrawal_for_x_days_monetary" : {
+               "type" : "number",
+               "enum" : [
+                  0
+               ]
+            },
+            "account_balance" : {
+               "enum" : ["300000"],
+               "type" : "number"
+            },
+            "num_of_days_limit" : {
+               "enum" : [
+                  10000
+               ],
+               "type" : "number"
+            },
+            "market_specific" : {
+               "properties" : {
+                  "commodities" : {
+                     "items" : {
+                        "type" : "object",
+                        "properties" : {
+                           "name" : {
+                              "type" : "string",
+                              "pattern" : "^Commodities$"
+                           },
+                           "turnover_limit" : {
+                              "type" : "number",
+                              "enum" : [
+                                 50000
+                              ]
+                           }
+                        }
+                     },
+                     "type" : "array"
+                  },
+                  "indices" : {
+                     "type" : "array",
+                     "items" : {
+                        "type" : "object",
+                        "properties" : {
+                           "name" : {
+                              "type" : "string",
+                              "pattern" : "^Indices$"
+                           },
+                           "turnover_limit" : {
+                              "enum" : [
+                                 100000
+                              ],
+                              "type" : "number"
+                           }
+                        }
+                     }
+                  },
+                  "volidx" : {
+                     "items" : {
+                        "type" : "object",
+                        "properties" : {
+                           "turnover_limit" : {
+                              "type" : "number",
+                              "enum" : [
+                                 500000
+                              ]
+                           },
+                           "name" : {
+                              "type" : "string",
+                              "pattern" : "^Volatility Indices$"
+                           }
+                        }
+                     },
+                     "type" : "array"
+                  },
+                  "forex" : {
+                     "items" : {
+                        "properties" : {
+                           "turnover_limit" : {
+                              "enum" : [
+                                 100000,
+                                 50000
+                              ],
+                              "type" : "number"
+                           },
+                           "name" : {
+                              "type" : "string",
+                              "pattern" : "^(Major Pairs|Minor Pairs|Smart FX)$"
+                           }
+                        },
+                        "type" : "object"
+                     },
+                     "type" : "array"
+                  }
+               },
+               "type" : "object",
+               "required" : [
+                  "commodities",
+                  "indices",
+                  "volidx",
+                  "forex"
+               ]
+            },
+            "lifetime_limit" : {
+               "enum" : [
+                  10000
+               ],
+               "type" : "number"
+            },
+            "open_positions" : {
+               "enum" : [
+                  100
+               ],
+               "type" : "integer"
+            }
+         },
+         "type" : "object",
+         "required" : [
+            "withdrawal_since_inception_monetary",
+            "payout",
+            "remainder",
+            "num_of_days",
+            "withdrawal_for_x_days_monetary",
+            "account_balance",
+            "num_of_days_limit",
+            "lifetime_limit",
+            "open_positions"
+         ]
+      },
+      "echo_req" : {}
+   }
 }

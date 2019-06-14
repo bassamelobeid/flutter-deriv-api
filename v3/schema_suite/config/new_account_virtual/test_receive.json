@@ -1,44 +1,51 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "echo_req": {
-        "required": "1"
-    },
-    "new_account_virtual": {
-      "type": "object",
-      "properties": {
-        "client_id": {
-          "type": "string",
-          "pattern": "^VRTC[0-9]+$",
-          "required": "1"
-        },
-        "email": {
-          "type": "string",
-          "pattern": "^[_2]$",
-          "required": "1"
-        },
-        "currency": {
-          "type": "string",
-          "pattern": "^USD$",
-          "required": "1"
-        },
-        "balance": {
-          "type": "number",
-          "pattern": "^10000.00$",
-          "required": "1"
-        },
-        "oauth_token": {
-            "type": "string",
-            "required": "1"
-        }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "type" : "object",
+   "title" : null,
+   "required" : [
+      "echo_req",
+      "msg_type",
+      "new_account_virtual" 
+   ],
+   "properties" : {
+      "new_account_virtual" : {
+         "properties" : {
+            "currency" : {
+               "type" : "string",
+               "pattern" : "^USD$"
+            },
+            "balance" : {
+               "type" : "number",
+               "enum" : [
+                  10000
+               ]
+            },
+            "client_id" : {
+               "pattern" : "^VRTC\\d+$",
+               "type" : "string"
+            },
+            "oauth_token" : {
+               "type" : "string"
+            },
+            "email" : {
+               "pattern" : "^[_2]$",
+               "type" : "string"
+            }
+         },
+         "type" : "object",
+         "required" : [
+            "currency",
+            "balance",
+            "client_id",
+            "oauth_token",
+            "email"
+         ]
       },
-      "required": "1"
-    },
-    "msg_type": {
-        "type": "string",
-        "pattern": "^new_account_virtual$",
-        "required": "1"
-    }
-  }
+      "echo_req" : {},
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^new_account_virtual$"
+      }
+   }
 }

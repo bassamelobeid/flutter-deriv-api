@@ -1,74 +1,76 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "echo_req": {
-      "required": 1
-    },
-    "copytrading_statistics": {
-      "type":"object",
-      "properties": {
-        "active_since": {
-          "type": "integer",
-          "pattern": "^[0-9]+$",
-          "required": 1
-        },
-        "monthly_profitable_trades": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-          }
-        },
-        "yearly_profitable_trades": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-          }
-        },
-        "last_12months_profitable_trades": {
-          "type": "number",
-          "pattern": "^0$",
-          "requred": 1
-        },
-        "total_trades": {
-          "type": "integer",
-          "pattern": "^0$",
-          "requred": 1
-        },
-        "trades_profitable": {
-          "type": "number",
-          "pattern": "^0$",
-          "requred": 1
-        },
-        "avg_duration": {
-          "type": "integer",
-          "pattern": "^0$",
-          "requred": 1
-        },
-        "avg_profit": {
-          "type": "number",
-          "pattern": "^0$",
-          "requred": 1
-        },
-        "avg_loss": {
-          "type": "number",
-          "pattern": "^0$",
-          "requred": 1
-        },
-        "trades_breakdown": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-          }
-        }
-      }
-    },
-    "msg_type": {
-      "type": "string",
-      "required": 1
-    },
-    "req_id": {
-      "type": "integer"
-    }
-  }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "title" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "properties" : {
+      "copytrading_statistics" : {
+         "type" : "object",
+         "properties" : {
+            "last_12months_profitable_trades" : {
+               "type" : "number",
+               "requred" : 1,
+               "enum" : [0]
+            },
+            "trades_profitable" : {
+               "requred" : 1,
+               "type" : "number",
+               "enum" : [0]
+            },
+            "active_since" : {
+               "type" : "integer"
+            },
+            "total_trades" : {
+               "enum" : [0],
+               "type" : "integer",
+               "requred" : 1
+            },
+            "avg_profit" : {
+               "enum" : [0],
+               "type" : "number",
+               "requred" : 1
+            },
+            "trades_breakdown" : {
+               "additionalProperties" : false,
+               "type" : "object",
+               "properties" : {}
+            },
+            "monthly_profitable_trades" : {
+               "additionalProperties" : false,
+               "type" : "object",
+               "properties" : {}
+            },
+            "avg_loss" : {
+               "enum" : [0],
+               "type" : "number",
+               "requred" : 1
+            },
+            "avg_duration" : {
+               "requred" : 1,
+               "type" : "integer",
+               "enum" : [0]
+            },
+            "yearly_profitable_trades" : {
+               "type" : "object",
+               "additionalProperties" : false,
+               "properties" : {}
+            }
+         },
+         "required" : [
+            "active_since"
+         ]
+      },
+      "req_id" : {
+         "type" : "integer"
+      },
+      "msg_type" : {
+         "type" : "string"
+      },
+      "echo_req" : {}
+   }
 }

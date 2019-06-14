@@ -1,39 +1,44 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "echo_req": {
-            "required": "1"
-        },
-        "get_settings": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string",
-                    "required": "1"
-                },
-                "country": {
-                    "type": "string",
-                    "pattern": "^[_1]$",
-                    "required": "1"
-                },
-                "country_code": {
-                    "type": "string",
-                    "pattern": "^[_2]$",
-                    "required": "1"
-                },
-                "email_consent": {
-                    "type": "integer",
-                    "pattern": "^(0|1)$",
-                    "required": "1"
-                }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "properties" : {
+      "get_settings" : {
+         "required" : [
+            "email_consent",
+            "country",
+            "email",
+            "country_code"
+         ],
+         "type" : "object",
+         "properties" : {
+            "email_consent" : {
+               "pattern" : "^(0|1)$",
+               "type" : "integer"
             },
-            "required": "1"
-        },
-        "msg_type":{
-            "type": "string",
-            "pattern": "^get_settings$",
-            "required": "1"
-        }
-    }
+            "country" : {
+               "type" : "string",
+               "pattern" : "^[_1]$"
+            },
+            "email" : {
+               "type" : "string"
+            },
+            "country_code" : {
+               "type" : "string",
+               "pattern" : "^[_2]$"
+            }
+         }
+      },
+      "msg_type" : {
+         "pattern" : "^get_settings$",
+         "type" : "string"
+      },
+      "echo_req" : {}
+   }
 }

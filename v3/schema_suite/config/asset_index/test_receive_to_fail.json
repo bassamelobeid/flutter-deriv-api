@@ -1,45 +1,44 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "asset_index": {
-            "type": "array",
-            "required": "1",
-            "items": {
-                "type": "array",
-                "items": [
-                    {
-                        "type": "string",
-                        "required": "1"
-                    },
-                    {
-                        "type": "string",
-                        "required": "1"
-                    },
-                    {
-                        "type": "array",
-                        "required": "1",
-                        "items": {
-                            "type": "array",
-                            "minItems": 2,
-                            "maxItems": 3,
-                            "items": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                ],
-                "additionalItems": false,
-                "uniqueItems": true
-            }
-        },
-        "echo_req": {
-            "required": "1"
-        },
-        "msg_type": {
-            "type": "string",
-            "pattern": "^asset_index$",
-            "required": "1"
-        }
-    }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "additionalProperties" : null,
+   "type" : "object",
+   "title" : null,
+   "description" : null,
+   "required" : [
+      "msg_type",
+      "asset_index",
+      "echo_req"
+   ],
+   "properties" : {
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^asset_index$"
+      },
+      "asset_index" : {
+         "type" : "array",
+         "items" : {
+             "required": ["type"], 
+            "items" : [
+               {
+                  "type" : "string"
+               },
+               {
+                  "type" : "array",
+                  "items" : {
+                     "minItems" : 2,
+                     "type" : "array",
+                     "items" : {
+                        "type" : "string"
+                     },
+                     "maxItems" : 3
+                  }
+               }
+            ],
+            "additionalItems" : false,
+            "type" : "array",
+            "uniqueItems" : true
+         }
+      },
+      "echo_req" : {}
+   }
 }

@@ -35,12 +35,12 @@ test_sendrecv_params 'copytrading_statistics/test_send.json', 'copytrading_stati
     $suite->get_stashed('authorize/authorize/loginid');
 
 $suite->free_gift($suite->get_stashed('new_account_real/new_account_real/client_id'));
-test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '10000\\\\.00', 'USD', $suite->get_stashed('authorize/authorize/loginid');
+test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', 10000, 'USD', $suite->get_stashed('authorize/authorize/loginid');
 
 test_sendrecv_params 'proposal/test_send_buy.json', 'proposal/test_receive_buy.json';
-test_sendrecv_params 'buy/test_send.json',          'buy/test_receive.json', $suite->get_stashed('proposal/proposal/id'), '99\\\\d{2}\\\\.\\\\d{2}';
+test_sendrecv_params 'buy/test_send.json',          'buy/test_receive.json', $suite->get_stashed('proposal/proposal/id'), 9948.51;
 test_sendrecv_params 'balance/test_send.json',      'balance/test_receive.json',
-    '99\\\\d{2}\\\\.\\\\d{2}', 'USD', $suite->get_stashed('authorize/authorize/loginid');
+    9948.51 , 'USD', $suite->get_stashed('authorize/authorize/loginid');
 
 test_sendrecv_params 'copytrading_statistics/test_send.json', 'copytrading_statistics/test_receive.json',
     $suite->get_stashed('authorize/authorize/loginid');
@@ -64,7 +64,7 @@ test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_cr.json
     $suite->get_stashed('new_account_real/new_account_real/oauth_token'), 'copier@binary.com', 'Vasya';
 
 $suite->free_gift($suite->get_stashed('new_account_real/new_account_real/client_id'));
-test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '10000\\\\.00', 'USD', $suite->get_stashed('authorize/authorize/loginid');
+test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', 10000, 'USD', $suite->get_stashed('authorize/authorize/loginid');
 
 test_sendrecv_params 'copytrading_list/test_send.json', 'copytrading_list/test_receive_empty.json';
 

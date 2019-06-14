@@ -1,34 +1,42 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "echo_req": {
-            "required": "1"
-        },
-        "get_account_status": {
-            "type": "object",
-            "properties": {
-                "status": {
-                    "type": "array",
-                    "required": "1"
-                },
-                "risk_classification": {
-                    "type": ["string", "null"],
-                    "pattern": "^(low|standard|high)?$",
-                    "required": "1"
-                },
-                "prompt_client_to_authenticate": {
-                    "type": "string",
-                    "pattern": "^(1|0)$",
-                    "required": "1"
-                }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "description" : null,
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "properties" : {
+      "get_account_status" : {
+         "required" : [
+            "prompt_client_to_authenticate",
+            "status",
+            "risk_classification"
+         ],
+         "properties" : {
+            "prompt_client_to_authenticate" : {
+               "type" : "string",
+               "pattern" : "^(1|0)$"
             },
-            "required": "1"
-        },
-        "msg_type":{
-            "type": "string",
-            "pattern": "^get_account_status$",
-            "required": "1"
-        }
-    }
+            "status" : {
+               "type" : "array"
+            },
+            "risk_classification" : {
+               "pattern" : "^(low|standard|high)?$",
+               "type" : [
+                  "string",
+                  "null"
+               ]
+            }
+         },
+         "type" : "object"
+      },
+      "echo_req" : {},
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^get_account_status$"
+      }
+   }
 }

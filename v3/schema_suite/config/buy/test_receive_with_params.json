@@ -1,60 +1,63 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "echo_req": {
-      "required": 1
-    },
-    "buy": {
-      "type": "object",
-      "properties": {
-        "balance_after": {
-          "type": "number",
-          "required": 1
-        },
-        "longcode": {
-          "type": "string",
-          "required": 1
-        },
-        "shortcode": {
-          "type": "string",
-          "required": 1
-        },
-        "start_time": {
-          "type": "integer",
-          "pattern": "^[0-9]{10}$",
-          "required": 1
-        },
-        "contract_id": {
-          "type": "integer",
-          "required": 1
-        },
-        "buy_price": {
-          "type": "number",
-          "pattern": "^[_2]",
-          "required": 1
-        },
-        "purchase_time": {
-          "type": "integer",
-          "pattern": "^[0-9]{10}$",
-          "required": 1
-        },
-        "transaction_id": {
-          "type": "integer",
-          "required": 1
-        },
-        "payout": {
-            "type": "number",
-            "pattern": "^[_3]",
-            "required": 1
-        }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "additionalProperties" : null,
+   "type" : "object",
+   "title" : null,
+   "description" : null,
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "properties" : {
+      "buy" : {
+         "properties" : {
+            "payout" : {
+               "type" : "number",
+               "enum" : [[_3]]
+            },
+            "purchase_time" : {
+               "type" : "integer"
+            },
+            "shortcode" : {
+               "type" : "string"
+            },
+            "contract_id" : {
+               "type" : "integer"
+            },
+            "start_time" : {
+               "type" : "integer"
+            },
+            "longcode" : {
+               "type" : "string"
+            },
+            "balance_after" : {
+               "type" : "number"
+            },
+            "buy_price" : {
+               "enum" : [[_2]],
+               "type" : "number"
+            },
+            "transaction_id" : {
+               "type" : "integer"
+            }
+         },
+         "type" : "object",
+         "required" : [
+            "payout",
+            "purchase_time",
+            "shortcode",
+            "contract_id",
+            "start_time",
+            "longcode",
+            "balance_after",
+            "buy_price",
+            "transaction_id"
+         ]
       },
-      "required": 1
-    },
-    "msg_type": {
-      "type": "string",
-      "pattern":"^buy$",
-      "required": 1
-    }
-  }
+      "msg_type" : {
+         "pattern" : "^buy$",
+         "type" : "string"
+      },
+      "echo_req" : {}
+   }
 }

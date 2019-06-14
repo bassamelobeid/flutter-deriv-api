@@ -1,29 +1,34 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "echo_req": {
-            "required": "1"
-        },
-        "error": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string",
-                    "required": "1"
-                },
-                "code": {
-                    "type": "string",
-                    "pattern": "^CashierForwardError$",
-                    "required": "1"
-                }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "description" : null,
+   "title" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "properties" : {
+      "error" : {
+         "type" : "object",
+         "properties" : {
+            "code" : {
+               "type" : "string",
+               "pattern" : "^CashierForwardError$"
             },
-            "required": "1"
-        },
-        "msg_type":{
-            "type": "string",
-            "pattern": "^cashier$",
-            "required": "1"
-        }
-    }
+            "message" : {
+               "type" : "string"
+            }
+         },
+         "required" : [
+            "code",
+            "message"
+         ]
+      },
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^cashier$"
+      },
+      "echo_req" : {}
+   }
 }

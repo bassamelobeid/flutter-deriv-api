@@ -1,40 +1,45 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "echo_req": {
-            "required": "1"
-        },
-        "new_account_maltainvest": {
-            "type": "object",
-            "properties": {
-                "client_id": {
-                    "type": "string",
-                    "pattern": "^MF[0-9]+$",
-                    "required": "1"
-                },
-                "landing_company": {
-                    "type": "string",
-                    "pattern": "^Binary Investments \\(Europe\\) Ltd$",
-                    "required": "1"
-                },
-                "landing_company_shortcode": {
-                    "type": "string",
-                    "pattern": "^maltainvest$",
-                    "required": "1"
-                },
-                "oauth_token": {
-                    "type": "string",
-                    "pattern": "^.{32}$",
-                    "required": "1"
-                }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "description" : null,
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "properties" : {
+      "new_account_maltainvest" : {
+         "type" : "object",
+         "properties" : {
+            "landing_company" : {
+               "type" : "string",
+               "pattern" : "^Binary Investments \\(Europe\\) Ltd$"
             },
-            "required": "1"
-        },
-        "msg_type": {
-            "type": "string",
-            "pattern": "^new_account_maltainvest$",
-            "required": "1"
-        }
-    }
+            "oauth_token" : {
+               "type" : "string",
+               "pattern" : "^.{32}$"
+            },
+            "client_id" : {
+               "pattern" : "^MF\\d+$",
+               "type" : "string"
+            },
+            "landing_company_shortcode" : {
+               "pattern" : "^maltainvest$",
+               "type" : "string"
+            }
+         },
+         "required" : [
+            "landing_company",
+            "oauth_token",
+            "client_id",
+            "landing_company_shortcode"
+         ]
+      },
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^new_account_maltainvest$"
+      },
+      "echo_req" : {}
+   }
 }

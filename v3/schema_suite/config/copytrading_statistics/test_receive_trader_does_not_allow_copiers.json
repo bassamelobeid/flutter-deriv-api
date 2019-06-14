@@ -1,32 +1,38 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "echo_req": {
-      "required": 1
-    },
-    "error":{
-      "type":"object",
-      "additionalProperties": false,
-      "properties": {
-        "code": {
-          "type": "string",
-          "pattern": "^CopyTradingNotAllowed$",
-          "required": 1
-        },
-        "message": {
-          "type": "string",
-          "pattern": "^Trader does not allow copy trading\\.$",
-          "required": 1
-        }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "properties" : {
+      "echo_req" : {},
+      "req_id" : {
+         "type" : "integer"
+      },
+      "error" : {
+         "required" : [
+            "code",
+            "message"
+         ],
+         "properties" : {
+            "code" : {
+               "pattern" : "^CopyTradingNotAllowed$",
+               "type" : "string"
+            },
+            "message" : {
+               "type" : "string",
+               "pattern" : "^Trader does not allow copy trading\\.$"
+            }
+         },
+         "type" : "object",
+         "additionalProperties" : false
+      },
+      "msg_type" : {
+         "type" : "string"
       }
-    },
-    "msg_type": {
-      "type": "string",
-      "required": 1
-    },
-    "req_id": {
-      "type": "integer"
-    }
-  }
+   }
 }

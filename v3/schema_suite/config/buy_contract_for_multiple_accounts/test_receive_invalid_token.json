@@ -1,44 +1,46 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "title": "Buy a Contract for multiple Accounts Receive",
-  "description": "A message with transaction results is received",
-  "properties": {
-    "buy_contract_for_multiple_accounts": {
-      "type": "object",
-      "title": "Receipt confirmation",
-      "description": "Receipt confirmation for the purchase",
-      "properties": {
-        "result": {
-          "type": "array",
-          "required": "1",
-          "items": {
-            "type": "object",
-            "title": "1 schema.",
-            "description": "An explanation about the purpose of this instance.",
-            "properties": {
-              "code": {
-                "type": "string",
-                "description": "Error code"
-              },
-              "message_to_client": {
-                "type": "string",
-                "description": "Message to client"
-              },
-              "token": {
-                "type": "string",
-                "description": "Token returned"
-              }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "title" : "Buy a Contract for multiple Accounts Receive",
+   "type" : "object",
+   "description" : "A message with transaction results is received",
+   "required" : null,
+   "properties" : {
+      "buy_contract_for_multiple_accounts" : {
+         "title" : "Receipt confirmation",
+         "type" : "object",
+         "description" : "Receipt confirmation for the purchase",
+         "properties" : {
+            "result" : {
+               "items" : {
+                  "properties" : {
+                     "code" : {
+                        "description" : "Error code",
+                        "type" : "string"
+                     },
+                     "token" : {
+                        "type" : "string",
+                        "description" : "Token returned"
+                     },
+                     "message_to_client" : {
+                        "type" : ["string",null],
+                        "description" : "Message to client"
+                     }
+                  },
+                  "description" : "An explanation about the purpose of this instance.",
+                  "type" : "object",
+                  "title" : "1 schema."
+               },
+               "type" : "array"
             }
-          }
-        }
+         },
+         "required" : [
+            "result"
+         ]
       }
-    }
-      
-    },
-    "msg_type": {
-      "type": "string",
-      "title": "buy_contract_for_multiple_accounts",
-      "description": "buy_contract_for_multiple_accounts"
-    }
-  }
+   },
+   "msg_type" : {
+      "description" : "buy_contract_for_multiple_accounts",
+      "type" : "string",
+      "title" : "buy_contract_for_multiple_accounts"
+   }
+}

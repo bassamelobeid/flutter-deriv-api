@@ -1,66 +1,61 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "active_symbols": {
-            "type": "array",
-            "required": "1",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "market": {
-                        "type": "string",
-                        "required": "1"
-                    },
-                    "market_display_name": {
-                        "type": "string",
-                        "required": "1"
-                    },
-                    "submarket": {
-                        "type": "string",
-                        "required": "1"
-                    },
-                    "submarket_display_name": {
-                        "type": "string",
-                        "required": "1"
-                    },
-                    "symbol": {
-                        "type": "string",
-                        "required": "1"
-                    },
-                    "symbol_type": {
-                        "type": "string",
-                        "required": "1"
-                    },
-                    "display_name": {
-                        "type": "string",
-                        "required": "1"
-                    },
-                    "exchange_is_open": {
-                        "type": "integer",
-                        "pattern": "^(0|1)$",
-                        "required": "1"
-                    },
-                    "is_trading_suspended": {
-                        "type": "integer",
-                        "pattern": "^(0|1)$",
-                        "required": "1"
-                    },
-                    "pip": {
-                        "type": "string",
-                        "pattern": "^0\\.0{1,4}1$",
-                        "required": "1"
-                    }
-                }
-            }
-        },
-        "echo_req": {
-            "required": "1"
-        },
-        "msg_type": {
-            "type": "string",
-            "pattern": "^active_symbols$",
-            "required": "1"
-        }
-    }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "required" : [
+      "echo_req",
+      "active_symbols",
+      "msg_type"
+   ],
+   "properties" : {
+      "echo_req" : {},
+      "active_symbols" : {
+         "items" : {
+             "required": ["submarket", "market_display_name", "is_trading_suspended", "exchange_is_open", "submarket_display_name", "display_name", "pip", "symbol", "market", "symbol_type"], 
+            "properties" : {
+               "market" : {
+                  "type" : "string"
+               },
+               "symbol" : {
+                  "type" : "string"
+               },
+               "symbol_type" : {
+               },
+               "submarket" : {
+                  "type" : "string"
+               },
+               "market_display_name" : {
+                  "type" : "string"
+               },
+               "is_trading_suspended" : {
+                  "type" : "integer",
+                  "enum" : [0,1]
+               },
+               "submarket_display_name" : {
+                  "type" : "string"
+               },
+               "exchange_is_open" : {
+                  "type" : "integer",
+                  "enum" : [0,1]
+               },
+               "pip" : {
+                  "type" : "number",
+                  "minimum": 0.00001,
+                  "maximum": 0.01
+               },
+               "display_name" : {
+                  "type" : "string"
+               }
+            },
+            "type" : "object"
+         },
+         "type" : "array"
+      },
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^active_symbols$"
+      }
+   }
 }

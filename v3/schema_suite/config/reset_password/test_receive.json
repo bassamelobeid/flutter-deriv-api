@@ -1,19 +1,23 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "reset_password": {
-      "type": "integer",
-      "pattern": "^1$",
-      "required": "1"
-    },
-    "echo_req": {
-        "required": "1"
-    },
-    "msg_type": {
-      "type": "string",
-      "pattern": "^reset_password$",
-      "required": "1"
-    }
-  }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "reset_password",
+      "echo_req",
+      "msg_type"
+   ],
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "description" : null,
+   "properties" : {
+      "reset_password" : {
+         "type" : "integer",
+         "enum" : [1]
+      },
+      "echo_req" : {},
+      "msg_type" : {
+         "pattern" : "^reset_password$",
+         "type" : "string"
+      }
+   }
 }

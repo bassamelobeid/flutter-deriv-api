@@ -1,71 +1,66 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "echo_req": {
-        "required": "1"
-    },
-    "app_list": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-            "name": {
-              "type": "string",
-              "pattern": "^.+$",
-              "required": "1"
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "additionalProperties" : null,
+   "type" : "object",
+   "title" : null,
+   "description" : null,
+   "required" : [
+      "echo_req",
+      "app_list",
+      "msg_type"
+   ],
+   "properties" : {
+      "echo_req" : {},
+      "app_list" : {
+         "type" : "array",
+         "items" : {
+             "required": ["verification_uri", "appstore", "homepage", "app_markup_percentage", "scopes", "name", "redirect_uri", "github", "googleplay", "app_id"],
+            "properties" : {
+               "verification_uri" : {
+                  "type" : "string"
+               },
+               "appstore" : {
+                  "type" : "string"
+               },
+               "homepage" : {
+                  "type" : "string"
+               },
+               "app_markup_percentage" : {
+                  "type" : "number"
+               },
+               "scopes" : {
+                  "items" : {
+                     "type" : "string",
+                     "pattern" : "^(look|trade|payments|admin)$"
+                  },
+                  "maxItem" : 4,
+                  "minItem" : 1,
+                  "type" : "array"
+               },
+               "name" : {
+                  "pattern" : "^.+$",
+                  "type" : "string"
+               },
+               "redirect_uri" : {
+                  "type" : "string"
+               },
+               "github" : {
+                  "type" : "string"
+               },
+               "googleplay" : {
+                  "type" : "string"
+               },
+               "app_id" : {
+                  "enum" : [[_1]],
+                  "type" : "integer"
+               }
             },
-            "app_id": {
-              "type": "integer",
-              "pattern": "(?!^[_1]$)(^.*$)",
-              "required": "1"
-            },
-            "scopes": {
-              "type": "array",
-              "minItem": 1,
-              "maxItem": 4,
-              "items": {
-                "type": "string",
-                "pattern": "^(look|trade|payments|admin)$"
-              },
-              "required": "1"
-            },
-            "redirect_uri": {
-              "type": "string",
-              "required": "1"
-            },
-            "verification_uri": {
-              "type": "string",
-              "required": "1"
-            },
-            "homepage": {
-              "type": "string",
-              "required": "1"
-            },
-            "github": {
-              "type": "string",
-              "required": "1"
-            },
-            "appstore": {
-              "type": "string",
-              "required": "1"
-            },
-            "googleplay": {
-              "type": "string",
-              "required": "1"
-            },
-            "app_markup_percentage": {
-              "type": "number",
-              "required": "1"
-            }
-        }
+            "type" : "object"
+         }
       },
-      "required": "1"
-    },
-    "msg_type": {
-      "type": "string",
-      "pattern": "^app_list$",
-      "required": "1"
-    }
-  }
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^app_list$"
+      }
+   }
 }

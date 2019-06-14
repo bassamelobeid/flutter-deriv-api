@@ -1,85 +1,91 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "echo_req": {
-      "required": 1
-    },
-    "copytrading_statistics": {
-      "type":"object",
-      "properties": {
-        "active_since": {
-          "type": "integer",
-          "pattern": "^[0-9]+$",
-          "required": 1
-        },
-        "monthly_profitable_trades": {
-          "type": "object",
-          "patternProperties": {
-            "^[0-9]{4}\\-[0-9]{2}$": {
-              "type": "number",
-              "pattern": "^-?[0-9]\\.[0-9]{2}([1-9]0|0[1-9]|[1-9]{2})$",
-              "required": 1
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "additionalProperties" : null,
+   "type" : "object",
+   "title" : null,
+   "description" : null,
+   "properties" : {
+      "copytrading_statistics" : {
+         "type" : "object",
+         "properties" : {
+            "active_since" : {
+               "pattern" : "^\\d+$",
+               "type" : "integer"
+            },
+            "trades_profitable" : {
+               "type" : "number",
+               "enum" : [0]
+            },
+            "last_12months_profitable_trades" : {
+               "type" : "number"
+            },
+            "avg_duration" : {
+               "enum" : [0],
+               "type" : "integer"
+            },
+            "avg_loss" : {
+               "enum" : [0],
+               "type" : "number"
+            },
+            "yearly_profitable_trades" : {
+                "minPropoerties": 1, 
+               "patternProperties" : {
+                  "^[0-9]{4}$" : {
+                     "type" : "number"
+                  }
+               },
+               "type" : "object"
+            },
+            "total_trades" : {
+               "type" : "integer",
+               "enum" : [0]
+            },
+            "monthly_profitable_trades" : {
+                "minPropoerties": 1, 
+               "type" : "object",
+               "patternProperties" : {
+                  "^[0-9]{4}\\-[0-9]{2}$" : {
+                     "type" : "number"
+                  }
+               }
+            },
+            "trades_breakdown" : {
+                "minPropoerties": 1, 
+               "patternProperties" : {
+                  "^\\w+$" : {
+                     "type" : "number"
+                  }
+               },
+               "type" : "object"
+            },
+            "avg_profit" : {
+               "type" : "number",
+               "enum" : [0.0000]
             }
-          }
-        },
-        "yearly_profitable_trades": {
-          "type": "object",
-          "patternProperties": {
-            "^[0-9]{4}$": {
-              "type": "number",
-              "pattern": "^-?[0-9]\\.[0-9]{2}([1-9]0|0[1-9]|[1-9]{2})$",
-              "required": 1
-            }
-          }
-        },
-        "last_12months_profitable_trades": {
-          "type": "number",
-          "pattern": "^-?[0-9]\\.[0-9]{2}([1-9]0|0[1-9]|[1-9]{2})$",
-          "requred": 1
-        },
-        "total_trades": {
-          "type": "integer",
-          "pattern": "^0$",
-          "requred": 1
-        },
-        "trades_profitable": {
-          "type": "number",
-          "pattern": "^0\\.0000$",
-          "requred": 1
-        },
-        "avg_duration": {
-          "type": "integer",
-          "pattern": "^0$",
-          "requred": 1
-        },
-        "avg_profit": {
-          "type": "number",
-          "pattern": "^0\\.0000$",
-          "requred": 1
-        },
-        "avg_loss": {
-          "type": "number",
-          "pattern": "^0\\.0000$",
-          "requred": 1
-        },
-        "trades_breakdown": {
-          "type": "object",
-          "patternProperties": {
-            "^\\w+$": {
-              "type": "object",
-              "required": 1
-            }
-          }
-        }
-      }
-    },
-    "msg_type": {
-      "type": "string",
-      "required": 1
-    },
-    "req_id": {
-      "type": "integer"
-    }
-  }
+         },
+         "required" : [
+            "active_since",
+            "trades_profitable",
+            "last_12months_profitable_trades",
+            "avg_duration",
+            "avg_loss", 
+            "yearly_profitable_trades",
+            "total_trades",
+            "monthly_profitable_trades",
+            "trades_breakdown",
+            "avg_profit"
+         ]
+      },
+      "msg_type" : {
+         "type" : "string"
+      },
+      "req_id" : {
+         "type" : "integer"
+      },
+      "echo_req" : {}
+   }
 }

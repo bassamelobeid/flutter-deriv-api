@@ -3,31 +3,28 @@
    "title" : "copytrading list",
    "description" : "Details of copiers and/or traders for Copy Trading",
    "type" : "object",
-
+    "required": ["echo_req", "msg_type"],
    "properties" : {
       "echo_req" : {
-         "required" : 1,
          "pattern" : "copytrading_list"
       },
 
       "msg_type" : {
          "type" : "string",
-         "required" : 1,
          "pattern" : "copytrading_list"
       },
       "copytrading_list" : {
          "title" : "copytrading list",
          "description" : "trading copiers or traders info",
          "type" : "object",
+         "required" : ["copiers", "traders" ],
          "properties" : {
             "copiers" : {
-               "required" : 1,
                "description" : "List of users who are currently copy trading the authenticated user",
                "type" : "array",
                "maxItems" : 0
             },
             "traders" : {
-               "required" : 1,
                "description" : "List of users who are currently copy trading the authenticated user",
                "type" : "array",
                "maxItems" : 0

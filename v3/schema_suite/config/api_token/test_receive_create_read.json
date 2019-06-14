@@ -1,56 +1,62 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "api_token": {
-      "type": "object",
-      "properties": {
-        "tokens": {
-          "type": "array",
-          "items": {
-              "type": "object",
-              "properties": {
-                  "scopes": {
-                      "minItems": 1,
-                      "items": {
-                        "type": "string",
-                        "pattern": "^read$"
-                      },
-                      "required": "1"
-                  },
-                  "token": {
-                      "type": "string",
-                      "pattern": "^.{15}$",
-                      "required": "1"
-                  },
-                  "display_name": {
-                      "type": "string",
-                      "pattern": "^test$",
-                      "required": "1"
-                  },
-                  "last_used": {
-                      "type": ["string", "null"],
-                      "pattern": "^([0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2})?$",
-                      "required": "1"
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "description" : null,
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "properties" : {
+      "msg_type" : {
+         "pattern" : "^api_token$",
+         "type" : "string"
+      },
+      "echo_req" : {},
+      "api_token" : {
+         "type" : "object",
+         "properties" : {
+            "new_token" : {
+               "type" : "integer",
+               "enum" : [1]
+            },
+            "tokens" : {
+               "type" : "array",
+               "items" : {
+                  "type" : "object",
+                  "required": ["token", "last_used", "scopes", "display_name"], 
+                  "properties" : {
+                     "token" : {
+                        "pattern" : "^.{15}$",
+                        "type" : "string"
+                     },
+                     "last_used" : {
+                        "type" : [
+                           "string",
+                           "null"
+                        ],
+                        "pattern" : "^(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2})?$"
+                     },
+                     "scopes" : {
+                        "items" : {
+                           "type" : "string",
+                           "pattern" : "^read$"
+                        },
+                        "minItems" : 1
+                     },
+                     "display_name" : {
+                        "pattern" : "^test$",
+                        "type" : "string"
+                     }
                   }
-              }
-          },
-          "required": "1"
-        },
-        "new_token": {
-          "type":"integer",
-          "pattern": "^1$",
-          "required": "1"
-        }
+               }
+            }
+         },
+         "required" : [
+            "new_token",
+            "tokens"
+         ]
       }
-    },
-    "echo_req": {
-        "required": "1"
-    },
-    "msg_type": {
-      "type": "string",
-      "pattern": "^api_token$",
-      "required": "1"
-    }
-  }
+   }
 }

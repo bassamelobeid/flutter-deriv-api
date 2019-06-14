@@ -218,8 +218,8 @@ sub check_last_statement {
     test_schema('statement', $statement_res);
     is($statement_res->{statement}->{count}, 1, 'Statement result is not empty');
     is($statement_res->{statement}->{transactions}[0]->{transaction_id}, $transaction_id, 'The same trasaction id in statement') if $transaction_id;
-    cmp_ok($statement_res->{statement}->{transactions}[0]->{amount},        '==', $amount,  'Correct amount in statement');
-    cmp_ok($statement_res->{statement}->{transactions}[0]->{balance_after}, '==', $balance, 'Correct balance in statement');
+    cmp_ok(sprintf("%.5f",$statement_res->{statement}->{transactions}[0]->{amount}), '==', sprintf("%.5f",$amount),  'Correct amount in statement');
+    cmp_ok(sprintf("%.5f",$statement_res->{statement}->{transactions}[0]->{balance_after}), '==', sprintf("%.5f",$balance),  'Correct balance in statement');
     is($statement_res->{statement}->{transactions}[0]->{action_type}, $action_type, 'Correct action type in statement');
     like($statement_res->{statement}->{transactions}[0]->{longcode}, $longcode);
 }

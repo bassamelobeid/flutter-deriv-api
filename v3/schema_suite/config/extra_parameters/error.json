@@ -1,30 +1,34 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "error": {
-            "type": "object",
-            "required": "1",
-            "properties": {
-                "code": {
-                    "type": "string",
-                    "pattern": "^InputValidationFailed",
-                    "required": "1"
-                },
-                "message": {
-                    "type": "string",
-                    "pattern": "Input validation failed: [_1]",
-                    "required": "1"
-                },
-                "details": {
-                    "type": "object",
-                    "required": "1",
-                    "[_1]" : { "type": "string",
-                        "pattern": "the schema does not allow additional properties",
-                        "required": "1"
-                    }
-                }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : ["error"],
+   "description" : null,
+   "type" : "object",
+   "title" : null,
+   "properties" : {
+      "error" : {
+         "properties" : {
+            "message" : {
+               "type" : "string",
+               "pattern" : "Input validation failed: [_1]"
+            },
+            "code" : {
+               "pattern" : "^InputValidationFailed",
+               "type" : "string"
+            },
+            "details" : {
+               "type" : "object",
+               "[_1]" : {
+                  "type" : "string",
+                  "pattern" : "the yschema does not allow additional properties"
+               }
             }
-        }
-    }
+         },
+         "type" : "object",
+         "required" : [
+            "details",
+            "message",
+            "code"
+         ]
+      }
+   }
 }

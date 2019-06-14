@@ -2,7 +2,8 @@
     "$schema" : "http://json-schema.org/draft-04/schema#",
     "required" : [
         "echo_req",
-        "msg_type"
+        "msg_type",
+        "subscription"
     ],
     "type" : "object",
     "description" : null,
@@ -13,7 +14,7 @@
             "type" : "string"
         },
         "website_status" : {
-            "required" : ["currencies_config", "api_call_limits", "supported_languages", "site_status", "terms_conditions_version", "clients_country", "subscription"],
+            "required" : ["currencies_config", "api_call_limits", "supported_languages", "site_status", "terms_conditions_version", "clients_country"],
             "properties" : {
                 "supported_languages" : {
                     "description" : "Provides codes for languages supported",
@@ -164,12 +165,11 @@
             "title" : "Subscription information",
             "description" : "For subscription requests only.",
             "type" : "object",
-            "required": 1,
+            "required": ["id"],
             "properties": {
                "id" : {
                 "description": "A stream id that can be used to cancel this stream using the Forget request.",
-                "type" : "string",
-                "required" : 1
+                "type" : "string"
                }
             }
         }

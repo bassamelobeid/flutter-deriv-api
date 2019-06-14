@@ -1,104 +1,109 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "echo_req": {
-        "required": "1"
-    },
-    "authorize": {
-      "type": "object",
-      "properties": {
-        "email": {
-          "type": "string",
-          "pattern": "^[_2]$",
-          "required": "1"
-        },
-        "currency": {
-          "type": "string",
-          "pattern": "^$",
-          "required": "1"
-        },
-        "balance": {
-          "type": "number",
-          "pattern": "^0.00$",
-          "required": "1"
-        },
-        "loginid": {
-          "type": "string",
-          "pattern": "^MX[0-9]+$",
-          "required": "1"
-        },
-        "is_virtual": {
-          "type": "string",
-          "pattern": "^0$",
-          "required": "1"
-        },
-        "landing_company_name": {
-          "type": "string",
-          "pattern": "^iom$",
-          "required": "1"
-        },
-        "landing_company_fullname": {
-          "type": "string",
-          "pattern": "^Binary \\(IOM\\) Ltd$",
-          "required": "1"
-        },
-        "country": {
-          "type": "string",
-          "pattern": "^[a-z]{0,2}$",
-          "required": "1"
-        },
-        "fullname": {
-          "type": "string",
-          "pattern": "^Mr [_3] Pan$",
-          "required": "1"
-        },
-        "scopes": {
-          "type": "array",
-          "minItems": 4,
-          "items": {
-            "type": "string",
-            "pattern": "^(admin|payments|read|trade)$"
-          },
-          "required": "1"
-        },
-        "account_list": {
-          "type": "array",
-          "description": "List of accounts for current client",
-          "items": {
-            "type": "object",
-            "properties": {
-              "currency": {
-                "type": "string"
-              },
-              "excluded_until": {
-                "type": "integer"
-              },
-              "is_disabled": {
-                "type": "integer",
-                "pattern": "^(1|0)$"
-              },
-              "is_virtual": {
-                "type": "integer",
-                "pattern": "^(1|0)$"
-              },
-              "landing_company_name": {
-                "type": "string"
-              },
-              "loginid": {
-                "type": "string",
-                "pattern": "^[A-Z]{2,4}[0-9]+$"
-              }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "title" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "description" : null,
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "properties" : {
+      "authorize" : {
+         "properties" : {
+            "country" : {
+               "type" : "string",
+               "pattern" : "^[a-z]{0,2}$"
+            },
+            "currency" : {
+               "pattern" : "^$",
+               "type" : "string"
+            },
+            "landing_company_fullname" : {
+               "type" : "string",
+               "pattern" : "^Binary \\(IOM\\) Ltd$"
+            },
+            "loginid" : {
+               "type" : "string",
+               "pattern" : "^MX\\d+$"
+            },
+            "fullname" : {
+               "pattern" : "^Mr [_3] Pan$",
+               "type" : "string"
+            },
+            "account_list" : {
+               "type" : "array",
+               "description" : "List of accounts for current client",
+               "items" : {
+                  "properties" : {
+                     "excluded_until" : {
+                        "type" : "integer"
+                     },
+                     "currency" : {
+                        "type" : "string"
+                     },
+                     "is_virtual" : {
+                        "enum" : [0,1],
+                        "type" : "integer"
+                     },
+                     "loginid" : {
+                        "type" : "string",
+                        "pattern" : "^[A-Z]{2,4}\\d+$"
+                     },
+                     "landing_company_name" : {
+                        "type" : "string"
+                     },
+                     "is_disabled" : {
+                        "type" : "integer",
+                        "enum" : [0,1]
+                     }
+                  },
+                  "type" : "object"
+               }
+            },
+            "scopes" : {
+               "type" : "array",
+               "minItems" : 4,
+               "items" : {
+                  "type" : "string",
+                  "pattern" : "^(admin|payments|read|trade)$"
+               }
+            },
+            "balance" : {
+               "enum" : [0],
+               "type" : "number"
+            },
+            "is_virtual" : {
+               "enum" : [0],
+               "type" : "integer"
+            },
+            "landing_company_name" : {
+               "type" : "string",
+               "pattern" : "^iom$"
+            },
+            "email" : {
+               "pattern" : "^[_2]$",
+               "type" : "string"
             }
-          }
-        }
+         },
+         "type" : "object",
+         "required" : [
+            "country",
+            "currency",
+            "landing_company_fullname",
+            "loginid",
+            "fullname",
+            "scopes",
+            "balance",
+            "is_virtual",
+            "landing_company_name",
+            "email"
+         ]
       },
-      "required": "1"
-    },
-    "msg_type": {
-        "type": "string",
-        "pattern": "^authorize$",
-        "required": "1"
-    }
-  }
+      "echo_req" : {},
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^authorize$"
+      }
+   }
 }

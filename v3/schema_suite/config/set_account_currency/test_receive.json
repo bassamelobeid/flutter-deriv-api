@@ -1,19 +1,23 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "echo_req": {
-        "required": "1"
-    },
-    "set_account_currency": {
-      "type": "integer",
-      "pattern": "^1$",
-      "required": "1"
-    },
-    "msg_type": {
-      "type": "string",
-      "pattern": "^set_account_currency$",
-      "required": "1"
-    }
-  }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "description" : null,
+   "required" : [
+      "msg_type",
+      "set_account_currency",
+      "echo_req"
+   ],
+   "properties" : {
+      "msg_type" : {
+         "pattern" : "^set_account_currency$",
+         "type" : "string"
+      },
+      "set_account_currency" : {
+         "type" : "integer",
+         "enum" : [1]
+      },
+      "echo_req" : {}
+   }
 }

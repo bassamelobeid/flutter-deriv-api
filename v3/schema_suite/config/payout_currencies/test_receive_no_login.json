@@ -1,28 +1,32 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "echo_req": {
-      "type": "object",
-      "required": "1",
-      "payout_currencies": {
-        "type": "number",
-        "required": "1"
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "payout_currencies",
+      "msg_type",
+      "echo_req"
+   ],
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "description" : null,
+   "properties" : {
+      "payout_currencies" : {
+         "items" : {
+            "type" : "string",
+            "pattern" : "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB)$"
+         },
+         "minItems" : 7,
+         "type" : "array"
+      },
+      "echo_req" : {
+         "type" : "object",
+         "required" : ["payout_currencies"],
+         "payout_currencies" : {
+            "type" : "number"
+         }
+      },
+      "msg_type" : {
+         "type" : "string"
       }
-    },
-    "payout_currencies": {
-      "type": "array",
-      "minItems": 7,
-      "required": "1",
-      "items": {
-        "type": "string",
-        "pattern": "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB)$",
-        "required": "1"
-      }
-    },
-    "msg_type":{
-        "type":"string",
-        "required": "1"
    }
-  }
 }

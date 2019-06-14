@@ -1,17 +1,21 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "error": {
-        "type": "object",
-        "properties": {
-            "message_to_client": {
-                "type": "string",
-                "required": "1"
-            },
-            "code": {
-                "type": "string",
-                "pattern": "^CurrencyTypeNotAllowed$",
-                "required": "1"
-            }
-        }
-    }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : null,
+   "required" : null,
+   "error" : {
+      "properties" : {
+         "code" : {
+            "pattern" : "^CurrencyTypeNotAllowed$",
+            "type" : "string"
+         },
+         "message_to_client" : {
+            "type" : "string"
+         }
+      },
+      "type" : "object",
+      "required": ["code", "message_to_client"]
+   }
 }

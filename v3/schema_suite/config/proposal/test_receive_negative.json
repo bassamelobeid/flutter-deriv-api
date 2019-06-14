@@ -1,20 +1,26 @@
 {
-  "echo_req": {
-    "amount": -1,
-    "basis": "payout",
-    "contract_type": "CALL",
-    "currency": "USD",
-    "duration": "60",
-    "duration_unit": "s",
-    "proposal": 1,
-    "symbol": "R_100"
-  },
-  "error": {
-    "code": "InputValidationFailed",
-    "details": {
-      "amount": "must be greater than or equal to minimum value 0"
-    },
-    "message": "Input validation failed: amount"
-  },
-  "msg_type": "proposal"
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "additionalProperties" : null,
+   "type" : null,
+   "title" : null,
+   "description" : null,
+   "required" : null,
+   "echo_req" : {
+      "basis" : "payout",
+      "duration_unit" : "s",
+      "symbol" : "R_100",
+      "amount" : -1,
+      "currency" : "USD",
+      "duration" : "60",
+      "contract_type" : "CALL",
+      "proposal" : 1
+   },
+   "error" : {
+      "details" : {
+         "amount" : "must be greater than or equal to minimum value 0"
+      },
+      "code" : "InputValidationFailed",
+      "message" : "Input validation failed: amount"
+   },
+   "msg_type" : "proposal"
 }

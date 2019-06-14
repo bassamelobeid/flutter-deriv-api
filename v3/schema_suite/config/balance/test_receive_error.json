@@ -1,29 +1,34 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "echo_req": {
-            "required": "1"
-        },
-        "error": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string",
-                    "required": "1"
-                },
-                "code": {
-                    "type": "string",
-                    "pattern": "^AuthorizationRequired$",
-                    "required": "1"
-                }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "description" : null,
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "properties" : {
+      "echo_req" : {},
+      "error" : {
+         "type" : "object",
+         "properties" : {
+            "message" : {
+               "type" : "string"
             },
-            "required": "1"
-        },
-        "msg_type":{
-            "type": "string",
-            "pattern": "^balance$",
-            "required": "1"
-        }
-    }
+            "code" : {
+               "pattern" : "^AuthorizationRequired$",
+               "type" : "string"
+            }
+         },
+         "required" : [
+            "message",
+            "code"
+         ]
+      },
+      "msg_type" : {
+         "pattern" : "^balance$",
+         "type" : "string"
+      }
+   }
 }

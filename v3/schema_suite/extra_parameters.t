@@ -29,12 +29,11 @@ subtest 'Check specfic calls' => sub {
         $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test@binary.com';
 
     test_sendrecv_params 'extra_parameters/buy.json', 'extra_parameters/error.json', '.*parameters';
-
     test_sendrecv_params 'extra_parameters/buy_contract_for_multiple_accounts.json', 'extra_parameters/error.json', '.*parameters',
         $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token');
 
     test_sendrecv_params 'extra_parameters/proposal_array.json', 'extra_parameters/error.json', '.*barriers.0';
-};
+    };
 
 subtest 'Nested objects in all calls' => sub {
     for my $call_name (path($SCHEMA_DIR)->children) {

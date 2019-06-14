@@ -1,49 +1,52 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "echo_req": {
-        "required": "1"
-    },
-    "oauth_apps": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "required": "1"
-          },
-          "app_id": {
-            "type": "integer",
-            "required": "1"
-          },
-          "last_used": {
-            "type": ["string", "null"],
-            "required": "1"
-          },
-          "scopes": {
-            "type": "array",
-            "minItems": 1,
-            "maxItems": 4,
-            "items": {
-              "type": "string",
-              "pattern": "^(read|trade|payments|admin)$"
-            },
-            "required": "1"
-          },
-          "app_markup_percentage": {
-            "type": "number",
-            "required": "1"
-          }
-        }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "additionalProperties" : null,
+   "title" : null,
+   "type" : "object",
+   "required" : [
+      "msg_type",
+      "echo_req",
+      "oauth_apps"
+   ],
+   "properties" : {
+      "msg_type" : {
+         "pattern" : "^oauth_apps$",
+         "type" : "string"
       },
-      "required": "1"
-    },
-    "msg_type": {
-      "type": "string",
-      "pattern": "^oauth_apps$",
-      "required": "1"
-    }
-  }
+      "echo_req" : {},
+      "oauth_apps" : {
+         "items" : {
+            "type" : "object",
+            "required": ["last_used", "name", "app_id", "scopes", "app_markup_percentage"],
+            "properties" : {
+               "last_used" : {
+                  "type" : [
+                     "string",
+                     "null"
+                  ]
+               },
+               "name" : {
+                  "type" : "string"
+               },
+               "app_id" : {
+                  "type" : "integer"
+               },
+               "scopes" : {
+                  "minItems" : 1,
+                  "type" : "array",
+                  "items" : {
+                     "pattern" : "^(read|trade|payments|admin)$",
+                     "type" : "string"
+                  },
+                  "maxItems" : 4
+               },
+               "app_markup_percentage" : {
+                  "type" : "number"
+               }
+            }
+         },
+         "type" : "array"
+      }
+   }
 }

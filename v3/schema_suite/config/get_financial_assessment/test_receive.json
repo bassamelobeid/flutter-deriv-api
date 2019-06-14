@@ -1,111 +1,116 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "echo_req": {
-        "required": "1"
-    },
-    "get_financial_assessment": {
-      "type": "object",
-      "properties": {
-        "account_turnover": {
-          "type": "string",
-          "pattern": "^Less than \\$25\\,000$"
-        },
-        "forex_trading_frequency": {
-          "type": "string",
-          "pattern": "^0\\-5 transactions in the past 12 months$"
-        },
-        "forex_trading_experience": {
-          "type": "string",
-          "pattern": "^Over 3 years$"
-        },
-        "binary_options_trading_frequency": {
-          "type": "string",
-          "pattern": "^40 transactions or more in the past 12 months$"
-        },
-        "binary_options_trading_experience": {
-          "type": "string",
-          "pattern": "^1\\-2 years$"
-        },
-        "cfd_trading_frequency": {
-          "type": "string",
-          "pattern": "^0\\-5 transactions in the past 12 months$"
-        },
-        "cfd_trading_experience": {
-          "type": "string",
-          "pattern": "^1\\-2 years$"
-        },
-        "other_instruments_trading_frequency": {
-          "type": "string",
-          "pattern": "^6\\-10 transactions in the past 12 months$"
-        },
-        "other_instruments_trading_experience": {
-          "type": "string",
-          "pattern": "^Over 3 years$"
-        },
-        "employment_industry": {
-          "type": "string",
-          "pattern": "^Finance$",
-          "required": "1"
-        },
-        "education_level": {
-          "type": "string",
-          "pattern": "^Secondary$",
-          "required": "1"
-        },
-        "income_source": {
-          "type": "string",
-          "pattern": "^Self\\-Employed$",
-          "required": "1"
-        },
-        "net_income": {
-          "type": "string",
-          "pattern": "^\\$25\\,000 \\- \\$50\\,000$",
-          "required": "1"
-        },
-        "estimated_worth": {
-          "type": "string",
-          "pattern": "^\\$100\\,000 \\- \\$250\\,000$",
-          "required": "1"
-        },
-        "employment_status": {
-          "type": "string",
-          "pattern": "^Self-Employed$",
-          "required": "1"
-        },
-        "source_of_wealth": {
-          "type": "string",
-          "pattern": "^Company Ownership$",
-          "required": "1"
-        },
-        "total_score": {
-          "type": "integer",
-          "description": "Total Score",
-          "pattern": "^[_1]$"
-        },
-        "cfd_score": {
-          "type": "integer",
-          "description": "CFD Score",
-          "pattern": "^[_2]$"
-        },
-        "trading_score": {
-          "type": "integer",
-          "description": "Trading Experience Score",
-          "pattern": "^[_3]$"
-        },
-        "financial_information_score": {
-          "type": "integer",
-          "description": "Financial Information Score",
-          "pattern": "^[_4]$"
-        }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "type" : "object",
+   "additionalProperties" : null,
+   "title" : null,
+   "description" : null,
+   "properties" : {
+      "get_financial_assessment" : {
+         "properties" : {
+            "binary_options_trading_experience" : {
+               "type" : "string",
+               "pattern" : "^1\\-2 years$"
+            },
+            "forex_trading_frequency" : {
+               "type" : "string",
+               "pattern" : "^0\\-5 transactions in the past 12 months$"
+            },
+            "source_of_wealth" : {
+               "pattern" : "^Company Ownership$",
+               "type" : "string"
+            },
+            "binary_options_trading_frequency" : {
+               "pattern" : "^40 transactions or more in the past 12 months$",
+               "type" : "string"
+            },
+            "financial_information_score" : {
+               "description" : "Financial Information Score",
+               "type" : "integer",
+               "enum" : [[_4]]
+            },
+            "forex_trading_experience" : {
+               "type" : "string",
+               "pattern" : "^Over 3 years$"
+            },
+            "cfd_trading_frequency" : {
+               "pattern" : "^0\\-5 transactions in the past 12 months$",
+               "type" : "string"
+            },
+            "trading_score" : {
+               "type" : "integer",
+               "description" : "Trading Experience Score",
+               "enum" : [[_3]]
+            },
+            "total_score" : {
+               "description" : "Total Score",
+               "type" : "integer",
+               "enum" : [[_1]]
+            },
+            "net_income" : {
+               "pattern" : "^\\$25\\,000 \\- \\$50\\,000$",
+               "type" : "string"
+            },
+            "other_instruments_trading_experience" : {
+               "type" : "string",
+               "pattern" : "^Over 3 years$"
+            },
+            "estimated_worth" : {
+               "pattern" : "^\\$100\\,000 \\- \\$250\\,000$",
+               "type" : "string"
+            },
+            "employment_status" : {
+               "pattern" : "^Self-Employed$",
+               "type" : "string"
+            },
+            "employment_industry" : {
+               "pattern" : "^Finance$",
+               "type" : "string"
+            },
+            "education_level" : {
+               "pattern" : "^Secondary$",
+               "type" : "string"
+            },
+            "other_instruments_trading_frequency" : {
+               "pattern" : "^6\\-10 transactions in the past 12 months$",
+               "type" : "string"
+            },
+            "cfd_trading_experience" : {
+               "type" : "string",
+               "pattern" : "^1\\-2 years$"
+            },
+            "income_source" : {
+               "pattern" : "^Self\\-Employed$",
+               "type" : "string"
+            },
+            "account_turnover" : {
+               "type" : "string",
+               "pattern" : "^Less than \\$25\\,000$"
+            },
+            "cfd_score" : {
+               "enum" : [[_2]],
+               "description" : "CFD Score",
+               "type" : "integer"
+            }
+         },
+         "type" : "object",
+         "required" : [
+            "source_of_wealth",
+            "net_income",
+            "estimated_worth",
+            "employment_status",
+            "employment_industry",
+            "education_level",
+            "income_source"
+         ]
       },
-      "required": "1"
-    },
-    "msg_type": {
-      "type": "string",
-      "pattern": "^get_financial_assessment$",
-      "required": "1"
-    }
-  }
+      "msg_type" : {
+         "pattern" : "^get_financial_assessment$",
+         "type" : "string"
+      },
+      "echo_req" : {}
+   }
 }
