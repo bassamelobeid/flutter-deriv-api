@@ -25,9 +25,9 @@
          "description" : "Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."
       },
       "change_password" : {
-         "pattern" : "^1$",
+         "enum" : [1],
          "description" : "Must be 1",
-         "type" : "string"
+         "type" : "number"
       },
       "req_id" : {
          "description" : "Optional field to map request to response",

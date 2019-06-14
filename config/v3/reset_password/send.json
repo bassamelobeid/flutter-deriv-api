@@ -25,8 +25,8 @@
          "pattern" : "^[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}$"
       },
       "reset_password" : {
-         "pattern" : "^1$",
-         "type" : "string"
+         "enum" : [1],
+         "type" : "number"
       },
       "passthrough" : {
          "type" : "object",
