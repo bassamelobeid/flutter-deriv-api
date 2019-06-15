@@ -105,8 +105,10 @@ sub _get_generator {
     return $self->{generator} //= Amazon::S3::SignedURLGenerator->new(
         aws_access_key_id     => $self->{config}->{aws_access_key_id},
         aws_secret_access_key => $self->{config}->{aws_secret_access_key},
-        prefix                => 'https://s3-' . $self->{config}->{aws_region} . '.amazonaws.com/',
-        expires               => $expiry,
+        # Here we do a special process on `us-east-1` because as a default region, its url has no rigion part
+        # Please refer to https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html#access-bucket-intro
+        prefix => 'https://s3' . ($self->{config}->{aws_region} eq 'us-east-1' ? "" : '-' . $self->{config}{aws_region}) . '.amazonaws.com/',
+        expires => $expiry,
     );
 }
 
