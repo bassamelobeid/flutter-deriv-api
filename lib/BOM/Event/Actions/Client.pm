@@ -20,7 +20,7 @@ use IO::Async::Loop;
 use Locale::Codes::Country qw(country_code2code);
 use DataDog::DogStatsd::Helper;
 use Brands;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Template::AutoFilter;
 use List::Util qw(any);
 use List::UtilsBy qw(rev_nsort_by);
@@ -193,7 +193,7 @@ sub document_upload {
 
     return if (BOM::Config::Runtime->instance->app_config->system->suspend->onfido);
 
-    return try {
+    try {
         my $loginid = $args->{loginid}
             or die 'No client login ID supplied?';
         my $file_id = $args->{file_id}
@@ -326,22 +326,21 @@ sub document_upload {
                             # a race condition: if 2 documents are uploaded simultaneously, then we'll
                             # assume that we've also processed and sent to Onfido, but one of those may
                             # still be stuck in the queue.
-                            $onfido->document_list(applicant_id => $applicant->id)->merge($onfido->photo_list(applicant_id => $applicant->id))
-                                ->as_list->on_ready(
-                                sub {
-                                    my $f = shift;
-                                    DataDog::DogStatsd::Helper::stats_timing("event.document_upload.onfido.list_documents." . $f->state . ".elapsed",
-                                        $f->elapsed,);
-                                }
+                            Future->needs_all(
+                                $onfido->document_list(applicant_id => $applicant->id)->as_arrayref,
+                                $onfido->photo_list(applicant_id => $applicant->id)->as_arrayref
                                 )->then(
                                 sub {
-                                    my @documents = @_;
+                                    my ($documents, $photos) = @_;
+
+                                    $log->debugf('Have %d documents for applicant %s', 0 + @$documents, $applicant->id);
+                                    $log->debugf('Have %d photos for applicant %s',    0 + @$photos,    $applicant->id);
                                     # Since the list of types may change, and we don't really have a good
                                     # way of mapping the Onfido data to our document types at the moment,
                                     # we use a basic heuristic of "if we sent it, this is one of the documents
                                     # that we need for verification, and we should be able to verify when
                                     # we have 2 or more including a live photo".
-                                    return Future->done if @documents <= 2 or not grep { $_->isa('WebService::Async::Onfido::Photo') } @documents;
+                                    return Future->done if @$documents < 2 or not grep { $_->isa('WebService::Async::Onfido::Photo') } @$photos;
                                     $log->debugf('Emitting ready_for_authentication event for %s (applicant ID %s)', $loginid, $applicant->id);
                                     BOM::Platform::Event::Emitter::emit(
                                         ready_for_authentication => {
@@ -350,6 +349,16 @@ sub document_upload {
                                         });
 
                                     return Future->done;
+                                }
+                                )->on_ready(
+                                sub {
+                                    my $f = shift;
+                                    DataDog::DogStatsd::Helper::stats_timing("event.document_upload.onfido.list_documents." . $f->state . ".elapsed",
+                                        $f->elapsed);
+                                }
+                                )->on_fail(
+                                sub {
+                                    $log->errorf('An error occurred while uploading document to Onfido: %s', @_);
                                 });
                         });
                 }
@@ -366,9 +375,11 @@ sub document_upload {
             )->get
     }
     catch {
-        $log->errorf('Failed to process Onfido application: %s', $_);
+        $log->errorf('Failed to process Onfido application: %s', $@);
         DataDog::DogStatsd::Helper::stats_inc("event.document_upload.failure",);
     };
+
+    return;
 }
 
 =head2 ready_for_authentication
@@ -387,7 +398,7 @@ everything should be ready to do the verification step.
 sub ready_for_authentication {
     my ($args) = @_;
 
-    return try {
+    try {
         my $loginid = $args->{loginid}
             or die 'No client login ID supplied?';
         my $applicant_id = $args->{applicant_id}
@@ -435,10 +446,10 @@ sub ready_for_authentication {
                 $request_count      = shift // 0;
                 $user_request_count = shift // 0;
 
-                # Update DataDog Stats
                 DataDog::DogStatsd::Helper::stats_inc('event.ready_for_authentication.onfido.applicant_check.count');
 
                 if (!$args->{is_pending} && $user_request_count >= ONFIDO_REQUEST_PER_USER_LIMIT) {
+                    $log->debugf('No check performed as client %s exceeded daily limit of %d requests.', $loginid, ONFIDO_REQUEST_PER_USER_LIMIT);
                     return $redis_events_write->ttl(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id)->then(
                         sub {
                             my $time_to_live = shift;
@@ -588,26 +599,30 @@ sub ready_for_authentication {
                                         $redis_events_write->expire(ONFIDO_PENDING_REQUEST_PREFIX . $client->binary_user_id,
                                             ONFIDO_PENDING_REQUEST_TIMEOUT);
                                     })->retain;
-
                             } else {
                                 $log->errorf('An error occurred while processing Onfido verification: %s', join(' ', @_));
                             }
                         }
                         ),
                     )    # wait_any
+            }
+            )->on_fail(
+            sub {
+                $log->errorf('Failed to process Onfido verification: %s', @_);
             })->get;
     }
     catch {
-        $log->errorf('Failed to process Onfido verification: %s', $_);
-        return Future->done;
+        $log->errorf('Failed to process Onfido verification: %s', $@);
     };
+
+    return;
 }
 
 sub client_verification {
     my ($args) = @_;
     $log->debugf('Client verification with %s', $args);
 
-    return try {
+    try {
         my $url = $args->{check_url};
         $log->debugf('Had client verification result %s with check URL %s', $args->{status}, $args->{check_url});
 
@@ -707,17 +722,22 @@ sub client_verification {
                         )->on_fail(
                         sub {
                             $log->errorf('An error occurred while retrieving reports for client %s check %s: %s', $loginid, $check->id, $_[0]);
-                        });
+                        })->retain;
+
                 }
                 catch {
-                    $log->errorf('Failed to do verification callback - %s', $_);
-                    Future->fail($_);
-                }
+                    $log->errorf('Failed to do verification callback - %s', $@);
+                    return Future->fail($@);
+                };
+
+                return Future->done;
             })->get;
     }
     catch {
-        $log->errorf('Exception while handling client verification result: %s', $_);
-    }
+        $log->errorf('Exception while handling client verification result: %s', $@);
+    };
+
+    return;
 }
 
 =head2 sync_onfido_details
@@ -731,7 +751,7 @@ sub sync_onfido_details {
 
     return if (BOM::Config::Runtime->instance->app_config->system->suspend->onfido);
 
-    return try {
+    try {
 
         my $loginid = $data->{loginid} or die 'No loginid supplied';
         my $client = BOM::User::Client->new({loginid => $loginid});
@@ -739,23 +759,24 @@ sub sync_onfido_details {
         my $applicant_id = BOM::Config::RedisReplicated::redis_events()->get(ONFIDO_APPLICANT_KEY_PREFIX . $client->binary_user_id);
 
         # Only for users that are registered in onfido
-        return Future->done() unless $applicant_id;
+        return unless $applicant_id;
 
         # Instantiate client and onfido object
         my $client_details_onfido = _client_onfido_details($client);
 
         $client_details_onfido->{applicant_id} = $applicant_id;
 
-        _onfido()->applicant_update(%$client_details_onfido)->then(
+        return _onfido()->applicant_update(%$client_details_onfido)->then(
             sub {
                 Future->done(shift);
             })->get;
 
     }
     catch {
-        $log->errorf('Failed to update deatils in Onfido: %s', $_);
-        return Future->done;
+        $log->errorf('Failed to update deatils in Onfido: %s', $@);
     };
+
+    return;
 }
 
 =head2 verify_address
@@ -906,39 +927,46 @@ async sub _get_onfido_applicant {
     my $onfido = $args{onfido};
 
     my $country = $client->place_of_birth // $client->residence;
-    my $is_supported_country = _is_supported_country_onfido($country, $onfido)->get;
-    unless ($is_supported_country) {
-        DataDog::DogStatsd::Helper::stats_inc('onfido.unsupported_country', {tags => [$country]});
-        await _send_email_onfido_unsupported_country_cs($client);
-        $log->debugf('Document not uploaded to Onfido as client is from list of countries not supported by Onfido');
-        return undef;
+    try {
+        my $is_supported_country = _is_supported_country_onfido($country, $onfido)->get;
+        unless ($is_supported_country) {
+            DataDog::DogStatsd::Helper::stats_inc('onfido.unsupported_country', {tags => [$country]});
+            await _send_email_onfido_unsupported_country_cs($client);
+            $log->debugf('Document not uploaded to Onfido as client is from list of countries not supported by Onfido');
+            return undef;
+        }
+
+        my $redis_events_read = _redis_events_read();
+        await $redis_events_read->connect;
+        my $applicant_id = await $redis_events_read->get(ONFIDO_APPLICANT_KEY_PREFIX . $client->binary_user_id);
+
+        if ($applicant_id) {
+            $log->debugf('Applicant id already exists, returning that instead of creating new one');
+            return await $onfido->applicant_get(applicant_id => $applicant_id);
+        }
+
+        my $start     = Time::HiRes::time();
+        my $applicant = await $onfido->applicant_create(%{_client_onfido_details($client)});
+        my $elapsed   = Time::HiRes::time() - $start;
+
+        if ($applicant) {
+            DataDog::DogStatsd::Helper::stats_timing("event.document_upload.onfido.applicant_create.done.elapsed", $elapsed);
+
+            my $redis_events_write = _redis_events_write();
+            await $redis_events_write->connect;
+
+            await $redis_events_write->set(ONFIDO_APPLICANT_KEY_PREFIX . $client->binary_user_id, $applicant->id);
+        } else {
+            DataDog::DogStatsd::Helper::stats_timing("event.document_upload.onfido.applicant_create.failed.elapsed", $elapsed);
+        }
+
+        return $applicant;
     }
+    catch {
+        $log->warn($@);
+    };
 
-    my $redis_events_read = _redis_events_read();
-    await $redis_events_read->connect;
-    my $applicant_id = await $redis_events_read->get(ONFIDO_APPLICANT_KEY_PREFIX . $client->binary_user_id);
-
-    if ($applicant_id) {
-        $log->debugf('Applicant id already exists, returning that instead of creating new one');
-        return await $onfido->applicant_get(applicant_id => $applicant_id);
-    }
-
-    my $start     = Time::HiRes::time();
-    my $applicant = await $onfido->applicant_create(%{_client_onfido_details($client)});
-    my $elapsed   = Time::HiRes::time() - $start;
-
-    if ($applicant) {
-        DataDog::DogStatsd::Helper::stats_timing("event.document_upload.onfido.applicant_create.done.elapsed", $elapsed);
-
-        my $redis_events_write = _redis_events_write();
-        await $redis_events_write->connect;
-
-        await $redis_events_write->set(ONFIDO_APPLICANT_KEY_PREFIX . $client->binary_user_id, $applicant->id);
-    } else {
-        DataDog::DogStatsd::Helper::stats_timing("event.document_upload.onfido.applicant_create.failed.elapsed", $elapsed);
-    }
-
-    return $applicant;
+    return undef;
 }
 
 sub _get_document_details {
@@ -1038,19 +1066,20 @@ sub _send_email_account_closure_cs {
         ENCODING => 'utf8'
     });
 
-    return try {
+    try {
         $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/account_closure.html.tt', $data_tt, \my $html);
         die "Template error: @{[$tt->error]}" if $tt->error;
 
         die "failed to send email to CS for Account closure ($loginid)"
             unless Email::Stuffer->from($system_email)->to($support_email)->subject($email_subject)->html_body($html)->send();
 
-        undef;
+        return undef;
     }
     catch {
-        $log->warn($_);
-        undef;
+        $log->warn($@);
     };
+
+    return undef;
 }
 
 sub _send_email_account_closure_client {
@@ -1093,19 +1122,20 @@ sub _send_report_not_clear_status_email {
 
     my $email_subject = "Automated age verification failed for $loginid";
 
-    return try {
+    try {
         die "failed to send email to CS for automated age verification failure ($loginid)"
             unless Email::Stuffer->from('no-reply@binary.com')->to('authentications@binary.com')->subject($email_subject)
             ->text_body(
             "We were unable to automatically mark client as age verified for client ($loginid), as onfido result was marked as $result. Please check and verify."
             )->send();
 
-        undef;
+        return undef;
     }
     catch {
-        $log->warn($_);
-        undef;
+        $log->warn($@);
     };
+
+    return undef;
 }
 
 =head2 _send_email_notification_for_poa
@@ -1324,18 +1354,18 @@ sub social_responsibility_check {
             # Remove keys from redis
             $redis->hdel($hash_key, $loginid . '_' . $_) for keys %$client_sr_values;
 
-            return try {
+            try {
                 $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/social_responsibiliy.html.tt', $data, \my $html);
                 die "Template error: @{[$tt->error]}" if $tt->error;
 
                 die "failed to send social responsibility email ($loginid)"
                     unless Email::Stuffer->from($system_email)->to($sr_email)->subject($email_subject)->html_body($html)->send();
 
-                undef;
+                return undef;
             }
             catch {
-                $log->warn($_);
-                undef;
+                $log->warn($@);
+                return undef;
             };
         }
     }

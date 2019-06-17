@@ -34,11 +34,20 @@ use constant DEFAULT_QUEUE_WAIT_TIME => 10;
 
 =head2 MAXIMUM_PROCESSING_TIME
 
-How long (in seconds) to allow for the initial call to L</process_event>.
+How long (in seconds) to allow for the process
+call to wait for L</process_event>.
 
 =cut
 
 use constant MAXIMUM_PROCESSING_TIME => 30;
+
+=head2 MAXIMUM_JOB_TIME
+
+How long (in seconds) to allow for a single async call is allowed.
+
+=cut
+
+use constant MAXIMUM_JOB_TIME => 10;
 
 =head2 configure
 
@@ -115,6 +124,16 @@ need a timeout.
 =cut
 
 sub queue_wait_time { return (shift->{queue_wait_time} || DEFAULT_QUEUE_WAIT_TIME) }
+
+=head2 maximum_job_time
+
+Returns the maximum timeout configured per an async job
+
+We should not cache this value as it could be changed in run-time
+
+=cut
+
+sub maximum_job_time { return (shift->{maximum_job_time} || MAXIMUM_JOB_TIME) }
 
 =head2 should_shutdown
 

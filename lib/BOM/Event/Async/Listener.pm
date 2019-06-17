@@ -35,8 +35,8 @@ sub new {
 sub queue { return shift->{queue} }
 
 sub run {
-    my ($self, $queue_name) = @_;
-    my $loop = IO::Async::Loop->new;
+    my $self    = shift;
+    my $loop    = IO::Async::Loop->new;
     my $handler = BOM::Event::Async::QueueHandler->new(queue => $self->queue);
     local $SIG{TERM} = local $SIG{INT} = sub {
         # If things go badly wrong, we might never exit the loop. This attempts to
