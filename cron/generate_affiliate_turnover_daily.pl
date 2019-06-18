@@ -5,6 +5,7 @@ no indirect;
 use Path::Tiny;
 use Try::Tiny;
 use Date::Utility;
+use Getopt::Long 'GetOptions';
 
 use Brands;
 
@@ -13,9 +14,20 @@ use BOM::Config::Runtime;
 use BOM::Platform::Email qw/send_email/;
 use DataDog::DogStatsd;
 
+GetOptions
+    'past_date=s' => \my $past_date;
+
+if ($past_date) {
+    try {
+        Date::Utility->new($past_date);
+    } catch {
+        die 'Invalid date. Please use yyyy-mm-dd format.';
+    };
+}
+
 my $reporter        = BOM::MyAffiliates::TurnoverReporter->new();
 my $statsd          = DataDog::DogStatsd->new;
-my $processing_date = Date::Utility->new(time - 86400);
+my $processing_date = Date::Utility->new($past_date // (time - 86400));
 my @csv;
 
 try {
@@ -23,9 +35,12 @@ try {
 } catch {
     my $error = shift;
     $statsd->event('Turnover Report Failed', "TurnoverReporter failed to generate csv files due: $error");
-}
+};
 
-exit unless @csv;
+unless (@csv) {
+    $statsd->event('Turnover Report Failed', 'Turnover report has no data for ' . $processing_date->date_ddmmmyy);
+    exit;
+}
 
 my $output_dir = BOM::Config::Runtime->instance->app_config->system->directory->db . '/myaffiliates/';
 path($output_dir)->mkpath if (not -d $output_dir);
@@ -42,7 +57,7 @@ foreach my $line (@csv) {
 # in case if write was not successful
 try {
     path($output_filename)->spew_utf8(@lines);
-    
+
     my $brand = Brands->new();
     # email CSV out for reporting purposes
     send_email({

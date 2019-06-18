@@ -13,6 +13,7 @@ use Archive::Zip qw( :ERROR_CODES );
 use Net::Async::Webservice::S3;
 use DataDog::DogStatsd;
 use Amazon::S3::SignedURLGenerator;
+use Getopt::Long 'GetOptions';
 
 use Brands;
 
@@ -20,10 +21,21 @@ use BOM::Config::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::MyAffiliates::ActivityReporter;
 
+GetOptions
+    'past_date=s' => \my $past_date;
+
 local $SIG{ALRM} = sub { die "alarm\n" };
 alarm 1800;
 
-my $to_date = Date::Utility->new(time - 86400);
+if ($past_date) {
+    try {
+        Date::Utility->new($past_date);
+    } catch {
+        die 'Invalid date. Please use yyyy-mm-dd format.';
+    };
+}
+
+my $to_date = Date::Utility->new($past_date // (time - 86400));
 #Alway start to regenerate the files from start of the month.
 my $from_date = Date::Utility->new('01-' . $to_date->month_as_string . '-' . $to_date->year);
 
@@ -105,5 +117,4 @@ try {
 catch {
     my $error = shift;
     $statsd->event('Failed to generate MyAffiliates PL report', "MyAffiliates PL report failed to upload to S3 due: $error");
-    die "Failed to upload reports to s3. Error is shift. No email was sent.";
 };
