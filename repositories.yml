@@ -7,7 +7,7 @@
 - regentmarkets/bom-postgres-chronicledb
 - regentmarkets/bom-postgres-clientdb
 - regentmarkets/bom-postgres-collectordb
-- regentmarkets/bom-postgres-feedbdb
+- regentmarkets/bom-postgres-feeddb
 - regentmarkets/bom-postgres-userdb
 - regentmarkets/bom-test
 - regentmarkets/bom-user
