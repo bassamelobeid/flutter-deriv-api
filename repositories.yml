@@ -9,4 +9,5 @@
 - regentmarkets/bom-transaction
 - regentmarkets/bom-feed
 - regentmarkets/bom-postgres-feeddb
+- regentmarkets/bom-cryptocurrency
 - binary-com/translations-websockets-api
