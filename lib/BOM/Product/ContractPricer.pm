@@ -241,7 +241,7 @@ sub _build_reset_spot {
 
     if ($self->category_code eq 'reset' and $self->reset_time and $self->date_pricing->epoch > $self->reset_time) {
         if ($self->tick_expiry) {
-            my @ticks_since_start = @{$self->get_ticks_for_tick_expiry};
+            my @ticks_since_start = @{$self->ticks_for_tick_expiry};
             my $tick_reset_timing = int($self->tick_count * 0.5);
             if (@ticks_since_start >= ($tick_reset_timing + 1)) {
                 $reset_spot = $ticks_since_start[$tick_reset_timing];

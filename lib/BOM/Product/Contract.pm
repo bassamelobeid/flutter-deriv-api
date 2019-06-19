@@ -786,12 +786,12 @@ sub _build_apply_market_inefficient_limit {
 
 # this needs to be a lazy build attribute because
 # it determined the expiry condition of a contract.
-has get_ticks_for_tick_expiry => (
+has ticks_for_tick_expiry => (
     is         => 'ro',
     lazy_build => 1
 );
 
-sub _build_get_ticks_for_tick_expiry {
+sub _build_ticks_for_tick_expiry {
     my $self = shift;
 
     # before expected expiry, get it from cache
@@ -819,7 +819,7 @@ sub _build_exit_tick {
     my $exit_tick;
     if ($self->tick_expiry) {
         my $tick_number       = $self->ticks_to_expiry;
-        my @ticks_since_start = @{$self->get_ticks_for_tick_expiry};
+        my @ticks_since_start = @{$self->ticks_for_tick_expiry};
         # We wait for the n-th tick to settle tick expiry contract.
         # But the maximum waiting period is 5 minutes.
         if (@ticks_since_start == $tick_number) {

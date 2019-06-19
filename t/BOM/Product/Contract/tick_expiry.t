@@ -56,7 +56,7 @@ subtest 'tick expiry up&down' => sub {
 
     my $c = produce_contract($args);
 
-    is scalar(@{$c->get_ticks_for_tick_expiry}), 1, 'correct no of tick for streaming';
+    is scalar(@{$c->ticks_for_tick_expiry}), 1, 'correct no of tick for streaming';
 
     $args->{date_pricing} = $one_day->plus_time_interval('4s');
 
@@ -73,7 +73,7 @@ subtest 'tick expiry up&down' => sub {
     ok !$c->exit_tick,  'exit tick is undef when we only have 5 ticks';
     ok !$c->is_expired, 'not expired when exit tick is undef';
 
-    is scalar(@{$c->get_ticks_for_tick_expiry}), 2, 'correct no of tick for streaming';
+    is scalar(@{$c->ticks_for_tick_expiry}), 2, 'correct no of tick for streaming';
 
     for (3 .. 5) {
         my $epoch = $one_day->epoch + $_ * 2;
@@ -109,7 +109,7 @@ subtest 'tick expiry up&down' => sub {
     ok $c2->is_expired, 'contract is expired once exit tick is obtained';
     is $c2->exit_tick->quote, 111, 'exit tick is the 6th tick after contract start time';
 
-    is scalar(@{$c->get_ticks_for_tick_expiry}), 6, 'correct no of tick for streaming';
+    is scalar(@{$c->ticks_for_tick_expiry}), 6, 'correct no of tick for streaming';
 };
 
 my $new_day = $one_day->plus_time_interval('1d');
