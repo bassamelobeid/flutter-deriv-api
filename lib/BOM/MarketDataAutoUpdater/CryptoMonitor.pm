@@ -16,7 +16,7 @@ use Bloomberg::FileDownloader;
 use Bloomberg::RequestFiles;
 use Quant::Framework;
 use BOM::Config::Chronicle;
-use DataDog::DogStatsd::Helper qw(stats_event);
+use DataDog::DogStatsd::Helper qw(stats_gauge);
 
 has file => (
     is         => 'ro',
@@ -102,13 +102,8 @@ sub run {
         my $diff_pct = (($binary_closing_tick->quote - $close) / $close) * 100;
 
         #Add datadog monitoring code here
-        stats_event(
-            'Crypto closing price alert',
-            'Diff is ' . abs($diff_pct) . '%',
-            {
-                tags       => ['tag:' . $bom_underlying_symbol],
-                alert_type => 'warning'
-            }) if abs($diff_pct) >= 2.0;
+        stats_gauge('Crypto_OHLC_diff_percentage', $diff_pct, {tags => ['tag:' . $bom_underlying_symbol]});
+
     }
 
     return 1;
