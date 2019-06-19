@@ -1,1 +1,12 @@
+- regentmarkets/bom-quant-benchmark
 - regentmarkets/bom-test
+- regentmarkets/perl-Pricing-Engine-BlackScholes
+- regentmarkets/perl-Pricing-Engine-Digits
+- regentmarkets/perl-Pricing-Engine-European-Digital-Slope
+- regentmarkets/perl-Pricing-Engine-HighLow-Ticks
+- regentmarkets/perl-Pricing-Engine-Intraday-Forex-Base
+- regentmarkets/perl-Pricing-Engine-Lookback
+- regentmarkets/perl-Pricing-Engine-Markup
+- regentmarkets/perl-Pricing-Engine-Reset
+- regentmarkets/perl-Pricing-Engine-TickExpiry
+- regentmarkets/travis-scripts
