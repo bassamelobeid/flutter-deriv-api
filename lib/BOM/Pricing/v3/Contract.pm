@@ -920,7 +920,7 @@ sub _build_bid_response {
     }
 
     if ($contract->tick_expiry) {
-        my @all_ticks = @{$contract->get_ticks_for_tick_expiry};
+        my @all_ticks = @{$contract->ticks_for_tick_expiry};
 
         # for path dependent contract, there should be no more tick after hit tick
         # because the contract technically has expired
