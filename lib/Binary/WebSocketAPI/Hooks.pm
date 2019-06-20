@@ -635,7 +635,7 @@ Final processing of echo_req to ensure we don't send anything sensitive in respo
 sub _sanitize_echo {
     my $params = shift;
     for my $param ($params->%*) {
-        if ($param =~ /password$/i) {
+        if ($param && $param =~ /password$/i) {
             $params->{$param} = '<not shown>';
         }
     }
