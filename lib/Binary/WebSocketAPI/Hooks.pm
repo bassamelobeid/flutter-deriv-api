@@ -132,7 +132,7 @@ sub add_req_data {
     my $args = {};
     if ($req_storage) {
         $args = $req_storage->{origin_args} || $req_storage->{args};
-        $api_response->{echo_req} = $args;
+        $api_response->{echo_req} = _sanitize_echo($args);
     } elsif (defined $api_response->{echo_req}) {
         $args = $api_response->{echo_req};
     }
@@ -624,6 +624,22 @@ sub _handle_error {
     $log->errorf("[ERROR - %s] APP ID: %s Details: %s", $all_data->{details}->{error_code}, $app_id, $all_data->{details}->{reason});
     $c->finish;
     return;
+}
+
+=head2 _sanitize_echo
+
+Final processing of echo_req to ensure we don't send anything sensitive in response
+
+=cut
+
+sub _sanitize_echo {
+    my $params = shift;
+    for my $param ($params->%*) {
+        if ($param =~ /password$/i) {
+            $params->{$param} = '<not shown>';
+        }
+    }
+    return $params;
 }
 
 1;
