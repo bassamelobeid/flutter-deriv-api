@@ -1129,7 +1129,6 @@ sub _email_client_age_verified {
     }
     catch {
         $log->warn($@);
-        die($@);
     };
     return undef;
 }
