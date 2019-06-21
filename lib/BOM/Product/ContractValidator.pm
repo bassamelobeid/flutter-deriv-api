@@ -611,6 +611,29 @@ sub _build_forward_blackouts {
 
 }
 
+=head2 date_start_forward_blackouts
+
+forward starting contracts cannot be bought at the certain period
+
+=cut
+
+has date_start_forward_blackouts => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_date_start_forward_blackouts {
+    my $self = shift;
+
+    return [] if $self->market->name ne 'forex';
+    return [] if not $self->is_forward_starting;
+    return [] if not $self->is_intraday;
+
+    my $today = $self->effective_start->truncate_to_day;
+
+    return [[$today->plus_time_interval('21h')->epoch, $today->plus_time_interval('23h59m59s')->epoch]];
+}
+
 sub _validate_start_and_expiry_date {
     my $self = shift;
 
@@ -632,8 +655,9 @@ sub _validate_start_and_expiry_date {
     my @blackout_checks = (
         [[$start_epoch], $self->date_start_blackouts,  'TradingNotAvailable'],
         [[$end_epoch],   $self->date_expiry_blackouts, 'ContractExpiryNotAllowed'],
-        [[$start_epoch, $end_epoch], $self->market_risk_blackouts, 'TradingNotAvailable'],
-        [[$start_epoch, $end_epoch], $self->forward_blackouts,     'TradingNotAvailable'],
+        [[$start_epoch, $end_epoch], $self->market_risk_blackouts,        'TradingNotAvailable'],
+        [[$start_epoch, $end_epoch], $self->forward_blackouts,            'TradingNotAvailable'],
+        [[$start_epoch, $end_epoch], $self->date_start_forward_blackouts, 'TradingNotAvailable'],
     );
 
     # disable contracts with duration < 5 hours at 21:00 to 24:00GMT due to quiet period.
