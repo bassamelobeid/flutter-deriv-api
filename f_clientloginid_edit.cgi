@@ -391,7 +391,13 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         $_->delete for @{$client->client_authentication_method};
 
         $client->set_authentication('ID_NOTARIZED')->status('pass') if $auth_method eq 'ID_NOTARIZED';
-        $client->set_authentication('ID_DOCUMENT')->status('pass')  if $auth_method eq 'ID_DOCUMENT';
+        my $already_passed_id_document = $client->get_authentication('ID_DOCUMENT') ? $client->get_authentication('ID_DOCUMENT')->status : '';
+        if ($auth_method eq 'ID_DOCUMENT' && !($already_passed_id_document eq 'pass'))
+        {    #Authenticated with scans, front end lets this get run again even if already set.
+
+            $client->set_authentication('ID_DOCUMENT')->status('pass');
+            BOM::Platform::Event::Emitter::emit('authenticated_with_scans', {loginid => $loginid});
+        }
 
         if ($auth_method eq 'NEEDS_ACTION') {
             $client->set_authentication('ID_DOCUMENT')->status('needs_action');
