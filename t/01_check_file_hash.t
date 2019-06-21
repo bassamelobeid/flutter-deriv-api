@@ -36,7 +36,7 @@ my %file_details = (
     },
     digitsevenodd => {
         filename => module_path('BOM::Product::Contract::Digiteven'),
-        hash     => 'e8d9cd5170b51cf079cdeda84f71191c477f5b7f'
+        hash     => 'c99dc348275f3cbee36089b153834e488b262bee'
     },
     digitsoverunder => {
         filename => module_path('BOM::Product::Contract::Digitover'),
@@ -48,7 +48,7 @@ my %file_details = (
     },
     highlowtick => {
         filename => module_path('BOM::Product::Contract::Tickhigh'),
-        hash     => '2d3e7b4217bf909bd2f0cebc1f3abd2acfad8858'
+        hash     => '177ec191f4d1a6b0259fd5951e3126466508531d'
     },
     callputspread => {
         filename => module_path('BOM::Product::Contract::Callspread'),

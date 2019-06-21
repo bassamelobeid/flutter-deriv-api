@@ -6,8 +6,6 @@ with 'BOM::Product::Role::Binary', 'BOM::Product::Role::SingleBarrier',
     'BOM::Product::Role::AmericanExpiry' => {-excludes => ['_build_hit_tick']},
     'BOM::Product::Role::HighLowTicks';
 
-use Pricing::Engine::HighLowTicks;
-
 use BOM::Product::Pricing::Greeks::ZeroGreek;
 
 sub check_expiry_conditions {

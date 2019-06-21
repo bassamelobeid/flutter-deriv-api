@@ -38,8 +38,8 @@ subtest 'tick expiry' => sub {
     subtest 'RUNLOW - first tick is higher than entry tick. Contract will be settled as a loss' => sub {
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch + 1, $symbol], [100.01, $now->epoch + 2, $symbol]);
         my $c = produce_contract({%$args, date_pricing => $now->plus_time_interval('2s')});
-        is $c->entry_tick->quote, 100, 'entry tick is 100';
-        is $c->hit_tick->quote,   100.01,  'hit tick is 100.01';
+        is $c->entry_tick->quote, 100,    'entry tick is 100';
+        is $c->hit_tick->quote,   100.01, 'hit tick is 100.01';
         ok $c->is_expired,       'contract is expired';
         ok $c->is_valid_to_sell, 'is valid to sell';
         ok !$c->waiting_for_settlement_tick, 'not waiting for settlement tick';
@@ -61,9 +61,9 @@ subtest 'tick expiry' => sub {
 
     subtest 'RUNLOW - second tick is higher than first tick. Contract will be settled as a loss' => sub {
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
-            [100,    $now->epoch + 1, $symbol],
+            [100,   $now->epoch + 1, $symbol],
             [99.99, $now->epoch + 2, $symbol],
-            [100,    $now->epoch + 3, $symbol]);
+            [100,   $now->epoch + 3, $symbol]);
         my $c = produce_contract({%$args, date_pricing => $now->plus_time_interval('4s')});
         is $c->entry_tick->quote, 100, 'entry tick is 100';
         is $c->hit_tick->quote,   100, 'hit tick is 100';
@@ -76,14 +76,14 @@ subtest 'tick expiry' => sub {
 
     subtest 'RUNLOW - last tick is lower than second last tick. Contract will be settled as a loss' => sub {
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
-            [100,    $now->epoch + 1, $symbol],
+            [100,   $now->epoch + 1, $symbol],
             [99.99, $now->epoch + 2, $symbol],
             [99.98, $now->epoch + 3, $symbol],
             [99.97, $now->epoch + 4, $symbol],
             [99.96, $now->epoch + 5, $symbol],
             [99.98, $now->epoch + 6, $symbol]);
         my $c = produce_contract({%$args, date_pricing => $now->plus_time_interval('10s')});
-        is $c->entry_tick->quote, 100,    'entry tick is 100';
+        is $c->entry_tick->quote, 100,   'entry tick is 100';
         is $c->hit_tick->quote,   99.98, 'hit tick is 99.98';
         ok $c->is_expired,       'contract is expired';
         ok $c->is_valid_to_sell, 'is valid to sell';
@@ -94,7 +94,7 @@ subtest 'tick expiry' => sub {
 
     subtest 'RUNLOW - all ticks are higher than previous tick. Contract will be settled as a win' => sub {
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
-            [100,    $now->epoch + 1, $symbol],
+            [100,   $now->epoch + 1, $symbol],
             [99.99, $now->epoch + 2, $symbol],
             [99.98, $now->epoch + 3, $symbol],
             [99.97, $now->epoch + 4, $symbol],

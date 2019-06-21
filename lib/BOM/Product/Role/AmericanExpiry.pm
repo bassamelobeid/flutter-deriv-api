@@ -95,7 +95,7 @@ sub close_tick {
 sub _get_tick_expiry_hit_tick {
     my ($self, %args) = @_;
 
-    my @ticks_since_start = @{$self->get_ticks_for_tick_expiry};
+    my @ticks_since_start = @{$self->ticks_for_tick_expiry};
     my $tick;
 
     for (my $i = 1; $i <= $#ticks_since_start; $i++) {
