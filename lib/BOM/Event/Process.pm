@@ -48,7 +48,8 @@ my $action_mapping = {
     account_closure             => \&BOM::Event::Actions::Client::account_closure,
     social_responsibility_check => \&BOM::Event::Actions::Client::social_responsibility_check,
     set_pending_transaction     => \&BOM::Event::Actions::CryptoSubscription::set_pending_transaction,
-    sync_onfido_details         => \&BOM::Event::Actions::Client::sync_onfido_details
+    sync_onfido_details         => \&BOM::Event::Actions::Client::sync_onfido_details,
+    authenticated_with_scans    => \&BOM::Event::Actions::Client::email_client_account_verification,
 };
 
 =head1 METHODS
@@ -87,7 +88,7 @@ sub process {
 
     # don't process if type is not supported as of now
     unless (exists get_action_mappings()->{$event_type}) {
-        warn 'failed to map to the correct function';
+        warn 'failed to map to the correct function for ' . $event_type;
         return undef;
     }
 

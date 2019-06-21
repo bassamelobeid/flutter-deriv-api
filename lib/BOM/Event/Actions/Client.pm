@@ -1017,6 +1017,9 @@ sub _update_client_status {
 
     my $client = $args{client};
     $log->debugf('Updating status on %s to %s (%s)', $client->loginid, $args{status}, $args{message});
+    if ($args{status} eq 'age_verification') {
+        _email_client_age_verified($client);
+    }
     $client->status->set($args{status}, 'system', $args{message});
 
     return;
@@ -1079,6 +1082,101 @@ sub _send_email_account_closure_cs {
         $log->warn($@);
     };
 
+    return undef;
+}
+
+=head2 _email_client_age_verified
+
+Emails client when they have been successfully age verified. 
+Note at some time this is intended to be replaced by a front end message
+
+=over 4
+
+=item * L<BOM::User::Client>  Client Object of user who have been age verified.
+
+=back
+
+Returns undef
+
+=cut
+
+sub _email_client_age_verified {
+    my ($client) = @_;
+
+    return
+        unless defined($client->landing_company()->{actions}->{account_verified}->{email_client})
+        && $client->landing_company()->{actions}->{account_verified}->{email_client};
+    my $data_tt = {
+        client       => $client,
+        l            => \&localize,
+        website_name => 'Binary.com'
+    };
+    my $email_subject = localize("Age and identity verification");
+    my $tt = Template->new(ABSOLUTE => 1);
+
+    try {
+        $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/age_verified.html.tt', $data_tt, \my $html);
+        die "Template error: @{[$tt->error]}" if $tt->error;
+        send_email({
+            from                  => 'no-reply@binary.com',
+            to                    => $client->email,
+            subject               => $email_subject,
+            message               => [$html],
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            skip_text2html        => 1,
+        });
+    }
+    catch {
+        $log->warn($@);
+        die($@);
+    };
+    return undef;
+}
+
+=head2 _email_client_account_verification
+
+Emails client when they have been successfully verified by Back Office
+
+=over 4
+
+=item * C<<{loginid=>'clients loginid'}>>  hashref with a loginid key of the user who has had their account verified.
+
+=back
+
+Returns undef
+
+=cut
+
+sub email_client_account_verification {
+    my ($args) = @_;
+
+    my $client = BOM::User::Client->new($args);
+
+    my $data_tt = {
+        client       => $client,
+        l            => \&localize,
+        website_name => 'Binary.com',
+    };
+    my $email_subject = localize("Account verification");
+    my $tt = Template->new(ABSOLUTE => 1);
+
+    try {
+        $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/account_verification.html.tt', $data_tt, \my $html);
+        die "Template error: @{[$tt->error]}" if $tt->error;
+        send_email({
+            from                  => 'no-reply@binary.com',
+            to                    => $client->email,
+            subject               => $email_subject,
+            message               => [$html],
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            skip_text2html        => 1,
+        });
+    }
+    catch {
+        $log->warn($@);
+    };
     return undef;
 }
 
