@@ -51,7 +51,10 @@ subtest 'forex forward' => sub {
     };
     my $c = produce_contract($args);
     ok $c->is_forward_starting, 'forward starting';
-    ok $c->is_valid_to_buy, 'is valid to buy';
+    ok !$c->is_valid_to_buy, 'is not valid to buy';
+    is_deeply $c->primary_validation_error->message_to_client,
+        ['Trading is not available from [_1] to [_2].', '21:00:00', '23:59:59'],
+        'error is expected';
     $args->{date_start} = $now->plus_time_interval('1h');
     $c = produce_contract($args);
     ok $c->is_forward_starting, 'forward starting';
