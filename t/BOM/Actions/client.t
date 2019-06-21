@@ -21,6 +21,8 @@ like($msg->{body}, qr/Dear bRaD pItT/, "Correct user in message");
 
 like($msg->{body}, qr~https://www.binary.com/en/contact.html~, "Url Added");
 
+like($msg->{body}, qr/Binary.com/, "Website  Added");
+
 mailbox_clear();
 
 my $test_client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -42,5 +44,6 @@ $msg = mailbox_search(subject => qr/Account verification/);
 like($msg->{body}, qr/verified your account/, "Correct message");
 like($msg->{body}, qr~https://www.binary.com/en/contact.html~, "Url Added");
 
+like($msg->{body}, qr/Binary.com/, "Website  Added");
 done_testing
 
