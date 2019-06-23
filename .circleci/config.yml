@@ -64,6 +64,18 @@ jobs:
         name: Code structure and syntax
     - store_test_results:
         path: /var/tmp/test-output
+  localize:
+    <<: *6
+    steps:
+      - *1
+      - *2
+      - run:
+          <<: *5
+          command: |
+            make localize
+          name: Test translation strings
+      - store_test_results:
+          path: /var/tmp/test-output
   translations:
     <<: *6
     steps:
@@ -83,11 +95,15 @@ workflows:
         context: perl
     - core:
         context: perl
+    - localize:
+        context: perl
   daily:
     jobs:
     - syntax:
         context: perl
     - core:
+        context: perl
+    - localize:
         context: perl
     - translations:
         context: translation

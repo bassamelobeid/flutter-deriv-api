@@ -351,12 +351,10 @@ if ($informclient) {
     my $subject = $ttype eq 'CREDIT' ? localize('Deposit') : localize('Withdrawal');
 
     my $email_body =
-          localize('Dear') . " "
-        . BOM::Platform::Locale::translate_salutation($salutation)
-        . " $first_name $last_name,\n\n"
+          localize('Dear [_1] [_2] [_3],', BOM::Platform::Locale::translate_salutation($salutation), $first_name, $last_name) . "\n\n"
         . localize('We would like to inform you that your [_1] has been processed.', $subject) . "\n\n"
         . localize('Kind Regards') . "\n\n"
-        . 'Binary.com';
+        . (ucfirst BOM::Config::domain()->{default_domain});
 
     try {
         send_email({

@@ -24,8 +24,8 @@ Bar("Setting Client Self Exclusion");
 
 # Not available for Virtual Accounts
 if ($loginid =~ /^VR/) {
-    print '<h1>' . localize('Self-Exclusion Facilities') . '</h1>';
-    print '<p class="aligncenter">' . localize('We\'re sorry but the Self Exclusion facility is not available for Virtual Accounts.') . '</p>';
+    print '<h1>Self-Exclusion Facilities</h1>';
+    print '<p class="aligncenter">We\'re sorry but the Self Exclusion facility is not available for Virtual Accounts.</p>';
     code_exit_BO();
 }
 
@@ -44,62 +44,42 @@ my $page =
     . encode_entities($loginid)
     . '] self-exclusion settings are as follows. You may change it by editing the corresponding value.</h2>';
 
-#to generate existing limits
-if (my $self_exclusion = $client->get_self_exclusion) {
-    $page .= '<ul>';
+sub make_row {
+    my ($name, @values) = @_;
+    return '<tr><td>' . $name . '</td><td><strong>' . (join ' ', @values) . '</strong></td></tr>';
+}
 
-    if ($self_exclusion->max_balance) {
-        $page .= '<li>'
-            . localize('Maximum account cash balance is currently set to <strong>[_1] [_2]</strong>', $client->currency, $self_exclusion->max_balance)
-            . '</li>';
+# to generate existing limits
+if (my $self_exclusion = $client->get_self_exclusion) {
+    my $info;
+
+    $info .= make_row('Maximum account cash balance', $client->currency, $self_exclusion->max_balance)        if $self_exclusion->max_balance;
+    $info .= make_row('Daily turnover limit',         $client->currency, $self_exclusion->max_turnover)       if $self_exclusion->max_turnover;
+    $info .= make_row('Daily limit on losses',        $client->currency, $self_exclusion->max_losses)         if $self_exclusion->max_losses;
+    $info .= make_row('7-Day turnover limit',         $client->currency, $self_exclusion->max_7day_turnover)  if $self_exclusion->max_7day_turnover;
+    $info .= make_row('7-Day limit on losses',        $client->currency, $self_exclusion->max_7day_losses)    if $self_exclusion->max_7day_losses;
+    $info .= make_row('30-Day turnover limit',        $client->currency, $self_exclusion->max_30day_turnover) if $self_exclusion->max_30day_turnover;
+    $info .= make_row('30-Day limit on losses',       $client->currency, $self_exclusion->max_30day_losses)   if $self_exclusion->max_30day_losses;
+
+    $info .= make_row('Maximum number of open positions', $self_exclusion->max_open_bets)
+        if $self_exclusion->max_open_bets;
+
+    $info .= make_row('Session duration limit', $self_exclusion->session_duration_limit, 'minutes')
+        if $self_exclusion->session_duration_limit;
+
+    $info .= make_row('Website exclusion', Date::Utility->new($self_exclusion->exclude_until)->date)
+        if $self_exclusion->exclude_until;
+    $info .= make_row('Website Timeout until', Date::Utility->new($self_exclusion->timeout_until)->datetime_yyyymmdd_hhmmss)
+        if $self_exclusion->timeout_until;
+
+    $info .= make_row('Maximum deposit limit', $self_exclusion->max_deposit)
+        if $self_exclusion->max_deposit;
+    $info .= make_row('Maximum deposit limit expiration', Date::Utility->new($self_exclusion->max_deposit_end_date)->date)
+        if $self_exclusion->max_deposit_end_date;
+
+    if ($info) {
+        $page .= '<h3>Currently set values are:</h3><table cellspacing="0" cellpadding="5" border="1" class="GreyCandy">' . $info . '</table>';
     }
-    if ($self_exclusion->max_turnover) {
-        $page .= '<li>'
-            . localize('Daily turnover limit is currently set to <strong>[_1] [_2]</strong>', $client->currency, $self_exclusion->max_turnover)
-            . '</li>';
-    }
-    if ($self_exclusion->max_losses) {
-        $page .= '<li>'
-            . localize('Daily limit on losses is currently set to <strong>[_1] [_2]</strong>', $client->currency, $self_exclusion->max_losses)
-            . '</li>';
-    }
-    if ($self_exclusion->max_7day_turnover) {
-        $page .= '<li>'
-            . localize('7-Day turnover limit is currently set to <strong>[_1] [_2]</strong>', $client->currency, $self_exclusion->max_7day_turnover)
-            . '</li>';
-    }
-    if ($self_exclusion->max_7day_losses) {
-        $page .= '<li>'
-            . localize('7-Day limit on losses is currently set to <strong>[_1] [_2]</strong>', $client->currency, $self_exclusion->max_7day_losses)
-            . '</li>';
-    }
-    if ($self_exclusion->max_open_bets) {
-        $page .=
-            '<li>' . localize('Maximum number of open positions is currently set to <strong>[_1]</strong>', $self_exclusion->max_open_bets) . '</li>';
-    }
-    if ($self_exclusion->session_duration_limit) {
-        $page .= '<li>'
-            . localize('Session duration limit is currently set to <strong>[_1] minutes.</strong>', $self_exclusion->session_duration_limit)
-            . '</li>';
-    }
-    if ($self_exclusion->exclude_until) {
-        $page .= '<li>' . localize('Website exclusion is currently set to <strong>[_1].</strong>', $self_exclusion->exclude_until) . '</li>';
-    }
-    if ($self_exclusion->timeout_until) {
-        $page .= '<li>'
-            . localize(
-            'Website Timeout until is currently set to <strong>[_1].</strong>',
-            Date::Utility->new($self_exclusion->timeout_until)->datetime_yyyymmdd_hhmmss
-            ) . '</li>';
-    }
-    if ($self_exclusion->max_deposit) {
-        $page .= '<li>' . localize('Maximum deposit limit is set to <strong>[_1].</strong>', $self_exclusion->max_deposit) . '</li>';
-    }
-    if ($self_exclusion->max_deposit_end_date) {
-        $page .= '<li>'
-            . localize('Maximum deposit limit expires on <strong>[_1].</strong>', Date::Utility->new($self_exclusion->timeout_until)->date) . '</li>';
-    }
-    $page .= '</ul>';
 }
 
 # first time (not submitted)

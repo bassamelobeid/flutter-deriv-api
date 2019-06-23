@@ -2,7 +2,7 @@
 package main;
 
 =pod
- 
+
 =head1 DESCRIPTION
 
 This script responsible to handle create or edit of the affiliate token
@@ -37,7 +37,7 @@ BrokerPresentation("AFFILIATE TOKEN DCC");
 # Not available for Virtual Accounts
 if (($loginid =~ /^VR/) || ($loginid =~ /^MT\d+$/)) {
     Bar("CHANGE Client AFFILIATE TOKEN DCC");
-    print '<p class="aligncenter">' . localize('We\'re sorry but the Affiliate Token is not available for this type of Accounts.') . '</p>';
+    print '<p class="aligncenter">We\'re sorry but the Affiliate Token is not available for this type of Accounts.</p>';
     code_exit_BO();
 }
 

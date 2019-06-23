@@ -79,7 +79,7 @@ BOM::Transaction::sell_expired_contracts({
 my $open_bets = get_open_contracts($client);
 foreach my $open_bet (@$open_bets) {
     my $bet = produce_contract($open_bet->{short_code}, $client->currency);
-    $open_bet->{description} = localize($bet->longcode);
+    $open_bet->{description} = $bet->longcode;
     if ($bet->may_settle_automatically) {
         $open_bet->{sale_price} = $bet->bid_price;
     }

@@ -111,7 +111,7 @@ sub _configure_template_stash_for {
         runtime      => BOM::Config::Runtime->instance,
         language     => $request->language,
         request      => $request,
-        broker_name  => 'Binary.com',
+        broker_name  => ucfirst BOM::Config::domain()->{default_domain},
         l            => \&localize,
         formatnumber => \&Format::Util::Numbers::formatnumber
     });
