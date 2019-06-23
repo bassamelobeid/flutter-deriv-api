@@ -215,7 +215,7 @@ sub verify_app {
     if ($app_id !~ /^(?!0)[0-9]{1,19}$/ or not($app = $oauth->verify_app($app_id))) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidAppID',
-            message_to_client => localize('Your app_id is invalid.'),
+            message_to_client => localize('Your [_1] is invalid.', 'app_id'),
         });
     }
 
@@ -240,7 +240,7 @@ rpc app_markup_details => sub {
         unless ($oauth->user_has_app_id($user_id, $args->{app_id})) {
             return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidAppID',
-                message_to_client => localize('Your app_id is invalid.'),
+                message_to_client => localize('Your [_1] is invalid.', 'app_id'),
             });
         } else {
             $app_ids = [$args->{app_id}];
