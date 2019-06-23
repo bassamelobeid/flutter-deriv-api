@@ -1090,11 +1090,10 @@ sub _send_email_account_closure_client {
     my $client_email_template = localize(
         "\
         <p><b>We're sorry you're leaving.</b></p>
-        <p>You have requested to close your Binary.com accounts. This is to confirm that all your accounts have been terminated successfully.</p>
+        <p>You have requested to close your [_1] accounts. This is to confirm that all your accounts have been terminated successfully.</p>
         <p>Thank you.</p>
-        Team Binary.com
-        "
-    );
+        Team [_1]
+        ", ucfirst BOM::Config::domain()->{default_domain});
 
     send_email({
         from                  => $support_email,
