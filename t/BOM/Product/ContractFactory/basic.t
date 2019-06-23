@@ -89,10 +89,10 @@ subtest 'produce_contract exception' => sub {
     };
 
     foreach my $undef (
-        [{bet_type   => undef}, 'Missing required contract parameters (bet_type).'],
-        [{duration   => undef}, 'Please specify either duration or date_expiry.'],
-        [{underlying => undef}, 'Missing required contract parameters (underlying).'],
-        [{currency   => undef}, 'Missing required contract parameters (currency).'])
+        [{bet_type   => undef}, 'Missing required contract parameters ([_1]).'],
+        [{duration   => undef}, 'Please specify either [_1] or [_2].'],
+        [{underlying => undef}, 'Missing required contract parameters ([_1]).'],
+        [{currency   => undef}, 'Missing required contract parameters ([_1]).'])
     {
         try {
             produce_contract({%$contract_params, %{$undef->[0]}});

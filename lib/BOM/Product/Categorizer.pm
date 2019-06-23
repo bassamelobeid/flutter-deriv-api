@@ -93,7 +93,8 @@ sub _initialize_contract_type {
 
     unless ($params->{bet_type}) {
         BOM::Product::Exception->throw(
-            error_code => 'MissingRequiredBetType',
+            error_code => 'MissingRequiredContractParams',
+            error_args => ['bet_type'],
             details    => {field => 'contract_type'},
         );
     }
@@ -224,7 +225,8 @@ sub _initialize_underlying {
     my $params = $self->_parameters;
 
     BOM::Product::Exception->throw(
-        error_code => 'MissingRequiredUnderlying',
+        error_code => 'MissingRequiredContractParams',
+        error_args => ['underlying'],
         details    => {field => 'symbol'},
     ) unless $params->{underlying};
 
@@ -263,7 +265,8 @@ sub _initialize_other_parameters {
     delete $params->{is_intraday};
 
     BOM::Product::Exception->throw(
-        error_code => 'MissingRequiredCurrency',
+        error_code => 'MissingRequiredContractParams',
+        error_args => ['currency'],
         details    => {field => 'currency'},
     ) unless $params->{currency};
 
@@ -280,7 +283,8 @@ sub _initialize_other_parameters {
     # if both are present, we will throw an error
     if (exists $params->{duration} and exists $params->{date_expiry}) {
         BOM::Product::Exception->throw(
-            error_code => 'EitherDurationOrExpiry',
+            error_code => 'MissingEither',
+            error_args => ['duration', 'date_expiry'],
             details    => {field => ''},
         );
     }
@@ -352,21 +356,24 @@ sub _initialize_other_parameters {
 
     unless (exists $params->{date_start}) {
         BOM::Product::Exception->throw(
-            error_code => 'MissingRequiredStart',
+            error_code => 'MissingRequiredContractParams',
+            error_args => ['date_start'],
             details    => {field => 'date_start'},
         );
     }
 
     if ($params->{category}->has_user_defined_expiry and not $params->{date_expiry}) {
         BOM::Product::Exception->throw(
-            error_code => 'EitherDurationOrExpiry',
+            error_code => 'MissingEither',
+            error_args => ['duration', 'date_expiry'],
             details    => {field => 'duration'},
         );
     }
 
     if (exists $params->{payout} and exists $params->{stake}) {
         BOM::Product::Exception->throw(
-            error_code => 'EitherPayoutOrStake',
+            error_code => 'MissingEither',
+            error_args => ['payout', 'stake'],
             details    => {field => 'basis'},
         );
     }
@@ -384,9 +391,12 @@ sub _initialize_other_parameters {
     }
 
     unless (exists $params->{amount_type} and exists $params->{amount}) {
-        my $error_code = $params->{category}->code eq 'lookback' ? 'MissingRequiredMultiplier' : 'EitherPayoutOrStake';
+        my $is_lookback = $params->{category}->code eq 'lookback';
+        my $error_code  = $is_lookback ? 'MissingRequiredContractParams' : 'MissingEither';
+        my $error_args  = $is_lookback ? ['multiplier'] : ['payout', 'stake'];
         BOM::Product::Exception->throw(
             error_code => $error_code,
+            error_args => $error_args,
             details    => {field => 'amount'},
         );
     }

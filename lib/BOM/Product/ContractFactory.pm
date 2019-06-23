@@ -119,7 +119,8 @@ sub produce_batch_contract {
     # ideally we shouldn't be doing it here but the interface is not standardized!
     $build_args->{bet_types} = [$build_args->{bet_type}] if $build_args->{bet_type} and not $build_args->{bet_types};
     BOM::Product::Exception->throw(
-        error_code => 'MissingRequiredBetType',
+        error_code => 'MissingRequiredContractParams',
+        error_args => ['bet_type'],
         details    => {field => ''},
     ) if (not $build_args->{bet_types} or ref $build_args->{bet_types} ne 'ARRAY');
 
@@ -164,12 +165,14 @@ sub _validate_input_parameters {
     return if $params->{bet_type} =~ /INVALID/i or $params->{for_sale};
 
     BOM::Product::Exception->throw(
-        error_code => 'MissingRequiredStart',
+        error_code => 'MissingRequiredContractParams',
+        error_args => ['date_start'],
         details    => {field => 'date_start'},
     ) unless $params->{date_start};    # date_expiry is validated in BOM::Product::Categorizer
 
     BOM::Product::Exception->throw(
         error_code => 'MissingTradingPeriodStart',
+        error_args => ['trading_period_start'],
         details    => {field => 'trading_period_start'},
     ) if (($params->{product_type} // '') eq 'multi_barrier' and not $params->{trading_period_start});
 

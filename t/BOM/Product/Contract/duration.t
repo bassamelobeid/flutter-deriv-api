@@ -21,13 +21,13 @@ subtest 'everything about duration/date_expiry' => sub {
     try { produce_contract($args) }
     catch {
         isa_ok $_, 'BOM::Product::Exception';
-        is $_->message_to_client->[0], 'Please specify either duration or date_expiry.', 'not duration or date_expiry specified';
+        is $_->message_to_client->[0], 'Please specify either [_1] or [_2].', 'not duration or date_expiry specified';
     };
 
     try { produce_contract({%$args, date_start => '30-Dec-18', duration => 0, date_expiry => '2030-01-01'}) }
     catch {
         isa_ok $_, 'BOM::Product::Exception';
-        is $_->message_to_client->[0], 'Please specify either duration or date_expiry.', 'not duration or date_expiry specified';
+        is $_->message_to_client->[0], 'Please specify either [_1] or [_2].', 'not duration or date_expiry specified';
     };
 
     $args->{date_expiry} = '05-JAN-19';

@@ -20,7 +20,7 @@ subtest 'amount_type - generic' => sub {
     try { produce_contract($args) }
     catch {
         isa_ok $_, 'BOM::Product::Exception';
-        is $_->message_to_client->[0], 'Please specify either payout or stake.', 'no payout or stake specify';
+        is $_->message_to_client->[0], 'Please specify either [_1] or [_2].', 'no payout or stake specify';
     };
 
     $args->{multiplier} = 1;
@@ -63,7 +63,7 @@ subtest 'amount_type - generic' => sub {
     try { produce_contract({%$args, payout => 100}) }
     catch {
         isa_ok $_, 'BOM::Product::Exception';
-        is $_->message_to_client->[0], 'Please specify either payout or stake.', 'specify stake and payout for CALL';
+        is $_->message_to_client->[0], 'Please specify either [_1] or [_2].', 'specify stake and payout for CALL';
     };
 
     delete $args->{stake};
