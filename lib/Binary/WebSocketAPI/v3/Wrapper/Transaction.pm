@@ -37,7 +37,7 @@ Takes the following arguments
 
 =item * C<$req_storage> - JSON message containing a B<buy> request as received through websocket.
 
-=back 
+=back
 
 Returns a JSON message, containing B<$api_response> and subscription id.
 
@@ -135,7 +135,7 @@ sub transaction {
             and $args->{subscribe} eq '1'
             and (not $id = Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'subscribe', $account_id, 'transaction', $args)))
         {
-            return $c->new_error('transaction', 'AlreadySubscribed', $c->l('You are already subscribed to transaction updates.'));
+            return $c->new_error('transaction', 'AlreadySubscribed', $c->l('You are already subscribed to [_1].', 'transaction'));
         }
     }
 

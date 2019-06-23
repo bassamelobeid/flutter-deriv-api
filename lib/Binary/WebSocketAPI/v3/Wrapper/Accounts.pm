@@ -28,7 +28,7 @@ sub before_forward_balance {
         and $args->{subscribe}
         and $already_subscribed)
     {
-        return $c->new_error('balance', 'AlreadySubscribed', $c->l('You are already subscribed to balance updates.'));
+        return $c->new_error('balance', 'AlreadySubscribed', $c->l('You are already subscribed to [_1].', 'balance'));
     }
     return undef;
 }

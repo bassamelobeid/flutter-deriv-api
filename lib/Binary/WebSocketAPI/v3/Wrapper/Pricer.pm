@@ -87,7 +87,7 @@ sub proposal {
                     $api_response->{proposal}->{id} = $uuid;
                     $api_response->{subscription}->{id} = $uuid if $req_storage->{args}->{subscribe};
                 } else {
-                    $api_response = $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to proposal.'));
+                    $api_response = $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to [_1].', 'proposal'));
                 }
                 return $api_response;
             },
@@ -134,7 +134,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
 
     my $uuid = _pricing_channel_for_ask($c, $copy_args, {});
     unless ($uuid) {
-        my $error = $c->new_error('proposal_array', 'AlreadySubscribed', $c->l('You are already subscribed to proposal_array.'));
+        my $error = $c->new_error('proposal_array', 'AlreadySubscribed', $c->l('You are already subscribed to [_1].', 'proposal_array'));
         $c->send({json => $error}, $req_storage);
         return;
     }
@@ -258,7 +258,8 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                             if (my $uuid = $req_storage->{uuid}) {
                                 $api_response->{proposal}->{id} = $uuid;
                             } else {
-                                $api_response = $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to proposal.'));
+                                $api_response =
+                                    $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to [_1].', 'proposal'));
                             }
                             $f->done($api_response);
                             return;
@@ -487,7 +488,8 @@ sub _process_proposal_open_contract_response {
 
                 if (not $uuid = pricing_channel_for_bid($c, $args, $cache)) {
                     my $error =
-                        $c->new_error('proposal_open_contract', 'AlreadySubscribed', $c->l('You are already subscribed to proposal_open_contract.'));
+                        $c->new_error('proposal_open_contract', 'AlreadySubscribed',
+                        $c->l('You are already subscribed to [_1].', 'proposal_open_contract'));
                     $c->send({json => $error}, $req_storage);
                     return;
                 } else {
