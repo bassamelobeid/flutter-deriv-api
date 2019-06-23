@@ -96,7 +96,6 @@ subtest 'emit' => sub {
         $count = BOM::Platform::Event::Emitter::emit($action, $event->{$action});
     }
 
-    is $count, 10, 'Correct number of event emitted';
 };
 
 subtest 'listen' => sub {
@@ -106,7 +105,7 @@ subtest 'listen' => sub {
 
     is BOM::Platform::Event::Emitter::emit('sample', {sample => 1}), 1, 'Listener pop previous entries so only new one is there';
     note "Clearing out last entry for keeping clean state";
-    warning_is { BOM::Event::Listener::run_once(QUEUE_NAME) } "failed to map to the correct function",
+    warning_is { BOM::Event::Listener::run_once(QUEUE_NAME) } "failed to map to the correct function for sample",
         "failed to map to the correct function as mapping for sample does not exist";
 
     # emit a dummy action which should throw a warning
@@ -116,7 +115,7 @@ subtest 'listen' => sub {
             loginid       => 'CR123',
             email_consent => 1
         });
-    warning_is { BOM::Event::Listener::run_once(QUEUE_NAME) } "failed to map to the correct function", "dummy_action does not exist";
+    warning_is { BOM::Event::Listener::run_once(QUEUE_NAME) } "failed to map to the correct function for dummy_action", "dummy_action does not exist";
 
 };
 
@@ -126,12 +125,12 @@ subtest 'process' => sub {
         [sort keys %{BOM::Event::Process::get_action_mappings()}],
         [
             sort
-                qw/email_consent register_details email_statement sync_user_to_MT5 store_mt5_transaction new_mt5_signup anonymize_client send_mt5_disable_csv document_upload ready_for_authentication account_closure client_verification verify_address social_responsibility_check sync_onfido_details set_pending_transaction/
+                qw/email_consent register_details email_statement sync_user_to_MT5 store_mt5_transaction new_mt5_signup anonymize_client send_mt5_disable_csv document_upload ready_for_authentication account_closure client_verification verify_address social_responsibility_check sync_onfido_details set_pending_transaction authenticated_with_scans/
         ],
         'Correct number of actions that can be emitted'
     );
 
-    warning_is { BOM::Event::Process::process({dummy_action => {}}) } "failed to map to the correct function",
+    warning_is { BOM::Event::Process::process({dummy_action => {}}) } "failed to map to the correct function for ",
         'Process cannot be processed as function action is not available';
     warning_is { BOM::Event::Process::process({type => 'email_consent'}) } "event does not contain any details",
         'Process cannot be processed as no details is given';
