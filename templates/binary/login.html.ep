@@ -44,7 +44,7 @@
     <% if ($is_reset_password_allowed) { %>
         <div class="center-text links">
             <p><a id="lost-password" href="https://www.<%= $website_domain %>/<%= lc($r->language) %>/user/lost_passwordws.html"><%= l('Reset Password') %></a></p>
-            <p><%= l('Don\'t have a Binary.com account?') %> <a id="create-account" href="https://www.<%= $website_domain %>/<%= lc($r->language) %>/new-account.html"><%= l('Create one') %></a> <%= l('now.') %></p>
+            <p><%= l('Don\'t have a [_1] account?', ucfirst $website_domain) %> <%== l('[_1]Create one[_2] now.', '<a id="create-account" href="https://www.' . $website_domain . '/' . lc($r->language) . '/new-account.html">', '</a>') %></p>
         </div>
     <% } %>
 </div>
