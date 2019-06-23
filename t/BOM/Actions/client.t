@@ -23,6 +23,15 @@ like($msg->{body}, qr~https://www.binary.com/en/contact.html~, "Url Added");
 
 like($msg->{body}, qr/Binary.com/, "Website  Added");
 
+is($msg->{from}, 'no-reply@binary.com', 'Correct from Address');
+#$test_client->status->set('age_verification');
+
+mailbox_clear();
+BOM::Event::Actions::Client::_email_client_age_verified($test_client);
+
+my $msg = mailbox_search(subject => qr/Age and identity verification/);
+is($msg, undef, "Didn't send email when already age verified");
+
 mailbox_clear();
 
 my $test_client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
