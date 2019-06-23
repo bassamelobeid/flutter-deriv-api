@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use List::MoreUtils qw(none all);
+use List::Util qw(min max);
 use Quant::Framework::VolSurface::Utils qw(effective_date_for);
 use Quant::Framework::VolSurface;
 use VolSurface::Empirical;
@@ -276,6 +277,13 @@ sub _get_ticks_for_volatility_calculation {
     return \@ticks;
 }
 
+# We need a minimum number of ticks to calculate volatility. But these ticks cannot be influenced by econonic events
+# since we are handling economic events impact separately.
+#
+# This method get ticks windows that are not affected by economic events by skipping them. First it looks back for 2 hours
+# the get the events that could potentially impact volatility calculation. Then it combines overlapping events for
+# smoother processing. Finally, it get the windows of ticks not affected by economic events.
+
 sub _get_tick_windows {
     my ($self, $period) = @_;
 
@@ -302,7 +310,7 @@ sub _get_tick_windows {
         } elsif ($curr->[0] == $combined[-1][0]) {
             $combined[-1][1] = max($curr->[1], $combined[-1][1]);    # overlapping release date, just take the maximum duration impact;
         } elsif ($curr->[1] >= $combined[-1][0]) {
-            $combined[-1][0] = $curr->[0];
+            $combined[-1][0] = $curr->[0] if $curr->[0] < $combined[-1][0];
             $combined[-1][1] = $curr->[1] if $curr->[1] > $combined[-1][1];    # duration of current event spans across previously added event
         } else {
             push @combined, $curr;
@@ -321,8 +329,10 @@ sub _get_tick_windows {
                 push @tick_windows, [$period->[0] - $seconds_left, $period->[0]];
                 $seconds_left = 0;
             } else {
-                my $start_of_period = max($period->[1], $end_of_period - $seconds_left);
-                push @tick_windows, [$start_of_period, $end_of_period];
+                # use of min($to, x) is to avoid inverted start and end of period when
+                # the event started before $to and ended after $to.
+                my $start_of_period = min($to, max($period->[1], $end_of_period - $seconds_left));
+                push @tick_windows, [$start_of_period, $end_of_period] if $start_of_period < $end_of_period;
                 $seconds_left -= ($end_of_period - $start_of_period);
                 last if $seconds_left <= 0;
                 $end_of_period = $period->[0];
