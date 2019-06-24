@@ -635,10 +635,9 @@ sub _sanitize_echo {
     my ($params, $msg_type) = @_;
     my $schema = _load_schemas($msg_type);
     for my $param ($params->%*) {
+        next unless $param;
         next if (exists $schema->{schema_receive}{properties}{$param} && $schema->{schema_receive}{properties}{$param}{type} ne 'string');
-        if ($param && $param =~ /password$/i) {
-            $params->{$param} = '<not shown>';
-        }
+        $params->{$param} = '<not shown>' if ($param =~ /password$/i);
     }
     return $params;
 }
