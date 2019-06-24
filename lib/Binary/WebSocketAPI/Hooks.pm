@@ -132,7 +132,7 @@ sub add_req_data {
     my $args = {};
     if ($req_storage) {
         $args = $req_storage->{origin_args} || $req_storage->{args};
-        $api_response->{echo_req} = _sanitize_echo($args);
+        $api_response->{echo_req} = _sanitize_echo($args, $api_response->{msg_type});
     } elsif (defined $api_response->{echo_req}) {
         $args = $api_response->{echo_req};
     }
@@ -633,8 +633,10 @@ Final processing of echo_req to ensure we don't send anything sensitive in respo
 =cut
 
 sub _sanitize_echo {
-    my $params = shift;
+    my ($params, $msg_type) = @_;
+    my $schema = _load_schemas($msg_type);
     for my $param ($params->%*) {
+        next if (exists $schema->{schema_receive}{properties}{$param} && $schema->{schema_receive}{properties}{$param}{type} ne 'string');
         if ($param && $param =~ /password$/i) {
             $params->{$param} = '<not shown>';
         }
