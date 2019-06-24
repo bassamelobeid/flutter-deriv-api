@@ -133,7 +133,6 @@
             <option value="NBV CGL USD 0143184001"><NBV CGL USD 0143184001</option>
         </select>
     </td>
-    <td class="all_payment_types "><input type="text" name="payment_processor" insist/></td>
     <td class="all_payment_types cash_transfer"><input type="text" name="mtcn_number" insist/></td>
     <td class="all_payment_types bank_money_transfer cash_transfer" style="text-align:center">
         <input type="text" name="reference_id" />
