@@ -67,7 +67,6 @@ sub _load_schemas {
         my $schema_path = $schemas_base . $request_type . '/receive.json';
         if (!-e $schema_path) {
             $schema_log->error('no schema found  for ' . $request_type);
-            warn('no schema found  for ' . $request_type);
             return {
                 schema_receive    => {},
                 schema_receive_v3 => {}};
