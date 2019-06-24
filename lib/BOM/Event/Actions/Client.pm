@@ -70,6 +70,8 @@ use constant ONFIDO_SUPPORTED_COUNTRIES_KEY                    => 'ONFIDO_SUPPOR
 use constant ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT                => $ENV{ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT} // 7 * 86400;                     # 1 week
 use constant ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_PREFIX  => 'ONFIDO::UNSUPPORTED::COUNTRY::EMAIL::PER::USER::';
 use constant ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_TIMEOUT => $ENV{ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_TIMEOUT} // 24 * 60 * 60;
+use constant ONFIDO_AGE_EMAIL_PER_USER_PREFIX                  => 'ONFIDO::AGE::VERIFICATION::EMAIL::PER::USER::';
+use constant ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT                 => $ENV{ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT} // 24 * 60 * 60;
 
 # Conversion from our database to the Onfido available fields
 my %ONFIDO_DOCUMENT_TYPE_MAPPING = (
@@ -716,11 +718,9 @@ sub client_verification {
                                     status  => 'age_verification',
                                     message => 'Onfido - age verified'
                                 );
-                            } else {
-                                _send_report_not_clear_status_email($loginid, @reports ? $reports[0]->result : 'blank');
+                                return Future->done;
                             }
-
-                            return Future->done;
+                            return _send_report_not_clear_status_email($client, @reports ? $reports[0]->result : 'blank');
                         }
                         )->on_fail(
                         sub {
@@ -1196,11 +1196,10 @@ sub _send_email_account_closure_client {
     my $client_email_template = localize(
         "\
         <p><b>We're sorry you're leaving.</b></p>
-        <p>You have requested to close your Binary.com accounts. This is to confirm that all your accounts have been terminated successfully.</p>
+        <p>You have requested to close your [_1] accounts. This is to confirm that all your accounts have been terminated successfully.</p>
         <p>Thank you.</p>
-        Team Binary.com
-        "
-    );
+        Team [_1]
+        ", ucfirst BOM::Config::domain()->{default_domain});
 
     send_email({
         from                  => $support_email,
@@ -1222,26 +1221,36 @@ because of which we were not able to mark client as age_verified
 
 =cut
 
-sub _send_report_not_clear_status_email {
-    my $loginid = shift;
-    my $result  = shift;
+async sub _send_report_not_clear_status_email {
+    my $client = shift;
+    my $result = shift;
 
+    # Prevent sending multiple emails for the same user
+    my $redis_key         = ONFIDO_AGE_EMAIL_PER_USER_PREFIX . $client->binary_user_id;
+    my $redis_events_read = _redis_events_read();
+    await $redis_events_read->connect;
+    return undef if await $redis_events_read->exists($redis_key);
+
+    my $loginid       = $client->loginid;
     my $email_subject = "Automated age verification failed for $loginid";
 
     my $from_email = $Brands->emails('no-reply');
     my $to_email   = $Brands->emails('authentication');
-    try {
-        die "failed to send email to CS for automated age verification failure ($loginid)"
-            unless Email::Stuffer->from($from_email)->to($to_email)->subject($email_subject)
-            ->text_body(
-            "We were unable to automatically mark client as age verified for client ($loginid), as onfido result was marked as $result. Please check and verify."
-            )->send();
+    my $email_status =
+        Email::Stuffer->from($from_email)->to($to_email)->subject($email_subject)
+        ->text_body(
+        "We were unable to automatically mark client as age verified for client ($loginid), as onfido result was marked as $result. Please check and verify."
+        )->send();
 
-        return undef;
+    if ($email_status) {
+        my $redis_events_write = _redis_events_write();
+        await $redis_events_write->connect;
+        await $redis_events_write->set($redis_key, 1);
+        await $redis_events_write->expire($redis_key, ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT);
+    } else {
+        $log->warn('failed to send Onfido age verification email.');
+        return 0;
     }
-    catch {
-        $log->warn($@);
-    };
 
     return undef;
 }

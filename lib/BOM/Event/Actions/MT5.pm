@@ -223,9 +223,8 @@ sub new_mt5_signup {
         <p>Please <a href=\"https://www.binary.com/[_2]/user/authenticate.html\">upload scanned copies</a> of the above documents within five days of receipt of this email to keep your MT5 account active.</p>
         <p>We look forward to hearing from you soon.</p>
         <p>Regards,</p>
-        Binary.com
-        ", $client->full_name, $language
-        );
+        [_3]
+        ", $client->full_name, $language, ucfirst BOM::Config::domain()->{default_domain});
 
         try {
             send_email({
@@ -247,9 +246,9 @@ sub new_mt5_signup {
 }
 
 =head2 send_mt5_disable_csv
-    
+
 Send CSV file to customer support for the list of MT5 accounts to disable
-    
+
 =cut
 
 sub send_mt5_disable_csv {
