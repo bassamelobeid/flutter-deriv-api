@@ -242,15 +242,13 @@ sub _show_error_and_exit {
     PrintContentType();
     if ($staff) {
         # user is logged in, but access is not enabled;
-        print '<div id="page_timeout_notice" class="aligncenter">'
-            . '<p class="normalfonterror">'
-            . $timenow . ' '
-            . localize($error) . '</p>'
-            . '<p class="normalfonterror">'
-            . '<a href="javascript:document.location.reload();"><b>'
-            . localize('Reload page')
-            . '</b></a> '
-            . '</div>';
+        print qq~
+            <div id="page_timeout_notice" class="aligncenter">
+                <p class='normalfonterror'>$timenow $error</p>
+                <a href="javascript:document.location.reload();">
+                    <b>Reload page</b>
+                </a>
+            </div>~;
     } else {
         # user is not logged in, redirect him to login page
         BOM::Backoffice::Utility::redirect_login();

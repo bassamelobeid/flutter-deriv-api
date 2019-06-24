@@ -70,7 +70,7 @@ foreach my $loginid (@approved, @rejected) {
                 currency     => $currency,
                 amount       => $amount,
                 tac_url      => $tac_url,
-                website_name => 'Binary.com',
+                website_name => ucfirst BOM::Config::domain()->{default_domain},
             },
             \$email_content
             )
@@ -90,7 +90,7 @@ foreach my $loginid (@approved, @rejected) {
             {
                 name         => $client_name,
                 tac_url      => $tac_url,
-                website_name => 'Binary.com',
+                website_name => ucfirst BOM::Config::domain()->{default_domain},
             },
             \$email_content
         ) || die "rejecting promocode for $client: " . BOM::Backoffice::Request::template()->error;

@@ -10,7 +10,7 @@ use HTML::FormBuilder::Select;
 use JSON::MaybeXS;
 use Locale::SubCountry;
 
-use BOM::Backoffice::Request qw(request localize template);
+use BOM::Backoffice::Request qw(request);
 use BOM::Platform::Locale;
 use BOM::User::Client;
 
@@ -97,7 +97,7 @@ sub get_self_exclusion_form {
     #input field for Maximum account cash balance
     my $input_field_maximum_account_cash_balance = {
         'label' => {
-            'text' => localize('Maximum account cash balance'),
+            'text' => 'Maximum account cash balance',
             'for'  => 'MAXCASHBAL',
         },
         'input' => {
@@ -109,7 +109,7 @@ sub get_self_exclusion_form {
         'validation' => [{
                 'type'    => 'regexp',
                 'regexp'  => $curr_regex,
-                'err_msg' => localize('Please enter a numeric value.'),
+                'err_msg' => 'Please enter a numeric value.',
             },
         ],
         'error' => {
@@ -118,12 +118,13 @@ sub get_self_exclusion_form {
         },
         'comment' => {
             'class' => 'hint',
-            'text'  => localize('Once this limit is reached, you may no longer deposit.')}};
+            'text'  => 'Once this limit is reached, you may no longer deposit.',
+        }};
 
     #input field for Daily Turnover limit
     my $input_field_daily_turnover_limit = {
         'label' => {
-            'text' => localize('Daily turnover limit'),
+            'text' => 'Daily turnover limit',
             'for'  => 'DAILYTURNOVERLIMIT',
         },
         'input' => {
@@ -135,7 +136,7 @@ sub get_self_exclusion_form {
         'validation' => [{
                 'type'    => 'regexp',
                 'regexp'  => $curr_regex,
-                'err_msg' => localize('Please enter a numeric value.'),
+                'err_msg' => 'Please enter a numeric value.',
             },
         ],
         'error' => {
@@ -144,12 +145,13 @@ sub get_self_exclusion_form {
         },
         'comment' => {
             'class' => 'hint',
-            'text'  => localize('Maximum aggregate contract purchases per day.')}};
+            'text'  => 'Maximum aggregate contract purchases per day.',
+        }};
 
     # Daily Losses limit
     my $input_field_daily_loss_limit = {
         'label' => {
-            'text' => localize('Daily limit on losses'),
+            'text' => 'Daily limit on losses',
             'for'  => 'DAILYLOSSLIMIT',
         },
         'input' => {
@@ -161,7 +163,7 @@ sub get_self_exclusion_form {
         'validation' => [{
                 'type'    => 'regexp',
                 'regexp'  => $curr_regex,
-                'err_msg' => localize('Please enter a numeric value.'),
+                'err_msg' => 'Please enter a numeric value.',
             },
         ],
         'error' => {
@@ -170,12 +172,13 @@ sub get_self_exclusion_form {
         },
         'comment' => {
             'class' => 'hint',
-            'text'  => localize('Maximum aggregate loss per day.')}};
+            'text'  => 'Maximum aggregate loss per day.',
+        }};
 
     #input field for 7-day Turnover limit
     my $input_field_7day_turnover_limit = {
         'label' => {
-            'text' => localize('7-day turnover limit'),
+            'text' => '7-day turnover limit',
             'for'  => '7DAYTURNOVERLIMIT',
         },
         'input' => {
@@ -187,7 +190,7 @@ sub get_self_exclusion_form {
         'validation' => [{
                 'type'    => 'regexp',
                 'regexp'  => $curr_regex,
-                'err_msg' => localize('Please enter a numeric value.'),
+                'err_msg' => 'Please enter a numeric value.',
             },
         ],
         'error' => {
@@ -196,12 +199,13 @@ sub get_self_exclusion_form {
         },
         'comment' => {
             'class' => 'hint',
-            'text'  => localize('Maximum aggregate contract purchases over a 7-day period.')}};
+            'text'  => 'Maximum aggregate contract purchases over a 7-day period.',
+        }};
 
     #input field for 7-day loss limit
     my $input_field_7day_loss_limit = {
         'label' => {
-            'text' => localize('7-day limit on losses'),
+            'text' => '7-day limit on losses',
             'for'  => '7DAYLOSSLIMIT',
         },
         'input' => {
@@ -213,7 +217,7 @@ sub get_self_exclusion_form {
         'validation' => [{
                 'type'    => 'regexp',
                 'regexp'  => $curr_regex,
-                'err_msg' => localize('Please enter a numeric value.'),
+                'err_msg' => 'Please enter a numeric value.',
             },
         ],
         'error' => {
@@ -222,12 +226,13 @@ sub get_self_exclusion_form {
         },
         'comment' => {
             'class' => 'hint',
-            'text'  => localize('Maximum aggregate loss over a 7-day period.')}};
+            'text'  => 'Maximum aggregate loss over a 7-day period.',
+        }};
 
     #input field for 30-day Turnover limit
     my $input_field_30day_turnover_limit = {
         'label' => {
-            'text' => localize('30-day turnover limit'),
+            'text' => '30-day turnover limit',
             'for'  => '30DAYTURNOVERLIMIT',
         },
         'input' => {
@@ -239,7 +244,7 @@ sub get_self_exclusion_form {
         'validation' => [{
                 'type'    => 'regexp',
                 'regexp'  => $curr_regex,
-                'err_msg' => localize('Please enter a numeric value.'),
+                'err_msg' => 'Please enter a numeric value.',
             },
         ],
         'error' => {
@@ -248,12 +253,13 @@ sub get_self_exclusion_form {
         },
         'comment' => {
             'class' => 'hint',
-            'text'  => localize('Maximum aggregate contract purchases over a 30-day period.')}};
+            'text'  => 'Maximum aggregate contract purchases over a 30-day period.',
+        }};
 
     #input field for 30-day loss limit
     my $input_field_30day_loss_limit = {
         'label' => {
-            'text' => localize('30-day limit on losses'),
+            'text' => '30-day limit on losses',
             'for'  => '30DAYLOSSLIMIT',
         },
         'input' => {
@@ -265,7 +271,7 @@ sub get_self_exclusion_form {
         'validation' => [{
                 'type'    => 'regexp',
                 'regexp'  => $curr_regex,
-                'err_msg' => localize('Please enter a numeric value.'),
+                'err_msg' => 'Please enter a numeric value.',
             },
         ],
         'error' => {
@@ -274,11 +280,12 @@ sub get_self_exclusion_form {
         },
         'comment' => {
             'class' => 'hint',
-            'text'  => localize('Maximum aggregate loss over a 30-day period.')}};
+            'text'  => 'Maximum aggregate loss over a 30-day period.',
+        }};
 
     my $input_field_max_deposit_limit = {
         'label' => {
-            'text' => localize('Maximum deposit'),
+            'text' => 'Maximum deposit',
             'for'  => 'MAXDEPOSIT',
         },
         'input' => {
@@ -290,7 +297,7 @@ sub get_self_exclusion_form {
         'validation' => [{
                 'type'    => 'regexp',
                 'regexp'  => $curr_regex,
-                'err_msg' => localize('Please enter a numeric value.'),
+                'err_msg' => 'Please enter a numeric value.',
             },
         ],
         'error' => {
@@ -299,10 +306,11 @@ sub get_self_exclusion_form {
         },
         'comment' => {
             'class' => 'hint',
-            'text'  => localize('Once maximum deposit limit is reached the client may no longer deposit.')}};
+            'text'  => 'Once maximum deposit limit is reached the client may no longer deposit.',
+        }};
     my $input_field_max_deposit_end_date = {
         'label' => {
-            'text' => localize('Maximum deposit limit expiry date'),
+            'text' => 'Maximum deposit limit expiry date',
             'for'  => 'MAXDEPOSITDATE',
         },
         'input' => {
@@ -314,7 +322,7 @@ sub get_self_exclusion_form {
         'validation' => [{
                 'type'    => 'regexp',
                 'regexp'  => '^(|\d{4}-\d\d-\d\d)$',
-                'err_msg' => localize('Please enter date in the format YYYY-MM-DD.'),
+                'err_msg' => 'Please enter date in the format YYYY-MM-DD.',
             },
         ],
         'error' => {
@@ -323,12 +331,13 @@ sub get_self_exclusion_form {
         },
         'comment' => {
             'class' => 'hint',
-            'text'  => localize('Please enter date in the format YYYY-MM-DD.')}};
+            'text'  => 'Please enter date in the format YYYY-MM-DD.',
+        }};
 
     #input field for Maximum number of open positions
     my $input_field_maximum_number_open_positions = {
         'label' => {
-            'text' => localize('Maximum number of open positions'),
+            'text' => 'Maximum number of open positions',
             'for'  => 'MAXOPENPOS',
         },
         'input' => {
@@ -340,7 +349,7 @@ sub get_self_exclusion_form {
         'validation' => [{
                 'type'    => 'regexp',
                 'regexp'  => '^(\d*)$',
-                'err_msg' => localize('Please enter an integer value.'),
+                'err_msg' => 'Please enter an integer value.',
             },
         ],
         'error' => {
@@ -351,7 +360,7 @@ sub get_self_exclusion_form {
     #input field for Session duration limit,
     my $input_field_session_duration = {
         'label' => {
-            'text' => localize('Session duration limit, in minutes'),
+            'text' => 'Session duration limit, in minutes',
             'for'  => 'SESSIONDURATION',
         },
         'input' => {
@@ -363,14 +372,14 @@ sub get_self_exclusion_form {
         'validation' => [{
                 'type'    => 'regexp',
                 'regexp'  => '^(\d*)$',
-                'err_msg' => localize('Please enter an integer value.'),
+                'err_msg' => 'Please enter an integer value.',
             },
             {
                 'type' => 'custom',
                 # Note, this relies on parseInt('') being NaN and NaN>=0 being false and NaN<=max being false
                 'function' =>
                     qq{(function(max){var v=input_element_SESSIONDURATION.value; if(v==='') return true; parseInt(v);return v>=0 && v<=max})(1440 * 42)},
-                'err_msg' => localize('Session duration limit cannot be more than 6 weeks.'),
+                'err_msg' => 'Session duration limit cannot be more than 6 weeks.',
             },
         ],
         'error' => {
@@ -379,12 +388,13 @@ sub get_self_exclusion_form {
         },
         'comment' => {
             'class' => 'hint',
-            'text'  => localize('You will be automatically logged out after such time.')}};
+            'text'  => 'You will be automatically logged out after such time.',
+        }};
 
     #input field for Exclude me from the website until
     my $input_field_exclude_me = {
         'label' => {
-            'text' => localize('Exclude me from the website until'),
+            'text' => 'Exclude me from the website until',
             'for'  => 'EXCLUDEUNTIL',
         },
         'input' => {
@@ -396,7 +406,7 @@ sub get_self_exclusion_form {
         'validation' => [{
                 'type'    => 'regexp',
                 'regexp'  => '^(|\d{4}-\d\d-\d\d)$',
-                'err_msg' => localize('Please enter date in the format YYYY-MM-DD.'),
+                'err_msg' => 'Please enter date in the format YYYY-MM-DD.',
             },
         ],
         'error' => {
@@ -405,11 +415,12 @@ sub get_self_exclusion_form {
         },
         'comment' => {
             'class' => 'hint',
-            'text'  => localize('Please enter date in the format YYYY-MM-DD.')}};
+            'text'  => 'Please enter date in the format YYYY-MM-DD.',
+        }};
 
     my $input_field_timeout_me = {
         'label' => {
-            'text' => localize('Timeout from the website until'),
+            'text' => 'Timeout from the website until',
             'for'  => 'TIMEOUTUNTIL',
         },
         'input' => {
@@ -421,7 +432,7 @@ sub get_self_exclusion_form {
         'validation' => [{
                 'type'    => 'regexp',
                 'regexp'  => '^(|((\d{4}-\d{2}-\d{2})+(\s\d{2}:\d{2}:\d{2})?))$',
-                'err_msg' => localize('Please enter date in the format YYYY-MM-DD or YYYY-MM-DD hh::mm::ss'),
+                'err_msg' => 'Please enter date in the format YYYY-MM-DD or YYYY-MM-DD hh::mm::ss',
             },
         ],
         'error' => {
@@ -430,7 +441,8 @@ sub get_self_exclusion_form {
         },
         'comment' => {
             'class' => 'hint',
-            'text'  => localize('Please enter date in the format YYYY-MM-DD or YYYY-MM-DD hh::mm::ss. It will save in GMT format.')}};
+            'text'  => 'Please enter date in the format YYYY-MM-DD or YYYY-MM-DD hh::mm::ss. It will save in GMT format.',
+        }};
 
     my $input_hidden_fields = {
         'input' => [{
@@ -460,7 +472,7 @@ sub get_self_exclusion_form {
             'id'    => 'self_exclusion_submit',
             'name'  => 'submit',
             'type'  => 'submit',
-            'value' => localize('Update Settings')
+            'value' => 'Update Settings'
         },
         'error' => {
             'id'    => 'invalidinputfound',
@@ -506,7 +518,7 @@ sub get_self_exclusion_form {
 
         # This check is done both for BO and UI
         if (not $form_self_exclusion->is_error_found_in('SESSIONDURATION') and $session_duration and $session_duration > 1440 * 42) {
-            $form_self_exclusion->set_field_error_message('SESSIONDURATION', localize('Session duration limit cannot be more than 6 weeks.'));
+            $form_self_exclusion->set_field_error_message('SESSIONDURATION', 'Session duration limit cannot be more than 6 weeks.');
         }
 
         if ($exclude_until
@@ -518,17 +530,17 @@ sub get_self_exclusion_form {
 
             #server side checking for the exclude until date which must be larger than today's date
             if (not $exclusion_end->is_after($now)) {
-                $form_self_exclusion->set_field_error_message('EXCLUDEUNTIL', localize('Exclude time must be after today.'));
+                $form_self_exclusion->set_field_error_message('EXCLUDEUNTIL', 'Exclude time must be after today.');
             }
 
             #server side checking for the exclude until date could not be less than 6 months
             elsif ($exclusion_end->epoch < $six_month->epoch) {
-                $form_self_exclusion->set_field_error_message('EXCLUDEUNTIL', localize('Exclude time cannot be less than 6 months.'));
+                $form_self_exclusion->set_field_error_message('EXCLUDEUNTIL', 'Exclude time cannot be less than 6 months.');
             }
 
             #server side checking for the exclude until date could not be more than 5 years
             elsif ($exclusion_end->days_between($now) > 365 * 5 + 1) {
-                $form_self_exclusion->set_field_error_message('EXCLUDEUNTIL', localize('Exclude time cannot be for more than five years.'));
+                $form_self_exclusion->set_field_error_message('EXCLUDEUNTIL', 'Exclude time cannot be for more than five years.');
             }
         }
 
@@ -541,11 +553,11 @@ sub get_self_exclusion_form {
 
             #server side checking for the exclude until date which must be larger than today's date
             if (not $exclusion_end->is_after($now)) {
-                $form_self_exclusion->set_field_error_message('TIMEOUTUNTIL', localize('Timeout time must be greater than current time.'));
+                $form_self_exclusion->set_field_error_message('TIMEOUTUNTIL', 'Timeout time must be greater than current time.');
             }
 
             if ($exclusion_end->is_after($six_week)) {
-                $form_self_exclusion->set_field_error_message('TIMEOUTUNTIL', localize('Timeout time cannot be more than 6 weeks.'));
+                $form_self_exclusion->set_field_error_message('TIMEOUTUNTIL', 'Timeout time cannot be more than 6 weeks.');
             }
         }
     };
@@ -560,7 +572,7 @@ sub get_payment_agent_registration_form {
     # input field for pa_name
     my $input_field_pa_name = {
         'label' => {
-            'text' => localize('Your name/company'),
+            'text' => 'Your name/company',
             'for'  => 'pa_name',
         },
         'input' => {
@@ -576,14 +588,14 @@ sub get_payment_agent_registration_form {
         'validation' => [{
                 'type'    => 'regexp',
                 'regexp'  => '^.{1,60}$',
-                'err_msg' => localize('Please enter a valid name.'),
+                'err_msg' => 'Please enter a valid name.',
             },
         ]};
 
     # input field for pa_summary
     my $input_field_pa_summary = {
         'label' => {
-            'text' => localize('Short summary of your Payment Agent service'),
+            'text' => 'Short summary of your Payment Agent service',
             'for'  => 'pa_summary'
         },
         'input' => {
@@ -601,7 +613,7 @@ sub get_payment_agent_registration_form {
     # Input field for pa_email
     my $input_field_pa_email = {
         'label' => {
-            'text' => localize('Your email address'),
+            'text' => 'Your email address',
             'for'  => 'pa_email',
         },
         'input' => {
@@ -617,19 +629,19 @@ sub get_payment_agent_registration_form {
         'validation' => [{
                 'type'    => 'regexp',
                 'regexp'  => '\w+',
-                'err_msg' => localize('Please enter your email address.'),
+                'err_msg' => 'Please enter your email address.',
             },
             {
                 'type'    => 'regexp',
                 'regexp'  => _email_check_regexp(),
-                'err_msg' => localize('Sorry, you have entered an incorrect email address.'),
+                'err_msg' => 'Sorry, you have entered an incorrect email address.',
             },
         ]};
 
     # input field for pa_tel
     my $input_field_pa_tel = {
         'label' => {
-            'text' => localize('Your phone number'),
+            'text' => 'Your phone number',
             'for'  => 'pa_tel',
         },
         'input' => {
@@ -647,18 +659,18 @@ sub get_payment_agent_registration_form {
             {
                 'type'    => 'regexp',
                 'regexp'  => '^(|.{6}.*)$',
-                'err_msg' => localize('Invalid telephone number (too short).'),
+                'err_msg' => 'Invalid telephone number (too short).',
             },
             # max length = 35
             {
                 'type'    => 'regexp',
                 'regexp'  => '^.{0,35}$',
-                'err_msg' => localize('Invalid telephone number (too long).'),
+                'err_msg' => 'Invalid telephone number (too long).',
             },
             {
                 'type'    => 'regexp',
                 'regexp'  => '^(|\+?[0-9\s]+)$',
-                'err_msg' => localize('Invalid telephone number.'),
+                'err_msg' => 'Invalid telephone number.',
             },
         ],
     };
@@ -666,7 +678,7 @@ sub get_payment_agent_registration_form {
     # input field for pa_url
     my $input_field_pa_url = {
         'label' => {
-            'text' => localize('Your website URL'),
+            'text' => 'Your website URL',
             'for'  => 'pa_url'
         },
         'input' => {
@@ -682,7 +694,7 @@ sub get_payment_agent_registration_form {
         'validation' => [{
                 'type'    => 'regexp',
                 'regexp'  => '^(https?:\/\/[^\s]+)?$',
-                'err_msg' => localize('This URL is invalid.'),
+                'err_msg' => 'This URL is invalid.',
             },
         ],
     };
@@ -693,7 +705,7 @@ sub get_payment_agent_registration_form {
     # input field for pa_comm_depo
     my $input_field_pa_comm_depo = {
         'label' => {
-            'text' => localize('Commission (%) you want to take on deposits'),
+            'text' => 'Commission (%) you want to take on deposits',
             'for'  => 'pa_comm_depo',
         },
         'input' => HTML::FormBuilder::Select->new(
@@ -710,7 +722,7 @@ sub get_payment_agent_registration_form {
     # input field for pa_comm_with
     my $input_field_pa_comm_with = {
         'label' => {
-            'text' => localize('Commission (%) you want to take on withdrawals'),
+            'text' => 'Commission (%) you want to take on withdrawals',
             'for'  => 'pa_comm_with',
         },
         'input' => HTML::FormBuilder::Select->new(
@@ -726,7 +738,7 @@ sub get_payment_agent_registration_form {
 
     my $input_field_pa_max_withdrawal = {
         'label' => {
-            'text' => localize('Max withdrawal limit'),
+            'text' => 'Max withdrawal limit',
             'for'  => 'pa_max_withdrawal'
         },
         'input' => {
@@ -742,14 +754,14 @@ sub get_payment_agent_registration_form {
         'validation' => [{
                 'type'    => 'regexp',
                 'regexp'  => '^(?![+-])(?:[1-9]\d*|0)?(?:.\d+)?$',
-                'err_msg' => localize('Please enter a positive numeric value.'),
+                'err_msg' => 'Please enter a positive numeric value.',
             },
         ],
     };
 
     my $input_field_pa_min_withdrawal = {
         'label' => {
-            'text' => localize('Min withdrawal limit'),
+            'text' => 'Min withdrawal limit',
             'for'  => 'pa_min_withdrawal'
         },
         'input' => {
@@ -765,7 +777,7 @@ sub get_payment_agent_registration_form {
         'validation' => [{
                 'type'    => 'regexp',
                 'regexp'  => '^(?![+-])(?:[1-9]\d*|0)?(?:.\d+)?$',
-                'err_msg' => localize('Please enter a positive numeric value.'),
+                'err_msg' => 'Please enter a positive numeric value.',
             },
         ],
     };
@@ -773,7 +785,7 @@ sub get_payment_agent_registration_form {
     # Input field for pa_info
     my $textarea_pa_info = {
         'label' => {
-            'text' => localize('Please provide some information about yourself and your proposed services'),
+            'text' => 'Please provide some information about yourself and your proposed services',
             'for'  => 'pa_info',
         },
         'input' => {
@@ -792,7 +804,7 @@ sub get_payment_agent_registration_form {
         'validation' => [{
                 'type'    => 'regexp',
                 'regexp'  => '^(.|\n){0,500}$',
-                'err_msg' => localize('Comment must not exceed [_1] characters. Please resubmit.', 500),
+                'err_msg' => 'Comment must not exceed 500 characters. Please resubmit.',
             },
 
         ],
@@ -801,7 +813,7 @@ sub get_payment_agent_registration_form {
     # Input field for pa_supported_banks
     my $input_field_pa_supported_banks = {
         'label' => {
-            'text' => localize('Supported banks'),
+            'text' => 'Supported banks',
             'for'  => 'pa_supported_banks'
         },
         'input' => {
@@ -817,7 +829,7 @@ sub get_payment_agent_registration_form {
         'validation' => [{
                 'type'    => 'regexp',
                 'regexp'  => '^[0-9a-zA-Z,]*$',
-                'err_msg' => localize('Supported banks list is invalid'),
+                'err_msg' => 'Supported banks list is invalid',
             },
         ],
         comment => {
@@ -827,7 +839,7 @@ sub get_payment_agent_registration_form {
     # Input field for pa_auth
     my $input_field_pa_auth = {
         'label' => {
-            'text' => localize('AUTHORISED PAYMENT AGENT?'),
+            'text' => 'AUTHORISED PAYMENT AGENT?',
             'for'  => 'pa_auth'
         },
         'input' => HTML::FormBuilder::Select->new(
@@ -840,7 +852,7 @@ sub get_payment_agent_registration_form {
     # Input field for pa_listed
     my $input_field_pa_listed = {
         'label' => {
-            'text' => localize('LISTED PAYMENT AGENT?'),
+            'text' => 'LISTED PAYMENT AGENT?',
             'for'  => 'pa_listed'
         },
         'input' => HTML::FormBuilder::Select->new(
@@ -865,7 +877,8 @@ sub get_payment_agent_registration_form {
             'id'    => 'submit',
             'name'  => 'submit',
             'type'  => 'submit',
-            'value' => localize('Submit')}};
+            'value' => 'Submit',
+        }};
 
     my $form_action = request()->url_for("/paymentagent/application");
 
@@ -941,15 +954,16 @@ sub _input_hidden_field_language {
 sub _select_yes_no {
     return [{
             value => '',
-            text  => localize('Please select')
+            text  => 'Please select'
         },
         {
             value => 'yes',
-            text  => localize('Yes')
+            text  => 'Yes'
         },
         {
             value => 'no',
-            text  => localize('No')}];
+            text  => 'No',
+        }];
 }
 
 sub _email_check_regexp {

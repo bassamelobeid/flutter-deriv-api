@@ -61,8 +61,9 @@ my $email_template = $has_social_login ? "email/lost_password_has_social_login.h
 BOM::Backoffice::Request::template()->process(
     $email_template,
     {
-        link        => $link,
-        client_name => $client_name =~ /^ *$/ ? 'there' : $client_name,
+        link         => $link,
+        client_name  => $client_name =~ /^ *$/ ? 'there' : $client_name,
+        website_name => ucfirst BOM::Config::domain()->{default_domain},
     },
     \$lost_pass_email
 );
@@ -75,7 +76,7 @@ print '<p class="success_message">Emailing change password link to ' . encode_en
 my $result = send_email({
     from                  => $brand->emails('support'),
     to                    => $email,
-    subject               => localize('Reset your Binary.com account password'),
+    subject               => localize('Reset your [_1] account password', ucfirst BOM::Config::domain()->{default_domain}),
     message               => [$lost_pass_email,],
     template_loginid      => $loginID,
     use_email_template    => 1,

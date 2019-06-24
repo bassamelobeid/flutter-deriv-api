@@ -24,7 +24,7 @@ sub get_info {
     } else {
         try {
             my $contract = produce_contract($fmb->{short_code}, $currency);
-            $info->{longcode} = BOM::Backoffice::Request::localize($contract->longcode);
+            $info->{longcode} = $contract->longcode;
             if (not $fmb->{is_sold}) {
                 if ($contract and $contract->may_settle_automatically) {
                     $info->{indicative_price} = $contract->bid_price;

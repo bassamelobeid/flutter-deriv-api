@@ -11,4 +11,4 @@
 <p>[% l("If you need further clarification or assistance regarding this decision, please contact us at [_1].", '<a href="mailto:support@binary.com">support@binary.com</a>') | none %]</p>
 
 <p>[% l("Regards,")%]<br>
-[% l("Binary.com") %]</p>
+[% website_name %]</p>

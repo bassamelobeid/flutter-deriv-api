@@ -57,8 +57,9 @@ sub send_email_authentication_reminder {
     BOM::Backoffice::Request::template()->process(
         "email/mt5_authentication_reminder_email.html.tt",
         {
-            full_name => $client->full_name,
-            last_date => $last_date
+            full_name    => $client->full_name,
+            last_date    => $last_date,
+            website_name => ucfirst BOM::Config::domain()->{default_domain},
         },
         \$mt5_followup_email
     );
@@ -93,7 +94,14 @@ sub send_email_disable_account {
     # Send client the email that their account will be disabled
     my $mt5_disable_email;
 
-    BOM::Backoffice::Request::template()->process("email/disable_mt5_accounts_email.html.tt", {full_name => $client->full_name}, \$mt5_disable_email);
+    BOM::Backoffice::Request::template()->process(
+        'email/disable_mt5_accounts_email.html.tt',
+        {
+            full_name    => $client->full_name,
+            website_name => ucfirst BOM::Config::domain()->{default_domain},
+        },
+        \$mt5_disable_email
+    );
 
     my $email_sent = send_email({
         from                  => $brands->emails('support'),

@@ -132,11 +132,9 @@ sub print_client_details {
     my $dob_day_options;
     $dob_day_options .= qq|<option value="$_->{value}">$_->{value}</option>| for @$dob_day_optionlist;
     $dob_day_options = set_selected_item($dob_day, $dob_day_options);
-    my $dob_month_options = set_selected_item(
-        $dob_month,
-        localize(
-            '<option value=""></option><option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option><option value="04">Apr</option><option value="05">May</option><option value="06">Jun</option><option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>'
-        ));
+    my @month_names = (undef, qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec));
+    my $dob_month_options = set_selected_item($dob_month,
+        join "", map { "<option value=\"" . ($_ ? sprintf("%02s", $_) : "") . "\">" . ($month_names[$_] || "") . "</option>" } (0 .. $#month_names));
     my $dob_year_optionlist = BOM::Backoffice::FormAccounts::DOB_YearList($dob_year);
     my $dob_year_options    = '<option value=""></option>';
     $dob_year_options .= qq|<option value="$_->{value}">$_->{value}</option>| for @$dob_year_optionlist;
