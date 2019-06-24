@@ -7,7 +7,7 @@ use BOM::Platform::Event::Emitter;
 use BOM::Event::Process;
 use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
 
-use constant QUEUE_WAIT_DURATION => 1;
+use constant QUEUE_WAIT_DURATION => 3;
 
 =head1 NAME
 
