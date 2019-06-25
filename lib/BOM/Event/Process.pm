@@ -16,6 +16,7 @@ use BOM::Event::Actions::CustomerStatement;
 use BOM::Event::Actions::MT5;
 use BOM::Event::Actions::Client;
 use BOM::Event::Actions::CryptoSubscription;
+use Scalar::Util qw(blessed);
 
 =head1 NAME
 
@@ -100,6 +101,7 @@ sub process {
     my $response = 0;
     try {
         $response = get_action_mappings()->{$event_type}->($event_to_be_processed->{details});
+        $response->retain if blessed($response) and $response->isa('Future');
         stats_inc(lc "$queue_name.processed.success");
     }
     catch {
