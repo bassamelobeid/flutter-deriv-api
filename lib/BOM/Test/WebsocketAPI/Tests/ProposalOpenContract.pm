@@ -7,10 +7,11 @@ use warnings;
 
 use Future::Utils qw(fmap_void);
 use Devops::BinaryAPI::Tester::DSL;
+use List::Util qw(first);
 
 =head2 buy_then_sell_contract
 
-Buy contracts with subscribe, 
+Buy contracts with subscribe,
 wait for proposal open contracts streams
 and then sell the contracts
 
@@ -20,10 +21,10 @@ and then sell the contracts
 
 =item * C<%args> - Subscription arguments
 
-%args contains the following keys: 
-    C<token> : client token to make connection 
+%args contains the following keys:
+    C<token> : client token to make connection
     C<requests> : array ref of subscription (buy) requests
-    C<concurrent> : Maximum number of buy requests to be subscribed concurrently 
+    C<concurrent> : Maximum number of buy requests to be subscribed concurrently
 
 =back
 
@@ -31,15 +32,15 @@ and then sell the contracts
 
 suite buy_then_sell_contract => sub {
     my ($suite, %args) = @_;
-    
+
     my $context = $suite->last_context;
-    
-    #Filter out requests except `buy` since this suite only targets buy requests 
-    my @buy_requests = grep { (keys($_->%*))[0] eq 'buy' } $args{requests}->@*; 
-    
+
+    #Filter out requests except `buy` since this suite only targets buy requests
+    my @buy_requests = grep { (keys($_->%*))[0] eq 'buy' } $args{requests}->@*;
+
     fmap_void {
         my ($method, $request) = $_->%*;
-        
+
         $context
         ->connection(token => $args{token})
         ->subscribe(buy => $request)
@@ -52,22 +53,22 @@ suite buy_then_sell_contract => sub {
             my $buy_response = shift;
             my $sell_response = pop;
             my @poc_reponses = @_;
-            
+
             # Check buy response
-            ok ($buy_response->contract_id, "Contract '" . 
-            $buy_response->longcode . 
-            "' is purchased at buy price " . 
+            ok ($buy_response->contract_id, "Contract '" .
+            $buy_response->longcode .
+            "' is purchased at buy price " .
             $sell_response->buy_price);
 
             # Check proposal_open_contract response
             ok ($_->is_sold == 0)  for (@poc_reponses);
-            
+
             # Check sell response
-            ok ($sell_response->is_sold == 1, 
-            "Contract '" . $sell_response->longcode . 
-            "' is sold at bid price: " . 
+            ok ($sell_response->is_sold == 1,
+            "Contract '" . $sell_response->longcode .
+            "' is sold at bid price: " .
             $sell_response->bid_price);
-            
+
         })
         ->timeout_ok(5, sub {
             shift->take_latest
@@ -75,6 +76,48 @@ suite buy_then_sell_contract => sub {
         ->completed
 
     } foreach => [ @buy_requests ], %args{qw(concurrent)}
+};
+
+
+
+suite poc_no_contract_id => sub {
+    my ($suite, %args) = @_;
+
+    # Get two buy reqs with differenct symbols
+    my @filtred_reqs = grep { (keys($_->%*))[0] eq 'buy' } $args{requests}->@*;
+    my @buy_reqs = ( $filtred_reqs[0] );
+    $buy_reqs[1] = first { $_->{buy}{parameters}{symbol} ne $buy_reqs[0]->{buy}{parameters}{symbol} } @filtred_reqs;
+
+    my %bought;
+
+    my $con = $suite
+    ->last_context
+    ->connection(token => $args{token});
+
+    $con
+    ->subscribe(proposal_open_contract => 1)
+    ->buy($buy_reqs[0]->{buy}->%*)
+    ->take_until(sub {
+        return 0 unless $_->contract_id;
+    	push $bought{$_->is_sold // 0}->@*, $_->contract_id;
+    	return 1 if exists $bought{1} and $bought{1}->@* == 2;
+    	if ( $_->is_sold ) {
+    	    note "1st contract sold, buying 2nd contract";
+    	    # poc will wait for two contracts to sell, therefore we don't need to wait for this buy
+    		$con
+    		->buy($buy_reqs[1]->{buy}->%*)
+    		->completed
+    		->retain;
+    	}
+    	return 0;
+    })
+    ->expect_done(sub {
+        for my $buy (0..1) {
+           my $cnt = grep { $_->underlying && $_->underlying eq $buy_reqs[$buy]->{buy}{parameters}{symbol} } @_;
+           cmp_ok $cnt, '>', 1, 'contract '.($buy+1)." got $cnt responses";
+        }
+    });
+
 };
 
 1;
