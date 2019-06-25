@@ -87,7 +87,7 @@ sub proposal {
                     $api_response->{proposal}->{id} = $uuid;
                     $api_response->{subscription}->{id} = $uuid if $req_storage->{args}->{subscribe};
                 } else {
-                    $api_response = $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to proposal.'));
+                    $api_response = $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to [_1].', 'proposal'));
                 }
                 return $api_response;
             },
@@ -134,7 +134,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
 
     my $uuid = _pricing_channel_for_ask($c, $copy_args, {});
     unless ($uuid) {
-        my $error = $c->new_error('proposal_array', 'AlreadySubscribed', $c->l('You are already subscribed to proposal_array.'));
+        my $error = $c->new_error('proposal_array', 'AlreadySubscribed', $c->l('You are already subscribed to [_1].', 'proposal_array'));
         $c->send({json => $error}, $req_storage);
         return;
     }
@@ -258,7 +258,8 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                             if (my $uuid = $req_storage->{uuid}) {
                                 $api_response->{proposal}->{id} = $uuid;
                             } else {
-                                $api_response = $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to proposal.'));
+                                $api_response =
+                                    $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to [_1].', 'proposal'));
                             }
                             $f->done($api_response);
                             return;
@@ -487,7 +488,8 @@ sub _process_proposal_open_contract_response {
 
                 if (not $uuid = pricing_channel_for_bid($c, $args, $cache)) {
                     my $error =
-                        $c->new_error('proposal_open_contract', 'AlreadySubscribed', $c->l('You are already subscribed to proposal_open_contract.'));
+                        $c->new_error('proposal_open_contract', 'AlreadySubscribed',
+                        $c->l('You are already subscribed to [_1].', 'proposal_open_contract'));
                     $c->send({json => $error}, $req_storage);
                     return;
                 } else {
@@ -932,12 +934,6 @@ sub _price_stream_results_adjustment {
 sub send_proposal_open_contract_last_time {
     my ($c, $args, $contract_id, $stash_data) = @_;
     Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $args->{uuid});
-    # we don't want to end up with new subscribtion
-    delete $stash_data->{subscribe} if exists $stash_data->{subscribe};
-    # We should also clear stash data, otherwise the args in stash data will become 'not subscribe' (deleted by previous line) and will block the future subscribe
-    $c->stash('proposal_open_contracts_subscribed' => 0)
-        if $c->stash('proposal_open_contracts_subscribed')
-        && ($c->stash('proposal_open_contracts_subscribed')->{req_id} // 0) == ($stash_data->{req_id} // 0);
 
     $c->call_rpc({
             args        => $stash_data,
