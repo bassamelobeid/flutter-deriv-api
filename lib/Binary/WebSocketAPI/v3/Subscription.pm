@@ -88,8 +88,12 @@ sub process {
         return $self->worker->handle_message($data);
     }
     catch {
-        $log->errorf("Failure processing Redis subscription message:  %s from original message %s, module %s, channel %s",
-            $_, $message, $self->worker->class, $self->worker->channel);
+        if (defined($self->worker)) {
+            $log->errorf("Failure processing Redis subscription message:  %s from original message %s, module %s, channel %s",
+                $_, $message, $self->worker->class, $self->worker->channel);
+        } else {
+            $log->errorf("Failure processing Redis subscription message: %s from original message %s ", $_, $message);
+        }
     }
 }
 
