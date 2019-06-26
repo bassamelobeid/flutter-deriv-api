@@ -67,7 +67,6 @@ sub _load_schemas {
         my $schema_path = $schemas_base . $request_type . '/receive.json';
         if (!-e $schema_path) {
             $schema_log->error('no schema found  for ' . $request_type);
-            warn('no schema found  for ' . $request_type);
             return {
                 schema_receive    => {},
                 schema_receive_v3 => {}};
@@ -132,7 +131,7 @@ sub add_req_data {
     my $args = {};
     if ($req_storage) {
         $args = $req_storage->{origin_args} || $req_storage->{args};
-        $api_response->{echo_req} = $args;
+        $api_response->{echo_req} = _sanitize_echo($args, $api_response->{msg_type});
     } elsif (defined $api_response->{echo_req}) {
         $args = $api_response->{echo_req};
     }
@@ -624,6 +623,23 @@ sub _handle_error {
     $log->errorf("[ERROR - %s] APP ID: %s Details: %s", $all_data->{details}->{error_code}, $app_id, $all_data->{details}->{reason});
     $c->finish;
     return;
+}
+
+=head2 _sanitize_echo
+
+Final processing of echo_req to ensure we don't send anything sensitive in response
+
+=cut
+
+sub _sanitize_echo {
+    my ($params, $msg_type) = @_;
+    my $schema = _load_schemas($msg_type);
+    for my $param ($params->%*) {
+        next unless $param;
+        next if (exists $schema->{schema_receive}{properties}{$param} && $schema->{schema_receive}{properties}{$param}{type} ne 'string');
+        $params->{$param} = '<not shown>' if ($param =~ /password$/i);
+    }
+    return $params;
 }
 
 1;
