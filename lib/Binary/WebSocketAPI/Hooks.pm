@@ -131,6 +131,10 @@ sub add_req_data {
     my $args = {};
     if ($req_storage) {
         $args = $req_storage->{origin_args} || $req_storage->{args};
+        open(my $fh, '>>', '/tmp/y');
+        use Data::Dumper;
+        print $fh Dumper($api_response);
+        close($fh);
         $api_response->{echo_req} = _sanitize_echo($args, $api_response->{msg_type});
     } elsif (defined $api_response->{echo_req}) {
         $args = $api_response->{echo_req};

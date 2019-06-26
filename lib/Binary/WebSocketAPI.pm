@@ -8,6 +8,7 @@ no indirect;
 use Mojo::Base 'Mojolicious';
 use Mojo::Redis2;
 use Mojo::IOLoop;
+use Mojo::WebSocketProxy::Backend::JobAsync;
 use IO::Async::Loop::Mojo;
 
 use Binary::WebSocketAPI::Hooks;
@@ -239,7 +240,7 @@ sub startup {
         ['proposal_array', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Pricer::proposal_array}],
         ['forget',         {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::forget}],
         ['forget_all',     {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::forget_all}],
-        ['ping',           {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::ping}],
+        ['ping', {backend => 'queue_test'} ],
         ['time',           {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::server_time}],
         ['website_status', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::website_status}],
         ['residence_list'],
@@ -602,6 +603,7 @@ sub startup {
             actions => $actions,
             # Skip check sanity to password fields
             skip_check_sanity => qr/password/,
+            backends => {queue_test => {type=> "job_async", redis => {uri => "redis://127.0.0.1"}}},
         });
 
     my $redis = ws_redis_master();
