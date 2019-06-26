@@ -1,0 +1,9 @@
+<p>[% l("Dear [_1] [_2],", client.first_name, client.last_name) %]</p>
+ 
+<p>[% l("We're pleased to inform you that we've verified your age and identity.") %]</p>
+ 
+<p>[% l("Happy trading and please [_1]contact us[_2]  if you need further assistance.",'<a href="https://www.binary.com/en/contact.html">','</a>'  ) %]</p>
+ 
+<p>[% l("Regards,") %]</p>
+<p>[% l("Team [_1]", website_name) %]</p>
+

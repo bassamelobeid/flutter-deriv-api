@@ -170,6 +170,9 @@ $loop->add(my $services = BOM::Event::Services->new);
     }
 }
 
+#load Brands object globally,
+my $Brands = Brands->new();
+
 =head2 document_upload
 
     Called when we have a new document provided by the client .
@@ -751,6 +754,9 @@ sub _update_client_status {
 
     my $client = $args{client};
     $log->debugf('Updating status on %s to %s (%s)', $client->loginid, $args{status}, $args{message});
+    if ($args{status} eq 'age_verification') {
+        _email_client_age_verified($client);
+    }
     $client->status->set($args{status}, 'system', $args{message});
 
     return;
@@ -765,9 +771,8 @@ Send email to CS that a client has closed their accounts.
 sub account_closure {
     my $data = shift;
 
-    my $brands        = Brands->new();
-    my $system_email  = $brands->emails('system');
-    my $support_email = $brands->emails('support');
+    my $system_email  = $Brands->emails('system');
+    my $support_email = $Brands->emails('support');
 
     _send_email_account_closure_cs($data, $system_email, $support_email);
 
@@ -814,6 +819,107 @@ sub _send_email_account_closure_cs {
         $log->warn($e);
     };
 
+    return undef;
+}
+
+=head2 _email_client_age_verified
+
+Emails client when they have been successfully age verified. 
+Raunak 19/06/2019 Please note that we decided to do it as frontend notification but since that is not yet drafted and designed so we will implement email notification
+
+=over 4
+
+=item * L<BOM::User::Client>  Client Object of user who has been age verified.
+
+=back
+
+Returns undef
+
+=cut
+
+sub _email_client_age_verified {
+    my ($client) = @_;
+
+    return unless $client->landing_company()->{actions}->{account_verified}->{email_client};
+
+    return if $client->status->age_verification;
+    my $from_email   = $Brands->emails('no-reply');
+    my $website_name = $Brands->website_name;
+    my $data_tt      = {
+        client       => $client,
+        l            => \&localize,
+        website_name => $website_name,
+    };
+    my $email_subject = localize("Age and identity verification");
+    my $tt = Template->new(ABSOLUTE => 1);
+
+    try {
+        $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/age_verified.html.tt', $data_tt, \my $html);
+        die "Template error: @{[$tt->error]}" if $tt->error;
+        send_email({
+            from                  => $from_email,
+            to                    => $client->email,
+            subject               => $email_subject,
+            message               => [$html],
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            skip_text2html        => 1,
+        });
+    }
+    catch {
+        $log->warn($@);
+    };
+    return undef;
+}
+
+=head2 _email_client_account_verification
+
+Emails client when they have been successfully verified by Back Office
+Raunak 19/06/2019 Please note that we decided to do it as frontend notification but since that is not yet drafted and designed so we will implement email notification
+
+=over 4
+
+=item * C<<{loginid=>'clients loginid'}>>  hashref with a loginid key of the user who has had their account verified.
+
+=back
+
+Returns undef
+
+=cut
+
+sub email_client_account_verification {
+    my ($args) = @_;
+
+    my $client = BOM::User::Client->new($args);
+
+    my $from_email   = $Brands->emails('no-reply');
+    my $website_name = $Brands->website_name;
+
+    my $data_tt = {
+        client       => $client,
+        l            => \&localize,
+        website_name => $website_name,
+    };
+
+    my $email_subject = localize("Account verification");
+    my $tt = Template->new(ABSOLUTE => 1);
+
+    try {
+        $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/account_verification.html.tt', $data_tt, \my $html);
+        die "Template error: @{[$tt->error]}" if $tt->error;
+        send_email({
+            from                  => $from_email,
+            to                    => $client->email,
+            subject               => $email_subject,
+            message               => [$html],
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            skip_text2html        => 1,
+        });
+    }
+    catch {
+        $log->warn($@);
+    };
     return undef;
 }
 
@@ -864,8 +970,10 @@ async sub _send_report_not_clear_status_email {
     my $loginid       = $client->loginid;
     my $email_subject = "Automated age verification failed for $loginid";
 
+    my $from_email = $Brands->emails('no-reply');
+    my $to_email   = $Brands->emails('authentication');
     my $email_status =
-        Email::Stuffer->from('no-reply@binary.com')->to('authentications@binary.com')->subject($email_subject)
+        Email::Stuffer->from($from_email)->to($to_email)->subject($email_subject)
         ->text_body(
         "We were unable to automatically mark client as age verified for client ($loginid), as onfido result was marked as $result. Please check and verify."
         )->send();
@@ -890,9 +998,11 @@ async sub _send_poa_email {
 
     my $need_to_send_email = await $redis_replicated_write->hsetnx('EMAIL_NOTIFICATION_POA', $client->binary_user_id, 1);
 
+    my $from_email = $Brands->email('no-reply');
+    my $to_email   = $Brands->email('authentications');
     # using replicated one
     # as this key is used in backoffice as well
-    Email::Stuffer->from('no-reply@binary.com')->to('authentications@binary.com')->subject('New uploaded POA document for: ' . $client->loginid)
+    Email::Stuffer->from($from_email)->to($to_email)->subject('New uploaded POA document for: ' . $client->loginid)
         ->text_body('New proof of address document was uploaded for ' . $client->loginid)->send()
         if $need_to_send_email;
 
@@ -951,9 +1061,8 @@ async sub _send_email_notification_for_poa {
 
 sub _send_email_onfido_check_exceeded_cs {
     my $request_count        = shift;
-    my $brands               = Brands->new();
-    my $system_email         = $brands->emails('system');
-    my @email_recipient_list = ($brands->emails('support'), $brands->emails('compliance_alert'));
+    my $system_email         = $Brands->emails('system');
+    my @email_recipient_list = ($Brands->emails('support'), $Brands->emails('compliance_alert'));
     my $email_subject        = 'Onfido request count limit exceeded';
     my $email_template       = "\
         <p><b>IMPORTANT: We exceeded our Onfido authentication check request per day..</b></p>
@@ -998,8 +1107,10 @@ async sub _send_email_onfido_unsupported_country_cs {
         Team Binary.com
         ";
 
+    my $from_email = $Brands->email('no-reply');
+    my $to_email   = $Brands->email('authentications');
     my $email_status =
-        Email::Stuffer->from('no-reply@binary.com')->to('authentications@binary.com')->subject($email_subject)->html_body($email_template)->send();
+        Email::Stuffer->from($from_email)->to($to_email)->subject($email_subject)->html_body($email_template)->send();
 
     if ($email_status) {
         my $redis_events_write = _redis_events_write();
@@ -1077,9 +1188,8 @@ sub social_responsibility_check {
 
         if ($hits >= $hits_required) {
 
-            my $brands        = Brands->new();
-            my $system_email  = $brands->emails('system');
-            my $sr_email      = $brands->emails('social_responsibility');
+            my $system_email  = $Brands->emails('system');
+            my $sr_email      = $Brands->emails('social_responsibility');
             my $email_subject = 'Social Responsibility Check required - ' . $loginid;
 
             my $tt = Template::AutoFilter->new({
