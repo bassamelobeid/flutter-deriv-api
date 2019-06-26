@@ -134,7 +134,7 @@ subtest "withdraw vs Balance" => sub {
 
 # Test for CR withdrawal limits
 subtest 'CR withdrawal' => sub {
-    plan tests => 6;
+    plan tests => 7;
 
     # CR withdrawals in USD
     subtest 'in USD, unauthenticated' => sub {
@@ -228,6 +228,15 @@ subtest 'CR withdrawal' => sub {
             lives_ok { $client->smart_payment(%withdrawal, amount => -5000) } 'first 5k withdrawal';
             lives_ok { $client->smart_payment(%withdrawal, amount => -6000) } 'subsequent 6k withdrawal';
         };
+    };
+
+    # Testing an odd case for validate_payment
+    subtest 'BTC authenticated, full withdrawal' => sub {
+        my $client = new_client('BTC');
+        $client->status->set('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID',);
+        $client->set_authentication('ID_DOCUMENT')->status('pass');
+        my $var = $client->smart_payment(%deposit_btc, amount => 0.01434048);
+        lives_ok { $client->validate_payment(%withdrawal_btc, amount => -0.01434048) } 'Authed CR withdraw full BTC amount';
     };
 };
 

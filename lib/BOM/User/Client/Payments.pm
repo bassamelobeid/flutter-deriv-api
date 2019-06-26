@@ -93,13 +93,13 @@ sub validate_payment {
             if ($self->missing_requirements('withdrawal'));
 
         die "Withdrawal amount [$currency $absamt] exceeds client balance [$currency $accbal].\n"
-            if $absamt > $accbal;
+            if financialrounding('amount', $currency, $absamt) > financialrounding('amount', $currency, $accbal);
 
         if (my $frozen = $self->get_withdrawal_limits->{frozen_free_gift}) {
             my $unfrozen = financialrounding('amount', $currency, $accbal - $frozen);
             die sprintf "Withdrawal is [%s %s] but balance [%s] includes frozen bonus [%s].\n", $currency,
                 formatnumber('amount', $currency, $absamt), formatnumber('amount', $currency, $accbal), formatnumber('amount', $currency, $frozen)
-                if $absamt > $unfrozen;
+                if financialrounding('amount', $currency, $absamt) > financialrounding('amount', $currency, $unfrozen);
         }
 
         return 1 if $self->fully_authenticated;
@@ -124,7 +124,7 @@ sub validate_payment {
 
             my $wd_left = financialrounding('amount', $currency, $lc_limits->{lifetime_limit} - $wd_epoch);
 
-            if ($absamt > $wd_left) {
+            if (financialrounding('amount', $currency, $absamt) > financialrounding('amount', $currency, $wd_left)) {
                 if ($currency ne $lc_currency) {
                     die sprintf "Withdrawal amount [%s %s] exceeds withdrawal limit [%s %s].\n", $currency,
                         formatnumber('amount', $currency, convert_currency($absamt, $lc_currency, $currency)),
@@ -169,7 +169,7 @@ sub validate_payment {
             # Withdrawable amount is converted from EUR to clients' currency and rounded
             my $wd_left = financialrounding('amount', $currency, convert_currency($wd_eur_left, 'EUR', $currency));
 
-            if ($absamt > $wd_left) {
+            if (financialrounding('amount', $currency, $absamt) > financialrounding('amount', $currency, $wd_left)) {
                 # lock cashier and unwelcome if its MX (as per compliance, check with compliance if you want to remove it)
                 if ($lc eq 'iom') {
                     $self->status->multi_set_clear({
@@ -421,7 +421,8 @@ sub payment_doughflow {
     $doughflow_values{created_by}        ||= $staff;
     $doughflow_values{payment_processor} ||= 'unspecified';
 
-    my @bind_params = ($account->id, $amount, $payment_type, $staff, $remark, Encode::encode_utf8($json->encode(\%doughflow_values)), $payment_fee,);
+    my @bind_params =
+        ($account->id, $amount, $payment_type, $staff, $remark, Encode::encode_utf8($json->encode(\%doughflow_values)), $payment_fee,);
 
     my $trx = $self->db->dbic->run(
         fixup => sub {
