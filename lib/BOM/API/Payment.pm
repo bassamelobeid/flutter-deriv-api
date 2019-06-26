@@ -51,7 +51,7 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
         };
 
         # DoughFlow
-        resource qr'/transaction/payment/doughflow/record' => sub {
+        resource qr'/transaction/payment/doughflow/record$' => sub {
             GET { BOM::API::Payment::DoughFlow->new(env => $_[0])->record_GET };
         };
         resource '/transaction/payment/doughflow/deposit' => sub {
@@ -77,6 +77,21 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
         resource '/transaction/payment/doughflow/withdrawal_reversal' => sub {
             POST {
                 BOM::API::Payment::DoughFlow->new(env => $_[0])->withdrawal_reversal_POST;
+            }
+        };
+        resource '/transaction/payment/doughflow/create_payout' => sub {
+            POST {
+                BOM::API::Payment::DoughFlow->new(env => $_[0])->create_payout_POST;
+            }
+        };
+        resource '/transaction/payment/doughflow/update_payout' => sub {
+            POST {
+                BOM::API::Payment::DoughFlow->new(env => $_[0])->update_payout_POST;
+            }
+        };
+        resource '/transaction/payment/doughflow/record_failed_deposit' => sub {
+            POST {
+                BOM::API::Payment::DoughFlow->new(env => $_[0])->record_failed_deposit_POST;
             }
         };
     };

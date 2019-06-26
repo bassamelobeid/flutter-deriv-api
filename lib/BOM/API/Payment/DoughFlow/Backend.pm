@@ -29,8 +29,7 @@ sub execute {
     my $client = $c->user;
 
     if ($c->type eq 'deposit') {
-
-        #if the client uses DF to deposit, unset flag to dont allow them withdrawal through PA
+        # if the client uses DF to deposit, unset flag to dont allow them withdrawal through PA
         $client->status->clear_pa_withdrawal_explicitly_allowed;
     }
 

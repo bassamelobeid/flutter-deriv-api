@@ -11,6 +11,7 @@ alias:
   run:
     background: true
     command: |
+      sudo mkdir -p /var/lib/binary && sudo chown nobody:nogroup /var/lib/binary # needed for paymentapi_new_api_calls_trace.log
       start_services
       touch /tmp/services.ready
     name: Start services

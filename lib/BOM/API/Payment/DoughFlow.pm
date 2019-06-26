@@ -10,6 +10,12 @@ use Scalar::Util qw/blessed/;
 use BOM::API::Payment::DoughFlow::Backend;
 use BOM::Database::DataMapper::Payment;
 
+use Log::Any '$new_api_log',
+    log_level => 'debug',
+    category  => 'new_api_log';
+use Log::Any::Adapter;
+Log::Any::Adapter->set({category => 'new_api_log'}, 'File', '/var/lib/binary/paymentapi_new_api_calls_trace.log');
+
 =head2 record
 
 Routes requests to the appropriate DoughFlow transaction record method. Currently only GET is supported.
@@ -116,6 +122,78 @@ sub withdrawal_reversal_POST {
     return _doughflow_backend($c, 'withdrawal_reversal');
 }
 
+=head2 create_payout_POST, update_payout_POST
+
+The following two subs are placeholders for future implemention of the Doughflow requests CreatePayout and UpdatePayout.
+For now they just dump request params to the paymentapi_new_api_calls_trace log.
+See https://trello.com/c/10Ex9IyA/8915-8-billmarriott-newdfendpoints-2 for more background.
+
+=cut
+
+sub create_payout_POST {
+    my $c = shift;
+
+    _log_new_api_request($c, 'create_payout');
+
+    unless (_is_authenticated($c)) {
+        $new_api_log->debugf('create_payout: Authorization required, please check if request has X-DoughFlow-Authorization-Passed header.');
+        return $c->throw(401, 'Authorization required');
+    }
+
+    # return success as of now, once we have evaluated all
+    # the error messages then we will update this accordingly
+    return {
+        status      => 0,
+        description => 'success',
+    };
+}
+
+sub update_payout_POST {
+    my $c = shift;
+
+    _log_new_api_request($c, 'update_payout');
+
+    unless (_is_authenticated($c)) {
+        $new_api_log->debugf('update_payout: Authorization required, please check if request has X-DoughFlow-Authorization-Passed header.');
+        return $c->throw(401, 'Authorization required');
+    }
+
+    # return success as of now, once we have evaluated all
+    # the error messages then we will update this accordingly
+    return {
+        status      => 0,
+        description => 'success',
+    };
+}
+
+=head2 record_failed_deposit_POST
+
+Implements the RecordFailedDeposit Doughflow request.
+DoughFlow has provision to notify our platform upon the failure
+of customer deposit.
+Currently we are just logging to evaluate the data we get, later
+we can extend this to notify client about failure.
+
+=cut
+
+sub record_failed_deposit_POST {
+    my $c = shift;
+
+    _log_new_api_request($c, 'record_failed_deposit');
+
+    unless (_is_authenticated($c)) {
+        $new_api_log->debugf('record_failed_deposit: Authorization required, please check if request has X-DoughFlow-Authorization-Passed header.');
+        return $c->throw(401, 'Authorization required');
+    }
+
+    # return success as of now, once we have evaluated all
+    # the error messages then we will update this accordingly
+    return {
+        status      => 0,
+        description => 'success',
+    };
+}
+
 =head1 INTERNAL METHODS
 
 =head2 _doughflow_backend
@@ -127,11 +205,7 @@ Processes all requests to the back-end BOM code for DoughFlow requests.
 sub _doughflow_backend {
     my ($c, $type) = @_;
 
-    ## only allow DoughFlow Auth call
-    unless ($c->env->{'X-DoughFlow-Authorization-Passed'}) {
-        # check BOM::API::Payment
-        return $c->throw(401, 'Authorization required');
-    }
+    return $c->throw(401, 'Authorization required') unless _is_authenticated($c);
 
     my $new_txn_id = BOM::API::Payment::DoughFlow::Backend->new(
         env  => $c->env,
@@ -147,6 +221,28 @@ sub _doughflow_backend {
         'client_loginid=' . $c->user->loginid . '&currency_code=' . $c->request_parameters->{'currency_code'} . '&reference_number=' . $new_txn_id);
 
     return $c->status_created($location->as_string);
+}
+
+sub _is_authenticated {
+    my $c = shift;
+
+    ## only allow DoughFlow Auth call
+    return 0 unless $c->env->{'X-DoughFlow-Authorization-Passed'};
+
+    return 1;
+}
+
+sub _log_new_api_request {
+    my ($c, $type) = @_;
+
+    $new_api_log->debugf(
+        'Request details: type: %s, timestamp: %s, method: %s and params: %s',
+        ($type // ''),
+        Date::Utility->new->datetime_yyyymmdd_hhmmss,
+        $c->req->method, $c->req->parameters->as_hashref
+    );
+
+    return undef;
 }
 
 no Moo;
