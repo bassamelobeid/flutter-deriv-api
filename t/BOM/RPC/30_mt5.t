@@ -165,7 +165,9 @@ subtest 'new account' => sub {
         },
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account');
-    is($c->result->{login}, $DETAILS{login}, 'result->{login}');
+    is($c->result->{login},           $DETAILS{login}, 'result->{login}');
+    is($c->result->{balance},         0,               'Balance is 0 upon creation');
+    is($c->result->{display_balance}, '0.00',          'Display balance is "0.00" upon creation');
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
@@ -695,7 +697,8 @@ subtest 'virtual_deposit' => sub {
     };
 
     $c->call_ok($method, $new_account_params)->has_no_error('no error for mt5_new_account');
-    is($c->result->{balance}, 10000, 'Balance is 10,000 upon creation');
+    is($c->result->{balance},         10000,      'Balance is 10,000 upon creation');
+    is($c->result->{display_balance}, '10000.00', 'Display balance is "10000.00" upon creation');
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 

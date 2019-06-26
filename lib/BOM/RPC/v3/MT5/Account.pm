@@ -493,10 +493,11 @@ async_rpc mt5_new_account => sub {
                                     message_to_client => $group_details->{error}}) if ref $group_details eq 'HASH' and $group_details->{error};
 
                             return Future->done({
-                                    login        => $mt5_login,
-                                    balance      => $balance,
-                                    currency     => $args->{currency},
-                                    account_type => $account_type,
+                                    login           => $mt5_login,
+                                    balance         => $balance,
+                                    display_balance => formatnumber('amount', $args->{currency}, $balance),
+                                    currency        => $args->{currency},
+                                    account_type    => $account_type,
                                     ($mt5_account_type) ? (mt5_account_type => $mt5_account_type) : ()});
                         });
                 });
