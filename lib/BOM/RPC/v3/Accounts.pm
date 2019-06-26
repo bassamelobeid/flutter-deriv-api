@@ -1917,6 +1917,7 @@ async_rpc service_token => sub {
     my $params = shift;
 
     my ($client, $args) = @{$params}{qw/client args/};
+    $args->{referrer} //= $params->{referrer} =~ s/(\/|)$/\//r;    # Onfido requires an slash at the end
 
     return BOM::RPC::v3::Services::service_token($client, $args)->then(
         sub {
