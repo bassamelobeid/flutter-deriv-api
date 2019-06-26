@@ -28,6 +28,7 @@ my $config = {
     feed          => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_FEED}       // '/etc/rmg/redis-feed.yml'),
     mt5_user      => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_MT5_USER}   // '/etc/rmg/redis-mt5user.yml'),
     events        => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_EVENTS}     // '/etc/rmg/redis-events.yml'),
+    companylimits        => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_EVENTS}     // '/etc/rmg/redis-companylimits.yml'),
 };
 my $connections = {};
 
@@ -119,6 +120,14 @@ sub redis_events_write {
 
 sub redis_events {
     return _redis('events', 'read', 10);
+}
+
+sub redis_limits_write {
+    return _redis('companylimits', 'write', 10);
+}
+
+sub redis_limits {
+    return _redis('companylimits', 'read', 10);
 }
 
 1;
