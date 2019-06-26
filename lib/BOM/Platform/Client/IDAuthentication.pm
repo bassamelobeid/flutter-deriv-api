@@ -273,7 +273,7 @@ Dear [_1],
 
 Thank you for creating your [_2] account!
 
-As the next step, we’ll need to authenticate your account with proof of your identity and address. To help us with this, please forward scanned copies of the following to [_3]:
+As the next step, we'll need to authenticate your account with proof of your identity and address. To help us with this, please forward scanned copies of the following to [_3]:
 
 - Valid passport, driving licence, or national ID card
 - Bank statement or utility bill (phone bills are not accepted)
@@ -282,7 +282,7 @@ After authentication is complete, your account will be enabled for trading, depo
 
 Thank you for choosing [_2]!
 
-Sincerely,
+Sincerely,  
 Team [_2]
 
 EOM
