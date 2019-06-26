@@ -198,6 +198,7 @@ subtest 'new account with switching' => sub {
     # Expect error because we opened an account in the previous test.
     $c->call_ok($method, $params)->has_error('error from duplicate mt5_new_account')
         ->error_code_is('MT5CreateUserError', 'error code for duplicate mt5_new_account');
+    like $c->result->{error}->{message_to_client}, qr/You already have a gaming account/, 'error message for duplicate mt5_new_account';
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 };
@@ -279,7 +280,7 @@ subtest 'MF to MLT account switching' => sub {
 
     BOM::RPC::v3::MT5::Account::reset_throttler($mf_switch_client->loginid);
     $c->call_ok($method, $params)->has_error('cannot create gaming account for MF only users')
-        ->error_code_is('PermissionDenied', 'error should be permission denied');
+        ->error_code_is('GamingAccountMissing', 'error should be missing gaming account');
 
     # add MLT client
     $switch_user->add_client($mlt_switch_client);
@@ -342,7 +343,7 @@ subtest 'MLT to MF account switching' => sub {
 
     BOM::RPC::v3::MT5::Account::reset_throttler($mf_switch_client->loginid);
     $c->call_ok($method, $params)->has_error('cannot create financial account for MLT only users')
-        ->error_code_is('PermissionDenied', 'error should be permission denied');
+        ->error_code_is('FinancialAccountMissing', 'error should be financial account missing');
 
     # add MF client
     $switch_user->add_client($mf_switch_client);
@@ -360,6 +361,87 @@ subtest 'MLT to MF account switching' => sub {
 
     $c->call_ok($method, $params)->has_no_error('gaming account should be created');
     is($c->result->{account_type}, 'gaming', 'account type should be gaming');
+};
+
+subtest 'VRTC to MLT and MF account switching' => sub {
+    my $mf_switch_client = create_client('MF');
+    $mf_switch_client->set_default_account('GBP');
+    $mf_switch_client->residence('at');
+
+    my $mlt_switch_client = create_client('MLT');
+    $mlt_switch_client->set_default_account('EUR');
+    $mlt_switch_client->residence('at');
+
+    my $vr_switch_client = create_client('VRTC');
+    $vr_switch_client->set_default_account('USD');
+    $vr_switch_client->residence('at');
+
+    $mf_switch_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
+    $mlt_switch_client->$_($basic_details{$_}) for keys %basic_details;
+
+    $mf_switch_client->save();
+    $mlt_switch_client->save();
+    $vr_switch_client->save();
+
+    my $switch_user = BOM::User->create(
+        email    => 'switch+vrtc@binary.com',
+        password => 's3kr1t',
+    );
+
+    $switch_user->add_client($vr_switch_client);
+
+    my $vr_switch_token = $m->create_token($vr_switch_client->loginid, 'test token');
+
+    my $method = 'mt5_new_account';
+    my $params = {
+        language => 'EN',
+        token    => $vr_switch_token,
+        args     => {
+            account_type   => 'gaming',
+            country        => 'es',
+            email          => $DETAILS{email},
+            name           => $DETAILS{name},
+            investPassword => 'Abcd1234',
+            mainPassword   => $DETAILS{password},
+        },
+    };
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($mlt_switch_client->loginid);
+    $c->call_ok($method, $params)->has_error('cannot create gaming account for VRTC only users')
+        ->error_code_is('RealAccountMissing', 'error should be permission denied');
+
+    $switch_user->add_client($mlt_switch_client);
+
+    $c->call_ok($method, $params)->has_no_error('gaming account should be created');
+    is($c->result->{account_type}, 'gaming', 'account type should be gaming');
+
+    # we should get an error if we are trying to open a financial account
+
+    $method = 'mt5_new_account';
+    $params = {
+        language => 'EN',
+        token    => $vr_switch_token,
+        args     => {
+            account_type     => 'financial',
+            mt5_account_type => 'standard',
+            country          => 'es',
+            email            => $DETAILS{email},
+            name             => $DETAILS{name},
+            investPassword   => 'Abcd1234',
+            mainPassword     => $DETAILS{password},
+        },
+    };
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($mf_switch_client->loginid);
+    $c->call_ok($method, $params)->has_error('cannot create financial account for MLT only users')
+        ->error_code_is('FinancialAccountMissing', 'error should be permission denied');
+
+    # add MF client
+    $switch_user->add_client($mf_switch_client);
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($mf_switch_client->loginid);
+    $c->call_ok($method, $params)->has_no_error('financial account should be created');
+    is($c->result->{account_type}, 'financial', 'account type should be financial');
 };
 
 subtest 'get settings' => sub {

@@ -239,6 +239,7 @@ async_rpc mt5_new_account => sub {
             code              => 'InvalidAccountType',
             message_to_client => localize('Invalid account type.')});
     return $invalid_account_type_error if (not $account_type or $account_type !~ /^demo|gaming|financial$/);
+
     if (($account_type ne "demo") && (my @arr = $client->missing_requirements("mt5_signup"))) {
         return create_error_future({
                 code              => 'MissingBasicDetails',
@@ -249,6 +250,7 @@ async_rpc mt5_new_account => sub {
             code              => 'NoCitizen',
             message_to_client => localize('Please set citizenship for your account.')})
         if not $client->is_virtual()
+        and $account_type ne "demo"
         and not $client->citizen();
 
     $mt5_account_type = '' if $account_type eq 'gaming';
@@ -286,22 +288,53 @@ async_rpc mt5_new_account => sub {
         account_type     => $company_type,
         sub_account_type => $mt5_account_type
     );
-    my $binary_company_name = $countries_list->{$residence}->{"${company_type}_company"};
 
     # MT5 is not allowed in client country
     return permission_error_future() if $company_name eq 'none';
 
+    my $binary_company_name = $countries_list->{$residence}->{"${company_type}_company"};
+
+    my $source_client = $client;
+
     # Binary.com front-end will pass whichever client is currently selected
     # in the top-right corner, so check if this user has a qualifying account and switch if they do.
-    if ($client->landing_company->short ne 'virtual' and $client->landing_company->short ne $binary_company_name) {
+    if ($account_type ne 'demo' and $client->landing_company->short ne $binary_company_name) {
         my @clients = $user->clients_for_landing_company($binary_company_name);
         $client = (@clients > 0) ? $clients[0] : undef;
     }
 
-    return permission_error_future() unless $client;
+    unless ($client) {
+        if (scalar($user->clients) == 1 and $source_client->is_virtual() and $account_type ne 'demo') {
+            return create_error_future({
+                    code              => 'RealAccountMissing',
+                    message_to_client => localize('To perform this action, please upgrade to Binary.com real account.')});
+        } elsif ($account_type eq 'financial') {
+            return create_error_future({
+                    code              => 'FinancialAccountMissing',
+                    message_to_client => localize('Upgrade to Binary.com Financial account')});
+        } elsif ($account_type eq 'gaming') {
+            return create_error_future({
+                    code              => 'GamingAccountMissing',
+                    message_to_client => localize('Upgrade to Binary.com Gaming account')});
+        }
+
+        return permission_error_future();
+    }
+
+    return permission_error_future() if ($client->is_virtual() and $account_type ne 'demo');
 
     my $group = _mt5_group($company_name, $account_type, $mt5_account_type, $manager_id, $client->currency);
     return permission_error_future() if $group eq '';
+
+    if ($client->residence eq 'gb' and not $client->status->age_verification) {
+        return ($client->is_virtual() and $user->clients == 1)
+            ? create_error_future({
+                code              => 'RealAccountMissing',
+                message_to_client => localize('To perform this action, please upgrade to Binary.com real account.')})
+            : create_error_future({
+                code              => 'NoAgeVerification',
+                message_to_client => localize('Account needs age verification.')});
+    }
 
     return create_error_future({
             code              => 'FinancialAssessmentMandatory',
@@ -488,6 +521,8 @@ Returns 1 of the financial assemssments meet the requirements; otherwise returns
 
 sub _is_financial_assessment_complete {
     my ($client, $mt5_group) = @_;
+
+    return 1 if $mt5_group =~ /^demo/;
 
     # this case doesn't follow the general rule (labuan and vanuatu are exclusively mt5 landing companies).
     if ($mt5_group =~ /labuan|vanuatu/) {
