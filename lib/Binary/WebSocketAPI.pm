@@ -173,6 +173,7 @@ sub startup {
             $c->stash(
                 server_name          => $c->server_name,
                 client_ip            => $client_ip,
+                referrer             => $c->req->headers->header('Origin'),
                 country_code         => $c->country_code,
                 landing_company_name => $c->landing_company_name,
                 user_agent           => $user_agent,
@@ -494,7 +495,13 @@ sub startup {
         ['copy_stop',          {require_auth => 'trade'}],
         ['app_markup_details', {require_auth => 'read'}],
         ['account_security',   {require_auth => 'admin'}],
-        ['service_token',      {require_auth => 'admin'}],
+        [
+            'service_token',
+            {
+                require_auth => 'admin',
+                stash_params => [qw/ referrer /],
+            }
+        ],
         [
             'exchange_rates',
             {
