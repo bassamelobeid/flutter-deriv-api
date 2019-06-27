@@ -998,8 +998,8 @@ async sub _send_poa_email {
 
     my $need_to_send_email = await $redis_replicated_write->hsetnx('EMAIL_NOTIFICATION_POA', $client->binary_user_id, 1);
 
-    my $from_email = $Brands->email('no-reply');
-    my $to_email   = $Brands->email('authentications');
+    my $from_email = $Brands->emails('no-reply');
+    my $to_email   = $Brands->emails('authentications');
     # using replicated one
     # as this key is used in backoffice as well
     Email::Stuffer->from($from_email)->to($to_email)->subject('New uploaded POA document for: ' . $client->loginid)
@@ -1107,8 +1107,8 @@ async sub _send_email_onfido_unsupported_country_cs {
         Team Binary.com
         ";
 
-    my $from_email = $Brands->email('no-reply');
-    my $to_email   = $Brands->email('authentications');
+    my $from_email = $Brands->emails('no-reply');
+    my $to_email   = $Brands->emails('authentications');
     my $email_status =
         Email::Stuffer->from($from_email)->to($to_email)->subject($email_subject)->html_body($email_template)->send();
 
