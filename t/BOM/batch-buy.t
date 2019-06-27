@@ -135,6 +135,7 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 my $underlying        = create_underlying('frxUSDJPY');
+my $market = $underlying->market->name;
 my $underlying_GDAXI  = create_underlying('GDAXI');
 my $underlying_WLDUSD = create_underlying('WLDUSD');
 my $underlying_R50    = create_underlying('R_50');
@@ -601,8 +602,10 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         rmgenv:production
                         contract_class:higher_lower_bet
                         landing_company:virtual
+                        market:forex
                         amount_type:payout
-                        expiry_type:duration /
+                        expiry_type:duration
+                        /
                 ]}];
         check_datadog
             action_name => 'increment',
@@ -614,8 +617,10 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         rmgenv:production
                         contract_class:higher_lower_bet
                         landing_company:virtual
+                        market:forex
                         amount_type:payout
-                        expiry_type:duration /
+                        expiry_type:duration
+                        /
                 ]}];
         check_datadog
             action_name => 'count',
@@ -628,8 +633,10 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         rmgenv:production
                         contract_class:higher_lower_bet
                         landing_company:virtual
+                        market:forex
                         amount_type:payout
-                        expiry_type:duration /
+                        expiry_type:duration
+                        /
                 ]}];
         check_datadog
             action_name => 'count',
@@ -642,8 +649,10 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         rmgenv:production
                         contract_class:higher_lower_bet
                         landing_company:virtual
+                        market:forex
                         amount_type:payout
-                        expiry_type:duration /
+                        expiry_type:duration
+                        /
                 ]}];
         check_datadog
             action_name => 'count',
@@ -656,8 +665,10 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         rmgenv:production
                         contract_class:higher_lower_bet
                         landing_company:virtual
+                        market:forex
                         amount_type:payout
-                        expiry_type:duration /
+                        expiry_type:duration
+                        /
                 ]}];
         check_datadog
             action_name => 'count',
@@ -670,8 +681,10 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         rmgenv:production
                         contract_class:higher_lower_bet
                         landing_company:virtual
+                        market:forex
                         amount_type:payout
-                        expiry_type:duration /
+                        expiry_type:duration
+                        /
                 ]}];
         check_datadog
             action_name => 'count',
@@ -684,8 +697,10 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         rmgenv:production
                         contract_class:higher_lower_bet
                         landing_company:virtual
+                        market:forex
                         amount_type:payout
-                        expiry_type:duration /
+                        expiry_type:duration
+                        /
                 ]}];
         check_datadog
             action_name => 'count',
@@ -698,8 +713,10 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         rmgenv:production
                         contract_class:higher_lower_bet
                         landing_company:virtual
+                        market:forex
                         amount_type:payout
-                        expiry_type:duration /
+                        expiry_type:duration
+                        /
                 ]}];
         check_datadog
             action_name => 'timing',
@@ -711,8 +728,10 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         rmgenv:production
                         contract_class:higher_lower_bet
                         landing_company:virtual
+                        market:forex
                         amount_type:payout
-                        expiry_type:duration /
+                        expiry_type:duration
+                        /
                 ]}];
         check_datadog
             action_name => 'timing',
@@ -724,8 +743,10 @@ subtest 'batch-buy multiple databases and datadog', sub {
                         rmgenv:production
                         contract_class:higher_lower_bet
                         landing_company:virtual
+                        market:forex
                         amount_type:payout
-                        expiry_type:duration /
+                        expiry_type:duration
+                        /
                 ]}];
     }
     'survived';

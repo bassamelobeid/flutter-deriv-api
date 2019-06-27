@@ -1,1 +1,9 @@
+- regentmarkets/bom
+- regentmarkets/bom-config
+- regentmarkets/bom-market
+- regentmarkets/bom-platform
 - regentmarkets/bom-postgres
+- regentmarkets/bom-pricing
+- regentmarkets/bom-test
+- regentmarkets/bom-user
+- regentmarkets/travis-scripts

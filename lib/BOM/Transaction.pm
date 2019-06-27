@@ -242,12 +242,14 @@ sub stats_start {
     my $client   = $self->client;
     my $contract = $self->contract;
 
-    my $broker    = lc($client->broker_code);
-    my $virtual   = $client->is_virtual ? 'yes' : 'no';
-    my $rmgenv    = BOM::Config::env;
-    my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
-    my $lc        = $client->landing_company->short;
-    my $tags      = {tags => ["broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "contract_class:$bet_class", "landing_company:$lc"]};
+    my $broker      = lc($client->broker_code);
+    my $virtual     = $client->is_virtual ? 'yes' : 'no';
+    my $rmgenv      = BOM::Config::env;
+    my $bet_class   = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
+    my $lc          = $client->landing_company->short;
+    my $market_name = $contract->market->name;
+    my $tags =
+        {tags => ["broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "contract_class:$bet_class", "landing_company:$lc", "market:$market_name"]};
 
     if ($what eq 'buy' or $what eq 'batch_buy') {
         push @{$tags->{tags}}, "amount_type:" . lc($self->amount_type), "expiry_type:" . ($contract->fixed_expiry ? 'fixed' : 'duration');
