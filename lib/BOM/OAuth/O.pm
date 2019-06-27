@@ -244,89 +244,17 @@ sub authorize {
 sub _login {
     my ($c, $app, $oneall_user_id) = @_;
 
-    my ($user, $last_login, $err, $client, @filtered_clients);
-
-    my $email      = lc defang($c->param('email'));
-    my $password   = $c->param('password');
-    my $brand      = $c->stash('brand');
+    my $brand = $c->stash('brand');
     my $brand_name = BOM::OAuth::Helper->extract_brand_from_params($c->stash('request')->params) // $brand->name;
 
-    # TODO get rid of LOGIN label
-    LOGIN:
-    {
-        if ($oneall_user_id) {
-            $password = '**SOCIAL-LOGIN-ONEALL**';
+    my $login_details = {
+        c              => $c,
+        oneall_user_id => $oneall_user_id,
+        app_id         => $app->{id}};
 
-            $user = BOM::User->new(id => $oneall_user_id);
-            unless ($user) {
-                $err = "INVALID_USER";
-                last;
-            }
-        } else {
-            if (not $email or not Email::Valid->address($email)) {
-                $err = "INVALID_EMAIL";
-                last;
-            }
+    my $result = _validate_login($login_details);
 
-            if (not $password) {
-                $err = "INVALID_PASSWORD";
-                last;
-            }
-
-            $user = BOM::User->new(email => $email);
-
-            unless ($user) {
-                $err = "USER_NOT_FOUND";
-                last;
-            }
-
-            # Prevent login if social signup flag is found.
-            # As the main purpose of this controller is to serve
-            # clients with email/password only.
-
-            if ($user->{has_social_signup}) {
-                $err = "NO_SOCIAL_SIGNUP";
-                last;
-            }
-        }
-
-        if (BOM::Config::Runtime->instance->app_config->system->suspend->all_logins) {
-            $err = "TEMP_DISABLED";
-            BOM::User::AuditLog::log('system suspend all login', $user->{email});
-            last;
-        }
-
-        @filtered_clients = _filter_user_clients_by_app_id(
-            app_id => $app->{id},
-            user   => $user
-            )
-            or do {
-            $err = 'UNAUTHORIZED_ACCESS';
-            ();
-            };
-
-        last unless @filtered_clients;
-
-        # get last login before current login to get last record
-        $last_login = $user->get_last_successful_login_history();
-
-        my $result = $user->login(
-            password        => $password,
-            environment     => $c->_login_env(),
-            is_social_login => $oneall_user_id ? 1 : 0,
-        );
-
-        last if ($err = $result->{error});
-
-        $client = $filtered_clients[0];
-        if (grep { $client->loginid =~ /^$_/ } @{BOM::Config::Runtime->instance->app_config->system->suspend->logins}) {
-            $err = "TEMP_DISABLED";
-        } elsif ($client->status->is_login_disallowed or $client->status->disabled) {
-            $err = "DISABLED";
-        }
-    }
-
-    if ($err) {
+    if (my $err = $result->{error_code}) {
         _stats_inc_error($brand_name, $err);
 
         $c->render(
@@ -346,10 +274,19 @@ sub _login {
         return;
     }
 
+    my $filtered_clients = $result->{filtered_clients};
+
     # send when client already has login session(s) and its not backoffice (app_id = 4, as we impersonate from backoffice using read only tokens)
     if ($app->{id} ne '4') {
 
         try {
+
+            # get last login before current login to get last record
+            my $client = $filtered_clients->[0];
+            my $user   = $result->{user};
+
+            my $last_login = $user->get_last_successful_login_history();
+
             if ($last_login and exists $last_login->{environment}) {
                 my ($old_env, $user_agent, $r) =
                     (_get_details_from_environment($last_login->{environment}), $c->req->headers->header('User-Agent') // '', $c->stash('request'));
@@ -396,7 +333,7 @@ sub _login {
 
     # reset csrf_token
     delete $c->session->{csrf_token};
-    return \@filtered_clients;
+    return $filtered_clients;
 }
 
 # fetch social login feature status from settings
@@ -496,6 +433,86 @@ sub _website_domain {
     return "binary.me" if $app_id == 15284;
 
     return "binary.com";
+}
+
+=head2 _validate_login
+
+Validate the email and password inputs. Return the user object
+and list of associated clients, upon successful validation. Otherwise,
+return the error code
+
+=cut
+
+sub _validate_login {
+    my ($login_details) = @_;
+
+    my $err_var = sub {
+        my ($error_code) = @_;
+        return {error_code => $error_code};
+    };
+
+    my $c              = delete $login_details->{c};
+    my $oneall_user_id = delete $login_details->{oneall_user_id};
+
+    my $email    = lc defang($c->param('email'));
+    my $password = $c->param('password');
+
+    my $user;
+
+    if ($oneall_user_id) {
+
+        $user = BOM::User->new(id => $oneall_user_id);
+        return $err_var->("INVALID_USER") unless $user;
+
+        $password = '**SOCIAL-LOGIN-ONEALL**';
+
+    } else {
+
+        return $err_var->("INVALID_EMAIL") unless ($email and Email::Valid->address($email));
+        return $err_var->("INVALID_PASSWORD") unless $password;
+
+        $user = BOM::User->new(email => $email);
+
+        return $err_var->("USER_NOT_FOUND") unless $user;
+
+        # Prevent login if social signup flag is found.
+        # As the main purpose of this controller is to serve
+        # clients with email/password only.
+
+        return $err_var->("NO_SOCIAL_SIGNUP") if $user->{has_social_signup};
+    }
+
+    if (BOM::Config::Runtime->instance->app_config->system->suspend->all_logins) {
+
+        BOM::User::AuditLog::log('system suspend all login', $user->{email});
+        return $err_var->("TEMP_DISABLED");
+
+    }
+
+    my $result = $user->login(
+        password        => $password,
+        environment     => $c->_login_env(),
+        is_social_login => $oneall_user_id ? 1 : 0,
+    );
+
+    return $err_var->($result->{error}) if exists $result->{error};
+
+    my @filtered_clients = _filter_user_clients_by_app_id(
+        app_id => $login_details->{app_id},
+        user   => $user
+    );
+
+    return $err_var->("UNAUTHORIZED_ACCESS") unless @filtered_clients;
+
+    my $client = $filtered_clients[0];
+
+    return $err_var->("TEMP_DISABLED") if grep { $client->loginid =~ /^$_/ } @{BOM::Config::Runtime->instance->app_config->system->suspend->logins};
+    return $err_var->("DISABLED") if ($client->status->is_login_disallowed or $client->status->disabled);
+
+    return {
+        filtered_clients => \@filtered_clients,
+        user             => $user
+    };
 }
 
 # TODO: Remove this when we agree to use all accounts for Mobytrader
