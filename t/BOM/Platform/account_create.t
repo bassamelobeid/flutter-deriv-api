@@ -130,11 +130,14 @@ subtest 'create account' => sub {
 
         # MF acc
         if ($broker eq 'MLT' or $broker eq 'MX') {
+            $real_client->status->set('age_verification', 'system', 'test');
+
             lives_ok { $real_acc = create_mf_acc($real_client, $user); } "create MF acc";
             is($real_acc->{client}->broker, 'MF', "Successfully create " . $real_acc->{client}->loginid);
             my $cl = BOM::User::Client->new({loginid => $real_acc->{client}->loginid});
             my $data = decode_fa($cl->financial_assessment());
             is $data->{forex_trading_experience}, '0-1 year', "got the forex trading experience";
+            ok $cl->status->age_verification, 'sync_client_status age_verification';
         } else {
             warning_like { $real_acc = create_mf_acc($real_client, $user); } qr/maltainvest acc opening err/, "failed to create MF acc";
             is($real_acc->{error}, 'invalid', "$broker client can't open MF acc");
