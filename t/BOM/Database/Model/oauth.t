@@ -15,6 +15,7 @@ my $test_user_id = 999;
 ## clear
 $m->dbic->dbh->do("DELETE FROM oauth.access_token");
 $m->dbic->dbh->do("DELETE FROM oauth.user_scope_confirm");
+$m->dbic->dbh->do("DELETE FROM oauth.official_apps");
 $m->dbic->dbh->do("DELETE FROM oauth.apps");
 
 my $app1 = $m->create_app({
