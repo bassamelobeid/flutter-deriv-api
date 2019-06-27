@@ -613,11 +613,13 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 next CLIENT_KEY;
             }
 
-            if (($key eq 'age_verification') && (($cli->loginid eq $loginid) || $cli->landing_company->short eq 'svg')) {
-                if ($input{$key} eq 'yes') {
-                    $cli->status->set('age_verification', $clerk, 'No specific reason.') unless $cli->status->age_verification;
-                } else {
-                    $cli->status->clear_age_verification;
+            if (exists $input{'age_verification'}) {
+                foreach my $cli (@user_clients) {
+                    if ($input{'age_verification'} eq 'yes') {
+                        $cli->status->set('age_verification', $clerk, 'No specific reason.') unless $cli->status->age_verification;
+                    } else {
+                        $cli->status->clear_age_verification;
+                    }
                 }
             }
 
