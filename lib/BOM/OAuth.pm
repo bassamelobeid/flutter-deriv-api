@@ -22,7 +22,6 @@ sub startup {
     $log->warn("Mojolicious Mode is " . $app->mode);
     $log->warn("Log Level        is " . $log->level);
 
-    $app->plugin(charset => {charset => 'utf-8'});
     $app->plugin('DefaultHelpers');
     $app->plugin('ClientIP');
     $app->secrets([BOM::Config::aes_keys()->{web_secret}{1}]);
