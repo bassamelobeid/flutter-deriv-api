@@ -1,15 +1,35 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "status": {
-            "type": "array",
-            "required": "1"
-        },
-        "risk_classification": {
-            "type": ["string", "null"],
-            "pattern": "^(low|standard|high)?$",
-            "required": "1"
-        }
-    }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "type" : "object",
+   "title" : null,
+   "additionalProperties" : false,
+   "required" : [
+      "status",
+      "stash",
+      "risk_classification",
+      "prompt_client_to_authenticate"
+   ],
+   "properties" : {
+      "stash" : {
+         "type" : "object"
+      },
+      "risk_classification" : {
+         "pattern" : "^(low|standard|high)?$",
+         "type" : [
+            "string",
+            "null"
+         ]
+      },
+      "prompt_client_to_authenticate" : {
+         "enum" : [
+            0,
+            1
+         ],
+         "type" : "integer"
+      },
+      "status" : {
+         "type" : "array"
+      }
+   }
 }

@@ -1,22 +1,35 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "total_score": {
-      "type": "integer",
-      "description" : "Financial assessment score based on answers"
-    },
-    "cfd_score": {
-      "type": "integer",
-      "description" : "CFD score based on answers"
-    },
-    "financial_information_score": {
-      "type": "integer",
-      "description" : "Financial information score based on answers"
-    },
-    "trading_score": {
-      "type": "integer",
-      "description" : "Trading experience score based on answers"
-    }
-  }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "additionalProperties" : false,
+   "title" : null,
+   "type" : "object",
+   "description" : null,
+   "required" : [
+      "stash",
+      "financial_information_score",
+      "trading_score",
+      "total_score",
+      "cfd_score"
+   ],
+   "properties" : {
+      "stash" : {
+         "type" : "object"
+      },
+      "financial_information_score" : {
+         "type" : "integer",
+         "description" : "Financial information score based on answers"
+      },
+      "trading_score" : {
+         "type" : "integer",
+         "description" : "Trading experience score based on answers"
+      },
+      "total_score" : {
+         "description" : "Financial assessment score based on answers",
+         "type" : "integer"
+      },
+      "cfd_score" : {
+         "type" : "integer",
+         "description" : "CFD score based on answers"
+      }
+   }
 }

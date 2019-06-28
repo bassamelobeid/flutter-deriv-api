@@ -1,61 +1,74 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "stash": {
-            "type": "object",
-            "required": "1",
-            "properties":{
-                "[_1]_display_decimals": {
-                    "type": "integer",
-                    "required": "1"
-                }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "type" : "object",
+   "additionalProperties" : false,
+   "title" : null,
+   "required" : [
+      "type",
+      "publish",
+      "stash",
+      "data"
+   ],
+   "properties" : {
+      "type" : {
+         "type" : "string",
+         "pattern" : "^history$"
+      },
+      "stash" : {
+         "properties" : {
+            "[_1]_display_decimals" : {
+               "type" : "integer"
             }
-        },
-        "type":{
-            "type": "string",
-            "required": "1",
-            "pattern": "^history$"
-        },
-        "publish": {
-            "type": "string",
-            "required": "1",
-            "pattern": "^tick$"
-        },
-        "data": {
-            "type": "object",
-            "required": "1",
-            "properties": {
-                "history": {
-                    "type": "object",
-                    "required": "1",
-                    "properties": {
-                        "times": {
-                            "type": ["array", "null"],
-                            "required": "1",
-                            "maxItems": "[_2]",
-                            "minItems": "[_2]",
-                            "items": {
-                                "type": "integer",
-                                "pattern": "^\\d{10}$",
-                                "required": "1"
-                            }
-                        },
-                        "prices": {
-                            "type": ["array", "null"],
-                            "required": "1",
-                            "maxItems": "[_2]",
-                            "minItems": "[_2]",
-                            "items": {
-                                "type": "string",
-                                "pattern": "^\\d+\\.\\d+$",
-                                "required": "1"
-                            }
-                        }
-                    }
-                }
+         },
+         "type" : "object"
+      },
+      "publish" : {
+         "pattern" : "^tick$",
+         "type" : "string"
+      },
+      "data" : {
+         "properties" : {
+            "history" : {
+               "required" : [
+                  "prices",
+                  "times"
+               ],
+               "properties" : {
+                  "prices" : {
+                     "minItems" : "[_2]",
+                     "items" : {
+                        "pattern" : "^\\d+\\.\\d+$",
+                        "type" : "string"
+                     },
+                     "type" : [
+                        "array",
+                        "null"
+                     ],
+                     "maxItems" : "[_2]"
+                  },
+                  "times" : {
+                     "minItems" : "[_2]",
+                     "maxItems" : "[_2]",
+                     "type" : [
+                        "array",
+                        "null"
+                     ],
+                     "items" : {
+                        "pattern" : "^\\d{10}$",
+                        "type" : "string"
+                     }
+                  }
+               },
+               "additionalProperties" : false,
+               "type" : "object"
             }
-        }
-
-    }
+         },
+         "required" : [
+            "history"
+         ],
+         "type" : "object",
+         "additionalProperties" : false
+      }
+   }
 }

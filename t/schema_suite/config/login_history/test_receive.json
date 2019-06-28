@@ -1,32 +1,46 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-         "records": {
-              "type": "array",
-              "items": {
-                   "type": "object",
-                   "properties": {
-                        "time": {
-                            "type": "integer",
-                            "required": "1"
-                        },
-                        "action": {
-                            "type": "string",
-                            "required": "1"
-                        },
-                        "environment": {
-                            "type":"string",
-                            "required": "1"
-                        },
-                        "status": {
-                            "type": "integer",
-                            "pattern": "^1$",
-                            "required": "1"
-                        }
-                   }
-              },
-              "required": "1"
-         }
-    }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "title" : null,
+   "additionalProperties" : false,
+   "description" : null,
+   "type" : "object",
+   "required" : [
+      "stash",
+      "records"
+   ],
+   "properties" : {
+      "records" : {
+         "items" : {
+            "properties" : {
+               "environment" : {
+                  "type" : "string"
+               },
+               "time" : {
+                  "type" : "integer"
+               },
+               "action" : {
+                  "type" : "string"
+               },
+               "status" : {
+                  "enum" : [
+                     1
+                  ],
+                  "type" : "integer"
+               }
+            },
+            "required" : [
+               "environment",
+               "status",
+               "action",
+               "time"
+            ],
+            "type" : "object",
+            "additionalProperties" : false
+         },
+         "type" : "array"
+      },
+      "stash" : {
+         "type" : "object"
+      }
+   }
 }

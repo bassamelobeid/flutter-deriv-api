@@ -1,60 +1,126 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "email": {
-      "type": "string",
-      "pattern": "^[_3]$",
-      "required": "1"
-    },
-    "currency": {
-      "type": "string",
-      "pattern": "^$",
-      "required": "1"
-    },
-    "balance": {
-      "type": "number",
-      "pattern": "^0.00$",
-      "required": "1"
-    },
-    "loginid": {
-      "type": "string",
-      "pattern": "^MLT\\d+$",
-      "required": "1"
-    },
-    "is_virtual": {
-      "type": "string",
-      "pattern": "^0$",
-      "required": "1"
-    },
-    "landing_company_name": {
-      "type": "string",
-      "pattern": "^malta$",
-      "required": "1"
-    },
-    "landing_company_fullname": {
-      "type": "string",
-      "pattern": "^Binary \\(Europe\\) Ltd$",
-      "required": "1"
-    },
-    "country": {
-      "type": "string",
-      "pattern": "^[_2]$",
-      "required": "1"
-    },
-    "fullname": {
-      "type": "string",
-      "pattern": "^Mrs Example First Name MLT Example Last Name$",
-      "required": "1"
-    },
-    "scopes": {
-      "type": "array",
-      "minItems": 4,
-      "items": {
-        "type": "string",
-        "pattern": "^(admin|payments|read|trade)$"
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "landing_company_fullname",
+      "currency",
+      "balance",
+      "is_virtual",
+      "email",
+      "loginid",
+      "fullname",
+      "landing_company_name",
+      "country",
+      "scopes",
+      "stash",
+      "account_list",
+      "upgradeable_landing_companies",
+      "user_id"
+   ],
+   "additionalProperties" : false,
+   "title" : null,
+   "type" : "object",
+   "description" : null,
+   "properties" : {
+      "loginid" : {
+         "pattern" : "^MLT\\d+$",
+         "type" : "string"
       },
-      "required": "1"
-    }
-  }
+      "user_id" : {
+         "type" : "string",
+         "pattern" : "^[0-9]+$"
+      },
+      "landing_company_name" : {
+         "type" : "string",
+         "pattern" : "^malta$"
+      },
+      "account_list" : {
+         "type" : "array",
+         "description" : "List of accounts for current user.",
+         "items" : {
+            "additionalProperties" : false,
+            "type" : "object",
+            "required" : [
+               "is_virtual",
+               "currency",
+               "loginid",
+               "is_disabled",
+               "landing_company_name"
+            ],
+            "properties" : {
+               "is_virtual" : {
+                  "type" : "integer",
+                  "description" : "Boolean value: 1 or 0, indicating whether the account is a virtual-money account.",
+                  "enum" : [
+                     0,
+                     1
+                  ]
+               },
+               "loginid" : {
+                  "type" : "string",
+                  "description" : "The account id of specified account."
+               },
+               "is_disabled" : {
+                  "enum" : [
+                     0,
+                     1
+                  ],
+                  "description" : "Boolean value: 1 or 0, indicating whether the account is marked as disabled or not.",
+                  "type" : "integer"
+               },
+               "currency" : {
+                  "description" : "Currency of specified account.",
+                  "type" : "string"
+               },
+               "landing_company_name" : {
+                  "description" : "Landing company shortcode the account belongs to.",
+                  "type" : "string"
+               }
+            }
+         }
+      },
+      "stash" : {
+         "type" : "object"
+      },
+      "scopes" : {
+         "type" : "array",
+         "items" : {
+            "type" : "string",
+            "pattern" : "^(admin|payments|read|trade)$"
+         },
+         "minItems" : 4
+      },
+      "is_virtual" : {
+         "type" : "integer",
+         "enum" : [
+            0
+         ]
+      },
+      "country" : {
+         "type" : "string",
+         "pattern" : "^[_2]$"
+      },
+      "currency" : {
+         "type" : "string",
+         "pattern" : "^$"
+      },
+      "fullname" : {
+         "type" : "string",
+         "pattern" : "^Mrs Example First Name MLT Example Last Name$"
+      },
+      "email" : {
+         "type" : "string",
+         "pattern" : "^[_3]$"
+      },
+      "landing_company_fullname" : {
+         "pattern" : "^Binary \\(Europe\\) Ltd$",
+         "type" : "string"
+      },
+      "balance" : {
+         "type" : "string",
+         "pattern" : "^0.00$"
+      },
+      "upgradeable_landing_companies" : {
+         "type" : "array"
+      }
+   }
 }

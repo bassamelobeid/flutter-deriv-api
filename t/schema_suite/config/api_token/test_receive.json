@@ -1,39 +1,61 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "tokens": {
-      "type": "array",
-      "items": {
-          "type": "object",
-          "properties": {
-              "scopes": {
-                  "minItems": 4,
-                  "items": {
-                    "type": "string",
-                    "pattern": "^(read|trade|payments|admin)$"
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "tokens",
+      "stash"
+   ],
+   "type" : "object",
+   "description" : null,
+   "title" : null,
+   "additionalProperties" : false,
+   "properties" : {
+      "stash" : {
+         "type" : "object"
+      },
+      "tokens" : {
+         "items" : {
+            "required" : [
+               "token",
+               "display_name",
+               "scopes",
+               "last_used",
+               "valid_for_ip"
+            ],
+            "properties" : {
+               "scopes" : {
+                  "minItems" : 4,
+                  "items" : {
+                     "pattern" : "^(read|trade|payments|admin)$",
+                     "type" : "string"
                   },
-                  "required": "1"
-              },
-              "token": {
-                  "type": "string",
-                  "pattern": "^[_2]$",
-                  "required": "1"
-              },
-              "display_name": {
-                  "type": "string",
-                  "pattern": "^[_3]$",
-                  "required": "1"
-              },
-              "last_used": {
-                  "type": ["string", "null"],
-                  "pattern": "^(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2})?$",
-                  "required": "1"
-              }
-          }
-        },
-        "required": "1"
-    }
-  },
-  "required": "1"
+                  "type" : "array"
+               },
+               "display_name" : {
+                  "pattern" : "^[_3]$",
+                  "type" : "string"
+               },
+               "valid_for_ip" : {
+                  "type" : [
+                     "string",
+                     "null"
+                  ]
+               },
+               "token" : {
+                  "type" : "string",
+                  "pattern" : "^[_2]$"
+               },
+               "last_used" : {
+                  "type" : [
+                     "string",
+                     "null"
+                  ],
+                  "pattern" : "^(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2})?$"
+               }
+            },
+            "additionalProperties" : false,
+            "type" : "object"
+         },
+         "type" : "array"
+      }
+   }
 }

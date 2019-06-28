@@ -1,44 +1,53 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "start_time": {
-      "type": "integer",
-      "required": "1"
-    },
-    "loginid": {
-      "type": "string",
-      "pattern": "^MF\\d+$",
-      "required": "1"
-    },
-    "currency": {
-      "type": "string",
-      "pattern": "^$",
-      "required": "1"
-    },
-    "buy_count": {
-      "type": "integer",
-      "required": "1"
-    },
-    "buy_amount": {
-      "type": "number",
-      "required": "1"
-    },
-    "sell_count": {
-      "type": "integer",
-      "required": "1"
-    },
-    "sell_amount": {
-      "type": "number",
-      "required": "1"
-    },
-    "potential_profit": {
-      "type": "number",
-      "required": "1"
-    },
-    "open_contract_count": {
-      "type": "integer",
-      "required": "1"
-    }
-  }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "start_time",
+      "currency",
+      "sell_count",
+      "open_contract_count",
+      "buy_amount",
+      "buy_count",
+      "loginid",
+      "sell_amount",
+      "stash",
+      "potential_profit"
+   ],
+   "type" : "object",
+   "description" : null,
+   "additionalProperties" : false,
+   "title" : null,
+   "properties" : {
+      "stash" : {
+         "type" : "object"
+      },
+      "open_contract_count" : {
+         "type" : "integer"
+      },
+      "buy_amount" : {
+         "type" : "number"
+      },
+      "start_time" : {
+         "type" : "integer"
+      },
+      "potential_profit" : {
+         "type" : "number"
+      },
+      "loginid" : {
+         "type" : "string",
+         "pattern" : "^MF\\d+$"
+      },
+      "sell_amount" : {
+         "type" : "number"
+      },
+      "currency" : {
+         "pattern" : "^$",
+         "type" : "string"
+      },
+      "buy_count" : {
+         "type" : "integer"
+      },
+      "sell_count" : {
+         "type" : "integer"
+      }
+   }
 }

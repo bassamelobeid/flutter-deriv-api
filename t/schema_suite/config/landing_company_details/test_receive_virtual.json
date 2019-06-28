@@ -1,64 +1,202 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "shortcode": {
-            "type": "string",
-            "pattern": "^[_1]$",
-            "required": "1"
-        },
-        "name": {
-            "type": "string",
-            "pattern": "^Binary Ltd$",
-            "required": "1"
-        },
-        "address": {
-            "type": "null"
-        },
-        "country": {
-            "type": "string",
-            "pattern": "^Bahamas$",
-            "required": "1"
-        },
-        "legal_default_currency": {
-            "type": "string",
-            "pattern": "^USD$",
-            "required": "1"
-        },
-        "legal_allowed_currencies": {
-            "type": "array",
-            "minItems": 1,
-            "required": "1",
-            "items": {
-                "type": "string",
-                "pattern": "^USD$",
-                "required": "1"
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "legal_default_currency",
+      "shortcode",
+      "legal_allowed_currencies",
+      "country",
+      "stash",
+      "legal_allowed_markets",
+      "legal_allowed_contract_categories",
+      "has_reality_check",
+      "name",
+      "changeable_fields",
+      "currency_config",
+      "requirements",
+      "address"
+   ],
+   "description" : null,
+   "type" : "object",
+   "additionalProperties" : false,
+   "title" : null,
+   "properties" : {
+      "requirements" : {
+         "additionalProperties" : false,
+         "type" : "object",
+         "properties" : {}
+      },
+      "legal_allowed_contract_categories" : {
+         "type" : "array",
+         "items" : {
+            "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|highlowticks|reset|callputspread|callputequal|runs)$",
+            "type" : "string"
+         },
+         "minItems" : 6
+      },
+      "has_reality_check" : {
+         "enum" : [
+            0
+         ],
+         "type" : "integer"
+      },
+      "stash" : {
+         "type" : "object"
+      },
+      "changeable_fields" : {
+         "properties" : {},
+         "type" : "object",
+         "additionalProperties" : false
+      },
+      "country" : {
+         "pattern" : "^Bahamas$",
+         "type" : "string"
+      },
+      "currency_config" : {
+         "required" : [
+            "forex",
+            "commodities",
+            "volidx",
+            "indices"
+         ],
+         "properties" : {
+            "forex" : {
+               "additionalProperties" : false,
+               "type" : "object",
+               "patternProperties" : {
+                  "^[A-Z]{3,4}$" : {
+                     "properties" : {
+                        "min_stake" : {
+                           "type" : "number",
+                           "minimum" : 0,
+                           "maximum" : 10
+                        },
+                        "max_payout" : {
+                           "type" : "number",
+                           "minimum" : 0
+                        }
+                     },
+                     "required" : [
+                        "max_payout",
+                        "min_stake"
+                     ],
+                     "additionalProperties" : false,
+                     "type" : "object"
+                  }
+               },
+               "properties" : {}
+            },
+            "commodities" : {
+               "additionalProperties" : false,
+               "type" : "object",
+               "patternProperties" : {
+                  "^[A-Z]{3,4}$" : {
+                     "required" : [
+                        "max_payout",
+                        "min_stake"
+                     ],
+                     "properties" : {
+                        "max_payout" : {
+                           "minimum" : 0,
+                           "type" : "number"
+                        },
+                        "min_stake" : {
+                           "minimum" : 0,
+                           "type" : "number",
+                           "maximum" : 10
+                        }
+                     },
+                     "additionalProperties" : false,
+                     "type" : "object"
+                  }
+               },
+               "properties" : {}
+            },
+            "volidx" : {
+               "patternProperties" : {
+                  "^[A-Z]{3,4}$" : {
+                     "additionalProperties" : false,
+                     "type" : "object",
+                     "required" : [
+                        "max_payout",
+                        "min_stake"
+                     ],
+                     "properties" : {
+                        "max_payout" : {
+                           "type" : "number",
+                           "minimum" : 0
+                        },
+                        "min_stake" : {
+                           "maximum" : 10,
+                           "minimum" : 0,
+                           "type" : "number"
+                        }
+                     }
+                  }
+               },
+               "properties" : {},
+               "additionalProperties" : false,
+               "type" : "object"
+            },
+            "indices" : {
+               "patternProperties" : {
+                  "^[A-Z]{3,4}$" : {
+                     "required" : [
+                        "max_payout",
+                        "min_stake"
+                     ],
+                     "properties" : {
+                        "min_stake" : {
+                           "type" : "number",
+                           "minimum" : 0,
+                           "maximum" : 10
+                        },
+                        "max_payout" : {
+                           "type" : "number",
+                           "minimum" : 0
+                        }
+                     },
+                     "additionalProperties" : false,
+                     "type" : "object"
+                  }
+               },
+               "properties" : {},
+               "additionalProperties" : false,
+               "type" : "object"
             }
-        },
-        "legal_allowed_markets": {
-            "type": "array",
-            "minItems": 4,
-            "required": "1",
-            "items": {
-                "type": "string",
-                "pattern": "^(commodities|forex|indices|volidx)$",
-                "required": "1"
-            }
-        },
-        "legal_allowed_contract_categories": {
-            "type": "array",
-            "minItems": 6,
-            "required": "1",
-            "items": {
-                "type": "string",
-                "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|highlowticks|reset|callputspread|callputequal|runs)$",
-                "required": "1"
-            }
-        },
-        "has_reality_check": {
-            "type": "integer",
-            "pattern": "^0$",
-            "required": "1"
-        }
-    }
+         },
+         "type" : "object",
+         "additionalProperties" : false
+      },
+      "legal_allowed_currencies" : {
+         "type" : "array",
+         "items" : {
+            "pattern" : "^USD$",
+            "type" : "string"
+         },
+         "minItems" : 1
+      },
+      "legal_allowed_markets" : {
+         "type" : "array",
+         "items" : {
+            "pattern" : "^(commodities|forex|indices|volidx)$",
+            "type" : "string"
+         },
+         "minItems" : 4
+      },
+      "address" : {
+         "type" : "null"
+      },
+      "name" : {
+         "type" : "string",
+         "pattern" : "^Binary Ltd$"
+      },
+      "legal_default_currency" : {
+         "type" : "string",
+         "pattern" : "^USD$"
+      },
+      "shortcode" : {
+         "pattern" : "^[_1]$",
+         "type" : "string"
+      }
+   }
 }
