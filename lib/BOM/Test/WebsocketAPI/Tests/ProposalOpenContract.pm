@@ -5,6 +5,7 @@ no indirect;
 use strict;
 use warnings;
 
+use List::Util;
 use Future::Utils qw(fmap_void);
 use Devops::BinaryAPI::Tester::DSL;
 use List::Util qw(first);
@@ -35,7 +36,7 @@ suite buy_then_sell_contract => sub {
 
     my $context = $suite->last_context;
 
-    #Filter out requests except `buy` since this suite only targets buy requests
+    # Filter out requests except `buy` since this suite only targets buy requests
     my @buy_requests = grep { (keys($_->%*))[0] eq 'buy' } $args{requests}->@*;
 
     fmap_void {
@@ -46,13 +47,13 @@ suite buy_then_sell_contract => sub {
         ->subscribe(buy => $request)
         ->take_until(sub {
             my $response = shift;
-
             $response->isa('Binary::API::OpenContract') && $response->is_sold;
         })
         ->expect_done(sub {
+            my @all_reposonses = @_;
             my $buy_response = shift;
             my $sell_response = pop;
-            my @poc_reponses = @_;
+            my @poc_responses = @_;
 
             # Check buy response
             ok ($buy_response->contract_id, "Contract '" .
@@ -61,14 +62,19 @@ suite buy_then_sell_contract => sub {
             $sell_response->buy_price);
 
             # Check proposal_open_contract response
-            ok ($_->is_sold == 0)  for (@poc_reponses);
+
+            ok ($poc_responses[$_]->is_sold == 0, "poc response $_ is unsold") for (0..$#poc_responses);
 
             # Check sell response
             ok ($sell_response->is_sold == 1,
             "Contract '" . $sell_response->longcode .
             "' is sold at bid price: " .
             $sell_response->bid_price);
-
+            
+            # check subscription id
+            my @subscriptions = grep { $_->envelope->subscription } @all_reposonses;
+            is scalar(@subscriptions), scalar(@all_reposonses), 'All responses have subcription id';
+            ok List::Util::all(sub { $buy_response->envelope->subscription->id eq $_->envelope->subscription->id; }, @subscriptions), 'Subscription ids are all the same';
         })
         ->timeout_ok(5, sub {
             shift->take_latest
