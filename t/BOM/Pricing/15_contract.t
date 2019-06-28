@@ -421,10 +421,14 @@ subtest 'get_bid' => sub {
             barrier
             exit_tick_time
             exit_tick
+            exit_tick_display_value
             entry_tick
+            entry_tick_display_value
             entry_tick_time
             current_spot
+            current_spot_display_value
             entry_spot
+            entry_spot_display_value
             barrier_count
             status
             audit_details
@@ -551,24 +555,27 @@ subtest $method => sub {
     };
     my $res = $c->call_ok('get_bid', $params)->result;
     my $expected_result = {
-        'barrier'         => '0.99350',
-        'contract_id'     => 10,
-        'currency'        => 'USD',
-        'bid_price'       => '154.07',
-        'payout'          => '154.07',
-        'date_expiry'     => 1127287660,
-        'date_settlement' => 1127287660,
-        'date_start'      => 1127287260,
-        'entry_spot'      => '0.99350',
-        'entry_tick'      => '0.99350',
-        'entry_tick_time' => 1127287261,
-        'exit_tick'       => '0.99380',
-        'exit_tick_time'  => 1127287659,
-        'longcode'        => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 40 seconds after contract start time.',
-        'shortcode'       => 'CALL_FRXAUDCAD_154.07_1127287260_1127287660_S0P_0',
-        'underlying'      => 'frxAUDCAD',
-        is_valid_to_sell  => 1,
-        'status'          => 'open',
+        'barrier'                  => '0.99350',
+        'contract_id'              => 10,
+        'currency'                 => 'USD',
+        'bid_price'                => '154.07',
+        'payout'                   => '154.07',
+        'date_expiry'              => 1127287660,
+        'date_settlement'          => 1127287660,
+        'date_start'               => 1127287260,
+        'entry_spot'               => '0.9935',
+        'entry_spot_display_value' => '0.99350',
+        'entry_tick'               => '0.9935',
+        'entry_tick_display_value' => '0.99350',
+        'entry_tick_time'          => 1127287261,
+        'exit_tick'                => '0.9938',
+        'exit_tick_display_value'  => '0.99380',
+        'exit_tick_time'           => 1127287659,
+        'longcode'                 => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 40 seconds after contract start time.',
+        'shortcode'                => 'CALL_FRXAUDCAD_154.07_1127287260_1127287660_S0P_0',
+        'underlying'               => 'frxAUDCAD',
+        is_valid_to_sell           => 1,
+        'status'                   => 'open',
     };
 
     foreach my $key (keys %$expected_result) {
@@ -601,24 +608,27 @@ subtest $method => sub {
     };
     $res = $c->call_ok('get_bid', $params)->result;
     $expected_result = {
-        'barrier'         => '0.99360',
-        'bid_price'       => '0.00',
-        'is_expired'      => 1,
-        'contract_id'     => 10,
-        'currency'        => 'USD',
-        'date_expiry'     => 1127288662,
-        'date_settlement' => 1127288662,
-        'date_start'      => 1127288260,
-        'payout'          => '188.21',
-        'entry_spot'      => '0.99360',
-        'entry_tick'      => '0.99360',
-        'entry_tick_time' => 1127288261,
-        'exit_tick'       => '0.99340',
-        'exit_tick_time'  => 1127288661,
-        'longcode'        => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 42 seconds after contract start time.',
-        'shortcode'       => 'CALL_FRXAUDCAD_188.21_1127288260_1127288662_S0P_0',
-        'underlying'      => 'frxAUDCAD',
-        is_valid_to_sell  => 1,
+        'barrier'                  => '0.99360',
+        'bid_price'                => '0.00',
+        'is_expired'               => 1,
+        'contract_id'              => 10,
+        'currency'                 => 'USD',
+        'date_expiry'              => 1127288662,
+        'date_settlement'          => 1127288662,
+        'date_start'               => 1127288260,
+        'payout'                   => '188.21',
+        'entry_spot'               => '0.9936',
+        'entry_spot_display_value' => '0.99360',
+        'entry_tick'               => '0.9936',
+        'entry_tick_display_value' => '0.99360',
+        'entry_tick_time'          => 1127288261,
+        'exit_tick'                => '0.9934',
+        'exit_tick_display_value'  => '0.99340',
+        'exit_tick_time'           => 1127288661,
+        'longcode'                 => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 42 seconds after contract start time.',
+        'shortcode'                => 'CALL_FRXAUDCAD_188.21_1127288260_1127288662_S0P_0',
+        'underlying'               => 'frxAUDCAD',
+        is_valid_to_sell           => 1,
     };
 
     foreach my $key (keys %$expected_result) {
@@ -635,25 +645,28 @@ subtest $method => sub {
     };
     $res = $c->call_ok('get_bid', $params)->result;
     $expected_result = {
-        'barrier'         => '0.99360',
-        'is_expired'      => 1,
-        'bid_price'       => '0.00',
-        'contract_id'     => 10,
-        'currency'        => 'USD',
-        'payout'          => '188.21',
-        'date_expiry'     => 1127288662,
-        'date_settlement' => 1127288662,
-        'date_start'      => 1127288260,
-        'entry_spot'      => '0.99360',
-        'entry_tick'      => '0.99360',
-        'entry_tick_time' => 1127288261,
-        'exit_tick'       => '0.99340',
-        'exit_tick_time'  => 1127288661,
-        'longcode'        => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 42 seconds after contract start time.',
-        'shortcode'       => 'CALL_FRXAUDCAD_188.21_1127288260_1127288662_S0P_0',
-        'underlying'      => 'frxAUDCAD',
-        is_valid_to_sell  => 0,
-        validation_error  => 'This contract has been sold.',
+        'barrier'                  => '0.99360',
+        'is_expired'               => 1,
+        'bid_price'                => '0.00',
+        'contract_id'              => 10,
+        'currency'                 => 'USD',
+        'payout'                   => '188.21',
+        'date_expiry'              => 1127288662,
+        'date_settlement'          => 1127288662,
+        'date_start'               => 1127288260,
+        'entry_spot'               => '0.9936',
+        'entry_spot_display_value' => '0.99360',
+        'entry_tick'               => '0.9936',
+        'entry_tick_display_value' => '0.99360',
+        'entry_tick_time'          => 1127288261,
+        'exit_tick'                => '0.9934',
+        'exit_tick_display_value'  => '0.99340',
+        'exit_tick_time'           => 1127288661,
+        'longcode'                 => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 42 seconds after contract start time.',
+        'shortcode'                => 'CALL_FRXAUDCAD_188.21_1127288260_1127288662_S0P_0',
+        'underlying'               => 'frxAUDCAD',
+        is_valid_to_sell           => 0,
+        validation_error           => 'This contract has been sold.',
     };
     foreach my $key (keys %$expected_result) {
         cmp_ok $res->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";

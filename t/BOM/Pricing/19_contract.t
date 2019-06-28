@@ -170,10 +170,14 @@ subtest 'get_bid' => sub {
             barrier
             exit_tick_time
             exit_tick
+            exit_tick_display_value
             entry_tick
+            entry_tick_display_value
             entry_tick_time
             current_spot
+            current_spot_display_value
             entry_spot
+            entry_spot_display_value
             barrier_count
             audit_details
             status

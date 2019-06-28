@@ -789,6 +789,8 @@ Returns a contract proposal response as a  Hashref
 
 =cut
 
+my @spot_list = qw(entry_tick entry_spot exit_tick sell_spot current_spot);
+
 sub _build_bid_response {
     my ($params)           = @_;
     my $contract           = $params->{contract};
@@ -929,8 +931,12 @@ sub _build_bid_response {
         }
 
         $response->{tick_stream} =
-            [map { {epoch => $_->epoch, tick => $contract->underlying->pipsized_value($_->quote)} } @all_ticks];
+            [map { {epoch => $_->epoch, tick => $_->quote, tick_display_value => $contract->underlying->pipsized_value($_->quote)} } @all_ticks];
     }
+
+    $response->{$_ . '_display_value'} = $contract->underlying->pipsized_value($response->{$_}) for (grep { defined $response->{$_} } @spot_list);
+    # makes sure they are numbers
+    $response->{$_} += 0 for (grep { defined $response->{$_} } @spot_list);
 
     return $response;
 }
