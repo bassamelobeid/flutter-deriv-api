@@ -952,7 +952,7 @@ sub send_proposal_open_contract_last_time {
                 return {
                     proposal_open_contract => $rpc_response->{$contract_id} || {},
                     msg_type => 'proposal_open_contract',
-                };
+                    subscription => {id => $args->{uuid}}};
             }
         });
     return;
