@@ -1059,18 +1059,20 @@ sub audit_details {
         my $hit_tick = $self->close_tick;
         $details->{contract_end} = [{
                 # "0 +" converts string into number. This was added to ensure some fields return the value as number instead of string
-                epoch => 0 + $hit_tick->epoch,
-                tick  => $self->underlying->pipsized_value($hit_tick->quote),
-                name  => [$GENERIC_MAPPING->{exit_spot}],
-                flag  => 'highlight_tick',
+                epoch              => 0 + $hit_tick->epoch,
+                tick               => $hit_tick->quote,
+                tick_display_value => $self->underlying->pipsized_value($hit_tick->quote),
+                name               => [$GENERIC_MAPPING->{exit_spot}],
+                flag               => 'highlight_tick',
             }];
     } elsif ($self->expiry_daily) {
         my $closing_tick = $self->underlying->closing_tick_on($self->date_expiry->date);
         $details->{contract_end} = [{
-                epoch => 0 + $closing_tick->epoch,
-                tick  => $self->underlying->pipsized_value($closing_tick->quote),
-                name  => [$GENERIC_MAPPING->{closing_spot}],
-                flag  => 'highlight_tick',
+                epoch              => 0 + $closing_tick->epoch,
+                tick               => $closing_tick->quote,
+                tick_display_value => $self->underlying->pipsized_value($closing_tick->quote),
+                name               => [$GENERIC_MAPPING->{closing_spot}],
+                flag               => 'highlight_tick',
             }];
     } else {
         $details->{contract_end} = $self->_get_tick_details({
@@ -1137,8 +1139,9 @@ sub _get_tick_details {
         my $t         = $ticks[$i];
         my $t2        = $ticks[$i + 1];
         my $t_details = {
-            epoch => 0 + $t->epoch,
-            tick  => $self->underlying->pipsized_value($t->quote),
+            epoch              => 0 + $t->epoch,
+            tick               => $t->quote,
+            tick_display_value => $self->underlying->pipsized_value($t->quote),
         };
 
         if ($t->epoch == $epoch && $t->epoch == $quote_epoch) {
