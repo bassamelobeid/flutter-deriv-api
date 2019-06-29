@@ -28,8 +28,6 @@ my $json = JSON::MaybeXS->new;
 
 requires_auth();
 
-my @validation_checks = qw(check_trade_status check_tax_information);
-
 my $nonbinary_list = 'LBFLOATCALL|LBFLOATPUT|LBHIGHLOW';
 
 sub trade_copiers {
@@ -123,9 +121,6 @@ rpc buy => sub {
     my $client = $params->{client} // die "Client should have been authenticated at this stage.";
 
     my ($source, $contract_parameters, $args, $payout) = @{$params}{qw/source contract_parameters args payout/};
-
-    my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($client, @validation_checks);
-    return $validation_error if $validation_error;
 
     my $trading_period_start = $contract_parameters->{trading_period_start};
     my $purchase_date        = time;                                           # Purchase is considered to have happened at the point of request.
@@ -260,7 +255,9 @@ rpc buy_contract_for_multiple_accounts => sub {
     my $args = $params->{args};
     my $tokens = $args->{tokens} // [];
 
-    my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($client, @validation_checks);
+    # Validation still needs to be done on the client that instigated the rpc call
+    # Reason: Compliance checks to prevent money laundering, scamming, fraudulent, etc
+    my $validation_error = BOM::RPC::v3::Utility::validation_checks($client);
     return $validation_error if $validation_error;
 
     return BOM::RPC::v3::Utility::create_error({
@@ -415,7 +412,9 @@ rpc sell_contract_for_multiple_accounts => sub {
 
     my $client = $params->{client} // die "client should be authed when get here";
 
-    my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($client, @validation_checks);
+    # Validation still needs to be done on the client that instigated the rpc call
+    # Reason: Compliance checks to prevent money laundering, scamming, fraudulent, etc
+    my $validation_error = BOM::RPC::v3::Utility::validation_checks($client);
     return $validation_error if $validation_error;
 
     my ($source, $args) = ($params->{source}, $params->{args});
@@ -481,9 +480,6 @@ rpc sell => sub {
     my $params = shift;
 
     my $client = $params->{client} // die "client should be authed when get here";
-
-    my $validation_error = BOM::RPC::v3::Utility::transaction_validation_checks($client, @validation_checks);
-    return $validation_error if $validation_error;
 
     my ($source, $args) = ($params->{source}, $params->{args});
     my $id = $args->{sell};

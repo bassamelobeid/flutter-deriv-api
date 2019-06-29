@@ -56,7 +56,7 @@ my $payment_limits = BOM::Config::payment_limits;
 rpc "cashier", sub {
     my $params = shift;
 
-    my $validation_error = BOM::RPC::v3::Utility::validation_checks($params->{client}, qw( compliance_checks ));
+    my $validation_error = BOM::RPC::v3::Utility::validation_checks($params->{client}, ['compliance_checks']);
     return $validation_error if $validation_error;
 
     my $error_sub = sub {
@@ -93,7 +93,7 @@ rpc "cashier", sub {
             });
         }
     } else {
-        $validation_error = BOM::RPC::v3::Utility::validation_checks($params->{client}, qw( validate_tnc ));
+        $validation_error = BOM::RPC::v3::Utility::validation_checks($params->{client}, ['validate_tnc']);
         return $validation_error if $validation_error;
     }
 
