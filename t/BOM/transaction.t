@@ -34,7 +34,9 @@ Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
 
-$mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
+$mock_validation->mock(validate_tnc          => sub { note "mocked Transaction::Validation->validate_tnc returning nothing";          undef });
+$mock_validation->mock(compliance_checks     => sub { note "mocked Transaction::Validation->compliance_checks returning nothing";     undef });
+$mock_validation->mock(check_tax_information => sub { note "mocked Transaction::Validation->check_tax_information returning nothing"; undef });
 
 #create an empty un-used even so ask_price won't fail preparing market data for pricing engine
 #Because the code to prepare market data is called for all pricings in Contract

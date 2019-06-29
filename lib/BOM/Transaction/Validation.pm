@@ -36,21 +36,27 @@ sub validate_trx_sell {
     $clients = $self->transaction->multiple if $self->transaction;
     $clients = [map { +{client => $_} } @{$self->clients}] unless $clients;
 
-    my @client_validation_method =
-        qw/ check_trade_status _validate_available_currency _validate_currency _validate_iom_withdrawal_limit _validate_offerings_sell /;
+    my @client_validation_method = qw/ _validate_available_currency _validate_currency _validate_iom_withdrawal_limit _validate_offerings_sell /;
 
     my @contract_validation_method = qw/_is_valid_to_sell _validate_sell_pricing_adjustment _validate_date_pricing/;
 
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
-        foreach my $method (@client_validation_method) {
-            my $res = $self->$method($c->{client});
+
+        my $client = $c->{client};
+        my @validation_checks = (@{$client->landing_company->transaction_checks}, @client_validation_method);
+
+        foreach my $method (@validation_checks) {
+
+            my $res = $self->$method($client);
             next unless $res;
+
             if ($self->transaction && $self->transaction->multiple) {
                 $c->{code}  = $res->get_type;
                 $c->{error} = $res->{-message_to_client};
                 next CLI;
             }
+
             return $res;
         }
     }
@@ -80,11 +86,10 @@ sub validate_trx_buy {
     $res = $self->_is_valid_to_buy($self->transaction->client);
     return $res if $res;
 
-    my @client_validation_method = qw/ check_trade_status
+    my @client_validation_method = qw/
         _validate_client_status
         _validate_available_currency
         _validate_currency
-        validate_tnc
         _validate_iom_withdrawal_limit
         _validate_jurisdictional_restrictions
         _validate_client_self_exclusion
@@ -93,8 +98,12 @@ sub validate_trx_buy {
 
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
-        foreach my $method (@client_validation_method) {
-            $res = $self->$method($c->{client});
+        my $client = $c->{client};
+
+        my @validation_checks = (@{$client->landing_company->transaction_checks}, @client_validation_method);
+
+        foreach my $method (@validation_checks) {
+            $res = $self->$method($client);
             next unless $res;
 
             if ($self->transaction && $self->transaction->multiple) {
@@ -102,6 +111,7 @@ sub validate_trx_buy {
                 $c->{error} = $res->{-message_to_client};
                 next CLI;
             }
+
             return $res;
         }
     }
@@ -746,17 +756,11 @@ sub validate_tnc {
 sub compliance_checks {
     my ($self, $client) = (shift, shift);
 
-    # checks are not applicable for virtual, svg and champion clients
-    return undef if $client->is_virtual;
-    return undef if $client->landing_company->short eq 'champion';
-
-    if (!$client->is_financial_assessment_complete()) {
-        return Error::Base->cuss(
-            -type              => 'FinancialAssessmentRequired',
-            -mesg              => 'Please complete the financial assessment form to lift your withdrawal and trading limits.',
-            -message_to_client => localize('Please complete the financial assessment form to lift your withdrawal and trading limits.'),
-        );
-    }
+    return Error::Base->cuss(
+        -type              => 'FinancialAssessmentRequired',
+        -mesg              => 'Please complete the financial assessment form to lift your withdrawal and trading limits.',
+        -message_to_client => localize('Please complete the financial assessment form to lift your withdrawal and trading limits.'),
+    ) unless $client->is_financial_assessment_complete();
 
     return undef;
 }
@@ -764,13 +768,13 @@ sub compliance_checks {
 sub check_tax_information {
     my ($self, $client) = (shift, shift);
 
-    if ($client->landing_company->short eq 'maltainvest' and not $client->status->crs_tin_information) {
-        return Error::Base->cuss(
-            -type => 'TINDetailsMandatory',
-            -mesg => 'Tax-related information is mandatory for legal and regulatory requirements',
-            -message_to_client =>
-                localize('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.'));
-    }
+    return Error::Base->cuss(
+        -type => 'TINDetailsMandatory',
+        -mesg => 'Tax-related information is mandatory for legal and regulatory requirements',
+        -message_to_client =>
+            localize('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.')
+    ) unless $client->status->crs_tin_information;
+
     return undef;
 }
 
@@ -815,12 +819,8 @@ Check if client is age verified for
 sub check_authentication_required {
     my ($self, $client) = (shift, shift);
 
-    return undef if $client->is_virtual;
-
-    my $landing_company_name = $client->landing_company->short;
-
-    if (   ($landing_company_name =~ /^(?:maltainvest|malta|iom)$/ and not $client->status->age_verification) and $client->has_deposits
-        or ($landing_company_name eq 'maltainvest' and not $client->fully_authenticated))
+    if (   ($client->has_deposits and not $client->status->age_verification)
+        or ($client->landing_company->short eq 'maltainvest' and not $client->fully_authenticated))
     {
         return Error::Base->cuss(
             -type              => 'PleaseAuthenticate',
@@ -841,13 +841,13 @@ Check if client is professional for maltainvest landing company
 sub check_client_professional {
     my ($self, $client) = (shift, shift);
 
-    return undef if $client->is_virtual;
+    return undef unless ($client->landing_company->short eq 'maltainvest');
 
     return Error::Base->cuss(
         -type              => 'NoMFProfessionalClient',
         -mesg              => 'your account is not authorised for any further contract purchases.',
         -message_to_client => localize('Sorry, your account is not authorised for any further contract purchases.'),
-    ) if $client->landing_company->short eq 'maltainvest' and not $client->status->professional;
+    ) unless $client->status->professional;
 
     return undef;
 }

@@ -229,7 +229,7 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
             is $error->get_type, 'tick_expiry_engine_turnover_limitExceeded', 'error is tick_expiry_engine_turnover_limit';
 
             is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
-            is $error->{-mesg}, 'Exceeds turnover limit on tick_expiry_engine_turnover_limit', 'mesg';
+            is $error->{-mesg},              'Exceeds turnover limit on tick_expiry_engine_turnover_limit',   'mesg';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
@@ -640,7 +640,7 @@ subtest 'smartfx_turnover_limit', sub {
             is $error->get_type, 'smart_fx_turnover_limitExceeded', 'error is smart_fx_turnover_limit';
 
             is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
-            is $error->{-mesg}, 'Exceeds turnover limit on smart_fx_turnover_limit', 'mesg';
+            is $error->{-mesg},              'Exceeds turnover limit on smart_fx_turnover_limit',             'mesg';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
@@ -879,7 +879,7 @@ subtest 'non atm turnover checks' => sub {
             is $error->get_type, 'tick_expiry_nonatm_turnover_limitExceeded', 'error is tick_expiry_nonatm_turnover_limit';
 
             is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
-            is $error->{-mesg}, 'Exceeds turnover limit on tick_expiry_nonatm_turnover_limit', 'mesg';
+            is $error->{-mesg},              'Exceeds turnover limit on tick_expiry_nonatm_turnover_limit',   'mesg';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';

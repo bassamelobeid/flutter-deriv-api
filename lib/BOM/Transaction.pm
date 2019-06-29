@@ -909,7 +909,7 @@ sub sell_by_shortcode {
     my %per_broker;
     for my $m (@{$self->multiple}) {
         if ($m->{code}) {
-            $m->{-message_to_client} = $m->{message_to_client} if defined $m->{message_to_client};
+            $m->{message_to_client} = $m->{error} if defined $m->{error};
             next;
         }
         push @{$per_broker{$m->{client}->broker_code}}, $m;

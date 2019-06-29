@@ -573,6 +573,10 @@ subtest 'batch-buy multiple databases and datadog', sub {
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
+            $mock_validation->mock(compliance_checks => sub { note "mocked Transaction::Validation->compliance_checks returning nothing"; undef });
+            $mock_validation->mock(
+                check_tax_information => sub { note "mocked Transaction::Validation->check_tax_information returning nothing"; undef });
+
             ExpiryQueue::queue_flush;
             # note explain +ExpiryQueue::queue_status;
             reset_datadog;

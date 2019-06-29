@@ -1050,21 +1050,15 @@ subtest 'Purchase Sell Contract' => sub {
     });
 
     my $error = $bpt->buy;
-    like($error, qr/PleaseAuthenticate/, 'Account authentication validation failed');
-    my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
-    $mock_validation->mock(check_trade_status => sub { note "mocked Transaction::Validation->check_trade_status returning nothing"; undef });
-
-    $error = $bpt->buy;
     like($error, qr/ASK_TNC_APPROVAL/, 'TNC validation failed');
+
+    my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+
     $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
 
-    $bpt = BOM::Transaction->new({
-        client        => $client,
-        contract      => $contract,
-        price         => $contract->ask_price,
-        amount_type   => 'payout',
-        purchase_date => $contract->date_start,
-    });
+    $error = $bpt->buy;
+    like($error, qr/PleaseAuthenticate/, 'Account authentication validation failed');
+    $mock_validation->mock(check_trade_status => sub { note "mocked Transaction::Validation->check_trade_status returning nothing"; undef });
 
     $error = $bpt->buy;
     is($error, undef, 'Able to purchase the contract successfully');
