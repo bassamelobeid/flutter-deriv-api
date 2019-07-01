@@ -19,7 +19,8 @@
       },
       "ping" : {
          "description" : "Will return 'pong'",
-         "type" : "null"
+         "type" : "string",
+         "pattern" : "^pong$"
       },
       "msg_type" : {
          "type" : "string",
