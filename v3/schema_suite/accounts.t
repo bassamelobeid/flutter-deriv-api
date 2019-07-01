@@ -17,13 +17,12 @@ my $suite = start(
 
 set_language 'EN';
 
-
 # VIRTUAL ACCOUNT OPENING FOR (CR)
 test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test@binary.com', 'account_opening';
 test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
     $suite->get_token('test@binary.com'), 'test@binary.com', 'id';
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.json',
-$suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test@binary.com';
+    $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test@binary.com';
 fail_test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
     $suite->get_token('test@binary.com'), 'test@binary.com', 'id';
 # READ SCOPE CALLS (VRTC)
@@ -39,12 +38,11 @@ test_sendrecv 'balance/test_send_subscribe.json', 'balance/test_receive.json',
     template_values => ['10000', 'USD', $suite->get_stashed('authorize/authorize/loginid')],
     start_stream_id => 1;
 test_sendrecv 'proposal/test_send_buy.json', 'proposal/test_receive_buy.json';
-test_sendrecv_params 'buy/test_send.json',   'buy/test_receive.json', $suite->get_stashed('proposal/proposal/id'), 9948.51;
-test_last_stream_params 1,                   'balance/test_receive_subscribe.json', 9948.51,  'USD',
-    $suite->get_stashed('authorize/authorize/loginid');
+test_sendrecv_params 'buy/test_send.json', 'buy/test_receive.json', $suite->get_stashed('proposal/proposal/id'), 9948.51;
+test_last_stream_params 1, 'balance/test_receive_subscribe.json', 9948.51, 'USD', $suite->get_stashed('authorize/authorize/loginid');
 test_sendrecv_params 'buy/test_send_with_params.json', 'buy/test_receive_with_params.json', 'payout', '5.15', '10';
 test_sendrecv_params 'buy/test_send_with_params.json', 'buy/test_receive_with_params.json', 'stake',  '10',   '19.43';
-test_sendrecv 'proposal/test_send_buy.json', 'proposal/test_receive_buy.json';
+test_sendrecv 'proposal/test_send_buy.json',           'proposal/test_receive_buy.json';
 test_sendrecv_params 'buy_contract_for_multiple_accounts/test_send_invalid_token.json',
     'buy_contract_for_multiple_accounts/test_receive_invalid_token.json',
     $suite->get_stashed('proposal/proposal/id'), $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'dummy1234';

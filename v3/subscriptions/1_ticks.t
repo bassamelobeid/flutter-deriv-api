@@ -47,8 +47,7 @@ subtest "Tick Subscriptions: Only R_*" => sub {
             ),
         });
     Future->needs_all(
-        $tester->subscribe,
-        $tester->subscribe_multiple_times(count => 10),
+        $tester->subscribe, $tester->subscribe_multiple_times(count => 10),
         $tester->subscribe_twice,
         $tester->multiple_subscriptions_forget,
         $tester->multiple_subscriptions_forget_all,

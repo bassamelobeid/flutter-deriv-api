@@ -18,7 +18,7 @@ $loop->add(
         timeout            => 300,
         max_response_delay => 10,
         skip_sanity_checks => {
-            website_status => [qw(published check_duplicates)],  # Response can be overlapping between publishes
+            website_status => [qw(published check_duplicates)],    # Response can be overlapping between publishes
         },
         suite_params => {
             requests => requests(
@@ -47,14 +47,9 @@ $loop->add(
 
 subtest 'General subscriptions: All calls in parallel' => sub {
     Future->needs_all(
-        $tester->subscribe_multiple_times(count => 10),
-        $tester->subscribe_twice,
-        $tester->subscribe,
-        $tester->subscribe_after_request,
-        $tester->multiple_subscriptions_forget,
-        $tester->multiple_subscriptions_forget_all,
-        $tester->multiple_connections_forget,
-        $tester->multiple_connections_forget_all,
+        $tester->subscribe_multiple_times(count => 10), $tester->subscribe_twice, $tester->subscribe,
+        $tester->subscribe_after_request,     $tester->multiple_subscriptions_forget, $tester->multiple_subscriptions_forget_all,
+        $tester->multiple_connections_forget, $tester->multiple_connections_forget_all,
     )->get;
 };
 

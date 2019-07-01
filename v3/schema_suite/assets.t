@@ -40,8 +40,8 @@ test_sendrecv_params 'landing_company_details/test_send.json', "landing_company_
 test_sendrecv 'website_status/test_send.json',           'website_status/test_receive.json';
 test_sendrecv 'website_status/test_send_subscribe.json', 'website_status/test_receive_subscribe.json';
 
-test_sendrecv 'payout_currencies/test_send.json', 'payout_currencies/test_receive_no_login.json';
-test_sendrecv 'ticks_history/test_send_r50.json', 'ticks_history/test_receive_r50.json';
+test_sendrecv 'payout_currencies/test_send.json',     'payout_currencies/test_receive_no_login.json';
+test_sendrecv 'ticks_history/test_send_r50.json',     'ticks_history/test_receive_r50.json';
 test_sendrecv_params 'active_symbols/test_send.json', 'active_symbols/test_receive_brief.json', 'brief';
 # test_sendrecv_params 'active_symbols/test_send.json', 'active_symbols/test_receive_full.json',
 #     'full';

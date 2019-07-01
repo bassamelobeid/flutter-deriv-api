@@ -39,8 +39,7 @@ test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', 1000
 
 test_sendrecv_params 'proposal/test_send_buy.json', 'proposal/test_receive_buy.json';
 test_sendrecv_params 'buy/test_send.json',          'buy/test_receive.json', $suite->get_stashed('proposal/proposal/id'), 9948.51;
-test_sendrecv_params 'balance/test_send.json',      'balance/test_receive.json',
-    9948.51 , 'USD', $suite->get_stashed('authorize/authorize/loginid');
+test_sendrecv_params 'balance/test_send.json',      'balance/test_receive.json', 9948.51, 'USD', $suite->get_stashed('authorize/authorize/loginid');
 
 test_sendrecv_params 'copytrading_statistics/test_send.json', 'copytrading_statistics/test_receive.json',
     $suite->get_stashed('authorize/authorize/loginid');
