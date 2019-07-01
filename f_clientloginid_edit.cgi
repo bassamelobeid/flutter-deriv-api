@@ -10,6 +10,7 @@ use HTML::Entities;
 use Try::Tiny;
 use Digest::MD5;
 use Media::Type::Simple;
+use List::UtilsBy qw(rev_sort_by);
 
 use Brands;
 use LandingCompany::Registry;
@@ -985,6 +986,9 @@ foreach my $l (@user_clients) {
         push @deleted_tokens, $t;
     }
 }
+
+@all_tokens     = rev_sort_by { $_->{creation_time} } @all_tokens;
+@deleted_tokens = rev_sort_by { $_->{deleted} } @deleted_tokens;
 
 BOM::Backoffice::Request::template()->process(
     'backoffice/access_tokens.html.tt',
