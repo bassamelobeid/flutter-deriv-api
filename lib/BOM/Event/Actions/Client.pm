@@ -971,7 +971,7 @@ async sub _send_report_not_clear_status_email {
     my $email_subject = "Automated age verification failed for $loginid";
 
     my $from_email = $Brands->emails('no-reply');
-    my $to_email   = $Brands->emails('authentication');
+    my $to_email   = $Brands->emails('authentications');
     my $email_status =
         Email::Stuffer->from($from_email)->to($to_email)->subject($email_subject)
         ->text_body(
