@@ -204,6 +204,7 @@ sub run_worker_process {
         my $worker = Job::Async::Worker::Redis->new(
             uri                 => 'redis://127.0.0.1',
             max_concurrent_jobs => 1,
+            use_multi           => 1,
             timeout             => 5
         ));
 
@@ -233,6 +234,7 @@ sub run_worker_process {
 
             # Handle a 'ping' request immediately here
             if ($name eq "ping") {
+                warn "PING";
                 $_->done(
                     encode_json_utf8({
                             result => "success",
