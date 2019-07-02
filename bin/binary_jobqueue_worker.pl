@@ -235,9 +235,9 @@ sub run_worker_process {
             # Handle a 'ping' request immediately here
             if ($name eq "ping") {
                 warn "PING";
-                $_->done(
+                $job->done(
                     encode_json_utf8({
-                            result => "success",
+                            result => "pong",
                             (exists $params->{req_id}      ? (req_id      => $params->{req_id})      : ()),
                             (exists $params->{passthrough} ? (passthrough => $params->{passthrough}) : ()),
                         }));
