@@ -36,6 +36,12 @@ use Scalar::Util qw(weaken);
 use Time::Duration::Concise;
 use YAML::XS qw(LoadFile);
 use URI;
+use List::Util qw( first );
+
+# to block apps from certain operations_domains (red, green etc ) enter the color/name of the domain to the list
+# with the associated list of app_id's
+# Currently 3rd Party Uses red only.
+use constant APPS_BLOCKED_FROM_OPERATION_DOMAINS => {red => [1]};
 
 # Set up the event loop singleton so that any code we pull in uses the Mojo
 # version, rather than trying to set its own.
@@ -57,6 +63,7 @@ our %BLOCK_ORIGINS;
 our %RPC_LOGGING;
 
 my $json = JSON::MaybeXS->new;
+my $node_config;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -106,7 +113,7 @@ sub startup {
     apply_usergroup $app->config->{hypnotoad}, sub {
         $log->info(@_);
     };
-
+    $node_config = YAML::XS::LoadFile('/etc/rmg/node.yml');
     # binary.com plugins
     push @{$app->plugins->namespaces}, 'Binary::WebSocketAPI::Plugins';
     $app->plugin('Introspection' => {port => 0});
@@ -144,6 +151,12 @@ sub startup {
                 json   => {error => 'AccessRestricted'},
                 status => 403
             ) if exists $BLOCK_APP_IDS{$app_id};
+
+            # app_id 1 which is our static site should not be used on Red environment which is for 3rd party developers.
+            return $c->render(
+                json   => {error => 'AccessRestricted'},
+                status => 403
+            ) if first { $app_id == $_ } APPS_BLOCKED_FROM_OPERATION_DOMAINS->{$node_config->{node}->{operation_domain} // ''}->@*;
 
             my $request_origin = $c->tx->req->headers->origin // '';
             $request_origin = 'https://' . $request_origin unless $request_origin =~ /^https?:/;
