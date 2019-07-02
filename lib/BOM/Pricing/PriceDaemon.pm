@@ -18,6 +18,9 @@ use BOM::Config::RedisReplicated;
 use BOM::Config::Runtime;
 use BOM::Pricing::v3::Contract;
 use Volatility::LinearCache;
+#TODO DEBUG CODE, SHOULD BE RMMOVED
+use Devel::Confess;
+# DEBUG CODE END
 
 use constant {
     DURATION_DONT_PRICE_SAME_SPOT => 10,
@@ -109,7 +112,7 @@ sub process_job {
 
 sub run {
     my ($self, %args) = @_;
-    my $redis = BOM::Config::RedisReplicated::redis_pricer;
+    my $redis = BOM::Config::RedisReplicated::redis_pricer(timeout => 0);
 
     my $tv_appconfig          = [0, 0];
     my $tv                    = [Time::HiRes::gettimeofday];
@@ -119,6 +122,13 @@ sub run {
     # Allow ->stop and restart
     local $self->{is_running} = 1;
     while ($self->is_running and (my $key = $redis->brpop(@{$args{queues}}, 0))) {
+
+        # TODO DEBUG CODE, should be removed
+        if ($Devel::Confess::STACK_TRACE_ALREADY_RECORDED) {
+            Devel::Confess->unimport();
+        }
+        # DEBUG CODE END
+
         my $current_eco_cache_epoch = $redis->get('economic_events_cache_snapshot');
         if ($current_eco_cache_epoch and $eco_snapshot != $current_eco_cache_epoch) {
             Volatility::LinearCache::clear_cache();
@@ -303,5 +313,51 @@ sub tags {
     return [@{$self->{tags}}, map { ; "tag:$_" } $self->current_queue // (), @tags];
 }
 
+# TODO DEBUG code, should be removed
+# This debug code is for card https://trello.com/c/PVt9CRyc/8930-move-pricedaemon-warnings-to-metrics
+# I think when we set pricer timeout to 0, the error will be disappeared. But I want to confirm
+# there is no other places that cause the error 'Resource temporarily unavailable'.
+# So I introduced the `Devel::Confess`. And I want to suppress the errors caused by redis commands.
+# I believe these errors should disappear, but it will be safer to wrap it by hand.
+# If there is no 'pricer_daemon.resource_unavailable_error' in statsd, then the debug code can be dropped.
+
+package RedisDB;    ## no critic (ProhibitMultiplePackages)
+use Class::Method::Modifiers;
+use Try::Tiny;
+use Scalar::Util qw(blessed);
+use feature qw(state);
+use DataDog::DogStatsd::Helper qw/stats_inc/;
+
+around execute => sub {
+    Devel::Confess->unimport();
+    my $orig       = shift;
+    my @args       = @_;
+    my $died_count = 0;
+    my $err;
+    my $result;
+    my $max_retry = 10;
+    for (1 .. $max_retry) {
+        undef $err;
+        try {
+            $result = $orig->(@args);
+        }
+        catch {
+            $died_count++;
+            $err = $_;
+            if (blessed($err) && $err->isa('RedisDB::Error::EAGAIN')) {
+                stats_inc("pricer_daemon.resource_unavailable_error");
+            }
+        };
+
+        # we retry only when the error is EAGAIN
+        last unless blessed($err) && $err->isa('RedisDB::Error::EAGAIN');
+    }
+
+    die "command @_ failed: $err" if $died_count == $max_retry || ($err && (!blessed($err) || !$err->isa('RedisDB:Error::EAGAIN')));
+    Devel::Confess->import();
+    return $result;
+};
+
+# DEBUG CODE END
 1;
 
