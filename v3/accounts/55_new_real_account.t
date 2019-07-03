@@ -210,7 +210,7 @@ subtest 'create account failed' => sub {
         my $res = $t->await::new_account_real(\%details);
 
         is($res->{error}->{code}, 'InputValidationFailed', 'not enough info');
-        is_deeply($res->{error}->{details}, {first_name => 'is missing and it is required'}, "error info ok");
+        is_deeply($res->{error}->{details}, {first_name => 'Missing property.'}, "error info ok");
         is($res->{new_account_real}, undef, 'NO account created');
     };
 
