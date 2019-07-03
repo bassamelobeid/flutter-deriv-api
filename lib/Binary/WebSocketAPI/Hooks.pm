@@ -11,28 +11,23 @@ use Mojo::IOLoop;
 use Path::Tiny;
 use Try::Tiny;
 use Data::Dumper;
-use JSON::Schema;
 use JSON::Validator;
 use Clone;
-#set up a specific logger for the V3 to v4 logging
-use Log::Any '$schema_log', category => 'schema_log';
-use Log::Any::Adapter;
-Log::Any::Adapter->set({category => 'schema_log'}, 'File', '/var/lib/binary/v4_v3_schema_fails.log');
 use Log::Any qw($log);
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use Path::Tiny;
 #  module is loaded on server start and shared across connections
 #  %schema_cache is added onto as each unique request type is received.
-#  by the _load_schemas sub in this module
+#  by the _load_schema sub in this module
 my %schema_cache;
 my $schemas_base = '/home/git/regentmarkets/binary-websocket-api/config/v3/';
 
 my $json = JSON::MaybeXS->new;
 
-=head2 _load_schemas
+=head2 _load_schema
 
 Description
-Gets  the json validation schemas (v3 and v4) for the call types so  we can pass to send so that they are processed by the hooks.
+Gets  the json validation schema for the call types so  we can pass to send so that they are processed by the hooks.
 This is required as they are not stashed. 
 
 =over 4
@@ -40,19 +35,14 @@ This is required as they are not stashed.
 =item  * C<request_type>   string - the name of the request type eg 'Proposal_array'
 
 =back
- 
-Returns  a hashRef   
-            
-            {
-                schema_receive => hashref of version 4 schema, 
-                schema_receive_v3 => hashref of version 3 schema, 
-            }
-               
+
+Returns version 4 schema
+
 =cut
 
-sub _load_schemas {
+sub _load_schema {
     my ($request_type) = @_;
-    my %schemas;
+    my $schema;
     #sometimes the msg_type does not match the schema dir name
     #mapped here msg_type on the left directory on the right
     my %schema_mapping = (
@@ -66,17 +56,13 @@ sub _load_schemas {
     if (!$schema_cache{$request_type}) {
         my $schema_path = $schemas_base . $request_type . '/receive.json';
         if (!-e $schema_path) {
-            $schema_log->error('no schema found  for ' . $request_type);
-            return {
-                schema_receive    => {},
-                schema_receive_v3 => {}};
+            $log->warnf('no schema found  for %s', $request_type);
+            return {};
         }
         my $receive_schema = path($schema_path);
-        $schemas{schema_receive} = decode_json($receive_schema->slurp);
+        $schema = decode_json($receive_schema->slurp);
 
-        $schema_path = $schemas_base . 'draft-03/' . $request_type . '/receive.json';
-        $schemas{schema_receive_v3} = (-e $schema_path) ? decode_json(path($schema_path)->slurp) : {};
-        $schema_cache{$request_type} = \%schemas;
+        $schema_cache{$request_type} = $schema;
     }
     return $schema_cache{$request_type},;
 }
@@ -244,11 +230,7 @@ sub before_forward {
 
     return reached_limit_check($c, $category, $is_real)->then(
         sub {
-            my $caller_info = {
-                loginid => $c->stash('loginid'),
-                app_id  => $c->app_id
-            };
-            my $error = _validate_schema_error($req_storage->{schema_send}, $req_storage->{schema_send_v3}, $args, $caller_info);
+            my $error = _validate_schema_error($req_storage->{schema_send}, $args);
             if ($error) {
                 my $message = $c->l('Input validation failed: ') . join(', ', (keys %{$error->{details}}, @{$error->{general}}));
                 return Future->fail($c->new_error($req_storage->{name}, 'InputValidationFailed', $message, $error->{details}));
@@ -298,7 +280,7 @@ sub _rpc_suffix {
     my $processor = $Binary::WebSocketAPI::DIVERT_APP_IDS{$app_id};
     my $suffix    = $processor ? '_' . $processor : '';
     unless (exists $c->app->config->{"rpc_url" . $suffix}) {
-        warn "Suffix $suffix not found in config for app ID $app_id\n";
+        $log->warn("Suffix $suffix not found in config for app ID $app_id\n");
         $suffix = '';
     }
     return $suffix;
@@ -339,18 +321,15 @@ sub output_validation {
         return if exists $api_response->{error}{code};
     }
 
-    my $schemas;
+    my $schema;
     if ($api_response->{msg_type}) {
-        $schemas = _load_schemas($api_response->{msg_type});
+        $schema = _load_schema($api_response->{msg_type});
     }
 
-    my $caller_info = {
-        loginid => $c->stash('loginid'),
-        app_id  => $c->stash('app_id')};
-    my $error = _validate_schema_error($schemas->{schema_receive}, $schemas->{schema_receive_v3}, $api_response, $caller_info);
+    my $error = _validate_schema_error($schema, $api_response);
     if ($error) {
         my $error_msg = join(" - ", (map { "$_:$error->{details}{$_}" } keys %{$error->{details}}), @{$error->{general}});
-        $c->app->log->error("Schema validation failed for our own output [ "
+        $log->error("Schema validation failed for our own output [ "
                 . $json->encode($api_response)
                 . " error: $error_msg ], make sure backend are aware of this error!, schema may need adjusting");
         %$api_response = %{
@@ -432,7 +411,7 @@ sub _on_sanity_failed {
 sub on_client_connect {
     my ($c) = @_;
     # We use a weakref in case the disconnect is never called
-    warn "Client connect request but $c is already in active connection list" if exists $c->app->active_connections->{$c};
+    $log->warn("Client connect request but $c is already in active connection list") if exists $c->app->active_connections->{$c};
     Scalar::Util::weaken($c->app->active_connections->{$c} = $c);
 
     $c->app->stat->{cumulative_client_connections}++;
@@ -445,7 +424,7 @@ sub on_client_connect {
 sub on_client_disconnect {
     my ($c) = @_;
 
-    warn "Client disconnect request but $c is not in active connection list" unless exists $c->app->active_connections->{$c};
+    $log->warn("Client disconnect request but $c is not in active connection list") unless exists $c->app->active_connections->{$c};
     forget_all($c);
 
     delete $c->app->active_connections->{$c};
@@ -521,21 +500,13 @@ sub filter_sensitive_fields {
 =head2 _validate_schema_error
 
 Checks sent and received API data for validation against our JSON schema's
-Currently from 11/2018 it first validates against v4 of the schema and if it fails it will try against v3
-if it passes V3 we log the message, error and the source.  The idea is to capture the failures and 
-determine if we need any action before enforcing v4 
 Takes the following arguments as parameters
 
 =over 4
 
 =item  C<$schema> HashRef version 4 of the schema 
 
-=item  C<$schema_v3> HashRef version 3 of the schema 
-
 =item  C<$args> HashRef Data from API call 
-
-=item  C<$caller_info> HashRef  containing extra information for logs messages with keys "loginid", "app_id"
-
 
 =back
 
@@ -545,12 +516,11 @@ Returns an HashRef on error or undef if no error
     details => { "attribute name" => "Error message" },
     general => [ "error message one" ,  "error message two" ]
  }
-   
 
 =cut
 
 sub _validate_schema_error {
-    my ($schema, $schema_v3, $args, $caller_info) = @_;
+    my ($schema, $args) = @_;
     my $validator = JSON::Validator->new();
     my @errors;
     # This statement will coerce items like "1" into a integer this allows for better compatibility with the existing schema
@@ -562,54 +532,21 @@ sub _validate_schema_error {
     @errors = $validator->schema($schema)->validate($args);
     return undef unless scalar(@errors);    #passed Version 4 Check
 
-    if (!$schema_v3) {
-        my (%details, @general);
+    my (%details, @general);
 
-        foreach my $error (@errors) {
-            if ($error->path =~ /\/(.+)$/) {
-                $details{$1} = $error->message;
-            } else {
-                push @general, $error->message;
-            }
+    foreach my $error (@errors) {
+        if ($error->path =~ /\/(.+)$/) {
+            $details{$1} = $error->message;
+        } else {
+            push @general, $error->message;
         }
-
-        return {
-            details => \%details,
-            general => \@general
-        };
     }
 
-    #check against version 3 of JSON Schema
-    my $v3_result = JSON::Schema->new($schema_v3, format => \%JSON::Schema::FORMATS)->validate($args);
+    return {
+        details => \%details,
+        general => \@general
+    };
 
-    # This result object uses overload to mimic a boolean, true means no error, false means error
-    if ($v3_result) {
-        #Failed v4 check but passed V3 so log it and let it through
-        my $cloned_args = Clone::clone($args);
-        filter_sensitive_fields($schema, $cloned_args);
-        my $message = {
-            data         => $cloned_args,
-            errors       => "@errors",
-            caller       => $caller_info,
-            schema_title => $schema->{title}};
-        $schema_log->warn($message);
-        return undef;
-    } else {
-        my (%details, @general);
-        foreach my $err ($v3_result->errors) {
-            if ($err->property =~ /\$\.(.+)$/) {
-                @details{$1} = $err->message;
-            } else {
-                push @general, $err->message;
-            }
-        }
-
-        #failed version 4 and 3 check return the version 4 error message.
-        return {
-            details => \%details,
-            general => \@general
-        };
-    }
 }
 
 sub _handle_error {
@@ -636,10 +573,10 @@ Final processing of echo_req to ensure we don't send anything sensitive in respo
 
 sub _sanitize_echo {
     my ($params, $msg_type) = @_;
-    my $schema = _load_schemas($msg_type);
+    my $schema = _load_schema($msg_type);
     for my $param ($params->%*) {
         next unless $param;
-        next if (exists $schema->{schema_receive}{properties}{$param} && $schema->{schema_receive}{properties}{$param}{type} ne 'string');
+        next if (exists $schema->{properties}{$param} && $schema->{properties}{$param}{type} ne 'string');
         $params->{$param} = '<not shown>' if ($param =~ /password$/i);
     }
     return $params;
