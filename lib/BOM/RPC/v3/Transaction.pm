@@ -243,7 +243,8 @@ rpc buy => sub {
         start_time       => $trx->contract->date_start->epoch,
         longcode         => localize($trx->contract->longcode),
         shortcode        => $trx->contract->shortcode,
-        payout           => $trx->payout
+        payout           => $trx->payout,
+        stash => {market => $trx->contract->market->name},
     };
 };
 
