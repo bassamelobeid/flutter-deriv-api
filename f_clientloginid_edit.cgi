@@ -1177,6 +1177,9 @@ sub _assemble_dob_input {
     my $client = $data->{client};
     my $input  = $data->{input};
 
+    # virtual clients will always have empty dob fields, so no need to save
+    return undef if $client->is_virtual;
+
     my @dob_fields = ('dob_year', 'dob_month', 'dob_day');
     my @dob_keys = grep { /dob_/ } keys %$input;
 
