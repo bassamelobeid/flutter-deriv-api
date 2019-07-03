@@ -32,15 +32,17 @@ my $page     = request()->param('page')     || 0;
 my $pagesize = request()->param('pagesize') || 40;
 my $offset   = $page * $pagesize;
 my @system_cols = qw/stamp staff_name operation remote_addr/;
-my @noshow_cols = qw/pg_userid client_port id client_addr client_loginid document_format/;
+my @noshow_cols = qw/client_port id client_addr client_loginid document_format/;
 
 my $myself_args = {
     broker   => $broker,
     category => $category
 };
+
 my $return_args = {broker => $broker};
 my ($title_bar, $return_cgi);
 my $page_1 = $page + 1;
+
 if ($loginid) {
     $title_bar              = "Audit Trail ($category) on Client ($loginid) - Page ($page_1)";
     $myself_args->{loginid} = $loginid;
@@ -52,6 +54,7 @@ if ($loginid) {
 }
 
 my @tables;
+
 for ($category) {
     if (/^client_status_(\w+)/) {
         my $status_code = $1;
@@ -111,6 +114,7 @@ for ($category) {
         );
     }
 }
+
 unless (@tables) {
     print "Unsupported audit-trail category [" . $category . "]";
     code_exit_BO();
@@ -119,9 +123,12 @@ unless (@tables) {
 my (@logs, %hdrs, $hitcount);
 
 for my $table (@tables) {
+
     my $tabname = $table->{table};
     my $query   = $table->{query};
+
     $hitcount = _get_table_count(%$table, db => $db) || next;
+
     my $rows = _get_table_rows(
         %$table,
         db => $db,
@@ -134,33 +141,28 @@ for my $table (@tables) {
             )
         ),
     );
+
     next unless @$rows;
+
     # accumulate new non-system column names into %hdrs
     my %cols = map { $_ => 1 } keys %{$rows->[0]};
     delete $cols{$_} for (@system_cols, @noshow_cols);
     $hdrs{$_} = 1 for keys %cols;
+
     # now pre-process 'rows' to build 'log' entry (and flag changed cells, for individual users only)
     my $prevrow;
     for my $row (@$rows) {
+
         my $changes = {};
-        my $data = {table => $tabname};
-        for my $col (@system_cols) {
+
+        my $data = {
+            table      => $tabname,
+            staff_name => $row->{pg_userid}};
+
+        for my $col (qw/stamp operation remote_addr/) {
             $data->{$col} = $row->{$col} if exists $row->{$col};
         }
-        if ($tabname eq 'client') {
-            # as set by audit.set_staff..
-            $data->{staff_name} = $row->{pg_userid};
-        } else {
-            # this is because some code just puts 'system' into staff_name,
-            # but other code goes to trouble of putting meaningful data there.
-            # Better show both, if they are different and useful.
-            for ($row->{pg_userid}) {
-                next if /write|\?/;
-                $data->{staff_name} ||= $_;
-                next if $_ eq $data->{staff_name};
-                $data->{staff_name} .= "/$_";
-            }
-        }
+
         for my $col (keys %cols) {
             $data->{$col} = $row->{$col};
             if ($loginid && $prevrow) {
@@ -168,6 +170,7 @@ for my $table (@tables) {
                     if ($row->{$col} || '') ne ($prevrow->{$col} || '');
             }
         }
+
         $prevrow = $row;
         push @logs,
             {
@@ -175,27 +178,29 @@ for my $table (@tables) {
             changes => $changes
             };
     }
+
 }
 
 my ($rowcount, $pages);
+
 if ($loginid) {    # don't page for single login report
+
     $rowcount = scalar(@logs);
     $pages    = 1;
+
 } else {
+
     $rowcount = $hitcount || 0;
     $pages = int($rowcount / $pagesize);
     $pages += 1 if $rowcount % $pagesize;
+
 }
 
-my @allhdrs;
-
-if (@logs) {
-    @allhdrs = (@system_cols, 'table', @{_sort_headers(\%hdrs)});
-} else {
-    @allhdrs = ('no data found');
-}
+my @allhdrs = ('no data found');
+@allhdrs = (@system_cols, 'table', @{_sort_headers(\%hdrs)}) if @logs;
 
 my $logs = [sort { $a->{data}->{stamp} cmp $b->{data}->{stamp} } @logs];
+
 my $stash = {
     hdrs     => \@allhdrs,
     logs     => $logs,
