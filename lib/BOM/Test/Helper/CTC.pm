@@ -28,7 +28,7 @@ sub wait_miner {
     my ($currency_code, $txhash) = @_;
     return undef unless $txhash;
 
-    my $currency = BOM::CTC::Currency->new($currency_code);
+    my $currency = BOM::CTC::Currency->new(currency_code => $currency_code);
 
     my $transaction;
     do {
