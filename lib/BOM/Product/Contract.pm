@@ -520,6 +520,10 @@ sub _check_is_intraday {
 
     return 0 if $contract_duration > 86400;
 
+    # don't have to check closing time for volatility indices because it is using the same engine.
+    # This is done for buy optimisation
+    return 1 if ($self->market->name eq 'volidx');
+
     my $trading_calendar = $self->trading_calendar;
     my $exchange         = $self->underlying->exchange;
     # for contract that start at the open of day and expire at the close of day (include early close) should be treated as daily contract

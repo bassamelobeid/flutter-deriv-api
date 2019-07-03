@@ -637,6 +637,12 @@ sub _build_date_start_forward_blackouts {
 sub _validate_start_and_expiry_date {
     my $self = shift;
 
+    # random_index will not have any blackout period unless this rule were to change in the future.
+    # returning early here!
+    # DO NOT change this to $self->market->name eq 'volidx' because we have blackout period for random_daily submarket
+    # This is done for buy optimisation
+    return if $self->underlying->submarket->name eq 'random_index';
+
     # Currently, there's a bug in our system for contract ending at the start of day (00 GMT). We made the fix for offical OHLC handling
     # that causes this bug. Since we are removing indices and OTC indices do not settle on official OHLC anymore, we will disable
     # contracts expiring at the start of day for now. We will re-enable it again once we remove indices from our offerings.

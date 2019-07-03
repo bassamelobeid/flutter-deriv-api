@@ -64,8 +64,8 @@ subtest 'ask/bid price' => sub {
     };
     my $c = produce_contract($args);
     is $c->multiplier, 100, 'multiplier is 100';
-    is $c->pricing_engine->theo_price, 0.9228300523766, 'theo price 0.9228300523766';
-    is $c->commission_per_unit, 0.013842450785649, '';
+    is $c->pricing_engine->theo_price, 0.922830146038422, 'theo price 0.922830146038422';
+    is $c->commission_per_unit, 0.0138424521905763, '';
     cmp_ok $c->ask_price,       '==',              93.67, 'correct ask price';
     cmp_ok $c->bid_price,       '==',              90.9, 'correct bid price';
 };

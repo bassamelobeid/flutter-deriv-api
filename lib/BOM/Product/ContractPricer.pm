@@ -722,6 +722,10 @@ sub _build_fordom {
 sub _build_discount_rate {
     my $self = shift;
 
+    # not needing discount rate for intraday & tick
+    # This is done for buy optimisation
+    return 0 if $self->market->name eq 'volidx' and not $self->expiry_daily;
+
     my %args = (
         symbol => $self->currency,
         $self->underlying->for_date ? (for_date => $self->underlying->for_date) : (),
@@ -841,10 +845,10 @@ sub _build_greek_engine {
 sub _build_pricing_engine_name {
     my $self = shift;
 
-    my $engine_name = $self->is_path_dependent ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated' : 'Pricing::Engine::EuropeanDigitalSlope';
-
     #For Volatility indices, we use plain BS formula for pricing instead of VV/Slope
-    $engine_name = 'Pricing::Engine::BlackScholes' if $self->market->name eq 'volidx';
+    return 'Pricing::Engine::BlackScholes' if $self->market->name eq 'volidx';
+
+    my $engine_name = $self->is_path_dependent ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated' : 'Pricing::Engine::EuropeanDigitalSlope';
 
     if ($self->tick_expiry) {
         my @symbols = create_underlying_db->get_symbols_for(
