@@ -61,7 +61,6 @@ sub checks_list {
             check_skipped
             published
             schema_v4
-            schema_v3
             )];
 }
 

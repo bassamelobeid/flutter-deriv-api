@@ -58,9 +58,8 @@ sub schemas {
         my $iter = path("//home/git/regentmarkets/binary-websocket-api/config/v3")->iterator({recurse => 1});
         while (my $path = $iter->()) {
             next unless $path->basename eq 'receive.json';
-            my $version = ($path->parent(2)->basename eq 'draft-03') ? 'v3' : 'v4';
             my $method = $path->parent->basename;
-            $schemas->{$version}->{$method} = $json->decode($path->slurp_utf8);
+            $schemas->{$method} = $json->decode($path->slurp_utf8);
         }
         $schemas;
         }
@@ -182,25 +181,6 @@ sub too_old_response {
     return 1;
 }
 
-=head2 schema_v3
-
-Fails if the expected response does not validate against our JSON draft-03 receive schema
-
-=cut
-
-sub schema_v3 {
-    my ($self, @subscriptions) = @_;
-    for my $response (@subscriptions) {
-        next unless (my $schema = $self->schemas->{v3}->{$response->type});
-        my $result = JSON::Schema->new($schema, format => \%JSON::Schema::FORMATS)->validate($response->raw);
-
-        # $result is true for no errors
-        return fail "JSON v3 schema validation error: " . join ", received: ", explain $result->errors, $response->raw
-            unless $result;
-    }
-    return 1;
-}
-
 =head2 schema_v4
 
 Fails if the expected response does not validate against our JSON draft-04 receive schema
@@ -210,7 +190,7 @@ Fails if the expected response does not validate against our JSON draft-04 recei
 sub schema_v4 {
     my ($self, @subscriptions) = @_;
     for my $response (@subscriptions) {
-        next unless (my $schema = $self->schemas->{v4}->{$response->type});
+        next unless (my $schema = $self->schemas->{$response->type});
         my @errors = JSON::Validator->new()->schema($schema)->validate($response->raw);
         return fail "JSON v4 schema validation error: " . join ", received: ", explain @errors, $response->raw
             if @errors;
