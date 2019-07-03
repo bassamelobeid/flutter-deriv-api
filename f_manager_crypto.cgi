@@ -116,7 +116,10 @@ if ($end_date->is_before($start_date)) {
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
 my $dbic = $clientdb->db->dbic;
 
-my $currency_wrapper = BOM::CTC::Currency->new($currency);
+my $currency_wrapper = BOM::CTC::Currency->new(
+    currency_code => $currency,
+    broker_code   => $broker
+);
 
 # Exchange rate should be populated according to supported cryptocurrencies.
 my $exchange_rate = eval { in_usd(1.0, $currency) } or code_exit_BO("no exchange rate found for currency " . $currency . ". Please contact IT.")->();
