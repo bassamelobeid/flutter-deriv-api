@@ -302,7 +302,7 @@ subtest 'get_ask' => sub {
             'proposal'                    => 1,
             'date_start'                  => ignore(),
             non_binary_results_adjustment => 1,
-            'theo_price'                  => '1.9914570080649',
+            'theo_price'                  => '1.99145854964839',
             'landing_company'             => 'virtual'
         }};
 
