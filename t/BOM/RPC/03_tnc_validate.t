@@ -23,6 +23,9 @@ my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
 
+$test_client->set_default_account('USD');
+$test_client_cr->set_default_account('USD');
+
 $test_client->email($email);
 $test_client->save;
 $test_client_cr->email($email);
@@ -40,7 +43,7 @@ my ($token_cr) = $oauth->store_access_token_only(1, $test_client_cr->loginid);
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 
-my @methods = qw(buy buy_contract_for_multiple_accounts sell cashier);
+my @methods = qw(buy_contract_for_multiple_accounts cashier);
 
 my $params = {
     language => 'EN',

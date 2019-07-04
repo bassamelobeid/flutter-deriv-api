@@ -1,23 +1,40 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "array",
-    "required": "1",
-    "items": {
-        "type": "object",
-        "properties": {
-            "phone_idd": {
-                "type": "string",
-                "pattern": "^\\d+$"
-            },
-            "text": {
-                "type": "string",
-                "required": "1"
-            },
-            "value": {
-                "type": "string",
-                "pattern": "^[a-z]{2}$",
-                "required": "1"
-            }
-        }
-    }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "type" : "array",
+   "description" : null,
+   "additionalProperties" : false,
+   "title" : null,
+   "required" : null,
+   "items" : {
+      "type" : "object",
+      "additionalProperties" : false,
+      "required" : [
+         "value",
+         "text"
+      ],
+      "properties" : {
+         "selected" : {
+            "type" : "string",
+            "enum" : [
+               "selected"
+            ]
+         },
+         "value" : {
+            "type" : "string",
+            "pattern" : "^[a-z]{2}$"
+         },
+         "phone_idd" : {
+            "type" : "integer"
+         },
+         "text" : {
+            "type" : "string"
+         },
+         "disabled" : {
+            "enum" : [
+               "DISABLED"
+            ],
+            "type" : "string"
+         }
+      }
+   }
 }

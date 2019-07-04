@@ -1,12 +1,14 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "array",
-  "required": "1",
-  "minItems": "[_3]",
-  "maxItems": "[_3]",
-  "items": {
-    "type": "string",
-    "pattern": "^[_2]$",
-    "required": "1"
-  }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "title" : null,
+   "additionalProperties" : false,
+   "type" : "array",
+   "description" : null,
+   "required" : null,
+   "maxItems" : "[_3]",
+   "minItems" : "[_3]",
+   "items" : {
+      "pattern" : "^[_2]$",
+      "type" : "string"
+   }
 }

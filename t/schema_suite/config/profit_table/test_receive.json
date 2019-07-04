@@ -1,15 +1,23 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "transactions": {
-            "type": "array",
-            "required": "1"
-        },
-        "count": {
-            "type": "integer",
-            "required": "1",
-            "pattern": "^\\d+$"
-        }
-    }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "stash",
+      "transactions",
+      "count"
+   ],
+   "additionalProperties" : false,
+   "title" : null,
+   "description" : null,
+   "type" : "object",
+   "properties" : {
+      "stash" : {
+         "type" : "object"
+      },
+      "count" : {
+         "type" : "integer"
+      },
+      "transactions" : {
+         "type" : "array"
+      }
+   }
 }

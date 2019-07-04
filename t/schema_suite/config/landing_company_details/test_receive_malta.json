@@ -1,68 +1,134 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "shortcode": {
-            "type": "string",
-            "pattern": "^[_1]$",
-            "required": "1"
-        },
-        "name": {
-            "type": "string",
-            "pattern": "^Binary \\(Europe\\) Ltd$",
-            "required": "1"
-        },
-        "address": {
-            "type": "array",
-            "required": "1",
-            "items": {
-                "type": "string"
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "stash",
+      "country",
+      "legal_allowed_currencies",
+      "legal_allowed_markets",
+      "legal_allowed_contract_categories",
+      "name",
+      "has_reality_check",
+      "legal_default_currency",
+      "address",
+      "shortcode",
+      "changeable_fields",
+      "currency_config",
+      "requirements"
+   ],
+   "description" : null,
+   "type" : "object",
+   "additionalProperties" : false,
+   "title" : null,
+   "properties" : {
+      "stash" : {
+         "type" : "object"
+      },
+      "has_reality_check" : {
+         "type" : "integer",
+         "enum" : [
+            1
+         ]
+      },
+      "changeable_fields" : {
+         "properties" : {},
+         "additionalProperties" : false,
+         "type" : "object"
+      },
+      "requirements" : {
+         "type" : "object",
+         "additionalProperties" : false,
+         "required" : [
+            "signup"
+         ],
+         "properties" : {
+            "signup" : {
+               "type" : "array",
+               "items" : {
+                  "type" : "string"
+               }
             }
-        },
-        "country": {
-            "type": "string",
-            "pattern": "^Malta$",
-            "required": "1"
-        },
-        "legal_default_currency": {
-            "type": "string",
-            "pattern": "^EUR$",
-            "required": "1"
-        },
-        "legal_allowed_currencies": {
-            "type": "array",
-            "minItems": 3,
-            "required": "1",
-            "items": {
-                "type": "string",
-                "pattern": "^(USD|EUR|GBP)$",
-                "required": "1"
+         }
+      },
+      "legal_allowed_contract_categories" : {
+         "items" : {
+            "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|callputequal|callputspread|reset|highlowticks|lookback)$",
+            "type" : "string"
+         },
+         "type" : "array",
+         "minItems" : 6
+      },
+      "name" : {
+         "type" : "string",
+         "pattern" : "^Binary \\(Europe\\) Ltd$"
+      },
+      "address" : {
+         "items" : {
+            "type" : "string"
+         },
+         "type" : "array"
+      },
+      "shortcode" : {
+         "type" : "string",
+         "pattern" : "^[_1]$"
+      },
+      "legal_default_currency" : {
+         "type" : "string",
+         "pattern" : "^EUR$"
+      },
+      "legal_allowed_currencies" : {
+         "minItems" : 3,
+         "type" : "array",
+         "items" : {
+            "type" : "string",
+            "pattern" : "^(USD|EUR|GBP)$"
+         }
+      },
+      "legal_allowed_markets" : {
+         "type" : "array",
+         "items" : {
+            "pattern" : "^(volidx)$",
+            "type" : "string"
+         },
+         "minItems" : 1
+      },
+      "country" : {
+         "pattern" : "^Malta$",
+         "type" : "string"
+      },
+      "currency_config" : {
+         "type" : "object",
+         "additionalProperties" : false,
+         "required" : [
+            "volidx"
+         ],
+         "properties" : {
+            "volidx" : {
+               "additionalProperties" : false,
+               "type" : "object",
+               "patternProperties" : {
+                  "^[A-Z]{3,4}$" : {
+                     "properties" : {
+                        "max_payout" : {
+                           "type" : "number",
+                           "minimum" : 0
+                        },
+                        "min_stake" : {
+                           "maximum" : 10,
+                           "type" : "number",
+                           "minimum" : 0
+                        }
+                     },
+                     "required" : [
+                        "max_payout",
+                        "min_stake"
+                     ],
+                     "additionalProperties" : false,
+                     "type" : "object"
+                  }
+               },
+               "properties" : {}
             }
-        },
-        "legal_allowed_markets": {
-            "type": "array",
-            "minItems": 1,
-            "required": "1",
-            "items": {
-                "type": "string",
-                "pattern": "^(volidx)$",
-                "required": "1"
-            }
-        },
-        "legal_allowed_contract_categories": {
-            "type": "array",
-            "minItems": 6,
-            "required": "1",
-            "items": {
-                "type": "string",
-                "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|callputequal|callputspread|reset|highlowticks|lookback)$",
-                "required": "1"
-            }
-        },
-        "has_reality_check": {
-            "type": "integer",
-            "pattern": "^1$",
-            "required": "1"
-        }
-    }
+         }
+      }
+   }
 }

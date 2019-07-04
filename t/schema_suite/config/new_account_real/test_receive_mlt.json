@@ -1,26 +1,35 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "client_id": {
-            "type": "string",
-            "pattern": "^MLT\\d+$",
-            "required": "1"
-        },
-        "landing_company": {
-            "type": "string",
-            "pattern": "^Binary \\(Europe\\) Ltd$",
-            "required": "1"
-        },
-        "landing_company_shortcode": {
-            "type": "string",
-            "pattern": "^malta$",
-            "required": "1"
-        },
-        "oauth_token": {
-            "type": "string",
-            "pattern": "^.{32}$",
-            "required": "1"
-        }
-    }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "oauth_token",
+      "landing_company_shortcode",
+      "client_id",
+      "landing_company",
+      "stash"
+   ],
+   "title" : null,
+   "additionalProperties" : false,
+   "description" : null,
+   "type" : "object",
+   "properties" : {
+      "stash" : {
+         "type" : "object"
+      },
+      "client_id" : {
+         "type" : "string",
+         "pattern" : "^MLT\\d+$"
+      },
+      "landing_company_shortcode" : {
+         "type" : "string",
+         "pattern" : "^malta$"
+      },
+      "oauth_token" : {
+         "pattern" : "^.{32}$",
+         "type" : "string"
+      },
+      "landing_company" : {
+         "pattern" : "^Binary \\(Europe\\) Ltd$",
+         "type" : "string"
+      }
+   }
 }

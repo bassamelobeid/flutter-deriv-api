@@ -1,51 +1,74 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "max_balance":{
-      "type": "integer",
-      "pattern": "^1$",
-      "required": "1"
-    },
-    "max_turnover":{
-      "type": "integer",
-      "pattern": "^3$",
-      "required": "1"
-    },
-    "max_losses":{
-      "type": "integer",
-      "pattern": "^5$",
-      "required": "1"
-    },
-    "max_7day_turnover":{
-      "type": "integer",
-      "pattern": "^2$",
-      "required": "1"
-    },
-    "max_7day_losses":{
-      "type": "integer",
-      "pattern": "^4$",
-      "required": "1"
-    },
-    "max_30day_turnover":{
-      "type": "integer",
-      "pattern": "^7$",
-      "required": "1"
-    },
-    "max_30day_losses":{
-      "type": "integer",
-      "pattern": "^5$",
-      "required": "1"
-    },
-    "max_open_bets":{
-      "type": "integer",
-      "pattern": "^6$",
-      "required": "1"
-    },
-    "session_duration_limit":{
-      "type": "integer",
-      "pattern": "^3$",
-      "required": "1"
-    }
-  }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "max_turnover",
+      "max_7day_turnover",
+      "max_open_bets",
+      "session_duration_limit",
+      "max_30day_losses",
+      "max_7day_losses",
+      "max_balance",
+      "max_30day_turnover",
+      "max_losses"
+   ],
+   "description" : null,
+   "type" : "object",
+   "title" : null,
+   "additionalProperties" : false,
+   "properties" : {
+      "max_losses" : {
+         "type" : "integer",
+         "enum" : [
+            5
+         ]
+      },
+      "max_7day_turnover" : {
+         "type" : "integer",
+         "enum" : [
+            2
+         ]
+      },
+      "max_30day_losses" : {
+         "enum" : [
+            5
+         ],
+         "type" : "integer"
+      },
+      "max_balance" : {
+         "enum" : [
+            1
+         ],
+         "type" : "integer"
+      },
+      "max_open_bets" : {
+         "type" : "integer",
+         "enum" : [
+            6
+         ]
+      },
+      "max_turnover" : {
+         "enum" : [
+            3
+         ],
+         "type" : "integer"
+      },
+      "max_30day_turnover" : {
+         "type" : "integer",
+         "enum" : [
+            7
+         ]
+      },
+      "session_duration_limit" : {
+         "type" : "integer",
+         "enum" : [
+            3
+         ]
+      },
+      "max_7day_losses" : {
+         "enum" : [
+            4
+         ],
+         "type" : "integer"
+      }
+   }
 }

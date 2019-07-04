@@ -1,26 +1,35 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "client_id": {
-            "type": "string",
-            "pattern": "^MX\\d+$",
-            "required": "1"
-        },
-        "landing_company": {
-            "type": "string",
-            "pattern": "^Binary \\(IOM\\) Ltd$",
-            "required": "1"
-        },
-        "landing_company_shortcode": {
-            "type": "string",
-            "pattern": "^iom$",
-            "required": "1"
-        },
-        "oauth_token": {
-            "type": "string",
-            "pattern": "^.{32}$",
-            "required": "1"
-        }
-    }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "title" : null,
+   "additionalProperties" : false,
+   "description" : null,
+   "type" : "object",
+   "required" : [
+      "client_id",
+      "oauth_token",
+      "landing_company_shortcode",
+      "landing_company",
+      "stash"
+   ],
+   "properties" : {
+      "landing_company" : {
+         "type" : "string",
+         "pattern" : "^Binary \\(IOM\\) Ltd$"
+      },
+      "oauth_token" : {
+         "type" : "string",
+         "pattern" : "^.{32}$"
+      },
+      "landing_company_shortcode" : {
+         "type" : "string",
+         "pattern" : "^iom$"
+      },
+      "stash" : {
+         "type" : "object"
+      },
+      "client_id" : {
+         "pattern" : "^MX\\d+$",
+         "type" : "string"
+      }
+   }
 }

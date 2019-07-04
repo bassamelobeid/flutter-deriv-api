@@ -1,11 +1,22 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-      "status": {
-          "type": "integer",
-          "pattern": "^1$",
-          "required": "1"
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "stash",
+      "status"
+   ],
+   "type" : "object",
+   "description" : null,
+   "additionalProperties" : false,
+   "title" : null,
+   "properties" : {
+      "status" : {
+         "enum" : [
+            1
+         ],
+         "type" : "integer"
+      },
+      "stash" : {
+         "type" : "object"
       }
-  }
+   }
 }

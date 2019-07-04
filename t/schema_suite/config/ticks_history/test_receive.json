@@ -1,55 +1,66 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-       "stash": {
-           "type": "object",
-           "required": "1",
-           "properties":{
-               "[_1]_display_decimals": {
-                   "type": "integer",
-                   "required": "1"
-               }
-           }
-       },
-       "type":{
-           "type": "string",
-           "required": "1",
-           "pattern": "^history$"
-       },
-       "publish": {
-           "type": "string",
-           "required": "1",
-           "pattern": "^tick$"
-       },
-       "data": {
-           "type": "object",
-           "required": "1",
-           "properties": {
-               "times": {
-                   "type": ["array", "null"],
-                   "required": "1",
-                   "maxItems": "[_2]",
-                   "minItems": "[_2]",
-                   "items": {
-                       "type": "integer",
-                       "pattern": "^\\d{10}$",
-                       "required": "1"
-                   }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "title" : null,
+   "additionalProperties" : false,
+   "description" : null,
+   "type" : "object",
+   "required" : [
+      "stash",
+      "publish",
+      "type",
+      "data"
+   ],
+   "properties" : {
+      "stash" : {
+         "type" : "object",
+         "properties" : {
+            "[_1]_display_decimals" : {
+               "type" : "integer"
+            }
+         }
+      },
+      "publish" : {
+         "pattern" : "^tick$",
+         "type" : "string"
+      },
+      "data" : {
+         "properties" : {
+            "times" : {
+               "items" : {
+                  "minimum" : 1000000000,
+                  "type" : "integer",
+                  "maximum" : 9999999999
                },
-               "prices": {
-                   "type": ["array", "null"],
-                   "required": "1",
-                   "maxItems": "[_2]",
-                   "minItems": "[_2]",
-                   "items": {
-                       "type": "string",
-                       "pattern": "^\\d+\\.\\d+$",
-                       "required": "1"
-                   }
-               }
-           }
-       }
-        
-    }
+               "type" : [
+                  "array",
+                  "null"
+               ],
+               "maxItems" : "[_2]",
+               "minItems" : "[_2]"
+            },
+            "prices" : {
+               "type" : [
+                  "array",
+                  "null"
+               ],
+               "maxItems" : "[_2]",
+               "items" : {
+                  "type" : "string",
+                  "pattern" : "^\\d+\\.\\d+$"
+               },
+               "minItems" : "[_2]"
+            }
+         },
+         "required" : [
+            "times",
+            "prices"
+         ],
+         "type" : "object",
+         "additionalProperties" : false
+      },
+      "type" : {
+         "type" : "string",
+         "pattern" : "^history$"
+      }
+   }
 }

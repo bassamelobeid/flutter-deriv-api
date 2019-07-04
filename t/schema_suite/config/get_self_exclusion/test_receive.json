@@ -1,51 +1,64 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "max_balance":{
-      "type": "integer",
-      "pattern": "^25000$",
-      "required": "1"
-    },
-    "max_turnover":{
-      "type": "integer",
-      "pattern": "^123123$",
-      "required": "1"
-    },
-    "max_losses":{
-      "type": "integer",
-      "pattern": "^129381231$",
-      "required": "1"
-    },
-    "max_7day_turnover":{
-      "type": "integer",
-      "pattern": "^1203123$",
-      "required": "1"
-    },
-    "max_7day_losses":{
-      "type": "integer",
-      "pattern": "^129837123$",
-      "required": "1"
-    },
-    "max_30day_turnover":{
-      "type": "integer",
-      "pattern": "^12837123$",
-      "required": "1"
-    },
-    "max_30day_losses":{
-      "type": "integer",
-      "pattern": "^19834234$",
-      "required": "1"
-    },
-    "max_open_bets":{
-      "type": "integer",
-      "pattern": "^25$",
-      "required": "1"
-    },
-    "session_duration_limit":{
-      "type": "integer",
-      "pattern": "^12934$",
-      "required": "1"
-    }
-  }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "additionalProperties" : false,
+   "title" : null,
+   "description" : null,
+   "type" : "object",
+   "required" : [
+      "max_losses",
+      "max_30day_turnover",
+      "max_balance",
+      "max_30day_losses",
+      "max_7day_losses",
+      "session_duration_limit",
+      "max_open_bets",
+      "max_turnover",
+      "max_7day_turnover",
+      "stash"
+   ],
+   "properties" : {
+      "max_7day_turnover" : {
+         "pattern" : "^1203123$",
+         "type" : "string"
+      },
+      "stash" : {
+         "type" : "object"
+      },
+      "max_losses" : {
+         "type" : "string",
+         "pattern" : "^129381231$"
+      },
+      "max_7day_losses" : {
+         "pattern" : "^129837123$",
+         "type" : "string"
+      },
+      "session_duration_limit" : {
+         "enum" : [
+            12934
+         ],
+         "type" : "integer"
+      },
+      "max_turnover" : {
+         "pattern" : "^123123$",
+         "type" : "string"
+      },
+      "max_open_bets" : {
+         "type" : "integer",
+         "enum" : [
+            25
+         ]
+      },
+      "max_30day_turnover" : {
+         "pattern" : "^12837123$",
+         "type" : "string"
+      },
+      "max_30day_losses" : {
+         "pattern" : "^19834234$",
+         "type" : "string"
+      },
+      "max_balance" : {
+         "pattern" : "^25000$",
+         "type" : "string"
+      }
+   }
 }

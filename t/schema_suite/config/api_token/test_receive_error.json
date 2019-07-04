@@ -1,29 +1,44 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "echo_req": {
-            "required": "1"
-        },
-        "error": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string",
-                    "required": "1"
-                },
-                "code": {
-                    "type": "string",
-                    "pattern": "^APITokenError$",
-                    "required": "1"
-                }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "type" : "object",
+   "description" : null,
+   "title" : null,
+   "additionalProperties" : false,
+   "required" : [
+      "msg_type",
+      "stash",
+      "echo_req",
+      "error"
+   ],
+   "properties" : {
+      "error" : {
+         "required" : [
+            "message",
+            "code"
+         ],
+         "properties" : {
+            "message" : {
+               "type" : "string"
             },
-            "required": "1"
-        },
-        "msg_type":{
-            "type": "string",
-            "pattern": "^api_token$",
-            "required": "1"
-        }
-    }
+            "code" : {
+               "pattern" : "^APITokenError$",
+               "type" : "string"
+            }
+         },
+         "type" : "object",
+         "additionalProperties" : false
+      },
+      "stash" : {
+         "type" : "object"
+      },
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^api_token$"
+      },
+      "echo_req" : {
+         "properties" : {},
+         "additionalProperties" : false,
+         "type" : "object"
+      }
+   }
 }
