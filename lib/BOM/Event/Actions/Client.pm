@@ -213,9 +213,15 @@ async sub document_upload {
         await $redis_events_write->connect;
 
         # trigger address verification if not already address_verified
-        await _address_verification(client => $client)
-            if (not $client->status->address_verified
-            and (await $redis_events_write->hsetnx('ADDRESS_VERIFICATION_TRIGGER', $client->binary_user_id, 1)));
+        try {
+            await _address_verification(client => $client)
+                if (not $client->status->address_verified
+                and (await $redis_events_write->hsetnx('ADDRESS_VERIFICATION_TRIGGER', $client->binary_user_id, 1)));
+        }
+        catch {
+            my $e = $@;
+            $log->errorf('Failed to verify applicants address: %s', $e);
+        }
 
         $log->debugf('Applying Onfido verification process for client %s', $loginid);
         my $file_data = $args->{content};
@@ -1051,9 +1057,9 @@ async sub _send_email_notification_for_poa {
     my $mt5_groups = await $redis_mt5_user->mget(@mt_loginid_keys);
 
     # loop through all mt5 loginids check
-    # mt5 group has advanced|standard then
+    # non demo mt5 group has advanced|standard then
     # its considered as financial
-    if (any { defined && /_standard|_advanced/ } @$mt5_groups) {
+    if (any { defined && /^(?!demo).*(_standard|_advanced)/ } @$mt5_groups) {
         await _send_poa_email($client);
     }
     return undef;
