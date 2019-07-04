@@ -1,21 +1,30 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "currency": {
-            "type": "string",
-            "required": "1",
-            "pattern": "^(|[A-Z]{3})$"
-        },
-        "balance": {
-            "type": "number",
-            "required": "1",
-            "pattern": "^([.0-9]{1,25})$"
-        },
-        "loginid": {
-            "type": "string",
-            "required": "1",
-            "pattern": "^[A-Z]{2,4}[0-9]{1,10}$"
-        }
-    }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "additionalProperties" : false,
+   "title" : null,
+   "description" : null,
+   "type" : "object",
+   "required" : [
+      "loginid",
+      "currency",
+      "stash",
+      "balance"
+   ],
+   "properties" : {
+      "stash" : {
+         "type" : "object"
+      },
+      "balance" : {
+         "pattern" : "^([.0-9]{1,25})$",
+         "type" : "string"
+      },
+      "currency" : {
+         "pattern" : "^(|[A-Z]{3})$",
+         "type" : "string"
+      },
+      "loginid" : {
+         "type" : "string",
+         "pattern" : "^[A-Z]{2,4}[0-9]{1,10}$"
+      }
+   }
 }

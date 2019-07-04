@@ -1,98 +1,110 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "forex_trading_frequency": {
-      "type": "string",
-      "pattern": "^40 transactions or more in the past 12 months$"
-    },
-    "forex_trading_experience": {
-      "type": "string",
-      "pattern": "^1\\-2 years$"
-    },
-    "binary_options_trading_frequency": {
-      "type": "string",
-      "pattern": "^0\\-5 transactions in the past 12 months$"
-    },
-    "binary_options_trading_experience": {
-      "type": "string",
-      "pattern": "^Over 3 years$"
-    },
-    "cfd_trading_frequency": {
-      "type": "string",
-      "pattern": "^40 transactions or more in the past 12 months$"
-    },
-    "cfd_trading_experience": {
-      "type": "string",
-      "pattern": "^Over 3 years$"
-    },
-    "other_instruments_trading_frequency": {
-      "type": "string",
-      "pattern": "^40 transactions or more in the past 12 months$"
-    },
-    "other_instruments_trading_experience": {
-      "type": "string",
-      "pattern": "^1\\-2 years$"
-    },
-    "employment_industry": {
-      "type": "string",
-      "pattern": "^Health$",
-      "required": "1"
-    },
-    "education_level": {
-      "type": "string",
-      "pattern": "^Tertiary$",
-      "required": "1"
-    },
-    "income_source": {
-      "type": "string",
-      "pattern": "^Investments \\& Dividends$",
-      "required": "1"
-    },
-    "net_income": {
-      "type": "string",
-      "pattern": "^Over \\$500\\,000$",
-      "required": "1"
-    },
-    "estimated_worth": {
-      "type": "string",
-      "pattern": "^Less than \\$100\\,000$",
-      "required": "1"
-    },
-    "occupation": {
-      "type": "string",
-      "pattern": "^Managers$",
-      "required": 1
-    },
-    "employment_status": {
-      "type": "string",
-      "pattern": "^Self-Employed$",
-      "required": 0
-    },
-    "source_of_wealth": {
-      "type": "string",
-      "pattern": "^Company Ownership$",
-      "required": 0
-    },
-    "total_score": {
-      "type": "integer",
-      "pattern": "^[_2]$",
-      "required": 1
-    },
-    "cfd_score": {
-      "type": "integer",
-      "pattern": "^[_3]$",
-      "required": 1
-    },
-    "trading_score": {
-      "type": "integer",
-      "pattern": "^[_5]$",
-      "required": 1
-    },
-    "financial_information_score": {
-      "type": "integer",
-      "pattern": "^[_4]$",
-      "required": 1
-    }
-  }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "additionalProperties" : false,
+   "required" : [
+      "education_level",
+      "stash",
+      "occupation",
+      "net_income",
+      "financial_information_score",
+      "estimated_worth",
+      "cfd_score",
+      "trading_score",
+      "income_source",
+      "employment_industry",
+      "total_score",
+      "account_turnover"
+   ],
+   "type" : "object",
+   "properties" : {
+      "education_level" : {
+         "pattern" : "^Tertiary$",
+         "type" : "string"
+      },
+      "stash" : {
+         "type" : "object"
+      },
+      "account_turnover": {
+         "type" : "string",
+         "pattern" : "^Over \\$500\\,000$"
+      },
+      "binary_options_trading_frequency" : {
+         "type" : "string",
+         "pattern" : "^0\\-5 transactions in the past 12 months$"
+      },
+      "source_of_wealth" : {
+         "pattern" : "^Company Ownership$",
+         "required" : 0,
+         "type" : "string"
+      },
+      "forex_trading_experience" : {
+         "pattern" : "^1\\-2 years$",
+         "type" : "string"
+      },
+      "occupation" : {
+         "pattern" : "^Managers$",
+         "type" : "string"
+      },
+      "net_income" : {
+         "pattern" : "^Over \\$500\\,000$",
+         "type" : "string"
+      },
+      "financial_information_score" : {
+         "type" : "integer",
+         "pattern" : "^[_4]$"
+      },
+      "estimated_worth" : {
+         "pattern" : "^Less than \\$100\\,000$",
+         "type" : "string"
+      },
+      "cfd_score" : {
+         "pattern" : "^[_3]$",
+         "type" : "integer"
+      },
+      "trading_score" : {
+         "enum" : [[_5]],
+         "type" : "integer"
+      },
+      "income_source" : {
+         "type" : "string",
+         "pattern" : "^Investments \\& Dividends$"
+      },
+      "employment_industry" : {
+         "pattern" : "^Health$",
+         "type" : "string"
+      },
+      "cfd_trading_frequency" : {
+         "type" : "string",
+         "pattern" : "^40 transactions or more in the past 12 months$"
+      },
+      "cfd_trading_experience" : {
+         "pattern" : "^Over 3 years$",
+         "type" : "string"
+      },
+      "other_instruments_trading_experience" : {
+         "pattern" : "^1\\-2 years$",
+         "type" : "string"
+      },
+      "total_score" : {
+         "enum" : [[_2]],
+         "type" : "integer"
+      },
+      "binary_options_trading_experience" : {
+         "type" : "string",
+         "pattern" : "^Over 3 years$"
+      },
+      "employment_status" : {
+         "type" : "string",
+         "required" : 0,
+         "pattern" : "^Self-Employed$"
+      },
+      "forex_trading_frequency" : {
+         "type" : "string",
+         "pattern" : "^40 transactions or more in the past 12 months$"
+      },
+      "other_instruments_trading_frequency" : {
+         "type" : "string",
+         "pattern" : "^40 transactions or more in the past 12 months$"
+      }
+   }
 }

@@ -1,60 +1,126 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "email": {
-      "type": "string",
-      "pattern": "^[_3]$",
-      "required": "1"
-    },
-    "currency": {
-      "type": "string",
-      "pattern": "^$",
-      "required": "1"
-    },
-    "balance": {
-      "type": "number",
-      "pattern": "^0.00$",
-      "required": "1"
-    },
-    "loginid": {
-      "type": "string",
-      "pattern": "^MX\\d+$",
-      "required": "1"
-    },
-    "is_virtual": {
-      "type": "string",
-      "pattern": "^0$",
-      "required": "1"
-    },
-    "landing_company_name": {
-      "type": "string",
-      "pattern": "^iom$",
-      "required": "1"
-    },
-    "landing_company_fullname": {
-      "type": "string",
-      "pattern": "^Binary \\(IOM\\) Ltd$",
-      "required": "1"
-    },
-    "country": {
-      "type": "string",
-      "pattern": "^[_2]$",
-      "required": "1"
-    },
-    "fullname": {
-      "type": "string",
-      "pattern": "^Mrs Example First Name MX Example Last Name$",
-      "required": "1"
-    },
-    "scopes": {
-      "type": "array",
-      "minItems": 4,
-      "items": {
-        "type": "string",
-        "pattern": "^(admin|payments|read|trade)$"
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "title" : null,
+   "additionalProperties" : false,
+   "description" : null,
+   "type" : "object",
+   "required" : [
+      "landing_company_fullname",
+      "currency",
+      "balance",
+      "is_virtual",
+      "email",
+      "loginid",
+      "fullname",
+      "landing_company_name",
+      "country",
+      "scopes",
+      "stash",
+      "account_list",
+      "upgradeable_landing_companies",
+      "user_id"
+   ],
+   "properties" : {
+      "email" : {
+         "pattern" : "^[_3]$",
+         "type" : "string"
       },
-      "required": "1"
-    }
-  }
+      "fullname" : {
+         "pattern" : "^Mrs Example First Name MX Example Last Name$",
+         "type" : "string"
+      },
+      "landing_company_fullname" : {
+         "pattern" : "^Binary \\(IOM\\) Ltd$",
+         "type" : "string"
+      },
+      "balance" : {
+         "type" : "string",
+         "pattern" : "^0.00$"
+      },
+      "upgradeable_landing_companies" : {
+         "type" : "array"
+      },
+      "currency" : {
+         "type" : "string",
+         "pattern" : "^$"
+      },
+      "country" : {
+         "pattern" : "^[_2]$",
+         "type" : "string"
+      },
+      "is_virtual" : {
+         "enum" : [
+            0
+         ],
+         "type" : "integer"
+      },
+      "account_list" : {
+         "type" : "array",
+         "description" : "List of accounts for current user.",
+         "items" : {
+            "required" : [
+               "is_virtual",
+               "currency",
+               "loginid",
+               "is_disabled",
+               "landing_company_name"
+            ],
+            "properties" : {
+               "landing_company_name" : {
+                  "description" : "Landing company shortcode the account belongs to.",
+                  "type" : "string"
+               },
+               "is_disabled" : {
+                  "type" : "integer",
+                  "description" : "Boolean value: 1 or 0, indicating whether the account is marked as disabled or not.",
+                  "enum" : [
+                     1,
+                     0
+                  ]
+               },
+               "currency" : {
+                  "description" : "Currency of specified account.",
+                  "type" : "string"
+               },
+               "is_virtual" : {
+                  "description" : "Boolean value: 1 or 0, indicating whether the account is a virtual-money account.",
+                  "type" : "integer",
+                  "enum" : [
+                     1,
+                     0
+                  ]
+               },
+               "loginid" : {
+                  "description" : "The account id of specified account.",
+                  "type" : "string"
+               }
+            },
+            "type" : "object",
+            "additionalProperties" : false
+         }
+      },
+      "stash" : {
+         "type" : "object"
+      },
+      "scopes" : {
+         "type" : "array",
+         "items" : {
+            "pattern" : "^(admin|payments|read|trade)$",
+            "type" : "string"
+         },
+         "minItems" : 4
+      },
+      "landing_company_name" : {
+         "pattern" : "^iom$",
+         "type" : "string"
+      },
+      "loginid" : {
+         "type" : "string",
+         "pattern" : "^MX\\d+$"
+      },
+      "user_id" : {
+         "pattern" : "^[0-9]+$",
+         "type" : "string"
+      }
+   }
 }

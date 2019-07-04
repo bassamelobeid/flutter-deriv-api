@@ -1,17 +1,29 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "error": {
-        "type": "object",
-        "properties": {
-            "message_to_client": {
-                "type": "string",
-                "required": "1"
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "error"
+   ],
+   "description" : null,
+   "type" : "object",
+   "title" : null,
+   "additionalProperties" : false,
+   "properties" : {
+      "error" : {
+         "additionalProperties" : false,
+         "type" : "object",
+         "properties" : {
+            "message_to_client" : {
+               "type" : "string"
             },
-            "code": {
-                "type": "string",
-                "pattern": "^CurrencyTypeNotAllowed$",
-                "required": "1"
+            "code" : {
+               "pattern" : "^CurrencyTypeNotAllowed$",
+               "type" : "string"
             }
-        }
-    }
+         },
+         "required" : [
+            "message_to_client",
+            "code"
+         ]
+      }
+   }
 }

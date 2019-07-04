@@ -1,51 +1,126 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "country": {
-      "type": "string",
-      "pattern": "^[_2]$",
-      "required": "1"
-    },
-    "currency": {
-      "type": "string",
-      "pattern": "^USD$",
-      "required": "1"
-    },
-    "email": {
-      "type": "string",
-      "pattern": "^[_3]$",
-      "required": "1"
-    },
-    "landing_company_fullname": {
-      "type": "string",
-      "pattern": "^Binary Ltd$",
-      "required": "1"
-    },
-    "landing_company_name": {
-      "type": "string",
-      "pattern": "^virtual$",
-      "required": "1"
-    },
-    "loginid": {
-      "type": "string",
-      "pattern": "^VRTC",
-      "required": "1"
-    },
-    "fullname": {
-      "type": "string",
-      "pattern": "  ",
-      "required": "1"
-    },
-    "balance": {
-      "type": "number",
-      "pattern": "^10000.00$",
-      "required": "1"
-    },
-    "is_virtual": {
-      "type": "integer",
-      "pattern": "^1$",
-      "required": "1"
-    }
-  }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "landing_company_fullname",
+      "currency",
+      "balance",
+      "is_virtual",
+      "email",
+      "loginid",
+      "fullname",
+      "landing_company_name",
+      "country",
+      "scopes",
+      "stash",
+      "account_list",
+      "upgradeable_landing_companies",
+      "user_id"
+   ],
+   "additionalProperties" : false,
+   "title" : null,
+   "type" : "object",
+   "description" : null,
+   "properties" : {
+      "scopes" : {
+         "minItems" : 4,
+         "type" : "array",
+         "items" : {
+            "type" : "string",
+            "pattern" : "^(admin|payments|read|trade)$"
+         }
+      },
+      "stash" : {
+         "type" : "object"
+      },
+      "account_list" : {
+         "items" : {
+            "type" : "object",
+            "additionalProperties" : false,
+            "required" : [
+               "is_virtual",
+               "currency",
+               "loginid",
+               "is_disabled",
+               "landing_company_name"
+            ],
+            "properties" : {
+               "is_virtual" : {
+                  "enum" : [
+                     1,
+                     0
+                  ],
+                  "description" : "Boolean value: 1 or 0, indicating whether the account is a virtual-money account.",
+                  "type" : "integer"
+               },
+               "loginid" : {
+                  "type" : "string",
+                  "description" : "The account id of specified account."
+               },
+               "is_disabled" : {
+                  "enum" : [
+                     1,
+                     0
+                  ],
+                  "description" : "Boolean value: 1 or 0, indicating whether the account is marked as disabled or not.",
+                  "type" : "integer"
+               },
+               "currency" : {
+                  "type" : "string",
+                  "description" : "Currency of specified account."
+               },
+               "landing_company_name" : {
+                  "description" : "Landing company shortcode the account belongs to.",
+                  "type" : "string"
+               }
+            }
+         },
+         "type" : "array",
+         "description" : "List of accounts for current user."
+      },
+      "landing_company_name" : {
+         "type" : "string",
+         "pattern" : "^virtual$"
+      },
+      "loginid" : {
+         "pattern" : "^VRTC",
+         "type" : "string"
+      },
+      "user_id" : {
+         "pattern" : "^[0-9]+$",
+         "type" : "string"
+      },
+      "landing_company_fullname" : {
+         "pattern" : "^Binary Ltd$",
+         "type" : "string"
+      },
+      "upgradeable_landing_companies" : {
+         "type" : "array"
+      },
+      "balance" : {
+         "pattern" : "^10000.00$",
+         "type" : "string"
+      },
+      "email" : {
+         "type" : "string",
+         "pattern" : "^[_3]$"
+      },
+      "fullname" : {
+         "pattern" : "  ",
+         "type" : "string"
+      },
+      "currency" : {
+         "type" : "string",
+         "pattern" : "^USD$"
+      },
+      "is_virtual" : {
+         "enum" : [
+            1
+         ],
+         "type" : "integer"
+      },
+      "country" : {
+         "type" : "string",
+         "pattern" : "^[_2]$"
+      }
+   }
 }

@@ -1,21 +1,29 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "error":{
-            "type": "object",
-            "required": "1",
-            "properties": {
-                "code": {
-                    "type": "string",
-                    "required": "1",
-                    "pattern": "^InvalidSymbol$"
-                },
-                "message_to_client": {
-                    "type": "string",
-                    "required": "1"
-                }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "error"
+   ],
+   "description" : null,
+   "type" : "object",
+   "additionalProperties" : false,
+   "title" : null,
+   "properties" : {
+      "error" : {
+         "additionalProperties" : false,
+         "type" : "object",
+         "properties" : {
+            "message_to_client" : {
+               "type" : "string"
+            },
+            "code" : {
+               "type" : "string",
+               "pattern" : "^InvalidSymbol$"
             }
-        }
-    }
+         },
+         "required" : [
+            "message_to_client",
+            "code"
+         ]
+      }
+   }
 }

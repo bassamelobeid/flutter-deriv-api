@@ -1,151 +1,227 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "account_balance": {
-      "type": "integer",
-      "pattern": "^300000$",
-      "required": "1"
-    },
-    "lifetime_limit": {
-      "type": "integer",
-      "pattern": "^10000$",
-      "required": "1"
-    },
-    "market_specific": {
-      "type": "object",
-      "properties": {
-        "commodities": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string",
-                "pattern": "^Commodities$"
-              },
-              "turnover_limit": {
-                "type": "integer",
-                "pattern": "^50000$"
-              }
-            }
-          },
-          "required": "1"
-        },
-        "forex": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string",
-                "pattern": "^(Major Pairs|Minor Pairs|Smart FX)$"
-              },
-              "turnover_limit": {
-                "type": "integer",
-                "pattern": "^(100000|50000)$"
-              }
-            }
-          },
-          "required": "1"
-        },
-        "indices": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string",
-                "pattern": "^Indices$"
-              },
-              "turnover_limit": {
-                "type": "integer",
-                "pattern": "^100000$"
-              }
-            }
-          },
-          "required": "1"
-        },
-        "volidx": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string",
-                "pattern": "^Volatility Indices$"
-              },
-              "turnover_limit": {
-                "type": "integer",
-                "pattern": "^500000$"
-              }
-            }
-          },
-          "required": "1"
-        }
-      }
-    },
-    "num_of_days": {
-      "type": "integer",
-      "pattern": "^30$",
-      "required": "1"
-    },
-    "num_of_days_limit": {
-      "type": "integer",
-      "pattern": "^10000$",
-      "required": "1"
-    },
-    "open_positions": {
-      "type": "integer",
-      "pattern": "^60$",
-      "required": "1"
-    },
-    "payout": {
-      "type": "integer",
-      "pattern": "^100000$",
-      "required": "1"
-    },
-    "remainder": {
-      "type": "integer",
-      "pattern": "^10000$",
-      "required": "1"
-    },
-    "withdrawal_for_x_days_monetary": {
-      "type": "integer",
-      "pattern": "^0$",
-      "required": "1"
-    },
-    "withdrawal_since_inception_monetary": {
-      "type": "integer",
-      "pattern": "^0$",
-      "required": "1"
-    },
-    "daily_transfers": {
-      "type": "object",
-      "properties": {
-        "internal": {
-          "type": "object",
-          "properties": {
-            "allowed": {
-              "type": "integer"
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "account_balance",
+      "num_of_days_limit",
+      "remainder",
+      "withdrawal_since_inception_monetary",
+      "lifetime_limit",
+      "stash",
+      "payout",
+      "num_of_days",
+      "open_positions",
+      "withdrawal_for_x_days_monetary",
+      "market_specific",
+      "daily_transfers"
+   ],
+   "title" : null,
+   "additionalProperties" : false,
+   "description" : null,
+   "type" : "object",
+   "properties" : {
+      "market_specific" : {
+         "required" : [
+            "forex",
+            "commodities",
+            "indices",
+            "volidx"
+         ],
+         "properties" : {
+            "indices" : {
+               "type" : "array",
+               "items" : {
+                  "required" : [
+                     "name",
+                     "turnover_limit"
+                  ],
+                  "properties" : {
+                     "name" : {
+                        "pattern" : "^Indices$",
+                        "type" : "string"
+                     },
+                     "turnover_limit" : {
+                        "enum" : [
+                           100000
+                        ],
+                        "type" : "integer"
+                     }
+                  },
+                  "additionalProperties" : false,
+                  "type" : "object"
+               }
             },
-            "available": {
-              "type": "integer"
-            }
-          }
-        },
-        "mt5": {
-          "type": "object",
-          "properties": {
-            "allowed": {
-              "type": "integer"
+            "commodities" : {
+               "items" : {
+                  "properties" : {
+                     "turnover_limit" : {
+                        "enum" : [
+                           50000
+                        ],
+                        "type" : "integer"
+                     },
+                     "name" : {
+                        "type" : "string",
+                        "pattern" : "^Commodities$"
+                     }
+                  },
+                  "required" : [
+                     "turnover_limit",
+                     "name"
+                  ],
+                  "type" : "object",
+                  "additionalProperties" : false
+               },
+               "type" : "array"
             },
-            "available": {
-              "type": "integer"
+            "volidx" : {
+               "items" : {
+                  "type" : "object",
+                  "additionalProperties" : false,
+                  "properties" : {
+                     "turnover_limit" : {
+                        "enum" : [
+                           500000
+                        ],
+                        "type" : "integer"
+                     },
+                     "name" : {
+                        "type" : "string",
+                        "pattern" : "^Volatility Indices$"
+                     }
+                  },
+                  "required" : [
+                     "turnover_limit",
+                     "name"
+                  ]
+               },
+               "type" : "array"
+            },
+            "forex" : {
+               "type" : "array",
+               "items" : {
+                  "required" : [
+                     "turnover_limit",
+                     "name"
+                  ],
+                  "properties" : {
+                     "turnover_limit" : {
+                        "type" : "integer",
+                        "enum" : [
+                           100000,
+                           50000
+                        ]
+                     },
+                     "name" : {
+                        "pattern" : "^(Major Pairs|Minor Pairs|Smart FX)$",
+                        "type" : "string"
+                     }
+                  },
+                  "type" : "object",
+                  "additionalProperties" : false
+               }
             }
-          }
-        }
+         },
+         "type" : "object",
+         "additionalProperties" : false
+      },
+      "account_balance" : {
+         "enum" : [
+            300000
+         ],
+         "type" : "integer"
+      },
+      "num_of_days_limit" : {
+         "type" : "integer",
+         "enum" : [
+            10000
+         ]
+      },
+      "withdrawal_since_inception_monetary" : {
+         "type" : "integer",
+         "enum" : [
+            0
+         ]
+      },
+      "lifetime_limit" : {
+         "enum" : [
+            10000
+         ],
+         "type" : "integer"
+      },
+      "num_of_days" : {
+         "enum" : [
+            30
+         ],
+         "type" : "integer"
+      },
+      "remainder" : {
+         "enum" : [
+            10000
+         ],
+         "type" : "integer"
+      },
+      "open_positions" : {
+         "enum" : [
+            60
+         ],
+         "type" : "integer"
+      },
+      "stash" : {
+         "type" : "object"
+      },
+      "payout" : {
+         "type" : "integer",
+         "enum" : [
+            100000
+         ]
+      },
+      "daily_transfers" : {
+         "type" : "object",
+         "additionalProperties" : false,
+         "properties" : {
+            "mt5" : {
+               "additionalProperties" : false,
+               "type" : "object",
+               "required" : [
+                  "allowed",
+                  "available"
+               ],
+               "properties" : {
+                  "allowed" : {
+                     "type" : "integer"
+                  },
+                  "available" : {
+                     "type" : "integer"
+                  }
+               }
+            },
+            "internal" : {
+               "type" : "object",
+               "additionalProperties" : false,
+               "required" : [
+                  "allowed",
+                  "available"
+               ],
+               "properties" : {
+                  "allowed" : {
+                     "type" : "integer"
+                  },
+                  "available" : {
+                     "type" : "integer"
+                  }
+               }
+            }
+         },
+         "required" : [
+            "mt5",
+            "internal"
+         ]
+      },
+      "withdrawal_for_x_days_monetary" : {
+         "enum" : [
+            0
+         ],
+         "type" : "integer"
       }
-    }
-  }
+   }
 }

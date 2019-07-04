@@ -65,23 +65,7 @@ use constant RATES_FILE_CACHE_TIME => 120;
 use constant CURRENCY_CONVERSION_MAX_AGE_FIAT   => 3600 * 24;    # 1 day
 use constant CURRENCY_CONVERSION_MAX_AGE_CRYPTO => 3600;
 
-=head2 transaction_validation_checks
-
-    my $error = transaction_validation_checks($client, qw(check_trade_status check_tax_information));
-
-Performs a list of given Transaction Validation checks in addtion to C<validate_tnc> and C<compliance_checks> for a given client.
-Returns an error if a check fails else undef.
-
-=cut
-
-sub transaction_validation_checks {
-    my ($client, @validations) = @_;
-    return validation_checks($client, qw(validate_tnc compliance_checks), @validations);
-}
-
 =head2 validation_checks
-
-    my $error = validation_checks($client, qw(validate_tnc check_trade_status check_tax_information));
 
 Performs a list of given Transaction Validation checks for a given client.
 Returns an error if a check fails else undef.
@@ -89,10 +73,13 @@ Returns an error if a check fails else undef.
 =cut
 
 sub validation_checks {
-    my ($client, @validations) = @_;
+    my ($client, $validations) = @_;
 
-    for my $act (@validations) {
-        die "Error: no such hook $act" unless BOM::Transaction::Validation->can($act);
+    $validations //= $client->landing_company->transaction_checks;
+
+    for my $act (@$validations) {
+        die "Error: no such hook $act"
+            unless BOM::Transaction::Validation->can($act);
 
         my $err;
         try {

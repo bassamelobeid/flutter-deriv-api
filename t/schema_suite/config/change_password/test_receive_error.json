@@ -1,21 +1,29 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "error": {
-            "type": "object",
-            "properties": {
-                "message_to_client": {
-                    "type": "string",
-                    "required": "1"
-                },
-                "code": {
-                    "type": "string",
-                    "pattern": "^PasswordError$",
-                    "required": "1"
-                }
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "error"
+   ],
+   "additionalProperties" : false,
+   "title" : null,
+   "description" : null,
+   "type" : "object",
+   "properties" : {
+      "error" : {
+         "additionalProperties" : false,
+         "type" : "object",
+         "required" : [
+            "message_to_client",
+            "code"
+         ],
+         "properties" : {
+            "message_to_client" : {
+               "type" : "string"
             },
-            "required": "1"
-        }
-    }
+            "code" : {
+               "pattern" : "^PasswordError$",
+               "type" : "string"
+            }
+         }
+      }
+   }
 }

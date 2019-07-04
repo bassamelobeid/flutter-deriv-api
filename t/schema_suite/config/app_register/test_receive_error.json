@@ -1,16 +1,24 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "properties": {
-        "message_to_client": {
-            "type": "string",
-            "required": "1"
-        },
-        "code": {
-            "type": "string",
-            "pattern": "^AppRegister$",
-            "required": "1"
-        }
-    },
-    "required": "1"
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "additionalProperties" : false,
+   "title" : null,
+   "description" : null,
+   "type" : "object",
+   "required" : [
+      "stash",
+      "message_to_client",
+      "code"
+   ],
+   "properties" : {
+      "stash" : {
+         "type" : "object"
+      },
+      "code" : {
+         "pattern" : "^AppRegister$",
+         "type" : "string"
+      },
+      "message_to_client" : {
+         "type" : "string"
+      }
+   }
 }
