@@ -19,6 +19,8 @@ sub buy_get_single_contract {
 
     buy_store_last_contract_id($c, $api_response);
 
+    $c->stash(%{$api_response->{stash}}) if $api_response->{stash};
+
     return undef;
 }
 
