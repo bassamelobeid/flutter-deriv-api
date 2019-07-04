@@ -135,7 +135,7 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 my $underlying        = create_underlying('frxUSDJPY');
-my $market = $underlying->market->name;
+my $market            = $underlying->market->name;
 my $underlying_GDAXI  = create_underlying('GDAXI');
 my $underlying_WLDUSD = create_underlying('WLDUSD');
 my $underlying_R50    = create_underlying('R_50');
