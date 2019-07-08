@@ -9,13 +9,41 @@ use Test::Exception;
 use Data::Dumper;
 
 use Test::MockModule;
-use BOM::CompanyLimits::Limits::Helpers;
+use BOM::CompanyLimits::Helpers;
 
 subtest 'key combination test', sub {
-    my @limit = BOM::CompanyLimits::Limits::_add_limit_value(10000, 1561801504, 1561801810);
-    is_deeply (\@limit, [10000, 1561801504, 1561801810], 'first limit, return itself');
+    my @a = qw/a/;
+    my @limit = BOM::CompanyLimits::Helpers::get_all_key_combinations(@a);
+    is_deeply (\@limit, [
+          'a',
+        ], 'Single element array returns itself');
 
-    @limit = BOM::CompanyLimits::Limits::_add_limit_value(10, 0, 0, @limit);
-    is_deeply (\@limit, [10, 0, 0, 10000, 1561801504, 1561801810], 'smallest limit, inserted into front');
+    @a = qw/a b/;
+    @limit = BOM::CompanyLimits::Helpers::get_all_key_combinations(@a);
+    is_deeply (\@limit, [
+          'a,',
+          ',b',
+          'a,b'
+        ], '2 elements');
+
+    @a = qw/a b c d/;
+    @limit = BOM::CompanyLimits::Helpers::get_all_key_combinations(@a);
+    is_deeply (\@limit, [
+          'a,,,',
+          ',b,,',
+          'a,b,,',
+          ',,c,',
+          'a,,c,',
+          ',b,c,',
+          'a,b,c,',
+          ',,,d',
+          'a,,,d',
+          ',b,,d',
+          'a,b,,d',
+          ',,c,d',
+          'a,,c,d',
+          ',b,c,d',
+          'a,b,c,d'
+        ], '4 elements');
 
 };
