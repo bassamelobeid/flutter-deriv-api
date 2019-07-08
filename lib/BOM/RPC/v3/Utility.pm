@@ -619,7 +619,10 @@ sub validate_uri {
     if (!$host || $original_url =~ /https?:\/\/.*(\:|\@|\#|\?)+/) {
         return localize('Invalid URL');
     }
-    my $suffix = Domain::PublicSuffix->new();
+    # We are explicitly asking to use default
+    # to avoid failure on Debian Stretch
+    # Check https://rt.cpan.org/Public/Bug/Display.html?id=121222
+    my $suffix = Domain::PublicSuffix->new({use_default => 1});
     if (!$suffix->get_root_domain($host)) {
         return localize('Unknown domain name');
     }
