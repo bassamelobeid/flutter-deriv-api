@@ -55,7 +55,7 @@ sub add_contract {
         $expiry_type = 'tick';
     } elsif ($b_data->{expiry_daily}) {
         $expiry_type = 'daily';
-    } elsif ((Date::Utility->new($b_data->{expiry_time})->epoch - Date::Utility->new($b_data->{start_time})->epoch) <= 300) { # 5 minutes
+    } elsif ((Date::Utility->new($b_data->{expiry_time})->epoch - Date::Utility->new($b_data->{start_time})->epoch) <= 300) {    # 5 minutes
         $expiry_type = 'ultra_short';
     } else {
         $expiry_type = 'intraday';

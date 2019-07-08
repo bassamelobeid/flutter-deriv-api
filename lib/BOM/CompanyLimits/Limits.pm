@@ -8,20 +8,20 @@ use Error::Base;
 use BOM::Test;
 use BOM::Config::RedisReplicated;
 
-use constant CHAR_BYTE => 1;
-use constant SHORT_BYTE => 2;
-use constant LONG_BYTE => 4;
-use constant LIMITS_BYTE => LONG_BYTE * 3; # amount (signed long), start_epoch (unsigned long), end_epoch (unsigned long)
+use constant CHAR_BYTE   => 1;
+use constant SHORT_BYTE  => 2;
+use constant LONG_BYTE   => 4;
+use constant LIMITS_BYTE => LONG_BYTE * 3;    # amount (signed long), start_epoch (unsigned long), end_epoch (unsigned long)
 
 # TODO: Validations, a lot of validations, like a lot a lot of it.
 # TODO: Unit test everything
 
 # map underlying to binary form in redis storage
 my $LOSS_TYPE_MAP = {
-	GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP => 1,
-	GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP_DEFAULTS => 2,
-	GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP => 3,
-	GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP_DEFAULTS => 4,
+    GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP          => 0,
+    GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP_DEFAULTS => 1,
+    GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP           => 2,
+    GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP_DEFAULTS  => 3,
 };
 
 sub _encode_limit {
@@ -36,7 +36,7 @@ sub _encode_limit {
     # l = the amount signed integer (4 byte)
     # L2 = the start_epoch and end_epoch unsgined integer (4 byte)
     # the first param will result in something like CSlL2lL2
-    return pack((sprintf('CS%u',$offset_cnt)."lL2"x$limit_cnt), @_);
+    return pack((sprintf('CS%u', $offset_cnt) . "lL2" x $limit_cnt), @_);
 }
 
 sub _decode_limit {
@@ -52,7 +52,7 @@ sub _decode_limit {
     # l = the amount signed integer (4 byte)
     # L2 = the start_epoch and end_epoch unsgined integer (4 byte)
     # the first param will result in something like CSlL2lL2
-    return unpack((sprintf('CS%u',$offsets_cnt)."lL2"x$limits_cnt), $encoded);
+    return unpack((sprintf('CS%u', $offsets_cnt) . "lL2" x $limits_cnt), $encoded);
 }
 
 sub _add_limit_value {
@@ -70,12 +70,12 @@ sub _add_limit_value {
         my $s = $curr_lim[$i + 1];
         my $e = $curr_lim[$i + 2];
         if ($amount < $a) {
-            push (@lims, $amount, $start_epoch, $end_epoch);
+            push(@lims, $amount, $start_epoch, $end_epoch);
             $is_added = 1;
         }
         push @lims, $a, $s, $e;
     }
-    push (@lims, $amount, $start_epoch, $end_epoch) unless $is_added;
+    push(@lims, $amount, $start_epoch, $end_epoch) unless $is_added;
     return @lims;
 }
 
@@ -86,7 +86,7 @@ sub _extract_limit_by_group {
 
 sub _collapse_limit_by_group {
     # TODO: Expected input { "GLOBAL_POTENTIAL_LOSS_UNDERLYING" => ..., "GLOBAL_POTENTIAL_LOSS_UNDERLYING_DEFAULT" => ..., .... }
-    # TODO: Expected output "4 3 4 4 300000 1561801504 1561801810 500000 0 0 800000 1561801504 1561801810 1000000 0 0"
+    # TODO: Expected output (4 3 4 4 300000 1561801504 1561801810 500000 0 0 800000 1561801504 1561801810 1000000 0 0)
 }
 
 sub _get_encoded_limit {
@@ -95,7 +95,7 @@ sub _get_encoded_limit {
 }
 
 sub get_limit {
-    # TODO: Expected input 'GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP', 'forex,,,t' 
+    # TODO: Expected input 'GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP', 'forex,,,t'
     # TODO: Expected output '10 0 0 10000 1561801504 1561801810"
 #my $lim = BOM::Config::RedisReplicated::redis_limits_write->hmget($loss_type, $key);
 }
