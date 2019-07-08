@@ -80,6 +80,8 @@ subtest '_extract_limit_by_group and _collapse_limit_by_group', sub {
         },
         ''
     );
+    my @collapsed = BOM::CompanyLimits::Limits::_collapse_limit_by_group($extracted);
+    is_deeply(\@collapsed, [1, 10000, 1561801504, 1561801810], '');
 
     $extracted = BOM::CompanyLimits::Limits::_extract_limit_by_group(2, 2, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504,
         1961801810);
@@ -93,6 +95,8 @@ subtest '_extract_limit_by_group and _collapse_limit_by_group', sub {
         },
         ''
     );
+    @collapsed = BOM::CompanyLimits::Limits::_collapse_limit_by_group($extracted);
+    is_deeply(\@collapsed, [2, 2, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810], '');
 
     $extracted =
         BOM::CompanyLimits::Limits::_extract_limit_by_group(4, 3, 4, 2, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504,
@@ -107,6 +111,9 @@ subtest '_extract_limit_by_group and _collapse_limit_by_group', sub {
         },
         ''
     );
+    @collapsed = BOM::CompanyLimits::Limits::_collapse_limit_by_group($extracted);
+    is_deeply(\@collapsed,
+        [4, 3, 4, 2, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810, 700, 1261801504, 2061801504], '');
 
     $extracted =
         BOM::CompanyLimits::Limits::_extract_limit_by_group(4, 1, 2, 3, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504,
@@ -121,6 +128,11 @@ subtest '_extract_limit_by_group and _collapse_limit_by_group', sub {
         },
         ''
     );
+    @collapsed =
+        BOM::CompanyLimits::Limits::_collapse_limit_by_group(4, 1, 2, 3, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504,
+        1961801810, 700, 1261801504, 2061801504);
+    is_deeply(\@collapsed,
+        [4, 1, 2, 3, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810, 700, 1261801504, 2061801504], '');
 
     # trick testcase return should be null for everything, as offset goes past the memory block
     $extracted =
@@ -136,6 +148,8 @@ subtest '_extract_limit_by_group and _collapse_limit_by_group', sub {
         },
         ''
     );
+    @collapsed = BOM::CompanyLimits::Limits::_collapse_limit_by_group($extracted);
+    is_deeply(\@collapsed, [], '');
 };
 
 #my $mock_redis = Test::MockModule->new('RedisDB');
