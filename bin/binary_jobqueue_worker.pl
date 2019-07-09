@@ -243,9 +243,7 @@ sub run_worker_process {
                 $_->done(
                     encode_json_utf8({
                             success => 1,
-                            result => "pong",
-                            (exists $params->{req_id}      ? (req_id      => $params->{req_id})      : ()),
-                            (exists $params->{passthrough} ? (passthrough => $params->{passthrough}) : ()),
+                            result => "pong"
                         }));
                 return;
             }
@@ -259,9 +257,7 @@ sub run_worker_process {
                 $_->done(
                     encode_json_utf8({
                             success => 1,
-                            result  => $result,
-                            (exists $params->{req_id}      ? (req_id      => $params->{req_id})      : ()),
-                            (exists $params->{passthrough} ? (passthrough => $params->{passthrough}) : ()),
+                            result  => $result
                         }));
             } else {
                 print STDERR "  UNKNOWN\n";
@@ -269,9 +265,7 @@ sub run_worker_process {
                 $_->done(
                     encode_json_utf8({
                             success => 0,
-                            error   => "Unknown RPC name '$name'",
-                            (exists $params->{req_id}      ? (req_id      => $params->{req_id})      : ()),
-                            (exists $params->{passthrough} ? (passthrough => $params->{passthrough}) : ()),
+                            error   => "Unknown RPC name '$name'"
                         }));
             }
         });
