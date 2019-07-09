@@ -8,13 +8,17 @@ use Job::Async::Worker::Redis;
 
 use IO::Socket::UNIX;
 use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
+use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
 use Path::Tiny qw(path);
 use Data::Dump 'pp';
-use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
+use Syntax::Keyword::Try;
 
 use Getopt::Long;
-
 use Log::Any qw($log);
+use Log::Any::Adapter qw(Stdout), log_level => 'trace';
+
+#TODO: replace the following line with a proper command to initialize RoseDB
+use BOM::RPC::v3::App; BOM::RPC::v3::App::verify_app({app_id => 1003});
 
 GetOptions(
     'testing|T'    => \my $TESTING,
@@ -184,9 +188,15 @@ sub add_worker_process {
     $workers{$worker->pid} = $worker;
 }
 
+sub create_response {
+    my $res = shift;
+    $res->{rpc_queue_worker_tv} =  [Time::HiRes::gettimeofday];
+    return encode_json_utf8($res);
+}
+
 sub run_worker_process {
     my $loop = IO::Async::Loop->new;
-
+    
     require BOM::RPC::Registry;
     require BOM::RPC;    # This will load all the RPC methods into registry as a side-effect
 
@@ -229,45 +239,35 @@ sub run_worker_process {
     # Result: JSON-encoded result
     $worker->jobs->each(
         sub {
-            my $job    = $_;
-            my $name   = $job->data('name');
-            my $params = decode_json_utf8($job->data('params'));
-            my $queue_time = $job->data('queue_time');
+            my $job = $_;
+            my $name = $job->data('name');
+                my $params = decode_json_utf8($job->data('params'));
 
-            stats_gauge('rpc_queue.worker.size', scalar(keys ($worker->{pending_jobs}->%*)));
-            stats_inc("rpc_queue.worker.requests.worker.$name");
-            stats_gauge("rpc_queue.worker.latency", Time::HiRes::time - $queue_time) if $queue_time;
-
-            # Handle a 'ping' request immediately here
-            if ($name eq "ping") {
-                $_->done(
-                    encode_json_utf8({
-                            success => 1,
-                            result => "pong"
-                        }));
-                return;
-            }
-
-            print STDERR "Running RPC <$name> for:\n" . pp($params) . "\n";
-
-            if (my $code = $services{$name}) {
-                my $result = $code->($params);
-                print STDERR "Result:\n" . join("\n", map { " | $_" } split m/\n/, pp($result)) . "\n";
-
-                $_->done(
-                    encode_json_utf8({
-                            success => 1,
-                            result  => $result
-                        }));
-            } else {
-                print STDERR "  UNKNOWN\n";
-                # Transport mechanism itself succeeded, so ->done is fine here
-                $_->done(
-                    encode_json_utf8({
-                            success => 0,
-                            error   => "Unknown RPC name '$name'"
-                        }));
-            }
+                my $queue_time = $job->data('rpc_queue_client_tv');
+                my ($queue) = $worker->pending_queues;
+                my $tags = {tags => ["method:$name", 'queue:'.$queue]}; #TODO: replace with a more reliable value
+                stats_gauge('rpc_queue.worker.length', scalar(keys ($worker->{pending_jobs}->%*)), $tags);
+                stats_inc("rpc_queue.worker.calls", $tags);
+                stats_gauge("rpc_queue.client.latency", 1000 * Time::HiRes::tv_interval($queue_time), $tags) if $queue_time;
+    
+                # Handle a 'ping' request immediately here
+                if ($name eq "ping") {
+                    $_->done(create_response({success => 1, result => 'pong'}));
+                    return;
+                }
+    
+                print STDERR "Running RPC <$name> for:\n" . pp($params) . "\n";
+    
+                if (my $code = $services{$name}) {
+                    my $result = $code->($params);
+                    print STDERR "Result:\n" . join("\n", map { " | $_" } split m/\n/, pp($result)) . "\n";
+    
+                    $_->done(create_response({success => 1, result  => $result}));
+                } else {
+                    print STDERR "  UNKNOWN\n";
+                    # Transport mechanism itself succeeded, so ->done is fine here
+                    $_->done(create_response({success => 0, error   => "Unknown RPC name '$name'"}));
+                }
         });
 
     $worker->trigger;
