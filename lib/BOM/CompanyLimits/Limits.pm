@@ -18,16 +18,15 @@ use constant LIMITS_BYTE => LONG_BYTE * 3;    # amount (signed long), start_epoc
 
 # map underlying to binary form in redis storage
 my $LOSS_TYPE_MAP = {
-    GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP          => 0,
-    GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP_DEFAULTS => 1,
-    GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP           => 2,
-    GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP_DEFAULTS  => 3,
+    0 => 'GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP',
+    1 => 'GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP_DEFAULTS',
+    2 => 'GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP',
+    3 => 'GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP_DEFAULTS',
 };
 
 sub _encode_limit {
     # TODO: Validate encoding format
-    my $loss_type = $_[0];
-    # number of offset is loss_type - 1
+    my $loss_type  = $_[0];
     my $offset_cnt = $loss_type - 1;
     # the remaining limit counts is minus of loss_type (-1) and count of offsets and divide that by 3 (amount,start,end)
     my $limit_cnt = (scalar @_ - 1 - $offset_cnt) / 3;
@@ -79,9 +78,40 @@ sub _add_limit_value {
     return @lims;
 }
 
+# helper function, returns undef if from or to indexes are out of range
+sub _array_slice {
+    my ($from, $to, @arr) = @_;
+    return ($from < 0 || $to >= scalar @arr) ? () : @arr[$from .. $to];
+}
+
 sub _extract_limit_by_group {
     # TODO: Expected input (4 3 4 4 300000 1561801504 1561801810 500000 0 0 800000 1561801504 1561801810 1000000 0 0)
     # TODO: Expected output { "GLOBAL_POTENTIAL_LOSS_UNDERLYING" => ..., "GLOBAL_POTENTIAL_LOSS_UNDERLYING_DEFAULT" => ..., .... }
+    # TODO: test edge cases
+    my $loss_type  = $_[0];
+    my $offset_cnt = $loss_type - 1;
+    # get offsets and limits portion
+    my @offsets = _array_slice(1, $offset_cnt, @_);
+    my @limits = _array_slice($offset_cnt + 1, $#_, @_);
+
+    my $extracted_limits;
+    for (0 .. $offset_cnt) {
+        my $from;
+        my $to;
+
+        if (scalar @offsets) {
+            $from = ($_ - 1 < 0) ? 0 : $offsets[$_ - 1] * 3;
+            $to = ($offsets[$_]) ? ($offsets[$_] * 3) - 1 : $#limits;
+        } else {
+            # when there are no offsets
+            $from = 0;
+            $to   = $#limits;
+        }
+
+        my $loss_type = $LOSS_TYPE_MAP->{$_};
+        $extracted_limits->{$loss_type} = [_array_slice($from, $to, @limits)];
+    }
+    return $extracted_limits;
 }
 
 sub _collapse_limit_by_group {
