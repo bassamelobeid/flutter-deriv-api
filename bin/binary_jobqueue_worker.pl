@@ -242,6 +242,7 @@ sub run_worker_process {
             if ($name eq "ping") {
                 $_->done(
                     encode_json_utf8({
+                            success => 1,
                             result => "pong",
                             (exists $params->{req_id}      ? (req_id      => $params->{req_id})      : ()),
                             (exists $params->{passthrough} ? (passthrough => $params->{passthrough}) : ()),
@@ -258,7 +259,9 @@ sub run_worker_process {
                 $_->done(
                     encode_json_utf8({
                             success => 1,
-                            result  => $result
+                            result  => $result,
+                            (exists $params->{req_id}      ? (req_id      => $params->{req_id})      : ()),
+                            (exists $params->{passthrough} ? (passthrough => $params->{passthrough}) : ()),
                         }));
             } else {
                 print STDERR "  UNKNOWN\n";
@@ -266,7 +269,9 @@ sub run_worker_process {
                 $_->done(
                     encode_json_utf8({
                             success => 0,
-                            error   => "Unknown RPC name '$name'"
+                            error   => "Unknown RPC name '$name'",
+                            (exists $params->{req_id}      ? (req_id      => $params->{req_id})      : ()),
+                            (exists $params->{passthrough} ? (passthrough => $params->{passthrough}) : ()),
                         }));
             }
         });
