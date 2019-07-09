@@ -85,8 +85,6 @@ sub _array_slice {
 }
 
 sub _extract_limit_by_group {
-    # TODO: Expected input (4 3 4 4 300000 1561801504 1561801810 500000 0 0 800000 1561801504 1561801810 1000000 0 0)
-    # TODO: Expected output { "GLOBAL_POTENTIAL_LOSS_UNDERLYING" => ..., "GLOBAL_POTENTIAL_LOSS_UNDERLYING_DEFAULT" => ..., .... }
     # TODO: test edge cases
     my $loss_type  = $_[0];
     my $offset_cnt = $loss_type - 1;
@@ -95,28 +93,51 @@ sub _extract_limit_by_group {
     my @limits = _array_slice($offset_cnt + 1, $#_, @_);
 
     my $extracted_limits;
-    for (0 .. $offset_cnt) {
+    foreach my $idx (0 .. $offset_cnt) {
         my $from;
         my $to;
 
         if (scalar @offsets) {
-            $from = ($_ - 1 < 0) ? 0 : $offsets[$_ - 1] * 3;
-            $to = ($offsets[$_]) ? ($offsets[$_] * 3) - 1 : $#limits;
+            $from = ($idx - 1 < 0) ? 0 : $offsets[$idx - 1] * 3;
+            $to = ($offsets[$idx]) ? ($offsets[$idx] * 3) - 1 : $#limits;
         } else {
             # when there are no offsets
             $from = 0;
             $to   = $#limits;
         }
 
-        my $loss_type = $LOSS_TYPE_MAP->{$_};
-        $extracted_limits->{$loss_type} = [_array_slice($from, $to, @limits)];
+        $extracted_limits->{$LOSS_TYPE_MAP->{$idx}} = [_array_slice($from, $to, @limits)];
     }
     return $extracted_limits;
 }
 
 sub _collapse_limit_by_group {
-    # TODO: Expected input { "GLOBAL_POTENTIAL_LOSS_UNDERLYING" => ..., "GLOBAL_POTENTIAL_LOSS_UNDERLYING_DEFAULT" => ..., .... }
-    # TODO: Expected output (4 3 4 4 300000 1561801504 1561801810 500000 0 0 800000 1561801504 1561801810 1000000 0 0)
+    # TODO: test edge cases
+    my $expanded_limits = shift;
+    my @offsets;
+    my @limits;
+
+    # get number of limits there are in the struct
+    my $limits_cnt = 0;
+    $limits_cnt += scalar @{$_} foreach values %{$expanded_limits};
+    $limits_cnt /= 3;
+
+    my $type_cnt = scalar keys %{$expanded_limits};
+    foreach my $idx (0 .. $type_cnt - 1) {
+
+        my @curr_lim = @{$expanded_limits->{$LOSS_TYPE_MAP->{$idx}}};
+        push @limits, @curr_lim;
+
+        if ($idx and scalar @curr_lim != 0) {
+            push(@offsets, (scalar @limits / 3) - 1);
+        } elsif (scalar @curr_lim == 0) {
+            # push limits to offsets only if the idx is 0
+            # push the size of all limits and + 1 to overflow the offset (indicating that limit is not yet set) if current limit is empty
+            push(@offsets, $limits_cnt);
+        }
+    }
+
+    return ($type_cnt, @offsets, @limits);
 }
 
 sub _get_encoded_limit {

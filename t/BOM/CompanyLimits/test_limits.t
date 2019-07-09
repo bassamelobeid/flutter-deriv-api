@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More tests => 5;
 use BOM::Test;
 use Test::Exception;
 use Data::Dumper;
@@ -71,8 +71,9 @@ subtest '_encode_limit and _decode_limit', sub {
 subtest '_extract_limit_by_group and _collapse_limit_by_group', sub {
     my $extracted = BOM::CompanyLimits::Limits::_extract_limit_by_group(1, 10000, 1561801504, 1561801810);
     is_deeply($extracted, {GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP => [10000, 1561801504, 1561801810]}, '');
-    #my @collapsed = BOM::CompanyLimits::Limits::_collapse_limit_by_group($extracted);
-    #is_deeply (\@collapsed, [1, 10000, 1561801504, 1561801810], '');
+
+    my @collapsed = BOM::CompanyLimits::Limits::_collapse_limit_by_group($extracted);
+    is_deeply(\@collapsed, [1, 10000, 1561801504, 1561801810], '');
 
     $extracted = BOM::CompanyLimits::Limits::_extract_limit_by_group(2, 2, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504,
         1961801810);
@@ -84,8 +85,8 @@ subtest '_extract_limit_by_group and _collapse_limit_by_group', sub {
         },
         ''
     );
-    #@collapsed = BOM::CompanyLimits::Limits::_collapse_limit_by_group($extracted);
-    #is_deeply (\@collapsed, [2, 2, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810], '');
+    @collapsed = BOM::CompanyLimits::Limits::_collapse_limit_by_group($extracted);
+    is_deeply(\@collapsed, [2, 2, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810], '');
 
     $extracted =
         BOM::CompanyLimits::Limits::_extract_limit_by_group(4, 2, 3, 4, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504,
@@ -100,8 +101,9 @@ subtest '_extract_limit_by_group and _collapse_limit_by_group', sub {
         },
         ''
     );
-    #@collapsed = BOM::CompanyLimits::Limits::_collapse_limit_by_group($extracted);
-    #is_deeply (\@collapsed, [4, 3, 4, 2, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810, 700, 1261801504, 2061801504], '');
+    @collapsed = BOM::CompanyLimits::Limits::_collapse_limit_by_group($extracted);
+    is_deeply(\@collapsed,
+        [4, 2, 3, 4, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810, 700, 1261801504, 2061801504], '');
 
     $extracted =
         BOM::CompanyLimits::Limits::_extract_limit_by_group(4, 1, 2, 3, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504,
@@ -116,8 +118,9 @@ subtest '_extract_limit_by_group and _collapse_limit_by_group', sub {
         },
         ''
     );
-    #@collapsed = BOM::CompanyLimits::Limits::_collapse_limit_by_group(4, 1, 2, 3, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810, 700, 1261801504, 2061801504);
-    #is_deeply (\@collapsed, [4, 1, 2, 3, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810, 700, 1261801504, 2061801504], '');
+    @collapsed = BOM::CompanyLimits::Limits::_collapse_limit_by_group($extracted);
+    is_deeply(\@collapsed,
+        [4, 1, 2, 3, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810, 700, 1261801504, 2061801504], '');
 
     $extracted =
         BOM::CompanyLimits::Limits::_extract_limit_by_group(4, 4, 4, 4, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504,
@@ -133,20 +136,23 @@ subtest '_extract_limit_by_group and _collapse_limit_by_group', sub {
         },
         ''
     );
-    #@collapsed = BOM::CompanyLimits::Limits::_collapse_limit_by_group($extracted);
-    #is_deeply (\@collapsed, [], '');
+    @collapsed = BOM::CompanyLimits::Limits::_collapse_limit_by_group($extracted);
+    is_deeply(\@collapsed,
+        [4, 4, 4, 4, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810, 700, 1261801504, 2061801504], '');
 
 };
 
-=pod
 my $mock_redis = Test::MockModule->new('RedisDB');
 subtest '_get_encoded_limit', sub {
+
+=pod
     $mock_redis->mock(hget => sub { return BOM::CompanyLimits::Limits::_encode_limit(4, 3, 4, 2, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810, 700, 1261801504, 2061801504); });
     my $decoded = BOM::CompanyLimits::Limits::_decode_limit(BOM::CompanyLimits::Limits::_get_encoded_limit('forex,,,t'));
     is_deeply ($decoded, [4, 3, 4, 2, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810, 700, 1261801504, 2061801504], '');
     $mock_redis->unmock('hget');
+=cut
+
 };
-=cut 
 
 =pod
 subtest 'add_limit and get_limit', sub {
