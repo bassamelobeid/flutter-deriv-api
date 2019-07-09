@@ -10,6 +10,7 @@ use IO::Socket::UNIX;
 use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use Path::Tiny qw(path);
 use Data::Dump 'pp';
+use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
 
 use Getopt::Long;
 
@@ -231,6 +232,11 @@ sub run_worker_process {
             my $job    = $_;
             my $name   = $job->data('name');
             my $params = decode_json_utf8($job->data('params'));
+            my $queue_time = $job->data('queue_time');
+
+            stats_gauge('rpc_queue.worker.size', scalar(keys ($worker->{pending_jobs}->%*)));
+            stats_inc("rpc_queue.worker.requests.worker.$name");
+            stats_gauge("rpc_queue.worker.latency", Time::HiRes::time - $queue_time) if $queue_time;
 
             # Handle a 'ping' request immediately here
             if ($name eq "ping") {
