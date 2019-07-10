@@ -22,21 +22,38 @@ use constant REDIS_LIMIT_KEY => 'LIMITS';
 # TODO: Validations, a lot of validations, like a lot a lot of it.
 # TODO: Unit test everything
 
-# map underlying to binary form in redis storage
-my $LOSS_TYPE_MAP = {
-    0 => 'GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP',
-    1 => 'GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP_DEFAULTS',
-    2 => 'GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP',
-    3 => 'GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP_DEFAULTS',
-};
+# TODO: temporal part, this will be revisited later
+# maps a type to an underlying table in database
+sub _db_mapper {
+    my $type = shift;
+    # this function should be defined as a modular function for mapping to the underlying !!
+    my $DB_MAP = {
+        # UNDERLYINGGROUP,CONTRACTGROUP,EXPIRYTYPE,ISATM
+        GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP          => 'global_potential_loss',
+        GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP_DEFAULTS => 'global_potential_loss',
+        GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP           => 'global_realized_loss',
+        GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP_DEFAULTS  => 'global_realized_loss',
+        # ...
+        # ...
+    };
+    return $DB_MAP->{$type};
+}
 
-# TODO: temporal part, this
-my $LOSS_TYPE_TO_UNDERLYING_TABLE = {
-    'GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP'          => 'global_potential_loss',
-    'GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP_DEFAULTS' => 'global_potential_loss',
-    'GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP'           => 'global_realized_loss',
-    'GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP_DEFAULTS'  => 'global_realized_loss',
-};
+# maps a type to an underlying index
+sub _type_mapper {
+    my $type = shift;
+    # this function should be defined as a modular function for mapping to the underlying !!
+    my $GENERAL_MAP = {
+        # UNDERLYINGGROUP,CONTRACTGROUP,EXPIRYTYPE,ISATM
+        GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP          => 0,
+        GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP_DEFAULTS => 1,
+        GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP           => 2,
+        GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP_DEFAULTS  => 3,
+        # ...
+        # ...
+    };
+    return $GENERAL_MAP->{$type};
+}
 
 sub _encode_limit {
     # TODO: Validate encoding format
@@ -106,7 +123,7 @@ sub _extract_limit_by_group {
     my $offsets = _array_slice(1, $offset_cnt, @_);
     my $limits = _array_slice($offset_cnt + 1, $#_, @_);
 
-    my $extracted_limits;
+    my $extracted_limits = [];
     foreach my $idx (0 .. $offset_cnt) {
         my $from;
         my $to;
@@ -119,7 +136,7 @@ sub _extract_limit_by_group {
             $to   = scalar $limits->@* - 1;
         }
 
-        $extracted_limits->{$LOSS_TYPE_MAP->{$idx}} = _array_slice($from, $to, $limits->@*);
+        push $extracted_limits->@*, _array_slice($from, $to, $limits->@*);
     }
     return $extracted_limits;
 }
@@ -132,13 +149,13 @@ sub _collapse_limit_by_group {
 
     # get number of limits there are in the struct
     my $limits_cnt = 0;
-    $limits_cnt += scalar @{$_} foreach values %{$expanded_limits};
+    $limits_cnt += scalar @{$_} foreach $expanded_limits->@*;
     $limits_cnt /= 3;
 
-    my $type_cnt = scalar keys %{$expanded_limits};
+    my $type_cnt = scalar $expanded_limits->@*;
     foreach my $idx (0 .. $type_cnt - 1) {
 
-        my @curr_lim = @{$expanded_limits->{$LOSS_TYPE_MAP->{$idx}}};
+        my @curr_lim = @{$expanded_limits->[$idx]};
         push @limits, @curr_lim;
 
         if ($idx and scalar @curr_lim != 0) {
@@ -171,12 +188,13 @@ sub add_limit {
     my ($loss_type, $key, $amount, $start_epoch, $end_epoch) = @_;
     # check if redis has been added successfully
 
-    my $decoded_limits  = _get_decoded_limit($key);
-    my $expanded_struct = _extract_limit_by_group(@{$decoded_limits});
+    my $decoded_limits = _get_decoded_limit($key);
+    my $expanded_arr   = _extract_limit_by_group(@{$decoded_limits});
 
-    $expanded_struct->{$loss_type} = _add_limit_value($amount, $start_epoch, $end_epoch, $expanded_struct->{$loss_type});
+    my $underlying_idx = _type_mapper($loss_type);
+    $expanded_arr->[$underlying_idx] = _add_limit_value($amount, $start_epoch, $end_epoch, $expanded_arr->[$underlying_idx]);
 
-    my $collapsed_limits = _collapse_limit_by_group($expanded_struct);
+    my $collapsed_limits = _collapse_limit_by_group($expanded_arr);
     my $encoded_limits   = _encode_limit(@{$collapsed_limits});
 
     BOM::Config::RedisReplicated::redis_limits_write->hset(REDIS_LIMIT_KEY, $key, $encoded_limits);
@@ -199,7 +217,7 @@ sub add_limit {
             expiry_type       => $expiry_type ? [$expiry_type] : undef,
             barrier_category  => $is_atm ? ['atm'] : undef,
             limit_amount      => $amount,
-            limit_type        => $LOSS_TYPE_TO_UNDERLYING_TABLE->{$loss_type},
+            limit_type        => _db_mapper($loss_type),
 
     });
     return join(' ', @{$collapsed_limits});

@@ -81,37 +81,22 @@ subtest '_encode_limit and _decode_limit', sub {
 
 subtest '_extract_limit_by_group and _collapse_limit_by_group', sub {
     my $extracted = BOM::CompanyLimits::Limits::_extract_limit_by_group(1, 10000, 1561801504, 1561801810);
-    is_deeply($extracted, {GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP => [10000, 1561801504, 1561801810]}, '');
+    is_deeply($extracted, [[10000, 1561801504, 1561801810]], '');
 
     my $collapsed = BOM::CompanyLimits::Limits::_collapse_limit_by_group($extracted);
     is_deeply($collapsed, [1, 10000, 1561801504, 1561801810], '');
 
     $extracted = BOM::CompanyLimits::Limits::_extract_limit_by_group(2, 2, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504,
         1961801810);
-    is_deeply(
-        $extracted,
-        {
-            GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP          => [10000, 1561801504, 1561801810, 559, 1561801504, 1961801810],
-            GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP_DEFAULTS => [30,    1261801504, 1961801810]
-        },
-        ''
-    );
+    is_deeply($extracted, [[10000, 1561801504, 1561801810, 559, 1561801504, 1961801810], [30, 1261801504, 1961801810]], '');
     $collapsed = BOM::CompanyLimits::Limits::_collapse_limit_by_group($extracted);
     is_deeply($collapsed, [2, 2, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810], '');
 
     $extracted =
         BOM::CompanyLimits::Limits::_extract_limit_by_group(4, 2, 3, 4, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504,
         1961801810, 700, 1261801504, 2061801504);
-    is_deeply(
-        $extracted,
-        {
-            GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP          => [10000, 1561801504, 1561801810, 559, 1561801504, 1961801810],
-            GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP_DEFAULTS => [30,    1261801504, 1961801810],
-            GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP           => [700,   1261801504, 2061801504],
-            GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP_DEFAULTS  => []
-        },
-        ''
-    );
+    is_deeply($extracted,
+        [[10000, 1561801504, 1561801810, 559, 1561801504, 1961801810], [30, 1261801504, 1961801810], [700, 1261801504, 2061801504], []], '');
     $collapsed = BOM::CompanyLimits::Limits::_collapse_limit_by_group($extracted);
     is_deeply($collapsed,
         [4, 2, 3, 4, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810, 700, 1261801504, 2061801504], '');
@@ -119,16 +104,8 @@ subtest '_extract_limit_by_group and _collapse_limit_by_group', sub {
     $extracted =
         BOM::CompanyLimits::Limits::_extract_limit_by_group(4, 1, 2, 3, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504,
         1961801810, 700, 1261801504, 2061801504);
-    is_deeply(
-        $extracted,
-        {
-            GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP          => [10000, 1561801504, 1561801810],
-            GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP_DEFAULTS => [559,   1561801504, 1961801810],
-            GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP           => [30,    1261801504, 1961801810],
-            GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP_DEFAULTS  => [700,   1261801504, 2061801504]
-        },
-        ''
-    );
+    is_deeply($extracted,
+        [[10000, 1561801504, 1561801810], [559, 1561801504, 1961801810], [30, 1261801504, 1961801810], [700, 1261801504, 2061801504]], '');
     $collapsed = BOM::CompanyLimits::Limits::_collapse_limit_by_group($extracted);
     is_deeply($collapsed,
         [4, 1, 2, 3, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810, 700, 1261801504, 2061801504], '');
@@ -136,17 +113,8 @@ subtest '_extract_limit_by_group and _collapse_limit_by_group', sub {
     $extracted =
         BOM::CompanyLimits::Limits::_extract_limit_by_group(4, 4, 4, 4, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504,
         1961801810, 700, 1261801504, 2061801504);
-    is_deeply(
-        $extracted,
-        {
-            GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP =>
-                [10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810, 700, 1261801504, 2061801504],
-            GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP_DEFAULTS => [],
-            GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP           => [],
-            GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP_DEFAULTS  => []
-        },
-        ''
-    );
+    is_deeply($extracted,
+        [[10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810, 700, 1261801504, 2061801504], [], [], []], '');
     $collapsed = BOM::CompanyLimits::Limits::_collapse_limit_by_group($extracted);
     is_deeply($collapsed,
         [4, 4, 4, 4, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810, 700, 1261801504, 2061801504], '');
