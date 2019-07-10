@@ -253,7 +253,7 @@ sub startup {
         ['proposal_array', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Pricer::proposal_array}],
         ['forget',         {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::forget}],
         ['forget_all',     {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::forget_all}],
-        ['ping',           {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::ping}]
+        ['ping',           {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::ping}],
         ['time',           {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::System::server_time}],
         ['website_status', {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::website_status}],
         ['residence_list'],
@@ -351,7 +351,7 @@ sub startup {
         ['reality_check',            {require_auth => 'read'}],
         ['verify_email',             {stash_params => [qw/ server_name token /]}],
         ['new_account_virtual',      {stash_params => [qw/ server_name client_ip user_agent /]}],
-        ['reset_password',           {backend      => 'queue_reset_password'}],
+        ['reset_password',           {backend      => 'queue_login_history'}],
 
         # authenticated calls
         ['sell', {require_auth => 'trade'}],
@@ -610,7 +610,7 @@ sub startup {
             # Skip check sanity to password fields
             skip_check_sanity => qr/password/,
             backends          => {
-                queue_reset_password => {
+                queue_login_history => {
                     type  => "job_async",
                     redis => {uri => 'redis://' . $redis->url->host . ':' . $redis->url->port}}
             },
