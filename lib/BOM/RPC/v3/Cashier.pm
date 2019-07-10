@@ -1288,7 +1288,7 @@ rpc transfer_between_accounts => sub {
     my $error_audit_sub = sub {
         my ($err, $client_message) = @_;
         BOM::User::AuditLog::log("Account Transfer FAILED, $err");
-        $client_message ||= localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.' . $err);
+        $client_message ||= localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.');
         return _transfer_between_accounts_error($client_message);
     };
 
