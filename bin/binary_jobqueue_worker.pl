@@ -17,10 +17,6 @@ use Getopt::Long;
 use Log::Any qw($log);
 use Log::Any::Adapter qw(Stdout), log_level => 'trace';
 
-#TODO: the following lines should be replaced with a proper way to initialize RoseDB
-use BOM::RPC::v3::App; BOM::RPC::v3::App::verify_app({app_id => 1003});
-use BOM::User::Client; BOM::User::Client->new({loginid => 'CR1234'});
-
 GetOptions(
     'testing|T'    => \my $TESTING,
     'foreground|f' => \my $FOREGROUND,
