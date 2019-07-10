@@ -39,7 +39,7 @@ sub authorize {
     my ($app_id, $state) = map { defang($c->param($_)) // undef } qw/ app_id state /;
 
     return $c->_bad_request('the request was missing app_id') unless $app_id;
-    return $c->_bad_request('the request was missing valid app_id') if ($app_id !~ /^\d+$/);
+    return $c->_bad_request('the request was missing valid app_id') if ($app_id !~ /^[0-9]+$/);
 
     my $oauth_model = _oauth_model();
     my $app         = $oauth_model->verify_app($app_id);

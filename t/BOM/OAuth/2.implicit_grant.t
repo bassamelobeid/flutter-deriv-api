@@ -10,6 +10,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Database::Model::OAuth;
 use BOM::Config::Runtime;
+use utf8;
 
 ## init
 my $app_id = do {
@@ -57,6 +58,10 @@ my $t = Test::Mojo->new('BOM::OAuth');
 
 $t = $t->get_ok("/authorize");
 $t->json_is('/error', 'invalid_request')->json_like('/error_description', qr/missing app_id/);
+
+# "١" is Arabic digit 1
+$t = $t->get_ok("/authorize?app_id=١");
+$t->json_is('/error', 'invalid_request')->json_like('/error_description', qr/missing valid app_id/);
 
 $t = $t->get_ok("/authorize?app_id=9999999");
 $t->json_like('/error_description', qr/valid app_id/);
