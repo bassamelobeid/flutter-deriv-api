@@ -150,17 +150,25 @@ sub _get_decoded_limit {
 sub get_limit {
     # TODO: Expected input 'GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP', 'forex,,,t'
     # TODO: Expected output '10 0 0 10000 1561801504 1561801810"
-    my ($underlying, $key) = @_;
+    my ($loss_type, $key) = @_;
+    my $decoded_limits  = _get_decoded_limit($key);
+    my $expanded_struct = _extract_limit_by_group(@{$decoded_limits});
+    return join(' ', @{$expanded_struct->{$loss_type}});
 }
 
 sub add_limit {
     my ($loss_type, $key, $amount, $start_epoch, $end_epoch) = @_;
+    # check if redis has been added successfully
+
     my $decoded_limits  = _get_decoded_limit($key);
     my $expanded_struct = _extract_limit_by_group(@{$decoded_limits});
+
     $expanded_struct->{$loss_type} = _add_limit_value($amount, $start_epoch, $end_epoch, $expanded_struct->{$loss_type});
+
     my $collapsed_limits = _collapse_limit_by_group($expanded_struct);
     my $encoded_limits   = _encode_limit(@{$collapsed_limits});
-    # store_to_redis
+
+    BOM::Config::RedisReplicated::redis_limits_write->hset(REDIS_LIMIT_KEY, $key, $encoded_limits);
 
     # TODO: Insert into database
     return join(' ', @{$collapsed_limits});

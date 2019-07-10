@@ -171,6 +171,8 @@ subtest 'add_limit and get_limit', sub {
 
     # TODO: do a for loop through the whole thing per underlying group
     # TODO: add get_limit test
+    # TODO: test get_limit
+
     $mock_redis->mock(hget => sub { return BOM::CompanyLimits::Limits::_encode_limit(1, 10000, 1561801504, 1561801810); });
     my $limit = BOM::CompanyLimits::Limits::add_limit('GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP', 'forex,,,t', 39, 1561801504, 1561801810);
     cmp_ok $limit, 'eq', '1 39 1561801504 1561801810 10000 1561801504 1561801810', '';
