@@ -12,38 +12,18 @@ use Test::MockModule;
 use BOM::CompanyLimits::Helpers;
 
 subtest 'key combination test', sub {
-    my @a = qw/a/;
+    my @a     = qw/a/;
     my @limit = BOM::CompanyLimits::Helpers::get_all_key_combinations(@a);
-    is_deeply (\@limit, [
-          'a',
-        ], 'Single element array returns itself');
+    is_deeply(\@limit, ['a',], 'Single element array returns itself');
 
-    @a = qw/a b/;
+    @a     = qw/a b/;
     @limit = BOM::CompanyLimits::Helpers::get_all_key_combinations(@a);
-    is_deeply (\@limit, [
-          'a,',
-          ',b',
-          'a,b'
-        ], '2 elements');
+    is_deeply(\@limit, ['a,', ',b', 'a,b'], '2 elements');
 
-    @a = qw/a b c d/;
+    @a     = qw/a b c d/;
     @limit = BOM::CompanyLimits::Helpers::get_all_key_combinations(@a);
-    is_deeply (\@limit, [
-          'a,,,',
-          ',b,,',
-          'a,b,,',
-          ',,c,',
-          'a,,c,',
-          ',b,c,',
-          'a,b,c,',
-          ',,,d',
-          'a,,,d',
-          ',b,,d',
-          'a,b,,d',
-          ',,c,d',
-          'a,,c,d',
-          ',b,c,d',
-          'a,b,c,d'
-        ], '4 elements');
+    is_deeply(\@limit,
+        ['a,,,', ',b,,', 'a,b,,', ',,c,', 'a,,c,', ',b,c,', 'a,b,c,', ',,,d', 'a,,,d', ',b,,d', 'a,b,,d', ',,c,d', 'a,,c,d', ',b,c,d', 'a,b,c,d'],
+        '4 elements');
 
 };

@@ -29,7 +29,7 @@ my $LOSS_TYPE_MAP = {
 
 sub _encode_limit {
     # TODO: Validate encoding format
-    my $loss_type = $_[0];
+    my $loss_type  = $_[0];
     my $offset_cnt = $loss_type - 1;
     # the remaining limit counts is minus of loss_type (-1) and count of offsets and divide that by 3 (amount,start,end)
     my $limit_cnt = (scalar @_ - 1 - $offset_cnt) / 3;
@@ -58,19 +58,19 @@ sub _decode_limit {
 }
 
 sub _add_limit_value {
-    my ($amount, $start_epoch, $end_epoch, @curr_lim) = @_;
+    my ($amount, $start_epoch, $end_epoch, $curr_lim) = @_;
 
     # curr_lim is not yet initialized or key not found in redis
-    return \@_ unless @curr_lim;
+    return \@_ unless $curr_lim;
 
     my @lims;
 
     # variable needed for if the new amount is the largest than all existing limits
     my $is_added = 0;
-    for (my $i = 0; $i < $#curr_lim; $i += 3) {
-        my $a = $curr_lim[$i];
-        my $s = $curr_lim[$i + 1];
-        my $e = $curr_lim[$i + 2];
+    for (my $i = 0; $i < scalar $curr_lim->@*; $i += 3) {
+        my $a = $curr_lim->[$i];
+        my $s = $curr_lim->[$i + 1];
+        my $e = $curr_lim->[$i + 2];
         if ($amount < $a and $is_added == 0) {
             push(@lims, $amount, $start_epoch, $end_epoch);
             $is_added = 1;
@@ -84,32 +84,31 @@ sub _add_limit_value {
 # helper function, returns undef if from or to indexes are out of range
 sub _array_slice {
     my ($from, $to, @arr) = @_;
-    return ($from < 0 || $to >= scalar @arr) ? [] : \@arr[$from..$to];
+    return (($from < 0 || $to >= scalar @arr) ? [] : [@arr[$from .. $to]]);
 }
 
 sub _extract_limit_by_group {
     # TODO: test edge cases
-    my $loss_type = $_[0];
+    my $loss_type  = $_[0];
     my $offset_cnt = $loss_type - 1;
     # get offsets and limits portion
-    my @offsets = _array_slice(1, $offset_cnt, @_);
-    my @limits = _array_slice($offset_cnt+1, $#_, @_);
+    my $offsets = _array_slice(1, $offset_cnt, @_);
+    my $limits = _array_slice($offset_cnt + 1, $#_, @_);
 
     my $extracted_limits;
-    foreach my $idx (0..$offset_cnt){
+    foreach my $idx (0 .. $offset_cnt) {
         my $from;
         my $to;
-
-        if (scalar @offsets) {
-            $from = ($idx - 1 < 0) ? 0 : $offsets[$idx-1] * 3;
-            $to = ($offsets[$idx]) ? ($offsets[$idx] * 3) - 1 : $#limits;
+        if ($offsets) {
+            $from = ($idx - 1 < 0) ? 0 : $offsets->[$idx - 1] * 3;
+            $to = ($offsets->[$idx]) ? ($offsets->[$idx] * 3) - 1 : scalar $limits->@* - 1;
         } else {
             # when there are no offsets
             $from = 0;
-            $to = $#limits;
+            $to   = scalar $limits->@* - 1;
         }
 
-        $extracted_limits->{$LOSS_TYPE_MAP->{$idx}} = [_array_slice($from, $to, @limits)];
+        $extracted_limits->{$LOSS_TYPE_MAP->{$idx}} = _array_slice($from, $to, $limits->@*);
     }
     return $extracted_limits;
 }
@@ -117,8 +116,8 @@ sub _extract_limit_by_group {
 sub _collapse_limit_by_group {
     # TODO: test edge cases
     my $expanded_limits = shift;
-    my @offsets ;
-    my @limits ;
+    my @offsets;
+    my @limits;
 
     # get number of limits there are in the struct
     my $limits_cnt = 0;
@@ -126,18 +125,18 @@ sub _collapse_limit_by_group {
     $limits_cnt /= 3;
 
     my $type_cnt = scalar keys %{$expanded_limits};
-    foreach my $idx (0..$type_cnt - 1){
+    foreach my $idx (0 .. $type_cnt - 1) {
 
-            my @curr_lim = @{$expanded_limits->{$LOSS_TYPE_MAP->{$idx}}};
-            push @limits, @curr_lim;
+        my @curr_lim = @{$expanded_limits->{$LOSS_TYPE_MAP->{$idx}}};
+        push @limits, @curr_lim;
 
-            if ($idx and scalar @curr_lim != 0) {
-                push (@offsets, (scalar @limits / 3) - 1);
-            }elsif (scalar @curr_lim == 0){
-                # push limits to offsets only if the idx is 0
-                # push the size of all limits and + 1 to overflow the offset (indicating that limit is not yet set) if current limit is empty
-                push (@offsets, $limits_cnt);
-            }
+        if ($idx and scalar @curr_lim != 0) {
+            push(@offsets, (scalar @limits / 3) - 1);
+        } elsif (scalar @curr_lim == 0) {
+            # push limits to offsets only if the idx is 0
+            # push the size of all limits and + 1 to overflow the offset (indicating that limit is not yet set) if current limit is empty
+            push(@offsets, $limits_cnt);
+        }
     }
 
     return [$type_cnt, @offsets, @limits];
@@ -156,15 +155,15 @@ sub get_limit {
 
 sub add_limit {
     my ($loss_type, $key, $amount, $start_epoch, $end_epoch) = @_;
-    my $decoded_limits = _get_decoded_limit ($key);
+    my $decoded_limits  = _get_decoded_limit($key);
     my $expanded_struct = _extract_limit_by_group(@{$decoded_limits});
-    $expanded_struct->{$loss_type} = [_add_limit_value($amount, $start_epoch, $end_epoch, @{$expanded_struct->{$loss_type}})];
-    my $collapsed_limits = [_collapse_limit_by_group($expanded_struct)];
-    my $encoded_limits = _encode_limit(@{$collapsed_limits});
+    $expanded_struct->{$loss_type} = _add_limit_value($amount, $start_epoch, $end_epoch, $expanded_struct->{$loss_type});
+    my $collapsed_limits = _collapse_limit_by_group($expanded_struct);
+    my $encoded_limits   = _encode_limit(@{$collapsed_limits});
     # store_to_redis
 
     # TODO: Insert into database
-    return join (' ', @{$collapsed_limits});
+    return join(' ', @{$collapsed_limits});
 }
 
 1;
