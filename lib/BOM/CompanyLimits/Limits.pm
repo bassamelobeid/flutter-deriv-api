@@ -5,8 +5,11 @@ use warnings;
 
 use Data::Dumper;
 use Error::Base;
+
 use BOM::Test;
 use BOM::Config::RedisReplicated;
+use BOM::Database::QuantsConfig;
+use BOM::Test::Data::Utility::UnitTestDatabase qw( :init );
 
 use constant CHAR_BYTE   => 1;
 use constant SHORT_BYTE  => 2;
@@ -25,6 +28,14 @@ my $LOSS_TYPE_MAP = {
     1 => 'GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP_DEFAULTS',
     2 => 'GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP',
     3 => 'GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP_DEFAULTS',
+};
+
+# TODO: temporal part, this
+my $LOSS_TYPE_TO_UNDERLYING_TABLE = {
+    'GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP'          => 'global_potential_loss',
+    'GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP_DEFAULTS' => 'global_potential_loss',
+    'GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP'           => 'global_realized_loss',
+    'GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP_DEFAULTS'  => 'global_realized_loss',
 };
 
 sub _encode_limit {
@@ -60,22 +71,22 @@ sub _decode_limit {
 sub _add_limit_value {
     my ($amount, $start_epoch, $end_epoch, $curr_lim) = @_;
 
-    # curr_lim is not yet initialized or key not found in redis
+    # if curr_lim is undef, this is the first entry
     return \@_ unless $curr_lim;
 
     my @lims;
 
-    # variable needed for if the new amount is the largest than all existing limits
+    # If limit is not added in the loop above, it is the largest limit
+    # # and thus belongs to the end of the sequence.
     my $is_added = 0;
     for (my $i = 0; $i < scalar $curr_lim->@*; $i += 3) {
-        my $a = $curr_lim->[$i];
-        my $s = $curr_lim->[$i + 1];
-        my $e = $curr_lim->[$i + 2];
-        if ($amount < $a and $is_added == 0) {
+        my ($i_amount, $i_start_epoch, $i_end_epoch) = @{$curr_lim}[$i .. $i + 2];
+
+        if ($amount < $i_amount and $is_added == 0) {
             push(@lims, $amount, $start_epoch, $end_epoch);
             $is_added = 1;
         }
-        push @lims, $a, $s, $e;
+        push @lims, $i_amount, $i_start_epoch, $i_end_epoch;
     }
     push(@lims, $amount, $start_epoch, $end_epoch) unless $is_added;
     return \@lims;
@@ -170,7 +181,27 @@ sub add_limit {
 
     BOM::Config::RedisReplicated::redis_limits_write->hset(REDIS_LIMIT_KEY, $key, $encoded_limits);
 
-    # TODO: Insert into database
+    # TODO: need to check what set_global_limits is doing internally, it looks like there are a lot of checks in there
+    my ($underlying_grp, $contract_grp, $expiry_type, $is_atm) = split(',', $key);
+
+    # TODO: this should be obtained from redis later not querying the database directly
+    my $dbic = BOM::Database::ClientDB->new({broker_code => 'CR'})->db->dbic;
+    my $sql = q{
+	SELECT symbol, market FROM bet.market WHERE symbol = ?;
+    };
+    my $bet_market = $dbic->run(fixup => sub { $_->selectrow_hashref($sql, undef, ($underlying_grp)) });
+
+    my $qc = BOM::Database::QuantsConfig->new();
+    $qc->set_global_limit({
+            market            => [$bet_market->{market}],
+            underlying_symbol => [($underlying_grp =~ /DEFAULTS/) ? undef : $underlying_grp],
+            contract_group    => $contract_grp ? [$contract_grp] : undef,
+            expiry_type       => $expiry_type ? [$expiry_type] : undef,
+            barrier_category  => $is_atm ? ['atm'] : undef,
+            limit_amount      => $amount,
+            limit_type        => $LOSS_TYPE_TO_UNDERLYING_TABLE->{$loss_type},
+
+    });
     return join(' ', @{$collapsed_limits});
 }
 

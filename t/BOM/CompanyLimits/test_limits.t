@@ -160,7 +160,7 @@ subtest '_get_decoded_limit', sub {
             return BOM::CompanyLimits::Limits::_encode_limit(4, 1, 2, 3, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504,
                 1961801810, 700, 1261801504, 2061801504);
         });
-    my $decoded = BOM::CompanyLimits::Limits::_get_decoded_limit('forex,,,t');
+    my $decoded = BOM::CompanyLimits::Limits::_get_decoded_limit('frxUSDJPY,,,t');
     is_deeply($decoded,
         [4, 1, 2, 3, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810, 700, 1261801504, 2061801504], '');
     $mock_redis->unmock('hget');
@@ -174,19 +174,19 @@ subtest 'add_limit and get_limit', sub {
     # TODO: test get_limit
 
     $mock_redis->mock(hget => sub { return BOM::CompanyLimits::Limits::_encode_limit(1, 10000, 1561801504, 1561801810); });
-    my $limit = BOM::CompanyLimits::Limits::add_limit('GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP', 'forex,,,t', 39, 1561801504, 1561801810);
+    my $limit = BOM::CompanyLimits::Limits::add_limit('GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP', 'frxUSDJPY,,,t', 39, 1561801504, 1561801810);
     cmp_ok $limit, 'eq', '1 39 1561801504 1561801810 10000 1561801504 1561801810', '';
     $mock_redis->unmock('hget');
 
     $mock_redis->mock(hget => sub { return BOM::CompanyLimits::Limits::_encode_limit(1, 39, 1561801504, 1561801810, 10000, 1561801504, 1561801810); }
     );
-    $limit = BOM::CompanyLimits::Limits::add_limit('GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP', 'forex,,,t', 10, 0, 0);
+    $limit = BOM::CompanyLimits::Limits::add_limit('GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP', 'frxUSDJPY,,,t', 10, 0, 0);
     cmp_ok $limit, 'eq', '1 10 0 0 39 1561801504 1561801810 10000 1561801504 1561801810', '';
     $mock_redis->unmock('hget');
 
     $mock_redis->mock(
         hget => sub { return BOM::CompanyLimits::Limits::_encode_limit(1, 10, 0, 0, 39, 1561801504, 1561801810, 10000, 1561801504, 1561801810); });
-    $limit = BOM::CompanyLimits::Limits::add_limit('GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP', 'forex,,,t', 30, 1261801504, 1961801810);
+    $limit = BOM::CompanyLimits::Limits::add_limit('GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP', 'frxUSDJPY,,,t', 30, 1261801504, 1961801810);
     cmp_ok $limit, 'eq', '1 10 0 0 30 1261801504 1961801810 39 1561801504 1561801810 10000 1561801504 1561801810', '';
     $mock_redis->unmock('hget');
 
