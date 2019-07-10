@@ -185,11 +185,6 @@ sub add_worker_process {
     $workers{$worker->pid} = $worker;
 }
 
-sub create_response {
-    my $res = shift;
-    $res->{rpc_queue_worker_tv} =  [Time::HiRes::gettimeofday];
-    return encode_json_utf8($res);
-}
 
 sub run_worker_process {
     my $loop = IO::Async::Loop->new;
@@ -249,7 +244,7 @@ sub run_worker_process {
 
             # Handle a 'ping' request immediately here
             if ($name eq "ping") {
-                $_->done(create_response({success => 1, result => 'pong'}));
+                $_->done(encode_json_utf8({success => 1, result => 'pong'}));
                 return;
             }
 
@@ -259,11 +254,11 @@ sub run_worker_process {
                 my $result = $code->($params);
                 print STDERR "Result:\n" . join("\n", map { " | $_" } split m/\n/, pp($result)) . "\n";
 
-                $_->done(create_response({success => 1, result  => $result}));
+                $_->done(encode_json_utf8({success => 1, result  => $result}));
             } else {
                 print STDERR "  UNKNOWN\n";
                 # Transport mechanism itself succeeded, so ->done is fine here
-                $_->done(create_response({success => 0, error   => "Unknown RPC name '$name'"}));
+                $_->done(encode_json_utf8({success => 0, error   => "Unknown RPC name '$name'"}));
             }
         });
 
