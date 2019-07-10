@@ -13,25 +13,25 @@ use BOM::Test::WebsocketAPI;
 use BOM::Test::WebsocketAPI::Data qw( requests );
 
 my $loop = IO::Async::Loop->new;
+
 $loop->add(
     my $tester = BOM::Test::WebsocketAPI->new(
         timeout            => 300,
         max_response_delay => 10,
         skip_sanity_checks => {
-            website_status => [qw(published check_duplicates)],    # Response can be overlapping between publishes
+            website_status => [qw(published check_duplicates)],  # Response can be overlapping between publishes
         },
         suite_params => {
-            requests => requests(
+            concurrent => 50,
+            requests =>  requests(
+                calls => [qw( ticks ticks_history )],
                 filter => sub {
                     my $params = shift->{params};
                     my $symbol;
-                    if ($params->contract) {
-                        $symbol = $params->contract->underlying->symbol;
-                    } elsif ($params->ticks_history) {
+                    if ($params->ticks_history) {
                         $symbol = $params->ticks_history->underlying->symbol;
-                    } elsif ($params->proposal_array) {
-                        $symbol = $params->proposal_array->underlying->symbol;
-                    } elsif ($params->underlying) {
+                    }
+                    elsif ($params->underlying) {
                         $symbol = $params->underlying->symbol;
                     } else {
                         return 1;
@@ -39,20 +39,25 @@ $loop->add(
                     # Checking R_100 only, for faster tests.
                     $symbol eq 'R_100';
                 },
-            ),
-            concurrent => 50,
+            ),    
         }
     ),
 );
 
-subtest 'General subscriptions: All calls in parallel' => sub {
+subtest 'General subscriptions: ticks & ticks_history' => sub {
+    
     Future->needs_all(
-        $tester->subscribe_multiple_times(count => 10), $tester->subscribe_twice, $tester->subscribe,
-        $tester->subscribe_after_request,     $tester->multiple_subscriptions_forget, $tester->multiple_subscriptions_forget_all,
-        $tester->multiple_connections_forget, $tester->multiple_connections_forget_all,
+        $tester->subscribe_multiple_times(count => 10),
+        $tester->subscribe_twice,
+        $tester->subscribe,
+        $tester->subscribe_after_request,
+        $tester->multiple_subscriptions_forget,
+        $tester->multiple_subscriptions_forget_all,
+        $tester->multiple_connections_forget,
+        $tester->multiple_connections_forget_all,
     )->get;
+    
+    $tester->run_sanity_checks;
 };
-
-$tester->run_sanity_checks;
 
 done_testing;
