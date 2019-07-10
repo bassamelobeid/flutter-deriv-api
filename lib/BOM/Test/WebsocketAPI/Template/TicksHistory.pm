@@ -53,4 +53,6 @@ rpc_response ticks_history => sub {
     };
 };
 
+# This template does not publish anything. Therefore you can't run ticks_history without running ticks.
+
 1;

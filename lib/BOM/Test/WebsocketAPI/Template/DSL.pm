@@ -4,6 +4,8 @@ no indirect;
 use warnings;
 use strict;
 
+use Clone qw( clone );
+
 =head1 NAME
 
 BOM::Test::WebsocketAPI::Template::DSL - Helper class for data template with interpolation
@@ -54,13 +56,15 @@ generated version of their data.
 
 use Exporter;
 our @ISA    = qw( Exporter );
-our @EXPORT = qw( request rpc_request rpc_response publish );    ## no critic (Modules::ProhibitAutomaticExportation)
+our @EXPORT = qw( request rpc_request rpc_request_new_contracts rpc_response publish );    ## no critic (Modules::ProhibitAutomaticExportation)
 
 use BOM::Test::WebsocketAPI::Parameters qw( expand_params );
 use Clone qw(clone);
 
 # Keeps the serialized rpc_request keys to params mapping
 my $rpc_requests;
+# Templates to be generated on buy
+my @rpc_requests_new_contracts;
 # Params used to generate publish data, added dynamically by rpc responses.
 my $publish_params;
 # Used for finding the handler module for given RPC request.
@@ -69,6 +73,9 @@ my $rpc_req_to_module;
 my $module_to_publish_cb;
 # RPC response callbacks registered per module
 my $rpc_response_cb;
+
+# incremented and assigned to new contracts created by buy RPC calls
+my $contract_id = 100000;
 
 =head2 request
 
@@ -80,6 +87,7 @@ sub request {
     my ($type, $template, @params) = @_;
 
     my $requests = $BOM::Test::WebsocketAPI::Data::requests //= {};
+
     push $requests->{$type}->@*, map {
         { $type => {$template->()->%*}, params => $_ }
     } expand_params(@params);
@@ -106,6 +114,25 @@ sub rpc_request {
         $rpc_req_to_module->{$req_key} = $module;
         $rpc_requests->{$req_key}      = $_;
     }
+    return undef;
+}
+
+=head2 rpc_request_new_contracts
+
+Similar to C<@rpc_request>, except these requests will only be generated
+for new contracts, which are created by C<@buy> calls.
+
+=cut
+
+sub rpc_request_new_contracts {
+    my ($type, $template) = @_;
+    my ($module) = caller;
+    push @rpc_requests_new_contracts,
+        {
+        module => $module,
+        code   => $template
+        };
+
     return undef;
 }
 
@@ -156,7 +183,8 @@ sub key {
 
     return join '_', map { key($_) // 'undef' } $obj->@* if ref($obj) eq 'ARRAY';
 
-    return join '_', map { $_ => key($obj->{$_}) // 'undef' } sort keys $obj->%* if ref($obj) eq 'HASH';
+    return join '_', map { $_ => key($obj->{$_}) // 'undef' } sort keys $obj->%*
+        if ref($obj) eq 'HASH';
 
     return $obj;
 }
@@ -241,14 +269,31 @@ $BOM::Test::WebsocketAPI::Data::rpc_response = sub {
         {
             error => {
                 code              => 'MockResponseNotFound',
-                message_to_client => 'Cannot find mock RPC response for the given'
-                    . ' request, please create an rpc_request in the corresponding'
+                message_to_client => "Cannot find mock RPC response for method "
+                    . $request->{method}
+                    . " key $req_key."
+                    . ' Please create an rpc_request in the corresponding'
                     . ' BOM::Test::WebsocketAPI::Template::[RequestType]',
             },
         }) unless $module;
 
     # Scalar, but used for to set $_
     for ($rpc_requests->{$req_key}) {
+
+        # create new contract on buy - first need to clone all params
+        local $_ = clone($_) if $request->{method} eq 'buy';
+
+        # then create the new contract
+        if ($request->{method} eq 'buy') {
+            $_->contract->contract_id = $contract_id++;
+            # and rpc requests registered to be created for new contracts
+            for my $template (@rpc_requests_new_contracts) {
+                my $new_req_key = req_key($template->{code}->());
+                $rpc_req_to_module->{$new_req_key} = $template->{module};
+                $rpc_requests->{$new_req_key}      = $_;
+            }
+        }
+
         # This will dynamically pass the same params used to generate RPC response
         # to publishers, make it possible to publish only useful data.
         if (exists $module_to_publish_cb->{$module}) {
@@ -256,6 +301,7 @@ $BOM::Test::WebsocketAPI::Data::rpc_response = sub {
         }
         return wrap_rpc_response($request, $rpc_response_cb->{$module}->());
     }
+
 };
 
 =head2 publish_data

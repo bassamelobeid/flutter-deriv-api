@@ -45,4 +45,6 @@ rpc_response transaction => sub {
     };
 };
 
+# Cannot publish, because there is no RPC request for this API call
+
 1;
