@@ -13,7 +13,6 @@ use Test::Mojo;
 use Test::Builder;
 
 use Encode;
-use JSON::Schema;
 use Path::Tiny;
 use JSON::MaybeXS;
 use JSON::Validator;
