@@ -1198,6 +1198,29 @@ sub _assemble_dob_input {
 
     my $combined_new_dob = sprintf("%04d-%02d-%02d", $new_dob{'dob_year'}, $new_dob{'dob_month'}, $new_dob{'dob_day'});
 
+    # Validate the client age
+    my $dob_date = try {
+        Date::Utility->new($combined_new_dob)
+    }
+    catch {
+        code_exit_BO('Invalid Date Of Birth format');
+    };
+
+    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
+    code_exit_BO('Invalid country') unless $countries_instance;
+
+    my $country = $countries_instance->countries_list->{$client->{residence}};
+    code_exit_BO('Invalid country') unless $country;
+    my $country_name = $country->{name};
+
+    my $min_age      = $country->{minimum_age};
+    my $minimum_date = Date::Utility->new->minus_time_interval($min_age . 'y');
+    if ($dob_date->is_after($minimum_date)) {
+        my $self_href = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $client->loginid});
+        print qq{<p style="color:red">Error: Client age must be $min_age or older for $country_name clients.</p>};
+        code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
+    }
+
     $input->{date_of_birth} = $combined_new_dob;
 
     return undef;
