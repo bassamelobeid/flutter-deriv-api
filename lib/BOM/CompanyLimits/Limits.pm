@@ -262,6 +262,31 @@ sub _set_counters {
     BOM::Config::RedisReplicated::redis_limits_write->hincrbyfloat($counter_key, $key, _get_counter_from_db($loss_type, $key, $now)) unless ($is_set);
 }
 
+sub process_and_get_active_limit {
+    my $limits = shift;
+
+    my $chosen_limit;
+    my $has_future_limit;
+    my $now = Date::Utility->new()->epoch();
+
+    for (my $i = 0; $i < scalar $limits->@*; $i += 3) {
+        my ($i_amount, $i_start_epoch, $i_end_epoch) = @{$limits}[$i .. $i + 2];
+
+        # indefinite limit OR active limit
+        if (   ($i_start_epoch == 0 && $i_end_epoch == 0)
+            || ($now >= $i_start_epoch && $now < $i_end_epoch))
+        {
+            $chosen_limit = $i_amount;
+            last;
+        }
+        # expired limit
+        next if ($i_end_epoch <= $now);
+        # future limit
+        $has_future_limit = 1 if ($i_start_epoch > $now);
+    }
+    return ($has_future_limit && !$chosen_limit) ? "inf" : $chosen_limit;
+}
+
 # TODO: need to verify this function will work as a single transaction
 sub add_limit {
     my ($loss_type, $key, $amount, $start_epoch, $end_epoch) = @_;

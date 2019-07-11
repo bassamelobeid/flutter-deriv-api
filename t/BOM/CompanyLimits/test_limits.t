@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 6;
+use Test::More tests => 7;
 use BOM::Test;
 use Test::Exception;
 use Data::Dumper;
@@ -11,7 +11,7 @@ use Data::Dumper;
 use Test::MockModule;
 use BOM::CompanyLimits::Limits;
 use BOM::Config::RedisReplicated;
-
+use Date::Utility;
 # TODO: error validations for each function
 # TODO: write helper for test case such as encoding
 # TODO: add error messages
@@ -132,6 +132,38 @@ subtest '_get_decoded_limit', sub {
     is_deeply($decoded,
         [4, 1, 2, 3, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810, 700, 1261801504, 2061801504], '');
     $mock_redis->unmock('hget');
+};
+
+subtest 'process_and_get_active_limit', sub {
+    my $mock_date_util = Test::MockModule->new('Date::Utility');
+
+    $mock_date_util->mock(epoch => sub { return 1600000000; });
+    my $active_lim = BOM::CompanyLimits::Limits::process_and_get_active_limit(
+        [30, 1400000000, 1500000000, 40, 1500000000, 1700000000, 60, 1800000000, 1900000000]);
+    is $active_lim, 40, 'present limit';
+    $mock_date_util->unmock('epoch');
+
+    $mock_date_util->mock(epoch => sub { return 1750000000; });
+    $active_lim = BOM::CompanyLimits::Limits::process_and_get_active_limit(
+        [30, 1400000000, 1500000000, 40, 1500000000, 1700000000, 60, 1800000000, 1900000000]);
+    is $active_lim, "inf", 'future limits';
+    $mock_date_util->unmock('epoch');
+
+    $mock_date_util->mock(epoch => sub { return 1750000000; });
+    $active_lim = BOM::CompanyLimits::Limits::process_and_get_active_limit(
+        [30, 1400000000, 1500000000, 40, 1500000000, 1700000000, 60, 1800000000, 1900000000, 80, 0, 0]);
+    is $active_lim, 80, 'indefinite limit';
+    $mock_date_util->unmock('epoch');
+
+    $mock_date_util->mock(epoch => sub { return 2000000000; });
+    $active_lim = BOM::CompanyLimits::Limits::process_and_get_active_limit(
+        [30, 1400000000, 1500000000, 40, 1500000000, 1700000000, 60, 1800000000, 1900000000]);
+    is $active_lim, undef, 'every limit are past';
+
+    $mock_date_util->mock(epoch => sub { return 2000000000; });
+    $active_lim = BOM::CompanyLimits::Limits::process_and_get_active_limit([]);
+    is $active_lim, undef, 'no limits given';
+    $mock_date_util->unmock('epoch');
 };
 
 subtest 'add_limit and get_limit', sub {
