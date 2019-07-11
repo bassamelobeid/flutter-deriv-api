@@ -26,6 +26,7 @@ use BOM::Test::Data::Utility::UnitTestMarketData;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Helper::Redis qw/is_within_threshold/;
+use BOM::Test::Script::RpcQueue;
 use BOM::User::Password;
 use BOM::User;
 use Net::EmptyPort qw/empty_port/;
@@ -128,6 +129,8 @@ sub build_wsapi_test {
     $args->{app_id} = 1 unless exists $args->{app_id};
 
     my ($tmp_dir, $redis_server) = launch_redis;
+    my $rpc_queue = BOM::Test::Script::RpcQueue->new($redis_server->url->port);
+
     my $t = build_mojo_test('Binary::WebSocketAPI', $args);
     $t->app->log(Mojo::Log->new(level => 'debug'));
 
@@ -148,7 +151,8 @@ sub build_wsapi_test {
     # keep them until $t be destroyed
     $t->{_bom} = {
         tmp_dir      => $tmp_dir,
-        redis_server => $redis_server
+        redis_server => $redis_server,
+        rpc_queue    => $rpc_queue,
     };
     return $t;
 }
