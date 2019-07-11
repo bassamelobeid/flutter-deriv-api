@@ -22,7 +22,7 @@ GetOptions(
     'foreground|f' => \my $FOREGROUND,
     'workers|w=i'  => \(my $WORKERS = 4),
     'socket|S=s'   => \(my $SOCKETPATH),
-    'port|P=i'     => \(my $PORT),
+    'redis|R=i'     => \(my $REDIS),
 ) or exit 1;
 
 exit run_worker_process() if $FOREGROUND;
@@ -206,7 +206,7 @@ sub run_worker_process {
 
     $loop->add(
         my $worker = Job::Async::Worker::Redis->new(
-            uri                 => 'redis://127.0.0.1'. ($PORT? ":$PORT": '',
+            uri                 => $REDIS // 'redis://127.0.0.1',
             max_concurrent_jobs => 1,
             use_multi           => 1,
             timeout             => 5
