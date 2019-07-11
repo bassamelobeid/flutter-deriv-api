@@ -34,19 +34,19 @@ sub _db_mapper {
     # this function should be defined as a modular function for mapping to the underlying !!
     my $DB_MAP = {
         # UNDERLYINGGROUP,CONTRACTGROUP,EXPIRYTYPE,ISATM
-        GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP => {
+        POTENTIAL_LOSS => {
             limits   => 'global_potential_loss',
             counters => 'bet.open_contract_aggregates',
         },
-        GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP_DEFAULTS => {
+        POTENTIAL_LOSS_2 => {
             limits   => 'global_potential_loss',
             counters => 'bet.open_contract_aggregates',
         },
-        GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP => {
+        REALIZED_LOSS => {
             limits   => 'global_potential_loss',
             counters => 'bet.global_aggregates',
         },
-        GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP_DEFAULTS => {
+        REALIZED_LOSS_2 => {
             limits   => 'global_potential_loss',
             counters => ' bet.global_aggregates',
         },
@@ -60,16 +60,16 @@ sub _db_mapper {
 sub _type_mapper {
     my $type = shift;
     # this function should be defined as a modular function for mapping to the underlying !!
-    my $GENERAL_MAP = {
+    my $TYPE_IDX = {
         # UNDERLYINGGROUP,CONTRACTGROUP,EXPIRYTYPE,ISATM
-        GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP          => 0,
-        GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP_DEFAULTS => 1,
-        GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP           => 2,
-        GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP_DEFAULTS  => 3,
+        POTENTIAL_LOSS   => 0,
+        POTENTIAL_LOSS_2 => 1,
+        REALIZED_LOSS    => 2,
+        REALIZEDE_LOSS_2 => 3,
         # ...
         # ...
     };
-    return $GENERAL_MAP->{$type};
+    return $TYPE_IDX->{$type};
 }
 
 sub _insert_to_db {
@@ -84,16 +84,17 @@ sub _insert_to_db {
     };
     my $bet_market = $dbic->run(fixup => sub { $_->selectrow_hashref($sql, undef, ($underlying_grp)) });
 
-    my $table = _db_mapper($loss_type);
-    my $qc    = BOM::Database::QuantsConfig->new();
+    my $type_idx = _type_mapper($loss_type);
+    my $table    = _db_mapper($loss_type);
+    my $qc       = BOM::Database::QuantsConfig->new();
     $qc->set_global_limit({
         market            => [$bet_market->{market}],
-        underlying_symbol => [($underlying_grp =~ /DEFAULTS/) ? undef : $underlying_grp],
-        contract_group    => $contract_grp ? [$contract_grp] : undef,
-        expiry_type       => $expiry_type ? [$expiry_type] : undef,
-        barrier_category  => $is_atm ? ['atm'] : undef,
-        limit_amount      => $amount,
-        limit_type        => $table->{limits},
+        underlying_symbol => [($type_idx == 1 || $type_idx == 3) ? undef : $underlying_grp],
+        contract_group   => $contract_grp ? [$contract_grp] : undef,
+        expiry_type      => $expiry_type  ? [$expiry_type]  : undef,
+        barrier_category => $is_atm       ? ['atm']         : undef,
+        limit_amount     => $amount,
+        limit_type       => $table->{limits},
     });
 }
 
@@ -102,6 +103,7 @@ sub _get_counter_from_db {
 
     # TODO: this should be obtained from redis later not querying the database directly
     # TODO: find a better way other than where 1 = 1
+    # TODO: query from financial_open_market_bet we're removing open_contracts_aggregates
     my $dbic = BOM::Database::ClientDB->new({broker_code => 'CR'})->db->dbic;
     my $sql = qq{
         SELECT  coalesce(sum(o.payout_price - o.buy_price), 0) as aggregate -- prices in bet.open_contract_aggregates are in USD
@@ -269,7 +271,9 @@ sub add_limit {
     my $decoded_limits = _get_decoded_limit($key);
     my $expanded_arr   = _extract_limit_by_group(@{$decoded_limits});
 
+    #warn Dumper($loss_type);
     my $underlying_idx = _type_mapper($loss_type);
+    #warn Dumper($underlying_idx);
     $expanded_arr->[$underlying_idx] = _add_limit_value($amount, $start_epoch, $end_epoch, $expanded_arr->[$underlying_idx]);
 
     my $collapsed_limits = _collapse_limit_by_group($expanded_arr);
