@@ -16,11 +16,16 @@ use constant SHORT_BYTE  => 2;
 use constant LONG_BYTE   => 4;
 use constant LIMITS_BYTE => LONG_BYTE * 3;    # amount (signed long), start_epoch (unsigned long), end_epoch (unsigned long)
 
-use constant REDIS_LIMIT_KEY => 'LIMITS';
+use constant REDIS_LIMIT_KEY    => 'LIMITS';
+use constant COUNTER_PREFIX_KEY => 'COUNTERS_';
 
 # TODO: make every function return a ref to make things consistent
 # TODO: Validations, a lot of validations, like a lot a lot of it.
 # TODO: Unit test everything
+
+#######################
+## MODULAR FUNCTIONS ##
+#######################
 
 # TODO: temporal part, this will be revisited later
 # maps a type to an underlying table in database
@@ -29,10 +34,22 @@ sub _db_mapper {
     # this function should be defined as a modular function for mapping to the underlying !!
     my $DB_MAP = {
         # UNDERLYINGGROUP,CONTRACTGROUP,EXPIRYTYPE,ISATM
-        GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP          => 'global_potential_loss',
-        GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP_DEFAULTS => 'global_potential_loss',
-        GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP           => 'global_realized_loss',
-        GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP_DEFAULTS  => 'global_realized_loss',
+        GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP => {
+            limits   => 'global_potential_loss',
+            counters => 'bet.open_contract_aggregates',
+        },
+        GLOBAL_POTENTIAL_LOSS_UNDERLYINGGROUP_DEFAULTS => {
+            limits   => 'global_potential_loss',
+            counters => 'bet.open_contract_aggregates',
+        },
+        GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP => {
+            limits   => 'global_potential_loss',
+            counters => 'bet.global_aggregates',
+        },
+        GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP_DEFAULTS => {
+            limits   => 'global_potential_loss',
+            counters => ' bet.global_aggregates',
+        },
         # ...
         # ...
     };
@@ -54,6 +71,58 @@ sub _type_mapper {
     };
     return $GENERAL_MAP->{$type};
 }
+
+sub _insert_to_db {
+    my ($key, $loss_type, $amount) = @_;
+    # TODO: need to check what set_global_limits is doing internally, it looks like there are a lot of checks in there
+    my ($underlying_grp, $contract_grp, $expiry_type, $is_atm) = split(',', $key);
+
+    # TODO: this should be obtained from redis later not querying the database directly
+    my $dbic = BOM::Database::ClientDB->new({broker_code => 'CR'})->db->dbic;
+    my $sql = q{
+	SELECT symbol, market FROM bet.market WHERE symbol = ?;
+    };
+    my $bet_market = $dbic->run(fixup => sub { $_->selectrow_hashref($sql, undef, ($underlying_grp)) });
+
+    my $table = _db_mapper($loss_type);
+    my $qc    = BOM::Database::QuantsConfig->new();
+    $qc->set_global_limit({
+        market            => [$bet_market->{market}],
+        underlying_symbol => [($underlying_grp =~ /DEFAULTS/) ? undef : $underlying_grp],
+        contract_group    => $contract_grp ? [$contract_grp] : undef,
+        expiry_type       => $expiry_type ? [$expiry_type] : undef,
+        barrier_category  => $is_atm ? ['atm'] : undef,
+        limit_amount      => $amount,
+        limit_type        => $table->{limits},
+    });
+}
+
+sub _get_counter_from_db {
+    my ($loss_type, $key, $now) = @_;
+
+    # TODO: this should be obtained from redis later not querying the database directly
+    # TODO: find a better way other than where 1 = 1
+    my $dbic = BOM::Database::ClientDB->new({broker_code => 'CR'})->db->dbic;
+    my $sql = qq{
+        SELECT  coalesce(sum(o.payout_price - o.buy_price), 0) as aggregate -- prices in bet.open_contract_aggregates are in USD
+        FROM bet.open_contract_aggregates o
+        WHERE 1=1
+    };
+
+    # special case, as this will mean that it will be an aggregate of everything, so no need to add in filters
+    my @conditions = split(',', $key);
+    $sql .= " AND symbol = ?"         if $conditions[0];
+    $sql .= " AND contract_group = ?" if $conditions[1];
+    $sql .= " AND expiry_type = ?"    if $conditions[2];
+    $sql .= " AND is_atm = ?"         if $conditions[3];
+
+    my $ret = $dbic->run(fixup => sub { $_->selectrow_hashref($sql, undef, grep($_, @conditions)) });
+    return $ret->{aggregate};
+}
+
+###########################
+## LIMITS IMPLEMENTATION ##
+###########################
 
 sub _encode_limit {
     # TODO: Validate encoding format
@@ -184,9 +253,18 @@ sub get_limit {
     return join(' ', @{$expanded_struct->{$loss_type}});
 }
 
+sub _set_counters {
+    my ($loss_type, $key, $now) = @_;
+    my $counter_key = COUNTER_PREFIX_KEY . $loss_type;
+    my $is_set = BOM::Config::RedisReplicated::redis_limits_write->hget($counter_key, $key);
+    BOM::Config::RedisReplicated::redis_limits_write->hincrbyfloat($counter_key, $key, _get_counter_from_db($loss_type, $key, $now)) unless ($is_set);
+}
+
+# TODO: need to verify this function will work as a single transaction
 sub add_limit {
     my ($loss_type, $key, $amount, $start_epoch, $end_epoch) = @_;
     # check if redis has been added successfully
+    my $now = Date::Utility->new();
 
     my $decoded_limits = _get_decoded_limit($key);
     my $expanded_arr   = _extract_limit_by_group(@{$decoded_limits});
@@ -198,28 +276,9 @@ sub add_limit {
     my $encoded_limits   = _encode_limit(@{$collapsed_limits});
 
     BOM::Config::RedisReplicated::redis_limits_write->hset(REDIS_LIMIT_KEY, $key, $encoded_limits);
+    _insert_to_db($key, $loss_type, $amount);
+    _set_counters($loss_type, $key, $now);
 
-    # TODO: need to check what set_global_limits is doing internally, it looks like there are a lot of checks in there
-    my ($underlying_grp, $contract_grp, $expiry_type, $is_atm) = split(',', $key);
-
-    # TODO: this should be obtained from redis later not querying the database directly
-    my $dbic = BOM::Database::ClientDB->new({broker_code => 'CR'})->db->dbic;
-    my $sql = q{
-	SELECT symbol, market FROM bet.market WHERE symbol = ?;
-    };
-    my $bet_market = $dbic->run(fixup => sub { $_->selectrow_hashref($sql, undef, ($underlying_grp)) });
-
-    my $qc = BOM::Database::QuantsConfig->new();
-    $qc->set_global_limit({
-            market            => [$bet_market->{market}],
-            underlying_symbol => [($underlying_grp =~ /DEFAULTS/) ? undef : $underlying_grp],
-            contract_group    => $contract_grp ? [$contract_grp] : undef,
-            expiry_type       => $expiry_type ? [$expiry_type] : undef,
-            barrier_category  => $is_atm ? ['atm'] : undef,
-            limit_amount      => $amount,
-            limit_type        => _db_mapper($loss_type),
-
-    });
     return join(' ', @{$collapsed_limits});
 }
 
