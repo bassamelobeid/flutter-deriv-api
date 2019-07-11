@@ -28,7 +28,6 @@ use Scalar::Util qw(weaken);
 use Test::More;
 use JSON::MaybeXS;
 use Path::Tiny;
-use JSON::Schema;
 use JSON::Validator;
 
 my $json = JSON::MaybeXS->new;
