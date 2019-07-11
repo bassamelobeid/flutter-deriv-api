@@ -15,13 +15,14 @@ use Syntax::Keyword::Try;
 
 use Getopt::Long;
 use Log::Any qw($log);
-use Log::Any::Adapter qw(Stdout), log_level => 'trace';
+use Log::Any::Adapter qw(Stdout), log_level => 'info';
 
 GetOptions(
     'testing|T'    => \my $TESTING,
     'foreground|f' => \my $FOREGROUND,
     'workers|w=i'  => \(my $WORKERS = 4),
     'socket|S=s'   => \(my $SOCKETPATH),
+    'port|P=i'     => \(my $PORT),
 ) or exit 1;
 
 exit run_worker_process() if $FOREGROUND;
@@ -205,7 +206,7 @@ sub run_worker_process {
 
     $loop->add(
         my $worker = Job::Async::Worker::Redis->new(
-            uri                 => 'redis://127.0.0.1',
+            uri                 => 'redis://127.0.0.1'. ($PORT? ":$PORT": '',
             max_concurrent_jobs => 1,
             use_multi           => 1,
             timeout             => 5
