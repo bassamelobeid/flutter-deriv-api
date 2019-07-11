@@ -29,6 +29,7 @@ sub DESTROY {
     if ($self->{script}) {
         $self->{script}->stop_script;
     }
+    return;
 }
 
 1;
