@@ -6,18 +6,19 @@ use BOM::Test;
 use BOM::Test::Script;
 
 sub new {
-    my ($class, $redis) = @_;
+    my ($class, $redis_server) = @_;
     my $script;
     my $socket = '/tmp/binary_jobqueue_worker.sock';
+    my $url    = $redis_server->url;
     if (BOM::Test::on_qa()) {
         $script = BOM::Test::Script->new(
             script => "/home/git/regentmarkets/bom-rpc/bin/binary_jobqueue_worker.pl",
-            args   => "--redis $redis --socket $socket",
+            args   => "--redis $url --socket $socket",
         );
         $script->start_script_if_not_running;
     }
     return bless {
-        redis  => $redis,
+        redis  => $redis_server,
         script => $script,
         socket => $socket,
     }, $class;
