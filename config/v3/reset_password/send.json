@@ -35,7 +35,8 @@
       "new_password" : {
          "pattern" : "^[ -~]{6,25}$",
          "description" : "New password for validation (length within 6-25 chars, accepts any printable ASCII characters, need to include capital and lowercase letters with numbers). Password strength is evaluated with: http://archive.geekwisdom.com/js/passwordmeter.js",
-         "type" : "string"
+         "type" : "string",
+         "sensitive" : 1
       }
    }
 }

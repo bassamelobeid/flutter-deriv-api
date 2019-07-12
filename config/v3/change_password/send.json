@@ -13,12 +13,14 @@
       "new_password" : {
          "pattern" : "^[ -~]{6,25}$",
          "description" : "New password (length within 6-25 chars, accepts any printable ASCII character)",
-         "type" : "string"
+         "type" : "string",
+         "sensitive" : 1
       },
       "old_password" : {
          "pattern" : "^[ -~]+$",
          "type" : "string",
-         "description" : "Old password for validation (non-empty string, accepts any printable ASCII character)"
+         "description" : "Old password for validation (non-empty string, accepts any printable ASCII character)",
+         "sensitive" : 1
       },
       "passthrough" : {
          "type" : "object",
