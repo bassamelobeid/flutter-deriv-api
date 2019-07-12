@@ -262,6 +262,32 @@ sub _set_counters {
     BOM::Config::RedisReplicated::redis_limits_write->hincrbyfloat($counter_key, $key, _get_counter_from_db($loss_type, $key, $now)) unless ($is_set);
 }
 
+sub _get_new_limit {
+    # TODO: get current limit and figure out the new limits
+    # TODO: still deciding how this will be done
+    return 1;
+}
+
+# TODO: verify if this function works
+sub remove_limit {
+    my ($loss_type, $key) = @_;
+    my $new_lim = _get_new_limit();
+
+    my $redis_w     = BOM::Config::RedisReplicated::redis_limits_write;
+    my $counter_key = "COUNTERS_$loss_type";
+
+    # there are still limits left
+    return $redis_w->hset(REDIS_LIMIT_KEY, $key, $new_lim) if $new_lim;
+
+    $redis_w->watch(REDIS_LIMIT_KEY);
+    $redis_w->watch($counter_key);
+    $redis_w->multi;
+    $redis_w->hdel(REDIS_LIMIT_KEY, $key);
+    $redis_w->hdel($counter_key,    $key);
+    return $redis_w->exec();
+
+}
+
 sub process_and_get_active_limit {
     my $limits = shift;
 
