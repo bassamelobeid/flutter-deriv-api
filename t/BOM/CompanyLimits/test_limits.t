@@ -24,118 +24,111 @@ sub _clean_redis {
 
 subtest '_add_limit_value', sub {
     # TODO: make testcase more indendent instead of having to rely on previous output
-    my $limit = BOM::CompanyLimits::Limits::_add_limit_value(10000, 1561801504, 1561801810);
-    is_deeply($limit, [10000, 1561801504, 1561801810], 'first limit, return itself');
+    my $limit = BOM::CompanyLimits::Limits::_add_limit_value(10000, 1500000000, 1600000000);
+    is_deeply($limit, [10000, 1500000000, 1600000000], '');
 
-    $limit = [10000, 1561801504, 1561801810];
+    $limit = [10000, 1700000000, 1800000000];
     $limit = BOM::CompanyLimits::Limits::_add_limit_value(10, 0, 0, $limit);
-    is_deeply($limit, [10, 0, 0, 10000, 1561801504, 1561801810], 'smallest limit, inserted into front');
+    is_deeply($limit, [10, 0, 0, 10000, 1700000000, 1800000000], '');
 
-    $limit = [10, 0, 0, 10000, 1561801504, 1561801810];
-    $limit = BOM::CompanyLimits::Limits::_add_limit_value(30, 1261801504, 1961801810, $limit);
-    is_deeply($limit, [10, 0, 0, 30, 1261801504, 1961801810, 10000, 1561801504, 1561801810], 'middle limit');
+    $limit = [10, 0, 0, 10000, 1700000000, 1800000000];
+    $limit = BOM::CompanyLimits::Limits::_add_limit_value(30, 1500000000, 1600000000, $limit);
+    is_deeply($limit, [10, 0, 0, 30, 1500000000, 1600000000, 10000, 1700000000, 1800000000], '');
 
-    $limit = [10, 0, 0, 30, 1261801504, 1961801810, 10000, 1561801504, 1561801810];
-    $limit = BOM::CompanyLimits::Limits::_add_limit_value(30, 1061801504, 1661801810, $limit);
-    is_deeply(
-        $limit,
-        [10, 0, 0, 30, 1261801504, 1961801810, 30, 1061801504, 1661801810, 10000, 1561801504, 1561801810],
-        'same limit, position does not matter for this case'
-    );
+    $limit = [10, 0, 0, 30, 1500000000, 1600000000, 10000, 1500000000, 1600000000];
+    $limit = BOM::CompanyLimits::Limits::_add_limit_value(30, 1000000000, 1600000000, $limit);
+    is_deeply($limit, [10, 0, 0, 30, 1500000000, 1600000000, 30, 1000000000, 1600000000, 10000, 1500000000, 1600000000], '');
 
-    $limit = [10, 0, 0, 30, 1261801504, 1961801810, 30, 1061801504, 1661801810, 10000, 1561801504, 1561801810];
-    $limit = BOM::CompanyLimits::Limits::_add_limit_value(20000, 1061801504, 1661801810, $limit);
-    is_deeply(
-        $limit,
-        [10, 0, 0, 30, 1261801504, 1961801810, 30, 1061801504, 1661801810, 10000, 1561801504, 1561801810, 20000, 1061801504, 1661801810],
-        'same limit, position does not matter for this case'
-    );
+    $limit = [10, 0, 0, 30, 1500000000, 1600000000, 30, 1000000000, 1600000000, 10000, 1500000000, 1600000000];
+    $limit = BOM::CompanyLimits::Limits::_add_limit_value(20000, 1200000000, 1900000000, $limit);
+    is_deeply($limit,
+        [10, 0, 0, 30, 1500000000, 1600000000, 30, 1000000000, 1600000000, 10000, 1500000000, 1600000000, 20000, 1200000000, 1900000000], '');
 
-    $limit = [5, 1261801504, 1961801810];
-    $limit = BOM::CompanyLimits::Limits::_add_limit_value(559, 1561801504, 1961801810, $limit);
-    is_deeply($limit, [5, 1261801504, 1961801810, 559, 1561801504, 1961801810], 'largest limit, insert at the end');
+    $limit = [5, 1200000000, 1900000000];
+    $limit = BOM::CompanyLimits::Limits::_add_limit_value(559, 1500000000, 1800000000, $limit);
+    is_deeply($limit, [5, 1200000000, 1900000000, 559, 1500000000, 1800000000], '');
 
-    $limit = [10, 1261801504, 1961801810];
+    $limit = [10, 1200000000, 1900000000];
     $limit = BOM::CompanyLimits::Limits::_add_limit_value(10, 0, 0, $limit);
-    is_deeply($limit, [10, 1261801504, 1961801810, 10, 0, 0], '');
+    is_deeply($limit, [10, 1200000000, 1900000000, 10, 0, 0], '');
 };
 
 subtest '_encode_limit and _decode_limit', sub {
-    my $encoded = BOM::CompanyLimits::Limits::_encode_limit(1, 10000, 1561801504, 1561801810);
+    my $encoded = BOM::CompanyLimits::Limits::_encode_limit(1, 10000, 1300000000, 1700000000);
     my $decoded = BOM::CompanyLimits::Limits::_decode_limit($encoded);
-    is_deeply($decoded, [1, 10000, 1561801504, 1561801810], 'there is only one type of limit, so no need to specify offset');
+    is_deeply($decoded, [1, 10000, 1300000000, 1700000000], 'there is only one type of limit, so no need to specify offset');
 
     $encoded =
-        BOM::CompanyLimits::Limits::_encode_limit(2, 2, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810);
+        BOM::CompanyLimits::Limits::_encode_limit(2, 2, 10000, 1300000000, 1700000000, 559, 1500000000, 1900000000, 30, 1200000000, 1900000000);
     $decoded = BOM::CompanyLimits::Limits::_decode_limit($encoded);
     is_deeply(
         $decoded,
-        [2, 2, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810],
+        [2, 2, 10000, 1300000000, 1700000000, 559, 1500000000, 1900000000, 30, 1200000000, 1900000000],
         'there is two type of limit, so need to specify the 1 offset and all the remaining limits'
     );
 
     $encoded =
-        BOM::CompanyLimits::Limits::_encode_limit(4, 2, 3, 4, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810,
-        700, 1261801504, 2061801504);
+        BOM::CompanyLimits::Limits::_encode_limit(4, 2, 3, 4, 10000, 1300000000, 1700000000, 559, 1500000000, 1900000000, 30, 1200000000, 1900000000,
+        700, 1200000000, 2000000000);
     $decoded = BOM::CompanyLimits::Limits::_decode_limit($encoded);
     is_deeply(
         $decoded,
-        [4, 2, 3, 4, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810, 700, 1261801504, 2061801504],
+        [4, 2, 3, 4, 10000, 1300000000, 1700000000, 559, 1500000000, 1900000000, 30, 1200000000, 1900000000, 700, 1200000000, 2000000000],
         'there is four type of limit, so need to specify the 3 offset and all the remaining limits'
     );
 };
 
 subtest '_extract_limit_by_group and _collapse_limit_by_group', sub {
-    my $extracted = BOM::CompanyLimits::Limits::_extract_limit_by_group(1, 10000, 1561801504, 1561801810);
-    is_deeply($extracted, [[10000, 1561801504, 1561801810]], '');
+    my $extracted = BOM::CompanyLimits::Limits::_extract_limit_by_group(1, 10000, 1500000000, 1600000000);
+    is_deeply($extracted, [[10000, 1500000000, 1600000000]], '');
 
     my $collapsed = BOM::CompanyLimits::Limits::_collapse_limit_by_group($extracted);
-    is_deeply($collapsed, [1, 10000, 1561801504, 1561801810], '');
+    is_deeply($collapsed, [1, 10000, 1500000000, 1600000000], '');
 
-    $extracted = BOM::CompanyLimits::Limits::_extract_limit_by_group(2, 2, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504,
-        1961801810);
-    is_deeply($extracted, [[10000, 1561801504, 1561801810, 559, 1561801504, 1961801810], [30, 1261801504, 1961801810]], '');
+    $extracted = BOM::CompanyLimits::Limits::_extract_limit_by_group(2, 2, 10000, 1500000000, 1600000000, 559, 1600000000, 1700000000, 30, 1800000000,
+        1900000000);
+    is_deeply($extracted, [[10000, 1500000000, 1600000000, 559, 1600000000, 1700000000], [30, 1800000000, 1900000000]], '');
     $collapsed = BOM::CompanyLimits::Limits::_collapse_limit_by_group($extracted);
-    is_deeply($collapsed, [2, 2, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810], '');
-
-    $extracted =
-        BOM::CompanyLimits::Limits::_extract_limit_by_group(4, 2, 3, 4, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504,
-        1961801810, 700, 1261801504, 2061801504);
-    is_deeply($extracted,
-        [[10000, 1561801504, 1561801810, 559, 1561801504, 1961801810], [30, 1261801504, 1961801810], [700, 1261801504, 2061801504], []], '');
-    $collapsed = BOM::CompanyLimits::Limits::_collapse_limit_by_group($extracted);
-    is_deeply($collapsed,
-        [4, 2, 3, 4, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810, 700, 1261801504, 2061801504], '');
+    is_deeply($collapsed, [2, 2, 10000, 1500000000, 1600000000, 559, 1600000000, 1700000000, 30, 1800000000, 1900000000], '');
 
     $extracted =
-        BOM::CompanyLimits::Limits::_extract_limit_by_group(4, 1, 2, 3, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504,
-        1961801810, 700, 1261801504, 2061801504);
+        BOM::CompanyLimits::Limits::_extract_limit_by_group(4, 2, 3, 4, 10000, 1200000000, 1400000000, 559, 1500000000, 1600000000, 30, 1700000000,
+        1800000000, 700, 1900000000, 2000000000);
     is_deeply($extracted,
-        [[10000, 1561801504, 1561801810], [559, 1561801504, 1961801810], [30, 1261801504, 1961801810], [700, 1261801504, 2061801504]], '');
+        [[10000, 1200000000, 1400000000, 559, 1500000000, 1600000000], [30, 1700000000, 1800000000], [700, 1900000000, 2000000000], []], '');
     $collapsed = BOM::CompanyLimits::Limits::_collapse_limit_by_group($extracted);
     is_deeply($collapsed,
-        [4, 1, 2, 3, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810, 700, 1261801504, 2061801504], '');
+        [4, 2, 3, 4, 10000, 1200000000, 1400000000, 559, 1500000000, 1600000000, 30, 1700000000, 1800000000, 700, 1900000000, 2000000000], '');
 
     $extracted =
-        BOM::CompanyLimits::Limits::_extract_limit_by_group(4, 4, 4, 4, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504,
-        1961801810, 700, 1261801504, 2061801504);
+        BOM::CompanyLimits::Limits::_extract_limit_by_group(4, 1, 2, 3, 10000, 1500000000, 1600000000, 559, 1600000000, 1700000000, 30, 1800000000,
+        1900000000, 700, 1900000000, 2000000000);
     is_deeply($extracted,
-        [[10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810, 700, 1261801504, 2061801504], [], [], []], '');
+        [[10000, 1500000000, 1600000000], [559, 1600000000, 1700000000], [30, 1800000000, 1900000000], [700, 1900000000, 2000000000]], '');
     $collapsed = BOM::CompanyLimits::Limits::_collapse_limit_by_group($extracted);
     is_deeply($collapsed,
-        [4, 4, 4, 4, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810, 700, 1261801504, 2061801504], '');
+        [4, 1, 2, 3, 10000, 1500000000, 1600000000, 559, 1600000000, 1700000000, 30, 1800000000, 1900000000, 700, 1900000000, 2000000000], '');
+
+    $extracted =
+        BOM::CompanyLimits::Limits::_extract_limit_by_group(4, 4, 4, 4, 10000, 1500000000, 1600000000, 559, 1600000000, 1700000000, 30, 1800000000,
+        1900000000, 700, 1900000000, 2000000000);
+    is_deeply($extracted,
+        [[10000, 1500000000, 1600000000, 559, 1600000000, 1700000000, 30, 1800000000, 1900000000, 700, 1900000000, 2000000000], [], [], []], '');
+    $collapsed = BOM::CompanyLimits::Limits::_collapse_limit_by_group($extracted);
+    is_deeply($collapsed,
+        [4, 4, 4, 4, 10000, 1500000000, 1600000000, 559, 1600000000, 1700000000, 30, 1800000000, 1900000000, 700, 1900000000, 2000000000], '');
 
 };
 
 subtest '_get_decoded_limit', sub {
     _clean_redis();
 
-    my $encoded = BOM::CompanyLimits::Limits::_encode_limit(4, 1, 2, 3, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504,
-                1961801810, 700, 1261801504, 2061801504);
+    my $encoded = BOM::CompanyLimits::Limits::_encode_limit(4, 1, 2, 3, 10000, 1500000000, 1600000000, 559, 1700000000, 1800000000, 30, 1900000000,
+        2000000000, 700, 1800000000, 2000000000);
     BOM::Config::RedisReplicated::redis_limits_write->hset('LIMITS', 'frxUSDJPY,,,t', $encoded);
     my $decoded = BOM::CompanyLimits::Limits::_get_decoded_limit('frxUSDJPY,,,t');
     is_deeply($decoded,
-        [4, 1, 2, 3, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810, 700, 1261801504, 2061801504], '');
+        [4, 1, 2, 3, 10000, 1500000000, 1600000000, 559, 1700000000, 1800000000, 30, 1900000000, 2000000000, 700, 1800000000, 2000000000], '');
 };
 
 subtest 'process_and_get_active_limit', sub {
@@ -174,20 +167,23 @@ subtest 'add_limit and get_limit', sub {
     # TODO: do a for loop through the whole thing per underlying group
     # TODO: add get_limit test
     # TODO: test get_limit
-    _clean_redis();
-    
-    my $encoded = BOM::CompanyLimits::Limits::_encode_limit(1, 10000, 1561801504, 1561801810);
-    BOM::Config::RedisReplicated::redis_limits_write->hset('LIMITS', 'frxUSDJPY,,,t', $encoded);
-    my $limit = BOM::CompanyLimits::Limits::add_limit('POTENTIAL_LOSS', 'frxUSDJPY,,,t', 39, 1561801504, 1561801810);
-    cmp_ok $limit, 'eq', '1 39 1561801504 1561801810 10000 1561801504 1561801810', '';
-    
-    $encoded = BOM::CompanyLimits::Limits::_encode_limit(1, 39, 1561801504, 1561801810, 10000, 1561801504, 1561801810);
-    $limit = BOM::CompanyLimits::Limits::add_limit('POTENTIAL_LOSS', 'frxUSDJPY,,,t', 10, 0, 0);
-    cmp_ok $limit, 'eq', '1 10 0 0 39 1561801504 1561801810 10000 1561801504 1561801810', '';
 
-    $encoded = BOM::CompanyLimits::Limits::_encode_limit(1, 10, 0, 0, 39, 1561801504, 1561801810, 10000, 1561801504, 1561801810);
-    $limit = BOM::CompanyLimits::Limits::add_limit('POTENTIAL_LOSS', 'frxUSDJPY,,,t', 30, 1261801504, 1961801810);
-    cmp_ok $limit, 'eq', '1 10 0 0 30 1261801504 1961801810 39 1561801504 1561801810 10000 1561801504 1561801810', '';
+    _clean_redis();
+    my $encoded = BOM::CompanyLimits::Limits::_encode_limit(1, 10000, 1500000000, 1800000000);
+    BOM::Config::RedisReplicated::redis_limits_write->hset('LIMITS', 'frxUSDJPY,,,t', $encoded);
+    my $limit = BOM::CompanyLimits::Limits::add_limit('POTENTIAL_LOSS', 'frxUSDJPY,,,t', 39, 1500000000, 1800000000);
+    cmp_ok $limit, 'eq', '1 39 1500000000 1800000000 10000 1500000000 1800000000', '';
+
+    _clean_redis();
+    $encoded = BOM::CompanyLimits::Limits::_encode_limit(1, 39, 1500000000, 1800000000, 10000, 1900000000, 2000000000);
+    BOM::Config::RedisReplicated::redis_limits_write->hset('LIMITS', 'frxUSDJPY,,,t', $encoded);
+    $limit = BOM::CompanyLimits::Limits::add_limit('POTENTIAL_LOSS', 'frxUSDJPY,,,t', 10, 0, 0);
+    cmp_ok $limit, 'eq', '1 10 0 0 39 1500000000 1800000000 10000 1900000000 2000000000', '';
+
+    $encoded = BOM::CompanyLimits::Limits::_encode_limit(1, 10, 0, 0, 39, 1400000000, 1500000000, 10000, 1900000000, 2000000000);
+    BOM::Config::RedisReplicated::redis_limits_write->hset('LIMITS', 'frxUSDJPY,,,t', $encoded);
+    $limit = BOM::CompanyLimits::Limits::add_limit('POTENTIAL_LOSS', 'frxUSDJPY,,,t', 30, 1200000000, 1300000000);
+    cmp_ok $limit, 'eq', '1 10 0 0 30 1200000000 1300000000 39 1400000000 1500000000 10000 1900000000 2000000000', '';
 
 };
 
