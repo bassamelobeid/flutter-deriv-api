@@ -14,7 +14,7 @@ use Data::Dump 'pp';
 # examples:
 #
 # $ perl submit-one.pl ping
-# { result => "success" }
+# { result => "pong" }
 #
 # $ perl submit-one.pl sleep seconds=5
 # { result => "success", success => 1 }

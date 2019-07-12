@@ -204,6 +204,7 @@ sub run_worker_process {
         my $worker = Job::Async::Worker::Redis->new(
             uri                 => 'redis://127.0.0.1',
             max_concurrent_jobs => 1,
+            use_multi           => 1,
             timeout             => 5
         ));
 
@@ -235,7 +236,7 @@ sub run_worker_process {
             if ($name eq "ping") {
                 $_->done(
                     encode_json_utf8({
-                            result => "success",
+                            result => "pong",
                             (exists $params->{req_id}      ? (req_id      => $params->{req_id})      : ()),
                             (exists $params->{passthrough} ? (passthrough => $params->{passthrough}) : ()),
                         }));
