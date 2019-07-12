@@ -1,3 +1,5 @@
+#!/etc/rmg/bin/perl 
+
 use strict;
 use warnings;
 
@@ -15,15 +17,22 @@ use Syntax::Keyword::Try;
 
 use Getopt::Long;
 use Log::Any qw($log);
-use Log::Any::Adapter qw(Stdout), log_level => 'info';
+use Log::Any::Adapter qw(Stderr), log_level => 'info';
 
 GetOptions(
     'testing|T'    => \my $TESTING,
     'foreground|f' => \my $FOREGROUND,
     'workers|w=i'  => \(my $WORKERS = 4),
     'socket|S=s'   => \(my $SOCKETPATH),
-    'redis|R=i'     => \(my $REDIS),
+    'redis|R=s'     => \(my $REDIS),
+    'pid-file|P=s' => \(my $pid_file),
 ) or exit 1;
+
+if ($pid_file) {
+    $pid_file = Path::Tiny->new($pid_file);
+    $pid_file->spew($$);
+}
+
 
 exit run_worker_process() if $FOREGROUND;
 
