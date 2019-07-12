@@ -15,6 +15,12 @@ use Date::Utility;
 # TODO: error validations for each function
 # TODO: write helper for test case such as encoding
 # TODO: add error messages
+# TODO: nuke all redis limits keys used in the algo to test things out.
+
+#BOM::Config::RedisReplicated::redis_limits_write->hset('LIMITS', $key, $encoded_limits);
+sub _clean_redis {
+    BOM::Config::RedisReplicated::redis_limits_write->flushall();
+}
 
 subtest '_add_limit_value', sub {
     # TODO: make testcase more indendent instead of having to rely on previous output
@@ -123,6 +129,7 @@ subtest '_extract_limit_by_group and _collapse_limit_by_group', sub {
 
 my $mock_redis = Test::MockModule->new('RedisDB');
 subtest '_get_decoded_limit', sub {
+    _clean_redis();
     $mock_redis->mock(
         hget => sub {
             return BOM::CompanyLimits::Limits::_encode_limit(4, 1, 2, 3, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504,
@@ -167,6 +174,7 @@ subtest 'process_and_get_active_limit', sub {
 };
 
 subtest 'add_limit and get_limit', sub {
+    _clean_redis();
     my ($loss_type, $key, $amount, $start_epoch, $end_epoch) = @_;
 
     # TODO: do a for loop through the whole thing per underlying group
