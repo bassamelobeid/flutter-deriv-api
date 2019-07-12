@@ -7,9 +7,12 @@ use BOM::Test::Script;
 
 sub new {
     my ($class, $redis_server) = @_;
-    my $script;
+
     my $socket = '/tmp/binary_jobqueue_worker.sock';
-    my $url    = $redis_server->url;
+    $redis_server->url =~ /.*:(\d+)\D?$/;
+    my $url = 'redis://127.0.0.1:' . $1;
+
+    my $script;
     if (BOM::Test::on_qa()) {
         $script = BOM::Test::Script->new(
             script => "/home/git/regentmarkets/bom-rpc/bin/binary_jobqueue_worker.pl",
