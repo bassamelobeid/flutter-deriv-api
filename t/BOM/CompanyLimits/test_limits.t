@@ -127,18 +127,15 @@ subtest '_extract_limit_by_group and _collapse_limit_by_group', sub {
 
 };
 
-my $mock_redis = Test::MockModule->new('RedisDB');
 subtest '_get_decoded_limit', sub {
     _clean_redis();
-    $mock_redis->mock(
-        hget => sub {
-            return BOM::CompanyLimits::Limits::_encode_limit(4, 1, 2, 3, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504,
+
+    my $encoded = BOM::CompanyLimits::Limits::_encode_limit(4, 1, 2, 3, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504,
                 1961801810, 700, 1261801504, 2061801504);
-        });
+    BOM::Config::RedisReplicated::redis_limits_write->hset('LIMITS', 'frxUSDJPY,,,t', $encoded);
     my $decoded = BOM::CompanyLimits::Limits::_get_decoded_limit('frxUSDJPY,,,t');
     is_deeply($decoded,
         [4, 1, 2, 3, 10000, 1561801504, 1561801810, 559, 1561801504, 1961801810, 30, 1261801504, 1961801810, 700, 1261801504, 2061801504], '');
-    $mock_redis->unmock('hget');
 };
 
 subtest 'process_and_get_active_limit', sub {
@@ -174,29 +171,23 @@ subtest 'process_and_get_active_limit', sub {
 };
 
 subtest 'add_limit and get_limit', sub {
-    _clean_redis();
-    my ($loss_type, $key, $amount, $start_epoch, $end_epoch) = @_;
-
     # TODO: do a for loop through the whole thing per underlying group
     # TODO: add get_limit test
     # TODO: test get_limit
-
-    $mock_redis->mock(hget => sub { return BOM::CompanyLimits::Limits::_encode_limit(1, 10000, 1561801504, 1561801810); });
+    _clean_redis();
+    
+    my $encoded = BOM::CompanyLimits::Limits::_encode_limit(1, 10000, 1561801504, 1561801810);
+    BOM::Config::RedisReplicated::redis_limits_write->hset('LIMITS', 'frxUSDJPY,,,t', $encoded);
     my $limit = BOM::CompanyLimits::Limits::add_limit('POTENTIAL_LOSS', 'frxUSDJPY,,,t', 39, 1561801504, 1561801810);
     cmp_ok $limit, 'eq', '1 39 1561801504 1561801810 10000 1561801504 1561801810', '';
-    $mock_redis->unmock('hget');
-
-    $mock_redis->mock(hget => sub { return BOM::CompanyLimits::Limits::_encode_limit(1, 39, 1561801504, 1561801810, 10000, 1561801504, 1561801810); }
-    );
+    
+    $encoded = BOM::CompanyLimits::Limits::_encode_limit(1, 39, 1561801504, 1561801810, 10000, 1561801504, 1561801810);
     $limit = BOM::CompanyLimits::Limits::add_limit('POTENTIAL_LOSS', 'frxUSDJPY,,,t', 10, 0, 0);
     cmp_ok $limit, 'eq', '1 10 0 0 39 1561801504 1561801810 10000 1561801504 1561801810', '';
-    $mock_redis->unmock('hget');
 
-    $mock_redis->mock(
-        hget => sub { return BOM::CompanyLimits::Limits::_encode_limit(1, 10, 0, 0, 39, 1561801504, 1561801810, 10000, 1561801504, 1561801810); });
+    $encoded = BOM::CompanyLimits::Limits::_encode_limit(1, 10, 0, 0, 39, 1561801504, 1561801810, 10000, 1561801504, 1561801810);
     $limit = BOM::CompanyLimits::Limits::add_limit('POTENTIAL_LOSS', 'frxUSDJPY,,,t', 30, 1261801504, 1961801810);
     cmp_ok $limit, 'eq', '1 10 0 0 30 1261801504 1961801810 39 1561801504 1561801810 10000 1561801504 1561801810', '';
-    $mock_redis->unmock('hget');
 
 };
 
