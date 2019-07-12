@@ -34,7 +34,7 @@ subtest mask_tokens => sub {
 
     my $data = {authorize => 'secret'};
     Binary::WebSocketAPI::Hooks::filter_sensitive_fields($schema, $data);
-    is($data->{authorize}, '### Sensitive ###', 'result filtered');
+    is($data->{authorize}, '<not shown>', 'result filtered');
 
     my $schema_array = {
         '$schema'  => "http://json-schema.org/draft-04/schema#",
@@ -56,7 +56,7 @@ subtest mask_tokens => sub {
         price  => 12.30
     };
     Binary::WebSocketAPI::Hooks::filter_sensitive_fields($schema_array, $data);
-    my $expected = ['### Sensitive ###', '### Sensitive ###', '### Sensitive ###'];
+    my $expected = ['<not shown>', '<not shown>', '<not shown>'];
     is_deeply($data->{tokens}, $expected, 'array has been filtered');
 
     $data = {
@@ -76,7 +76,42 @@ subtest mask_tokens => sub {
             name => {type => 'string'}}};
     $schema_array->{properties}->{nested} = $nested_object;
     Binary::WebSocketAPI::Hooks::filter_sensitive_fields($schema_array, $data);
-    is($data->{nested}->{token}, '### Sensitive ###', 'filtered nested object');
+    is($data->{nested}->{token}, '<not shown>', 'filtered nested object');
+    
+    $data = {
+        nested_things => [    
+            {
+                token => 'token1',
+                name  => 'fred',
+            },
+            {
+                token => 'token2',
+                name  => 'donald',
+            }
+        ]
+    };
+    my $object_array = {
+        'properties' => {
+            'nested_things' => {
+                'type' => 'array',
+                'items' => {
+                    'type' => 'object',
+                    'properties' => {
+                       'token' => {
+                          'sensitive' => 1,
+                          'type' => 'string'
+                       },
+                       "name" => {
+                           'type' => 'string'
+                       }
+                    }
+                }
+            }
+        }
+    };
+    Binary::WebSocketAPI::Hooks::filter_sensitive_fields($object_array, $data);
+    is($data->{nested_things}[0]{token}, '<not shown>', 'filtered object array item 1');
+    is($data->{nested_things}[1]{token}, '<not shown>', 'filtered object array item 2');
 };
 
 sub encode_schemas {
