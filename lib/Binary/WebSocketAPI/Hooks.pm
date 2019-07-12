@@ -34,6 +34,8 @@ This is required as they are not stashed.
 
 =item  * C<request_type>   string - the name of the request type eg 'Proposal_array'
 
+=item  * C<direction>   string - send or receive, defaults to receive
+
 =back
 
 Returns version 4 schema
@@ -41,8 +43,12 @@ Returns version 4 schema
 =cut
 
 sub _load_schema {
-    my ($request_type) = @_;
+    my ($request_type, $direction) = @_;
+
+    return if $request_type eq 'error';
+    $direction //= 'receive';
     my $schema;
+
     #sometimes the msg_type does not match the schema dir name
     #mapped here msg_type on the left directory on the right
     my %schema_mapping = (
@@ -53,18 +59,16 @@ sub _load_schema {
 
     );
     $request_type = $schema_mapping{$request_type} || $request_type;
-    if (!$schema_cache{$request_type}) {
-        my $schema_path = $schemas_base . $request_type . '/receive.json';
+    if (!exists $schema_cache{$request_type}{$direction}) {
+        my $schema_path = $schemas_base . $request_type . '/' . $direction . '.json';
         if (!-e $schema_path) {
             $log->warnf('no schema found  for %s', $request_type);
             return {};
         }
-        my $receive_schema = path($schema_path);
-        $schema = decode_json($receive_schema->slurp);
-
-        $schema_cache{$request_type} = $schema;
+        $schema = decode_json(path($schema_path)->slurp);
+        $schema_cache{$request_type}{$direction} = $schema;
     }
-    return $schema_cache{$request_type},;
+    return $schema_cache{$request_type}{$direction};
 }
 
 sub start_timing {
@@ -327,6 +331,7 @@ sub output_validation {
     }
 
     my $error = _validate_schema_error($schema, $api_response);
+
     if ($error) {
         my $error_msg = join(" - ", (map { "$_:$error->{details}{$_}" } keys %{$error->{details}}), @{$error->{general}});
         $log->error("Schema validation failed for our own output [ "
@@ -479,18 +484,27 @@ Returns undef
 sub filter_sensitive_fields {
     my ($schema, $data) = @_;
     my $properties = $schema->{'properties'};
+    my $redact_str = '<not shown>';
+
     foreach my $attr (keys(%{$properties})) {
         my $current_attr = $properties->{$attr};
-        if (ref($current_attr) eq 'HASH' && ($current_attr->{'type'} // '') eq 'object') {
-            filter_sensitive_fields($current_attr, $data->{$attr});
+        my $attr_type = $current_attr->{'type'} // '';
+
+        if (ref($current_attr) eq 'HASH') {
+            if ($attr_type eq 'object') {
+                filter_sensitive_fields($current_attr, $data->{$attr});
+            } elsif ($attr_type eq 'array' && ref($current_attr->{items}) eq 'HASH' && ($current_attr->{items}{type} // '') eq 'object') {
+                filter_sensitive_fields($current_attr->{items}, $_) for $data->{$attr}->@*;
+            }
         }
+
         if (defined($data->{$attr}) && $current_attr->{'sensitive'}) {
             if ($current_attr->{type} eq 'array') {
                 my $array_count    = scalar(@{$data->{$attr}});
-                my @filtered_array = (('### Sensitive ###') x $array_count);
+                my @filtered_array = (($redact_str) x $array_count);
                 $data->{$attr} = \@filtered_array;
             } else {
-                $data->{$attr} = '### Sensitive ###';
+                $data->{$attr} = $redact_str;
             }
         }
     }
@@ -567,18 +581,17 @@ sub _handle_error {
 
 =head2 _sanitize_echo
 
-Final processing of echo_req to ensure we don't send anything sensitive in response
+Final processing of echo_req to ensure we don't send anything sensitive in response.
+Attributes marked with "sensitive" is in the send schema will be redacted.
 
 =cut
 
 sub _sanitize_echo {
     my ($params, $msg_type) = @_;
-    my $schema = _load_schema($msg_type);
-    for my $param ($params->%*) {
-        next unless $param;
-        next if (exists $schema->{properties}{$param} && $schema->{properties}{$param}{type} ne 'string');
-        $params->{$param} = '<not shown>' if ($param =~ /password$/i);
-    }
+
+    my $schema = _load_schema($msg_type, 'send');
+    filter_sensitive_fields($schema, $params);
+
     return $params;
 }
 
