@@ -19,13 +19,13 @@ use BOM::User::Utility;
 use BOM::User::Client;
 use BOM::Config::Runtime;
 use LandingCompany::Registry;
-
 use Exporter qw( import );
 our @EXPORT_OK = qw( is_payment_agents_suspended_in_country );
 
 sub dbic {
-    state $dbic = BOM::Database::UserDB::rose_db()->dbic;
-    return $dbic;
+    #not caching this as the handle is cached at a lower level and
+    #if it does cache a bad handle here it will not recover.
+    return BOM::Database::UserDB::rose_db()->dbic;
 }
 
 =head2 create
@@ -73,6 +73,7 @@ sub new {
     my ($class, %args) = @_;
     my $k = first { exists $args{$_} } qw(id email loginid);
     croak "no email nor id or loginid" unless $k;
+
     my $v    = $args{$k};
     my $self = $class->dbic->run(
         fixup => sub {
