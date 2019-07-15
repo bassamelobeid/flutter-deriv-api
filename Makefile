@@ -20,7 +20,6 @@ localize:
 
 i18n:
 	xgettext.pl \
-		-P haml=haml \
 		-P tt2=tt,tt2 \
 		-P generic=html.ep \
 		-P perl=pl,pm,cgi \

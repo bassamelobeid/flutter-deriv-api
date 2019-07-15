@@ -13,8 +13,11 @@ echo '{"lock":true}' | curl -X POST -d '@-' -H "Content-Type: application/json" 
 # starting point from which to run a build
 git config user.name "Automated translations build"
 git config user.email "sysadmin@binary.com"
+git checkout master
+git pull --rebase
+git remote set-branches --add origin translations
+git fetch --depth 1 -v origin translations
 git checkout translations
-git fetch origin
 git pull --rebase
 git merge origin/master
 
