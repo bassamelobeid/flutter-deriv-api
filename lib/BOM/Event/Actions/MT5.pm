@@ -23,6 +23,7 @@ use Date::Utility;
 use Text::CSV;
 use Path::Tiny qw(tempdir);
 use JSON::MaybeUTF8 qw/encode_json_utf8/;
+use DataDog::DogStatsd::Helper;
 
 use Future;
 use IO::Async::Loop;
@@ -52,7 +53,11 @@ Sync user information to MT5
 
 =over 4
 
-=item * C<data> - data passed in from BOM::Event::Process::process
+=item * C<data> - data passed in from BOM::Event::Process::process, which is a hashref and have the following keys:
+
+=item * C<loginid> - the login ID for the client to sync data
+
+=item * C<tried_times> - Number of times that this event has been tried
 
 =back
 
@@ -61,7 +66,6 @@ Sync user information to MT5
 sub sync_info {
     my $data = shift;
     return undef unless $data->{loginid};
-
     my $client = BOM::User::Client->new({loginid => $data->{loginid}});
     return 1 if $client->is_virtual;
 
@@ -82,19 +86,40 @@ sub sync_info {
                         login  => $login,
                         rights => $mt_user->{rights},
                         %{$client->get_mt5_details()}});
+            }
+            )->then(
+            sub {
+                my $result = shift;
+                return Future->fail($result->{error}) if $result->{error};
+                return Future->done($result);
             });
         push @update_operations, $operation;
     }
 
-    my $result = Future->needs_all(@update_operations)->get();
-
-    if ($result->{error}) {
-        $log->warn("Failed to sync client $data->{loginid} information to MT5: $result->{error}");
-        BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $data->{loginid}});
-        return 0;
-    }
-
-    return 1;
+    return Future->needs_all(@update_operations)->then_done(1)->else(
+        sub {
+            my $error = shift;
+            $log->warn("Failed to sync client $data->{loginid} information to MT5: $error");
+            my $brands = Brands->new();
+            my $tried_times = $data->{tried_times} // 0;
+            $tried_times++;
+            # if that error cannot recoverable
+            if ($error =~ /Not found/i) {
+                DataDog::DogStatsd::Helper::stats_inc('event.mt5.sync_info.unrecoverable_error');
+            } elsif ($tried_times < 5) {
+                BOM::Platform::Event::Emitter::emit(
+                    'sync_user_to_MT5',
+                    {
+                        loginid     => $data->{loginid},
+                        tried_times => $tried_times
+                    });
+            }
+            # we tried too many times already
+            else {
+                DataDog::DogStatsd::Helper::stats_inc('event.mt5.sync_info.retried_error');
+            }
+            return Future->done(0);
+        })->get();
 }
 
 sub redis_record_mt5_transfer {
