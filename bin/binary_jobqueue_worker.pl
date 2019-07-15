@@ -24,7 +24,7 @@ GetOptions(
     'foreground|f' => \my $FOREGROUND,
     'workers|w=i'  => \(my $WORKERS = 4),
     'socket|S=s'   => \(my $SOCKETPATH),
-    'redis|R=s'     => \(my $REDIS),
+    'redis|R=s'    => \(my $REDIS),
     'pid-file|P=s' => \(my $pid_file),
 ) or exit 1;
 
@@ -114,16 +114,16 @@ sub takeover_coordinator {
 }
 
 sub run_coordinator {
-add_worker_process() while keys %workers < $WORKERS;
+    add_worker_process() while keys %workers < $WORKERS;
 
-$SIG{TERM} = $SIG{INT} = sub {
-$WORKERS = 0;
+    $SIG{TERM} = $SIG{INT} = sub {
+        $WORKERS = 0;
 
-Future->needs_all(map { $_->shutdown('TERM', timeout => 15) } values %workers)->get;
+        Future->needs_all(map { $_->shutdown('TERM', timeout => 15) } values %workers)->get;
 
-unlink $SOCKETPATH;
-
-exit 0;
+        unlink $SOCKETPATH;
+        unlink $pid_file if $pid_file;
+        exit 0;
     };
 
     if ($pid_file) {
@@ -135,58 +135,56 @@ exit 0;
 }
 
 sub handle_ctrl_command {
-my ($cmd, $conn) = @_;
-print STDERR "Control command> $cmd\n";
+    my ($cmd, $conn) = @_;
+    print STDERR "Control command> $cmd\n";
 
-$cmd =~ s/-/_/g;
-if (my $code = __PACKAGE__->can("handle_ctrl_command_$cmd")) {
-    $code->($conn);
-} else {
-    print STDERR "Ignoring unrecognised control command\n";
-}
+    $cmd =~ s/-/_/g;
+    if (my $code = __PACKAGE__->can("handle_ctrl_command_$cmd")) {
+        $code->($conn);
+    } else {
+        print STDERR "Ignoring unrecognised control command\n";
+    }
 }
 
 sub handle_ctrl_command_DEC_WORKERS {
-my ($conn) = @_;
+    my ($conn) = @_;
 
-$WORKERS--;
-while(keys %workers > $WORKERS) {
-    # Arbitrarily pick a victim
-    my $worker_to_die = delete $workers{(keys %workers)[0]};
-    $worker_to_die->shutdown('TERM', timeout => 15)
-    ->on_done(sub { $conn->write("WORKERS " . scalar(keys %workers) . "\n") })
-->retain;
+    $WORKERS--;
+    while (keys %workers > $WORKERS) {
+        # Arbitrarily pick a victim
+        my $worker_to_die = delete $workers{(keys %workers)[0]};
+        $worker_to_die->shutdown('TERM', timeout => 15)->on_done(sub { $conn->write("WORKERS " . scalar(keys %workers) . "\n") })->retain;
     }
 }
 
 sub handle_ctrl_command_EXIT {
 # Immediate exit; don't use the SIGINT shutdown part
-exit 0;
+    exit 0;
 }
 
 sub add_worker_process {
-my $worker = IO::Async::Process::GracefulShutdown->new(
-    code => sub {
-    undef $loop;
-    undef $IO::Async::Loop::ONE_TRUE_LOOP;
+    my $worker = IO::Async::Process::GracefulShutdown->new(
+        code => sub {
+            undef $loop;
+            undef $IO::Async::Loop::ONE_TRUE_LOOP;
 
-    print STDERR "[$$] worker process waiting\n";
-    $log->{context}{pid} = $$;
-    return run_worker_process();
-},
-on_finish => sub {
-my ($worker, $exitcode) = @_;
-my $pid = $worker->pid;
+            print STDERR "[$$] worker process waiting\n";
+            $log->{context}{pid} = $$;
+            return run_worker_process();
+        },
+        on_finish => sub {
+            my ($worker, $exitcode) = @_;
+            my $pid = $worker->pid;
 
-print STDERR "Worker $pid exited code $exitcode\n";
+            print STDERR "Worker $pid exited code $exitcode\n";
 
-delete $workers{$worker->pid};
+            delete $workers{$worker->pid};
 
-return if keys %workers >= $WORKERS;
+            return if keys %workers >= $WORKERS;
 
-print STDERR "Restarting\n";
+            print STDERR "Restarting\n";
 
-$loop->delay_future(after => 1)->on_done(sub { add_worker_process() })->retain;
+            $loop->delay_future(after => 1)->on_done(sub { add_worker_process() })->retain;
         },
     );
 
@@ -194,37 +192,36 @@ $loop->delay_future(after => 1)->on_done(sub { add_worker_process() })->retain;
     $workers{$worker->pid} = $worker;
 }
 
-
 sub run_worker_process {
-my $loop = IO::Async::Loop->new;
+    my $loop = IO::Async::Loop->new;
 
-require BOM::RPC::Registry;
-require BOM::RPC;    # This will load all the RPC methods into registry as a side-effect
+    require BOM::RPC::Registry;
+    require BOM::RPC;    # This will load all the RPC methods into registry as a side-effect
 
-if ($TESTING) {
-    # Running for a unit test; so start it up in test mode
-    print STDERR "! Running in unit-test mode !\n";
-    require BOM::Test;
-    BOM::Test->import;
+    if ($TESTING) {
+        # Running for a unit test; so start it up in test mode
+        print STDERR "! Running in unit-test mode !\n";
+        require BOM::Test;
+        BOM::Test->import;
 
-    require BOM::MT5::User::Async;
-    no warnings 'once';
-    @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
-}
+        require BOM::MT5::User::Async;
+        no warnings 'once';
+        @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
+    }
 
-$loop->add(
-    my $worker = Job::Async::Worker::Redis->new(
-        uri                 => $REDIS // 'redis://127.0.0.1',
-        max_concurrent_jobs => 1,
-        use_multi           => 1,
-        timeout             => 5
-    ));
+    $loop->add(
+        my $worker = Job::Async::Worker::Redis->new(
+            uri => $REDIS // 'redis://127.0.0.1',
+            max_concurrent_jobs => 1,
+            use_multi           => 1,
+            timeout             => 5
+        ));
 
-my $stopping;
-$loop->attach_signal(
-    TERM => sub {
-    return if $stopping++;
-    $worker->stop->on_done(sub { exit 0; })->retain;
+    my $stopping;
+    $loop->attach_signal(
+        TERM => sub {
+            return if $stopping++;
+            $worker->stop->on_done(sub { exit 0; })->retain;
         });
     $SIG{INT} = 'IGNORE';
 
@@ -240,20 +237,24 @@ $loop->attach_signal(
     # Result: JSON-encoded result
     $worker->jobs->each(
         sub {
-        my $job = $_;
-        my $name = $job->data('name');
-        my $params = decode_json_utf8($job->data('params'));
+            my $job    = $_;
+            my $name   = $job->data('name');
+            my $params = decode_json_utf8($job->data('params'));
 
-        my $queue_time = $job->data('rpc_queue_client_tv');
-        my ($queue) = $worker->pending_queues;
-        my $tags = {tags => ["method:$name", 'queue:'.$queue]}; #TODO: replace with a more reliable value
-        stats_gauge('rpc_queue.worker.length', scalar(keys ($worker->{pending_jobs}->%*)), $tags);
-        stats_inc("rpc_queue.worker.calls", $tags);
-        stats_gauge("rpc_queue.client.latency", 1000 * Time::HiRes::tv_interval($queue_time), $tags) if $queue_time;
+            my $queue_time = $job->data('rpc_queue_client_tv');
+            my ($queue)    = $worker->pending_queues;
+            my $tags       = {tags => ["method:$name", 'queue:' . $queue]};    #TODO: replace with a more reliable value
+            stats_gauge('rpc_queue.worker.length', scalar(keys($worker->{pending_jobs}->%*)), $tags);
+            stats_inc("rpc_queue.worker.calls", $tags);
+            stats_gauge("rpc_queue.client.latency", 1000 * Time::HiRes::tv_interval($queue_time), $tags) if $queue_time;
 
-        # Handle a 'ping' request immediately here
-        if ($name eq "ping") {
-            $_->done(encode_json_utf8({success => 1, result => 'pong'}));
+            # Handle a 'ping' request immediately here
+            if ($name eq "ping") {
+                $_->done(
+                    encode_json_utf8({
+                            success => 1,
+                            result  => 'pong'
+                        }));
                 return;
             }
 
@@ -263,11 +264,19 @@ $loop->attach_signal(
                 my $result = $code->($params);
                 print STDERR "Result:\n" . join("\n", map { " | $_" } split m/\n/, pp($result)) . "\n";
 
-                $_->done(encode_json_utf8({success => 1, result  => $result}));
+                $_->done(
+                    encode_json_utf8({
+                            success => 1,
+                            result  => $result
+                        }));
             } else {
                 print STDERR "  UNKNOWN\n";
                 # Transport mechanism itself succeeded, so ->done is fine here
-                $_->done(encode_json_utf8({success => 0, error   => "Unknown RPC name '$name'"}));
+                $_->done(
+                    encode_json_utf8({
+                            success => 0,
+                            error   => "Unknown RPC name '$name'"
+                        }));
             }
         });
 
