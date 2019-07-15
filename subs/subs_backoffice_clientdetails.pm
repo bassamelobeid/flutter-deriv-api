@@ -116,8 +116,7 @@ sub get_professional_status {
 
 sub print_client_details {
 
-    my $client          = shift;
-    my $is_virtual_only = shift;
+    my $client = shift;
 
     # IDENTITY SECTION
     my @salutation_options = BOM::Backoffice::FormAccounts::GetSalutations();
@@ -284,7 +283,6 @@ sub print_client_details {
         tax_residence                      => \@tax_residences,
         tax_residences_countries_name      => $tax_residences_countries_name,
         cashier_allow_payment_agent_status => $client->status->pa_withdrawal_explicitly_allowed,
-        can_change_residence               => $is_virtual_only,
         address_verification_status        => $client->status->address_verified,
         onfido_check_status                => $onfido_status{status},
         onfido_check_url                   => $onfido_status{url},

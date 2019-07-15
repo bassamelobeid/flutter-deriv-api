@@ -178,7 +178,7 @@ table#client_edit td{
     <tr>
         <td class="label">Residence</td>
         <td>:
-            <select name="residence" [% IF NOT can_change_residence %]disabled="disabled"[% END %]>
+            <select name="residence" onChange="residence_change(this);">
                 [% IF client.residence == "" %]
                     <option value="" selected="selected">Select Residence</option>
                 [% ELSE %]
@@ -187,12 +187,12 @@ table#client_edit td{
 
             [% FOREACH country = countries %]
                 [% IF country_codes.$country == client.residence %]
-                   <option value="[% country_codes.$country %]" selected="selected">[% country %]</option>
+                   <option value="[% country_codes.$country %]" selected="selected" id="original_residence">[% country %]</option>
                 [% ELSE %]
                    <option value="[% country_codes.$country %]">[% country %]</option>
                 [% END %]
             [% END %]
-            </select>[% IF NOT can_change_residence %]&nbsp;<span style="color:red;">Country can't be changed</span>[% END %]
+            </select>
         </td>
     </tr>
     <tr>
@@ -584,6 +584,19 @@ function get_checked_files() {
     } else {
         alert('No files selected');
         return false;
+    }
+}
+
+function residence_change(sel) {
+
+    var e = document.getElementById("original_residence");
+    var original_residence = e.text;
+
+    var new_residence = sel.options[sel.selectedIndex].text;
+
+    if(!confirm("Client's original residence is " + original_residence + "\n\nAre you sure you want to change to " + new_residence + "?")) {
+        // Always return to the original residence
+        sel.selectedIndex = e.index;
     }
 }
 

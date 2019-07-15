@@ -44,7 +44,6 @@ use BOM::Platform::S3Client;
 BOM::Backoffice::Sysinit::init();
 
 my %input = %{request()->params};
-
 PrintContentType();
 
 # /etc/mime.types should exist but just in case...
@@ -372,19 +371,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         input  => \%input,
     });
 
-    my @clients_to_update;
-
-    unless ($client->is_virtual) {
-        # Save real clients only
-        push @clients_to_update, grep { not $_->is_virtual } @user_clients;
-    } elsif ($is_virtual_only) {
-
-        # When there are no real accounts, CS still needs to be able to change the residence.
-        # However, the code here enables them to change all client details. It is not a big
-        # deal; virtual client details are not used once real clients are added.
-        push @clients_to_update, $client;
-    }
-
     # Active client specific update details:
     my $auth_method = 'dummy';
     if ($input{client_authentication}) {
@@ -485,9 +471,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         or ($input{date_of_birth} and $input{date_of_birth} ne $client->date_of_birth))
     {
         my $duplicate_account_details = _check_duplicates({
-            client               => $client,
-            input                => \%input,
-            only_virtual_account => $is_virtual_only
+            client => $client,
+            input  => \%input
         });
 
         if (@$duplicate_account_details) {
@@ -508,8 +493,48 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         }
     }
 
+    my $new_residence = delete $input{residence};
+
+    my @clients_to_update;
+
+    if ($new_residence) {
+
+        # Check if residence is valid or not
+        my $valid_change = _residence_change_validation({
+            old_residence   => $client->residence,
+            new_residence   => $new_residence,
+            all_clients     => \@user_clients,
+            is_virtual_only => $is_virtual_only,
+            has_mt5_logins  => @mt_logins ? 1 : 0
+        });
+
+        unless ($valid_change) {
+            my $self_href = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $client->loginid});
+            print qq{<p style="color:red">Invalid residence change, due to different broker codes or different country restrictions.</p>};
+            code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
+        }
+
+        $_->residence($new_residence) for @user_clients;
+
+        @clients_to_update = @user_clients;
+
+    } else {
+
+        # Two reasons for this check:
+        # 1. If other fields were updated in virtual, we should not saving anything.
+        # 2. In a real account, let's assume that didn't update the residence
+        # but updated other fields (first_name, last_name)
+        # Filter out virtual clients if residence is not updated VR does not have this data; only residence is needed.
+        # Hence: we'll end up making an extra call to VR database when none of the fields were updated
+        @clients_to_update = $client->is_virtual ? () : grep { not $_->is_virtual } @user_clients;
+    }
+
     # Updates that apply to both active client and its corresponding clients
     foreach my $cli (@clients_to_update) {
+
+        # For non-resident changes, we have to update only real accounts
+        next if ($cli->is_virtual || $client->is_virtual);
+
         # Prevent last_name and first_name from being set blank
         foreach (qw/last_name first_name/) {
             next unless exists $input{$_};
@@ -539,7 +564,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             city
             state
             postcode
-            residence
             place_of_birth
             restricted_ip_address
             cashier_setting_password
@@ -654,16 +678,20 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     # Save details for all clients
     foreach my $cli (@clients_to_update) {
         my $sync_error;
+
         if (not $cli->save) {
             code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $encoded_loginid</p></p>");
-        } elsif ($auth_method =~ /^(?:ID_NOTARIZED|ID_DOCUMENT$)/) {
-            # sync to doughflow once we authenticate client
+
+        } elsif (!$client->is_virtual && ($auth_method =~ /^(?:ID_NOTARIZED|ID_DOCUMENT$)/)) {
+            # sync to doughflow once we authenticate real client
             # need to do after client save so that all information is upto date
+
             $sync_error = sync_to_doughflow($cli, $clerk);
         }
 
         print "<p style=\"color:#eeee00; font-weight:bold;\">Client " . $cli->loginid . " saved</p>";
         print "<p style=\"color:#eeee00;\">$sync_error</p>" if $sync_error;
+
         BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $cli->loginid}) if ($cli->loginid eq $loginid);
     }
 
@@ -909,7 +937,7 @@ print qq[<form action="$self_post?loginID=$encoded_loginid" id="clientInfoForm" 
 
 # Get latest client object to make sure it contains updated client info (after editing client details form)
 $client = BOM::User::Client->new({loginid => $loginid});
-print_client_details($client, $is_virtual_only);
+print_client_details($client);
 
 my $INPUT_SELECTOR = 'input:not([type="hidden"]):not([type="submit"]):not([type="reset"]):not([type="button"])';
 
@@ -1148,6 +1176,85 @@ sub obfuscate_token {
     $t =~ s/(.*)(.{4})$/('*' x length $1).$2/e;
     return $t;
 
+}
+
+sub _residence_change_validation {
+    my $data = shift;
+
+    my $new_residence = $data->{new_residence};
+    my @all_clients   = @{$data->{all_clients}};
+
+    my $countries_instance = Brands->new()->countries_instance;
+
+    # Get the list of landing companies, as per residence
+    my $get_lc = sub {
+        my ($residence) = @_;
+
+        my @broker_list;
+
+        my $gc = $countries_instance->gaming_company_for_country($residence);
+        my $fc = $countries_instance->financial_company_for_country($residence);
+
+        return () unless ($gc || $fc);
+
+        # Either gc or fc is none, so that's why the check is needed
+        push @broker_list, $gc if $gc;
+        push @broker_list, $fc if $fc;
+
+        return uniq @broker_list;
+    };
+
+    # Check if the new residence is allowed to trade on MT5 or not
+    # NOTE: As per CS, financial accounts have a higher priority than gaming
+    my $allowed_to_trade_mt5 = sub {
+        my ($sub_account_type) = @_;
+
+        my $mt5_lc = $countries_instance->mt_company_for_country(
+            country          => $new_residence,
+            account_type     => 'financial',
+            sub_account_type => $sub_account_type
+        );
+
+        return $mt5_lc ne 'none';
+    };
+
+    my @new_lc = $get_lc->($new_residence);
+    return undef unless @new_lc;
+
+    # NOTE: GB residents are marked as unwelcome in their virtual, as per regulations
+    if ($data->{is_virtual_only}) {
+        my $client = $all_clients[0];
+
+        if ($new_residence eq 'gb') {
+            $client->status->set('unwelcome', 'SYSTEM', 'Pending proof of age');
+        } else {
+            $client->status->clear_unwelcome if $client->status->unwelcome;
+        }
+
+        return 1;
+    }
+
+    # Get the list of non-virtual landing companies from created clients
+    my @current_lc;
+    push @current_lc, $_->landing_company->short for grep { !$_->is_virtual } @all_clients;
+
+    # Since we exclude VR clients, so if they don't have a real account but have a MT5
+    # account, we need to get the landing companies in a different way
+    @current_lc = $get_lc->($data->{old_residence}) unless @current_lc;
+
+    # There is no need for repeated checks
+    foreach my $broker (uniq @current_lc) {
+        return undef unless any { $_ eq $broker } @new_lc;
+    }
+
+    # If the client has MT5 accounts but the new residence does not allow mt5 trading
+    # The change should not happen (Regulations)
+    if ($data->{has_mt5_logins}) {
+        return undef unless ($allowed_to_trade_mt5->('standard') || $allowed_to_trade_mt5->('advanced'));
+    }
+
+    # If the loop above passes, then it is valid to change
+    return 1;
 }
 
 sub _check_duplicates {
