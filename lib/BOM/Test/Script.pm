@@ -71,7 +71,7 @@ sub wait_till_exit {
         print "wait $pid...\n";
         sleep 1;
     }
-    note "Failed to stop script before timeout: " . $self->name if (time - $start >= $timeout);
+    print "Failed to stop script before timeout: " . $self->name if (time - $start >= $timeout);
     return;
 }
 
