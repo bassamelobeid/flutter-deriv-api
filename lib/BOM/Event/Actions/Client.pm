@@ -66,6 +66,7 @@ use constant ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY => 'ONFIDO_AUTHENTICATION_RE
 use constant ONFIDO_REQUEST_COUNT_KEY               => 'ONFIDO_REQUEST_COUNT';
 use constant ONFIDO_CHECK_EXCEEDED_KEY              => 'ONFIDO_CHECK_EXCEEDED';
 use constant ONFIDO_REPORT_KEY_PREFIX               => 'ONFIDO::REPORT::ID::';
+use constant ONFIDO_DOCUMENT_ID_PREFIX              => 'ONFIDO::DOCUMENT::ID::';
 
 use constant ONFIDO_SUPPORTED_COUNTRIES_KEY                    => 'ONFIDO_SUPPORTED_COUNTRIES';
 use constant ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT                => $ENV{ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT} // 7 * 86400;                     # 1 week
@@ -73,6 +74,9 @@ use constant ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_PREFIX  => 'ONFIDO::UNSUP
 use constant ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_TIMEOUT => $ENV{ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_TIMEOUT} // 24 * 60 * 60;
 use constant ONFIDO_AGE_EMAIL_PER_USER_PREFIX                  => 'ONFIDO::AGE::VERIFICATION::EMAIL::PER::USER::';
 use constant ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT                 => $ENV{ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT} // 24 * 60 * 60;
+use constant ONFIDO_EMPTY_POSTCODE_EMAIL_PER_USER_PREFIX       => 'ONFIDO::EMPTY::POSTCODE::EMAIL::PER::USER::';
+use constant ONFIDO_DOB_MISMATCH_EMAIL_PER_USER_PREFIX         => 'ONFIDO::DOB::MISMATCH::EMAIL::PER::USER::';
+use constant ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX   => 'ONFIDO::AGE::BELOW::EIGHTEEN::EMAIL::PER::USER::';
 
 # Conversion from our database to the Onfido available fields
 my %ONFIDO_DOCUMENT_TYPE_MAPPING = (
@@ -171,7 +175,7 @@ $loop->add(my $services = BOM::Event::Services->new);
 }
 
 #load Brands object globally,
-my $Brands = Brands->new();
+my $BRANDS = Brands->new();
 
 =head2 document_upload
 
@@ -239,6 +243,14 @@ async sub document_upload {
             document_entry => $document_entry,
             client         => $client
         );
+
+        unless ($client->address_postcode) {
+            await _send_report_automated_age_verification_failed(
+                $client,
+                'as post code is blank.',
+                ONFIDO_EMPTY_POSTCODE_EMAIL_PER_USER_PREFIX . $client->binary_user_id
+            );
+        }
 
         my $loop   = IO::Async::Loop->new;
         my $onfido = _onfido();
@@ -433,17 +445,6 @@ async sub client_verification {
 
             $log->debugf('Onfido pending key cleared');
 
-            # if overall result of check is pass then set status and
-            # return early, else check individual report result
-            if ($check_status eq 'pass') {
-                _update_client_status(
-                    client  => $client,
-                    status  => 'age_verification',
-                    message => 'Onfido - age verified'
-                );
-                return;
-            }
-
             # Skip facial similarity:
             # For current selfie we ask them to submit with ID document
             # that leads to sub optimal facial images and hence, it leads
@@ -452,16 +453,77 @@ async sub client_verification {
             try {
                 my @reports = await $check->reports->filter(name => 'document')->as_list;
 
-                if (any { $_->result eq 'clear' } @reports) {
-                    _update_client_status(
-                        client  => $client,
-                        status  => 'age_verification',
-                        message => 'Onfido - age verified'
-                    );
+                # Extract all clear documents to check consistency between DOBs
+                if (my @valid_doc = grep { (defined $_->{properties}->{date_of_birth} and $_->result eq 'clear') } @reports) {
+                    my %dob = map { ($_->{properties}{date_of_birth} // '') => 1 } @valid_doc;
+                    my ($first_dob, @other_dob) = keys %dob;
+                    # All documents should have the same date of birth
+                    if (@other_dob) {
+                        await _send_report_automated_age_verification_failed(
+                            $client,
+                            "as birth dates are not the same in the documents.",
+                            ONFIDO_DOB_MISMATCH_EMAIL_PER_USER_PREFIX . $client->binary_user_id
+                        );
+                    } else {
+                        # Override date_of_birth if there is mismatch between Onfido report and client submited data
+                        if ($client->date_of_birth ne $first_dob) {
+                            $client->date_of_birth($first_dob);
+                            $client->save;
+                            # Update applicant data
+                            BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $client->loginid});
+                            $log->debugf("Updating client's date of birth due to mismatch between Onfido's response and submitted information");
+                        }
+                        # Age verified if report is clear and age is above minimum allowed age, otherwise send an email to notify cs
+                        # Get the minimum age from the client's residence
+                        my $min_age = $BRANDS->countries_instance->minimum_age_for_country($client->residence);
+                        if (Date::Utility->new($first_dob)->is_before(Date::Utility->new->_minus_years($min_age))) {
+                            _update_client_status(
+                                client  => $client,
+                                status  => 'age_verification',
+                                message => 'Onfido - age verified'
+                            );
+                        } else {
+                            await _send_report_automated_age_verification_failed(
+                                $client,
+                                "because Onfido reported the date of birth as $first_dob which is below age 18.",
+                                ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX . $client->binary_user_id
+                            );
+                        }
+                    }
                 } else {
-                    await _send_report_not_clear_status_email($client, @reports ? $reports[0]->result : 'blank');
+                    my $result = @reports ? $reports[0]->result : 'blank';
+                    my $failure_reason = "as onfido result was marked as $result.";
+                    await _send_report_automated_age_verification_failed($client, $failure_reason,
+                        ONFIDO_AGE_EMAIL_PER_USER_PREFIX . $client->binary_user_id);
                 }
+                # Update expiration_date and document_id of each document in DB
+                # Using corresponding values in Onfido response
+                @reports = grep { $_->result eq 'clear' } @reports;
+                foreach my $report (@reports) {
+                    next if ($report->{properties}->{document_type} eq 'live_photo');
 
+                    # It seems that expiration date and document number of all documents in $report->{documents} list are similar
+                    my ($expiration_date, $doc_numbers) = @{$report->{properties}}{qw(date_of_expiry document_numbers)};
+
+                    foreach my $onfido_doc ($report->{documents}->@*) {
+                        my $onfido_doc_id = $onfido_doc->{id};
+                        await $redis_events_write->connect;
+                        my $db_doc_id = await $redis_events_write->get(ONFIDO_DOCUMENT_ID_PREFIX . $onfido_doc_id);
+                        if ($db_doc_id) {
+                            await $redis_events_write->del(ONFIDO_DOCUMENT_ID_PREFIX . $onfido_doc_id);
+                            # There is a possibility that corresponding DB document of onfido document has been deleted (e.g. by BO user)
+                            my ($db_doc) = $client->find_client_authentication_document(query => [id => $db_doc_id]);
+                            if ($db_doc) {
+                                $db_doc->expiration_date($expiration_date);
+                                $db_doc->document_id($doc_numbers->[0]->{value});
+                                if ($db_doc->save) {
+                                    $log->infof('Expiration_date and document_id of document %s for client %s have been updated',
+                                        $db_doc->id, $loginid);
+                                }
+                            }
+                        }
+                    }
+                }
                 return;
             }
             catch {
@@ -469,7 +531,6 @@ async sub client_verification {
                 $log->errorf('An error occurred while retrieving reports for client %s check %s: %s', $loginid, $check->id, $e);
                 die $e;
             }
-
         }
         catch {
             my $e = $@;
@@ -777,8 +838,8 @@ Send email to CS that a client has closed their accounts.
 sub account_closure {
     my $data = shift;
 
-    my $system_email  = $Brands->emails('system');
-    my $support_email = $Brands->emails('support');
+    my $system_email  = $BRANDS->emails('system');
+    my $support_email = $BRANDS->emails('support');
 
     _send_email_account_closure_cs($data, $system_email, $support_email);
 
@@ -849,8 +910,8 @@ sub _email_client_age_verified {
     return unless $client->landing_company()->{actions}->{account_verified}->{email_client};
 
     return if $client->status->age_verification;
-    my $from_email   = $Brands->emails('no-reply');
-    my $website_name = $Brands->website_name;
+    my $from_email   = $BRANDS->emails('no-reply');
+    my $website_name = $BRANDS->website_name;
     my $data_tt      = {
         client       => $client,
         l            => \&localize,
@@ -898,8 +959,8 @@ sub email_client_account_verification {
 
     my $client = BOM::User::Client->new($args);
 
-    my $from_email   = $Brands->emails('no-reply');
-    my $website_name = $Brands->website_name;
+    my $from_email   = $BRANDS->emails('no-reply');
+    my $website_name = $BRANDS->website_name;
 
     my $data_tt = {
         client       => $client,
@@ -955,34 +1016,30 @@ sub _send_email_account_closure_client {
     return undef;
 }
 
-=head2 _send_report_not_clear_status_email
+=head2 _send_report_automated_age_verification_failed
 
-Send email to CS when onfido return status is nor clear
-
-because of which we were not able to mark client as age_verified
+Send email to CS because of which we were not able to mark client as age_verified
 
 =cut
 
-async sub _send_report_not_clear_status_email {
-    my $client = shift;
-    my $result = shift;
+async sub _send_report_automated_age_verification_failed {
+    my ($client, $failure_reason, $redis_key) = @_;
 
     # Prevent sending multiple emails for the same user
-    my $redis_key         = ONFIDO_AGE_EMAIL_PER_USER_PREFIX . $client->binary_user_id;
     my $redis_events_read = _redis_events_read();
     await $redis_events_read->connect;
     return undef if await $redis_events_read->exists($redis_key);
 
-    my $loginid       = $client->loginid;
+    my $loginid = $client->loginid;
+    $log->debugf("Can not mark client (%s) as age verified, failure reason is %s", $loginid, $failure_reason);
+
     my $email_subject = "Automated age verification failed for $loginid";
 
-    my $from_email = $Brands->emails('no-reply');
-    my $to_email   = $Brands->emails('authentications');
+    my $from_email = $BRANDS->emails('no-reply');
+    my $to_email   = $BRANDS->emails('authentications');
     my $email_status =
         Email::Stuffer->from($from_email)->to($to_email)->subject($email_subject)
-        ->text_body(
-        "We were unable to automatically mark client as age verified for client ($loginid), as onfido result was marked as $result. Please check and verify."
-        )->send();
+        ->text_body("We were unable to automatically mark client ($loginid) as age verified, $failure_reason Please check and verify.")->send();
 
     if ($email_status) {
         my $redis_events_write = _redis_events_write();
@@ -1004,8 +1061,8 @@ async sub _send_poa_email {
 
     my $need_to_send_email = await $redis_replicated_write->hsetnx('EMAIL_NOTIFICATION_POA', $client->binary_user_id, 1);
 
-    my $from_email = $Brands->emails('no-reply');
-    my $to_email   = $Brands->emails('authentications');
+    my $from_email = $BRANDS->emails('no-reply');
+    my $to_email   = $BRANDS->emails('authentications');
     # using replicated one
     # as this key is used in backoffice as well
     Email::Stuffer->from($from_email)->to($to_email)->subject('New uploaded POA document for: ' . $client->loginid)
@@ -1057,9 +1114,9 @@ async sub _send_email_notification_for_poa {
     my $mt5_groups = await $redis_mt5_user->mget(@mt_loginid_keys);
 
     # loop through all mt5 loginids check
-    # non demo mt5 group has advanced|standard then
+    # mt5 group has advanced|standard then
     # its considered as financial
-    if (any { defined && /^(?!demo).*(_standard|_advanced)/ } @$mt5_groups) {
+    if (any { defined && /_standard|_advanced/ } @$mt5_groups) {
         await _send_poa_email($client);
     }
     return undef;
@@ -1067,8 +1124,8 @@ async sub _send_email_notification_for_poa {
 
 sub _send_email_onfido_check_exceeded_cs {
     my $request_count        = shift;
-    my $system_email         = $Brands->emails('system');
-    my @email_recipient_list = ($Brands->emails('support'), $Brands->emails('compliance_alert'));
+    my $system_email         = $BRANDS->emails('system');
+    my @email_recipient_list = ($BRANDS->emails('support'), $BRANDS->emails('compliance_alert'));
     my $email_subject        = 'Onfido request count limit exceeded';
     my $email_template       = "\
         <p><b>IMPORTANT: We exceeded our Onfido authentication check request per day..</b></p>
@@ -1113,8 +1170,8 @@ async sub _send_email_onfido_unsupported_country_cs {
         Team Binary.com
         ";
 
-    my $from_email = $Brands->emails('no-reply');
-    my $to_email   = $Brands->emails('authentications');
+    my $from_email = $BRANDS->emails('no-reply');
+    my $to_email   = $BRANDS->emails('authentications');
     my $email_status =
         Email::Stuffer->from($from_email)->to($to_email)->subject($email_subject)->html_body($email_template)->send();
 
@@ -1194,8 +1251,8 @@ sub social_responsibility_check {
 
         if ($hits >= $hits_required) {
 
-            my $system_email  = $Brands->emails('system');
-            my $sr_email      = $Brands->emails('social_responsibility');
+            my $system_email  = $BRANDS->emails('system');
+            my $sr_email      = $BRANDS->emails('social_responsibility');
             my $email_subject = 'Social Responsibility Check required - ' . $loginid;
 
             my $tt = Template::AutoFilter->new({
@@ -1294,7 +1351,7 @@ async sub _get_document_s3 {
 
 async sub _upload_documents {
     my ($onfido, $client, $document_entry, $file_data, $loginid) = @_;
-
+    my $redis_events_write = _redis_events_write();
     try {
 
         my $applicant;
@@ -1360,7 +1417,17 @@ async sub _upload_documents {
 
         DataDog::DogStatsd::Helper::stats_timing("event.document_upload.onfido.upload.triggered.elapse ", Time::HiRes::time() - $start_time);
 
-        $log->debugf('Document %s created for applicant %s', $doc->id, $applicant->id,);
+        $log->debugf('Document %s created for applicant %s', $doc->id, $applicant->id);
+
+        # We need to map each onfido document to its corresponding DB document
+        # in onfido response later (`client_verification` sub)
+        if ($type ne 'live_photo') {
+            await $redis_events_write->connect;
+            await $redis_events_write->set(ONFIDO_DOCUMENT_ID_PREFIX . $doc->id, $document_entry->{id});
+            # Set expiry time for document id key in case of no onfido response due to
+            # `applicant_check` is not being called in `ready_for_authentication`
+            await $redis_events_write->expire(ONFIDO_DOCUMENT_ID_PREFIX . $doc->id, ONFIDO_PENDING_REQUEST_TIMEOUT);
+        }
 
         # At this point, we may have enough information to start verification.
         # Since this could vary by landing company, the logic ideally belongs there,
