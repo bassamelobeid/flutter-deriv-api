@@ -101,7 +101,7 @@ subtest 'surface has not change' => sub {
             underlying       => create_underlying('TOP40'),
             chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader,
             chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer,
-            recorded_date    => Date::Utility->new(Date::Utility->new - 18000),
+            recorded_date    => Date::Utility->new->minus_time_interval('18000s'),
         });
     my $au = BOM::MarketDataAutoUpdater::Indices->new(
         filename           => $test_file,
