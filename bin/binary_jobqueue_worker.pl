@@ -28,12 +28,6 @@ GetOptions(
     'pid-file|P=s' => \(my $pid_file),
 ) or exit 1;
 
-if ($pid_file) {
-    $pid_file = Path::Tiny->new($pid_file);
-    $pid_file->spew($$);
-}
-
-
 exit run_worker_process() if $FOREGROUND;
 
 # TODO: This probably depends on a queue name which will come in as an a
@@ -131,6 +125,11 @@ sub run_coordinator {
 
         exit 0;
     };
+
+    if ($pid_file) {
+        $pid_file = Path::Tiny->new($pid_file);
+        $pid_file->spew($$);
+    }
 
     $loop->run;
 }
