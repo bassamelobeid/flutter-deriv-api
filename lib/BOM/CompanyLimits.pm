@@ -64,17 +64,3 @@ sub add_contract {
     # my @key_combinations = ($b_data->{underlying_symbol}, $b_data->
 }
 
-sub _get_all_key_combinations {
-    my (@a) = @_;
-
-    my @combinations;
-    foreach my $i (1 .. 15) {
-        my $underlying     = (($i & 1) == 1) ? $a[0] : '';
-        my $contract_group = (($i & 2) == 2) ? $a[1] : '';
-        my $expiry_type    = (($i & 4) == 4) ? $a[2] : '';
-        my $is_atm         = (($i & 8) == 8) ? $a[3] : '';
-        push @combinations, "$underlying,$contract_group,$expiry_type,$is_atm";
-    }
-
-    return @combinations;
-}
