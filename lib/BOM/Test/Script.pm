@@ -60,17 +60,18 @@ sub stop_script {
     my $pid  = $self->pid;
     return unless $self->check_script;
     kill TERM => $pid;
-    wait_till_exit($pid, 10);
+    $self->wait_till_exit($pid, 10);
     return;
 }
 
 sub wait_till_exit {
-    my ($pid, $timeout) = @_;
+    my ($self, $pid, $timeout) = @_;
     my $start = time;
     while (time - $start < $timeout and kill ZERO => $pid) {
         print "wait $pid...\n";
         sleep 1;
     }
+    note "Failed to stop script before timeout: " . $self->name if (time - $start >= $timeout);
     return;
 }
 

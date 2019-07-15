@@ -4,6 +4,9 @@ use warnings;
 
 use BOM::Test;
 use BOM::Test::Script;
+use IO::Socket::UNIX;
+use IO::Async::Loop;
+use IO::Async::Stream;
 
 sub new {
     my ($class, $redis_server) = @_;
