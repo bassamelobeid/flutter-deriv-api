@@ -212,6 +212,8 @@ async sub document_upload {
         my $client = BOM::User::Client->new({loginid => $loginid})
             or die 'Could not instantiate client for login ID ' . $loginid;
 
+        my $uploaded_manually_by_staff = $args->{uploaded_manually_by_staff} // 0;
+
         my $redis_events_write = _redis_events_write();
 
         await $redis_events_write->connect;
@@ -242,12 +244,12 @@ async sub document_upload {
         await _send_email_notification_for_poa(
             document_entry => $document_entry,
             client         => $client
-        );
+        ) unless $uploaded_manually_by_staff;
 
         unless ($client->address_postcode) {
             await _send_report_automated_age_verification_failed(
                 $client,
-                'as post code is blank.',
+                'as postcode is blank. Please update the postcode as per the proof of address. Close this ticket if the country does not have a postal code.',
                 ONFIDO_EMPTY_POSTCODE_EMAIL_PER_USER_PREFIX . $client->binary_user_id
             );
         }
@@ -260,7 +262,13 @@ async sub document_upload {
         await Future->wait_any(
             $loop->timeout_future(after => UPLOAD_TIMEOUT)->on_fail(sub { $log->errorf('Time out waiting for Onfido upload.') }),
 
-            _upload_documents($onfido, $client, $document_entry, $file_data, $loginid)
+            _upload_documents(
+                onfido                     => $onfido,
+                client                     => $client,
+                document_entry             => $document_entry,
+                file_data                  => $file_data,
+                uploaded_manually_by_staff => $uploaded_manually_by_staff,
+                )
 
         );
 
@@ -726,15 +734,16 @@ async sub _is_supported_country_onfido {
 async sub _get_onfido_applicant {
     my (%args) = @_;
 
-    my $client = $args{client};
-    my $onfido = $args{onfido};
+    my $client                     = $args{client};
+    my $onfido                     = $args{onfido};
+    my $uploaded_manually_by_staff = $args{uploaded_manually_by_staff};
 
     my $country = $client->place_of_birth // $client->residence;
     try {
         my $is_supported_country = await _is_supported_country_onfido($country, $onfido);
         unless ($is_supported_country) {
             DataDog::DogStatsd::Helper::stats_inc('onfido.unsupported_country', {tags => [$country]});
-            await _send_email_onfido_unsupported_country_cs($client);
+            await _send_email_onfido_unsupported_country_cs($client) unless $uploaded_manually_by_staff;
             $log->debugf('Document not uploaded to Onfido as client is from list of countries not supported by Onfido');
             return undef;
         }
@@ -1319,8 +1328,10 @@ async sub _get_applicant_and_file {
 
     # Start with an applicant and the file data (which might come from S3
     # or be provided locally)
-    my ($applicant, $file_data) =
-        await Future->needs_all(_get_onfido_applicant(%args{onfido}, %args{client}), _get_document_s3(%args{file_data}, %args{document_entry}),);
+    my ($applicant, $file_data) = await Future->needs_all(
+        _get_onfido_applicant(%args{onfido}, %args{client}, %args{uploaded_manually_by_staff}),
+        _get_document_s3(%args{file_data}, %args{document_entry}),
+    );
 
     DataDog::DogStatsd::Helper::stats_timing("event.document_upload.onfido.upload.triggered.elapse ", Time::HiRes::time() - $start_time,);
 
@@ -1350,24 +1361,27 @@ async sub _get_document_s3 {
 }
 
 async sub _upload_documents {
-    my ($onfido, $client, $document_entry, $file_data, $loginid) = @_;
-    my $redis_events_write = _redis_events_write();
-    try {
+    my (%args) = @_;
 
+    my $onfido                     = $args{onfido};
+    my $client                     = $args{client};
+    my $document_entry             = $args{document_entry};
+    my $file_data                  = $args{file_data};
+    my $uploaded_manually_by_staff = $args{uploaded_manually_by_staff};
+
+    try {
         my $applicant;
         ($applicant, $file_data) = await _get_applicant_and_file(
-            onfido         => $onfido,
-            client         => $client,
-            document_entry => $document_entry,
-            file_data      => $file_data,
+            onfido                     => $onfido,
+            client                     => $client,
+            document_entry             => $document_entry,
+            file_data                  => $file_data,
+            uploaded_manually_by_staff => $args{uploaded_manually_by_staff},
         );
 
-        die(      'No applicant created for '
-                . $client->loginid
-                . ' with place of birth '
-                . $client->place_of_birth
-                . ' and residence '
-                . $client->residence)
+        my $loginid = $client->loginid;
+
+        die('No applicant created for ' . $loginid . ' with place of birth ' . $client->place_of_birth . ' and residence ' . $client->residence)
             unless $applicant;
 
         $log->debugf('Applicant created: %s, uploading %d bytes for document', $applicant->id, length($file_data));
@@ -1419,6 +1433,7 @@ async sub _upload_documents {
 
         $log->debugf('Document %s created for applicant %s', $doc->id, $applicant->id);
 
+        my $redis_events_write = _redis_events_write();
         # We need to map each onfido document to its corresponding DB document
         # in onfido response later (`client_verification` sub)
         if ($type ne 'live_photo') {
