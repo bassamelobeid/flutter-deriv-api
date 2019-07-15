@@ -303,8 +303,9 @@ if ($input{whattodo} eq 'uploadID') {
                 BOM::Platform::Event::Emitter::emit(
                     'document_upload',
                     {
-                        loginid => $loginid,
-                        file_id => $file_id,
+                        loginid                    => $loginid,
+                        file_id                    => $file_id,
+                        uploaded_manually_by_staff => 1
                     });
                 return Future->done();
             });
