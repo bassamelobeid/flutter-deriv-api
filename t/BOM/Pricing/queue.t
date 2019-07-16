@@ -102,7 +102,9 @@ subtest 'priority_queue' => sub {
         'New priority BOM::Pricing::Queue processor'
     );
 
-    $redis->publish('high_priority_prices', $_) for @keys;
+    $redis->publish('high_priority_prices', $_, RedisDB::IGNORE_REPLY) for @keys;
+    $redis->mainloop;
+
     $queue->process for (1 .. 5);
     is($redis->llen('pricer_jobs_priority'),        @keys, 'keys added to pricer_jobs_priority queue');
     is($stats{'pricer_daemon.priority_queue.recv'}, @keys, 'receive stats updated in statsd');

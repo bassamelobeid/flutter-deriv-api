@@ -6,7 +6,7 @@ use Test::Most;
 use Test::Mojo;
 use Test::Warnings qw(warning warnings);
 use Test::MockModule;
-use Test::MockTime::HiRes;
+use Test::MockTime::HiRes qw(set_relative_time restore_time);
 use Date::Utility;
 
 use Data::Dumper;
@@ -31,8 +31,11 @@ BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
     '{"yyy": {"market": "forex", "barrier_category": "euro_atm", "commission": "0.05", "name": "test commission", "updated_on": "xxx date", "updated_by": "xxyy"}}'
 );
 
-initialize_realtime_ticks_db();
 my $now             = Date::Utility->new('2005-09-21 06:46:00');
+set_relative_time($now->epoch);
+
+initialize_realtime_ticks_db();
+
 my $landing_company = 'svg';
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -69,8 +72,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 request(BOM::Platform::Context::Request->new(params => {}));
 
-# We dont write unit test. We fuck unit tests.
-set_fixed_time(Date::Utility->new()->epoch);
+
 
 subtest 'prepare_ask' => sub {
     my $params = {
@@ -457,16 +459,14 @@ subtest 'get_bid' => sub {
 subtest 'get_bid_skip_barrier_validation' => sub {
     my ($contract, $params, $result);
 
-    set_fixed_time($now->epoch);
-
-    create_ticks([964, $now->epoch + 1, 'R_50']);
+    create_ticks([964, $now->epoch-899, 'R_50'], [964, $now->epoch-501, 'R_50'], [964, $now->epoch-499, 'R_50']);
 
     $contract = _create_contract(
-        date_expiry  => $now->epoch + 900,
+        date_expiry  => $now->epoch-500,
         bet_type     => 'ONETOUCH',
         barrier      => 963.3055,
-        date_pricing => $now->epoch - 100,
-        date_start   => $now->epoch - 101,
+        date_pricing => $now->epoch,
+        date_start   => $now->epoch-900,
     );
     $params = {
         short_code      => $contract->shortcode,

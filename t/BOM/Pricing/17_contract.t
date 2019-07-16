@@ -6,7 +6,7 @@ use Test::Most;
 use Test::Mojo;
 use Test::Warnings qw(warning warnings);
 use Test::MockModule;
-use Test::MockTime::HiRes;
+use Test::MockTime::HiRes qw(set_relative_time);
 use Date::Utility;
 
 use Data::Dumper;
@@ -26,8 +26,9 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use Quant::Framework;
 use BOM::Config::Chronicle;
 
-initialize_realtime_ticks_db();
 my $now   = Date::Utility->new('2005-09-21 06:46:00');
+set_relative_time($now->epoch);
+initialize_realtime_ticks_db();
 my $email = 'test@binary.com';
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -70,7 +71,7 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_50',
 });
 
-set_fixed_time(Date::Utility->new()->epoch);
+
 
 subtest 'prepare_ask' => sub {
     my $params = {
