@@ -16,7 +16,7 @@ sub new {
     if (BOM::Test::on_qa()) {
         $script = BOM::Test::Script->new(
             script => "/home/git/regentmarkets/bom-rpc/bin/binary_jobqueue_worker.pl",
-            args   => "--redis $url --socket $socket",
+            args   => "--testing --redis $url --socket $socket",
         );
         $script->stop_script;
         $script->start_script_if_not_running;
