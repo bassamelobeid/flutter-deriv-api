@@ -18,6 +18,7 @@ sub new {
             script => "/home/git/regentmarkets/bom-rpc/bin/binary_jobqueue_worker.pl",
             args   => "--redis $url --socket $socket",
         );
+        $script->stop_script;
         $script->start_script_if_not_running;
     }
     return bless {
