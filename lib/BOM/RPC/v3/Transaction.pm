@@ -138,15 +138,16 @@ rpc buy => sub {
     my $error = BOM::RPC::v3::Contract::validate_barrier($contract_parameters);
     return $error if $error->{error};
 
-    my $price    = $args->{price};
-    my $currency = $client->currency;
-    my ($amount, $amount_type) = @{$contract_parameters}{qw/amount amount_type/};
-
     $error = _validate_currency($client);
     return $error if $error;
 
+    my $currency = $client->currency;
+    my $price    = $args->{price};
+
     $error = _validate_price($price, $currency);
     return $error if $error;
+
+    my ($amount, $amount_type) = @{$contract_parameters}{qw/amount amount_type/};
 
     #Temporary fix to skip amount validation for lookback.
     $error = _validate_amount($amount, $currency) if ($contract_parameters->{bet_type} and $contract_parameters->{bet_type} !~ /$nonbinary_list/);
@@ -194,22 +195,26 @@ rpc buy => sub {
     };
     return $error if $error;
 
-    try {
-        trade_copiers({
+    my $contract = $trx->contract;
+
+    if ($client->allow_copiers) {
+        try {
+            trade_copiers({
                 action              => 'buy',
                 client              => $client,
                 contract_parameters => $contract_parameters,
-                contract            => $trx->contract,
+                contract            => $contract,
                 price               => $price,
                 payout              => $payout,
                 amount_type         => $amount_type,
                 purchase_date       => $purchase_date,
                 source              => $source
-            }) if $client->allow_copiers;
+            });
+        }
+        catch {
+            warn "Copiers trade buy error: " . $_;
+        };
     }
-    catch {
-        warn "Copiers trade buy error: " . $_;
-    };
 
     # to subscribe to this contract after buy, we need to have the same information that we pass to
     # proposal_open_contract call, so we are giving this information as part of the response here
@@ -237,15 +242,14 @@ rpc buy => sub {
         transaction_id   => $trx->transaction_id,
         contract_id      => $trx->contract_id,
         contract_details => $contract_proposal_details,
-        balance_after    => formatnumber('amount', $client->currency, $trx->balance_after),
+        balance_after    => formatnumber('amount', $currency, $trx->balance_after),
         purchase_time    => $trx->purchase_date->epoch,
-        buy_price        => formatnumber('amount', $client->currency, $trx->price),
-        start_time       => $trx->contract->date_start->epoch,
-        longcode         => localize($trx->contract->longcode),
-        shortcode        => $trx->contract->shortcode,
+        buy_price        => formatnumber('amount', $currency, $trx->price),
+        start_time       => $contract->date_start->epoch,
+        longcode         => localize($contract->longcode),
+        shortcode        => $contract->shortcode,
         payout           => $trx->payout,
-        stash => {market => $trx->contract->market->name},
-    };
+        stash => {market => $contract->market->name}};
 };
 
 rpc buy_contract_for_multiple_accounts => sub {
@@ -280,15 +284,16 @@ rpc buy_contract_for_multiple_accounts => sub {
     my $error = BOM::RPC::v3::Contract::validate_barrier($contract_parameters);
     return $error if $error->{error};
 
-    my $price    = $args->{price};
-    my $currency = $client->currency;
-    my ($amount, $amount_type) = @{$contract_parameters}{qw/amount amount_type/};
-
     $error = _validate_currency($client);
     return $error if $error;
 
+    my $price    = $args->{price};
+    my $currency = $client->currency;
+
     $error = _validate_price($price, $currency);
     return $error if $error;
+
+    my ($amount, $amount_type) = @{$contract_parameters}{qw/amount amount_type/};
 
     $error = _validate_amount($amount, $currency) if ($contract_parameters->{bet_type} !~ /$nonbinary_list/);
     return $error if $error;
@@ -341,17 +346,19 @@ rpc buy_contract_for_multiple_accounts => sub {
             @{$new}{qw/token code message_to_client/} =
                 @{$el}{qw/token code message_to_client/};
         } else {
+            my $fmb = $el->{fmb};
+
             $new->{token}          = $el->{token};
             $new->{transaction_id} = $el->{txn}->{id};
-            $new->{contract_id}    = $el->{fmb}->{id};
+            $new->{contract_id}    = $fmb->{id};
             $new->{purchase_time} =
-                Date::Utility->new($el->{fmb}->{purchase_time})->epoch;
-            $new->{buy_price} = $el->{fmb}->{buy_price};
+                Date::Utility->new($fmb->{purchase_time})->epoch;
+            $new->{buy_price} = $fmb->{buy_price};
             $new->{start_time} =
-                Date::Utility->new($el->{fmb}->{start_time})->epoch;
+                Date::Utility->new($fmb->{start_time})->epoch;
             $new->{longcode}  = localize($trx->contract->longcode);
-            $new->{shortcode} = $el->{fmb}->{short_code};
-            $new->{payout}    = $el->{fmb}->{payout_price};
+            $new->{shortcode} = $fmb->{short_code};
+            $new->{payout}    = $fmb->{payout_price};
         }
         $el = $new;
     }
