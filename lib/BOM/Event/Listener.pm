@@ -3,11 +3,16 @@ package BOM::Event::Listener;
 use strict;
 use warnings;
 
+use Log::Any qw($log);
+use Syntax::Keyword::Try;
+
 use BOM::Platform::Event::Emitter;
 use BOM::Event::Process;
-use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
+use BOM::Event::QueueHandler;
 
-use constant QUEUE_WAIT_DURATION => 3;
+use IO::Async::Loop;
+
+use constant SHUTDOWN_TIMEOUT => 60;
 
 =head1 NAME
 
@@ -15,70 +20,52 @@ BOM::Event::Listener - Listen to events
 
 =head1 SYNOPSIS
 
-    BOM::Event::Listener::run()
+    BOM::Event::Listener->new(queue => '...')->run
 
 =head1 DESCRIPTION
 
-This class runs periodically and get emitted event and pass that to
-Event::Process to process fetched event.
+Watches queues in Redis for events and processes them accordingly.
 
 =cut
 
-=head2 run
-
-Process the task sequentially for fixed amount of time.
-
-=head3 Required parameters
-
-=over 4
-
-=item * name of the queue
-
-=back
-
-=cut
-
-sub run {
-    my ($self, $queue_name) = @_;
-
-    # We let the existing code in Future.pm track timing,
-    # this allows us to rely on a single ->on_ready callback
-    # to send information to Datadog.
-    $Future::TIMES = 1;
-
-    my $loop = IO::Async::Loop->new;
-    while (1) {
-        BOM::Config::Runtime->instance->app_config->check_for_update;
-        run_once($queue_name);
-        $loop->delay_future(after => QUEUE_WAIT_DURATION)->get;
-    }
-
-    return;
+sub new {
+    my ($class, %args) = @_;
+    return bless \%args, $class;
 }
 
-=head2 run_once
+sub queue { return shift->{queue} }
 
-Process the element of the queue once
-
-=head3 Required parameters
-
-=over 4
-
-=item * name of the queue
-
-=back
-
-=cut
-
-sub run_once {
-    my $queue_name = shift;
-
-    my $event_to_be_processed = BOM::Platform::Event::Emitter::get($queue_name);
-
-    return undef unless $event_to_be_processed;
-    BOM::Event::Process::process($event_to_be_processed, $queue_name);
-
-    return undef;
+sub run {    ## no critic (RequireFinalReturn)
+    my $self = shift;
+    $log->debugf('Starting listener for queue %s', $self->queue);
+    my $loop = IO::Async::Loop->new;
+    my $handler = BOM::Event::QueueHandler->new(queue => $self->queue);
+    local $SIG{TERM} = local $SIG{INT} = sub {
+        # If things go badly wrong, we might never exit the loop. This attempts to
+        # force the issue 60 seconds after the shutdown flag is set.
+        # Note that it's not 100% guaranteed, might want to replace this with a hard
+        # exit().
+        local $SIG{ALRM} = sub {
+            $log->errorf('Took too long to shut down, stopping loop manually');
+            $loop->stop;
+        };
+        alarm(SHUTDOWN_TIMEOUT);
+        # Could end up with multiple signals, so it's expected that subsequent
+        # calls to this sub will not be able to mark as done
+        $handler->should_shutdown->done unless $handler->should_shutdown->is_ready;
+    };
+    $loop->add($handler);
+    # Wait for the processing loop to end naturally (either due to errors, or
+    # from the shutdown signal)
+    try {
+        $handler->process_loop->get;
+    }
+    catch {
+        $log->errorf('Event listener bailing out early for %s - %s', $self->queue, $@) unless $@ =~ /normal_shutdown/;
+    }
+    finally {
+        alarm(0);
+    }
 }
 
 1;

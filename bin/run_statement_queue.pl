@@ -1,9 +1,8 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-
-use Log::Any::Adapter qw(Stderr), log_level => 'info';
-
 use BOM::Event::Listener;
 
-BOM::Event::Listener->run('STATEMENTS_QUEUE');
+use Log::Any::Adapter qw(Stderr), log_level => $ENV{BOM_LOG_LEVEL} // 'info';
+
+BOM::Event::Listener->new(queue => 'STATEMENTS_QUEUE')->run;

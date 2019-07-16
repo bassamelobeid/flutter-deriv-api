@@ -1,14 +1,18 @@
 use strict;
 use warnings;
 
+use Log::Any::Test;
+use Log::Any qw($log);
+
 use Test::Fatal;
 use Test::MockModule;
 use Test::More;
-use Test::Warn;
 
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_events_redis);
 use BOM::Platform::Event::Emitter;
 use BOM::Event::Process;
-use BOM::Event::Listener;
+
+initialize_events_redis();
 
 use constant QUEUE_NAME => 'GENERIC_EVENTS_QUEUE';
 
@@ -98,27 +102,6 @@ subtest 'emit' => sub {
 
 };
 
-subtest 'listen' => sub {
-    foreach (1 .. $count) {
-        BOM::Event::Listener::run_once(QUEUE_NAME);
-    }
-
-    is BOM::Platform::Event::Emitter::emit('sample', {sample => 1}), 1, 'Listener pop previous entries so only new one is there';
-    note "Clearing out last entry for keeping clean state";
-    warning_is { BOM::Event::Listener::run_once(QUEUE_NAME) } "failed to map to the correct function for sample",
-        "failed to map to the correct function as mapping for sample does not exist";
-
-    # emit a dummy action which should throw a warning
-    BOM::Platform::Event::Emitter::emit(
-        'dummy_action',
-        {
-            loginid       => 'CR123',
-            email_consent => 1
-        });
-    warning_is { BOM::Event::Listener::run_once(QUEUE_NAME) } "failed to map to the correct function for dummy_action", "dummy_action does not exist";
-
-};
-
 subtest 'process' => sub {
 
     is_deeply(
@@ -130,10 +113,16 @@ subtest 'process' => sub {
         'Correct number of actions that can be emitted'
     );
 
-    warning_is { BOM::Event::Process::process({dummy_action => {}}) } "failed to map to the correct function for ",
-        'Process cannot be processed as function action is not available';
-    warning_is { BOM::Event::Process::process({type => 'email_consent'}) } "event does not contain any details",
-        'Process cannot be processed as no details is given';
+    BOM::Event::Process::process({}, QUEUE_NAME);
+    $log->contains_ok(qr/no function mapping found for event <unknown> from queue GENERIC_EVENTS_QUEUE/, 'Empty message not processed');
+
+    BOM::Event::Process::process({type => 'dummy_action'}, QUEUE_NAME);
+    $log->contains_ok(qr/no function mapping found for event dummy_action from queue GENERIC_EVENTS_QUEUE/,
+        'Process cannot be processed as function action is not available');
+
+    BOM::Event::Process::process({type => 'email_consent'}, QUEUE_NAME);
+    $log->contains_ok(qr/event email_consent from queue GENERIC_EVENTS_QUEUE contains no details/,
+        'Process cannot be processed as no details is given');
 
     my $mock_process = Test::MockModule->new('BOM::Event::Process');
     $mock_process->mock(

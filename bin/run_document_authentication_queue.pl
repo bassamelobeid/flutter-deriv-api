@@ -1,17 +1,8 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-
-use Getopt::Long 'GetOptions';
-use Log::Any qw($log);
-use Log::Any::Adapter;
 use BOM::Event::Listener;
 
-GetOptions
-    'log-level=s' => \my $log_level;
+use Log::Any::Adapter qw(Stderr), log_level => $ENV{BOM_LOG_LEVEL} // 'info';
 
-Log::Any::Adapter->set('Stderr', log_level => $log_level // 'info');
-
-$log->debugf('Starting document listener');
-BOM::Event::Listener->run('DOCUMENT_AUTHENTICATION_QUEUE');
-$log->debugf('Ending document listener');
+BOM::Event::Listener->new(queue => 'DOCUMENT_AUTHENTICATION_QUEUE')->run;

@@ -16,6 +16,7 @@ use BOM::Event::Actions::CustomerStatement;
 use BOM::Event::Actions::MT5;
 use BOM::Event::Actions::Client;
 use BOM::Event::Actions::CryptoSubscription;
+use BOM::Event::Actions::Anonymization;
 use Scalar::Util qw(blessed);
 
 =head1 NAME
@@ -85,16 +86,16 @@ sub process {
     my $event_to_be_processed = shift;
     my $queue_name            = shift;
 
-    my $event_type = $event_to_be_processed->{type} // '';
+    my $event_type = $event_to_be_processed->{type} // '<unknown>';
 
     # don't process if type is not supported as of now
     unless (exists get_action_mappings()->{$event_type}) {
-        warn 'failed to map to the correct function for ' . $event_type;
+        $log->warnf("no function mapping found for event %s from queue %s", $event_type, $queue_name);
         return undef;
     }
 
     unless (exists $event_to_be_processed->{details}) {
-        warn 'event does not contain any details';
+        $log->warnf("event %s from queue %s contains no details", $event_type, $queue_name);
         return undef;
     }
 

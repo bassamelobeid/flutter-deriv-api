@@ -43,6 +43,9 @@ use BOM::Event::Services;
 use Encode qw(decode_utf8 encode_utf8);
 use Time::HiRes;
 
+# For smartystreets datadog stats_timing
+$Future::TIMES = 1;
+
 # Number of seconds to allow for just the verification step.
 use constant VERIFICATION_TIMEOUT => 60;
 
@@ -660,10 +663,10 @@ async sub _address_verification {
             $log->errorf('Address lookup failed for %s - %s', $client->loginid, $_[0]);
             return;
         }
-        )->on_ready(
+        )->on_done(
         sub {
-            my $f = shift;
-            DataDog::DogStatsd::Helper::stats_timing("event.address_verification.smartystreet.verify." . $f->state . ".elapsed", $f->elapsed);
+            DataDog::DogStatsd::Helper::stats_timing("event.address_verification.smartystreet.verify." . $future_verify_ss->state . ".elapsed",
+                $future_verify_ss->elapsed);
         });
 
     my $addr = await $future_verify_ss;

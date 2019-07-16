@@ -1,4 +1,4 @@
-package BOM::Event::Async::QueueHandler;
+package BOM::Event::QueueHandler;
 
 use strict;
 use warnings;
@@ -7,7 +7,7 @@ use parent qw(IO::Async::Notifier);
 
 =head1 NAME
 
-BOM::Event::Async::QueueHandler
+BOM::Event::QueueHandler
 
 =head1 DESCRIPTION
 
@@ -19,7 +19,7 @@ use Syntax::Keyword::Try;
 use Scalar::Util qw(blessed);
 use Future::Utils qw(repeat);
 use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
-use Net::Async::Redis;
+use BOM::Event::Services;
 use BOM::Event::Process;
 use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
 use Log::Any qw($log);
@@ -78,16 +78,27 @@ sub configure {
 
 =head2 redis
 
+The L<BOM::Event::Services> instance.
+
+=cut
+
+sub services {
+    my ($self) = @_;
+    return $self->{services} //= do {
+        $self->add_child(my $services = BOM::Event::Services->new);
+        $services;
+        }
+}
+
+=head2 redis
+
 The L<Net::Async::Redis> instance.
 
 =cut
 
 sub redis {
     my ($self) = @_;
-    return $self->{redis} //= do {
-        $self->add_child(my $redis = Net::Async::Redis->new);
-        $redis;
-        }
+    return $self->{redis} //= $self->services->redis_events_write();
 }
 
 =head2 _add_to_loop
@@ -144,7 +155,7 @@ processing.
 
 sub should_shutdown {
     my ($self) = @_;
-    return $self->{shutdown} //= $self->loop->new_future->set_label('QueueHandler::shutdown');
+    return $self->{should_shutdown} //= $self->loop->new_future->set_label('QueueHandler::shutdown');
 }
 
 =head2 process_loop
@@ -163,7 +174,7 @@ sub process_loop {
             Future->wait_any(
                 # This resolves as done, but we want to bail out of the loop,
                 # and we do that by returning a failed future from the repeat block
-                $self->should_shutdown->without_cancel->then_fail('shutting down'),
+                $self->should_shutdown->without_cancel->then_fail('normal_shutdown'),
                 $self->redis->brpop(
                     # We don't cache these: each iteration uses the latest values,
                     # allowing ->configure to change name and wait time dynamically.
@@ -195,12 +206,15 @@ sub process_loop {
                             # Invalid data indicates serious problems, we halt
                             # entirely and record the details
                             $log->errorf('Bad data received in event queue %s causing exception %s - data was %s', $queue_name, $err, $event_data);
-                            return Future->fail($err);
+                            return Future->fail("bad event data - $err");
                         }
                     }
                     )->then(
                     sub {
+                        # redis message will be undef in case of timeout occurred
+                        return Future->done() unless @_;
                         my ($queue_name, $event_data) = @_;
+
                         try {
                             # A local setting for this is fine here: we are limiting the initial call,
                             # not the time spent in any subsequent context switches due to async/await.
@@ -213,15 +227,12 @@ sub process_loop {
                             # Future->wrap will return immediately if it has a scalar
 
                             my $f = Future->wrap(BOM::Event::Process::process($event_data, $queue_name));
-
-                            return Future->wait_any($f, $self->loop->timeout_future(after => $self->maximum_job_time))->on_done(
+                            return Future->wait_any($f, $self->loop->timeout_future(after => $self->maximum_job_time))->on_fail(
                                 sub {
-                                    stats_inc(lc "$queue_name.processed.success");
-                                }
-                                )->on_fail(
-                                sub {
+                                    $log->errorf("Event from queue %s failed or did not complete within %s sec - data was %s",
+                                        $queue_name, $self->maximum_job_time, $event_data);
                                     stats_inc(lc "$queue_name.processed.failure");
-                                });
+                                })->else_done();
                         }
                         catch {
                             $log->errorf('Failed to process %s (data %s) - %s', $queue_name, $event_data, $@);
@@ -245,7 +256,7 @@ sub process_loop {
         sub {
             # ... and allow restart if we're stopped or fail,
             # next caller to this method will start things up again
-            delete $self->{process_loop};
+            delete $self->{process_loop} if $self->{process_loop};
         });
 }
 
