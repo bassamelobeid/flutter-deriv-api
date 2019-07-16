@@ -11,8 +11,7 @@
    "type" : "object",
    "properties" : {
       "app_delete" : {
-         "type" : "string",
-         "pattern" : "^[_2]$"
+         "enum" : [[_2]]
       },
       "msg_type" : {
          "type" : "string",
