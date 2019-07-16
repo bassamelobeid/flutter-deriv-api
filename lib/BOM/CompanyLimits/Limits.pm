@@ -23,9 +23,19 @@ use constant COUNTER_PREFIX_KEY => 'COUNTERS_';
 # TODO: Validations, a lot of validations, like a lot a lot of it.
 # TODO: Unit test everything
 
-#######################
-## MODULAR FUNCTIONS ##
-#######################
+#####################################
+## MODULAR FUNCTIONS AND VARIABLES ##
+#####################################
+
+# this function should be defined as a modular function for mapping to the underlying !!
+my $TYPE_IDX = {
+    POTENTIAL_LOSS   => 0,
+    POTENTIAL_LOSS_2 => 1,
+    REALIZED_LOSS    => 2,
+    REALIZEDE_LOSS_2 => 3,
+    # ...
+    # ...
+};
 
 # TODO: temporal part, this will be revisited later
 # maps a type to an underlying table in database
@@ -59,16 +69,6 @@ sub _db_mapper {
 # maps a type to an underlying index
 sub _type_mapper {
     my $type = shift;
-    # this function should be defined as a modular function for mapping to the underlying !!
-    my $TYPE_IDX = {
-        # UNDERLYINGGROUP,CONTRACTGROUP,EXPIRYTYPE,ISATM
-        POTENTIAL_LOSS   => 0,
-        POTENTIAL_LOSS_2 => 1,
-        REALIZED_LOSS    => 2,
-        REALIZEDE_LOSS_2 => 3,
-        # ...
-        # ...
-    };
     return $TYPE_IDX->{$type};
 }
 
@@ -127,17 +127,18 @@ sub _get_counter_from_db {
 ###########################
 
 sub _encode_limit {
+    my @input = $_[0]->@*;
     # TODO: Validate encoding format
-    my $loss_type  = $_[0];
+    my $loss_type  = $input[0];
     my $offset_cnt = $loss_type - 1;
     # the remaining limit counts is minus of loss_type (-1) and count of offsets and divide that by 3 (amount,start,end)
-    my $limit_cnt = (scalar @_ - 1 - $offset_cnt) / 3;
+    my $limit_cnt = (scalar @input - 1 - $offset_cnt) / 3;
     # C = the loss_type unsigned integer (1 byte)
     # S = the offset_count unsigned integer (2 byte)
     # l = the amount signed integer (4 byte)
     # L2 = the start_epoch and end_epoch unsgined integer (4 byte)
     # the first param will result in something like CSlL2lL2
-    return pack((sprintf('CS%u', $offset_cnt) . "lL2" x $limit_cnt), @_);
+    return pack((sprintf('CS%u', $offset_cnt) . "lL2" x $limit_cnt), @input);
 }
 
 sub _decode_limit {
@@ -156,11 +157,28 @@ sub _decode_limit {
     return [unpack((sprintf('CS%u', $offsets_cnt) . "lL2" x $limits_cnt), $encoded)];
 }
 
+# TODO: testcase for this function
+sub _remove_limit_value {
+    my ($amount, $start_epoch, $end_epoch, $curr_lim) = $_[0]->@*;
+    # if curr_lim is undef, this is the first entry
+    return unless $curr_lim;
+    my @lims;
+    # If limit is not added in the loop above, it is the largest limit
+    # # and thus belongs to the end of the sequence.
+    for (my $i = 0; $i < scalar $curr_lim->@*; $i += 3) {
+        my ($i_amount, $i_start_epoch, $i_end_epoch) = @{$curr_lim}[$i .. $i + 2];
+        push @lims, $i_amount, $i_start_epoch, $i_end_epoch
+            unless ($i_amount == $amount && $i_start_epoch == $start_epoch && $i_end_epoch == $end_epoch);
+    }
+    return \@lims;
+}
+
 sub _add_limit_value {
-    my ($amount, $start_epoch, $end_epoch, $curr_lim) = @_;
+#warn Dumper(@_);
+    my ($amount, $start_epoch, $end_epoch, $curr_lim) = $_[0]->@*;
 
     # if curr_lim is undef, this is the first entry
-    return \@_ unless $curr_lim;
+    return [$amount, $start_epoch, $end_epoch] unless $curr_lim;
 
     my @lims;
 
@@ -170,6 +188,9 @@ sub _add_limit_value {
     for (my $i = 0; $i < scalar $curr_lim->@*; $i += 3) {
         my ($i_amount, $i_start_epoch, $i_end_epoch) = @{$curr_lim}[$i .. $i + 2];
 
+        # TODO: either throw an error when this happens or we just return the original one
+        return $curr_lim if ($i_amount == $amount && $i_start_epoch == $start_epoch && $i_end_epoch == $end_epoch);
+
         if ($amount < $i_amount and $is_added == 0) {
             push(@lims, $amount, $start_epoch, $end_epoch);
             $is_added = 1;
@@ -177,6 +198,8 @@ sub _add_limit_value {
         push @lims, $i_amount, $i_start_epoch, $i_end_epoch;
     }
     push(@lims, $amount, $start_epoch, $end_epoch) unless $is_added;
+    #warn "dumping .. \n";
+    #warn Dumper(@lims);
     return \@lims;
 }
 
@@ -187,12 +210,14 @@ sub _array_slice {
 }
 
 sub _extract_limit_by_group {
+    my @inputs = $_[0]->@*;
+
     # TODO: test edge cases
-    my $loss_type  = $_[0];
+    my $loss_type  = $inputs[0];
     my $offset_cnt = $loss_type - 1;
     # get offsets and limits portion
-    my $offsets = _array_slice(1, $offset_cnt, @_);
-    my $limits = _array_slice($offset_cnt + 1, $#_, @_);
+    my $offsets = _array_slice(1, $offset_cnt, @inputs);
+    my $limits = _array_slice($offset_cnt + 1, $#inputs, @inputs);
 
     my $extracted_limits = [];
     foreach my $idx (0 .. $offset_cnt) {
@@ -241,20 +266,6 @@ sub _collapse_limit_by_group {
     return [$type_cnt, @offsets, @limits];
 }
 
-sub _get_decoded_limit {
-    my $key = shift;
-    return _decode_limit(BOM::Config::RedisReplicated::redis_limits_write->hget(REDIS_LIMIT_KEY, $key));
-}
-
-sub get_limit {
-    # TODO: Expected input 'GLOBAL_REALIZED_LOSS_UNDERLYINGGROUP', 'forex,,,t'
-    # TODO: Expected output '10 0 0 10000 1561801504 1561801810"
-    my ($loss_type, $key) = @_;
-    my $decoded_limits  = _get_decoded_limit($key);
-    my $expanded_struct = _extract_limit_by_group(@{$decoded_limits});
-    return join(' ', @{$expanded_struct->{$loss_type}});
-}
-
 sub _set_counters {
     my ($loss_type, $key, $now) = @_;
     my $counter_key = COUNTER_PREFIX_KEY . $loss_type;
@@ -268,16 +279,54 @@ sub _get_new_limit {
     return 1;
 }
 
+# input: encoded stuff
+# decode > [1000, undef, undef, undef]
+
+=pod
+        POTENTIAL_LOSS   => 0,
+        POTENTIAL_LOSS_2 => 1,
+        REALIZED_LOSS    => 2,
+        REALIZEDE_LOSS_2 => 3,
+=cut
+
+sub get_computed_limits {
+    # takes in encoded stuff
+    my $encoded = shift;
+    return unless $encoded;
+
+    # there is already an existing entry
+    my $decoded_limits = _decode_limit($encoded);
+    my $expanded_arr   = _extract_limit_by_group($decoded_limits);
+    my $computed_lims;
+    foreach my $idx (values %{$TYPE_IDX}) {
+        my $active_lim = process_and_get_active_limit($expanded_arr->[$idx]);
+        $computed_lims->[$idx] = ($active_lim->{amount}) ? $active_lim->{amount} : undef;
+    }
+    return $computed_lims;
+}
+
 # TODO: verify if this function works
 sub remove_limit {
-    my ($loss_type, $key) = @_;
-    my $new_lim = _get_new_limit();
+    my ($loss_type, $key, $amount, $start_epoch, $end_epoch) = $_[0]->@*;
+
+    my $encoded = BOM::Config::RedisReplicated::redis_limits_write->hget(REDIS_LIMIT_KEY, $key);
+    return unless $encoded;
+
+    my $underlying_idx = _type_mapper($loss_type);
+
+    # there is already an existing entry
+    my $decoded_limits = _decode_limit($encoded);
+    my $expanded_arr   = _extract_limit_by_group($decoded_limits);
+    $expanded_arr->[$underlying_idx] = _remove_limit_value($amount, $start_epoch, $end_epoch, $expanded_arr->[$underlying_idx]);
+
+    # get limit that is currently active
+    my $active_lim = process_and_get_active_limit($expanded_arr);
 
     my $redis_w     = BOM::Config::RedisReplicated::redis_limits_write;
     my $counter_key = "COUNTERS_$loss_type";
 
     # there are still limits left
-    return $redis_w->hset(REDIS_LIMIT_KEY, $key, $new_lim) if $new_lim;
+    return $redis_w->hset(REDIS_LIMIT_KEY, $key, $active_lim->{amount}) if $active_lim->{amount};
 
     $redis_w->watch(REDIS_LIMIT_KEY);
     $redis_w->watch($counter_key);
@@ -290,6 +339,7 @@ sub remove_limit {
 
 sub process_and_get_active_limit {
     my $limits = shift;
+    return unless $limits;
 
     my $chosen_limit;
     my $has_future_limit;
@@ -302,7 +352,11 @@ sub process_and_get_active_limit {
         if (   ($i_start_epoch == 0 && $i_end_epoch == 0)
             || ($now >= $i_start_epoch && $now < $i_end_epoch))
         {
-            $chosen_limit = $i_amount;
+            $chosen_limit = {
+                amount      => $i_amount,
+                start_epoch => $i_start_epoch,
+                end_epoch   => $i_end_epoch,
+            };
             last;
         }
         # expired limit
@@ -310,25 +364,33 @@ sub process_and_get_active_limit {
         # future limit
         $has_future_limit = 1 if ($i_start_epoch > $now);
     }
-    return ($has_future_limit && !$chosen_limit) ? "inf" : $chosen_limit;
+    return ($has_future_limit && !$chosen_limit) ? {amount => "inf"} : $chosen_limit;
 }
 
 # TODO: need to verify this function will work as a single transaction
 sub add_limit {
-    my ($loss_type, $key, $amount, $start_epoch, $end_epoch) = @_;
+    my ($loss_type, $key, $amount, $start_epoch, $end_epoch) = $_[0]->@*;
+
     # check if redis has been added successfully
     my $now = Date::Utility->new();
 
-    my $decoded_limits = _get_decoded_limit($key);
-    my $expanded_arr   = _extract_limit_by_group(@{$decoded_limits});
-
-    #warn Dumper($loss_type);
+    my $encoded = BOM::Config::RedisReplicated::redis_limits_write->hget(REDIS_LIMIT_KEY, $key);
     my $underlying_idx = _type_mapper($loss_type);
-    #warn Dumper($underlying_idx);
-    $expanded_arr->[$underlying_idx] = _add_limit_value($amount, $start_epoch, $end_epoch, $expanded_arr->[$underlying_idx]);
+    my $expanded_arr;
+
+    if ($encoded) {
+        # there is already an existing entry
+        my $decoded_limits = _decode_limit($encoded);
+        $expanded_arr = _extract_limit_by_group($decoded_limits);
+        $expanded_arr->[$underlying_idx] = _add_limit_value([$amount, $start_epoch, $end_epoch, $expanded_arr->[$underlying_idx]]);
+    } else {
+        # new entry
+        $expanded_arr->[$_] = [] foreach (0 .. $underlying_idx);
+        $expanded_arr->[$underlying_idx] = _add_limit_value([$amount, $start_epoch, $end_epoch]);
+    }
 
     my $collapsed_limits = _collapse_limit_by_group($expanded_arr);
-    my $encoded_limits   = _encode_limit(@{$collapsed_limits});
+    my $encoded_limits   = _encode_limit($collapsed_limits);
 
     BOM::Config::RedisReplicated::redis_limits_write->hset(REDIS_LIMIT_KEY, $key, $encoded_limits);
     _insert_to_db($key, $loss_type, $amount);
