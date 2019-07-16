@@ -42,7 +42,8 @@ my %event_queue_mapping = (
     client_verification      => 'DOCUMENT_AUTHENTICATION_QUEUE'
 );
 
-my $config = LoadFile($ENV{BINARY_EVENT_REDIS_CONFIG} // '/etc/rmg/redis-events.yml');
+my $config = LoadFile($ENV{BOM_TEST_REDIS_EVENTS} // '/etc/rmg/redis-events.yml');
+
 my $connections = {};
 
 =head1 METHODS
@@ -119,7 +120,7 @@ Event hash is in form of:
 sub get {
     my $queue_name = shift;
 
-    my $event_data = _read_connection()->brpop($queue_name, 1);
+    my $event_data = _write_connection()->brpop($queue_name, 1);
 
     my $decoded_data;
 
