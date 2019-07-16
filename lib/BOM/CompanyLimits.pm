@@ -14,10 +14,6 @@ use BOM::CompanyLimits::Limits;
 
 =cut
 
-sub set_limits {
-    my ($limit_def) = @_;
-}
-
 sub set_underlying_groups {
     # POC, we should see which broker code to use
     my $dbic = BOM::Database::ClientDB->new({broker_code => 'CR'})->db->dbic;
@@ -46,7 +42,7 @@ sub set_contract_groups {
     BOM::Config::RedisReplicated::redis_limits_write->hmset('CONTRACTGROUPS', @contract_grp);
 }
 
-sub add_contract {
+sub add_buy_contract {
     my ($contract) = @_;
     my $bet_data = $contract->{bet_data};
 
@@ -66,7 +62,7 @@ sub add_contract {
         });
     BOM::Config::RedisReplicated::redis_limits_write->mainloop;
 
-    # print 'BET DATA: ', Dumper($contract);
+    print 'BET DATA: ', Dumper($contract);
     my @combinations = _get_combinations($contract, $underlying_group, $contract_group);
     # print 'COMBINATIONS:', Dumper(\@combinations);
 
@@ -76,43 +72,115 @@ sub add_contract {
     my %limits;
     foreach my $i (0 .. scalar @combinations) {
         if ($limits_response->[$i]) {
-            $limits{$combinations[$i]} = $limits_response->[$i];
+            $limits{$combinations[$i]} = BOM::CompanyLimits::Limits::get_computed_limits($limits_response->[$i]);
         }
     }
 
-    print 'LIMITS:', Dumper(\%limits);
+    # No limits queries; nothing to do here...
+    return 1 if (!%limits);
 
-    my %totals = limits_to_totals(%limits, $underlying_group);
-    print 'totals:', Dumper(\%totals);
+    # print 'LIMITS:', Dumper(\%limits);
 
-    # INCREMENTS!!!
+    my %computed_limits = compute_limits(\%limits, $underlying);
 
+    print 'COMPUTED LIMITS:', Dumper(\%computed_limits);
+
+	my (%totals) = _buy_redis_increment_query(\%computed_limits, $bet_data);
+
+    print 'TOTALS:', Dumper(\%totals);
 }
 
-sub limits_to_totals {
-    my (%limits, $underlying_group) = @_;
+sub _buy_redis_increment_query {
+	my ($totals, $bet_data) = @_;
+    my @realized_loss_request;
+    my @potential_loss_request;
+
+    my $potential_loss = $bet_data->{payout_price} - $bet_data->{buy_price};
+
+    while (my ($k, $v) = each %{$totals}) {
+        push(@potential_loss_request, $k) if ($v->[0]);
+        push(@realized_loss_request,  $k) if ($v->[1]);
+    }
+
+	my ($realized_loss_response, $potential_loss_response);
+    # BOM::Config::RedisReplicated::redis_limits_write->send_command(('HMGET', 'TOTALS_REALIZED_LOSS', @realized_loss_request), sub {
+	#     $realized_loss_response = $_[1];
+	# });
+	foreach my $i (0 .. scalar @potential_loss_request) {
+		my $p = $potential_loss_request[$i];
+		BOM::Config::RedisReplicated::redis_limits_write->hincrbyfloat('TOTALS_POTENTIAL_LOSS', $p, $potential_loss, sub {
+			$potential_loss_response->[$i] = $_[1];
+		});
+	}
+    BOM::Config::RedisReplicated::redis_limits_write->mainloop;
+
+	my %totals;
+	foreach my $i (0 .. scalar @potential_loss_request) {
+		$totals{$potential_loss_request[$i]}->[0] = $potential_loss_response->[$i];
+	}
+
+	foreach my $i (0 .. scalar @realized_loss_request) {
+		$totals{$realized_loss_request[$i]}->[1] = $realized_loss_response->[$i];
+	}
+
+	return %totals;;
+}
+
+sub add_sell_contract {
+    my ($contract) = @_;
+    my $bet_data = $contract->{bet_data};
+    print 'BET DATA: ', Dumper($contract);
+
+    # For sell, we increment counters but do not check if they exceed limits;
+    # we only block buys, not sells.
+    my $realized_loss = $bet_data->{sell_price} - $bet_data->{buy_price};
+}
+
+sub compute_limits {
+    my ($limits, $underlying) = @_;
     my %totals;
 
     # The loop here makes the assumption that underlying group limits
     # all procede underlying limits.
-    while(my($k, $v) = each %limits) {
+    while (my ($k, $v) = each %{$limits}) {
         # for each array ref, allocate exactly 2 elements in order: potential,
         # realized loss
         # Potential #1 and Realized #1 are the actual limits for the totals
         $totals{$k} = [$v->[0], $v->[2]];
 
-        # Assume that if Potential #2 or Realized #2 is set, it is underlying
-        # group defaults limit:
-
+        _handle_underlying_group_defaults(\%totals, $underlying, $k, $v, 1, 0);
+        _handle_underlying_group_defaults(\%totals, $underlying, $k, $v, 3, 2);
     }
 
     return %totals;
 }
 
+sub _handle_underlying_group_defaults {
+    my ($totals, $underlying, $k, $v, $group_default_idx, $target_idx) = @_;
+
+    if ($v->[$group_default_idx]) {
+        my $loss_limit_2 = $v->[$group_default_idx];
+        if ($k =~ /(,.*)/) {    # trim off underlying group from key
+            my $underlying_key = "$underlying$1";
+            my $underlying_val = $totals->{$underlying_key};
+            if ($underlying_val) {
+                my $loss_limit = $underlying_val->[$target_idx];
+                if ($loss_limit) {
+                    $underlying_val->[$target_idx] = min($loss_limit, $loss_limit_2);
+                } else {
+                    $underlying_val->[$target_idx] = $loss_limit_2;
+                }
+            } else {
+                # Create array ref using the magic of auto vivification
+                $totals->{$underlying_key}->[$target_idx] = $loss_limit_2;
+            }
+        }
+    }
+}
 
 sub _get_combinations {
     my ($contract, $underlying_group, $contract_group) = @_;
-    my $bet_data = $contract->{bet_data};
+    my $bet_data   = $contract->{bet_data};
     my $underlying = $bet_data->{underlying_symbol};
 
     # print "CONTRACT GROUP: $contract_group\nUNDERLYING GROUP: $underlying_group\n";
