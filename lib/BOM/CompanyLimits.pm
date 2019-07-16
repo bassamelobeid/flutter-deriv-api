@@ -6,6 +6,8 @@ use BOM::Database::ClientDB;
 use BOM::Config::RedisReplicated;
 use Date::Utility;
 use Data::Dumper;
+use BOM::CompanyLimits::Helpers;
+use BOM::CompanyLimits::Limits;
 
 =head1 NAME
 
@@ -45,22 +47,74 @@ sub set_contract_groups {
 }
 
 sub add_contract {
-    my ($self, $bet_data) = @_;
-    my $b_data = $bet_data->{bet_data};
+    my ($contract) = @_;
+    # print 'BET DATA: ', Dumper($contract);
+    my @combinations = _get_combinations($contract);
+    # print 'COMBINATIONS:', Dumper(\@combinations);
 
-    my $is_atm = ($b_data->{short_code} =~ /_SOP_/) ? 't' : 'f';
+    # GET LIMITS!!
+    my $limits_response = BOM::Config::RedisReplicated::redis_limits_write->hmget('LIMITS', @combinations);
+
+    my %limits;
+    foreach my $i (0 .. scalar @combinations) {
+        if ($limits_response->[$i]) {
+my $decoded = BOM::CompanyLimits::Limits::_decode_limit($limits_response->[$i]);
+$limits{$combinations[$i]} = BOM::CompanyLimits::Limits::_extract_limit_by_group($decoded->@*);
+        }
+    }
+
+    print 'LIMITS:', Dumper(\%limits);
+
+    # INCREMENTS!!!
+
+}
+
+sub _get_combinations {
+    my ($contract) = @_;
+    my $bet_data = $contract->{bet_data};
+
+    my $underlying = $bet_data->{underlying_symbol};
+    my ($contract_group, $underlying_group);
+    BOM::Config::RedisReplicated::redis_limits_write->hget(
+        'CONTRACTGROUPS',
+        $bet_data->{bet_type},
+        sub {
+            $contract_group = $_[1];
+        });
+    BOM::Config::RedisReplicated::redis_limits_write->hget(
+        'UNDERLYINGGROUPS',
+        $underlying,
+        sub {
+            $underlying_group = $_[1];
+        });
+    BOM::Config::RedisReplicated::redis_limits_write->mainloop;
+
+    # print "CONTRACT GROUP: $contract_group\nUNDERLYING GROUP: $underlying_group\n";
+
+    my $is_atm = ($bet_data->{short_code} =~ /_SOP_/) ? 't' : 'f';
 
     my $expiry_type;
-    if ($b_data->{tick_count} > 0) {
+    if ($bet_data->{tick_count} and $bet_data->{tick_count} > 0) {
         $expiry_type = 'tick';
-    } elsif ($b_data->{expiry_daily}) {
+    } elsif ($bet_data->{expiry_daily}) {
         $expiry_type = 'daily';
-    } elsif ((Date::Utility->new($b_data->{expiry_time})->epoch - Date::Utility->new($b_data->{start_time})->epoch) <= 300) {    # 5 minutes
+    } elsif ((Date::Utility->new($bet_data->{expiry_time})->epoch - Date::Utility->new($bet_data->{start_time})->epoch) <= 300) {    # 5 minutes
         $expiry_type = 'ultra_short';
     } else {
         $expiry_type = 'intraday';
     }
 
-    # my @key_combinations = ($b_data->{underlying_symbol}, $b_data->
+    my @attributes = ($underlying, $contract_group, $expiry_type, $is_atm);
+    my @combinations = BOM::CompanyLimits::Helpers::get_all_key_combinations(@attributes);
+
+    # Merge another array that substitutes underlying with underlying group
+    my @underlyinggroup_combinations = grep(/^${underlying}\,/, @combinations);
+    foreach my $x (@underlyinggroup_combinations) {
+        substr($x, 0, length($underlying)) = $underlying_group;
+    }
+
+    return (@combinations, @underlyinggroup_combinations);
 }
+
+1;
 
