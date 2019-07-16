@@ -48,29 +48,6 @@ sub set_contract_groups {
 
 sub add_contract {
     my ($contract) = @_;
-    # print 'BET DATA: ', Dumper($contract);
-    my @combinations = _get_combinations($contract);
-    # print 'COMBINATIONS:', Dumper(\@combinations);
-
-    # GET LIMITS!!
-    my $limits_response = BOM::Config::RedisReplicated::redis_limits_write->hmget('LIMITS', @combinations);
-
-    my %limits;
-    foreach my $i (0 .. scalar @combinations) {
-        if ($limits_response->[$i]) {
-my $decoded = BOM::CompanyLimits::Limits::_decode_limit($limits_response->[$i]);
-$limits{$combinations[$i]} = BOM::CompanyLimits::Limits::_extract_limit_by_group($decoded->@*);
-        }
-    }
-
-    print 'LIMITS:', Dumper(\%limits);
-
-    # INCREMENTS!!!
-
-}
-
-sub _get_combinations {
-    my ($contract) = @_;
     my $bet_data = $contract->{bet_data};
 
     my $underlying = $bet_data->{underlying_symbol};
@@ -88,6 +65,55 @@ sub _get_combinations {
             $underlying_group = $_[1];
         });
     BOM::Config::RedisReplicated::redis_limits_write->mainloop;
+
+    # print 'BET DATA: ', Dumper($contract);
+    my @combinations = _get_combinations($contract, $underlying_group, $contract_group);
+    # print 'COMBINATIONS:', Dumper(\@combinations);
+
+    # GET LIMITS!!
+    my $limits_response = BOM::Config::RedisReplicated::redis_limits_write->hmget('LIMITS', @combinations);
+
+    my %limits;
+    foreach my $i (0 .. scalar @combinations) {
+        if ($limits_response->[$i]) {
+            $limits{$combinations[$i]} = $limits_response->[$i];
+        }
+    }
+
+    print 'LIMITS:', Dumper(\%limits);
+
+    my %totals = limits_to_totals(%limits, $underlying_group);
+    print 'totals:', Dumper(\%totals);
+
+    # INCREMENTS!!!
+
+}
+
+sub limits_to_totals {
+    my (%limits, $underlying_group) = @_;
+    my %totals;
+
+    # The loop here makes the assumption that underlying group limits
+    # all procede underlying limits.
+    while(my($k, $v) = each %limits) {
+        # for each array ref, allocate exactly 2 elements in order: potential,
+        # realized loss
+        # Potential #1 and Realized #1 are the actual limits for the totals
+        $totals{$k} = [$v->[0], $v->[2]];
+
+        # Assume that if Potential #2 or Realized #2 is set, it is underlying
+        # group defaults limit:
+
+    }
+
+    return %totals;
+}
+
+
+sub _get_combinations {
+    my ($contract, $underlying_group, $contract_group) = @_;
+    my $bet_data = $contract->{bet_data};
+    my $underlying = $bet_data->{underlying_symbol};
 
     # print "CONTRACT GROUP: $contract_group\nUNDERLYING GROUP: $underlying_group\n";
 
