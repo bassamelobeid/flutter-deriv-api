@@ -26,7 +26,7 @@
       },
       "reset_password" : {
          "enum" : [1],
-         "type" : "number"
+         "type" : "integer"
       },
       "passthrough" : {
          "type" : "object",
