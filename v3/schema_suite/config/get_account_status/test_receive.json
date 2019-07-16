@@ -17,8 +17,7 @@
          ],
          "properties" : {
             "prompt_client_to_authenticate" : {
-               "type" : "string",
-               "pattern" : "^(1|0)$"
+               "enum" : [1,0]
             },
             "status" : {
                "type" : "array"
