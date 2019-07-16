@@ -8,6 +8,7 @@ use Date::Utility;
 use Data::Dumper;
 use BOM::CompanyLimits::Helpers;
 use BOM::CompanyLimits::Limits;
+use ExchangeRates::CurrencyConverter qw(convert_currency);
 
 =head1 NAME
 
@@ -70,7 +71,7 @@ sub add_buy_contract {
     my $limits_response = BOM::Config::RedisReplicated::redis_limits_write->hmget('LIMITS', @combinations);
 
     my %limits;
-    foreach my $i (0 .. scalar @combinations) {
+    foreach my $i (0 .. $#combinations) {
         if ($limits_response->[$i]) {
             $limits{$combinations[$i]} = BOM::CompanyLimits::Limits::get_computed_limits($limits_response->[$i]);
         }
@@ -85,54 +86,69 @@ sub add_buy_contract {
 
     print 'COMPUTED LIMITS:', Dumper(\%computed_limits);
 
-	my (%totals) = _buy_redis_increment_query(\%computed_limits, $bet_data);
+    my (%totals) = _buy_redis_increment_query(\%computed_limits, $contract);
 
     print 'TOTALS:', Dumper(\%totals);
 }
 
 sub _buy_redis_increment_query {
-	my ($totals, $bet_data) = @_;
+    my ($totals, $contract) = @_;
     my @realized_loss_request;
     my @potential_loss_request;
+	my ($bet_data, $account_data) = @{$contract}{qw/bet_data account_data/};
 
     my $potential_loss = $bet_data->{payout_price} - $bet_data->{buy_price};
+	if ($account_data->{currency_code} ne 'USD') {
+		$potential_loss = convert_currency($potential_loss, $account_data->{currency_code}, 'USD');
+	}
 
     while (my ($k, $v) = each %{$totals}) {
         push(@potential_loss_request, $k) if ($v->[0]);
         push(@realized_loss_request,  $k) if ($v->[1]);
     }
 
-	my ($realized_loss_response, $potential_loss_response);
-    # BOM::Config::RedisReplicated::redis_limits_write->send_command(('HMGET', 'TOTALS_REALIZED_LOSS', @realized_loss_request), sub {
-	#     $realized_loss_response = $_[1];
-	# });
-	foreach my $i (0 .. scalar @potential_loss_request) {
-		my $p = $potential_loss_request[$i];
-		BOM::Config::RedisReplicated::redis_limits_write->hincrbyfloat('TOTALS_POTENTIAL_LOSS', $p, $potential_loss, sub {
-			$potential_loss_response->[$i] = $_[1];
-		});
-	}
+    my ($realized_loss_response, $potential_loss_response);
+
+    if (@realized_loss_request) {
+        BOM::Config::RedisReplicated::redis_limits_write->send_command(
+            ('HMGET', 'TOTALS_REALIZED_LOSS', @realized_loss_request),
+            sub {
+                $realized_loss_response = $_[1];
+            });
+    }
+
+    foreach my $i (0 .. $#potential_loss_request) {
+        my $p = $potential_loss_request[$i];
+        BOM::Config::RedisReplicated::redis_limits_write->hincrbyfloat(
+            'TOTALS_POTENTIAL_LOSS',
+            $p,
+            $potential_loss,
+            sub {
+                $potential_loss_response->[$i] = $_[1];
+            });
+    }
     BOM::Config::RedisReplicated::redis_limits_write->mainloop;
 
-	my %totals;
-	foreach my $i (0 .. scalar @potential_loss_request) {
-		$totals{$potential_loss_request[$i]}->[0] = $potential_loss_response->[$i];
-	}
+    my %totals;
+    foreach my $i (0 .. $#potential_loss_request) {
+        $totals{$potential_loss_request[$i]}->[0] = $potential_loss_response->[$i];
+    }
 
-	foreach my $i (0 .. scalar @realized_loss_request) {
-		$totals{$realized_loss_request[$i]}->[1] = $realized_loss_response->[$i];
-	}
+    foreach my $i (0 .. $#realized_loss_request) {
+        $totals{$realized_loss_request[$i]}->[1] = $realized_loss_response->[$i] // 0;
+    }
 
-	return %totals;;
+    return %totals;
 }
 
 sub add_sell_contract {
     my ($contract) = @_;
     my $bet_data = $contract->{bet_data};
-    print 'BET DATA: ', Dumper($contract);
+    # print 'BET DATA: ', Dumper($contract);
 
     # For sell, we increment counters but do not check if they exceed limits;
     # we only block buys, not sells.
+    # TODO: change to USD
     my $realized_loss = $bet_data->{sell_price} - $bet_data->{buy_price};
 }
 
