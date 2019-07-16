@@ -118,14 +118,13 @@ sub run_coordinator {
 
     $SIG{TERM} = $SIG{INT} = sub {
         $WORKERS = 0;
-
+        $loop->stop;
         Future->needs_all(map { $_->shutdown('TERM', timeout => 15) } values %workers)->get;
 
         unlink $SOCKETPATH;
         unlink $pid_file if $pid_file;
         exit 0;
     };
-
     if ($pid_file) {
         $pid_file = Path::Tiny->new($pid_file);
         $pid_file->spew($$);
@@ -220,6 +219,7 @@ sub run_worker_process {
     my $stopping;
     $loop->attach_signal(
         TERM => sub {
+            $loop->stop;
             return if $stopping++;
             $worker->stop->on_done(sub { exit 0; })->retain;
         });
@@ -241,12 +241,10 @@ sub run_worker_process {
             my $name   = $job->data('name');
             my $params = decode_json_utf8($job->data('params'));
 
-            my $queue_time = $job->data('rpc_queue_client_tv');
-            my ($queue)    = $worker->pending_queues;
-            my $tags       = {tags => ["method:$name", 'queue:' . $queue]};    #TODO: replace with a more reliable value
+            my ($queue) = $worker->pending_queues;
+            my $tags = {tags => ["method:$name", 'queue:' . $queue]};    #TODO: replace with a more reliable value
             stats_gauge('rpc_queue.worker.length', scalar(keys($worker->{pending_jobs}->%*)), $tags);
             stats_inc("rpc_queue.worker.calls", $tags);
-            stats_gauge("rpc_queue.client.latency", 1000 * Time::HiRes::tv_interval($queue_time), $tags) if $queue_time;
 
             # Handle a 'ping' request immediately here
             if ($name eq "ping") {
