@@ -75,7 +75,7 @@ Returns an error if a check fails else undef.
 sub validation_checks {
     my ($client, $validations) = @_;
 
-    $validations //= $client->landing_company->transaction_checks;
+    $validations //= $client->landing_company->client_validation_misc;
 
     for my $act (@$validations) {
         die "Error: no such hook $act"
