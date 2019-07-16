@@ -49,9 +49,20 @@ sub save_commission {
     my $args = shift;
 
     my $now = Date::Utility->new();
-    if (Date::Utility->new($args->{start_time})->is_before($now) or Date::Utility->new($args->{end_time})->is_before($now)) {
-        return _err("Start time and end time should not be in the past");
+
+    my ($start, $end);
+
+    return _err("Both starting time and ending time should present") unless $args->{start_time} and $args->{end_time};
+    my $error = try {
+        $start = Date::Utility->new($args->{start_time});
+        $end   = Date::Utility->new($args->{end_time});
+        _err("Start time and end time should not be in the past") if $start->is_before($now) or $end->is_before($now);
     }
+    catch {
+        _err("Invalid date format") unless $start and $end;
+    };
+
+    return _err($error->{error}) if defined $error and defined $error->{error};
 
     for (qw(ITM OTM)) {
         if (my $err = _check_value($_, $args)) {
