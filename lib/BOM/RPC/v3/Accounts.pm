@@ -1854,7 +1854,7 @@ rpc api_token => sub {
 
     my $m = BOM::Database::Model::AccessToken->new;
     my $rtn;
-    if ($args->{delete_token}) {
+    if (my $token = $args->{delete_token}) {
         # When a token is deleted from authdb, it need to be deleted from clientdb betonmarkets.copiers
         BOM::Database::DataMapper::Copier->new({
                 broker_code => $client->broker_code,
@@ -1863,9 +1863,10 @@ rpc api_token => sub {
             )->delete_copiers({
                 match_all => 1,
                 trader_id => $client->loginid,
-                token     => $args->{delete_token}});
+                token     => $token
+            });
 
-        $m->remove_by_token($args->{delete_token}, $client->loginid);
+        $m->remove_by_token($token, $client->loginid);
         $rtn->{delete_token} = 1;
         # send notification to cancel streaming, if we add more streaming
         # for authenticated calls in future, we need to add here as well
@@ -1876,6 +1877,7 @@ rpc api_token => sub {
                     $json->encode({
                             error => {
                                 code       => "TokenDeleted",
+                                token      => $token,
                                 account_id => $params->{account_id}}})));
         }
     }
