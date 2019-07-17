@@ -63,6 +63,10 @@ BEGIN {
         return env() =~ /^qa/;
     }
 
+    sub on_production {
+        return env() =~ /production/;
+    }
+
     my $dir_path      = __DIR__;
     my $test_data_dir = abs_path("$dir_path/../../data");
     my $config_dir    = $test_data_dir . '/config';
