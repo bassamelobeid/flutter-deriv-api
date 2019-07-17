@@ -22,7 +22,8 @@ sub new {
     my $url = 'redis://127.0.0.1:' . $1;
 
     my $script;
-    if (BOM::Test::on_qa()) {
+    #if (BOM::Test::on_qa()) {
+    (BOM::Test::on_qa())? warn 'ON QA': warn 'NOT ON QA';
         $script = BOM::Test::Script->new(
             script => "/home/git/regentmarkets/bom-rpc/bin/binary_jobqueue_worker.pl",
             args   => "--testing --redis $url --socket $socket",
@@ -38,7 +39,7 @@ sub new {
         $script->stop_script;
         $script->start_script_if_not_running;
         ($script->check_script)? print 'RPC QUEUE IS LOADED': warn 'RPC QUEUE IS NOT LOADED';;
-    }
+        #}
     return bless {
         redis  => $redis_server,
         script => $script,
