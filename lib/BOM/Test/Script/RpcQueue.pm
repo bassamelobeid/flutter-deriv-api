@@ -18,6 +18,9 @@ sub new {
             script => "/home/git/regentmarkets/bom-rpc/bin/binary_jobqueue_worker.pl",
             args   => "--testing --redis $url --socket $socket",
         );
+         system('sudo mkdir /var');
+         system('sudo mkdir /tmp');
+          system('sudo mkdir /var/run');
         system('sudo mkdir /var/run/bom-rpc');
         system('sudo chown nobody /var/run/bom-rpc');
         system('sudo chmod 770 /var/run/bom-rpc');
