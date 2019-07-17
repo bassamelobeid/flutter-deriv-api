@@ -14,6 +14,7 @@ use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
 use Path::Tiny qw(path);
 use Data::Dump 'pp';
 use Syntax::Keyword::Try;
+use Time::Moment;
 
 use Getopt::Long;
 use Log::Any qw($log);
@@ -237,16 +238,14 @@ sub run_worker_process {
     # Result: JSON-encoded result
     $worker->jobs->each(
         sub {
-            my $job    = $_;
-            my $name   = $job->data('name');
-            my $params = decode_json_utf8($job->data('params'));
+            my $job          = $_;
+            my $current_time = Time::Moment->now;
+            my $name         = $job->data('name');
+            my $params       = decode_json_utf8($job->data('params'));
 
-            my $queue_time = $job->data('rpc_queue_client_tv');
-            my ($queue)    = $worker->pending_queues;
-            my $tags       = {tags => ["method:$name", 'queue:' . $queue]};    #TODO: replace with a more reliable value
-            stats_gauge('rpc_queue.worker.length', scalar(keys($worker->{pending_jobs}->%*)), $tags);
-            stats_inc("rpc_queue.worker.calls", $tags);
-            stats_gauge("rpc_queue.client.latency", 1000 * Time::HiRes::tv_interval($queue_time), $tags) if $queue_time;
+            my ($queue) = $worker->pending_queues;
+            my $tags = {tags => ["rpc:$name", 'queue:' . $queue]};
+            stats_inc("rpc_queue.worker.jobs", $tags);
 
             # Handle a 'ping' request immediately here
             if ($name eq "ping") {
@@ -277,7 +276,10 @@ sub run_worker_process {
                             success => 0,
                             error   => "Unknown RPC name '$name'"
                         }));
+                stats_inc("rpc_queue.worker.jobs.failed", $tags);
             }
+
+            stats_gauge("rpc_queue.worker.jobs.latency", $current_time->delta_milliseconds(Time::Moment->now), $tags);
         });
 
     $worker->trigger;
