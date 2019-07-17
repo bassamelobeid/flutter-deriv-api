@@ -1126,9 +1126,9 @@ async sub _send_email_notification_for_poa {
     my $mt5_groups = await $redis_mt5_user->mget(@mt_loginid_keys);
 
     # loop through all mt5 loginids check
-    # mt5 group has advanced|standard then
+    # non demo mt5 group has advanced|standard then
     # its considered as financial
-    if (any { defined && /_standard|_advanced/ } @$mt5_groups) {
+    if (any { defined && /^(?!demo).*(_standard|_advanced)/ } @$mt5_groups) {
         await _send_poa_email($client);
     }
     return undef;
