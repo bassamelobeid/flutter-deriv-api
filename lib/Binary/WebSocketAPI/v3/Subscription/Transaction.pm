@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
+use Binary::WebSocketAPI::v3::Wrapper::Authorize;
 use Format::Util::Numbers qw(formatnumber);
 use Future;
 use Log::Any qw($log);
@@ -91,11 +92,13 @@ sub channel { return 'TXNUPDATE::transaction_' . shift->account_id }
 
 sub handle_error {
     my ($self, $err, $message) = @_;
-    if ($err eq 'TokenDeleted') {
-        delete $self->c->stash->{'transaction_channel'};
+    if ($err->{code} eq 'TokenDeleted') {
+        if ($self->c->stash->{token} eq $err->{token}) {
+            Binary::WebSocketAPI::v3::Wrapper::Authorize::logout_success($self->c);
+        }
         return;
     }
-    $log->warnf("error happened in class %s channel %s message %s: $err", $self->class, $self->channel, $message);
+    $log->warnf("error happened in class %s channel %s message %s: %s", $self->class, $self->channel, $message, $err->{code});
     return;
 }
 

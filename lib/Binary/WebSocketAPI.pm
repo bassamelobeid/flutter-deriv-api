@@ -579,13 +579,13 @@ sub startup {
             binary_frame => \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::document_upload,
             # action hooks
             before_forward => [
-                \&Binary::WebSocketAPI::Hooks::before_forward, \&Binary::WebSocketAPI::Hooks::assign_rpc_url,
-                \&Binary::WebSocketAPI::Hooks::introspection_before_forward,
+                \&Binary::WebSocketAPI::Hooks::start_timing,   \&Binary::WebSocketAPI::Hooks::before_forward,
+                \&Binary::WebSocketAPI::Hooks::assign_rpc_url, \&Binary::WebSocketAPI::Hooks::introspection_before_forward,
             ],
             before_call => [
-                \&Binary::WebSocketAPI::Hooks::add_app_id, \&Binary::WebSocketAPI::Hooks::add_log_config,
-                \&Binary::WebSocketAPI::Hooks::add_brand,  \&Binary::WebSocketAPI::Hooks::start_timing,
-                \&Binary::WebSocketAPI::Hooks::cleanup_stored_contract_ids
+                \&Binary::WebSocketAPI::Hooks::log_call_timing_before_forward, \&Binary::WebSocketAPI::Hooks::add_app_id,
+                \&Binary::WebSocketAPI::Hooks::add_log_config,                 \&Binary::WebSocketAPI::Hooks::add_brand,
+                \&Binary::WebSocketAPI::Hooks::start_timing,                   \&Binary::WebSocketAPI::Hooks::cleanup_stored_contract_ids
             ],
             before_get_rpc_response  => [\&Binary::WebSocketAPI::Hooks::log_call_timing],
             after_got_rpc_response   => [\&Binary::WebSocketAPI::Hooks::log_call_timing_connection, \&Binary::WebSocketAPI::Hooks::error_check],
