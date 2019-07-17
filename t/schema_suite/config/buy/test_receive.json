@@ -134,6 +134,12 @@
       },
       "longcode" : {
          "type" : "string"
+      },
+      "auth_time" : {
+        "type": "number"
+      },
+      "rpc_time" : {
+        "type": "number"
       }
    }
 }

@@ -91,6 +91,8 @@ subtest 'buy' => sub {
             shortcode
             payout
             stash
+            auth_time
+            rpc_time
     ));
     is_deeply([sort keys %$result], [sort @expected_keys], 'result keys is ok');
     my $new_balance = formatnumber('amount', 'USD', $client->default_account->balance);
