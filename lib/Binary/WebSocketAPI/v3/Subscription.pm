@@ -82,9 +82,10 @@ Handle incoming messages.
 
 sub process {
     my ($self, $message) = @_;
+    return unless $self->worker;
     return try {
         my $data = decode_json_utf8($message);
-        return $self->worker->handle_error($data->{error}{code}, $message) if exists $data->{error};
+        return $self->worker->handle_error($data->{error}, $message) if exists $data->{error};
         return $self->worker->handle_message($data);
     }
     catch {
