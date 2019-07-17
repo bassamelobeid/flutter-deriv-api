@@ -31,13 +31,11 @@ sub check_script {
     my $name = $self->name;
     local $?;    # localise $? in case this method is called at END time
     system("/usr/bin/pgrep -f $name | grep $pid");
-    warn $pid;
     return !$?;    # return  true if pgrep success
 }
 
 sub start_script_if_not_running {
     my $self = shift;
-    warn 'NO SCRIPT ' . $self->name unless $self->script;
     return 0 unless $self->script;
     return 1 if $self->check_script();
     return $self->start_script();
@@ -50,7 +48,6 @@ sub start_script {
     my $pid_file = $self->pid_file;
     $pid_file->remove;
     my $args = $self->args // '';
-    print 'LOADING ' . $self->name;
     system("$script --pid-file $pid_file $args &");
 
     for (1 .. 5) {

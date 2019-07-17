@@ -9,9 +9,8 @@ sub create_path {
     my $path = shift;
     use Path::Tiny;
     return if path($path)->exists;
-    print "$path DOES NOT EXIST. CREATING";
     system("sudo mkdir $path");
-    warn "FAILED TO CREATE" if $?;
+    warn "FAILED TO CREATE PATH $path" if $?;
 }
 
 sub new {
@@ -22,15 +21,11 @@ sub new {
     my $url = 'redis://127.0.0.1:' . $1;
 
     my $script;
-    (BOM::Test::on_production()) ? print 'ON PRODUCTION' : warn 'NOT ON PRODUCTION';
     if (!BOM::Test::on_production) {
         $script = BOM::Test::Script->new(
             script => "/home/git/regentmarkets/bom-rpc/bin/binary_jobqueue_worker.pl",
-            args   => "--testing --redis $url --socket $socket",
+            args   => "--testing --workers 1 --redis $url --socket $socket",
         );
-        create_path('/var/');
-        create_path('/tmp/');
-        create_path('/var/run/');
         create_path('/var/run/bom-rpc/');
         system('sudo chown nobody /var/run/bom-rpc');
         warn "FAILED TO SET OWNER" if $?;
@@ -38,7 +33,7 @@ sub new {
         warn "FAILED TO SET MODE" if $?;
         $script->stop_script;
         $script->start_script_if_not_running;
-        ($script->check_script) ? print 'RPC QUEUE IS LOADED' : warn 'RPC QUEUE IS NOT LOADED';
+        warn 'RPC QUEUE IS NOT LOADED' unless $script->check_script;
     }
     return bless {
         redis  => $redis_server,
