@@ -32,7 +32,6 @@ sub check_script {
     local $?;    # localise $? in case this method is called at END time
     system("/usr/bin/pgrep -f $name | grep $pid");
     warn $pid;
-    print "SCRIPT IS RUNNING: $name" if $?;
     return !$?;    # return  true if pgrep success
 }
 

@@ -5,11 +5,11 @@ use warnings;
 use BOM::Test;
 use BOM::Test::Script;
 
-sub create_path{
+sub create_path {
     my $path = shift;
     use Path::Tiny;
     return if path($path)->exists;
-    warn "$path DOES NOT EXIST. CREATING";
+    print "$path DOES NOT EXIST. CREATING";
     system("sudo mkdir $path");
     warn "FAILED TO CREATE" if $?;
 }
@@ -22,24 +22,24 @@ sub new {
     my $url = 'redis://127.0.0.1:' . $1;
 
     my $script;
-    #if (BOM::Test::on_qa()) {
-    (BOM::Test::on_qa())? warn 'ON QA': warn 'NOT ON QA';
+    (BOM::Test::on_production()) ? print 'ON PRODUCTION' : warn 'NOT ON PRODUCTION';
+    if (!BOM::Test::on_production) {
         $script = BOM::Test::Script->new(
             script => "/home/git/regentmarkets/bom-rpc/bin/binary_jobqueue_worker.pl",
             args   => "--testing --redis $url --socket $socket",
         );
         create_path('/var/');
-        create_path('/tmp/'); 
-        create_path('/var/run/'); 
-        create_path('/var/run/bom-rpc/'); 
+        create_path('/tmp/');
+        create_path('/var/run/');
+        create_path('/var/run/bom-rpc/');
         system('sudo chown nobody /var/run/bom-rpc');
         warn "FAILED TO SET OWNER" if $?;
         system('sudo chmod 770 /var/run/bom-rpc');
         warn "FAILED TO SET MODE" if $?;
         $script->stop_script;
         $script->start_script_if_not_running;
-        ($script->check_script)? print 'RPC QUEUE IS LOADED': warn 'RPC QUEUE IS NOT LOADED';;
-        #}
+        ($script->check_script) ? print 'RPC QUEUE IS LOADED' : warn 'RPC QUEUE IS NOT LOADED';
+    }
     return bless {
         redis  => $redis_server,
         script => $script,
