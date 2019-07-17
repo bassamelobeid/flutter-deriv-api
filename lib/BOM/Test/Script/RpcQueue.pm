@@ -21,7 +21,7 @@ sub new {
     my $url = 'redis://127.0.0.1:' . $1;
 
     my $script;
-    if (!BOM::Test::on_production) {
+    if (BOM::Test::on_qa) {
         $script = BOM::Test::Script->new(
             script => "/home/git/regentmarkets/bom-rpc/bin/binary_jobqueue_worker.pl",
             args   => "--testing --workers 1 --redis $url --socket $socket",
