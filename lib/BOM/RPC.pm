@@ -6,6 +6,7 @@ no indirect;
 
 use Try::Tiny;
 use Scalar::Util q(blessed);
+use Time::HiRes qw();
 
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Context::Request;
@@ -74,7 +75,6 @@ eventually returning the result of the RPC, even for asynchronous methods.
 =cut
 
 # TODO(leonerd): Allow this to be async-returning for Futures
-
 sub wrap_rpc_sub {
     my ($def) = @_;
 
@@ -84,6 +84,7 @@ sub wrap_rpc_sub {
         my @original_args = @_;
         my $params = $original_args[0] // {};
 
+        my $tv = [Time::HiRes::gettimeofday];
         $params->{token} = $params->{args}->{authorize} if !$params->{token} && $params->{args}->{authorize};
 
         foreach (REQUEST_ARGUMENTS_TO_BE_IGNORED) {
@@ -131,6 +132,8 @@ sub wrap_rpc_sub {
             }
         }
 
+        my $auth_timing = 1000 * Time::HiRes::tv_interval($tv);
+
         my @args   = @original_args;
         my $result = try {
             my $code = $def->code;
@@ -166,6 +169,8 @@ sub wrap_rpc_sub {
         if ($verify_app_res && ref $result eq 'HASH' && !$result->{error}) {
             $result->{stash} = {%{$result->{stash} // {}}, %{$verify_app_res->{stash}}};
         }
+
+        $result->{auth_time} = $auth_timing if ref $result eq 'HASH' && $result->{rpc_time};
         return $result;
     };
 }
