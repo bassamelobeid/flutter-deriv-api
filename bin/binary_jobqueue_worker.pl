@@ -123,14 +123,14 @@ sub run_coordinator {
 
     $SIG{TERM} = $SIG{INT} = sub {
         $WORKERS = 0;
-        $loop->stop;
+        $log->info("Terminating workers...");
         Future->needs_all(map { $_->shutdown('TERM', timeout => 15) } values %workers)->get;
 
         unlink $SOCKETPATH;
-        unlink $pid_file if $pid_file;
+        unlink $pid_file if $pid_file && $TESTING;
         exit 0;
     };
-    if ($pid_file) {
+    if ($pid_file && $TESTING) {
         $pid_file = Path::Tiny->new($pid_file);
         $pid_file->spew($$);
     }
@@ -186,7 +186,7 @@ sub add_worker_process {
 
             return if keys %workers >= $WORKERS;
 
-            $log->debugf("Restarting");
+            $log->debug("Restarting");
 
             $loop->delay_future(after => 1)->on_done(sub { add_worker_process() })->retain;
         },
@@ -224,7 +224,6 @@ sub run_worker_process {
     my $stopping;
     $loop->attach_signal(
         TERM => sub {
-            $loop->stop;
             return if $stopping++;
             $worker->stop->on_done(sub { exit 0; })->retain;
         });
