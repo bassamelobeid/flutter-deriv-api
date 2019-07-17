@@ -59,7 +59,7 @@ $res = $t->await::proposal({
     %contractParameters
 });
 
-is @$timing, 3, 'Should make 3 logs';
+is @$timing, 4, 'Should make 4 logs. Added pre_rpc log';
 
 is $timing->[1]->[0], 'bom_websocket_api.v_3.rpc.call.timing.connection';
 ok $timing->[1]->[1], 'Should log timing';
