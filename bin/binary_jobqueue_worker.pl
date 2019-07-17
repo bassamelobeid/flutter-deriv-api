@@ -157,7 +157,7 @@ sub handle_ctrl_command_DEC_WORKERS {
     while (keys %workers > $WORKERS) {
         # Arbitrarily pick a victim
         my $worker_to_die = delete $workers{(keys %workers)[0]};
-        $worker_to_die->shutdown('TERM', timeout => 15)->on_done(sub { $conn->write("WORKERS " . scalar(keys %workers) . "\n") })->retain;
+        $worker_to_die->shutdown('TERM', timeout => 15)->on_done(sub { $conn->write("WORKERS " . scalar(keys %workers) . "\n") })->get;
     }
 }
 
@@ -225,7 +225,7 @@ sub run_worker_process {
     $loop->attach_signal(
         TERM => sub {
             return if $stopping++;
-            $worker->stop->on_done(sub { exit 0; })->retain;
+            $worker->stop->on_done(sub { exit 0; })->get;
         });
     $SIG{INT} = 'IGNORE';
 
