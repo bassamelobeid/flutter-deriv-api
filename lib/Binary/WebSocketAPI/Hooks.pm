@@ -91,6 +91,19 @@ sub cleanup_stored_contract_ids {
     return;
 }
 
+sub log_call_timing_before_forward {
+    my ($c, $req_storage) = @_;
+
+    if ($req_storage && $req_storage->{tv} && $req_storage->{method}) {
+        DataDog::DogStatsd::Helper::stats_timing(
+            'bom_websocket_api.v_3.rpc.call.timing.before_forward',
+            1000 * Time::HiRes::tv_interval($req_storage->{tv}),
+            {tags => ["rpc:$req_storage->{method}"]});
+    }
+
+    return;
+}
+
 sub log_call_timing {
     my ($c, $req_storage) = @_;
     my $tags = ["rpc:$req_storage->{method}", "app_name:" . ($c->stash('app_name') || ''), "app_id:" . ($c->stash('source') || ''),];
@@ -106,14 +119,20 @@ sub log_call_timing {
 }
 
 sub log_call_timing_connection {
-    my (undef, $req_storage, $rpc_response) = @_;
-    if (ref($rpc_response->result) eq "HASH"
-        && (my $rpc_time = delete $rpc_response->result->{rpc_time}))
+    my ($c, $req_storage, $rpc_response) = @_;
+
+    if (   ref($rpc_response->result) eq "HASH"
+        && (my $rpc_time  = delete $rpc_response->result->{rpc_time})
+        && (my $auth_time = delete $rpc_response->result->{auth_time}))
     {
+        my $tags = ["rpc:$req_storage->{method}"];
+        push @$tags, "market:" . $c->stash('market') if $req_storage->{method} eq 'buy' && $c->stash('market');
         DataDog::DogStatsd::Helper::stats_timing(
             'bom_websocket_api.v_3.rpc.call.timing.connection',
-            1000 * Time::HiRes::tv_interval($req_storage->{tv}) - $rpc_time,
-            {tags => ["rpc:$req_storage->{method}"]});
+            1000 * Time::HiRes::tv_interval($req_storage->{tv}) - $rpc_time - $auth_time,
+            {tags => $tags});
+
+        DataDog::DogStatsd::Helper::stats_timing('bom_websocket_api.v_3.pre_rpc.call.timing.', $auth_time, {tags => $tags});
     }
     return;
 }
@@ -146,12 +165,15 @@ sub add_call_debug {
 }
 
 sub log_call_timing_sent {
-    my (undef, $req_storage) = @_;
+    my ($c, $req_storage) = @_;
+
     if ($req_storage && $req_storage->{tv} && $req_storage->{method}) {
+        my $tags = ["rpc:$req_storage->{method}"];
+        push @$tags, "market:" . $c->stash('market') if $req_storage->{method} eq 'buy' and $c->stash('market');
         DataDog::DogStatsd::Helper::stats_timing(
             'bom_websocket_api.v_3.rpc.call.timing.sent',
             1000 * Time::HiRes::tv_interval($req_storage->{tv}),
-            {tags => ["rpc:$req_storage->{method}"]});
+            {tags => $tags});
     }
     return;
 }
