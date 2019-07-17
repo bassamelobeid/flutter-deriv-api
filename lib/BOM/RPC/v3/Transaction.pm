@@ -7,6 +7,7 @@ use Try::Tiny;
 use Encode;
 use JSON::MaybeXS;
 use Scalar::Util qw(blessed);
+use Time::HiRes qw();
 
 use Format::Util::Numbers qw/formatnumber financialrounding/;
 
@@ -118,6 +119,7 @@ sub _validate_stake {
 rpc buy => sub {
     my $params = shift;
 
+    my $tv = [Time::HiRes::gettimeofday];
     my $client = $params->{client} // die "Client should have been authenticated at this stage.";
 
     my ($source, $contract_parameters, $args, $payout) = @{$params}{qw/source contract_parameters args payout/};
@@ -249,7 +251,9 @@ rpc buy => sub {
         longcode         => localize($contract->longcode),
         shortcode        => $contract->shortcode,
         payout           => $trx->payout,
-        stash => {market => $contract->market->name}};
+        stash    => {market => $contract->market->name},
+        rpc_time => 1000 * Time::HiRes::tv_interval($tv),
+    };
 };
 
 rpc buy_contract_for_multiple_accounts => sub {

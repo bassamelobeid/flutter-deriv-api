@@ -38,8 +38,8 @@ use BOM::User::FinancialAssessment qw(update_financial_assessment decode_fa);
 requires_auth();
 
 sub _create_oauth_token {
-    my $loginid = shift;
-    my ($access_token) = BOM::Database::Model::OAuth->new->store_access_token_only('1', $loginid);
+    my ($app_id, $loginid) = @_;
+    my ($access_token) = BOM::Database::Model::OAuth->new->store_access_token_only($app_id, $loginid);
     return $access_token;
 }
 
@@ -47,7 +47,8 @@ rpc "new_account_virtual",
     auth => 0,    # unauthenticated
     sub {
     my $params = shift;
-    my $args   = $params->{args};
+
+    my $args = $params->{args};
     my $err_code;
     if ($err_code = BOM::RPC::v3::Utility::_check_password({new_password => $args->{client_password}})) {
         return $err_code;
@@ -109,11 +110,11 @@ rpc "new_account_virtual",
         payment_agent => 0,
     );
     return {
-        client_id   => $client->loginid,
-        email       => $email,
-        currency    => $account->currency_code(),
-        balance     => formatnumber('amount', $account->currency_code(), $account->balance),
-        oauth_token => _create_oauth_token($client->loginid),
+        client_id => $client->loginid,
+        email     => $email,
+        currency  => $account->currency_code(),
+        balance   => formatnumber('amount', $account->currency_code(), $account->balance),
+        oauth_token => _create_oauth_token($params->{source}, $client->loginid),
     };
     };
 
@@ -352,7 +353,7 @@ rpc new_account_real => sub {
         client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,
         landing_company_shortcode => $landing_company->short,
-        oauth_token               => _create_oauth_token($new_client->loginid),
+        oauth_token               => _create_oauth_token($params->{source}, $new_client->loginid),
         $args->{currency} ? (currency => $new_client->currency) : (),
     };
 };
@@ -464,7 +465,7 @@ rpc new_account_maltainvest => sub {
         client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,
         landing_company_shortcode => $landing_company->short,
-        oauth_token               => _create_oauth_token($new_client->loginid),
+        oauth_token               => _create_oauth_token($params->{source}, $new_client->loginid),
     };
 };
 
