@@ -21,9 +21,12 @@ use BOM::User::Client;
 use Email::Stuffer::TestLinks;
 use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use BOM::Test::Helper::FinancialAssessment;
-
+use BOM::Database::Model::OAuth;
+use BOM::Database::Model::AccessToken;
 use utf8;
-
+my $app = BOM::Database::Model::OAuth->new->create_app({name => 'test', scopes => '{read,admin,trade,payments}', user_id => 1 });
+my $app_id = $app->{app_id};
+isnt($app_id,1, 'app id is not 1'); # There was a bug that the created token will be always app_id 1; We want to test that it is fixed.
 my %emitted;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
 $mock_events->mock(
@@ -58,7 +61,7 @@ $client_details = {
 
 $params = {
     language => 'EN',
-    source   => 1,
+    source   => $app_id,
     country  => 'ru',
     args     => {},
 };
@@ -113,6 +116,10 @@ subtest $method => sub {
     my $new_loginid = $rpc_ct->result->{client_id};
 
     ok $new_loginid =~ /^VRTC\d+/, 'new VR loginid';
+
+    my $token_db = BOM::Database::Model::AccessToken->new();
+    my $tokens = $token_db->get_all_tokens_by_loginid($new_loginid);
+    is($tokens->[0]{info}, "App ID: $app_id", "token's app_id is correct");
     my $user = BOM::User->new(
         email => $email,
     );
@@ -174,7 +181,7 @@ subtest $method => sub {
 $method = 'new_account_real';
 $params = {
     language => 'EN',
-    source   => 1,
+    source   => $app_id,
     country  => 'ru',
     args     => {},
 };
@@ -261,6 +268,11 @@ subtest $method => sub {
 
         my $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^CR\d+$/, 'new CR loginid';
+
+        my $token_db = BOM::Database::Model::AccessToken->new();
+        my $tokens = $token_db->get_all_tokens_by_loginid($new_loginid);
+        is($tokens->[0]{info}, "App ID: $app_id", "token's app_id is correct");
+
 
         ok $emitted{"register_details_$new_loginid"}, "register_details event emitted";
 
@@ -400,7 +412,7 @@ subtest $method => sub {
 $method = 'new_account_maltainvest';
 $params = {
     language => 'EN',
-    source   => 1,
+    source   => $app_id,
     country  => 'ru',
     args     => {
         'other_instruments_trading_frequency'  => '6-10 transactions in the past 12 months',
@@ -553,6 +565,11 @@ subtest $method => sub {
         my $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^MF\d+/, 'new MF loginid';
 
+        my $token_db = BOM::Database::Model::AccessToken->new();
+        my $tokens = $token_db->get_all_tokens_by_loginid($new_loginid);
+        is($tokens->[0]{info}, "App ID: $app_id", "token's app_id is correct");
+
+
         my $cl = BOM::User::Client->new({loginid => $new_loginid});
         ok($cl->status->financial_risk_approval, 'For mf accounts we will set financial risk approval status');
 
@@ -614,6 +631,10 @@ subtest $method => sub {
 
         my $result = $rpc_ct->call_ok($method, $params)->result;
         my $new_loginid = $result->{client_id};
+
+        my $token_db = BOM::Database::Model::AccessToken->new();
+        my $tokens = $token_db->get_all_tokens_by_loginid($new_loginid);
+        is($tokens->[0]{info}, "App ID: $app_id", "token's app_id is correct");
 
         my $auth_token_mf = BOM::Database::Model::AccessToken->new->create_token($new_loginid, 'test token');
         # make sure data is same, as in first account, regardless of what we have provided
@@ -679,6 +700,10 @@ subtest $method => sub {
         is $result->{error}->{code}, undef, 'Allow to open even if Client KYC is pending';
 
         my $new_loginid = $result->{client_id};
+        my $token_db = BOM::Database::Model::AccessToken->new();
+        my $tokens = $token_db->get_all_tokens_by_loginid($new_loginid);
+        is($tokens->[0]{info}, "App ID: $app_id", "token's app_id is correct");
+
         my $auth_token_mf = BOM::Database::Model::AccessToken->new->create_token($new_loginid, 'test token');
 
         # make sure data is same, as in first account, regardless of what we have provided
