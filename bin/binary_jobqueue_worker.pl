@@ -18,7 +18,6 @@ use Time::Moment;
 
 use Getopt::Long;
 use Log::Any qw($log);
-use Log::Any::Adapter qw(Stderr), log_level => 'info';
 
 GetOptions(
     'testing|T'    => \my $TESTING,
@@ -27,7 +26,11 @@ GetOptions(
     'socket|S=s'   => \(my $SOCKETPATH),
     'redis|R=s'    => \(my $REDIS),
     'pid-file|P=s' => \(my $pid_file),
+    'l|log=s'      => \(my $log_level = "info"),
 ) or exit 1;
+
+require Log::Any::Adapter;
+Log::Any::Adapter->import(qw(Stderr), log_level => $log_level);
 
 exit run_worker_process() if $FOREGROUND;
 
@@ -81,7 +84,7 @@ $loop->add(
             $self->add_child($conn);
         },
     ));
-print STDERR "Listening on control socket $SOCKETPATH\n";
+$log->debugf("Listening on control socket %s", $SOCKETPATH);
 
 exit run_coordinator();
 
@@ -90,7 +93,7 @@ my %workers;
 sub takeover_coordinator {
     my ($sock) = @_;
 
-    print STDERR "Taking over existing socket\n";
+    $log->debug("Taking over existing socket");
 
     $loop->add(
         my $conn = IO::Async::Stream->new(
@@ -111,11 +114,12 @@ sub takeover_coordinator {
     $conn->write("EXIT\n");
     $conn->close_when_empty;
 
-    print STDERR "Takeover successful\n";
+    $log->debug("Takeover successful");
 }
 
 sub run_coordinator {
     add_worker_process() while keys %workers < $WORKERS;
+    $log->infof("%d Workers are running, processing queue on: %s", $WORKERS, $REDIS // 'redis://127.0.0.1');
 
     $SIG{TERM} = $SIG{INT} = sub {
         $WORKERS = 0;
@@ -136,13 +140,13 @@ sub run_coordinator {
 
 sub handle_ctrl_command {
     my ($cmd, $conn) = @_;
-    print STDERR "Control command> $cmd\n";
+    $log->debug("Control command> $cmd");
 
     $cmd =~ s/-/_/g;
     if (my $code = __PACKAGE__->can("handle_ctrl_command_$cmd")) {
         $code->($conn);
     } else {
-        print STDERR "Ignoring unrecognised control command\n";
+        $log->debug("Ignoring unrecognised control command");
     }
 }
 
@@ -168,7 +172,7 @@ sub add_worker_process {
             undef $loop;
             undef $IO::Async::Loop::ONE_TRUE_LOOP;
 
-            print STDERR "[$$] worker process waiting\n";
+            $log->debugf("[%d] worker process waiting", $$);
             $log->{context}{pid} = $$;
             return run_worker_process();
         },
@@ -176,13 +180,13 @@ sub add_worker_process {
             my ($worker, $exitcode) = @_;
             my $pid = $worker->pid;
 
-            print STDERR "Worker $pid exited code $exitcode\n";
+            $log->debugf("Worker %d exited code %d", $pid, $exitcode);
 
             delete $workers{$worker->pid};
 
             return if keys %workers >= $WORKERS;
 
-            print STDERR "Restarting\n";
+            $log->debugf("Restarting");
 
             $loop->delay_future(after => 1)->on_done(sub { add_worker_process() })->retain;
         },
@@ -200,7 +204,7 @@ sub run_worker_process {
 
     if ($TESTING) {
         # Running for a unit test; so start it up in test mode
-        print STDERR "! Running in unit-test mode !\n";
+        $log->debug("! Running in unit-test mode !");
         require BOM::Test;
         BOM::Test->import;
 
@@ -257,11 +261,11 @@ sub run_worker_process {
                 return;
             }
 
-            print STDERR "Running RPC <$name> for:\n" . pp($params) . "\n";
+            $log->tracef("Running RPC <%s> for: %s", $name, pp($params));
 
             if (my $code = $services{$name}) {
                 my $result = $code->($params);
-                print STDERR "Result:\n" . join("\n", map { " | $_" } split m/\n/, pp($result)) . "\n";
+                $log->tracef("Results:\n%s", join("\n", map { " | $_" } split m/\n/, pp($result)));
 
                 $_->done(
                     encode_json_utf8({
@@ -269,7 +273,7 @@ sub run_worker_process {
                             result  => $result
                         }));
             } else {
-                print STDERR "  UNKNOWN\n";
+                $log->trace("  UNKNOWN");
                 # Transport mechanism itself succeeded, so ->done is fine here
                 $_->done(
                     encode_json_utf8({
