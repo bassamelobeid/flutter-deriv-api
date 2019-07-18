@@ -129,7 +129,7 @@ sub build_wsapi_test {
 
     my ($tmp_dir, $redis_server) = launch_redis;
     my $rpc_queue = BOM::Test::Script::RpcQueue->new($redis_server);
-
+    $rpc_queue->start;
     my $t = build_mojo_test('Binary::WebSocketAPI', $args);
     $t->app->log(Mojo::Log->new(level => 'debug'));
 
@@ -151,7 +151,7 @@ sub build_wsapi_test {
     $t->{_bom} = {
         tmp_dir      => $tmp_dir,
         redis_server => $redis_server,
-        rpc_queue    => $rpc_queue,
+        rpc_queue => $rpc_queue,
     };
 
     return $t;
@@ -238,5 +238,6 @@ sub call_mocked_client {
     $module->unmock_all;
     return ($res, $call_params);
 }
+
 
 1;
