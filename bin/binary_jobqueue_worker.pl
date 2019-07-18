@@ -25,7 +25,6 @@ GetOptions(
     'workers|w=i'  => \(my $WORKERS = 4),
     'socket|S=s'   => \(my $SOCKETPATH),
     'redis|R=s'    => \(my $REDIS),
-    'pid-file|P=s' => \(my $pid_file),
     'l|log=s'      => \(my $log_level = "info"),
 ) or exit 1;
 
@@ -127,13 +126,8 @@ sub run_coordinator {
         Future->needs_all(map { $_->shutdown('TERM', timeout => 15) } values %workers)->get;
 
         unlink $SOCKETPATH;
-        unlink $pid_file if $pid_file && $TESTING;
         exit 0;
     };
-    if ($pid_file && $TESTING) {
-        $pid_file = Path::Tiny->new($pid_file);
-        $pid_file->spew($$);
-    }
 
     $loop->run;
 }
@@ -153,16 +147,28 @@ sub handle_ctrl_command {
 sub handle_ctrl_command_DEC_WORKERS {
     my ($conn) = @_;
 
-    $WORKERS--;
+    $WORKERS = $WORKERS -1;
+    if (scalar(keys %workers) == 0){
+        $conn->write("WORKERS " . scalar(keys %workers) . "\n");
+        return;
+    }
     while (keys %workers > $WORKERS) {
         # Arbitrarily pick a victim
         my $worker_to_die = delete $workers{(keys %workers)[0]};
+        
         $worker_to_die->shutdown('TERM', timeout => 15)->on_done(sub { $conn->write("WORKERS " . scalar(keys %workers) . "\n") })->get;
     }
 }
 
+sub handle_ctrl_command_PING {
+    my ($conn) = @_;
+    
+    $conn->write("PONG\n");
+}
+
 sub handle_ctrl_command_EXIT {
 # Immediate exit; don't use the SIGINT shutdown part
+    unlink $SOCKETPATH;
     exit 0;
 }
 
