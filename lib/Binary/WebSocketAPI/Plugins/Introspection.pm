@@ -264,14 +264,13 @@ command connections => sub {
     my @connections        = map {
         my $pc = 0;
         my $ch = 0;
-        for my $k (keys %{$_->pricing_subscriptions}) {
-            ++$pc if defined $_->pricing_subscriptions->{$k};
+
+        my $stats = Binary::WebSocketAPI::v3::Subscription->introspect($_);
+        for my $class (keys %$stats) {
+            $pc += $stats->{$class}{subscription_count};
+            $ch += $stats->{$class}{channel_count};
         }
-        for my $k (keys %{$_->stash->{pricing_channel} || {}}) {
-            next if $k eq 'uuid';
-            next if $k eq 'price_daemon_cmd';
-            $ch += scalar keys %{$_->stash->{pricing_channel}{$k}};
-        }
+
         my $connection_info = {
             app_id                         => $_->stash->{source},
             landing_company                => $_->landing_company_name,

@@ -1,0 +1,17 @@
+msc {
+    hscale=4,arcgradient = 8;
+    client, array [label = "Subscription::Pricer::ProposalArray"], item [label = "Subscription::Pricer::ProposalArray"], redis, outside;
+    array -> item [label = "create and subscribe item channel\n will keep array uuid\nwill set channel name in redis"];
+    --- [ label = "boundary line for subscribing/processing" ];
+    outside -> redis [label = "read the channe name\n calculate the price\npublish the result\nplease see bom-pricing code"];
+    item box item [label = "start _proposal_array_collector IOloop"];
+    item box item [label = "get ProposalArray by the uuid in self->cache"];
+    item box item [label = "process every price in message\nstore them into ProposalArray subscription object\nwill be collected by _proposal_array_collector IOLoop"];
+    --- [label = "proposal_array_collector IOLoop start"];
+    item box item [label = "get ProposalArray object"];
+    item box item [label = "for ProposalArrayItems"];
+    item box item [label = "for every price in item"];
+    item box item [label = "process and push to result array"];
+    item box item [label = "end for\n end for"];
+    item -> client [label = "return result"];
+}

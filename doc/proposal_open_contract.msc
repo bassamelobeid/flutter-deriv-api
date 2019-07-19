@@ -1,0 +1,25 @@
+msc {
+    hscale=4,arcgradient = 8;
+    client, pricer [label = "Wraper::Pricer"], bom_rpc,  proposal [label = "Subscription::Pricer::ProposalOpenContract"],  redis, outside;
+    client -> bom_rpc [label = "client send request to websocketapi\n websocket forward the request to rpc"];
+    bom_rpc -> pricer [label = "rpc return the result back to websocketapi"];
+    pricer -> client [label = "return result if result is valid"];
+    pricer -> bom_rpc [label = "ask proposal_open_contract"];
+    bom_rpc -> pricer [label = "return message"];
+    pricer -> outside [label = "subscribe transaction channel with type 'buy'\n if args->subscribe is true \n and  args no account_id \n and stash has account_id"];
+    pricer -> client [label = "process rpc response and return\n if response is valid\n see following 'process response'", id="process response"];
+    pricer -> bom_rpc [label = "retry proposal_open_contract 5 times\n if propsal_open_contract with contract_id which was bought just now", id="loop"];
+    bom_rpc -> pricer [label = "return message"];
+    pricer -> pricer [label = "goto loop\n if invalid response"];
+    --- [label = "process response begin"];
+    pricer -> pricer [label = "process data"];
+    pricer -> proposal [label = "subscribe channel"];
+    proposal -> redis [label = "subscribe channel\nstore channel name"];
+    pricer -> outside [label = "subscribe transaction\n with type uuid of proposal streamer"];
+    pricer -> client [label = "return message"];
+    --- [label = "process response end"];
+    --- [label = "boundary line between subscribing/processing"];
+    outside -> redis [label = "read the channe name\n calculate the price\npublish the result\nplease see bom-pricing code"];
+    redis -> proposal [label = "get the message"];
+    proposal -> client [label = "process and return message"];
+}

@@ -18,7 +18,6 @@ use Format::Util::Numbers qw(formatnumber);
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Instance::Redis qw(ws_redis_master shared_redis);
-use Binary::WebSocketAPI::v3::Subscription::Transaction;
 use Binary::WebSocketAPI::v3::Subscription::Feed;
 
 my $json = JSON::MaybeXS->new;
@@ -72,7 +71,7 @@ sub website_status {
                             return $c->new_error('website_status', 'AlreadySubscribed',
                                 $c->l('You are already subscribed to [_1]', 'website_status'));
                         } else {
-                            $uuid = _generate_uuid_string();
+                            $uuid = Binary::WebSocketAPI::v3::Subscription::generate_uuid_string();
                         }
 
                         $shared_info->{broadcast_notifications}{$connection_id}{'c'}            = $c;
@@ -249,14 +248,17 @@ sub ticks_history {
                     my $args = $req_storage->{args};
                     if (exists $rpc_response->{error}) {
                         # cancel subscription if response has error
-                        feed_channel_unsubscribe($c, $args->{ticks_history}, $publish, $args->{req_id}) if $worker;
+                        $worker->unregister if $worker;
                         return $c->new_error('ticks_history', $rpc_response->{error}->{code}, $c->l($rpc_response->{error}->{message_to_client}));
                     }
 
-                    my $channel = $args->{ticks_history} . ';' . $publish;
-                    $channel .= ";" . $args->{req_id} if exists $args->{req_id};
-
-                    my $real_worker = $worker || $c->stash->{feed_channel_type}->{$channel};
+                    my $real_worker = $worker || Binary::WebSocketAPI::v3::Subscription::Feed->new(
+                        c          => $c,
+                        type       => $publish,
+                        args       => $args,
+                        symbol     => $args->{ticks_history},
+                        cache_only => 0,
+                    )->already_registered;
                     my $cache = $real_worker ? $real_worker->cache : undef;
                     # check for cached data
                     if ($cache and scalar(keys %$cache)) {
@@ -307,7 +309,7 @@ sub ticks_history {
 
                     if ($worker) {
                         # remove the cache_only flag which was set during subscription
-                        # TODO chylli to viewer: should we delete it if we used cache directly but not do a subscription? that is, we run callback directly, without subscribing ? I guess we shouldn't delete it
+                        # TODO to viewer: should we delete it if we used cache directly but not do a subscription? that is, we run callback directly, without subscribing ? I guess we shouldn't delete it
                         $worker->clear_cache;
                         $worker->cache_only(0);
 
@@ -337,120 +339,19 @@ sub ticks_history {
 sub _feed_channel_subscribe {
     my ($c, $symbol, $type, $args, $callback, $cache_only) = @_;
 
-    my $feed_channel_type = $c->stash('feed_channel_type') // {};
-
-    my $key    = "$symbol;$type";
-    my $req_id = $args->{req_id};
-    $key .= ";$req_id" if $req_id;
-
-    if (exists $feed_channel_type->{$key}) {
-        return;
-    }
-
-    my $uuid = _generate_uuid_string();
-
     my $worker = Binary::WebSocketAPI::v3::Subscription::Feed->new(
         c          => $c,
         type       => $type,
         args       => $args,
         symbol     => $symbol,
-        uuid       => $uuid,
         cache_only => $cache_only || 0,
     );
 
-    $feed_channel_type->{$key} = $worker;
-
-    $c->stash('feed_channel_type', $feed_channel_type);
-
+    return if ($worker->already_registered);
+    $worker->register;
+    my $uuid = $worker->uuid();
     $worker->subscribe($callback);
-
     return $uuid;
-}
-
-sub feed_channel_unsubscribe {
-    my ($c, $symbol, $type, $req_id) = @_;
-
-    my $feed_channel_type = $c->stash('feed_channel_type');
-
-    my $key = "$symbol;$type";
-    $key .= ";$req_id" if $req_id;
-
-    delete $feed_channel_type->{$key};
-    return;
-}
-
-sub transaction_channel {
-    my ($c, $action, $account_id, $type, $args, $contract_id) = @_;
-
-    $contract_id //= $args->{contract_id};
-    my $channel = $c->stash('transaction_channel');
-
-    my $already_subscribed = $channel ? exists $channel->{$type} : undef;
-
-    if ($action eq 'subscribe' and not $already_subscribed) {
-        # TODO move uuid to subscription::transaction
-        my $uuid   = _generate_uuid_string();
-        my $worker = Binary::WebSocketAPI::v3::Subscription::Transaction->new(
-            c           => $c,
-            account_id  => $account_id,
-            type        => $type,
-            contract_id => $contract_id,
-            args        => $args,
-            uuid        => $uuid,
-        );
-        $worker->subscribe;
-        $channel->{$type} = $worker;
-        $c->stash('transaction_channel', $channel);
-        return $uuid;
-    } elsif ($action eq 'unsubscribe' and $already_subscribed) {
-        delete $channel->{$type};
-        unless (%$channel) {
-            delete $c->stash->{transaction_channel};
-        }
-    }
-
-    return undef;
-}
-
-my %skip_duration_list = map { $_ => 1 } qw(t s m h);
-my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 R_10 RDBULL RDBEAR);
-my %skip_type_list =
-    map { $_ => 1 } qw(DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN ASIAND ASIANU TICKHIGH TICKLOW RESETCALL RESETPUT);
-
-#TODO move it to pricer module
-sub _skip_streaming {
-    my $args = shift;
-
-    return 1 if $args->{skip_streaming};
-    my $skip_symbols = ($skip_symbol_list{$args->{symbol}}) ? 1 : 0;
-    my $atm_callput_contract =
-        ($args->{contract_type} =~ /^(CALL|PUT)$/ and not($args->{barrier} or ($args->{proposal_array} and $args->{barriers}))) ? 1 : 0;
-
-    my ($skip_atm_callput, $skip_contract_type) = (0, 0);
-
-    if (defined $args->{duration_unit}) {
-
-        $skip_atm_callput =
-            ($skip_symbols and $skip_duration_list{$args->{duration_unit}} and $atm_callput_contract);
-
-        $skip_contract_type = ($skip_symbols and $skip_type_list{$args->{contract_type}});
-
-    }
-
-    return 1 if ($skip_atm_callput or $skip_contract_type);
-    return;
-}
-
-my $RAND;
-
-BEGIN {
-    open $RAND, "<", "/dev/urandom" or die "Could not open /dev/urandom : $!";    ## no critic (InputOutput::RequireBriefOpen)
-}
-
-#TODO move it to suitable place after pricing channel refactored
-sub _generate_uuid_string {
-    local $/ = \16;
-    return join "-", unpack "H8H4H4H4H12", (scalar <$RAND> or die "Could not read from /dev/urandom : $!");
 }
 
 1;

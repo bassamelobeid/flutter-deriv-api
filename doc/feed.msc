@@ -1,0 +1,22 @@
+msc{
+    hscale=4,arcgradient = 8;
+
+    client, streamer [label = "Wrapper::Streamer"], feed [label = "Subscription::Feed"], bom_rpc, redis;
+    client -> streamer [label = "call ticks_history", linecolor="red"];
+    streamer -> streamer [label = "call _feed_channel_subscribe", linecolor="red"];
+    streamer -> feed [label = "subscribing", linecolor="red"];
+    feed -> redis [label = "subscribing", linecolor="red"];
+    feed -> streamer [label = "callback", linecolor="red"];
+    streamer -> bom_rpc [label = "ask for ticks_history", linecolor="red"];
+    bom_rpc -> streamer [label = "return message", linecolor="red"];
+    streamer -> client [label = "return message", linecolor="red"];
+
+    client -> streamer [label = "call ticks", linecolor="blue"];
+    feed -> redis [label = "subscribing", linecolor="blue"];
+    streamer -> bom_rpc [label = "ask for ticks_history", linecolor="blue"];
+    bom_rpc -> streamer [label = "return message", linecolor="blue"];
+    streamer -> client [label = "return message", linecolor="blue"];
+    --- [label = "boundary line between subscribing/processing"];
+    redis -> feed [label = "call process message"];
+    feed -> client [label = "parse and send message out"];
+}

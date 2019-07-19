@@ -1,0 +1,14 @@
+# simple MSC for message flow
+msc {
+    hscale="1",arcgradient = 8;
+    #Entities
+    client, websocket_api, bom_rpc, redis, helpers;
+    client->websocket_api [label = "request"];
+    websocket_api->bom_rpc [label = "request"];
+    websocket_api->redis [label = "subscribe stream"];
+    bom_rpc->websocket_api [label = "reply"];
+    websocket_api->client [label = "reply"];
+    helpers -> redis [label = "publish data"];
+    redis->websocket_api [label = "receive data and process"];
+    websocket_api->client [label = "reply"];
+}

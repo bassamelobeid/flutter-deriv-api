@@ -139,6 +139,8 @@ sub log_call_timing_connection {
 
 sub add_req_data {
     my (undef, $req_storage, $api_response) = @_;
+    # api_response being a string means error happened.
+    die "api_response is not hashref: $api_response" unless ref($api_response) eq 'HASH';
 
     my $args = {};
     if ($req_storage) {
@@ -369,19 +371,10 @@ sub output_validation {
 
 sub forget_all {
     my $c = shift;
-
-    Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, 'balance');
-    Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, 'transaction');
-    Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, 'proposal_open_contract');
-
-    Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, 'proposal');
-    Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, 'proposal_open_contract');
-
-    Binary::WebSocketAPI::v3::Wrapper::System::_forget_feed_subscription($c, 'ticks');
-    Binary::WebSocketAPI::v3::Wrapper::System::_forget_feed_subscription($c, 'candles');
-
-    Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_proposal_array($c);
-
+    # TODO I guess 'buy' type should be added here.
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, $_) for qw(balance transaction sell);
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, $_) for qw(proposal proposal_open_contract proposal_array);
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_feed_subscription($c, $_) for qw(ticks candles);
     Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_website_status($c);
 
     return;

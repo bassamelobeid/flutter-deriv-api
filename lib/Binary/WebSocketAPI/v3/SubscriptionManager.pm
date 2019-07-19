@@ -3,9 +3,11 @@ package Binary::WebSocketAPI::v3::SubscriptionManager;
 use strict;
 use warnings;
 no indirect;
+
 use feature qw(state);
 use Moo;
 use curry;
+use curry::weak;
 use Future::Mojo;
 use Try::Tiny;
 use Log::Any qw($log);
@@ -23,7 +25,7 @@ subscriptions.
 =head1 DESCRIPTION
 
 This module is how the code requests and discards subscriptions.
-Multiple clients may want to subscribe to the same thing, the manager coordinates those
+Multiple clients may want to subscribe to the same thing, the manager coordinates them
 
 =cut
 
@@ -49,7 +51,7 @@ has channels => (
     is      => 'ro',
     default => sub { return +{} });
 
-=head2
+=head2 channel_subscriptions
 
 A hashref of C<< channel name => subscription >> instances.
 
@@ -89,21 +91,22 @@ my $config = {
 };
 
 sub redis {
-    my $self = shift;
-    return $config->{$self->name}->();
+    my $self  = shift;
+    my $redis = $config->{$self->name}->();
+    return $redis;
 }
 
 =head2 subscribe
 
-Returns a L<Binary::WebSocketAPI::v3::Subscription> instance
+Returns a L<Future> instance that represents the status of subscription.
 
 =cut
 
 sub subscribe {
-    my ($self, $worker) = @_;
-    my $channel    = $worker->channel;
-    my $stats_name = $worker->stats_name;
-    my $class      = $worker->class;
+    my ($self, $subscription) = @_;
+    my $channel    = $subscription->channel;
+    my $stats_name = $subscription->stats_name;
+    my $class      = $subscription->class;
     stats_inc("$stats_name.clients");
     $log->tracef('Subscribing %s channel %s in pid %i', $class, $channel, $$);
     my $f = (
@@ -111,6 +114,7 @@ sub subscribe {
             my $f = Future::Mojo->new->set_label('RedisSubscription[' . $channel . ']');
             $self->redis->subscribe(
                 [$channel],
+
                 sub {
                     my (undef, $err) = @_;
                     $log->tracef('Subscribed to redis server for %s channel %s in pid %i', $class, $channel, $$);
@@ -127,14 +131,9 @@ sub subscribe {
             $f;
             }
     );
-    my $sub = Binary::WebSocketAPI::v3::Subscription->new(
-        channel => $channel,
-        manager => $self,
-        status  => $f,
-        worker  => $worker,
-    );
-    weaken($self->channel_subscriptions->{$channel}{refaddr($sub)} = $sub);
-    return $sub;
+    weaken($self->channel_subscriptions->{$channel}{refaddr($subscription)} = $subscription);
+
+    return $f;
 }
 
 =head2 unsubscribe
@@ -146,8 +145,8 @@ unsubscribe a streamer
 sub unsubscribe {
     my ($self, $subscription) = @_;
     my $channel      = $subscription->channel;
-    my $class        = $subscription->worker->class;
-    my $stats_name   = $subscription->worker->stats_name;
+    my $class        = $subscription->class;
+    my $stats_name   = $subscription->stats_name;
     my $subs         = $self->channel_subscriptions->{$channel};
     my $original_sub = delete $subs->{refaddr($subscription)} or do {
         $log->errorf('Request to unsubscribe for a %s subscription that never existed on channel [%s]', $class, $channel);
@@ -205,10 +204,7 @@ Do some preparation.
 
 sub BUILD {
     my ($self) = @_;
-    $self->redis->on(
-        message => $self->curry::weak::on_message,
-        error   => sub { $log->errorf('Had an error from Redis: %s', join ' ', @_) },
-    );
+    $self->redis->on(message => $self->curry::weak::on_message);
     return;
 }
 
