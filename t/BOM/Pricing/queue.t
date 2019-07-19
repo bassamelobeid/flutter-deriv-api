@@ -93,6 +93,15 @@ subtest 'sleeping to next second' => sub {
 };
 
 subtest 'priority_queue' => sub {
+    
+    my $pid = fork // die "Couldn't fork";
+    unless ($pid) {
+        sleep 1;
+        note "publishing high priority prices in fork";
+        $redis->publish('high_priority_prices', $_) for @keys;
+        exit;
+    };
+    
     $queue = new_ok(
         'BOM::Pricing::Queue',
         [
@@ -101,11 +110,8 @@ subtest 'priority_queue' => sub {
         ],
         'New priority BOM::Pricing::Queue processor'
     );
-
-    $redis->publish('high_priority_prices', $_, RedisDB::IGNORE_REPLY) for @keys;
-    $redis->mainloop;
-
-    $queue->process for (1 .. 5);
+    # need to do 5 times because initial redis reply will be subscription confirmation
+    $queue->process for (0 .. 4);
     is($redis->llen('pricer_jobs_priority'),        @keys, 'keys added to pricer_jobs_priority queue');
     is($stats{'pricer_daemon.priority_queue.recv'}, @keys, 'receive stats updated in statsd');
     is($stats{'pricer_daemon.priority_queue.send'}, @keys, 'send stats updated in statsd');
