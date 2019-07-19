@@ -62,7 +62,7 @@
     fieldset ul label,fieldset ul  textarea {
         vertical-align:text-top;
         font-size:12px;
-        width: 400px;
+        width: 460px;
         float:left;
         display: block;
         text-align: left;
