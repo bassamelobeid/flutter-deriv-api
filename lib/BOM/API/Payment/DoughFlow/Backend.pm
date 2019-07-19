@@ -229,11 +229,11 @@ sub write_transaction_line {
     BOM::Platform::Client::IDAuthentication->new(client => $client)->run_authentication if $fdp;
 
     if ($fee) {
-        $log->debug($c->type . " fee transaction complete, trx id " . $trx->{fee_transaction_id});
+        $log->debug($c->type . " fee transaction complete, trx id " . $trx->fee_transaction_id);
     }
 
-    $log->debug($c->type . " transaction complete, trx id " . $trx->{id});
-    return $trx->{id};
+    $log->debug($c->type . " transaction complete, trx id " . $trx->transaction_id);
+    return $trx->transaction_id;
 }
 
 sub check_predicates {
