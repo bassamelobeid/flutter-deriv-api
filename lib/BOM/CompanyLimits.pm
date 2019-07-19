@@ -65,7 +65,7 @@ sub add_buy_contract {
 
     print 'BET DATA: ', Dumper($contract);
     my @combinations = _get_combinations($contract, $underlying_group, $contract_group);
-    # print 'COMBINATIONS:', Dumper(\@combinations);
+    print 'COMBINATIONS:', Dumper(\@combinations);
 
     # GET LIMITS!!
     my $limits_response = BOM::Config::RedisReplicated::redis_limits_write->hmget('LIMITS', @combinations);
@@ -80,7 +80,7 @@ sub add_buy_contract {
     # No limits queries; nothing to do here...
     return 1 if (!%limits);
 
-    # print 'LIMITS:', Dumper(\%limits);
+    print 'LIMITS:', Dumper(\%limits);
 
     my %computed_limits = compute_limits(\%limits, $underlying);
 
@@ -95,12 +95,12 @@ sub _buy_redis_increment_query {
     my ($totals, $contract) = @_;
     my @realized_loss_request;
     my @potential_loss_request;
-	my ($bet_data, $account_data) = @{$contract}{qw/bet_data account_data/};
+    my ($bet_data, $account_data) = @{$contract}{qw/bet_data account_data/};
 
     my $potential_loss = $bet_data->{payout_price} - $bet_data->{buy_price};
-	if ($account_data->{currency_code} ne 'USD') {
-		$potential_loss = convert_currency($potential_loss, $account_data->{currency_code}, 'USD');
-	}
+    if ($account_data->{currency_code} ne 'USD') {
+        $potential_loss = convert_currency($potential_loss, $account_data->{currency_code}, 'USD');
+    }
 
     while (my ($k, $v) = each %{$totals}) {
         push(@potential_loss_request, $k) if ($v->[0]);

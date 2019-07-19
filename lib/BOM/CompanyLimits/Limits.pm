@@ -369,7 +369,7 @@ sub process_and_get_active_limit {
 
 # TODO: need to verify this function will work as a single transaction
 sub add_limit {
-    my ($loss_type, $key, $amount, $start_epoch, $end_epoch) = $_[0]->@*;
+    my ($loss_type, $key, $amount, $start_epoch, $end_epoch) = @_;
 
     # check if redis has been added successfully
     my $now = Date::Utility->new();
