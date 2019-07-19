@@ -405,7 +405,7 @@ async_rpc mt5_new_account => sub {
                     # else get one associated with affiliate token
                     if ($manager_id) {
                         $args->{agent} = $manager_id;
-                    } elsif ($client->myaffiliates_token) {
+                    } elsif ($client->myaffiliates_token and $account_type ne 'demo') {
                         my $agent_login = _get_mt5_account_from_affiliate_token($client->myaffiliates_token);
                         $args->{agent} = $agent_login if $agent_login;
                         warn "Failed to link " . $client->loginid . " MT5 account with myaffiliates token " . $client->myaffiliates_token
@@ -498,6 +498,7 @@ async_rpc mt5_new_account => sub {
                                     display_balance => formatnumber('amount', $args->{currency}, $balance),
                                     currency        => $args->{currency},
                                     account_type    => $account_type,
+                                    agent           => $args->{agent},
                                     ($mt5_account_type) ? (mt5_account_type => $mt5_account_type) : ()});
                         });
                 });

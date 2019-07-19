@@ -677,6 +677,33 @@ subtest 'deposit' => sub {
     $demo_account_mock->unmock;
 };
 
+subtest 'demo account can not be tagged as an agent' => sub {
+    my $method            = 'mt5_new_account';
+    my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    $demo_account_mock->mock('_get_mt5_account_from_affiliate_token', sub { return '1234' });
+    $test_client->myaffiliates_token("asdfas");
+    $test_client->save;
+
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type     => 'demo',
+            mt5_account_type => 'advanced',
+            country          => 'af',
+            email            => $DETAILS{email},
+            name             => $DETAILS{name},
+            investPassword   => 'Abcd1234',
+            mainPassword     => $DETAILS{password},
+        },
+    };
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account');
+    is($c->result->{agent}, undef, 'Agent should not be tagged for demo account');
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $test_client->myaffiliates_token("");
+    $test_client->save;
+};
+
 subtest 'virtual_deposit' => sub {
 
     my $method = "mt5_new_account";
