@@ -19,13 +19,14 @@ $m->dbic->dbh->do("DELETE FROM oauth.official_apps");
 $m->dbic->dbh->do("DELETE FROM oauth.apps");
 
 my $app1 = $m->create_app({
-    name             => 'App 1',
-    scopes           => ['read', 'payments', 'trade'],
-    homepage         => 'http://www.example.com/',
-    github           => 'https://github.com/binary-com/binary-static',
-    user_id          => $test_user_id,
-    redirect_uri     => 'https://www.example.com',
-    verification_uri => 'https://www.example.com/verify',
+    name                  => 'App 1',
+    scopes                => ['read', 'payments', 'trade'],
+    homepage              => 'http://www.example.com/',
+    github                => 'https://github.com/binary-com/binary-static',
+    user_id               => $test_user_id,
+    redirect_uri          => 'https://www.example.com',
+    verification_uri      => 'https://www.example.com/verify',
+    app_markup_percentage => 3,
 });
 my $test_appid = $app1->{app_id};
 is $app1->{homepage},         'http://www.example.com/',        'homepage is correct';
@@ -68,9 +69,11 @@ $app1 = $m->update_app(
         verification_uri => 'https://www.example.com/verify_updated',
         homepage         => 'http://www.example2.com/',
     });
-is $app1->{redirect_uri},     'https://www.example.com/callback',       'redirect_uri is updated';
-is $app1->{verification_uri}, 'https://www.example.com/verify_updated', 'verification_uri is updated';
-is $app1->{homepage},         'http://www.example2.com/',               'homepage is updated';
+is $app1->{redirect_uri},          'https://www.example.com/callback',            'redirect_uri is updated';
+is $app1->{verification_uri},      'https://www.example.com/verify_updated',      'verification_uri is updated';
+is $app1->{homepage},              'http://www.example2.com/',                    'homepage is updated';
+is $app1->{app_markup_percentage}, 3,                                             'app_markup_percentage not updated';
+is $app1->{github},                'https://github.com/binary-com/binary-static', 'github not updated';
 
 ### get app_register/app_list/app_get
 my $get_app = $m->get_app($test_user_id, $app1->{app_id});

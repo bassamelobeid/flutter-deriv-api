@@ -187,58 +187,39 @@ sub create_app {
     return $result;
 }
 
+=head2 update_app
+
+
+B<NOTE> update_app does: update application details by calling app_update function in auth database.
+
+Function args:
+=over 4
+
+=item * C<app_id> - application ID "Int"
+
+=item * C<app> - hash reference for application data.
+
+=back 
+
+Returns a hash reference for the application updated data
+
+=cut
+
 sub update_app {
     my ($self, $app_id, $app) = @_;
 
-    # get old scopes
-    my $old_scopes = $self->dbic->run(
-        ping => sub {
-            my $sth = $_->prepare("SELECT scopes FROM oauth.apps WHERE id = ?");
-            $sth->execute($app_id);
-            my $old_scopes = $sth->fetchrow_array;
-            return __parse_array($old_scopes);
-        });
-    return if !@$old_scopes;
-
     my $updated_app = $self->dbic->run(
         ping => sub {
-            my $sth = $_->prepare("
-        UPDATE oauth.apps SET
-            name = ?, scopes = ?, homepage = ?, github = ?,
-            appstore = ?, googleplay = ?, redirect_uri = ?, verification_uri = ?, app_markup_percentage = ?, active = ?
-        WHERE id = ?
-        RETURNING *
-    ");
+            my $sth = $_->prepare("select * from oauth.app_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
             $sth->execute(
-                $app->{name},
-                $app->{scopes},
-                $app->{homepage}              || '',
-                $app->{github}                || '',
-                $app->{appstore}              || '',
-                $app->{googleplay}            || '',
-                $app->{redirect_uri}          || '',
-                $app->{verification_uri}      || '',
-                $app->{app_markup_percentage} || 0,
-                $app->{active} // 1,
-                $app_id
-            );
+                $app_id,                  $app->{name},                  $app->{scopes},     $app->{homepage},
+                $app->{github},           $app->{appstore},              $app->{googleplay}, $app->{redirect_uri},
+                $app->{verification_uri}, $app->{app_markup_percentage}, $app->{active});
             my $result = $sth->fetchrow_hashref();
             return $result;
         });
-
-    ## revoke user_scope_confirm on scope changes
-    if ($old_scopes
-        and join('-', sort @$old_scopes) ne join('-', sort @{$app->{scopes}}))
-    {
-        foreach my $table ('user_scope_confirm', 'access_token') {
-            $self->dbic->run(fixup => sub { $_->do("DELETE FROM oauth.$table WHERE app_id = ?", undef, $app_id) });
-        }
-    }
-
     $updated_app->{scopes} = __parse_array($updated_app->{scopes});
-    $updated_app->{app_id} = $updated_app->{id};
-    delete @$updated_app{qw(binary_user_id stamp id bypass_verification)};
-
     return $updated_app;
 }
 
