@@ -405,7 +405,7 @@ async_rpc mt5_new_account => sub {
                     # else get one associated with affiliate token
                     if ($manager_id) {
                         $args->{agent} = $manager_id;
-                    } elsif ($client->myaffiliates_token) {
+                    } elsif ($client->myaffiliates_token and $account_type ne 'demo') {
                         my $agent_login = _get_mt5_account_from_affiliate_token($client->myaffiliates_token);
                         $args->{agent} = $agent_login if $agent_login;
                         warn "Failed to link " . $client->loginid . " MT5 account with myaffiliates token " . $client->myaffiliates_token
@@ -498,6 +498,7 @@ async_rpc mt5_new_account => sub {
                                     display_balance => formatnumber('amount', $args->{currency}, $balance),
                                     currency        => $args->{currency},
                                     account_type    => $account_type,
+                                    agent           => $args->{agent},
                                     ($mt5_account_type) ? (mt5_account_type => $mt5_account_type) : ()});
                         });
                 });
@@ -1145,7 +1146,7 @@ async_rpc mt5_deposit => sub {
                     source   => $source,
                 );
 
-                _record_mt5_transfer($fm_client->db->dbic, $txn->{payment_id}, -$response->{mt5_amount}, $to_mt5, $response->{mt5_currency_code});
+                _record_mt5_transfer($fm_client->db->dbic, $txn->payment_id, -$response->{mt5_amount}, $to_mt5, $response->{mt5_currency_code});
             }
             catch {
                 $error = BOM::Transaction->format_error(err => $_);
@@ -1182,8 +1183,9 @@ async_rpc mt5_deposit => sub {
                     }
 
                     return Future->done({
-                            status                => 1,
-                            binary_transaction_id => $txn->{id}});
+                        status                => 1,
+                        binary_transaction_id => $txn->transaction_id
+                    });
                 });
         });
 };
@@ -1271,7 +1273,7 @@ async_rpc mt5_withdrawal => sub {
                             source   => $source,
                         );
 
-                        _record_mt5_transfer($to_client->db->dbic, $txn->{payment_id}, $amount, $fm_mt5, $mt5_currency_code);
+                        _record_mt5_transfer($to_client->db->dbic, $txn->payment_id, $amount, $fm_mt5, $mt5_currency_code);
 
                         _store_transaction_redis({
                                 loginid       => $to_loginid,
@@ -1281,8 +1283,9 @@ async_rpc mt5_withdrawal => sub {
                             }) if ($mt5_group eq 'real\vanuatu_standard');
 
                         return Future->done({
-                                status                => 1,
-                                binary_transaction_id => $txn->{id}});
+                            status                => 1,
+                            binary_transaction_id => $txn->transaction_id
+                        });
                     }
                     catch {
                         my $error = BOM::Transaction->format_error(err => $_);

@@ -142,7 +142,7 @@ subtest 'Currency locks after a transaction is made' => sub {
         payment_type => "ewallet",
         remark       => "credit",
         staff        => "test",
-    )->{id};
+    )->transaction_id;
 
     subtest 'Changing currency on account with transactions should fail' => sub {
         $params->{currency} = 'EUR';
