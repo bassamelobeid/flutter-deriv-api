@@ -26,7 +26,7 @@ sub insert_payment {
         payment_type => 'adjustment',
         remark       => 'play money'
     );
-    return $trx->{payment_id};
+    return $trx->payment_id;
 }
 
 # inserts higher/lower bet

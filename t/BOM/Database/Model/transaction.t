@@ -38,8 +38,8 @@ lives_ok {
         payment_type => 'adjustment',
         remark       => 'Comment field',
     );
-    $transaction_id = $transaction->{id};
-    $payment_id     = $transaction->{payment_id};
+    $transaction_id = $transaction->transaction_id;
+    $payment_id     = $transaction->payment_id;
 }
 'expect to load the account even with account_id instead of id';
 
