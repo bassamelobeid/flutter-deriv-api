@@ -1146,7 +1146,7 @@ async_rpc mt5_deposit => sub {
                     source   => $source,
                 );
 
-                _record_mt5_transfer($fm_client->db->dbic, $txn->{payment_id}, -$response->{mt5_amount}, $to_mt5, $response->{mt5_currency_code});
+                _record_mt5_transfer($fm_client->db->dbic, $txn->payment_id, -$response->{mt5_amount}, $to_mt5, $response->{mt5_currency_code});
             }
             catch {
                 $error = BOM::Transaction->format_error(err => $_);
@@ -1183,8 +1183,9 @@ async_rpc mt5_deposit => sub {
                     }
 
                     return Future->done({
-                            status                => 1,
-                            binary_transaction_id => $txn->{id}});
+                        status                => 1,
+                        binary_transaction_id => $txn->transaction_id
+                    });
                 });
         });
 };
@@ -1272,7 +1273,7 @@ async_rpc mt5_withdrawal => sub {
                             source   => $source,
                         );
 
-                        _record_mt5_transfer($to_client->db->dbic, $txn->{payment_id}, $amount, $fm_mt5, $mt5_currency_code);
+                        _record_mt5_transfer($to_client->db->dbic, $txn->payment_id, $amount, $fm_mt5, $mt5_currency_code);
 
                         _store_transaction_redis({
                                 loginid       => $to_loginid,
@@ -1282,8 +1283,9 @@ async_rpc mt5_withdrawal => sub {
                             }) if ($mt5_group eq 'real\vanuatu_standard');
 
                         return Future->done({
-                                status                => 1,
-                                binary_transaction_id => $txn->{id}});
+                            status                => 1,
+                            binary_transaction_id => $txn->transaction_id
+                        });
                     }
                     catch {
                         my $error = BOM::Transaction->format_error(err => $_);
