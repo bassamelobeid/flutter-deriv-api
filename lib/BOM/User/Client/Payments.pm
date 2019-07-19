@@ -17,6 +17,7 @@ use JSON::MaybeXS ();
 use Encode;
 
 use BOM::User::Client::PaymentNotificationQueue;
+use BOM::User::Client::PaymentTransaction::Doughflow;
 use BOM::Database::ClientDB;
 use BOM::Config;
 
@@ -387,7 +388,7 @@ sub payment_account_transfer {
         source               => $source,
     });
 
-    return {transaction_id => $fmTrx->{id}};
+    return {transaction_id => $fmTrx->transaction_id};
 }
 
 sub payment_doughflow {
@@ -437,8 +438,7 @@ sub payment_doughflow {
         amount        => $amount,
         payment_agent => $self->payment_agent ? 1 : 0,
     );
-
-    return $trx;
+    return BOM::User::Client::PaymentTransaction::Doughflow->new(%$trx);
 }
 
 sub payment_free_gift {

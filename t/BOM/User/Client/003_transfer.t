@@ -9,7 +9,7 @@ subtest intra_fx_transfer => sub {
     my $from_account = $client_from->set_default_account('USD');
     my $client_to    = create_client();
     my $to_account   = $client_to->set_default_account('JPY');
-    $client_from->payment_legacy_payment(
+    my $txn          = $client_from->payment_legacy_payment(
         currency     => 'USD',
         amount       => 100,
         payment_type => 'ewallet',
@@ -17,6 +17,7 @@ subtest intra_fx_transfer => sub {
         staff        => 'test'
     );
     cmp_ok($from_account->balance * 1, '==', 100, 'Account Balance Correct');
+    isa_ok $txn, 'BOM::User::Client::PaymentTransaction', 'Correct trasaction object type';
 
     $client_from->payment_account_transfer(
         inter_db_transfer => 1,
@@ -103,5 +104,5 @@ sub _get_payment_from_transaction {
         });
     return $result;
 }
-done_testing;
-1;
+
+done_testing();
