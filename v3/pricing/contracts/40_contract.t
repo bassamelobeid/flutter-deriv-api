@@ -327,7 +327,7 @@ subtest 'buy and subscribe' => sub {
     sleep 2;
 
     my $data = $t->await::forget_all({forget_all => 'proposal_open_contract'});
-    diag explain $res if not is(scalar @{$data->{forget_all}}, 1, 'Correct number of subscription forget');
+    diag explain $data if not is(scalar @{$data->{forget_all}}, 1, 'Correct number of subscription forget');
     is $data->{forget_all}->[0], $uuid, 'Correct subscription id returned';
 };
 

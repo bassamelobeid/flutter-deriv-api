@@ -2,7 +2,7 @@ use strict;
 use warnings;
 
 use Test::Most;
-use Binary::WebSocketAPI::v3::Wrapper::Streamer;
+use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 
 my $proposal_param = {
     "proposal"      => 1,
@@ -17,19 +17,19 @@ my $proposal_param = {
     "barrier"       => "+13.12"
 };
 
-is(Binary::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($proposal_param), undef, "Streams non ATM PUT");
+is(Binary::WebSocketAPI::v3::Wrapper::Pricer::_skip_streaming($proposal_param), undef, "Streams non ATM PUT");
 $proposal_param->{contract_type} = 'ONETOUCH';
-is(Binary::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($proposal_param), undef, "Streams ONEOTUCH");
+is(Binary::WebSocketAPI::v3::Wrapper::Pricer::_skip_streaming($proposal_param), undef, "Streams ONEOTUCH");
 $proposal_param->{contract_type} = 'RANGE';
 $proposal_param->{barrier2}      = '-13.12';
-is(Binary::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($proposal_param), undef, "Streams RANGE ");
+is(Binary::WebSocketAPI::v3::Wrapper::Pricer::_skip_streaming($proposal_param), undef, "Streams RANGE ");
 $proposal_param->{contract_type} = 'EXPIRYMISS';
 $proposal_param->{barrier2}      = '-13.12';
-is(Binary::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($proposal_param), undef, "Streams EXPIRYMISS");
+is(Binary::WebSocketAPI::v3::Wrapper::Pricer::_skip_streaming($proposal_param), undef, "Streams EXPIRYMISS");
 
 $proposal_param->{contract_type} = 'CALL';
 delete $proposal_param->{barrier};
 delete $proposal_param->{barrier2};
-is(Binary::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($proposal_param), 1, "Do not stream ATM volidx");
+is(Binary::WebSocketAPI::v3::Wrapper::Pricer::_skip_streaming($proposal_param), 1, "Do not stream ATM volidx");
 
 done_testing();

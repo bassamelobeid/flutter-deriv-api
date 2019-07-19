@@ -3,7 +3,8 @@ use warnings;
 use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use Devel::Refcount qw(refcount);
+use Test::Refcount;
+use Scalar::Util qw(weaken);
 
 use Test::More;
 use Test::Deep;
@@ -23,6 +24,7 @@ use BOM::Product::ContractFactory qw(produce_contract);
 
 use Sereal::Encoder;
 use Quant::Framework;
+use Role::Tiny;
 
 my $encoder = Sereal::Encoder->new({
     canonical => 1,
@@ -242,6 +244,10 @@ SKIP: {
         };
 
         subtest 'subscriptions' => sub {
+            $t->await::forget_all({forget_all => "proposal_array"});
+            $t->await::forget_all({forget_all => "proposal"});
+            $t->await::forget_all({forget_all => "proposal_open_contract"});
+
             $proposal_array_req_tpl->{date_expiry}          = $put->{trading_period}{date_expiry}{epoch};
             $proposal_array_req_tpl->{trading_period_start} = $put->{trading_period}{date_start}{epoch};
 
@@ -262,15 +268,24 @@ SKIP: {
 
             my ($c) = values %{$t->app->active_connections};
 
-            is(scalar keys %{$c->pricing_subscriptions()}, 1, "Subscription created");
-            my $channel = [keys %{$c->pricing_subscriptions()}]->[0];
-            is(refcount($c->pricing_subscriptions()->{$channel}), 1, "check refcount");
-            ok(redis_pricer->get($channel), "check redis subscription");
+            my $uuid_channel_stash = $c->stash('uuid_channel');
 
+            my @subscriptions = values %$uuid_channel_stash;
+            is(scalar @subscriptions, 2, "Subscription created");
+            @subscriptions = grep { $_->status } @subscriptions;
+            is(scalar @subscriptions, 1, "1 subscripion is really subscribed");
+            my $subscription = pop @subscriptions;
+            weaken($subscription);
+            ok(Role::Tiny::does_role($subscription, 'Binary::WebSocketAPI::v3::Subscription::Pricer'), 'is a pricer subscription');
+            is_oneref($subscription, '1 refcount');
+
+            ok(redis_pricer->get($subscription->channel), "check redis subscription");
+            explain "uuid is " . $subscription->uuid;
+            explain "subscribed ? " . $subscription->status;
             $response = $t->await::forget_all({forget_all => "proposal_array"});
+            ok(!$subscription, 'subscription is destroyed');
             is @{$response->{forget_all}}, 1, 'Correct number of subscriptions forgotten';
             is $response->{forget_all}->[0], $uuid, 'Correct subscription id returned';
-            is($c->pricing_subscriptions()->{$channel}, undef, "Forgotten");
         };
 
         subtest 'using durations' => sub {
