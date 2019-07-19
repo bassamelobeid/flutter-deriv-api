@@ -107,7 +107,7 @@ sub takeover_coordinator {
         add_worker_process() if %workers < $WORKERS;
 
         $conn->write("DEC-WORKERS\n");
-        my $result = $conn->read_until("\n")->get;
+        my $result = $conn->read_until("\n");
         last if $result eq "WORKERS 0\n";
     }
 
@@ -124,7 +124,7 @@ sub run_coordinator {
     $SIG{TERM} = $SIG{INT} = sub {
         $WORKERS = 0;
         $log->info("Terminating workers...");
-        Future->needs_all(map { $_->shutdown('TERM', timeout => 15) } values %workers)->get;
+        Future->needs_all(map { $_->shutdown('TERM', timeout => 15) } values %workers);
 
         unlink $SOCKETPATH;
         unlink $pid_file if $pid_file && $TESTING;
@@ -157,7 +157,7 @@ sub handle_ctrl_command_DEC_WORKERS {
     while (keys %workers > $WORKERS) {
         # Arbitrarily pick a victim
         my $worker_to_die = delete $workers{(keys %workers)[0]};
-        $worker_to_die->shutdown('TERM', timeout => 15)->on_done(sub { $conn->write("WORKERS " . scalar(keys %workers) . "\n") })->get;
+        $worker_to_die->shutdown('TERM', timeout => 15)->on_done(sub { $conn->write("WORKERS " . scalar(keys %workers) . "\n") });
     }
 }
 
@@ -188,7 +188,7 @@ sub add_worker_process {
 
             $log->debug("Restarting");
 
-            $loop->delay_future(after => 1)->on_done(sub { add_worker_process() })->retain;
+            $loop->delay_future(after => 1)->on_done(sub { add_worker_process() });
         },
     );
 
@@ -225,7 +225,7 @@ sub run_worker_process {
     $loop->attach_signal(
         TERM => sub {
             return if $stopping++;
-            $worker->stop->on_done(sub { exit 0; })->get;
+            $worker->stop->on_done(sub { exit 0; });
         });
     $SIG{INT} = 'IGNORE';
 
