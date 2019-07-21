@@ -34,10 +34,10 @@ suite restart_redis => sub {
         ->connection(exists $args{token} ? %args{token} : ())
         ->subscribe($method, $request)
         ->restart_redis
-        ->take_latest
+#        ->take_latest
         ->helper::log_method($request)
         ->completed
-    } foreach => [ $args{subscription_list}->@* ];
+    } foreach => [ $args{requests}->@* ];
 };
 
 1;
