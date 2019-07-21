@@ -62,7 +62,7 @@ our %BLOCK_ORIGINS;
 # Keys are RPC calls that we want RPC to log, controlled by redis too.
 our %RPC_LOGGING;
 
-my $json = JSON::MaybeXS->new;
+#my $json = JSON::MaybeXS->new;
 my $node_config;
 
 sub apply_usergroup {
@@ -524,6 +524,7 @@ sub startup {
         ],
     ];
 
+    my $json = JSON::MaybeXS->new;
     for my $action (@$actions) {
         my $action_name = $action->[0];
         my $f           = '/home/git/regentmarkets/binary-websocket-api/config/v3';
