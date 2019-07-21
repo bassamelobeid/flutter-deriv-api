@@ -40,7 +40,8 @@ sub start_rpc_queue {
     }
 
     if ($attempts > 5) {
-        print 'RPC queue is not responding.\n';
+        #TODO: it happens in one occasion during `make security`. Should be fixed.
+         $log->debug( 'RPC queue is not responding.\n');
     } else {
         $log->debug("RPC queue is launched with args: $args");
     }
