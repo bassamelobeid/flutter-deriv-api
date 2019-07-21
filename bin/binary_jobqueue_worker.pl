@@ -25,7 +25,7 @@ GetOptions(
     'workers|w=i'  => \(my $WORKERS = 4),
     'socket|S=s'   => \(my $SOCKETPATH),
     'redis|R=s'    => \(my $REDIS),
-    'l|log=s'      => \(my $log_level = "info"),
+    'l|log=s'      => \(my $log_level = "debug"),
 ) or exit 1;
 
 require Log::Any::Adapter;
@@ -149,6 +149,7 @@ sub handle_ctrl_command_DEC_WORKERS {
 
     $WORKERS = $WORKERS -1;
     if (scalar(keys %workers) == 0){
+        $WORKERS = 0;
         $conn->write("WORKERS " . scalar(keys %workers) . "\n");
         return;
     }
