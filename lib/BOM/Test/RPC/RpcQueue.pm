@@ -40,7 +40,7 @@ sub start_rpc_queue {
     }
 
     if ($attempts > 5) {
-        warn 'RPC queue is not responding.';
+        print 'RPC queue is not responding.\n';
     } else {
         $log->debug("RPC queue is launched with args: $args");
     }
@@ -111,10 +111,24 @@ sub stop_service {
     stop_workers();
     my $conn = create_socket_connection();
     return unless $conn;
-    $log->debug("Sending EXIT to rpc queue socket");
-    $conn->write("EXIT\n");
-    $conn->read_until("\n")->get;
-    $log->debug("Exit response is recieved");
+
+    my $attempts = 0;
+    while (1) {
+        $log->debug("Sending EXIT to rpc queue socket");
+        $conn->write("EXIT\n");
+        $conn->read_until("\n")->get;
+        $log->debug("Exit response is recieved");
+        last if not create_socket_connection();
+        $attempts += 1;
+        last if ($attempts > 5);
+        sleep 1;
+    }
+
+    if ($attempts > 5) {
+        $log->debug('RPC queue was not stopped in 5 seconds.');
+    } else {
+        $log->debug("RPC queue was stopped successfully");
+    }
 
 }
 
