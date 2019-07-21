@@ -56,6 +56,7 @@ $redis_pricer->mock(
     sub {
         my $redis = shift;
         my $keys  = shift;
+        return unless ref($keys) eq 'ARRAY';
         delete($keys_hash->{$_}) for @$keys;
     });
 

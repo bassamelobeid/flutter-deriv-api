@@ -6,8 +6,9 @@ use Encode;
 use JSON::MaybeXS;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use Devel::Refcount qw| refcount |;
+use Test::Refcount;
 use Test::MockModule;
+use Scalar::Util qw(weaken);
 
 use BOM::Test::Helper qw/test_schema build_mojo_test build_test_R_50_data/;
 use Binary::WebSocketAPI::v3::Instance::Redis qw| redis_pricer |;
@@ -48,14 +49,19 @@ subtest "Born and die" => sub {
     });
 
     my ($c) = values %{$t->app->active_connections};
-
-    is(scalar keys %{$c->pricing_subscriptions()}, 1, "Subscription created");
-    $channel = [keys %{$c->pricing_subscriptions()}]->[0];
-    is(refcount($c->pricing_subscriptions()->{$channel}), 1, "check refcount");
+    my $channels = $c->stash('channels')->{'Pricer::Proposal'};
+    is(scalar keys %$channels, 1, "Subscription created");
+    my ($k) = keys %$channels;
+    my $subscription = $channels->{$k};
+    weaken($subscription);
+    undef $channels;
+    isa_ok($subscription, 'Binary::WebSocketAPI::v3::Subscription::Pricer::Proposal', 'is a pricer proposal subscription');
+    is_oneref($subscription, '1 refcount');
+    ($channel) = split('###', $k);
     ok(redis_pricer->get($channel), "check redis subscription");
     $t->await::forget_all({forget_all => 'proposal'});
+    ok(!$subscription, 'subscription is destroyed');
 
-    is($c->pricing_subscriptions()->{$channel}, undef, "Killed");
     ### Mojo::Redis2 has not method PUBSUB
     SKIP: {
         skip 'Provide test access to pricing cycle so we can confirm that the subscription is cleaned up', 1;
@@ -92,9 +98,13 @@ subtest "Create Subscribes" => sub {
         });
 
         if ($i == $subs_count) {
-            is(scalar keys %{$c->pricing_subscriptions()}, 1, "One subscription by few clients");
-            $channel = [keys %{$c->pricing_subscriptions()}]->[0];
-            is(refcount($c->pricing_subscriptions()->{$channel}), $subs_count, "check refcount");
+            my $channels = $c->stash('channels')->{'Pricer::Proposal'};
+            is(scalar keys %{$channels}, 1, "One subscription created");
+            my ($subscription) = values %$channels;
+            weaken($subscription);
+            isa_ok($subscription, 'Binary::WebSocketAPI::v3::Subscription::Pricer::Proposal', 'is a pricer subscription');
+            is_oneref($subscription, '1 refcount');
+
         }
     }
 
