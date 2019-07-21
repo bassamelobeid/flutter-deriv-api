@@ -15,6 +15,7 @@ use Path::Tiny qw(path);
 use Data::Dump 'pp';
 use Syntax::Keyword::Try;
 use Time::Moment;
+use Text::Trim;
 
 use Getopt::Long;
 use Log::Any qw($log);
@@ -24,8 +25,8 @@ GetOptions(
     'foreground|f' => \my $FOREGROUND,
     'workers|w=i'  => \(my $WORKERS = 4),
     'socket|S=s'   => \(my $SOCKETPATH),
-    'redis|R=s'    => \(my $REDIS),
-    'l|log=s'      => \(my $log_level = "debug"),
+    'redis|R=s'    => \(my $REDIS = 'redis://127.0.0.1'),
+    'l|log=s'      => \(my $log_level = "info"),
 ) or exit 1;
 
 require Log::Any::Adapter;
@@ -118,7 +119,7 @@ sub takeover_coordinator {
 
 sub run_coordinator {
     add_worker_process() while keys %workers < $WORKERS;
-    $log->infof("%d Workers are running, processing queue on: %s", $WORKERS, $REDIS // 'redis://127.0.0.1');
+    $log->infof("%d Workers are running, processing queue on: %s", $WORKERS, $REDIS);
 
     $SIG{TERM} = $SIG{INT} = sub {
         $WORKERS = 0;
@@ -136,19 +137,22 @@ sub handle_ctrl_command {
     my ($cmd, $conn) = @_;
     $log->debug("Control command> $cmd");
 
-    $cmd =~ s/-/_/g;
-    if (my $code = __PACKAGE__->can("handle_ctrl_command_$cmd")) {
-        $code->($conn);
+    $cmd =~ /^(\S*)( .*)?$/;
+    my ($name, $args) = ($1, $2);
+
+    $name =~ s/-/_/g;
+    if (my $code = __PACKAGE__->can("handle_ctrl_command_$name")) {
+        $code->($conn, trim($args));
     } else {
-        $log->debug("Ignoring unrecognised control command");
+        $log->debug("Ignoring unrecognised control command $cmd");
     }
 }
 
 sub handle_ctrl_command_DEC_WORKERS {
     my ($conn) = @_;
 
-    $WORKERS = $WORKERS -1;
-    if (scalar(keys %workers) == 0){
+    $WORKERS = $WORKERS - 1;
+    if (scalar(keys %workers) == 0) {
         $WORKERS = 0;
         $conn->write("WORKERS " . scalar(keys %workers) . "\n");
         return;
@@ -156,14 +160,21 @@ sub handle_ctrl_command_DEC_WORKERS {
     while (keys %workers > $WORKERS) {
         # Arbitrarily pick a victim
         my $worker_to_die = delete $workers{(keys %workers)[0]};
-        
+
         $worker_to_die->shutdown('TERM', timeout => 15)->on_done(sub { $conn->write("WORKERS " . scalar(keys %workers) . "\n") })->get;
     }
 }
 
+sub handle_ctrl_command_ADD_WORKERS {
+    my ($conn, $redis) = @_;
+    $WORKERS += 1;
+    add_worker_process($redis);
+    $conn->write("WORKERS " . scalar(keys %workers) . "\n");
+}
+
 sub handle_ctrl_command_PING {
     my ($conn) = @_;
-    
+
     $conn->write("PONG\n");
 }
 
@@ -174,6 +185,9 @@ sub handle_ctrl_command_EXIT {
 }
 
 sub add_worker_process {
+    my $redis = shift;
+    $redis = $redis // $REDIS;
+
     my $worker = IO::Async::Process::GracefulShutdown->new(
         code => sub {
             undef $loop;
@@ -181,7 +195,7 @@ sub add_worker_process {
 
             $log->debugf("[%d] worker process waiting", $$);
             $log->{context}{pid} = $$;
-            return run_worker_process();
+            return run_worker_process($redis);
         },
         on_finish => sub {
             my ($worker, $exitcode) = @_;
@@ -195,16 +209,18 @@ sub add_worker_process {
 
             $log->debug("Restarting");
 
-            $loop->delay_future(after => 1)->on_done(sub { add_worker_process() })->retain;
+            $loop->delay_future(after => 1)->on_done(sub { add_worker_process($redis) })->retain;
         },
     );
 
     $loop->add($worker);
     $workers{$worker->pid} = $worker;
+    $log->debugf("New worker started on redis: $redis");
 }
 
 sub run_worker_process {
-    my $loop = IO::Async::Loop->new;
+    my $redis = shift;
+    my $loop  = IO::Async::Loop->new;
 
     require BOM::RPC::Registry;
     require BOM::RPC;    # This will load all the RPC methods into registry as a side-effect
@@ -222,7 +238,7 @@ sub run_worker_process {
 
     $loop->add(
         my $worker = Job::Async::Worker::Redis->new(
-            uri => $REDIS // 'redis://127.0.0.1',
+            uri => $redis // $REDIS,
             max_concurrent_jobs => 1,
             use_multi           => 1,
             timeout             => 5
