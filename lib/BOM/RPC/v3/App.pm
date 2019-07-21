@@ -76,13 +76,13 @@ rpc app_update => sub {
     my $app_id                = $args->{app_update};
     my $name                  = $args->{name};
     my $scopes                = $args->{scopes};
-    my $homepage              = $args->{homepage} // '';
-    my $github                = $args->{github} // '';
-    my $appstore              = $args->{appstore} // '';
-    my $googleplay            = $args->{googleplay} // '';
-    my $redirect_uri          = $args->{redirect_uri} // '';
-    my $verification_uri      = $args->{verification_uri} // '';
-    my $app_markup_percentage = $args->{app_markup_percentage} // 0;
+    my $homepage              = $args->{homepage};
+    my $github                = $args->{github};
+    my $appstore              = $args->{appstore};
+    my $googleplay            = $args->{googleplay};
+    my $redirect_uri          = $args->{redirect_uri};
+    my $verification_uri      = $args->{verification_uri};
+    my $app_markup_percentage = $args->{app_markup_percentage};
 
     ## do some validation
     my $error_sub = sub {
