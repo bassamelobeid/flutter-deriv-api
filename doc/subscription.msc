@@ -1,0 +1,18 @@
+# Subscripiton Flow
+msc {
+   hscale=3, arcgradient = 8;
+   outside, Subscription, SubscriptionManager, redis;
+   outside -> Subscription [label = "call new\n create object to store information"];
+   outside -> Subscription [label = "call register\n will store the object to $c->stash->{channels}" ];
+   outside -> Subscription [label = "call subscribe"];
+   Subscription -> SubscriptionManager [label = "subscribe the channel"];
+   SubscriptionManager box SubscriptionManager [label = "Check if there is an subcription for the channel\n if so, reuse it"];
+   SubscriptionManager -> redis [label = "subscribe to redis"];
+   redis ->  SubscriptionManager [label = "receive message"];
+   SubscriptionManager -> Subscription [ label = "call process\n dispatch the message to all subscription objects for that channel"];
+   Subscription -> outside [label = "process message and send it to outside"];
+   ... [ label = "process message again and again"];
+   outside -> Subscription [label = "call unregister\n Object will be removed from stash and be destroyed"];
+   Subscription -> SubscriptionManager [label = "call unsubscribe\n check if there are other subscripitions that share that channel"];
+   SubscriptionManager -> redis [label = "unsubscribe from redis server\n if there is no other subscriptions for that channel"];
+}

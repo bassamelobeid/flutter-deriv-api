@@ -7,7 +7,7 @@ use warnings;
 use List::Util qw(first);
 
 use Binary::WebSocketAPI::v3::Wrapper::System;
-use Binary::WebSocketAPI::v3::Wrapper::Streamer;
+use Binary::WebSocketAPI::v3::Subscription::Transaction;
 
 sub buy_get_single_contract {
     my ($c, $api_response, $req_storage) = @_;
@@ -72,11 +72,11 @@ sub _subscribe_to_contract {
     };
     $args->{req_id} = $req_args->{req_id} if exists $req_args->{req_id};
 
-    my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::pricing_channel_for_bid($c, $args, $contract);
+    my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::pricing_channel_for_proposal_open_contract($c, $args, $contract)->{uuid};
     # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-    Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel(
+    transaction_channel(
         $c, 'subscribe', $account_id,    # should not go to client
-        $uuid, $args, $contract_id
+        'sell', $args, $contract_id, $uuid
     );
 
     return $uuid;
@@ -112,13 +112,13 @@ sub buy_get_contract_params {
         return;
     }
     if (my $proposal_id = $args->{buy} // $args->{buy_contract_for_multiple_accounts}) {
-        my $ch = $c->stash('pricing_channel');
-        if ($ch and $ch = $ch->{uuid} and $ch = $ch->{$proposal_id}) {
-            $req_storage->{call_params}->{payout}                                       = $ch->{cache}->{payout};
-            $req_storage->{call_params}->{contract_parameters}                          = $ch->{args};
+        # get subscription object Proposal or ProposalArrayItem for information
+        my $subscription = Binary::WebSocketAPI::v3::Subscription->get_by_uuid($c, $proposal_id);
+        if ($subscription) {
+            $req_storage->{call_params}->{payout}                                       = $subscription->cache->{payout};
+            $req_storage->{call_params}->{contract_parameters}                          = $subscription->args;
             $req_storage->{call_params}->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
-            Binary::WebSocketAPI::v3::Wrapper::System::_forget_pricing_subscription($c, $proposal_id);
-
+            $subscription->unregister;
             return;
         }
     }
@@ -135,7 +135,7 @@ sub transaction {
     if ($account_id) {
         if (    exists $args->{subscribe}
             and $args->{subscribe} eq '1'
-            and (not $id = Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'subscribe', $account_id, 'transaction', $args)))
+            and (not $id = transaction_channel($c, 'subscribe', $account_id, 'transaction', $args)))
         {
             return $c->new_error('transaction', 'AlreadySubscribed', $c->l('You are already subscribed to [_1].', 'transaction'));
         }
@@ -146,6 +146,36 @@ sub transaction {
         transaction => {$id ? (id => $id) : ()},
         $id ? (subscription => {(id => $id)}) : (),
     };
+}
+
+sub transaction_channel {
+    my ($c, $action, $account_id, $type, $args, $contract_id, $poc_uuid) = @_;
+
+    $contract_id //= $args->{contract_id};
+    $poc_uuid //= '';
+
+    my $worker = Binary::WebSocketAPI::v3::Subscription::Transaction->new(
+        c           => $c,
+        account_id  => $account_id,
+        type        => $type,
+        contract_id => $contract_id,
+        args        => $args,
+        poc_uuid    => $poc_uuid,
+    );
+
+    my $already_registered_worker = $worker->already_registered;
+    if ($action eq 'subscribe' and not $already_registered_worker) {
+        my $uuid = $worker->uuid();
+        $worker->subscribe;
+        $worker->register;
+        return $uuid;
+    } elsif ($action eq 'unsubscribe' and $already_registered_worker) {
+        $already_registered_worker->unregister;
+    } elsif ($action eq 'subscribed?') {
+        return $already_registered_worker;
+    }
+
+    return undef;
 }
 
 1;

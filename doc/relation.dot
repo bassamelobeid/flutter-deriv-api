@@ -1,0 +1,11 @@
+digraph SubscriptionRelation {
+  node [style = filled, color = gray];
+  Feed;
+  Transaction -> ProposalOpenContract [label = "type buy \n create"];
+  Transaction -> Transaction [label = "type buy \n create type sell"]
+  Transaction -> ProposalOpenContract [label = "sell \n destroy "];
+  Proposal;
+  ProposalOpenContract;
+  ProposalArray -> ProposalArrayItem [label = "store item uuid into array\nstore array uuid into item"];
+  ProposalArrayItem -> ProposalArray [label = "run collector\nand store result into array"];
+}

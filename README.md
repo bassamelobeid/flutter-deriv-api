@@ -30,3 +30,4 @@ Commands are:
     prove t/BOM/001_structure.t
     # run one script with perl, you should load some modules. please refer to .proverc
     perl -MBOM::Test -MBOM::RPC::PricingRpc -MBOM::Test::Script::NotifyPub t/001_structure.t
+

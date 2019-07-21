@@ -32,3 +32,15 @@ tidy:
 	find . -name '*.p?.bak' -delete
 	find lib t -name '*.p[lm]' -o -name '*.t' | xargs perltidy -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
 	find . -name '*.tidyup' -delete
+
+rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst *,%,$2),$d))
+msc_graphs = $(patsubst %.msc,%.msc.png,$(call rwildcard,,*.msc))
+dot_graphs = $(patsubst %.dot,%.dot.png,$(call rwildcard,,*.dot))
+
+doc: $(msc_graphs) $(dot_graphs)
+
+%.msc.png: %.msc
+	mscgen -T png -i $< -o $@
+
+%.dot.png: %.dot
+	dot -Tpng < $< > $@

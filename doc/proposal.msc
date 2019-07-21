@@ -1,0 +1,14 @@
+msc {
+    hscale=4,arcgradient = 8;
+    client, pricer [label = "Wraper::Pricer"], proposal [label = "Subscription::Pricer::Proposal"], bom_rpc, redis, outside;
+    client -> pricer [label = "ask for proposal"];
+    pricer -> bom_rpc [label = "ask proposal"];
+    bom_rpc-> pricer [label = "get the result"];
+    pricer ->  proposal [label = "create proposal object"];
+    proposal -> redis [label = "subscribe the channel\n and store the channel name"];
+    pricer -> client [label = "return message"];
+    --- [label = "boundary line between subscribing/processing"];
+    outside -> redis [label = "read the channe name\n calculate the price\npublish the result\nplease see bom-pricing code"];
+    redis -> proposal [label = "get the message"];
+    proposal -> client [label = "process and return message"];
+}

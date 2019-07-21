@@ -48,18 +48,6 @@ our @EXPORT_OK = ('check_connections', sort keys %$servers);
 our %INSTANCES;
 
 my %message_handler = (
-    redis_pricer => sub {
-        my ($redis, $msg, $channel) = @_;
-        if (my $ch = $redis->{shared_info}{$channel}) {
-            foreach my $k (sort keys %$ch) {
-                unless (ref $ch->{$k}) {
-                    delete $ch->{$k};
-                    next;
-                }
-                Binary::WebSocketAPI::v3::Wrapper::Pricer::process_pricing_events($ch->{$k}, $msg, $channel);
-            }
-        }
-    },
     ws_redis_master => sub {
         my ($redis, $msg, $channel) = @_;
         Binary::WebSocketAPI::v3::Wrapper::Streamer::send_notification($redis->{shared_info}, $msg, $channel)

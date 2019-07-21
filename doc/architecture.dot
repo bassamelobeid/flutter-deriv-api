@@ -1,0 +1,18 @@
+digraph SubscriptionArchitecture {
+      subgraph clusterSubscriptionModules {
+          node [style = filled, color = white];
+          style = filled; color = gray;
+          Subscription [shape = box, label="Subscription\nRole"];
+          Pricer [shape = box, label = "Pricer\nRole"];
+          Subscription -> Feed;
+          Subscription -> Transaction;
+          Subscription -> Pricer;
+          Pricer -> Proposal;
+          Pricer -> ProposalArray;
+          Pricer -> ProposalArrayItem;
+          Pricer -> ProposalOpenContract;
+          label = "Subscription Modules";
+      }
+       Subscription -> SubscriptonManager [style = dotted, label = "subscribe"];
+       Subscription -> SubscriptonManager [style = dotted, label = "unsubscribe"];
+}

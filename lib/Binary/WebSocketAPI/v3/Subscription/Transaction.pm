@@ -1,15 +1,18 @@
 package Binary::WebSocketAPI::v3::Subscription::Transaction;
-
 use strict;
 use warnings;
+use feature qw(state);
+no indirect;
 
-use Binary::WebSocketAPI::v3::Wrapper::Streamer;
+use Binary::WebSocketAPI::v3::Wrapper::Transaction;
 use Binary::WebSocketAPI::v3::Wrapper::Authorize;
 use Format::Util::Numbers qw(formatnumber);
 use Future;
 use Log::Any qw($log);
 use Moo;
-with 'Binary::WebSocketAPI::v3::SubscriptionRole';
+use Carp qw(croak);
+use List::Util qw(any);
+with 'Binary::WebSocketAPI::v3::Subscription';
 
 use namespace::clean;
 
@@ -24,7 +27,7 @@ L<Binary::WebSocketAPI::v3::SubscriptionManager> will subscribe that channel on 
 information that will be fetched when the message arrive. So to avoid duplicate subscription, we can store
 the worker in the stash with the unique key.
 
-Please refer to L<Binary::WebSocketAPI::v3::SubscriptionRole>
+Please refer to L<Binary::WebSocketAPI::v3::Subscription>
 
 =head1 SYNOPSIS
 
@@ -46,14 +49,25 @@ Please refer to L<Binary::WebSocketAPI::v3::SubscriptionRole>
 
 =head2 type
 
-The type of subscription, like 'poc', 'balance', 'transaction'
+The type of subscription, like 'buy', 'balance', 'transaction', 'sell'
 
 =cut
 
 has type => (
     is       => 'ro',
     required => 1,
-);
+    isa      => sub {
+        state $allowed_types = {map { $_ => 1 } qw(buy balance transaction sell)};
+        die "type can only be buy, balance, transaction, sell" unless $allowed_types->{$_[0]};
+    });
+
+has poc_uuid => (
+    is       => 'ro',
+    required => 0,
+    default  => sub { '' },
+    isa      => sub {
+        die "poc_uuid should be a uuid string" unless $_[0] =~ /^(?:\w{8}-\w{4}-\w{4}-\w{4}-\w{12})?$/;
+    });
 
 =head2 contract_id
 
@@ -61,7 +75,7 @@ has type => (
 
 has contract_id => (
     is       => 'ro',
-    required => 1,
+    required => 0,
 
 );
 
@@ -84,23 +98,31 @@ The channel name
 
 =cut
 
-sub channel { return 'TXNUPDATE::transaction_' . shift->account_id }
+sub _build_channel { return 'TXNUPDATE::transaction_' . shift->account_id }
+
+sub BUILD {
+    my ($self) = @_;
+    die "poc_uuid is required for type 'sell'" if $self->type eq 'sell' && !$self->poc_uuid;
+    return undef;
+}
+
+# This method is used to find a subscription. Class name + _unique_key will be a unique index of the subscription objects.
+sub _unique_key {
+    my $self = shift;
+    return $self->type . ':' . $self->poc_uuid;
+}
 
 =head2 handle_error
 
 =cut
 
-sub handle_error {
+before handle_error => sub {
     my ($self, $err, $message) = @_;
-    if ($err->{code} eq 'TokenDeleted') {
-        if ($self->c->stash->{token} eq $err->{token}) {
-            Binary::WebSocketAPI::v3::Wrapper::Authorize::logout_success($self->c);
-        }
-        return;
+    if ($err->{code} eq 'TokenDeleted' && $self->c->stash->{token} eq $err->{token}) {
+        Binary::WebSocketAPI::v3::Wrapper::Authorize::logout_success($self->c);
     }
-    $log->warnf("error happened in class %s channel %s message %s: %s", $self->class, $self->channel, $message, $err->{code});
     return;
-}
+};
 
 =head2 handle_message
 
@@ -114,8 +136,8 @@ sub handle_message {
     my $c = $self->c;
 
     if (!$c->stash('account_id')) {
-        delete $c->stash->{'transaction_channel'};
-        return;
+        $self->unregister_class();
+        return undef;
     }
 
     Future->call(
@@ -126,7 +148,7 @@ sub handle_message {
             ### we'll start new bid stream if we have proposal_open_contract subscription and have bought a new contract
 
             return $self->_create_poc_stream($message)
-                if ($type eq 'poc' && $message->{action_type} eq 'buy');
+                if ($type eq 'buy' && $message->{action_type} eq 'buy');
 
             $self->_update_balance($message)
                 if $type eq 'balance';
@@ -135,13 +157,13 @@ sub handle_message {
                 if $type eq 'transaction';
 
             $self->_close_proposal_open_contract_stream($message)
-                if $type =~ /\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/ && $message->{action_type} eq 'sell';
+                if $self->type eq 'sell' && $message->{action_type} eq 'sell';
 
             return Future->done;
         }
         )->on_fail(
         sub {
-            warn "ERROR - @_";
+            $log->warn("ERROR - @_");
         })->retain;
     return;
 }
@@ -157,7 +179,7 @@ sub _close_proposal_open_contract_stream {
     my $c           = $self->c;
     my $args        = $self->args;
     my $contract_id = $self->contract_id;
-    my $uuid        = $self->type;
+    my $uuid        = $self->poc_uuid;
 
     if (    exists $payload->{financial_market_bet_id}
         and $contract_id
@@ -222,7 +244,7 @@ sub _update_transaction {
                 my ($c, $rpc_response) = @_;
 
                 if (exists $rpc_response->{error}) {
-                    Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
+                    Binary::WebSocketAPI::v3::Subscription->unregister_by_uuid($c, $id) if $id;
                     return $c->new_error('transaction', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
                 } else {
                     $details->{transaction}->{purchase_time} = Date::Utility->new($payload->{purchase_time})->epoch
@@ -285,18 +307,22 @@ sub _create_poc_stream {
         sub {
             my ($longcode) = @_;
             $payload->{longcode} = $longcode
-                or warn "Had no longcode for $payload->{short_code} currency $payload->{currency_code} language " . $c->stash('language');
+                or $log->warnf(
+                'Had no longcode for %s currency %s language %s',
+                $payload->{short_code},
+                $payload->{currency_code},
+                $c->stash('language'));
             return Future->done;
         },
         sub {
             my ($error, $category, @details) = @_;
-            warn "Longcode failure, falling back to placeholder text - $error ($category: @details)\n";
+            $log->warn("Longcode failure, falling back to placeholder text - $error ($category: @details)");
             $payload->{longcode} = $c->l('Could not retrieve contract details');
             return Future->done;
         }
         )->then(
         sub {
-            my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::pricing_channel_for_bid(
+            my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::pricing_channel_for_proposal_open_contract(
                 $c,
                 $poc_args,
                 {
@@ -311,11 +337,12 @@ sub _create_poc_stream {
                     purchase_time   => Date::Utility->new($payload->{purchase_time})->epoch,
                     sell_price      => undef,
                     sell_time       => undef,
-                });
+                })->{uuid};
 
             # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-            Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'subscribe', $payload->{account_id},
-                $uuid, $poc_args, $payload->{financial_market_bet_id})
+            #TODO chylli test not cover here ?
+            Binary::WebSocketAPI::v3::Wrapper::Transaction::transaction_channel($c, 'subscribe', $payload->{account_id},
+                'sell', $poc_args, $payload->{financial_market_bet_id}, $uuid)
                 if $uuid;
             return Future->done;
         });

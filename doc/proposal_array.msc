@@ -1,0 +1,15 @@
+msc {
+    hscale=4,arcgradient = 8;
+    client, pricer [label = "Wraper::Pricer"], bom_rpc,  proposal_array [label = "Subscription::Pricer::ProposalArray"], proposal_array_item [label = "Subscription::Pricer::ProposalArrayItem"];
+    client -> pricer [label = "ask for proosal_array"];
+    pricer -> proposal_array [label = "create Subscription::Pricer::ProposalArray object"];
+    pricer box pricer [label = "split barriers to smaller chunks"];
+    pricer box pricer [label = "fmap foreach barrier chunks"];
+    pricer -> bom_rpc [label = "ask for proposal"];
+    bom_rpc -> pricer [label = "return result"];
+    pricer -> proposal_array_item [label = "create and subscribe item channel\n will store array uuid into ProposalArrayItem->cache"];
+    pricer box pricer [label = "store ProposalArrayItem uuid into PorposalArray->seq"];
+    pricer box pricer [label = "end fmap foreach"];
+    pricer box pricer [label = "join all rpc result"];
+    pricer -> client [label = "return message"];
+}

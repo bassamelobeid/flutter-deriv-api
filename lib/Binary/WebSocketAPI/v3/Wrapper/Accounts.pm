@@ -6,7 +6,8 @@ use warnings;
 
 use List::Util qw(first);
 
-use Binary::WebSocketAPI::v3::Wrapper::Streamer;
+use Binary::WebSocketAPI::v3::Wrapper::Transaction;
+use Binary::WebSocketAPI::v3::Subscription;
 
 sub set_self_exclusion_response_handler {
     my ($rpc_response, $api_response) = @_;
@@ -19,10 +20,9 @@ sub set_self_exclusion_response_handler {
 sub before_forward_balance {
     my ($c, $req_storage) = @_;
 
-    my $args    = $req_storage->{args};
-    my $channel = $c->stash('transaction_channel');
-
-    my $already_subscribed = $channel ? exists $channel->{balance} : 0;
+    my $args               = $req_storage->{args};
+    my $account_id         = $c->stash('account_id');
+    my $already_subscribed = Binary::WebSocketAPI::v3::Wrapper::Transaction::transaction_channel($c, 'subscribed?', $account_id, 'balance', $args);
 
     if (    exists $args->{subscribe}
         and $args->{subscribe}
@@ -40,7 +40,7 @@ sub subscribe_transaction_channel {
 
     return undef unless exists $args->{subscribe} and $args->{subscribe};
     my $account_id = $c->stash('account_id');
-    my $id = Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($c, 'subscribe', $account_id, 'balance', $args);
+    my $id = Binary::WebSocketAPI::v3::Wrapper::Transaction::transaction_channel($c, 'subscribe', $account_id, 'balance', $args);
 
     $req_storage->{transaction_channel_id} = $id if $id;
     return undef;
@@ -48,7 +48,7 @@ sub subscribe_transaction_channel {
 
 sub balance_error_handler {
     my ($c, undef, $req_storage) = @_;
-    Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $req_storage->{transaction_channel_id}) if $req_storage->{transaction_channel_id};
+    Binary::WebSocketAPI::v3::Subscription->unregister_by_uuid($c, $req_storage->{transaction_channel_id}) if $req_storage->{transaction_channel_id};
     return;
 }
 

@@ -2,6 +2,7 @@ package Binary::WebSocketAPI::v3::Subscription::Feed;
 
 use strict;
 use warnings;
+no indirect;
 
 =head1 NAME
 
@@ -14,7 +15,6 @@ Binary::WebSocketAPI::v3::Subscription::Feed - The class that handle feed channe
         type       => $type,
         args       => $args,
         symbol     => $symbol,
-        uuid       => $uuid,
         cache_only => $cache_only || 0,
     );
 
@@ -30,7 +30,7 @@ subscribe that channel on redis server only once and this module will register
 information that will be fetched when the message arrive. So to avoid duplicate
 subscription, we can store the worker in the stash with the unique key.
 
-Please refer to L<Binary::WebSocketAPI::v3::SubscriptionRole>
+Please refer to L<Binary::WebSocketAPI::v3::Subscription>
 
 =cut
 
@@ -39,7 +39,7 @@ use Scalar::Util qw(looks_like_number);
 use List::Util qw(first);
 use Log::Any qw($log);
 use Moo;
-with 'Binary::WebSocketAPI::v3::SubscriptionRole';
+with 'Binary::WebSocketAPI::v3::Subscription';
 
 use namespace::clean;
 
@@ -88,7 +88,7 @@ has cache_only => (
 
 =head2 subscription_manager
 
-Please refer to L<Binary::WebSocketAPI::v3::SubscriptionRole/subscription_manager>
+Please refer to L<Binary::WebSocketAPI::v3::Subscription/subscription_manager>
 
 =cut
 
@@ -98,27 +98,29 @@ sub subscription_manager {
 
 =head2 channel
 
-Please refer to L<Binary::WebSocketAPI::v3::SubscriptionRole/channel>
+Please refer to L<Binary::WebSocketAPI::v3::Subscription/channel>
 
 =cut
 
-sub channel { return 'DISTRIBUTOR_FEED::' . shift->symbol }
+sub _build_channel { return 'DISTRIBUTOR_FEED::' . shift->symbol }
 
-=head2 handle_error
+=head2 _unique_key
 
-Please refer to L<Binary::WebSocketAPI::v3::SubscriptionRole/handle_error>
+This method is used to find a subscription. Class name + _unique_key will be a
+unique index of the subscription objects.
 
 =cut
 
-sub handle_error {
-    my ($self, $err, $message) = @_;
-    $log->warnf("error happened in class %s channel %s message %s: $err", $self->class, $self->channel, $message);
-    return;
+sub _unique_key {
+    my $self = shift;
+    my $key  = $self->symbol . ";" . $self->type;
+    $key .= ";" . $self->args->{req_id} if $self->args->{req_id};
+    return $key;
 }
 
 =head2 handle_message
 
-Please refer to L<Binary::WebSocketAPI::v3::SubscriptionRole/handle_message>
+Please refer to L<Binary::WebSocketAPI::v3::Subscription/handle_message>
 
 =cut
 
@@ -133,10 +135,8 @@ sub handle_message {
     my $type       = $self->type;
     my $arguments  = $self->args;
     my $cache_only = $self->cache_only;
-    my $req_id     = $arguments->{req_id};
-    return if $payload->{symbol} ne $symbol;
     unless ($c->tx) {
-        Binary::WebSocketAPI::v3::Wrapper::Streamer::feed_channel_unsubscribe($c, $symbol, $type, $req_id);
+        $self->unregister;
         return;
     }
 
@@ -196,14 +196,6 @@ sub _parse_ohlc_data_for_type {
     my @fields = $item =~ m/:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+)/ or die "regexp didn't match";
     return @fields;
 }
-
-before unsubscribe => sub {
-    my $self = shift;
-    # as we subscribe to transaction channel for proposal_open_contract so need to forget that also
-    Binary::WebSocketAPI::v3::Wrapper::Streamer::transaction_channel($self->c, 'unsubscribe', $self->args->{account_id}, $self->uuid)
-        if $self->type =~ /^proposal_open_contract:/;
-    return;
-};
 
 1;
 
