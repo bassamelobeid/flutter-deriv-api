@@ -5,6 +5,7 @@ use warnings;
 
 no indirect;
 
+use Binary::WebSocketAPI::BalanceConnections ();
 use Mojo::Base 'Mojolicious';
 use Mojo::Redis2;
 use Mojo::IOLoop;
