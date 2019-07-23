@@ -15,6 +15,8 @@ use ExchangeRates::CurrencyConverter qw(convert_currency);
 
 =cut
 
+my $redis = BOM::Config::RedisReplicated::redis_limits_write;
+
 sub set_underlying_groups {
     # POC, we should see which broker code to use
     my $dbic = BOM::Database::ClientDB->new({broker_code => 'CR'})->db->dbic;
@@ -26,7 +28,7 @@ sub set_underlying_groups {
 
     my @symbol_underlying;
     push @symbol_underlying, @$_ foreach (@$bet_market);
-    BOM::Config::RedisReplicated::redis_limits_write->hmset('UNDERLYINGGROUPS', @symbol_underlying);
+    $redis->hmset('UNDERLYINGGROUPS', @symbol_underlying);
 }
 
 sub set_contract_groups {
@@ -40,7 +42,7 @@ sub set_contract_groups {
 
     my @contract_grp;
     push @contract_grp, @$_ foreach (@$bet_grp);
-    BOM::Config::RedisReplicated::redis_limits_write->hmset('CONTRACTGROUPS', @contract_grp);
+    $redis->hmset('CONTRACTGROUPS', @contract_grp);
 }
 
 sub add_buy_contract {
@@ -49,26 +51,26 @@ sub add_buy_contract {
 
     my $underlying = $bet_data->{underlying_symbol};
     my ($contract_group, $underlying_group);
-    BOM::Config::RedisReplicated::redis_limits_write->hget(
+    $redis->hget(
         'CONTRACTGROUPS',
         $bet_data->{bet_type},
         sub {
             $contract_group = $_[1];
         });
-    BOM::Config::RedisReplicated::redis_limits_write->hget(
+    $redis->hget(
         'UNDERLYINGGROUPS',
         $underlying,
         sub {
             $underlying_group = $_[1];
         });
-    BOM::Config::RedisReplicated::redis_limits_write->mainloop;
+    $redis->mainloop;
 
     print 'BET DATA: ', Dumper($contract);
     my @combinations = _get_combinations($contract, $underlying_group, $contract_group);
     print 'COMBINATIONS:', Dumper(\@combinations);
 
     # GET LIMITS!!
-    my $limits_response = BOM::Config::RedisReplicated::redis_limits_write->hmget('LIMITS', @combinations);
+    my $limits_response = $redis->hmget('LIMITS', @combinations);
 
     my %limits;
     foreach my $i (0 .. $#combinations) {
@@ -109,25 +111,24 @@ sub _buy_redis_increment_query {
 
     my ($realized_loss_response, $potential_loss_response);
 
+    $redis->multi(sub { });
     if (@realized_loss_request) {
-        BOM::Config::RedisReplicated::redis_limits_write->send_command(
-            ('HMGET', 'TOTALS_REALIZED_LOSS', @realized_loss_request),
-            sub {
-                $realized_loss_response = $_[1];
-            });
+        $redis->send_command(('HMGET', 'TOTALS_REALIZED_LOSS', @realized_loss_request), sub { });
     }
 
     foreach my $i (0 .. $#potential_loss_request) {
         my $p = $potential_loss_request[$i];
-        BOM::Config::RedisReplicated::redis_limits_write->hincrbyfloat(
-            'TOTALS_POTENTIAL_LOSS',
-            $p,
-            $potential_loss,
-            sub {
-                $potential_loss_response->[$i] = $_[1];
-            });
+        $redis->hincrbyfloat('TOTALS_POTENTIAL_LOSS', $p, $potential_loss, sub { });
     }
-    BOM::Config::RedisReplicated::redis_limits_write->mainloop;
+    $redis->exec(
+        sub {
+            $realized_loss_response = $_[1];
+            foreach my $i (0 .. $#potential_loss_request) {
+                $potential_loss_response->[$i] = $_[$i + 1];
+            }
+
+        });
+    $redis->mainloop;
 
     my %totals;
     foreach my $i (0 .. $#potential_loss_request) {
@@ -135,7 +136,7 @@ sub _buy_redis_increment_query {
     }
 
     foreach my $i (0 .. $#realized_loss_request) {
-        $totals{$realized_loss_request[$i]}->[1] = $realized_loss_response->[$i] // 0;
+        $totals{$realized_loss_request[$i]}->[1] = ($realized_loss_response->[$i] // 0);
     }
 
     return %totals;
