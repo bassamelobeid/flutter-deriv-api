@@ -211,16 +211,16 @@ subtest 'get_computed_limits', sub {
     # TODO: test get_limit
 
     _clean_redis();
-    my $limit = BOM::CompanyLimits::Limits::add_limit(['POTENTIAL_LOSS', 'frxUSDJPY,,,t', 10000, 1500000000, 1800000000]);
+    my $limit = BOM::CompanyLimits::Limits::add_limit('POTENTIAL_LOSS', 'frxUSDJPY,,,t', 10000, 1500000000, 1800000000);
     cmp_ok $limit, 'eq', '1 10000 1500000000 1800000000', '';
 
-    $limit = BOM::CompanyLimits::Limits::add_limit(['POTENTIAL_LOSS', 'frxUSDJPY,,,t', 39, 1500000000, 1800000000]);
+    $limit = BOM::CompanyLimits::Limits::add_limit('POTENTIAL_LOSS', 'frxUSDJPY,,,t', 39, 1500000000, 1800000000);
     cmp_ok $limit, 'eq', '1 39 1500000000 1800000000 10000 1500000000 1800000000', '';
 
-    $limit = BOM::CompanyLimits::Limits::add_limit(['POTENTIAL_LOSS', 'frxUSDJPY,,,t', 10, 0, 0]);
+    $limit = BOM::CompanyLimits::Limits::add_limit('POTENTIAL_LOSS', 'frxUSDJPY,,,t', 10, 0, 0);
     cmp_ok $limit, 'eq', '1 10 0 0 39 1500000000 1800000000 10000 1500000000 1800000000', '';
 
-    $limit = BOM::CompanyLimits::Limits::add_limit(['POTENTIAL_LOSS', 'frxUSDJPY,,,t', 30, 1200000000, 1300000000]);
+    $limit = BOM::CompanyLimits::Limits::add_limit('POTENTIAL_LOSS', 'frxUSDJPY,,,t', 30, 1200000000, 1300000000);
     cmp_ok $limit, 'eq', '1 10 0 0 30 1200000000 1300000000 39 1500000000 1800000000 10000 1500000000 1800000000', '';
 
     my $computed_lim =
