@@ -289,7 +289,7 @@ sub _get_new_limit {
         REALIZEDE_LOSS_2 => 3,
 =cut
 
-sub get_computed_limits {
+sub get_active_limits {
     # takes in encoded stuff
     my $encoded = shift;
     return unless $encoded;

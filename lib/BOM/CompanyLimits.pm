@@ -75,14 +75,14 @@ sub add_buy_contract {
     my %limits;
     foreach my $i (0 .. $#combinations) {
         if ($limits_response->[$i]) {
-            $limits{$combinations[$i]} = BOM::CompanyLimits::Limits::get_computed_limits($limits_response->[$i]);
+            $limits{$combinations[$i]} = BOM::CompanyLimits::Limits::get_active_limits($limits_response->[$i]);
         }
     }
 
     # No limits queries; nothing to do here...
     return 1 if (!%limits);
 
-    print 'LIMITS:', Dumper(\%limits);
+    print 'ACTIVE LIMITS:', Dumper(\%limits);
 
     my %computed_limits = compute_limits(\%limits, $underlying);
 

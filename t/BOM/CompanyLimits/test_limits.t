@@ -205,7 +205,7 @@ subtest 'add_limit and remove_limit', sub {
 
 };
 
-subtest 'get_computed_limits', sub {
+subtest 'get_active_limits', sub {
     # TODO: do a for loop through the whole thing per underlying group
     # TODO: add get_limit test
     # TODO: test get_limit
@@ -224,7 +224,7 @@ subtest 'get_computed_limits', sub {
     cmp_ok $limit, 'eq', '1 10 0 0 30 1200000000 1300000000 39 1500000000 1800000000 10000 1500000000 1800000000', '';
 
     my $computed_lim =
-        BOM::CompanyLimits::Limits::get_computed_limits(BOM::Config::RedisReplicated::redis_limits_write->hget('LIMITS', 'frxUSDJPY,,,t'));
+        BOM::CompanyLimits::Limits::get_active_limits(BOM::Config::RedisReplicated::redis_limits_write->hget('LIMITS', 'frxUSDJPY,,,t'));
     is_deeply($computed_lim, [10, undef, undef, undef], '');
 
 };
