@@ -50,30 +50,18 @@ sub stop {
 }
 
 my $commands = {
-    proposal => {
+    price => {
         required_params => [qw(contract_type currency symbol)],
         get_underlying  => \&_get_underlying_price,
         process         => \&_process_price,
     },
-    proposal_open_contract => {
+    bid => {
         required_params => [qw(contract_id short_code currency landing_company)],
         get_underlying  => \&_get_underlying_bid,
         process         => \&_process_bid,
     },
-    proposal_array_item => {
-        required_params => [qw(contract_type currency symbol)],
-        get_underlying  => \&_get_underlying_price,
-        process         => \&_process_price,
-    },
-
 };
 
-#TODO remove following lines
-# these line is for back-compatible
-# should be removed after the PR https://github.com/regentmarkets/binary-websocket-api/pull/2408 released to the production server.
-$commands->{price} = $commands->{proposal};
-$commands->{bid}   = $commands->{proposal_open_contract};
-#TODO end
 my $eco_snapshot = 0;
 
 sub process_job {
