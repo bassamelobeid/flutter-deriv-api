@@ -112,7 +112,8 @@ sub handle_message {
     }
 
     return undef if not $message;
-
+    # TODO I guess this hash item should be deleted from PriceDaemon becuase it has useless now.
+    delete $message->{price_daemon_cmd};
     $self->do_handle_message($message);
     return undef;
 

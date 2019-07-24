@@ -76,7 +76,7 @@ sub proposal {
                     payout              => $rpc_response->{payout},
                 };
                 $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
-                $req_storage->{uuid} = _pricing_channel_for_proposal($c, $req_storage->{args}, $cache)->{uuid};
+                $req_storage->{uuid} = _pricing_channel_for_proposal($c, $req_storage->{args}, $cache, 'Proposal')->{uuid};
             },
             response => sub {
                 my ($rpc_response, $api_response, $req_storage) = @_;
@@ -132,7 +132,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
 
     $copy_args->{skip_streaming} =
         1;    # only for proposal_array: do not create redis subscription, we need only information stored in subscription object
-    my $channel_info = _pricing_channel_for_proposal($c, $copy_args, {}, 'proposal_array');
+    my $channel_info = _pricing_channel_for_proposal($c, $copy_args, {}, 'ProposalArray');
     my $uuid = $channel_info->{uuid};
     unless ($uuid) {
         my $error = $c->new_error('proposal_array', 'AlreadySubscribed', $c->l('You are already subscribed to [_1].', 'proposal_array'));
@@ -170,7 +170,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
             }
         }
 
-        $req_storage->{uuid} = _pricing_channel_for_proposal($c, $req_storage->{args}, $cache, 'proposal_array_item')->{uuid};
+        $req_storage->{uuid} = _pricing_channel_for_proposal($c, $req_storage->{args}, $cache, 'ProposalArrayItem')->{uuid};
 
         if ($req_storage->{uuid}) {
             my $barriers = $req_storage->{args}{barriers}[0];
@@ -521,11 +521,12 @@ sub _serialized_args {
     return 'PRICER_KEYS::' . Encode::encode_utf8($json->encode([map { !defined($_) ? $_ : ref($_) ? $_ : "$_" } @arr]));
 }
 
-# This function is for porposal, proposal_array and proposal_array_item
+# This function is for Porposal, ProposalArray and ProposalArrayItem
 # TODO rename this function
 sub _pricing_channel_for_proposal {
-    my ($c, $args, $cache, $price_daemon_cmd) = @_;
-    $price_daemon_cmd //= 'proposal';
+    my ($c, $args, $cache, $class) = @_;
+
+    my $price_daemon_cmd = 'price';
 
     my %args_hash = %{$args};
 
@@ -548,12 +549,12 @@ sub _pricing_channel_for_proposal {
     my $skip = _skip_streaming($args);
 
     # uuid is needed regardless of whether its subscription or not
-    return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache, $skip);
+    return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $class, $cache, $skip);
 }
 
 sub pricing_channel_for_proposal_open_contract {
     my ($c, $args, $cache) = @_;
-    my $price_daemon_cmd = 'proposal_open_contract';
+    my $price_daemon_cmd = 'bid';
 
     my %hash;
     # get_bid RPC call requires 'short_code' param, not 'shortcode'
@@ -571,21 +572,21 @@ sub pricing_channel_for_proposal_open_contract {
     $hash{transaction_id} = $cache->{transaction_ids}->{buy};    # transaction is going to be stored
     my $subchannel = _serialized_args(\%hash);
 
-    return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache);
+    return _create_pricer_channel($c, $args, $redis_channel, $subchannel, 'ProposalOpenContract', $cache);
 }
 
 # will return a hash {uuid => $subscription->uuid, subscription => $subscription}
 # here return a hash to avoid caller testing subscription when fetch uuid
 sub _create_pricer_channel {
-    my ($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache, $skip_redis_subscr) = @_;
+    my ($c, $args, $redis_channel, $subchannel, $class, $cache, $skip_redis_subscr) = @_;
 
     my $subscription = create_subscription(
-        c                => $c,
-        channel          => $redis_channel,
-        subchannel       => $subchannel,
-        args             => $args,
-        cache            => $cache,
-        price_daemon_cmd => $price_daemon_cmd
+        c          => $c,
+        channel    => $redis_channel,
+        subchannel => $subchannel,
+        args       => $args,
+        cache      => $cache,
+        class      => $class
     );
 
     # channel already generated
@@ -689,20 +690,10 @@ It returns a subscription  object
 =cut
 
 sub create_subscription {
-    my (%args) = @_;
-    state $subclass_map = {
-        proposal               => 'Proposal',
-        proposal_open_contract => 'ProposalOpenContract',
-        proposal_array_item    => 'ProposalArrayItem',
-        proposal_array         => 'ProposalArray',
-    };
-
+    my (%args)    = @_;
     my $baseclass = 'Binary::WebSocketAPI::v3::Subscription::Pricer';
-    my $type      = delete $args{price_daemon_cmd};
-    my $subclass  = $subclass_map->{$type};
-    return die "Don't know how to handle type $type" unless $subclass;
-    return "${baseclass}::$subclass"->new(%args);
-
+    my $class     = delete $args{class};
+    return "${baseclass}::$class"->new(%args);
 }
 
 my %skip_duration_list = map { $_ => 1 } qw(t s m h);
