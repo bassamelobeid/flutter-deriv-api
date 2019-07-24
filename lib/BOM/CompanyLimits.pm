@@ -15,6 +15,11 @@ use ExchangeRates::CurrencyConverter qw(convert_currency);
 
 =cut
 
+use constant {
+    POTENTIAL_LOSS_TOTALS => 0,
+    REALIZED_LOSS_TOTALS => 1,
+};
+
 my $redis = BOM::Config::RedisReplicated::redis_limits_write;
 
 sub set_underlying_groups {
@@ -65,9 +70,8 @@ sub add_buy_contract {
         });
     $redis->mainloop;
 
-    print 'BET DATA: ', Dumper($contract);
+    # print 'BET DATA: ', Dumper($contract);
     my @combinations = _get_combinations($contract, $underlying_group, $contract_group);
-    print 'COMBINATIONS:', Dumper(\@combinations);
 
     # GET LIMITS!!
     my $limits_response = $redis->hmget('LIMITS', @combinations);
@@ -79,67 +83,60 @@ sub add_buy_contract {
         }
     }
 
-    # No limits queries; nothing to do here...
-    return 1 if (!%limits);
-
-    print 'ACTIVE LIMITS:', Dumper(\%limits);
+    # print 'ACTIVE LIMITS:', Dumper(\%limits);
 
     my %computed_limits = compute_limits(\%limits, $underlying);
 
-    print 'COMPUTED LIMITS:', Dumper(\%computed_limits);
+    # print 'COMPUTED LIMITS:', Dumper(\%computed_limits);
 
-    my (%totals) = _buy_redis_increment_query(\%computed_limits, $contract);
-
-    print 'TOTALS:', Dumper(\%totals);
-}
-
-sub _buy_redis_increment_query {
-    my ($totals, $contract) = @_;
     my @realized_loss_request;
     my @potential_loss_request;
-    my ($bet_data, $account_data) = @{$contract}{qw/bet_data account_data/};
+    my $account_data = $contract->{account_data};
 
     my $potential_loss = $bet_data->{payout_price} - $bet_data->{buy_price};
     if ($account_data->{currency_code} ne 'USD') {
         $potential_loss = convert_currency($potential_loss, $account_data->{currency_code}, 'USD');
     }
 
-    while (my ($k, $v) = each %{$totals}) {
-        push(@potential_loss_request, $k) if ($v->[0]);
-        push(@realized_loss_request,  $k) if ($v->[1]);
+    while (my ($k, $v) = each %computed_limits) {
+        push(@potential_loss_request, $k) if ($v->[POTENTIAL_LOSS_TOTALS]);
+        push(@realized_loss_request,  $k) if ($v->[REALIZED_LOSS_TOTALS]);
     }
 
     my ($realized_loss_response, $potential_loss_response);
 
+    # Realized loss (selected depending on whether we need to use it) and incrementing totals
+    # for potential loss is done in a single transaction (via multi exec) and single redis call (via pipelinening)
     $redis->multi(sub { });
     if (@realized_loss_request) {
         $redis->send_command(('HMGET', 'TOTALS_REALIZED_LOSS', @realized_loss_request), sub { });
     }
 
-    foreach my $i (0 .. $#potential_loss_request) {
-        my $p = $potential_loss_request[$i];
+    foreach my $p (@combinations) {
         $redis->hincrbyfloat('TOTALS_POTENTIAL_LOSS', $p, $potential_loss, sub { });
     }
     $redis->exec(
         sub {
-            $realized_loss_response = $_[1];
-            foreach my $i (0 .. $#potential_loss_request) {
-                $potential_loss_response->[$i] = $_[$i + 1];
-            }
-
+            $realized_loss_response = $_[POTENTIAL_LOSS_TOTALS];
+            $potential_loss_response = $_[REALIZED_LOSS_TOTALS];
         });
     $redis->mainloop;
 
     my %totals;
-    foreach my $i (0 .. $#potential_loss_request) {
-        $totals{$potential_loss_request[$i]}->[0] = $potential_loss_response->[$i];
+    foreach my $p (@potential_loss_request) {
+        foreach my $i (0 .. $#combinations) {
+            if ($combinations[$i] eq $p) {
+                $totals{$combinations[$i]}->[POTENTIAL_LOSS_TOTALS] = $potential_loss_response->[$i];
+                last;
+            }
+        }
     }
 
     foreach my $i (0 .. $#realized_loss_request) {
-        $totals{$realized_loss_request[$i]}->[1] = ($realized_loss_response->[$i] // 0);
+        $totals{$realized_loss_request[$i]}->[REALIZED_LOSS_TOTALS] = ($realized_loss_response->[$i] // 0);
     }
 
-    return %totals;
+    print 'TOTALS:', Dumper(\%totals);
 }
 
 sub add_sell_contract {
