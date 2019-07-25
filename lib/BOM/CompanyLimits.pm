@@ -70,7 +70,7 @@ sub add_buy_contract {
 
     # Realized loss (selected depending on whether we need to use it) and incrementing totals
     # for potential loss is done in a single transaction (via multi exec) and single redis call (via pipelinening)
-    my ($realized_loss_response, $potential_loss_response);
+    my (@realized_loss_response, @potential_loss_response);
     $redis->multi(sub { });
     if (@realized_loss_request) {
         $redis->send_command(('HMGET', 'TOTALS_REALIZED_LOSS', @realized_loss_request), sub { });
@@ -80,19 +80,24 @@ sub add_buy_contract {
     }
     $redis->exec(
         sub {
-            $realized_loss_response  = $_[0];
-            $potential_loss_response = $_[1];
+            my $response = $_[1];
+            my $i = 0;
+            if (@realized_loss_request) {
+                @realized_loss_response = @{$response}[$i .. $i + $#realized_loss_request];
+                $i += $#realized_loss_request;
+            }
+            @potential_loss_response = @{$response}[$i .. $i + $#combinations];
         });
     $redis->mainloop;
 
     my %totals;
     foreach my $i (0 .. $#combinations) {
         if ($limits{$combinations[$i]}->[POTENTIAL_LOSS_TOTALS]) {
-            $totals{$combinations[$i]}->[POTENTIAL_LOSS_TOTALS] = $potential_loss_response->[$i];
+            $totals{$combinations[$i]}->[POTENTIAL_LOSS_TOTALS] = $potential_loss_response[$i];
         }
     }
     foreach my $i (0 .. $#realized_loss_request) {
-        $totals{$realized_loss_request[$i]}->[REALIZED_LOSS_TOTALS] = ($realized_loss_response->[$i] // 0);
+        $totals{$realized_loss_request[$i]}->[REALIZED_LOSS_TOTALS] = ($realized_loss_response[$i] // 0);
     }
 
     print 'TOTALS:', Dumper(\%totals);
