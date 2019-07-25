@@ -145,11 +145,6 @@ has sampling_frequency => (
     },
 );
 
-has market => (
-    is       => 'ro',
-    required => 1,
-);
-
 # size is the number of ticks
 has data_cache_size => (
     is      => 'ro',
