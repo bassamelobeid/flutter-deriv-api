@@ -26,8 +26,6 @@ use BOM::Backoffice::Sysinit ();
 use BOM::Config;
 BOM::Backoffice::Sysinit::init();
 
-my $cfg = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_rpc.yml');
-
 PrintContentType();
 
 my $loginID = uc(request()->param('loginID') // '');
@@ -212,7 +210,7 @@ if (@trxns) {
         code_exit_BO("no exchange rate found for currency " . $currency . ". Please contact IT.")->();
     };
 
-    my $currency_url    = $cfg->{blockchain_url}{$currency};
+    my $currency_url    = BOM::Config::crypto()->{$currency}{blockchain_url};
     my $transaction_uri = URI->new($currency_url->{transaction});
     my $address_uri     = URI->new($currency_url->{address});
 

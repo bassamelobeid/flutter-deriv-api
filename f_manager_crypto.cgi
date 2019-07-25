@@ -19,6 +19,7 @@ use Try::Tiny;
 use Bitcoin::RPC::Client;
 use Ethereum::RPC::Client;
 use BOM::CTC::Currency;
+use BOM::Config;
 
 use BOM::User::Client;
 
@@ -36,15 +37,6 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
-
-my $cfg;
-
-try {
-    $cfg = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_rpc.yml')
-}
-catch {
-    code_exit_BO("Not accessible. Please check url to make sure you are requesting correct server.");
-};
 
 my $broker = request()->broker_code;
 my $staff  = BOM::Backoffice::Auth0::get_staffname();
@@ -70,7 +62,7 @@ my $view_action = request()->param('view_action') // '';
 code_exit_BO("Invalid currency.")
     if $currency !~ /^[A-Z]{3}$/;
 
-my $currency_url = $cfg->{blockchain_url}{$currency} // $cfg->{blockchain_url}{ETH};
+my $currency_url = BOM::Config::crypto()->{$currency}{blockchain_url};
 code_exit_BO('No currency urls for ' . $currency) unless $currency_url->{transaction} and $currency_url->{address};
 
 my $transaction_uri = URI->new($currency_url->{transaction});
