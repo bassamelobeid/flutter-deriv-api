@@ -279,8 +279,9 @@ Send CSV file to customer support for the list of MT5 accounts to disable
 sub send_mt5_disable_csv {
     my $data = shift;
 
+    my $redis               = BOM::Config::RedisReplicated::redis_mt5_user();
     my $mt5_loginid_hashref = $data->{csv_info} // {};
-    my @csv_rows = ();
+    my @csv_rows            = ();
 
     foreach my $client_loginid_info (keys %$mt5_loginid_hashref) {
 
@@ -290,7 +291,10 @@ sub send_mt5_disable_csv {
 
             $mt5_loginid =~ s/\D//g;
 
-            push @csv_rows, [$client_loginid_info, $mt5_loginid];
+            my $group = $redis->get("MT5_USER_GROUP::$mt5_loginid");
+
+            # Only real financial (labuan and vanuatu) are to be disabled
+            push @csv_rows, [$client_loginid_info, $mt5_loginid, $group] if ($group !~ '^demo|svg$');
         }
     }
 
@@ -304,7 +308,7 @@ sub send_mt5_disable_csv {
 
     # CSV creation starts here
     my $filename = 'mt5_disable_list_' . $present_day . '.csv';
-    my @headers = ('Loginid (Currency)', 'MT5 ID');
+    my @headers = ('Loginid (Currency)', 'MT5 ID', 'Group');
 
     my $tdir = Path::Tiny->tempdir;
     $filename = $tdir->child($filename);
