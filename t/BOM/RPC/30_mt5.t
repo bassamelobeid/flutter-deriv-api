@@ -51,13 +51,14 @@ $manager_module->mock(
 #   t/BOM/RPC/05_accounts.t
 #   t/lib/mock_binary_mt5.pl
 my %DETAILS = (
-    login    => '123454321',
-    password => 'Efgh4567',
-    email    => 'test.account@binary.com',
-    name     => 'Test',
-    group    => 'real\svg',
-    country  => 'Malta',
-    balance  => '1234.56',
+    login           => '123454321',
+    password        => 'Efgh4567',
+    email           => 'test.account@binary.com',
+    name            => 'Test',
+    group           => 'real\svg',
+    country         => 'Malta',
+    balance         => '1234',
+    display_balance => '1234.00',
 );
 
 # Setup a test user
@@ -477,16 +478,17 @@ subtest 'login list' => sub {
     is_deeply(
         $c->result,
         [{
-                login       => $DETAILS{login},
-                email       => $DETAILS{email},
-                group       => $DETAILS{group},
-                balance     => $DETAILS{balance},
-                name        => 'Test',
-                country     => 'mt',
-                currency    => 'USD',
-                manager_id  => '',
-                mamm_status => 0,
-                leverage    => undef,
+                login           => $DETAILS{login},
+                email           => $DETAILS{email},
+                group           => $DETAILS{group},
+                balance         => $DETAILS{balance},
+                display_balance => $DETAILS{display_balance},
+                name            => 'Test',
+                country         => 'mt',
+                currency        => 'USD',
+                manager_id      => '',
+                mamm_status     => 0,
+                leverage        => undef,
             }
         ],
         'mt5_login_list result'

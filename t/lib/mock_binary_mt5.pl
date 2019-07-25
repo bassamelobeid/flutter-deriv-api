@@ -27,7 +27,7 @@ my %DETAILS = (
     name    => 'Test',
     group   => 'real\svg',
     country => 'Malta',
-    balance => '1234.56',
+    balance => '1234',
 );
 
 my %GROUP_DETAILS = (

@@ -155,7 +155,7 @@ sub get_mt5_logins {
             )->then(
             sub {
                 my ($setting) = @_;
-                $setting = _filter_settings($setting, qw/balance country currency email group leverage login name/);
+                $setting = _filter_settings($setting, qw/balance display_balance country currency email group leverage login name/);
                 return Future->needs_all(
                     mt5_mamm({
                             client => $client,
@@ -655,8 +655,9 @@ async_rpc mt5_get_settings => sub {
                         if (ref $group_details eq 'HASH' and $group_details->{error});
                     $settings->{currency}        = $group_details->{currency};
                     $settings->{landing_company} = $group_details->{company};
+                    $settings->{display_balance} = formatnumber('amount', $settings->{currency}, $settings->{balance});
                     $settings                    = _filter_settings($settings,
-                        qw/address balance city company country currency email group leverage login name phone phonePassword state zipCode landing_company/
+                        qw/address balance city company country currency email group leverage login name phone phonePassword state zipCode landing_company display_balance/
                     );
                     return Future->done($settings);
                 });

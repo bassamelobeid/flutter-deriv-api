@@ -2242,7 +2242,7 @@ subtest 'get and set self_exclusion' => sub {
         name     => 'Test',
         group    => 'real\svg',
         country  => 'Malta',
-        balance  => '1234.56',
+        balance  => '1234',
     );
     @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
 
