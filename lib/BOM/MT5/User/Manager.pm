@@ -14,14 +14,17 @@ use Data::UUID;
 use IO::Async::Stream;
 use IO::Async::SSL;
 use IO::Socket::SSL qw(SSL_VERIFY_PEER);
+use IO::Async::Timer::Countdown;
 
 use Socket qw(:crlf);
 
 use Moo;
 use parent 'IO::Async::Notifier';
 
-use constant SSL_VERSION   => 'TLSv12';
-use constant TIMEOUT_DELAY => 5;
+use constant SSL_VERSION        => 'TLSv12';
+use constant CONNECTION_TIMEOUT => 10;
+use constant COMMAND_TIMEOUT    => 3;
+use constant MAX_RETRY          => 3;
 
 my $mt5_config;
 
@@ -52,18 +55,10 @@ sub _connect {
             my $error_handler = $self->curry::weak::_clean_up;
             my $read_handler  = $self->$curry::weak(
                 sub {
-                    my ($self, $stream, $buffer_ref, $eof) = @_;
+                    my ($self, $stream, $buffer_ref) = @_;
                     while (my $message = $self->_parse_message($buffer_ref)) {
                         $self->_resolve_request_future($message);
                     }
-
-                    if ($eof) {
-                        # server might close the connection
-                        $self->_clean_up;
-                        return 0;
-                    }
-
-                    return 0;
                 });
 
             $stream->configure(
@@ -75,7 +70,12 @@ sub _connect {
             $self->{_stream} = $stream;
             $self->add_child($stream);
             $self->{_pending_requests} = [];
-
+            $self->{_idle_timer}       = IO::Async::Timer::Countdown->new(
+                on_expire => $self->curry::weak::_clean_up,
+                delay     => 2
+            );
+            $self->add_child($self->{_idle_timer});
+            $self->{_idle_timer}->start();
             return Future->done(1);
         }
         )->catch(
@@ -87,7 +87,8 @@ sub _connect {
 
 sub _connected {
     my $self = shift;
-    return $self->{_connected} ||= Future->wait_any($self->loop->timeout_future(after => TIMEOUT_DELAY), $self->_connect);
+    return $self->{_connected} //=
+        Future->wait_any($self->loop->timeout_future(after => CONNECTION_TIMEOUT), $self->_connect)->on_fail(sub { $self->{_connected} = undef });
 }
 
 sub _resolve_request_future {
@@ -96,26 +97,32 @@ sub _resolve_request_future {
     return shift(@{$self->{_pending_requests}})->done($message);
 }
 
-sub _get_request_id {
+sub _request_id {
     return Data::UUID->new()->create_str();
 }
 
 sub _clean_up {
     my $self = shift;
-    $_->fail('connection closed') for @{$self->{_pending_requests}};
-    delete $self->{_pending_requests};
-
-    $self->{_stream}->close if defined $self->{_stream};
-    delete $self->{_connected};
+    _disconnect();
+    map { $_->fail('connection closed') } grep { !$_->is_ready } @{$self->{_pending_requests}};
+    $self->{_pending_requests} = [];
 
     return 1;
 }
 
+sub _disconnect {
+    my $self = shift;
+    $self->{_stream}->close if defined $self->{_stream};
+    delete $self->{_connected};
+    return 1;
+}
+
 sub _send_message {
-    my ($self, $message, $request_UUID) = @_;
+    my ($self, $message, $trial) = @_;
+    $trial //= 1;
     return $self->_connected->then(
         sub {
-            $message->{request_id} = $request_UUID;
+            $message->{request_id} = _request_id();
             $message->{api_key}    = $mt5_config->{api_key};
             my $message_string = encode_json_utf8($message);
 
@@ -123,8 +130,20 @@ sub _send_message {
             my $message_encoded = pack("n", length($message_string)) . "$message_string$CRLF";
             push @{$self->{_pending_requests}}, my $f = $self->loop->new_future;
             $self->{_stream}->write($message_encoded);
-
-            return Future->wait_any($f, $self->loop->timeout_future(after => TIMEOUT_DELAY));
+            $self->{_idle_timer}->reset();
+            return Future->wait_any($f, $self->loop->timeout_future(after => COMMAND_TIMEOUT))->catch(
+                sub {
+                    $self->_disconnect();
+                    if ($trial == MAX_RETRY) {
+                        $self->_clean_up();
+                        return Future->fail("Command Timeout");
+                    } else {
+                        $self->_connected->then(
+                            sub {
+                                $self->_send_message($message, $trial + 1);
+                            });
+                    }
+                });
         });
 }
 
@@ -162,7 +181,7 @@ sub adjust_balance {
             return Future->done($message) if $message->{success};
             return Future->done({
                     success    => 0,
-                    error      => 'internal error',
+                    error      => $message->{error}->{err_descr} // 'internal error',
                     error_code => $message->{error}->{err_code}});
         });
 }

@@ -269,7 +269,6 @@ sub manager_api_deposit {
     return _mt5_manager->adjust_balance($args->{login}, $args->{amount}, $args->{comment})->then(
         sub {
             my ($hash) = @_;
-
             if ($hash->{success}) {
                 return Future->done({status => 1});
             }
@@ -278,8 +277,9 @@ sub manager_api_deposit {
         }
         )->catch(
         sub {
+            my $error = shift;
             return Future->done({    # usually it should be fail but since RPC interface right now work like this...
-                error      => 'timeout',
+                error      => $error,
                 error_code => 1,
             });
         });
