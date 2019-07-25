@@ -17,10 +17,12 @@ my $json = JSON::MaybeXS->new;
 
 for my $symbol (qw/R_50 R_100/) {
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => $symbol,
-        epoch      => Date::Utility->new->epoch,
-        quote      => 100
-    });
+            underlying => $symbol,
+            epoch      => Date::Utility->new->epoch,
+            quote      => 100
+        },
+        0
+    );
 }
 
 my $ohlc_sample =
