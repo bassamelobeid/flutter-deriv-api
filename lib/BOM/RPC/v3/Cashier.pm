@@ -655,7 +655,7 @@ rpc paymentagent_transfer => sub {
         } elsif ($error_code eq 'BI212') {
             return $error_sub->(localize('You cannot transfer to account [_1], as their account is currently disabled.', $loginid_to));
         } elsif ($error_code eq 'BI213') {
-            return $error_sub->(localize('You cannot transfer to account [_1], as their account is marked as unwelcome.', $loginid_to));
+            return $error_sub->(localize("We are unable to transfer to [_1], because that account has been restricted.", $loginid_to));
         } elsif ($error_code eq 'BI214') {
             return $error_sub->(localize('You cannot perform this action, as your verification documents have expired.'));
         } elsif ($error_code eq 'BI215') {
@@ -923,8 +923,7 @@ rpc paymentagent_withdraw => sub {
         localize("You cannot perform the withdrawal to account [_1], as the payment agent's account is disabled.", $pa_client->loginid))
         if $pa_client->status->disabled;
 
-    return $error_sub->(
-        localize("You cannot perform the withdrawal to account [_1], as the payment agent's account is marked as unwelcome.", $pa_client->loginid))
+    return $error_sub->(localize("We cannot transfer to account [_1]. Please select another payment agent.", $pa_client->loginid))
         if $pa_client->status->unwelcome;
 
     return $error_sub->(localize("You cannot perform the withdrawal to account [_1], as the payment agent's cashier is locked.", $pa_client->loginid))
@@ -1495,7 +1494,6 @@ sub _transfer_between_accounts_error {
 
 sub _validate_transfer_between_accounts {
     my ($current_client, $client_from, $client_to, $args) = @_;
-
     # error out if one of the client is not defined, i.e.
     # loginid provided is wrong or not in siblings
     return _transfer_between_accounts_error() if (not $client_from or not $client_to);
@@ -1532,11 +1530,11 @@ sub _validate_transfer_between_accounts {
         if $client_to->status->disabled;
 
     return _transfer_between_accounts_error(
-        localize('You cannot perform this action, as your account [_1] is marked as unwelcome.', $client_to->loginid))
+        localize("We are unable to transfer to [_1] because that account has been restricted.", $client_to->loginid))
         if $client_to->status->unwelcome;
 
     return _transfer_between_accounts_error(
-        localize('Your cannot perform this action, as your account [_1] cashier is locked as per request.', $client_to->loginid))
+        localize('You cannot perform this action, as your account [_1] cashier is locked as per request.', $client_to->loginid))
         if $client_to->cashier_setting_password;
 
     # error out if from account has no currency set
