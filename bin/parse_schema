@@ -55,7 +55,7 @@ EOF`;
     } elsif ($line =~ /GRANT/ or $line =~ /REVOKE/) {
          _write("utilities", "all", "grants", $line, 1);
     } elsif ($line =~ /CREATE EXTENSION/) {
-        _write("utilities", "all", "extentions", $line, 1);
+        _write("utilities", "all", "extensions", $line, 1);
     } elsif ($line =~ /CREATE VIEW "(\w+)"."(\w+)"/) {
         _write("views", $1, $2, $line);
     } elsif ($line =~ /CREATE SERVER/) {
