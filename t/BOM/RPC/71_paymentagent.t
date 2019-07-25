@@ -525,7 +525,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Bob->status->set('unwelcome', 'Testy McTestington', 'Just running some tests');
         $Bob->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client}, "You cannot transfer to account $Bob_id, as their account is marked as unwelcome.", $test);
+        is($res->{error}{code}, 'PaymentAgentTransferError', $test);
         $Bob->status->clear_unwelcome;
         $Bob->save;
 
@@ -1068,7 +1068,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $Bob->status->set('unwelcome', 'Testy McTestington', 'Just running some tests');
         $Bob->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        like($res->{error}{message_to_client}, qr/is marked as unwelcome/, $test);
+        is($res->{error}{code},'PaymentAgentWithdrawError', $test);
         $Bob->status->clear_unwelcome;
         $Bob->save;
 

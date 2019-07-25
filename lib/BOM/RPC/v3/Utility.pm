@@ -330,6 +330,8 @@ sub error_map {
         'InvalidDateFirstContact'    => localize('Date first contact is invalid.'),
         'InvalidBrand'               => localize('Brand is invalid.'),
         'CannotChangeAccountDetails' => localize('You may not change these account details.'),
+        'UnwelcomeAccount'           => localize('We are unable to do that because your account has been restricted. If you need help, let us know.'),
+
     };
 }
 
@@ -457,8 +459,7 @@ sub validate_make_new_account {
 
         return create_error({
                 code              => 'UnwelcomeAccount',
-                message_to_client => localize('You cannot perform this action, as your account [_1] is marked as unwelcome.', $client->loginid)}
-        ) if $client->status->unwelcome;
+                message_to_client => $error_map->{'UnwelcomeAccount'}}) if $client->status->unwelcome;
 
         # if from malta and account type is maltainvest, assign
         # maltainvest to landing company as client is upgrading

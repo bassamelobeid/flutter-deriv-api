@@ -22,6 +22,7 @@ use IO::Async::Loop;
 use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use Locale::Codes::Country qw(country_code2code);
 use Time::HiRes;
+use List::Util qw(all);
 
 use BOM::Config::RedisReplicated;
 use BOM::Platform::Context qw(localize);
@@ -31,6 +32,7 @@ use BOM::RPC::v3::Utility;
 use constant ONFIDO_APPLICANT_KEY_PREFIX        => 'ONFIDO::APPLICANT::ID::';
 use constant ONFIDO_SUPPORTED_COUNTRIES_KEY     => 'ONFIDO_SUPPORTED_COUNTRIES';
 use constant ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT => $ENV{ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT} // 7 * 86400;    # 1 week
+use constant ONFIDO_ADDRESS_REQUIRED_FIELDS     => qw(address_postcode residence);
 
 my ($loop, $services);
 
@@ -194,20 +196,25 @@ Generate the list of client personal details needed for Onfido API.
 sub _client_onfido_details {
     my $client = shift;
 
-    return {
+    my $details = {
         (map { $_ => $client->$_ } qw(first_name last_name email)),
         title   => $client->salutation,
         dob     => $client->date_of_birth,
         country => uc(country_code2code($client->place_of_birth, 'alpha-2', 'alpha-3')),
-        # Multiple addresses are supported by Onfido. We only want to set up a single one.
-        addresses => [{
-                building_number => $client->address_line_1,
-                street          => $client->address_line_2,
-                town            => $client->address_city,
-                state           => $client->address_state,
-                postcode        => $client->address_postcode,
-                country         => uc(country_code2code($client->residence, 'alpha-2', 'alpha-3')),
-            }]};
+    };
+
+    # Add address info if the required fields not empty
+    $details->{addresses} = [{
+            building_number => $client->address_line_1,
+            street          => $client->address_line_2 // $client->address_line_1,
+            town            => $client->address_city,
+            state           => $client->address_state,
+            postcode        => $client->address_postcode,
+            country         => uc(country_code2code($client->residence, 'alpha-2', 'alpha-3')),
+        }]
+        if all { length $client->$_ } ONFIDO_ADDRESS_REQUIRED_FIELDS;
+
+    return $details;
 }
 
 1;
