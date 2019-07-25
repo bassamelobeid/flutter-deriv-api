@@ -247,7 +247,7 @@ sub _build_reset_spot {
                 $reset_spot = $ticks_since_start[$tick_reset_timing];
             }
         } else {
-            $reset_spot = $self->underlying->tick_at($self->reset_time);
+            $reset_spot = $self->_tick_accessor->tick_at($self->reset_time);
         }
     }
 
@@ -380,18 +380,14 @@ sub _create_new_interface_engine {
             underlying_symbol         => $self->underlying->symbol,
             date_start                => $self->effective_start,
             date_pricing              => $self->date_pricing,
-            ticks => BOM::Market::DataDecimate->new({market => $self->market->name})->tick_cache_get_num_ticks({
-                    underlying => $self->underlying,
-                    end_epoch  => $self->date_start->epoch,
-                    num        => 20,
-                    backprice  => $backprice,
-
-                }
-            ),
-            economic_events => _generate_market_data(
-                $self->underlying,
-                $self->date_start
-                )->{economic_events},
+            ticks                     => [
+                reverse @{
+                    $self->_tick_accessor->ticks_in_between_end_limit({
+                            end_time => $self->date_start->epoch,
+                            limit    => 20,
+                        })}
+            ],
+            economic_events   => _generate_market_data($self->underlying, $self->date_start)->{economic_events},
             custom_commission => $self->_custom_commission,
             barrier_tier      => $self->barrier_tier,
         );

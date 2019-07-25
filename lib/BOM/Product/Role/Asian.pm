@@ -21,7 +21,7 @@ sub _build_supplied_barrier {
 
     my $hmt               = $self->tick_count;
     my @ticks_since_start = @{
-        $self->underlying->ticks_in_between_start_limit({
+        $self->_tick_accessor->ticks_in_between_start_limit({
                 start_time => $self->date_start->epoch + 1,
                 limit      => $hmt,
             })};

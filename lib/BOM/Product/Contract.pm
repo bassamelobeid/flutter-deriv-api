@@ -56,7 +56,7 @@ use Postgres::FeedDB::Spot::Tick;
 
 use BOM::Config::Chronicle;
 use BOM::MarketData::Types;
-use BOM::Market::DataDecimate;
+use BOM::Market::RedisTickAccessor;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Platform::RiskProfile;
 use BOM::Product::Types;
@@ -611,12 +611,7 @@ sub _build_basis_tick {
 
     # if there's no basis tick, don't die but catch the error.
     unless ($basis_tick) {
-        $basis_tick = Postgres::FeedDB::Spot::Tick->new({
-            # slope pricer will die with illegal division by zero error when we get the slope
-            quote  => $self->underlying->pip_size * 2,
-            epoch  => time,
-            symbol => $self->underlying->symbol,
-        });
+        $basis_tick = $self->_dummy_tick($self->date_pricing->epoch);
         $self->_add_error({
             message           => "Waiting for entry tick [symbol: " . $self->underlying->symbol . "]",
             message_to_client => [$potential_error],
@@ -723,8 +718,8 @@ sub _build_entry_tick {
     # entry tick if never defined if it is a newly priced contract.
     return if $self->pricing_new;
     my $entry_epoch = $self->date_start->epoch;
-    return $self->underlying->tick_at($entry_epoch) if $self->starts_as_forward_starting;
-    return $self->underlying->next_tick_after($entry_epoch);
+    return $self->_tick_accessor->tick_at($entry_epoch) if $self->starts_as_forward_starting;
+    return $self->_tick_accessor->next_tick_after($entry_epoch);
 }
 
 sub _build_date_start {
@@ -767,8 +762,9 @@ sub _build_pricing_spot {
     } else {
         # If we could not get the correct spot to price, we will take the latest available spot at pricing time.
         # This is to prevent undefined spot being passed to BlackScholes formula that causes the code to die!!
-        $initial_spot = $self->underlying->tick_at($self->date_pricing->epoch, {allow_inconsistent => 1});
-        $initial_spot //= $self->underlying->pip_size * 2;
+        my $dummy_tick = $self->_tick_accessor->tick_at($self->date_pricing->epoch, {allow_inconsistent => 1})
+            // $self->_dummy_tick($self->date_pricing->epoch);
+        $initial_spot = $dummy_tick->quote;
         $self->_add_error({
             message => 'Undefined spot '
                 . "[date pricing: "
@@ -798,19 +794,9 @@ has ticks_for_tick_expiry => (
 sub _build_ticks_for_tick_expiry {
     my $self = shift;
 
-    # before expected expiry, get it from cache
-    if ($self->date_pricing->is_before($self->expected_date_expiry) and not $self->is_path_dependent) {
-        my $tick_hashes = BOM::Market::DataDecimate->new({market => $self->market->name})->tick_cache_get_num_ticks({
-                underlying  => $self->underlying,
-                start_epoch => $self->date_start->epoch + 1,
-                num         => $self->ticks_to_expiry,
-            }) // [];
-        return [map { Postgres::FeedDB::Spot::Tick->new($_) } @$tick_hashes];
-    }
-
-    return $self->underlying->ticks_in_between_start_limit({
+    return $self->_tick_accessor->ticks_in_between_start_limit({
         start_time => $self->date_start->epoch + 1,
-        limit      => $self->ticks_to_expiry
+        limit      => $self->ticks_to_expiry,
     });
 }
 
@@ -833,16 +819,17 @@ sub _build_exit_tick {
         }
     } elsif ($self->is_after_expiry) {
         # For a daily contract or a contract expired at the close of trading, the valid exit tick should be the daily close else should be the tick at expiry date
+        # IMPORTANT NOTE: $self->_tick_accessor does not support ->closing_tick_on();
         my $valid_exit_tick_at_expiry = (
                    $self->expiry_daily
                 or $self->date_expiry->is_same_as($self->trading_calendar->closing_on($underlying->exchange, $self->date_expiry))
-        ) ? $underlying->closing_tick_on($self->date_expiry->date) : $underlying->tick_at($self->date_expiry->epoch);
+        ) ? $underlying->closing_tick_on($self->date_expiry->date) : $self->_tick_accessor->tick_at($self->date_expiry->epoch);
 
         # There are few scenarios where we still do not have valid exit tick as follow. In those case, we will use last available tick at the expiry time to determine the pre-settlement value but will not be settle based on that tick
         # 1) For long term contract, after expiry yet pass the settlement time, waiting for daily ohlc to be updated
         # 2) For short term contract, waiting for next tick to arrive after expiry to determine the valid exit tick at expiry
         if (not $valid_exit_tick_at_expiry) {
-            $exit_tick = $underlying->tick_at($self->date_expiry->epoch, {allow_inconsistent => 1});
+            $exit_tick = $self->_tick_accessor->tick_at($self->date_expiry->epoch, {allow_inconsistent => 1});
         } else {
             $exit_tick = $valid_exit_tick_at_expiry;
             $self->is_valid_exit_tick(1);
@@ -1385,6 +1372,41 @@ sub _publish {
     };
 
     return;
+}
+
+has _tick_accessor => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_tick_accessor',
+);
+
+sub _build_tick_accessor {
+    my $self = shift;
+
+    # historical pricing always use source from feed db
+    return $self->underlying if $self->underlying->for_date;
+
+    my $redis_accessor = BOM::Market::RedisTickAccessor->new(underlying => $self->underlying);
+    # don't use $self->timeinyears or $self->remaining_time here because that measures from date_pricing to date_expiry
+    my $original_contract_duration = $self->date_expiry->epoch - $self->date_start->epoch;
+    return $redis_accessor
+        if ($original_contract_duration < $redis_accessor->cache_retention_interval->seconds
+        && $redis_accessor->has_cache($self->date_start->epoch - $original_contract_duration));
+
+    # default back to feed db if we do not have cache
+    return $self->underlying;
+}
+
+sub _dummy_tick {
+    my ($self, $epoch) = @_;
+
+    return Postgres::FeedDB::Spot::Tick->new(
+        symbol => $self->underlying->symbol,
+        quote  => $self->underlying->pip_size * 2,
+        epoch  => $epoch,
+        bid    => $self->underlying->pip_size,
+        ask    => $self->underlying->pip_size,
+    );
 }
 
 # Don't mind me, I just need to make sure my attibutes are available.

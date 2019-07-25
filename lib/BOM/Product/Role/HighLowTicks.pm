@@ -71,7 +71,7 @@ sub _selected_tick {
 
     my $hmt               = $self->selected_tick;
     my @ticks_since_start = @{
-        $self->underlying->ticks_in_between_start_limit({
+        $self->_tick_accessor->ticks_in_between_start_limit({
                 start_time => $self->date_start->epoch + 1,
                 limit      => $hmt,
             })};
@@ -113,7 +113,7 @@ sub _build__all_ticks {
 
     return [] unless $self->entry_tick;
 
-    return $self->underlying->ticks_in_between_start_limit({
+    return $self->_tick_accessor->ticks_in_between_start_limit({
         start_time => $self->date_start->epoch + 1,
         limit      => $self->ticks_to_expiry,
     });
