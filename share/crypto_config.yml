@@ -11,6 +11,9 @@ BTC:
         rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 8
+    blockchain_url:
+        address: https://blockstream.info/address/
+        transaction: https://blockstream.info/tx/
 LTC:
     withdrawal:
         timeout: "3d"
@@ -24,6 +27,9 @@ LTC:
         rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 8
+    blockchain_url:
+        address: https://live.blockcypher.com/ltc/address/
+        transaction: https://live.blockcypher.com/ltc/tx/
 BCH:
     withdrawal:
         timeout: "3d"
@@ -37,6 +43,9 @@ BCH:
         rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 8
+    blockchain_url:
+        address: https://blockchair.com/bitcoin-cash/address/
+        transaction: https://blockchair.com/bitcoin-cash/transaction/
 ETH:
     withdrawal:
         timeout: "5d"
@@ -50,6 +59,10 @@ ETH:
         rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 18
+    blockchain_url:
+        address: https://etherscan.io/address/
+        transaction: https://etherscan.io/tx/
+    ethgasstation_api: https://ethgasstation.info/json/ethgasAPI.json
 UST:
     withdrawal:
         timeout: "3d"
@@ -63,6 +76,9 @@ UST:
         rpc_timeout: 100
     protocol_cost: 0.00000546
     decimal_places: 8
+    blockchain_url:
+        address: https://omniexplorer.info/tx/
+        transaction: https://omniexplorer.info/address/
 USB:
     withdrawal:
         timeout: "3d"
@@ -72,3 +88,6 @@ USB:
         required_confirmations: 3
     protocol_cost: 0
     decimal_places: 18
+    blockchain_url:
+        address: https://etherscan.io/address/
+        transaction: https://etherscan.io/tx/
