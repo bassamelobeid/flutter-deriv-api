@@ -24,9 +24,13 @@ use BOM::Test::Helper::FinancialAssessment;
 use BOM::Database::Model::OAuth;
 use BOM::Database::Model::AccessToken;
 use utf8;
-my $app = BOM::Database::Model::OAuth->new->create_app({name => 'test', scopes => '{read,admin,trade,payments}', user_id => 1 });
+my $app = BOM::Database::Model::OAuth->new->create_app({
+    name    => 'test',
+    scopes  => '{read,admin,trade,payments}',
+    user_id => 1
+});
 my $app_id = $app->{app_id};
-isnt($app_id,1, 'app id is not 1'); # There was a bug that the created token will be always app_id 1; We want to test that it is fixed.
+isnt($app_id, 1, 'app id is not 1');    # There was a bug that the created token will be always app_id 1; We want to test that it is fixed.
 my %emitted;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
 $mock_events->mock(
@@ -118,7 +122,7 @@ subtest $method => sub {
     ok $new_loginid =~ /^VRTC\d+/, 'new VR loginid';
 
     my $token_db = BOM::Database::Model::AccessToken->new();
-    my $tokens = $token_db->get_all_tokens_by_loginid($new_loginid);
+    my $tokens   = $token_db->get_all_tokens_by_loginid($new_loginid);
     is($tokens->[0]{info}, "App ID: $app_id", "token's app_id is correct");
     my $user = BOM::User->new(
         email => $email,
@@ -270,9 +274,8 @@ subtest $method => sub {
         ok $new_loginid =~ /^CR\d+$/, 'new CR loginid';
 
         my $token_db = BOM::Database::Model::AccessToken->new();
-        my $tokens = $token_db->get_all_tokens_by_loginid($new_loginid);
+        my $tokens   = $token_db->get_all_tokens_by_loginid($new_loginid);
         is($tokens->[0]{info}, "App ID: $app_id", "token's app_id is correct");
-
 
         ok $emitted{"register_details_$new_loginid"}, "register_details event emitted";
 
@@ -566,9 +569,8 @@ subtest $method => sub {
         ok $new_loginid =~ /^MF\d+/, 'new MF loginid';
 
         my $token_db = BOM::Database::Model::AccessToken->new();
-        my $tokens = $token_db->get_all_tokens_by_loginid($new_loginid);
+        my $tokens   = $token_db->get_all_tokens_by_loginid($new_loginid);
         is($tokens->[0]{info}, "App ID: $app_id", "token's app_id is correct");
-
 
         my $cl = BOM::User::Client->new({loginid => $new_loginid});
         ok($cl->status->financial_risk_approval, 'For mf accounts we will set financial risk approval status');
@@ -633,7 +635,7 @@ subtest $method => sub {
         my $new_loginid = $result->{client_id};
 
         my $token_db = BOM::Database::Model::AccessToken->new();
-        my $tokens = $token_db->get_all_tokens_by_loginid($new_loginid);
+        my $tokens   = $token_db->get_all_tokens_by_loginid($new_loginid);
         is($tokens->[0]{info}, "App ID: $app_id", "token's app_id is correct");
 
         my $auth_token_mf = BOM::Database::Model::AccessToken->new->create_token($new_loginid, 'test token');
@@ -700,8 +702,8 @@ subtest $method => sub {
         is $result->{error}->{code}, undef, 'Allow to open even if Client KYC is pending';
 
         my $new_loginid = $result->{client_id};
-        my $token_db = BOM::Database::Model::AccessToken->new();
-        my $tokens = $token_db->get_all_tokens_by_loginid($new_loginid);
+        my $token_db    = BOM::Database::Model::AccessToken->new();
+        my $tokens      = $token_db->get_all_tokens_by_loginid($new_loginid);
         is($tokens->[0]{info}, "App ID: $app_id", "token's app_id is correct");
 
         my $auth_token_mf = BOM::Database::Model::AccessToken->new->create_token($new_loginid, 'test token');
