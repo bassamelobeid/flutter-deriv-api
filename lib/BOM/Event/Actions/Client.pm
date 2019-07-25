@@ -22,7 +22,7 @@ use DataDog::DogStatsd::Helper;
 use Brands;
 use Syntax::Keyword::Try;
 use Template::AutoFilter;
-use List::Util qw(any);
+use List::Util qw(any all);
 use List::UtilsBy qw(rev_nsort_by);
 use Future::Utils qw(fmap0);
 use Future::AsyncAwait;
@@ -77,9 +77,9 @@ use constant ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_PREFIX  => 'ONFIDO::UNSUP
 use constant ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_TIMEOUT => $ENV{ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_TIMEOUT} // 24 * 60 * 60;
 use constant ONFIDO_AGE_EMAIL_PER_USER_PREFIX                  => 'ONFIDO::AGE::VERIFICATION::EMAIL::PER::USER::';
 use constant ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT                 => $ENV{ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT} // 24 * 60 * 60;
-use constant ONFIDO_EMPTY_POSTCODE_EMAIL_PER_USER_PREFIX       => 'ONFIDO::EMPTY::POSTCODE::EMAIL::PER::USER::';
 use constant ONFIDO_DOB_MISMATCH_EMAIL_PER_USER_PREFIX         => 'ONFIDO::DOB::MISMATCH::EMAIL::PER::USER::';
 use constant ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX   => 'ONFIDO::AGE::BELOW::EIGHTEEN::EMAIL::PER::USER::';
+use constant ONFIDO_ADDRESS_REQUIRED_FIELDS                    => qw(address_postcode residence);
 
 # Conversion from our database to the Onfido available fields
 my %ONFIDO_DOCUMENT_TYPE_MAPPING = (
@@ -248,14 +248,6 @@ async sub document_upload {
             document_entry => $document_entry,
             client         => $client
         ) unless $uploaded_manually_by_staff;
-
-        unless ($client->address_postcode) {
-            await _send_report_automated_age_verification_failed(
-                $client,
-                'as postcode is blank. Please update the postcode as per the proof of address. Close this ticket if the country does not have a postal code.',
-                ONFIDO_EMPTY_POSTCODE_EMAIL_PER_USER_PREFIX . $client->binary_user_id
-            );
-        }
 
         my $loop   = IO::Async::Loop->new;
         my $onfido = _onfido();
@@ -1308,20 +1300,25 @@ Generate the list of client personal details needed for Onfido API
 sub _client_onfido_details {
     my $client = shift;
 
-    return {
+    my $details = {
         (map { $_ => $client->$_ } qw(first_name last_name email)),
         title   => $client->salutation,
         dob     => $client->date_of_birth,
         country => uc(country_code2code($client->place_of_birth, 'alpha-2', 'alpha-3')),
-        # Multiple addresses are supported by Onfido. We only want to set up a single one.
-        addresses => [{
-                building_number => $client->address_line_1,
-                street          => $client->address_line_2,
-                town            => $client->address_city,
-                state           => $client->address_state,
-                postcode        => $client->address_postcode,
-                country         => uc(country_code2code($client->residence, 'alpha-2', 'alpha-3')),
-            }]};
+    };
+
+    # Add address info if the required fields not empty
+    $details->{addresses} = [{
+            building_number => $client->address_line_1,
+            street          => $client->address_line_2 // $client->address_line_1,
+            town            => $client->address_city,
+            state           => $client->address_state,
+            postcode        => $client->address_postcode,
+            country         => uc(country_code2code($client->residence, 'alpha-2', 'alpha-3')),
+        }]
+        if all { length $client->$_ } ONFIDO_ADDRESS_REQUIRED_FIELDS;
+
+    return $details;
 }
 
 async sub _get_applicant_and_file {
