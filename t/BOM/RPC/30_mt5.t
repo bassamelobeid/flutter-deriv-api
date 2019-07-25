@@ -26,6 +26,7 @@ my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::
 my $json = JSON::MaybeXS->new;
 
 my $runtime_system = BOM::Config::Runtime->instance->app_config->system;
+$runtime_system->suspend->mt5_manager_api(1);
 
 my $redis = BOM::Config::RedisReplicated::redis_exchangerates_write();
 

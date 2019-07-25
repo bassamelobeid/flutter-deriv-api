@@ -379,10 +379,19 @@ async_rpc mt5_new_account => sub {
             return BOM::MT5::User::Async::get_group($group)->then(
                 sub {
                     my ($group_details) = @_;
-                    return create_error_future({
-                            code              => 'MT5CreateUserError',
-                            message_to_client => $group_details->{error}}) if ref $group_details eq 'HASH' and $group_details->{error};
-
+                    if (ref $group_details eq 'HASH' and my $error = $group_details->{error}) {
+                        if ($error =~ /Not enough permissions/ && defined $manager_id) {
+                            return create_error_future({
+                                code              => 'MT5CreateUserError',
+                                message_to_client => 'There was an error while creating your account, please check your manager account login'
+                            });
+                        } else {
+                            return create_error_future({
+                                code              => 'MT5CreateUserError',
+                                message_to_client => $error
+                            });
+                        }
+                    }
                     # some MT5 groups should have leverage as 30
                     # but MT5 only support 33
                     if ($group_details->{leverage} == MT5_MALTAINVEST_MOCK_LEVERAGE) {
@@ -459,12 +468,7 @@ async_rpc mt5_new_account => sub {
                             if ($account_type eq 'demo') {
                                 # funds in Virtual money
                                 $balance = 10000;
-                                BOM::MT5::User::Async::deposit({
-                                        login   => $mt5_login,
-                                        amount  => $balance,
-                                        comment => 'Binary MT5 Virtual Money deposit.'
-                                    }
-                                    )->on_done(
+                                do_mt5_deposit($mt5_login, $balance, 'Binary MT5 Virtual Money deposit.')->on_done(
                                     sub {
                                         # TODO(leonerd): It'd be nice to turn these into failed
                                         #   Futures from BOM::MT5::User::Async also.
@@ -1062,12 +1066,7 @@ async_rpc mt5_deposit => sub {
 
                 my $amount_to_topup = 10000;
 
-                return BOM::MT5::User::Async::deposit({
-                        login   => $to_mt5,
-                        amount  => $amount_to_topup,
-                        comment => 'Binary MT5 Virtual Money deposit.'
-                    }
-                    )->then(
+                return do_mt5_deposit($to_mt5, $amount_to_topup, 'Binary MT5 Virtual Money deposit.')->then(
                     sub {
                         my ($status) = @_;
 
@@ -1162,12 +1161,7 @@ async_rpc mt5_deposit => sub {
                 }) if ($response->{mt5_data}->{group} eq 'real\vanuatu_standard');
 
             # deposit to MT5 a/c
-            return BOM::MT5::User::Async::deposit({
-                    login   => $to_mt5,
-                    amount  => $response->{mt5_amount},
-                    comment => $comment
-                }
-                )->then(
+            return do_mt5_deposit($to_mt5, $response->{mt5_amount}, $comment)->then(
                 sub {
                     my ($status) = @_;
 
@@ -1246,14 +1240,9 @@ async_rpc mt5_withdrawal => sub {
             $comment = "$comment $additional_comment" if $additional_comment;
 
             my $mt5_group = $response->{mt5_data}->{group};
-
+            #MT5 expect this value to be negative.
             # withdraw from MT5 a/c
-            return BOM::MT5::User::Async::withdrawal({
-                    login   => $fm_mt5,
-                    amount  => $amount < 0 ? $amount : $amount * -1,    #MT5 expect this value to be negative.
-                    comment => $comment
-                }
-                )->then(
+            return do_mt5_withdrawl($fm_mt5, (($amount > 0) ? $amount * -1 : $amount), $comment)->then(
                 sub {
                     my ($response) = @_;
                     return _make_error($error_code, $response->{error}) if (ref $response eq 'HASH' and $response->{error});
@@ -1536,7 +1525,7 @@ sub _mt5_validate_and_get_amount {
             # support for champion please revisit this
             return _make_error($error_code, localize('Please authenticate your account.'))
                 if ($action eq 'withdrawal'
-                and ($mt5_group // '') !~ /^real\\svg$/
+                and ($mt5_group // '') !~ /^real\\svg/
                 and not $authorized_client->fully_authenticated);
 
             # Actual USD or EUR amount that will be deposited into the MT5 account.
@@ -1793,6 +1782,34 @@ sub _validate_client {
 sub _is_account_demo {
     my ($group) = @_;
     return $group =~ /demo/;
+}
+
+sub do_mt5_deposit {
+    my ($login, $amount, $comment) = @_;
+    my $deposit_sub = \&BOM::MT5::User::Async::deposit;
+    if (!BOM::Config::Runtime->instance->app_config->system->suspend->mt5_manager_api) {
+        $deposit_sub = \&BOM::MT5::User::Async::manager_api_deposit;
+    }
+
+    return $deposit_sub->({
+        login   => $login,
+        amount  => $amount,
+        comment => $comment
+    });
+}
+
+sub do_mt5_withdrawl {
+    my ($login, $amount, $comment) = @_;
+    my $withdrawal_sub = \&BOM::MT5::User::Async::withdrawal;
+    if (!BOM::Config::Runtime->instance->app_config->system->suspend->mt5_manager_api) {
+        $withdrawal_sub = \&BOM::MT5::User::Async::manager_api_withdrawal;
+    }
+
+    return $withdrawal_sub->({
+        login   => $login,
+        amount  => $amount,
+        comment => $comment
+    });
 }
 
 1;
