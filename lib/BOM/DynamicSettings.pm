@@ -196,6 +196,7 @@ sub get_settings_by_group {
                 system.suspend.transfer_between_accounts
                 system.suspend.transfer_currencies
                 system.suspend.onfido
+                system.suspend.mt5_manager_api
                 )
         ],
         quant => [qw(
