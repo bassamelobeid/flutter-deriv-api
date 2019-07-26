@@ -7,16 +7,10 @@ use Test::MockModule;
 use Test::More;
 use Test::Warnings;
 use Test::Exception;
-use Guard;
-use Crypt::NamedKeys;
-use BOM::User::Client;
-use BOM::User::Password;
-use BOM::Config::Runtime;
 
 use BOM::CompanyLimits::Limits;
 
 use Date::Utility;
-use Math::Util::CalculatedValue::Validatable;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Helper::Client qw(create_client top_up);
 use BOM::Test::Time qw( sleep_till_next_second );
@@ -40,7 +34,7 @@ subtest 'buy a bet', sub {
     top_up $cl, 'USD', 5000;
     BOM::CompanyLimits::Limits::add_limit('POTENTIAL_LOSS', 'R_50,,,', 100, 0, 0);
     my $contract = create_contract(
-        payout     => 10,
+        payout     => 1000,
         underlying => 'R_50',
         # duration      => '15m',
         purchase_date => Date::Utility->new('2019-12-01'),
@@ -48,7 +42,7 @@ subtest 'buy a bet', sub {
 
     my ($trx, $fmb) = buy_contract(
         client    => $cl,
-        buy_price => 4,
+        buy_price => 400,
         contract  => $contract,
     );
 

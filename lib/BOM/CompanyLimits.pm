@@ -59,7 +59,7 @@ sub add_buy_contract {
 
     # print 'BET DATA: ', Dumper($contract);
     my @combinations = _get_combinations($contract, $underlying_group, $contract_group);
-    my %limits = _query_limits($underlying, \@combinations);
+    my %limits = BOM::CompanyLimits::Limits::query_limits($underlying, \@combinations);
 
     my @realized_loss_request;
     while (my ($k, $v) = each %limits) {
@@ -83,8 +83,8 @@ sub add_buy_contract {
             my $response = $_[1];
             my $i        = 0;
             if (@realized_loss_request) {
-                @realized_loss_response = @{$response}[$i .. $i + $#realized_loss_request];
-                $i += $#realized_loss_request;
+                @realized_loss_response = @{$response->[$i]};
+                $i += 1;
             }
             @potential_loss_response = @{$response}[$i .. $i + $#combinations];
         });
@@ -92,7 +92,7 @@ sub add_buy_contract {
 
     my %totals;
     foreach my $i (0 .. $#combinations) {
-        if ($limits{$combinations[$i]}->[POTENTIAL_LOSS_TOTALS]) {
+        if ($limits{$combinations[$i]} and $limits{$combinations[$i]}->[POTENTIAL_LOSS_TOTALS]) {
             $totals{$combinations[$i]}->[POTENTIAL_LOSS_TOTALS] = $potential_loss_response[$i];
         }
     }
@@ -100,7 +100,31 @@ sub add_buy_contract {
         $totals{$realized_loss_request[$i]}->[REALIZED_LOSS_TOTALS] = ($realized_loss_response[$i] // 0);
     }
 
+    print 'LIMITS:', Dumper(\%limits);
     print 'TOTALS:', Dumper(\%totals);
+
+    my $breaches = check_totals_with_limits(\%limits, \%totals);
+
+    if ($breaches) {
+        print "MAYDAY MAYDAY BREACHES DETECTED!!\n";
+        print 'BREACH', Dumper($breaches);
+    }
+}
+
+sub check_totals_with_limits {
+    my ($limits, $totals) = @_;
+
+    my $breaches;
+    while (my ($k, $v) = each %$limits) {
+        my $total = $totals->{$k};
+        for my $i (0 .. $#$v) {
+            if ($v->[$i] and $total->[$i] > $v->[$i]) {
+                push(@{$breaches->{$k}}, [$i, $v->[$i], $total->[$i]]);
+            }
+        }
+    }
+
+    return $breaches;
 }
 
 sub add_sell_contract {
@@ -126,19 +150,6 @@ sub add_sell_contract {
     }
     $redis->exec(sub { });
     $redis->mainloop;
-}
-
-sub _query_limits {
-    my ($underlying, $combinations) = @_;
-    my $limits_response = $redis->hmget('LIMITS', @$combinations);
-    my %limits;
-    foreach my $i (0 .. $#$combinations) {
-        if ($limits_response->[$i]) {
-            $limits{$combinations->[$i]} = BOM::CompanyLimits::Limits::get_active_limits($limits_response->[$i]);
-        }
-    }
-    # print 'ACTIVE LIMITS:', Dumper(\%limits);
-    return compute_limits(\%limits, $underlying);
 }
 
 sub _get_attr_groups {
@@ -172,54 +183,10 @@ sub _convert_to_usd {
     return $amount;
 }
 
-sub compute_limits {
-    my ($limits, $underlying) = @_;
-    my %totals;
-
-    # The loop here makes the assumption that underlying group limits
-    # all procede underlying limits.
-    while (my ($k, $v) = each %{$limits}) {
-        # for each array ref, allocate exactly 2 elements in order: potential,
-        # realized loss
-        # Potential #1 and Realized #1 are the actual limits for the totals
-        $totals{$k} = [$v->[0], $v->[2]];
-
-        _handle_underlying_group_defaults(\%totals, $underlying, $k, $v, 1, 0);
-        _handle_underlying_group_defaults(\%totals, $underlying, $k, $v, 3, 2);
-    }
-
-    return %totals;
-}
-
-sub _handle_underlying_group_defaults {
-    my ($totals, $underlying, $k, $v, $group_default_idx, $target_idx) = @_;
-
-    if ($v->[$group_default_idx]) {
-        my $loss_limit_2 = $v->[$group_default_idx];
-        if ($k =~ /(,.*)/) {    # trim off underlying group from key
-            my $underlying_key = "$underlying$1";
-            my $underlying_val = $totals->{$underlying_key};
-            if ($underlying_val) {
-                my $loss_limit = $underlying_val->[$target_idx];
-                if ($loss_limit) {
-                    $underlying_val->[$target_idx] = min($loss_limit, $loss_limit_2);
-                } else {
-                    $underlying_val->[$target_idx] = $loss_limit_2;
-                }
-            } else {
-                # Create array ref using the magic of auto vivification
-                $totals->{$underlying_key}->[$target_idx] = $loss_limit_2;
-            }
-        }
-    }
-}
-
 sub _get_combinations {
     my ($contract, $underlying_group, $contract_group) = @_;
     my $bet_data   = $contract->{bet_data};
     my $underlying = $bet_data->{underlying_symbol};
-
-    # print "CONTRACT GROUP: $contract_group\nUNDERLYING GROUP: $underlying_group\n";
 
     my $is_atm = ($bet_data->{short_code} =~ /_SOP_/) ? 't' : 'f';
 
