@@ -9,7 +9,7 @@ sub get_all_key_combinations {
     my @combinations;
     foreach my $i (1 .. (1 << scalar @a) - 1) {
         my $combination;
-        foreach my $j (0 .. scalar @a - 1) {
+        foreach my $j (0 .. $#a) {
             my $k = (1 << $j);
             my $c = (($i & $k) == $k) ? $a[$j] : '';
             $combination = ($j == 0 ? "$c" : "$combination$delim$c");

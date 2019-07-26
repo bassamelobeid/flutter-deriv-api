@@ -81,7 +81,7 @@ sub add_buy_contract {
     $redis->exec(
         sub {
             my $response = $_[1];
-            my $i = 0;
+            my $i        = 0;
             if (@realized_loss_request) {
                 @realized_loss_response = @{$response}[$i .. $i + $#realized_loss_request];
                 $i += $#realized_loss_request;
@@ -238,9 +238,15 @@ sub _get_combinations {
     my @combinations = BOM::CompanyLimits::Helpers::get_all_key_combinations(@attributes);
 
     # Merge another array that substitutes underlying with underlying group
-    my @underlyinggroup_combinations = grep(/^${underlying}\,/, @combinations);
-    foreach my $x (@underlyinggroup_combinations) {
-        substr($x, 0, length($underlying)) = $underlying_group;
+    # Since we know that the 1st attribute is the underlying, each index in which
+    # the 1st bit is 1 has underlying:
+    my @underlyinggroup_combinations;
+    my $underlying_len = length($underlying);
+    foreach my $i (1 .. scalar @combinations) {
+        if (($i & 1) == 1) {
+            my $k = $underlying_group . substr($combinations[$i - 1], $underlying_len);
+            push(@underlyinggroup_combinations, $k);
+        }
     }
 
     return (@combinations, @underlyinggroup_combinations);
