@@ -8,13 +8,9 @@ BOM::Test::Contract
 
 To be used by an RMG unit test.
 
-Focuses only on buying and selling contracts; encapsulates all
-the boilerplate code away from developer.
-
-=head1 SYNOPSIS
-
-  use BOM::Test::Contract;
-
+Focuses only on testing buying and selling contracts; encapsulates all
+the boilerplate code away from developer. All contract validations are skipped
+and assumed to pass so that we can set our own buy price and sell result.
 
 =cut
 
@@ -48,6 +44,9 @@ use Data::Dumper;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
+use Exporter qw( import );
+
+our @EXPORT_OK = qw(create_contract buy_contract sell_contract);
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
@@ -200,13 +199,14 @@ sub create_contract {
         underlying => $params{underlying},
     );
     my $contract = produce_contract({
-        underlying   => get_underlying($params{underlying}),
-        bet_type     => 'CALL',
-        currency     => 'USD',
-        payout       => $params{payout},
-        duration     => '15m',                                 # date_expiry => Date::Utility->new('2020-01-01')
+        underlying => get_underlying($params{underlying}),
+        bet_type   => $params{bet_type} || 'CALL',
+        currency   => $params{currency} || 'USD',
+        payout     => $params{payout},
+        duration   => $params{duration} || '5t',
+        # date_expiry => Date::Utility->new('2020-01-01')
         current_tick => $tick,
-        barrier      => 'S0P',
+        barrier      => $params{barrier} || 'S0P',
         date_start   => $params{purchase_date},
     });
 
@@ -221,24 +221,24 @@ sub buy_contract {
     my $txn = BOM::Transaction->new({
         client        => $params{client},
         contract      => $contract,
-        price         => 514.00,
+        price         => $params{buy_price},
         payout        => $contract->payout,
         amount_type   => 'payout',
         source        => 19,
         purchase_date => $contract->date_start,
     });
 
-    my $error = $txn->buy;
+    my $error = $txn->buy(skip_validation => 1);
     die "ERROR: $error" if $error;
 
     return get_transaction_from_db higher_lower_bet => $txn->transaction_id;
 }
 
 sub sell_contract {
-    my (%params)         = @_;
-    my $contract         = $params{contract};
+    my (%params) = @_;
+    my $contract = $params{contract};
     my $new_c = make_similar_contract($contract, {date_pricing => ($params{sell_time} ? $params{sell_time} : $contract->date_start->epoch + 1)});
-    $DB::single=1;
+
     my $txn = BOM::Transaction->new({
         purchase_date => $new_c->date_start,
         client        => $params{client},
@@ -248,10 +248,13 @@ sub sell_contract {
         # sell_outcome is a value from from 0 to 1;
         # 0 for loss, 1 for win, and anything in between is
         # a premature sell
-        price         => $new_c->payout * $params{sell_outcome},
-        source        => 23,
+        price  => $new_c->payout * $params{sell_outcome},
+        source => 23,
     });
-    $txn->sell(skip_validation => 1);
+
+    my $error = $txn->sell(skip_validation => 1);
+
+    die "ERROR: $error" if $error;
 }
 
 1;
