@@ -36,15 +36,13 @@ sub validate_trx_sell {
     $clients = $self->transaction->multiple if $self->transaction;
     $clients = [map { +{client => $_} } @{$self->clients}] unless $clients;
 
-    my @client_validation_method = qw/ _validate_available_currency _validate_currency _validate_iom_withdrawal_limit _validate_offerings_sell /;
-
-    my @contract_validation_method = qw/_is_valid_to_sell _validate_sell_pricing_adjustment _validate_date_pricing/;
+    my @extra_validation_methods = qw/ _validate_offerings_sell /;
 
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
 
         my $client = $c->{client};
-        my @validation_checks = (@{$client->landing_company->transaction_checks}, @client_validation_method);
+        my @validation_checks = (@{$client->landing_company->transaction_checks}, @extra_validation_methods);
 
         foreach my $method (@validation_checks) {
 
@@ -60,6 +58,8 @@ sub validate_trx_sell {
             return $res;
         }
     }
+
+    my @contract_validation_method = qw/_is_valid_to_sell _validate_sell_pricing_adjustment _validate_date_pricing/;
 
     foreach my $c_method (@contract_validation_method) {
         my $res = $self->$c_method();
@@ -86,27 +86,25 @@ sub validate_trx_buy {
     $res = $self->_is_valid_to_buy($self->transaction->client);
     return $res if $res;
 
-    my @client_validation_method = qw/
-        _validate_client_status
-        _validate_available_currency
-        _validate_currency
-        _validate_iom_withdrawal_limit
-        _validate_jurisdictional_restrictions
-        _validate_client_self_exclusion
+    my $has_multiple_clients = $self->transaction && $self->transaction->multiple;
+
+    my @extra_validation_methods = qw/
         _validate_offerings_buy
-        _is_valid_to_buy/;    # do _is_valid_to_buy as last of the validation
+        /;
+
+    push @extra_validation_methods, '_is_valid_to_buy' if $has_multiple_clients;
 
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
         my $client = $c->{client};
 
-        my @validation_checks = (@{$client->landing_company->transaction_checks}, @client_validation_method);
+        my @validation_checks = (@{$client->landing_company->transaction_checks}, @extra_validation_methods);
 
         foreach my $method (@validation_checks) {
             $res = $self->$method($client);
             next unless $res;
 
-            if ($self->transaction && $self->transaction->multiple) {
+            if ($has_multiple_clients) {
                 $c->{code}  = $res->get_type;
                 $c->{error} = $res->{-message_to_client};
                 next CLI;
@@ -123,18 +121,29 @@ sub validate_trx_buy {
     $res = $self->_validate_trade_pricing_adjustment();
     return $res if $res;
 
+    my @contract_validation_methods = qw/
+        _validate_payout_limit
+        _validate_stake_limit
+        /;
+
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
-        for (qw/ _validate_payout_limit _validate_stake_limit /) {
+
+        foreach my $method (@contract_validation_methods) {
+
             next unless $self->transaction->contract->is_binary;
-            $res = $self->$_($c->{client});
+
+            $res = $self->$method($c->{client});
             next unless $res;
-            if ($self->transaction && $self->transaction->multiple) {
+
+            if ($has_multiple_clients) {
                 $c->{code}  = $res->get_type;
                 $c->{error} = $res->{-message_to_client};
                 next CLI;
             }
+
             return $res;
+
         }
     }
 
@@ -170,24 +179,17 @@ sub _validate_offerings {
     return undef;
 }
 
-sub _validate_available_currency {
-    my ($self, $client) = (shift, shift);
-
-    my $currency = $self->transaction->contract->currency;
-    return Error::Base->cuss(
-        -type              => 'InvalidCurrency',
-        -mesg              => "Invalid $currency",
-        -message_to_client => localize("The provided currency [_1] is invalid.", $currency),
-    ) unless $client->landing_company->is_currency_legal($currency);
-
-    return undef;
-}
-
 sub _validate_currency {
     my ($self, $client) = (shift, shift);
-
-    my $broker   = $client->broker_code;
     my $currency = $self->transaction->contract->currency;
+
+    if (not $client->landing_company->is_currency_legal($currency)) {
+        return Error::Base->cuss(
+            -type              => 'InvalidCurrency',
+            -mesg              => "Invalid $currency",
+            -message_to_client => localize("The provided currency [_1] is invalid.", $currency),
+        );
+    }
 
     if ($client->default_account and $currency ne $client->currency) {
         return Error::Base->cuss(
@@ -197,13 +199,6 @@ sub _validate_currency {
         );
     }
 
-    if (not $client->landing_company->is_currency_legal($currency)) {
-        return Error::Base->cuss(
-            -type              => 'IllegalCurrency',
-            -mesg              => "Illegal $currency for $broker",
-            -message_to_client => localize("[_1] transactions may not be performed with this account.", $currency),
-        );
-    }
     return undef;
 }
 
@@ -511,15 +506,10 @@ sub _validate_iom_withdrawal_limit {
     my $self   = shift;
     my $client = shift;
 
-    return if $client->is_virtual;
-
-    my $landing_company_short = $client->landing_company->short;
-    return if ($landing_company_short ne 'iom');
-
-    my $withdrawal_limits = BOM::Config::payment_limits()->{withdrawal_limits};
-    my $numdays           = $withdrawal_limits->{$landing_company_short}->{for_days};
-    my $numdayslimit      = $withdrawal_limits->{$landing_company_short}->{limit_for_days};
-    my $lifetimelimit     = $withdrawal_limits->{$landing_company_short}->{lifetime_limit};
+    my $withdrawal_limits_config = BOM::Config::payment_limits()->{withdrawal_limits}->{'iom'};
+    my $numdays                  = $withdrawal_limits_config->{for_days};
+    my $numdayslimit             = $withdrawal_limits_config->{limit_for_days};
+    my $lifetimelimit            = $withdrawal_limits_config->{lifetime_limit};
 
     if ($client->fully_authenticated) {
         $numdayslimit  = 99999999;
@@ -697,14 +687,19 @@ sub _validate_jurisdictional_restrictions {
 =head2 $self->_validate_client_status
 
 Validates to make sure that the client with unwelcome status
-is not able to purchase contract
+is not able to purchase contract.
+
+NOTE: VRTC clients (with residence of UK or IOM) needs this check, as they need
+to be age verified for contract purchases.
 
 =cut
 
 sub _validate_client_status {
     my ($self, $client) = (shift, shift);
 
-    if ($client->status->unwelcome or $client->status->disabled) {
+    my $status = $client->status;
+
+    if ($status->unwelcome or $status->disabled) {
         return Error::Base->cuss(
             -type              => 'ClientUnwelcome',
             -mesg              => 'your account is not authorised for any further contract purchases.',

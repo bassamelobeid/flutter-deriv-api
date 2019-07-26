@@ -325,54 +325,11 @@ subtest 'valid currency test' => sub {
 
         my $error = BOM::Transaction::Validation->new({
                 transaction => $transaction,
-                clients     => [$client]})->_validate_available_currency($client);
+                clients     => [$client]})->_validate_currency($client);
 
         my $curr = $contract->currency;
         is($error->get_type, 'InvalidCurrency', 'Invalid currency: _validate_currency - error type');
         like($error->{-message_to_client}, qr/The provided currency $curr is invalid./, 'Invalid currency: _validate_currency - error message');
-    };
-
-    subtest 'illegal currency for landing company' => sub {
-        $mock_contract->mock('currency', sub { 'AUD' });
-
-        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-            'currency',
-            {
-                symbol        => $_,
-                recorded_date => Date::Utility->new($now->epoch - 100),
-            }) for (qw/USD JPY GBP JPY-USD/);
-
-        my $contract = produce_contract({
-            underlying   => create_underlying('frxUSDJPY'),
-            bet_type     => 'CALL',
-            currency     => 'AUD',
-            payout       => 100,
-            date_start   => $now,
-            date_expiry  => $now->epoch + 300,
-            date_pricing => Date::Utility->new($now->epoch - 100),
-            barrier      => 'S0P',
-        });
-
-        my $transaction = BOM::Transaction->new({
-            client        => $client,
-            contract      => $contract,
-            purchase_date => Date::Utility->new(),
-        });
-
-        my $error = BOM::Transaction::Validation->new({
-                transaction => $transaction,
-                clients     => [$client]})->_validate_currency($client);
-
-        my $curr   = $contract->currency;
-        my $broker = $client->broker;
-        is($error->get_type, 'IllegalCurrency', 'Illegal currency: _validate_currency - error type');
-        like(
-            $error->{-message_to_client},
-            qr/$curr transactions may not be performed with this account./,
-            'Invalid currency: _validate_currency - error message'
-        );
-
-        $mock_contract->unmock('currency');
     };
 
     subtest 'not default currency for client' => sub {
@@ -386,7 +343,7 @@ subtest 'valid currency test' => sub {
         my $contract = produce_contract({
             underlying   => create_underlying('frxUSDJPY'),
             bet_type     => 'CALL',
-            currency     => 'AUD',
+            currency     => 'USD',
             payout       => 100,
             date_start   => $now,
             date_expiry  => $now->epoch + 300,
@@ -406,8 +363,9 @@ subtest 'valid currency test' => sub {
 
         my $curr   = $contract->currency;
         my $broker = $client->broker;
+
         is($error->get_type, 'NotDefaultCurrency', 'wrong default currency');
-        like($error->{-message_to_client}, qr/The provided currency AUD is not the default currency/, 'wrong default currency - error message');
+        like($error->{-message_to_client}, qr/The provided currency USD is not the default currency/, 'wrong default currency - error message');
     };
 };
 
