@@ -20,11 +20,13 @@ use JSON::MaybeUTF8;
 use Log::Any qw($log);
 use Format::Util::Numbers qw(get_min_unit financialrounding);
 use ExchangeRates::CurrencyConverter qw/convert_currency/;
-use List::Util qw(any);
+use List::Util qw(max min);
 use LandingCompany::Registry;
-use List::Util qw(max);
 
 use BOM::Config::Runtime;
+use BOM::Config::Chronicle;
+use Finance::Exchange;
+use Quant::Framework;
 
 use constant MAX_TRANSFER_FEE => 7;
 require Exporter;
@@ -206,11 +208,11 @@ sub transfer_between_accounts_lower_bounds {
 
 =head2 rate_expiry
 
-Get exchange rates quote expiry time for two currencies
-For example exchange rate last known quote between USD and BTC 
-Should not be more than 1800 second.
-
-Currently we only care about general categories Fiat-Crypto, Fiat-Fiat and Crypto-Crypto.
+Gets exchange rates quote expiry time for a currency pair.
+For fiat currencies, if the FOREX exchange is currently closed, the "fiat_holidays"
+app config setting will be used. Otherwise "fiat" is used.
+"crypto" is used for crypto currencies.
+In the case of different currency types, the shortest expiry time is returned.
 
 =item * The source currrency we want to convert from.
 
@@ -223,17 +225,16 @@ Retruns
 =cut
 
 sub rate_expiry {
-    my @currency_types = map { LandingCompany::Registry::get_currency_type($_) } @_;
-    my $config = {};
-    $config->{fiat}   = app_config()->get('payments.transfer_between_accounts.exchange_rate_expiry.fiat');
-    $config->{crypto} = app_config()->get('payments.transfer_between_accounts.exchange_rate_expiry.crypto');
+    my @types = map { LandingCompany::Registry::get_currency_type($_) } @_;
+    my %config = map { $_ => app_config()->get('payments.transfer_between_accounts.exchange_rate_expiry.' . $_) } qw( fiat fiat_holidays crypto );
 
-    # If all currencies has the same type return that type age
-    return $config->{$currency_types[0]} if (@currency_types == grep { $_ eq $currency_types[0] } @currency_types);
+    my $reader   = BOM::Config::Chronicle::get_chronicle_reader;
+    my $calendar = Quant::Framework->new->trading_calendar($reader);
+    my $exchange = Finance::Exchange->create_exchange('FOREX');
+    my $fiat_key = $calendar->is_open($exchange) ? 'fiat' : 'fiat_holidays';
 
-    # else If currnecies have different types return the shortest age
-    return ($config->{crypto} < $config->{fiat}) ? $config->{crypto} : $config->{fiat};
-
+    my @expiries = map { $config{$_ eq 'fiat' ? $fiat_key : $_} } @types;
+    return min(@expiries);
 }
 
 1;

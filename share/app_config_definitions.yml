@@ -99,13 +99,18 @@ payments:
               global: 1
         exchange_rate_expiry:
           isa: section
-          description: 'Exchange Rates expiry age in seconds i.e do exchange rates from BTC to USD if last known rate IS NOT OLDER THAN 1800 second'
+          description: 'Exchange Rates expiry age in seconds e.g. allow conversion from BTC to USD if last known rate IS NOT OLDER THAN 1800 second'
           contains:
             fiat:
               isa: Num
               default: 86400 # 1 day
               description: 'Expiry age for transfer between Fiat-Fiat.'
               global: 1
+            fiat_holidays:
+              isa: Num
+              default: 259200 # 3 days
+              description: 'Expiry age for transfer between Fiat-Fiat when the market is closed.'
+              global: 1              
             crypto:
               isa: Num
               default: 3600 # 1 hour
@@ -429,6 +434,11 @@ system:
           global: 1
         onfido:
           description: "Suspend Onfido"
+          isa: Bool
+          default: 0
+          global: 1
+        mt5_manager_api:
+          description: "Suspend MT5 Manager API from doing transfer (switch back to MT5 Web API)"
           isa: Bool
           default: 0
           global: 1
