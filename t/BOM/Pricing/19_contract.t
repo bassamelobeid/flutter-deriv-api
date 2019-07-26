@@ -26,7 +26,7 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use Quant::Framework;
 use BOM::Config::Chronicle;
 
-my $now   = Date::Utility->new('2005-09-21 06:46:00');
+my $now = Date::Utility->new('2005-09-21 06:46:00');
 set_relative_time($now->epoch);
 initialize_realtime_ticks_db();
 my $email = 'test@binary.com';

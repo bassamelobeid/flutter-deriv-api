@@ -93,15 +93,15 @@ subtest 'sleeping to next second' => sub {
 };
 
 subtest 'priority_queue' => sub {
-    
+
     my $pid = fork // die "Couldn't fork";
     unless ($pid) {
         sleep 1;
         note "publishing high priority prices in fork";
         $redis->publish('high_priority_prices', $_) for @keys;
         exit;
-    };
-    
+    }
+
     $queue = new_ok(
         'BOM::Pricing::Queue',
         [
