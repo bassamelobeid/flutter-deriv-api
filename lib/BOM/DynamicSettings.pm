@@ -89,7 +89,7 @@ sub save_settings {
                 $message .= '<div id="error">NOT saving global settings due to data problems.</div>';
             } else {
                 try {
-                    my $log_content;
+                    my $log_content = "";
 
                     foreach my $key (keys %{$values_to_set}) {
 
