@@ -6,7 +6,7 @@ no indirect;
 
 use BOM::Test::WebsocketAPI::Template::DSL;
 
-# No requests, buy subscribes to open contracts for us
+# No requests, buy subscribes to open contracts for us, or you can manually create a proposal_open_contract request
 
 # with contract_id
 rpc_request proposal_open_contract => sub {
@@ -30,14 +30,30 @@ rpc_request proposal_open_contract => sub {
     },
     qw(contract);
 
-# With contract_id but a weird one that is requested from inside the API code!
-rpc_request proposal_open_contract => sub {
+# With contract_id, called from Binary::WebSocketAPI::v3::Wrapper::Pricer::send_proposal_open_contract_last_time
+# This only works for contracts bought earlier in a test
+rpc_request_new_contracts proposal_open_contract => sub {
     return {
         logging => {},
         args    => {
-            req_id                 => 2,
-            proposal_open_contract => 1
+            proposal_open_contract => 1,
+            contract_id            => $_->contract->contract_id,
         },
+        brand                      => 'binary',
+        contract_id                => $_->contract->contract_id,
+        token                      => $_->contract->client->token,
+        source                     => '1',
+        source_bypass_verification => 0,
+        valid_source               => '1'
+    };
+    },
+    qw(contract);
+
+# Same as previous, but for poc subscription to all contracts
+rpc_request_new_contracts proposal_open_contract => sub {
+    return {
+        logging                    => {},
+        args                       => {proposal_open_contract => 1},
         brand                      => 'binary',
         contract_id                => $_->contract->contract_id,
         token                      => $_->contract->client->token,

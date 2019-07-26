@@ -21,6 +21,8 @@ use curry;
 use IO::Async::Process;
 
 use Devops::BinaryAPI::Tester::DSL;
+use BOM::Test::WebsocketAPI::Redis qw/shared_redis ws_redis_master/;
+use Future::Utils qw(fmap_void);
 
 =head2 restart_redis
 
@@ -35,13 +37,12 @@ context restart_redis => sub {
     my ($self) = @_;
 
     $self->{completed} = $self->completed->then(
-        $self->$curry::weak(
-            sub {
-                shift->suite->tester->publisher->redis->then(
-                    sub {
-                        shift->client_kill('SKIPME', 'no');
-                    });
-            }));
+        sub {
+            Future->needs_all(
+                map {
+                    $_->then(sub { shift->client_kill('SKIPME', 'no') })
+                } (shared_redis(), ws_redis_master()));
+        });
 
     return $self;
 };

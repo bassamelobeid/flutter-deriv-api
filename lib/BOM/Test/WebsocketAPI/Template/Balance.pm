@@ -37,4 +37,25 @@ rpc_response balance => sub {
     };
 };
 
+publish transaction => sub {
+    my $client = $_->client;
+
+    my $account_id = $client->account_id;
+    my $amount     = sprintf("%.2f", (rand(1000) - 500));
+    my $action     = $amount < 0 ? 'withdrawal' : 'deposit';
+    $client->balance += $amount;
+
+    return {
+        "TXNUPDATE::transaction_$account_id" => {
+            balance_after  => $client->balance,
+            action_type    => $action,
+            currency_code  => $client->currency,
+            loginid        => $client->loginid,
+            amount         => $amount,
+            id             => ++$_->global->{transaction_id},
+            payment_remark => 'published by balance template'
+        },
+    };
+};
+
 1;

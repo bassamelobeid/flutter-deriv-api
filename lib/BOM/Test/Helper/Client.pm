@@ -57,7 +57,7 @@ sub top_up {
     BOM::Platform::Client::IDAuthentication->new(client => $c)->run_authentication
         if $fdp;
 
-    note $c->loginid . "'s balance is now $cur " . $trx->{balance_after} . "\n";
+    note $c->loginid . "'s balance is now $cur " . $trx->balance_after . "\n";
     return;
 }
 

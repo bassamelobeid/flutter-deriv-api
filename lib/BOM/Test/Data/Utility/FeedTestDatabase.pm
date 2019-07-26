@@ -123,7 +123,9 @@ sub create_redis_ticks {
 }
 
 sub create_tick {
-    my $args = shift;
+    my ($args, $create_redis_tick) = @_;
+
+    $create_redis_tick //= 1;
 
     my %defaults = (
         underlying => 'frxUSDJPY',
@@ -165,8 +167,8 @@ EOD
     # create tick in database
     my $tick = Postgres::FeedDB::Spot::Tick->new(\%defaults);
 
-    # create redis ticks
     if ($args->{create_redis_tick}) {
+        # create redis ticks
         $defaults{count}          = 1;
         $defaults{decimate_epoch} = $defaults{epoch};
 
@@ -190,6 +192,8 @@ sub flush_and_create_ticks {
     my @ticks = @_;
 
     Cache::RedisDB->flushall;
+    my $redis = BOM::Config::RedisReplicated::redis_write();
+    $redis->del($_) for @{$redis->keys('*DEC*')};
     BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
 
     for my $tick (@ticks) {

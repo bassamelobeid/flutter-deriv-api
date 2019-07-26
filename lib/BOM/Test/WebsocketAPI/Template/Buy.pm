@@ -138,42 +138,29 @@ publish proposal_open_contract => sub {
         }};
 };
 
-# Publish sell transaction after 5 times
-my $sell_at = 5;
 publish transaction => sub {
-    my $contract = $_->contract;
-    return undef if $contract->is_sold;
-    my $account_id = $contract->client->account_id;
+    my $contract    = $_->contract;
+    my $action      = $contract->is_sold ? 'sell' : 'buy';
+    my $account_id  = $contract->client->account_id;
+    my $contract_id = $contract->contract_id;
 
-    my $tx_published = $_->global->{tx_published}{$contract} //= {};
-    $tx_published->{count}++;
-
-    if ($tx_published->{count} < $sell_at) {
-        # Buy
-    } elsif ($tx_published->{count} == $sell_at) {
-        # Sell
-        $contract->is_sold = 1;
-    } else {
-        # No Data
-        delete $_->global->{tx_published}{$contract};
-        return undef;
-    }
-
-    my $action = $contract->is_sold ? 'sell' : 'buy';
+    # publish just once each for buy and sell
+    $_->global->{tx_published}{$action}{$contract_id}++;
+    return if $_->global->{tx_published}{$action}{$contract_id} > 1;
 
     {
         "TXNUPDATE::transaction_$account_id" => {
             purchase_time           => $contract->start_time_dt->datetime_yyyymmdd_hhmmss,
-            financial_market_bet_id => $contract->contract_id,
+            financial_market_bet_id => $contract_id,
             currency_code           => $contract->client->currency,
             transaction_time        => $contract->start_time_dt->datetime_yyyymmdd_hhmmss,
             short_code              => $contract->shortcode,
             payment_id              => '0',
             referrer_type           => 'financial_market_bet',
             action_type             => $action,
-
-            amount => ($contract->is_sold ? -1 : 1) * $contract->amount,
-            account_id     => $contract->client->account_id,
+            # negative amount for buy, postive for sell
+            amount => ($contract->is_sold ? 1 : -1) * $contract->amount,
+            account_id     => $account_id,
             purchase_price => $contract->amount_str,
             payment_remark => "A $action transaction for testing",
             balance_after  => $contract->balance_after,

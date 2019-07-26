@@ -33,7 +33,7 @@ Run checks on the balance response against the published balance
 
 =cut
 
-my @valid_actions = qw(buy sell deposit withdraw);
+my @valid_actions = qw(buy sell deposit withdrawal);
 
 sub published {
     my ($self, @transaction_list) = @_;
