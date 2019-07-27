@@ -28,8 +28,11 @@ my $failure_recipients = join(',', $brand->emails('compliance'), 'sysadmin@binar
 my $rd = Date::Utility->new($specified_rptDate);
 
 # our files will be written out for reference
-my $fileTail = join('', $rd->year, sprintf('%02d', $rd->month), sprintf('%02d', $rd->day_of_month), $rd->hour, $rd->minute, $rd->second);
-my $FN = 'BNRY_' . $fileTail . '.csv';
+my $FN = sprintf('BNRY_%04d%02d%02d%02d%02d%02d.csv', $rd->year, $rd->month, $rd->day_of_month, $rd->hour, $rd->minute, $rd->second);
+# that gives us something like this: BNRY_20180307270320.csv , which is the prescribed format
+
+my $rd2 = $rd->plus_time_interval('1s');
+my $FN_mt5 = sprintf('BNRY_%04d%02d%02d%02d%02d%02d.csv', $rd2->year, $rd2->month, $rd2->day_of_month, $rd2->hour, $rd2->minute, $rd2->second);
 
 # where will they go under reports/ and create that if it doesn't yet exist
 my $reports_path = "/reports/MiFIR/@{[ $rd->year ]}";
@@ -40,35 +43,66 @@ $rd = $rd->minus_time_interval('1d') unless $specified_rptDate;
 my $rptDate = $rd->date_yyyymmdd;
 
 # let psql do our CSV formatting
-my $rz = qx(/usr/bin/psql service=collector01 -qX -v ON_ERROR_STOP=1 <<SQL
+my $rz = qx(/usr/bin/psql service=report -qX -v ON_ERROR_STOP=1 2>&1 <<SQL
     SET SESSION CHARACTERISTICS as TRANSACTION READ ONLY;
     \\COPY (SELECT * FROM mfirmfsa_report('$rptDate','$rptDate')) TO STDOUT WITH (FORMAT 'csv', DELIMITER ',', FORCE_QUOTE *);
 SQL
 );
 
-# On weekends there is usually nothing to report. This is what the results look like.
-if ((!$rz) || $rz =~ /^"1","Transaction","new"/) {
+# On weekends there is usually nothing to report, so $rz is empty
+# If the call fails or $rz for some reason does not match expectations, the condition will still fail because of the mismatch
+if ($? or ($rz and $rz !~ /^"1","Transaction","new"/)) {
+    send_email({
+            from    => 'sysadmin@binary.com',
+            to      => $failure_recipients,
+            subject => "MFIR reporting failure - $FN - $rptDate",
+            message => ["An unexpected empty response was received while trying to create the report file today: $FN\n\n$rz"]});
+} else {
     open(my $fh, '>', "$reports_path/$FN") || die "Failed to open report file for writing: $reports_path/$FN";
     print $fh BNRY_header();
     print $fh $rz;
     close $fh;
 
     my $upload_status = BOM::Datatracks::upload("$reports_path", [$FN]);
-    my $message = $upload_status ? "There was a problem uploading the file: $upload_status" : 'File uploaded successfully';
+    my $message = $upload_status ? "There was a problem uploading the file, $FN: $upload_status" : 'Files uploaded successfully';
     $message .= "\n\nSee attached.";
 
     send_email({
             from       => $brand->emails('support'),
             to         => $report_recipients,
-            subject    => "MFIR reporting - $rptDate",
+            subject    => "MFIR reporting (Binary)- $rptDate",
             message    => [$message],
             attachment => ["$reports_path/$FN"]});
-} else {
+}
+
+$rz = qx(/usr/bin/psql service=report -qX -v ON_ERROR_STOP=1 2>&1 <<SQL
+    SET SESSION CHARACTERISTICS as TRANSACTION READ ONLY;
+    \\COPY (SELECT * FROM mt5.mfirmfsa_report('$rptDate','$rptDate')) TO STDOUT WITH (FORMAT 'csv', DELIMITER ',', FORCE_QUOTE *);
+SQL
+);
+
+if ($? or ($rz and $rz !~ /^"1","Transaction","new"/)) {
     send_email({
             from    => 'sysadmin@binary.com',
             to      => $failure_recipients,
-            subject => "MFIR reporting failure - $rptDate",
-            message => ["An unexpected empty response was received while trying to create the report files today"]});
+            subject => "MFIR reporting failure - $FN_mt5 - $rptDate",
+            message => ["An unexpected empty response was received while trying to create the report file today: $FN_mt5\n\n$rz"]});
+} else {
+    open(my $fh, '>', "$reports_path/$FN_mt5") || die "Failed to open report file for writing: $reports_path/$FN_mt5";
+    print $fh BNRY_header();
+    print $fh $rz;
+    close $fh;
+
+    my $upload_status = BOM::Datatracks::upload("$reports_path", [$FN_mt5]);
+    my $message = $upload_status ? "There was a problem uploading the file, $FN_mt5: $upload_status" : 'Files uploaded successfully';
+    $message .= "\n\nSee attached.";
+
+    send_email({
+            from       => $brand->emails('support'),
+            to         => $report_recipients,
+            subject    => "MFIR reporting (MT5)- $rptDate",
+            message    => [$message],
+            attachment => ["$reports_path/$FN_mt5"]});
 }
 
 # Yes, this is terribly verbose for column headers, but they match exactly with the definition document provided and so this makes it simple to compare columns in the spreadsheet to definitions
