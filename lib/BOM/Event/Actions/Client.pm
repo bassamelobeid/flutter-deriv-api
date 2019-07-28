@@ -55,7 +55,6 @@ use constant VERIFICATION_TIMEOUT => 60;
 use constant UPLOAD_TIMEOUT => 60;
 
 # Redis key namespace to store onfido applicant id
-use constant ONFIDO_APPLICANT_KEY_PREFIX     => 'ONFIDO::APPLICANT::ID::';
 use constant ONFIDO_REQUEST_PER_USER_PREFIX  => 'ONFIDO::DAILY::REQUEST::PER::USER::';
 use constant ONFIDO_REQUEST_PER_USER_LIMIT   => $ENV{ONFIDO_REQUEST_PER_USER_LIMIT} // 3;
 use constant ONFIDO_REQUEST_PER_USER_TIMEOUT => $ENV{ONFIDO_REQUEST_PER_USER_TIMEOUT} // 24 * 60 * 60;
@@ -418,22 +417,48 @@ async sub client_verification {
                 or die 'Could not instantiate client for login ID ' . $loginid;
             $log->debugf('Onfido check result for %s (applicant %s): %s (%s)', $loginid, $applicant_id, $result, $check_status);
 
+            my $dbic = $client->db->dbic;
+
+            $dbic->run(
+                fixup => sub {
+                    $_->do(
+                        'select betonmarkets.add_onfido_check(?::TEXT, ?::TEXT, ?::TIMESTAMP, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT[])',
+                        undef,
+                        $check->id,
+                        $applicant_id,
+                        Date::Utility->new($check->created_at)->datetime_yyyymmdd_hhmmss,
+                        $check->href,
+                        $check->type,
+                        $check->status,
+                        $check->result,
+                        $check->results_uri,
+                        $check->download_uri,
+                        $check->tags
+                    );
+                });
+
+            my @all_report = await $check->reports->as_list;
+
+            for my $each_report (@all_report) {
+                $dbic->run(
+                    fixup => sub {
+                        $_->do(
+                            'select betonmarkets.add_onfido_report(?::TEXT, ?::TEXT, ?::TEXT, ?::TIMESTAMP, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::JSONB, ?::JSONB)',
+                            undef,
+                            $each_report->id,
+                            $check->id,
+                            $each_report->name,
+                            Date::Utility->new($each_report->created_at)->datetime_yyyymmdd_hhmmss,
+                            $each_report->status,
+                            $each_report->result,
+                            $each_report->sub_result,
+                            $each_report->variant,
+                            encode_json_utf8($each_report->breakdown),
+                            encode_json_utf8($each_report->properties));
+                    });
+            }
+
             my $redis_events_write = _redis_events_write();
-
-            await $redis_events_write->connect;
-
-            try {
-                await $redis_events_write->hmset(
-                    ONFIDO_REPORT_KEY_PREFIX . $client->binary_user_id,
-                    status => $check_status,
-                    url    => $check->results_uri
-                );
-            }
-            catch {
-                my $e = $@;
-                $log->errorf('Error occured when saving %s report data to Redis', $client->loginid);
-                die $e;
-            }
 
             my $pending_key = ONFIDO_PENDING_REQUEST_PREFIX . $client->binary_user_id;
 
@@ -565,10 +590,14 @@ async sub sync_onfido_details {
         my $loginid = $data->{loginid} or die 'No loginid supplied';
         my $client = BOM::User::Client->new({loginid => $loginid});
 
-        my $redis_events_read = _redis_events_read();
-        await $redis_events_read->connect;
+        my $dbic = $client->db->dbic;
 
-        my $applicant_id = await $redis_events_read->get(ONFIDO_APPLICANT_KEY_PREFIX . $client->binary_user_id);
+        my $applicant_data = $dbic->run(
+            fixup => sub {
+                my $sth = $_->selectrow_hashref('select * from betonmarkets.get_onfido_applicant(?::BIGINT)', undef, $client->user_id);
+            });
+
+        my $applicant_id = $applicant_data->{id};
 
         # Only for users that are registered in onfido
         return unless $applicant_id;
@@ -735,6 +764,8 @@ async sub _get_onfido_applicant {
 
     my $country = $client->place_of_birth // $client->residence;
     try {
+        my $dbic = $client->db->dbic;
+
         my $is_supported_country = await _is_supported_country_onfido($country, $onfido);
         unless ($is_supported_country) {
             DataDog::DogStatsd::Helper::stats_inc('onfido.unsupported_country', {tags => [$country]});
@@ -742,10 +773,13 @@ async sub _get_onfido_applicant {
             $log->debugf('Document not uploaded to Onfido as client is from list of countries not supported by Onfido');
             return undef;
         }
+        # accessing applicant_data from onfido_applicant table
+        my $applicant_data = $dbic->run(
+            fixup => sub {
+                my $sth = $_->selectrow_hashref('select * from betonmarkets.get_onfido_applicant(?::BIGINT)', undef, $client->user_id);
+            });
 
-        my $redis_events_read = _redis_events_read();
-        await $redis_events_read->connect;
-        my $applicant_id = await $redis_events_read->get(ONFIDO_APPLICANT_KEY_PREFIX . $client->binary_user_id);
+        my $applicant_id = $applicant_data->{id};
 
         if ($applicant_id) {
             $log->debugf('Applicant id already exists, returning that instead of creating new one');
@@ -756,16 +790,19 @@ async sub _get_onfido_applicant {
         my $applicant = await $onfido->applicant_create(%{_client_onfido_details($client)});
         my $elapsed   = Time::HiRes::time() - $start;
 
-        if ($applicant) {
-            DataDog::DogStatsd::Helper::stats_timing("event.document_upload.onfido.applicant_create.done.elapsed", $elapsed);
+        # saving data into onfido_applicant table
+        $dbic->run(
+            fixup => sub {
+                $_->do(
+                    'select betonmarkets.add_onfido_applicant(?::TEXT,?::TIMESTAMP,?::TEXT,?::BIGINT)',
+                    undef, $applicant->id, Date::Utility->new($applicant->created_at)->datetime_yyyymmdd_hhmmss,
+                    $applicant->href, $client->user_id
+                );
+            });
 
-            my $redis_events_write = _redis_events_write();
-            await $redis_events_write->connect;
-
-            await $redis_events_write->set(ONFIDO_APPLICANT_KEY_PREFIX . $client->binary_user_id, $applicant->id);
-        } else {
-            DataDog::DogStatsd::Helper::stats_timing("event.document_upload.onfido.applicant_create.failed.elapsed", $elapsed);
-        }
+        $applicant
+            ? DataDog::DogStatsd::Helper::stats_timing("event.document_upload.onfido.applicant_create.done.elapsed",   $elapsed)
+            : DataDog::DogStatsd::Helper::stats_timing("event.document_upload.onfido.applicant_create.failed.elapsed", $elapsed);
 
         return $applicant;
     }
@@ -1431,18 +1468,40 @@ async sub _upload_documents {
 
         DataDog::DogStatsd::Helper::stats_timing("event.document_upload.onfido.upload.triggered.elapse ", Time::HiRes::time() - $start_time);
 
-        $log->debugf('Document %s created for applicant %s', $doc->id, $applicant->id);
+        my $clientdb = BOM::Database::ClientDB->new({broker_code => $client->broker});
+        my $dbic = $clientdb->db->dbic;
 
-        my $redis_events_write = _redis_events_write();
-        # We need to map each onfido document to its corresponding DB document
-        # in onfido response later (`client_verification` sub)
-        if ($type ne 'live_photo') {
-            await $redis_events_write->connect;
-            await $redis_events_write->set(ONFIDO_DOCUMENT_ID_PREFIX . $doc->id, $document_entry->{id});
-            # Set expiry time for document id key in case of no onfido response due to
-            # `applicant_check` is not being called in `ready_for_authentication`
-            await $redis_events_write->expire(ONFIDO_DOCUMENT_ID_PREFIX . $doc->id, ONFIDO_PENDING_REQUEST_TIMEOUT);
+        if ($type eq 'live_photo') {
+            $dbic->run(
+                fixup => sub {
+                    $_->do(
+                        'select betonmarkets.add_onfido_live_photo(?::TEXT, ?::TEXT, ?::TIMESTAMP, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::INTEGER)',
+                        undef, $doc->id, $applicant->id, Date::Utility->new($doc->created_at)->datetime_yyyymmdd_hhmmss,
+                        $doc->href, $doc->download_href, $doc->file_name, $doc->file_type, $doc->file_size
+                    );
+                });
+        } else {
+            $dbic->run(
+                fixup => sub {
+                    $_->do(
+                        'select betonmarkets.add_onfido_document(?::TEXT, ?::TEXT, ?::TIMESTAMP, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::INTEGER)',
+                        undef,
+                        $doc->id,
+                        $applicant->id,
+                        Date::Utility->new($doc->created_at)->datetime_yyyymmdd_hhmmss,
+                        $doc->href,
+                        $doc->download_href,
+                        $type,
+                        $side,
+                        uc(country_code2code($client->place_of_birth, 'alpha-2', 'alpha-3')),
+                        $doc->file_name,
+                        $doc->file_type,
+                        $doc->file_size
+                    );
+                });
         }
+
+        $log->debugf('Document %s created for applicant %s', $doc->id, $applicant->id,);
 
         # At this point, we may have enough information to start verification.
         # Since this could vary by landing company, the logic ideally belongs there,
