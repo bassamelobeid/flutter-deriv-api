@@ -125,7 +125,7 @@ sub run {
             $key = $redis->brpop(@{$args{queues}}, 0)
         }
         catch {
-            my $err = $_;
+            my $err = $@;
             if (blessed($err) && $err->isa('RedisDB::Error::EAGAIN')) {
                 stats_inc("pricer_daemon.resource_unavailable_error");
                 next LOOP;
