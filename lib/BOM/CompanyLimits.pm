@@ -100,14 +100,13 @@ sub add_buy_contract {
         $totals{$realized_loss_request[$i]}->[REALIZED_LOSS_TOTALS] = ($realized_loss_response[$i] // 0);
     }
 
-    print 'LIMITS:', Dumper(\%limits);
-    print 'TOTALS:', Dumper(\%totals);
+    # print 'LIMITS:', Dumper(\%limits);
+    # print 'TOTALS:', Dumper(\%totals);
 
     my $breaches = check_totals_with_limits(\%limits, \%totals);
 
     if ($breaches) {
-        print "MAYDAY MAYDAY BREACHES DETECTED!!\n";
-        print 'BREACH', Dumper($breaches);
+        die 'BREACH', Dumper($breaches);
     }
 }
 

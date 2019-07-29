@@ -27,31 +27,52 @@ sub setup_tests {
     $redis->hmset('UNDERLYINGGROUPS', ('R_50', 'volidx'));
 }
 
-subtest 'buy a bet', sub {
+subtest 'Limits test base case', sub {
     plan tests => 2;
     setup_tests();
     my $cl = create_client;
     top_up $cl, 'USD', 5000;
-    BOM::CompanyLimits::Limits::add_limit('POTENTIAL_LOSS', 'R_50,,,', 100, 0, 0);
-    my $contract = create_contract(
-        payout     => 1000,
+
+    # Apply a potential loss limit on a single underlying, then buy 2 contracts;
+    # second one will trigger limit breach.
+    BOM::CompanyLimits::Limits::add_limit('POTENTIAL_LOSS', 'R_50,,,', 10, 0, 0);
+
+    my ($contract, $trx, $fmb, $total);
+
+    $contract = create_contract(
+        payout     => 6,
         underlying => 'R_50',
-        # duration      => '15m',
-        purchase_date => Date::Utility->new('2019-12-01'),
     );
 
-    my ($trx, $fmb) = buy_contract(
+    ($trx, $fmb) = buy_contract(
         client    => $cl,
-        buy_price => 400,
+        buy_price => 2,
         contract  => $contract,
     );
 
-    sell_contract(
-        client       => $cl,
-        contract_id  => $fmb->{id},
-        contract     => $contract,
-        sell_outcome => 1,
+    $total = $redis->hget('TOTALS_POTENTIAL_LOSS', 'R_50,,,');
+    cmp_ok $total, '==', 4;
+
+    # same contract, but we crank up the price hundred fold to exceed limit
+    $contract = create_contract(
+        payout     => 600,
+        underlying => 'R_50',
     );
+
+    dies_ok {
+        ($trx, $fmb) = buy_contract(
+            client    => $cl,
+            buy_price => 200,
+            contract  => $contract,
+        );
+    }, 'limit exceeded! Should throw some descriptive error';
+
+    # sell_contract(
+    #     client       => $cl,
+    #     contract_id  => $fmb->{id},
+    #     contract     => $contract,
+    #     sell_outcome => 1,
+    # );
 };
 
 done_testing;
