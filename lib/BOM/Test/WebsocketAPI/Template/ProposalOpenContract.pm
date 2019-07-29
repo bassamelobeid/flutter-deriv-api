@@ -185,7 +185,7 @@ publish proposal_open_contract => sub {
         next if $contract->is_sold;
         my $payload = {
             sprintf(
-                'PRICER_KEYS::["short_code","%s","contract_id","%s","country_code","%s","currency","%s","is_sold","0","landing_company","%s","price_daemon_cmd","proposal_open_contract","sell_time",null]',
+                'PRICER_KEYS::["short_code","%s","contract_id","%s","country_code","%s","currency","%s","is_sold","0","landing_company","%s","price_daemon_cmd","bid","sell_time",null]',
 
                 $contract->shortcode,
                 $contract->contract_id,
@@ -193,7 +193,7 @@ publish proposal_open_contract => sub {
                 $contract->client->currency,
                 $contract->client->landing_company_name,
                 ) => {
-                price_daemon_cmd    => 'proposal_open_contract',
+                price_daemon_cmd    => 'bid',
                 currency            => $contract->client->currency,
                 rpc_time            => 31.425,
                 date_settlement     => 1557791999,

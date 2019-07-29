@@ -89,7 +89,7 @@ publish proposal => sub {
     my $now_str  = '' . time;
     return {
         sprintf(
-            'PRICER_KEYS::["amount","1000","basis","payout","contract_type","%s","country_code","%s","currency","%s","duration","%s","duration_unit","%s","landing_company","%s","price_daemon_cmd","proposal","product_type","basic","proposal","1","skips_price_validation","1","subscribe","1","symbol","%s"]',
+            'PRICER_KEYS::["amount","1000","basis","payout","contract_type","%s","country_code","%s","currency","%s","duration","%s","duration_unit","%s","landing_company","%s","price_daemon_cmd","price","product_type","basic","proposal","1","skips_price_validation","1","subscribe","1","symbol","%s"]',
             $contract->contract_type, $contract->client->country, $contract->client->currency,
             $contract->duration,      $contract->duration_unit,   $contract->client->landing_company_name,
             $contract->underlying->symbol
@@ -99,7 +99,7 @@ publish proposal => sub {
             display_value    => '566.27',
             longcode         => $contract->longcode,
             payout           => '1000',
-            price_daemon_cmd => 'proposal',
+            price_daemon_cmd => 'price',
             rpc_time         => 51.094,
             spot             => '78.555',
             spot_time        => $now_str,
