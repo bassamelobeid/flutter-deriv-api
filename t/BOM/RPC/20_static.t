@@ -30,14 +30,14 @@ subtest 'states_list' => sub {
         {
             language => 'EN',
             args     => {states_list => 'cn'}})->has_no_system_error->result;
-    my ($sh) = grep { $_->{text} eq 'Shanghai' } @$result;
+    my ($sh) = grep { $_->{text} eq 'Shanghai Shi' } @$result;
     is_deeply(
         $sh,
         {
-            'value' => '31',
-            'text'  => "Shanghai",
+            'value' => 'SH',
+            'text'  => "Shanghai Shi",
         },
-        'Shanghai is correct'
+        'Shanghai Shi is correct'
     );
 };
 
