@@ -105,30 +105,40 @@ for my $s (@symbols) {
             recorded_date => $now,
         });
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        quote      => 98,
-        epoch      => $now->epoch - 2,
-        underlying => $s,
-    });
+            quote      => 98,
+            epoch      => $now->epoch - 2,
+            underlying => $s,
+        },
+        0
+    );
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        quote      => 99,
-        epoch      => $now->epoch - 1,
-        underlying => $s,
-    });
+            quote      => 99,
+            epoch      => $now->epoch - 1,
+            underlying => $s,
+        },
+        0
+    );
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        quote      => 100,
-        epoch      => $now->epoch,
-        underlying => $s,
-    });
+            quote      => 100,
+            epoch      => $now->epoch,
+            underlying => $s,
+        },
+        0
+    );
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        quote      => 101,
-        epoch      => $now->epoch + 1,
-        underlying => $s,
-    });
+            quote      => 101,
+            epoch      => $now->epoch + 1,
+            underlying => $s,
+        },
+        0
+    );
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        quote      => 102,
-        epoch      => $now->epoch + 2,
-        underlying => $s,
-    });
+            quote      => 102,
+            epoch      => $now->epoch + 2,
+            underlying => $s,
+        },
+        0
+    );
 }
 
 build_test_R_50_data();
