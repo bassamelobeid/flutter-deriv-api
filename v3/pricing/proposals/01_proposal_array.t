@@ -304,6 +304,20 @@ SKIP: {
             $response = $t->await::proposal_array($proposal_array_req_tpl);
             is $response->{error}->{code}, 'InputValidationFailed', 'Schema validation fails with huge duration';
         };
+
+        subtest 'invalid barrier' => sub {
+            delete $proposal_array_req_tpl->{date_expiry};
+
+            $proposal_array_req_tpl->{duration}      = 1;
+            $proposal_array_req_tpl->{duration_unit} = 'd';
+            $response                                = $t->await::proposal_array($proposal_array_req_tpl);
+            test_schema('proposal_array', $response);
+
+            $proposal_array_req_tpl->{barrier} = "1.0000000000000000000000000000000000000000";
+            $response = $t->await::proposal_array($proposal_array_req_tpl);
+            is $response->{error}->{code}, 'InputValidationFailed', 'Schema validation fails with invalid barrier';
+            is $response->{error}->{message}, 'Input validation failed: barrier', 'Schema validation fails with correct error message';
+        };
     }
 }
 
