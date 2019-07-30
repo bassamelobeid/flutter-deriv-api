@@ -680,12 +680,11 @@ sub currency {
 sub has_deposits {
     my $self = shift;
     my $args = shift;
-    ## This query can be expensive, so we force it to use the replica
-    my $payment_mapper = BOM::Database::DataMapper::Payment->new({
-        'client_loginid' => $self->loginid,
-        operation        => 'replica'
-    });
-    return $payment_mapper->get_payment_count_exclude_gateway($args);
+
+    return $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref("SELECT * from betonmarkets.has_first_deposit(?, ?);", undef, $self->loginid, $args->{exclude});
+        })->{has_first_deposit};
 }
 
 sub is_first_deposit_pending {
