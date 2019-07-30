@@ -64,10 +64,10 @@ $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
 ok $test_client->default_account, 'Default account set correctly';
 is $test_client->currency, 'USD', 'Got correct client currency after setting account';
 
-$test_client->payment_free_gift(
+$test_client->payment_doughflow(
     currency => 'USD',
     amount   => 1000,
-    remark   => 'free gift',
+    remark   => 'first deposit',
 );
 
 $t = $t->send_ok({json => {set_account_currency => 'GBP'}})->message_ok;
