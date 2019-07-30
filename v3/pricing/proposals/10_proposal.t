@@ -57,4 +57,10 @@ $req->{duration} = "-10";
 $res = $t->await::proposal($req);
 is $res->{error}->{code}, 'InputValidationFailed', 'Schema validation fails with negative duration';
 
+$req->{duration} = "1";
+$req->{barrier}  = "10.0000000000000000000000000000000000000";
+$res             = $t->await::proposal($req);
+is $res->{error}->{code},    'InputValidationFailed',            'Schema validation fails with invalid barrier';
+is $res->{error}->{message}, 'Input validation failed: barrier', 'Schema validation fails and returns correct message';
+
 done_testing;
