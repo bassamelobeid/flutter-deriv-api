@@ -24,6 +24,7 @@ sub start_rpc_queue_if_not_running {
     }
 
     start_rpc_queue();
+    return;
 }
 
 sub start_rpc_queue {
