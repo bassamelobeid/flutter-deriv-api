@@ -46,7 +46,7 @@ use constant APPS_BLOCKED_FROM_OPERATION_DOMAINS => {red => [1]};
 
 # Set up the event loop singleton so that any code we pull in uses the Mojo
 # version, rather than trying to set its own.
-local $ENV{IO_ASYNC_LOOP} = 'IO::Async::Loop::Mojo'; 
+local $ENV{IO_ASYNC_LOOP} = 'IO::Async::Loop::Mojo';
 my $loop = IO::Async::Loop->new;
 die 'Unexpected event loop class: had ' . ref($loop) . ', expected a subclass of IO::Async::Loop::Mojo'
     unless $loop->isa('IO::Async::Loop::Mojo')
