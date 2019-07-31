@@ -41,10 +41,12 @@ sub start_rpc_queue {
 
     if ($attempts > 5) {
         #TODO: it happens in one occasion during `make security`. Should be fixed.
-         $log->debug( 'RPC queue is not responding.\n');
+        $log->debug('RPC queue is not responding.\n');
     } else {
         $log->debug("RPC queue is launched with args: $args");
     }
+
+    return;
 }
 
 sub add_worker {
@@ -63,6 +65,8 @@ sub add_worker {
     $conn->write("ADD-WORKERS $redis_url\n");
     my $result = $conn->read_until("\n")->get;
     $log->debug("WORKERS response recieved: $result");
+
+    return;
 }
 
 sub create_socket_connection {
@@ -106,6 +110,7 @@ sub stop_workers {
         $log->debug("Dec_workers response recieved: $result");
         last if ($result =~ / 0\n/);
     }
+    return;
 }
 
 sub stop_service {
@@ -131,6 +136,7 @@ sub stop_service {
         $log->debug("RPC queue was stopped successfully");
     }
 
+    return;
 }
 
 sub ping {
