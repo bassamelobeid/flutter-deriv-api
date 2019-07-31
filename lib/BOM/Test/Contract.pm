@@ -265,6 +265,8 @@ sub sell_contract {
     my $error = $txn->sell(skip_validation => 1);
 
     die "ERROR: $error" if $error;
+
+    return;
 }
 
 1;
