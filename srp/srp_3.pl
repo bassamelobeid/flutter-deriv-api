@@ -4,7 +4,7 @@ use warnings;
 use BOM::Database::ClientDB;
 
 # Update address_state code change when we update Locale::SubCountry from v1.65 => v2.05
-
+my $count = 0;
 # hash of old code => new code
 my %full_change_list;
 %full_change_list = (
@@ -418,12 +418,19 @@ for my $current_broker (@broker){
             my $sth = $dbic->run(fixup => sub {
                 my $sth = $_->prepare(qq{
                   SELECT audit.set_staff('SRP https://trello.com/c/MCLVmIqJ', '127.0.0.1');
-                  UPDATE betonmarkets.client SET address_state = ? WHERE residence = ? AND address_state =?});
+                  WITH rows AS (
+                    UPDATE betonmarkets.client SET address_state = ? WHERE residence = ? AND address_state =?
+                    RETURNING 1
+                  )
+                  SELECT count(*) FROM rows;
+                  });
                 $sth->execute($full_change_list{$country}{$subcountry_code}, $country, $subcountry_code);
-                $sth;
+                $count += $sth->fetchrow_hashref->{count};
             });
         }
         
     }
     
 }
+
+print "Number of clients updated: $count\n";
