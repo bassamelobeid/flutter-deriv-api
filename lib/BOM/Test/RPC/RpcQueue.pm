@@ -28,7 +28,7 @@ sub start_rpc_queue_if_not_running {
 }
 
 sub start_rpc_queue {
-    my $args = "--testing --workers 0 --socket $socket_path --log trace";
+    my $args = "--testing --workers 0 --socket $socket";
 
     system("$script_path $args &");
     my $attempts = 0;
@@ -55,8 +55,6 @@ sub add_worker {
     my ($redis_server) = @_;
     my $redis_url = $redis_server->url;
 
-    start_rpc_queue_if_not_running();
-    return;
     my $conn = create_socket_connection();
 
     $redis_url =~ /.*:(\d+)\D?$/;
