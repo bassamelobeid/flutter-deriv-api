@@ -164,6 +164,8 @@ test_sendrecv_params 'set_account_currency/test_send.json',   'set_account_curre
 test_sendrecv_params 'set_account_currency/test_send.json',   'set_account_currency/test_receive_error.json', 'XXX';
 test_sendrecv_params 'payout_currencies/test_send.json',      'payout_currencies/test_receive_vrt.json',      'EUR', 1;
 fail_test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json',      'USD', 1;
+# set_self_exclusion for max_30day_turnover should remove max_turnover_limit_not_set status
+test_sendrecv 'set_self_exclusion/test_send.json', 'set_self_exclusion/test_receive.json';
 
 # READ SCOPE CALLS (MLT) AFTER CHANGE
 fail_test_sendrecv_params 'reality_check/test_send.json', 'reality_check/test_receive.json', 'GBP';
@@ -214,9 +216,9 @@ fail_test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies
 test_sendrecv 'cashier/test_send_deposit.json',               'cashier/test_receive_ukgc_error.json';
 test_sendrecv 'tnc_approval/test_send_ukgc.json',             'tnc_approval/test_receive.json';
 $suite->change_status($suite->get_stashed('authorize/authorize/loginid'), 'set', 'age_verification');
-$suite->change_status($suite->get_stashed('authorize/authorize/loginid'), 'set', 'ukrts_max_turnover_limit_not_set');
+$suite->change_status($suite->get_stashed('authorize/authorize/loginid'), 'set', 'max_turnover_limit_not_set');
 test_sendrecv 'cashier/test_send_deposit.json', 'cashier/test_receive_max_turnover.json';
-# set_self_exclusion for max_30day_turnover should remove ukrts_max_turnover_limit_not_set status
+# set_self_exclusion for max_30day_turnover should remove max_turnover_limit_not_set status
 test_sendrecv 'set_self_exclusion/test_send.json', 'set_self_exclusion/test_receive.json';
 test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '0', 'GBP', $suite->get_stashed('authorize/authorize/loginid');
 
