@@ -27,10 +27,12 @@ binmode STDERR, ':encoding(UTF-8)';
 
 require Log::Any::Adapter;
 GetOptions(
-    'l|log=s' => \my $log_level,
+    'l|log=s'               => \my $log_level,
+    'requests_per_minute=s' => \my $requests_per_minute,
 ) or die;
 
-$log_level ||= 'info';
+$log_level           ||= 'info';
+$requests_per_minute ||= 30;
 Log::Any::Adapter->import(qw(Stdout), log_level => $log_level);
 
 my $loop = IO::Async::Loop->new;
@@ -39,7 +41,8 @@ $loop->add(my $services = BOM::Event::Services->new);
 
 {
     sub _onfido {
-        return $services->onfido();
+        $services->add_child(my $service = WebService::Async::Onfido->new(token => BOM::Config::third_party()->{onfido}->{authorization_token}, requests_per_minute => $requests_per_minute));
+        return $service;
     }
 }
 
