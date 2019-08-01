@@ -219,6 +219,19 @@ subtest 'Cashier validation landing company and country specific' => sub {
         $mock_client->unmock('fully_authenticated');
     };
 
+    subtest 'malta' => sub {
+        $mlt_client->status->set('max_turnover_limit_not_set', 'system', '1');
+        $mlt_client->set_default_account('EUR');
+        $mlt_client->save;
+
+        my $res = BOM::Platform::Client::CashierValidation::validate($mlt_client->loginid, 'deposit');
+        is $res->{error}->{code}, 'ASK_SELF_EXCLUSION_MAX_TURNOVER_SET', 'Correct error code';
+        is $res->{error}->{message_to_client}, 'Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.',
+            'Correct error message';
+
+        $mlt_client->status->clear_max_turnover_limit_not_set;
+
+    };
     subtest 'gb as residence' => sub {
         my $res = BOM::Platform::Client::CashierValidation::validate($mx_client->loginid, 'deposit');
         is $res->{error}->{code},              'ASK_CURRENCY',             'Correct error code for account currency not set';
@@ -232,15 +245,15 @@ subtest 'Cashier validation landing company and country specific' => sub {
         is $res->{error}->{code},              'ASK_UK_FUNDS_PROTECTION',         'Correct error code';
         is $res->{error}->{message_to_client}, 'Please accept Funds Protection.', 'Correct error message';
 
-        $mx_client->status->set('ukgc_funds_protection',            'system', '1');
-        $mx_client->status->set('ukrts_max_turnover_limit_not_set', 'system', '1');
+        $mx_client->status->set('ukgc_funds_protection',      'system', '1');
+        $mx_client->status->set('max_turnover_limit_not_set', 'system', '1');
 
         $res = BOM::Platform::Client::CashierValidation::validate($mx_client->loginid, 'deposit');
         is $res->{error}->{code}, 'ASK_SELF_EXCLUSION_MAX_TURNOVER_SET', 'Correct error code';
         is $res->{error}->{message_to_client}, 'Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.',
             'Correct error message';
 
-        $mx_client->status->clear_ukrts_max_turnover_limit_not_set;
+        $mx_client->status->clear_max_turnover_limit_not_set;
 
         is BOM::Platform::Client::CashierValidation::validate($mx_client->loginid, 'deposit'), undef, 'Validation passed';
     };
