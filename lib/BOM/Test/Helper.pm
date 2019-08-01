@@ -128,6 +128,7 @@ sub build_wsapi_test {
     $args->{app_id} = 1 unless exists $args->{app_id};
 
     my ($tmp_dir, $redis_server) = launch_redis;
+    BOM::Test::RPC::RpcQueue::start_rpc_queue_if_not_running();
     BOM::Test::RPC::RpcQueue::add_worker($redis_server);
 
     my $t = build_mojo_test('Binary::WebSocketAPI', $args);
@@ -239,8 +240,8 @@ sub call_mocked_client {
 }
 
 sub END {
-    BOM::Test::RPC::RpcQueue::stop_workers();
-    BOM::Test::RPC::RpcQueue::stop_service();
+    BOM::Test::RPC::RpcQueue::stop_workers();    #TODO: stop by redis server url
+                                                 #BOM::Test::RPC::RpcQueue::stop_process();
 }
 
 1;

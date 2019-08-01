@@ -11,7 +11,7 @@ use Log::Any qw($log);
 use BOM::Test;
 use BOM::Test::Script;
 
-my $socket_path = '/tmp/binary_jobqueue_worker.sock';
+my $socket_path = '/var/run/bom-rpc/binary_jobqueue_worker.sock';
 my $script_path = '/home/git/regentmarkets/bom-rpc/bin/binary_jobqueue_worker.pl';
 
 sub start_rpc_queue_if_not_running {
@@ -28,7 +28,8 @@ sub start_rpc_queue_if_not_running {
 }
 
 sub start_rpc_queue {
-    my $args = "--testing --workers 0 --socket $socket_path";
+    my $args = "--testing --workers 0 --socket $socket_path --log trace";
+
     system("$script_path $args &");
     my $attempts = 0;
     while (1) {
@@ -55,6 +56,7 @@ sub add_worker {
     my $redis_url = $redis_server->url;
 
     start_rpc_queue_if_not_running();
+    return;
     my $conn = create_socket_connection();
 
     $redis_url =~ /.*:(\d+)\D?$/;
