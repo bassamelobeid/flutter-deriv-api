@@ -26,7 +26,7 @@ sub get_clients_activity {
     return $dbic->run(
         fixup => sub {
             my $sth = $_->prepare($sql);
-            $sth->execute($args->{'date'}->datetime_yyyymmdd_hhmmss_TZ, $args->{only_authenticate} || 'false', $args->{broker_code});
+            $sth->execute($args->{'date'}->date_yyyymmdd, $args->{only_authenticate} || 'false', $args->{broker_code});
 
             return $sth->fetchall_hashref('loginid');
         });
