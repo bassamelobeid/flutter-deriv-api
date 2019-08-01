@@ -20,7 +20,7 @@ has dbic => (
 my @status_codes = qw(
     age_verification cashier_locked  disabled  unwelcome  withdrawal_locked
     mt5_withdrawal_locked  ukgc_funds_protection  financial_risk_approval
-    crs_tin_information  ukrts_max_turnover_limit_not_set
+    crs_tin_information  max_turnover_limit_not_set
     professional_requested  professional professional_rejected  tnc_approval
     migrated_single_email  duplicate_account  proveid_pending  proveid_requested
     require3ds  skip_3ds  ok  ico_only  allowed_other_card  can_authenticate
