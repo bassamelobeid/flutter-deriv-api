@@ -313,10 +313,10 @@ SKIP: {
             $response                                = $t->await::proposal_array($proposal_array_req_tpl);
             test_schema('proposal_array', $response);
 
-            $proposal_array_req_tpl->{barrier} = "1.0000000000000000000000000000000000000000";
+            push @{$proposal_array_req_tpl->{barriers}}, {barrier2 => "97.0000000000000000000000000000000000000001"};
             $response = $t->await::proposal_array($proposal_array_req_tpl);
             is $response->{error}->{code}, 'InputValidationFailed', 'Schema validation fails with invalid barrier';
-            is $response->{error}->{message}, 'Input validation failed: barrier', 'Schema validation fails with correct error message';
+            is $response->{error}->{message}, 'Input validation failed: barriers/1/barrier2', 'Schema validation fails with correct error message';
         };
     }
 }

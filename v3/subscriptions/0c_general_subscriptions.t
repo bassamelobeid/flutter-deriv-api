@@ -23,9 +23,9 @@ $loop->add(
         },
         suite_params => {
             concurrent => 50,
-            requests =>  requests(
+            requests   => requests(
                 #calls => [qw( ticks ticks_history proposal_array proposal website_status )],
-                calls => [qw( proposal_array proposal website_status )],
+                calls  => [qw( proposal_array proposal website_status )],
                 filter => sub {
                     my $params = shift->{params};
                     my $symbol;
@@ -43,19 +43,19 @@ $loop->add(
                     # Checking R_100 only, for faster tests.
                     $symbol eq 'R_100';
                 },
-            ),    
+            ),
         }
     ),
 );
 
 subtest 'General subscriptions: proposal, proposal_array & website_status' => sub {
-    
+
     Future->needs_all(
         $tester->subscribe_multiple_times(count => 10), $tester->subscribe_twice, $tester->subscribe,
         $tester->subscribe_after_request,     $tester->multiple_subscriptions_forget, $tester->multiple_subscriptions_forget_all,
         $tester->multiple_connections_forget, $tester->multiple_connections_forget_all,
     )->get;
-    
+
     $tester->run_sanity_checks;
 };
 

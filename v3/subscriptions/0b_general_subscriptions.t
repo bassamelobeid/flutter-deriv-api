@@ -19,19 +19,18 @@ $loop->add(
         timeout            => 300,
         max_response_delay => 10,
         skip_sanity_checks => {
-            website_status => [qw(published check_duplicates)],  # Response can be overlapping between publishes
+            website_status => [qw(published check_duplicates)],    # Response can be overlapping between publishes
         },
         suite_params => {
             concurrent => 50,
-            requests =>  requests(
-                calls => [qw( ticks ticks_history )],
+            requests   => requests(
+                calls  => [qw( ticks ticks_history )],
                 filter => sub {
                     my $params = shift->{params};
                     my $symbol;
                     if ($params->ticks_history) {
                         $symbol = $params->ticks_history->underlying->symbol;
-                    }
-                    elsif ($params->underlying) {
+                    } elsif ($params->underlying) {
                         $symbol = $params->underlying->symbol;
                     } else {
                         return 1;
@@ -39,24 +38,19 @@ $loop->add(
                     # Checking R_100 only, for faster tests.
                     $symbol eq 'R_100';
                 },
-            ),    
+            ),
         }
     ),
 );
 
 subtest 'General subscriptions: ticks & ticks_history' => sub {
-    
+
     Future->needs_all(
-        $tester->subscribe_multiple_times(count => 10),
-        $tester->subscribe_twice,
-        $tester->subscribe,
-        $tester->subscribe_after_request,
-        $tester->multiple_subscriptions_forget,
-        $tester->multiple_subscriptions_forget_all,
-        $tester->multiple_connections_forget,
-        $tester->multiple_connections_forget_all,
+        $tester->subscribe_multiple_times(count => 10), $tester->subscribe_twice, $tester->subscribe,
+        $tester->subscribe_after_request,     $tester->multiple_subscriptions_forget, $tester->multiple_subscriptions_forget_all,
+        $tester->multiple_connections_forget, $tester->multiple_connections_forget_all,
     )->get;
-    
+
     $tester->run_sanity_checks;
 };
 

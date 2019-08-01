@@ -53,10 +53,10 @@ my (@global_poc_uuids, $global_data, $global_contract_id);
 subtest 'forget transaction stream at first' => sub {
     my $data = $t->await::forget_all({forget_all => 'proposal_open_contract'});
     is(scalar @{$data->{forget_all}}, 0, 'Forget all returns empty because all streams forgot already');
-    my @transaction_subscriptions            = Binary::WebSocketAPI::v3::Subscription::Transaction->get_by_class($c);
+    my @transaction_subscriptions = Binary::WebSocketAPI::v3::Subscription::Transaction->get_by_class($c);
     is(scalar @transaction_subscriptions, 0, "There is 0 transaction subscription");
     my @pocs = Binary::WebSocketAPI::v3::Subscription::Pricer::ProposalOpenContract->get_by_class($c);
-    my @poc_uuids                            = sort map {$_->uuid} @pocs;
+    my @poc_uuids = sort map { $_->uuid } @pocs;
     is(scalar(@poc_uuids), 0, 'There is 0 poc subscriptions now');
 };
 
@@ -156,7 +156,7 @@ subtest 'sell a contract and test' => sub {
 subtest 'forget all and test' => sub {
     my $data = $t->await::forget_all({forget_all => 'proposal_open_contract'});
     is(scalar($data->{forget_all}->@*), 1, 'There is only one poc stream forgotten in the result, that means no transaction stream forgotten');
-    my @transaction_subscriptions            = Binary::WebSocketAPI::v3::Subscription::Transaction->get_by_class($c);
+    my @transaction_subscriptions = Binary::WebSocketAPI::v3::Subscription::Transaction->get_by_class($c);
     is(scalar(@transaction_subscriptions), 0, 'but in fact all transaction streams also forgotten');
 };
 
@@ -169,9 +169,9 @@ sub parse_result {
     my @transaction_subscriptions            = Binary::WebSocketAPI::v3::Subscription::Transaction->get_by_class($c);
     my @types                                = map { $_->type } @transaction_subscriptions;
     my @buy_type                             = grep(/^buy$/, @types);
-    my @poc_uuids_in_transaction_subscripton = sort map { $_->type eq 'sell' ? $_->poc_uuid : ()} @transaction_subscriptions;
-    my @pocs = Binary::WebSocketAPI::v3::Subscription::Pricer::ProposalOpenContract->get_by_class($c);
-    my @poc_uuids                            = sort map {$_->uuid} @pocs;
+    my @poc_uuids_in_transaction_subscripton = sort map { $_->type eq 'sell' ? $_->poc_uuid : () } @transaction_subscriptions;
+    my @pocs                                 = Binary::WebSocketAPI::v3::Subscription::Pricer::ProposalOpenContract->get_by_class($c);
+    my @poc_uuids                            = sort map { $_->uuid } @pocs;
 
     return (\@types, \@buy_type, \@poc_uuids_in_transaction_subscripton, \@poc_uuids);
 }
