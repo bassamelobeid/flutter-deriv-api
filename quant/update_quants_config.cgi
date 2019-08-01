@@ -219,9 +219,10 @@ sub _send_compliance_email {
 
     my $brand = Brands->new(name => request()->brand);
     # send an email to compliance
+    my $recipients = join(',', $brand->emails('compliance'), $brand->emails('alert_quants'));
     send_email({
         from    => $brand->emails('system'),
-        to      => $brand->emails('compliance'),
+        to      => $recipients,
         subject => $args{subject},
         message => $args{message},
     });
