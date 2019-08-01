@@ -15,7 +15,8 @@ use BOM::Platform::Email qw/send_email/;
 use DataDog::DogStatsd;
 
 GetOptions
-    'past_date=s' => \my $past_date;
+    'past_date=s' => \my $past_date,
+    'directory=s' => \my $directory;
 
 if ($past_date) {
     try {
@@ -24,6 +25,8 @@ if ($past_date) {
         die 'Invalid date. Please use yyyy-mm-dd format.';
     };
 }
+
+$directory //= '';
 
 my $reporter        = BOM::MyAffiliates::TurnoverReporter->new();
 my $statsd          = DataDog::DogStatsd->new;
@@ -43,6 +46,7 @@ unless (@csv) {
 }
 
 my $output_dir = BOM::Config::Runtime->instance->app_config->system->directory->db . '/myaffiliates/';
+$output_dir .= "$directory/" if ($directory);
 path($output_dir)->mkpath if (not -d $output_dir);
 
 my $output_filename = $output_dir . 'turnover_' . $processing_date->date_yyyymmdd . '.csv';

@@ -38,7 +38,7 @@ use BOM::Database::DataMapper::MyAffiliates;
     Result is formatted to this form:
 
     Date, Client Loginid, company profit/loss from client, deposits,
-    turnover_runbets, intraday turnover, other turnover, first funded date,
+    turnover_ticktrade, intraday turnover, other turnover, first funded date,
     withdrawals, first funded amount
 
 =cut
@@ -82,7 +82,7 @@ sub _generate_csv_output {
         if ($currency eq 'USD') {
             push @output_fields, formatnumber('amount', $currency, $activity->{$loginid}->{pnl});
             push @output_fields, formatnumber('amount', $currency, $activity->{$loginid}->{deposits});
-            push @output_fields, formatnumber('amount', $currency, $activity->{$loginid}->{turnover_runbets});
+            push @output_fields, formatnumber('amount', $currency, $activity->{$loginid}->{turnover_ticktrade});
             push @output_fields, formatnumber('amount', $currency, $activity->{$loginid}->{turnover_intradays});
             push @output_fields, formatnumber('amount', $currency, $activity->{$loginid}->{turnover_others});
             push @output_fields, $first_funded_date;
@@ -93,7 +93,7 @@ sub _generate_csv_output {
             # by myaffiliates system
             push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{pnl});
             push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{deposits});
-            push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{turnover_runbets});
+            push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{turnover_ticktrade});
             push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{turnover_intradays});
             push @output_fields, formatnumber('amount', 'USD', $conversion_hash{$currency} * $activity->{$loginid}->{turnover_others});
             push @output_fields, $first_funded_date;

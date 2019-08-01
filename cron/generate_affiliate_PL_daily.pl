@@ -22,7 +22,8 @@ use BOM::Platform::Email qw(send_email);
 use BOM::MyAffiliates::ActivityReporter;
 
 GetOptions
-    'past_date=s' => \my $past_date;
+    'past_date=s' => \my $past_date,
+    'directory=s' => \my $directory;
 
 local $SIG{ALRM} = sub { die "alarm\n" };
 alarm 1800;
@@ -35,6 +36,8 @@ if ($past_date) {
     };
 }
 
+$directory //= '';
+
 my $to_date = Date::Utility->new($past_date // (time - 86400));
 #Alway start to regenerate the files from start of the month.
 my $from_date = Date::Utility->new('01-' . $to_date->month_as_string . '-' . $to_date->year);
@@ -44,6 +47,7 @@ my $statsd          = DataDog::DogStatsd->new;
 my $processing_date = Date::Utility->new($from_date->epoch);
 
 my $output_dir = BOM::Config::Runtime->instance->app_config->system->directory->db . '/myaffiliates/';
+$output_dir .= "$directory/" if ($directory);
 path($output_dir)->mkpath if (not -d $output_dir);
 
 my $output_zip      = "myaffiliates_" . $from_date->date_yyyymmdd . "-" . $to_date->date_yyyymmdd . ".zip";
@@ -79,7 +83,6 @@ while ($to_date->days_between($processing_date) >= 0) {
 
 unless ($zip->writeToFileNamed($output_zip_path->stringify) == AZ_OK) {
     $statsd->event('Failed to generate MyAffiliates PL report', "MyAffiliates PL report failed to generate zip archive");
-    die "unable to create zip file at: ${\$output_zip_path->stringify}" 
 }
 
 my $config = LoadFile('/etc/rmg/third_party.yml')->{myaffiliates};
@@ -118,3 +121,5 @@ catch {
     my $error = shift;
     $statsd->event('Failed to generate MyAffiliates PL report', "MyAffiliates PL report failed to upload to S3 due: $error");
 };
+
+1;
