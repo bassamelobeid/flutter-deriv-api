@@ -576,7 +576,7 @@ sub startup {
             return "rate_limits::unauthorised::$app_id/$client_id";
         });
 
-    my $redis = ws_redis_master();
+    my $backend_redis = rpc_queue_redis();
     $app->plugin(
         'web_socket_proxy' => {
             binary_frame => \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::document_upload,
@@ -615,10 +615,11 @@ sub startup {
             backends          => {
                 queue_reset_password => {
                     type  => "job_async",
-                    redis => {uri => 'redis://' . $redis->url->host . ':' . $redis->url->port}}
+                    redis => {uri => 'redis://' . $backend_redis->url->host . ':' . $backend_redis->url->port}}
             },
         });
 
+    my $redis = ws_redis_master();
     $redis->get(
         'app_id::diverted',
         sub {

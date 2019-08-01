@@ -39,6 +39,11 @@ my $servers = {
         config   => '/etc/rmg/ws-redis.yml',
         user     => 'write',
         override => 'BOM_TEST_WS_REDIS'
+    },
+    rpc_queue_redis => {
+        config   => '/etc/rmg/redis-rpc_queues.yml',
+        user     => 'write',
+        override => 'BOM_TEST_WS_REDIS'
     }};
 
 # We export (on demand) all Redis names and a helper function.
