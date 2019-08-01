@@ -4,7 +4,7 @@ use warnings;
 use BOM::Database::ClientDB;
 
 # Update address_state code change when we update Locale::SubCountry from v1.65 => v2.05
-
+my $count = 0;
 # hash of old code => new code
 my %full_change_list;
 %full_change_list = (
@@ -14,7 +14,7 @@ my %full_change_list;
       15 => 'NM',
       34 => 'AH',
       50 => 'CQ',
-      45 => 'HB',
+      42 => 'HB',
       23 => 'HL',
       11 => 'BJ',
       35 => 'FJ',
@@ -68,6 +68,7 @@ my %full_change_list;
 
     md =>{
       TI => 'BD',
+      CH => 'CU',
     },
 
     ss =>{
@@ -225,6 +226,7 @@ my %full_change_list;
     },
 
     lv =>{
+      VM => 'VMR',
       RE => '077',
       OG => '067',
       AL => '007',
@@ -253,6 +255,10 @@ my %full_change_list;
     bh =>{
       '03' => '13',
       '02' => '15',
+    },
+
+    ph =>{
+      'MM' => '00',
     },
 
     in =>{
@@ -410,12 +416,21 @@ for my $current_broker (@broker){
     for my $country (keys %full_change_list){
         for my $subcountry_code (keys %{$full_change_list{$country}}){
             my $sth = $dbic->run(fixup => sub {
-                my $sth = $_->prepare(qq{UPDATE betonmarkets.client SET address_state = ? WHERE residence = ? AND address_state =?});
+                my $sth = $_->prepare(qq{
+                  SELECT audit.set_staff('SRP https://trello.com/c/MCLVmIqJ', '127.0.0.1');
+                  WITH rows AS (
+                    UPDATE betonmarkets.client SET address_state = ? WHERE residence = ? AND address_state =?
+                    RETURNING 1
+                  )
+                  SELECT count(*) FROM rows;
+                  });
                 $sth->execute($full_change_list{$country}{$subcountry_code}, $country, $subcountry_code);
-                $sth;
+                $count += $sth->fetchrow_hashref->{count};
             });
         }
         
     }
     
 }
+
+print "Number of clients updated: $count\n";
