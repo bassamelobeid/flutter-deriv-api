@@ -53,6 +53,12 @@ subtest 'Limits test base case', sub {
     $total = $redis->hget('TOTALS_POTENTIAL_LOSS', 'R_50,,,');
     cmp_ok $total, '==', 4;
 
+    sell_contract(
+        client       => $cl,
+        contract_id  => $fmb->{id},
+        contract     => $contract,
+        sell_outcome => 1,
+    );
     # same contract, but we crank up the price hundred fold to exceed limit
     $contract = create_contract(
         payout     => 600,
@@ -67,12 +73,6 @@ subtest 'Limits test base case', sub {
         );
     }, 'limit exceeded! Should throw some descriptive error';
 
-    # sell_contract(
-    #     client       => $cl,
-    #     contract_id  => $fmb->{id},
-    #     contract     => $contract,
-    #     sell_outcome => 1,
-    # );
 };
 
 done_testing;

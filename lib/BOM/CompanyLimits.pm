@@ -57,7 +57,7 @@ sub add_buy_contract {
     my $underlying = $bet_data->{underlying_symbol};
     my ($contract_group, $underlying_group) = _get_attr_groups($bet_data);
 
-    # print 'BET DATA: ', Dumper($contract);
+    print 'BET DATA: ', Dumper($contract);
     my @combinations = _get_combinations($contract, $underlying_group, $contract_group);
     my %limits = BOM::CompanyLimits::Limits::query_limits($underlying, \@combinations);
 
@@ -139,13 +139,14 @@ sub add_sell_contract {
     # For sell, we increment totals but do not check if they exceed limits;
     # we only block buys, not sells.
     my $realized_loss = _convert_to_usd($account_data, $bet_data->{sell_price} - $bet_data->{buy_price});
+    my $potential_loss = _convert_to_usd($account_data, $bet_data->{payout_price} - $bet_data->{buy_price});
 
-    # On sells, we increment realized loss and deduct realized loss from potential loss
+    # On sells, we increment realized loss and deduct potential loss
     $redis->multi(sub { });
     foreach my $p (@combinations) {
         # Since no checks are done, we simply increment and discard the response
         $redis->hincrbyfloat('TOTALS_REALIZED_LOSS',  $p, $realized_loss,  sub { });
-        $redis->hincrbyfloat('TOTALS_POTENTIAL_LOSS', $p, -$realized_loss, sub { });
+        $redis->hincrbyfloat('TOTALS_POTENTIAL_LOSS', $p, -$potential_loss, sub { });
     }
     $redis->exec(sub { });
     $redis->mainloop;
