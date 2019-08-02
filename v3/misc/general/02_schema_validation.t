@@ -77,38 +77,28 @@ subtest mask_tokens => sub {
     $schema_array->{properties}->{nested} = $nested_object;
     Binary::WebSocketAPI::Hooks::filter_sensitive_fields($schema_array, $data);
     is($data->{nested}->{token}, '<not shown>', 'filtered nested object');
-    
+
     $data = {
-        nested_things => [    
-            {
+        nested_things => [{
                 token => 'token1',
                 name  => 'fred',
             },
             {
                 token => 'token2',
                 name  => 'donald',
-            }
-        ]
-    };
+            }]};
     my $object_array = {
         'properties' => {
             'nested_things' => {
-                'type' => 'array',
+                'type'  => 'array',
                 'items' => {
-                    'type' => 'object',
+                    'type'       => 'object',
                     'properties' => {
-                       'token' => {
-                          'sensitive' => 1,
-                          'type' => 'string'
-                       },
-                       "name" => {
-                           'type' => 'string'
-                       }
-                    }
-                }
-            }
-        }
-    };
+                        'token' => {
+                            'sensitive' => 1,
+                            'type'      => 'string'
+                        },
+                        "name" => {'type' => 'string'}}}}}};
     Binary::WebSocketAPI::Hooks::filter_sensitive_fields($object_array, $data);
     is($data->{nested_things}[0]{token}, '<not shown>', 'filtered object array item 1');
     is($data->{nested_things}[1]{token}, '<not shown>', 'filtered object array item 2');
