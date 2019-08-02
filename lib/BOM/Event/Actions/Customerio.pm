@@ -7,6 +7,7 @@ use Locale::Country;
 use Mojo::URL;
 use Mojo::UserAgent;
 use Date::Utility;
+use DataDog::DogStatsd::Helper;
 
 use BOM::User::Client;
 use BOM::Config;
@@ -27,19 +28,21 @@ When a new user signed up for binary.com, register_details will send user inform
 =cut
 
 sub register_details {
-    my $data = shift;
-
+    my $data    = shift;
     my $loginid = $data->{loginid};
 
-    return undef unless $loginid;
+    return 0 unless $loginid;
 
     my $client = BOM::User::Client->new({loginid => $loginid});
 
-    return undef unless $client;
+    return 0 unless $client;
 
-    return undef unless $client->user->email_consent;
+    return 0 unless $client->user;
+
+    return 0 unless $client->user->email_consent;
 
     return _connect_and_update_customerio_record(
+        method  => 'register_details',
         loginid => $client->loginid,
         details => _get_details_structure(
             client          => $client,
@@ -64,15 +67,18 @@ sub email_consent {
     my $data    = shift;
     my $loginid = delete $data->{loginid};
 
-    return undef unless $loginid;
+    return 0 unless $loginid;
 
     my $client = BOM::User::Client->new({loginid => $loginid});
 
-    return undef unless $client;
+    return 0 unless $client;
+
+    return 0 unless $client->user;
 
     # trigger event for each client as customerio save it per loginid
-    foreach my $client_obj ($client->user->clients()) {
+    foreach my $client_obj ($client->user->clients(include_disabled => 1)) {
         _connect_and_update_customerio_record(
+            method  => 'email_consent_update',
             loginid => $client_obj->loginid,
             details => _get_details_structure(
                 client          => $client_obj,
@@ -81,7 +87,10 @@ sub email_consent {
             and next
             if (exists $data->{email_consent} and $data->{email_consent});
 
-        _connect_and_delete_customerio_record(loginid => $client_obj->loginid);
+        _connect_and_delete_customerio_record(
+            method  => 'email_consent_delete',
+            loginid => $client_obj->loginid
+        );
     }
 
     return 1;
@@ -93,12 +102,10 @@ sub _connect_and_delete_customerio_record {
     my $url = _get_base_url($args{loginid});
     my $tx  = _get_user_agent()->delete($url);
 
-    if (my $err = $tx->error) {
-        die 'Error - ' . $err->{code} . ' response: ' . $err->{message} if $err->{code};
-        die 'Error - Connection error: ' . $err->{message};
-    }
+    _log_and_handle_error($args{method}, $tx);
 
     return $tx->success ? 1 : 0;
+
 }
 
 sub _connect_and_update_customerio_record {
@@ -108,12 +115,27 @@ sub _connect_and_update_customerio_record {
     $url->query($args{details});
     my $tx = _get_user_agent()->put($url);
 
-    if (my $err = $tx->error) {
-        die 'Error - ' . $err->{code} . ' response: ' . $err->{message} if $err->{code};
-        die 'Error - Connection error: ' . $err->{message};
-    }
+    _log_and_handle_error($args{method}, $tx);
 
     return $tx->success ? 1 : 0;
+}
+
+sub _log_and_handle_error {
+    my ($method, $tx) = @_;
+
+    my $method_tag = "method:$method";
+    DataDog::DogStatsd::Helper::stats_inc("event.customerio.all", {tags => [$method_tag]});
+
+    if (my $err = $tx->error) {
+        my $error = ($err->{code}) ? "$err->{code}" : 'Connection error';
+        DataDog::DogStatsd::Helper::stats_inc("event.customerio.failure", {tags => [$method_tag, "error:$error", "message:$err->{message}"]});
+        die "Error: $error Message: $err->{message}";
+
+    } elsif (not $tx->success) {
+        DataDog::DogStatsd::Helper::stats_inc("event.customerio.failure", {tags => [$method_tag]});
+    }
+
+    return undef;
 }
 
 sub _get_user_agent {
