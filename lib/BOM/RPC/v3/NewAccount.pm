@@ -334,8 +334,9 @@ rpc new_account_real => sub {
         successful  => 't'
     );
 
-    if ($new_client->residence eq 'gb') {    # RTS 12 - Financial Limits - UK Clients
-        try { $new_client->status->set('ukrts_max_turnover_limit_not_set', 'system', 'new GB client - have to set turnover limit') }
+    if ($new_client->residence eq 'gb' or $new_client->landing_company->check_max_turnover_limit_is_set)
+    {    # RTS 12 - Financial Limits - UK Clients and MLT Clients
+        try { $new_client->status->set('max_turnover_limit_not_set', 'system', 'new GB client or MLT client - have to set turnover limit') }
         catch { $error = BOM::RPC::v3::Utility::client_error() };
         return $error if $error;
     }

@@ -25,8 +25,8 @@ my ($t, $rpc_ct);
 my $client_mocked      = Test::MockModule->new('BOM::User::Client');
 my $status_mocked      = Test::MockModule->new('BOM::User::Client::Status');
 my @can_affect_cashier = (
-    'age_verification',        'crs_tin_information',   'cashier_locked',                   'disabled',
-    'financial_risk_approval', 'ukgc_funds_protection', 'ukrts_max_turnover_limit_not_set', 'unwelcome',
+    'age_verification',        'crs_tin_information',   'cashier_locked',             'disabled',
+    'financial_risk_approval', 'ukgc_funds_protection', 'max_turnover_limit_not_set', 'unwelcome',
     'withdrawal_locked'
 );
 my %seen;
@@ -83,7 +83,7 @@ my $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MX',
     email       => $email
 });
-$client_mx->status->set('ukrts_max_turnover_limit_not_set', 'tests', 'Newly created GB clients have this status until they set 30Day turnover');
+$client_mx->status->set('max_turnover_limit_not_set', 'tests', 'Newly created GB clients have this status until they set 30Day turnover');
 
 my $method = 'cashier';
 subtest 'common' => sub {
@@ -320,8 +320,8 @@ subtest 'landing_companies_specific' => sub {
 subtest 'all status are covered' => sub {
     # Flags that can affect cashier should be seen
     my @can_affect_cashier = (
-        'age_verification',        'crs_tin_information',   'cashier_locked',                   'disabled',
-        'financial_risk_approval', 'ukgc_funds_protection', 'ukrts_max_turnover_limit_not_set', 'unwelcome',
+        'age_verification',        'crs_tin_information',   'cashier_locked',             'disabled',
+        'financial_risk_approval', 'ukgc_funds_protection', 'max_turnover_limit_not_set', 'unwelcome',
         'withdrawal_locked'
     );
     fail("missing status $_") for sort grep !exists $seen{$_}, @can_affect_cashier;

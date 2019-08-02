@@ -1755,8 +1755,9 @@ rpc set_self_exclusion => sub {
     }
     if ($args{max_30day_turnover}) {
         $client->set_exclusion->max_30day_turnover($args{max_30day_turnover});
-        if ($client->residence eq 'gb') {    # RTS 12 - Financial Limits - UK Clients
-            $client->status->clear_ukrts_max_turnover_limit_not_set;
+        if ($client->residence eq 'gb' or $client->landing_company->check_max_turnover_limit_is_set)
+        {    # RTS 12 - Financial Limits - UK Clients and MLT clients
+            $client->status->clear_max_turnover_limit_not_set;
         }
     }
     if ($args{max_30day_losses}) {
