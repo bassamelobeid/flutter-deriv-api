@@ -137,7 +137,7 @@ sub handle_ctrl_command {
     my ($cmd, $conn) = @_;
     $log->debug("Control command> $cmd");
 
-    $cmd =~ /^(\S*)( .*)?$/;
+    my ($name, @args) = split ' ', $cmd;
     my ($name, $args) = ($1, $2);
 
     $name =~ s/-/_/g;
