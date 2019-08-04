@@ -10,11 +10,13 @@ use Log::Any qw($log);
 
 use BOM::Test;
 use BOM::Test::Script;
+use BOM::Config::RedisReplicated;
 
 my $socket_path = '/var/run/bom-rpc/binary_jobqueue_worker.sock';
 my $script_path = '/home/git/regentmarkets/bom-rpc/bin/binary_jobqueue_worker.pl';
 
 sub start_rpc_queue_if_not_running {
+    my $redis = shift;
     if (path($socket_path)->exists) {
         my $sock = IO::Socket::UNIX->new(
             Type => SOCK_STREAM,
@@ -27,8 +29,16 @@ sub start_rpc_queue_if_not_running {
     return;
 }
 
+sub _redis{
+    my $config = BOM::Config::RedisReplicated::get_redis_config('rpc_queue')->{write};
+    return "redis://$config->{host}:$config->{port}";
+}
+
 sub start_rpc_queue {
-    my $args = "--testing --workers 0 --socket $socket";
+    
+    my $redis = _redis;
+    #my $args = "--testing --workers 1 --socket $socket_path --log trace --redis $redis";\
+    my $args = "--testing --workers 1 --socket $socket_path --log trace --redis $redis";
 
     system("$script_path $args &");
     my $attempts = 0;
@@ -47,23 +57,15 @@ sub start_rpc_queue {
     } else {
         $log->debug("RPC queue is launched with args: $args");
     }
-
     return;
 }
 
 sub add_worker {
-    my ($redis_server) = @_;
-    my $redis_url = $redis_server->url;
-
+    start_rpc_queue_if_not_running();
+     my $redis = _redis;
     my $conn = create_socket_connection();
-
-    $redis_url =~ /.*:(\d+)\D?$/;
-    $redis_url = 'redis://127.0.0.1:' . $1;
-
-    $log->debug('Starting an rpc queue on redis $redis_url.');
-
     $log->debug("Sending ADD_WORKERS to rpc queue socket");
-    $conn->write("ADD-WORKERS $redis_url\n");
+    $conn->write("ADD-WORKERS $redis\n");
     my $result = $conn->read_until("\n")->get;
     $log->debug("WORKERS response recieved: $result");
 
@@ -99,25 +101,19 @@ sub create_socket_connection {
     return $conn;
 }
 
-sub stop_workers {
+
+sub stop_service {
     my $conn = create_socket_connection();
     return unless $conn;
-    my $result;
+    
     $log->debug('Stopping workers of rpc queue through socket.');
     while (1) {
         $log->debug("Sending DEC_WORKERS to rpc queue socket");
         $conn->write("DEC-WORKERS\n");
-        $result = $conn->read_until("\n")->get;
+        my $result = $conn->read_until("\n")->get;
         $log->debug("Dec_workers response recieved: $result");
         last if ($result =~ / 0\n/);
     }
-    return;
-}
-
-sub stop_service {
-    stop_workers();
-    my $conn = create_socket_connection();
-    return unless $conn;
 
     my $attempts = 0;
     while (1) {
