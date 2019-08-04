@@ -24,7 +24,7 @@ GetOptions(
     'testing|T'    => \my $TESTING,
     'foreground|f' => \my $FOREGROUND,
     'workers|w=i'  => \(my $WORKERS = 4),
-    'socket|S=s'   => \(my $SOCKETPATH),
+    'socket|S=s'   => \(my $SOCKETPATH = "/var/run/bom-rpc/binary_jobqueue_worker.sock"),
     'redis|R=s'    => \(my $REDIS = 'redis://127.0.0.1'),
     'l|log=s'      => \(my $log_level = "info"),
 ) or exit 1;
@@ -32,15 +32,13 @@ GetOptions(
 require Log::Any::Adapter;
 Log::Any::Adapter->import(qw(Stderr), log_level => $log_level);
 
-exit run_worker_process() if $FOREGROUND;
+exit run_worker_process($REDIS) if $FOREGROUND;
 
 # TODO: This probably depends on a queue name which will come in as an a
 #   commandline argument sometime
 # TODO: Should it live in /var/run/bom-daemon? That exists but I don't know
 #   what it is
-$SOCKETPATH //= "/var/run/bom-rpc/binary_jobqueue_worker.sock";
-
-my $loop = IO::Async::Loop->new;
+my $loop = IO::Async::Loop->new();
 
 if (-S $SOCKETPATH) {
     # Try to connect first
@@ -86,7 +84,7 @@ $loop->add(
     ));
 $log->debugf("Listening on control socket %s", $SOCKETPATH);
 
-exit run_coordinator();
+exit run_coordinator($REDIS);
 
 my %workers;
 
@@ -107,7 +105,7 @@ sub takeover_coordinator {
         add_worker_process() if %workers < $WORKERS;
 
         $conn->write("DEC-WORKERS\n");
-        my $result = $conn->read_until("\n");
+        my $result = $conn->read_until("\n")->get;
         last if $result eq "WORKERS 0\n";
     }
 
@@ -118,13 +116,14 @@ sub takeover_coordinator {
 }
 
 sub run_coordinator {
-    add_worker_process() while keys %workers < $WORKERS;
-    $log->infof("%d Workers are running, processing queue on: %s", $WORKERS, $REDIS);
+    my $redis = shift;
+    add_worker_process($redis) while keys %workers < $WORKERS;
+    $log->infof("%d Workers are running, processing queue on: %s", $WORKERS, $redis);
 
     $SIG{TERM} = $SIG{INT} = sub {
         $WORKERS = 0;
         $log->info("Terminating workers...");
-        Future->needs_all(map { $_->shutdown('TERM', timeout => 15) } values %workers);
+        Future->needs_all(map { $_->shutdown('TERM', timeout => 15) } values %workers)->get;
 
         unlink $SOCKETPATH;
         exit 0;
@@ -138,11 +137,9 @@ sub handle_ctrl_command {
     $log->debug("Control command> $cmd");
 
     my ($name, @args) = split ' ', $cmd;
-    my ($name, $args) = ($1, $2);
-
     $name =~ s/-/_/g;
     if (my $code = __PACKAGE__->can("handle_ctrl_command_$name")) {
-        $code->($conn, trim($args));
+        $code->($conn, @args);
     } else {
         $log->debug("Ignoring unrecognised control command $cmd");
     }
@@ -159,6 +156,7 @@ sub handle_ctrl_command_DEC_WORKERS {
     }
     while (keys %workers > $WORKERS) {
         # Arbitrarily pick a victim
+        warn 'DELETING WORKERS';
         my $worker_to_die = delete $workers{(keys %workers)[0]};
         $worker_to_die->shutdown('TERM', timeout => 15)->on_done(sub { $conn->write("WORKERS " . scalar(keys %workers) . "\n") })->get;
     }
@@ -166,6 +164,8 @@ sub handle_ctrl_command_DEC_WORKERS {
 
 sub handle_ctrl_command_ADD_WORKERS {
     my ($conn, $redis) = @_;
+    $conn->write('Error: redis arg was empty') unless $redis;
+
     $WORKERS += 1;
     add_worker_process($redis);
     $conn->write("WORKERS " . scalar(keys %workers) . "\n");
@@ -184,9 +184,7 @@ sub handle_ctrl_command_EXIT {
 }
 
 sub add_worker_process {
-    my $redis = shift;
-    $redis = $redis // $REDIS;
-
+    my $redis  = shift;
     my $worker = IO::Async::Process::GracefulShutdown->new(
         code => sub {
             undef $loop;
@@ -215,6 +213,8 @@ sub add_worker_process {
     $loop->add($worker);
     $workers{$worker->pid} = $worker;
     $log->debugf("New worker started on redis: $redis");
+
+    return $worker;
 }
 
 sub run_worker_process {
@@ -237,7 +237,7 @@ sub run_worker_process {
 
     $loop->add(
         my $worker = Job::Async::Worker::Redis->new(
-            uri => $redis // $REDIS,
+            uri                 => $redis,
             max_concurrent_jobs => 1,
             use_multi           => 1,
             timeout             => 5
@@ -309,6 +309,5 @@ sub run_worker_process {
 
     $worker->trigger;
     $loop->run;
-
     return 0;    # exit code
 }
