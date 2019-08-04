@@ -16,7 +16,6 @@ my $socket_path = '/var/run/bom-rpc/binary_jobqueue_worker.sock';
 my $script_path = '/home/git/regentmarkets/bom-rpc/bin/binary_jobqueue_worker.pl';
 
 sub start_rpc_queue_if_not_running {
-    my $redis = shift;
     if (path($socket_path)->exists) {
         my $sock = IO::Socket::UNIX->new(
             Type => SOCK_STREAM,
@@ -29,13 +28,13 @@ sub start_rpc_queue_if_not_running {
     return;
 }
 
-sub _redis{
+sub _redis {
     my $config = BOM::Config::RedisReplicated::get_redis_config('rpc_queue')->{write};
     return "redis://$config->{host}:$config->{port}";
 }
 
 sub start_rpc_queue {
-    
+
     my $redis = _redis;
     #my $args = "--testing --workers 1 --socket $socket_path --log trace --redis $redis";\
     my $args = "--testing --workers 1 --socket $socket_path --log trace --redis $redis";
@@ -62,8 +61,8 @@ sub start_rpc_queue {
 
 sub add_worker {
     start_rpc_queue_if_not_running();
-     my $redis = _redis;
-    my $conn = create_socket_connection();
+    my $redis = _redis;
+    my $conn  = create_socket_connection();
     $log->debug("Sending ADD_WORKERS to rpc queue socket");
     $conn->write("ADD-WORKERS $redis\n");
     my $result = $conn->read_until("\n")->get;
@@ -101,11 +100,10 @@ sub create_socket_connection {
     return $conn;
 }
 
-
 sub stop_service {
     my $conn = create_socket_connection();
     return unless $conn;
-    
+
     $log->debug('Stopping workers of rpc queue through socket.');
     while (1) {
         $log->debug("Sending DEC_WORKERS to rpc queue socket");
