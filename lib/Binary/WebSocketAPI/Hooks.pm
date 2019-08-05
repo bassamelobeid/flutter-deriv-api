@@ -16,6 +16,7 @@ use Clone;
 use Log::Any qw($log);
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use Path::Tiny;
+use Net::Address::IP::Local;
 #  module is loaded on server start and shared across connections
 #  %schema_cache is added onto as each unique request type is received.
 #  by the _load_schema sub in this module
@@ -28,7 +29,7 @@ my $json = JSON::MaybeXS->new;
 
 Description
 Gets  the json validation schema for the call types so  we can pass to send so that they are processed by the hooks.
-This is required as they are not stashed. 
+This is required as they are not stashed.
 
 =over 4
 
@@ -72,9 +73,20 @@ sub _load_schema {
 }
 
 sub start_timing {
-    my (undef, $req_storage) = @_;
+    my ($c, $req_storage) = @_;
     if ($req_storage) {
         $req_storage->{tv} = [Time::HiRes::gettimeofday];
+
+        if (_is_profiling($c)) {
+            $req_storage->{call_params}->{is_profiling} = 1;
+            $req_storage->{passthrough}{profile} //= {
+                pid                => $$,
+                active_connections => Binary::WebSocketAPI::BalanceConnections::get_active_connections_count(),
+                server_name        => $c->server_name,
+                server_ip          => Net::Address::IP::Local->public,
+                ws_send_wsproc     => scalar Time::HiRes::gettimeofday,
+            };
+        }
     }
     return;
 }
@@ -100,6 +112,9 @@ sub log_call_timing_before_forward {
             1000 * Time::HiRes::tv_interval($req_storage->{tv}),
             {tags => ["rpc:$req_storage->{method}"]});
     }
+
+    $req_storage->{passthrough}{profile}{wsproc_send_rpc} = Time::HiRes::gettimeofday
+        if _is_profiling($c);
 
     return;
 }
@@ -134,11 +149,21 @@ sub log_call_timing_connection {
 
         DataDog::DogStatsd::Helper::stats_timing('bom_websocket_api.v_3.pre_rpc.call.timing.', $auth_time, {tags => $tags});
     }
+
+    if (_is_profiling($c)) {
+        $req_storage->{passthrough}{profile} = {
+            $req_storage->{passthrough}{profile}->%*,
+            $rpc_response->result->{passthrough}{profile}->%*,
+            wsproc_receive_rpc => scalar Time::HiRes::gettimeofday,
+        };
+        delete $rpc_response->result->{passthrough};
+    }
+
     return;
 }
 
 sub add_req_data {
-    my (undef, $req_storage, $api_response) = @_;
+    my ($c, $req_storage, $api_response) = @_;
     # api_response being a string means error happened.
     die "api_response is not hashref: $api_response" unless ref($api_response) eq 'HASH';
 
@@ -152,6 +177,10 @@ sub add_req_data {
 
     $api_response->{req_id}      = $args->{req_id}      if defined $args->{req_id};
     $api_response->{passthrough} = $args->{passthrough} if defined $args->{passthrough};
+
+    $api_response->{passthrough}{profile} = {$req_storage->{passthrough}{profile}->%*}
+        if _is_profiling($c);
+
     return;
 }
 
@@ -467,28 +496,31 @@ sub introspection_before_forward {
 }
 
 sub introspection_before_send_response {
-    my ($c, undef, $api_response) = @_;
+    my ($c, $req_storage, $api_response) = @_;
     my %copy = %{$api_response};
     $c->stash->{introspection}{last_message_sent} = \%copy;
     $c->stash->{introspection}{msg_type}{sent}{$api_response->{msg_type}}++;
     use bytes;
     $c->stash->{introspection}{sent_bytes} += bytes::length(Dumper($api_response));
+
+    $api_response->{passthrough}{profile}{ws_receive_wsproc} = Time::HiRes::gettimeofday
+        if _is_profiling($c);
     return;
 }
 
 =head2 filter_sensitive_fields
 
-Changes the value of any attribute that has a C<{"sensitive" : 1}> attribute set in the schema 
+Changes the value of any attribute that has a C<{"sensitive" : 1}> attribute set in the schema
 note that "sensitive" is not a standard JSON schema attribute but JSON validators will ignore non
-standard attributes. 
-Also Note that this updates the reference  to the data so make a copy of the data if you do not want it modified. 
+standard attributes.
+Also Note that this updates the reference  to the data so make a copy of the data if you do not want it modified.
 Takes the following arguments as parameters
 
 =over 4
 
-=item C<$schema> HashRef JSON schema as a  HashRef 
+=item C<$schema> HashRef JSON schema as a  HashRef
 
-=item C<$data> HashRef API data matching the JSON schema 
+=item C<$data> HashRef API data matching the JSON schema
 
 =back
 
@@ -533,9 +565,9 @@ Takes the following arguments as parameters
 
 =over 4
 
-=item  C<$schema> HashRef version 4 of the schema 
+=item  C<$schema> HashRef version 4 of the schema
 
-=item  C<$args> HashRef Data from API call 
+=item  C<$args> HashRef Data from API call
 
 =back
 
@@ -608,6 +640,19 @@ sub _sanitize_echo {
     filter_sensitive_fields($schema, $params);
 
     return $params;
+}
+
+=head2 _is_profiling
+
+Returns true when the C<X-Profiling> HTTP header is set to a predefined secret value
+in the request.
+Missing or incorrect header value will return false.
+
+=cut
+
+sub _is_profiling {
+    my $profiling = shift->req->headers->header('X-Profiling') // '';
+    return $profiling eq '547a52075cb11e8404cd207a5612dd75';
 }
 
 1;

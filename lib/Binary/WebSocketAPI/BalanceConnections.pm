@@ -68,6 +68,10 @@ sub connection_count_class {
     }
 }
 
+sub get_active_connections_count {
+    return $active_connections;
+}
+
 sub G::DESTROY {
     my $self = shift;
     return $self->();
