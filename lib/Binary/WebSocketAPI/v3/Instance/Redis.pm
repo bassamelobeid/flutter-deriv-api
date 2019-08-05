@@ -39,7 +39,13 @@ my $servers = {
         config   => '/etc/rmg/ws-redis.yml',
         user     => 'write',
         override => 'BOM_TEST_WS_REDIS'
-    }};
+    },
+    redis_rpc_queue => {
+        config   => '/etc/rmg/redis-replicated.yml',
+        user     => 'read',
+        override => 'BOM_TEST_REDIS_REPLICATED'
+    },
+};
 
 # We export (on demand) all Redis names and a helper function.
 our @EXPORT_OK = ('check_connections', sort keys %$servers);
