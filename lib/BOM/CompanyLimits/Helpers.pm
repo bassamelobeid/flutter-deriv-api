@@ -1,5 +1,8 @@
 package BOM::CompanyLimits::Helpers;
 use BOM::Config::RedisReplicated;
+use Exporter qw(import);
+
+our @EXPORT_OK = qw(get_all_key_combinations get_redis);
 use strict;
 use warnings;
 use 5.010;

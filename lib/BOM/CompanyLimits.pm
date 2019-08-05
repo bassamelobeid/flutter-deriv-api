@@ -8,9 +8,9 @@ use Future::AsyncAwait;
 use Future::Utils;
 use Date::Utility;
 use Data::Dumper;
-use BOM::CompanyLimits::Helpers;
+use BOM::CompanyLimits::Helpers qw(get_all_key_combinations get_redis);
 use BOM::CompanyLimits::Limits;
-use ExchangeRates::CurrencyConverter qw(convert_currency);
+use BOM::CompanyLimits::LossTypes;
 
 =head1 NAME
 
@@ -62,16 +62,12 @@ sub add_buy_contract {
     print 'BET DATA: ', Dumper($contract);
     my @combinations = _get_combinations($contract, $underlying_group, $contract_group);
 
-    # Realized loss (selected depending on whether we need to use it) and incrementing totals
-    # for potential loss is done in a single transaction (via multi exec) and single redis call (via pipelinening)
-    my (@realized_loss_response, @potential_loss_response);
-
     my $limits_future = BOM::CompanyLimits::Limits::query_limits($underlying, \@combinations);
-    my $potential_loss = _convert_to_usd($account_data, $bet_data->{payout_price} - $bet_data->{buy_price});
-    my %totals;
+    my $potential_loss = BOM::CompanyLimits::LossTypes::calc_potential_loss($contract);
+    my $landing_company = $account_data->{landing_company};
     my @breaches = Future->needs_all(
-        check_realized_loss($redis, $limits_future, \@combinations),
-        check_potential_loss($redis, $limits_future, \@combinations, $potential_loss),
+        check_realized_loss(get_redis($landing_company, 'realized_loss'), $limits_future, \@combinations),
+        check_potential_loss(get_redis($landing_company, 'potential_loss'), $limits_future, \@combinations, $potential_loss),
     )->get();
     my $limits = $limits_future->get();
 
@@ -92,16 +88,7 @@ async sub check_realized_loss {
 async sub check_potential_loss {
     my ($redis, $limits_future, $combinations, $potential_loss) = @_;
 
-    $redis->multi(sub { });
-    foreach my $p (@$combinations) {
-        $redis->hincrbyfloat('TOTALS_POTENTIAL_LOSS', $p, $potential_loss, sub { });
-    }
-    my $response;
-    $redis->exec(
-        sub {
-            $response = $_[1];
-        });
-    $redis->mainloop;
+    my $response = await incr_loss_hash($redis, $combinations, 'TOTALS_POTENTIAL_LOSS', $potential_loss);
 
     return _check_breaches($response, $limits_future, $combinations, 'potential_loss', POTENTIAL_LOSS_TOTALS);
 }
@@ -139,18 +126,31 @@ sub add_sell_contract {
 
     # For sell, we increment totals but do not check if they exceed limits;
     # we only block buys, not sells.
-    my $realized_loss  = _convert_to_usd($account_data, $bet_data->{sell_price} - $bet_data->{buy_price});
-    my $potential_loss = _convert_to_usd($account_data, $bet_data->{payout_price} - $bet_data->{buy_price});
+    my $realized_loss = BOM::CompanyLimits::LossTypes::calc_realized_loss($contract);
+    my $potential_loss = BOM::CompanyLimits::LossTypes::calc_potential_loss($contract);
 
     # On sells, we increment realized loss and deduct potential loss
+    # Since no checks are done, we simply increment and discard the response
+    Future->needs_all(
+        incr_loss_hash($redis, \@combinations, 'TOTALS_REALIZED_LOSS', $realized_loss),
+        incr_loss_hash($redis, \@combinations, 'TOTALS_POTENTIAL_LOSS', -$potential_loss),
+    );
+}
+
+async sub incr_loss_hash {
+    my ($redis, $combinations, $hash_name, $incrby) = @_;
+
     $redis->multi(sub { });
-    foreach my $p (@combinations) {
-        # Since no checks are done, we simply increment and discard the response
-        $redis->hincrbyfloat('TOTALS_REALIZED_LOSS',  $p, $realized_loss,   sub { });
-        $redis->hincrbyfloat('TOTALS_POTENTIAL_LOSS', $p, -$potential_loss, sub { });
+    foreach my $p (@$combinations) {
+        $redis->hincrbyfloat($hash_name, $p, $incrby, sub { });
     }
-    $redis->exec(sub { });
+
+    my $response;
+    $redis->exec(sub { $response  = $_[1]; });
     $redis->mainloop;
+
+    return $response;
+
 }
 
 sub _get_attr_groups {
@@ -174,16 +174,6 @@ sub _get_attr_groups {
     return ($contract_group, $underlying_group);
 }
 
-sub _convert_to_usd {
-    my ($account_data, $amount) = @_;
-
-    if ($account_data->{currency_code} ne 'USD') {
-        $amount = convert_currency($amount, $account_data->{currency_code}, 'USD');
-    }
-
-    return $amount;
-}
-
 sub _get_combinations {
     my ($contract, $underlying_group, $contract_group) = @_;
     my $bet_data   = $contract->{bet_data};
@@ -203,7 +193,7 @@ sub _get_combinations {
     }
 
     my @attributes = ($underlying, $contract_group, $expiry_type, $is_atm);
-    my @combinations = BOM::CompanyLimits::Helpers::get_all_key_combinations(@attributes);
+    my @combinations = get_all_key_combinations(@attributes);
 
     # Merge another array that substitutes underlying with underlying group
     # Since we know that the 1st attribute is the underlying, each index in which
