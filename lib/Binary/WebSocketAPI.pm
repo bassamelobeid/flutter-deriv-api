@@ -23,7 +23,8 @@ use Binary::WebSocketAPI::v3::Wrapper::Cashier;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
 use Binary::WebSocketAPI::v3::Wrapper::LandingCompany;
-use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections ws_redis_master rpc_queue_redis|;
+use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections ws_redis_master|;
+use BOM::Config::RedisReplicated;
 
 use Encode;
 use DataDog::DogStatsd::Helper;
@@ -576,7 +577,6 @@ sub startup {
             return "rate_limits::unauthorised::$app_id/$client_id";
         });
 
-    my $backend_redis = rpc_queue_redis();
     $app->plugin(
         'web_socket_proxy' => {
             binary_frame => \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::document_upload,
@@ -615,7 +615,9 @@ sub startup {
             backends          => {
                 queue_reset_password => {
                     type  => "job_async",
-                    redis => {uri => 'redis://' . $backend_redis->url->host . ':' . $backend_redis->url->port}}
+                    redis => {
+                        uri => BOM::Config::RedisReplicated::get_redis_uri('rpc_queue', 'write'),
+                    }}
             },
         });
 
