@@ -10,6 +10,7 @@ use BOM::Test;
 use BOM::Config::RedisReplicated;
 use BOM::Database::QuantsConfig;
 use BOM::Test::Data::Utility::UnitTestDatabase qw( :init );
+use Future::AsyncAwait;
 
 my $redis = BOM::Config::RedisReplicated::redis_limits_write;
 
@@ -401,7 +402,7 @@ sub add_limit {
     return join(' ', @{$collapsed_limits});
 }
 
-sub query_limits {
+async sub query_limits {
     my ($underlying, $combinations) = @_;
     my $limits_response = $redis->hmget('LIMITS', @$combinations);
     my %limits;
@@ -430,7 +431,7 @@ sub compute_limits {
         _handle_underlying_group_defaults(\%totals, $underlying, $k, $v, 3, 2);
     }
 
-    return %totals;
+    return \%totals;
 }
 
 sub _handle_underlying_group_defaults {

@@ -22,7 +22,6 @@ sub get_all_key_combinations {
     return @combinations;
 }
 
-
 sub get_redis {
     my ($landing_company, $purpose) = @_;
 
@@ -32,31 +31,31 @@ sub get_redis {
     }
 
     # Should we enable sharding for limits, this is the place to set
-    state $redis = BOM::Config::RedisReplicated::redis_limits_write;
+    state $redis            = BOM::Config::RedisReplicated::redis_limits_write;
     state $limits_redis_map = {
         svg => {
             potential_loss => $redis,
-            realized_loss => $redis,
-            turnover => $redis,
-            limit_setting => $redis,
+            realized_loss  => $redis,
+            turnover       => $redis,
+            limit_setting  => $redis,
         },
         mlt => {
             potential_loss => $redis,
-            realized_loss => $redis,
-            turnover => $redis,
-            limit_setting => $redis,
+            realized_loss  => $redis,
+            turnover       => $redis,
+            limit_setting  => $redis,
         },
         mf => {
             potential_loss => $redis,
-            realized_loss => $redis,
-            turnover => $redis,
-            limit_setting => $redis,
+            realized_loss  => $redis,
+            turnover       => $redis,
+            limit_setting  => $redis,
         },
         mx => {
             potential_loss => $redis,
-            realized_loss => $redis,
-            turnover => $redis,
-            limit_setting => $redis,
+            realized_loss  => $redis,
+            turnover       => $redis,
+            limit_setting  => $redis,
         },
     };
 
