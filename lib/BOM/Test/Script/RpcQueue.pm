@@ -18,7 +18,7 @@ BEGIN {
     if (!BOM::Test::on_production()) {
         $script = BOM::Test::Script->new(
             script => $script_path,
-            args   => "--testing --socket $socket_path --redis $redis --foreground --log trace",
+            args   => "--testing --socket $socket_path --redis $redis --foreground",
         );
         $script->start_script_if_not_running;
     }

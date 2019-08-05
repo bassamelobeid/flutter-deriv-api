@@ -25,7 +25,6 @@ use BOM::Test::Data::Utility::UnitTestMarketData;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Helper::Redis qw/is_within_threshold/;
-use BOM::Test::RPC::RpcQueue;
 use BOM::User::Password;
 use BOM::User;
 use Net::EmptyPort qw/empty_port/;
@@ -236,11 +235,6 @@ sub call_mocked_client {
 
     $module->unmock_all;
     return ($res, $call_params);
-}
-
-sub END {
-    BOM::Test::RPC::RpcQueue::stop_service();    #TODO: stop by redis server url
-                                                 #BOM::Test::RPC::RpcQueue::stop_process();
 }
 
 1;
