@@ -29,4 +29,10 @@ sub calc_potential_loss {
     return _convert_to_usd($contract->{account_data}, $bet_data->{payout_price} - $bet_data->{buy_price});
 }
 
+sub calc_turnover {
+    my ($contract) = @_;
+
+    return _convert_to_usd($contract->{account_data}, $contract->{bet_data}->{buy_price});
+}
+
 1;

@@ -22,8 +22,6 @@ use constant {
     REALIZED_LOSS_TOTALS  => 1,
 };
 
-my $redis = BOM::Config::RedisReplicated::redis_limits_write;
-
 sub set_underlying_groups {
     # POC, we should see which broker code to use
     my $dbic = BOM::Database::ClientDB->new({broker_code => 'CR'})->db->dbic;
@@ -35,7 +33,9 @@ sub set_underlying_groups {
 
     my @symbol_underlying;
     push @symbol_underlying, @$_ foreach (@$bet_market);
-    $redis->hmset('UNDERLYINGGROUPS', @symbol_underlying);
+
+    # TODO: we are hard coding the landing company when setting limits
+    get_redis('svg', 'limit_setting')->hmset('UNDERLYINGGROUPS', @symbol_underlying);
 }
 
 sub set_contract_groups {
@@ -49,7 +49,7 @@ sub set_contract_groups {
 
     my @contract_grp;
     push @contract_grp, @$_ foreach (@$bet_grp);
-    $redis->hmset('CONTRACTGROUPS', @contract_grp);
+    get_redis('svg', 'limit_setting')->hmset('CONTRACTGROUPS', @contract_grp);
 }
 
 sub add_buy_contract {
@@ -57,43 +57,42 @@ sub add_buy_contract {
     my ($bet_data, $account_data) = @$contract{qw/bet_data account_data/};
 
     my $underlying = $bet_data->{underlying_symbol};
-    my ($contract_group, $underlying_group) = _get_attr_groups($bet_data);
+    my $landing_company = $account_data->{landing_company};
+    my ($contract_group, $underlying_group) = _get_attr_groups($landing_company, $bet_data);
 
-    print 'BET DATA: ', Dumper($contract);
+    # print 'BET DATA: ', Dumper($contract);
     my @combinations = _get_combinations($contract, $underlying_group, $contract_group);
 
     my $limits_future = BOM::CompanyLimits::Limits::query_limits($underlying, \@combinations);
     my $potential_loss = BOM::CompanyLimits::LossTypes::calc_potential_loss($contract);
-    my $landing_company = $account_data->{landing_company};
     my @breaches = Future->needs_all(
-        check_realized_loss(get_redis($landing_company, 'realized_loss'), $limits_future, \@combinations),
-        check_potential_loss(get_redis($landing_company, 'potential_loss'), $limits_future, \@combinations, $potential_loss),
+        check_realized_loss(get_redis($landing_company, 'realized_loss'), $landing_company, $limits_future, \@combinations),
+        check_potential_loss(get_redis($landing_company, 'potential_loss'), $landing_company, $limits_future, \@combinations, $potential_loss),
     )->get();
     my $limits = $limits_future->get();
 
     if (@breaches) {
-        print 'BREACH', Dumper(\@breaches);
+        # print 'BREACH', Dumper(\@breaches);
         die 'BREACH', Dumper(\@breaches);
     }
 }
 
 async sub check_realized_loss {
-    my ($redis, $limits_future, $combinations) = @_;
+    my ($redis, $landing_company, $limits_future, $combinations) = @_;
 
-    my $response = $redis->hmget('TOTALS_REALIZED_LOSS', @$combinations);
+    my $response = $redis->hmget("$landing_company:realized_loss", @$combinations);
 
     return _check_breaches($response, $limits_future, $combinations, 'realized_loss', REALIZED_LOSS_TOTALS);
 }
 
 async sub check_potential_loss {
-    my ($redis, $limits_future, $combinations, $potential_loss) = @_;
+    my ($redis, $landing_company, $limits_future, $combinations, $potential_loss) = @_;
 
-    my $response = await incr_loss_hash($redis, $combinations, 'TOTALS_POTENTIAL_LOSS', $potential_loss);
+    my $response = await incr_loss_hash($redis, $combinations, "$landing_company:potential_loss", $potential_loss);
 
     return _check_breaches($response, $limits_future, $combinations, 'potential_loss', POTENTIAL_LOSS_TOTALS);
 }
 
-# append to breach array should limit be breached
 sub _check_breaches {
     my ($response, $limits_future, $combinations, $loss_type, $loss_type_idx) = @_;
 
@@ -120,7 +119,8 @@ sub add_sell_contract {
     my $account_data = $contract->{account_data};
     # print 'BET DATA: ', Dumper($contract);
 
-    my ($contract_group, $underlying_group) = _get_attr_groups($bet_data);
+    my $landing_company = $account_data->{landing_company};
+    my ($contract_group, $underlying_group) = _get_attr_groups($landing_company, $bet_data);
 
     my @combinations = _get_combinations($contract, $underlying_group, $contract_group);
 
@@ -132,8 +132,8 @@ sub add_sell_contract {
     # On sells, we increment realized loss and deduct potential loss
     # Since no checks are done, we simply increment and discard the response
     Future->needs_all(
-        incr_loss_hash($redis, \@combinations, 'TOTALS_REALIZED_LOSS', $realized_loss),
-        incr_loss_hash($redis, \@combinations, 'TOTALS_POTENTIAL_LOSS', -$potential_loss),
+        incr_loss_hash(get_redis($landing_company, 'realized_loss'), \@combinations, "$landing_company:realized_loss", $realized_loss),
+        incr_loss_hash(get_redis($landing_company, 'potential_loss'), \@combinations, "$landing_company:potential_loss", -$potential_loss),
     );
 }
 
@@ -154,9 +154,10 @@ async sub incr_loss_hash {
 }
 
 sub _get_attr_groups {
-    my ($bet_data) = @_;
+    my ($landing_company, $bet_data) = @_;
 
     my ($contract_group, $underlying_group);
+    my $redis = get_redis($landing_company, 'limit_setting');
     $redis->hget(
         'CONTRACTGROUPS',
         $bet_data->{bet_type},

@@ -50,7 +50,7 @@ subtest 'Limits test base case', sub {
         contract  => $contract,
     );
 
-    $total = $redis->hget('TOTALS_POTENTIAL_LOSS', 'R_50,,,');
+    $total = $redis->hget('svg:potential_loss', 'R_50,,,');
     cmp_ok $total, '==', 4;
 
     sell_contract(
