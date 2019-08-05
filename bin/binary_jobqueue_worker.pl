@@ -26,7 +26,8 @@ GetOptions(
     'workers|w=i'  => \(my $WORKERS = 4),
     'socket|S=s'   => \(my $SOCKETPATH = "/var/run/bom-rpc/binary_jobqueue_worker.sock"),
     'redis|R=s'    => \(my $REDIS = 'redis://127.0.0.1'),
-    'l|log=s'      => \(my $log_level = "info"),
+    'log|l=s'      => \(my $log_level = "info"),
+    'pid-file=s'      => \(my $PID_FILE),
 ) or exit 1;
 
 require Log::Any::Adapter;
@@ -233,6 +234,11 @@ sub run_worker_process {
         require BOM::MT5::User::Async;
         no warnings 'once';
         @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
+        
+        if ($PID_FILE){
+            my $pid_file = Path::Tiny->new($PID_FILE);
+            $pid_file->spew("$$");
+        }
     }
 
     $loop->add(
@@ -247,6 +253,7 @@ sub run_worker_process {
     $loop->attach_signal(
         TERM => sub {
             return if $stopping++;
+            unlink $PID_FILE if ($PID_FILE);
             $worker->stop->on_done(sub { exit 0; });
         });
     $SIG{INT} = 'IGNORE';
