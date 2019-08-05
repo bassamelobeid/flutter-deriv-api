@@ -16,7 +16,10 @@ git config user.email "sysadmin@binary.com"
 git checkout master
 git pull --rebase
 git remote set-branches --add origin translations
-git fetch --depth 1 -v origin translations
+# fetch whole history for translations
+# else it will lead to
+# fatal: refusing to merge unrelated histories error
+git fetch origin translations
 git checkout translations
 git pull --rebase
 git merge origin/master
