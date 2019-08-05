@@ -577,8 +577,7 @@ sub startup {
         });
 
     my $backend_redis = rpc_queue_redis();
-    use Data::Dumper;
-    warn Dumper $backend_redis;
+
     $app->plugin(
         'web_socket_proxy' => {
             binary_frame => \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::document_upload,
@@ -618,7 +617,7 @@ sub startup {
                 queue_reset_password => {
                     type  => "job_async",
                     redis => {
-                        uri => 'redis://' . $backend_redis->{write}->{host} . ':' . $backend_redis->{write}->{port},
+                        uri => 'redis://' . $backend_redis->url->host . ':' . $backend_redis->url->port,
                     }}
             },
         });

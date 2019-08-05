@@ -40,9 +40,9 @@ my $servers = {
         user     => 'write',
         override => 'BOM_TEST_WS_REDIS'
     },
-    redis_rpc_queue => {
+    rpc_queue_redis => {
         config   => '/etc/rmg/redis-replicated.yml',
-        user     => 'read',
+        user     => 'write',
         override => 'BOM_TEST_REDIS_REPLICATED'
     },
 };
