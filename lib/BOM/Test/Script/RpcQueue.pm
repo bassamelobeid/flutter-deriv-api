@@ -12,8 +12,7 @@ BEGIN {
     my $socket_path = '/var/run/bom-rpc/binary_jobqueue_worker.sock';
     my $script_path = '/home/git/regentmarkets/bom-rpc/bin/binary_jobqueue_worker.pl';
 
-    my $config = BOM::Config::RedisReplicated::get_redis_config('rpc_queue')->{write};
-    my $redis  = "redis://$config->{host}:$config->{port}";
+    my $redis = BOM::Config::RedisReplicated::get_redis_uri('rpc_queue', 'write');
 
     if (!BOM::Test::on_production()) {
         $script = BOM::Test::Script->new(
