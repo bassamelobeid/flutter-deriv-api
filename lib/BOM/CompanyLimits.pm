@@ -62,49 +62,35 @@ sub add_buy_contract {
     print 'BET DATA: ', Dumper($contract);
     my @combinations = _get_combinations($contract, $underlying_group, $contract_group);
 
-
     # Realized loss (selected depending on whether we need to use it) and incrementing totals
     # for potential loss is done in a single transaction (via multi exec) and single redis call (via pipelinening)
     my (@realized_loss_response, @potential_loss_response);
 
-
     my $limits_future = BOM::CompanyLimits::Limits::query_limits($underlying, \@combinations);
     my $potential_loss = _convert_to_usd($account_data, $bet_data->{payout_price} - $bet_data->{buy_price});
     my %totals;
-    Future->needs_all(
-        set_realized_loss_totals($redis, $limits_future, \@combinations, \%totals),
-        set_potential_loss_totals($redis, $limits_future, \@combinations, \%totals, $potential_loss),
+    my @breaches = Future->needs_all(
+        check_realized_loss($redis, $limits_future, \@combinations),
+        check_potential_loss($redis, $limits_future, \@combinations, $potential_loss),
     )->get();
     my $limits = $limits_future->get();
 
-    print 'LIMITS:', Dumper($limits);
-    print 'TOTALS:', Dumper(\%totals);
-
-    my $breaches = check_totals_with_limits($limits, \%totals);
-
-    if ($breaches) {
-        die 'BREACH', Dumper($breaches);
+    if (@breaches) {
+        print 'BREACH', Dumper(\@breaches);
+        die 'BREACH', Dumper(\@breaches);
     }
 }
 
-async sub set_realized_loss_totals {
-    my ($redis, $limits_future, $combinations, $totals) = @_;
+async sub check_realized_loss {
+    my ($redis, $limits_future, $combinations) = @_;
 
     my $response = $redis->hmget('TOTALS_REALIZED_LOSS', @$combinations);
 
-    my $limits = $limits_future->get();
-    foreach my $i (0 .. $#$combinations) {
-        my $limit = $limits->{$combinations->[$i]};
-        if ($limit) {
-            if ($limit->[REALIZED_LOSS_TOTALS]) {
-                $totals->{$combinations->[$i]}->[REALIZED_LOSS_TOTALS] = $response->[$i];
-            }
-        }
-    }
+    return _check_breaches($response, $limits_future, $combinations, 'realized_loss', REALIZED_LOSS_TOTALS);
 }
 
-async sub set_potential_loss_totals {
-    my ($redis, $limits_future, $combinations, $totals, $potential_loss) = @_;
+async sub check_potential_loss {
+    my ($redis, $limits_future, $combinations, $potential_loss) = @_;
 
     $redis->multi(sub { });
     foreach my $p (@$combinations) {
@@ -117,31 +103,28 @@ async sub set_potential_loss_totals {
         });
     $redis->mainloop;
 
-    my $limits = $limits_future->get();
-    foreach my $i (0 .. $#$combinations) {
-        my $limit = $limits->{$combinations->[$i]};
-        if ($limit) {
-            if ($limit->[POTENTIAL_LOSS_TOTALS]) {
-                $totals->{$combinations->[$i]}->[POTENTIAL_LOSS_TOTALS] = $response->[$i];
-            }
-        }
-    }
+    return _check_breaches($response, $limits_future, $combinations, 'potential_loss', POTENTIAL_LOSS_TOTALS);
 }
 
-sub check_totals_with_limits {
-    my ($limits, $totals) = @_;
+# append to breach array should limit be breached
+sub _check_breaches {
+    my ($response, $limits_future, $combinations, $loss_type, $loss_type_idx) = @_;
 
-    my $breaches;
-    while (my ($k, $v) = each %$limits) {
-        my $total = $totals->{$k};
-        for my $i (0 .. $#$v) {
-            if ($v->[$i] and $total->[$i] > $v->[$i]) {
-                push(@{$breaches->{$k}}, [$i, $v->[$i], $total->[$i]]);
-            }
+    my @breaches;
+
+    my $limits = $limits_future->get();
+    foreach my $i (0 .. $#$combinations) {
+        my $comb  = $combinations->[$i];
+        my $limit = $limits->{$comb};
+        if (    $limit
+            and $limit->[$loss_type_idx]
+            and $response->[$i] > $limit->[$loss_type_idx])
+        {
+            push(@breaches, [$loss_type, $comb, $limit->[$loss_type_idx], $response->[$i]]);
         }
     }
 
-    return $breaches;
+    return @breaches;
 }
 
 sub add_sell_contract {
