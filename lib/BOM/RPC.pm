@@ -85,6 +85,9 @@ sub wrap_rpc_sub {
         my $params = $original_args[0] // {};
 
         my $tv = [Time::HiRes::gettimeofday];
+
+        $params->{profile}->{rpc_send_rpcproc} = Time::HiRes::gettimeofday if $params->{is_profiling};
+
         $params->{token} = $params->{args}->{authorize} if !$params->{token} && $params->{args}->{authorize};
 
         foreach (REQUEST_ARGUMENTS_TO_BE_IGNORED) {
@@ -171,6 +174,14 @@ sub wrap_rpc_sub {
         }
 
         $result->{auth_time} = $auth_timing if ref $result eq 'HASH' && $result->{rpc_time};
+
+        if ($params->{is_profiling}) {
+            $result->{passthrough}->{profile} = {
+                $params->{profile}->%*,
+                rpc_receive_rpcproc => scalar Time::HiRes::gettimeofday,
+            };
+        }
+
         return $result;
     };
 }
