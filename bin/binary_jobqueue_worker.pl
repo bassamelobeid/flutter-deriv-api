@@ -17,6 +17,8 @@ use Syntax::Keyword::Try;
 use Time::Moment;
 use Text::Trim;
 
+use BOM::Config::RedisReplicated;
+
 use Getopt::Long;
 use Log::Any qw($log);
 
@@ -25,9 +27,9 @@ GetOptions(
     'foreground|f' => \my $FOREGROUND,
     'workers|w=i'  => \(my $WORKERS = 4),
     'socket|S=s'   => \(my $SOCKETPATH = "/var/run/bom-rpc/binary_jobqueue_worker.sock"),
-    'redis|R=s'    => \(my $REDIS = 'redis://127.0.0.1'),
-    'log|l=s'      => \(my $log_level = "info"),
-    'pid-file=s'      => \(my $PID_FILE),
+    'redis|R=s'    => \(my $REDIS = BOM::Config::RedisReplicated::get_redis_uri('rpc_queue', 'write')),
+    'log|l=s' => \(my $log_level = "info"),
+    'pid-file=s' => \(my $PID_FILE),    #for BOM::Test::Script compatilibity
 ) or exit 1;
 
 require Log::Any::Adapter;
@@ -234,8 +236,8 @@ sub run_worker_process {
         require BOM::MT5::User::Async;
         no warnings 'once';
         @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
-        
-        if ($PID_FILE){
+
+        if ($PID_FILE) {
             my $pid_file = Path::Tiny->new($PID_FILE);
             $pid_file->spew("$$");
         }
