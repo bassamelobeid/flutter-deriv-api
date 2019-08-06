@@ -127,8 +127,6 @@ sub build_wsapi_test {
     $args->{app_id} = 1 unless exists $args->{app_id};
 
     my ($tmp_dir, $redis_server) = launch_redis;
-    #BOM::Test::RPC::RpcQueue::start_rpc_queue_if_not_running();
-
     my $t = build_mojo_test('Binary::WebSocketAPI', $args);
     $t->app->log(Mojo::Log->new(level => 'debug'));
 
@@ -151,7 +149,6 @@ sub build_wsapi_test {
         tmp_dir      => $tmp_dir,
         redis_server => $redis_server
     };
-
     return $t;
 }
 
