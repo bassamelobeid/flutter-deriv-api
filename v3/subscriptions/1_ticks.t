@@ -30,7 +30,7 @@ $loop->add(
 );
 
 subtest "Tick Subscriptions: All Symbols" => sub {
-    Future->needs_all($tester->subscribe, $tester->subscribe_multiple_times(count => 10),)->get;
+    $tester->subscribe_multiple_times(count => 2)->get;
 };
 
 subtest "Tick Subscriptions: Only R_*" => sub {
@@ -47,7 +47,8 @@ subtest "Tick Subscriptions: Only R_*" => sub {
             ),
         });
     Future->needs_all(
-        $tester->subscribe, $tester->subscribe_multiple_times(count => 10),
+        $tester->subscribe,
+        $tester->subscribe_multiple_times(count => 10),
         $tester->subscribe_twice,
         $tester->multiple_subscriptions_forget,
         $tester->multiple_subscriptions_forget_all,
