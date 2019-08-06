@@ -50,8 +50,11 @@ jobs:
     - run:
         <<: *5
         command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make accounts
         name: Accounts-related functionality
+    - store_test_results:
+        path: /var/tmp/test-output
   misc:
     <<: *6
     steps:
@@ -62,8 +65,11 @@ jobs:
     - run:
         <<: *5
         command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make misc
         name: Uncategorised tests
+    - store_test_results:
+        path: /var/tmp/test-output
   pricing:
     <<: *6
     steps:
@@ -83,6 +89,8 @@ jobs:
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make pricing
         name: Pricing
+    - store_test_results:
+        path: /var/tmp/test-output
   schema:
     <<: *6
     steps:
@@ -99,8 +107,11 @@ jobs:
     - run:
         <<: *5
         command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make schema
         name: Schema tests
+    - store_test_results:
+        path: /var/tmp/test-output
   security:
     <<: *6
     steps:
@@ -111,8 +122,11 @@ jobs:
     - run:
         <<: *5
         command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make security
         name: Security handling
+    - store_test_results:
+        path: /var/tmp/test-output
   structure:
     <<: *6
     steps:
@@ -138,6 +152,7 @@ jobs:
     - run:
         <<: *5
         command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make subscriptions
         name: Run subscription tests
     - store_test_results:
