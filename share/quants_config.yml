@@ -90,7 +90,7 @@ bet_limits:
         ETC: 0.05
         UST: 0.5
         USB: 0.5
-      volidx:
+      synthetic_index:
         USD: 0.35
         EUR: 0.35
         AUD: 0.35
