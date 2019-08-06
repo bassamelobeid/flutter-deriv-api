@@ -57,23 +57,45 @@ sub add_buy_contract {
     my ($contract) = @_;
     my ($bet_data, $account_data) = @$contract{qw/bet_data account_data/};
 
-    my $underlying = $bet_data->{underlying_symbol};
+    my $underlying      = $bet_data->{underlying_symbol};
     my $landing_company = $account_data->{landing_company};
 
     my @combinations = BOM::CompanyLimits::Combinations::get_combinations($contract);
 
-    my $limits_future = BOM::CompanyLimits::Limits::query_limits($underlying, \@combinations);
+    my $limits_future  = BOM::CompanyLimits::Limits::query_limits($underlying, \@combinations);
     my $potential_loss = BOM::CompanyLimits::LossTypes::calc_potential_loss($contract);
-    my @breaches = Future->needs_all(
+    my @breaches       = Future->needs_all(
         check_realized_loss(get_redis($landing_company, 'realized_loss'), $landing_company, $limits_future, \@combinations),
         check_potential_loss(get_redis($landing_company, 'potential_loss'), $landing_company, $limits_future, \@combinations, $potential_loss),
     )->get();
     my $limits = $limits_future->get();
 
     if (@breaches) {
+        # TODO: send event to publish email to quants
         # print 'BREACH', Dumper(\@breaches);
-        die 'BREACH', Dumper(\@breaches);
+
+        foreach my $breach (@breaches) {
+            if ($breach->[0] == POTENTIAL_LOSS_TOTALS or $breach->[0] == REALIZED_LOSS_TOTALS) {
+                die ['BI051'];    # To retain much of existing functionality, make it look as if the error comes from db
+            }
+        }
+
+        die 'Unknown Limit Breach';
     }
+}
+
+sub reverse_buy_contract {
+    my ($contract) = @_;
+
+    my $landing_company = $contract->{account_data}->{landing_company};
+    my @combinations    = BOM::CompanyLimits::Combinations::get_combinations($contract);
+    my $potential_loss  = BOM::CompanyLimits::LossTypes::calc_potential_loss($contract);
+
+    Future->needs_all(
+        incr_loss_hash(get_redis($landing_company, 'potential_loss'), \@combinations, "$landing_company:potential_loss", -$potential_loss),
+    )->get();
+
+    return;
 }
 
 async sub check_realized_loss {
@@ -81,7 +103,7 @@ async sub check_realized_loss {
 
     my $response = $redis->hmget("$landing_company:realized_loss", @$combinations);
 
-    return _check_breaches($response, $limits_future, $combinations, 'realized_loss', REALIZED_LOSS_TOTALS);
+    return _check_breaches($response, $limits_future, $combinations, REALIZED_LOSS_TOTALS);
 }
 
 async sub check_potential_loss {
@@ -89,11 +111,11 @@ async sub check_potential_loss {
 
     my $response = await incr_loss_hash($redis, $combinations, "$landing_company:potential_loss", $potential_loss);
 
-    return _check_breaches($response, $limits_future, $combinations, 'potential_loss', POTENTIAL_LOSS_TOTALS);
+    return _check_breaches($response, $limits_future, $combinations, POTENTIAL_LOSS_TOTALS);
 }
 
 sub _check_breaches {
-    my ($response, $limits_future, $combinations, $loss_type, $loss_type_idx) = @_;
+    my ($response, $limits_future, $combinations, $loss_type_idx) = @_;
 
     my @breaches;
 
@@ -105,7 +127,7 @@ sub _check_breaches {
             and $limit->[$loss_type_idx]
             and $response->[$i] > $limit->[$loss_type_idx])
         {
-            push(@breaches, [$loss_type, $comb, $limit->[$loss_type_idx], $response->[$i]]);
+            push(@breaches, [$loss_type_idx, $comb, $limit->[$loss_type_idx], $response->[$i]]);
         }
     }
 
@@ -124,13 +146,13 @@ sub add_sell_contract {
 
     # For sell, we increment totals but do not check if they exceed limits;
     # we only block buys, not sells.
-    my $realized_loss = BOM::CompanyLimits::LossTypes::calc_realized_loss($contract);
+    my $realized_loss  = BOM::CompanyLimits::LossTypes::calc_realized_loss($contract);
     my $potential_loss = BOM::CompanyLimits::LossTypes::calc_potential_loss($contract);
 
     # On sells, we increment realized loss and deduct potential loss
     # Since no checks are done, we simply increment and discard the response
     Future->needs_all(
-        incr_loss_hash(get_redis($landing_company, 'realized_loss'), \@combinations, "$landing_company:realized_loss", $realized_loss),
+        incr_loss_hash(get_redis($landing_company, 'realized_loss'),  \@combinations, "$landing_company:realized_loss",  $realized_loss),
         incr_loss_hash(get_redis($landing_company, 'potential_loss'), \@combinations, "$landing_company:potential_loss", -$potential_loss),
     );
 }
@@ -144,13 +166,12 @@ async sub incr_loss_hash {
     }
 
     my $response;
-    $redis->exec(sub { $response  = $_[1]; });
+    $redis->exec(sub { $response = $_[1]; });
     $redis->mainloop;
 
     return $response;
 
 }
-
 
 1;
 

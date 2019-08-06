@@ -44,8 +44,8 @@ sub get_combinations {
 }
 
 sub _get_attr_groups {
-    my ($contract) = @_;
-    my $bet_data = $contract->{bet_data};
+    my ($contract)      = @_;
+    my $bet_data        = $contract->{bet_data};
     my $landing_company = $contract->{account_data}->{landing_company};
 
     my ($contract_group, $underlying_group);

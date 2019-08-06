@@ -580,10 +580,10 @@ sub buy {
         binary_user_id  => $client->binary_user_id,
     };
 
-    BOM::CompanyLimits::add_buy_contract({
+    my $contract_data = {
         bet_data     => $bet_data->{bet_data},
         account_data => $account_data,
-    });
+    };
 
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
         %$bet_data,
@@ -595,6 +595,8 @@ sub buy {
     my $error = 1;
     my ($fmb, $txn);
     try {
+        BOM::CompanyLimits::add_buy_contract($contract_data);
+
         ($fmb, $txn) = $fmb_helper->buy_bet;
         $self->contract_details($fmb);
         $self->transaction_details($txn);
@@ -604,6 +606,7 @@ sub buy {
         # if $error_status is defined, return it
         # otherwise the function re-throws the exception
         stats_inc('database.consistency.inverted_transaction', {tags => ['broker_code:' . $client->broker_code]});
+        BOM::CompanyLimits::reverse_buy_contract($contract_data);
         $error_status = $self->_recover($_);
     };
     return $self->stats_stop($stats_data, $error_status) if $error_status;

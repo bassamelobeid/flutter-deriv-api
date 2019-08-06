@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
-use Test::More;
+use Test::More tests => 2;
 use Test::Warnings;
 use Test::Exception;
 
@@ -16,6 +16,8 @@ use BOM::Test::Helper::Client qw(create_client top_up);
 use BOM::Test::Time qw( sleep_till_next_second );
 use BOM::Test::Contract qw(create_contract buy_contract sell_contract);
 use BOM::Config::RedisReplicated;
+use Syntax::Keyword::Try;
+use Data::Dumper;
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
@@ -28,7 +30,6 @@ sub setup_tests {
 }
 
 subtest 'Limits test base case', sub {
-    plan tests => 2;
     setup_tests();
     my $cl = create_client;
     top_up $cl, 'USD', 5000;
@@ -51,7 +52,7 @@ subtest 'Limits test base case', sub {
     );
 
     $total = $redis->hget('svg:potential_loss', 'R_50,,,');
-    cmp_ok $total, '==', 4;
+    cmp_ok $total, '==', 4, 'buying contract adds correct potential loss';
 
     sell_contract(
         client       => $cl,
@@ -59,20 +60,27 @@ subtest 'Limits test base case', sub {
         contract     => $contract,
         sell_outcome => 1,
     );
+
+    $total = $redis->hget('svg:potential_loss', 'R_50,,,');
+    cmp_ok $total, '==', 0, 'selling contract with win, deducts potential loss from before';
+
     # same contract, but we crank up the price hundred fold to exceed limit
     $contract = create_contract(
         payout     => 600,
         underlying => 'R_50',
     );
 
-    dies_ok {
-        ($trx, $fmb) = buy_contract(
+    my $error = 0;
+    throws_ok {
+        buy_contract(
             client    => $cl,
             buy_price => 200,
             contract  => $contract,
         );
-    }, 'limit exceeded! Should throw some descriptive error';
+    }
+    qr/CompanyWideLimitExceeded/, 'Throws company wide limit exceeded error and block trade';
 
+    $total = $redis->hget('svg:potential_loss', 'R_50,,,');
+    cmp_ok $total, '==', 0, 'If contract failed to buy, it should be reverted';
 };
 
-done_testing;
