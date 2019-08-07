@@ -16,18 +16,21 @@ use Data::Dump 'pp';
 use Syntax::Keyword::Try;
 use Time::Moment;
 use Text::Trim;
+use YAML::XS;
 
 use BOM::Config::RedisReplicated;
 
 use Getopt::Long;
 use Log::Any qw($log);
 
+my $redis_config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_RPC_QUEUE} // '/etc/rmg/redis-rpc_queues.yml');
+
 GetOptions(
     'testing|T'    => \my $TESTING,
     'foreground|f' => \my $FOREGROUND,
     'workers|w=i'  => \(my $WORKERS = 4),
     'socket|S=s'   => \(my $SOCKETPATH = "/var/run/bom-rpc/binary_jobqueue_worker.sock"),
-    'redis|R=s'    => \(my $REDIS = BOM::Config::RedisReplicated::get_redis_uri('rpc_queue', 'write')),
+    'redis|R=s'    => \(my $REDIS = "redis://$redis_config->{write}->{host}:$redis_config->{write}->{port}"),
     'log|l=s' => \(my $log_level = "info"),
     'pid-file=s' => \(my $PID_FILE),    #for BOM::Test::Script compatilibity
 ) or exit 1;
