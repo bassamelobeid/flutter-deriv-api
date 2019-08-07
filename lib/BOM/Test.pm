@@ -82,15 +82,14 @@ BEGIN {
         $ENV{BOM_TEST_REDIS_RAND}       = $config_dir . '/redis.yml';
         $ENV{BOM_TEST_REDIS_FEED}       = $config_dir . '/redis-feed.yml';
         $ENV{BOM_TEST_REDIS_EVENTS}     = $config_dir . '/redis-replicated.yml';
-
+        $ENV{BOM_TEST_REDIS_RPC_QUEUES} = $config_dir . '/redis-replicated.yml';
         # Cache redis server
         $ENV{REDIS_CACHE_SERVER} = $ENV{BOM_CACHE_SERVER} = '127.0.1.3:6385';
 
         $ENV{DB_POSTFIX}    = '_test';
         $ENV{PGSERVICEFILE} = '/home/nobody/.pg_service_test.conf';
     }
-    $ENV{BOM_TEST_REDIS_RPC_QUEUES} = $config_dir . '/redis-replicated.yml';
-    $ENV{TEST_DATABASE}             = 1;                                       ## no critic (RequireLocalizedPunctuationVars)
+    $ENV{TEST_DATABASE} = 1;    ## no critic (RequireLocalizedPunctuationVars)
 
     # remove PERL5OPT which could cause confusion when forking to perls
     # different from our own (e.g. from binary-com/perl to /usr/bin/perl)
