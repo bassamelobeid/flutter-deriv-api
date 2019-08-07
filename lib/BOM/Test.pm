@@ -82,6 +82,7 @@ BEGIN {
         $ENV{BOM_TEST_REDIS_RAND}       = $config_dir . '/redis.yml';
         $ENV{BOM_TEST_REDIS_FEED}       = $config_dir . '/redis-feed.yml';
         $ENV{BOM_TEST_REDIS_EVENTS}     = $config_dir . '/redis-replicated.yml';
+        $ENV{BOM_TEST_REDIS_RPC_QUEUE}  = $config_dir . '/redis-replicated.yml';
 
         # Cache redis server
         $ENV{REDIS_CACHE_SERVER} = $ENV{BOM_CACHE_SERVER} = '127.0.1.3:6385';
