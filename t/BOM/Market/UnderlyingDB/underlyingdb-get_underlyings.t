@@ -24,7 +24,7 @@ eq_or_diff [sort $udb->available_expiry_types], [sort qw(intraday daily tick)], 
 
 eq_or_diff [sort $udb->available_start_types], [sort qw(spot forward)], 'Correct list of available start types.';
 
-eq_or_diff [sort $udb->markets], [sort qw(commodities forex indices volidx)], "Correct list of markets";
+eq_or_diff [sort $udb->markets], [sort qw(commodities forex indices synthetic_index)], "Correct list of markets";
 
 eq_or_diff [sort $udb->symbols_for_intraday_fx], [
     sort qw(frxAUDCAD frxAUDCHF frxAUDJPY frxAUDNZD frxAUDUSD frxEURAUD frxEURCAD frxEURCHF
@@ -124,7 +124,7 @@ subtest "sub market related" => sub {
     my @ul_random_daily = qw( RDBEAR RDBULL );
     eq_or_diff [
         sort $udb->get_symbols_for(
-            market            => 'volidx',
+            market            => 'synthetic_index',
             submarket         => 'random_daily',
             contract_category => 'ANY',
         )
@@ -134,7 +134,7 @@ subtest "sub market related" => sub {
     my @ul_random = qw( R_10 R_100 R_25 R_50 R_75 );
     eq_or_diff [
         sort $udb->get_symbols_for(
-            market            => 'volidx',
+            market            => 'synthetic_index',
             submarket         => 'random_index',
             contract_category => 'ANY',
         )
@@ -152,7 +152,7 @@ subtest "sub market related" => sub {
 
     eq_or_diff [
         sort $udb->get_symbols_for(
-            market    => 'volidx',
+            market    => 'synthetic_index',
             submarket => 'invalid',
         )
         ],
