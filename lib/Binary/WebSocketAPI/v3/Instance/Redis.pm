@@ -41,9 +41,9 @@ my $servers = {
         override => 'BOM_TEST_WS_REDIS'
     },
     rpc_queue_redis => {
-        config   => '/etc/rmg/redis-rpc_queus.yml',
+        config   => '/etc/rmg/redis-rpc_queues.yml',
         user     => 'write',
-        override => 'BOM_TEST_REDIS_REPLICATED'
+        override => 'BOM_TEST_REDIS_RPC_QUEUES'
     },
 };
 
