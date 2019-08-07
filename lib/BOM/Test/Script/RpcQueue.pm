@@ -15,7 +15,7 @@ BEGIN {
     if (!BOM::Test::on_production()) {
         $script = BOM::Test::Script->new(
             script => $script_path,
-            args   => "--testing --socket $socket_path --foreground",
+            args   => "--testing --socket $socket_path --redis $ENV{BOM_TEST_REDIS_RPC_QUEUES} --foreground",
         );
         $script->start_script_if_not_running;
     }
