@@ -1872,7 +1872,7 @@ rpc api_token => sub {
         # send notification to cancel streaming, if we add more streaming
         # for authenticated calls in future, we need to add here as well
         if (defined $params->{account_id}) {
-            BOM::Config::RedisReplicated::redis_write()->publish(
+            BOM::Config::RedisReplicated::redis_transaction_notify_write()->publish(
                 'TXNUPDATE::transaction_' . $params->{account_id},
                 Encode::encode_utf8(
                     $json->encode({
