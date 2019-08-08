@@ -21,7 +21,7 @@ use YAML::XS;
 use Getopt::Long;
 use Log::Any qw($log);
 
-my $redis_config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_RPC_QUEUES} // '/etc/rmg/redis-rpc_queues.yml');
+my $redis_config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_QUEUE} // '/etc/rmg/redis-queue.yml');
 
 GetOptions(
     'testing|T'    => \my $TESTING,
