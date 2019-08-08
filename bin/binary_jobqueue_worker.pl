@@ -18,8 +18,6 @@ use Time::Moment;
 use Text::Trim;
 use YAML::XS;
 
-use BOM::Config::RedisReplicated;
-
 use Getopt::Long;
 use Log::Any qw($log);
 
@@ -90,7 +88,7 @@ $loop->add(
     ));
 $log->debugf("Listening on control socket %s", $SOCKETPATH);
 
-exit run_coordinator($REDIS);
+exit run_coordinator();
 
 my %workers;
 
@@ -108,7 +106,7 @@ sub takeover_coordinator {
     # We'll start a "prisoner exchange"; starting one worker for every one of
     # the previous process we shut down
     while (1) {
-        add_worker_process() if %workers < $WORKERS;
+        add_worker_process($REDIS) if %workers < $WORKERS;
 
         $conn->write("DEC-WORKERS\n");
         my $result = $conn->read_until("\n")->get;
@@ -122,9 +120,8 @@ sub takeover_coordinator {
 }
 
 sub run_coordinator {
-    my $redis = shift;
-    add_worker_process($redis) while keys %workers < $WORKERS;
-    $log->infof("%d Workers are running, processing queue on: %s", $WORKERS, $redis);
+    add_worker_process($REDIS) while keys %workers < $WORKERS;
+    $log->infof("%d Workers are running, processing queue on: %s", $WORKERS, $REDIS);
 
     $SIG{TERM} = $SIG{INT} = sub {
         $WORKERS = 0;
@@ -319,7 +316,7 @@ sub run_worker_process {
             stats_gauge("rpc_queue.worker.jobs.latency", $current_time->delta_milliseconds(Time::Moment->now), $tags);
         });
 
-    $worker->trigger;
+    $worker->trigger->retain;
     $loop->run;
     return 0;    # exit code
 }
