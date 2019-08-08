@@ -356,7 +356,6 @@ subtest "multi subscription to one channel" => sub {
             channel_arg => 'channel2',
         );
         $sub2->subscribe(sub { });
-#	$log->clear;
         $log->does_not_contain_ok(qr/Too many callbacks/, 'different channel has different queue, so channel channel2 will not have that warning');
 
         # execute callbacks

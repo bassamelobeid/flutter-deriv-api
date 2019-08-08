@@ -30,6 +30,11 @@ my $servers = {
         user     => 'read',
         override => 'BOM_TEST_REDIS_REPLICATED'
     },
+    redis_transaction => {
+        config   => '/etc/rmg/redis-transaction.yml',
+        user     => 'read',
+        override => 'BOM_TEST_REDIS_TRANSACTION'
+    },
     redis_pricer => {
         config   => '/etc/rmg/redis-pricer.yml',
         user     => 'write',
@@ -65,10 +70,15 @@ sub create {
     $redis_url->userinfo('dummy:' . $cf->{password}) if $cf->{password};
 
     my $redis = Mojo::Redis2->new(url => $redis_url);
-    # NOTICE Mojo::Redis2 will 'encode_utf8' & 'decode_utf8' automatically when it send & receive messages. And before & after that we do encode & decode again. That means we do 'encode' & 'decode' twice.
-    # In most cases it is ok. I'm afraid that will cause new problem if I fix it. And we will replace Mojo::Redis2 in the future, so I don't fix it now.
-    # Bot in shared_redis, We send it by RedisDB, that will generate an error 'wide character' when we decode message twice. So we disable it now
-    $redis->encoding(undef) if $name eq 'shared_redis';
+    # NOTICE Mojo::Redis2 will 'encode_utf8' and 'decode_utf8' automatically
+    # when it send and receive messages. And before and after that we do
+    # encode and decode again. That means we do 'encode' & 'decode' twice.
+    # In most cases it is ok. I'm afraid that will cause new problem if we
+    # fix it. And we will replace Mojo::Redis2 in the future, so we don't
+    # fix it now. But in shared_redis and transaction redis, we send it by
+    # RedisDB, that will generate an error 'wide character' when we decode
+    # message twice. So we disable it now
+    $redis->encoding(undef) if $name =~ /^(?:shared_redis|redis_transaction)$/;
     $redis->on(
         connection => sub {
             stats_inc('bom_websocket_api.v_3.redis_instances.' . $name . '.connections');

@@ -89,7 +89,7 @@ has account_id => (
 );
 
 sub subscription_manager {
-    return Binary::WebSocketAPI::v3::SubscriptionManager->shared_redis_manager();
+    return Binary::WebSocketAPI::v3::SubscriptionManager->redis_transaction_manager();
 }
 
 =head2 channel
