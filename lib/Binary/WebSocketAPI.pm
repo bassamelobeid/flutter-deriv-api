@@ -23,7 +23,7 @@ use Binary::WebSocketAPI::v3::Wrapper::Cashier;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
 use Binary::WebSocketAPI::v3::Wrapper::LandingCompany;
-use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections ws_redis_master rpc_queue_redis|;
+use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections ws_redis_master redis_queue|;
 
 use Encode;
 use DataDog::DogStatsd::Helper;
@@ -576,7 +576,7 @@ sub startup {
             return "rate_limits::unauthorised::$app_id/$client_id";
         });
 
-    my $backend_redis = rpc_queue_redis();
+    my $backend_redis = redis_queue();
 
     $app->plugin(
         'web_socket_proxy' => {
