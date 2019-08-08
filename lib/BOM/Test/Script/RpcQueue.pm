@@ -12,7 +12,7 @@ BEGIN {
     my $socket_path = '/var/run/bom-rpc/binary_jobqueue_worker.sock';
     my $script_path = '/home/git/regentmarkets/bom-rpc/bin/binary_jobqueue_worker.pl';
 
-    if (BOM::Test::on_qa()) {
+    if (!BOM::Test::on_production()) {
         $script = BOM::Test::Script->new(
             script => $script_path,
             args   => "--testing --socket $socket_path --foreground",
