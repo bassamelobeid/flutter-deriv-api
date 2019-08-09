@@ -708,6 +708,12 @@ sub get_untrusted_types {
             'show_reason' => 'yes'
         },
         {
+            'linktype'    => 'nowithdrawalortrading',
+            'comments'    => 'Disable Withdrawal and Trading',
+            'code'        => 'no_withdrawal_or_trading',
+            'show_reason' => 'yes'
+        },
+        {
             'linktype'    => 'lockwithdrawal',
             'comments'    => 'Withdrawal Locked',
             'code'        => 'withdrawal_locked',

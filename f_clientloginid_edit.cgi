@@ -396,19 +396,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             BOM::Config::RedisReplicated::redis_write()->hdel("EMAIL_NOTIFICATION_POA", $client->binary_user_id);
         }
     }
-    my @number_updates = qw/
-        custom_max_acbal
-        custom_max_daily_turnover
-        custom_max_payout
-        /;
-    foreach my $key (@number_updates) {
-        next unless exists $input{$key};
-        if ($input{$key} =~ /^(|[1-9]([0-9]+)?)$/) {
-            $client->$key($input{$key});
-        } else {
-            code_exit_BO(qq{<p style="color:red">ERROR: Invalid $key, minimum value is 1 and it can be integer only</p>});
-        }
-    }
+
     if (exists $input{professional_client}) {
         my $result;
         try {
