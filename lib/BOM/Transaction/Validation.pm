@@ -699,7 +699,7 @@ sub _validate_client_status {
 
     my $status = $client->status;
 
-    if ($status->unwelcome or $status->disabled) {
+    if ($status->unwelcome or $status->disabled or $status->no_withdrawal_or_trading) {
         return Error::Base->cuss(
             -type              => 'ClientUnwelcome',
             -mesg              => 'your account is not authorised for any further contract purchases.',
