@@ -158,6 +158,12 @@ foreach my $login_id (split(/\s+/, $clientID)) {
             }
             catch { $remove_error_msg };
         }
+    } elsif ($client_status_type eq 'nowithdrawalortrading') {
+        if ($action eq 'insert_data') {
+            $printline = try { $client->status->set('no_withdrawal_or_trading', $clerk, $reason); $insert_success_msg } catch { $insert_error_msg };
+        } elsif ($action eq 'remove_status') {
+            $printline = try { $client->status->clear_no_withdrawal_or_trading; $remove_success_msg } catch { $remove_error_msg };
+        }
     }
     # print success/fail message
     print $printline;

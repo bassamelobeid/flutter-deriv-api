@@ -367,41 +367,6 @@ table#client_edit td{
         </td>
     </tr>
     <tr>
-        <td class="small_header" colspan="2">#Custom Limits </td>
-    </tr>
-    [% IF self_exclusion_enabled == 'yes' %]
-        <tr>
-                <td colspan="2"> Client has enabled self-exclusion limits. Custom limits may not take effect until the self-exclusion period is over. </td>
-        </tr>
-    [% END %]
-    <tr>
-        <td class="label">Max Account Balance</td>
-        <td>: <input type="text" name="custom_max_acbal" value="[% client.custom_max_acbal %]" size="20" placeholder="min: 1. Only integer"/>
-         Currently enforced client limit:
-         [% client.currency %] [% client.get_limit_for_account_balance %]
-         [% IF self_exclusion_enabled == 'yes' && client.self_exclusion.max_balance %]
-            (self-exclusion: [% client.currency %] [% client.self_exclusion.max_balance %])
-         [% END %]
-         </td>
-    </tr>
-    <tr>
-        <td class="label">Max Daily Turnover</td>
-        <td>: <input type="text" name="custom_max_daily_turnover" value="[% client.custom_max_daily_turnover %]" size="20" placeholder="min: 1. Only integer"/>
-         Currently enforced client limit:
-         [% client.currency %] [% client.get_limit_for_daily_turnover %]
-         [% IF self_exclusion_enabled == 'yes' && client.self_exclusion.max_turnover %]
-            (self-exclusion: [% client.currency %] [% client.self_exclusion.max_turnover %])
-         [% END %]
-        </td>
-    </tr>
-    <tr>
-        <td class="label">Max Open Positions Payout</td>
-        <td>: <input type="text" name="custom_max_payout" value="[% client.custom_max_payout %]" size="20" placeholder="min: 1. Only integer"/>
-         Currently enforced client limit:
-         [% client.currency %] [% client.get_limit_for_payout %]
-        </td>
-    </tr>
-    <tr>
         <td class="small_header" colspan="2">#Communication Addresses</td>
     </tr>
     <tr>
