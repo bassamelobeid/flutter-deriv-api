@@ -106,6 +106,9 @@ sub validate {
     return _create_error(localize('Your account is restricted to withdrawals only.'))
         if ($action eq 'deposit' and $client->status->unwelcome);
 
+    return _create_error(localize('Your account is restricted to deposits only.'))
+        if ($action eq 'withdraw' and $client->status->no_withdrawal_or_trading);
+
     return _create_error(localize('Your account is locked for withdrawals.'))
         if ($action eq 'withdraw' and $client->status->withdrawal_locked);
 
