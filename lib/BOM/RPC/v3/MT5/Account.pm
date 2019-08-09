@@ -1511,6 +1511,7 @@ sub _mt5_validate_and_get_amount {
             return _make_error($error_code, $err) if $err;
 
             my $client_currency = $client->account ? $client->account->currency_code() : undef;
+            my $brand = Brands->new(name => request()->brand);
 
             $err = BOM::RPC::v3::Cashier::validate_amount($amount, $client_currency);
             return _make_error($error_code, $err) if $err;
@@ -1528,6 +1529,14 @@ sub _mt5_validate_and_get_amount {
                 if ($action eq 'withdrawal'
                 and ($mt5_group // '') !~ /^real\\svg/
                 and not $authorized_client->fully_authenticated);
+
+            return _make_error(
+                $error_code,
+                localize(
+                    'You cannot perform this action because your account has been locked for MT5 transfers. Please contact us at [_1]',
+                    $brand->emails('support')))
+                if ($action eq 'deposit'
+                and ($client->status->no_withdrawal_or_trading or $client->status->withdrawal_locked));
 
             # Actual USD or EUR amount that will be deposited into the MT5 account.
             # We have a currency conversion fees when transferring between currencies.

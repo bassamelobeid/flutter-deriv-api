@@ -1068,7 +1068,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $Bob->status->set('unwelcome', 'Testy McTestington', 'Just running some tests');
         $Bob->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        is($res->{error}{code},'PaymentAgentWithdrawError', $test);
+        is($res->{error}{code}, 'PaymentAgentWithdrawError', $test);
         $Bob->status->clear_unwelcome;
         $Bob->save;
 
