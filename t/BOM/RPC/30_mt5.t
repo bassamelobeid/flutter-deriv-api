@@ -638,12 +638,14 @@ subtest 'deposit' => sub {
     # User needs some real money now
     top_up $test_client, USD => 1000;
 
+    my $loginid = $test_client->loginid;
+
     my $method = "mt5_deposit";
     my $params = {
         language => 'EN',
         token    => $token,
         args     => {
-            from_binary => $test_client->loginid,
+            from_binary => $loginid,
             to_mt5      => $DETAILS{login},
             amount      => 180,
         },
@@ -654,7 +656,7 @@ subtest 'deposit' => sub {
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $demo_account_mock->mock('_fetch_mt5_lc', sub { return 'svg' });
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
     $c->call_ok($method, $params)->has_no_error('no error for mt5_deposit');
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
     subtest record_mt5_transfer_deposit => sub {
@@ -664,14 +666,23 @@ subtest 'deposit' => sub {
     # assert that account balance is now 1000-180 = 820
     cmp_ok $test_client->default_account->balance, '==', 820, "Correct balance after deposited to mt5 account";
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
 
     $runtime_system->suspend->mt5_deposits(1);
     $c->call_ok($method, $params)->has_error('error as mt5_deposits are suspended in system config')
         ->error_code_is('MT5DepositError', 'error code is MT5DepositError')->error_message_is('Deposits are suspended.');
     $runtime_system->suspend->mt5_deposits(0);
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
+
+    $test_client->status->set('no_withdrawal_or_trading', 'system', 'pending investigations');
+    $c->call_ok($method, $params)->has_error('client is blocked from withdrawal')->error_code_is('MT5DepositError', 'error code is MT5DepositError')
+        ->error_message_is(
+        'There was an error processing the request. You cannot perform this action because your account has been locked for MT5 transfers. Please contact us at support@binary.com'
+        );
+    $test_client->status->clear_no_withdrawal_or_trading;
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
 
     $params->{args}{to_mt5} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_deposit wrong login')
