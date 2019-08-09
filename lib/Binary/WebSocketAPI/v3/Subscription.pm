@@ -179,6 +179,16 @@ process the error
 
 sub handle_error {
     my ($self, $err, $msg) = @_;
+
+    if ($err->{code} eq 'TokenDeleted') {
+        if ($self->c->stash->{token} eq $err->{token}) {
+            # this cannot be "use", because of our class structure
+            require Binary::WebSocketAPI::v3::Wrapper::Authorize;
+            Binary::WebSocketAPI::v3::Wrapper::Authorize::logout_success($self->c);
+        }
+        return;
+    }
+
     $log->errorf("error happened when processing message: %s from %s, module %s, channel %s", $err->{code}, $msg, $self->class, $self->channel);
     return undef;
 }
