@@ -153,9 +153,17 @@ subtest 'Cashier validation deposit' => sub {
 };
 
 subtest 'Cashier validation withdraw' => sub {
-    $cr_client->status->set('withdrawal_locked', 'system', 'pending investigations');
+    $cr_client->status->set('no_withdrawal_or_trading', 'system', 'pending investigations');
 
     my $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'withdraw');
+    is $res->{error}->{code}, $generic_err_code, 'Correct error code for to_be_decided';
+    is $res->{error}->{message_to_client}, 'Your account is restricted to deposits only.', 'Correct error message for to_be_decided';
+
+    $cr_client->status->clear_no_withdrawal_or_trading;
+
+    $cr_client->status->set('withdrawal_locked', 'system', 'pending investigations');
+
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'withdraw');
     is $res->{error}->{code}, $generic_err_code, 'Correct error code for withdrawal locked';
     is $res->{error}->{message_to_client}, 'Your account is locked for withdrawals.', 'Correct error message for withdrawal locked';
 
