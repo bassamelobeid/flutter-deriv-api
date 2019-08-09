@@ -5,7 +5,6 @@ use feature qw(state);
 no indirect;
 
 use Binary::WebSocketAPI::v3::Wrapper::Transaction;
-use Binary::WebSocketAPI::v3::Wrapper::Authorize;
 use Format::Util::Numbers qw(formatnumber);
 use Future;
 use Log::Any qw($log);
@@ -118,9 +117,6 @@ sub _unique_key {
 
 before handle_error => sub {
     my ($self, $err, $message) = @_;
-    if ($err->{code} eq 'TokenDeleted' && $self->c->stash->{token} eq $err->{token}) {
-        Binary::WebSocketAPI::v3::Wrapper::Authorize::logout_success($self->c);
-    }
     return;
 };
 
