@@ -64,7 +64,6 @@ our %BLOCK_ORIGINS;
 # Keys are RPC calls that we want RPC to log, controlled by redis too.
 our %RPC_LOGGING;
 
-#my $json = JSON::MaybeXS->new;
 my $node_config;
 
 sub apply_usergroup {
