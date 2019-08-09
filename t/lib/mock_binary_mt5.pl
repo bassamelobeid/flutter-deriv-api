@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use open ':encoding(UTF-8)';
-use List::Util qw(pairgrep);
+use List::Util qw(pairgrep first);
 use JSON::MaybeXS;
 
 use constant {
@@ -13,19 +13,35 @@ use constant {
 };
 
 # Mocked account details
-# This hash shared between three files, and should be kept in-sync to avoid test failures
+
+# %ACCOUNTS and %DETAILS are shared between four files, and should be kept in-sync to avoid test failures
 #   t/BOM/RPC/30_mt5.t
 #   t/BOM/RPC/05_accounts.t
+#   t/BOM/RPC/Cashier/20_transfer_between_accounts.t
 #   t/lib/mock_binary_mt5.pl
+
+# Account numbers to be assigned to new accounts.
+# Add here if your test uses a new group.
+my %ACCOUNTS = (
+    'demo\vanuatu_standard'         => '00000001',
+    'demo\vanuatu_advanced'         => '00000002',
+    'demo\labuan_standard'          => '00000003',
+    'demo\labuan_advanced'          => '00000004',
+    'real\malta'                    => '00000010',
+    'real\maltainvest_standard'     => '00000011',
+    'real\maltainvest_standard_GBP' => '00000012',
+    'real\svg'                      => '00000013',
+    'real\vanuatu_standard'         => '00000014',
+    'real\labuan_advanced'          => '00000015',
+);
+
 my %DETAILS = (
-    login    => '123454321',
     password => {
         main     => 'Efgh4567',
         investor => 'Abcd1234',
     },
     email   => 'test.account@binary.com',
     name    => 'Test',
-    group   => 'real\svg',
     country => 'Malta',
     balance => '1234',
 );
@@ -55,25 +71,24 @@ if (my $code = main->can("cmd_$cmd")) {
 sub cmd_UserAdd {
     my ($input) = @_;
 
+    exists $ACCOUNTS{$input->{group}} or die "UserAdd with unexpected group=$input->{group}\n";
+
     $input->{mainPassword} eq $DETAILS{password}->{main}
         or die "UserAdd with unexpected mainPassword=$input->{mainPassword}\n";
-    # allow another group to pass in order to create new real (standard & advanced) MT5 financial account
-    $input->{group} eq $DETAILS{group} || $input->{group} =~ /real\\vanuatu|labuan|malta.*/
-        or die "UserAdd with unexpected group=$input->{group}\n";
 
     $input->{investPassword} eq $DETAILS{password}->{investor}
         or die "UserAdd with unexpected investorPassword=$input->{investPassword}\n";
 
     return {
         ret_code => MT_RET_OK,
-        login    => $DETAILS{login},
+        login    => $ACCOUNTS{$input->{group}},
     };
 }
 
 sub cmd_UserDepositChange {
     my ($input) = @_;
 
-    $input->{login} eq $DETAILS{login}
+    get_account_group($input->{login})
         or die "TODO: mock UserDepositChange on unknown login\n";
 
     # This command is invoked for both deposits and withdrawals, the sign of
@@ -91,12 +106,16 @@ sub cmd_UserDepositChange {
 sub cmd_UserGet {
     my ($input) = @_;
 
-    $input->{login} eq $DETAILS{login}
+    my $group = get_account_group($input->{login})
         or die "TODO: mock UserGet on unknown login\n";
 
     return {
         ret_code => MT_RET_OK,
-        user     => {pairgrep { $a ne "password" } %DETAILS},
+        user     => {
+            (pairgrep { $a ne 'password' } %DETAILS),
+            group => $group,
+            login => $input->{login}
+        }
     };
 }
 
@@ -115,8 +134,7 @@ sub cmd_GroupGet {
 sub cmd_UserUpdate {
     my ($input) = @_;
 
-    $input->{login} eq $DETAILS{login}
-        or die "TODO: mock UserUpdate on unknown login\n";
+    my $group = get_account_group($input->{login}) or die "TODO: mock UserUpdate on unknown login\n";
 
     $input->{name} eq "Test2"
         or die "UserUpdate with unexpected name$input->{name}\n";
@@ -126,6 +144,7 @@ sub cmd_UserUpdate {
         user     => {
             (pairgrep { $a ne "password" } %DETAILS),
             name => "Test2",
+            group => $group
         },
     };
 }
@@ -133,7 +152,7 @@ sub cmd_UserUpdate {
 sub cmd_UserPasswordChange {
     my ($input) = @_;
 
-    $input->{login} eq $DETAILS{login}
+    get_account_group($input->{login})
         or die "TODO: mock UserUpdate on unknown login\n";
 
     $input->{type} eq 'main' || $input->{type} eq 'investor'
@@ -150,7 +169,7 @@ sub cmd_UserPasswordChange {
 sub cmd_UserPasswordCheck {
     my ($input) = @_;
 
-    $input->{login} eq $DETAILS{login}
+    get_account_group($input->{login})
         or die "TODO: mock UserUpdate on unknown login\n";
 
     $input->{password} eq $DETAILS{password}->{$input->{type}}
@@ -167,11 +186,16 @@ sub cmd_UserPasswordCheck {
 sub cmd_PositionGetTotal {
     my ($input) = @_;
 
-    $input->{login} eq $DETAILS{login}
+    get_account_group($input->{login})
         or die "TODO: mock PositionGetTotal on unknown login\n";
 
     return {
         ret_code => MT_RET_OK,
         total    => 0,
     };
+}
+
+sub get_account_group {
+    my $login = shift;
+    return first {$ACCOUNTS{$_} eq $login} keys %ACCOUNTS;
 }

@@ -2,6 +2,7 @@ use strict;
 use warnings;
 use Guard;
 use Test::More;
+use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
 use Test::MockTime qw(:all);
@@ -45,13 +46,27 @@ $manager_module->mock(
         return Future->done({success => 1});
     });
 
-# Mocked account details
-# This hash shared between three files, and should be kept in-sync to avoid test failures
+# Mocked MT5 account details
+# %ACCOUNTS and %DETAILS are shared between four files, and should be kept in-sync to avoid test failures
 #   t/BOM/RPC/30_mt5.t
 #   t/BOM/RPC/05_accounts.t
+#   t/BOM/RPC/Cashier/20_transfer_between_accounts.t
 #   t/lib/mock_binary_mt5.pl
+
+my %ACCOUNTS = (
+    'demo\vanuatu_standard'         => '00000001',
+    'demo\vanuatu_advanced'         => '00000002',
+    'demo\labuan_standard'          => '00000003',
+    'demo\labuan_advanced'          => '00000004',
+    'real\malta'                    => '00000010',
+    'real\maltainvest_standard'     => '00000011',
+    'real\maltainvest_standard_GBP' => '00000012',
+    'real\svg'                      => '00000013',
+    'real\vanuatu_standard'         => '00000014',
+    'real\labuan_advanced'          => '00000015',
+);
+
 my %DETAILS = (
-    login           => '123454321',
     password        => 'Efgh4567',
     email           => 'test.account@binary.com',
     name            => 'Test',
@@ -167,7 +182,7 @@ subtest 'new account' => sub {
         },
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account');
-    is($c->result->{login},           $DETAILS{login}, 'result->{login}');
+    is($c->result->{login},           $ACCOUNTS{'real\svg'}, 'result->{login}');
     is($c->result->{balance},         0,               'Balance is 0 upon creation');
     is($c->result->{display_balance}, '0.00',          'Display balance is "0.00" upon creation');
 
@@ -454,11 +469,11 @@ subtest 'get settings' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login => $DETAILS{login},
+            login => $ACCOUNTS{'real\svg'},
         },
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_get_settings');
-    is($c->result->{login},   $DETAILS{login},   'result->{login}');
+    is($c->result->{login},   $ACCOUNTS{'real\svg'},   'result->{login}');
     is($c->result->{balance}, $DETAILS{balance}, 'result->{balance}');
     is($c->result->{country}, "mt",              'result->{country}');
 
@@ -475,24 +490,9 @@ subtest 'login list' => sub {
         args     => {},
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_login_list');
-    is_deeply(
-        $c->result,
-        [{
-                login           => $DETAILS{login},
-                email           => $DETAILS{email},
-                group           => $DETAILS{group},
-                balance         => $DETAILS{balance},
-                display_balance => $DETAILS{display_balance},
-                name            => 'Test',
-                country         => 'mt',
-                currency        => 'USD',
-                manager_id      => '',
-                mamm_status     => 0,
-                leverage        => undef,
-            }
-        ],
-        'mt5_login_list result'
-    );
+
+    my @accounts = map { $_->{login} } @{$c->result};
+    cmp_bag(\@accounts, [ $ACCOUNTS{'real\svg'}, $ACCOUNTS{'real\vanuatu_standard'} ], "mt5_login_list result");
 };
 
 subtest 'password check' => sub {
@@ -501,7 +501,7 @@ subtest 'password check' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login    => $DETAILS{login},
+            login    => $ACCOUNTS{'real\svg'},
             password => $DETAILS{password},
             type     => 'main',
         },
@@ -524,7 +524,7 @@ subtest 'password change' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login         => $DETAILS{login},
+            login         => $ACCOUNTS{'real\svg'},
             old_password  => $DETAILS{password},
             new_password  => 'Ijkl6789',
             password_type => 'main'
@@ -540,7 +540,7 @@ subtest 'password change' => sub {
 
     # reset throller, test for password limit
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-    $params->{args}->{login}        = $DETAILS{login};
+    $params->{args}->{login}        = $ACCOUNTS{'real\svg'};
     $params->{args}->{old_password} = $DETAILS{password};
     $params->{args}->{new_password} = 'Ijkl6789';
     $c->call_ok($method, $params)->has_no_error('no error for mt5_password_change');
@@ -564,7 +564,7 @@ subtest 'password reset' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login             => $DETAILS{login},
+            login             => $ACCOUNTS{'real\svg'},
             new_password      => 'Ijkl6789',
             password_type     => 'main',
             verification_code => $code
@@ -600,7 +600,7 @@ subtest 'investor password reset' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login             => $DETAILS{login},
+            login             => $ACCOUNTS{'real\svg'},
             new_password      => 'Abcd1234',
             password_type     => 'investor',
             verification_code => $code
@@ -626,7 +626,7 @@ subtest 'password check investor' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login         => $DETAILS{login},
+            login         => $ACCOUNTS{'real\svg'},
             password      => 'Abcd1234',
             password_type => 'investor'
         },
@@ -644,7 +644,7 @@ subtest 'deposit' => sub {
         token    => $token,
         args     => {
             from_binary => $test_client->loginid,
-            to_mt5      => $DETAILS{login},
+            to_mt5      => $ACCOUNTS{'real\svg'},
             amount      => 180,
         },
     };
@@ -692,7 +692,7 @@ subtest 'demo account can not be tagged as an agent' => sub {
         token    => $token,
         args     => {
             account_type     => 'demo',
-            mt5_account_type => 'advanced',
+            mt5_account_type => 'standard',
             country          => 'af',
             email            => $DETAILS{email},
             name             => $DETAILS{name},
@@ -741,7 +741,7 @@ subtest 'virtual_deposit' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            to_mt5 => $DETAILS{login},
+            to_mt5 => $ACCOUNTS{'real\svg'},
             amount => 180,
         },
     };
@@ -771,7 +771,7 @@ subtest 'mx_deposit' => sub {
         token    => $token_mx,
         args     => {
             from_binary => $test_mx_client->loginid,
-            to_mt5      => $DETAILS{login},
+            to_mt5      => $ACCOUNTS{'real\svg'},
             amount      => 180,
         },
     };
@@ -803,7 +803,7 @@ subtest 'mx_withdrawal' => sub {
         language => 'EN',
         token    => $token_mx,
         args     => {
-            from_mt5  => $DETAILS{login},
+            from_mt5  => $ACCOUNTS{'real\svg'},
             to_binary => $test_mx_client->loginid,
             amount    => 350,
         },
@@ -829,7 +829,7 @@ subtest 'withdrawal' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            from_mt5  => $DETAILS{login},
+            from_mt5  => $ACCOUNTS{'real\svg'},
             to_binary => $test_client->loginid,
             amount    => 150,
         },
@@ -886,7 +886,7 @@ subtest 'mf_withdrawal' => sub {
         language => 'EN',
         token    => $token_mf,
         args     => {
-            from_mt5  => $DETAILS{login},
+            from_mt5  => $ACCOUNTS{'real\svg'},
             to_binary => $test_mf_client->loginid,
             amount    => 350,
         },
@@ -935,7 +935,7 @@ subtest 'mf_deposit' => sub {
         token    => $token_mf,
         args     => {
             from_binary => $test_mf_client->loginid,
-            to_mt5      => $DETAILS{login},
+            to_mt5      => $ACCOUNTS{'real\svg'},
             amount      => 350,
         },
     };
@@ -988,7 +988,7 @@ subtest 'multi currency transfers' => sub {
         token    => $token,
         args     => {
             from_binary => $client_eur->loginid,
-            to_mt5      => $DETAILS{login},
+            to_mt5      => $ACCOUNTS{'real\svg'},
             amount      => $eur_test_amount,
         },
     };
@@ -997,7 +997,7 @@ subtest 'multi currency transfers' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            from_mt5  => $DETAILS{login},
+            from_mt5  => $ACCOUNTS{'real\svg'},
             to_binary => $client_eur->loginid,
             amount    => $usd_test_amount,
         },
@@ -1250,7 +1250,7 @@ subtest 'Transfers Limits' => sub {
         token    => $token,
         args     => {
             from_binary => $client->loginid,
-            to_mt5      => $DETAILS{login},
+            to_mt5      => $ACCOUNTS{'real\svg'},
             amount      => 1
         },
     };
@@ -1288,7 +1288,7 @@ subtest 'Transfers Limits' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            from_mt5  => $DETAILS{login},
+            from_mt5  => $ACCOUNTS{'real\svg'},
             to_binary => $client->loginid,
             amount    => 1,
         },
@@ -1317,7 +1317,7 @@ subtest 'Suspended Transfers Currencies' => sub {
             token    => $token,
             args     => {
                 from_binary => $client_cr_btc->loginid,
-                to_mt5      => $DETAILS{login},
+                to_mt5      => $ACCOUNTS{'real\svg'},
                 amount      => 1
             },
         };

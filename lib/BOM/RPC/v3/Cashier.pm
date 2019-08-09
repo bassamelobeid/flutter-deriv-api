@@ -40,6 +40,7 @@ use BOM::User::AuditLog;
 use BOM::Platform::RiskProfile;
 use BOM::Platform::Client::CashierValidation;
 use BOM::User::Client::PaymentNotificationQueue;
+use BOM::RPC::v3::MT5::Account;
 use BOM::RPC::v3::Utility;
 use BOM::Transaction::Validation;
 use BOM::Database::Model::HandoffToken;
@@ -1245,6 +1246,18 @@ rpc transfer_between_accounts => sub {
             };
     }
 
+    my %mt5_siblings;
+    for my $mt (grep { $_->{group} !~ /^demo/ } BOM::RPC::v3::MT5::Account::get_mt5_logins($client)->get ) {
+        my $mt5_account = 'MT'.$mt->{login};
+        push @accounts,
+            {
+            loginid  => $mt5_account,
+            balance  => $mt->{balance},
+            currency => $mt->{currency},
+            };
+        $mt5_siblings{$mt5_account} = 1;
+    }
+
     # get clients if loginid from or to is not provided
     if (not $loginid_from or not $loginid_to) {
         return {
@@ -1256,6 +1269,7 @@ rpc transfer_between_accounts => sub {
     return _transfer_between_accounts_error(localize('Please provide valid currency.')) unless $currency;
     return _transfer_between_accounts_error(localize('Please provide valid amount.'))
         if (not looks_like_number($amount) or $amount <= 0);
+        
     # create client from siblings so that we are sure that from and to loginid
     # provided are for same user
     my ($client_from, $client_to, $res);

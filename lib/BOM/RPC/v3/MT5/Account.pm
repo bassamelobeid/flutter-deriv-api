@@ -171,7 +171,7 @@ sub get_mt5_logins {
                 return Future->done($setting);
             });
     }
-    foreach        => [$user->mt5_logins],
+    foreach        => [$user->get_mt5_loginids],
         concurrent => 4;
 # purely to keep perlcritic+perltidy happy :(
     return $f;
@@ -405,7 +405,6 @@ async_rpc mt5_new_account => sub {
                     $client_info->{name} = $args->{name} if $client->is_virtual;
 
                     @{$args}{keys %$client_info} = values %$client_info;
-
                     $args->{group}    = $group;
                     $args->{leverage} = $group_details->{leverage};
                     $args->{currency} = $group_details->{currency};
