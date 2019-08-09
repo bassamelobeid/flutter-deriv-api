@@ -33,9 +33,6 @@ is($self_exclusion_open_positions_limit, 100, 'self exclusion open positions lim
 
 #setting
 
-$client->custom_max_daily_turnover(222222);
-$client->custom_max_acbal(111111);
-$client->custom_max_payout(333333);
 $client->set_exclusion->max_open_bets(50);
 
 #print Data::Dumper::Dumper($client);
@@ -70,13 +67,13 @@ Test::Exception::lives_ok { $client = BOM::User::Client->new({'loginid' => 'CR00
         });
 
     $account_balance_limit = $client->get_limit({'for' => 'account_balance'});
-    is($account_balance_limit, 111111 / 1.4, 'balance limit = 111111/1.4 (1.4 is the GBP exchange rate)');
+    is($account_balance_limit, 300000, 'Correct account balance limit');
 
     $daily_turnover_limit = $client->get_limit({'for' => 'daily_turnover'});
-    is($daily_turnover_limit, 222222 / 1.4, 'turnover limit = 222222/1.4 (1.4 is the GBP exchange rate)');
+    is($daily_turnover_limit, 500000, 'Correct turnover limit');
 
     $payout_limit = $client->get_limit({'for' => 'payout'});
-    is($payout_limit, 333333 / 1.4, 'payout limit = 333333/1.4 (1.4 is the GBP exchange rate)');
+    is($payout_limit, 50000, 'Correct payout limit');
 }
 
 $self_exclusion_open_positions_limit = $client->get_limit({'for' => 'open_positions'});

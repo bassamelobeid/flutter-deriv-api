@@ -500,10 +500,6 @@ sub get_limit_for_account_balance {
         push @maxbalances, $self->get_self_exclusion->max_balance;
     }
 
-    if ($self->custom_max_acbal) {
-        push @maxbalances, convert_currency($self->custom_max_acbal, USD => $curr);
-    }
-
     return List::Util::min(@maxbalances);
 }
 
@@ -514,10 +510,6 @@ sub get_limit_for_daily_turnover {
     my @limits = (BOM::Config::client_limits()->{maximum_daily_turnover}{$self->currency});
     if ($self->get_self_exclusion && $self->get_self_exclusion->max_turnover) {
         push @limits, $self->get_self_exclusion->max_turnover;
-    }
-
-    if (my $val = $self->custom_max_daily_turnover) {
-        push @limits, convert_currency($val, USD => $self->currency);
     }
 
     return List::Util::min(@limits);
@@ -628,9 +620,6 @@ sub get_self_exclusion_until_date {
 
 sub get_limit_for_payout {
     my $self = shift;
-
-    my $val = $self->custom_max_payout;
-    return convert_currency($val, USD => $self->currency) if defined $val;
 
     my $max_payout = BOM::Config::client_limits()->{max_payout_open_positions};
 
