@@ -196,7 +196,8 @@ subtest 'new account' => sub {
     $token           = $m->create_token($test_client->loginid, 'test token 2');
     $params->{token} = $token;
 
-    $c->call_ok($method, $params)->has_error->error_message_is('Permission denied.', 'Only svg, malta, maltainvest and champion fx clients allowed.');
+    $c->call_ok($method, $params)->has_error->error_message_is('This account type is not available in your country.',
+        'Only svg, malta, maltainvest and champion fx clients allowed.');
 
     SKIP: {
         skip "Unable to Retrieve files from PHP MT5 Server Yet";
@@ -432,7 +433,7 @@ subtest 'MLT account types - low risk' => sub {
             account_type     => 'demo',
             mt5_account_type => 'advanced'
         },
-        'PermissionDenied',
+        'MT5NotAllowed',
         'MLT client cannot create an advanced financial demo account'
     );
 
@@ -456,7 +457,7 @@ subtest 'MLT account types - low risk' => sub {
             account_type     => 'financial',
             mt5_account_type => 'advanced'
         },
-        'PermissionDenied',
+        'MT5NotAllowed',
         'MLT client cannot create an advanced financial real account'
     );
 };
@@ -495,7 +496,7 @@ subtest 'MLT account types - high risk' => sub {
             account_type     => 'demo',
             mt5_account_type => 'advanced'
         },
-        'PermissionDenied',
+        'MT5NotAllowed',
         'MLT client cannot create an advanced financial demo account'
     );
 
@@ -528,7 +529,7 @@ subtest 'MLT account types - high risk' => sub {
             account_type     => 'financial',
             mt5_account_type => 'advanced'
         },
-        'PermissionDenied',
+        'MT5NotAllowed',
         'MLT client cannot create an advanced financial real account'
     );
 };
@@ -548,11 +549,16 @@ subtest 'MF accout types' => sub {
     my $token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
 
     #demo account
-    my $login = create_mt5_account->($c, $token, $client, {account_type => 'demo'});
-    ok($login, 'demo account successfully created for a low risk client');
-    is $mt5_account_info->{group}, 'demo\malta', 'correct MF demo group';
+    create_mt5_account->(
+        $c, $token, $client,
+        {
+            account_type => 'demo',
+        },
+        'MT5NotAllowed',
+        'MF clients cannot create demo gaming account'
+    );
 
-    $login = create_mt5_account->(
+    my $login = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'demo',
@@ -567,7 +573,7 @@ subtest 'MF accout types' => sub {
             account_type     => 'demo',
             mt5_account_type => 'advanced'
         },
-        'PermissionDenied',
+        'MT5NotAllowed',
         'non-professional MF clients cannot create demo advanced account'
     );
 
@@ -579,8 +585,8 @@ subtest 'MF accout types' => sub {
             account_type     => 'demo',
             mt5_account_type => 'advanced'
         },
-        'PermissionDenied',
-        'professional MF clients cannot create advanced accounts either'
+        'MT5NotAllowed',
+        'professional MF clients cannot create demo advanced accounts either'
     );
     $client->status->clear_professional;
     $client->save;
@@ -640,7 +646,7 @@ subtest 'MF accout types' => sub {
             account_type     => 'financial',
             mt5_account_type => 'advanced'
         },
-        'PermissionDenied',
+        'MT5NotAllowed',
         'MF client cannot create a real advanced account'
     );
 
@@ -652,7 +658,7 @@ subtest 'MF accout types' => sub {
             account_type     => 'financial',
             mt5_account_type => 'advanced'
         },
-        'PermissionDenied',
+        'MT5NotAllowed',
         'MF client cannot create a real advanced account - even if they are professionals'
     );
     $client->status->clear_professional;
@@ -663,8 +669,6 @@ subtest 'MX account types' => sub {
     my $client = create_client('MX');
     $client->set_default_account('EUR');
     $client->residence('gb');
-    $client->aml_risk_classification('low');
-    $client->status->clear_age_verification();
     $client->save();
 
     my $user = BOM::User->create(
@@ -674,68 +678,38 @@ subtest 'MX account types' => sub {
     $user->add_client($client);
     my $token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
 
-    #demo accounts
-    create_mt5_account->(
-        $c, $token, $client, {account_type => 'demo'},
-        'NoAgeVerification', 'Age verification is mandatory for GB citizens creating demo MT5 accounts'
-    );
-
-    $client->status->set('age_verification', 'test', 'test');
-    $client->save();
-    my $login = create_mt5_account->($c, $token, $client, {account_type => 'demo'});
-    ok $login, 'MX client can create gaming demo account';
-    is $mt5_account_info->{group}, 'demo\iom', 'correct MX gaming group';
-
-    $login = create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'demo',
-            mt5_account_type => 'standard'
-        },
-    );
-    ok $login, 'MX client can create standard demo account';
-    is $mt5_account_info->{group}, 'demo\maltainvest_standard', 'Correct MX financial group';
-
     create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'demo',
             mt5_account_type => 'advanced'
         },
-        'PermissionDenied',
-        'MX client cannot create advanced demo account'
+        'MT5NotAllowed',
+        'MX client cannot create mt5 account'
     );
-    #real accounts
-    $client->status->clear_age_verification();
-    $client->save();
-    create_mt5_account->(
-        $c, $token, $client, {account_type => 'gaming'},
-        'NoAgeVerification', 'Age verification is mandatory for GB citizens creating real MT5 accounts'
-    );
-    $client->status->set('age_verification', 'test', 'test');
-    $client->save();
 
-    $login = create_mt5_account->($c, $token, $client, {account_type => 'gaming'});
-    ok $login, 'MX client can create gaming demo account';
-    is $mt5_account_info->{group}, 'real\iom', 'correct MX gaming group';
+    #demo account
+    my $login = create_mt5_account->($c, $token, $client, {account_type => 'demo'});
+    ok($login, 'demo gaming account successfully created for a MX account');
+    is $mt5_account_info->{group}, 'demo\iom', 'correct MX demo gaming account';
+
+    my $mf_client = create_client('MF');
+    $mf_client->set_default_account('EUR');
+    $mf_client->residence('de');
+    financial_assessment($mf_client, 'full');
+    $mf_client->save();
+
+    $user->add_client($mf_client);
+    $token = BOM::Database::Model::AccessToken->new->create_token($mf_client->loginid, 'test token');
 
     create_mt5_account->(
         $c, $token, $client,
         {
-            account_type     => 'financial',
+            account_type     => 'gaming',
             mt5_account_type => 'standard'
         },
-        'FinancialAccountMissing',
-        'MX client cannot create any real standard account before upgrading to MF'
-    );
-    create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type => 'financial',
-            , mt5_account_type => 'advanced'
-        },
-        'PermissionDenied',
-        'MX client cannot create any real advanced account'
+        'MT5NotAllowed',
+        'MF client upgraded from MX cannot create mt5 gaming account'
     );
 };
 
@@ -826,7 +800,7 @@ subtest 'Virtual account types - EU residences' => sub {
             country      => 'mt',
             account_type => 'demo'
         },
-        'PermissionDenied',
+        'MT5NotAllowed',
         'Gaming MT5 account is not available for EU residents'
     );
 
@@ -844,14 +818,14 @@ subtest 'Virtual account types - EU residences' => sub {
             account_type     => 'demo',
             mt5_account_type => 'advanced'
         },
-        'PermissionDenied',
+        'MT5NotAllowed',
         'Advanced financial MT5 account is not available in this country'
     );
 
     #real accounts
     create_mt5_account->(
         $c, $token, $client, {account_type => 'gaming'},
-        'PermissionDenied', 'Real gaming MT5 account creation is not allowed in the country of residence'
+        'MT5NotAllowed', 'Real gaming MT5 account creation is not allowed in the country of residence'
     );
 
     create_mt5_account->(
@@ -870,7 +844,7 @@ subtest 'Virtual account types - EU residences' => sub {
             account_type     => 'financial',
             mt5_account_type => 'advanced'
         },
-        'PermissionDenied',
+        'MT5NotAllowed',
         'Advanced financial MT5 account is not available in this country'
     );
 
@@ -931,15 +905,14 @@ subtest 'Virtual account types - GB residence' => sub {
             mt5_account_type => 'standard'
         });
     is $mt5_account_info->{group}, 'demo\maltainvest_standard', 'correct VRTC standard demo group';
-
     $login = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'demo',
             mt5_account_type => 'advanced'
         },
-        'PermissionDenied',
-        'Advanced financial MT5 account is not available in this country'
+        'MT5NotAllowed',
+        'Advanced demo MT5 account is not available in this country'
     );
 
     #real accounts
@@ -973,7 +946,7 @@ subtest 'Virtual account types - GB residence' => sub {
             account_type     => 'financial',
             mt5_account_type => 'advanced'
         },
-        'PermissionDenied',
+        'MT5NotAllowed',
         'Advanced financial MT5 account is not available in this country'
     );
 
@@ -1025,3 +998,4 @@ sub financial_assessment {
 $mocked_mt5->unmock_all;
 
 done_testing();
+
