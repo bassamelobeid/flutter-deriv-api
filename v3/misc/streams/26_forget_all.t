@@ -78,7 +78,7 @@ initialize_realtime_ticks_db();
             if ($type eq 'ticks') {
                 note("ticks 1 json :: " . encode_json($t->await::tick($msg)));
             } else {
-                note("ohlc 1 json :: " . encode_json($t->await::ohlc($msg)));
+                note("candles 1 json :: " . encode_json($t->await::candles($msg)));
             }
         }
         my $failed_res = $t->await::forget_all({forget_all => 'tick'});
