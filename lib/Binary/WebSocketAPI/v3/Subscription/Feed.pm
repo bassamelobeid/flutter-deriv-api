@@ -135,6 +135,7 @@ sub handle_message {
     my $type       = $self->type;
     my $arguments  = $self->args;
     my $cache_only = $self->cache_only;
+    my $pip_size   = $c->stash->{pip_size}->{$symbol};
     unless ($c->tx) {
         $self->unregister;
         return;
@@ -151,7 +152,8 @@ sub handle_message {
             epoch  => 0 + $epoch,
             quote  => $payload->{quote},
             bid    => $payload->{bid},
-            ask    => $payload->{ask}};
+            ask    => $payload->{ask},
+        };
 
     } else {
         $msg_type = 'ohlc';
@@ -171,7 +173,7 @@ sub handle_message {
         };
 
     }
-
+    $result->{pip_size} = $pip_size;
     if ($cache_only) {
         $cache->{$epoch} = $result;
     } else {
