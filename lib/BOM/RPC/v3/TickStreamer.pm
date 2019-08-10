@@ -106,6 +106,7 @@ rpc ticks_history => sub {
                 message_to_client => localize("Style [_1] invalid", $style)});
     }
 
+    $result->{pip_size} = $ul->display_decimals;
     return {
         stash   => {"${symbol}_display_decimals" => $ul->display_decimals},
         type    => $type,
