@@ -29,6 +29,7 @@
       },
       "data" : {
          "properties" : {
+            "pip_size" : { "enum" : [4] }, 
             "history" : {
                "required" : [
                   "prices",
