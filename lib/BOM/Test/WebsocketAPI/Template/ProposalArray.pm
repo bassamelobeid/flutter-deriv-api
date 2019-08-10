@@ -109,11 +109,10 @@ publish proposal_array => sub {
     my $display_name = $pa->underlying->display_name;
     return {
         sprintf(
-            'PRICER_KEYS::["amount","1000","barriers",[%s],"basis","payout","contract_type",[%s],"country_code","%s","currency","%s","duration","%s","duration_unit","%s","landing_company","%s","price_daemon_cmd","price","proposal_array","1","skips_price_validation","1","subscribe","1","symbol","%s"]',
+            'PRICER_KEYS::["amount","1000","barriers",[%s],"basis","payout","contract_type",[%s],"currency","%s","duration","%s","duration_unit","%s","landing_company","%s","price_daemon_cmd","price","proposal_array","1","skips_price_validation","1","subscribe","1","symbol","%s"]',
 
             join(',', map { "\"$_\"" } $pa->barriers->@*),
             join(',', map { "\"$_\"" } $pa->contract_types->@*),
-            $pa->client->country,
             $pa->client->currency,
             $pa->duration,
             $pa->duration_unit,
