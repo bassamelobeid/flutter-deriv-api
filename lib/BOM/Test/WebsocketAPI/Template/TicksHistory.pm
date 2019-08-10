@@ -47,7 +47,10 @@ rpc_response ticks_history => sub {
         stash => {
             $underlying->symbol . _display_decimals => $pip_size,
         },
-        data    => {history => (map { {times => $_->times, prices => $_->prices} } $history)},
+        data => {
+            pip_size => $pip_size,
+            history  => (map { {times => $_->times, prices => $_->prices} } $history)
+        },
         publish => 'tick',
         type    => 'history'
     };
