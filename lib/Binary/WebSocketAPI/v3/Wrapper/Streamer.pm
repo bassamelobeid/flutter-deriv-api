@@ -179,6 +179,8 @@ sub ticks {
                 },
                 success => sub {
                     my ($c, $api_response, $req_storage) = @_;
+
+                    $c->stash->{pip_size}->{$symbol} = $api_response->{stash}->{"${symbol}_display_decimals"};
                     $req_storage->{id} = _feed_channel_subscribe($c, $req_storage->{symbol}, 'tick', $req_storage->{args});
                 },
                 response => sub {
@@ -246,6 +248,7 @@ sub ticks_history {
                     my ($c, $rpc_response, $req_storage) = @_;
                     return if (!$c || !$c->tx);
                     my $args = $req_storage->{args};
+                    $c->stash->{pip_size}->{$args->{ticks_history}} = $rpc_response->{data}->{pip_size};
                     if (exists $rpc_response->{error}) {
                         # cancel subscription if response has error
                         $worker->unregister if $worker;
@@ -338,7 +341,6 @@ sub ticks_history {
 
 sub _feed_channel_subscribe {
     my ($c, $symbol, $type, $args, $callback, $cache_only) = @_;
-
     my $worker = Binary::WebSocketAPI::v3::Subscription::Feed->new(
         c          => $c,
         type       => $type,
