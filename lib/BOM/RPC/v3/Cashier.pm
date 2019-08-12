@@ -1269,15 +1269,16 @@ rpc transfer_between_accounts => sub {
     return _transfer_between_accounts_error(localize('Please provide valid amount.'))
         if (not looks_like_number($amount) or $amount <= 0);
 
-    return _transfer_between_accounts_error(localize('Transfers between two MT5 accounts are not allowed.'))
-        if (exists $mt5_accounts{$loginid_from} and exists $mt5_accounts{$loginid_to});
-
+    # Both $loginid_from and $loginid_to must be either a real or a MT5 account
     return _transfer_between_accounts_error()
         unless ((
                exists $siblings->{$loginid_from}
             or exists $mt5_accounts{$loginid_from})
         and (  exists $siblings->{$loginid_to}
             or exists $mt5_accounts{$loginid_to}));
+
+    return _transfer_between_accounts_error(localize('Transfers between two MT5 accounts are not allowed.'))
+        if (exists $mt5_accounts{$loginid_from} and exists $mt5_accounts{$loginid_to});
 
     # this transfer involves an MT5 account
     if (exists $mt5_accounts{$loginid_from} or exists $mt5_accounts{$loginid_to}) {
