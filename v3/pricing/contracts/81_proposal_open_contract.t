@@ -164,7 +164,8 @@ subtest 'selling contract message' => sub {
         currency_code           => 'USD',
     };
 
-    BOM::Config::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, Encode::encode_utf8($json->encode($msg)));
+    BOM::Config::RedisReplicated::redis_transaction_write()
+        ->publish('TXNUPDATE::transaction_' . $msg->{account_id}, Encode::encode_utf8($json->encode($msg)));
 
     my $data = $t->await::proposal_open_contract();
     is($data->{msg_type}, 'proposal_open_contract', 'Got message about selling contract');
@@ -267,7 +268,8 @@ subtest 'check two contracts subscription' => sub {
 
     };
 
-    BOM::Config::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, Encode::encode_utf8($json->encode($msg)));
+    BOM::Config::RedisReplicated::redis_transaction_write()
+        ->publish('TXNUPDATE::transaction_' . $msg->{account_id}, Encode::encode_utf8($json->encode($msg)));
 
     $data = $t->await::portfolio({portfolio => 1});
     is @{$data->{portfolio}->{contracts}}, $init_open_contracts_count + 1, 'Duplicate transaction feed does not change the portfolio';
