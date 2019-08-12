@@ -171,7 +171,7 @@ sub get_mt5_logins {
                 return Future->done($setting);
             });
     }
-    foreach        => [$user->get_mt5_loginids],
+    foreach        => [$user->mt5_logins],
         concurrent => 4;
 # purely to keep perlcritic+perltidy happy :(
     return $f;
