@@ -1098,7 +1098,7 @@ sub increment_social_responsibility_values {
     my $hash_name  = 'social_responsibility';
     my $event_name = $loginid . '_sr_check';
 
-    my $redis = BOM::Config::RedisReplicated::redis_write();
+    my $redis = BOM::Config::RedisReplicated::redis_events_write();
 
     foreach my $attribute (keys %$sr_hashref) {
         my $field_name = $loginid . '_' . $attribute;
