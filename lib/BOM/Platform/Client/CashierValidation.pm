@@ -94,7 +94,8 @@ sub validate {
             unless $client->status->crs_tin_information;
     }
 
-    if ($client->landing_company->short ne 'maltainvest' && ($client->residence eq 'gb' || $client->landing_company->check_max_turnover_limit_is_set)) {
+    if ($client->landing_company->short ne 'maltainvest' && ($client->residence eq 'gb' || $client->landing_company->check_max_turnover_limit_is_set))
+    {
         return _create_error(localize('Please accept Funds Protection.'), 'ASK_UK_FUNDS_PROTECTION')
             if $client->residence eq 'gb' && !$client->status->ukgc_funds_protection;
         return _create_error(localize('Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.'),
