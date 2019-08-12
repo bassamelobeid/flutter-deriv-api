@@ -515,6 +515,10 @@ sub _serialized_args {
     # We want to handle similar contracts together, so we do this and sort by
     # key in the price_queue.pl daemon
     push @arr, ('short_code', delete $copy->{short_code}) if exists $copy->{short_code};
+
+    # Keep country only if it is CN.
+    delete $copy->{country_code} if exists $copy->{country_code} and $copy->{country_code} ne 'cn';
+
     foreach my $k (sort keys %$copy) {
         push @arr, ($k, $copy->{$k});
     }

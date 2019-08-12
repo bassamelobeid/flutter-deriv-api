@@ -356,7 +356,6 @@ subtest "multi subscription to one channel" => sub {
             channel_arg => 'channel2',
         );
         $sub2->subscribe(sub { });
-#	$log->clear;
         $log->does_not_contain_ok(qr/Too many callbacks/, 'different channel has different queue, so channel channel2 will not have that warning');
 
         # execute callbacks
@@ -447,6 +446,154 @@ subtest 'registering' => sub {
     weaken($c->stash->{uuid_channel}{$worker->uuid} = $worker);
     undef $worker;
     ok(!$c->stash->{uuid_channel}->%*, 'the item we set by hand was deleted by subscription DEMOLISH');
+};
+
+{
+    # clean up by unsubscribing everything
+    my $count = scalar @unsubscription_requests;
+    while ($count > 0) {
+        my $unsubscribe = shift @unsubscription_requests;
+        $unsubscribe->[1]->();
+        undef $unsubscribe;
+        --$count;
+    }
+}
+
+{
+
+    package TransactionSubscription;
+    use Moo;
+    use Test::More;
+    with 'Binary::WebSocketAPI::v3::Subscription';
+    our @MESSAGES;
+    our @ERRORS;
+    has channel_arg => (is => 'ro');
+    sub channel { shift->channel_arg // 'transactionSubscription' }
+
+    sub handle_message {
+        my $self = shift;
+        push @MESSAGES, [Scalar::Util::refaddr($self), @_];
+    }
+
+    sub handle_error {
+        my $self = shift;
+        push @ERRORS, [Scalar::Util::refaddr($self), @_];
+        return $_[-1];
+    }
+
+    sub _unique_key {
+        my $self = shift;
+        return $self->channel . ($self->args->{subchannel} // '');
+    }
+
+    sub subscription_manager {
+        return Binary::WebSocketAPI::v3::SubscriptionManager->redis_transaction_manager();
+    }
+}
+
+{
+
+    package Binary::WebSocketAPI::v3::Subscription::TransactionSubscription;
+    use Moo;
+    extends 'TransactionSubscription';
+}
+
+subtest 'Transaction subscription role attribute & method test' => sub {
+    my $c      = mock_c();
+    my $worker = new_ok(
+        'Binary::WebSocketAPI::v3::Subscription::TransactionSubscription' => [
+            c    => $c,
+            args => {},
+        ]);
+    like($worker->uuid, qr/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/, 'There is a uuid');
+    is($worker->abbrev_class, 'TransactionSubscription', 'abbrev class correct');
+    is($worker->stats_name, 'bom_websocket_api.v_3.transactionsubscription_subscriptions');
+};
+
+subtest 'Subscription class transaction test' => sub {
+    my $c      = mock_c();
+    my $worker = new_ok(
+        TransactionSubscription => [
+            c    => $c,
+            args => {},
+        ]);
+    my $subscription_callback_called;
+    is_oneref($worker->c, 'c has refcount 1');
+    is($worker->status, undef, 'subscription still not defined');
+    $worker->subscribe(sub { $subscription_callback_called = shift->channel });
+    weaken(my $status = $worker->status);
+    is_oneref($worker, 'worker has refcount 1');
+    is(@subscription_requests, 2, 'have two Redis-one general and other transaction-subscription request');
+    isa_ok($status, 'Future');
+    ok(!$status->is_ready,             'subscription starts out unstatus');
+    ok(!$subscription_callback_called, "subscription callback not called yet");
+    {
+        my $req = shift @subscription_requests
+            or die 'no subscription request queued';
+        # transaction one is the second one
+        $req = shift @subscription_requests
+            or die 'no transaction subscription request queued';
+
+        cmp_deeply($req->[0], [$worker->channel], 'channel parameter was correct');
+        lives_ok {
+            $req->[1]->();
+        }
+        'can run callback with no exceptions';
+        ok($worker->status->is_done, 'subscription is now done')
+            or die 'subscription invalid';
+        is($subscription_callback_called, $worker->channel, 'the subscription callback is called, and can visit worker');
+    }
+    is_oneref($worker, 'worker still has refcount 1');
+    isa_ok(my $on_message = $callbacks{message}, 'CODE')
+        or die 'no on_message callback';
+    is(@TransactionSubscription::MESSAGES, 0, 'start with no messages');
+    is(@TransactionSubscription::ERRORS,   0, 'no errors either');
+    $log->clear;
+    lives_ok {
+        $on_message->(undef, encode_json_utf8({data => 'here'}) => 'NoSuchChannel');
+    }
+    'can trigger message with no failures';
+    is(@TransactionSubscription::MESSAGES, 0, 'Still no messages');
+    is(@TransactionSubscription::ERRORS,   0, 'no errors in TransactionSubscription');
+    $log->contains_only_ok(qr/Had a message for channel \[NoSuchChannel\]/, 'should emit an error message');
+    lives_ok {
+        $on_message->(undef, encode_json_utf8({data => 'here'}) => $worker->channel);
+    }
+    'can trigger message with no failures';
+    is(@TransactionSubscription::MESSAGES, 1, 'now have one message received');
+    is(@TransactionSubscription::ERRORS,   0, 'no errors yet');
+    @TransactionSubscription::MESSAGES = ();
+    lives_ok {
+        $on_message->(undef, encode_json_utf8({error => {code => 'Testing'}}) => $worker->channel);
+    }
+    'can trigger message with error';
+    is(@TransactionSubscription::MESSAGES, 1, 'still have one message received');
+    is(@TransactionSubscription::ERRORS,   1, 'but now also have an error');
+    undef $worker;
+    ok($status, 'status future is still there, because there is a ref in the redis unsubscribe callback');
+
+    $log->clear;
+    lives_ok {
+        $on_message->(undef, encode_json_utf8({data => 'here'}) => 'transactionSubscription');
+    }
+    'can trigger message with no failures';
+    $log->empty_ok('should not emit an error message during the unsubscribing phrase');
+
+    is(@unsubscription_requests, 1, 'There is an unsubscribe request');
+    my $unsubscribe = shift @unsubscription_requests;
+    is($unsubscribe->[0][0], 'transactionSubscription', 'unsubscribe transactionSubscription');
+    $unsubscribe->[1]->();
+    undef $unsubscribe;
+    ok(!$status, 'Now status is destroyed');
+    $log->clear;
+    lives_ok {
+        $on_message->(undef, encode_json_utf8({data => 'here'}) => 'transactionSubscription');
+    }
+    'can trigger message with no failures';
+
+    $log->contains_only_ok(qr/Had a message for channel \[transactionSubscription\]/, 'should emit an error message');
+
+    done_testing;
 };
 
 done_testing();

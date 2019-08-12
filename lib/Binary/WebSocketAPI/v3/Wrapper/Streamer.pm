@@ -17,7 +17,7 @@ use Format::Util::Numbers qw(formatnumber);
 
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::System;
-use Binary::WebSocketAPI::v3::Instance::Redis qw(ws_redis_master shared_redis);
+use Binary::WebSocketAPI::v3::Instance::Redis qw(ws_redis_master);
 use Binary::WebSocketAPI::v3::Subscription::Feed;
 
 my $json = JSON::MaybeXS->new;
