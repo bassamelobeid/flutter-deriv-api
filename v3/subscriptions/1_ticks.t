@@ -29,7 +29,19 @@ $loop->add(
     ),
 );
 
-subtest "Tick Subscriptions: All Symbols" => sub {
+subtest "Tick Subscriptions: frx*" => sub {
+    $tester->configure(
+        suite_params => {
+            concurrent => 50,
+            requests   => requests(
+                calls  => [qw(ticks ticks_history)],
+                filter => sub {
+                    my $params = shift->{params};
+                    $params = $params->ticks_history if $params->ticks_history;
+                    $params->underlying->symbol =~ /frx.*/;
+                },
+            ),
+        });
     $tester->subscribe_multiple_times(count => 2)->get;
 };
 

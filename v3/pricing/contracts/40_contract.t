@@ -322,7 +322,7 @@ subtest 'buy and subscribe' => sub {
 
     };
 
-    BOM::Config::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, encode_json_utf8($msg));
+    BOM::Config::RedisReplicated::redis_transaction_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, encode_json_utf8($msg));
 
     sleep 2;
 
