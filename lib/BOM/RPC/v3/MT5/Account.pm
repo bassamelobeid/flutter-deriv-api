@@ -177,7 +177,6 @@ sub get_mt5_logins {
     return $f;
 }
 
-
 # limit number of requests to once per minute
 sub _throttle {
     my $loginid = shift;

@@ -40,10 +40,10 @@ my %DETAILS = (
         main     => 'Efgh4567',
         investor => 'Abcd1234',
     },
-    email   => 'test.account@binary.com',
-    name    => 'Meta traderman',
-    country => 'Malta',
-    balance => '1234',
+    email           => 'test.account@binary.com',
+    name            => 'Meta traderman',
+    country         => 'Malta',
+    balance         => '1234',
     landing_company => 'svg'
 );
 
@@ -51,7 +51,7 @@ my %GROUP_DETAILS = (
     currency => 'USD',
     group    => 'real\svg',
     leverage => 300,
-    company => 'Binary (SVG) Ltd.'
+    company  => 'Binary (SVG) Ltd.'
 );
 
 my $json = JSON::MaybeXS->new;
@@ -116,9 +116,7 @@ sub cmd_UserGet {
         user     => {
             (pairgrep { $a ne 'password' } %DETAILS),
             group => $group,
-            login => $input->{login}
-        }
-    };
+            login => $input->{login}}};
 }
 
 sub cmd_GroupGet {
@@ -145,7 +143,7 @@ sub cmd_UserUpdate {
         ret_code => MT_RET_OK,
         user     => {
             (pairgrep { $a ne "password" } %DETAILS),
-            name => "Test2",
+            name  => "Test2",
             group => $group
         },
     };
@@ -199,5 +197,5 @@ sub cmd_PositionGetTotal {
 
 sub get_account_group {
     my $login = shift;
-    return first {$ACCOUNTS{$_} eq $login} keys %ACCOUNTS;
+    return first { $ACCOUNTS{$_} eq $login } keys %ACCOUNTS;
 }

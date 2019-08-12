@@ -2235,11 +2235,11 @@ subtest 'get and set self_exclusion' => sub {
     #   t/BOM/RPC/05_accounts.t
     #   t/BOM/RPC/Cashier/20_transfer_between_accounts.t
     #   t/lib/mock_binary_mt5.pl
-    
+
     my %ACCOUNTS = (
         'real\malta' => '00000010',
     );
-    
+
     my %DETAILS = (
         password => 'Efgh4567',
         email    => 'test.account@binary.com',

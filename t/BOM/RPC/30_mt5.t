@@ -183,8 +183,8 @@ subtest 'new account' => sub {
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account');
     is($c->result->{login},           $ACCOUNTS{'real\svg'}, 'result->{login}');
-    is($c->result->{balance},         0,               'Balance is 0 upon creation');
-    is($c->result->{display_balance}, '0.00',          'Display balance is "0.00" upon creation');
+    is($c->result->{balance},         0,                     'Balance is 0 upon creation');
+    is($c->result->{display_balance}, '0.00',                'Display balance is "0.00" upon creation');
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
@@ -473,9 +473,9 @@ subtest 'get settings' => sub {
         },
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_get_settings');
-    is($c->result->{login},   $ACCOUNTS{'real\svg'},   'result->{login}');
-    is($c->result->{balance}, $DETAILS{balance}, 'result->{balance}');
-    is($c->result->{country}, "mt",              'result->{country}');
+    is($c->result->{login},   $ACCOUNTS{'real\svg'}, 'result->{login}');
+    is($c->result->{balance}, $DETAILS{balance},     'result->{balance}');
+    is($c->result->{country}, "mt",                  'result->{country}');
 
     $params->{args}{login} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_get_settings wrong login')
@@ -492,7 +492,7 @@ subtest 'login list' => sub {
     $c->call_ok($method, $params)->has_no_error('no error for mt5_login_list');
 
     my @accounts = map { $_->{login} } @{$c->result};
-    cmp_bag(\@accounts, [ $ACCOUNTS{'real\svg'}, $ACCOUNTS{'real\vanuatu_standard'} ], "mt5_login_list result");
+    cmp_bag(\@accounts, [$ACCOUNTS{'real\svg'}, $ACCOUNTS{'real\vanuatu_standard'}], "mt5_login_list result");
 };
 
 subtest 'password check' => sub {
