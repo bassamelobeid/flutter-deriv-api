@@ -177,6 +177,7 @@ sub get_mt5_logins {
     return $f;
 }
 
+
 # limit number of requests to once per minute
 sub _throttle {
     my $loginid = shift;
@@ -403,7 +404,6 @@ async_rpc mt5_new_account => sub {
 
                     my $client_info = $client->get_mt5_details();
                     $client_info->{name} = $args->{name} if $client->is_virtual;
-
                     @{$args}{keys %$client_info} = values %$client_info;
                     $args->{group}    = $group;
                     $args->{leverage} = $group_details->{leverage};

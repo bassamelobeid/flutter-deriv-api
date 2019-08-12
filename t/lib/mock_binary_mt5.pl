@@ -41,15 +41,17 @@ my %DETAILS = (
         investor => 'Abcd1234',
     },
     email   => 'test.account@binary.com',
-    name    => 'Test',
+    name    => 'Meta traderman',
     country => 'Malta',
     balance => '1234',
+    landing_company => 'svg'
 );
 
 my %GROUP_DETAILS = (
     currency => 'USD',
     group    => 'real\svg',
-    leverage => 300
+    leverage => 300,
+    company => 'Binary (SVG) Ltd.'
 );
 
 my $json = JSON::MaybeXS->new;

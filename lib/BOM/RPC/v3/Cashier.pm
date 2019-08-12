@@ -40,6 +40,7 @@ use BOM::User::AuditLog;
 use BOM::Platform::RiskProfile;
 use BOM::Platform::Client::CashierValidation;
 use BOM::User::Client::PaymentNotificationQueue;
+use BOM::MT5::User::Async;
 use BOM::RPC::v3::MT5::Account;
 use BOM::RPC::v3::Utility;
 use BOM::Transaction::Validation;
@@ -1246,20 +1247,16 @@ rpc transfer_between_accounts => sub {
             };
     }
 
-    my %mt5_siblings;
-    for my $mt (grep { $_->{group} !~ /^demo/ } BOM::RPC::v3::MT5::Account::get_mt5_logins($client)->get ) {
-        my $mt5_account = 'MT'.$mt->{login};
-        push @accounts,
-            {
-            loginid  => $mt5_account,
-            balance  => $mt->{balance},
-            currency => $mt->{currency},
-            };
-        $mt5_siblings{$mt5_account} = 1;
-    }
-
-    # get clients if loginid from or to is not provided
+    # needed now to determine if account is demo/real
+    my %mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($client)->then(
+        sub {
+                return Future->done( map { 'MT'.$_->{login} => $_ } grep { $_->{group} !~ /^demo/ } @_ );
+        
+    })->get;
+    
+    # just return accounts list if loginid from or to is not provided
     if (not $loginid_from or not $loginid_to) {
+        push @accounts, map { { loginid => $_, balance => $mt5_accounts{$_}->{balance}, currency => $mt5_accounts{$_}->{currency} } } keys %mt5_accounts;
         return {
             status   => 0,
             accounts => \@accounts
@@ -1269,6 +1266,42 @@ rpc transfer_between_accounts => sub {
     return _transfer_between_accounts_error(localize('Please provide valid currency.')) unless $currency;
     return _transfer_between_accounts_error(localize('Please provide valid amount.'))
         if (not looks_like_number($amount) or $amount <= 0);
+        
+    return _transfer_between_accounts_error(localize('Transfers between two MT5 accounts are not allowed.'))
+        if ( exists $mt5_accounts{$loginid_from} and exists $mt5_accounts{$loginid_to} );
+
+    return _transfer_between_accounts_error()
+        if ( !exists $siblings->{$loginid_from} and !exists $siblings->{$loginid_to} and !exists $mt5_accounts{$loginid_from} and !exists $mt5_accounts{$loginid_to} );
+    
+    # this transfer involves an MT5 account
+    if ( exists $mt5_accounts{$loginid_from} or exists $mt5_accounts{$loginid_to} ) {
+        delete @{$params->{args}}{qw/account_from account_to/};
+        my ( $method, $client_to_full_name );
+        
+        if ( exists $mt5_accounts{$loginid_to} ) {
+            $method = \&BOM::RPC::v3::MT5::Account::mt5_deposit;
+            $params->{args}{from_binary} = $loginid_from;
+            $params->{args}{to_mt5} = $mt5_accounts{$loginid_to}->{login};
+            $client_to_full_name = $mt5_accounts{$loginid_to}->{name};
+        }
+        
+        if ( exists $mt5_accounts{$loginid_from} ) {
+            $method = \&BOM::RPC::v3::MT5::Account::mt5_withdrawal;
+            $params->{args}{to_binary} = $loginid_to;
+            $params->{args}{from_mt5} = $mt5_accounts{$loginid_from}->{login};
+            $client_to_full_name = $client->full_name;
+        }
+    
+        return $method->($params)->then(
+            sub {
+                my $resp = shift;
+                return Future->done(_transfer_between_accounts_error( $resp->{error}{message_to_client} )) if ($resp->{error});
+                $resp->{transaction_id} = delete $resp->{binary_transaction_id};
+                $resp->{client_to_loginid} = $loginid_to;
+                $resp->{client_to_full_name} = $client_to_full_name;
+                return Future->done($resp);
+        })->get;
+    }
         
     # create client from siblings so that we are sure that from and to loginid
     # provided are for same user
