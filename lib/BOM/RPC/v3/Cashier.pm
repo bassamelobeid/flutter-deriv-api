@@ -1215,12 +1215,14 @@ rpc transfer_between_accounts => sub {
 
     return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
 
+    my $status = $client->status;
+
     return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is currently disabled.'))
-        if $client->status->disabled;
+        if $status->disabled;
     return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is cashier locked.'))
-        if $client->status->cashier_locked;
+        if $status->cashier_locked;
     return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is withdrawal locked.'))
-        if $client->status->withdrawal_locked;
+        if ($status->withdrawal_locked || $status->no_withdrawal_or_trading);
     return _transfer_between_accounts_error(localize('Your profile appears to be incomplete. Please update your personal details to continue.'))
         if ($client->missing_requirements('withdrawal'));
     return _transfer_between_accounts_error(localize('Your cashier is locked as per your request.')) if $client->cashier_setting_password;

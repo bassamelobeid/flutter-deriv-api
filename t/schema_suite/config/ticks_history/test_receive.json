@@ -25,6 +25,7 @@
       },
       "data" : {
          "properties" : {
+            "pip_size" : { "enum" : [4] }, 
             "times" : {
                "items" : {
                   "minimum" : 1000000000,
