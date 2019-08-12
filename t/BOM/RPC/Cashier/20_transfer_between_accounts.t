@@ -1106,7 +1106,7 @@ subtest 'suspended currency transfers' => sub {
 
         $rpc_ct->call_ok($method, $params);
     };
-    
+
     # reset the config
     BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies([]);
 };

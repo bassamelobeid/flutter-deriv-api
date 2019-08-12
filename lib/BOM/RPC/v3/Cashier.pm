@@ -40,7 +40,6 @@ use BOM::User::AuditLog;
 use BOM::Platform::RiskProfile;
 use BOM::Platform::Client::CashierValidation;
 use BOM::User::Client::PaymentNotificationQueue;
-use BOM::MT5::User::Async;
 use BOM::RPC::v3::MT5::Account;
 use BOM::RPC::v3::Utility;
 use BOM::Transaction::Validation;
@@ -1272,10 +1271,11 @@ rpc transfer_between_accounts => sub {
         if (exists $mt5_accounts{$loginid_from} and exists $mt5_accounts{$loginid_to});
 
     return _transfer_between_accounts_error()
-        if (!exists $siblings->{$loginid_from}
-        and !exists $siblings->{$loginid_to}
-        and !exists $mt5_accounts{$loginid_from}
-        and !exists $mt5_accounts{$loginid_to});
+        unless ((
+               exists $siblings->{$loginid_from}
+            or exists $mt5_accounts{$loginid_from})
+        and (  exists $siblings->{$loginid_to}
+            or exists $mt5_accounts{$loginid_to}));
 
     # this transfer involves an MT5 account
     if (exists $mt5_accounts{$loginid_from} or exists $mt5_accounts{$loginid_to}) {
