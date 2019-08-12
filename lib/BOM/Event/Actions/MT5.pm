@@ -124,7 +124,7 @@ sub sync_info {
 
 sub redis_record_mt5_transfer {
     my $input_data = shift;
-    my $redis      = BOM::Config::RedisReplicated::redis_write();
+    my $redis      = BOM::Config::RedisReplicated::redis_mt5_user_write();
     my $loginid    = $input_data->{loginid};
     my $mt5_id     = $input_data->{mt5_id};
     my $redis_key  = $mt5_id . "_" . $input_data->{action};

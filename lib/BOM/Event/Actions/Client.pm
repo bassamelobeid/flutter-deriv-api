@@ -1212,7 +1212,7 @@ sub social_responsibility_check {
 
     my $loginid = $data->{loginid};
 
-    my $redis = BOM::Config::RedisReplicated::redis_write();
+    my $redis = BOM::Config::RedisReplicated::redis_events();
 
     my $hash_key   = 'social_responsibility';
     my $event_name = $loginid . '_sr_check';
