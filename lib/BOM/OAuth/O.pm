@@ -29,8 +29,9 @@ use BOM::User::AuditLog;
 use BOM::Platform::Context qw(localize);
 use BOM::OAuth::Static qw(get_message_mapping);
 
-use constant APPS_ALLOWED_TO_RESET_PASSWORD => qw(1 14473 15284);
-use constant APPS_LOGINS_RESTRICTED         => qw(16063);           # mobytrader
+use constant APPS_ALLOWED_TO_RESET_PASSWORD      => qw(1 14473 15284);
+use constant APPS_ACCESS_PERMISSION_NOT_REQUIRED => qw(1 16929);         # binary.com, deriv.app
+use constant APPS_LOGINS_RESTRICTED              => qw(16063);           # mobytrader
 
 sub authorize {
     my $c = shift;
@@ -184,11 +185,11 @@ sub authorize {
     }
 
     my $loginid = $client->loginid;
-    $is_all_approved = 1 if $app_id eq '1';
+    $is_all_approved = 1 if grep /^$app_id$/, APPS_ACCESS_PERMISSION_NOT_REQUIRED;
     $is_all_approved ||= $oauth_model->is_scope_confirmed($app_id, $loginid);
 
     # show scope confirms if not yet approved
-    # do not show the scope confirm screen if APP ID is 1
+    # do not show the scope confirm screen if APP ID is in APPS_ACCESS_PERMISSION_NOT_REQUIRED
     return $c->render(
         template       => $brand_name . '/scope_confirms',
         layout         => $brand_name,
@@ -201,7 +202,6 @@ sub authorize {
     ) unless $is_all_approved;
 
     # setting up client ip
-
     my $client_ip = $c->client_ip;
     if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
         $client_ip = $c->tx->req->headers->header('REMOTE_ADDR');
