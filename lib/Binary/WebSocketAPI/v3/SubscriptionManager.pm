@@ -115,9 +115,10 @@ sub subscribe {
             my $f = Future::Mojo->new->set_label('RedisSubscription[' . $channel . ']');
             $self->redis->subscribe(
                 [$channel],
-
                 sub {
                     my (undef, $err) = @_;
+                    return if ${^GLOBAL_PHASE} eq 'DESTRUCT';
+                    # We can do nothing useful if we are already shutting down
                     $log->tracef('Subscribed to redis server for %s channel %s in pid %i', $class, $channel, $$);
                     if ($err) {
                         $log->errorf("Failed Redis subscription for %s channel %s - %s", $class, $channel, $err);
@@ -181,6 +182,8 @@ sub unsubscribe {
         [$channel],
         sub {
             my (undef, $err) = @_;
+            # We can do nothing useful if we are already shutting down
+            return if ${^GLOBAL_PHASE} eq 'DESTRUCT';
             $log->tracef('Unsubscribed from redis server for %s channel %s in pid %i', $class, $channel, $$);
             delete $channel_unsubscribing->{$channel};
             # May have had a sub/unsub sequence before Redis could finish the
