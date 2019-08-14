@@ -6,21 +6,21 @@ no indirect;
 
 use BOM::Test::WebsocketAPI::Template::DSL;
 
-request proposal_array => sub {
-    my $pa = $_->proposal_array;
-    return {
-        proposal_array => 1,
-        symbol         => $pa->underlying->symbol,
-        contract_type  => [$pa->contract_types->@*],
-        barriers       => [map { {barrier => $_} } $pa->barriers->@*],
-        basis          => $pa->basis,
-        amount         => $pa->amount,
-        currency       => $pa->client->currency,
-        duration       => $pa->duration,
-        duration_unit  => $pa->duration_unit,
-    };
-    },
-    qw(proposal_array);
+#request proposal_array => sub {
+#    my $pa = $_->proposal_array;
+#    return {
+#        proposal_array => 1,
+#        symbol         => $pa->underlying->symbol,
+#        contract_type  => [$pa->contract_types->@*],
+#        barriers       => [map { {barrier => $_} } $pa->barriers->@*],
+#        basis          => $pa->basis,
+#        amount         => $pa->amount,
+#        currency       => $pa->client->currency,
+#        duration       => $pa->duration,
+#        duration_unit  => $pa->duration_unit,
+#    };
+#    },
+#    qw(proposal_array);
 
 rpc_request send_ask => sub {
     my $pa = $_->proposal_array;
