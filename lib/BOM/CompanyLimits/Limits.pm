@@ -175,10 +175,10 @@ sub _get_key_structure {
     my $key_struct = '';
 
     # 1. Add in the expiry type (only the first character)
-    $key_struct .= $hash->{expiry_type};
+    $key_struct .= substr $hash->{expiry_type}, 0, 1;
 
     # 1a. If it does not contain binary user id, add the barrier type (only the first character)
-    $key_struct .= $hash->{barrier_type} unless $hash->{binary_user_id};
+    $key_struct .= substr $hash->{barrier_type}, 0, 1 unless $hash->{binary_user_id};
 
     # 2. Underlying group is always in the middle
     $key_struct .= ',' . $hash->{underlying_symbol} . ',';
