@@ -516,7 +516,7 @@ subtest 'get_ohlc_data_for_period' => sub {
         my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'DJI'}]);
         my $ohlc = $underlying->get_high_low_for_period({
             start => '2012-10-22',
-            end   => '2012-10-24'
+            end   => '2012-10-25'
         });
 
         is $ohlc->{high},  13_368.55, 'Correct High';

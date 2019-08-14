@@ -1,39 +1,71 @@
+version: 2
+
+default: &default
+  docker:
+    - image: regentmarkets/debian-ci:stable
+      user: nobody
+      auth:
+        username: circle4regentmarkets
+        password: $DOCKERHUB_PASSWORD
+  shell: /bin/bash -leo pipefail
+  working_directory: /home/git/regentmarkets/bom-market
+
+alias:
+  - &ssh_keys
+    add_ssh_keys:
+      fingerprints:
+        - "26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb"
+  - &git
+    run:
+      name: Update git repositories
+      command: /opt/circle/prepare-test.sh
+  - &services
+    run:
+      name: Start services
+      command: |
+        start_services
+        touch /tmp/services.ready
+      background: true
+  - &wait_services
+    run:
+      name: Wait for services to start up
+      command: |
+        count=0
+        while [ ! -f /tmp/services.ready ]; do
+            echo 'Still waiting for services...'
+            (( count++ )) && (( count >= 20 )) && break
+            sleep 1
+        done
+  - &tests
+    environment:
+      PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
+
 jobs:
   build:
-    docker:
-    - auth:
-        password: $DOCKERHUB_PASSWORD
-        username: circle4regentmarkets
-      image: regentmarkets/debian-ci:stable
-      user: nobody
+    <<: *default
     steps:
-    - add_ssh_keys:
-        fingerprints:
-        - 26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb
-    - run:
-        command: for i in chronicle feed; do sudo pg_ctlcluster 9.6 $i start & done
-          && sudo service binary_feeddb_pgbouncer restart & sudo service binary_pgbouncer
-          restart & sudo service redis-server start & wait && sudo cp /home/git/regentmarkets/travis-scripts/conf/redis_appsettings.conf
-          /etc/redis/ && sudo /usr/bin/redis-server /etc/redis/redis_appsettings.conf
-          && cd /home/git/regentmarkets/cpan
-        name: Start services
-    - run:
-        command: echo '--formatter TAP::Formatter::JUnit' >> .proverc && make unit_test_market
-        environment:
-          PERL5LIB: /home/git/regentmarkets/bom/lib:/home/git/regentmarkets/bom-postgres/lib:/home/git/regentmarkets/bom-market/lib:/home/git/regentmarkets/bom-test/lib:/home/git/regentmarkets/bom-config/lib
-          PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
-        name: Run tests
-    - store_test_results:
-        path: /var/tmp/test-output
-    working_directory: /home/git/regentmarkets/bom-market
-version: 2
+      - *ssh_keys
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: Market unit test
+          command: |
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make unit_test_market
+      - store_test_results:
+          path: /var/tmp/test-output
+
 workflows:
   build-workflow:
-    jobs: &1
+    jobs:
     - build:
         context: perl
   daily:
-    jobs: *1
+    jobs:
+    - build:
+        context: perl
     triggers:
     - schedule:
         cron: 47 20 * * *
