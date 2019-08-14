@@ -1286,6 +1286,13 @@ rpc transfer_between_accounts => sub {
         my ($method, $client_to_full_name);
 
         if (exists $mt5_accounts{$loginid_to}) {
+
+            return _transfer_between_accounts_error(localize('From account provided should be same as current authorized client.'))
+                unless ($client->loginid eq $loginid_from);
+
+            return _transfer_between_accounts_error(localize('Currency provided is different from account currency.'))
+                if ($client->currency ne $currency);
+
             $method                      = \&BOM::RPC::v3::MT5::Account::mt5_deposit;
             $params->{args}{from_binary} = $loginid_from;
             $params->{args}{to_mt5}      = $mt5_accounts{$loginid_to}->{login};
@@ -1293,6 +1300,10 @@ rpc transfer_between_accounts => sub {
         }
 
         if (exists $mt5_accounts{$loginid_from}) {
+
+            return _transfer_between_accounts_error(localize('Currency provided is different from account currency.'))
+                if ($mt5_accounts{$loginid_from}->{currency} ne $currency);
+
             $method                    = \&BOM::RPC::v3::MT5::Account::mt5_withdrawal;
             $params->{args}{to_binary} = $loginid_to;
             $params->{args}{from_mt5}  = $mt5_accounts{$loginid_from}->{login};

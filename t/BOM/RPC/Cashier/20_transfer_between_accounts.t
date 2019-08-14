@@ -1172,7 +1172,24 @@ subtest 'MT5' => sub {
     );
 
     $test_client->status->set('crs_tin_information', 'system', 'testing something');
+
+    my $test_client_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        place_of_birth => 'id'
+    });
+
+    $test_client_btc->set_default_account('BTC');
+    $test_client_btc->payment_free_gift(
+        currency => 'USD',
+        amount   => 10,
+        remark   => 'free gift',
+    );
+
+    $test_client_btc->status->set('crs_tin_information', 'system', 'testing something');
+
     $user->add_client($test_client);
+    $user->add_client($test_client_btc);
 
     my $token = BOM::Database::Model::AccessToken->new->create_token($test_client->loginid, 'test token');
 
@@ -1208,6 +1225,11 @@ subtest 'MT5' => sub {
                 currency => 'USD'
             },
             {
+                loginid  => $test_client_btc->loginid,
+                balance  => num(10),
+                currency => 'BTC'
+            },
+            {
                 loginid  => 'MT' . $ACCOUNTS{'real\vanuatu_standard'},
                 balance  => $DETAILS{balance},
                 currency => 'USD'
@@ -1224,7 +1246,7 @@ subtest 'MT5' => sub {
     $params->{args} = {
         account_from => 'MT' . $ACCOUNTS{'real\vanuatu_standard'},
         account_to   => 'MT' . $ACCOUNTS{'real\labuan_advanced'},
-        currency     => "EUR",
+        currency     => "USD",
         amount       => 180                                          # this is the only deposit amount allowed by mock MT5
     };
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'MT5->MT5 transfer error code')
@@ -1271,10 +1293,29 @@ subtest 'MT5' => sub {
     );
     cmp_ok $test_client->default_account->balance, '==', 970, 'real money account balance increased';
 
-    $mock_client->mock(fully_authenticated => sub { return 0 });
+    {
+        $mock_client->mock(fully_authenticated => sub { return 0 });
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
+            ->error_message_is('There was an error processing the request. Please authenticate your account.',
+            'Error message returned from inner MT5 sub');
+    }
+
+    $params->{args}{account_from} = $test_client_btc->loginid;
+    $params->{args}{account_to}   = 'MT' . $ACCOUNTS{'real\vanuatu_standard'};
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
-        ->error_message_is('There was an error processing the request. Please authenticate your account.',
-        'Error message returned from inner MT5 sub');
+        ->error_message_is('From account provided should be same as current authorized client.', 'Account from must be authenticated account');
+
+    $params->{args}{account_from} = $test_client->loginid;
+    $params->{args}{account_to}   = 'MT' . $ACCOUNTS{'real\vanuatu_standard'};
+    $params->{args}{currency}     = 'EUR';
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
+        ->error_message_is('Currency provided is different from account currency.', 'Correct message for wrong currency for real account_from');
+
+    $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\vanuatu_standard'};
+    $params->{args}{account_to}   = $test_client->loginid;
+    $params->{args}{curency}      = 'EUR';
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
+        ->error_message_is('Currency provided is different from account currency.', 'Correct message for wrong currency for MT5 account_from');
 
     # restore config
     BOM::Config::Runtime->instance->app_config->system->suspend->mt5_manager_api($mt5_mgr_suspend);
