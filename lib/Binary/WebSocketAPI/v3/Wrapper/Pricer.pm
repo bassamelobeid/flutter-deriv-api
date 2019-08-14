@@ -97,6 +97,8 @@ sub proposal {
 
 =head2 proposal_array
 
+Deprecated API call. TODO: (JB) This will be refactored to support multiplier.
+
 Pricing proposals for multiple barriers.
 
 Issues a separate RPC request for each barrier, then collates the results
@@ -107,6 +109,7 @@ in a single response back to the client.
 # perlcritic seems to be confused about the fmap block, hence this workaround
 sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
     my ($c, $req_storage) = @_;
+
     my $msg_type       = 'proposal_array';
     my $barriers_order = {};
     my @barriers       = @{$req_storage->{args}->{barriers}};
@@ -348,6 +351,14 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
 
 # Send nothing back to the client yet. We'll push a response
 # once the RPC calls complete or time out
+    return;
+}
+
+sub proposal_array_deprecated {
+    my ($c, $req_storage) = @_;
+
+    my $dep_error = $c->new_error('proposal_array', 'Deprecated', $c->l('This API call is deprecated.'));
+    $c->send({json => $dep_error}, $req_storage);
     return;
 }
 
