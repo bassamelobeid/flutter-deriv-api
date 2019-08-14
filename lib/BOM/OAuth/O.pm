@@ -307,10 +307,13 @@ sub _login {
                         device  => $bd->device                                                             // $bd->os_string,
                         browser => $bd->browser_string,
                         app     => $app,
+                        ip      => $new_ip,
                         l       => \&localize
                     };
 
-                    $tt->process('/home/git/regentmarkets/bom-oauth/templates/email/new_signin.html.tt', $data, \my $message);
+                    my $template = $brand_name eq 'deriv' ? 'new_signin_deriv.html.tt' : 'new_signin.html.tt';
+
+                    $tt->process('/home/git/regentmarkets/bom-oauth/templates/email/'.$template, $data, \my $message);
                     if ($tt->error) {
                         warn "Template error: " . $tt->error;
                         return;
