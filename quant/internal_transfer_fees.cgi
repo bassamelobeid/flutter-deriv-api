@@ -10,6 +10,7 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 use BOM::Config::Runtime;
+use BOM::Config::Chronicle;
 use BOM::Config::CurrencyConfig;
 use LandingCompany::Registry;
 
@@ -52,6 +53,7 @@ if ($submit) {
     my $new_fee_by_currency = request()->param('fee_by_currency');
     $new_fee_by_currency =~ s/\s//g;
 
+    $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
     if ($fee_by_currency ne $new_fee_by_currency) {
         $fee_by_currency = $new_fee_by_currency;
         $app_config->set({

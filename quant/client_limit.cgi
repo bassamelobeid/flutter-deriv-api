@@ -11,6 +11,7 @@ use BOM::Database::ClientDB;
 use BOM::User::Client;
 use BOM::Config;
 use BOM::Backoffice::Sysinit ();
+use BOM::Config::Chronicle;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -58,6 +59,7 @@ if ($r->params->{'deleteclientlimit'}) {
     } else {
 
         delete $custom_client_limits->{$client_id}->{custom_limits}->{$limit_id};
+        $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
         $app_config->set({'quants.custom_client_profiles' => $json->encode($custom_client_limits)});
 
     }
