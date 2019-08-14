@@ -1271,7 +1271,7 @@ subtest 'Transfers Limits' => sub {
 
     $c->call_ok('mt5_deposit', $deposit_params)->has_error('Transfers should have been stopped')
         ->error_code_is('MT5DepositError', 'Transfers limit - correct error code')
-        ->error_message_is('There was an error processing the request. Maximum of 0 transfers allowed per day.',
+        ->error_message_is('There was an error processing the request. Maximum of 0 MT5 account transfers allowed per day.',
         'Transfers limit - correct error message');
 
     # unlimit the transfers again

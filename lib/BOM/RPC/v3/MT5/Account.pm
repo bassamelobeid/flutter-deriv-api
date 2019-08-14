@@ -1801,7 +1801,7 @@ sub _validate_client {
     my $daily_transfer_limit  = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5;
     my $client_today_transfer = $client_obj->get_today_transfer_summary('mt5_transfer');
 
-    return localize("Maximum of [_1] transfers allowed per day.", $daily_transfer_limit)
+    return localize("Maximum of [_1] MT5 account transfers allowed per day.", $daily_transfer_limit)
         unless $client_today_transfer->{count} < $daily_transfer_limit;
 
     return undef;

@@ -1228,7 +1228,7 @@ subtest 'MT5' => sub {
         amount       => 180                                          # this is the only deposit amount allowed by mock MT5
     };
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'MT5->MT5 transfer error code')
-        ->error_message_is('Transfers between two MT5 accounts are not allowed.', 'MT5->MT5 transfer error message');
+        ->error_message_is('Transfer between two MT5 accounts is not allowed.', 'MT5->MT5 transfer error message');
 
     $params->{args}{account_from} = 'MT' . $ACCOUNTS{'demo\vanuatu_standard'};
     $params->{args}{account_to}   = $test_client->loginid;

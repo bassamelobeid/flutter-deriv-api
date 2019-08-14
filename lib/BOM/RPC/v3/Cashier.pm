@@ -1277,7 +1277,7 @@ rpc transfer_between_accounts => sub {
         and (  exists $siblings->{$loginid_to}
             or exists $mt5_accounts{$loginid_to}));
 
-    return _transfer_between_accounts_error(localize('Transfers between two MT5 accounts are not allowed.'))
+    return _transfer_between_accounts_error(localize('Transfer between two MT5 accounts is not allowed.'))
         if (exists $mt5_accounts{$loginid_from} and exists $mt5_accounts{$loginid_to});
 
     # this transfer involves an MT5 account
