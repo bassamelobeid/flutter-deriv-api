@@ -167,7 +167,7 @@ EOD
     # create tick in database
     my $tick = Postgres::FeedDB::Spot::Tick->new(\%defaults);
 
-    if ($args->{create_redis_tick}) {
+    if ($create_redis_tick) {
         # create redis ticks
         $defaults{count}          = 1;
         $defaults{decimate_epoch} = $defaults{epoch};
