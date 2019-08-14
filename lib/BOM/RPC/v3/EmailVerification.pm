@@ -9,6 +9,96 @@ use BOM::RPC::v3::Utility;
 use Exporter qw(import export_to_level);
 our @EXPORT_OK = qw(email_verification);
 
+# Hacky deriv way - to be refactored in a future card
+# note: square brackets must be escaped with ~
+my %deriv_content = (
+    account_opening_new => q( 
+        <tr>
+            <td bgcolor="#f3f3f3" align="center" style="padding: 0px 10px 0px 10px;">
+                <!--~[if (gte mso 9)|(IE)~]>
+                <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
+                <!~[endif~]-->
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+                    <tr>
+                        <td bgcolor="#ffffff" align="left" valign="top" style="padding: 40px 30px 20px 30px; border-top: 2px solid #ff444f;">
+                            <h2 style="font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">Verify your account</h2>
+                            <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 16px 0px 0px 0px;">Thanks for signing up. To start trading,<br />please verify your email address by clicking the button below.</p>
+                        </td>
+                    </tr>
+                    <!-- button -->
+                    <tr>
+                        <td bgcolor="#ffffff" align="left" style="padding: 12px 30px 20px 30px; color: #333333; font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 18px; font-weight: 400; line-height: 25px;">
+                            <!--~[if (gte mso 9)|(IE)~]>
+                                <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://www.deriv.com" style="height:50px;v-text-anchor:middle;width:200px;" arcsize="8%" stroke="f" fillcolor="#ff444f">
+                                <w:anchorlock/>
+                                <center style="color:#ffffff;font-family:sans-serif;font-size:16px;font-weight:bold;">Verify and start trading</center>
+                                </v:roundrect>
+                            <!~[endif~]-->
+                            <a class="button" href="[_1]" style="mso-hide:all;"><span>Verify and start trading</span></a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td bgcolor="#ffffff" align="left" valign="top" style="padding: 0px 30px 40px 30px;">
+                            <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 16px 0px 0px 0px;">Having trouble with the button?<br />Copy and paste this link into your browser to verify.<br /><a href="[_1]">[_1]</a></p>
+                        </td>
+                    </tr>
+                </table>
+                <!--~[if (gte mso 9)|(IE)~]></td></tr></table>
+                <!~[endif~]-->
+            </td>
+        </tr>
+    ),
+    account_opening_existing => q(
+        <tr>
+            <td bgcolor="#f3f3f3" align="center" style="padding: 0px 10px 0px 10px;">
+                <!--~[if (gte mso 9)|(IE)~]>
+                <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
+                <!~[endif~]-->
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+                    <tr>
+                        <td bgcolor="#ffffff" align="center" valign="top" style="padding: 40px 30px 40px 30px; border-top: 2px solid #ff444f;">
+                                <a href="https://www.deriv.com">
+                                    <img src="https://binary-com.github.io/deriv-email-templates/html/images/open-email.png" width="268" height="180" border="0" style="display: block; max-width: 100%;" alt="Deriv.com">
+                                </a>
+                        </td>
+                    </tr>
+                </table>
+                <!--~[if (gte mso 9)|(IE)~]></td></tr></table>
+                <!~[endif~]-->
+            </td>
+        </tr>
+        <!-- COPY BLOCK -->
+        <tr>
+            <td bgcolor="#f3f3f3" align="center" style="padding: 0px 10px 0px 10px;">
+                <!--~[if (gte mso 9)|(IE)~]>
+                <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
+                <!~[endif~]-->
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+                    <!-- COPY -->
+                    <tr>
+                        <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 8px 30px;">
+                            <h2 style="font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">This email is already in use</h2>
+                        </td>
+                    </tr>
+                    <!-- COPY -->
+                    <tr>
+                        <td bgcolor="#ffffff" align="left" style="padding: 8px 30px 40px 30px; color: #333333; font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px;">
+                            <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">The email address you provided <strong>(<a href="[_1]" style="color: #333333 !important;">[_1]</a>)</strong> is already taken. Only one Deriv account can be created with one email address.</p>
+                            <p style="margin: 16px 0px 0px 0px;"><a href="https://www.deriv.com">Log in</a> or <a href="https://www.deriv.com">reset your password.</a></p>
+                        </td>
+                     </tr>
+                </table>
+                <!--~[if (gte mso 9)|(IE)~]>
+                    </td></tr></table>
+                <!~[endif~]-->
+            </td>
+        </tr>
+    )
+);
+
+
+
+
 =head2 email_verification
 
 Description: Creates verification email messages  for the different verification types that are called using the verify_email api call. 
@@ -70,6 +160,8 @@ sub email_verification {
     my $language         = $args->{language};
     my $source           = $args->{source};
     my $app_name         = $args->{app_name};
+    my $brand            = $args->{brand};
+    my $email            = $args->{email};
 
     my ($has_social_signup, $user_name);
     if ($code and my $user = BOM::RPC::v3::Utility::get_user_by_token($code)) {
@@ -85,9 +177,15 @@ sub email_verification {
 
     return {
         account_opening_new => sub {
-            return {
-                subject => localize('Verify your email address - [_1]', $website_name),
-                message => $verification_uri
+            my ($message, $subject);
+            
+            if ($brand eq 'deriv') {
+                $subject = localize('Verify your account for Deriv'),
+                $message = localize( $deriv_content{account_opening_new}, _build_verification_url('signup', $args) );
+            }
+            else {
+                $subject = localize('Verify your email address - [_1]', $website_name),
+                $message = $verification_uri
                 ? localize(
                     '<p style="font-weight: bold;">Thank you for signing up for a virtual account!</p><p>Click the following link to verify your account:</p><p><a href="[_1]">[_1]</a></p><p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p>Enjoy trading with us on [_2].</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
                     _build_verification_url('signup', $args),
@@ -97,31 +195,43 @@ sub email_verification {
                     '<p style="font-weight: bold;">Thank you for signing up for a virtual account!</p><p>Enter the following verification token into the form to create an account: <p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p>Enjoy trading with us on [_2].</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
                     $code,
                     $website_name
-                ),
+                );
+            }
+            
+            return {
+                subject => $subject,
+                message => $message
             };
         },
         account_opening_existing => sub {
-            return {
-                # Check the user is trying to sign up from binary.com
-                $source == 1
-                ? (
-                    subject => localize('Duplicate email address submitted - [_1]', $website_name),
-                    message => '<div style="line-height:200%;color:#333333;font-size:15px;">'
-                        . localize(
-                        '<p>It seems that you tried to sign up with an email address that\'s already in the [_2] system.</p><p>You may have</p><ul><li>Previously signed up with [_2] using the same email address, or</li><li>Signed up with another trading application that uses [_2] technology.</li></ul><p>If you have forgotten your password, please <a href="[_1]">reset your password</a> now to access your account.</p><p>If this wasn\'t you, please ignore this email.</p><p style="color:#333333;font-size:15px;">Regards,<br/>[_2]</p>',
-                        $password_reset_url,
-                        $website_name,
-                        )
-                        . '</div>'
+            my ( $message, $subject );
+            
+            if ($brand eq 'deriv') { 
+                $subject = localize('This email is taken');
+                $message = localize($deriv_content{account_opening_existing}, $email);
+            }
+            elsif ( $source == 1 ) {
+                $subject = localize('Duplicate email address submitted - [_1]', $website_name);
+                $message = '<div style="line-height:200%;color:#333333;font-size:15px;">'
+                    . localize(
+                    '<p>It seems that you tried to sign up with an email address that\'s already in the [_2] system.</p><p>You may have</p><ul><li>Previously signed up with [_2] using the same email address, or</li><li>Signed up with another trading application that uses [_2] technology.</li></ul><p>If you have forgotten your password, please <a href="[_1]">reset your password</a> now to access your account.</p><p>If this wasn\'t you, please ignore this email.</p><p style="color:#333333;font-size:15px;">Regards,<br/>[_2]</p>',
+                    $password_reset_url,
+                    $website_name,
                     )
-                : (
-                    subject => localize('Duplicate email address submitted to [_1] (powered by [_2])', $app_name, $website_name),
-                    message => '<div style="line-height:200%;color:#333333;font-size:15px;">'
-                        . localize(
-                        '<p>[_3] is one of many trading applications powered by [_2] technology. It seems that you tried to sign up with an email address that\'s already in the [_2] system.</p><p>You may have</p><ul><li>Previously signed up with [_3] using the same email address, or</li><li>Signed up with another trading application that uses [_2] technology.</li></ul><p>If you have forgotten your password, please <a href="[_1]">reset your password</a> now to access your account.</p><p>If this wasn\'t you, please ignore this email.</p><p style="color:#333333;font-size:15px;">Regards,<br/>[_2]</p>',
-                        $password_reset_url, $website_name, $app_name,)
-                        . '</div>'
-                ),
+                    . '</div>';
+            }
+            else {
+                $subject = localize('Duplicate email address submitted to [_1] (powered by [_2])', $app_name, $website_name);
+                $message = '<div style="line-height:200%;color:#333333;font-size:15px;">'
+                    . localize(
+                    '<p>[_3] is one of many trading applications powered by [_2] technology. It seems that you tried to sign up with an email address that\'s already in the [_2] system.</p><p>You may have</p><ul><li>Previously signed up with [_3] using the same email address, or</li><li>Signed up with another trading application that uses [_2] technology.</li></ul><p>If you have forgotten your password, please <a href="[_1]">reset your password</a> now to access your account.</p><p>If this wasn\'t you, please ignore this email.</p><p style="color:#333333;font-size:15px;">Regards,<br/>[_2]</p>',
+                    $password_reset_url, $website_name, $app_name)
+                    . '</div>';
+            }
+            
+            return {
+                subject => $subject,
+                message => $message
             };
         },
         payment_withdraw => sub {
@@ -227,5 +337,8 @@ sub _build_verification_url {
     }
     return "$args->{verification_uri}?action=$action&lang=$args->{language}&code=$args->{code}$extra_params_string";
 }
+
+
+
 
 1;

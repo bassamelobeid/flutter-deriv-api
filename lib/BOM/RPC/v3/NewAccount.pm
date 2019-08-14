@@ -171,6 +171,8 @@ rpc "verify_email",
         language         => $params->{language},
         source           => $params->{source},
         app_name         => get_app_name($params->{source}),
+        brand            => request()->brand,
+        email            => $email,
         %$extra_url_params
     });
 
