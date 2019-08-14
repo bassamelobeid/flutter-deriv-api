@@ -145,12 +145,16 @@ sub _get_counter_from_db {
 ###########################
 
 sub _encode_limit {
+
     my @input = $_[0]->@*;
+
     # TODO: Validate encoding format
     my $loss_type  = $input[0];
     my $offset_cnt = $loss_type - 1;
+
     # the remaining limit counts is minus of loss_type (-1) and count of offsets and divide that by 3 (amount,start,end)
     my $limit_cnt = (scalar @input - 1 - $offset_cnt) / 3;
+
     # C = the loss_type unsigned integer (1 byte)
     # S = the offset_count unsigned integer (2 byte)
     # l = the amount signed integer (4 byte)
@@ -161,12 +165,16 @@ sub _encode_limit {
 
 sub _decode_limit {
     my $encoded = shift;
+
     # TODO: Validate decoding format
     my ($loss_type) = unpack('C', $encoded);
+
     # number of offset is loss_type - 1
     my $offsets_cnt = $loss_type - 1;
+
     # the remaining limit counts is minus of loss_type (-1) and count of offsets
     my $limits_cnt = (length($encoded) - CHAR_BYTE - (SHORT_BYTE * $offsets_cnt)) / LIMITS_BYTE;
+
     # C = the loss_type unsigned integer (1 byte)
     # S = the offset_count unsigned integer (2 byte)
     # l = the amount signed integer (4 byte)
