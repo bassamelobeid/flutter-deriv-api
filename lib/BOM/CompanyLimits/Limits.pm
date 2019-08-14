@@ -69,6 +69,21 @@ sub _db_mapper {
     return $DB_MAP->{$type};
 }
 
+sub _get_key_structure {
+
+    my ($hash) = @_;
+
+    my $key;
+
+    # 1. Add in the underlying symbol and expiry type
+
+    # 2. If no binary user id, add in the barrier and contract type
+
+    # 3. Otherwise, just use binary user id
+
+    return $key;
+}
+
 # maps a type to an underlying index
 sub _type_mapper {
     my $type = shift;
@@ -372,7 +387,9 @@ sub process_and_get_active_limit {
 
 # TODO: need to verify this function will work as a single transaction
 sub add_limit {
-    my ($loss_type, $key, $amount, $start_epoch, $end_epoch) = @_;
+    my ($loss_type, $hash, $amount, $start_epoch, $end_epoch) = @_;
+
+    my $key = _get_key_structure($hash);
 
     # check if redis has been added successfully
     my $now = Date::Utility->new();
