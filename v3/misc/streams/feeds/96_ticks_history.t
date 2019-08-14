@@ -17,10 +17,12 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 for my $symbol (qw/R_50 frxUSDJPY/) {
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => $symbol,
-        epoch      => Date::Utility->new->epoch,
-        quote      => 100
-    });
+            underlying => $symbol,
+            epoch      => Date::Utility->new->epoch,
+            quote      => 100
+        },
+        0
+    );
 }
 
 my $time      = Date::Utility->new;
