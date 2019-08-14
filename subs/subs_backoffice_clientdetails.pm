@@ -245,7 +245,16 @@ sub print_client_details {
         $tax_residences_countries_name = join ',', map { code2country($_) } @tax_residences;
     }
 
-    my %onfido_status = @{BOM::Config::RedisReplicated::redis_events()->hgetall(ONFIDO_REPORT_KEY_PREFIX . $client->binary_user_id)};
+    my $onfido_check = get_onfido_check_latest($client);
+
+    my $check_status = {
+        clear        => 'pass',
+        rejected     => 'fail',
+        suspected    => 'fail',
+        consider     => 'maybe',
+        caution      => 'maybe',
+        unidentified => 'maybe',
+    };
 
     my $template_param = {
         client                => $client,
@@ -284,8 +293,8 @@ sub print_client_details {
         tax_residences_countries_name      => $tax_residences_countries_name,
         cashier_allow_payment_agent_status => $client->status->pa_withdrawal_explicitly_allowed,
         address_verification_status        => $client->status->address_verified,
-        onfido_check_status                => $onfido_status{status},
-        onfido_check_url                   => $onfido_status{url},
+        onfido_check_result                => $check_status->{$onfido_check->{result}},
+        onfido_check_url                   => $onfido_check->{results_uri},
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
@@ -553,6 +562,21 @@ SQL
     $links = "<table>$links</table>" if $links;
 
     return $links;
+}
+
+sub get_onfido_check_latest {
+    my ($client) = @_;
+
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic or die "[$0] cannot create connection";
+
+    my $latest_check_result = $dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare('select * from users.get_onfido_checks(?::BIGINT, ?::TEXT, ?::BIGINT)');
+            $sth->execute($client->binary_user_id, undef, 1);
+            return $sth->fetchrow_hashref;
+        });
+
+    return $latest_check_result;
 }
 
 sub client_statement_summary {

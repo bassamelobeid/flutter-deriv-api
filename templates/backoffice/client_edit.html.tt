@@ -246,9 +246,9 @@ table#client_edit td{
     <tr>
         <td class = 'label'>ONFIDO : </td>
         <td>
-            [% IF onfido_check_status %]
-                <a href="[% onfido_check_url %]">
-                    [% onfido_check_status FILTER upper %]
+            [% IF onfido_check_result %]
+                <a href="[% onfido_check_url %]" target="_blank">
+                    [% onfido_check_result FILTER upper %]
                 </a>
             [% ELSE %]
                 Check not performed
