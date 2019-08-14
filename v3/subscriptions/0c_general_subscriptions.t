@@ -25,7 +25,7 @@ $loop->add(
             concurrent => 50,
             requests   => requests(
                 #calls => [qw( ticks ticks_history proposal_array proposal website_status )],
-                calls  => [qw( proposal_array proposal website_status )],
+                calls  => [qw( proposal website_status )],
                 filter => sub {
                     my $params = shift->{params};
                     my $symbol;

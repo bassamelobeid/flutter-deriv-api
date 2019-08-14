@@ -133,7 +133,9 @@ my $no_offerings     = ($contracts_for->{error}{code} // '') eq 'InvalidSymbol';
 ok(Date::Utility->new->time_hhmmss ge '18:15:00' || Date::Utility->new->time_hhmmss lt '00:15:00' || $market_closed,
     "$symbol $pt is unavailable at this time")
     if $no_offerings;
-my $skip = $market_closed || $no_offerings;
+#my $skip = $market_closed || $no_offerings;
+# skips test until proposal_array is revived
+my $skip = 1;
 
 SKIP: {
     skip "Forex test does not work on the weekends or $symbol $pt contracts unavailability.", 1 if $skip;
@@ -225,22 +227,22 @@ SKIP: {
             $proposal_array_req_tpl->{currency}      = 'USD';
             $response                                = $t->await::proposal_array($proposal_array_req_tpl);
             test_schema('proposal_array', $response);
-
-            is $response->{proposal_array}{proposals}{CALLE}[0]{error}{message}, 'Invalid expiry time.',
-                "ContractBuyValidationError : Invalid expiry time";
+            is $response->{error}->{code}, 'Deprecated', 'deprecated';
+            is $response->{error}->{message}, 'This API call is deprecated.', 'message: This API call is deprecated.';
 
             $proposal_array_req_tpl->{barriers} = [{barrier => 111}];
             # Here we reset the amount back to 100 to ensure we get the minimum stake error for the next test.
             $proposal_array_req_tpl->{amount} = 100;
             $response = $t->await::proposal_array($proposal_array_req_tpl);
             test_schema('proposal_array', $response);
-            ok $response->{proposal_array}{proposals}{CALLE}[0]{error},
-                "ContractBuyValidationError : Minimum stake of 35 and maximum payout of 100000.";
+            is $response->{error}->{code}, 'Deprecated', 'deprecated';
+            is $response->{error}->{message}, 'This API call is deprecated.', 'message: This API call is deprecated.';
 
             $proposal_array_req_tpl->{barriers} = [{barrier => 109}];
             $response = $t->await::proposal_array($proposal_array_req_tpl);
             test_schema('proposal_array', $response);
-            ok $response->{proposal_array}{proposals}{CALLE}[0]{error}, "ContractBuyValidationError : This contract offers no return.";
+            is $response->{error}->{code}, 'Deprecated', 'deprecated';
+            is $response->{error}->{message}, 'This API call is deprecated.', 'message: This API call is deprecated.';
         };
 
         subtest 'subscriptions' => sub {
@@ -259,33 +261,40 @@ SKIP: {
             $response = $t->await::proposal_array($proposal_array_req_tpl);
             test_schema('proposal_array', $response);
 
-            my $uuid = $response->{proposal_array}->{id};
-            ok $uuid, "There is an id";
-            is $response->{subscription}->{id}, $uuid, "And it is the same as the subscription id";
+            my $uuid;
+            SKIP: {
+                skip 'deprecated proposal_array', 2, if $response->{error}->{code} eq 'Deprecated';
+                $uuid = $response->{proposal_array}->{id};
+                ok $uuid, "There is an id";
+                is $response->{subscription}->{id}, $uuid, "And it is the same as the subscription id";
+            };
 
             my $failure = $t->await::proposal_array($proposal_array_req_tpl);
-            is $failure->{error}->{code}, 'AlreadySubscribed', 'Error when subscribed again';
+            is $failure->{error}->{code}, 'Deprecated', 'Deprecated';
 
-            my ($c) = values %{$t->app->active_connections};
+            SKIP: {
+                skip 'deprecated proposal_array', 8, if $failure->{error}->{code} eq 'Deprecated';
+                my ($c) = values %{$t->app->active_connections};
 
-            my $uuid_channel_stash = $c->stash('uuid_channel');
+                my $uuid_channel_stash = $c->stash('uuid_channel');
 
-            my @subscriptions = values %$uuid_channel_stash;
-            is(scalar @subscriptions, 2, "Subscription created");
-            @subscriptions = grep { $_->status } @subscriptions;
-            is(scalar @subscriptions, 1, "1 subscripion is really subscribed");
-            my $subscription = pop @subscriptions;
-            weaken($subscription);
-            ok(Role::Tiny::does_role($subscription, 'Binary::WebSocketAPI::v3::Subscription::Pricer'), 'is a pricer subscription');
-            is_oneref($subscription, '1 refcount');
+                my @subscriptions = values %$uuid_channel_stash;
+                is(scalar @subscriptions, 2, "Subscription created");
+                @subscriptions = grep { $_->status } @subscriptions;
+                is(scalar @subscriptions, 1, "1 subscripion is really subscribed");
+                my $subscription = pop @subscriptions;
+                weaken($subscription);
+                ok(Role::Tiny::does_role($subscription, 'Binary::WebSocketAPI::v3::Subscription::Pricer'), 'is a pricer subscription');
+                is_oneref($subscription, '1 refcount');
 
-            ok(redis_pricer->get($subscription->channel), "check redis subscription");
-            explain "uuid is " . $subscription->uuid;
-            explain "subscribed ? " . $subscription->status;
-            $response = $t->await::forget_all({forget_all => "proposal_array"});
-            ok(!$subscription, 'subscription is destroyed');
-            is @{$response->{forget_all}}, 1, 'Correct number of subscriptions forgotten';
-            is $response->{forget_all}->[0], $uuid, 'Correct subscription id returned';
+                ok(redis_pricer->get($subscription->channel), "check redis subscription");
+                explain "uuid is " . $subscription->uuid;
+                explain "subscribed ? " . $subscription->status;
+                $response = $t->await::forget_all({forget_all => "proposal_array"});
+                ok(!$subscription, 'subscription is destroyed');
+                is @{$response->{forget_all}}, 1, 'Correct number of subscriptions forgotten';
+                is $response->{forget_all}->[0], $uuid, 'Correct subscription id returned';
+            };
         };
 
         subtest 'using durations' => sub {
