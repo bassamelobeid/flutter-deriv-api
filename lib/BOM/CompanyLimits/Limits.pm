@@ -69,21 +69,6 @@ sub _db_mapper {
     return $DB_MAP->{$type};
 }
 
-sub _get_key_structure {
-
-    my ($hash) = @_;
-
-    my $key;
-
-    # 1. Add in the underlying symbol and expiry type
-
-    # 2. If no binary user id, add in the barrier and contract type
-
-    # 3. Otherwise, just use binary user id
-
-    return $key;
-}
-
 # maps a type to an underlying index
 sub _type_mapper {
     my $type = shift;
@@ -181,6 +166,27 @@ sub _decode_limit {
     # L2 = the start_epoch and end_epoch unsgined integer (4 byte)
     # the first param will result in something like CSlL2lL2
     return [unpack((sprintf('CS%u', $offsets_cnt) . "lL2" x $limits_cnt), $encoded)];
+}
+
+sub _get_key_structure {
+
+    my ($hash) = @_;
+
+    my $key_struct = '';
+
+    # 1. Add in the expiry type (only the first character)
+    $key_struct .= $hash->{expiry_type};
+
+    # 1a. If it does not contain binary user id, add the barrier type (only the first character)
+    $key_struct .= $hash->{barrier_type} unless $hash->{binary_user_id};
+
+    # 2. Underlying group is always in the middle
+    $key_struct .= ',' . $hash->{underlying_symbol} . ',';
+
+    # 3. Append the binary user id/contract group
+    $key_struct .= $hash->{binary_user_id} ? $hash->binary_user_id : $hash->{contract_group};
+
+    return $key;
 }
 
 # TODO: testcase for this function
