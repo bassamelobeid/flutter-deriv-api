@@ -172,21 +172,25 @@ sub _get_key_structure {
 
     my ($hash) = @_;
 
+    my @key_struct_list;
+
     my $key_struct = '';
 
-    # 1. Add in the expiry type (only the first character)
-    $key_struct .= substr $hash->{expiry_type}, 0, 1;
+    push @key_struct_list, substr $hash->{expiry_type}, 0, 1;
+    push @key_struct_list, $hash->{underlying_symbol};
 
-    # 1a. If it does not contain binary user id, add the barrier type (only the first character)
-    $key_struct .= substr $hash->{barrier_type}, 0, 1 unless $hash->{binary_user_id};
+    unless ($hash->{binary_user_id}) {
 
-    # 2. Underlying group is always in the middle
-    $key_struct .= ',' . $hash->{underlying_symbol} . ',';
+        $key_struct_list[0] .= substr $hash->{barrier_type}, 0, 1;
+        push @key_struct_list, $hash->{contract_group};
 
-    # 3. Append the binary user id/contract group
-    $key_struct .= $hash->{binary_user_id} ? $hash->binary_user_id : $hash->{contract_group};
+    } else {
 
-    return $key;
+        push @key_struct_list, $hash->{binary_user_id};
+
+    }
+
+    return join ',', @key_struct_list;
 }
 
 # TODO: testcase for this function
