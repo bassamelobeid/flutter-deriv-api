@@ -37,8 +37,7 @@ sub create_underlying_db {
     my $quant_config = BOM::Config::Runtime->instance->app_config->quants->underlyings;
     my $result       = LandingCompany::UnderlyingDB->instance;
 
-    $result->chronicle_reader(BOM::Config::Chronicle::get_chronicle_reader);
-    $result->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer);
+    $result->chronicle_reader(BOM::Config::Chronicle::get_chronicle_reader());
     $result->quant_config($quant_config);
     $result->offerings_flyby(LandingCompany::Registry::get('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config));
 
