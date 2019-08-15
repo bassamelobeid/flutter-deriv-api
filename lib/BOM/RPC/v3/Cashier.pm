@@ -1303,7 +1303,7 @@ rpc transfer_between_accounts => sub {
 
             return _transfer_between_accounts_error(localize('To account provided should be same as current authorized client.'))
                 unless ($client->loginid eq $loginid_to);
-            
+
             return _transfer_between_accounts_error(localize('Currency provided is different from account currency.'))
                 if ($mt5_accounts{$loginid_from}->{currency} ne $currency);
 

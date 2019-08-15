@@ -1305,8 +1305,8 @@ subtest 'MT5' => sub {
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
         ->error_message_is('From account provided should be same as current authorized client.', 'Account from must be authenticated account');
 
-    $params->{args}{account_from}   = 'MT' . $ACCOUNTS{'real\vanuatu_standard'};
-    $params->{args}{account_to} = $test_client_btc->loginid;
+    $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\vanuatu_standard'};
+    $params->{args}{account_to}   = $test_client_btc->loginid;
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
         ->error_message_is('To account provided should be same as current authorized client.', 'To from must be authenticated account');
 
