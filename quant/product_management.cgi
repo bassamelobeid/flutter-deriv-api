@@ -34,11 +34,14 @@ PrintContentType();
 BrokerPresentation('Product Management');
 
 my $args_content;
-my $staff            = BOM::Backoffice::Auth0::get_staffname();
-my $r                = request();
-my $limit_profile    = BOM::Config::quants()->{risk_profile};
-my $app_config       = BOM::Config::Runtime->instance->app_config;
-my %known_profiles   = map { $_ => 1 } keys %$limit_profile;
+my $staff         = BOM::Backoffice::Auth0::get_staffname();
+my $r             = request();
+my $limit_profile = BOM::Config::quants()->{risk_profile};
+my $app_config    = BOM::Config::Runtime->instance->app_config;
+
+# for write, we pass in the writer here
+$app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+my %known_profiles = map { $_ => 1 } keys %$limit_profile;
 my %allowed_multiple = (
     market            => 1,
     submarket         => 1,

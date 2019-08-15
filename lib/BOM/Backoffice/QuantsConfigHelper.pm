@@ -6,6 +6,7 @@ use warnings;
 use BOM::Database::QuantsConfig;
 use BOM::Database::ClientDB;
 use BOM::Config::Runtime;
+use BOM::Config::Chronicle;
 
 use Finance::Underlying;
 use LandingCompany::Registry;
@@ -298,8 +299,9 @@ sub save_threshold {
     }
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
-    my $key_name   = 'quants.' . $args->{limit_type} . '_alert_threshold';
-    my $output     = try {
+    $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+    my $key_name = 'quants.' . $args->{limit_type} . '_alert_threshold';
+    my $output   = try {
         $app_config->set({$key_name => $amount});
         +{
             id     => $args->{limit_type},
@@ -329,7 +331,8 @@ sub update_config_switch {
 
     my $key_name   = 'quants.' . 'enable_' . $type;
     my $app_config = BOM::Config::Runtime->instance->app_config;
-    my $output     = try {
+    $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+    my $output = try {
         $app_config->set({$key_name => $switch});
         return +{status => $switch};
     }

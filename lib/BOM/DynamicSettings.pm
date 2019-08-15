@@ -19,6 +19,7 @@ use List::Util;
 use BOM::Backoffice::QuantsAuditLog;
 use BOM::Platform::Email qw(send_email);
 use BOM::Config::Runtime;
+use BOM::Config::Chronicle;
 use BOM::Config::CurrencyConfig;
 
 sub textify_obj {
@@ -36,6 +37,8 @@ sub save_settings {
     my $message = "";
     if ($submitted) {
         my $app_config = BOM::Config::Runtime->instance->app_config;
+        # pass in the writer before setting any config
+        $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
 
         my $setting_revision   = $app_config->global_revision();
         my $submitted_revision = $settings->{'revision'};
