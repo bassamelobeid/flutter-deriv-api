@@ -299,14 +299,14 @@ sub _login {
                     and $old_env->{user_agent} ne $user_agent)
                 {
                     my $bd   = HTTP::BrowserDetect->new($user_agent);
-                    my $tt   = Template->new(ABSOLUTE => 1);
+                    my $tt   = Template->new(ENCODING => 'utf8', ABSOLUTE => 1);
                     my $data = {
                         client_name => $client->first_name ? ' ' . $client->first_name . ' ' . $client->last_name : '',
                         country => $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
                         device  => $bd->device                                                             // $bd->os_string,
                         browser => $bd->browser_string,
                         app     => $app,
-                        ip      => $new_ip,
+                        ip      => $r->client_ip,
                         l       => \&localize
                     };
 

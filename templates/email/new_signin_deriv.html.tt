@@ -12,9 +12,9 @@
                     <table border="0" cellpadding="0" cellspacing="0" width="100%">
                         <tr>
                             <td bgcolor="#f3f3f3" align="left" valign="top" style="padding: 16px 24px 16px 24px;">
-                                <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">[% l('Login country:') %]<strong>[% country %]</strong></p>
-                                <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">[% l('Type of device:') %]<strong>[% l( device ) %]</strong></p>
-                                <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">[% l('IP address:') %]<strong>[% ip %]</strong></p>
+                                <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">[% l('Login country:') %] <strong>[% country %]</strong></p>
+                                <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">[% l('Type of device:') %] <strong>[% l( device ) %]</strong></p>
+                                <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">[% l('IP address:') %] <strong>[% ip %]</strong></p>
                             </td>
                         </tr>
                     </table>
@@ -42,7 +42,7 @@
             <!-- COPY -->
             <tr>
                 <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 8px 30px;">
-                    <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">l('Read more about what you can do to safeguard your account [_1]here', '<a href="https://www.deriv.com" style="text-decoration: underline;">') %]</a>.</p>
+                    <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">[% l('Read more about what you can do to safeguard your account [_1]here', '<a href="https://www.deriv.com" style="text-decoration: underline;">') %]</a>.</p>
                 </td>
             </tr>
             <tr>
