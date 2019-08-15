@@ -616,8 +616,10 @@ sub startup {
                 queue_reset_password => {
                     type  => "job_async",
                     redis => {
-                        uri => 'redis://' . $backend_redis->url->host . ':' . $backend_redis->url->port,
-                    }}
+                        uri       => 'redis://' . $backend_redis->url->host . ':' . $backend_redis->url->port,
+                        use_multi => 1,
+                        timeout   => 5,
+                        prefix    => $app->config->{queue_prefix}}}
             },
         });
 
