@@ -293,8 +293,8 @@ sub print_client_details {
         tax_residences_countries_name      => $tax_residences_countries_name,
         cashier_allow_payment_agent_status => $client->status->pa_withdrawal_explicitly_allowed,
         address_verification_status        => $client->status->address_verified,
-        onfido_check_result                => $check_status->{$onfido_check->{result}},
-        onfido_check_url                   => $onfido_check->{results_uri},
+        onfido_check_result                => $check_status->{$onfido_check->{result} // ''},
+        onfido_check_url                   => $onfido_check->{results_uri} // '',
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
