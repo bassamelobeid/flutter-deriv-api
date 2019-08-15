@@ -8,14 +8,42 @@ use Log::Any qw($log);
 use BOM::Database::ClientDB;
 use Syntax::Keyword::Try;
 
+my $clientdb;
+my $collectordb;
+
+sub clientdb {
+    return $clientdb //= do {
+        my $clientdbi = BOM::Database::ClientDB->new({broker_code => 'CR'});
+        $clientdbi->db->dbic;
+    };
+}
+
+sub collectordb {
+    return $collectordb //= do {
+        my $collectordbi = BOM::Database::ClientDB->new({
+            broker_code => 'FOG',
+            operation   => 'collector',
+        });
+        $collectordbi->db->dbic;
+    };
+}
+
 sub set_pending_transaction {
     my $transaction = shift;
 
     try {
-        my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
-        my $dbic = $clientdb->db->dbic;
+        my $cursor_result = collectordb()->run(
+            ping => sub {
+                $_->selectall_arrayref(
+                    'SELECT cryptocurrency.update_cursor(?, ?, ?)',
+                    undef, $transaction->{currency},
+                    $transaction->{block}, 'deposit'
+                );
+            });
 
-        my $res = $dbic->run(
+        $log->warnf("%s: Can't update the cursor to block: %s", $transaction->{currency}, $transaction->{block}) unless $cursor_result;
+
+        my $res = clientdb()->run(
             fixup => sub {
                 $_->selectrow_hashref('select * from payment.find_crypto_by_addresses(?::VARCHAR[])', undef, $transaction->{to});
             });
@@ -49,7 +77,7 @@ sub set_pending_transaction {
             return undef;
         }
 
-        my $result = $dbic->run(
+        my $result = clientdb()->run(
             ping => sub {
                 $_->selectrow_array(
                     'SELECT payment.ctc_set_deposit_pending(?, ?, ?, ?)',

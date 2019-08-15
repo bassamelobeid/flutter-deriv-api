@@ -12,6 +12,7 @@ use Test::MockModule;
 use Net::Async::Blockchain::Transaction;
 use BOM::Event::Actions::CryptoSubscription;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestCollectorDatabase qw(:init);
 use BOM::Test::Helper::Client qw( create_client );
 use BOM::CTC::Helper;
 use BOM::CTC::Currency::LTC;
@@ -38,6 +39,7 @@ subtest "change_address_status" => sub {
         to       => ['abc', 'def'],
         type     => 'receive',
         amount   => 0,
+        block    => 10,
     );
 
     my $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
@@ -67,6 +69,12 @@ subtest "change_address_status" => sub {
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
     is $response, 1, "Correct status";
+
+    my $currency = BOM::CTC::Currency->new(
+        currency_code => $transaction->{currency},
+        broker_code   => 'CR'
+    );
+    is $currency->get_latest_checked_block('deposit'), 10, "correct latest block number got";
 };
 
 done_testing;
