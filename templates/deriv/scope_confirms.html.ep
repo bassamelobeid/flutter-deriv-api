@@ -1,0 +1,31 @@
+<div id="wrapper" class="scope-confirms">
+    <div>
+        <h1><%= l('Authorize application') %></h1>
+        <p><%= l('[_1] would like permission to access your account [_2]', $app->{name}, $client->loginid) %></p>
+        <div class="separator-line border-bottom"></div>
+        <p><strong><%= l('Review Permissions') %></strong></p>
+        <div class="scopes">
+            <ul class="bullet">
+                <% if (grep { $_ eq 'read' } @$scopes) { %>
+                <li><span><%= l('Read user profile') %></span></li>
+                <% } %>
+                <% if (grep { $_ eq 'trade' } @$scopes) { %>
+                <li><span><%= l('Trading') %></span></li>
+                <% } %>
+                <% if (grep { $_ eq 'admin' } @$scopes) { %>
+                <li><span><%= l('Operate on accounts') %></span></li>
+                <% } %>
+                <% if (grep { $_ eq 'payments' } @$scopes) { %>
+                <li><span><%= l('Payments') %></span></li>
+                <% } %>
+            </ul>
+        </div>
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
+            <div>
+                <button class="button" name="confirm_scopes" value="<%= l('Grant') %>" type="submit"><%= l('Grant') %></button>
+                <button class="button button-secondary" name="cancel_scopes" value="<%= l('Cancel') %>" type="submit"><%= l('Cancel') %></button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title><%= l('Log in') %> | <%= ucfirst($website_domain) %> </title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+        <link rel="shortcut icon" href="https://<%= $website_domain %>/icons/icon-48x48.png"/>
+        <link rel="apple-touch-icon" sizes="48x48" href="https://<%= $website_domain %>/icons/icon-48x48.png"/>
+        <link rel="apple-touch-icon" sizes="72x72" href="https://<%= $website_domain %>/icons/icon-72x72.png"/>
+        <link rel="apple-touch-icon" sizes="96x96" href="https://<%= $website_domain %>/icons/icon-96x96.png"/>
+        <link rel="apple-touch-icon" sizes="144x144" href="https://<%= $website_domain %>/icons/icon-144x144.png"/>
+        <link rel="apple-touch-icon" sizes="192x192" href="https://<%= $website_domain %>/icons/icon-192x192.png"/>
+        <link rel="apple-touch-icon" sizes="256x256" href="https://<%= $website_domain %>/icons/icon-256x256.png"/>
+        <link rel="apple-touch-icon" sizes="384x384" href="https://<%= $website_domain %>/icons/icon-384x384.png"/>
+        <link rel="apple-touch-icon" sizes="512x512" href="https://<%= $website_domain %>/icons/icon-512x512.png"/>
+
+        <style type="text/css">
+            @import url("https://fonts.googleapis.com/css?family=IBM+Plex+Sans:400,700&display=swap");
+            /*---------- variables ---------- */
+            :root {
+                /* colors */
+                --color-black: #0e0e0e;
+                --color-black-2: #2a2a2a;
+                --color-black-3: #333333;
+                --color-black-4: #182039;
+                --color-white: #ffffff;
+                --color-red: #ff444f;
+                --color-red-1: #dd573a;
+                --color-red-2: #ffc9cc;
+                --color-red-3: #d43e47;
+                --color-grey-1: #f4f4f4;
+                --color-grey-2: #e8e8e8;
+                --color-grey-3: #646464;
+                --color-grey-4: #fafbfb;
+                --color-grey-5: #f8f6f6;
+                --color-grey: #9b9b9b;
+                --color-green: #85acb0;
+                --color-blue: #4c76be;
+                --color-blue-2: #365899;
+                /* font-sizes */
+                --text-size-xs: 1.2rem;
+                --text-size-s: 1.6rem;
+                --text-size-sm: 2rem;
+                --text-size-m: 2.4rem;
+                --text-size-l: 3.2rem;
+                --text-size-xl: 4.8rem;
+                --text-size-xxl: 6.4rem;
+            }
+            html {
+                font-size: 62.5%;
+            }
+            body {
+                font-family: 'IBM Plex Sans', sans-serif;
+                margin: 0;
+            }
+            header {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 7.2rem;
+                margin-bottom: 8rem;
+                background-color: var(--color-black);
+            }
+            header #logo {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            a {
+                color: var(--color-red);
+                font-size: var(--text-size-xs);
+                line-height: 1.5;
+                text-decoration: none;
+            }
+            a:hover {
+                cursor: pointer;
+                text-decoration: underline;
+            }
+            p {
+                color: var(--color-black-3);
+                font-weight: normal;
+                font-size: var(--text-size-s);
+                line-height: 1.5;
+            }
+            p.secondary {
+                color: var(--color-grey);
+            }
+            h1, h2, h3, h4, h5 {
+                font-weight: bold;
+                line-height: 1.25;
+                width: 100%;
+                margin-top: 0;
+            }
+            h1 {
+                font-size: var(--text-size-xxl);
+            }
+
+            h2 {
+                font-size: var(--text-size-xl);
+            }
+
+            h3 {
+                font-size: var(--text-size-l);
+            }
+
+            h4 {
+                font-size: var(--text-size-m);
+            }
+
+            h5 {
+                font-size: var(--text-size-s);
+            }
+
+                /*---------- form, input, button ---------- */
+            button {
+                border-radius: 6px;
+                padding: 1rem 1.6rem;
+                font-size: 1.4rem;
+                transition: all 0.25s;
+                font-weight: bold;
+            }
+            button:hover {
+                cursor: pointer;
+            }
+            button:focus, button:active {
+                outline: none;
+            }
+            button:active {
+                transform: scale(0.95);
+            }
+            button > * {
+                pointer-events: none;
+            }
+            button.primary {
+                border: 2px solid var(--color-red);
+                color: var(--color-red);
+                background: transparent;
+            }
+            button.primary:hover {
+                background-color: var(--color-red);
+                color: var(--color-white);
+            }
+            button.secondary {
+                border: 2px solid var(--color-red);
+                color: var(--color-white);
+                background: var(--color-red);
+            }
+            button.secondary:hover {
+                background-color: var(--color-red-3);
+                border-color: var(--color-red-3);
+            }
+
+            input {
+                background: none;
+                color: var(--color-black);
+                font-size: var(--text-size-s);
+                padding: 1rem 1rem 1rem 0.8rem;
+                width: 95%;
+                display: block;
+                border: none;
+                border-radius: 0;
+                border-bottom: 1px solid var(--color-grey-2);
+            }
+            input::placeholder {
+                transition: opacity 0.25s;
+                padding-left: 0.3rem;
+                color: var(--color-grey);
+            }
+            input:focus {
+                outline: none;
+            }
+            input:focus ~ label {
+                transform: translate(-0.6rem, -2rem) scale(0.7);
+                color: var(--color-green);
+            }
+            input:focus ~ span::before {
+                width: 100%;
+            }
+            input:focus::placeholder {
+                opacity: 0.5;
+            }
+            input:valid ~ label {
+                transform: translate(-0.6rem, -2rem) scale(0.7);
+                color: var(--color-green);
+            }
+
+            form {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                width: 95%;
+                max-width: 524px;
+                margin: 4rem auto;
+            }
+            form input {
+                margin-bottom: 1.6rem;
+            }
+            form button[type=submit] {
+                margin-top: 2.4rem;
+            }
+            form a {
+                align-self: flex-end;
+            }
+
+            /*---------- oneall custom style ---------- */
+            .plugin {
+                margin: 0;
+                font-family: 'IBM Plex Sans', sans-serif;
+            }
+            .plugin #providers .providers_group .providers_block {
+                overflow: hidden;
+                clear: both;
+            }
+            .plugin #providers .providers_group .providers_block .providers_row {
+                clear: both;
+                display: flex;
+                justify-content: center;
+            }
+            .plugin #providers .providers_group .providers_block .providers_row .provider {
+                position: relative;
+            }
+            .plugin #providers .providers_group .providers_block .providers_row .provider .name {
+                position: absolute;
+                top: 20%;
+            }
+            @-moz-document url-prefix() {
+                .plugin #providers .providers_group .providers_block .providers_row .provider .name {
+                    /* stylelint-disable-line function-url-quotes */
+                    top: 28%;
+                }
+            }
+            .provider#provider_google {
+                background: var(--color-white);
+                border: 1px solid var(--color-grey-5);
+            }
+            .provider#provider_google:hover {
+                background: var(--color-grey-4);
+            }
+
+            .provider#provider_facebook {
+                background: var(--color-blue);
+                border: none;
+            }
+            .provider#provider_facebook:hover {
+                background: var(--color-blue-2);
+            }
+
+            .provider {
+                border-radius: 4px;
+            }
+            .provider + .provider {
+                margin-left: 10px;
+            }
+            .provider a.button {
+                background-position-x: center;
+                background-position-y: center;
+                background-repeat: no-repeat;
+                border-radius: 4px;
+                padding: 5px 0;
+                box-sizing: border-box;
+                width: 17.4rem;
+                height: 4.8rem;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                text-decoration: none;
+                transition: background-color 0.2s;
+            }
+            @media screen and (max-width: 480px) {
+                .provider a.button {
+                    width: 80px;
+                }
+            }
+            .provider a.button span {
+                display: none !important;
+            }
+            .provider a.button#button_google {
+                background-image: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGcgZmlsbC1ydWxlPSJub256ZXJvIiBmaWxsPSJub25lIj48cGF0aCBkPSJNMjMuOTE4IDEyLjIyNWMwLS45ODQtLjA4Mi0xLjcwMS0uMjU4LTIuNDQ1SDEyLjIwM3Y0LjQzOGg2LjcyNWMtLjEzNiAxLjEwMy0uODY4IDIuNzYzLTIuNDk1IDMuODhsLS4wMjMuMTQ4IDMuNjIzIDIuNzUuMjUuMDI1YzIuMzA2LTIuMDg2IDMuNjM1LTUuMTU2IDMuNjM1LTguNzk2IiBmaWxsPSIjNDI4NUY0Ii8+PHBhdGggZD0iTTEyLjIwMyAyMy45MThjMy4yOTUgMCA2LjA2LTEuMDYzIDguMDgtMi44OTdsLTMuODUtMi45MjNjLTEuMDMuNzA0LTIuNDEzIDEuMTk1LTQuMjMgMS4xOTVhNy4zMzIgNy4zMzIgMCAwIDEtNi45NDItNC45NjlsLS4xNDMuMDEyLTMuNzY3IDIuODU3LS4wNS4xMzRjMi4wMDcgMy45MDYgNi4xMyA2LjU5IDEwLjkwMiA2LjU5IiBmaWxsPSIjMzRBODUzIi8+PHBhdGggZD0iTTUuMjYgMTQuMzI0YTcuMjMgNy4yMyAwIDAgMS0uNDA2LTIuMzY1YzAtLjgyNC4xNS0xLjYyMS4zOTMtMi4zNjVsLS4wMDctLjE1OS0zLjgxNC0yLjkwMy0uMTI0LjA1OUExMS43NzUgMTEuNzc1IDAgMCAwIDAgMTEuOTU5YzAgMS45MjYuNDc1IDMuNzQ3IDEuMzAyIDUuMzY4bDMuOTU5LTMuMDAzIiBmaWxsPSIjRkJCQzA1Ii8+PHBhdGggZD0iTTEyLjIwMyA0LjYyNGMyLjI5MSAwIDMuODM3Ljk3IDQuNzE4IDEuNzhsMy40NDQtMy4yOTVDMTguMjUgMS4xODMgMTUuNDk4IDAgMTIuMjAzIDAgNy40MyAwIDMuMzA4IDIuNjg0IDEuMzAyIDYuNTlsMy45NDUgMy4wMDRjLjk5LTIuODg0IDMuNzI5LTQuOTcgNi45NTYtNC45NyIgZmlsbD0iI0VCNDMzNSIvPjwvZz48L3N2Zz4=");
+            }
+            .provider a.button#button_facebook {
+                background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMiIgaGVpZ2h0PSIyMiIgdmlld0JveD0iMCAwIDEyIDIyIj4KICAgIDxwYXRoIGZpbGw9IiNGRkYiIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTguNzk3IDMuNTE0aDIuMjNWLjEwOEw5Ljk0NiAwSDcuOTMyYTQuOTA1IDQuOTA1IDAgMCAwLTIuODUuODc5IDQuMjQzIDQuMjQzIDAgMCAwLTEuNzA0IDIuODM3Yy0uMDc0LjQ4NC0uMTE1Ljk3MS0uMTIxIDEuNDZ2Mi41ODFIMHYzLjc5N2gzLjI0M3Y5LjU2OEg3LjE5VjExLjU0aDMuMjNjLjE3Ni0xLjI3LjMzOC0yLjUyNy41LTMuODI1SDcuMTYyVjUuMDE0Yy4wNjgtMS4xMjIuNzMtMS40NiAxLjYzNS0xLjV6Ii8+Cjwvc3ZnPgo=");
+            }
+            .provider .name {
+                display: none;
+            }
+            #oa_social_login_container {
+                width: 95%;
+                max-width: 524px;
+                margin: 16px auto;
+            }
+            #oa_social_login_container iframe {
+                height: auto !important;
+                width: 100% !important;
+            }
+            .center-text {
+                text-align: center;
+            }
+        </style>
+
+        <script type="text/javascript">
+            var oa = document.createElement('script');
+            oa.type = 'text/javascript';
+            oa.async = false;
+            oa.src = '//binary.api.oneall.com/socialize/library.js?lang=<%= ($r->language eq "ZH_CN" || $r->language eq "ZH_TW") ? "zh" : lc($r->language) %>';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(oa, s);
+        </script>
+    </head>
+    <body class="oauth">
+        <header>
+            <a id="logo" href="https://<%= $website_domain %>/">
+                <svg xmlns="http://www.w3.org/2000/svg" width="160" height="27">
+                    <defs>
+                        <linearGradient id="a" x1="50%" x2="50%" y1="0%" y2="100%">
+                            <stop offset="0%" stop-color="#FF6544"/>
+                            <stop offset="100%" stop-color="#FF4449"/>
+                        </linearGradient>
+                    </defs>
+                    <g fill="none">
+                        <path fill="url(#a)" d="M6.13 0v.03L16.314 13.5 0 26.97V27h16.474c4.807 0 8.979-3.373 10.06-8.136l1.363-6.008a10.63 10.63 0 0 0-1.98-8.894A10.261 10.261 0 0 0 17.84 0H6.13z"/>
+                        <path fill="#B51A31" d="M16.308 13.527L9.144 27H0z"/>
+                        <path fill="#FFF" d="M39.64 0h10.283c8.279 0 13.01 5.782 11.702 13.327l-.013.076c-1.31 7.547-8.05 13.406-16.338 13.406H34.992L39.639 0zm6.559 21.485c4.744 0 8.51-3.255 9.334-8.005l.013-.077c.824-4.747-1.799-8.08-6.546-8.08h-4.48l-2.804 16.162H46.2zM69.473 0h19.89l-.912 5.247H74.328l-.945 5.438h9.118l-.91 5.247h-9.117l-.976 5.625H85.81l-.91 5.247H64.826L69.473 0zm38.975 17.235l4.778 9.574h-6.78l-6.31-13.793h4.364c2.826 0 4.712-1.541 5.103-3.791l.014-.076c.438-2.523-1.07-3.825-3.895-3.825h-5.754L96.24 26.808h-5.8L95.088 0h12.054c3.353 0 5.785.959 7.204 2.72 1.21 1.492 1.64 3.6 1.197 6.127l-.013.077c-.742 4.326-3.51 7.046-7.082 8.311zM122.963 0h5.8l-4.647 26.809h-5.802L122.964 0zm10.51 0h6.402l3.62 18.88L153.662 0h6.254l-15.343 27h-5.123l-5.977-27z"/>
+                    </g>
+                </svg>
+            </a>
+        </header>
+
+        <%= content %>
+    </body>
+</html>
