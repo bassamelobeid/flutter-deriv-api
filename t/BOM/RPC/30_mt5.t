@@ -670,7 +670,7 @@ subtest 'deposit' => sub {
 
     $runtime_system->suspend->mt5_deposits(1);
     $c->call_ok($method, $params)->has_error('error as mt5_deposits are suspended in system config')
-        ->error_code_is('MT5DepositError', 'error code is MT5DepositError')->error_message_is('Deposits are suspended.');
+        ->error_code_is('MT5DepositError', 'error code is MT5DepositError')->error_message_is('MT5 deposits are suspended.');
     $runtime_system->suspend->mt5_deposits(0);
 
     BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
@@ -866,7 +866,7 @@ subtest 'withdrawal' => sub {
 
     $runtime_system->suspend->mt5_withdrawals(1);
     $c->call_ok($method, $params)->has_error('error as mt5_withdrawals are suspended in system config')
-        ->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')->error_message_is('Withdrawals are suspended.');
+        ->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')->error_message_is('MT5 withdrawals are suspended.');
     $runtime_system->suspend->mt5_withdrawals(0);
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);

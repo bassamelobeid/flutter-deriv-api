@@ -1073,7 +1073,7 @@ async_rpc mt5_deposit => sub {
     if ($app_config->system->suspend->mt5_deposits) {
         return create_error_future({
                 code              => $error_code,
-                message_to_client => localize('Deposits are suspended.')});
+                message_to_client => localize('MT5 deposits are suspended.')});
     }
 
     return _mt5_validate_and_get_amount($client, $fm_loginid, $to_mt5, $amount, $error_code)->then(
@@ -1217,7 +1217,7 @@ async_rpc mt5_withdrawal => sub {
     if ($app_config->system->suspend->mt5_withdrawals) {
         return create_error_future({
                 code              => $error_code,
-                message_to_client => localize('Withdrawals are suspended.')});
+                message_to_client => localize('MT5 withdrawals are suspended.')});
     }
 
     return _make_error($error_code, localize('MT5 account is locked'), 'MT5 account is locked') if $client->status->mt5_withdrawal_locked;
