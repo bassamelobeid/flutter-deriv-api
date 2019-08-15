@@ -619,7 +619,7 @@ sub startup {
                         uri       => 'redis://' . $backend_redis->url->host . ':' . $backend_redis->url->port,
                         use_multi => 1,
                         timeout   => 5,
-                        prefix    => $app->config->{queue_prefix}}}
+                        prefix    => $ENV{JOB_QUEUE_PREFIX} // $app->config->{queue_prefix}}}
             },
         });
 
