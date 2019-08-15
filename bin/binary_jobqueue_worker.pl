@@ -25,13 +25,14 @@ use BOM::Config::RedisReplicated;
 my $redis_config = BOM::Config::RedisReplicated::redis_config('queue', 'write');
 
 GetOptions(
-    'testing|T'    => \my $TESTING,
-    'foreground|f' => \my $FOREGROUND,
-    'workers|w=i'  => \(my $WORKERS = 4),
-    'socket|S=s'   => \(my $SOCKETPATH = "/var/run/bom-rpc/binary_jobqueue_worker.sock"),
-    'redis|R=s'    => \(my $REDIS = $redis_config->{uri}),
-    'log|l=s'      => \(my $log_level = "info"),
-    'pid-file=s'   => \(my $PID_FILE),                                                      #for BOM::Test::Script compatilibity
+    'testing|T'        => \my $TESTING,
+    'foreground|f'     => \my $FOREGROUND,
+    'workers|w=i'      => \(my $WORKERS = 4),
+    'socket|S=s'       => \(my $SOCKETPATH = "/var/run/bom-rpc/binary_jobqueue_worker.sock"),
+    'redis|R=s'        => \(my $REDIS = $redis_config->{uri}),
+    'log|l=s'          => \(my $log_level = "info"),
+    'queue-prefix|q=s' => \(my $queue_prefix = ''),
+    'pid-file=s'       => \(my $PID_FILE),                                                      #for BOM::Test::Script compatilibity
 ) or exit 1;
 
 require Log::Any::Adapter;
@@ -249,7 +250,8 @@ sub run_worker_process {
             uri                 => $redis,
             max_concurrent_jobs => 1,
             use_multi           => 1,
-            timeout             => 5
+            timeout             => 5,
+            prefix              => $queue_prefix,
         ));
 
     my $stopping;
