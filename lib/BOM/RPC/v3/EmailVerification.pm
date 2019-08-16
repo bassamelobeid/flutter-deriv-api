@@ -157,7 +157,7 @@ sub email_verification {
     my $language         = $args->{language};
     my $source           = $args->{source};
     my $app_name         = $args->{app_name};
-    my $brand            = $args->{brand};
+    my $brand            = $args->{brand} // '';
     my $email            = $args->{email};
 
     my ($has_social_signup, $user_name);
