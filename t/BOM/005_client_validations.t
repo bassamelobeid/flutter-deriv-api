@@ -70,10 +70,18 @@ subtest 'doughflow payment exists for client - no flag set - dont allow for paym
 my $reason = "test to set unwelcome login";
 my $clerk  = 'shuwnyuan';
 
-# lock client cashier
-Test::Exception::lives_ok { $client->status->set('unwelcome', $clerk, $reason) } "set client unwelcome login";
-#make sure unwelcome client cannot trade
+#make sure unwelcome, disabled, and no_withdrawal_or_trading client cannot trade
+$client->status->set('unwelcome', $clerk, $reason);
 ok(ref $validation_obj->_validate_client_status($client) eq 'Error::Base', "unwelcome client cannot trade");
+$client->status->clear_unwelcome;
+
+$client->status->set('disabled', $clerk, $reason);
+ok(ref $validation_obj->_validate_client_status($client) eq 'Error::Base', "disabled client cannot trade");
+$client->status->clear_disabled;
+
+$client->status->set('no_withdrawal_or_trading', $clerk, $reason);
+ok(ref $validation_obj->_validate_client_status($client) eq 'Error::Base', "no_withdrawal_or_trading client cannot trade");
+$client->status->clear_no_withdrawal_or_trading;
 
 my $client_details = {
     broker_code     => 'MX',
