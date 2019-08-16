@@ -352,7 +352,13 @@ sub get_xml_result {
     my $header_namespace = 'http://xml.proveid.experian.com/xsd/Headers';
     my $soap = SOAP::Lite->readable(1)->uri($self->api_uri)->proxy($self->api_proxy)->ns($header_namespace, 'head');
 
-    my $som = $soap->search(SOAP::Data->type('xml' => $request), $self->_2fa_header);
+    my $som;
+    try {
+        $som = $soap->search(SOAP::Data->type('xml' => $request), $self->_2fa_header);
+    }
+    catch {
+        die "Connection error\n";    ## Do not echo $_ here, as it can contain a path
+    };
 
     die "Encountered SOAP Fault when sending XML request : " . $som->faultcode . " : " . $som->faultstring if $som->fault;
 
