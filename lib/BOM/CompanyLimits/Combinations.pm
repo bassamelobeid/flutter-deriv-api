@@ -9,6 +9,7 @@ sub get_combinations {
     my ($contract) = @_;
 
     my ($contract_group, $underlying_group) = _get_attr_groups($contract);
+
     my $bet_data   = $contract->{bet_data};
     my $underlying = $bet_data->{underlying_symbol};
 
@@ -26,7 +27,10 @@ sub get_combinations {
     }
 
     my @attributes = ($underlying, $contract_group, $expiry_type, $is_atm);
-    my @combinations = _get_all_key_combinations(@attributes);
+
+    # Return the combinations here (hardcode them)
+
+    #my @combinations = _get_all_key_combinations(@attributes);
 
     # Merge another array that substitutes underlying with underlying group
     # Since we know that the 1st attribute is the underlying, each index in which
