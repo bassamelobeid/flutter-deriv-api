@@ -48,9 +48,11 @@ subtest 'Limits test base case', sub {
     my $key = BOM::CompanyLimits::Limits::get_key_structure($limit_def_hash);
 
     # 2. Set the limit value (somehow)
+    # TODO: Visit this later
+    my $limit_val = 100;
 
     # 3. Set in redis
-    #$redis->hset('LIMITS', $key, $encoded_limits);
+    $redis->hset('LIMITS', $key, $limit_val);
 
     #BOM::CompanyLimits::Limits::add_limit('POTENTIAL_LOSS', $limit_def_hash, 10, 0, 0);
 
