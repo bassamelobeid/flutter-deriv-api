@@ -498,8 +498,20 @@ async sub client_verification {
                     } else {
                         # Override date_of_birth if there is mismatch between Onfido report and client submited data
                         if ($client->date_of_birth ne $first_dob) {
-                            $client->date_of_birth($first_dob);
-                            $client->save;
+                            try {
+                                my $user = $client->user;
+
+                                foreach my $lid ($user->bom_real_loginids) {
+                                    my $current_client = BOM::User::Client->new({loginid => $lid});
+                                    $current_client->date_of_birth($first_dob);
+                                    $current_client->save;
+                                }
+                            }
+                            catch {
+                                my $e = $@;
+                                $log->debugf('Error updating client date of birth: %s', $e);
+                            };
+
                             # Update applicant data
                             BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $client->loginid});
                             $log->debugf("Updating client's date of birth due to mismatch between Onfido's response and submitted information");
