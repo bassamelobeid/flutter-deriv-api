@@ -102,6 +102,15 @@ subtest 'Response' => sub {
     my $xml_fld = "/home/git/regentmarkets/bom-test/data/Experian/SavedXML/";
     my $pdf_fld = "/home/git/regentmarkets/bom-test/data/Experian/PDF/";
 
+    my $test    = 'Failure to connect does not reveal module path or name';
+    my $client  = create_client("MX");
+    my $proveid = BOM::Platform::ProveID->new(
+        client    => $client,
+        api_proxy => 'http://localhost:1'
+    );
+    eval { $proveid->get_result; };
+    ok($@ !~ /ProveID/, $test);
+
     for my $entry (@$entries) {
         subtest $entry => sub {
             my $client  = create_client("MX");
