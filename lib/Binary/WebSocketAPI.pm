@@ -576,6 +576,7 @@ sub startup {
         });
 
     my $backend_redis = redis_queue();
+    my $queue_prefix = $ENV{JOB_QUEUE_PREFIX} // $app->config->{queue_prefix};
 
     $app->plugin(
         'web_socket_proxy' => {
@@ -619,7 +620,9 @@ sub startup {
                         uri       => 'redis://' . $backend_redis->url->host . ':' . $backend_redis->url->port,
                         use_multi => 1,
                         timeout   => 5,
-                        prefix    => $ENV{JOB_QUEUE_PREFIX} // $app->config->{queue_prefix}}}
+                        $queue_prefix ? (prefix => $queue_prefix) : (),
+                    },
+                }
             },
         });
 
