@@ -96,9 +96,6 @@ my %deriv_content = (
     )
 );
 
-
-
-
 =head2 email_verification
 
 Description: Creates verification email messages  for the different verification types that are called using the verify_email api call. 
@@ -178,49 +175,44 @@ sub email_verification {
     return {
         account_opening_new => sub {
             my ($message, $subject);
-            
+
             if ($brand eq 'deriv') {
-                $subject = localize('Verify your account for Deriv'),
-                $message = localize( $deriv_content{account_opening_new}, _build_verification_url('signup', $args) );
-            }
-            else {
-                $subject = localize('Verify your email address - [_1]', $website_name),
-                $message = $verification_uri
-                ? localize(
+                $subject = localize('Verify your account for Deriv');
+                $message = localize($deriv_content{account_opening_new}, _build_verification_url('signup', $args));
+            } else {
+                $subject = localize('Verify your email address - [_1]', $website_name);
+                $message =
+                    $verification_uri
+                    ? localize(
                     '<p style="font-weight: bold;">Thank you for signing up for a virtual account!</p><p>Click the following link to verify your account:</p><p><a href="[_1]">[_1]</a></p><p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p>Enjoy trading with us on [_2].</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
                     _build_verification_url('signup', $args),
                     $website_name
                     )
-                : localize(
+                    : localize(
                     '<p style="font-weight: bold;">Thank you for signing up for a virtual account!</p><p>Enter the following verification token into the form to create an account: <p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p>Enjoy trading with us on [_2].</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                    $code,
-                    $website_name
-                );
+                    $code, $website_name
+                    );
             }
-            
+
             return {
                 subject => $subject,
                 message => $message
             };
         },
         account_opening_existing => sub {
-            my ( $message, $subject );
-            
-            if ($brand eq 'deriv') { 
+            my ($message, $subject);
+
+            if ($brand eq 'deriv') {
                 $subject = localize('This email is taken');
                 $message = localize($deriv_content{account_opening_existing}, $email);
-            }
-            elsif ( $source == 1 ) {
+            } elsif ($source == 1) {
                 $subject = localize('Duplicate email address submitted - [_1]', $website_name);
                 $message = '<div style="line-height:200%;color:#333333;font-size:15px;">'
                     . localize(
                     '<p>It seems that you tried to sign up with an email address that\'s already in the [_2] system.</p><p>You may have</p><ul><li>Previously signed up with [_2] using the same email address, or</li><li>Signed up with another trading application that uses [_2] technology.</li></ul><p>If you have forgotten your password, please <a href="[_1]">reset your password</a> now to access your account.</p><p>If this wasn\'t you, please ignore this email.</p><p style="color:#333333;font-size:15px;">Regards,<br/>[_2]</p>',
-                    $password_reset_url,
-                    $website_name,
-                    )
-                    . '</div>';
-            }
-            else {
+                    $password_reset_url, $website_name,
+                    ) . '</div>';
+            } else {
                 $subject = localize('Duplicate email address submitted to [_1] (powered by [_2])', $app_name, $website_name);
                 $message = '<div style="line-height:200%;color:#333333;font-size:15px;">'
                     . localize(
@@ -228,7 +220,7 @@ sub email_verification {
                     $password_reset_url, $website_name, $app_name)
                     . '</div>';
             }
-            
+
             return {
                 subject => $subject,
                 message => $message
@@ -337,8 +329,5 @@ sub _build_verification_url {
     }
     return "$args->{verification_uri}?action=$action&lang=$args->{language}&code=$args->{code}$extra_params_string";
 }
-
-
-
 
 1;
