@@ -251,7 +251,7 @@ sub run_worker_process {
             max_concurrent_jobs => 1,
             use_multi           => 1,
             timeout             => 5,
-            prefix              => $queue_prefix,
+            $queue_prefix ? (prefix => $queue_prefix) : (),
         ));
 
     my $stopping;
