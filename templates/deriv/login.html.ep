@@ -6,6 +6,7 @@
                 <input type="email" id="txtEmail" name="email" placeholder="<%= l('example@email.com') %>" required autocomplete="off" autofocus="autofocus" maxlength="254" />
                 <label for="txtEmail"><%= l('Email') %></label>
                 <span class="bar"></span>
+                <span id="btnClear" class="input-button"></span>
                 <p class='hide error error_invalid'><%= l("That doesn't look like an email address.") %></p>
                 <p class='hide error error_required'><%= l('Email is required.') %></p>
                 <% if (stash('error')) { %>
@@ -16,30 +17,36 @@
                 <input type="password" id="txtPass" name="password" placeholder="<%= l('Password') %>" required autocomplete="off" />
                 <label for="txtPass"><%= l('Password') %></label>
                 <span class="bar"></span>
+                <span id="btnToggle" class="input-button"></span>
                 <p class='hide error error_required'><%= l('Password is required.') %></p>
             </div>
             <% if ($is_reset_password_allowed) { %>
-                <a id="lost-password" href="https://www.<%= $website_domain %>/<%= lc($r->language) %>/user/lost_passwordws.html"><%= l('Forgot password?') %></a>
+                <a id="lost-password" class="hide" href="https://www.<%= $website_domain %>/<%= lc($r->language) %>/user/lost_passwordws.html"><%= l('Forgot password?') %></a>
             <% } %>
             <button type="submit" class="button secondary" name="login" value="<%= l('Login') %>"><%= l('Login') %></button>
             <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
         </form>
         <% if ($use_social_login) { %>
             <p class="secondary center-text"><%= l('Or') %></p>
-            <% if (stash('social_error')) { %>
-                <p class='error-msg center-text'><%= stash('social_error') %></p>
-            <% } %>
             <div id="oa_social_login_container"></div>
+            <% if (stash('social_error')) { %>
+                <p class='error-oneall center-text'><%= stash('social_error') %></p>
+            <% } %>
         <% } %>
     </div>
 <% } %>
 
 <script type="text/javascript">
-    var frmLogin, txtEmail, txtPass;
+    var frmLogin, txtEmail, txtPass, btnClear, btnToggle;
     window.onload = function() {
-        frmLogin = document.getElementById('frmLogin');
-        txtEmail = document.getElementById('txtEmail');
-        txtPass  = document.getElementById('txtPass');
+        frmLogin  = document.getElementById('frmLogin');
+        txtEmail  = document.getElementById('txtEmail');
+        txtPass   = document.getElementById('txtPass');
+        btnClear  = document.getElementById('btnClear');
+        btnToggle = document.getElementById('btnToggle');
+
+        btnClear.addEventListener('click', clearEmailInput);
+        btnToggle.addEventListener('click', togglePasswordVisibility);
 
         if (frmLogin) {
             frmLogin.addEventListener('submit', function(e) {
@@ -56,11 +63,6 @@
         ];
         fields.forEach(function(field) {
             if (field.element) {
-                field.element.addEventListener('input', function(e) {
-                    if (field.element.classList.contains('hadError')) {
-                        field.validator();
-                    }
-                });
                 ['change', 'blur'].forEach(function(event) {
                     field.element.addEventListener(event, function(e) {
                         field.validator();
@@ -112,6 +114,15 @@
         if (el) {
             el.classList.remove('hide');
         }
+    }
+
+    function togglePasswordVisibility() {
+        txtPass.type = txtPass.type === 'password' ? 'text' : 'password';
+    }
+
+    function clearEmailInput() {
+        txtEmail.value = '';
+        validateEmail();
     }
 </script>
 
