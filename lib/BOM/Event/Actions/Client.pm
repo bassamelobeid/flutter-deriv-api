@@ -28,6 +28,7 @@ use Future::Utils qw(fmap0);
 use Future::AsyncAwait;
 use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
 use Date::Utility;
+use BOM::Config::Runtime;
 
 use BOM::Config;
 use BOM::Platform::Context qw(localize);
@@ -204,6 +205,7 @@ information to process this client.
 async sub document_upload {
     my ($args) = @_;
 
+    BOM::Config::Runtime->instance->app_config->check_for_update();
     return if (BOM::Config::Runtime->instance->app_config->system->suspend->onfido);
 
     try {
@@ -584,6 +586,7 @@ Sync the client details from our system with Onfido
 async sub sync_onfido_details {
     my $data = shift;
 
+    BOM::Config::Runtime->instance->app_config->check_for_update();
     return if (BOM::Config::Runtime->instance->app_config->system->suspend->onfido);
 
     try {
