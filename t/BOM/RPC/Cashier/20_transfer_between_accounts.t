@@ -1216,6 +1216,7 @@ subtest 'MT5' => sub {
     $params->{args} = {};
     $rpc_ct->call_ok($method, $params)->has_no_error("no error for $method with no params");
 
+    # we don't return balance and currency for MT5 accounts yet, for performance reasons
     my @accounts = map { $_->{loginid} } @{$rpc_ct->result->{accounts}};
     cmp_bag(
         $rpc_ct->result->{accounts},
@@ -1230,14 +1231,13 @@ subtest 'MT5' => sub {
                 currency => 'BTC'
             },
             {
-                loginid  => 'MT' . $ACCOUNTS{'real\vanuatu_standard'},
-                balance  => $DETAILS{balance},
-                currency => 'USD'
+                loginid => 'MT' . $ACCOUNTS{'real\vanuatu_standard'},
             },
             {
-                loginid  => 'MT' . $ACCOUNTS{'real\labuan_advanced'},
-                balance  => $DETAILS{balance},
-                currency => 'USD'
+                loginid => 'MT' . $ACCOUNTS{'real\labuan_advanced'},
+            },
+            {
+                loginid => 'MT' . $ACCOUNTS{'demo\vanuatu_standard'},
             },
         ],
         "all real money accounts by empty $method call"
