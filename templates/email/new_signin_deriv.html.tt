@@ -22,30 +22,6 @@
                 </td>
             </tr>
             <tr>
-                <td bgcolor="#ffffff" align="center" style="padding: 0px 30px 0px 30px;">
-                        <h2 style="font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0px 0px 0px 0px;">[% l('Don’t recognise this device?') %]</h2>
-                        <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 8px 0px 0px 0px;">[% l('If this wasn’t you, please change your password now.') %]</p>
-                </td>
-            </tr>
-            <!-- button -->
-            <tr>
-                <td bgcolor="#ffffff" align="center" style="padding: 16px 30px 24px 30px; color: #333333; font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 18px; font-weight: 400; line-height: 25px;">
-                    <!--~[if (gte mso 9)|(IE)~]>
-                        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://www.deriv.com" style="height:50px;v-text-anchor:middle;width:170px;" arcsize="10%" strokecolor="#ff444f" fillcolor="#ffffff">
-                        <w:anchorlock/>
-                        <center style="color:#ff444f;font-family:sans-serif;font-size:16px;font-weight:bold;">[% l('Reset password') %]</center>
-                        </v:roundrect>
-                    <!~[endif~]-->
-                    <a class="button-secondary" href="https://www.deriv.com" style="mso-hide:all;"><span>[% l('Reset password') %]</span></a>
-                </td>
-            </tr>
-            <!-- COPY -->
-            <tr>
-                <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 8px 30px;">
-                    <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">[% l('Read more about what you can do to safeguard your account [_1]here', '<a href="https://www.deriv.com" style="text-decoration: underline;">') %]</a>.</p>
-                </td>
-            </tr>
-            <tr>
                 <td bgcolor="#ffffff" align="left" valign="top" style="padding: 0px 30px 40px 30px; border-radius: 0px 0px 2px 2px;">
                     <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 16px 0px 0px 0px;">[% l('If you have any questions or concerns, we’re here to help.') %]</p>
                     <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">[% l('Contact us via our [_1]Help Centre','<a href="https://www.deriv.com/help-centre" style="text-decoration: underline;">') %]</a>.</p>
