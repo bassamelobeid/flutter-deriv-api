@@ -34,7 +34,6 @@ sub _build_app_config {
     return App::Config::Chronicle->new(
         definition_yml   => '/home/git/regentmarkets/bom-config/share/app_config_definitions.yml',
         chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         setting_name     => 'binary',
     );
 }
