@@ -29,6 +29,23 @@ sub get_combinations {
     my @attributes = ($underlying, $contract_group, $expiry_type, $is_atm);
 
     # Return the combinations here (hardcode them)
+    my $combinations = [
+        [$underlying, $contract_group, $expiry_type, $is_atm],
+        [$underlying, $contract_group, $expiry_type, ''],
+        [$underlying, $contract_group, '',           ''],
+        [$underlying, '',              $expiry_type, $is_atm],
+        [$underlying, '',              $expiry_type, ''],
+        [$underlying, '',              '',           $is_atm],
+        [$underlying, '',              '',           ''],
+        ['',          $contract_group, $expiry_type, $is_atm],
+        ['',          $contract_group, $expiry_type, ''],
+        ['',          $contract_group, '',           $is_atm],
+        ['',          $contract_group, '',           ''],
+        ['',          '',              $expiry_type, $is_atm],
+        ['',          '',              $expiry_type, ''],
+        ['',          '',              '',           $is_atm]];
+
+    return @$combinations;
 
     #my @combinations = _get_all_key_combinations(@attributes);
 
@@ -37,14 +54,14 @@ sub get_combinations {
     # the 1st bit is 1 has underlying:
     my @underlyinggroup_combinations;
     my $underlying_len = length($underlying);
-    foreach my $i (1 .. scalar @combinations) {
+    foreach my $i (1 .. scalar @$combinations) {
         if (($i & 1) == 1) {
-            my $k = $underlying_group . substr($combinations[$i - 1], $underlying_len);
+            my $k = $underlying_group . substr(@$combinations[$i - 1], $underlying_len);
             push(@underlyinggroup_combinations, $k);
         }
     }
 
-    return (@combinations, @underlyinggroup_combinations);
+    return (@$combinations, @underlyinggroup_combinations);
 }
 
 sub _get_attr_groups {
