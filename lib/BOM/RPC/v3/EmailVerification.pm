@@ -84,7 +84,7 @@ my %deriv_content = (
                     <tr>
                         <td bgcolor="#ffffff" align="left" style="padding: 8px 30px 40px 30px; color: #333333; font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px;">
                             <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">The email address you provided <strong>(<a href="[_1]" style="color: #333333 !important;">[_1]</a>)</strong> is already taken. Only one Deriv account can be created with one email address.</p>
-                            <p style="margin: 16px 0px 0px 0px;"><a href="https://www.deriv.com">Log in</a> or <a href="https://www.deriv.com">reset your password.</a></p>
+                            <p style="margin: 16px 0px 0px 0px;"><a href="https://www.deriv.com">Log in</a></p>
                         </td>
                      </tr>
                 </table>
