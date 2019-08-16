@@ -9,7 +9,6 @@ use Error::Base;
 use BOM::Test;
 use BOM::Config::RedisReplicated;
 use BOM::Database::QuantsConfig;
-use BOM::Test::Data::Utility::UnitTestDatabase qw( :init );
 use Future::AsyncAwait;
 
 my $redis = BOM::Config::RedisReplicated::redis_limits_write;
@@ -168,7 +167,7 @@ sub _decode_limit {
     return [unpack((sprintf('CS%u', $offsets_cnt) . "lL2" x $limits_cnt), $encoded)];
 }
 
-sub _get_key_structure {
+sub get_key_structure {
 
     my ($hash) = @_;
 
