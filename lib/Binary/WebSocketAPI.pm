@@ -24,6 +24,7 @@ use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
 use Binary::WebSocketAPI::v3::Wrapper::LandingCompany;
 use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections ws_redis_master |;
 
+use Brands;
 use Encode;
 use DataDog::DogStatsd::Helper;
 use Digest::MD5 qw(md5_hex);
@@ -167,7 +168,9 @@ sub startup {
             ) if exists $BLOCK_ORIGINS{$uri->host};
 
             my $client_ip = $c->client_ip;
-            my $brand     = defang($c->req->param('brand'));
+            #TODO is this brand that brand ? can be used to create a Brands object ?
+            my $brand_name = defang($c->req->param('brand'));
+            my $binary_brand = Brands->new(name => 'binary');
 
             if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
                 $client_ip = $c->tx->req->headers->header('REMOTE_ADDR');
@@ -179,7 +182,8 @@ sub startup {
             # not guaranteed to have referrer information so the stash value may not always
             # be set.
             if (my $domain = $c->req->headers->header('Origin')) {
-                if (my ($domain_without_prefix) = $domain =~ m{^(?:https://)?\S+(binary\.\S+)$}) {
+                my $name = $binary_brand->name;
+                if (my ($domain_without_prefix) = $domain =~ m{^(?:https://)?\S+($name\.\S+)$}) {
                     $c->stash(domain => $domain_without_prefix);
                 }
             }
@@ -193,7 +197,7 @@ sub startup {
                 user_agent           => $user_agent,
                 ua_fingerprint       => md5_hex(($app_id // 0) . ($client_ip // '') . ($user_agent // '')),
                 ($app_id) ? (source => $app_id) : (),
-                brand => (($brand =~ /^\w{1,10}$/) ? $brand : 'binary'),
+                brand => (($brand_name =~ /^\w{1,10}$/) ? $brand_name : $binary_brand->name),
             );
         });
 
