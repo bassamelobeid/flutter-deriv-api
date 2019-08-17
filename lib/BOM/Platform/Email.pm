@@ -9,8 +9,6 @@ use Email::Stuffer;
 use Email::Valid;
 use Encode;
 
-use Brands;
-
 use BOM::Config;
 use BOM::Platform::Context qw(request localize);
 
@@ -56,7 +54,7 @@ sub send_email {
         }
     }
 
-    my $brand = Brands->new(name => request()->brand);
+    my $brand = request()->brand;
     if ($fromemail eq $brand->emails('support')) {
         $fromemail = "\"" . $brand->website_name . "\" <$fromemail>";
     }

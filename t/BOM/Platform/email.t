@@ -4,7 +4,6 @@ use Test::More;
 use Email::Sender::Transport::Test;
 use Test::MockModule;
 use Test::Warnings qw(warning);
-use Brands;
 use BOM::Platform::Context qw(request);
 use Email::Address::UseXS;
 use Email::MIME::Attachment::Stripper;
@@ -48,7 +47,7 @@ subtest 'args' => sub {
 
 subtest 'support address' => sub {
     $args->{to} = 'test@test.com';
-    my $brand = Brands->new(name => request()->brand);
+    my $brand = request()->brand;
     $args->{from} = $brand->emails('support');
     ok(send_email($args));
     my @deliveries = $transport->deliveries;

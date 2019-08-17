@@ -4,7 +4,6 @@ use Moo;
 use Try::Tiny;
 use List::Util qw( first );
 
-use Brands;
 use BOM::User::Client;
 use BOM::Config;
 use XML::LibXML;
@@ -224,7 +223,7 @@ sub _fetch_proveid {
         $client->status->set('proveid_pending', 'system', 'Experian request failed and will be attempted again within 1 hour.');
         $client->status->set('unwelcome',       'system', 'FailedExperian - Experian request failed and will be attempted again within 1 hour.');
 
-        my $brand   = Brands->new(name => request()->brand);
+        my $brand   = request()->brand;
         my $loginid = $self->client->loginid;
         my $message = <<EOM;
 There was an error during Experian request.
@@ -260,8 +259,8 @@ sub _request_id_authentication {
     my $self   = shift;
     my $client = $self->client;
 
-    my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);
-    my $brand         = Brands->new(name => request()->brand);
+    my $client_name   = join(' ', $client->salutation, $client->first_name, $client->last_name);
+    my $brand         = request()->brand;
     my $support_email = $brand->emails('support');
     my $subject       = localize('Documents are required to verify your identity');
 

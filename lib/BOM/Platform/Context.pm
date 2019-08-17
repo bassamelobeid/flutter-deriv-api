@@ -20,8 +20,6 @@ use base qw( Exporter );
 
 our @EXPORT_OK = qw(request localize template);
 
-use Brands;
-
 use Time::Duration::Concise::Localize;
 use BOM::Platform::Context::Request;
 use Format::Util::Numbers;
@@ -127,7 +125,7 @@ sub localize {
 sub _configure_template_for {
     my $request = shift;
 
-    my @include_path = (Brands->new(name => $request->brand)->template_dir);
+    my @include_path = ($request->brand->template_dir);
 
     my $template_toolkit = Template::AutoFilter->new({
             ENCODING     => 'utf8',

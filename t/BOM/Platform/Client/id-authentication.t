@@ -7,7 +7,6 @@ use Test::FailWarnings;
 use File::Spec;
 use Test::MockModule;
 use Test::Exception;
-use Brands;
 
 use BOM::Platform::Email;
 
@@ -132,7 +131,7 @@ subtest 'MX accounts' => sub {
     my $mock         = Test::MockModule->new('BOM::Platform::Client::IDAuthentication');
     my $proveid_mock = Test::MockModule->new('BOM::Platform::ProveID');
 
-    my $brand = Brands->new(name => request()->brand);
+    my $brand = request()->brand;
 
     $mock->mock(
         send_email => sub {

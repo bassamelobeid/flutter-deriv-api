@@ -48,7 +48,6 @@ sub _remote_ip {
 sub from_mojo {
     my $args    = shift;
     my $request = $args->{mojo_request};
-
     return unless ($request);
 
     # put back some ENV b/c we use it in our other modules like BOM::User::AuditLog

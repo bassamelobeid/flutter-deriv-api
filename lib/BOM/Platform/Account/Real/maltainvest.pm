@@ -7,7 +7,6 @@ use Encode;
 use JSON::MaybeXS;
 use Date::Utility;
 
-use Brands;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(request);
@@ -21,7 +20,7 @@ sub _validate {
 
     # also allow MLT UK client to open MF account
     my $from_client = $args->{from_client};
-    my $company = Brands->new(name => request()->brand)->countries_instance->financial_company_for_country($from_client->residence) // '';
+    my $company = request()->brand->countries_instance->financial_company_for_country($from_client->residence) // '';
     return if ($company eq 'maltainvest' or ($from_client->residence eq 'gb' and $from_client->landing_company->short eq 'malta'));
 
     warn("maltainvest acc opening err: loginid:" . $from_client->loginid . " residence:" . $from_client->residence . " financial_company:$company");

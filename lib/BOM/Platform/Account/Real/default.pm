@@ -8,7 +8,6 @@ use Try::Tiny;
 use Locale::Country;
 use List::MoreUtils qw(any);
 
-use Brands;
 use BOM::User::Client;
 use BOM::User::Client::Desk;
 
@@ -44,7 +43,7 @@ sub validate {
     }
 
     if ($details) {
-        my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
+        my $countries_instance = request()->brand->countries_instance;
 
         if ($details->{citizen}
             && !defined $countries_instance->countries->country_from_code($details->{citizen}))
@@ -122,7 +121,8 @@ sub after_register_client {
 
     BOM::Platform::Client::Sanctions->new({
             client => $client,
-            brand  => Brands->new(name => request()->brand)})->check();
+            brand  => request()->brand
+        })->check();
 
     my $client_loginid = $client->loginid;
     my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);
@@ -367,7 +367,7 @@ sub validate_dob {
     my $dob_date = try { Date::Utility->new($dob) };
     return {error => 'InvalidDateOfBirth'} unless $dob_date;
 
-    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
+    my $countries_instance = request()->brand->countries_instance;
     return {error => 'invalid country'} if !defined $countries_instance;
 
     # Get the minimum age from the client's residence

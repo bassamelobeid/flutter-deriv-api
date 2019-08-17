@@ -5,6 +5,7 @@ use Encode;
 use URL::Encode;
 use Sys::Hostname;
 
+use Brands;
 use BOM::Config::Runtime;
 
 with 'BOM::Platform::Context::Request::Builders';
@@ -45,11 +46,6 @@ has 'params' => (
     lazy_build => 1,
 );
 
-has 'brand' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 has '_ip' => (
     is => 'ro',
 );
@@ -58,6 +54,11 @@ sub param {
     my $self = shift;
     my $name = shift;
     return $self->params->{$name};
+}
+
+sub brand {
+    my $self = shift;
+    return Brands->new(name => $self->_brand_name);
 }
 
 sub _build_params {
@@ -131,7 +132,7 @@ sub _build_client_ip {
     return ($self->_ip || '127.0.0.1');
 }
 
-sub _build_brand {
+sub _brand_name {
     my $self = shift;
 
     if (my $brand = $self->param('brand')) {

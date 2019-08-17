@@ -5,7 +5,6 @@ use warnings;
 
 use Try::Tiny;
 
-use Brands;
 use LandingCompany::Registry;
 
 use BOM::User;
@@ -20,8 +19,9 @@ sub create_account {
     my $password               = $details->{client_password} ? BOM::User::Password::hashpw($details->{client_password}) : '';
     my $residence              = $details->{residence};
     my $date_first_contact     = $details->{date_first_contact};
-    my $brand_name             = $details->{brand_name} // request()->brand;
+    my $brand_name             = $details->{brand_name} // request()->brand->name;
     my $brand_country_instance = Brands->new(name => $brand_name)->countries_instance;
+
     if (BOM::Config::Runtime->instance->app_config->system->suspend->new_accounts) {
         return {error => 'invalid'};
     } elsif (BOM::User->new(email => $email)) {

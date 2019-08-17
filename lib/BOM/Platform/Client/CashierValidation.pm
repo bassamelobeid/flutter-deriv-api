@@ -21,7 +21,6 @@ use Format::Util::Numbers qw/get_min_unit financialrounding/;
 use Try::Tiny;
 use List::Util qw(any);
 
-use Brands;
 use BOM::User::Client;
 use LandingCompany::Registry;
 
@@ -79,7 +78,7 @@ sub validate {
     return _create_error(
         localize(
             'Your identity documents have passed their expiration date. Kindly send a scan of a valid identity document to [_1] to unlock your cashier.',
-            Brands->new(name => request()->brand)->emails('support'))) if ($client->documents_expired);
+            request()->brand->emails('support'))) if ($client->documents_expired);
 
     # landing company or country specific validations
     if ($landing_company->short eq 'maltainvest') {
