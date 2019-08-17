@@ -34,7 +34,7 @@ $loop->add(
 
 sub is_mt5_suspended {
     my $app_config = BOM::Config::Runtime->instance->app_config;
-    return 1 if $app_config->system->suspend->mt5;
+    return 1 if $app_config->system->mt5->suspend->all;
     return 0;
 }
 

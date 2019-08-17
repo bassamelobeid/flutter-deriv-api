@@ -194,13 +194,13 @@ sub get_settings_by_group {
                 system.suspend.all_logins
                 system.suspend.social_logins
                 system.suspend.logins
-                system.suspend.mt5
-                system.suspend.mt5_deposits
-                system.suspend.mt5_withdrawals
                 system.suspend.transfer_between_accounts
                 system.suspend.transfer_currencies
                 system.suspend.onfido
-                system.suspend.mt5_manager_api
+                system.mt5.suspend.all
+                system.mt5.suspend.deposits
+                system.mt5.suspend.withdrawals
+                system.mt5.suspend.manager_api
                 )
         ],
         quant => [qw(
