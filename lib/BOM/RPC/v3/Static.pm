@@ -20,7 +20,6 @@ use List::Util qw( min max );
 use List::UtilsBy qw(nsort_by);
 use Time::HiRes ();
 
-use Brands;
 use LandingCompany::Registry;
 use Format::Util::Numbers qw/financialrounding/;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_gauge);
@@ -63,8 +62,8 @@ Returns an array of hashes, sorted by country name. Each contains the following:
 rpc residence_list => sub {
     my $residence_countries_list;
 
-    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
-    my $countries = $countries_instance->countries;
+    my $countries_instance = request()->brand->countries_instance;
+    my $countries          = $countries_instance->countries;
     foreach my $country_selection (
         sort { $a->{translated_name} cmp $b->{translated_name} }
         map { +{code => $_, translated_name => $countries->localized_code2country($_, request()->language)} } $countries->all_country_codes
