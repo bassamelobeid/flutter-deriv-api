@@ -8,7 +8,6 @@ use BOM::Platform::Account::Real::default;
 use BOM::Platform::Context qw (request);
 use BOM::Platform::Email qw(send_email);
 use BOM::Config;
-use Brands;
 
 use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
 use List::Util qw/none all any/;
@@ -115,7 +114,7 @@ sub _email_diffs_to_compliance {
         $message .= should_warn($new) ? "shown and client accepted the disclosure." : "not shown.";
     }
 
-    my $brand = Brands->new(name => request()->brand);
+    my $brand = request()->brand;
     return send_email({
         from    => $brand->emails('support'),
         to      => $brand->emails('compliance'),

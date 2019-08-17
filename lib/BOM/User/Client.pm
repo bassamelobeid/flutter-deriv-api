@@ -15,7 +15,6 @@ use List::Util qw/all/;
 use Locale::Country::Extra;
 use Format::Util::Numbers qw(roundcommon);
 use BOM::Platform::Context qw (request);
-use Brands;
 
 use Rose::DB::Object::Util qw(:all);
 use Rose::Object::MakeMethods::Generic scalar => ['self_exclusion_cache'];
@@ -789,7 +788,7 @@ sub add_note {
 
     # send to different email based on the subject of the email, as desk.com handles different subject and email differently.
     my $email_add = ($subject =~ /$SUBJECT_RE/) ? 'support_new_account' : 'support';
-    $email_add = Brands->new(name => request()->brand)->emails($email_add);
+    $email_add = request()->brand->emails($email_add);
 
     # We want to record who this note is for, but many legacy places already include client ID.
     # If you're reading this, please check for those and remove the condition.
@@ -1060,8 +1059,8 @@ sub is_region_eu {
 
     if ($self->is_virtual) {
 
-        my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
-        my $company = $countries_instance->real_company_for_country($self->residence);
+        my $countries_instance = request()->brand->countries_instance;
+        my $company            = $countries_instance->real_company_for_country($self->residence);
 
         return LandingCompany::Registry->new->get($company)->is_eu;
     } else {

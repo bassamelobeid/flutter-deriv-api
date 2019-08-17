@@ -18,8 +18,7 @@ use Webservice::GAMSTOP;
 use Email::Address::UseXS;
 use Email::Stuffer;
 use YAML::XS qw(LoadFile);
-
-use BOM::Config;
+use BOM::Platform::Context qw(request);
 
 sub aes_keys {
     state $config = YAML::XS::LoadFile('/etc/rmg/aes_keys.yml');
@@ -116,9 +115,9 @@ sub set_gamstop_self_exclusion {
         # send email to helpdesk.
         $client->add_note($subject, $content);
         $client->save();
-
+        my $brand = request()->brand();
         # also send email to complience
-        Email::Stuffer->from("compliance-alerts\@binary.com")->to("compliance-alerts\@binary.com")->subject($subject)->text_body($content)
+        Email::Stuffer->from($brand->emails("compliance_alert"))->to($brand->emails("compliance_alert"))->subject($subject)->text_body($content)
             ->send_or_die;
     }
     catch {
