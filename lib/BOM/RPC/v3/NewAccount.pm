@@ -13,8 +13,6 @@ Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 use BOM::RPC::Registry '-dsl';
 
-use Brands;
-
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
 use BOM::User::Client;
@@ -125,7 +123,7 @@ sub request_email {
     my $message = $args->{message};
 
     return send_email({
-        from                  => Brands->new(name => request()->brand)->emails('support'),
+        from                  => request()->brand->emails('support'),
         to                    => $email,
         subject               => $subject,
         message               => [$message],
@@ -263,8 +261,8 @@ rpc new_account_real => sub {
     my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'real', $args);
     return $error if $error;
 
-    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
-    my $company = $countries_instance->gaming_company_for_country($client->residence)
+    my $countries_instance = request()->brand->countries_instance;
+    my $company            = $countries_instance->gaming_company_for_country($client->residence)
         // $countries_instance->financial_company_for_country($client->residence);
     my $broker = LandingCompany::Registry->new->get($company)->broker_codes->[0];
 

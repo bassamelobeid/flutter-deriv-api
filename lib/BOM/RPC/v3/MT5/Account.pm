@@ -12,7 +12,6 @@ use List::Util qw(any first);
 use Try::Tiny;
 use File::ShareDir;
 use Locale::Country::Extra;
-use Brands;
 use LandingCompany::Registry;
 use WebService::MyAffiliates;
 use Future::Utils qw(fmap1);
@@ -290,7 +289,7 @@ async_rpc mt5_new_account => sub {
     # legal validation
     my $residence = $client->residence;
 
-    my $brand              = Brands->new(name => request()->brand);
+    my $brand              = request()->brand;
     my $countries_instance = $brand->countries_instance;
     my $countries_list     = $countries_instance->countries_list;
 
