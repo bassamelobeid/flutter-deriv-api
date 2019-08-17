@@ -9,7 +9,6 @@ use Locale::Country;
 use JSON::MaybeXS;
 use File::stat qw( stat );
 
-use Brands;
 use LandingCompany::Registry;
 
 use f_brokerincludeall;
@@ -139,7 +138,7 @@ if (@$pcs) {
         my $amount = $pc_currency . $pc->{_json}->{amount};
 
         my @countries =
-            map { /ALL/ ? 'ALL' : Brands->new(name => request()->brand)->countries_instance->countries->country_from_code($_) }
+            map { /ALL/ ? 'ALL' : request()->brand->countries_instance->countries->country_from_code($_) }
             split(/,/, $pc->{_json}->{country});
 
         my $href = request()->url_for(

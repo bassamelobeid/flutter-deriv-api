@@ -42,7 +42,7 @@ my $qty      = request()->param('qty');
 my $bet_ref  = request()->param('ref');
 my $subject;
 my @body;
-my $brand            = Brands->new(name => request()->brand);
+my $brand            = request()->brand;
 my $to               = $brand->emails('alert_quants');
 my $encoded_loginID  = encode_entities($loginID);
 my $encoded_currency = encode_entities($currency);

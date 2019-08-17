@@ -267,10 +267,11 @@ sub send_notification_email {
         );
     push @message, ("By " . $limit->{updated_by} . " on " . $limit->{updated_on});
 
-    my $email_list = 'x-quants@binary.com, compliance@binary.com, x-cs@binary.com,x-marketing@binary.com';
+    my $brand = request()->brand;
+    my $email_list = join ', ', map { $brand->emails($_) } qw(quants compliance cs marketing_x);
 
     send_email({
-            from    => 'system@binary.com',
+            from    => $brand->emails('system'),
             to      => $email_list,
             subject => $subject,
             message => \@message,

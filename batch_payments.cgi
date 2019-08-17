@@ -7,7 +7,6 @@ use warnings;
 use Path::Tiny;
 use Try::Tiny;
 use Date::Utility;
-use Brands;
 use HTML::Entities;
 use Format::Util::Numbers qw/formatnumber/;
 use Scalar::Util qw(looks_like_number);
@@ -319,7 +318,7 @@ if ($preview and @invalid_lines == 0) {
     BOM::User::AuditLog::log($msg, '', $clerk);
     Path::Tiny::path(BOM::Backoffice::Config::config()->{log}->{deposit})->append_utf8($msg);
 
-    my $brand = Brands->new(name => request()->brand);
+    my $brand = request()->brand;
     send_email({
         'from'    => $brand->emails('support'),
         'to'      => $brand->emails('accounting'),

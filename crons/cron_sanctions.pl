@@ -10,7 +10,6 @@ use Path::Tiny qw(path);
 use Getopt::Long;
 use Text::CSV;
 
-use Brands;
 use BOM::Database::ClientDB;
 use BOM::Config;
 use BOM::Platform::Email qw(send_email);
@@ -51,7 +50,7 @@ do_report();
 sub do_report {
 
     my $result;
-    my $brand = Brands->new(name => 'binary');
+    my $brand = BOM::Config->brand();
 
     my $today_date           = Date::Utility::today()->date;
     my $last_sanction_update = $sanctions->last_updated();

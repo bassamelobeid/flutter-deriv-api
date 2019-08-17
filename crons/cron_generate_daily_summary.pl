@@ -10,7 +10,6 @@ use Getopt::Long;
 use Path::Tiny qw(path);
 use Text::CSV;
 
-use Brands;
 use Date::Utility;
 
 use BOM::Config;
@@ -85,7 +84,7 @@ my $filename = 'daily_open_trades_' . $for_date . '.csv';
 
 # CSV creation ends here
 
-my $brand = Brands->new(name => request()->brand);
+my $brand = request()->brand;
 send_email({
     'from'       => $brand->emails('system'),
     'to'         => 'i-payments@binary.com',

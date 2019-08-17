@@ -30,7 +30,7 @@ BOM::Backoffice::Request::template()->process(
     'backoffice/payment_agent_list.html.tt',
     {
         submit_form_url   => request()->url_for("backoffice/f_payment_agent_list.cgi?broker=$broker"),
-        countries_list    => Brands->new(name => 'Binary')->countries_instance->countries->{_country_codes},
+        countries_list    => request()->brand->countries_instance->countries->{_country_codes},
         selected_country  => $selected_country,
         records           => $result,
         currency_options  => request()->available_currencies,

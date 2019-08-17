@@ -21,6 +21,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 use BOM::Config::CurrencyConfig;
+use BOM::Backoffice::Request qw(request);
 
 sub textify_obj {
     my $type  = shift;
@@ -482,10 +483,11 @@ sub send_email_notification {
     push @message, "$disable_type: " . join(",", @different);
     push @message, "By $staff on " . Date::Utility->new->datetime;
 
-    my $email_list = 'x-quants@binary.com, compliance@binary.com, x-cs@binary.com,x-marketing@binary.com';
+    my $brand = request()->brand;
+    my $email_list = join ", ", map { $brand->emails($_) } qw(quants complicance cs marketing_x);
 
     send_email({
-        from    => 'system@binary.com',
+        from    => $brand->emails('system'),
         to      => $email_list,
         subject => $subject,
         message => \@message,

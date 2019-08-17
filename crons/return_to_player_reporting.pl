@@ -3,7 +3,7 @@ use strict;
 use warnings;
 
 use Date::Utility;
-use Brands;
+use BOM::Config;
 use BOM::Platform::Email qw(send_email);
 use Path::Tiny 'path';
 
@@ -15,7 +15,7 @@ use Path::Tiny 'path';
 =cut
 
 my $specified_rptDate = $ARGV[0];
-my $brand = Brands->new(name => 'binary');
+my $brand             = BOM::Config->brand();
 
 my $report_recipients  = join(',', 'compliance-alerts@binary.com', 'bill@binary.com');
 my $failure_recipients = join(',', 'compliance-alerts@binary.com', 'sysadmin@binary.com');

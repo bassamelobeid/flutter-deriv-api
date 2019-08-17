@@ -8,7 +8,6 @@ use Digest::MD5;
 use Path::Tiny;
 use Try::Tiny;
 use Fcntl qw/:flock O_RDWR O_CREAT/;
-use Brands;
 use BOM::MyAffiliates::PaymentToAccountManager;
 use BOM::Config;
 use BOM::Platform::Email qw(send_email);
@@ -77,7 +76,7 @@ try {
     push @message, '';
     push @message, $s3_client->get_s3_url($zip->basename, $expiry);
 
-    my $brand = Brands->new(name => request()->brand);
+    my $brand = request()->brand;
     send_email({
         from    => $brand->emails('system'),
         to      => $brand->emails('affiliates'),

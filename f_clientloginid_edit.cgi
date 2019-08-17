@@ -13,7 +13,6 @@ use Media::Type::Simple;
 use Date::Utility;
 use List::UtilsBy qw(rev_sort_by);
 
-use Brands;
 use LandingCompany::Registry;
 use Finance::MIFIR::CONCAT qw(mifir_concat);
 
@@ -1060,7 +1059,7 @@ if (not $client->is_virtual) {
             self_post => $self_post,
             broker    => $encoded_broker,
             loginid   => $encoded_loginid,
-            countries => Brands->new(name => request()->brand)->countries_instance->countries,
+            countries => request()->brand->countries_instance->countries,
         });
 }
 
@@ -1172,7 +1171,7 @@ sub _residence_change_validation {
     my $new_residence = $data->{new_residence};
     my @all_clients   = @{$data->{all_clients}};
 
-    my $countries_instance = Brands->new()->countries_instance;
+    my $countries_instance = request()->brand->countries_instance;
 
     # Get the list of landing companies, as per residence
     my $get_lc = sub {
@@ -1302,7 +1301,7 @@ sub _assemble_dob_input {
         code_exit_BO('Invalid Date Of Birth format');
     };
 
-    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
+    my $countries_instance = request()->brand->countries_instance;
     code_exit_BO('Invalid country') unless $countries_instance;
 
     my $country = $countries_instance->countries_list->{$client->{residence}};

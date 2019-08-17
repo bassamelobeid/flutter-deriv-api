@@ -5,7 +5,6 @@ use warnings;
 
 use JSON::MaybeXS;
 
-use Brands;
 use f_brokerincludeall;
 use BOM::Database::DataMapper::Payment;
 use BOM::Platform::Email qw(send_email);
@@ -98,7 +97,7 @@ foreach my $loginid (@approved, @rejected) {
 
     if ($input{"${loginid}_notify"}) {
         send_email({
-            from                  => Brands->new(name => request()->brand)->emails('support'),
+            from                  => request()->brand->emails('support'),
             to                    => $client->email,
             subject               => $email_subject,
             message               => [$email_content],

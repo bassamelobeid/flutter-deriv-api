@@ -8,6 +8,7 @@ use Sys::Hostname;
 use Plack::App::CGIBin::Streaming::Request;
 
 use LandingCompany::Registry;
+use Brands;
 
 with 'BOM::Backoffice::Request::Role';
 
@@ -66,7 +67,7 @@ has 'domain_name' => (
 
 has 'brand' => (
     is         => 'ro',
-    isa        => 'Str',
+    isa        => 'Brands',
     lazy_build => 1,
 );
 
@@ -108,10 +109,10 @@ sub _build_brand {
 
     my $broker = $self->broker_code // '';
     if ($broker =~ /^(?:CH|VRCH)/) {
-        return 'champion';
+        return Brands->new(name => 'champion');
     }
 
-    return 'binary';
+    return Brands->new(name => 'binary');
 }
 
 sub _build_available_currencies {
@@ -194,9 +195,11 @@ sub _build_domain_name {
     my $name = $host_name[0];
 
     if ($name =~ /^qa\d+$/) {
+        # TODO should change this ?
         return 'binary' . $name . '.com' if $host_name[1] eq 'regentmarkets';
         return Sys::Hostname::hostname();
     }
+    # TODO should change this ?
     return 'binary.com';
 }
 

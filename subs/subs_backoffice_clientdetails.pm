@@ -10,7 +10,6 @@ use Finance::MIFIR::CONCAT qw(mifir_concat);
 use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 
-use Brands;
 use LandingCompany::Registry;
 
 use BOM::Config;
@@ -140,8 +139,8 @@ sub print_client_details {
     $dob_year_options = set_selected_item($dob_year, $dob_year_options);
 
     my @countries;
-    my $country_codes = {};
-    my $countries_instance = Brands->new(name => request()->brand)->countries_instance->countries;
+    my $country_codes      = {};
+    my $countries_instance = request()->brand->countries_instance->countries;
     foreach my $country_name (sort $countries_instance->all_country_names) {
         push @countries, $country_name;
         $country_codes->{$country_name} = $countries_instance->code_from_country($country_name);
@@ -812,7 +811,7 @@ sub sync_to_doughflow {
     );
     $handoff_token->save;
 
-    my $doughflow_loc  = BOM::Config::third_party()->{doughflow}->{request()->brand};
+    my $doughflow_loc  = BOM::Config::third_party()->{doughflow}->{request()->brand->name};
     my $doughflow_pass = BOM::Config::third_party()->{doughflow}->{passcode};
     my $url            = $doughflow_loc . '/CreateCustomer.asp';
 

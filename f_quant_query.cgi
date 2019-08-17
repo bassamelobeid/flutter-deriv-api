@@ -84,12 +84,13 @@ if (my $il = request()->param('investigate_list')) {
         );
     }
 
-    my @to_list = ('x-quants@binary.com', 'x-cs@binary.com', $staff->{email});
-    push @to_list, 'triage@binary.com' if (request()->param('inform_triage'));
+    my $brand = request()->brand;
+    my @to_list = ($brand->emails('quants'), $brand->emails('cs'), $staff->{email});
+    push @to_list, $brand->emails('triage') if (request()->param('inform_triage'));
 
     if (
         send_email({
-                from    => 'QQ from ' . $staff->{nickname} . ' <qq@binary.com>',
+                from    => 'QQ from ' . $staff->{nickname} . ' <' . $brand->emails('qq') . '>',
                 to      => join(',', @to_list),
                 subject => '[QQ] ' . $client->loginid . ': ' . $reason . ' - ' . request()->param('reflist'),
                 message => [

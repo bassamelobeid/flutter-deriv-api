@@ -16,7 +16,6 @@ package main;
 use strict;
 use warnings;
 
-use Brands;
 use LandingCompany::Registry;
 
 use BOM::User;
@@ -43,7 +42,7 @@ Send email to client to remind them to authenticate their account
 =cut
 
 sub send_email_authentication_reminder {
-    my ($days_between_account_creation, $client, $data, $brands, $redis) = @_;
+    my ($days_between_account_creation, $client, $data, $brand, $redis) = @_;
 
     # Edge case: if the email is sent but the number of days is more than five, we need to handle this
     # Example: if four days are remaining, email content should mention that client has four days remaining
@@ -65,7 +64,7 @@ sub send_email_authentication_reminder {
     );
 
     send_email({
-        from                  => $brands->emails('support'),
+        from                  => $brand->emails('support'),
         to                    => $client->email,
         subject               => localize('IMPORTANT: Authenticate your MT5 real money account to continue trading'),
         message               => [$mt5_followup_email],
@@ -89,7 +88,7 @@ Send email to client to tell them that their MT5 accounts will be disabled
 
 sub send_email_disable_account {
 
-    my ($brands, $client) = @_;
+    my ($brand, $client) = @_;
 
     # Send client the email that their account will be disabled
     my $mt5_disable_email;
@@ -104,7 +103,7 @@ sub send_email_disable_account {
     );
 
     my $email_sent = send_email({
-        from                  => $brands->emails('support'),
+        from                  => $brand->emails('support'),
         to                    => $client->email,
         subject               => localize('IMPORTANT: We are disabling your MT5 real money account'),
         message               => [$mt5_disable_email],
@@ -121,7 +120,7 @@ my $csv_hashref;
 my $redis   = BOM::Config::RedisReplicated::redis_write();
 my @all_ids = @{$redis->hkeys(REDIS_MASTERKEY)};
 
-my $brands = Brands->new(name => BOM::Backoffice::Request::request()->brand);
+my $brand       = BOM::Backoffice::Request::request()->brand;
 my $present_day = Date::Utility::today();
 
 foreach my $id (@all_ids) {
@@ -155,13 +154,13 @@ foreach my $id (@all_ids) {
     next if $days_between_account_creation < MT5_EMAIL_AUTHENTICATION_DAYS;
 
     # Send email to client five days after account creation
-    send_email_authentication_reminder($days_between_account_creation, $client, $data, $brands, $redis) unless $data->{has_email_sent};
+    send_email_authentication_reminder($days_between_account_creation, $client, $data, $brand, $redis) unless $data->{has_email_sent};
 
     # Save the client details in CSV if 10 days have passed after account creation
     if ($days_between_account_creation >= MT5_ACCOUNT_DISABLE_DAYS) {
         my $loginid_info = $client->loginid . ' (' . $client->currency . ')';
 
-        my $email_sent = send_email_disable_account($brands, $client);
+        my $email_sent = send_email_disable_account($brand, $client);
 
         my @mt5_loginids = sort grep { /^MT\d+$/ } $user->loginids;
 

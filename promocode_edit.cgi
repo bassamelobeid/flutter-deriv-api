@@ -6,7 +6,6 @@ use warnings;
 
 use Scalar::Util 'looks_like_number';
 use JSON::MaybeXS;
-use Brands;
 use Date::Utility;
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -35,7 +34,7 @@ if (my $code = $input{promocode}) {
 Bar($pc ? "EDIT PROMOTIONAL CODE" : "ADD PROMOTIONAL CODE");
 
 my @messages;
-my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
+my $countries_instance = request()->brand->countries_instance;
 
 if ($input{save}) {
     @messages = _validation_errors(%input);

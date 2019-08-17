@@ -12,7 +12,6 @@ use Format::Util::Strings qw( set_selected_item );
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use LandingCompany;
-use Brands;
 use Mojo::Redis2;
 use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections ws_redis_master |;
 use JSON::MaybeUTF8;
@@ -52,7 +51,7 @@ sub redis_push {
 
 my $block_app = sub {
     my $app_id = request()->param('app_id');
-    if (Brands->new()->is_app_whitelisted($app_id) || !($app_id =~ m/^[0-9]+$/)) {
+    if (request()->brand->is_app_whitelisted($app_id) || !($app_id =~ m/^[0-9]+$/)) {
         show_form_result("App ID $app_id can not be blocked.", "error");
     } else {
         my $oauth      = BOM::Database::Model::OAuth->new;

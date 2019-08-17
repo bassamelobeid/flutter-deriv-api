@@ -13,8 +13,6 @@ use Format::Util::Numbers qw/roundcommon/;
 use ExchangeRates::CurrencyConverter qw/in_usd/;
 use Text::CSV;
 
-use Brands;
-
 use open qw[ :encoding(UTF-8) ];
 
 use BOM::Database::DataMapper::Account;
