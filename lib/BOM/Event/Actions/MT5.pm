@@ -10,13 +10,13 @@ use Try::Tiny;
 use Log::Any qw($log);
 
 use BOM::Platform::Event::Emitter;
-use BOM::Platform::Context qw(localize);
+use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Email qw(send_email);
 use BOM::User::Client;
 use BOM::MT5::User::Async;
 use BOM::Config::RedisReplicated;
+use BOM::Config;
 
-use Brands;
 use Email::Stuffer;
 use YAML::XS;
 use Date::Utility;
@@ -100,7 +100,7 @@ sub sync_info {
         sub {
             my $error = shift;
             $log->warn("Failed to sync client $data->{loginid} information to MT5: $error");
-            my $brands = Brands->new();
+            my $brand = request()->brand();
             my $tried_times = $data->{tried_times} // 0;
             $tried_times++;
             # if that error cannot recoverable
@@ -158,9 +158,9 @@ sub redis_record_mt5_transfer {
 sub notifiy_compliance_mt5_over8K {
     # notify compliance about the situation
     my $data                   = shift;
-    my $brands                 = Brands->new();
-    my $system_email           = $brands->emails('system');
-    my $compliance_alert_email = $brands->emails('compliance_alert');
+    my $brand                  = request()->brand();
+    my $system_email           = $brand->emails('system');
+    my $compliance_alert_email = $brand->emails('compliance_alert');
 
     my $seconds_passed_since_start = (SECONDS_IN_DAY * DAYS_TO_EXPIRE) - $data->{ttl};
     my $start_time_epoch           = (Date::Utility->new()->epoch()) - $seconds_passed_since_start;
@@ -238,6 +238,7 @@ sub new_mt5_signup {
         #language in params is in upper form.
         my $language = lc($data->{language} // 'en');
 
+        my $brand                 = request()->brand();
         my $client_email_template = localize(
             "\
             <p>Dear [_1],</p>
@@ -245,11 +246,11 @@ sub new_mt5_signup {
         <p>We are legally required to verify each client's identity and address. Therefore, we kindly request that you authenticate your account by submitting the following documents:
         <ul><li>A copy of a valid driving licence, identity card, or passport (front and back)</li><li>A copy of a utility bill or bank statement issued within the past six months</li><li>A photo of yourself (selfie) holding your driving licence, identity card, or passport</li></ul>
         </p>
-        <p>Please <a href=\"https://www.binary.com/[_2]/user/authenticate.html\">upload scanned copies</a> of the above documents within five days of receipt of this email to keep your MT5 account active.</p>
+        <p>Please <a href=\"https://www.[_4]/[_2]/user/authenticate.html\">upload scanned copies</a> of the above documents within five days of receipt of this email to keep your MT5 account active.</p>
         <p>We look forward to hearing from you soon.</p>
         <p>Regards,</p>
         [_3]
-        ", $client->full_name, $language, ucfirst BOM::Config::domain()->{default_domain});
+        ", $client->full_name, $language, $brand->website_name, $brand->whitelist_apps->{1});
 
         try {
             send_email({
@@ -299,7 +300,7 @@ sub send_mt5_disable_csv {
     }
 
     my $present_day = Date::Utility::today()->date_yyyymmdd;
-    my $brands      = Brands->new();
+    my $brand       = request()->brand();
 
     my $csv = Text::CSV->new({
         eol        => "\n",
@@ -322,8 +323,8 @@ sub send_mt5_disable_csv {
     # CSV creation ends here
 
     send_email({
-        'from'       => $brands->emails('system'),
-        'to'         => $brands->emails('support'),
+        'from'       => $brand->emails('system'),
+        'to'         => $brand->emails('support'),
         'subject'    => 'List of MT5 accounts to disable -  ' . $present_day,
         'attachment' => $filename->canonpath
     });

@@ -118,7 +118,7 @@ sub _send_email_statement {
         return {status_code => 0};
     }
 
-    my $support_email = Brands->new(name => request()->brand)->emails('support');
+    my $support_email = request()->brand->emails('support');
     my $email_subject =
         $params->{email_subject} ? $params->{email_subject} : 'Statement from ' . $date_from->date_ddmmmyy() . ' to ' . $date_to->date_ddmmmyy();
 

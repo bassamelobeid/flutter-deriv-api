@@ -19,7 +19,6 @@ use Log::Any qw($log);
 use IO::Async::Loop;
 use Locale::Codes::Country qw(country_code2code);
 use DataDog::DogStatsd::Helper;
-use Brands;
 use Syntax::Keyword::Try;
 use Template::AutoFilter;
 use List::Util qw(any all);
@@ -31,7 +30,7 @@ use Date::Utility;
 use BOM::Config::Runtime;
 
 use BOM::Config;
-use BOM::Platform::Context qw(localize);
+use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Email qw(send_email);
 use Email::Stuffer;
 use BOM::User;
@@ -179,7 +178,7 @@ $loop->add(my $services = BOM::Event::Services->new);
 }
 
 #load Brands object globally,
-my $BRANDS = Brands->new();
+my $BRANDS = request()->brand();
 
 =head2 document_upload
 
@@ -1183,12 +1182,13 @@ sub _send_email_onfido_check_exceeded_cs {
     my $request_count        = shift;
     my $system_email         = $BRANDS->emails('system');
     my @email_recipient_list = ($BRANDS->emails('support'), $BRANDS->emails('compliance_alert'));
+    my $website_name         = $BRANDS->website_name;
     my $email_subject        = 'Onfido request count limit exceeded';
     my $email_template       = "\
         <p><b>IMPORTANT: We exceeded our Onfido authentication check request per day..</b></p>
         <p>We have sent about $request_count requests which exceeds (" . ONFIDO_REQUESTS_LIMIT . "\)
         our own request limit per day with Onfido server.</p>
-        Team Binary.com
+        Team $website_name
         ";
 
     my $email_status =
@@ -1224,7 +1224,7 @@ async sub _send_email_onfido_unsupported_country_cs {
             <b>place of birth:</b> " . $client->place_of_birth . "\
             <b>residence:</b> " . $client->residence . "\
         </p>
-        Team Binary.com
+        Team " . $BRANDS->website_name . "\
         ";
 
     my $from_email = $BRANDS->emails('no-reply');
