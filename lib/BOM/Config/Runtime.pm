@@ -5,6 +5,7 @@ use feature 'state';
 
 use App::Config::Chronicle;
 use BOM::Config::Chronicle;
+use BOM::Config;
 
 has 'app_config' => (
     is         => 'ro',
@@ -34,7 +35,7 @@ sub _build_app_config {
     return App::Config::Chronicle->new(
         definition_yml   => '/home/git/regentmarkets/bom-config/share/app_config_definitions.yml',
         chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
-        setting_name     => 'binary',
+        setting_name     => BOM::Config->brand->name,
     );
 }
 
