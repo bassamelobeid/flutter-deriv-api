@@ -46,6 +46,7 @@ sub update_price_preview {
     };
 
     return $prices if $prices->{error};
+    return {} unless %$prices;
     # just take one as sample.
     my $first_symbol = (keys %$prices)[0];
     my @headers = map { $_->[0] } sort { $a->[1]->epoch <=> $b->[1]->epoch } map { [$_, Date::Utility->new($_)] } keys %{$prices->{$first_symbol}};
@@ -125,7 +126,7 @@ sub calculate_prices {
             };
     }
 
-    my $preview_output;
+    my $preview_output = {};
     foreach my $symbol (@underlying_symbols) {
         my $underlying = create_underlying($symbol);
         my $volsurface = Quant::Framework::VolSurface::Delta->new({
