@@ -110,7 +110,7 @@ payments:
               isa: Num
               default: 259200 # 3 days
               description: 'Expiry age for transfer between Fiat-Fiat when the market is closed.'
-              global: 1              
+              global: 1
             crypto:
               isa: Num
               default: 3600 # 1 hour
@@ -407,21 +407,6 @@ system:
           isa: ArrayRef
           default: []
           global: 1
-        mt5:
-          description: "Suspend MT5 API calls"
-          isa: Bool
-          default: 0
-          global: 1
-        mt5_deposits:
-          description: "Suspend MT5 deposits"
-          isa: Bool
-          default: 0
-          global: 1
-        mt5_withdrawals:
-          description: "Suspend MT5 withdrawals"
-          isa: Bool
-          default: 0
-          global: 1
         transfer_between_accounts:
           description: "Suspend all transfer between accounts be it between binary accounts or between binary and MT5 or vice versa"
           isa: Bool
@@ -434,11 +419,6 @@ system:
           global: 1
         onfido:
           description: "Suspend Onfido"
-          isa: Bool
-          default: 0
-          global: 1
-        mt5_manager_api:
-          description: "Suspend MT5 Manager API from doing transfer (switch back to MT5 Web API)"
           isa: Bool
           default: 0
           global: 1
@@ -455,3 +435,32 @@ system:
           isa: Str
           default: "/feed"
           global: 1
+    mt5:
+      description: "Configuration for MT5"
+      isa: section
+      contains:
+        suspend:
+          description: "Configuration for MT5 suspend"
+          isa: section
+          contains:
+            all:
+              description: "Suspend MT5 API calls"
+              isa: Bool
+              default: 0
+              global: 1
+            deposits:
+              description: "Suspend MT5 deposits"
+              isa: Bool
+              default: 0
+              global: 1
+            withdrawals:
+              description: "Suspend MT5 withdrawals"
+              isa: Bool
+              default: 0
+              global: 1
+            manager_api:
+              description: "Suspend MT5 Manager API from doing transfer (switch back to MT5 Web API)"
+              isa: Bool
+              default: 0
+              global: 1
+
