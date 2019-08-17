@@ -1265,7 +1265,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
     },
     BI054 => Error::Base->cuss(
         -type              => 'SymbolMissingInBetMarketTable',
-        -mesg              => 'Symbol missing in bet.market table',
+        -mesg              => 'Symbol missing in bet.limits_market_mapper table',
         -message_to_client => BOM::Platform::Context::localize('Trading is suspended for this instrument.'),
     ),
     BI103 => Error::Base->cuss(
