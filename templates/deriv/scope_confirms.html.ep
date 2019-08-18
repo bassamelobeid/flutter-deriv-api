@@ -1,6 +1,6 @@
-<div id="wrapper" class="scope-confirms">
+<div id="container" class="scope-confirms">
     <div>
-        <h1><%= l('Authorize application') %></h1>
+        <h3><%= l('Authorize application') %></h3>
         <p><%= l('[_1] would like permission to access your account [_2]', $app->{name}, $client->loginid) %></p>
         <div class="separator-line border-bottom"></div>
         <p><strong><%= l('Review Permissions') %></strong></p>
@@ -23,8 +23,8 @@
         <form method="POST">
             <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
             <div>
-                <button class="button" name="confirm_scopes" value="<%= l('Grant') %>" type="submit"><%= l('Grant') %></button>
-                <button class="button button-secondary" name="cancel_scopes" value="<%= l('Cancel') %>" type="submit"><%= l('Cancel') %></button>
+                <button id="btnCancel" class="primary" name="cancel_scopes" value="<%= l('Cancel') %>" type="submit"><%= l('Cancel') %></button>
+                <button id="btnGrant" class="secondary" name="confirm_scopes" value="<%= l('Grant') %>" type="submit"><%= l('Grant') %></button>
             </div>
         </form>
     </div>

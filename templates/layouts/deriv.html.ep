@@ -81,11 +81,19 @@
                 font-weight: normal;
                 font-size: var(--text-size-s);
                 line-height: 1.5;
+                margin: 0;
             }
             p.secondary {
                 color: var(--color-grey);
             }
-            h1, h2, h3, h4, h5 {
+            p.error {
+                color: var(--color-red-1);
+                font-size: var(--text-size-xs);
+                align-self: flex-start;
+                padding-left: 0.8rem;
+            }
+
+            h1, h2, h3 {
                 font-weight: bold;
                 line-height: 1.25;
                 width: 100%;
@@ -103,19 +111,122 @@
                 font-size: var(--text-size-l);
             }
 
-            h4 {
-                font-size: var(--text-size-m);
+            /*---------- form, input, button ---------- */
+            #container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                width: 95%;
+                max-width: 524px;
+                margin: auto;
+            }
+            form {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                width: 100%;
+                margin: 4rem auto;
+            }
+            form .input-wrapper {
+                margin-top: 1.6rem;
+            }
+            form button[type=submit] {
+                margin-top: 5.6rem;
+            }
+            form a {
+                align-self: flex-end;
             }
 
-            h5 {
+            div.input-wrapper {
+                position: relative;
+                width: 100%;
+            }
+            div.input-wrapper .input-button {
+                position: absolute;
+                right: 10px;
+                background-repeat: no-repeat;
+                cursor: pointer;
+                display: none;
+            }
+            div.input-wrapper #btnClear {
+                top: 9px;
+                height: 18px;
+                width: 17px;
+                background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICAgIDxnIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+CiAgICAgICAgPGNpcmNsZSBjeD0iOCIgY3k9IjgiIHI9IjgiIGZpbGw9IiNERDU3M0EiLz4KICAgICAgICA8cGF0aCBmaWxsPSIjRkZGIiBmaWxsLXJ1bGU9Im5vbnplcm8iIGQ9Ik04IDYuNTg2bDIuMjkzLTIuMjkzYTEgMSAwIDAgMSAxLjQxNCAxLjQxNEw5LjQxNCA4bDIuMjkzIDIuMjkzYTEgMSAwIDAgMS0xLjQxNCAxLjQxNEw4IDkuNDE0bC0yLjI5MyAyLjI5M2ExIDEgMCAxIDEtMS40MTQtMS40MTRMNi41ODYgOCA0LjI5MyA1LjcwN2ExIDEgMCAwIDEgMS40MTQtMS40MTRMOCA2LjU4NnoiLz4KICAgIDwvZz4KPC9zdmc+Cg==");
+            }
+            div.input-wrapper #btnToggle {
+                top: 12px;
+                height: 10px;
+                width: 16px;
+                background-image: url("data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iMTRweCIgaGVpZ2h0PSIxMHB4IiB2aWV3Qm94PSIwIDAgMTQgMTAiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+CiAgICA8IS0tIEdlbmVyYXRvcjogU2tldGNoIDU3LjEgKDgzMDg4KSAtIGh0dHBzOi8vc2tldGNoLmNvbSAtLT4KICAgIDx0aXRsZT5hdG9tcy9pY29ucy8xNnB4L2FjdGlvbi92aXNpYmxlL2FjdGl2ZTwvdGl0bGU+CiAgICA8ZGVzYz5DcmVhdGVkIHdpdGggU2tldGNoLjwvZGVzYz4KICAgIDxnIGlkPSItLS0tNi4xLVN5c3RlbS1JY29ucyIgc3Ryb2tlPSJub25lIiBzdHJva2Utd2lkdGg9IjEiIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+CiAgICAgICAgPGcgaWQ9IjYuMS1zeXN0ZW0taWNvbnMiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0zNDAuMDAwMDAwLCAtMjk2LjAwMDAwMCkiIGZpbGw9IiM5OTk5OTkiIGZpbGwtcnVsZT0ibm9uemVybyI+CiAgICAgICAgICAgIDxnIGlkPSJhdG9tcy9pY29ucy8xNnB4L2FjdGlvbi92aXNpYmxlL2FjdGl2ZSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMzM5LjAwMDAwMCwgMjkzLjAwMDAwMCkiPgogICAgICAgICAgICAgICAgPHBhdGggZD0iTTgsMyBDNC44MTgxODE4MiwzIDIuMDgxODE4MTgsNC45Mjg4ODg4OSAxLDcuNjY2NjY2NjcgQzIuMDgxODE4MTgsMTAuNDA0NDQ0NCA0LjgxODE4MTgyLDEyLjMzMzMzMzMgOCwxMi4zMzMzMzMzIEMxMS4xODE4MTgyLDEyLjMzMzMzMzMgMTMuOTE4MTgxOCwxMC40MDQ0NDQ0IDE1LDcuNjY2NjY2NjcgQzEzLjkxODE4MTgsNC45Mjg4ODg4OSAxMS4xODE4MTgyLDMgOCwzIFogTTgsMTAuNzc3Nzc3OCBDNi4yMTgxODE4MiwxMC43Nzc3Nzc4IDQuODE4MTgxODIsOS40MDg4ODg4OSA0LjgxODE4MTgyLDcuNjY2NjY2NjcgQzQuODE4MTgxODIsNS45MjQ0NDQ0NCA2LjIxODE4MTgyLDQuNTU1NTU1NTYgOCw0LjU1NTU1NTU2IEM5Ljc4MTgxODE4LDQuNTU1NTU1NTYgMTEuMTgxODE4Miw1LjkyNDQ0NDQ0IDExLjE4MTgxODIsNy42NjY2NjY2NyBDMTEuMTgxODE4Miw5LjQwODg4ODg5IDkuNzgxODE4MTgsMTAuNzc3Nzc3OCA4LDEwLjc3Nzc3NzggWiBNOCw1LjggQzYuOTE4MTgxODIsNS44IDYuMDkwOTA5MDksNi42MDg4ODg4OSA2LjA5MDkwOTA5LDcuNjY2NjY2NjcgQzYuMDkwOTA5MDksOC43MjQ0NDQ0NCA2LjkxODE4MTgyLDkuNTMzMzMzMzMgOCw5LjUzMzMzMzMzIEM5LjA4MTgxODE4LDkuNTMzMzMzMzMgOS45MDkwOTA5MSw4LjcyNDQ0NDQ0IDkuOTA5MDkwOTEsNy42NjY2NjY2NyBDOS45MDkwOTA5MSw2LjYwODg4ODg5IDkuMDgxODE4MTgsNS44IDgsNS44IFoiIGlkPSJTaGFwZS1Db3B5IiB0cmFuc2Zvcm09InRyYW5zbGF0ZSg4LjAwMDAwMCwgNy42NjY2NjcpIHNjYWxlKC0xLCAxKSB0cmFuc2xhdGUoLTguMDAwMDAwLCAtNy42NjY2NjcpICI+PC9wYXRoPgogICAgICAgICAgICA8L2c+CiAgICAgICAgPC9nPgogICAgPC9nPgo8L3N2Zz4=");
+            }
+            input {
+                background: none;
+                color: var(--color-black);
                 font-size: var(--text-size-s);
+                padding: 1rem 1rem 1rem 0.8rem;
+                width: calc(100% - 1.8rem);
+                display: block;
+                border: none;
+                border-radius: 0;
+                border-bottom: 1px solid var(--color-grey-2);
+            }
+            input::placeholder {
+                opacity: 0;
+                transition: opacity 0.25s;
+                padding-left: 0.3rem;
+            }
+            input ~ label {
+                color: var(--color-grey);
+                font-size: var(--text-size-s);
+                position: absolute;
+                pointer-events: none;
+                left: 0.8rem;
+                top: 1rem;
+                transition: 0.25s ease all;
+                transform: translateZ(0);
+            }
+            input ~ span.bar {
+                position: relative;
+                display: block;
+                background: var(--color-green);
+            }
+            input ~ span.bar::before {
+                content: '';
+                height: 2px;
+                width: 0;
+                bottom: 0;
+                left: 0;
+                position: absolute;
+                background: var(--color-green);
+                transition: 0.25s ease all;
+                transform: translateZ(0);
             }
 
-                /*---------- form, input, button ---------- */
+            input:focus {
+                outline: none;
+            }
+            input:focus::placeholder {
+                opacity: 0.5;
+            }
+            input:focus ~ label, input:not(:placeholder-shown) ~ label {
+                transform: translate(0, -2rem) scale(0.7);
+                transform-origin: top left;
+                color: var(--color-green);
+            }
+            input:focus ~ span.bar::before {
+                width: 100%;
+            }
+            input[style*=background] ~ .input-button {
+                right: 32px;
+            }
+            input:not(:placeholder-shown) ~ .input-button {
+                display: block;
+            }
             button {
                 border-radius: 6px;
-                padding: 1rem 1.6rem;
-                font-size: 1.4rem;
+                padding: 1.3rem 2rem;
+                font-size: 1.6rem;
                 transition: all 0.25s;
                 font-weight: bold;
             }
@@ -150,150 +261,40 @@
                 border-color: var(--color-red-3);
             }
 
-            input {
-                background: none;
-                color: var(--color-black);
-                font-size: var(--text-size-s);
-                padding: 1rem 1rem 1rem 0.8rem;
-                width: 95%;
-                display: block;
-                border: none;
-                border-radius: 0;
-                border-bottom: 1px solid var(--color-grey-2);
+            #lost-password {
+                margin-top: 1rem;
             }
-            input::placeholder {
-                transition: opacity 0.25s;
-                padding-left: 0.3rem;
-                color: var(--color-grey);
-            }
-            input:focus {
-                outline: none;
-            }
-            input:focus ~ label {
-                transform: translate(-0.6rem, -2rem) scale(0.7);
-                color: var(--color-green);
-            }
-            input:focus ~ span::before {
+
+            #oa_social_login_container {
+                margin: 1.6rem auto;
                 width: 100%;
             }
-            input:focus::placeholder {
-                opacity: 0.5;
-            }
-            input:valid ~ label {
-                transform: translate(-0.6rem, -2rem) scale(0.7);
-                color: var(--color-green);
-            }
-
-            form {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                width: 95%;
-                max-width: 524px;
-                margin: 4rem auto;
-            }
-            form input {
-                margin-bottom: 1.6rem;
-            }
-            form button[type=submit] {
-                margin-top: 2.4rem;
-            }
-            form a {
-                align-self: flex-end;
-            }
-
-            /*---------- oneall custom style ---------- */
-            .plugin {
-                margin: 0;
-                font-family: 'IBM Plex Sans', sans-serif;
-            }
-            .plugin #providers .providers_group .providers_block {
-                overflow: hidden;
-                clear: both;
-            }
-            .plugin #providers .providers_group .providers_block .providers_row {
-                clear: both;
-                display: flex;
-                justify-content: center;
-            }
-            .plugin #providers .providers_group .providers_block .providers_row .provider {
-                position: relative;
-            }
-            .plugin #providers .providers_group .providers_block .providers_row .provider .name {
-                position: absolute;
-                top: 20%;
-            }
-            @-moz-document url-prefix() {
-                .plugin #providers .providers_group .providers_block .providers_row .provider .name {
-                    /* stylelint-disable-line function-url-quotes */
-                    top: 28%;
-                }
-            }
-            .provider#provider_google {
-                background: var(--color-white);
-                border: 1px solid var(--color-grey-5);
-            }
-            .provider#provider_google:hover {
-                background: var(--color-grey-4);
-            }
-
-            .provider#provider_facebook {
-                background: var(--color-blue);
-                border: none;
-            }
-            .provider#provider_facebook:hover {
-                background: var(--color-blue-2);
-            }
-
-            .provider {
-                border-radius: 4px;
-            }
-            .provider + .provider {
-                margin-left: 10px;
-            }
-            .provider a.button {
-                background-position-x: center;
-                background-position-y: center;
-                background-repeat: no-repeat;
-                border-radius: 4px;
-                padding: 5px 0;
-                box-sizing: border-box;
-                width: 17.4rem;
-                height: 4.8rem;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                text-decoration: none;
-                transition: background-color 0.2s;
-            }
-            @media screen and (max-width: 480px) {
-                .provider a.button {
-                    width: 80px;
-                }
-            }
-            .provider a.button span {
-                display: none !important;
-            }
-            .provider a.button#button_google {
-                background-image: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGcgZmlsbC1ydWxlPSJub256ZXJvIiBmaWxsPSJub25lIj48cGF0aCBkPSJNMjMuOTE4IDEyLjIyNWMwLS45ODQtLjA4Mi0xLjcwMS0uMjU4LTIuNDQ1SDEyLjIwM3Y0LjQzOGg2LjcyNWMtLjEzNiAxLjEwMy0uODY4IDIuNzYzLTIuNDk1IDMuODhsLS4wMjMuMTQ4IDMuNjIzIDIuNzUuMjUuMDI1YzIuMzA2LTIuMDg2IDMuNjM1LTUuMTU2IDMuNjM1LTguNzk2IiBmaWxsPSIjNDI4NUY0Ii8+PHBhdGggZD0iTTEyLjIwMyAyMy45MThjMy4yOTUgMCA2LjA2LTEuMDYzIDguMDgtMi44OTdsLTMuODUtMi45MjNjLTEuMDMuNzA0LTIuNDEzIDEuMTk1LTQuMjMgMS4xOTVhNy4zMzIgNy4zMzIgMCAwIDEtNi45NDItNC45NjlsLS4xNDMuMDEyLTMuNzY3IDIuODU3LS4wNS4xMzRjMi4wMDcgMy45MDYgNi4xMyA2LjU5IDEwLjkwMiA2LjU5IiBmaWxsPSIjMzRBODUzIi8+PHBhdGggZD0iTTUuMjYgMTQuMzI0YTcuMjMgNy4yMyAwIDAgMS0uNDA2LTIuMzY1YzAtLjgyNC4xNS0xLjYyMS4zOTMtMi4zNjVsLS4wMDctLjE1OS0zLjgxNC0yLjkwMy0uMTI0LjA1OUExMS43NzUgMTEuNzc1IDAgMCAwIDAgMTEuOTU5YzAgMS45MjYuNDc1IDMuNzQ3IDEuMzAyIDUuMzY4bDMuOTU5LTMuMDAzIiBmaWxsPSIjRkJCQzA1Ii8+PHBhdGggZD0iTTEyLjIwMyA0LjYyNGMyLjI5MSAwIDMuODM3Ljk3IDQuNzE4IDEuNzhsMy40NDQtMy4yOTVDMTguMjUgMS4xODMgMTUuNDk4IDAgMTIuMjAzIDAgNy40MyAwIDMuMzA4IDIuNjg0IDEuMzAyIDYuNTlsMy45NDUgMy4wMDRjLjk5LTIuODg0IDMuNzI5LTQuOTcgNi45NTYtNC45NyIgZmlsbD0iI0VCNDMzNSIvPjwvZz48L3N2Zz4=");
-            }
-            .provider a.button#button_facebook {
-                background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMiIgaGVpZ2h0PSIyMiIgdmlld0JveD0iMCAwIDEyIDIyIj4KICAgIDxwYXRoIGZpbGw9IiNGRkYiIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTguNzk3IDMuNTE0aDIuMjNWLjEwOEw5Ljk0NiAwSDcuOTMyYTQuOTA1IDQuOTA1IDAgMCAwLTIuODUuODc5IDQuMjQzIDQuMjQzIDAgMCAwLTEuNzA0IDIuODM3Yy0uMDc0LjQ4NC0uMTE1Ljk3MS0uMTIxIDEuNDZ2Mi41ODFIMHYzLjc5N2gzLjI0M3Y5LjU2OEg3LjE5VjExLjU0aDMuMjNjLjE3Ni0xLjI3LjMzOC0yLjUyNy41LTMuODI1SDcuMTYyVjUuMDE0Yy4wNjgtMS4xMjIuNzMtMS40NiAxLjYzNS0xLjV6Ii8+Cjwvc3ZnPgo=");
-            }
-            .provider .name {
-                display: none;
-            }
-            #oa_social_login_container {
-                width: 95%;
-                max-width: 524px;
-                margin: 16px auto;
-            }
             #oa_social_login_container iframe {
-                height: auto !important;
+                height: 50px !important;
                 width: 100% !important;
             }
+            #oa_social_login_container iframe #social_login {
+                background: black !important;
+            }
+            p.error-oneall {
+                color: var(--color-red-1);
+                font-size: var(--text-size-s);
+            }
+
             .center-text {
                 text-align: center;
+            }
+            .hide {
+                display: none;
+            }
+
+            /*---------- Scopes confirmation page ---------- */
+            .scope-confirms li {
+                color: var(--color-black-3);
+                font-size: var(--text-size-s);
+            }
+            .scope-confirms #btnCancel {
+                margin-right: 1rem;
             }
         </style>
 
