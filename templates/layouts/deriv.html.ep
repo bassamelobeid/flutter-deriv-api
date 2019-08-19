@@ -302,7 +302,7 @@
             var oa = document.createElement('script');
             oa.type = 'text/javascript';
             oa.async = false;
-            oa.src = '//binary.api.oneall.com/socialize/library.js?lang=<%= ($r->language eq "ZH_CN" || $r->language eq "ZH_TW") ? "zh" : lc($r->language) %>';
+            oa.src = '//deriv.api.oneall.com/socialize/library.js?lang=<%= ($r->language eq "ZH_CN" || $r->language eq "ZH_TW") ? "zh" : lc($r->language) %>';
             var s = document.getElementsByTagName('script')[0];
             s.parentNode.insertBefore(oa, s);
         </script>
