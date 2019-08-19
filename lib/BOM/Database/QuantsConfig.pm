@@ -636,7 +636,7 @@ sub switch_pending_market_group {
 
 =head2 update_market_group
 
-Update bet.market table for underlying with the right information.
+Update bet.limits_market_mapper table for underlying with the right information.
 ->update_market_group({
     underlying_symbol => 'frxUSDJPY',
     market => 'new_market',
