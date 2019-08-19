@@ -36,9 +36,9 @@ sub callback {
     }
 
     my $oneall = WWW::OneAll->new(
-        subdomain   => 'binary',
-        public_key  => BOM::Config::third_party()->{"oneall"}->{public_key},
-        private_key => BOM::Config::third_party()->{"oneall"}->{private_key},
+        subdomain   => $brand_name,
+        public_key  => BOM::Config::third_party()->{"oneall"}->{$brand_name}->{public_key},
+        private_key => BOM::Config::third_party()->{"oneall"}->{$brand_name}->{private_key},
     );
 
     my $data = try {
