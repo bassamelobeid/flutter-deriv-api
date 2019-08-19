@@ -29,8 +29,7 @@ use BOM::User::AuditLog;
 use BOM::Platform::Context qw(localize);
 use BOM::OAuth::Static qw(get_message_mapping);
 
-use constant APPS_ALLOWED_TO_RESET_PASSWORD => qw(1 14473 15284 16929);
-use constant APPS_LOGINS_RESTRICTED         => qw(16063);           # mobytrader
+use constant APPS_LOGINS_RESTRICTED => qw(16063);    # mobytrader
 
 sub authorize {
     my $c = shift;
@@ -298,8 +297,11 @@ sub _login {
                 if (($old_ip ne $new_ip or $old_env->{country} ne $country_code)
                     and $old_env->{user_agent} ne $user_agent)
                 {
-                    my $bd   = HTTP::BrowserDetect->new($user_agent);
-                    my $tt   = Template->new(ENCODING => 'utf8', ABSOLUTE => 1);
+                    my $bd = HTTP::BrowserDetect->new($user_agent);
+                    my $tt = Template->new(
+                        ENCODING => 'utf8',
+                        ABSOLUTE => 1
+                    );
                     my $data = {
                         client_name => $client->first_name ? ' ' . $client->first_name . ' ' . $client->last_name : '',
                         country => $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
@@ -312,7 +314,7 @@ sub _login {
 
                     my $template = $brand_name eq 'deriv' ? 'new_signin_deriv.html.tt' : 'new_signin.html.tt';
 
-                    $tt->process('/home/git/regentmarkets/bom-oauth/templates/email/'.$template, $data, \my $message);
+                    $tt->process('/home/git/regentmarkets/bom-oauth/templates/email/' . $template, $data, \my $message);
                     if ($tt->error) {
                         warn "Template error: " . $tt->error;
                         return;
@@ -424,7 +426,7 @@ sub _is_reset_password_allowed {
 
     die "Invalid application id." unless $app_id;
 
-    return first { $_ == $app_id } APPS_ALLOWED_TO_RESET_PASSWORD;
+    return _oauth_model()->is_primary_website($app_id);
 }
 
 sub _website_domain {
