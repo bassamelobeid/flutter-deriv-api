@@ -29,6 +29,7 @@ my $config = {
     mt5_user      => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_MT5_USER}    // '/etc/rmg/redis-mt5user.yml'),
     events        => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_EVENTS}      // '/etc/rmg/redis-events.yml'),
     transaction   => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_TRANSACTION} // '/etc/rmg/redis-transaction.yml'),
+    queue         => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_QUEUE}       // '/etc/rmg/redis-queue.yml'),
 };
 my $connections = {};
 
@@ -128,6 +129,14 @@ sub redis_transaction_write {
 
 sub redis_transaction {
     return _redis('transaction', 'read', 10);
+}
+
+sub redis_queue_write {
+    return _redis('queue', 'write', 10);
+}
+
+sub redis_queue {
+    return _redis('queue', 'read', 10);
 }
 
 1;
