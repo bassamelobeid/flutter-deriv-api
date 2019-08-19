@@ -19,7 +19,8 @@ use BOM::RPC::Registry;
 
 # This has a side-effect of setting the IO::Async::Loop singleton.
 # Once we drop Mojolicious, this line can be removed.
-my $loop = IO::Async::Loop::Mojo->new;
+local $ENV{IO_ASYNC_LOOP} = 'IO::Async::Loop::Mojo';
+my $loop = IO::Async::Loop->new;
 {
     my $loop_check = IO::Async::Loop->new;
     die 'Unexpected event loop class: had '
