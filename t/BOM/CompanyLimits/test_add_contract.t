@@ -72,7 +72,7 @@ subtest 'Limits test base case', sub {
 
     # 5. Ensure the right keys are affected (BOM::CompanyLimits::Combinations::get_combinations)
 
-    $total = $redis->hget('svg:potential_loss', 'R_50,,,');
+    $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 4, 'buying contract adds correct potential loss';
 
     sell_contract(
@@ -82,7 +82,7 @@ subtest 'Limits test base case', sub {
         sell_outcome => 1,
     );
 
-    $total = $redis->hget('svg:potential_loss', 'R_50,,,');
+    $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 0, 'selling contract with win, deducts potential loss from before';
 
     # same contract, but we crank up the price hundred fold to exceed limit
@@ -101,7 +101,7 @@ subtest 'Limits test base case', sub {
     }
     qr/CompanyWideLimitExceeded/, 'Throws company wide limit exceeded error and block trade';
 
-    $total = $redis->hget('svg:potential_loss', 'R_50,,,');
+    $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 0, 'If contract failed to buy, it should be reverted';
 };
 
