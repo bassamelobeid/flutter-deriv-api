@@ -183,7 +183,7 @@ sub authorize {
     }
 
     my $loginid = $client->loginid;
-    $is_all_approved = 1 if $oauth_model->is_primary_website($app_id);
+    $is_all_approved = 1 if $oauth_model->is_official_app($app_id);
     $is_all_approved ||= $oauth_model->is_scope_confirmed($app_id, $loginid);
 
     # show scope confirms if not yet approved
