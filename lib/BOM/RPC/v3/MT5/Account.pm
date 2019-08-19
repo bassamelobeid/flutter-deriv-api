@@ -12,7 +12,6 @@ use List::Util qw(any first);
 use Try::Tiny;
 use File::ShareDir;
 use Locale::Country::Extra;
-use Brands;
 use LandingCompany::Registry;
 use WebService::MyAffiliates;
 use Future::Utils qw(fmap1);
@@ -290,7 +289,7 @@ async_rpc mt5_new_account => sub {
     # legal validation
     my $residence = $client->residence;
 
-    my $brand              = Brands->new(name => request()->brand);
+    my $brand              = request()->brand;
     my $countries_instance = $brand->countries_instance;
     my $countries_list     = $countries_instance->countries_list;
 
@@ -1072,7 +1071,7 @@ async_rpc mt5_deposit => sub {
     my $app_config = BOM::Config::Runtime->instance->app_config;
 
     # no need to throttle this call only limited numbers of transfers are allowed
-    if ($app_config->system->suspend->mt5_deposits) {
+    if (_is_mt5_suspended('deposits')) {
         return create_error_future({
                 code              => $error_code,
                 message_to_client => localize('Deposits are suspended.')});
@@ -1216,7 +1215,7 @@ async_rpc mt5_withdrawal => sub {
     my $app_config = BOM::Config::Runtime->instance->app_config;
 
     # no need to throttle this call only limited numbers of transfers are allowed
-    if ($app_config->system->suspend->mt5_withdrawals) {
+    if (_is_mt5_suspended('withdrawals')) {
         return create_error_future({
                 code              => $error_code,
                 message_to_client => localize('Withdrawals are suspended.')});
@@ -1402,9 +1401,11 @@ async_rpc mt5_mamm => sub {
 };
 
 sub _is_mt5_suspended {
-    my $app_config = BOM::Config::Runtime->instance->app_config;
+    my ($feature_name) = @_;
+    my $app_config = BOM::Config::Runtime->instance->app_config->system->mt5->suspend;
 
-    if ($app_config->system->suspend->mt5) {
+    # always check if all calls are suspended.
+    if (($feature_name and $app_config->$feature_name) or $app_config->all) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'MT5APISuspendedError',
                 message_to_client => localize('MT5 API calls are suspended.')});
@@ -1817,7 +1818,7 @@ sub _is_account_demo {
 sub do_mt5_deposit {
     my ($login, $amount, $comment) = @_;
     my $deposit_sub = \&BOM::MT5::User::Async::deposit;
-    if (!BOM::Config::Runtime->instance->app_config->system->suspend->mt5_manager_api) {
+    if (!_is_mt5_suspended('manager_api')) {
         $deposit_sub = \&BOM::MT5::User::Async::manager_api_deposit;
     }
 
@@ -1831,7 +1832,7 @@ sub do_mt5_deposit {
 sub do_mt5_withdrawl {
     my ($login, $amount, $comment) = @_;
     my $withdrawal_sub = \&BOM::MT5::User::Async::withdrawal;
-    if (!BOM::Config::Runtime->instance->app_config->system->suspend->mt5_manager_api) {
+    if (!_is_mt5_suspended('manager_api')) {
         $withdrawal_sub = \&BOM::MT5::User::Async::manager_api_withdrawal;
     }
 
