@@ -20,7 +20,7 @@ use DataDog::DogStatsd::Helper qw(stats_inc);
 use Format::Util::Numbers qw/formatnumber financialrounding/;
 use JSON::MaybeXS;
 use Text::Trim;
-use Brands;
+
 use BOM::User qw( is_payment_agents_suspended_in_country );
 use LandingCompany::Registry;
 use BOM::User::Client::PaymentAgent;
@@ -104,7 +104,7 @@ rpc "cashier", sub {
             code              => $validation->{error}->{code},
             message_to_client => $validation->{error}->{message_to_client}}) if exists $validation->{error};
 
-    my ($brand, $currency) = (Brands->new(name => request()->brand), $client->default_account->currency_code());
+    my ($brand, $currency) = (request()->brand, $client->default_account->currency_code());
 
     if (LandingCompany::Registry::get_currency_type($currency) eq 'crypto') {
         return _get_cryptocurrency_cashier_url($client->loginid, $params->{website_name},
@@ -736,7 +736,7 @@ The [_4] team.', $currency, $amount, encode_entities($payment_agent->payment_age
         );
 
     send_email({
-        'from'                  => Brands->new(name => request()->brand)->emails('support'),
+        'from'                  => request()->brand->emails('support'),
         'to'                    => $client_to->email,
         'subject'               => localize('Acknowledgement of Money Transfer'),
         'message'               => [$emailcontent],
@@ -1101,7 +1101,7 @@ rpc paymentagent_withdraw => sub {
     ];
 
     send_email({
-        from                  => Brands->new(name => request()->brand)->emails('support'),
+        from                  => request()->brand->emails('support'),
         to                    => $paymentagent->email,
         subject               => localize('Acknowledgement of Withdrawal Request'),
         message               => $emailcontent,

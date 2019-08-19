@@ -19,7 +19,6 @@ use HTML::Entities qw(encode_entities);
 use List::Util qw(any sum0 first);
 use Digest::SHA qw(hmac_sha256_hex);
 
-use Brands;
 use BOM::User::Client;
 use BOM::User::FinancialAssessment qw(is_section_complete update_financial_assessment decode_fa build_financial_assessment);
 use LandingCompany::Registry;
@@ -149,7 +148,7 @@ rpc "landing_company",
     my $params = shift;
 
     my $country  = $params->{args}->{landing_company};
-    my $configs  = Brands->new(name => request()->brand)->countries_instance->countries_list;
+    my $configs  = request()->brand->countries_instance->countries_list;
     my $c_config = $configs->{$country};
     unless ($c_config) {
         ($c_config) = grep { $configs->{$_}->{name} eq $country and $country = $_ } keys %$configs;
@@ -715,7 +714,7 @@ rpc change_password => sub {
 
     BOM::User::AuditLog::log('password has been changed', $client->email);
     send_email({
-            from    => Brands->new(name => request()->brand)->emails('support'),
+            from    => request()->brand->emails('support'),
             to      => $client->email,
             subject => localize('Your password has been changed.'),
             message => [
@@ -780,7 +779,7 @@ rpc cashier_password => sub {
             return $error_sub->(localize('Sorry, an error occurred while processing your request.'));
         } else {
             send_email({
-                    'from'    => Brands->new(name => request()->brand)->emails('support'),
+                    'from'    => request()->brand->emails('support'),
                     'to'      => $client->email,
                     'subject' => localize("Cashier password updated"),
                     'message' => [
@@ -806,7 +805,7 @@ rpc cashier_password => sub {
         if (!BOM::User::Password::checkpw($unlock_password, $cashier_password)) {
             BOM::User::AuditLog::log('Failed attempt to unlock cashier', $client->loginid);
             send_email({
-                    'from'    => Brands->new(name => request()->brand)->emails('support'),
+                    'from'    => request()->brand->emails('support'),
                     'to'      => $client->email,
                     'subject' => localize("Failed attempt to unlock cashier section"),
                     'message' => [
@@ -829,7 +828,7 @@ rpc cashier_password => sub {
             return $error_sub->(localize('Sorry, an error occurred while processing your request.'));
         } else {
             send_email({
-                    'from'    => Brands->new(name => request()->brand)->emails('support'),
+                    'from'    => request()->brand->emails('support'),
                     'to'      => $client->email,
                     'subject' => localize("Cashier password updated"),
                     'message' => [
@@ -912,7 +911,7 @@ rpc "reset_password",
 
     BOM::User::AuditLog::log('password has been reset', $email, $args->{verification_code});
     send_email({
-            from    => Brands->new(name => request()->brand)->emails('support'),
+            from    => request()->brand->emails('support'),
             to      => $email,
             subject => localize('Your password has been reset.'),
             message => [
@@ -938,8 +937,7 @@ rpc get_settings => sub {
     $dob_epoch = Date::Utility->new($client->date_of_birth)->epoch if ($client->date_of_birth);
     if ($client->residence) {
         $country_code = $client->residence;
-        $country =
-            Brands->new(name => request()->brand)->countries_instance->countries->localized_code2country($client->residence, $params->{language});
+        $country = request()->brand->countries_instance->countries->localized_code2country($client->residence, $params->{language});
     }
 
     my $client_tnc_status = $client->status->tnc_approval;
@@ -992,7 +990,7 @@ rpc set_settings => sub {
         @{$params}{qw/website_name client_ip user_agent language args/};
     $user_agent //= '';
 
-    my $brand = Brands->new(name => request()->brand);
+    my $brand = request()->brand;
     my ($residence, $allow_copiers) =
         ($args->{residence}, $args->{allow_copiers});
 
@@ -1816,7 +1814,7 @@ sub send_self_exclusion_notification {
         my $statuses = join '/', map { uc $_ } @{$client->status->all};
         my $client_title = join ', ', $client->loginid, $client->email, ($name || '?'), ($statuses ? "current status: [$statuses]" : '');
 
-        my $brand = Brands->new(name => request()->brand);
+        my $brand = request()->brand;
 
         $message .= "Client $client_title set the following self-exclusion limits:\n\n";
 

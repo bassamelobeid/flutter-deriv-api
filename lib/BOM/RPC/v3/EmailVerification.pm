@@ -3,8 +3,9 @@ package BOM::RPC::v3::EmailVerification;
 use strict;
 use warnings;
 
-use BOM::Platform::Context qw(localize);
+use BOM::Platform::Context qw(localize request);
 use BOM::RPC::v3::Utility;
+use BOM::Config;
 
 use Exporter qw(import export_to_level);
 our @EXPORT_OK = qw(email_verification);
@@ -77,12 +78,14 @@ sub email_verification {
         $user_name         = ($user->clients)[0]->last_name;
     }
 
+    my $brand              = request()->brand;
     my $password_reset_url = 'https://www.'
         # Redirect Binary.me and Binary Desktop to binary.me
-        . ($source == 15284 || $source == 14473 ? 'binary.me' : $website_name) . '/'
+        . ($source == 15284 || $source == 14473 ? $brand->whitelist_apps->{15284} : $website_name) . '/'
         . lc($language)
         . ($website_name =~ /champion/i ? '/lost-password.html' : '/user/lost_passwordws.html');
 
+    my $contact_url = 'https://www.' . lc($brand->website_name) . '/en/contact.html';
     return {
         account_opening_new => sub {
             return {
@@ -164,22 +167,25 @@ sub email_verification {
                 ? (
                     $has_social_signup
                     ? localize(
-                        '<p style="line-height:200%;color:#333333;font-size:15px;">Hello [_1],</p><p>We received a request to reset your password. If it was you, we\'d be glad to help.</p><p>Before we proceed, we noticed you are logged in using your (Google/Facebook) account. Please note that if you reset your password, your social account login will be deactivated. If you wish to keep your social account login, you would need to remember your (Google/Facebook) account password.</p><p>If you\'re ready, <a href="[_2]">reset your password now.<a></p><p>Not you? Unsure? <a href="https://www.binary.com/en/contact.html">Please let us know right away.</a></p><p style="color:#333333;font-size:15px;">Thank you for trading with us.<br/>[_3]</p>',
+                        '<p style="line-height:200%;color:#333333;font-size:15px;">Hello [_1],</p><p>We received a request to reset your password. If it was you, we\'d be glad to help.</p><p>Before we proceed, we noticed you are logged in using your (Google/Facebook) account. Please note that if you reset your password, your social account login will be deactivated. If you wish to keep your social account login, you would need to remember your (Google/Facebook) account password.</p><p>If you\'re ready, <a href="[_2]">reset your password now.<a></p><p>Not you? Unsure? <a href="[_4]">Please let us know right away.</a></p><p style="color:#333333;font-size:15px;">Thank you for trading with us.<br/>[_3]</p>',
                         $user_name || 'there',
                         _build_verification_url('reset_password', $args),
-                        $website_name
+                        $website_name,
+                        $contact_url,
                         )
                     : localize(
-                        '<p style="line-height:200%;color:#333333;font-size:15px;">Hello [_1],</p><p>We received a request to reset your password. If it was you, you may <a href="[_2]">reset your password now.<a></p><p>Not you? Unsure? <a href="https://www.binary.com/en/contact.html">Please let us know right away.</a></p><p style="color:#333333;font-size:15px;">Thank you for trading with us.<br/>[_3]</p>',
+                        '<p style="line-height:200%;color:#333333;font-size:15px;">Hello [_1],</p><p>We received a request to reset your password. If it was you, you may <a href="[_2]">reset your password now.<a></p><p>Not you? Unsure? <a href="[_4]">Please let us know right away.</a></p><p style="color:#333333;font-size:15px;">Thank you for trading with us.<br/>[_3]</p>',
                         $user_name || 'there',
                         _build_verification_url('reset_password', $args),
-                        $website_name
+                        $website_name,
+                        $contact_url,
                     ))
                 : localize(
-                    '<p style="line-height:200%;color:#333333;font-size:15px;">Hello [_1],</p><p>We received a request to reset your password. Please use the token below to create your new password.</p><p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_2]</span></p><p>Not you? Unsure? <a href="https://www.binary.com/en/contact.html">Please let us know right away.</a></p><p style="color:#333333;font-size:15px;">Thank you for trading with us.<br/>[_3]</p>',
+                    '<p style="line-height:200%;color:#333333;font-size:15px;">Hello [_1],</p><p>We received a request to reset your password. Please use the token below to create your new password.</p><p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_2]</span></p><p>Not you? Unsure? <a href="[_4]">Please let us know right away.</a></p><p style="color:#333333;font-size:15px;">Thank you for trading with us.<br/>[_3]</p>',
                     $user_name || 'there',
                     $code,
-                    $website_name
+                    $website_name,
+                    $contact_url,
                 ),
             };
         },

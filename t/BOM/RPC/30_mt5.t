@@ -27,7 +27,7 @@ my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::
 my $json = JSON::MaybeXS->new;
 
 my $runtime_system = BOM::Config::Runtime->instance->app_config->system;
-$runtime_system->suspend->mt5_manager_api(1);
+$runtime_system->mt5->suspend->manager_api(1);
 
 my $redis = BOM::Config::RedisReplicated::redis_exchangerates_write();
 
@@ -668,10 +668,10 @@ subtest 'deposit' => sub {
 
     BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
 
-    $runtime_system->suspend->mt5_deposits(1);
+    $runtime_system->mt5->suspend->deposits(1);
     $c->call_ok($method, $params)->has_error('error as mt5_deposits are suspended in system config')
         ->error_code_is('MT5DepositError', 'error code is MT5DepositError')->error_message_is('MT5 deposits are suspended.');
-    $runtime_system->suspend->mt5_deposits(0);
+    $runtime_system->mt5->suspend->deposits(0);
 
     BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
 
@@ -864,10 +864,10 @@ subtest 'withdrawal' => sub {
     };
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
-    $runtime_system->suspend->mt5_withdrawals(1);
+    $runtime_system->mt5->suspend->withdrawals(1);
     $c->call_ok($method, $params)->has_error('error as mt5_withdrawals are suspended in system config')
         ->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')->error_message_is('MT5 withdrawals are suspended.');
-    $runtime_system->suspend->mt5_withdrawals(0);
+    $runtime_system->mt5->suspend->withdrawals(0);
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 

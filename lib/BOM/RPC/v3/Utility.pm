@@ -28,7 +28,6 @@ use Time::Duration::Concise::Localize;
 use Format::Util::Numbers qw/formatnumber/;
 use JSON::MaybeUTF8 qw/encode_json_utf8 decode_json_utf8/;
 
-use Brands;
 use Quant::Framework;
 use LandingCompany::Registry;
 use Finance::Contract::Longcode qw(shortcode_to_longcode);
@@ -215,7 +214,7 @@ sub website_name {
 
     return "Binary$server_name.com" if ($server_name =~ /^qa\d+$/);
 
-    return Brands->new(name => request()->brand)->website_name;
+    return request()->brand->website_name;
 }
 
 sub check_authorization {
@@ -401,7 +400,7 @@ sub validate_make_new_account {
             code              => 'NoResidence',
             message_to_client => localize('Please set your country of residence.')}) unless $residence;
 
-    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
+    my $countries_instance = request()->brand->countries_instance;
     my $gaming_company     = $countries_instance->gaming_company_for_country($residence);
     my $financial_company  = $countries_instance->financial_company_for_country($residence);
 
@@ -657,7 +656,7 @@ sub send_professional_requested_email {
 
     return unless $loginid;
 
-    my $brand = Brands->new(name => request()->brand);
+    my $brand = request()->brand;
 
     my $to_email = $brand->emails('compliance');
 
