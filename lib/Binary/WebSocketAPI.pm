@@ -514,6 +514,7 @@ sub startup {
         ['copy_stop',          {require_auth => 'trade'}],
         ['app_markup_details', {require_auth => 'read'}],
         ['account_security',   {require_auth => 'admin'}],
+        ['notification_event', {require_auth => 'admin'}],
         [
             'service_token',
             {

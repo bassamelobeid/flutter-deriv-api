@@ -1,0 +1,33 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Notification Event Response",
+    "description": "A message with Notification Event",
+    "type": "object",
+    "required": [
+        "echo_req",
+        "msg_type"
+    ],
+    "properties": {
+        "notification_event": {
+            "enum" : [
+                0,
+                1
+            ],
+         "type" : "integer",
+         "description" : "1: all actions finished successfully, 0: at least one or more actions failed."
+        },
+        "echo_req": {
+            "type": "object",
+            "title": "Echo request",
+            "description": "Echo of the request made."
+        },
+        "msg_type": {
+            "type": "string",
+            "description": "notification_event"
+        },
+        "req_id": {
+            "type": "integer",
+            "description": "ID used to map request to response, present only when the request contains req_id."
+        }
+    }
+}
