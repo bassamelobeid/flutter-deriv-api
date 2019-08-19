@@ -4,6 +4,7 @@ use warnings;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 
+use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use Date::Utility;
 use Test::MockModule;
 use Test::MockObject;
@@ -106,6 +107,19 @@ $fake_res->mock('is_error', sub { '' });
 
 my $module = Test::MockModule->new('MojoX::JSON::RPC::Client');
 $module->mock('call', sub { shift; $call_params = $_[1]->{params}; return $_[2]->($fake_res) });
+
+my $sync_moduel = Test::MockModule->new('Job::Async::Client::Redis');
+$sync_moduel->mock(
+    'submit',
+    sub {
+        my ($self, %args) = @_;
+        $call_params = decode_json_utf8($args{params});
+        return Future->done(
+            encode_json_utf8({
+                    success => 1,
+                    result  => $rpc_response
+                }));
+    });
 
 $res = $t->await::landing_company({landing_company => 'de'});
 is($res->{msg_type}, 'landing_company');
