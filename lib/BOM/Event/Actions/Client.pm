@@ -1484,8 +1484,9 @@ async sub _upload_documents {
 
         DataDog::DogStatsd::Helper::stats_timing("event.document_upload.onfido.upload.triggered.elapse ", Time::HiRes::time() - $start_time);
 
-        my $clientdb = BOM::Database::ClientDB->new({broker_code => $client->broker});
-        my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+        my $clientdb           = BOM::Database::ClientDB->new({broker_code => $client->broker});
+        my $dbic               = BOM::Database::UserDB::rose_db()->dbic;
+        my $redis_events_write = _redis_events_write();
 
         if ($type eq 'live_photo') {
             $dbic->run(
@@ -1515,6 +1516,12 @@ async sub _upload_documents {
                         $doc->file_size
                     );
                 });
+
+            await $redis_events_write->connect;
+            await $redis_events_write->set(ONFIDO_DOCUMENT_ID_PREFIX . $doc->id, $document_entry->{id});
+            # Set expiry time for document id key in case of no onfido response due to
+            # `applicant_check` is not being called in `ready_for_authentication`
+            await $redis_events_write->expire(ONFIDO_DOCUMENT_ID_PREFIX . $doc->id, ONFIDO_PENDING_REQUEST_TIMEOUT);
         }
 
         $log->debugf('Document %s created for applicant %s', $doc->id, $applicant->id,);
