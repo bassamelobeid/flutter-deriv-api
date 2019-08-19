@@ -136,6 +136,7 @@ sub _brand_name {
     my $self = shift;
 
     if (my $brand = $self->param('brand')) {
+        return $brand->[0] if (ref($brand) eq 'ARRAY');
         return $brand;
     } elsif (my $domain = $self->domain_name) {
         # webtrader.champion-fx.com -> champion, visit this regex
