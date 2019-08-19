@@ -84,32 +84,6 @@ sub debug_link {
 
     my $bet = $self->bet;
 
-    my $seasonality_prefix = 'bo_' . time . '_';
-
-    Volatility::EconomicEvents::set_prefix($seasonality_prefix);
-    my $EEC = Quant::Framework::EconomicEventCalendar->new({
-        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(1),
-        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
-    });
-
-    foreach my $pair (qw(fordom domqqq forqqq)) {
-        my $pair_ref = $bet->$pair;
-
-        my $events = $EEC->get_latest_events_for_period({
-                from => $bet->date_start,
-                to   => $bet->date_start->plus_time_interval('14d'),
-            },
-            $pair_ref->{underlying}->for_date
-        );
-        Volatility::EconomicEvents::generate_variance({
-            underlying_symbols => [$pair_ref->{underlying}->system_symbol],
-            economic_events    => $events,
-            date               => $bet->date_start,
-            chronicle_writer   => BOM::Config::Chronicle::get_chronicle_writer(),
-        });
-
-    }
-
     my $attr_content = $self->_get_overview();
 
     my $ask_price_content = $self->_get_price({
@@ -168,14 +142,12 @@ sub debug_link {
     BOM::Backoffice::Request::template()->process(
         'backoffice/container/debug_link.html.tt',
         {
-            bet_id             => $bet->id,
-            tabs               => $tabs_content,
-            seasonality_prefix => $seasonality_prefix,
+            bet_id => $bet->id,
+            tabs   => $tabs_content,
         },
         \$debug_link
     ) || die BOM::Backoffice::Request::template()->error;
 
-    Volatility::EconomicEvents::set_prefix('');
     return $debug_link;
 }
 

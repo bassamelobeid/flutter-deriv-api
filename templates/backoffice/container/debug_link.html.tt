@@ -12,5 +12,4 @@
     <script> \$(function() { \$( "#[% bet_id %]" ).tabs(); }); </script>
     <a class="centerText pricing-details-close" href="#">[close]</a>
 </div>
-<input type=hidden value="[%seasonality_prefix%]" name="seasonality_prefix" id="seasonality_prefix">
 <a class="centerText pricing-details" style="bottom:10px;clear:both;display:block;font-size:10px;position:relative;" href="#">[pricing details]</a>

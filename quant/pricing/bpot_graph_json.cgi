@@ -44,8 +44,6 @@ my $timestep = Time::Duration::Concise::Localize->new(interval => request()->par
 my $start    = Date::Utility->new(request()->param('start')                                    || time());
 my $end      = Date::Utility->new(request()->param('end')                                      || time());
 
-Volatility::EconomicEvents::set_prefix(request()->param('seasonality_prefix'));
-
 my ($barrier, $barrier2);
 if ($bet->two_barriers) {
     $barrier  = $bet->high_barrier->as_absolute;
@@ -139,7 +137,6 @@ my $data = {
         'vs_changes'  => \@vs_changes,
     },
 };
-Volatility::EconomicEvents::set_prefix();
 
 PrintContentType_JSON();
 print JSON::MaybeXS->new->encode($data);

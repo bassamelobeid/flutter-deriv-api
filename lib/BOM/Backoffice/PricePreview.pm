@@ -70,32 +70,7 @@ sub calculate_prices {
         ? $offerings_obj->query({submarket => ['major_pairs', 'minor_pairs']}, ['underlying_symbol'])
         : grep { $_ =~ /$args->{symbol}/ } $offerings_obj->query({submarket => ['major_pairs', 'minor_pairs']}, ['underlying_symbol']);
 
-    my $cr = BOM::Config::Chronicle::get_chronicle_reader();
-    my $cw = BOM::Config::Chronicle::get_chronicle_writer();
-    # if we are calculating volatility for a modified event, adjust it here.
-    if (my $event = $args->{event}) {
-        my $ul = delete $event->{underlying};
-
-        $event->{custom}->{$ul} =
-            {map { my $v = delete $event->{$_}; $v ne '' ? ($_ => $_ =~ /vol/ ? $v / 100 : $_ =~ /duration/ ? $v * 60 : $v) : () }
-                qw/vol_change duration vol_change_before duration_before decay_factor decay_factor_before/};
-
-        die 'Please specify at least one change' unless %{$event->{custom}};
-
-        my $eec = Quant::Framework::EconomicEventCalendar->new(
-            chronicle_reader => $cr,
-            chronicle_writer => $cw
-        );
-        $eec->update_event($event, 0);    # don't save event since it is for preview only
-
-        Volatility::EconomicEvents::set_prefix(time);
-        Volatility::EconomicEvents::generate_variance({
-            underlying_symbols => \@underlying_symbols,
-            economic_events    => $eec->existing_events(),
-            chronicle_writer   => $cw,
-        });
-    }
-
+    my $cr           = BOM::Config::Chronicle::get_chronicle_reader();
     my $calendar     = Quant::Framework->trading_calendar($cr);
     my $now          = Date::Utility->new();
     my $pricing_from = $args->{pricing_date} ? Date::Utility->new($args->{pricing_date})->truncate_to_day : Date::Utility->new->truncate_to_day;
@@ -128,12 +103,13 @@ sub calculate_prices {
 
     my $preview_output = {};
     foreach my $symbol (@underlying_symbols) {
-        my $underlying = create_underlying($symbol);
+        my $underlying = create_underlying($symbol, $pricing_from);
         my $volsurface = Quant::Framework::VolSurface::Delta->new({
             underlying       => $underlying,
             chronicle_reader => $cr,
         });
-        my $current_spot = $underlying->spot_tick->quote;
+        my $current_spot = $underlying->spot_tick ? $underlying->spot_tick->quote : undef;
+        next unless $current_spot;
         foreach my $expiry (@expiries) {
             if (ref $expiry->{close} ne 'Date::Utility') {
                 $preview_output->{$symbol}{$expiry->{date}}{vol}       = '-';
@@ -153,9 +129,6 @@ sub calculate_prices {
             }
         }
     }
-
-    # reset prefix
-    Volatility::EconomicEvents::set_prefix('');
 
     return $preview_output;
 }

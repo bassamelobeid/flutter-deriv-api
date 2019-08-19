@@ -52,25 +52,6 @@ sub generate {
     my $for_date = shift;
 
     my $start = time;
-    my $events;
-    if ($for_date) {
-
-        my $seasonality_prefix = 'bo_' . time . '_';
-        Volatility::EconomicEvents::set_prefix($seasonality_prefix);
-        my $EEC = Quant::Framework::EconomicEventCalendar->new({
-            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(1),
-            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
-        });
-
-        my $for_date_obj = Date::Utility->new($for_date);
-
-        $events = $EEC->get_latest_events_for_period({
-                from => $for_date_obj,
-                to   => $for_date_obj->plus_time_interval('6d'),
-            },
-            $for_date_obj
-        );
-    }
 
     my $nowish         = Date::Utility->new($for_date) || Date::Utility->new;
     my $pricing_date   = $nowish->minus_time_interval($nowish->epoch % $self->min_contract_length->seconds);
@@ -143,17 +124,6 @@ sub generate {
                 ]);
 
             next FMB;
-        }
-        if ($for_date) {
-
-            Volatility::EconomicEvents::generate_variance({
-
-                    underlying_symbols => [$underlying_symbol],
-                    economic_events    => $events,
-                    date               => $bet->date_start,
-                    chronicle_writer   => BOM::Config::Chronicle::get_chronicle_writer(),
-            });
-
         }
         $csv->print($raw_fh,
             [$open_fmb->{transaction_id}, $open_fmb->{client_loginid}, $open_fmb->{short_code}, $open_fmb->{currency_code}, $bid_price_in_usd]);
