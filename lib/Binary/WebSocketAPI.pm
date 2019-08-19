@@ -9,6 +9,7 @@ use Binary::WebSocketAPI::BalanceConnections ();
 use Mojo::Base 'Mojolicious';
 use Mojo::Redis2;
 use Mojo::IOLoop;
+use Mojo::WebSocketProxy::Backend::JobAsync;
 use IO::Async::Loop::Mojo;
 
 use Binary::WebSocketAPI::Hooks;
@@ -22,7 +23,7 @@ use Binary::WebSocketAPI::v3::Wrapper::Cashier;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
 use Binary::WebSocketAPI::v3::Wrapper::LandingCompany;
-use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections ws_redis_master |;
+use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections ws_redis_master redis_queue|;
 
 use Brands;
 use Encode;
@@ -46,7 +47,8 @@ use constant APPS_BLOCKED_FROM_OPERATION_DOMAINS => {red => [1]};
 
 # Set up the event loop singleton so that any code we pull in uses the Mojo
 # version, rather than trying to set its own.
-my $loop = IO::Async::Loop::Mojo->new;
+local $ENV{IO_ASYNC_LOOP} = 'IO::Async::Loop::Mojo';
+my $loop = IO::Async::Loop->new;
 die 'Unexpected event loop class: had ' . ref($loop) . ', expected a subclass of IO::Async::Loop::Mojo'
     unless $loop->isa('IO::Async::Loop::Mojo')
     and IO::Async::Loop->new->isa('IO::Async::Loop::Mojo');
@@ -63,7 +65,6 @@ our %BLOCK_ORIGINS;
 # Keys are RPC calls that we want RPC to log, controlled by redis too.
 our %RPC_LOGGING;
 
-my $json = JSON::MaybeXS->new;
 my $node_config;
 
 sub apply_usergroup {
@@ -355,7 +356,7 @@ sub startup {
         ['reality_check',            {require_auth => 'read'}],
         ['verify_email',             {stash_params => [qw/ server_name token /]}],
         ['new_account_virtual',      {stash_params => [qw/ server_name client_ip user_agent /]}],
-        ['reset_password'],
+        ['reset_password',           {backend      => 'queue_reset_password'}],
 
         # authenticated calls
         ['sell', {require_auth => 'trade'}],
@@ -528,6 +529,7 @@ sub startup {
         ],
     ];
 
+    my $json = JSON::MaybeXS->new;
     for my $action (@$actions) {
         my $action_name = $action->[0];
         my $f           = '/home/git/regentmarkets/binary-websocket-api/config/v3';
@@ -577,6 +579,9 @@ sub startup {
             return "rate_limits::unauthorised::$app_id/$client_id";
         });
 
+    my $backend_redis = redis_queue();
+    my $queue_prefix = $ENV{JOB_QUEUE_PREFIX} // $app->config->{queue_prefix};
+
     $app->plugin(
         'web_socket_proxy' => {
             binary_frame => \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::document_upload,
@@ -612,6 +617,17 @@ sub startup {
             actions => $actions,
             # Skip check sanity to password fields
             skip_check_sanity => qr/password/,
+            backends          => {
+                queue_reset_password => {
+                    type  => "job_async",
+                    redis => {
+                        uri       => 'redis://' . $backend_redis->url->host . ':' . $backend_redis->url->port,
+                        use_multi => 1,
+                        timeout   => 5,
+                        $queue_prefix ? (prefix => $queue_prefix) : (),
+                    },
+                }
+            },
         });
 
     my $redis = ws_redis_master();
