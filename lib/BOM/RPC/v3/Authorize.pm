@@ -8,8 +8,6 @@ use List::MoreUtils qw(any);
 use Convert::Base32;
 use Format::Util::Numbers qw/formatnumber/;
 
-use Brands;
-
 use BOM::RPC::Registry '-dsl';
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Context qw (localize request);
@@ -26,7 +24,7 @@ sub _get_upgradeable_landing_companies {
     # List to store upgradeable companies
     my @upgradeable_landing_companies;
 
-    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
+    my $countries_instance = request()->brand->countries_instance;
 
     # Get the gaming and financial company from the client's residence
     my $gaming_company    = $countries_instance->gaming_company_for_country($client->residence);
@@ -104,7 +102,7 @@ rpc authorize => sub {
     });
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client;
 
-    my ($lc, $brand_name) = ($client->landing_company, request()->brand);
+    my ($lc, $brand_name) = ($client->landing_company, request()->brand->name);
     # check for not allowing cross brand tokens
     return BOM::RPC::v3::Utility::invalid_token_error() unless (grep { $brand_name eq $_ } @{$lc->allowed_for_brands});
 

@@ -63,7 +63,7 @@ my $assessment_keys = {
     ],
 };
 
-BOM::Config::Runtime->instance->app_config->system->suspend->mt5_manager_api(1);
+BOM::Config::Runtime->instance->app_config->system->mt5->suspend->manager_api(1);
 
 #mocking this module will let us avoid making calls to MT5 server.
 my $mt5_account_info;
@@ -123,10 +123,10 @@ subtest 'new account' => sub {
 
     $params->{token} = $token;
 
-    BOM::Config::Runtime->instance->app_config->system->suspend->mt5(1);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all(1);
     $c->call_ok($method, $params)->has_error->error_message_is('MT5 API calls are suspended.', 'MT5 calls are suspended error message');
 
-    BOM::Config::Runtime->instance->app_config->system->suspend->mt5(0);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all(0);
 
     $params->{args}->{account_type} = undef;
     $c->call_ok($method, $params)->has_error->error_message_is('Invalid account type.', 'Correct error message for undef account type');
