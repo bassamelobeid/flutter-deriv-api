@@ -1114,8 +1114,8 @@ subtest 'suspended currency transfers' => sub {
 subtest 'MT5' => sub {
 
     @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
-    my $mt5_mgr_suspend = BOM::Config::Runtime->instance->app_config->system->suspend->mt5_manager_api;
-    BOM::Config::Runtime->instance->app_config->system->suspend->mt5_manager_api(1);
+    my $mt5_mgr_suspend = BOM::Config::Runtime->instance->app_config->system->mt5->suspend->manager_api;
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->manager_api(1);
     my $mock_account = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $mock_account->mock(
         _is_financial_assessment_complete => sub { return 1 },
@@ -1323,7 +1323,7 @@ subtest 'MT5' => sub {
         ->error_message_is('Currency provided is different from account currency.', 'Correct message for wrong currency for MT5 account_from');
 
     # restore config
-    BOM::Config::Runtime->instance->app_config->system->suspend->mt5_manager_api($mt5_mgr_suspend);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->manager_api;
 };
 
 done_testing();
