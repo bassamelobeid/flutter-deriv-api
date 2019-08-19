@@ -1248,11 +1248,17 @@ rpc transfer_between_accounts => sub {
             };
     }
 
-    my @mt5_accounts = $client->user->get_mt5_loginids;
+    # needed now to determine if account is demo/real
+    my %mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($client)->then(
+        sub {
+            return Future->done(map { 'MT' . $_->{login} => $_ } grep { $_->{group} !~ /^demo/ } @_);
+
+        })->get;
 
     # just return accounts list if loginid from or to is not provided
     if (not $loginid_from or not $loginid_to) {
-        push @accounts, map { {loginid => $_} } @mt5_accounts;
+        push @accounts,
+            map { {loginid => $_, balance => $mt5_accounts{$_}->{balance}, currency => $mt5_accounts{$_}->{currency}} } keys %mt5_accounts;
         return {
             status   => 0,
             accounts => \@accounts
@@ -1266,28 +1272,20 @@ rpc transfer_between_accounts => sub {
     # Both $loginid_from and $loginid_to must be either a real or a MT5 account
     return _transfer_between_accounts_error()
         unless ((
-            exists $siblings->{$loginid_from}
-            or any { $loginid_from eq $_ } @mt5_accounts
-        )
-        and (exists $siblings->{$loginid_to}
-            or any { $loginid_to eq $_ } @mt5_accounts));
+               exists $siblings->{$loginid_from}
+            or exists $mt5_accounts{$loginid_from})
+        and (  exists $siblings->{$loginid_to}
+            or exists $mt5_accounts{$loginid_to}));
+
+    return _transfer_between_accounts_error(localize('Transfer between two MT5 accounts is not allowed.'))
+        if (exists $mt5_accounts{$loginid_from} and exists $mt5_accounts{$loginid_to});
 
     # this transfer involves an MT5 account
-    if (any { $loginid_from eq $_ or $loginid_to eq $_ } @mt5_accounts) {
-
-        # potentially slow, needed now to get demo/real, currency, name
-        my %mt5_real_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($client)->then(
-            sub {
-                return Future->done(map { 'MT' . $_->{login} => $_ } grep { $_->{group} !~ /^demo/ } @_);
-            })->get;
-
-        return _transfer_between_accounts_error(localize('Transfer between two MT5 accounts is not allowed.'))
-            if (exists $mt5_real_accounts{$loginid_from} and exists $mt5_real_accounts{$loginid_to});
-
+    if (exists $mt5_accounts{$loginid_from} or exists $mt5_accounts{$loginid_to}) {
         delete @{$params->{args}}{qw/account_from account_to/};
         my ($method, $client_to_full_name);
 
-        if (exists $mt5_real_accounts{$loginid_to}) {
+        if (exists $mt5_accounts{$loginid_to}) {
 
             return _transfer_between_accounts_error(localize('From account provided should be same as current authorized client.'))
                 unless ($client->loginid eq $loginid_from);
@@ -1297,26 +1295,22 @@ rpc transfer_between_accounts => sub {
 
             $method                      = \&BOM::RPC::v3::MT5::Account::mt5_deposit;
             $params->{args}{from_binary} = $loginid_from;
-            $params->{args}{to_mt5}      = $mt5_real_accounts{$loginid_to}->{login};
-            $client_to_full_name         = $mt5_real_accounts{$loginid_to}->{name};
+            $params->{args}{to_mt5}      = $mt5_accounts{$loginid_to}->{login};
+            $client_to_full_name         = $mt5_accounts{$loginid_to}->{name};
         }
 
-        elsif (exists $mt5_real_accounts{$loginid_from}) {
+        if (exists $mt5_accounts{$loginid_from}) {
 
             return _transfer_between_accounts_error(localize('To account provided should be same as current authorized client.'))
                 unless ($client->loginid eq $loginid_to);
 
             return _transfer_between_accounts_error(localize('Currency provided is different from account currency.'))
-                if ($mt5_real_accounts{$loginid_from}->{currency} ne $currency);
+                if ($mt5_accounts{$loginid_from}->{currency} ne $currency);
 
             $method                    = \&BOM::RPC::v3::MT5::Account::mt5_withdrawal;
             $params->{args}{to_binary} = $loginid_to;
-            $params->{args}{from_mt5}  = $mt5_real_accounts{$loginid_from}->{login};
+            $params->{args}{from_mt5}  = $mt5_accounts{$loginid_from}->{login};
             $client_to_full_name       = $client->full_name;
-        }
-
-        else {
-            return _transfer_between_accounts_error();
         }
 
         return $method->($params)->then(
