@@ -70,6 +70,31 @@ sub get_names_by_app_id {
     return $app;
 }
 
+=head2 is_official_app
+
+Checks if the app is among official
+
+=over 4
+
+=item * C<app_id> - application ID
+
+=back
+
+Returns true if the app is present in official_apps table
+
+=cut
+
+sub is_official_app {
+    my ($self, $app_id) = @_;
+
+    my ($is_official) = $self->dbic->run(
+        fixup => sub {
+            $_->selectrow_array("SELECT EXISTS(SELECT 1 FROM oauth.official_apps WHERE app_id = ?)", undef, $app_id);
+        });
+
+    return $is_official ? 1 : 0;
+}
+
 =head2 is_primary_website
 
 Checks if the app is among official apps and is a primary website.
