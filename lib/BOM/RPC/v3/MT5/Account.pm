@@ -1062,8 +1062,8 @@ async_rpc mt5_deposit => sub {
     my $params = shift;
 
     my ($client, $args, $source) = @{$params}{qw/client args source/};
-    my ($fm_loginid, $to_mt5, $amount) =
-        @{$args}{qw/from_binary to_mt5 amount/};
+    my ($fm_loginid, $to_mt5, $amount, $return_mt5_details) =
+        @{$args}{qw/from_binary to_mt5 amount return_mt5_details/};
 
     my $error_code = 'MT5DepositError';
     my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -1195,9 +1195,9 @@ async_rpc mt5_deposit => sub {
                     }
 
                     return Future->done({
-                        status                => 1,
-                        binary_transaction_id => $txn->transaction_id
-                    });
+                            status                => 1,
+                            binary_transaction_id => $txn->transaction_id,
+                            $return_mt5_details ? (mt5_data => $response->{mt5_data}) : ()});
                 });
         });
 };

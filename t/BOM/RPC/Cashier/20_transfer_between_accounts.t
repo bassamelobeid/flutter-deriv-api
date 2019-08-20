@@ -1215,8 +1215,24 @@ subtest 'MT5' => sub {
 
     $params->{args} = {};
     $rpc_ct->call_ok($method, $params)->has_no_error("no error for $method with no params");
+    cmp_bag(
+        $rpc_ct->result->{accounts},
+        [{
+                loginid  => $test_client->loginid,
+                balance  => num(1000),
+                currency => 'USD'
+            },
+            {
+                loginid  => $test_client_btc->loginid,
+                balance  => num(10),
+                currency => 'BTC'
+            }
+        ],
+        "all real binary accounts by empty $method call"
+    );
 
-    my @accounts = map { $_->{loginid} } @{$rpc_ct->result->{accounts}};
+    $params->{args} = {accounts => 'all'};
+    $rpc_ct->call_ok($method, $params)->has_no_error("no error for $method with accounts=all");
     cmp_bag(
         $rpc_ct->result->{accounts},
         [{
@@ -1231,16 +1247,16 @@ subtest 'MT5' => sub {
             },
             {
                 loginid  => 'MT' . $ACCOUNTS{'real\vanuatu_standard'},
-                balance  => $DETAILS{balance},
+                balance  => num($DETAILS{balance}),
                 currency => 'USD'
             },
             {
                 loginid  => 'MT' . $ACCOUNTS{'real\labuan_advanced'},
-                balance  => $DETAILS{balance},
+                balance  => num($DETAILS{balance}),
                 currency => 'USD'
             },
         ],
-        "all real money accounts by empty $method call"
+        "accounts=all returns all binary + MT5 accounts"
     );
 
     $params->{args} = {
@@ -1256,7 +1272,8 @@ subtest 'MT5' => sub {
     $params->{args}{account_to}   = $test_client->loginid;
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'MT5 demo -> real account transfer error code')
-        ->error_message_is('Transfers between accounts are not available for your account.', 'MT5 demo -> real account transfer error message');
+        ->error_message_is('There was an error processing the request. Withdrawals are not allowed for demo accounts.',
+        'MT5 demo -> real account transfer error message');
 
     # real -> MT5
     $params->{args}{account_from} = $test_client->loginid;
@@ -1269,7 +1286,17 @@ subtest 'MT5' => sub {
             transaction_id      => ignore(),
             client_to_full_name => $DETAILS{name},
             client_to_loginid   => $params->{args}{account_to},
-            stash               => ignore()
+            stash               => ignore(),
+            accounts            => bag({
+                    loginid  => 'MT' . $ACCOUNTS{'real\vanuatu_standard'},
+                    balance  => num($DETAILS{balance}),
+                    currency => 'USD'
+                },
+                {
+                    loginid  => $test_client->loginid,
+                    balance  => num(1000 - 180),
+                    currency => 'USD'
+                })
         },
         'expected data in result'
     );
@@ -1287,10 +1314,21 @@ subtest 'MT5' => sub {
             transaction_id      => ignore(),
             client_to_full_name => $test_client->full_name,
             client_to_loginid   => $params->{args}{account_to},
-            stash               => ignore()
+            stash               => ignore(),
+            accounts            => bag({
+                    loginid  => 'MT' . $ACCOUNTS{'real\vanuatu_standard'},
+                    balance  => num($DETAILS{balance}),
+                    currency => 'USD'
+                },
+                {
+                    loginid  => $test_client->loginid,
+                    balance  => num(1000 - 30),
+                    currency => 'USD'
+                })
         },
         'expected data in result'
     );
+
     cmp_ok $test_client->default_account->balance, '==', 970, 'real money account balance increased';
 
     {
@@ -1316,11 +1354,11 @@ subtest 'MT5' => sub {
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
         ->error_message_is('Currency provided is different from account currency.', 'Correct message for wrong currency for real account_from');
 
-    $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\vanuatu_standard'};
-    $params->{args}{account_to}   = $test_client->loginid;
-    $params->{args}{curency}      = 'EUR';
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
-        ->error_message_is('Currency provided is different from account currency.', 'Correct message for wrong currency for MT5 account_from');
+    # $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\vanuatu_standard'};
+    # $params->{args}{account_to}   = $test_client->loginid;
+    # $params->{args}{curency}      = 'EUR';
+    # $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
+    #     ->error_message_is('Currency provided is different from account currency.', 'Correct message for wrong currency for MT5 account_from');
 
     # restore config
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->manager_api;
