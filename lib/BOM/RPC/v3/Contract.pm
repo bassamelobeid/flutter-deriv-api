@@ -92,7 +92,7 @@ sub validate_barrier {
     my $contract_parameters = shift;
 
     return undef if (defined $contract_parameters->{barrier} && $contract_parameters->{barrier} eq 'S0P');
-    return undef unless exists $contract_parameters->{barrier} or exists $contract_parameters->{barrier2};
+    return undef unless grep { exists $contract_parameters->{$_} } qw(barrier barrier2 low_barrier high_barrier);
 
     # Get the number of digits of the underlying pipsize.
     create_underlying($contract_parameters->{underlying})->pip_size =~ /\.([0-9]+)/;
@@ -107,7 +107,6 @@ sub validate_barrier {
         # NOTE: If it is not fractional, it is ignored
         if ($contract_parameters->{$key} =~ /\.([0-9]+)/) {
             my $barrier_decimal_places = length $1;
-
             # Compare with the number of decimal places from the pipsize
             # If barrier has 5 decimal places and pipsize has 4, this would be rejected due to excessive precision.
             if ($barrier_decimal_places > $pipsize_decimal_places) {
