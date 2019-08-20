@@ -13,7 +13,7 @@ use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Database::Model::AccessToken;
+use BOM::Platform::Token::API;
 use BOM::Database::Model::OAuth;
 use BOM::Database::ClientDB;
 use Email::Stuffer::TestLinks;

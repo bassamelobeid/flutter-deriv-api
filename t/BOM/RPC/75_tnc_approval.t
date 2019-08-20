@@ -6,7 +6,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::User::Client;
 use BOM::Config::Runtime;
-use BOM::Database::Model::AccessToken;
+use BOM::Platform::Token::API;
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Static;

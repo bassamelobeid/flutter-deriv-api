@@ -249,7 +249,7 @@ subtest 'CR account types - low risk' => sub {
         password => 'jskjd8292922',
     );
     $user->add_client($client);
-    my $token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
+    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
     #demo account
     my $login = create_mt5_account->(
@@ -326,7 +326,7 @@ subtest 'CR account types - high risk' => sub {
     $client->aml_risk_classification('high');
     $client->save();
     $user->add_client($client);
-    my $token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
+    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
     #demo account
     my $login = create_mt5_account->(
@@ -411,7 +411,7 @@ subtest 'MLT account types - low risk' => sub {
         password => 'jskjd8292922',
     );
     $user->add_client($client);
-    my $token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
+    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
     #demo account
     my $login = create_mt5_account->($c, $token, $client, {account_type => 'demo'});
@@ -474,7 +474,7 @@ subtest 'MLT account types - high risk' => sub {
         password => 'jskjd8292922',
     );
     $user->add_client($client);
-    my $token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
+    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
     #demo account
     my $login = create_mt5_account->($c, $token, $client, {account_type => 'demo'});
@@ -546,7 +546,7 @@ subtest 'MF accout types' => sub {
         password => 'jskjd8292922',
     );
     $user->add_client($client);
-    my $token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
+    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
     #demo account
     create_mt5_account->(
@@ -676,7 +676,7 @@ subtest 'MX account types' => sub {
         password => 'jskjd8292922',
     );
     $user->add_client($client);
-    my $token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
+    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
     create_mt5_account->(
         $c, $token, $client,
@@ -700,7 +700,7 @@ subtest 'MX account types' => sub {
     $mf_client->save();
 
     $user->add_client($mf_client);
-    $token = BOM::Database::Model::AccessToken->new->create_token($mf_client->loginid, 'test token');
+    $token = BOM::Platform::Token::API->new->create_token($mf_client->loginid, 'test token');
 
     create_mt5_account->(
         $c, $token, $client,
@@ -724,7 +724,7 @@ subtest 'VR account types - CR residence' => sub {
         password => 'jskjd8292922',
     );
     $user->add_client($client);
-    my $token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
+    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
     #demo account
     my $login = create_mt5_account->(
@@ -791,7 +791,7 @@ subtest 'Virtual account types - EU residences' => sub {
         password => 'jskjd8292922',
     );
     $user->add_client($client);
-    my $token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
+    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
     #demo account
     my $login = create_mt5_account->(
@@ -877,7 +877,7 @@ subtest 'Virtual account types - GB residence' => sub {
         password => 'jskjd8292922',
     );
     $user->add_client($client);
-    my $token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
+    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
     #demo account
     $client->status->clear_age_verification();

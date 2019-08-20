@@ -38,7 +38,7 @@ $client_cr->set_default_account('USD');
 subtest 'Doughflow' => sub {
     my $params = {};
     $params->{args}->{cashier} = 'deposit';
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr->loginid, 'test token');
     $params->{domain} = 'binary.com';
 
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_internal_message_like(qr/frontend not found/, 'No frontend error');

@@ -22,7 +22,7 @@ use Email::Stuffer::TestLinks;
 use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use BOM::Test::Helper::FinancialAssessment;
 use BOM::Database::Model::OAuth;
-use BOM::Database::Model::AccessToken;
+use BOM::Platform::Token::API;
 use utf8;
 my $app = BOM::Database::Model::OAuth->new->create_app({
     name    => 'test',
@@ -200,7 +200,7 @@ subtest $method => sub {
                 broker_code => 'CR',
                 email       => 'new_email' . rand(999) . '@binary.com',
             });
-            $auth_token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
+            $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
             # Make virtual client with user
             my $password = 'jskjd8292922';
@@ -241,7 +241,7 @@ subtest $method => sub {
     };
 
     subtest 'Create new account' => sub {
-        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($vclient->loginid, 'test token');
+        $params->{token} = BOM::Platform::Token::API->new->create_token($vclient->loginid, 'test token');
 
         my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
         isnt $result->{error}->{code}, 'InvalidAccount', 'No error with duplicate details but residence not provided so it errors out';
@@ -456,7 +456,7 @@ subtest $method => sub {
                 email       => $email,
                 citizen     => '',
             });
-            $auth_token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
+            $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
             $user->add_client($client);
         }
@@ -605,7 +605,7 @@ subtest $method => sub {
                     email         => $email,
                     residence     => 'cz',
                     secret_answer => BOM::User::Utility::encrypt_secret_answer('mysecretanswer')});
-            $auth_token = BOM::Database::Model::AccessToken->new->create_token($client_mlt->loginid, 'test token');
+            $auth_token = BOM::Platform::Token::API->new->create_token($client_mlt->loginid, 'test token');
 
             $user->add_client($client);
             $user->add_client($client_mlt);
@@ -638,7 +638,7 @@ subtest $method => sub {
         my $tokens   = $token_db->get_all_tokens_by_loginid($new_loginid);
         is($tokens->[0]{info}, "App ID: $app_id", "token's app_id is correct");
 
-        my $auth_token_mf = BOM::Database::Model::AccessToken->new->create_token($new_loginid, 'test token');
+        my $auth_token_mf = BOM::Platform::Token::API->new->create_token($new_loginid, 'test token');
         # make sure data is same, as in first account, regardless of what we have provided
         my $cl = BOM::User::Client->new({loginid => $new_loginid});
         is $client_mlt->$_, $cl->$_, "$_ is correct on created account" for qw/first_name last_name residence address_city phone date_of_birth/;
@@ -674,7 +674,7 @@ subtest $method => sub {
                     email         => $email,
                     residence     => 'gb',
                     secret_answer => BOM::User::Utility::encrypt_secret_answer('mysecretanswer')});
-            $auth_token = BOM::Database::Model::AccessToken->new->create_token($client_mx->loginid, 'test token');
+            $auth_token = BOM::Platform::Token::API->new->create_token($client_mx->loginid, 'test token');
 
             $user->add_client($client);
             $user->add_client($client_mx);
@@ -706,7 +706,7 @@ subtest $method => sub {
         my $tokens      = $token_db->get_all_tokens_by_loginid($new_loginid);
         is($tokens->[0]{info}, "App ID: $app_id", "token's app_id is correct");
 
-        my $auth_token_mf = BOM::Database::Model::AccessToken->new->create_token($new_loginid, 'test token');
+        my $auth_token_mf = BOM::Platform::Token::API->new->create_token($new_loginid, 'test token');
 
         # make sure data is same, as in first account, regardless of what we have provided
         my $cl = BOM::User::Client->new({loginid => $new_loginid});
@@ -736,7 +736,7 @@ subtest $method => sub {
             email       => $email,
             residence   => 'gb',
         });
-        $auth_token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
+        $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
         $user->add_client($client);
 
         $params->{args}->{accept_risk} = 1;
@@ -758,7 +758,7 @@ subtest $method => sub {
                 email         => $email,
                 residence     => 'gb',
                 secret_answer => BOM::User::Utility::encrypt_secret_answer('mysecretanswer')});
-        $auth_token = BOM::Database::Model::AccessToken->new->create_token($client_mx->loginid, 'test token');
+        $auth_token = BOM::Platform::Token::API->new->create_token($client_mx->loginid, 'test token');
         $params->{token} = $auth_token;
 
         $user->add_client($client_mx);
@@ -785,7 +785,7 @@ subtest $method => sub {
             email       => $email,
             residence   => 'de',
         });
-        $auth_token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
+        $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
         $user->add_client($client);
 
         $params->{token}                   = $auth_token;

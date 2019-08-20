@@ -12,7 +12,7 @@ use TestHelper qw/create_test_user/;
 use Test::MockModule;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
-use BOM::Database::Model::AccessToken;
+use BOM::Platform::Token::API;
 use BOM::Test::RPC::Client;
 use Test::Mojo;
 use Email::Stuffer::TestLinks;

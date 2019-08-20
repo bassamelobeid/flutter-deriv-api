@@ -13,8 +13,10 @@ use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Email;
 use BOM::RPC::v3::Utility;
+use BOM::Platform::Token::API;
 use BOM::Database::Model::AccessToken;
 use BOM::User;
+use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
 
 use utf8;
 
@@ -33,6 +35,7 @@ my @params = (
 
 {
     # cleanup
+    cleanup_redis_tokens();
     BOM::Database::Model::AccessToken->new->dbic->dbh->do('DELETE FROM auth.access_token');
 }
 
@@ -152,7 +155,7 @@ subtest 'Payment agent withdraw' => sub {
     $params[1]->{server_name}          = 'binary.com';
     $params[1]->{link}                 = 'binary.com/some_url';
 
-    my $token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token');
+    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
     $params[1]->{params}->{token_details} = BOM::RPC::v3::Utility::get_token_details($token);
 
     $rpc_ct->call_ok(@params)
@@ -183,7 +186,7 @@ subtest 'Payment withdraw' => sub {
     $params[1]->{server_name}          = 'binary.com';
     $params[1]->{link}                 = 'binary.com/some_url';
 
-    my $token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'test token 1');
+    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token 1');
     $params[1]->{params}->{token_details} = BOM::RPC::v3::Utility::get_token_details($token);
 
     $rpc_ct->call_ok(@params)
