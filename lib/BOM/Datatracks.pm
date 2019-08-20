@@ -22,9 +22,9 @@ Otherwise, undef will be returned.
 my $sftp;
 
 sub upload {
-    my ($path, $fnames) = @_;
+    my ($path, $fnames, $brand) = @_;
 
-    $sftp ||= _by_public_key();
+    $sftp ||= _by_public_key($brand);
 
     return $sftp->status if $sftp->error;
 
@@ -37,9 +37,10 @@ sub upload {
 }
 
 sub _by_public_key {
+    my $brand = shift;
     return Net::SFTP::Foreign->new(
         'secure.datatracks.eu',
-        user     => 'Binary',
+        user     => ucfirst($brand->name),
         key_path => '/home/nobody/.ssh/mfirmfsa',
         more     => [qw(-o PreferredAuthentications=publickey)]);
 }

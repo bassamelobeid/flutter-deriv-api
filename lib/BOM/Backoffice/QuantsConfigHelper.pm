@@ -180,7 +180,7 @@ sub decorate_for_display {
     my $db = BOM::Database::ClientDB->new({broker_code => 'CR'})->db;
     my $output = $db->dbic->run(
         fixup => sub {
-            $_->selectall_arrayref("SELECT market from bet.market group by market");
+            $_->selectall_arrayref("SELECT market from bet.limits_market_mapper group by market");
         });
     my $potentially_new_market = $db->dbic->run(
         fixup => sub {

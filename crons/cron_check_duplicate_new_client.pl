@@ -11,7 +11,6 @@ use Email::Address::UseXS;
 use Email::Stuffer;
 use BOM::Platform::Context qw (request);
 use Template;
-use Brands;
 
 use BOM::Backoffice::Sysinit ();
 use BOM::Database::DataMapper::CollectorReporting;
@@ -25,7 +24,7 @@ if ($ENV{REQUEST_METHOD}) {
 }
 
 my $check_date    = Date::Utility->new(time - 86400)->date;
-my $support_email = Brands->new(name => request()->brand)->emails('support');
+my $support_email = request()->brand->emails('support');
 my $template      = Template->new(ABSOLUTE => 1);
 
 # connect to collector for getting data

@@ -29,8 +29,10 @@ sub get_languages {
 }
 
 sub master_live_server_error {
+    my $brand        = request()->brand;
+    my $website_name = lc($brand->website_name);
     return main::code_exit_BO(
-        "WARNING! You are not on the Master Live Server. Please go to the following link: https://collector01.binary.com/d/backoffice/f_broker_login.cgi"
+        "WARNING! You are not on the Master Live Server. Please go to the following link: https://collector01.$website_name/d/backoffice/f_broker_login.cgi"
     );
 }
 

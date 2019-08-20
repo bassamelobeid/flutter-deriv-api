@@ -3,7 +3,7 @@ use strict;
 use warnings;
 
 use Date::Utility;
-use Brands;
+use BOM::Config;
 use BOM::Platform::Email qw(send_email);
 use BOM::Datatracks;
 use Path::Tiny 'path';
@@ -18,10 +18,10 @@ use Path::Tiny 'path';
 =cut
 
 my $specified_rptDate = $ARGV[0];
-my $brand = Brands->new(name => 'binary');
+my $brand             = BOM::Config->brand();
 
-my $report_recipients = join(',', $brand->emails('compliance'), 'bill@binary.com');
-my $failure_recipients = join(',', $brand->emails('compliance'), 'sysadmin@binary.com', 'bill@binary.com');
+my $report_recipients  = join(',', map { $brand->emails($_) } qw(compliance bill));
+my $failure_recipients = join(',', map { $brand->emails($_) } qw(compliance bill sysadmin));
 
 # If we pass in a date, then we presumably want to report on that date
 # Yesterday is default
@@ -53,7 +53,7 @@ SQL
 # If the call fails or $rz for some reason does not match expectations, the condition will still fail because of the mismatch
 if ($? or ($rz and $rz !~ /^"1","Transaction","new"/)) {
     send_email({
-            from    => 'sysadmin@binary.com',
+            from    => $brand->emails('sysadmin'),
             to      => $failure_recipients,
             subject => "MFIR reporting failure - $FN - $rptDate",
             message => ["An unexpected empty response was received while trying to create the report file today: $FN\n\n$rz"]});
@@ -63,14 +63,14 @@ if ($? or ($rz and $rz !~ /^"1","Transaction","new"/)) {
     print $fh $rz;
     close $fh;
 
-    my $upload_status = BOM::Datatracks::upload("$reports_path", [$FN]);
+    my $upload_status = BOM::Datatracks::upload("$reports_path", [$FN], $brand);
     my $message = $upload_status ? "There was a problem uploading the file, $FN: $upload_status" : 'Files uploaded successfully';
     $message .= "\n\nSee attached.";
-
+    my $brand_name = $brand->website_name;
     send_email({
             from       => $brand->emails('support'),
             to         => $report_recipients,
-            subject    => "MFIR reporting (Binary)- $rptDate",
+            subject    => "MFIR reporting ($brand_name)- $rptDate",
             message    => [$message],
             attachment => ["$reports_path/$FN"]});
 }
@@ -83,7 +83,7 @@ SQL
 
 if ($? or ($rz and $rz !~ /^"1","Transaction","new"/)) {
     send_email({
-            from    => 'sysadmin@binary.com',
+            from    => $brand->emails('sysadmin'),
             to      => $failure_recipients,
             subject => "MFIR reporting failure - $FN_mt5 - $rptDate",
             message => ["An unexpected empty response was received while trying to create the report file today: $FN_mt5\n\n$rz"]});
@@ -93,7 +93,7 @@ if ($? or ($rz and $rz !~ /^"1","Transaction","new"/)) {
     print $fh $rz;
     close $fh;
 
-    my $upload_status = BOM::Datatracks::upload("$reports_path", [$FN_mt5]);
+    my $upload_status = BOM::Datatracks::upload("$reports_path", [$FN_mt5], $brand);
     my $message = $upload_status ? "There was a problem uploading the file, $FN_mt5: $upload_status" : 'Files uploaded successfully';
     $message .= "\n\nSee attached.";
 

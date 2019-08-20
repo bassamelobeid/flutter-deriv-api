@@ -15,7 +15,6 @@ use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::QuantsConfigHelper;
 use BOM::Platform::Email qw(send_email);
 use BOM::Config::Runtime;
-use Brands;
 
 BOM::Backoffice::Sysinit::init();
 my $json  = JSON::MaybeXS->new;
@@ -217,7 +216,7 @@ sub _format_email_for_limit {
 sub _send_compliance_email {
     my %args = @_;
 
-    my $brand = Brands->new(name => request()->brand);
+    my $brand = request()->brand;
     # send an email to compliance
     my $recipients = join(',', $brand->emails('compliance'), $brand->emails('alert_quants'));
     send_email({

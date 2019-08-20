@@ -20,7 +20,7 @@ if (my $email_list = request()->param('email')) {
         Bar($email . " Login History");
         my $user = BOM::User->new(email => $email);
         no warnings 'numeric';    ## no critic (ProhibitNoWarnings)
-        my $limit = int(request()->param('limit')) // 100;
+        my $limit = int(request()->param('limit') // 100);
         my $history;
         if ($user) {
             $history = $user->login_history(

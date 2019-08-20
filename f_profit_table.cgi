@@ -9,7 +9,6 @@ use Format::Util::Numbers qw(roundcommon);
 use Machine::Epsilon;
 use HTML::Entities;
 
-use Brands;
 use BOM::User::Client;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::FinancialMarketBet;
@@ -213,7 +212,7 @@ BOM::Backoffice::Request::template()->process(
         page                        => $page,
         all_in_one_page             => $all_in_one_page,
         currency                    => $client->currency,
-        residence                   => Brands->new(name => request()->brand)->countries_instance->countries->country_from_code($client->residence),
+        residence                   => request()->brand->countries_instance->countries->country_from_code($client->residence),
         contract_details            => \&BOM::ContractInfo::get_info,
         performance_probability     => $performance_probability,
         inv_performance_probability => $inv_performance_probability,

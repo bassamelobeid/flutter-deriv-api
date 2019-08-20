@@ -7,7 +7,6 @@ use URL::Encode qw( url_encode );
 use HTML::Entities;
 
 use BOM::User::Client;
-use Brands;
 
 use f_brokerincludeall;
 use BOM::Backoffice::Request qw(request localize);
@@ -54,7 +53,7 @@ my $link = "https://www.binary.com/" . lc($lang) . "/redirect.html?action=reset_
 
 my $lost_pass_email;
 
-my $brand = Brands->new(name => request()->brand);
+my $brand = request()->brand;
 
 my $email_template = $has_social_login ? "email/lost_password_has_social_login.html.tt" : "email/lost_password.html.tt";
 

@@ -52,25 +52,6 @@ sub generate {
     my $for_date = shift;
 
     my $start = time;
-    my $events;
-    if ($for_date) {
-
-        my $seasonality_prefix = 'bo_' . time . '_';
-        Volatility::EconomicEvents::set_prefix($seasonality_prefix);
-        my $EEC = Quant::Framework::EconomicEventCalendar->new({
-            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(1),
-            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
-        });
-
-        my $for_date_obj = Date::Utility->new($for_date);
-
-        $events = $EEC->get_latest_events_for_period({
-                from => $for_date_obj,
-                to   => $for_date_obj->plus_time_interval('6d'),
-            },
-            $for_date_obj
-        );
-    }
 
     my $nowish         = Date::Utility->new($for_date) || Date::Utility->new;
     my $pricing_date   = $nowish->minus_time_interval($nowish->epoch % $self->min_contract_length->seconds);
@@ -144,17 +125,6 @@ sub generate {
 
             next FMB;
         }
-        if ($for_date) {
-
-            Volatility::EconomicEvents::generate_variance({
-
-                    underlying_symbols => [$underlying_symbol],
-                    economic_events    => $events,
-                    date               => $bet->date_start,
-                    chronicle_writer   => BOM::Config::Chronicle::get_chronicle_writer(),
-            });
-
-        }
         $csv->print($raw_fh,
             [$open_fmb->{transaction_id}, $open_fmb->{client_loginid}, $open_fmb->{short_code}, $open_fmb->{currency_code}, $bid_price_in_usd]);
         my @prices_in_usd = $self->_calculate_grid_for_max_exposure($bet);
@@ -222,8 +192,9 @@ sub generate {
         . $ignored
         . '] out of scope contracts ignored.';
     $scenario_message .= "\n\n" . $status;
-    Email::Stuffer->from('Risk reporting <risk-reporting@binary.com>')->to('<x-risk@binary.com>')->subject($subject)->text_body($scenario_message)
-        ->attach_file($scenario_fh->filename)->attach_file($raw_fh->filename)->send;
+    my $brand = BOM::Backoffice::Request::request()->brand;
+    Email::Stuffer->from('Risk reporting ' . $brand->emails('risk_reporting'))->to($brand->emails('risk'))->subject($subject)
+        ->text_body($scenario_message)->attach_file($scenario_fh->filename)->attach_file($raw_fh->filename)->send;
     return;
 }
 

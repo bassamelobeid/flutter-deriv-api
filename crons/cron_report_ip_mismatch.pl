@@ -14,12 +14,12 @@ package main;
 use strict;
 use warnings;
 
-use Brands;
 use BOM::Backoffice::Request;
 use BOM::Platform::Email qw(send_email);
 use JSON::MaybeXS qw{decode_json};
 use Date::Utility;
 use LandingCompany::Registry;
+use BOM::Config;
 use BOM::Config::RedisReplicated;
 use BOM::User::Client;
 use BOM::User;
@@ -55,7 +55,7 @@ BOM::Backoffice::Request::template()->process(
     \$list_ip_mismatch_email
 ) || die BOM::Backoffice::Request::template()->error();
 
-my $brands = Brands->new();
+my $brands = BOM::Config->brand();
 
 send_email({
     from                  => $brands->emails('system'),

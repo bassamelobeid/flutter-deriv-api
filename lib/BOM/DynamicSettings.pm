@@ -21,6 +21,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 use BOM::Config::CurrencyConfig;
+use BOM::Backoffice::Request qw(request);
 
 sub textify_obj {
     my $type  = shift;
@@ -193,13 +194,13 @@ sub get_settings_by_group {
                 system.suspend.all_logins
                 system.suspend.social_logins
                 system.suspend.logins
-                system.suspend.mt5
-                system.suspend.mt5_deposits
-                system.suspend.mt5_withdrawals
                 system.suspend.transfer_between_accounts
                 system.suspend.transfer_currencies
                 system.suspend.onfido
-                system.suspend.mt5_manager_api
+                system.mt5.suspend.all
+                system.mt5.suspend.deposits
+                system.mt5.suspend.withdrawals
+                system.mt5.suspend.manager_api
                 )
         ],
         quant => [qw(
@@ -482,10 +483,11 @@ sub send_email_notification {
     push @message, "$disable_type: " . join(",", @different);
     push @message, "By $staff on " . Date::Utility->new->datetime;
 
-    my $email_list = 'x-quants@binary.com, compliance@binary.com, x-cs@binary.com,x-marketing@binary.com';
+    my $brand = request()->brand;
+    my $email_list = join ", ", map { $brand->emails($_) } qw(quants compliance cs marketing_x);
 
     send_email({
-        from    => 'system@binary.com',
+        from    => $brand->emails('system'),
         to      => $email_list,
         subject => $subject,
         message => \@message,

@@ -87,19 +87,20 @@ sub _SetEnvironment {
 }
 
 sub _domain_for {
-    my @host_name = split(/\./, Sys::Hostname::hostname());
+    my @host_name   = split(/\./, Sys::Hostname::hostname());
     my $server_name = $host_name[0];
-
+    my $site        = lc(Brands->new(name => 'binary')->website_name);
     if ($server_name =~ /^(qa\d+)$/) {
+        #TODO should change here ?
         return "www.binary$1.com" if $host_name[1] eq 'regentmarkets';
         return Sys::Hostname::hostname();
     }
 
     if ($server_name =~ /^backoffice.*$/) {
-        return "backoffice.binary.com";
+        return "backoffice.$site";
     }
 
-    return $server_name . '.binary.com';
+    return $server_name . ".$site";
 }
 
 1;

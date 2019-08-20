@@ -5,7 +5,7 @@ use warnings;
 
 ### WHAT DOES THIS SCRIPT DO AND WHY?
 #
-# Limits are applied based on the market definition of a symbol in bet.market table. These definition is mostly similar to the
+# Limits are applied based on the market definition of a symbol in bet.limits_market_mapper table. These definition is mostly similar to the
 # definitions found in underlyings.yml, but it could be changed from the backoffice. For example, the market group for
 # frxUSDJPY, frxAUDJPY, frxGBPJPY is forex. In some events, quants might decide to set a tighter limit to JPY forex pairs.
 #

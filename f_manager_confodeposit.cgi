@@ -10,7 +10,6 @@ use Try::Tiny;
 use HTML::Entities;
 use Scope::Guard;
 
-use Brands;
 use LandingCompany::Registry;
 
 use f_brokerincludeall;
@@ -358,7 +357,7 @@ if ($informclient) {
 
     try {
         send_email({
-            from                  => Brands->new(name => request()->brand)->emails('support'),
+            from                  => request()->brand->emails('support'),
             to                    => $client->email,
             subject               => $subject,
             message               => [$email_body],

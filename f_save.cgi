@@ -247,7 +247,7 @@ if (    -e $overridefilename
 #internal audit warnings
 if ($filen eq 'f_broker/promocodes.txt' and not BOM::Config::on_qa and $diff) {
     warn("promocodes.txt EDITED BY $clerk");
-    my $brand = Brands->new(name => request()->brand);
+    my $brand = request()->brand;
     send_email({
             from    => $brand->emails('system'),
             to      => $brand->emails('compliance'),
