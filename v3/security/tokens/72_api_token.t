@@ -17,8 +17,8 @@ use await;
 cleanup_redis_tokens();
 use BOM::Database::Model::AccessToken;
 BOM::Database::Model::AccessToken->new->dbic->dbh->do("
-    DELETE FROM $_
-") foreach ('auth.access_token');
+    DELETE FROM auth.access_token
+");
 
 my $t = build_wsapi_test();
 
