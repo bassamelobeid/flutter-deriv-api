@@ -22,7 +22,6 @@ use Binary::WebSocketAPI::v3::Wrapper::Accounts;
 use Binary::WebSocketAPI::v3::Wrapper::Cashier;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
-use Binary::WebSocketAPI::v3::Wrapper::LandingCompany;
 use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections ws_redis_master redis_queue|;
 
 use Brands;
@@ -224,33 +223,10 @@ sub startup {
             },
         ],
         ['trading_times'],
-        [
-            'trading_durations',
-            {
-                stash_params => [qw/ token /],
-            }
-        ],
-        [
-            'asset_index',
-            {
-                before_forward => \&Binary::WebSocketAPI::v3::Wrapper::LandingCompany::map_landing_company,
-                stash_params   => [qw/ token /],
-            }
-        ],
-        [
-            'contracts_for',
-            {
-                before_forward => \&Binary::WebSocketAPI::v3::Wrapper::LandingCompany::map_landing_company,
-                stash_params   => [qw/ token /],
-            }
-        ],
-        [
-            'active_symbols',
-            {
-                before_forward => \&Binary::WebSocketAPI::v3::Wrapper::LandingCompany::map_landing_company,
-                stash_params   => [qw/ token /],
-            }
-        ],
+        ['trading_durations', {stash_params => [qw/ token /]}],
+        ['asset_index',       {stash_params => [qw/ token /]}],
+        ['contracts_for',     {stash_params => [qw/ token /]}],
+        ['active_symbols',    {stash_params => [qw/ token /]}],
 
         ['ticks',          {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::ticks}],
         ['ticks_history',  {instead_of_forward => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::ticks_history}],
@@ -265,7 +241,7 @@ sub startup {
         ['states_list'],
         ['payout_currencies', {stash_params => [qw/ token landing_company_name /]}],
         ['landing_company'],
-        ['landing_company_details', {before_forward => \&Binary::WebSocketAPI::v3::Wrapper::LandingCompany::map_landing_company}],
+        ['landing_company_details'],
         [
             'balance',
             {
@@ -287,7 +263,8 @@ sub startup {
             'change_password',
             {
                 require_auth => 'admin',
-                stash_params => [qw/ token_type client_ip /]}
+                stash_params => [qw/ token_type client_ip /],
+            }
         ],
         ['get_settings',     {require_auth => 'read'}],
         ['mt5_get_settings', {require_auth => 'read'}],
@@ -295,60 +272,65 @@ sub startup {
             'set_settings',
             {
                 require_auth => 'admin',
-                stash_params => [qw/ server_name client_ip user_agent /]}
+                stash_params => [qw/ server_name client_ip user_agent /],
+            }
         ],
         [
             'mt5_password_check',
             {
                 require_auth => 'admin',
-                stash_params => [qw/ server_name client_ip user_agent /]}
+                stash_params => [qw/ server_name client_ip user_agent /],
+            }
         ],
         [
             'mt5_password_change',
             {
                 require_auth => 'admin',
-                stash_params => [qw/ server_name client_ip user_agent /]}
+                stash_params => [qw/ server_name client_ip user_agent /],
+            }
         ],
         [
             'mt5_password_reset',
             {
                 require_auth => 'admin',
-                stash_params => [qw/ server_name client_ip user_agent /]}
+                stash_params => [qw/ server_name client_ip user_agent /],
+            }
         ],
         ['get_self_exclusion', {require_auth => 'read'}],
         [
             'set_self_exclusion',
             {
                 require_auth => 'admin',
-                response     => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::set_self_exclusion_response_handler
+                response     => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::set_self_exclusion_response_handler,
             }
         ],
         [
             'cashier_password',
             {
                 require_auth => 'payments',
-                stash_params => [qw/ client_ip /]}
+                stash_params => [qw/ client_ip /],
+            }
         ],
-
         [
             'api_token',
             {
                 require_auth => 'admin',
-                stash_params => [qw/ account_id client_ip /]}
+                stash_params => [qw/ account_id client_ip /],
+            }
         ],
         ['tnc_approval', {require_auth => 'admin'}],
         [
             'login_history',
             {
                 require_auth => 'read',
-                response     => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::login_history_response_handler
+                response     => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::login_history_response_handler,
             }
         ],
         [
             'set_account_currency',
             {
                 require_auth   => 'admin',
-                before_forward => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency_params_handler
+                before_forward => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency_params_handler,
             }
         ],
         ['set_financial_assessment', {require_auth => 'admin'}],
@@ -377,25 +359,15 @@ sub startup {
                 success        => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::buy_store_last_contract_id,
             }
         ],
-        [
-            'sell_contract_for_multiple_accounts',
-            {
-                require_auth => 'trade',
-            }
-        ],
+        ['sell_contract_for_multiple_accounts', {require_auth => 'trade'}],
         [
             'transaction',
             {
                 require_auth   => 'read',
-                before_forward => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::transaction
+                before_forward => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::transaction,
             }
         ],
-        [
-            'portfolio',
-            {
-                require_auth => 'read',
-            }
-        ],
+        ['portfolio', {require_auth => 'read'}],
         [
             'proposal_open_contract',
             {
@@ -403,12 +375,7 @@ sub startup {
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::Pricer::proposal_open_contract,
             }
         ],
-        [
-            'sell_expired',
-            {
-                require_auth => 'trade',
-            }
-        ],
+        ['sell_expired', {require_auth => 'trade'}],
 
         ['app_register',     {require_auth => 'admin'}],
         ['app_list',         {require_auth => 'read'}],
@@ -458,50 +425,54 @@ sub startup {
             'new_account_real',
             {
                 require_auth => 'admin',
-                stash_params => [qw/ server_name client_ip user_agent /]}
+                stash_params => [qw/ server_name client_ip user_agent /],
+            }
         ],
         [
             'new_account_maltainvest',
             {
                 require_auth => 'admin',
-                stash_params => [qw/ server_name client_ip user_agent /]}
+                stash_params => [qw/ server_name client_ip user_agent /],
+            }
         ],
         ['account_closure', {require_auth => 'admin'}],
         [
             'mt5_login_list',
             {
                 require_auth => 'read',
-                stash_params => [qw/ server_name client_ip user_agent /]}
+                stash_params => [qw/ server_name client_ip user_agent /],
+            }
         ],
         [
             'mt5_new_account',
             {
                 require_auth => 'admin',
-                stash_params => [qw/ server_name client_ip user_agent /]}
+                stash_params => [qw/ server_name client_ip user_agent /],
+            }
         ],
         [
             'mt5_deposit',
             {
                 require_auth => 'admin',
                 response     => Binary::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('mt5_deposit'),
-                stash_params => [qw/ server_name client_ip user_agent /]}
+                stash_params => [qw/ server_name client_ip user_agent /],
+            }
         ],
         [
             'mt5_withdrawal',
             {
                 require_auth => 'admin',
                 response     => Binary::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('mt5_withdrawal'),
-                stash_params => [qw/ server_name client_ip user_agent /]}
+                stash_params => [qw/ server_name client_ip user_agent /],
+            }
         ],
         [
             'mt5_mamm',
             {
                 require_auth => 'admin',
-                stash_params => [qw/ server_name client_ip user_agent /]}
+                stash_params => [qw/ server_name client_ip user_agent /],
+            }
         ],
-        ['copytrading_statistics'],
-        ['copytrading_list', {require_auth => 'admin'}],
-
         [
             'document_upload',
             {
@@ -510,8 +481,12 @@ sub startup {
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::add_upload_info,
             }
         ],
-        ['copy_start',         {require_auth => 'trade'}],
-        ['copy_stop',          {require_auth => 'trade'}],
+
+        ['copytrading_statistics'],
+        ['copytrading_list', {require_auth => 'admin'}],
+        ['copy_start',       {require_auth => 'trade'}],
+        ['copy_stop',        {require_auth => 'trade'}],
+
         ['app_markup_details', {require_auth => 'read'}],
         ['account_security',   {require_auth => 'admin'}],
         ['notification_event', {require_auth => 'admin'}],
@@ -522,12 +497,7 @@ sub startup {
                 stash_params => [qw/ referrer /],
             }
         ],
-        [
-            'exchange_rates',
-            {
-                stash_params => [qw/ exchange_rates base_currency /],
-            }
-        ],
+        ['exchange_rates', {stash_params => [qw/ exchange_rates base_currency /]}],
     ];
 
     my $json = JSON::MaybeXS->new;
