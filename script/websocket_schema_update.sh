@@ -14,6 +14,7 @@ rsync /home/git/regentmarkets/binary-websocket-api/config /tmp/websockets/ --del
 rm -fvr /tmp/websockets/config/*/change_password
 rm -fvr /tmp/websockets/config/*/reset_password
 rm -fvr /tmp/websockets/config/*/service_token
+rm -fvr /tmp/websockets/config/*/notification_event
 
 # Show what we're changing - anyone can easily check version control for this,
 # but this diff usually is not too long.
