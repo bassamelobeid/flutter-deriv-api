@@ -46,7 +46,7 @@ use BOM::Config;
 use BOM::User::Password;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
-use BOM::Database::Model::AccessToken;
+use BOM::Platform::Token::API;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
@@ -1851,7 +1851,7 @@ rpc api_token => sub {
 
     my ($client, $args, $client_ip) = @{$params}{qw/client args client_ip/};
 
-    my $m = BOM::Database::Model::AccessToken->new;
+    my $m = BOM::Platform::Token::API->new;
     my $rtn;
     if (my $token = $args->{delete_token}) {
         # When a token is deleted from authdb, it need to be deleted from clientdb betonmarkets.copiers

@@ -37,7 +37,7 @@ use BOM::Platform::ProveID;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Config::RedisReplicated;
 use BOM::Config::Runtime;
-use BOM::Database::Model::AccessToken;
+use BOM::Platform::Token::API;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Token;
@@ -118,7 +118,7 @@ sub get_token_details {
 
     my ($loginid, $creation_time, $epoch, $ua_fingerprint, $scopes, $valid_for_ip);
     if (length $token == 15) {    # access token
-        my $m = BOM::Database::Model::AccessToken->new;
+        my $m = BOM::Platform::Token::API->new;
         ($loginid, $creation_time, $scopes, $valid_for_ip) = @{$m->get_token_details($token)}{qw/loginid creation_time scopes valid_for_ip/};
         return unless $loginid;
         $epoch = Date::Utility->new($creation_time)->epoch if $creation_time;
