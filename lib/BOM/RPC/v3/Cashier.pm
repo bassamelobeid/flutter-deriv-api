@@ -1276,6 +1276,8 @@ rpc transfer_between_accounts => sub {
     my $is_mt5_loginid_to   = any { $loginid_to eq $_ } @mt5_logins;
 
     # Both $loginid_from and $loginid_to must be either a real or a MT5 account
+    # Unfortunately demo MT5 accounts will slip through this check, but they will
+    # be caught in BOM::RPC::v3::MT5::Account::*
     return _transfer_between_accounts_error()
         unless ((
             exists $siblings->{$loginid_from}
