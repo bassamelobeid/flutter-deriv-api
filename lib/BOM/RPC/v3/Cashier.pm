@@ -1528,8 +1528,17 @@ rpc transfer_between_accounts => sub {
         status              => 1,
         transaction_id      => $response->{transaction_id},
         client_to_full_name => $client_to->full_name,
-        client_to_loginid   => $loginid_to
-    };
+        client_to_loginid   => $loginid_to,
+        accounts            => [{
+                loginid  => $client_from->loginid,
+                balance  => $client_from->default_account->balance,
+                currency => $client_from->default_account->currency_code
+            },
+            {
+                loginid  => $client_to->loginid,
+                balance  => $client_to->default_account->balance,
+                currency => $client_to->default_account->currency_code
+            }]};
 };
 
 rpc topup_virtual => sub {

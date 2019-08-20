@@ -442,6 +442,22 @@ subtest $method => sub {
         is $result->{client_to_loginid},   $client_mf->loginid,   'transfer_between_accounts to client is ok';
         is $result->{client_to_full_name}, $client_mf->full_name, 'transfer_between_accounts to client name is ok';
 
+        cmp_deeply(
+            $rpc_ct->result->{accounts},
+            bag({
+                    loginid  => $client_mf->loginid,
+                    balance  => $client_mf->default_account->balance,
+                    currency => $client_mf->default_account->currency_code
+                },
+                {
+                    loginid  => $client_mlt->loginid,
+                    balance  => $client_mlt->default_account->balance,
+                    currency => $client_mf->default_account->currency_code
+                }
+            ),
+            'affected accounts returned in result'
+        );
+
         ## after withdraw, check both balance
         $client_mlt = BOM::User::Client->new({loginid => $client_mlt->loginid});
         $client_mf  = BOM::User::Client->new({loginid => $client_mf->loginid});
@@ -1354,6 +1370,7 @@ subtest 'MT5' => sub {
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
         ->error_message_is('Currency provided is different from account currency.', 'Correct message for wrong currency for real account_from');
 
+    # This test & check is to be put back when MT5 api speed is improved
     # $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\vanuatu_standard'};
     # $params->{args}{account_to}   = $test_client->loginid;
     # $params->{args}{curency}      = 'EUR';
