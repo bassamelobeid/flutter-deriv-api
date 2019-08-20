@@ -5,6 +5,7 @@ use Test::More;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
+use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
 
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -13,6 +14,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use await;
 
 # cleanup
+cleanup_redis_tokens();
 use BOM::Database::Model::AccessToken;
 BOM::Database::Model::AccessToken->new->dbic->dbh->do("
     DELETE FROM $_

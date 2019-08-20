@@ -7,7 +7,7 @@ use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 
 use BOM::Database::Model::OAuth;
-use BOM::Database::Model::AccessToken;
+use BOM::Platform::Token::API;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
@@ -110,7 +110,7 @@ foreach my $client ($user->clients) {
 }
 
 ## for api token, it's not allowed to change password
-$token = BOM::Database::Model::AccessToken->new->create_token($vr_1, 'Test Token', ['read', 'admin']);
+$token = BOM::Platform::Token::API->new->create_token($vr_1, 'Test Token', ['read', 'admin']);
 $authorize = $t->await::authorize({authorize => $token});
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $vr_1;

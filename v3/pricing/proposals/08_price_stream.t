@@ -11,7 +11,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data/;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Database::Model::AccessToken;
+use BOM::Platform::Token::API;
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
@@ -27,7 +27,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 build_test_R_50_data();
 
 my $t     = build_wsapi_test();
-my $token = BOM::Database::Model::AccessToken->new->create_token("CR2002", 'Test', ['price', 'trade']);
+my $token = BOM::Platform::Token::API->new->create_token("CR2002", 'Test', ['price', 'trade']);
 my $json  = JSON::MaybeXS->new;
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
