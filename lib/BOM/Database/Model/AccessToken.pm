@@ -84,6 +84,31 @@ sub token_deletion_history {
     return $tokens;
 }
 
+sub get_all_tokens_by_loginid {
+    my ($self, $loginid) = @_;
+
+    return $self->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref("
+        SELECT                           
+            access_token as token, 'Access' as type, 'App ID: '|| app_id::text as info, creation_time::timestamp(0)
+        FROM
+            oauth.access_token
+        WHERE
+            loginid = ?
+        UNION
+        SELECT
+            token, 'API', 'Name: ' ||display_name||'; Scopes: '||array_to_string(scopes,','), creation_time::timestamp(0)
+        FROM
+            auth.access_token
+        WHERE
+            client_loginid = ?",
+                {Slice => {}},
+                $loginid, $loginid);
+        });
+}
+
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
