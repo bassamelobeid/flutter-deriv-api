@@ -22,7 +22,7 @@ use Binary::WebSocketAPI::v3::Wrapper::Cashier;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
 use Binary::WebSocketAPI::v3::Wrapper::LandingCompany;
-use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections ws_redis_master redis_queue|;
+use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections ws_redis_master |;
 
 use Brands;
 use Encode;
