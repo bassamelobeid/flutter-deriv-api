@@ -22,14 +22,14 @@ use RedisDB;
 use Try::Tiny;
 
 my $config = {
-    replicated    => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-replicated.yml'),
-    pricer        => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml'),
-    exchangerates => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-exchangerates.yml'),
-    feed          => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_FEED}       // '/etc/rmg/redis-feed.yml'),
-    mt5_user      => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_MT5_USER}   // '/etc/rmg/redis-mt5user.yml'),
-    events        => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_EVENTS}     // '/etc/rmg/redis-events.yml'),
+    replicated    => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED}  // '/etc/rmg/redis-replicated.yml'),
+    pricer        => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED}  // '/etc/rmg/redis-pricer.yml'),
+    exchangerates => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED}  // '/etc/rmg/redis-exchangerates.yml'),
+    feed          => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_FEED}        // '/etc/rmg/redis-feed.yml'),
+    mt5_user      => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_MT5_USER}    // '/etc/rmg/redis-mt5user.yml'),
+    events        => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_EVENTS}      // '/etc/rmg/redis-events.yml'),
     transaction   => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_TRANSACTION} // '/etc/rmg/redis-transaction.yml'),
-    companylimits => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-exchangerates.yml'),
+    companylimits => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED}  // '/etc/rmg/redis-exchangerates.yml'),
     queue         => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_QUEUE}       // '/etc/rmg/redis-queue.yml'),
 };
 my $connections = {};
