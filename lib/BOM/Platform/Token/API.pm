@@ -28,7 +28,7 @@ sub create_token {
     $self->_log->fatal("display_name is required") unless $display_name;
 
     $scopes = [grep { $supported_scopes{$_} } @$scopes];
-    my $token = $self->_generate_token(TOKEN_LENGTH);
+    my $token = $self->generate_token(TOKEN_LENGTH);
 
     my $data = {
         type          => 'api',
