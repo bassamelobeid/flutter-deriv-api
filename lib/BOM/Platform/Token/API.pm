@@ -7,10 +7,10 @@ use Moo;
 
 use BOM::Database::Model::AccessToken;
 
-use Carp qw(croak);
 use JSON::MaybeXS;
 use Date::Utility;
 use BOM::Config::RedisReplicated;
+use Log::Any ();
 
 use constant {
     NAMESPACE       => 'TOKEN',
@@ -25,8 +25,8 @@ my %supported_scopes = map { $_ => 1 } ('read', 'trade', 'payments', 'admin');
 sub create_token {
     my ($self, $loginid, $display_name, $scopes, $ip) = @_;
 
-    croak "loginid is required"      unless $loginid;
-    croak "display_name is required" unless $display_name;
+    $self->_log->fatal("loginid is required")      unless $loginid;
+    $self->_log->fatal("display_name is required") unless $display_name;
     $scopes = [grep { $supported_scopes{$_} } @$scopes];
     my $token = $self->_generate_token(TOKEN_LENGTH);
     my $data  = {
@@ -153,7 +153,6 @@ sub generate_token {
     return $token;
 }
 
-
 ### PRIVATE ###
 sub _cleanup {
     my $token = shift;
@@ -209,5 +208,10 @@ sub _make_key_by_id {
 
     return join('::', (NAMESPACE_BY_ID, @$id));
 }
+
+has _log => (
+    is      => 'ro',
+    default => sub { Log::Any->get_logger },
+);
 
 1;
