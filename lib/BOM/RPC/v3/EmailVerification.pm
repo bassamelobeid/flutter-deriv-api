@@ -178,7 +178,7 @@ sub email_verification {
         account_opening_new => sub {
             my ($message, $subject);
 
-            if ($brand eq 'deriv') {
+            if ($brand->name eq 'deriv') {
                 $subject = localize('Verify your account for Deriv');
                 $message = localize($deriv_content{account_opening_new}, _build_verification_url('signup', $args));
             } else {
@@ -204,7 +204,7 @@ sub email_verification {
         account_opening_existing => sub {
             my ($message, $subject);
 
-            if ($brand eq 'deriv') {
+            if ($brand->name eq 'deriv') {
                 $subject = localize('This email is taken');
                 $message = localize($deriv_content{account_opening_existing}, $email);
             } elsif ($source == 1) {
