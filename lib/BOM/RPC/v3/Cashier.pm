@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use HTML::Entities;
-use List::Util qw( min first any);
+use List::Util qw( min first any );
 use Scalar::Util qw( looks_like_number );
 use Data::UUID;
 use Path::Tiny;
@@ -40,6 +40,7 @@ use BOM::User::AuditLog;
 use BOM::Platform::RiskProfile;
 use BOM::Platform::Client::CashierValidation;
 use BOM::User::Client::PaymentNotificationQueue;
+use BOM::RPC::v3::MT5::Account;
 use BOM::RPC::v3::Utility;
 use BOM::Transaction::Validation;
 use BOM::Database::Model::HandoffToken;
@@ -1247,8 +1248,19 @@ rpc transfer_between_accounts => sub {
             };
     }
 
-    # get clients if loginid from or to is not provided
+    # just return accounts list if loginid from or to is not provided
     if (not $loginid_from or not $loginid_to) {
+
+        if (($args->{accounts} // '') eq 'all') {
+            my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($client)->get;
+            push @accounts,
+                {
+                loginid  => 'MT' . $_->{login},
+                balance  => $_->{display_balance},
+                currency => $_->{currency}}
+                for grep { $_->{group} !~ /^demo/ } @mt5_accounts;
+        }
+
         return {
             status   => 0,
             accounts => \@accounts
@@ -1258,6 +1270,90 @@ rpc transfer_between_accounts => sub {
     return _transfer_between_accounts_error(localize('Please provide valid currency.')) unless $currency;
     return _transfer_between_accounts_error(localize('Please provide valid amount.'))
         if (not looks_like_number($amount) or $amount <= 0);
+
+    my @mt5_logins          = $client->user->get_mt5_loginids;
+    my $is_mt5_loginid_from = any { $loginid_from eq $_ } @mt5_logins;
+    my $is_mt5_loginid_to   = any { $loginid_to eq $_ } @mt5_logins;
+
+    # Both $loginid_from and $loginid_to must be either a real or a MT5 account
+    # Unfortunately demo MT5 accounts will slip through this check, but they will
+    # be caught in BOM::RPC::v3::MT5::Account::*
+    return _transfer_between_accounts_error()
+        unless ((
+            exists $siblings->{$loginid_from}
+            or $is_mt5_loginid_from
+        )
+        and (exists $siblings->{$loginid_to}
+            or $is_mt5_loginid_to));
+
+    return _transfer_between_accounts_error(localize('Transfer between two MT5 accounts is not allowed.'))
+        if ($is_mt5_loginid_from and $is_mt5_loginid_to);
+
+    # this transfer involves an MT5 account
+    if ($is_mt5_loginid_from or $is_mt5_loginid_to) {
+        delete @{$params->{args}}{qw/account_from account_to/};
+
+        my ($method, $binary_login, $mt5_login);
+
+        if ($is_mt5_loginid_to) {
+
+            return _transfer_between_accounts_error(localize('From account provided should be same as current authorized client.'))
+                unless ($client->loginid eq $loginid_from);
+
+            return _transfer_between_accounts_error(localize('Currency provided is different from account currency.'))
+                if ($client->currency ne $currency);
+
+            $method = \&BOM::RPC::v3::MT5::Account::mt5_deposit;
+            $params->{args}{from_binary} = $binary_login = $loginid_from;
+            $params->{args}{to_mt5}      = $mt5_login    = $loginid_to =~ s/^MT//r;
+            $params->{args}{return_mt5_details} = 1;    # to get MT5 account holder name
+        }
+
+        if ($is_mt5_loginid_from) {
+
+            return _transfer_between_accounts_error(localize('To account provided should be same as current authorized client.'))
+                unless ($client->loginid eq $loginid_to);
+
+            $method = \&BOM::RPC::v3::MT5::Account::mt5_withdrawal;
+            $params->{args}{to_binary} = $binary_login = $loginid_to;
+            $params->{args}{from_mt5}  = $mt5_login    = $loginid_from =~ s/^MT//r;
+        }
+
+        return $method->($params)->then(
+            sub {
+                my $resp = shift;
+                return Future->done(_transfer_between_accounts_error($resp->{error}{message_to_client})) if ($resp->{error});
+
+                my $mt5_data = delete $resp->{mt5_data};
+                $resp->{transaction_id}      = delete $resp->{binary_transaction_id};
+                $resp->{client_to_loginid}   = $loginid_to;
+                $resp->{client_to_full_name} = $is_mt5_loginid_to ? $mt5_data->{name} : $client->full_name;
+
+                my $binary_account = BOM::User::Client->new({loginid => $binary_login})->default_account;
+                push @{$resp->{accounts}},
+                    {
+                    loginid  => $binary_login,
+                    balance  => $binary_account->balance,
+                    currency => $binary_account->currency_code
+                    };
+
+                BOM::RPC::v3::MT5::Account::mt5_get_settings({
+                        client => $client,
+                        args   => {login => $mt5_login}}
+                    )->then(
+                    sub {
+                        my ($setting) = @_;
+                        push @{$resp->{accounts}},
+                            {
+                            loginid  => 'MT' . $mt5_login,
+                            balance  => $setting->{display_balance},
+                            currency => $setting->{currency}}
+                            unless $setting->{error};
+                        return Future->done($resp);
+                    });
+            })->get;
+    }
+
     # create client from siblings so that we are sure that from and to loginid
     # provided are for same user
     my ($client_from, $client_to, $res);
@@ -1432,8 +1528,17 @@ rpc transfer_between_accounts => sub {
         status              => 1,
         transaction_id      => $response->{transaction_id},
         client_to_full_name => $client_to->full_name,
-        client_to_loginid   => $loginid_to
-    };
+        client_to_loginid   => $loginid_to,
+        accounts            => [{
+                loginid  => $client_from->loginid,
+                balance  => $client_from->default_account->balance,
+                currency => $client_from->default_account->currency_code
+            },
+            {
+                loginid  => $client_to->loginid,
+                balance  => $client_to->default_account->balance,
+                currency => $client_to->default_account->currency_code
+            }]};
 };
 
 rpc topup_virtual => sub {

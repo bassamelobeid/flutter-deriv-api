@@ -422,9 +422,7 @@ async_rpc mt5_new_account => sub {
 
                     my $client_info = $client->get_mt5_details();
                     $client_info->{name} = $args->{name} if $client->is_virtual;
-
                     @{$args}{keys %$client_info} = values %$client_info;
-
                     $args->{group}    = $group;
                     $args->{leverage} = $group_details->{leverage};
                     $args->{currency} = $group_details->{currency};
@@ -1064,8 +1062,8 @@ async_rpc mt5_deposit => sub {
     my $params = shift;
 
     my ($client, $args, $source) = @{$params}{qw/client args source/};
-    my ($fm_loginid, $to_mt5, $amount) =
-        @{$args}{qw/from_binary to_mt5 amount/};
+    my ($fm_loginid, $to_mt5, $amount, $return_mt5_details) =
+        @{$args}{qw/from_binary to_mt5 amount return_mt5_details/};
 
     my $error_code = 'MT5DepositError';
     my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -1074,7 +1072,7 @@ async_rpc mt5_deposit => sub {
     if (_is_mt5_suspended('deposits')) {
         return create_error_future({
                 code              => $error_code,
-                message_to_client => localize('Deposits are suspended.')});
+                message_to_client => localize('MT5 deposits are suspended.')});
     }
 
     return _mt5_validate_and_get_amount($client, $fm_loginid, $to_mt5, $amount, $error_code)->then(
@@ -1197,9 +1195,9 @@ async_rpc mt5_deposit => sub {
                     }
 
                     return Future->done({
-                        status                => 1,
-                        binary_transaction_id => $txn->transaction_id
-                    });
+                            status                => 1,
+                            binary_transaction_id => $txn->transaction_id,
+                            $return_mt5_details ? (mt5_data => $response->{mt5_data}) : ()});
                 });
         });
 };
@@ -1218,7 +1216,7 @@ async_rpc mt5_withdrawal => sub {
     if (_is_mt5_suspended('withdrawals')) {
         return create_error_future({
                 code              => $error_code,
-                message_to_client => localize('Withdrawals are suspended.')});
+                message_to_client => localize('MT5 withdrawals are suspended.')});
     }
 
     return _make_error($error_code, localize('MT5 account is locked'), 'MT5 account is locked') if $client->status->mt5_withdrawal_locked;
@@ -1804,7 +1802,7 @@ sub _validate_client {
     my $daily_transfer_limit  = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5;
     my $client_today_transfer = $client_obj->get_today_transfer_summary('mt5_transfer');
 
-    return localize("Maximum of [_1] transfers allowed per day.", $daily_transfer_limit)
+    return localize("Maximum of [_1] MT5 account transfers allowed per day.", $daily_transfer_limit)
         unless $client_today_transfer->{count} < $daily_transfer_limit;
 
     return undef;

@@ -2229,17 +2229,21 @@ subtest 'get and set self_exclusion' => sub {
     );
     ok(!$msg, 'No email for MLT client limits without MT5 accounts');
 
-    ## Open an MT5 account
-    # Mocked account details
-    # This hash shared between three files, and should be kept in-sync to avoid test failures
+    # Mocked MT5 account details
+    # %ACCOUNTS and %DETAILS are shared between four files, and should be kept in-sync to avoid test failures
     #   t/BOM/RPC/30_mt5.t
     #   t/BOM/RPC/05_accounts.t
+    #   t/BOM/RPC/Cashier/20_transfer_between_accounts.t
     #   t/lib/mock_binary_mt5.pl
+
+    my %ACCOUNTS = (
+        'real\malta' => '00000010',
+    );
+
     my %DETAILS = (
-        login    => '123454321',
         password => 'Efgh4567',
         email    => 'test.account@binary.com',
-        name     => 'Test',
+        name     => 'Meta traderman',
         group    => 'real\svg',
         country  => 'Malta',
         balance  => '1234',
@@ -2260,7 +2264,7 @@ subtest 'get and set self_exclusion' => sub {
         },
     };
     my $mt5_loginid = $c->tcall('mt5_new_account', $mt5_params)->{login};
-    is($mt5_loginid, $DETAILS{login}, 'MT5 loginid is correct: ' . $mt5_loginid);
+    is($mt5_loginid, $ACCOUNTS{'real\malta'}, 'MT5 loginid is correct: ' . $mt5_loginid);
 
     ## Verify an email was sent after opening an MT5 account, since user has
     ##  limits currently in place.
