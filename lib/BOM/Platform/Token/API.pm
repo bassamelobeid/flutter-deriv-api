@@ -87,6 +87,14 @@ sub get_scopes_by_access_token {
     return ();
 }
 
+=head2 get_tokens_by_loginid
+
+Returns all API tokens belong to the provided loginid.
+
+This could be slow if loginid has a lot of tokens. Use with caution!
+
+=cut
+
 sub get_tokens_by_loginid {
     my ($self, $loginid) = @_;
 
@@ -95,17 +103,35 @@ sub get_tokens_by_loginid {
     return [sort { $a->{display_name} cmp $b->{display_name} } map { _cleanup($self->get_token_details($_)) } @$tokens];
 }
 
+=head2 get_token_count_by_loginid
+
+Return the number of tokens available for the provided loginid
+
+=cut
+
 sub get_token_count_by_loginid {
     my ($self, $loginid) = @_;
 
     return $self->_redis_read->hlen($self->_make_key_by_id($loginid));
 }
 
+=head2 is_name_taken
+
+Do we have the same API token display name for this loginid
+
+=cut
+
 sub is_name_taken {
     my ($self, $loginid, $display_name) = @_;
 
     return $self->_redis_read->hexists($self->_make_key_by_id($loginid), $display_name);
 }
+
+=head2 remove_by_loginid
+
+removes all API tokens for loginid
+
+=cut
 
 sub remove_by_loginid {
     my ($self, $loginid) = @_;
@@ -116,15 +142,23 @@ sub remove_by_loginid {
 
     foreach my $name (keys %all) {
         my $token_details = $self->get_token_details($all{$name});
+        #remove token from database first before removing it from redis
+        $self->_api_model->remove_by_token($token_details->{token}, $loginid);
+
         $redis->multi;
         $redis->del($self->_make_key($all{$name}));
         $redis->hdel($key_by_id, $name);
         $redis->exec;
-        $self->_api_model->remove_by_token($token_details->{token}, $loginid);
     }
 
     return 1;
 }
+
+=head2 remove_by_token
+
+removes token for loginid
+
+=cut
 
 sub remove_by_token {
     my ($self, $token, $loginid) = @_;
@@ -136,18 +170,24 @@ sub remove_by_token {
     my $redis = $self->_redis_write;
 
     my $token_details = $self->get_token_details($token);
+    #remove token from database first before removing it from redis
+    $self->_api_model->remove_by_token($token_details->{token}, $loginid);
 
     $redis->multi;
     $redis->del($self->_make_key($token));
     $redis->hdel($key_by_id, $all{$token});
     $redis->exec;
 
-    $self->_api_model->remove_by_token($token_details->{token}, $loginid);
-
     return 1;
 }
 
 my @chars = ("A" .. "Z", 0 .. 9, "a" .. "z");
+
+=head2 generate_token
+
+generates random token for the provided length.
+
+=cut
 
 sub generate_token {
     my ($self, $length) = @_;
