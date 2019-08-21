@@ -107,7 +107,7 @@ subtest 'new account' => sub {
     );
     $user->add_client($test_client);
 
-    my $m = BOM::Database::Model::AccessToken->new;
+    my $m = BOM::Platform::Token::API->new;
     my $token = $m->create_token($test_client->loginid, 'test token');
 
     my $method = 'mt5_new_account';
@@ -192,7 +192,7 @@ subtest 'new account' => sub {
 
     $user->add_client($test_client);
 
-    $m               = BOM::Database::Model::AccessToken->new;
+    $m               = BOM::Platform::Token::API->new;
     $token           = $m->create_token($test_client->loginid, 'test token 2');
     $params->{token} = $token;
 
@@ -215,7 +215,7 @@ subtest 'new account' => sub {
         $user->add_client($test_client);
 
         $c     = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
-        $m     = BOM::Database::Model::AccessToken->new;
+        $m     = BOM::Platform::Token::API->new;
         $token = $m->create_token($test_client->loginid, 'test token');
 
         # set the params

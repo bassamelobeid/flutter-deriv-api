@@ -65,7 +65,7 @@ subtest 'Initialization' => sub {
             remark   => 'free gift',
         );
 
-        my $m = BOM::Database::Model::AccessToken->new;
+        my $m = BOM::Platform::Token::API->new;
 
         $client_token = $m->create_token($client->loginid, 'test token');
 

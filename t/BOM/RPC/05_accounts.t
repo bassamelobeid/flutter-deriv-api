@@ -171,7 +171,7 @@ $user_mlt_mf->add_client($test_client_vr_2);
 $user_mlt_mf->add_client($test_client_mlt);
 $user_mlt_mf->add_client($test_client_mf);
 
-my $m              = BOM::Database::Model::AccessToken->new;
+my $m              = BOM::Platform::Token::API->new;
 my $token1         = $m->create_token($test_loginid, 'test token');
 my $token_21       = $m->create_token($test_client_cr->loginid, 'test token');
 my $token_cr_2     = $m->create_token($test_client_cr_2->loginid, 'test token');
