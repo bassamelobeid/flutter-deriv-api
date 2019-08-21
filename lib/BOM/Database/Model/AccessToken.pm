@@ -36,9 +36,10 @@ sub save_token {
                 RETURNING *
             ");
             $sth->execute(@{$args}{'token', 'display_name', 'loginid', 'scopes', 'valid_for_ip', 'creation_time'});
+            $sth->fetchrow_hashref();
         });
 
-    return $res;
+    return $res->{token};
 }
 
 sub remove_by_token {
