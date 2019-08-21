@@ -7,6 +7,7 @@ use Moo;
 
 use BOM::Database::Model::AccessToken;
 
+use Bytes::Random::Secure;
 use JSON::MaybeUTF8 qw(:v1);
 use Date::Utility;
 use BOM::Config::RedisReplicated;
@@ -148,10 +149,10 @@ my @chars = ("A" .. "Z", 0 .. 9, "a" .. "z");
 sub generate_token {
     my ($self, $length) = @_;
 
-    my $token;
-    $token .= $chars[rand(@chars)] for (1 .. $length);
-
-    return $token;
+    return Bytes::Random::Secure->new(
+        Bits        => 160,
+        NonBlocking => 1,
+    )->string_from(@chars, $length);
 }
 
 ### PRIVATE ###
