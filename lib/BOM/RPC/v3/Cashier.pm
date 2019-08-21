@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use HTML::Entities;
-use List::Util qw( min first any all );
+use List::Util qw( min first any );
 use Scalar::Util qw( looks_like_number );
 use Data::UUID;
 use Path::Tiny;
