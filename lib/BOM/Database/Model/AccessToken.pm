@@ -55,7 +55,7 @@ sub update_token_last_used {
     my ($self, $token, $last_used) = @_;
 
     unless ($token and $last_used) {
-        die 'token adn last_used are required to update_token_last_used';
+        die 'token and last_used are required to update_token_last_used';
     }
 
     return $self->dbic->run(
