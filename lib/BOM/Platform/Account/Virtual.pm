@@ -30,10 +30,8 @@ sub create_account {
         return {error => 'invalid residence'};
     }
     # set virtual company if residence is provided otherwise use brand name to infer the broker code
-    my $default_virtual;
-    $default_virtual = 'champion-virtual' if $brand_name eq 'champion';
-    $default_virtual = 'virtual'          if $brand_name eq 'binary';
-    return {error => 'InvalidBrand'} unless $default_virtual;
+    my $default_virtual = $brand_name eq 'champion' ? 'champion-virtual' : 'virtual';
+    return {error => 'InvalidBrand'} unless grep { $brand_name eq $_ } LandingCompany::Registry::get($default_virtual)->allowed_for_brands->@*;
 
     #return error if date_first_contact is in future or invalid
     # date_first_contact is used by marketing to record when users first touched a binary.com site.
