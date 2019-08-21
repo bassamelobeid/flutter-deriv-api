@@ -35,10 +35,10 @@ sub create_token {
         display_name  => $display_name,
         scopes        => $scopes,
         valid_for_ip  => $ip // '',
-        creation_time => time,
+        creation_time => Date::Utility->new->db_timestamp,
         loginid       => $loginid,
         token         => $token,
-        last_used     => 0,
+        last_used     => '',
     };
 
     # save in database for persistence
@@ -46,10 +46,12 @@ sub create_token {
 
     my $writer    = $self->_redis_write;
     my $redis_key = $self->_make_key($token);
-    $data->{scopes} = encode_json_utf8($data->{scopes});
+    $data->{scopes}        = encode_json_utf8($data->{scopes})                 if $data->{scopes};
+    $data->{creation_time} = Date::Utility->new($data->{creation_time})->epoch if $data->{creation_time};
+    $data->{last_used}     = Date::Utility->new($data->{last_used})->epoch     if $data->{last_used};
 
     $writer->multi;
-    $writer->hmset($redis_key, $_, %$data);
+    $writer->hmset($redis_key, %$data);
     $writer->hset($self->_make_key_by_id($data->{loginid}), $data->{display_name}, $token);
     $writer->exec;
 
