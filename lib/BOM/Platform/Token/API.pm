@@ -184,11 +184,11 @@ has _redis_write => (
 );
 
 sub _build_redis_read {
-    return BOM::Config::RedisReplicated::redis_read();
+    return BOM::Config::RedisReplicated::redis_auth();
 }
 
 sub _build_redis_write {
-    return BOM::Config::RedisReplicated::redis_write();
+    return BOM::Config::RedisReplicated::redis_auth_write();
 }
 
 has _json => (
