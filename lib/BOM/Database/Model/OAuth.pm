@@ -70,6 +70,58 @@ sub get_names_by_app_id {
     return $app;
 }
 
+=head2 is_official_app
+
+Checks if the app is among official
+
+=over 4
+
+=item * C<app_id> - application ID
+
+=back
+
+Returns true if the app is present in official_apps table
+
+=cut
+
+sub is_official_app {
+    my ($self, $app_id) = @_;
+
+    my ($is_official) = $self->dbic->run(
+        fixup => sub {
+            $_->selectrow_array("SELECT EXISTS(SELECT 1 FROM oauth.official_apps WHERE app_id = ?)", undef, $app_id);
+        });
+
+    return $is_official ? 1 : 0;
+}
+
+=head2 is_primary_website
+
+Checks if the app is among official apps and is a primary website.
+
+=over 4
+
+=item * C<app_id> - application ID
+
+=back
+
+Returns true if the app is official and primary.
+
+=cut
+
+sub is_primary_website {
+    my ($self, $app_id) = @_;
+
+    my ($is_primary_website) = $self->dbic->run(
+        fixup => sub {
+            $_->selectrow_array("
+        SELECT is_primary_website FROM oauth.official_apps WHERE app_id = ?
+    ", undef, $app_id);
+        });
+
+    return $is_primary_website ? 1 : 0;
+}
+
 sub confirm_scope {
     my ($self, $app_id, $loginid) = @_;
 
@@ -193,13 +245,14 @@ sub create_app {
 B<NOTE> update_app does: update application details by calling app_update function in auth database.
 
 Function args:
+
 =over 4
 
 =item * C<app_id> - application ID "Int"
 
 =item * C<app> - hash reference for application data.
 
-=back 
+=back
 
 Returns a hash reference for the application updated data
 
@@ -312,7 +365,7 @@ sub get_used_apps_by_loginid {
             my $dbh  = $_;
             my $apps = $dbh->selectall_arrayref("
         SELECT
-            u.app_id, a.name, a.scopes, a.app_markup_percentage, 
+            u.app_id, a.name, a.scopes, a.app_markup_percentage,
             u.last_login as last_used
         FROM oauth.apps a JOIN oauth.user_scope_confirm u ON a.id=u.app_id
         WHERE u.loginid = ? AND a.active ORDER BY a.name
