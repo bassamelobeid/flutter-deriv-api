@@ -7,7 +7,7 @@ use Moo;
 
 use BOM::Database::Model::AccessToken;
 
-use JSON::MaybeXS;
+use JSON::MaybeUTF8 qw(:v1);
 use Date::Utility;
 use BOM::Config::RedisReplicated;
 use Log::Any ();
@@ -17,8 +17,6 @@ use constant {
     NAMESPACE_BY_ID => 'TOKENS_BY_ID',
     TOKEN_LENGTH    => 15,
 };
-
-my $json = JSON::MaybeXS->new(utf8 => 1);
 
 my %supported_scopes = map { $_ => 1 } ('read', 'trade', 'payments', 'admin');
 
@@ -43,7 +41,7 @@ sub create_token {
     my $writer    = $self->_redis_write;
     my $redis_key = $self->_make_key($token);
     $writer->multi;
-    $writer->hset($redis_key, $_, ($_ eq 'scopes' ? $self->_json->encode($data->{$_}) : $data->{$_})) for (keys %$data);
+    $writer->hset($redis_key, $_, ($_ eq 'scopes' ? encode_json_utf8($data->{$_}) : $data->{$_})) for (keys %$data);
 
     $writer->hset($self->_make_key_by_id($data->{loginid}), $data->{display_name}, $token);
     $writer->exec;
@@ -66,7 +64,7 @@ sub get_token_details {
     my $key = $self->_make_key($token);
     my %details = @{$self->_redis_read->hgetall($key) // []};
 
-    $details{scopes} = $self->_json->decode($details{scopes}) if $details{scopes};
+    $details{scopes} = decode_json_utf8($details{scopes}) if $details{scopes};
 
     $self->_redis_write->hset($key, 'last_used', time);
 
@@ -189,11 +187,6 @@ sub _build_redis_read {
 sub _build_redis_write {
     return BOM::Config::RedisReplicated::redis_auth_write();
 }
-
-has _json => (
-    is      => 'ro',
-    default => sub { $json },
-);
 
 sub _make_key {
     my ($self, $token) = @_;
