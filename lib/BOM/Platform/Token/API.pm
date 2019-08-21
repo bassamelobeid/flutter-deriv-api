@@ -142,6 +142,18 @@ sub remove_by_token {
     return 1;
 }
 
+my @chars = ("A" .. "Z", 0 .. 9, "a" .. "z");
+
+sub generate_token {
+    my ($self, $length) = @_;
+
+    my $token;
+    $token .= $chars[rand(@chars)] for (1 .. $length);
+
+    return $token;
+}
+
+
 ### PRIVATE ###
 sub _cleanup {
     my $token = shift;
@@ -196,17 +208,6 @@ sub _make_key_by_id {
     $id = [$id] if ref $id ne 'ARRAY';
 
     return join('::', (NAMESPACE_BY_ID, @$id));
-}
-
-my @chars = ("A" .. "Z", 0 .. 9, "a" .. "z");
-
-sub _generate_token {
-    my ($self, $length) = @_;
-
-    my $token;
-    $token .= $chars[rand(@chars)] for (1 .. $length);
-
-    return $token;
 }
 
 1;
