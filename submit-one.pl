@@ -20,28 +20,26 @@ use Data::Dump 'pp';
 # { result => "success", success => 1 }
 
 my $loop = IO::Async::Loop->new;
-$loop->add(my $jobman = Job::Async->new);
+$loop->add(
+    my $jobman = Job::Async->new
+);
 
 my $client = $jobman->client(
     redis => {
         uri => 'redis://127.0.0.1',
-    });
+    }
+);
 $client->start->get;
 
 my $name = shift @ARGV;
 
 my %args;
-my %params;
-foreach (@ARGV) {
+foreach( @ARGV ) {
     next unless m/^(.+?)=(.*)$/;
     $args{$1} = $2;
 }
 
-$params{args} = \%args;
-
-my $jsonresult = $client->submit(
-    name   => $name,
-    params => encode_json_utf8(\%params))->get;
+my $jsonresult = $client->submit(name => $name, params => encode_json_utf8(\%args))->get;
 my $result = decode_json_utf8($jsonresult);
 
 print pp($result) . "\n";
