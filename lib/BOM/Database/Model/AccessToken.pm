@@ -4,9 +4,6 @@ use Moose;
 
 use BOM::Database::AuthDB;
 use Date::Utility;
-use JSON::MaybeXS;
-
-my $json = JSON::MaybeXS->new;
 
 has 'dbic' => (
     is         => 'ro',
@@ -25,11 +22,11 @@ sub save_token {
     }
 
     $args->{valid_for_ip}  //= '';
-    $args->{creation_time} //= Date::Utility->new->db_timestamp;
+    $args->{creation_time} //= time;
 
     my $dbic = $self->dbic;
     my $res  = $dbic->run(
-        ping => sub {
+        fixup => sub {
             my $sth = $_->prepare("
                 INSERT INTO auth.access_token(token, display_name, client_loginid, scopes, valid_for_ip, creation_time)
                 VALUES (?,?,?,?,?,?)
@@ -46,7 +43,7 @@ sub remove_by_token {
     my ($self, $token, $loginid) = @_;
 
     return $self->dbic->run(
-        ping => sub {
+        fixup => sub {
             $_->do("DELETE FROM auth.access_token WHERE token = ? and client_loginid = ?", undef, $token, $loginid);
         });
 }
@@ -59,9 +56,9 @@ sub update_token_last_used {
     }
 
     return $self->dbic->run(
-        ping => sub {
+        fixup => sub {
             my $sth = $_->prepare("UPDATE auth.access_token SET last_used=? WHERE token=?");
-            $sth->execute(Date::Utility->new($last_used)->db_timestamp, $token);
+            $sth->execute($last_used, $token);
         });
 }
 
