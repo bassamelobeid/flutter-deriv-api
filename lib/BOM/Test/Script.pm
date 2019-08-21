@@ -36,23 +36,25 @@ sub check_script {
 
 sub start_script_if_not_running {
     my $self = shift;
-    return unless $self->script;
-    return $self->check_script() || $self->start_script();
+    return 0 unless $self->script;
+    return 1 if $self->check_script();
+    return $self->start_script();
 }
 
 sub start_script {
     my $self   = shift;
     my $script = $self->script;
-    return unless $script;
+    return 0 unless $script;
     my $pid_file = $self->pid_file;
     $pid_file->remove;
     my $args = $self->args // '';
     system("$script --pid-file $pid_file $args &");
+
     for (1 .. 5) {
-        last if $pid_file->exists;
+        return 1 if $pid_file->exists;
         sleep 1;
     }
-    return;
+    return 0;
 }
 
 sub stop_script {
@@ -60,17 +62,18 @@ sub stop_script {
     my $pid  = $self->pid;
     return unless $self->check_script;
     kill TERM => $pid;
-    wait_till_exit($pid, 10);
+    $self->wait_till_exit($pid, 10);
     return;
 }
 
 sub wait_till_exit {
-    my ($pid, $timeout) = @_;
+    my ($self, $pid, $timeout) = @_;
     my $start = time;
     while (time - $start < $timeout and kill ZERO => $pid) {
         print "wait $pid...\n";
         sleep 1;
     }
+    print "Failed to stop script before timeout: " . $self->name if (time - $start >= $timeout);
     return;
 }
 

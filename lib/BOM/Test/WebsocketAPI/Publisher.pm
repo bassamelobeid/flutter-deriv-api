@@ -40,7 +40,7 @@ use Future::Utils qw(fmap0);
 
 use BOM::Test;
 use Binary::API::Mapping::Response;
-use BOM::Test::WebsocketAPI::Redis qw/shared_redis ws_redis_master/;
+use BOM::Test::WebsocketAPI::Redis qw/shared_redis ws_redis_master redis_transaction/;
 use BOM::Test::WebsocketAPI::Data qw( publish_data publish_methods );
 use BOM::Test::WebsocketAPI::Parameters qw( test_params );
 
@@ -204,7 +204,7 @@ handler transaction => sub {
     my $currency = $transaction->{currency_code};
     my $loginid  = delete $transaction->{loginid};
 
-    return $self->publish($key, $type => $transaction)->on_done(
+    return $self->publish($key, $type, $transaction, redis_transaction)->on_done(
         $self->$curry::weak(
             sub {
                 my ($self) = @_;

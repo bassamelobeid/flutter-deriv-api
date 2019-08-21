@@ -345,9 +345,10 @@ sub create_fmb_with_ticks {
     return $bet;
 }
 
-# since this will populate the bet.market table from underlyings.yml,
+# since this will populate the bet.limits_market_mapper table from underlyings.yml,
 # we only have to do this once when every test database is rebuilt.
-sub setup_bet_market {
+sub setup_db_underlying_mapping {
+    my $table              = shift;
     my $connection_builder = BOM::Database::ClientDB->new({
         broker_code => 'CR',      # since there's only one clientdb in test environment
         operation   => 'write',
@@ -357,7 +358,7 @@ sub setup_bet_market {
     my @data = map { [$_->{symbol}, $_->{market}, $_->{submarket}, $_->{market_type}] } @uls;
     $db->dbic->run(
         ping => sub {
-            my $sth = $_->prepare("INSERT INTO bet.market VALUES(?,?,?,?)");
+            my $sth = $_->prepare("INSERT INTO bet.$table VALUES(?,?,?,?)");
             $sth->execute(@$_) foreach @data;
         });
     return;
@@ -376,7 +377,10 @@ sub import {
 
     if (exists $options{':init'}) {
         __PACKAGE__->instance->prepare_unit_test_database;
-        setup_bet_market() unless exists $options{':exclude_bet_market_setup'};
+        unless (exists $options{':exclude_bet_market_setup'}) {
+            setup_db_underlying_mapping('market');
+            setup_db_underlying_mapping('limits_market_mapper');
+        }
         require BOM::Test::Data::Utility::UserTestDatabase;
 
         BOM::Test::Data::Utility::UserTestDatabase->import(':init');
