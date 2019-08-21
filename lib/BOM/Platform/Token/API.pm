@@ -152,7 +152,7 @@ sub generate_token {
     return Bytes::Random::Secure->new(
         Bits        => 160,
         NonBlocking => 1,
-    )->string_from(@chars, $length);
+    )->string_from(join('', @chars), $length);
 }
 
 ### PRIVATE ###
