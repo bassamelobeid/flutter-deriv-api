@@ -25,29 +25,32 @@ sub create_token {
 
     $self->_log->fatal("loginid is required")      unless $loginid;
     $self->_log->fatal("display_name is required") unless $display_name;
+
     $scopes = [grep { $supported_scopes{$_} } @$scopes];
     my $token = $self->_generate_token(TOKEN_LENGTH);
-    my $data  = {
+
+    my $data = {
         type          => 'api',
         display_name  => $display_name,
         scopes        => $scopes,
         valid_for_ip  => $ip // '',
-        creation_time => Date::Utility->new->db_timestamp,
+        creation_time => time,
         loginid       => $loginid,
         token         => $token,
-        last_used     => '',
+        last_used     => 0,
     };
-
-    my $writer    = $self->_redis_write;
-    my $redis_key = $self->_make_key($token);
-    $writer->multi;
-    $writer->hset($redis_key, $_, ($_ eq 'scopes' ? encode_json_utf8($data->{$_}) : $data->{$_})) for (keys %$data);
-
-    $writer->hset($self->_make_key_by_id($data->{loginid}), $data->{display_name}, $token);
-    $writer->exec;
 
     # save in database for persistence
     $self->_api_model->save_token($data);
+
+    my $writer    = $self->_redis_write;
+    my $redis_key = $self->_make_key($token);
+    $data->{scopes} = encode_json_utf8($data->{scopes});
+
+    $writer->multi;
+    $writer->hmset($redis_key, $_, %$data);
+    $writer->hset($self->_make_key_by_id($data->{loginid}), $data->{display_name}, $token);
+    $writer->exec;
 
     return $token;
 }
