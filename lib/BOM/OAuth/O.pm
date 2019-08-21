@@ -29,8 +29,7 @@ use BOM::User::AuditLog;
 use BOM::Platform::Context qw(localize);
 use BOM::OAuth::Static qw(get_message_mapping);
 
-use constant APPS_ALLOWED_TO_RESET_PASSWORD => qw(1 14473 15284);
-use constant APPS_LOGINS_RESTRICTED         => qw(16063);           # mobytrader
+use constant APPS_LOGINS_RESTRICTED => qw(16063);    # mobytrader
 
 sub authorize {
     my $c = shift;
@@ -184,11 +183,11 @@ sub authorize {
     }
 
     my $loginid = $client->loginid;
-    $is_all_approved = 1 if $app_id eq '1';
+    $is_all_approved = 1 if $oauth_model->is_official_app($app_id);
     $is_all_approved ||= $oauth_model->is_scope_confirmed($app_id, $loginid);
 
     # show scope confirms if not yet approved
-    # do not show the scope confirm screen if APP ID is 1
+    # do not show the scope confirm screen if APP ID is a primary official app
     return $c->render(
         template       => $brand_name . '/scope_confirms',
         layout         => $brand_name,
@@ -201,7 +200,6 @@ sub authorize {
     ) unless $is_all_approved;
 
     # setting up client ip
-
     my $client_ip = $c->client_ip;
     if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
         $client_ip = $c->tx->req->headers->header('REMOTE_ADDR');
@@ -299,18 +297,24 @@ sub _login {
                 if (($old_ip ne $new_ip or $old_env->{country} ne $country_code)
                     and $old_env->{user_agent} ne $user_agent)
                 {
-                    my $bd   = HTTP::BrowserDetect->new($user_agent);
-                    my $tt   = Template->new(ABSOLUTE => 1);
+                    my $bd = HTTP::BrowserDetect->new($user_agent);
+                    my $tt = Template->new(
+                        ENCODING => 'utf8',
+                        ABSOLUTE => 1
+                    );
                     my $data = {
                         client_name => $client->first_name ? ' ' . $client->first_name . ' ' . $client->last_name : '',
                         country => $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
                         device  => $bd->device                                                             // $bd->os_string,
                         browser => $bd->browser_string,
                         app     => $app,
+                        ip      => $r->client_ip,
                         l       => \&localize
                     };
 
-                    $tt->process('/home/git/regentmarkets/bom-oauth/templates/email/new_signin.html.tt', $data, \my $message);
+                    my $template = $brand_name eq 'deriv' ? 'new_signin_deriv.html.tt' : 'new_signin.html.tt';
+
+                    $tt->process('/home/git/regentmarkets/bom-oauth/templates/email/' . $template, $data, \my $message);
                     if ($tt->error) {
                         warn "Template error: " . $tt->error;
                         return;
@@ -422,7 +426,7 @@ sub _is_reset_password_allowed {
 
     die "Invalid application id." unless $app_id;
 
-    return first { $_ == $app_id } APPS_ALLOWED_TO_RESET_PASSWORD;
+    return _oauth_model()->is_primary_website($app_id);
 }
 
 sub _website_domain {
@@ -430,7 +434,12 @@ sub _website_domain {
 
     die "Invalid application id." unless $app_id;
 
-    return "binary.me" if $app_id == 15284;
+    my %known_domains = (
+        15284 => 'binary.me',
+        16929 => 'deriv.com',
+    );
+
+    return $known_domains{$app_id} if exists $known_domains{$app_id};
 
     return "binary.com";
 }

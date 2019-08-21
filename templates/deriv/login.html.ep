@@ -1,0 +1,152 @@
+<% if (!$login_method || stash('error') || stash('social_error')) { %>
+    <div id="container">
+        <h3 class="center-text"><%= l('Log in to Deriv') %></h3>
+        <form id="frmLogin" method="POST">
+            <div class="input-wrapper">
+                <input type="email" id="txtEmail" name="email" placeholder="<%= l('example@email.com') %>" required autocomplete="off" autofocus="autofocus" maxlength="254" />
+                <label for="txtEmail"><%= l('Email') %></label>
+                <span class="bar"></span>
+                <span id="btnClear" class="input-button"></span>
+                <p class='hide error error_invalid'><%= l("That doesn't look like an email address.") %></p>
+                <p class='hide error error_required'><%= l('Email is required.') %></p>
+                <% if (stash('error')) { %>
+                    <p class='error'><%= stash('error') %></p>
+                <% } %>
+            </div>
+            <div class="input-wrapper">
+                <input type="password" id="txtPass" name="password" placeholder="<%= l('Password') %>" required autocomplete="off" />
+                <label for="txtPass"><%= l('Password') %></label>
+                <span class="bar"></span>
+                <span id="btnToggle" class="input-button"></span>
+                <p class='hide error error_required'><%= l('Password is required.') %></p>
+            </div>
+            <% if ($is_reset_password_allowed) { %>
+                <a id="lost-password" class="hide" href="https://www.<%= $website_domain %>/<%= lc($r->language) %>/user/lost_passwordws.html"><%= l('Forgot password?') %></a>
+            <% } %>
+            <button type="submit" class="button secondary" name="login" value="<%= l('Login') %>"><%= l('Login') %></button>
+            <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
+        </form>
+        <% if ($use_social_login) { %>
+            <p class="secondary center-text"><%= l('Or') %></p>
+            <div id="oa_social_login_container"></div>
+            <% if (stash('social_error')) { %>
+                <p class='error-oneall center-text'><%= stash('social_error') %></p>
+            <% } %>
+        <% } %>
+    </div>
+<% } %>
+
+<script type="text/javascript">
+    var frmLogin, txtEmail, txtPass, btnClear, btnToggle;
+    window.onload = function() {
+        frmLogin  = document.getElementById('frmLogin');
+        txtEmail  = document.getElementById('txtEmail');
+        txtPass   = document.getElementById('txtPass');
+        btnClear  = document.getElementById('btnClear');
+        btnToggle = document.getElementById('btnToggle');
+
+        btnClear.addEventListener('click', clearEmailInput);
+        btnToggle.addEventListener('click', togglePasswordVisibility);
+
+        if (frmLogin) {
+            frmLogin.addEventListener('submit', function(e) {
+                if (!validateAll()) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        }
+
+        var fields = [
+            { element: txtEmail, validator: validateEmail },
+            { element: txtPass,  validator: validatePass },
+        ];
+        fields.forEach(function(field) {
+            if (field.element) {
+                ['change', 'blur'].forEach(function(event) {
+                    field.element.addEventListener(event, function(e) {
+                        field.validator();
+                    });
+                });
+            }
+        });
+    };
+
+    function validateAll() {
+        return validateEmail() && validatePass();
+    }
+
+    function validateEmail() {
+        return validateField(txtEmail, new RegExp(/^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,63}$/));
+    }
+
+    function validatePass() {
+        return validateField(txtPass, new RegExp(/^[ -~]{6,25}$/));
+    }
+
+    function validateField(element, regex) {
+        if (element) {
+            hideErrors(element);
+
+            var hasError = true;
+            var value = (element.value || '').trim();
+
+            if (!value) {
+                showError(element, 'required');
+            } else if (!regex.test(value)) {
+                showError(element, 'invalid');
+            } else {
+                hasError = false;
+            }
+
+            return !hasError;
+        }
+    }
+
+    function hideErrors(element) {
+        element.parentNode.querySelectorAll('.error').forEach(function (el) {
+            el.classList.add('hide');
+        });
+    }
+
+    function showError(element, errorType) {
+        var el = element.parentNode.querySelector('.error_' + errorType);
+        if (el) {
+            el.classList.remove('hide');
+        }
+    }
+
+    function togglePasswordVisibility() {
+        txtPass.type = txtPass.type === 'password' ? 'text' : 'password';
+    }
+
+    function clearEmailInput() {
+        txtEmail.value = '';
+        validateEmail();
+    }
+</script>
+
+<script type="text/javascript">
+    var use_social_login = '<%== $use_social_login %>';
+    if (use_social_login) {
+        var cb = '<%= $oneall_callback %>';
+        var login_method = '<%= $login_method %>';
+        var providers = <%== Mojo::JSON::encode_json($login_providers) %>;
+
+        /* Embeds the buttons into the container oa_social_login_container */
+        var _oneall = _oneall || [];
+        _oneall.push(['social_login', 'set_force_re_authentication', true]);
+        _oneall.push(['social_login', 'set_providers', providers]);
+        _oneall.push(['social_login', 'set_callback_uri', cb]);
+        _oneall.push(['social_login', 'set_popup_usage', 'never']);
+        /* push all configs before this as once rendered it not possible to hook*/
+        _oneall.push(['social_login', 'do_render_ui', 'oa_social_login_container']);
+
+        if (login_method) {
+            _oneall.push(['social_login', 'do_login', login_method]);
+        }
+        if (document.getElementById('frmLogin')) {
+            document.getElementById('frmLogin').reset();
+        }
+    }
+</script>

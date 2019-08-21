@@ -1,0 +1,11 @@
+<div class="container">
+    <p class="center-text"><%= l('Please enter your verification code') %></p>
+    <% if (stash('error')) { %>
+        <p class='error-msg center-text'><%= stash('error') %></p>
+    <% } %>
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
+        <div><input type="text" id="txtOTP" name="otp" placeholder="<%= l('Verification Code') %>" autocomplete="off" autofocus="autofocus" /></div>
+        <div><button type="submit" class="button" name="totp_proceed" value="<%= l('Proceed') %>"><%= l('Proceed') %></button></div>
+    </form>
+</div>
