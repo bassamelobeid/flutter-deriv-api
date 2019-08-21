@@ -5,6 +5,7 @@ use warnings;
 
 use feature "state";
 use YAML::XS;
+use Brands;
 
 sub node {
     state $config = YAML::XS::LoadFile('/etc/rmg/node.yml');
@@ -74,6 +75,11 @@ sub crypto {
 sub domain {
     state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/domain.yml');
     return $config;
+}
+
+sub brand {
+    state $brand = Brands->new(name => domain()->{brand});
+    return $brand;
 }
 
 sub s3 {
