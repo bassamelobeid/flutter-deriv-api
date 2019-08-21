@@ -48,7 +48,11 @@ lives_ok {
 'build connection builder & account';
 
 # CR0027 is always the trader in these tests
-my $trader_token = $token_db->save_token({loginid => 'CR0027', display_name => 'token1', scopes => ['read', 'trade', 'payments', 'admin'], token => generate_token(15)});
+my $trader_token = $token_db->save_token({
+        loginid      => 'CR0027',
+        display_name => 'token1',
+        scopes       => ['read', 'trade', 'payments', 'admin'],
+        token        => generate_token(15)});
 
 sub subscribe {
     my $args = shift;
@@ -166,7 +170,11 @@ is(
 
 $token_db->remove_by_token($trader_token, 'CR0027');
 # For extra certainty, create a new trader token; it should not be used by the copiers
-$token_db->save_token({loginid => 'CR0027', display_name => 'token2', scopes => ['read', 'trade', 'payments', 'admin'], token => generate_token(15)});
+$token_db->save_token({
+        loginid      => 'CR0027',
+        display_name => 'token2',
+        scopes       => ['read', 'trade', 'payments', 'admin'],
+        token        => generate_token(15)});
 
 is($dm->get_copiers_count({trader_id => 'CR0027'}), 0, 'copier count is zero after removing trader token');
 

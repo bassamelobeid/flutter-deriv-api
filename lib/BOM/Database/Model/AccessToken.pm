@@ -109,7 +109,6 @@ sub get_all_tokens_by_loginid {
         });
 }
 
-
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
