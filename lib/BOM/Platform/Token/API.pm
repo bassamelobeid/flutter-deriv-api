@@ -73,7 +73,7 @@ sub get_token_details {
     $self->_redis_write->hset($key, 'last_used', time);
 
     # last_used is expected as string in the API schema
-    $details->{last_used} = Date::Utility->new($details->{last_used})->datetime if $details->{last_used};
+    $details{last_used} = Date::Utility->new($details{last_used})->datetime if $details{last_used};
 
     return \%details;
 }
