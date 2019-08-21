@@ -33,7 +33,7 @@ my $res = BOM::RPC::v3::Static::website_status({country_code => ''});
 is $res->{terms_conditions_version}, 'version 1', 'version 1';
 
 # cleanup
-BOM::Database::Model::AccessToken->new->remove_by_loginid($test_loginid);
+BOM::Platform::Token::API->new->remove_by_loginid($test_loginid);
 
 $res = BOM::RPC::v3::Accounts::tnc_approval({client => $test_client});
 is_deeply $res, {status => 1};
