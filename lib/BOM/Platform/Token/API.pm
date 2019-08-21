@@ -68,7 +68,7 @@ sub get_token_details {
 
     $details{scopes} = $self->_json->decode($details{scopes}) if $details{scopes};
 
-    $self->_redis_write->hset($key, 'last_used', Date::Utility->new->datetime);
+    $self->_redis_write->hset($key, 'last_used', time);
 
     return \%details;
 }
