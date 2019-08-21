@@ -87,11 +87,12 @@ subtest 'symbol not defined' => sub {
         $txn->buy;
     };
     ok $error, 'error is thrown';
-    is $error->{'-mesg'},              'Symbol missing in bet.market table';
+    is $error->{'-mesg'},              'Symbol missing in bet.limits_market_mapper table';
     is $error->{'-message_to_client'}, 'Trading is suspended for this instrument.';
 };
 
-BOM::Test::Data::Utility::UnitTestDatabase::setup_bet_market();
+BOM::Test::Data::Utility::UnitTestDatabase::setup_db_underlying_mapping('limits_market_mapper');
+BOM::Test::Data::Utility::UnitTestDatabase::setup_db_underlying_mapping('market');
 
 subtest 'global potential loss' => sub {
     close_all_open_contracts('CR');
