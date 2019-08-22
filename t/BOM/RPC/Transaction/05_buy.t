@@ -99,8 +99,8 @@ subtest 'buy' => sub {
     delete $params->{contract_parameters}{barrier};
 
     $params->{contract_parameters}{contract_type} = "EXPIRYRANGE";
-    $params->{contract_parameters}{low_barrier} = "-0.0501506060605079016";
-    $params->{contract_parameters}{high_barrier} = "+0.0601506060605079016";
+    $params->{contract_parameters}{low_barrier}   = "-0.0501506060605079016";
+    $params->{contract_parameters}{high_barrier}  = "+0.0601506060605079016";
 
     $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('BarrierValidationError', 'BarrierValidationError')
         ->error_message_is('Barrier can only be up to 4 decimal places.', 'Low and high barriers can only be up to 4 decimal places.');
