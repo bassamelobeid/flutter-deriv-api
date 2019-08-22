@@ -46,6 +46,11 @@ has 'params' => (
     lazy_build => 1,
 );
 
+has 'brand_name' => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
 has '_ip' => (
     is => 'ro',
 );
@@ -58,7 +63,7 @@ sub param {
 
 sub brand {
     my $self = shift;
-    return Brands->new(name => $self->_brand_name);
+    return Brands->new(name => $self->brand_name);
 }
 
 sub _build_params {
@@ -132,7 +137,7 @@ sub _build_client_ip {
     return ($self->_ip || '127.0.0.1');
 }
 
-sub _brand_name {
+sub _build_brand_name {
     my $self = shift;
 
     if (my $brand = $self->param('brand')) {
