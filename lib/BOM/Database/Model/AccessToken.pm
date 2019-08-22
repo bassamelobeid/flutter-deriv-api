@@ -22,7 +22,7 @@ sub save_token {
     }
 
     $args->{valid_for_ip}  //= '';
-    $args->{creation_time} //= time;
+    $args->{creation_time} //= Date::Utility->new->db_timestamp;
 
     my $dbic = $self->dbic;
     my $res  = $dbic->run(
