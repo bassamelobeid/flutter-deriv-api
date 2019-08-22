@@ -1207,7 +1207,7 @@ subtest 'MT5' => sub {
     $user->add_client($test_client);
     $user->add_client($test_client_btc);
 
-    my $token = BOM::Database::Model::AccessToken->new->create_token($test_client->loginid, 'test token');
+    my $token = BOM::Platform::Token::API->new->create_token($test_client->loginid, 'test token');
 
     my $params = {
         language => 'EN',
