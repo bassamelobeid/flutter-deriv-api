@@ -573,7 +573,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         CLIENT_KEY:
         foreach my $key (keys %input) {
             if (my ($document_field, $id) = $key =~ /^(expiration_date|comments|document_id)_([0-9]+)$/) {
-                my $val = $input{$key} // '' || next CLIENT_KEY;
+                my $val = $input{$key} or next CLIENT_KEY;
                 my ($doc) = grep { $_->id eq $id } $cli->client_authentication_document;    # Rose
                 next CLIENT_KEY unless $doc;
                 my $new_value;
