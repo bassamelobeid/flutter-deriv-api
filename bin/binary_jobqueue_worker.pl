@@ -16,6 +16,7 @@ use Data::Dump 'pp';
 use Syntax::Keyword::Try;
 use Time::Moment;
 use Text::Trim;
+use File::Slurp;
 
 use Getopt::Long;
 use Log::Any qw($log);
@@ -31,8 +32,8 @@ GetOptions(
     'socket|S=s'       => \(my $SOCKETPATH = "/var/run/bom-rpc/binary_jobqueue_worker.sock"),
     'redis|R=s'        => \(my $REDIS = $redis_config->{uri}),
     'log|l=s'          => \(my $log_level = "info"),
-    'queue-prefix|q=s' => \(my $queue_prefix = $ENV{JOB_QUEUE_PREFIX} // ''),
-    'pid-file=s'       => \(my $PID_FILE),                                                      #for BOM::Test::Script compatilibity
+    'queue-prefix|q=s' => \(my $queue_prefix = $ENV{JOB_QUEUE_PREFIX} // read_file('/etc/rmg/environment')),
+    'pid-file=s'       => \(my $PID_FILE),                                                                        #for BOM::Test::Script compatilibity
 ) or exit 1;
 
 require Log::Any::Adapter;
