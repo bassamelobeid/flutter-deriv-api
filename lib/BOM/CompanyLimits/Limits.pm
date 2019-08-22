@@ -6,7 +6,6 @@ use warnings;
 use Data::Dumper;
 use Error::Base;
 
-use BOM::Test;
 use BOM::Config::RedisReplicated;
 use BOM::Database::QuantsConfig;
 use Future::AsyncAwait;
