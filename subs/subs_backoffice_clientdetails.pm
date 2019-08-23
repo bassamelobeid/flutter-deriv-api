@@ -278,7 +278,7 @@ sub print_client_details {
         secret_answer                  => $secret_answer,
         can_decode_secret_answer       => $can_decode_secret_answer,
         self_exclusion_enabled         => $self_exclusion_enabled,
-        show_allow_professional_client => ($client->landing_company->short =~ /^(?:svg|maltainvest)$/) ? 1 : 0,
+        show_allow_professional_client => $client->landing_company->support_professional_client,
         professional_status            => get_professional_status($client),
         show_funds_message             => ($client->residence eq 'gb' and not $client->is_virtual) ? 1 : 0,
         show_risk_approval => ($client->landing_company->short eq 'maltainvest') ? 1 : 0,
@@ -431,10 +431,10 @@ sub build_client_warning_message {
             . '<td align="left">'
             . $status . '</td>'
             . '<td><b>'
-            . $info->{reason}
+            . ($info->{reason} // '')
             . '</b></td>'
             . '<td><b>'
-            . $info->{staff_name}
+            . ($info->{staff_name} // '')
             . '</b></td>'
             . '<td colspan="2">&nbsp;</td>' . '</tr>';
     }

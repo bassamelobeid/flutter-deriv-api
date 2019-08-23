@@ -11,7 +11,7 @@
     <form id='EditclientAffiliatesToken' action="[% request.url_for('backoffice/f_change_affiliates_token.cgi') | none %]" method='post'>
         <input type='hidden' name='l' value='EN'>
         Loginid : <input type='text' name='ClientLoginid' placeholder='required' value='[% ClientLoginid %]'>
-        Affiliate Token : <input type='text' name='affiliate_token' value='[% affiliate_token %]'>
+        Affiliate Token : <input type='text' maxlength="32" name='affiliate_token' value='[% affiliate_token %]'>
         <br><br>DCC : <input type='text' name='DCcode' placeholder='required' value='[% prev_dcc %]'>
         <br><br><input type='checkbox' name='verification' value='true'> I understand this action is irreversible ([% clerk %])
         <br><br><input type='submit' name='EditAffiliatesToken' value='Edit affiliates token'/>
