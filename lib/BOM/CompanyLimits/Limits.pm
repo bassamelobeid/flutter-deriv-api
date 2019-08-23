@@ -10,8 +10,6 @@ use BOM::Database::QuantsConfig;
 use Future::AsyncAwait;
 use BOM::CompanyLimits::Helpers qw(get_redis);
 
-# TODO: It is rather strange to be putting userdb into a bom-transaction repo.
-#       We should consider a new repo for this. Perhaps BOM::Limits
 use BOM::Database::UserDB;
 
 # TODO: make every function return a ref to make things consistent

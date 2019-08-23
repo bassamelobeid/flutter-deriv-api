@@ -1,11 +1,13 @@
 package BOM::CompanyLimits::Helpers;
+
+use strict;
+use warnings;
+use 5.010;
+
 use BOM::Config::RedisReplicated;
 use Exporter qw(import);
 
 our @EXPORT_OK = qw(get_redis);
-use strict;
-use warnings;
-use 5.010;
 
 sub get_redis {
     my ($landing_company, $purpose) = @_;

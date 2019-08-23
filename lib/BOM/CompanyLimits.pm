@@ -37,6 +37,8 @@ sub set_underlying_groups {
 
     # TODO: we are hard coding the landing company when setting limits
     get_redis('svg', 'limit_setting')->hmset('UNDERLYINGGROUPS', @symbol_underlying);
+
+    return;
 }
 
 sub set_contract_groups {
@@ -51,6 +53,8 @@ sub set_contract_groups {
     my @contract_grp;
     push @contract_grp, @$_ foreach (@$bet_grp);
     get_redis('svg', 'limit_setting')->hmset('CONTRACTGROUPS', @contract_grp);
+
+    return;
 }
 
 sub add_buy_contract {
