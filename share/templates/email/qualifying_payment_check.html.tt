@@ -1,0 +1,67 @@
+<style>
+ table {
+  padding-bottom: 2%;
+ }
+
+ th {
+  background-color: lightgray;
+ }
+
+ td {
+  text-align: center;
+ }
+</style>
+<h2>Client [% loginid %] has breached the following thresholds:</h2>
+<table>
+ <tbody>
+  <tr>
+   <th scope="col">Exceeded limit</th>
+   <th scope="col">Limit value</th>
+   <th scope="col">Client's value</th>
+  </tr>
+  [% FOREACH info IN breached_info -%]
+  <tr>
+    <td>[% info.attribute %]</td>
+    <td>[% info.threshold_val %]</td>
+    <td>[% info.client_val %]</td>
+  </tr>
+  [% END -%]
+ </tbody>
+</table>
+<h2>Information of [% loginid %]: </h2>
+<table>
+<tbody>
+ <tr>
+  <th scope="col">Client statuses: </th>
+  <td>[% client_info.statuses %]</td>
+ </tr>
+ <tr>
+  <th scope="col">Account opening reason: </th>
+  <td>[% client_info.account_opening_reason %]</td>
+ </tr>
+ <tr>
+  <th scope="col">Age verified: </th>
+  <td>[% client_info.age_verified %]</td>
+ </tr>
+ <tr>
+  <th scope="col">Authentication status: </th>
+  <td>[% client_info.authentication_status %]</td>
+ </tr>
+ <tr>
+  <th scope="col">Currency: </th>
+  <td>[% client_info.currency %]</td>
+ </tr>
+ <tr>
+  <th scope="col">Deposit totals (Lifetime): </th>
+  <td>[% client_info.total_deposits %]</td>
+ </tr>
+ <tr>
+  <th scope="col">Withdrawal totals (Lifetime): </th>
+  <td>[% client_info.total_withdrawals %]</td>
+ </tr>
+ <tr>
+  <th scope="col">Balance (Current): </th>
+  <td>[% client_info.balance %]</td>
+ </tr>
+</tbody>
+</table>

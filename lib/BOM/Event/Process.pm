@@ -52,6 +52,7 @@ my $action_mapping = {
     set_pending_transaction     => \&BOM::Event::Actions::CryptoSubscription::set_pending_transaction,
     sync_onfido_details         => \&BOM::Event::Actions::Client::sync_onfido_details,
     authenticated_with_scans    => \&BOM::Event::Actions::Client::email_client_account_verification,
+    qualifying_payment_check    => \&BOM::Event::Actions::Client::qualifying_payment_check
 };
 
 =head1 METHODS

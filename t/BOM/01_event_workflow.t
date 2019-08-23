@@ -107,8 +107,11 @@ subtest 'process' => sub {
     is_deeply(
         [sort keys %{BOM::Event::Process::get_action_mappings()}],
         [
-            sort
-                qw/email_consent register_details email_statement sync_user_to_MT5 store_mt5_transaction new_mt5_signup anonymize_client send_mt5_disable_csv document_upload ready_for_authentication account_closure client_verification verify_address social_responsibility_check sync_onfido_details set_pending_transaction authenticated_with_scans/
+            sort qw/email_consent register_details email_statement sync_user_to_MT5
+                store_mt5_transaction new_mt5_signup anonymize_client send_mt5_disable_csv
+                document_upload ready_for_authentication account_closure client_verification
+                verify_address social_responsibility_check sync_onfido_details
+                set_pending_transaction authenticated_with_scans qualifying_payment_check/
         ],
         'Correct number of actions that can be emitted'
     );

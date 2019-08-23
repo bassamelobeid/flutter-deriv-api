@@ -27,6 +27,7 @@ use Future::Utils qw(fmap0);
 use Future::AsyncAwait;
 use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
 use Date::Utility;
+use ExchangeRates::CurrencyConverter qw(convert_currency);
 use BOM::Config::Runtime;
 
 use BOM::Config;
@@ -1694,6 +1695,124 @@ async sub _update_onfido_user_check_count {
     }
 
     return 1;
+}
+
+=head2 qualifying_payment_check
+
+
+This check is to verify whether clients have exceeded the qualifying transaction threshold
+between an operator (us) and a customer (client). 'Qualifying transaction' refers to the deposits/withdrawals
+made by a client over a certain period of time, in either a single transaction or a series of
+linked transactions. 
+
+If the amount breached the thresholds, an email is sent out to the compliance team, and
+the monitoring starts again. If a certain period of time has passed and no thresholds
+have been breached, the monitoring will start from scratch again.
+
+As at 14th August, 2019:
+- The threshold value is at EUR3000, or its equivalent in USD/GBP
+- Only applies for MX clients
+- Applied for a period of 30 days
+
+Regulation for qualifying transaction is specified in page 9, and the actions to be taken
+are in page 16, in the following link: http://www.tynwald.org.im/business/opqp/sittings/20182021/2019-SD-0219.pdf
+
+=cut
+
+sub qualifying_payment_check {
+    my $data = shift;
+
+    my $loginid = $data->{loginid};
+
+    my $redis = BOM::Config::RedisReplicated::redis_events();
+
+    # Event is taking place, so no need to keep in redis
+    $redis->del($loginid . '_qualifying_payment_check');
+
+    my $client = BOM::User::Client->new({loginid => $loginid});
+
+    my $payment_check_limits = BOM::Config::payment_limits()->{qualifying_payment_check_limits}->{$client->landing_company->short};
+
+    my $limit_val = $payment_check_limits->{limit_for_days};
+    my $limit_cur = $payment_check_limits->{currency};
+
+    my $threshold_val = convert_currency($limit_val, $limit_cur, $client->currency);
+
+    my @breached_info;
+
+    foreach my $action_key (qw/deposit withdrawal/) {
+        my $key = $loginid . '_' . $action_key . '_qualifying_payment_check';
+
+        my $value = $redis->get($key) // 0;
+
+        if ($value >= $threshold_val) {
+            push @breached_info,
+                {
+                attribute     => $action_key,
+                client_val    => $value,
+                threshold_val => $threshold_val
+                };
+
+            $redis->del($key);
+        }
+    }
+
+    if (@breached_info) {
+
+        my $account     = $client->default_account;
+        my $status      = $client->status;
+        my $auth_status = $client->authentication_status;
+
+        my ($total_deposits, $total_withdrawals) = $client->db->dbic->run(
+            fixup => sub {
+                my $statement = $_->prepare("SELECT * FROM betonmarkets.get_total_deposits_and_withdrawals(?)");
+                $statement->execute($account->id);
+                return @{$statement->fetchrow_arrayref};
+            });
+
+        my $client_info_required = {
+            statuses => join(',', @{$status->all}),
+            age_verified => $status->age_verification ? 'Yes' : 'No',
+            authentication_status => $auth_status eq 'no' ? 'Not authenticated' : $auth_status,
+            account_opening_reason => $client->account_opening_reason,
+            currency               => $client->currency,
+            balance                => $account->balance,
+            total_deposits         => $total_deposits,
+            total_withdrawals      => $total_withdrawals
+        };
+
+        my $system_email     = $BRANDS->emails('system');
+        my $compliance_email = $BRANDS->emails('compliance');
+        my $email_subject    = "MX - Qualifying Payment 3K Check (Loginid: $loginid)";
+
+        my $tt = Template::AutoFilter->new({
+            ABSOLUTE => 1,
+            ENCODING => 'utf8'
+        });
+
+        my $data = {
+            loginid       => $loginid,
+            breached_info => \@breached_info,
+            client_info   => $client_info_required
+        };
+
+        try {
+            $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/qualifying_payment_check.html.tt', $data, \my $html);
+            die "Template error: @{[$tt->error]}" if $tt->error;
+
+            die "failed to send qualifying_payment_check email ($loginid)"
+                unless Email::Stuffer->from($system_email)->to($compliance_email)->subject($email_subject)->html_body($html)->send();
+
+            return undef;
+        }
+        catch {
+            $log->warn($@);
+            return undef;
+        };
+
+    }
+
+    return undef;
 }
 
 1;
