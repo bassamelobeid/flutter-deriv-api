@@ -23,6 +23,21 @@ has 'type' => (
     required => 1
 );
 
+=head2 _handle_qualifying_payments
+
+Handle the qualifying payments regulation check for clients that requires it.
+
+=cut
+
+sub _handle_qualifying_payments {
+    my ($client, $amount, $action) = @_;
+
+    return $client->increment_qualifying_payments({
+        amount => $amount,
+        action => $action
+    });
+}
+
 sub execute {
     my $c      = shift;
     my $log    = $c->env->{log};
@@ -202,14 +217,15 @@ sub write_transaction_line {
         $trx = $client->payment_doughflow(%payment_args);
 
         # Social responsibility checks for MLT/MX clients
-        if ($client->landing_company->social_responsibility_check_required) {
-            $client->increment_social_responsibility_values({
+        $client->increment_social_responsibility_values({
                 deposit_amount => $amount,
                 deposit_count  => 1
-            });
-        }
+            }) if ($client->landing_company->social_responsibility_check_required);
+
+        _handle_qualifying_payments($client, $amount, $c->type) if $client->landing_company->qualifying_payment_check_required;
 
     } elsif ($c->type eq 'withdrawal') {
+
         # Don't allow balances to ever go negative! Include any fee in this test.
         my $balance = $client->default_account->balance;
         if ($amount + $fee > $balance) {
@@ -219,6 +235,9 @@ sub write_transaction_line {
         }
         $payment_args{amount} = -$amount;
         $trx = $client->payment_doughflow(%payment_args);
+
+        _handle_qualifying_payments($client, $amount, $c->type) if $client->landing_company->qualifying_payment_check_required;
+
     } elsif ($c->type eq 'withdrawal_reversal') {
         if ($bonus or $fee) {
             return $c->status_bad_request('Bonuses and fees are not allowed for withdrawal reversals');
