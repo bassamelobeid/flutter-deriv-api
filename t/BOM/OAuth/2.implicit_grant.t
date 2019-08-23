@@ -90,6 +90,12 @@ $t = $t->get_ok("/authorize?app_id=$app_id")->content_like(qr/login/);
 $csrf_token = $t->tx->res->dom->at('input[name=csrf_token]')->val;
 ok $csrf_token, 'csrf_token is there';
 
+my $mock_history = Test::MockModule->new('BOM::User');
+$mock_history->mock(
+    'get_last_successful_login_history' => sub {
+        return {"environment" => "IP=1.1.1.1 IP_COUNTRY=1.1.1.1 User_AGENT=ABC LANG=AU"};
+    });
+
 $t->post_ok(
     "/authorize?app_id=$app_id" => form => {
         login      => 1,

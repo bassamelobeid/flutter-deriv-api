@@ -56,10 +56,6 @@ my $csrf_token = $t->tx->res->dom->at('input[name=csrf_token]')->val;
 ok $csrf_token, 'csrf_token is there';
 
 my $mock_session = Test::MockModule->new('BOM::Database::Model::OAuth');
-$mock_session->mock(
-    'has_other_login_sessions' => sub {
-        return 0;
-    });
 
 my $mock_history = Test::MockModule->new('BOM::User');
 $mock_history->mock(
@@ -75,9 +71,7 @@ $mocked_oauth->mock(
         is $arg->{subject}, 'Security alert: New sign-in activity', 'Unrecognised Sign-in email subject';
     });
 
-$t = callPost($t, $email, $password, $csrf_token);
-
-sub callPost {
+my $callPost = sub {
     my ($t, $email, $password, $csrf_token, $lang) = @_;
 
     $t->post_ok(
@@ -88,6 +82,8 @@ sub callPost {
             csrf_token => $csrf_token,
         });
     return $t;
-}
+};
+
+$callPost->($t, $email, $password, $csrf_token);
 
 done_testing();

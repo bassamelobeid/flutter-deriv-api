@@ -248,7 +248,8 @@ sub _login {
     my $login_details = {
         c              => $c,
         oneall_user_id => $oneall_user_id,
-        app_id         => $app->{id}};
+        app            => $app
+    };
 
     my $result = _validate_login($login_details);
 
@@ -273,67 +274,6 @@ sub _login {
     }
 
     my $filtered_clients = $result->{filtered_clients};
-
-    # send when client already has login session(s) and its not backoffice (app_id = 4, as we impersonate from backoffice using read only tokens)
-    if ($app->{id} ne '4') {
-
-        try {
-
-            # get last login before current login to get last record
-            my $client = $filtered_clients->[0];
-            my $user   = $result->{user};
-
-            my $last_login = $user->get_last_successful_login_history();
-
-            if ($last_login and exists $last_login->{environment}) {
-                my ($old_env, $user_agent, $r) =
-                    (_get_details_from_environment($last_login->{environment}), $c->req->headers->header('User-Agent') // '', $c->stash('request'));
-
-                # need to compare first two octet only
-                my ($old_ip, $new_ip, $country_code) = ($old_env->{ip}, $r->client_ip // '', uc($r->country_code // ''));
-                ($old_ip) = $old_ip =~ /(^(\d{1,3}\.){2})/;
-                ($new_ip) = $new_ip =~ /(^(\d{1,3}\.){2})/;
-
-                if (($old_ip ne $new_ip or $old_env->{country} ne $country_code)
-                    and $old_env->{user_agent} ne $user_agent)
-                {
-                    my $bd = HTTP::BrowserDetect->new($user_agent);
-                    my $tt = Template->new(
-                        ENCODING => 'utf8',
-                        ABSOLUTE => 1
-                    );
-                    my $data = {
-                        client_name => $client->first_name ? ' ' . $client->first_name . ' ' . $client->last_name : '',
-                        country => $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
-                        device  => $bd->device                                                             // $bd->os_string,
-                        browser => $bd->browser_string,
-                        app     => $app,
-                        ip      => $r->client_ip,
-                        l       => \&localize
-                    };
-
-                    my $template = $brand_name eq 'deriv' ? 'new_signin_deriv.html.tt' : 'new_signin.html.tt';
-
-                    $tt->process('/home/git/regentmarkets/bom-oauth/templates/email/' . $template, $data, \my $message);
-                    if ($tt->error) {
-                        warn "Template error: " . $tt->error;
-                        return;
-                    }
-
-                    send_email({
-                        from                  => $brand->emails('support'),
-                        to                    => $client->email,
-                        subject               => localize(get_message_mapping()->{NEW_SIGNIN_SUBJECT}),
-                        message               => [$message],
-                        use_email_template    => 1,
-                        email_content_is_html => 1,
-                        template_loginid      => $client->loginid,
-                        skip_text2html        => 1
-                    });
-                }
-            }
-        };
-    }
 
     # reset csrf_token
     delete $c->session->{csrf_token};
@@ -392,6 +332,13 @@ sub _bad_request {
     return $c->throw_error('invalid_request', $error);
 }
 
+=head2 _get_details_from_environment
+
+Get details from environment, which includes the IP address, country, and the
+user agent.
+
+=cut
+
 sub _get_details_from_environment {
     my $env = shift;
 
@@ -399,8 +346,10 @@ sub _get_details_from_environment {
 
     my ($ip) = $env =~ /(IP=(\d{1,3}\.){3}\d{1,3})/i;
     $ip =~ s/IP=//i;
+
     my ($country) = $env =~ /(IP_COUNTRY=\w{1,2})/i;
     $country =~ s/IP_COUNTRY=//i if $country;
+
     my ($user_agent) = $env =~ /(User_AGENT.+(?=\sLANG))/i;
     $user_agent =~ s/User_AGENT=//i;
 
@@ -444,6 +393,70 @@ sub _website_domain {
     return "binary.com";
 }
 
+=head2 _compare_signin_activity
+
+Compare the sign-in activity of the last login environment and the
+new login environment. If there is a difference, send an email to client indicating
+that a login has been successful from a different environment (even if it was
+the client themselves)
+
+=cut
+
+sub _compare_signin_activity {
+    my ($args) = @_;
+
+    my $old = delete $args->{old_env};
+    my $new = delete $args->{new_env};
+
+    foreach my $key (keys %$old) {
+
+        next if $old->{$key} eq $new->{$key};
+
+        my $app    = delete $args->{app};
+        my $client = delete $args->{client};
+        my $c      = delete $args->{c};
+
+        my $brand = $c->stash('brand');
+
+        my $bd = HTTP::BrowserDetect->new($c->req->headers->header('User-Agent'));
+        my $country_code = uc($c->stash('request')->country_code // '');
+
+        # Relevant data required
+        my $data = {
+            client_name => $client->first_name ? ' ' . $client->first_name . ' ' . $client->last_name : '',
+            country => $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
+            device  => $bd->device                                                             // $bd->os_string,
+            browser => $bd->browser_string,
+            app     => $app,
+            l       => \&localize
+        };
+
+        my $tt = Template->new(ABSOLUTE => 1);
+        $tt->process('/home/git/regentmarkets/bom-oauth/templates/email/new_signin.html.tt', $data, \my $message);
+
+        if ($tt->error) {
+            warn "Template error: " . $tt->error;
+            return;
+        }
+
+        send_email({
+            from                  => $brand->emails('support'),
+            to                    => $client->email,
+            subject               => localize(get_message_mapping()->{NEW_SIGNIN_SUBJECT}),
+            message               => [$message],
+            template_loginid      => $client->loginid,
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            skip_text2html        => 1
+        });
+
+        # Only one difference is needed for the email to be send
+        last;
+    }
+
+    return undef;
+}
+
 =head2 _validate_login
 
 Validate the email and password inputs. Return the user object
@@ -462,6 +475,7 @@ sub _validate_login {
 
     my $c              = delete $login_details->{c};
     my $oneall_user_id = delete $login_details->{oneall_user_id};
+    my $app            = delete $login_details->{app};
 
     my $email    = lc defang($c->param('email'));
     my $password = $c->param('password');
@@ -498,22 +512,36 @@ sub _validate_login {
 
     }
 
+    # Get last login before current login to get last record
+    my $new_env    = $c->_login_env();
+    my $last_login = $user->get_last_successful_login_history();
+
     my $result = $user->login(
         password        => $password,
-        environment     => $c->_login_env(),
+        environment     => $new_env,
         is_social_login => $oneall_user_id ? 1 : 0,
     );
 
     return $err_var->($result->{error}) if exists $result->{error};
 
     my @filtered_clients = _filter_user_clients_by_app_id(
-        app_id => $login_details->{app_id},
+        app_id => $app->{id},
         user   => $user
     );
 
     return $err_var->("UNAUTHORIZED_ACCESS") unless @filtered_clients;
 
     my $client = $filtered_clients[0];
+
+    # See if sign-in activity is different from previous
+    # NOTE: App ID = 4 (impersonate from backoffice using read only tokens)
+    _compare_signin_activity({
+            old_env => _get_details_from_environment($last_login->{environment}),
+            new_env => _get_details_from_environment($new_env),
+            client  => $client,
+            c       => $c,
+            app     => $app
+        }) unless ($app->{id} eq '4' || !$last_login);
 
     return $err_var->("TEMP_DISABLED") if grep { $client->loginid =~ /^$_/ } @{BOM::Config::Runtime->instance->app_config->system->suspend->logins};
     return $err_var->("DISABLED") if ($client->status->is_login_disallowed or $client->status->disabled);
