@@ -32,7 +32,9 @@ use constant ELECTRON_SUPPORTED_COUNTRIES => qw(id);
 sub register {
     my ($self, $app) = @_;
 
-    $app->helper(server_name => sub { return [split(/\./, Sys::Hostname::hostname)]->[0] });
+    # This sets a hostname within the App.
+    # It expects HOSTNAME to be set in environment, otherwise it falls back to the system.
+    $app->helper(server_name => sub { return [split(/\./, $ENV{'HOSTNAME'} // Sys::Hostname::hostname)]->[0] });
 
     # Weakrefs to active $c instances
     $app->helper(
