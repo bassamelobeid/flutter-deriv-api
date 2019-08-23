@@ -98,8 +98,9 @@ sub contract_metadata {
     return +{
         app_markup_percentage => $contract->app_markup_percentage,
         ($contract->is_binary) ? (staking_limits => $contract->staking_limits) : (),    #staking limits only apply to binary
-        deep_otm_threshold => $contract->otm_threshold,
-        base_commission    => $contract->base_commission,
+        deep_otm_threshold    => $contract->otm_threshold,
+        base_commission       => $contract->base_commission,
+        min_commission_amount => $contract->min_commission_amount,
     };
 }
 

@@ -192,7 +192,8 @@ subtest 'get_ask' => sub {
             'bet_type'              => 'ONETOUCH',
             'underlying'            => 'R_50',
             'currency'              => 'USD',
-            base_commission         => '0.035',
+            'base_commission'       => '0.035',
+            'min_commission_amount' => '0.02',
             'amount'                => '100',
             'amount_type'           => 'payout',
             'app_markup_percentage' => 0,
@@ -286,7 +287,7 @@ sub _create_contract {
         duration              => '5t',
         barrier               => '+2.9054',
         app_markup_percentage => $args{app_markup_percentage} // 0,
-
+        min_commission_amount => 0.02,
         # this is not what we want to test here.
         # setting it to false.
         uses_empirical_volatility => 0,
