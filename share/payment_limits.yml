@@ -24,3 +24,9 @@ withdrawal_limits:
     currency: USD
     limit_for_days: 10000
     lifetime_limit: 10000
+    
+qualifying_payment_check_limits: # Regulatory requirement for deposit and withdrawals
+  iom:
+    for_days: 30
+    currency: EUR
+    limit_for_days: 3000
