@@ -1086,7 +1086,7 @@ sub get_open_contracts {
 
 =head2 increment_social_responsibility_values
 
-Pass in an hasref and increment the social responsibility values in redis
+Pass in an hashref and increment the social responsibility values in redis
 
 =cut
 
@@ -1108,6 +1108,40 @@ sub increment_social_responsibility_values {
 
     # This is only set once; there is no point to queue again and again
     BOM::Platform::Event::Emitter::emit('social_responsibility_check', {loginid => $loginid}) if $redis->hsetnx($hash_name, $event_name, 1);
+
+    return undef;
+}
+
+=head2 increment_qualifying_payments
+
+Pass in a hashref and increment the qualifying payment check values, which 
+is either deposit or withdrawals.
+
+If no key is present, a new key is set with an expiry of 30 days (Regulation as at 14th August, 2019)
+Otherwise, increment existing key
+
+=cut
+
+sub increment_qualifying_payments {
+    my ($client, $args) = @_;
+    my $loginid = $client->loginid;
+
+    my $redis     = BOM::Config::RedisReplicated::redis_events();
+    my $redis_key = $loginid . '_' . $args->{action} . '_qualifying_payment_check';
+
+    my $payment_check_limits = BOM::Config::payment_limits()->{qualifying_payment_check_limits}->{$client->landing_company->short};
+
+    if ($redis->exists($redis_key)) {
+        # abs() is used, as withdrawal transactions have negative amount
+        $redis->incrbyfloat($redis_key => abs($args->{amount}));
+    } else {
+        $redis->set(
+            $redis_key => $args->{amount},
+            EX         => 86400 * $payment_check_limits->{for_days});
+    }
+
+    my $event_name = $loginid . '_qualifying_payment_check';
+    BOM::Platform::Event::Emitter::emit('qualifying_payment_check', {loginid => $loginid}) if $redis->setnx($event_name, 1);
 
     return undef;
 }
