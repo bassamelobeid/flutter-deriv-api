@@ -11,13 +11,13 @@ use Test::Exception;
 use BOM::CompanyLimits::Limits;
 
 use Date::Utility;
+use BOM::Test;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Helper::Client qw(create_client top_up);
 use BOM::Test::Time qw( sleep_till_next_second );
 use BOM::Test::Contract qw(create_contract buy_contract sell_contract);
 use BOM::Config::RedisReplicated;
 use Syntax::Keyword::Try;
-use Data::Dumper;
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
@@ -45,14 +45,14 @@ subtest 'Limits test base case', sub {
     # second one will trigger limit breach.
 
     # 1. Get the key structure
-    my $key = BOM::CompanyLimits::Limits::get_key_structure($limit_def_hash);
+    my $key = 'tf,R_50,CALLPUT';
 
     # 2. Set the limit value (somehow)
     # TODO: Visit this later
-    my $limit_val = 100;
+    my $limit_val = BOM::CompanyLimits::Limits::pack_limit_values([100, 0, 0, 0]);
 
     # 3. Set in redis
-    $redis->hset('LIMITS', $key, $limit_val);
+    $redis->hset('svg:limits', $key, $limit_val);
 
     #BOM::CompanyLimits::Limits::add_limit('POTENTIAL_LOSS', $limit_def_hash, 10, 0, 0);
 

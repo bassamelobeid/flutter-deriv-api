@@ -60,13 +60,14 @@ sub add_buy_contract {
     my $underlying      = $bet_data->{underlying_symbol};
     my $landing_company = $account_data->{landing_company};
 
-    my @combinations = BOM::CompanyLimits::Combinations::get_combinations($contract);
+    # TODO: incrby and check turnover
+    my ($company_limits, $turnover_incrby) = BOM::CompanyLimits::Combinations::get_combinations($contract);
 
-    my $limits_future  = BOM::CompanyLimits::Limits::query_limits($underlying, \@combinations);
+    my $limits_future  = BOM::CompanyLimits::Limits::query_limits($landing_company, $company_limits);
     my $potential_loss = BOM::CompanyLimits::LossTypes::calc_potential_loss($contract);
     my @breaches       = Future->needs_all(
-        check_realized_loss(get_redis($landing_company, 'realized_loss'), $landing_company, $limits_future, \@combinations),
-        check_potential_loss(get_redis($landing_company, 'potential_loss'), $landing_company, $limits_future, \@combinations, $potential_loss),
+        check_realized_loss(get_redis($landing_company, 'realized_loss'), $landing_company, $limits_future, $company_limits),
+        check_potential_loss(get_redis($landing_company, 'potential_loss'), $landing_company, $limits_future, $company_limits, $potential_loss),
     )->get();
     my $limits = $limits_future->get();
 
@@ -88,11 +89,12 @@ sub reverse_buy_contract {
     my ($contract) = @_;
 
     my $landing_company = $contract->{account_data}->{landing_company};
-    my @combinations    = BOM::CompanyLimits::Combinations::get_combinations($contract);
-    my $potential_loss  = BOM::CompanyLimits::LossTypes::calc_potential_loss($contract);
+    # TODO: incrby and check turnover
+    my ($company_limits, $turnover_incrby) = BOM::CompanyLimits::Combinations::get_combinations($contract);
+    my $potential_loss = BOM::CompanyLimits::LossTypes::calc_potential_loss($contract);
 
     Future->needs_all(
-        incr_loss_hash(get_redis($landing_company, 'potential_loss'), \@combinations, "$landing_company:potential_loss", -$potential_loss),
+        incr_loss_hash(get_redis($landing_company, 'potential_loss'), $company_limits, "$landing_company:potential_loss", -$potential_loss),
     )->get();
 
     return;
@@ -118,7 +120,6 @@ sub _check_breaches {
     my ($response, $limits_future, $combinations, $loss_type_idx) = @_;
 
     my @breaches;
-
     my $limits = $limits_future->get();
     foreach my $i (0 .. $#$combinations) {
         my $comb  = $combinations->[$i];
@@ -142,7 +143,7 @@ sub add_sell_contract {
 
     my $landing_company = $account_data->{landing_company};
 
-    my @combinations = BOM::CompanyLimits::Combinations::get_combinations($contract);
+    my ($company_limits) = BOM::CompanyLimits::Combinations::get_combinations($contract);
 
     # For sell, we increment totals but do not check if they exceed limits;
     # we only block buys, not sells.
@@ -152,8 +153,8 @@ sub add_sell_contract {
     # On sells, we increment realized loss and deduct potential loss
     # Since no checks are done, we simply increment and discard the response
     Future->needs_all(
-        incr_loss_hash(get_redis($landing_company, 'realized_loss'),  \@combinations, "$landing_company:realized_loss",  $realized_loss),
-        incr_loss_hash(get_redis($landing_company, 'potential_loss'), \@combinations, "$landing_company:potential_loss", -$potential_loss),
+        incr_loss_hash(get_redis($landing_company, 'realized_loss'),  $company_limits, "$landing_company:realized_loss",  $realized_loss),
+        incr_loss_hash(get_redis($landing_company, 'potential_loss'), $company_limits, "$landing_company:potential_loss", -$potential_loss),
     );
 }
 

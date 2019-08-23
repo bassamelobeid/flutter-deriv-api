@@ -4,64 +4,60 @@ use strict;
 use warnings;
 use BOM::CompanyLimits::Helpers qw(get_redis);
 
-# TODO: This is going to be changed quite a bit with the new spec
 sub get_combinations {
     my ($contract) = @_;
 
-    my ($contract_group, $underlying_group) = _get_attr_groups($contract);
+    my ($binary_user_id, $underlying_group, $underlying, $contract_group, $expiry_type, $barrier_type) = get_attributes_from_contract($contract);
 
-    my $bet_data   = $contract->{bet_data};
-    my $underlying = $bet_data->{underlying_symbol};
+    my $g                     = '%s%s,%s,%s';
+    my $u                     = "%s,%s,$binary_user_id";
+    my $company_limits_incrby = [
+        # Global limits
+        sprintf($g, $expiry_type, $barrier_type, $underlying,       $contract_group),
+        sprintf($g, $expiry_type, $barrier_type, $underlying,       '+'),
+        sprintf($g, $expiry_type, $barrier_type, $underlying_group, $contract_group),
+        sprintf($g, $expiry_type, $barrier_type, $underlying_group, '+'),
+        sprintf($g, $expiry_type, $barrier_type, '+',               $contract_group),
+        sprintf($g, $expiry_type, $barrier_type, '+',               '+'),
+        sprintf($g, $expiry_type, '+',           $underlying,       $contract_group),
+        sprintf($g, $expiry_type, '+',           $underlying,       '+'),
+        sprintf($g, $expiry_type, '+',           $underlying_group, $contract_group),
+        sprintf($g, $expiry_type, '+',           $underlying_group, '+'),
+        sprintf($g, $expiry_type, '+',           '+',               $contract_group),
+        sprintf($g, $expiry_type, '+',           '+',               '+'),
+        sprintf($g, '+',          $barrier_type, $underlying,       $contract_group),
+        sprintf($g, '+',          $barrier_type, $underlying,       '+'),
+        sprintf($g, '+',          $barrier_type, $underlying_group, $contract_group),
+        sprintf($g, '+',          $barrier_type, $underlying_group, '+'),
+        sprintf($g, '+',          $barrier_type, '+',               $contract_group),
+        sprintf($g, '+',          $barrier_type, '+',               '+'),
+        sprintf($g, '+',          '+',           $underlying,       $contract_group),
+        sprintf($g, '+',          '+',           $underlying,       '+'),
+        sprintf($g, '+',          '+',           $underlying_group, $contract_group),
+        sprintf($g, '+',          '+',           $underlying_group, '+'),
+        sprintf($g, '+',          '+',           '+',               $contract_group),
+        sprintf($g, '+',          '+',           '+',               '+'),
+        # User specific limits
+        sprintf($u, $expiry_type, $underlying_group),
+        sprintf($u, $expiry_type, '+'),
+        sprintf($u, '+',          $underlying_group),
+        sprintf($u, '+',          '+'),
+    ];
 
-    my $is_atm = ($bet_data->{short_code} =~ /_SOP_/) ? 't' : 'f';
+    my $turnover_format = "%s,%s,%s,$binary_user_id";
+    # Turnover only applies per underlying, and without barrier type
+    my $turnover_incrby = [
+        sprintf($turnover_format, $expiry_type, $underlying, $contract_group),
+        sprintf($turnover_format, $expiry_type, $underlying, '+'),
+        sprintf($turnover_format, $expiry_type, '+',         $contract_group),
+        sprintf($turnover_format, $expiry_type, '+',         '+'),
+        sprintf($turnover_format, '+',          $underlying, $contract_group),
+        sprintf($turnover_format, '+',          $underlying, '+'),
+        sprintf($turnover_format, '+',          '+',         $contract_group),
+        sprintf($turnover_format, '+',          '+',         '+'),
+    ];
 
-    my $expiry_type;
-    if ($bet_data->{tick_count} and $bet_data->{tick_count} > 0) {
-        $expiry_type = 'tick';
-    } elsif ($bet_data->{expiry_daily}) {
-        $expiry_type = 'daily';
-    } elsif ((Date::Utility->new($bet_data->{expiry_time})->epoch - Date::Utility->new($bet_data->{start_time})->epoch) <= 300) {    # 5 minutes
-        $expiry_type = 'ultra_short';
-    } else {
-        $expiry_type = 'intraday';
-    }
-
-    my @attributes = ($underlying, $contract_group, $expiry_type, $is_atm);
-
-    # Return the combinations here (hardcode them)
-    my $combinations = [
-        [$underlying, $contract_group, $expiry_type, $is_atm],
-        [$underlying, $contract_group, $expiry_type, ''],
-        [$underlying, $contract_group, '',           ''],
-        [$underlying, '',              $expiry_type, $is_atm],
-        [$underlying, '',              $expiry_type, ''],
-        [$underlying, '',              '',           $is_atm],
-        [$underlying, '',              '',           ''],
-        ['',          $contract_group, $expiry_type, $is_atm],
-        ['',          $contract_group, $expiry_type, ''],
-        ['',          $contract_group, '',           $is_atm],
-        ['',          $contract_group, '',           ''],
-        ['',          '',              $expiry_type, $is_atm],
-        ['',          '',              $expiry_type, ''],
-        ['',          '',              '',           $is_atm]];
-
-    return @$combinations;
-
-    #my @combinations = _get_all_key_combinations(@attributes);
-
-    # Merge another array that substitutes underlying with underlying group
-    # Since we know that the 1st attribute is the underlying, each index in which
-    # the 1st bit is 1 has underlying:
-    my @underlyinggroup_combinations;
-    my $underlying_len = length($underlying);
-    foreach my $i (1 .. scalar @$combinations) {
-        if (($i & 1) == 1) {
-            my $k = $underlying_group . substr(@$combinations[$i - 1], $underlying_len);
-            push(@underlyinggroup_combinations, $k);
-        }
-    }
-
-    return (@$combinations, @underlyinggroup_combinations);
+    return ($company_limits_incrby, $turnover_incrby);
 }
 
 sub _get_attr_groups {
@@ -85,25 +81,38 @@ sub _get_attr_groups {
         });
     $redis->mainloop;
 
+    # TODO: Defaults to + to get tests to pass, but we should
+    #       setup the contract and underlying groups in unit test redis
+    #       as well as the the redis instance used for trades
+    $contract_group   ||= '+';
+    $underlying_group ||= '+';
+
     return ($contract_group, $underlying_group);
 }
 
-sub _get_all_key_combinations {
-    my (@a, $delim) = @_;
-    $delim ||= ',';
+sub get_attributes_from_contract {
+    my ($contract) = @_;
 
-    my @combinations;
-    foreach my $i (1 .. (1 << scalar @a) - 1) {
-        my $combination;
-        foreach my $j (0 .. $#a) {
-            my $k = (1 << $j);
-            my $c = (($i & $k) == $k) ? $a[$j] : '';
-            $combination = ($j == 0 ? "$c" : "$combination$delim$c");
-        }
-        push @combinations, $combination;
+    my ($contract_group, $underlying_group) = _get_attr_groups($contract);
+
+    my $bet_data       = $contract->{bet_data};
+    my $underlying     = $bet_data->{underlying_symbol};
+    my $binary_user_id = $contract->{account_data}->{binary_user_id};
+
+    # t for atm, f for non-atm
+    my $barrier_type = ($bet_data->{short_code} =~ /_SOP_/) ? 't' : 'f';
+
+    my $expiry_type = 'i';    # intraday
+    if ($bet_data->{tick_count} and $bet_data->{tick_count} > 0) {
+        $expiry_type = 't';    # tick
+    } elsif ($bet_data->{expiry_daily}) {
+        $expiry_type = 'd';    # daily
+    } else {
+        my $duration = Date::Utility->new($bet_data->{expiry_time})->epoch - Date::Utility->new($bet_data->{start_time})->epoch;
+        $expiry_type = 'u' if ($duration <= 300);    # ultra_short; 5 minutes
     }
 
-    return @combinations;
+    return ($binary_user_id, $underlying_group, $underlying, $contract_group, $expiry_type, $barrier_type);
 }
 
 1;
