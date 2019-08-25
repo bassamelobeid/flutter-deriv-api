@@ -23,7 +23,7 @@ use Log::Any qw($log);
 
 use BOM::Config::RedisReplicated;
 
-my $redis_config = BOM::Config::RedisReplicated::redis_config('queue', 'write');
+my $redis_config = BOM::Config::RedisReplicated::redis_queue_write();
 
 GetOptions(
     'testing|T'        => \my $TESTING,
