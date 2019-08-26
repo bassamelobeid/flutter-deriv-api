@@ -6,7 +6,7 @@
       "currency",
       "symbol",
       "contract_type",
-      "proposal",
+      "proposal"
    ],
    "additionalProperties" : false,
    "title" : "Price Proposal Request",
