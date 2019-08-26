@@ -25,8 +25,8 @@ my $redis = BOM::Config::RedisReplicated::redis_limits_write;
 
 sub setup_tests {
     $redis->flushall();    # cleanup past data
-    $redis->hmset('CONTRACTGROUPS',   ('CALL', 'callput'));
-    $redis->hmset('UNDERLYINGGROUPS', ('R_50', 'volidx'));
+    $redis->hmset('contractgroups',   ('CALL', 'callput'));
+    $redis->hmset('underlyinggroups', ('R_50', 'volidx'));
 }
 
 subtest 'Limits test base case', sub {

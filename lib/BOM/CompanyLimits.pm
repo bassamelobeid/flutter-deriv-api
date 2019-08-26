@@ -36,7 +36,7 @@ sub set_underlying_groups {
     push @symbol_underlying, @$_ foreach (@$bet_market);
 
     # TODO: we are hard coding the landing company when setting limits
-    get_redis('svg', 'limit_setting')->hmset('UNDERLYINGGROUPS', @symbol_underlying);
+    get_redis('svg', 'limit_setting')->hmset('underlyinggroups', @symbol_underlying);
 
     return;
 }
@@ -52,7 +52,7 @@ sub set_contract_groups {
 
     my @contract_grp;
     push @contract_grp, @$_ foreach (@$bet_grp);
-    get_redis('svg', 'limit_setting')->hmset('CONTRACTGROUPS', @contract_grp);
+    get_redis('svg', 'limit_setting')->hmset('contractgroups', @contract_grp);
 
     return;
 }
@@ -72,8 +72,8 @@ sub add_buy_contract {
     my $limits_future  = BOM::CompanyLimits::Limits::query_limits($landing_company, $company_limits);
     my $potential_loss = BOM::CompanyLimits::LossTypes::calc_potential_loss($contract);
     my @breaches       = Future->needs_all(
-        check_realized_loss(get_redis($landing_company, 'realized_loss'), $landing_company, $limits_future, $company_limits),
-        check_potential_loss(get_redis($landing_company, 'potential_loss'), $landing_company, $limits_future, $company_limits, $potential_loss),
+        check_realized_loss($landing_company, $limits_future, $company_limits),
+        check_potential_loss($landing_company, $limits_future, $company_limits, $potential_loss),
     )->get();
     my $limits = $limits_future->get();
 
@@ -108,16 +108,18 @@ sub reverse_buy_contract {
 }
 
 async sub check_realized_loss {
-    my ($redis, $landing_company, $limits_future, $combinations) = @_;
+    my ($landing_company, $limits_future, $combinations) = @_;
 
+    my $redis = get_redis($landing_company, 'realized_loss');
     my $response = $redis->hmget("$landing_company:realized_loss", @$combinations);
 
     return _check_breaches($response, $limits_future, $combinations, REALIZED_LOSS_TOTALS);
 }
 
 async sub check_potential_loss {
-    my ($redis, $landing_company, $limits_future, $combinations, $potential_loss) = @_;
+    my ($landing_company, $limits_future, $combinations, $potential_loss) = @_;
 
+    my $redis = get_redis($landing_company, 'potential_loss');
     my $response = await incr_loss_hash($redis, $combinations, "$landing_company:potential_loss", $potential_loss);
 
     return _check_breaches($response, $limits_future, $combinations, POTENTIAL_LOSS_TOTALS);

@@ -75,13 +75,13 @@ sub _get_attr_groups {
     my ($contract_group, $underlying_group);
     my $redis = get_redis($landing_company, 'limit_setting');
     $redis->hget(
-        'CONTRACTGROUPS',
+        'contractgroups',
         $bet_data->{bet_type},
         sub {
             $contract_group = $_[1];
         });
     $redis->hget(
-        'UNDERLYINGGROUPS',
+        'underlyinggroups',
         $bet_data->{underlying_symbol},
         sub {
             $underlying_group = $_[1];
