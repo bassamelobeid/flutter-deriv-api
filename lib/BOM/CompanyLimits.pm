@@ -65,7 +65,9 @@ sub add_buy_contract {
     my $landing_company = $account_data->{landing_company};
 
     # TODO: incrby and check turnover
-    my ($company_limits, $turnover_incrby) = BOM::CompanyLimits::Combinations::get_combinations($contract);
+    my $attributes = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
+    use Data::Dumper;
+    my ($company_limits) = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
 
     my $limits_future  = BOM::CompanyLimits::Limits::query_limits($landing_company, $company_limits);
     my $potential_loss = BOM::CompanyLimits::LossTypes::calc_potential_loss($contract);
@@ -94,8 +96,9 @@ sub reverse_buy_contract {
 
     my $landing_company = $contract->{account_data}->{landing_company};
     # TODO: incrby and check turnover
-    my ($company_limits, $turnover_incrby) = BOM::CompanyLimits::Combinations::get_combinations($contract);
-    my $potential_loss = BOM::CompanyLimits::LossTypes::calc_potential_loss($contract);
+    my $attributes       = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
+    my ($company_limits) = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
+    my $potential_loss   = BOM::CompanyLimits::LossTypes::calc_potential_loss($contract);
 
     Future->needs_all(
         incr_loss_hash(get_redis($landing_company, 'potential_loss'), $company_limits, "$landing_company:potential_loss", -$potential_loss),
@@ -147,7 +150,8 @@ sub add_sell_contract {
 
     my $landing_company = $account_data->{landing_company};
 
-    my ($company_limits) = BOM::CompanyLimits::Combinations::get_combinations($contract);
+    my $attributes = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
+    my ($company_limits) = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
 
     # For sell, we increment totals but do not check if they exceed limits;
     # we only block buys, not sells.

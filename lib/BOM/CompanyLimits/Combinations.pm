@@ -4,14 +4,12 @@ use strict;
 use warnings;
 use BOM::CompanyLimits::Helpers qw(get_redis);
 
-sub get_combinations {
-    my ($contract) = @_;
+sub get_limit_settings_combinations {
+    my ($binary_user_id, $underlying_group, $underlying, $contract_group, $expiry_type, $barrier_type) = @{+shift};
 
-    my ($binary_user_id, $underlying_group, $underlying, $contract_group, $expiry_type, $barrier_type) = get_attributes_from_contract($contract);
-
-    my $g                     = '%s%s,%s,%s';
-    my $u                     = "%s,%s,$binary_user_id";
-    my $company_limits_incrby = [
+    my $g = '%s%s,%s,%s';
+    my $u = "%s,%s,$binary_user_id";
+    return [
         # Global limits
         sprintf($g, $expiry_type, $barrier_type, $underlying,       $contract_group),
         sprintf($g, $expiry_type, $barrier_type, $underlying,       '+'),
@@ -43,10 +41,21 @@ sub get_combinations {
         sprintf($u, '+',          $underlying_group),
         sprintf($u, '+',          '+'),
     ];
+}
+
+# turnover limits require special handling; though we use the same keys to query
+# its limits settings, we infer that turnover limits only apply per user per
+# underlying and exclude barrier type; this meant that the same increments applied
+# globally can also be reused for user specific turnover limits. This is done by
+# checking with turnover increments in which contract group is '+'. Although user
+# specific limits is set per underlying group, we infer that it is applied per
+# underlying (underlying group specific, underlying = '*').
+sub get_turnover_incrby_combinations {
+    # NOTE: underlying_group is never used here
+    my ($binary_user_id, undef, $underlying, $contract_group, $expiry_type) = @{+shift};
 
     my $turnover_format = "%s,%s,%s,$binary_user_id";
-    # Turnover only applies per underlying, and without barrier type
-    my $turnover_incrby = [
+    return [
         sprintf($turnover_format, $expiry_type, $underlying, $contract_group),
         sprintf($turnover_format, $expiry_type, $underlying, '+'),
         sprintf($turnover_format, $expiry_type, '+',         $contract_group),
@@ -56,8 +65,6 @@ sub get_combinations {
         sprintf($turnover_format, '+',          '+',         $contract_group),
         sprintf($turnover_format, '+',          '+',         '+'),
     ];
-
-    return ($company_limits_incrby, $turnover_incrby);
 }
 
 sub _get_attr_groups {
@@ -114,7 +121,7 @@ sub get_attributes_from_contract {
     # TODO: for some tests, underlying is undef. Why??
     $underlying ||= '+';
 
-    return ($binary_user_id, $underlying_group, $underlying, $contract_group, $expiry_type, $barrier_type);
+    return [$binary_user_id, $underlying_group, $underlying, $contract_group, $expiry_type, $barrier_type];
 }
 
 1;
