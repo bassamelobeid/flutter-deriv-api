@@ -25,7 +25,7 @@ my $redis = BOM::Config::RedisReplicated::redis_limits_write;
 
 sub setup_tests {
     $redis->flushall();    # cleanup past data
-    $redis->hmset('CONTRACTGROUPS',   ('CALL', 'CALLPUT'));
+    $redis->hmset('CONTRACTGROUPS',   ('CALL', 'callput'));
     $redis->hmset('UNDERLYINGGROUPS', ('R_50', 'volidx'));
 }
 
@@ -34,27 +34,18 @@ subtest 'Limits test base case', sub {
     my $cl = create_client;
     top_up $cl, 'USD', 5000;
 
-    my $limit_def_hash = {
-        underlying_symbol => 'R_50',
-        expiry_type       => 'daily',
-        barrier_type      => 'atm',
-        contract_group    => 'CALLPUT'
-    };
-
     # Apply a potential loss limit on a single underlying, then buy 2 contracts;
     # second one will trigger limit breach.
 
-    # 1. Get the key structure
-    my $key = 'tf,R_50,CALLPUT';
-
-    # 2. Set the limit value (somehow)
-    # TODO: Visit this later
-    my $limit_val = BOM::CompanyLimits::Limits::pack_limit_values([100, 0, 0, 0]);
-
-    # 3. Set in redis
-    $redis->hset('svg:limits', $key, $limit_val);
-
-    #BOM::CompanyLimits::Limits::add_limit('POTENTIAL_LOSS', $limit_def_hash, 10, 0, 0);
+    my $limit_added = BOM::CompanyLimits::Limits::update_company_limits({
+        landing_company => 'svg',
+        underlying      => 'R_50',
+        expiry_type     => 'tick',
+        contract_group  => 'callput',
+        barrier_type    => 'non_atm',
+        limit_type      => 'potential_loss',
+        limit_amount    => 100,
+    });
 
     my ($contract, $trx, $fmb, $total);
 
@@ -71,7 +62,7 @@ subtest 'Limits test base case', sub {
     );
 
     # 5. Ensure the right keys are affected (BOM::CompanyLimits::Combinations::get_combinations)
-
+    my $key = 'tn,R_50,callput';
     $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 4, 'buying contract adds correct potential loss';
 
