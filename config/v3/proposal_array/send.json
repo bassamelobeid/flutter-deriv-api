@@ -37,9 +37,13 @@
          "description" : "Indicate whether amount is 'payout' or 'stake'.",
          "enum" : [
             "payout",
-            "stake",
-            "multiplier"
+            "stake"
          ]
+      },
+      "multiplier": {
+         "description": "The multiplier for non-binary options. E.g. lookbacks.",
+         "type" : "number",
+         "minimum" : 0
       },
       "duration" : {
          "description" : "Duration quantity.",
