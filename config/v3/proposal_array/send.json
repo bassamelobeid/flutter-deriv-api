@@ -3,13 +3,11 @@
    "description" : "(This API call is deprecated) Get latest prices for a specific contract with different barriers.",
    "type" : "object",
    "required" : [
-      "basis",
       "barriers",
       "contract_type",
       "proposal_array",
       "currency",
       "symbol",
-      "amount"
    ],
    "additionalProperties" : false,
    "title" : "Price Proposal for Multiple Contracts Request",
