@@ -12,12 +12,20 @@ use BOM::CompanyLimits::Helpers qw(get_redis);
 
 use BOM::Database::UserDB;
 
-# TODO: make every function return a ref to make things consistent
-# TODO: Validations, a lot of validations, like a lot a lot of it.
-# TODO: Unit test everything
-
-my $pack_format = '(c/a)*';
-
+# NOTE: For user specific limits, because only underlying group is specified,
+# we need to infer behavior when g is defined or left default (u and g are
+# specific underlying and underlying group):
+#
+#      loss_type     | underlying_group | underlying
+# -------------------+------------------+------------
+# turnover           |      g           |     *
+# realized+potential |      g           |     +
+# turnover           |      * (default) |     *
+# realized+potential |      + (default) |     +
+#
+# To reuse the same limit settings, eventhough for turnover the behaviour when
+# underlying group is not defined is '* *' (per underlying for all underlying),
+# it is set as '+' and needs to be inferred.
 async sub query_limits {
     my ($landing_company, $combinations) = @_;
     my $redis = get_redis($landing_company, 'limit_setting');
@@ -32,6 +40,8 @@ async sub query_limits {
 
     return \%limits;
 }
+
+my $pack_format = '(c/a)*';
 
 sub pack_limit_values {
     my ($values) = @_;

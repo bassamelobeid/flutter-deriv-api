@@ -58,12 +58,8 @@ sub get_turnover_incrby_combinations {
     return [
         sprintf($turnover_format, $expiry_type, $underlying, $contract_group),
         sprintf($turnover_format, $expiry_type, $underlying, '+'),
-        sprintf($turnover_format, $expiry_type, '+',         $contract_group),
-        sprintf($turnover_format, $expiry_type, '+',         '+'),
         sprintf($turnover_format, '+',          $underlying, $contract_group),
         sprintf($turnover_format, '+',          $underlying, '+'),
-        sprintf($turnover_format, '+',          '+',         $contract_group),
-        sprintf($turnover_format, '+',          '+',         '+'),
     ];
 }
 

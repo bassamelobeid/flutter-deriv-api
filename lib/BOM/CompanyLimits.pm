@@ -21,6 +21,7 @@ use BOM::CompanyLimits::LossTypes;
 use constant {
     POTENTIAL_LOSS_TOTALS => 0,
     REALIZED_LOSS_TOTALS  => 1,
+    TURNOVER_TOTALS       => 2,
 };
 
 sub set_underlying_groups {
@@ -68,12 +69,15 @@ sub add_buy_contract {
     my $attributes = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
     use Data::Dumper;
     my ($company_limits) = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
+    my $turnover_combinations = BOM::CompanyLimits::Combinations::get_turnover_incrby_combinations($attributes);
 
     my $limits_future  = BOM::CompanyLimits::Limits::query_limits($landing_company, $company_limits);
     my $potential_loss = BOM::CompanyLimits::LossTypes::calc_potential_loss($contract);
+    my $turnover       = BOM::CompanyLimits::LossTypes::calc_turnover($contract);
     my @breaches       = Future->needs_all(
         check_realized_loss($landing_company, $limits_future, $company_limits),
         check_potential_loss($landing_company, $limits_future, $company_limits, $potential_loss),
+        check_turnover($landing_company, $limits_future, $turnover_combinations, $turnover),
     )->get();
     my $limits = $limits_future->get();
 
@@ -96,12 +100,15 @@ sub reverse_buy_contract {
 
     my $landing_company = $contract->{account_data}->{landing_company};
     # TODO: incrby and check turnover
-    my $attributes       = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
-    my ($company_limits) = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
-    my $potential_loss   = BOM::CompanyLimits::LossTypes::calc_potential_loss($contract);
+    my $attributes            = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
+    my $company_limits        = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
+    my $potential_loss        = BOM::CompanyLimits::LossTypes::calc_potential_loss($contract);
+    my $turnover              = BOM::CompanyLimits::LossTypes::calc_turnover($contract);
+    my $turnover_combinations = BOM::CompanyLimits::Combinations::get_turnover_incrby_combinations($attributes);
 
     Future->needs_all(
-        incr_loss_hash(get_redis($landing_company, 'potential_loss'), $company_limits, "$landing_company:potential_loss", -$potential_loss),
+        incr_loss_hash($landing_company, 'potential_loss', $company_limits,        -$potential_loss),
+        incr_loss_hash($landing_company, 'turnover',       $turnover_combinations, -$turnover),
     )->get();
 
     return;
@@ -119,10 +126,64 @@ async sub check_realized_loss {
 async sub check_potential_loss {
     my ($landing_company, $limits_future, $combinations, $potential_loss) = @_;
 
-    my $redis = get_redis($landing_company, 'potential_loss');
-    my $response = await incr_loss_hash($redis, $combinations, "$landing_company:potential_loss", $potential_loss);
+    my $response = await incr_loss_hash($landing_company, 'potential_loss', $combinations, $potential_loss);
 
     return _check_breaches($response, $limits_future, $combinations, POTENTIAL_LOSS_TOTALS);
+}
+
+# For turnover, because it is only underlying specific, these are the only increments
+# we make (note that barrier_type is removed only for turnover):
+#
+#     Turnover Increments
+#  idx | exp | u | contract |
+# -----+-----+---+----------+
+#   0  |  e  | u |    c     |
+#   1  |  e  | u |    +     |
+#   2  |  +  | u |    c     |
+#   3  |  +  | u |    +     |
+#
+# Because turnover is inferred to be binary user specific, these 4 increment values
+# is then used to check 8 limit settings:
+#
+#           All Limit Definitions       | Turnover|
+# -----+-----+---------+-----+----------+   Idx   |
+#  idx | exp | barrier | u/g | contract |         |
+# -----+-----+---------+-----+----------+---------+
+#   0  |  e  |    b    |  u  |     c    |         |
+#   1  |  e  |    b    |  u  |     +    |         |
+#   2  |  e  |    b    |  g  |     c    |         |
+#   3  |  e  |    b    |  g  |     +    |         |
+#   4  |  e  |    b    |  +  |     c    |         |
+#   5  |  e  |    b    |  +  |     +    |         |
+#   6  |  e  |    +    |  u  |     c    |    0    |
+#   7  |  e  |    +    |  u  |     +    |    1    |
+#   8  |  e  |    +    |  g  |     c    |         |
+#   9  |  e  |    +    |  g  |     +    |         |
+#   10 |  e  |    +    |  +  |     c    |         |
+#   11 |  e  |    +    |  +  |     +    |         |
+#   12 |  +  |    b    |  u  |     c    |         |
+#   13 |  +  |    b    |  u  |     +    |         |
+#   14 |  +  |    b    |  g  |     c    |         |
+#   15 |  +  |    b    |  g  |     +    |         |
+#   16 |  +  |    b    |  +  |     c    |         |
+#   17 |  +  |    b    |  +  |     +    |         |
+#   18 |  +  |    +    |  u  |     c    |    2    |
+#   19 |  +  |    +    |  u  |     +    |    3    |
+#   20 |  +  |    +    |  g  |     c    |         |
+#   21 |  +  |    +    |  g  |     +    |         |
+#   22 |  +  |    +    |  +  |     c    |         |
+#   23 |  +  |    +    |  +  |     +    |         |
+# ------------>> User Specific Limits <<----------+
+#   24 |  e  |         |  g  |          |    1    |
+#   25 |  e  |         |  +  |          |    1    |
+#   26 |  +  |         |  g  |          |    3    |
+#   27 |  +  |         |  +  |          |    3    |
+async sub check_turnover {
+    my ($landing_company, $limits_future, $combinations, $turnover) = @_;
+
+    my $response = await incr_loss_hash($landing_company, 'turnover', $combinations, $turnover);
+
+    return _check_breaches($response, $limits_future, $combinations, TURNOVER_TOTALS);
 }
 
 sub _check_breaches {
@@ -163,14 +224,16 @@ sub add_sell_contract {
     # On sells, we increment realized loss and deduct potential loss
     # Since no checks are done, we simply increment and discard the response
     Future->needs_all(
-        incr_loss_hash(get_redis($landing_company, 'realized_loss'),  $company_limits, "$landing_company:realized_loss",  $realized_loss),
-        incr_loss_hash(get_redis($landing_company, 'potential_loss'), $company_limits, "$landing_company:potential_loss", -$potential_loss),
+        incr_loss_hash($landing_company, 'realized_loss',  $company_limits, $realized_loss),
+        incr_loss_hash($landing_company, 'potential_loss', $company_limits, -$potential_loss),
     );
 }
 
 async sub incr_loss_hash {
-    my ($redis, $combinations, $hash_name, $incrby) = @_;
+    my ($landing_company, $loss_type, $combinations, $incrby) = @_;
 
+    my $redis = get_redis($landing_company, $loss_type);
+    my $hash_name = "$landing_company:$loss_type";
     $redis->multi(sub { });
     foreach my $p (@$combinations) {
         $redis->hincrbyfloat($hash_name, $p, $incrby, sub { });
