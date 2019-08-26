@@ -24,8 +24,6 @@ my $config = {
         INVALID_EMAIL        => "Email not given.",
         INVALID_SOCIAL_EMAIL => "Please grant access to your email address to log in with [_1]",
         INVALID_PASSWORD     => "Password not given.",
-        USER_NOT_FOUND       => "Incorrect email or password. Please check if you previously logged in via a social network.",
-        NO_SOCIAL_SIGNUP     => "Incorrect email or password. Please check if you previously logged in via a social network.",
         NO_LOGIN_SIGNUP      => "Invalid login attempt. Please log in with your email and password instead.",
         TEMP_DISABLED        => "Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.",
         DISABLED             => "This account has been disabled.",
@@ -47,6 +45,13 @@ my $config = {
         'InvalidBrand'        => "Brand is invalid.",
         'invalid'             => "Sorry, an error occurred. Please try again later.",
         'UNAUTHORIZED_ACCESS' => 'Sorry, your account is not authorized to access this application. Currently, only USD accounts are allowed.',
+
+        # brand-specific messages
+        USER_NOT_FOUND_BINARY => "Incorrect email or password. Please check if you previously logged in via a social network.",
+        USER_NOT_FOUND_DERIV  => "Your email and/or password do not match.",
+
+        NO_SOCIAL_SIGNUP_BINARY => "Incorrect email or password. Please check if you previously logged in via a social network.",
+        NO_SOCIAL_SIGNUP_DERIV  => "Your email and/or password do not match.",
     },
 };
 
@@ -61,4 +66,3 @@ sub get_message_mapping {
 }
 
 1;
-

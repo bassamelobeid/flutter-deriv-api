@@ -49,8 +49,10 @@
             html {
                 font-size: 62.5%;
             }
-            body {
+            body, * {
                 font-family: 'IBM Plex Sans', sans-serif;
+            }
+            body {
                 margin: 0;
             }
             header {
@@ -91,6 +93,7 @@
                 font-size: var(--text-size-xs);
                 align-self: flex-start;
                 padding-left: 0.8rem;
+                position: absolute;
             }
 
             h1, h2, h3 {
@@ -128,7 +131,7 @@
                 margin: 4rem auto;
             }
             form .input-wrapper {
-                margin-top: 1.6rem;
+                margin-top: 4.6rem;
             }
             form button[type=submit] {
                 margin-top: 5.6rem;

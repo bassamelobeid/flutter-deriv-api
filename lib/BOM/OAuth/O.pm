@@ -49,10 +49,8 @@ sub authorize {
     my $oneall_callback = $c->req->url->path('/oauth2/oneall/callback')->to_abs;
     $c->stash('oneall_callback' => $oneall_callback);
 
-    my $brand_name = BOM::OAuth::Helper->extract_brand_from_params($c->stash('request')->params) // $c->stash('brand')->name;
-
     # load available networks for brand
-    $c->stash('login_providers' => Brands->new(name => $brand_name)->login_providers);
+    $c->stash('login_providers' => $c->stash('brand')->login_providers);
 
     my ($client, $filtered_clients);
     # try to retrieve client from session
@@ -77,8 +75,10 @@ sub authorize {
         $c->session('_loginid',    $client->loginid);
     }
 
+    my $brand_name = $c->stash('brand')->name;
+
     my %template_params = (
-        template                  => _get_login_template_name($brand_name),
+        template                  => $c->_get_template_name('login'),
         layout                    => $brand_name,
         app                       => $app,
         r                         => $c->stash('request'),
@@ -87,7 +87,7 @@ sub authorize {
         login_providers           => $c->stash('login_providers'),
         login_method              => undef,
         is_reset_password_allowed => _is_reset_password_allowed($app->{id}),
-        website_domain            => _website_domain($app->{id}),
+        website_domain            => $c->_website_domain($app->{id}),
     );
 
     my $date_first_contact = $c->param('date_first_contact') // '';
@@ -148,9 +148,9 @@ sub authorize {
     # Check if user has enabled 2FA authentication and this is not a scope request
     if ($user->{is_totp_enabled} && !$is_verified) {
         return $c->render(
-            template       => $brand_name . '/totp',
+            template       => $c->_get_template_name('totp'),
             layout         => $brand_name,
-            website_domain => _website_domain($app->{id}),
+            website_domain => $c->_website_domain($app->{id}),
             app            => $app,
             error          => $otp_error,
             r              => $c->stash('request'),
@@ -189,9 +189,9 @@ sub authorize {
     # show scope confirms if not yet approved
     # do not show the scope confirm screen if APP ID is a primary official app
     return $c->render(
-        template       => $brand_name . '/scope_confirms',
+        template       => $c->_get_template_name('scope_confirms'),
         layout         => $brand_name,
-        website_domain => _website_domain($app->{id}),
+        website_domain => $c->_website_domain($app->{id}),
         app            => $app,
         client         => $client,
         scopes         => \@{$app->{scopes}},
@@ -242,8 +242,7 @@ sub authorize {
 sub _login {
     my ($c, $app, $oneall_user_id) = @_;
 
-    my $brand = $c->stash('brand');
-    my $brand_name = BOM::OAuth::Helper->extract_brand_from_params($c->stash('request')->params) // $brand->name;
+    my $brand_name = $c->stash('brand')->name;
 
     my $login_details = {
         c              => $c,
@@ -257,7 +256,7 @@ sub _login {
         _stats_inc_error($brand_name, $err);
 
         $c->render(
-            template                  => _get_login_template_name($brand_name),
+            template                  => $c->_get_template_name('login'),
             layout                    => $brand_name,
             app                       => $app,
             error                     => localize(get_message_mapping()->{$err} // $err),
@@ -267,7 +266,7 @@ sub _login {
             login_providers           => $c->stash('login_providers'),
             login_method              => undef,
             is_reset_password_allowed => _is_reset_password_allowed($app->{id}),
-            website_domain            => _website_domain($app->{id}),
+            website_domain            => $c->_website_domain($app->{id}),
         );
 
         return;
@@ -360,9 +359,10 @@ sub _get_details_from_environment {
     };
 }
 
-sub _get_login_template_name {
-    my $brand_name = shift // 'binary';
-    return $brand_name . '/login';
+sub _get_template_name {
+    my ($c, $template_name) = @_;
+
+    return $c->stash('brand')->name . '/' . $template_name;
 }
 
 sub _stats_inc_error {
@@ -379,18 +379,13 @@ sub _is_reset_password_allowed {
 }
 
 sub _website_domain {
-    my $app_id = shift;
+    my ($c, $app_id) = @_;
 
     die "Invalid application id." unless $app_id;
 
-    my %known_domains = (
-        15284 => 'binary.me',
-        16929 => 'deriv.com',
-    );
+    return 'binary.me' if $app_id == 15284;
 
-    return $known_domains{$app_id} if exists $known_domains{$app_id};
-
-    return "binary.com";
+    return lc $c->stash('brand')->website_name;
 }
 
 =head2 _compare_signin_activity
@@ -494,15 +489,17 @@ sub _validate_login {
         return $err_var->("INVALID_EMAIL") unless ($email and Email::Valid->address($email));
         return $err_var->("INVALID_PASSWORD") unless $password;
 
+        my $brand_name = uc $c->stash('brand')->name;
+
         $user = BOM::User->new(email => $email);
 
-        return $err_var->("USER_NOT_FOUND") unless $user;
+        return $err_var->("USER_NOT_FOUND_$brand_name") unless $user;
 
         # Prevent login if social signup flag is found.
         # As the main purpose of this controller is to serve
         # clients with email/password only.
 
-        return $err_var->("NO_SOCIAL_SIGNUP") if $user->{has_social_signup};
+        return $err_var->("NO_SOCIAL_SIGNUP_$brand_name") if $user->{has_social_signup};
     }
 
     if (BOM::Config::Runtime->instance->app_config->system->suspend->all_logins) {
