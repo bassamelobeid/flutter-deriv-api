@@ -559,7 +559,7 @@ sub _pricing_channel_for_proposal {
     $args_hash{country_code} = $c->stash('residence') || $c->stash('country_code');
     $args_hash{skips_price_validation} = 1;
     my $redis_channel = _serialized_args(\%args_hash);
-    my $subchannel    = $args->{amount};
+    my $subchannel = $args->{amount} // $args->{multiplier};
 
     my $skip = _skip_streaming($args);
 
