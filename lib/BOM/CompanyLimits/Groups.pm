@@ -3,6 +3,7 @@ use strict;
 use warnings;
 
 use BOM::Database::UserDB;
+use BOM::CompanyLimits::Helpers qw(get_redis);
 
 # All code related to setting groups, changing groups, syncing
 # groups from the database should be placed here. Nothing related

@@ -86,15 +86,15 @@ subtest 'Limits test base case', sub {
         underlying => 'R_50',
     );
 
-    my $error = 0;
-    throws_ok {
-        buy_contract(
-            client    => $cl,
-            buy_price => 200,
-            contract  => $contract,
-        );
-    }
-    qr/CompanyWideLimitExceeded/, 'Throws company wide limit exceeded error and block trade';
+    my $error = buy_contract(
+        client    => $cl,
+        buy_price => 200,
+        contract  => $contract,
+    );
+
+    ok $error, 'error is thrown';
+    is $error->{'-mesg'},              'company-wide risk limit reached';
+    is $error->{'-message_to_client'}, 'No further trading is allowed on this contract type for the current trading session.';
 
     $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 0, 'If contract failed to buy, it should be reverted';
