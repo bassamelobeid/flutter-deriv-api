@@ -239,7 +239,7 @@ sub buy_contract {
     });
 
     my $error = $txn->buy(skip_validation => 1);
-    die "ERROR: $error" if $error;
+    return $error if $error;
 
     return get_transaction_from_db higher_lower_bet => $txn->transaction_id;
 }
@@ -264,7 +264,7 @@ sub sell_contract {
 
     my $error = $txn->sell(skip_validation => 1);
 
-    die "ERROR: $error" if $error;
+    return $error if $error;
 
     return;
 }
