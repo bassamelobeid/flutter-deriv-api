@@ -9,8 +9,11 @@ use MooseX::Singleton;
 use Postgres::FeedDB;
 use Finance::Underlying;
 use BOM::User::Utility;
+use List::MoreUtils qw(uniq);
 
 use BOM::Database::ClientDB;
+use BOM::Database::UserDB;
+use BOM::CompanyLimits::Groups;
 use BOM::Database::Model::FinancialMarketBet::HigherLowerBet;
 use BOM::Database::Model::FinancialMarketBet::SpreadBet;
 use BOM::Database::Model::FinancialMarketBet::TouchBet;
@@ -348,7 +351,28 @@ sub create_fmb_with_ticks {
 # since this will populate the bet.limits_market_mapper table from underlyings.yml,
 # we only have to do this once when every test database is rebuilt.
 sub setup_db_underlying_mapping {
-    my $table              = shift;
+    my $table = shift;
+
+    # TODO: this is a bit of a hack. Not sure if we would figure out a better way to do this
+    if ($table eq 'limits_market_mapper') {
+        my $dbic              = BOM::Database::UserDB::rose_db()->dbic;
+        my @uls               = Finance::Underlying::all_underlyings();
+        my @underlying_groups = uniq map { $_->{market} } @uls;
+        my @data              = map { [$_->{symbol}, $_->{market}] } @uls;
+        $dbic->run(
+            ping => sub {
+                my $sth = $_->prepare("INSERT INTO limits.underlying_group VALUES (?)");
+                $sth->execute(($_)) foreach @underlying_groups;
+
+                $sth = $_->prepare("INSERT INTO limits.underlying_group_mapping VALUES(?,?)");
+                $sth->execute(@$_) foreach @data;
+            });
+
+        # TODO: sync contract groups and underlying group here? Odd
+        BOM::CompanyLimits::Groups::sync_underlying_groups();
+        BOM::CompanyLimits::Groups::sync_contract_groups();
+    }
+
     my $connection_builder = BOM::Database::ClientDB->new({
         broker_code => 'CR',      # since there's only one clientdb in test environment
         operation   => 'write',
@@ -377,13 +401,13 @@ sub import {
 
     if (exists $options{':init'}) {
         __PACKAGE__->instance->prepare_unit_test_database;
+        require BOM::Test::Data::Utility::UserTestDatabase;
+
+        BOM::Test::Data::Utility::UserTestDatabase->import(':init');
         unless (exists $options{':exclude_bet_market_setup'}) {
             setup_db_underlying_mapping('market');
             setup_db_underlying_mapping('limits_market_mapper');
         }
-        require BOM::Test::Data::Utility::UserTestDatabase;
-
-        BOM::Test::Data::Utility::UserTestDatabase->import(':init');
     }
 
     return;

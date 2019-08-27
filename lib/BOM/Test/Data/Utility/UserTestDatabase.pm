@@ -2,8 +2,6 @@ package BOM::Test::Data::Utility::UserTestDatabase;
 
 use MooseX::Singleton;
 
-use List::MoreUtils qw(uniq);
-use BOM::Database::UserDB;
 use BOM::Test;
 
 BEGIN {
@@ -38,24 +36,6 @@ sub _post_import_operations {
     return;
 }
 
-# TODO: not sure if this is the best way to do it...?
-sub setup_db_underlying_group_mapping {
-    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
-    my @uls  = Finance::Underlying::all_underlyings();
-    my @underlying_groups = uniq map { $_->{market} } @uls;
-    my @data = map { [$_->{symbol}, $_->{market}] } @uls;
-    $dbic->run(
-        ping => sub {
-            my $sth = $_->prepare("INSERT INTO limits.underlying_group VALUES (?)");
-            $sth->execute(($_)) foreach @underlying_groups;
-
-            $sth = $_->prepare("INSERT INTO limits.underlying_group_mapping VALUES(?,?)");
-            $sth->execute(@$_) foreach @data;
-        });
-    return;
-
-}
-
 with 'BOM::Test::Data::Utility::TestDatabaseSetup';
 
 no Moose;
@@ -67,7 +47,6 @@ sub import {
 
     if ($init && $init eq ':init') {
         __PACKAGE__->instance->prepare_unit_test_database;
-        setup_db_underlying_group_mapping();
     }
     return;
 }
