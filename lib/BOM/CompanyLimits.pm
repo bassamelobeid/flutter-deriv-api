@@ -24,39 +24,6 @@ use constant {
     TURNOVER_TOTALS       => 2,
 };
 
-sub set_underlying_groups {
-    # POC, we should see which broker code to use
-    my $dbic = BOM::Database::ClientDB->new({broker_code => 'CR'})->db->dbic;
-
-    my $sql = q{
-	SELECT symbol, market FROM bet.market;
-    };
-    my $bet_market = $dbic->run(fixup => sub { $_->selectall_arrayref($sql, undef) });
-
-    my @symbol_underlying;
-    push @symbol_underlying, @$_ foreach (@$bet_market);
-
-    # TODO: we are hard coding the landing company when setting limits
-    get_redis('svg', 'limit_setting')->hmset('underlyinggroups', @symbol_underlying);
-
-    return;
-}
-
-sub set_contract_groups {
-    # POC, we should see which broker code to use
-    my $dbic = BOM::Database::ClientDB->new({broker_code => 'CR'})->db->dbic;
-
-    my $sql = q{
-	SELECT bet_type, contract_group FROM bet.contract_group;
-    };
-    my $bet_grp = $dbic->run(fixup => sub { $_->selectall_arrayref($sql, undef) });
-
-    my @contract_grp;
-    push @contract_grp, @$_ foreach (@$bet_grp);
-    get_redis('svg', 'limit_setting')->hmset('contractgroups', @contract_grp);
-
-    return;
-}
 
 sub add_buy_contract {
     my ($contract) = @_;
@@ -65,7 +32,6 @@ sub add_buy_contract {
     my $underlying      = $bet_data->{underlying_symbol};
     my $landing_company = $account_data->{landing_company};
 
-    # TODO: incrby and check turnover
     my $attributes = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
     use Data::Dumper;
     my ($company_limits) = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
@@ -99,7 +65,6 @@ sub reverse_buy_contract {
     my ($contract) = @_;
 
     my $landing_company = $contract->{account_data}->{landing_company};
-    # TODO: incrby and check turnover
     my $attributes            = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
     my $company_limits        = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
     my $potential_loss        = BOM::CompanyLimits::LossTypes::calc_potential_loss($contract);
@@ -143,7 +108,8 @@ async sub check_potential_loss {
 #   3  |  +  | u |    +     |
 #
 # Because turnover is inferred to be binary user specific, these 4 increment values
-# is then used to check 8 limit settings:
+# is then used to check 8 limit settings (remember that for global limits, '*' is
+# expanded in limits.get_company_limits):
 #
 #           All Limit Definitions       | Turnover|
 # -----+-----+---------+-----+----------+   Idx   |
@@ -181,9 +147,12 @@ async sub check_potential_loss {
 async sub check_turnover {
     my ($landing_company, $limits_future, $combinations, $turnover) = @_;
 
-    my $response = await incr_loss_hash($landing_company, 'turnover', $combinations, $turnover);
+    my $turnover_response = await incr_loss_hash($landing_company, 'turnover', $combinations, $turnover);
 
-    return _check_breaches($response, $limits_future, $combinations, TURNOVER_TOTALS);
+    my @response;
+    @response[6, 7, 18, 19, 24 .. 27] = @{$turnover_response}[0 .. 3, 1, 1, 3, 3];
+
+    return _check_breaches(\@response, $limits_future, $combinations, TURNOVER_TOTALS);
 }
 
 sub _check_breaches {
