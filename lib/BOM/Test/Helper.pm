@@ -15,6 +15,7 @@ use Test::Builder;
 use Encode;
 use Path::Tiny;
 use JSON::MaybeXS;
+use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use JSON::Validator;
 use Data::Dumper;
 use Date::Utility;
@@ -36,12 +37,15 @@ use Try::Tiny;
 
 use Test::MockModule;
 use MojoX::JSON::RPC::Client;
+use IO::Async::Loop::Mojo;
+use Net::Async::Redis;
 
 use RedisDB;
 use YAML::XS qw/LoadFile DumpFile/;
 
 use Exporter qw/import/;
-our @EXPORT_OK = qw/test_schema build_mojo_test build_wsapi_test build_test_R_50_data create_test_user call_mocked_client reconnect launch_redis/;
+our @EXPORT_OK =
+    qw/test_schema build_mojo_test build_wsapi_test build_test_R_50_data create_test_user call_mocked_client reconnect launch_redis call_instrospection/;
 
 my $version = 'v3';
 die 'unknown version' unless $version;
@@ -232,6 +236,49 @@ sub call_mocked_client {
 
     $module->unmock_all;
     return ($res, $call_params);
+}
+
+sub call_instrospection {
+    my ($cmd, $args) = @_;
+
+    return 'Websocket API repo is uavailable' unless (Binary::WebSocketAPI::v3::Instance::Redis->can('ws_redis_master'));
+    my $redis_master = Binary::WebSocketAPI::v3::Instance::Redis->ws_redis_master() or die 'no redis connection';
+    my $loop = IO::Async::Loop::Mojo->new;
+
+    $loop->add(my $redis         = Net::Async::Redis->new(uri => 'redis://127.0.0.1:' . $redis_master->url->port));
+    $loop->add(my $redis_publish = Net::Async::Redis->new(uri => 'redis://127.0.0.1:' . $redis_master->url->port));
+
+    $redis->connect->get;
+    $redis_publish->connect->get;
+
+    my $response;
+
+    $redis->subscribe('introspection_response')->then(
+        sub {
+            my $sub = shift;
+            $redis_publish->publish(
+                introspection => JSON::MaybeUTF8::encode_json_utf8({
+                        command => $cmd,
+                        args    => $args,
+                        id      => 1,
+                        channel => 'introspection_response',
+                    })
+                )->then(
+                sub {
+                    ok 1, "Introspection message published: command = $cmd, args = " . join(', ', @$args);
+                })->retain;
+
+            $sub->events->map('payload')->take(1)->map(
+                sub {
+                    $response = decode_json_utf8(shift);
+                })->completed;
+        }
+        )->then(
+        sub {
+            $redis->unsubscribe('introspection_response');
+        })->get;
+
+    return $response;
 }
 
 1;
