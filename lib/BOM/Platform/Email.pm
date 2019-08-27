@@ -77,6 +77,13 @@ sub send_email {
     }
 
     my $email_stuffer = Email::Stuffer->from($fromemail)->to($email)->subject($subject);
+    
+    # Add email host for docker to work
+    if($ENV{EMAIL_HOST}) {
+	require Email::Sender::Transport::SMTP;
+        $email_stuffer->transport(Email::Sender::Transport::SMTP->new({host => $ENV{EMAIL_HOST}}))
+    }
+
     if ($args_ref->{'email_content_is_html'} || $use_email_template) {
         $email_stuffer->html_body($mail_message);
     } else {
