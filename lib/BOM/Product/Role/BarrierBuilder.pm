@@ -136,8 +136,8 @@ sub _apply_barrier_adjustment {
 
     if ($self->market->name eq 'volidx' and $self->is_path_dependent) {
         my $used_vol            = $self->pricing_vol;
-        my $generation_interval = $self->underlying->market->generation_interval->days / 365;
-        my $dir                 = ($barrier > $self->current_spot) ? 1 : -1;                     # Move in same direction from spot.
+        my $generation_interval = $self->underlying->submarket->generation_interval->days / 365;
+        my $dir                 = ($barrier > $self->current_spot) ? 1 : -1;                       # Move in same direction from spot.
         my $shift               = exp($dir * 0.5826 * $used_vol * sqrt($generation_interval));
         $barrier *= $shift;
     }
