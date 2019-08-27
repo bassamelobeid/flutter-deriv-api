@@ -357,6 +357,20 @@ sub assign_rpc_url {
     return;
 }
 
+=head2 assign_ws_backend
+
+Saves the configured B<backend> of an API call into the request storage, before forwarding it to RPC.
+It is a necessary step for http/queue backend switching.
+
+=cut
+
+sub assign_ws_backend {
+    my ($c, $req_storage) = @_;
+    my $action = $Binary::WebSocketAPI::WS_ACTIONS->{$req_storage->{method}};
+    $req_storage->{backend} = $action->{backend} if $action->{backend};
+    return;
+}
+
 sub get_doc_auth_s3_conf {
     my $c = shift;
     my $access_key = $ENV{DOCUMENT_AUTH_S3_ACCESS} || $c->app->config->{document_auth_s3}->{aws_access_key_id} || die 'S3 Configuration Unavailable';

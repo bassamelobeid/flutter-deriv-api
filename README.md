@@ -21,7 +21,10 @@ Commands are:
 * `subscriptions` Returns a list of all subscribed Redis channels. Placeholder, not yet implemented.
 * `stats` Returns a summary of current stats.
 * `dumpmem` Writes a dumpfile using [Devel::MAT::Dumper](https://metacpan.org/pod/Devel::MAT::Dumper).
+* `backend` Sets the backend RPC service of an API call by taking the method name and the backend service name.
 * `help` Returns a list of available commands.
+
+For a detailed documentation on usage, please refer to [devops-docs/ws_introspect.md](https://github.com/regentmarkets/devops-docs/blob/master/ws-introspect.md).
 
 # TEST
     # run all test scripts
