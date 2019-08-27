@@ -225,8 +225,14 @@ sub process_loop {
 
                             # A handler might be a sync sub or an async sub
                             # Future->wrap will return immediately if it has a scalar
-
-                            my $f = Future->wrap(BOM::Event::Process::process($event_data, $queue_name));
+                            # Due to Perl stack refcounting issues, we occasionally see exceptions here with
+                            # a message like "Can't call method "wrap" without a package or object reference"
+                            # - storing in an intermediary variable here to keep the result alive long enough
+                            # for Future->wrap to work. Note that the actual stack element which Perl complains about
+                            # is just the class name (the string 'Future') - this would likely need some quality time with gdb
+                            # to dissect fully.
+                            my $res = BOM::Event::Process::process($event_data, $queue_name);
+                            my $f = Future->wrap($res);
                             return Future->wait_any($f, $self->loop->timeout_future(after => $self->maximum_job_time))->on_fail(
                                 sub {
                                     $log->errorf("Event from queue %s failed or did not complete within %s sec - data was %s",
