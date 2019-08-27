@@ -24,17 +24,14 @@ use constant {
     TURNOVER_TOTALS       => 2,
 };
 
-
 sub add_buy_contract {
     my ($contract) = @_;
     my ($bet_data, $account_data) = @$contract{qw/bet_data account_data/};
 
-    my $underlying      = $bet_data->{underlying_symbol};
     my $landing_company = $account_data->{landing_company};
 
-    my $attributes = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
-    use Data::Dumper;
-    my ($company_limits) = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
+    my $attributes            = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
+    my ($company_limits)      = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
     my $turnover_combinations = BOM::CompanyLimits::Combinations::get_turnover_incrby_combinations($attributes);
 
     my $limits_future  = BOM::CompanyLimits::Limits::query_limits($landing_company, $company_limits);
@@ -45,7 +42,6 @@ sub add_buy_contract {
         check_potential_loss($landing_company, $limits_future, $company_limits, $potential_loss),
         check_turnover($landing_company, $limits_future, $turnover_combinations, $turnover),
     )->get();
-    my $limits = $limits_future->get();
 
     if (@breaches) {
         # TODO: send event to publish email to quants
@@ -64,7 +60,7 @@ sub add_buy_contract {
 sub reverse_buy_contract {
     my ($contract) = @_;
 
-    my $landing_company = $contract->{account_data}->{landing_company};
+    my $landing_company       = $contract->{account_data}->{landing_company};
     my $attributes            = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
     my $company_limits        = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
     my $potential_loss        = BOM::CompanyLimits::LossTypes::calc_potential_loss($contract);
@@ -175,14 +171,10 @@ sub _check_breaches {
 }
 
 sub add_sell_contract {
-    my ($contract)   = @_;
-    my $bet_data     = $contract->{bet_data};
-    my $account_data = $contract->{account_data};
-    # print 'BET DATA: ', Dumper($contract);
+    my ($contract) = @_;
 
-    my $landing_company = $account_data->{landing_company};
-
-    my $attributes = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
+    my $landing_company  = $contract->{account_data}->{landing_company};
+    my $attributes       = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
     my ($company_limits) = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
 
     # For sell, we increment totals but do not check if they exceed limits;
@@ -213,7 +205,6 @@ async sub incr_loss_hash {
     $redis->mainloop;
 
     return $response;
-
 }
 
 1;

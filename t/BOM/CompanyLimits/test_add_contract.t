@@ -24,7 +24,11 @@ Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 my $redis = BOM::Config::RedisReplicated::redis_limits_write;
 
 sub setup_tests {
-    $redis->flushall();    # cleanup past data
+    foreach my $landing_company (qw/svg mf mlt mx/) {
+        foreach my $k (qw/potential_loss realized_loss turnover limits/) {
+            $redis->del("$landing_company:$k");
+        }
+    }
     $redis->hmset('contractgroups',   ('CALL', 'callput'));
     $redis->hmset('underlyinggroups', ('R_50', 'volidx'));
 }

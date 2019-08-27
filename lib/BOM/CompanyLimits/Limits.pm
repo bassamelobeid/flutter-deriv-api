@@ -75,6 +75,8 @@ sub update_company_limits {
         });
 
     sync_limits_to_redis();
+
+    return;
 }
 
 # Takes limits from limits.company_limits and place them inside Redis limits with
@@ -95,9 +97,10 @@ sub sync_limits_to_redis {
 
     my $all_limits = _get_landing_company_limits_map($db_records);
 
-    while (my ($landing_company, $limits) = each %$all_limits) {
-        my $redis = get_redis($landing_company, 'limit_setting');
-        my @keyvals = map { $_ => pack_limit_values($limits->{$_}) } keys %$limits;
+    foreach my $landing_company (keys %$all_limits) {
+        my $redis     = get_redis($landing_company, 'limit_setting');
+        my $limits    = $all_limits->{$landing_company};
+        my @keyvals   = map { $_ => pack_limit_values($limits->{$_}) } keys %$limits;
         my $hash_name = "$landing_company:limits";
 
         $redis->multi(sub { });
@@ -106,6 +109,8 @@ sub sync_limits_to_redis {
         $redis->exec(sub { });
         $redis->mainloop;
     }
+
+    return;
 }
 
 # take database records and turn it to the format:
@@ -120,7 +125,6 @@ sub _get_landing_company_limits_map {
 
     my $all_limits;
     foreach my $landing_company (qw/svg mlt mf mx/) {
-        my $redis = get_redis($landing_company, 'limit_setting');
         my $landing_company_limits;
         foreach my $limit (@$db_records) {
             if (   $limit->{landing_company} eq '*'

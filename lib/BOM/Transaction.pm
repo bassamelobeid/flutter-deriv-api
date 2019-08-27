@@ -875,11 +875,6 @@ sub sell {
         $error_status = $self->_recover($_);
     };
 
-    BOM::CompanyLimits::add_sell_contract({
-        bet_data     => $fmb,
-        account_data => $bet_data->{account_data},
-    });
-
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     return $self->stats_stop(
@@ -911,6 +906,11 @@ sub sell {
             losses => $loss > 0 ? $loss : 0,
         });
     }
+
+    BOM::CompanyLimits::add_sell_contract({
+        bet_data     => $fmb,
+        account_data => $bet_data->{account_data},
+    });
 
     return;
 }
