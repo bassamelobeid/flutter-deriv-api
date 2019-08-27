@@ -635,7 +635,7 @@ sub set_professional_status {
     my $error;
 
     # Set checks in variables
-    my $cr_mf_valid      = $client->landing_company->short =~ /^(?:svg|maltainvest)$/;
+    my $cr_mf_valid      = $client->landing_company->support_professional_client;
     my $set_prof_status  = $professional && !$client->status->professional && $cr_mf_valid;
     my $set_prof_request = $professional_requested && !$client->status->professional_requested && $cr_mf_valid;
 
@@ -643,7 +643,9 @@ sub set_professional_status {
         $client->status->set('professional',           'SYSTEM', 'Mark as professional as requested') if $set_prof_status;
         $client->status->set('professional_requested', 'SYSTEM', 'Professional account requested')    if $set_prof_request;
     }
-    catch { $error = client_error() };
+    catch {
+        $error = client_error();
+    };
     return $error if $error;
 
     send_professional_requested_email($client->loginid, $client->residence, $client->landing_company->short) if $set_prof_request;

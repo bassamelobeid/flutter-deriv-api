@@ -1327,12 +1327,11 @@ rpc set_settings => sub {
         }
     }
 
-    # only allowed to set for maltainvest, svg and only
     # if professional status is not set or requested
     my $update_professional_status = sub {
         my ($client_obj) = @_;
         if (    $args->{request_professional_status}
-            and $client_obj->landing_company->short =~ /^(?:svg|maltainvest)$/
+            and $client_obj->landing_company->support_professional_client
             and not($client_obj->status->professional or $client_obj->status->professional_requested))
         {
             $client_obj->status->multi_set_clear({
