@@ -23,18 +23,7 @@ Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 my $redis = BOM::Config::RedisReplicated::redis_limits_write;
 
-sub setup_tests {
-    foreach my $landing_company (qw/svg mf mlt mx/) {
-        foreach my $k (qw/potential_loss realized_loss turnover limits/) {
-            $redis->del("$landing_company:$k");
-        }
-    }
-    $redis->hmset('contractgroups',   ('CALL', 'callput'));
-    $redis->hmset('underlyinggroups', ('R_50', 'volidx'));
-}
-
 subtest 'Limits test base case', sub {
-    setup_tests();
     my $cl = create_client;
     top_up $cl, 'USD', 5000;
 
