@@ -125,7 +125,7 @@ subtest 'buy' => sub {
     like($result->{shortcode}, qr/ONETOUCH_R_50_100_\d{10}_/, 'shortcode is correct');
     is(
         $result->{longcode},
-        'Win payout if Volatility 50 Index touches entry spot plus 0.5000 through 5 ticks after first tick.',
+        'Win payout if Volatility 50 1Hz touches entry spot plus 0.5000 through 5 ticks after first tick.',
         'longcode is correct'
     );
 
