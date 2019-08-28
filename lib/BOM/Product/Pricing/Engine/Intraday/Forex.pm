@@ -23,6 +23,7 @@ use Pricing::Engine::Markup::CustomCommission;
 use Pricing::Engine::Markup::HourEndMarkup;
 use Pricing::Engine::Markup::HourEndDiscount;
 use Pricing::Engine::Markup::IntradayMeanReversionMarkup;
+use Pricing::Engine::Markup::RollOverMarkup;
 use Math::Util::CalculatedValue::Validatable;
 
 =head2 tick_source
@@ -122,6 +123,29 @@ sub _build_apply_equal_tie_markup {
             and ($self->bet->underlying->submarket->name eq 'major_pairs' or $self->bet->underlying->submarket->name eq 'minor_pairs')) ? 1 : 0;
 }
 
+has apply_rollover_markup => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_apply_rollover_markup {
+    my $self = shift;
+
+    my $bet = $self->bet;
+
+    return 0 if $bet->underlying->market->name ne 'forex';
+
+    return 0 if $bet->date_expiry->hour < 20;
+    my $rollover_date = $bet->volsurface->rollover_date($bet->date_pricing);
+
+    return 1
+        if ((
+               ($bet->date_start->hour >= ($rollover_date->hour - 1))
+            or ($bet->date_expiry->hour >= $rollover_date->hour))
+        and ($bet->date_start->hour < ($rollover_date->hour + 2)));
+
+    return 0;
+}
 has mean_reversion_markup => (
     is         => 'ro',
     lazy_build => 1,
@@ -412,6 +436,17 @@ sub _build_risk_markup {
             timeinyears       => $bet->timeinyears->amount
         )->markup
     ) if $self->apply_equal_tie_markup;
+    # Rollover markup should only app]y for contract that start after 1 hour before rollover time (ie 16NYT) or contract end after rollover time (ie 17NYT)
+    $risk_markup->include_adjustment(
+        'add',
+        Pricing::Engine::Markup::RollOverMarkup->new(
+            interest_rate_difference => $bet->q_rate - $bet->r_rate,
+            rollover_hour            => $bet->volsurface->rollover_date($bet->date_pricing),
+            date_start               => $bet->date_start,
+            date_expiry              => $bet->date_expiry,
+            pricing_code             => $bet->pricing_code
+        )->markup
+    ) if $self->apply_rollover_markup;
 
     return $risk_markup;
 }
