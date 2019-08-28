@@ -99,7 +99,7 @@ subtest 'buy' => sub {
     is($new_balance, $result->{balance_after}, 'balance is changed');
     ok($old_balance - $new_balance - $result->{buy_price} < 0.0001, 'balance reduced');
     like($result->{shortcode}, qr/LBFLOATCALL_R_75_1_\d{10}_\d{10}/, 'shortcode is correct');
-    is($result->{longcode}, 'Win USD 1 times Volatility 75 1Hz\'s close minus low over the next 2 minutes.', 'longcode is correct');
+    is($result->{longcode}, 'Win USD 1 times Volatility 75 Index\'s close minus low over the next 2 minutes.', 'longcode is correct');
 
 };
 
