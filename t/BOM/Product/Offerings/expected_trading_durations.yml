@@ -1199,7 +1199,7 @@
         display_name: Only Ups/Only Downs
         name: runs
   market:
-    display_name: Volatility Indices
+    display_name: Synthetic Indices
     name: synthetic_index
   submarket:
     display_name: Continuous Indices
@@ -1340,7 +1340,7 @@
         display_name: Digits
         name: digits
   market:
-    display_name: Volatility Indices
+    display_name: Synthetic Indices
     name: synthetic_index
   submarket:
     display_name: Daily Reset Indices
