@@ -26,7 +26,7 @@ use BOM::Test::Helper::QuantsConfig qw(create_config delete_all_config);
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
-my $base = 'USD';
+my $base                     = 'USD';
 my $mocked_CurrencyConverter = Test::MockModule->new('ExchangeRates::CurrencyConverter');
 $mocked_CurrencyConverter->mock(
     'in_usd',

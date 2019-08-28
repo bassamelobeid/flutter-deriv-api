@@ -110,7 +110,7 @@ sub get_attributes_from_contract {
     }
 
     if (not $underlying_group) {
-       die ['BI054']; # mimic database error
+        die ['BI054'];                               # mimic database error
     }
 
     return [$binary_user_id, $underlying_group, $underlying, $contract_group, $expiry_type, $barrier_type];
