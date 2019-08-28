@@ -112,8 +112,6 @@ async sub check_potential_loss {
 
     my $response = await incr_loss_hash($landing_company, 'potential_loss', $combinations, $potential_loss);
 
-    my $app_config = BOM::Config::Runtime->instance->app_config;
-
     return _check_breaches($response, $limits_future, $combinations, 'potential_loss');
 }
 
@@ -219,7 +217,6 @@ sub _check_breaches {
 
     # Global limits
     if ($is_global_loss_enabled) {
-        my ($comb, $limit, $curr_amount, $loss_type_limit);
         foreach my $i (0 .. 23) {
             my @attr = $get_limit_check_attributes->($i);
             next unless @attr;
@@ -237,7 +234,6 @@ sub _check_breaches {
     # User specific limits
     if ($is_user_loss_enabled) {
         # Alert threshold not available for user specific limits; it is never used
-        my ($comb, $limit, $curr_amount, $loss_type_limit);
         foreach my $i (24 .. 27) {
             my @attr = $get_limit_check_attributes->($i);
             next unless @attr;
