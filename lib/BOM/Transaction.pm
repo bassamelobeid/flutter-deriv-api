@@ -606,7 +606,7 @@ sub buy {
         # if $error_status is defined, return it
         # otherwise the function re-throws the exception
         stats_inc('database.consistency.inverted_transaction', {tags => ['broker_code:' . $client->broker_code]});
-        BOM::CompanyLimits::reverse_buy_contract($contract_data);
+        BOM::CompanyLimits::reverse_buy_contract($contract_data, $_);
         $error_status = $self->_recover($_);
     };
     return $self->stats_stop($stats_data, $error_status) if $error_status;

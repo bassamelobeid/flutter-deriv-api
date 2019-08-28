@@ -109,13 +109,9 @@ sub get_attributes_from_contract {
         $expiry_type = 'u' if ($duration <= 300);    # ultra_short; 5 minutes
     }
 
-    # TODO: Defaults to + to get tests to pass, but we should
-    #       setup the contract and underlying groups in unit test redis
-    #       as well as the the redis instance used for trades
-    $contract_group   ||= '+';
-    $underlying_group ||= '+';
-    # TODO: for some tests, underlying is undef. Why??
-    $underlying ||= '+';
+    if (not $underlying_group) {
+       die ['BI054']; # mimic database error
+    }
 
     return [$binary_user_id, $underlying_group, $underlying, $contract_group, $expiry_type, $barrier_type];
 }

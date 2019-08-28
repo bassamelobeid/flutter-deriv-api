@@ -4,6 +4,7 @@ use warnings;
 
 use BOM::Database::ClientDB;
 use BOM::Config::RedisReplicated;
+use BOM::Config::Runtime;
 use Future::AsyncAwait;
 use Future::Utils;
 use Date::Utility;
@@ -58,7 +59,10 @@ sub add_buy_contract {
 }
 
 sub reverse_buy_contract {
-    my ($contract) = @_;
+    my ($contract, $error) = @_;
+
+    # Should be very careful here; we do not want to revert a buy we have not incremented in Redis!
+    return unless (_should_reverse_buy_contract($error));
 
     my $landing_company       = $contract->{account_data}->{landing_company};
     my $attributes            = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
@@ -75,6 +79,19 @@ sub reverse_buy_contract {
     return;
 }
 
+sub _should_reverse_buy_contract {
+    my ($error) = @_;
+
+    if (ref $error eq 'ARRAY') {
+        my $error_code = $error->[0];
+        return 0 if ($error_code eq 'BI054'); # no underlying group mapping
+
+        return 1;
+    }
+
+    return 0;
+}
+
 async sub check_realized_loss {
     my ($landing_company, $limits_future, $combinations) = @_;
 
@@ -88,6 +105,8 @@ async sub check_potential_loss {
     my ($landing_company, $limits_future, $combinations, $potential_loss) = @_;
 
     my $response = await incr_loss_hash($landing_company, 'potential_loss', $combinations, $potential_loss);
+
+    my $app_config = BOM::Config::Runtime->instance->app_config;
 
     return _check_breaches($response, $limits_future, $combinations, POTENTIAL_LOSS_TOTALS);
 }
@@ -153,6 +172,7 @@ async sub check_turnover {
 
 sub _check_breaches {
     my ($response, $limits_future, $combinations, $loss_type_idx) = @_;
+    # TODO: should skip global potential/realized loss check if some app_config setting is disabled
 
     my @breaches;
     my $limits = $limits_future->get();
@@ -160,7 +180,7 @@ sub _check_breaches {
         my $comb  = $combinations->[$i];
         my $limit = $limits->{$comb};
         if (    $limit
-            and $limit->[$loss_type_idx]
+            and $limit->[$loss_type_idx] ne ''
             and $response->[$i] > $limit->[$loss_type_idx])
         {
             push(@breaches, [$loss_type_idx, $comb, $limit->[$loss_type_idx], $response->[$i]]);

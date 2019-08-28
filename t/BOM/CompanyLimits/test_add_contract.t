@@ -12,9 +12,7 @@ use BOM::CompanyLimits::Limits;
 
 use Date::Utility;
 use BOM::Test;
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Helper::Client qw(create_client top_up);
-use BOM::Test::Time qw( sleep_till_next_second );
 use BOM::Test::Contract qw(create_contract buy_contract sell_contract);
 use BOM::Config::RedisReplicated;
 use Syntax::Keyword::Try;

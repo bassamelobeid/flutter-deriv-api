@@ -45,7 +45,7 @@ my $pack_format = '(c/a)*';
 
 sub pack_limit_values {
     my ($values) = @_;
-    return pack($pack_format, map { $_ || '' } @$values);
+    return pack($pack_format, map { defined $_ ? $_ : '' } @$values);
 }
 
 sub unpack_limit_values {
