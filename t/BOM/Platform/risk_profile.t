@@ -94,9 +94,9 @@ subtest 'get_risk_profile' => sub {
     is $rp->get_risk_profile, 'low_risk', 'low risk is default for volatility index';
     $limit = $rp->custom_profiles;
     is scalar(@$limit), 1, 'only one profile';
-    is $limit->[0]->{name},         'volidx_turnover_limit', 'correct name';
+    is $limit->[0]->{name},         'synthetic_index_turnover_limit', 'correct name';
     is $limit->[0]->{risk_profile}, 'low_risk',              'risk_profile is low';
-    is $limit->[0]->{market},       'volidx',                'market specific';
+    is $limit->[0]->{market},       'synthetic_index',                'market specific';
 };
 
 subtest 'comma separated entries' => sub {
@@ -116,14 +116,14 @@ subtest 'comma separated entries' => sub {
     $args{symbol} = 'frxAUDUSD';
     $rp = BOM::Platform::RiskProfile->new(%args);
     is $rp->get_risk_profile, 'low_risk', 'risk profile for frxAUDUSD is low_risk';
-    $args{market_name} = 'volidx';
+    $args{market_name} = 'synthetic_index';
     $args{symbol}      = 'R_100';
 };
 
 subtest 'custom client profile' => sub {
     note("set volatility index to no business for client XYZ");
     BOM::Config::Runtime->instance->app_config->quants->custom_client_profiles(
-        '{"CR1": {"reason": "test XYZ", "custom_limits": {"xxx": {"market": "volidx", "risk_profile": "no_business", "name": "test custom"}}}}');
+        '{"CR1": {"reason": "test XYZ", "custom_limits": {"xxx": {"market": "synthetic_index", "risk_profile": "no_business", "name": "test custom"}}}}');
     my $rp = BOM::Platform::RiskProfile->new(%args);
     my @cl_pr = $rp->get_client_profiles('CR2', $landing_company);
     ok !@cl_pr, 'no custom client limit';
@@ -133,7 +133,7 @@ subtest 'custom client profile' => sub {
 
 subtest 'turnover limit parameters' => sub {
     BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
-        '{"xxx": {"market": "volidx", "expiry_type": "tick", "risk_profile": "no_business", "name": "test custom"}}');
+        '{"xxx": {"market": "synthetic_index", "expiry_type": "tick", "risk_profile": "no_business", "name": "test custom"}}');
     my $rp = BOM::Platform::RiskProfile->new(%args, expiry_type => 'tick');
     is $rp->contract_info->{expiry_type}, 'tick', 'tick expiry';
     my $param = $rp->get_turnover_limit_parameters;
@@ -142,7 +142,7 @@ subtest 'turnover limit parameters' => sub {
     ok $param->[0]->{tick_expiry}, 'tick_expiry set to 1';
     is scalar(@{$param->[0]->{symbols}}), 7, '7 symbols selected';
     BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
-        '{"xxx": {"market": "volidx", "expiry_type": "intraday", "risk_profile": "no_business", "name": "test custom"}}');
+        '{"xxx": {"market": "synthetic_index", "expiry_type": "intraday", "risk_profile": "no_business", "name": "test custom"}}');
     $rp = BOM::Platform::RiskProfile->new(%args, expiry_type => 'intraday');
     is $rp->contract_info->{expiry_type}, 'intraday', 'intraday expiry';
     $param = $rp->get_turnover_limit_parameters;
@@ -152,7 +152,7 @@ subtest 'turnover limit parameters' => sub {
     ok !$param->[0]->{ultra_short}, 'daily set to 0';
     is scalar(@{$param->[0]->{symbols}}), 7, '7 symbols selected';
     BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
-        '{"xxx": {"market": "volidx", "expiry_type": "daily", "risk_profile": "no_business", "name": "test custom"}}');
+        '{"xxx": {"market": "synthetic_index", "expiry_type": "daily", "risk_profile": "no_business", "name": "test custom"}}');
     $rp = BOM::Platform::RiskProfile->new(%args, expiry_type => 'daily');
     is $rp->contract_info->{expiry_type}, 'daily', 'daily expiry';
     $param = $rp->get_turnover_limit_parameters;
@@ -173,7 +173,7 @@ subtest 'turnover limit parameters' => sub {
     is $param->[0]->{symbols}->[1], 'R_10',  'first symbol is R_10';
 
     BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
-        '{"xxx": {"market": "volidx", "expiry_type": "ultra_short", "risk_profile": "no_business", "name": "test custom ultra_short"}}');
+        '{"xxx": {"market": "synthetic_index", "expiry_type": "ultra_short", "risk_profile": "no_business", "name": "test custom ultra_short"}}');
     $rp = BOM::Platform::RiskProfile->new(%args, expiry_type => 'ultra_short');
     is $rp->contract_info->{expiry_type}, 'ultra_short', 'ultra_short  expiry';
     $param = $rp->get_turnover_limit_parameters;
@@ -201,7 +201,7 @@ subtest 'get_current_profile_definitions' => sub {
                     'profile_name'   => 'high_risk'
                 }
             ],
-            'volidx' => [{
+            'synthetic_index' => [{
                     'turnover_limit' => "500000.00",
                     'payout_limit'   => "50000.00",
                     'name'           => 'Volatility Indices',
