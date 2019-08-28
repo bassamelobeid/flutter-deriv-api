@@ -19,10 +19,11 @@ use BOM::CompanyLimits::LossTypes;
 
 =cut
 
-use constant {
-    POTENTIAL_LOSS_TOTALS => 0,
-    REALIZED_LOSS_TOTALS  => 1,
-    TURNOVER_TOTALS       => 2,
+my $loss_map_to_idx = {
+    'potential_loss' => 0,
+    'realized_loss'  => 1,
+    'turnover'       => 2,
+    'payout'         => 3,
 };
 
 sub add_buy_contract {
@@ -49,8 +50,13 @@ sub add_buy_contract {
         # print 'BREACH', Dumper(\@breaches);
 
         foreach my $breach (@breaches) {
-            if ($breach->[0] == POTENTIAL_LOSS_TOTALS or $breach->[0] == REALIZED_LOSS_TOTALS) {
-                die ['BI051'];    # To retain much of existing functionality, make it look as if the error comes from db
+            # For now, we simply mimic database errors instead creating new error codes.
+            if (   $breach->[0] eq 'potential_loss'
+                or $breach->[0] eq 'realized_loss')
+            {
+                die ['BI051'];
+            } elsif ($breach->[0] eq 'turnover') {
+                die ['BI011'];
             }
         }
 
@@ -84,7 +90,7 @@ sub _should_reverse_buy_contract {
 
     if (ref $error eq 'ARRAY') {
         my $error_code = $error->[0];
-        return 0 if ($error_code eq 'BI054'); # no underlying group mapping
+        return 0 if ($error_code eq 'BI054');    # no underlying group mapping
 
         return 1;
     }
@@ -98,7 +104,7 @@ async sub check_realized_loss {
     my $redis = get_redis($landing_company, 'realized_loss');
     my $response = $redis->hmget("$landing_company:realized_loss", @$combinations);
 
-    return _check_breaches($response, $limits_future, $combinations, REALIZED_LOSS_TOTALS);
+    return _check_breaches($response, $limits_future, $combinations, 'realized_loss');
 }
 
 async sub check_potential_loss {
@@ -108,7 +114,7 @@ async sub check_potential_loss {
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
 
-    return _check_breaches($response, $limits_future, $combinations, POTENTIAL_LOSS_TOTALS);
+    return _check_breaches($response, $limits_future, $combinations, 'potential_loss');
 }
 
 # For turnover, because it is only underlying specific, these are the only increments
@@ -167,23 +173,79 @@ async sub check_turnover {
     my @response;
     @response[6, 7, 18, 19, 24 .. 27] = @{$turnover_response}[0 .. 3, 1, 1, 3, 3];
 
-    return _check_breaches(\@response, $limits_future, $combinations, TURNOVER_TOTALS);
+    return _check_breaches(\@response, $limits_future, $combinations, 'turnover');
 }
 
 sub _check_breaches {
-    my ($response, $limits_future, $combinations, $loss_type_idx) = @_;
-    # TODO: should skip global potential/realized loss check if some app_config setting is disabled
+    my ($response, $limits_future, $combinations, $loss_type) = @_;
+
+    # TODO: This makes an additional Redis query. Do we really need to switch this on and off?
+    # TODO: Do we want this warning threshold for turnover limits?
+    my $is_global_loss_enabled = 1;
+    my $is_user_loss_enabled   = 1;
+    my $threshold              = undef;
+    if ($loss_type eq 'realized_loss' or $loss_type eq 'potential_loss') {
+        my $app_config        = BOM::Config::Runtime->instance->app_config;
+        my $global_check_name = "enable_global_$loss_type";
+        my $user_check_name   = "enable_user_$loss_type";
+        $is_global_loss_enabled = $app_config->quants->$global_check_name;
+        $is_user_loss_enabled   = $app_config->quants->$user_check_name;
+        if ($is_global_loss_enabled) {
+            my $threshold_name = "global_${loss_type}_alert_threshold";
+            $threshold = $app_config->quants->$threshold_name;
+        }
+    }
 
     my @breaches;
     my $limits = $limits_future->get();
-    foreach my $i (0 .. $#$combinations) {
-        my $comb  = $combinations->[$i];
+
+    my $get_limit_check_attributes = sub {
+        my ($i) = @_;
+
+        my $comb = $combinations->[$i];
+        return () unless $comb;
+
         my $limit = $limits->{$comb};
-        if (    $limit
-            and $limit->[$loss_type_idx] ne ''
-            and $response->[$i] > $limit->[$loss_type_idx])
-        {
-            push(@breaches, [$loss_type_idx, $comb, $limit->[$loss_type_idx], $response->[$i]]);
+        return () unless $limit;
+
+        my $loss_type_limit = $limit->[$loss_map_to_idx->{$loss_type}];
+        return () unless $loss_type_limit ne '';
+
+        my $curr_amount = $response->[$i];
+        return () unless defined $curr_amount;
+
+        return ($comb, $limit, $loss_type_limit, $curr_amount);
+    };
+
+    # Global limits
+    if ($is_global_loss_enabled) {
+        my ($comb, $limit, $curr_amount, $loss_type_limit);
+        foreach my $i (0 .. 23) {
+            my @attr = $get_limit_check_attributes->($i);
+            next unless @attr;
+            my ($comb, $limit, $loss_type_limit, $curr_amount) = @attr;
+
+            my $diff = $curr_amount - $loss_type_limit;
+            if ($diff > 0) {
+                push(@breaches, [$loss_type, $comb, $loss_type_limit, $curr_amount]);
+            } elsif ($threshold and $curr_amount > ($loss_type_limit * $threshold)) {
+                # TODO: send out trade_warning that warning threshold is breached
+            }
+        }
+    }
+
+    # User specific limits
+    if ($is_user_loss_enabled) {
+        # Alert threshold not available for user specific limits; it is never used
+        my ($comb, $limit, $curr_amount, $loss_type_limit);
+        foreach my $i (24 .. 27) {
+            my @attr = $get_limit_check_attributes->($i);
+            next unless @attr;
+            my ($comb, $limit, $loss_type_limit, $curr_amount) = @attr;
+
+            if ($curr_amount > $loss_type_limit) {
+                push(@breaches, [$loss_type, $comb, $loss_type_limit, $curr_amount]);
+            }
         }
     }
 

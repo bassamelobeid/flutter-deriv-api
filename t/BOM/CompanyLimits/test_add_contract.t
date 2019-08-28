@@ -16,10 +16,12 @@ use BOM::Test::Helper::Client qw(create_client top_up);
 use BOM::Test::Contract qw(create_contract buy_contract sell_contract);
 use BOM::Config::RedisReplicated;
 use Syntax::Keyword::Try;
+use BOM::Config::Runtime;
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 my $redis = BOM::Config::RedisReplicated::redis_limits_write;
+BOM::Config::Runtime->instance->app_config->quants->enable_global_potential_loss(1);
 
 subtest 'Limits test base case', sub {
     my $cl = create_client;
