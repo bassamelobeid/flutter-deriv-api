@@ -109,7 +109,7 @@ subtest 'longcode from params for forward starting' => sub {
         $c->longcode,
         [
             'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
-            ['Volatility 100 Index'],
+            ['Volatility 100 1Hz'],
             ['2016-10-19 10:10:00 GMT'],
             {
                 class => 'Time::Duration::Concise::Localize',
@@ -141,7 +141,7 @@ subtest 'longcode with \'difference\' as barrier' => sub {
         $c->longcode,
         [
             'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
-            ['Volatility 100 Index'],
+            ['Volatility 100 1Hz'],
             ['2016-10-19 10:10:00 GMT'],
             {
                 class => 'Time::Duration::Concise::Localize',
@@ -164,7 +164,7 @@ subtest 'longcode with \'difference\' as barrier' => sub {
     is_deeply(
         $c->longcode,
         [
-            'Win payout if [_1] ends outside [_5] to [_4] at [_3].', ['Volatility 100 Index'],
+            'Win payout if [_1] ends outside [_5] to [_4] at [_3].', ['Volatility 100 1Hz'],
             [], ['2016-10-19 10:20:00 GMT'],
             ['entry spot plus [_1]', 0.32], ['entry spot minus [_1]', 0.42],
         ]);
@@ -194,7 +194,7 @@ subtest 'intraday duration longcode variation' => sub {
         $c->longcode,
         [
             'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
-            ['Volatility 100 Index'],
+            ['Volatility 100 1Hz'],
             ['2016-10-19 10:10:00 GMT'],
             {
                 class => 'Time::Duration::Concise::Localize',
@@ -207,7 +207,7 @@ subtest 'intraday duration longcode variation' => sub {
         $c->longcode,
         [
             'Win payout if [_1] is strictly higher than [_4] at [_3] after [_2].',
-            ['Volatility 100 Index'],
+            ['Volatility 100 1Hz'],
             ['2016-10-19 10:10:00 GMT'],
             {
                 class => 'Time::Duration::Concise::Localize',

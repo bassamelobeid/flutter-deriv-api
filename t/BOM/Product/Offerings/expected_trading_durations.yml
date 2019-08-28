@@ -959,15 +959,15 @@
     name: energy
 - data:
   - symbol:
-    - display_name: Volatility 10 Index
+    - display_name: Volatility 10 1Hz
       name: R_10
-    - display_name: Volatility 25 Index
+    - display_name: Volatility 25 1Hz
       name: R_25
-    - display_name: Volatility 50 Index
+    - display_name: Volatility 50 1Hz
       name: R_50
-    - display_name: Volatility 75 Index
+    - display_name: Volatility 75 1Hz
       name: R_75
-    - display_name: Volatility 100 Index
+    - display_name: Volatility 100 1Hz
       name: R_100
     trade_durations:
     - durations:
