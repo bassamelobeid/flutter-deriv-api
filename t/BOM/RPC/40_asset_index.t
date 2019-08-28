@@ -31,7 +31,7 @@ my $entry_count_mf  = NUM_TOTAL_SYMBOLS - NUM_VOLATILITY_SYMBOLS;
 my $entry_count_cr  = NUM_TOTAL_SYMBOLS;
 my $first_entry_mlt = [
     "R_10",
-    "Volatility 10 Index",
+    "Volatility 10 0.5Hz",
     [
         ["callput",       "Higher/Lower",               "5t",  "365d"],
         ["callput",       "Rise/Fall",                  "1t",  "365d"],
