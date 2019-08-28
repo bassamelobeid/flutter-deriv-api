@@ -139,7 +139,7 @@
                         "type" : "array",
                         "minItems" : 4,
                         "items" : {
-                           "pattern" : "^(commodities|forex|indices|volidx)$",
+                           "pattern" : "^(commodities|forex|indices|synthetic_index)$",
                            "type" : "string"
                         }
                      },
@@ -246,7 +246,7 @@
                   },
                   "legal_allowed_markets" : {
                      "items" : {
-                        "pattern" : "^(commodities|forex|indices|volidx)$",
+                        "pattern" : "^(commodities|forex|indices|synthetic_index)$",
                         "type" : "string"
                      },
                      "type" : "array",
@@ -262,7 +262,7 @@
                      "type" : "array",
                      "items" : {
                         "type" : "string",
-                        "pattern" : "^(commodities|forex|indices|volidx)$"
+                        "pattern" : "^(commodities|forex|indices|synthetic_index)$"
                      }
                   },
                   "legal_allowed_currencies" : {

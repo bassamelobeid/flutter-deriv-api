@@ -93,7 +93,7 @@
                         }
                      }
                   },
-                  "volidx" : {
+                  "synthetic_index" : {
                      "items" : {
                         "type" : "object",
                         "properties" : {
@@ -105,7 +105,7 @@
                            },
                            "name" : {
                               "type" : "string",
-                              "pattern" : "^Volatility Indices$"
+                              "pattern" : "^Synthetic Indices$"
                            }
                         }
                      },
@@ -135,7 +135,7 @@
                "required" : [
                   "commodities",
                   "indices",
-                  "volidx",
+                  "synthetic_index",
                   "forex"
                ]
             },
