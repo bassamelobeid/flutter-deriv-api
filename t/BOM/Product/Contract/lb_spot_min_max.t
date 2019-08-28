@@ -66,7 +66,7 @@ my $single_data = {
     'epoch'  => $now->epoch - 1,
     'quote'  => '100',
 };
-my $decimate_cache = BOM::Market::DataDecimate->new({market => 'volidx'});
+my $decimate_cache = BOM::Market::DataDecimate->new({market => 'synthetic_index'});
 
 my $key = $decimate_cache->_make_key('R_100', 0);
 $decimate_cache->_update($decimate_cache->redis_write, $key, $now->epoch - 1, $decimate_cache->encoder->encode($single_data));

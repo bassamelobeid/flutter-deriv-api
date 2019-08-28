@@ -1286,7 +1286,7 @@
         name: runs
   market:
     display_name: Volatility Indices
-    name: volidx
+    name: synthetic_index
   submarket:
     display_name: Continuous Indices
     name: random_index
@@ -1427,7 +1427,7 @@
         name: digits
   market:
     display_name: Volatility Indices
-    name: volidx
+    name: synthetic_index
   submarket:
     display_name: Daily Reset Indices
     name: random_daily

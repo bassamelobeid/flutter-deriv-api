@@ -9,7 +9,7 @@ use Test::Warnings;
 use BOM::Product::ContractFactory qw(produce_contract);
 use Math::Util::CalculatedValue::Validatable;
 
-BOM::Config::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->volidx(100);
+BOM::Config::Runtime->instance->app_config->quants->commission->adjustment->per_market_scaling->synthetic_index(100);
 my $fake_theo = Math::Util::CalculatedValue::Validatable->new({
     name        => 'theo_probability',
     description => 'fake theo',

@@ -75,7 +75,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                     })};
 
             #we only price ATM contracts for financial instruments with flat vol-surface
-            @barriers = ({barrier => 'S0P'}) if (($ul->symbol eq 'frxBROUSD' or $ul->symbol eq 'WLDEUR') and $ul->market->name ne 'volidx');
+            @barriers = ({barrier => 'S0P'}) if (($ul->symbol eq 'frxBROUSD' or $ul->symbol eq 'WLDEUR') and $ul->market->name ne 'synthetic_index');
 
             foreach my $barrier (@barriers) {
                 my %equal = (

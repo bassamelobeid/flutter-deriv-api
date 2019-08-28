@@ -623,7 +623,7 @@ sub _build_base_commission {
         $underlying_base = $custom_commission;
     }
 
-    if (not $self->for_sale and $self->market->name eq 'volidx' and $self->tick_expiry and $self->category_code eq 'touchnotouch') {
+    if (not $self->for_sale and $self->market->name eq 'synthetic_index' and $self->tick_expiry and $self->category_code eq 'touchnotouch') {
         # We are adding another extra 2 percent to cover touch no touch tick trade.
         # The approximated discrete-monitoring prices (for one/double touch) underestimate the true prices for tick trades.
         # The discrete_monitoring_adj_markup is applied to push prices up just above the true prices.
@@ -641,7 +641,7 @@ sub _build_base_commission {
         $underlying_base = 0.03;
     }
 
-    if (not $self->for_sale and $self->market->name eq 'volidx' and $self->tick_expiry and $self->category_code eq 'runs') {
+    if (not $self->for_sale and $self->market->name eq 'synthetic_index' and $self->tick_expiry and $self->category_code eq 'runs') {
         # For Runs the theo probability decreases sharply with an increase in number of ticks,
         # hence a fixed % of payout as commission makes contracts fairly expensive.
         # As an example a 1.5% commission on payout for a 5-tick contract would result in a 48% charge on theo price (e.g  `0.015/(1/2^5) == 0.48` or 48%).
@@ -720,7 +720,7 @@ sub _build_discount_rate {
 
     # not needing discount rate for intraday & tick
     # This is done for buy optimisation
-    return 0 if $self->market->name eq 'volidx' and not $self->expiry_daily;
+    return 0 if $self->market->name eq 'synthetic_index' and not $self->expiry_daily;
 
     my %args = (
         symbol => $self->currency,
@@ -842,7 +842,7 @@ sub _build_pricing_engine_name {
     my $self = shift;
 
     #For Volatility indices, we use plain BS formula for pricing instead of VV/Slope
-    return 'Pricing::Engine::BlackScholes' if $self->market->name eq 'volidx';
+    return 'Pricing::Engine::BlackScholes' if $self->market->name eq 'synthetic_index';
 
     my $engine_name = $self->is_path_dependent ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated' : 'Pricing::Engine::EuropeanDigitalSlope';
 

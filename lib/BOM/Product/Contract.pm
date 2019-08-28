@@ -492,7 +492,7 @@ sub allowed_slippage {
     my $self = shift;
 
     # our commission for volatility indices is 1.5% so we can't let it slipped more than that.
-    return 0.002 if $self->market->name eq 'volidx';
+    return 0.002 if $self->market->name eq 'synthetic_index';
     return 0.0175;
 }
 
@@ -522,7 +522,7 @@ sub _check_is_intraday {
 
     # don't have to check closing time for volatility indices because it is using the same engine.
     # This is done for buy optimisation
-    return 1 if ($self->market->name eq 'volidx');
+    return 1 if ($self->market->name eq 'synthetic_index');
 
     my $trading_calendar = $self->trading_calendar;
     my $exchange         = $self->underlying->exchange;
