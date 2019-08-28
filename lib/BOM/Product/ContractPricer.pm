@@ -448,17 +448,18 @@ sub _create_new_interface_engine {
         } elsif ($self->pricing_engine_name eq 'Pricing::Engine::Lookback') {
 
             %pricing_parameters = (
-                strikes         => [grep { $_ } values %{$self->barriers_for_pricing}],
-                spot            => $self->pricing_spot,
-                discount_rate   => $self->discount_rate,
-                t               => $self->timeinyears->amount,
-                mu              => $self->mu,
-                vol             => $self->pricing_vol,
-                payouttime_code => $payouttime_code,
-                payout_type     => 'non-binary',
-                contract_type   => $self->pricing_code,
-                spot_max        => $self->spot_min_max($self->date_start_plus_1s)->{high},
-                spot_min        => $self->spot_min_max($self->date_start_plus_1s)->{low},
+                strikes             => [grep { $_ } values %{$self->barriers_for_pricing}],
+                spot                => $self->pricing_spot,
+                discount_rate       => $self->discount_rate,
+                t                   => $self->timeinyears->amount,
+                mu                  => $self->mu,
+                vol                 => $self->pricing_vol,
+                payouttime_code     => $payouttime_code,
+                payout_type         => 'non-binary',
+                contract_type       => $self->pricing_code,
+                spot_max            => $self->spot_min_max($self->date_start_plus_1s)->{high},
+                spot_min            => $self->spot_min_max($self->date_start_plus_1s)->{low},
+                generation_interval => $self->underlying->generation_interval->seconds,
             );
 
         } else {

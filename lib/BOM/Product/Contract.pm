@@ -496,16 +496,6 @@ sub allowed_slippage {
     return 0.0175;
 }
 
-sub expected_date_expiry {
-    my $self = shift;
-
-    return $self->date_expiry unless $self->tick_expiry;
-    return Date::Utility->new($self->reset_time) if $self->category_code eq 'reset';
-
-    # use $self->tick_count -1 here to ensure that settlement ticks are from the database
-    return $self->date_start->plus_time_interval(($self->tick_count - 1) * $self->market->expected_tick_frequency);
-}
-
 # INTERNAL METHODS
 
 #A TimeInterval which expresses the maximum time a tick trade may run, even if there are missing ticks in the middle.

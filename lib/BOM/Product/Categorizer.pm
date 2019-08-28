@@ -320,10 +320,14 @@ sub _initialize_other_parameters {
         } else {
             # sanity check for duration. Date::Utility throws exception if you're trying
             # to create an object that's too ridiculous far in the future.
+
+            my $expected_feed_frequency = $params->{underlying}->generation_interval->seconds;
+            # defaults to 2-second if not specified
+            $expected_feed_frequency = 2 if $expected_feed_frequency == 0;
             try {
                 my ($duration_amount, $duration_unit) = $duration =~ /([0-9]+)(t|m|d|s|h)/;
                 my $interval = $duration;
-                $interval = $duration_amount * 2 if $duration_unit eq 't';
+                $interval = $duration_amount * $expected_feed_frequency if $duration_unit eq 't';
                 $params->{date_start}->plus_time_interval($interval);
             }
             catch {
@@ -334,7 +338,7 @@ sub _initialize_other_parameters {
             if (my ($tick_count) = $duration =~ /^([0-9]+)t$/) {
                 $params->{tick_expiry} = 1;
                 $params->{tick_count}  = $tick_count;
-                $params->{date_expiry} = $params->{date_start}->plus_time_interval(2 * $params->{tick_count});
+                $params->{date_expiry} = $params->{date_start}->plus_time_interval($expected_feed_frequency * $params->{tick_count});
             } else {
                 my $underlying  = $params->{underlying};
                 my $start_epoch = $params->{date_start};

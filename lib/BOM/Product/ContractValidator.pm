@@ -498,11 +498,11 @@ sub _validate_trading_times {
     my $self = shift;
     my $args = shift;
 
-    my $underlying  = $self->underlying;
-    my $exchange    = $underlying->exchange;
-    my $calendar    = $self->trading_calendar;
-    my $date_expiry = $self->date_expiry;
-    my $date_start  = $self->date_start;
+    my $underlying           = $self->underlying;
+    my $exchange             = $underlying->exchange;
+    my $calendar             = $self->trading_calendar;
+    my $date_expiry          = $self->date_expiry;
+    my $date_start           = $self->date_start;
     my $synthetic_index_flag = 1;
     my (@markets, $lc);
 
