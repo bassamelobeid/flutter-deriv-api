@@ -67,6 +67,14 @@ sub _initialize_symbol_dividend {
 sub _init {
     my $writer = BOM::Config::Chronicle::get_chronicle_writer();
     #delete chronicle data too (Redis and Pg)
+    # TODO: Rewrite this to flush everything except contractgroups and underlyinggroups.
+    # This is because UnitTestMarketData flushes Redis data but UnitTestDatabase
+    # adds the required data for trading tests to pass, but the order of requiring
+    # them is not consistent throughout the entire codebase.
+    #
+    # I would rather do this than modify every single unit test that does trades.
+    # IMHO this big amount of boilerplate is a pain in the ass and we should have
+    # some unified testing framework for testing trades that has a simple API.
     $writer->cache_writer->flushall;
     BOM::Config::Chronicle::dbic()->run(fixup => sub { $_->do('delete from chronicle;') }) if BOM::Config::Chronicle::dbic();
     $writer->set(
