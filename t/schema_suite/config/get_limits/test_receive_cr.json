@@ -24,7 +24,7 @@
             "forex",
             "commodities",
             "indices",
-            "volidx"
+            "synthetic_index"
          ],
          "properties" : {
             "indices" : {
@@ -73,7 +73,7 @@
                },
                "type" : "array"
             },
-            "volidx" : {
+            "synthetic_index" : {
                "items" : {
                   "type" : "object",
                   "additionalProperties" : false,

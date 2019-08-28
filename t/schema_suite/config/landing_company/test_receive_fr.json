@@ -131,7 +131,7 @@
                      },
                      "properties" : {}
                   },
-                  "volidx" : {
+                  "synthetic_index" : {
                      "type" : "object",
                      "additionalProperties" : false,
                      "properties" : {},

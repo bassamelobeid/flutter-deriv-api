@@ -311,7 +311,7 @@ subtest $method => sub {
     );
     my $result = $c->tcall($method, {args => {landing_company_details => 'svg'}});
     is($result->{name}, 'Binary (SVG) Ltd.', "details result ok");
-    cmp_bag([keys %{$result->{currency_config}->{volidx}}], [LandingCompany::Registry->new()->all_currencies()], "currency config ok");
+    cmp_bag([keys %{$result->{currency_config}->{synthetic_index}}], [LandingCompany::Registry->new()->all_currencies()], "currency config ok");
     ok(!(grep { !looks_like_number($_) } get_values($result->{currency_config})), 'limits for svg are all numeric');
 
     $result = $c->tcall($method, {args => {landing_company_details => 'maltainvest'}});
