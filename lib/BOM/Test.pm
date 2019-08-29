@@ -84,6 +84,7 @@ BEGIN {
         $ENV{BOM_TEST_REDIS_EVENTS}      = $config_dir . '/redis-replicated.yml';
         $ENV{BOM_TEST_REDIS_QUEUE}       = $config_dir . '/redis-replicated.yml';
         $ENV{BOM_TEST_REDIS_TRANSACTION} = $config_dir . '/redis-replicated.yml';
+        $ENV{BOM_TEST_REDIS_AUTH}        = $config_dir . '/redis.yml';
 
         # Cache redis server
         $ENV{REDIS_CACHE_SERVER} = $ENV{BOM_CACHE_SERVER} = '127.0.1.3:6385';
