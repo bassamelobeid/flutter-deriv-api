@@ -21,6 +21,10 @@ BEGIN {
     }
 }
 
+sub get_script {
+    return $script;
+}
+
 END {
     if ($script) {
         $script->stop_script;
