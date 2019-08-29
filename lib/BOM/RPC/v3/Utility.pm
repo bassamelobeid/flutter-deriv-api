@@ -117,7 +117,7 @@ sub get_token_details {
 
     return unless $token;
 
-    my ($loginid, $creation_time, $epoch, $ua_fingerprint, $scopes, $valid_for_ip, $last_used);
+    my ($loginid, $creation_time, $epoch, $ua_fingerprint, $scopes, $valid_for_ip);
     if (length $token == 15) {    # access token
         my $m = BOM::Platform::Token::API->new;
         ($loginid, $creation_time, $scopes, $valid_for_ip) = @{$m->get_token_details($token)}{qw/loginid creation_time scopes valid_for_ip/};
