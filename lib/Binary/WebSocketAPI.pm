@@ -9,6 +9,7 @@ use Binary::WebSocketAPI::BalanceConnections ();
 use Mojo::Base 'Mojolicious';
 use Mojo::Redis2;
 use Mojo::IOLoop;
+use Mojo::WebSocketProxy::Backend::JobAsync;
 use IO::Async::Loop::Mojo;
 
 use Binary::WebSocketAPI::Hooks;
@@ -21,7 +22,7 @@ use Binary::WebSocketAPI::v3::Wrapper::Accounts;
 use Binary::WebSocketAPI::v3::Wrapper::Cashier;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
-use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections ws_redis_master |;
+use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections ws_redis_master redis_queue |;
 
 use Brands;
 use Encode;
@@ -29,6 +30,7 @@ use DataDog::DogStatsd::Helper;
 use Digest::MD5 qw(md5_hex);
 use Format::Util::Strings qw( defang );
 use JSON::MaybeXS;
+use JSON::MaybeUTF8 qw(decode_json_utf8);
 use Mojolicious::Plugin::ClientIP::Pluggable;
 use Path::Tiny;
 use RateLimitations::Pluggable;
@@ -37,6 +39,7 @@ use Time::Duration::Concise;
 use YAML::XS qw(LoadFile);
 use URI;
 use List::Util qw( first );
+use Try::Tiny;
 
 # to block apps from certain operations_domains (red, green etc ) enter the color/name of the domain to the list
 # with the associated list of app_id's
@@ -45,7 +48,8 @@ use constant APPS_BLOCKED_FROM_OPERATION_DOMAINS => {red => [1]};
 
 # Set up the event loop singleton so that any code we pull in uses the Mojo
 # version, rather than trying to set its own.
-my $loop = IO::Async::Loop::Mojo->new;
+local $ENV{IO_ASYNC_LOOP} = 'IO::Async::Loop::Mojo';
+my $loop = IO::Async::Loop->new;
 die 'Unexpected event loop class: had ' . ref($loop) . ', expected a subclass of IO::Async::Loop::Mojo'
     unless $loop->isa('IO::Async::Loop::Mojo')
     and IO::Async::Loop->new->isa('IO::Async::Loop::Mojo');
@@ -62,7 +66,12 @@ our %BLOCK_ORIGINS;
 # Keys are RPC calls that we want RPC to log, controlled by redis too.
 our %RPC_LOGGING;
 
-my $json = JSON::MaybeXS->new;
+# API method (action) settings stored in a hash
+our $WS_ACTIONS;
+
+# websocket RPC backends
+our $WS_BACKENDS;
+
 my $node_config;
 
 sub apply_usergroup {
@@ -499,6 +508,23 @@ sub startup {
         ['exchange_rates', {stash_params => [qw/ exchange_rates base_currency /]}],
     ];
 
+    my $backend_redis = redis_queue();
+    my $queue_prefix = $ENV{JOB_QUEUE_PREFIX} // $app->config->{queue_prefix};
+    $WS_BACKENDS = {
+        queue_backend => {
+            type  => "job_async",
+            redis => {
+                uri       => 'redis://' . $backend_redis->url->host . ':' . $backend_redis->url->port,
+                use_multi => 1,
+                timeout   => 5,
+                $queue_prefix ? (prefix => $queue_prefix) : (),
+            }
+        },
+    };
+
+    my $json = JSON::MaybeXS->new;
+    my $ws_actions;
+
     for my $action (@$actions) {
         my $action_name = $action->[0];
         my $f           = '/home/git/regentmarkets/binary-websocket-api/config/v3';
@@ -508,8 +534,9 @@ sub startup {
         $action_options->{schema_send} = $schema_send;
         $action_options->{stash_params} ||= [];
         push @{$action_options->{stash_params}}, qw( language country_code );
-
         push @{$action_options->{stash_params}}, 'token' if $action_options->{require_auth};
+
+        $ws_actions->{$action_name} = $action_options;
     }
 
     $app->helper(
@@ -555,6 +582,7 @@ sub startup {
             before_forward => [
                 \&Binary::WebSocketAPI::Hooks::start_timing,   \&Binary::WebSocketAPI::Hooks::before_forward,
                 \&Binary::WebSocketAPI::Hooks::assign_rpc_url, \&Binary::WebSocketAPI::Hooks::introspection_before_forward,
+                \&Binary::WebSocketAPI::Hooks::assign_ws_backend,
             ],
             before_call => [
                 \&Binary::WebSocketAPI::Hooks::log_call_timing_before_forward, \&Binary::WebSocketAPI::Hooks::add_app_id,
@@ -583,6 +611,7 @@ sub startup {
             actions => $actions,
             # Skip check sanity to password fields
             skip_check_sanity => qr/password/,
+            backends          => $WS_BACKENDS,
         });
 
     my $redis = ws_redis_master();
@@ -591,11 +620,11 @@ sub startup {
         sub {
             my ($redis, $err, $ids) = @_;
             if ($err) {
-                warn "Error reading diverted app IDs from Redis: $err\n";
+                $log->error("Error reading diverted app IDs from Redis: $err");
                 return;
             }
             return unless $ids;
-            warn "Have diverted app_ids, applying: $ids\n";
+            $log->info("Have diverted app_ids, applying: $ids");
             # We'd expect this to be an empty hashref - i.e. true - if there's a value back from Redis.
             # No value => no update.
             %Binary::WebSocketAPI::DIVERT_APP_IDS = %{$json->decode(Encode::decode_utf8($ids))};
@@ -605,11 +634,11 @@ sub startup {
         sub {
             my ($redis, $err, $ids) = @_;
             if ($err) {
-                warn "Error reading blocked app IDs from Redis: $err\n";
+                $log->error("Error reading blocked app IDs from Redis: $err");
                 return;
             }
             return unless $ids;
-            warn "Have blocked app_ids, applying: $ids\n";
+            $log->info("Have blocked app_ids, applying: $ids");
             %BLOCK_APP_IDS = %{$json->decode(Encode::decode_utf8($ids))};
         });
     $redis->get(
@@ -617,11 +646,11 @@ sub startup {
         sub {
             my ($redis, $err, $origins) = @_;
             if ($err) {
-                warn "Error reading blocked origins from Redis: $err\n";
+                $log->error("Error reading blocked origins from Redis: $err");
                 return;
             }
             return unless $origins;
-            warn "Have blocked origins, applying: $origins\n";
+            $log->info("Have blocked origins, applying: $origins");
             %BLOCK_ORIGINS = %{$json->decode(Encode::decode_utf8($origins))};
         });
     $redis->get(
@@ -629,14 +658,47 @@ sub startup {
         sub {
             my ($redis, $err, $logging) = @_;
             if ($err) {
-                warn "Error reading RPC logging config from Redis: $err\n";
+                $log->error("Error reading RPC logging config from Redis: $err");
                 return;
             }
             %RPC_LOGGING = $logging ? $json->decode(Encode::decode_utf8($logging))->%* : ();
-            warn "Enabled logging for RPC: " . join(', ', keys %RPC_LOGGING) . "\n" if %RPC_LOGGING;
+            $log->info("Enabled logging for RPC: " . join(', ', keys %RPC_LOGGING)) if %RPC_LOGGING;
         });
-    return;
 
+    $redis->get(
+        'web_socket_proxy::backends',
+        sub {
+            my ($redis, $err, $backends_str) = @_;
+            if ($err) {
+                $log->error("Error reading rpc backends from Redis: $err");
+            }
+            if ($backends_str) {
+                $log->info("Found rpc backends in redis, applying: $backends_str");
+                try {
+                    my $backends = decode_json_utf8($backends_str);
+                    for my $method (keys %$backends) {
+                        my $backend = $backends->{$method} // 'default';
+                        $backend = 'default' if $backend eq 'http';
+                        if (exists $ws_actions->{$method} and ($backend eq 'default' or exists $WS_BACKENDS->{$backend})) {
+                            $ws_actions->{$method}->{backend} = $backend;
+                        } else {
+                            $log->warn("Invalid  backend setting ignored: <$method $backend>");
+                        }
+                    }
+                }
+                catch {
+                    $log->error("Error applying backends from Redis: $_");
+                };
+            }
+            $WS_ACTIONS = $ws_actions;
+        });
+
+    my $timeout = 0;
+    Mojo::IOLoop->timer(2 => sub { ++$timeout });
+    Mojo::IOLoop->one_tick while !($timeout or $WS_ACTIONS);
+    $log->error("Timeout reached when trying to load backend settings from Redis") if $timeout;
+
+    return;
 }
 
 1;

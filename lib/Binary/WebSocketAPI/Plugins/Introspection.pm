@@ -16,11 +16,15 @@ use Try::Tiny;
 use POSIX qw(strftime);
 
 use JSON::MaybeXS;
+use JSON::MaybeUTF8 qw(encode_json_utf8);
 use Scalar::Util qw(blessed);
 use Variable::Disposition qw(retain_future);
 use Socket qw(:crlf);
 use Proc::ProcessTable;
 use feature 'state';
+use Log::Any qw($log);
+use DataDog::DogStatsd::Helper;
+
 use Binary::WebSocketAPI::v3::Instance::Redis qw(ws_redis_master);
 
 # How many seconds to allow per command - anything that takes more than a few milliseconds
@@ -42,7 +46,6 @@ taken by something else and we have no SO_REUSEPORT on our current kernel.
 
 sub start_server {
     my ($self, $app) = @_;
-
     $INTROSPECTION_REDIS = Binary::WebSocketAPI::v3::Instance::Redis::create('ws_redis_master');
     $INTROSPECTION_REDIS->on(
         message => $app->$curry::weak(
@@ -64,7 +67,7 @@ sub start_server {
                                 # We'd like this to be nonblocking
                                 sub {
                                     my ($redis, $err) = @_;
-                                    warn "Publish response - $err" if $err;
+                                    $log->errorf('Publish failure response - %s', $err) if $err;
                                 });
                         },
                         fail => sub {
@@ -75,7 +78,7 @@ sub start_server {
                                 # We'd like this to be nonblocking
                                 sub {
                                     my ($redis, $err) = @_;
-                                    warn "Publish failure response - $err" if $err;
+                                    $log->errorf('Publish failure response - %s', $err) if $err;
                                 });
                         }));
             }));
@@ -84,9 +87,9 @@ sub start_server {
         sub {
             my ($redis, $err) = @_;
             return unless $err;
-            warn "Failed to subscribe to introspection endpoint: " . $err;
+            $log->errorf('Failed to subscribe to introspection endpoint: %s', $err);
         });
-    $app->log->info("Introspection listening on: " . INTROSPECTION_CHANNEL);
+    $app->log->info('Introspection listening on: ' . INTROSPECTION_CHANNEL);
     return;
 }
 
@@ -99,7 +102,7 @@ sub handle_command {
     }
 
     unless (is_valid_command($command)) {
-        warn "Invalid command: $command @args\n";
+        $log->errorf('Invalid command: %s %s', $command, \@args);
         return Future->fail(
             sprintf("Invalid command [%s]", $command),
             invalid_command => $command,
@@ -122,7 +125,7 @@ sub handle_command {
     return Future->wait_any($rslt, Future::Mojo->new_timer(MAX_REQUEST_SECONDS)->then(sub { Future->fail('Timeout') }),)->on_done(
         sub {
             my ($resp) = @_;
-            warn "$command (@args) - " . $json->encode($resp) . "\n" if $write_to_log;
+            $log->debugf('%s (%s) - %s', $command, \@args, $resp) if $write_to_log;
         }
         )->else(
         sub {
@@ -132,7 +135,7 @@ sub handle_command {
                 category => $category,
                 details  => \@details
             };
-            warn "$command (@args) failed - $exception\n";
+            $log->errorf('%s (%s) failed - %s', $command, \@args, $exception);
             return Future->fail($rslt, $category, @details);
         });
 }
@@ -162,7 +165,7 @@ sub register {
                 catch {
                     return unless $code;
                     return $code->() if $retries--;
-                    warn "Unable to start introspection server after 100 retries - $@";
+                    $log->errorf('Unable to start introspection server after 100 retries - ', $_);
                     undef $code;
                 }
             });
@@ -342,6 +345,57 @@ command stats => sub {
             cumulative_redis_errors       => $app->stat->{redis_errors}});
 };
 
+command backend => sub {
+    my ($self, $app, $method, $backend) = @_;
+    my $ws_actions = $Binary::WebSocketAPI::WS_ACTIONS;
+    my $backend_list = 'default (or http), ' . join(', ', keys $Binary::WebSocketAPI::WS_BACKENDS->%*);
+
+    return Future->fail('Websocket actions are not initialized yet. Please try later') unless $ws_actions;
+
+    return Future->fail('No method name is specified (usage: backend <method> <backend>)') unless $method;
+
+    return Future->done({backend_list => $backend_list}) if ($method eq '--list');
+    return Future->fail("Method '$method' was not found") unless exists $ws_actions->{$method};
+
+    return Future->fail('No backend name is specified (usage: backend <method> <backend>)') unless $backend;
+
+    $backend = 'default' if $backend eq 'http';
+    if ($backend eq ($ws_actions->{$method}->{backend} // 'default')) {
+        return Future->fail("Backend is already set to '$backend' for method '$method'. Nothing is changed.");
+    }
+
+    unless ($backend eq 'default' or exists $Binary::WebSocketAPI::WS_BACKENDS->{$backend}) {
+        my $msg = "Backend '$backend' was not found. Available backends: $backend_list";
+        return Future->fail($msg);
+    }
+
+    $ws_actions->{$method}->{backend} = $backend;
+
+    my $redis = ws_redis_master();
+
+    my %method_backends = map { $ws_actions->{$_}->{backend} ? ($_ => $ws_actions->{$_}->{backend}) : () } keys $ws_actions->%*;
+    my $f = Future::Mojo->new;
+    $redis->set(
+        'web_socket_proxy::backends' => encode_json_utf8(\%method_backends),
+        sub {
+            my ($redis, $err) = @_;
+            unless ($err) {
+                $f->done({$method => $backend});
+                return;
+            }
+            $log->errorf('Error when saving backends to redis - %s', $err);
+            DataDog::DogStatsd::Helper::stats_inc(
+                'bom_websocket_api.v_3.redis_instances.ws_redis_master.fail',
+                {tags => ['introspection', 'command:backend', "args:$method $backend"]});
+            $f->fail(
+                $err,
+                backend => $backend,
+                method  => $method
+            );
+        });
+    return $f;
+};
+
 sub _get_redis_connections {
     my $app         = shift;
     my $connections = 0;
@@ -378,7 +432,7 @@ L<App::Devel::MAT::Explorer::GTK>.
 command dumpmem => sub {
     require Devel::MAT::Dumper;
     my $filename = '/var/lib/binary/websockets/' . strftime('%Y-%m-%d-%H%M%S', gmtime) . '-dump-' . $$ . '.pmat';
-    warn "Writing memory dump to [$filename] for $$\n";
+    $log->infof("Writing memory dump to [%s] for %s", $filename, $$);
     my $start = Time::HiRes::time;
     Devel::MAT::Dumper::dump($filename);
     my $elapsed = 1000.0 * (Time::HiRes::time - $start);
@@ -404,7 +458,7 @@ command divert => sub {
         sub {
             my ($redis, $err, $ids) = @_;
             if ($err) {
-                warn "Error reading diverted app IDs from Redis: $err\n";
+                $log->errorf('Error reading diverted app IDs from Redis: %s', $err);
                 return $f->fail(
                     $err,
                     redis => $app_id,
@@ -431,7 +485,7 @@ command divert => sub {
                             $f->done($rslt);
                             return;
                         }
-                        warn "Redis error when recording diverted app_id - $err";
+                        $log->errorf('Redis error when recording diverted app_id - %s', $err);
                         $f->fail(
                             $err,
                             redis => $app_id,
@@ -460,7 +514,7 @@ command block => sub {
         sub {
             my ($redis, $err, $ids) = @_;
             if ($err) {
-                warn "Error reading blocked app IDs from Redis: $err\n";
+                $log->errorf('Error reading blocked app IDs from Redis: %s', $err);
                 return $f->fail(
                     $err,
                     redis => $app_id,
@@ -483,7 +537,7 @@ command block => sub {
                             $f->done($rslt);
                             return;
                         }
-                        warn "Redis error when recording blocked app_id - $err";
+                        $log->errorf('Redis error when recording blocked app_id - %s', $err);
                         $f->fail(
                             $err,
                             redis => $app_id,
@@ -512,7 +566,7 @@ command block_origin => sub {
         sub {
             my ($redis, $err, $origins) = @_;
             if ($err) {
-                warn "Error reading blocked app orgins from Redis: $err\n";
+                $log->errorf('Error reading blocked app orgins from Redis: %s', $err);
                 return $f->fail(
                     $err,
                     redis => $origins,
@@ -535,7 +589,7 @@ command block_origin => sub {
                             $f->done($rslt);
                             return;
                         }
-                        warn "Redis error when recording blocked origin - $err";
+                        $log->errorf('Redis error when recording blocked origin - %s', $err);
                         $f->fail(
                             $err,
                             redis => $origin,
@@ -574,7 +628,7 @@ command logging => sub {
         sub {
             my ($redis, $err, $config) = @_;
             if ($err) {
-                warn "Error reading RPC logging config from Redis: $err\n";
+                $log->errorf('Error reading RPC logging config from Redis: %s', $err);
                 return $f->fail($err);
             }
             %Binary::WebSocketAPI::RPC_LOGGING = $json->decode(Encode::decode_utf8($config))->%* if $config;
@@ -607,7 +661,7 @@ command logging => sub {
                             $f->done($rslt);
                             return;
                         }
-                        warn "Redis error when setting RPC logging config - $err";
+                        $log->errorf('Redis error when setting RPC logging config - %s', $err);
                         $f->fail(
                             $err,
                             type   => $type,
