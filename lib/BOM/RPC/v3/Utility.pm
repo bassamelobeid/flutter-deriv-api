@@ -42,6 +42,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Token;
 use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Token::API;
 use BOM::Platform::Client::CashierValidation;
 use BOM::MarketData qw(create_underlying);
 use BOM::Platform::Event::Emitter;
@@ -116,10 +117,13 @@ sub get_token_details {
 
     return unless $token;
 
-    my ($loginid, $creation_time, $epoch, $ua_fingerprint, $scopes, $valid_for_ip);
+    my ($loginid, $creation_time, $epoch, $ua_fingerprint, $scopes, $valid_for_ip, $last_used);
     if (length $token == 15) {    # access token
         my $m = BOM::Database::Model::AccessToken->new;
-        ($loginid, $creation_time, $scopes, $valid_for_ip) = @{$m->get_token_details($token)}{qw/loginid creation_time scopes valid_for_ip/};
+        ($loginid, $creation_time, $scopes, $valid_for_ip, $last_used) =
+            @{$m->get_token_details($token)}{qw/loginid creation_time scopes valid_for_ip last_used/};
+        # This is temporary to support migration
+        BOM::Platform::Token::API->new->update_cached_last_used($token, $last_used) if $last_used;
         return unless $loginid;
         $epoch = Date::Utility->new($creation_time)->epoch if $creation_time;
     } elsif (length $token == 32 && $token =~ /^a1-/) {

@@ -32,6 +32,7 @@ use BOM::RPC::v3::PortfolioManagement;
 use BOM::Transaction::History qw(get_transaction_history);
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Client::CashierValidation;
+use BOM::Platform::Token::API;
 use BOM::Config::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Locale qw/get_state_by_id/;
@@ -1864,7 +1865,7 @@ rpc api_token => sub {
                 token     => $token
             });
 
-        $m->remove_by_token($token, $client->loginid);
+        BOM::Platform::Token::API->new->remove_by_token($token, $client->loginid);
         $rtn->{delete_token} = 1;
         # send notification to cancel streaming, if we add more streaming
         # for authenticated calls in future, we need to add here as well
@@ -1901,9 +1902,9 @@ rpc api_token => sub {
         ## for old API calls (we'll make it required on v4)
         my $scopes = $args->{new_token_scopes} || ['read', 'trade', 'payments', 'admin'];
         if ($args->{valid_for_current_ip_only}) {
-            $m->create_token($client->loginid, $display_name, $scopes, $client_ip);
+            BOM::Platform::Token::API->new->create_token($client->loginid, $display_name, $scopes, $client_ip);
         } else {
-            $m->create_token($client->loginid, $display_name, $scopes);
+            BOM::Platform::Token::API->new->create_token($client->loginid, $display_name, $scopes);
         }
         $rtn->{new_token} = 1;
     }
