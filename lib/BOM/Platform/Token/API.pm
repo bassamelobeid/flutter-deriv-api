@@ -74,14 +74,15 @@ returns a hash reference containing details of a token
 =cut
 
 sub get_token_details {
-    my ($self, $token) = @_;
+    my ($self, $token, $update_last_used) = @_;
 
+    $update_last_used //= 0;
     my $key = $self->_make_key($token);
     my %details = @{$self->_redis_read->hgetall($key) // []};
 
     $details{scopes} = decode_json_utf8($details{scopes}) if $details{scopes};
 
-    $self->_redis_write->hset($key, 'last_used', time);
+    $self->_redis_write->hset($key, 'last_used', time) if $update_last_used;
 
     # last_used is expected as string in the API schema
     $details{last_used} = Date::Utility->new($details{last_used})->datetime if $details{last_used};
