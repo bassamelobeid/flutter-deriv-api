@@ -1,5 +1,23 @@
 package BOM::Platform::Token::API;
 
+=head1 NAME
+
+BOM::Platform::Token::API - creates and saves API token to both auth redis and auth database.
+
+=cut
+
+=head2 DESCRIPTION
+
+    use BOM::Platform::Token::API;
+
+    my $obj = BOM::Platform::Token::API->new;
+    # creates new token
+    my $token = $obj->create_token('CR1234', 'testtoken', ['read','write']);
+    # delete token
+    $obj->remove_by_token($token);
+
+=cut
+
 use strict;
 use warnings;
 
@@ -42,18 +60,9 @@ sub create_token {
     };
 
     # save in database for persistence
-    $self->_api_model->save_token($data);
+    $self->_db_model->save_token($data);
 
-    my $writer    = $self->_redis_write;
-    my $redis_key = $self->_make_key($token);
-    $data->{scopes}        = encode_json_utf8($data->{scopes})                 if $data->{scopes};
-    $data->{creation_time} = Date::Utility->new($data->{creation_time})->epoch if $data->{creation_time};
-    $data->{last_used}     = Date::Utility->new($data->{last_used})->epoch     if $data->{last_used};
-
-    $writer->multi;
-    $writer->hmset($redis_key, %$data);
-    $writer->hset($self->_make_key_by_id($data->{loginid}), $data->{display_name}, $token);
-    $writer->exec;
+    $self->save_token_details_to_redis($data);
 
     return $token;
 }
@@ -129,6 +138,27 @@ sub is_name_taken {
     return $self->_redis_read->hexists($self->_make_key_by_id($loginid), $display_name);
 }
 
+sub save_token_details_to_redis {
+    my ($self, $data) = @_;
+
+    my $token           = $data->{token};
+    my $writer          = $self->_redis_write;
+    my $redis_key_by_id = $self->_make_key_by_id($data->{loginid});
+
+    $self->_log->fatal('display name must be unique.') if $writer->hexists($redis_key_by_id, $data->{display_name});
+
+    $data->{scopes}        = encode_json_utf8($data->{scopes})                 if $data->{scopes} and ref $data->{scopes} eq 'ARRAY';
+    $data->{creation_time} = Date::Utility->new($data->{creation_time})->epoch if $data->{creation_time};
+    $data->{last_used}     = Date::Utility->new($data->{last_used})->epoch     if $data->{last_used};
+
+    $writer->multi;
+    $writer->hmset($self->_make_key($token), %$data);
+    $writer->hset($redis_key_by_id, $data->{display_name}, $token);
+    $writer->exec;
+
+    return;
+}
+
 =head2 remove_by_loginid
 
 removes all API tokens for loginid
@@ -145,7 +175,7 @@ sub remove_by_loginid {
     foreach my $name (keys %all) {
         my $token_details = $self->get_token_details($all{$name});
         #remove token from database first before removing it from redis
-        $self->_api_model->remove_by_token($token_details->{token}, $loginid);
+        $self->_db_model->remove_by_token($token_details->{token}, $loginid);
 
         $redis->multi;
         $redis->del($self->_make_key($all{$name}));
@@ -171,9 +201,8 @@ sub remove_by_token {
 
     my $redis = $self->_redis_write;
 
-    my $token_details = $self->get_token_details($token);
     #remove token from database first before removing it from redis
-    $self->_api_model->remove_by_token($token_details->{token}, $loginid);
+    $self->_db_model->remove_by_token($token, $loginid);
 
     $redis->multi;
     $redis->del($self->_make_key($token));
@@ -207,13 +236,13 @@ sub _cleanup {
     return $token;
 }
 
-has _api_model => (
+has _db_model => (
     is      => 'ro',
     lazy    => 1,
-    builder => '_build_api_model'
+    builder => '_build_db_model'
 );
 
-sub _build_api_model {
+sub _build_db_model {
     return BOM::Database::Model::AccessToken->new;
 }
 
