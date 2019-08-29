@@ -92,6 +92,14 @@ sub get_attributes_from_contract {
 
     my ($contract_group, $underlying_group) = _get_attr_groups($contract);
 
+    if (not $underlying_group) {
+        die ['BI054'];    # mimic database error
+    }
+
+    # We do not check for contracts with no contract groups.
+    # Not sure if that is a bug or expected behaviour
+    $contract_group ||= '+';
+
     my $bet_data       = $contract->{bet_data};
     my $underlying     = $bet_data->{underlying_symbol};
     my $binary_user_id = $contract->{account_data}->{binary_user_id};
@@ -107,10 +115,6 @@ sub get_attributes_from_contract {
     } else {
         my $duration = Date::Utility->new($bet_data->{expiry_time})->epoch - Date::Utility->new($bet_data->{start_time})->epoch;
         $expiry_type = 'u' if ($duration <= 300);    # ultra_short; 5 minutes
-    }
-
-    if (not $underlying_group) {
-        die ['BI054'];                               # mimic database error
     }
 
     return [$binary_user_id, $underlying_group, $underlying, $contract_group, $expiry_type, $barrier_type];

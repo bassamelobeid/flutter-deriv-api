@@ -24,9 +24,6 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Helper::Client qw(create_client top_up);
 use BOM::Test::Helper::QuantsConfig qw(create_config delete_all_config);
 
-Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
-
-my $base                     = 'USD';
 my $mocked_CurrencyConverter = Test::MockModule->new('ExchangeRates::CurrencyConverter');
 $mocked_CurrencyConverter->mock(
     'in_usd',
@@ -45,6 +42,9 @@ $mocked_CurrencyConverter->mock(
         $from_currency eq 'USD' and return 1 * $price;
         return 0;
     });
+
+Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
+
 my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
 
 $mock_validation->mock(
