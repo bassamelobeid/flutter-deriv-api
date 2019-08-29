@@ -166,6 +166,33 @@ sub token_deletion_history {
     return $tokens;
 }
 
+### Methods to support api token migration phase
+
+sub save_token {
+    my ($self, $args) = @_;
+
+    for (grep { not $args->{$_} } qw(token display_name loginid scopes)) {
+        die "$_ is required in create_token";
+    }
+
+    $args->{valid_for_ip}  //= '';
+    $args->{creation_time} //= Date::Utility->new->db_timestamp;
+
+    my $dbic = $self->dbic;
+    my $res  = $dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare("
+                INSERT INTO auth.access_token(token, display_name, client_loginid, scopes, valid_for_ip, creation_time)
+                VALUES (?,?,?,?,?,?)
+                RETURNING *
+            ");
+            $sth->execute(@{$args}{'token', 'display_name', 'loginid', 'scopes', 'valid_for_ip', 'creation_time'});
+            $sth->fetchrow_hashref();
+        });
+
+    return $res->{token};
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
