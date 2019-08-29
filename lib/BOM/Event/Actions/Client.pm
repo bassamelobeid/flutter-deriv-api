@@ -1326,6 +1326,9 @@ sub social_responsibility_check {
             # Remove keys from redis
             $redis->hdel($hash_key, $loginid . '_' . $_) for keys %$client_sr_values;
 
+            # Set the client's SR risk status as at-risk
+            $redis->hset($hash_key, $loginid . '_sr_risk_status', 1);
+
             try {
                 $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/social_responsibiliy.html.tt', $data, \my $html);
                 die "Template error: @{[$tt->error]}" if $tt->error;
