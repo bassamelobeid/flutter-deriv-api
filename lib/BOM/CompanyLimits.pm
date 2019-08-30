@@ -13,6 +13,7 @@ use BOM::CompanyLimits::Helpers qw(get_redis);
 use BOM::CompanyLimits::Combinations;
 use BOM::CompanyLimits::Limits;
 use BOM::CompanyLimits::LossTypes;
+use BOM::Platform::Script::TradeWarnings;
 
 =head1 NAME
 
@@ -47,22 +48,25 @@ sub add_buy_contract {
     )->get();
 
     if (@breaches) {
-        # TODO: send event to publish email to quants
-        # print 'BREACH', Dumper(\@breaches);
-
         foreach my $breach (@breaches) {
-            # For now, we simply mimic database errors instead creating new error codes.
-            if (   $breach->[0] eq 'potential_loss'
-                or $breach->[0] eq 'realized_loss')
-            {
-                die ['BI051'];
-            } elsif ($breach->[0] eq 'turnover') {
-                die ['BI011'];
+            publish_breach($breach, $contract);
+
+            # Only block trades for actual breaches; ignore threshold warnings
+            if ($breach->[3] > $breach->[2]) {
+                # For now, we simply mimic database errors instead creating new error codes.
+                if (   $breach->[0] eq 'potential_loss'
+                    or $breach->[0] eq 'realized_loss')
+                {
+                    die ['BI051'];
+                } elsif ($breach->[0] eq 'turnover') {
+                    die ['BI011'];
+                }
+                die "Unknown Limit Breach @$breach";
             }
         }
-
-        die 'Unknown Limit Breach';
     }
+
+    return;
 }
 
 sub reverse_buy_contract {
@@ -226,10 +230,10 @@ sub _check_breaches {
             my ($comb, $limit, $loss_type_limit, $curr_amount) = @attr;
 
             my $diff = $curr_amount - $loss_type_limit;
-            if ($diff > 0) {
+            if ($diff > 0
+                or ($threshold and $curr_amount > ($loss_type_limit * $threshold)))
+            {
                 push(@breaches, [$loss_type, $comb, $loss_type_limit, $curr_amount]);
-            } elsif ($threshold and $curr_amount > ($loss_type_limit * $threshold)) {
-                # TODO: send out trade_warning that warning threshold is breached
             }
         }
     }
@@ -249,6 +253,65 @@ sub _check_breaches {
     }
 
     return @breaches;
+}
+
+sub publish_breach {
+    my ($breach, $contract) = @_;
+    my $msg = _build_breach_msg($breach, $contract);
+
+    # TODO: this looks like in the wrong place. We keep as is for legacy reasons.
+    #       Ideally publishing trade warnings should be a part of trade limits code
+    # NOTE: 1st param here is Redis instance, which is not used (lol)
+    BOM::Platform::Script::TradeWarnings::_publish(undef, $msg);
+
+    return;
+}
+
+my $expiry_map = {
+    t => 'tick',
+    d => 'daily',
+    i => 'intraday',
+    u => 'ultrashort',
+};
+
+my $barrier_map = {
+    a => 'atm',
+    n => 'non-atm',
+};
+
+sub _build_breach_msg {
+    my ($breach, $contract) = @_;
+    my ($loss_type, $comb, $loss_type_limit, $curr_amount) = @$breach;
+    my $account_data = $contract->{account_data};
+
+    my @attrs = split(/,/, $comb);
+    my ($type, $rank);
+
+    $rank->{expiry_type} = $expiry_map->{substr($attrs[0], 0, 1)};
+    $rank->{market_or_symbol} = $attrs[1];
+
+    # Only user specific limits have 1 char as 1st attribute in key
+    if (length($attrs[0]) == 1) {
+        # User specific limits
+        $type = "user_$loss_type";
+    } else {
+        # Global limits
+        $type = "global_$loss_type";
+        $rank->{contract_group} = $attrs[2];
+        $rank->{barrier_type} = $barrier_map->{substr($attrs[1], 1, 1)};
+    }
+
+    my $msg = {
+        rank            => $rank,
+        current_amount  => $curr_amount,
+        limit_amount    => $loss_type_limit,
+        type            => $type,
+        client_loginid  => $account_data->{client_loginid},
+        binary_user_id  => $account_data->{binary_user_id},
+        landing_company => $account_data->{landing_company},
+    };
+
+    return $msg;
 }
 
 sub add_sell_contract {
@@ -271,6 +334,8 @@ sub add_sell_contract {
         incr_loss_hash($landing_company, 'realized_loss',  $company_limits, $realized_loss),
         incr_loss_hash($landing_company, 'potential_loss', $company_limits, -$potential_loss),
     );
+
+    return;
 }
 
 async sub incr_loss_hash {

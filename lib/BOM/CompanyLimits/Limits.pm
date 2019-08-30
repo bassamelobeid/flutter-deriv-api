@@ -170,9 +170,9 @@ sub get_key_from_limit_record {
 
 # takes the min if both params are defined, otherwise take the first defined
 sub _coalesce_min {
-    my ($a, $b) = @_;
-    return min($a, $b) if (defined $a and defined $b);
-    return $a || $b;
+    my ($x, $y) = @_;
+    return min($x, $y) if (defined $x and defined $y);
+    return $x || $y;
 }
 
 1;
