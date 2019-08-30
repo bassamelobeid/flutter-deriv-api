@@ -30,6 +30,7 @@ use JSON::MaybeUTF8 qw(:v1);
 use Date::Utility;
 use BOM::Config::RedisReplicated;
 use Log::Any ();
+use BOM::Platform::Context qw (localize);
 
 use constant {
     NAMESPACE       => 'TOKEN',
@@ -44,6 +45,10 @@ sub create_token {
 
     die $self->_log->fatal("loginid is required")      unless $loginid;
     die $self->_log->fatal("display_name is required") unless $display_name;
+
+    return {error => localize('alphanumeric with space and dash, 2-32 characters')} if $display_name !~ /^[\w\s\-]{2,32}$/;
+    return {error => localize('The name is taken.')}                                if $self->is_name_taken($loginid, $display_name);
+    return {error => localize('Max 30 tokens are allowed.')}                        if $self->get_token_count_by_loginid($loginid) > 30;
 
     $scopes = [grep { $supported_scopes{$_} } @$scopes];
     my $token = $self->generate_token(TOKEN_LENGTH);
@@ -60,11 +65,14 @@ sub create_token {
     };
 
     # save in database for persistence
-    $self->_db_model->save_token($data);
-
+    my $success = $self->_db_model->save_token($data);
+    # it might be token get deleted in redis somehow since it exists in the database already.
+    # Still save it if it is not saved as a new token in database.
     $self->save_token_details_to_redis($data);
 
-    return $token;
+    return {error => localize('The name is taken.')} unless $success;
+
+    return $success->{token};
 }
 
 =head2 get_token_details
@@ -142,11 +150,10 @@ sub is_name_taken {
 sub save_token_details_to_redis {
     my ($self, $data) = @_;
 
-    my $token           = $data->{token};
-    my $writer          = $self->_redis_write;
-    my $redis_key_by_id = $self->_make_key_by_id($data->{loginid});
+    my $token  = $data->{token};
+    my $writer = $self->_redis_write;
 
-    die $self->_log->fatal('display name must be unique.') if $writer->hexists($redis_key_by_id, $data->{display_name});
+    return 0 if $self->is_name_taken($data->{loginid}, $data->{display_name});
 
     $data->{scopes}        = encode_json_utf8($data->{scopes})                 if $data->{scopes} and ref $data->{scopes} eq 'ARRAY';
     $data->{creation_time} = Date::Utility->new($data->{creation_time})->epoch if $data->{creation_time};
@@ -154,10 +161,10 @@ sub save_token_details_to_redis {
 
     $writer->multi;
     $writer->hmset($self->_make_key($token), %$data);
-    $writer->hset($redis_key_by_id, $data->{display_name}, $token);
+    $writer->hset($self->_make_key_by_id($data->{loginid}), $data->{display_name}, $token);
     $writer->exec;
 
-    return;
+    return 1;
 }
 
 =head2 remove_by_loginid
