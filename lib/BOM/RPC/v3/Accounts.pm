@@ -1865,7 +1865,7 @@ rpc api_token => sub {
                 token     => $token
             });
 
-        BOM::Platform::Token::API->new->remove_by_token($token, $client->loginid);
+        $m->remove_by_token($token, $client->loginid);
         $rtn->{delete_token} = 1;
         # send notification to cancel streaming, if we add more streaming
         # for authenticated calls in future, we need to add here as well
@@ -1881,30 +1881,15 @@ rpc api_token => sub {
         }
     }
     if (my $display_name = $args->{new_token}) {
-        my $display_name_err;
-        if ($display_name =~ /^[\w\s\-]{2,32}$/) {
-            if ($m->is_name_taken($client->loginid, $display_name)) {
-                $display_name_err = localize('The name is taken.');
-            }
-        } else {
-            $display_name_err = localize('alphanumeric with space and dash, 2-32 characters');
-        }
-        unless ($display_name_err) {
-            my $token_cnt = $m->get_token_count_by_loginid($client->loginid);
-            $display_name_err = localize('Max 30 tokens are allowed.') if $token_cnt >= 30;
-        }
-        if ($display_name_err) {
-            return BOM::RPC::v3::Utility::create_error({
-                code              => 'APITokenError',
-                message_to_client => $display_name_err,
-            });
-        }
         ## for old API calls (we'll make it required on v4)
         my $scopes = $args->{new_token_scopes} || ['read', 'trade', 'payments', 'admin'];
-        if ($args->{valid_for_current_ip_only}) {
-            BOM::Platform::Token::API->new->create_token($client->loginid, $display_name, $scopes, $client_ip);
-        } else {
-            BOM::Platform::Token::API->new->create_token($client->loginid, $display_name, $scopes);
+        my $token = $m->create_token($client->loginid, $display_name, $scopes, ($args->{valid_for_current_ip_only} ? $client_ip : undef));
+
+        if (my $error = $token->{error}) {
+            return BOM::RPC::v3::Utility::create_error({
+                code              => 'APITokenError',
+                message_to_client => $error,
+            });
         }
         $rtn->{new_token} = 1;
     }
