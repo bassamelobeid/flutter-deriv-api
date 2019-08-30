@@ -250,7 +250,7 @@ sub run_worker_process {
             uri                 => $redis,
             max_concurrent_jobs => 1,
             use_multi           => 1,
-            timeout             => 5,
+            timeout             => 300,
             $queue_prefix ? (prefix => $queue_prefix) : (),
         ));
 
@@ -275,48 +275,60 @@ sub run_worker_process {
     # Result: JSON-encoded result
     $worker->jobs->each(
         sub {
-            my $job          = $_;
-            my $current_time = Time::Moment->now;
-            my $name         = $job->data('name');
-            my $params       = decode_json_utf8($job->data('params'));
+            my $job = $_;
 
-            my ($queue) = $worker->pending_queues;
-            my $tags = {tags => ["rpc:$name", 'queue:' . $queue]};
-            stats_inc("rpc_queue.worker.jobs", $tags);
+            Future->wait_any(
+                $loop->timeout_future(after => get_timeout($job))->on_fail(
+                    sub {
+                        # add datadog metrics
+                        $log->errorf('Time out');
+                        $job->fail("ERROR");
+                    }
+                ),
+                sub {
 
-            # Handle a 'ping' request immediately here
-            if ($name eq "ping") {
-                $_->done(
-                    encode_json_utf8({
-                            success => 1,
-                            result  => 'pong'
-                        }));
-                return;
-            }
+                    my $current_time = Time::Moment->now;
+                    my $name         = $job->data('name');
+                    my $params       = decode_json_utf8($job->data('params'));
 
-            $log->tracef("Running RPC <%s> for: %s", $name, pp($params));
+                    my ($queue) = $worker->pending_queues;
+                    my $tags = {tags => ["rpc:$name", 'queue:' . $queue]};
+                    stats_inc("rpc_queue.worker.jobs", $tags);
 
-            if (my $code = $services{$name}) {
-                my $result = $code->($params);
-                $log->tracef("Results:\n%s", join("\n", map { " | $_" } split m/\n/, pp($result)));
+                    # Handle a 'ping' request immediately here
+                    if ($name eq "ping") {
+                        $job->done(
+                            encode_json_utf8({
+                                    success => 1,
+                                    result  => 'pong'
+                                }));
+                        return;
+                    }
 
-                $_->done(
-                    encode_json_utf8({
-                            success => 1,
-                            result  => $result
-                        }));
-            } else {
-                $log->trace("  UNKNOWN");
-                # Transport mechanism itself succeeded, so ->done is fine here
-                $_->done(
-                    encode_json_utf8({
-                            success => 0,
-                            error   => "Unknown RPC name '$name'"
-                        }));
-                stats_inc("rpc_queue.worker.jobs.failed", $tags);
-            }
+                    $log->tracef("Running RPC <%s> for: %s", $name, pp($params));
 
-            stats_gauge("rpc_queue.worker.jobs.latency", $current_time->delta_milliseconds(Time::Moment->now), $tags);
+                    if (my $code = $services{$name}) {
+                        my $result = $code->($params);
+                        $log->tracef("Results:\n%s", join("\n", map { " | $_" } split m/\n/, pp($result)));
+
+                        $job->done(
+                            encode_json_utf8({
+                                    success => 1,
+                                    result  => $result
+                                }));
+                    } else {
+                        $log->trace("  UNKNOWN");
+                        # Transport mechanism itself succeeded, so ->done is fine here
+                        $job->done(
+                            encode_json_utf8({
+                                    success => 0,
+                                    error   => "Unknown RPC name '$name'"
+                                }));
+                        stats_inc("rpc_queue.worker.jobs.failed", $tags);
+                    }
+
+                    stats_gauge("rpc_queue.worker.jobs.latency", $current_time->delta_milliseconds(Time::Moment->now), $tags);
+                })->retain;
         });
 
     $worker->trigger->retain;
