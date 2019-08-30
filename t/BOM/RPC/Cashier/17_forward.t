@@ -193,7 +193,7 @@ subtest 'withdraw' => sub {
             created_for => 'payment_withdraw',
         })->token;
 
-    $params->{token} = BOM::Platform::Token::API->new->create_token($client_mx->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_mx->loginid, 'test token1');
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('ASK_CURRENCY',
         'Terms and condition check is skipped for withdrawal, currency check comes after that.')
@@ -212,7 +212,7 @@ subtest 'withdraw' => sub {
         'Terms and condition check is skipped for withdrawal, even with correct version set same currency error occur.')
         ->error_message_is('Please set the currency.', 'Correct error message as terms and condition check is skipped for withdrawal.');
 
-    $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr->loginid, 'test token1');
     $params->{args}->{verification_code} = BOM::Platform::Token->new({
             email       => $client_cr->email,
             expires_in  => 3600,
@@ -229,7 +229,7 @@ subtest 'landing_companies_specific' => sub {
     $params->{args}->{cashier} = 'deposit';
     delete $params->{args}->{verification_code};
 
-    $params->{token} = BOM::Platform::Token::API->new->create_token($client_mlt->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_mlt->loginid, 'test token1');
 
     $client_mlt->set_default_account('EUR');
     $client_mlt->status->set('tnc_approval', 'system', $current_tnc_version);
@@ -255,7 +255,7 @@ subtest 'landing_companies_specific' => sub {
             'Attempted to forward request to the cashier after validation');
     };
 
-    $params->{token} = BOM::Platform::Token::API->new->create_token($client_mf->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_mf->loginid, 'test token1');
 
     $client_mf->set_default_account('EUR');
     $client_mf->save;
@@ -288,7 +288,7 @@ subtest 'landing_companies_specific' => sub {
         ->error_message_is('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.',
         'tax information is required for malatainvest');
 
-    $params->{token} = BOM::Platform::Token::API->new->create_token($client_mx->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_mx->loginid, 'test token2');
 
     $client_mx->set_default_account('GBP');
     $client_mx->residence('gb');
