@@ -40,11 +40,11 @@ sub save_token {
 }
 
 sub remove_by_token {
-    my ($self, $token, $loginid) = @_;
+    my ($self, $token) = @_;
 
     return $self->dbic->run(
         fixup => sub {
-            $_->do("DELETE FROM auth.access_token WHERE token = ? and client_loginid = ?", undef, $token, $loginid);
+            $_->do("DELETE FROM auth.access_token WHERE token = ?", undef, $token);
         });
 }
 
