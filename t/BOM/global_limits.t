@@ -16,6 +16,7 @@ use Math::Util::CalculatedValue::Validatable;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Config::Runtime;
 use BOM::Database::ClientDB;
+use BOM::Config::RedisReplicated;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init :exclude_bet_market_setup);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -82,6 +83,10 @@ BOM::Config::Runtime->instance->app_config->quants->enable_global_potential_loss
 BOM::Config::Runtime->instance->app_config->quants->enable_global_realized_loss(1);
 my $cl = create_client('CR');
 top_up $cl, 'USD', 5000;
+
+# Mimic symbol missing by deleting the underlyinggroups redis key
+my $redis = BOM::Config::RedisReplicated::redis_write();
+$redis->del('underlyinggroups');
 
 subtest 'symbol not defined' => sub {
     my $contract = produce_contract({

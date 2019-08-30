@@ -6,7 +6,6 @@ use warnings;
 use Error::Base;
 use List::Util qw(min);
 
-use BOM::Config::RedisReplicated;
 use BOM::Database::QuantsConfig;
 use Future::AsyncAwait;
 use BOM::CompanyLimits::Helpers qw(get_redis);
