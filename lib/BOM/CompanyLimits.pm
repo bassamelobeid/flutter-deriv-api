@@ -189,6 +189,8 @@ sub _check_breaches {
     my $is_global_loss_enabled = 1;
     my $is_user_loss_enabled   = 1;
     my $threshold              = undef;
+    # TODO: Pretty hackish to just hard code this if statement. Need to find a cleaner way to do
+    #       this later
     if ($loss_type eq 'realized_loss' or $loss_type eq 'potential_loss') {
         my $app_config        = BOM::Config::Runtime->instance->app_config;
         my $global_check_name = "enable_global_$loss_type";
