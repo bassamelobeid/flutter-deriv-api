@@ -1865,7 +1865,7 @@ rpc api_token => sub {
                 token     => $token
             });
 
-        BOM::Platform::Token::API->new->remove_by_token($token, $client->loginid);
+        BOM::Platform::Token::API->new->remove_by_token($token);
         $rtn->{delete_token} = 1;
         # send notification to cancel streaming, if we add more streaming
         # for authenticated calls in future, we need to add here as well
