@@ -30,13 +30,15 @@ sub save_token {
             my $sth = $_->prepare("
                 INSERT INTO auth.access_token(token, display_name, client_loginid, scopes, valid_for_ip, creation_time)
                 VALUES (?,?,?,?,?,?)
+                ON CONFLICT (client_loginid, display_name)
+                DO NOTHING
                 RETURNING *
             ");
             $sth->execute(@{$args}{'token', 'display_name', 'loginid', 'scopes', 'valid_for_ip', 'creation_time'});
             $sth->fetchrow_hashref();
         });
 
-    return $res->{token};
+    return $res;
 }
 
 sub remove_by_token {
