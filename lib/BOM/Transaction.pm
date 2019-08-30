@@ -362,21 +362,6 @@ sub calculate_limits {
     unless ($client->is_virtual) {
         # only pass true values if global limit checks are enabled.
         # actual checks happens in the database
-
-        foreach my $check_name (qw(global_potential_loss global_realized_loss)) {
-            my $method       = 'enable_' . $check_name;
-            my $alert_method = $check_name . '_alert_threshold';
-            if ($app_config->quants->$method) {
-                my $threshold = $app_config->quants->$alert_method;
-                $limits{$check_name} = {
-                    per_market                   => 1,
-                    per_symbol                   => 1,
-                    per_market_warning_threshold => $threshold,
-                    per_symbol_warning_threshold => $threshold,
-                };
-            }
-        }
-
         foreach my $check_name (qw(user_potential_loss user_realized_loss)) {
             my $method       = 'enable_' . $check_name;
             my $alert_method = $check_name . '_alert_threshold';
