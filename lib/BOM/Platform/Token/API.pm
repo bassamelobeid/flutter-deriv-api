@@ -42,8 +42,8 @@ my %supported_scopes = map { $_ => 1 } ('read', 'trade', 'payments', 'admin');
 sub create_token {
     my ($self, $loginid, $display_name, $scopes, $ip) = @_;
 
-    $self->_log->fatal("loginid is required")      unless $loginid;
-    $self->_log->fatal("display_name is required") unless $display_name;
+    die $self->_log->fatal("loginid is required")      unless $loginid;
+    die $self->_log->fatal("display_name is required") unless $display_name;
 
     $scopes = [grep { $supported_scopes{$_} } @$scopes];
     my $token = $self->generate_token(TOKEN_LENGTH);
@@ -146,7 +146,7 @@ sub save_token_details_to_redis {
     my $writer          = $self->_redis_write;
     my $redis_key_by_id = $self->_make_key_by_id($data->{loginid});
 
-    $self->_log->fatal('display name must be unique.') if $writer->hexists($redis_key_by_id, $data->{display_name});
+    die $self->_log->fatal('display name must be unique.') if $writer->hexists($redis_key_by_id, $data->{display_name});
 
     $data->{scopes}        = encode_json_utf8($data->{scopes})                 if $data->{scopes} and ref $data->{scopes} eq 'ARRAY';
     $data->{creation_time} = Date::Utility->new($data->{creation_time})->epoch if $data->{creation_time};
