@@ -203,7 +203,7 @@ sub remove_by_token {
     my $redis = $self->_redis_write;
 
     #remove token from database first before removing it from redis
-    $self->_db_model->remove_by_token($token, $loginid);
+    $self->_db_model->remove_by_token($token);
 
     $redis->multi;
     $redis->del($self->_make_key($token));
