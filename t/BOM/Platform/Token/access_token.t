@@ -29,7 +29,7 @@ ok $m->is_name_taken($test_loginid, 'Test Token'), 'name is taken after create';
 my @scopes = $m->get_scopes_by_access_token($token);
 is_deeply([sort @scopes], ['admin', 'payments', 'read'], 'token has right scope');
 
-my $client_loginid = $m->get_token_details($token)->{loginid};
+my $client_loginid = $m->get_token_details($token, 1)->{loginid};
 is $client_loginid, $test_loginid;
 
 my $tokens = $m->get_tokens_by_loginid($test_loginid);
