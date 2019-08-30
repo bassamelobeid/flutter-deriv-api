@@ -72,7 +72,8 @@ sub _init {
     # data for trading tests to pass, but the order of requiring them is not consistent
     # throughout the entire codebase.
     my $all_keys = $writer->cache_writer->keys('*');
-    $writer->cache_writer->del(grep { $_ ne 'underlyinggroups' and $_ ne 'contractgroups' } @$all_keys);
+    my @to_delete = grep { $_ ne 'underlyinggroups' and $_ ne 'contractgroups' } @$all_keys;
+    $writer->cache_writer->del(@to_delete) if @to_delete;
 
     BOM::Config::Chronicle::dbic()->run(fixup => sub { $_->do('delete from chronicle;') }) if BOM::Config::Chronicle::dbic();
     $writer->set(
