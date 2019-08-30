@@ -31,6 +31,7 @@ sub add_buy_contract {
     my ($bet_data, $account_data) = @$contract{qw/bet_data account_data/};
 
     my $landing_company = $account_data->{landing_company};
+    return unless $landing_company;
 
     my $attributes            = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
     my ($company_limits)      = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
@@ -67,10 +68,12 @@ sub add_buy_contract {
 sub reverse_buy_contract {
     my ($contract, $error) = @_;
 
+    my $landing_company = $contract->{account_data}->{landing_company};
+    return unless $landing_company;
+
     # Should be very careful here; we do not want to revert a buy we have not incremented in Redis!
     return unless (_should_reverse_buy_contract($error));
 
-    my $landing_company       = $contract->{account_data}->{landing_company};
     my $attributes            = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
     my $company_limits        = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
     my $potential_loss        = BOM::CompanyLimits::LossTypes::calc_potential_loss($contract);
@@ -251,8 +254,10 @@ sub _check_breaches {
 sub add_sell_contract {
     my ($contract) = @_;
 
-    my $landing_company  = $contract->{account_data}->{landing_company};
-    my $attributes       = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
+    my $landing_company = $contract->{account_data}->{landing_company};
+    return unless $landing_company;
+
+    my $attributes = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
     my ($company_limits) = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
 
     # For sell, we increment totals but do not check if they exceed limits;
