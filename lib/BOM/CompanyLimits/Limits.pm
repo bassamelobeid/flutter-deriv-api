@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Error::Base;
+use List::Util qw(min);
 
 use BOM::Config::RedisReplicated;
 use BOM::Database::QuantsConfig;
@@ -136,10 +137,10 @@ sub _get_landing_company_limits_map {
                 if (exists $landing_company_limits->{$key}) {
                     my $val = $landing_company_limits->{$key};
                     $landing_company_limits->{$key} = [
-                        min($val->[0], $limit->{potential_loss}),
-                        min($val->[1], $limit->{realized_loss}),
-                        min($val->[2], $limit->{turnover}),
-                        min($val->[3], $limit->{payout}),
+                        _coalesce_min($val->[0], $limit->{potential_loss}),
+                        _coalesce_min($val->[1], $limit->{realized_loss}),
+                        _coalesce_min($val->[2], $limit->{turnover}),
+                        _coalesce_min($val->[3], $limit->{payout}),
                     ];
                 } else {
                     $landing_company_limits->{$key} = [$limit->{potential_loss}, $limit->{realized_loss}, $limit->{turnover}, $limit->{payout}];
@@ -165,6 +166,13 @@ sub get_key_from_limit_record {
     # global limits
     my $barrier_type = substr($limit->{barrier_type}, 0, 1);
     return "$expiry_type$barrier_type,$limit->{underlying_or_group},$limit->{contract_group}";
+}
+
+# takes the min if both params are defined, otherwise take the first defined
+sub _coalesce_min {
+    my ($a, $b) = @_;
+    return min($a, $b) if (defined $a and defined $b);
+    return $a || $b;
 }
 
 1;
