@@ -96,9 +96,11 @@ sub get_attributes_from_contract {
         die ['BI054'];    # mimic database error
     }
 
-    # We do not check for contracts with no contract groups.
-    # Not sure if that is a bug or expected behaviour
-    $contract_group ||= '+';
+    # TODO: This error code is not mapped to any error object in Transaction.pm
+    #       nor unit tested. Might want to look into that.
+    if (not $contract_group) {
+        die ['BI053'];    # Error: 'bet_type %s not found in bet.contract_group table'
+    }
 
     my $bet_data       = $contract->{bet_data};
     my $underlying     = $bet_data->{underlying_symbol};
