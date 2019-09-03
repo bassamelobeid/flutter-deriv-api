@@ -20,7 +20,8 @@ use BOM::Pricing::v3::Contract;
 
 requires_auth();
 
-rpc "portfolio" category => 'account',
+rpc "portfolio",
+    category => 'account',
     sub {
     my $params = shift;
 
