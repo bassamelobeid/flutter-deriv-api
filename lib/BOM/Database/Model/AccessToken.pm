@@ -28,21 +28,13 @@ sub save_token {
     my $res  = $dbic->run(
         fixup => sub {
             my $sth = $_->prepare(
-                q{
-                INSERT INTO auth.access_token(token, display_name, client_loginid, scopes, valid_for_ip, creation_time)
-                VALUES ($1,$2,$3,$4,$5,$6)
-                ON CONFLICT (client_loginid, display_name) WHERE (client_loginid=$3)
+                "INSERT INTO auth.access_token(token, display_name, client_loginid, scopes, valid_for_ip, creation_time)
+                VALUES (?,?,?,?,?,?)
+                ON CONFLICT (client_loginid, display_name)
                 DO NOTHING
-                RETURNING *
-                }
+                RETURNING *"
             );
-            $sth->bind_param(1, $args->{token});
-            $sth->bind_param(2, $args->{display_name});
-            $sth->bind_param(3, $args->{loginid});
-            $sth->bind_param(4, $args->{scopes});
-            $sth->bind_param(5, $args->{valid_for_ip});
-            $sth->bind_param(6, $args->{creation_time});
-            $sth->execute();
+            $sth->execute(@{$args}{'token', 'display_name', 'loginid', 'scopes', 'valid_for_ip', 'creation_time'});
             $sth->fetchrow_hashref();
         });
 

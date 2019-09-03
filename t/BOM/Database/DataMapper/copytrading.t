@@ -48,11 +48,12 @@ lives_ok {
 'build connection builder & account';
 
 # CR0027 is always the trader in these tests
-my $trader_token = $token_db->save_token({
+my $res = $token_db->save_token({
         loginid      => 'CR0027',
         display_name => 'token1',
         scopes       => ['read', 'trade', 'payments', 'admin'],
         token        => generate_token(15)});
+my $trader_token = $res->{token};
 
 sub subscribe {
     my $args = shift;
