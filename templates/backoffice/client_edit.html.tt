@@ -289,7 +289,7 @@ table#client_edit td{
         <td>
             <select name="client_social_responsibility_check">
                 [% FOREACH social_responsibility = social_responsibility_options %]
-                    <option value="[% social_responsibility.value %]"> [% social_responsibility.details %]</option>
+                    <option value="[% social_responsibility.value %]" [% IF social_responsibility.value == social_responsibility_risk_status %] selected="selected" [% END %]> [% social_responsibility.details %]</option>
                 [% END %]
         </td>
     </tr>

@@ -257,11 +257,13 @@ sub print_client_details {
 
     my $sr_check_req = $client->landing_company->social_responsibility_check_required;
     my $sr_risk;
+    
+    
 
     # TODO: Remove this when we move from redis to database
     if ($sr_check_req) {
         my $redis = BOM::Config::RedisReplicated::redis_events_write();
-        $sr_risk = $redis->hset('social_responsibility', $client->loginid . '_sr_risk_status');
+        $sr_risk = $redis->hget('social_responsibility', $client->loginid . '_sr_risk_status');
     }
 
     my $template_param = {
