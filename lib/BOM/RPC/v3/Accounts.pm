@@ -1885,7 +1885,7 @@ rpc api_token => sub {
         my $scopes = $args->{new_token_scopes} || ['read', 'trade', 'payments', 'admin'];
         my $token = $m->create_token($client->loginid, $display_name, $scopes, ($args->{valid_for_current_ip_only} ? $client_ip : undef));
 
-        if (my $error = $token->{error}) {
+        if (ref $token eq 'HASH' and my $error = $token->{error}) {
             return BOM::RPC::v3::Utility::create_error({
                 code              => 'APITokenError',
                 message_to_client => $error,
