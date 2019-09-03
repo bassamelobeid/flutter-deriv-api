@@ -1327,6 +1327,7 @@ sub social_responsibility_check {
             $redis->hdel($hash_key, $loginid . '_' . $_) for keys %$client_sr_values;
 
             # Set the client's SR risk status as at-risk
+            # TODO: Remove this when we move from redis to database
             $redis->hset($hash_key, $loginid . '_sr_risk_status', 'high');
 
             try {
