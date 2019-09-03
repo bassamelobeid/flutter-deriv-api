@@ -275,6 +275,25 @@ table#client_edit td{
             </select>
         </td>
     </tr>
+    [% IF show_social_responsibility_client %]
+    <tr>
+        <td class="label"> Social Responsibility Status</td>
+        [%
+            social_responsibility_options = [
+                { 'value' => 'low', details => 'Low risk'},
+                { 'value' => 'high', details => 'At risk'},
+                { 'value' => 'manual override high', details => 'At risk - Manual override'},
+                { 'value' => 'problem gambler', details => 'Problem Gambler'}
+            ]
+        %]
+        <td>
+            <select name="client_social_responsibility_check">
+                [% FOREACH social_responsibility = social_responsibility_options %]
+                    <option value="[% social_responsibility.value %]"> [% social_responsibility.details %]</option>
+                [% END %]
+        </td>
+    </tr>
+    [% END %]
     <tr>
         <td class="label">ID Authentication</td>
         [%

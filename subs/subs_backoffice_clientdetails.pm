@@ -279,6 +279,7 @@ sub print_client_details {
         can_decode_secret_answer       => $can_decode_secret_answer,
         self_exclusion_enabled         => $self_exclusion_enabled,
         show_allow_professional_client => $client->landing_company->support_professional_client,
+        show_social_responsibility_client => $client->landing_company->social_responsibility_check_required,
         professional_status            => get_professional_status($client),
         show_funds_message             => ($client->residence eq 'gb' and not $client->is_virtual) ? 1 : 0,
         show_risk_approval => ($client->landing_company->short eq 'maltainvest') ? 1 : 0,
