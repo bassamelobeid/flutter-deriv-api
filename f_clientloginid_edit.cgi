@@ -422,6 +422,13 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         # Print clients that were not updated
         print $result if $result;
     }
+
+    # Social responsibility checks are only for MX-MLT clients
+    # TODO: Remove this once the transition is done from redis to client object
+    if (my $sr_risk_val = $input{client_social_responsibility_check}) {
+        BOM::Config::RedisReplicated::redis_events_write()->hset('social_responsibility', $loginid . '_sr_risk_status', $sr_risk_val);
+    }
+
     # client promo_code related fields
     if (exists $input{promo_code}) {
         if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {

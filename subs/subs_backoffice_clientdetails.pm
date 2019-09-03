@@ -255,17 +255,6 @@ sub print_client_details {
         unidentified => 'maybe',
     };
 
-    my $sr_check_req = $client->landing_company->social_responsibility_check_required;
-    my $sr_risk;
-    
-    
-
-    # TODO: Remove this when we move from redis to database
-    if ($sr_check_req) {
-        my $redis = BOM::Config::RedisReplicated::redis_events_write();
-        $sr_risk = $redis->hget('social_responsibility', $client->loginid . '_sr_risk_status');
-    }
-
     my $template_param = {
         client                => $client,
         client_phone_country  => $client_phone_country,
@@ -290,10 +279,11 @@ sub print_client_details {
         can_decode_secret_answer          => $can_decode_secret_answer,
         self_exclusion_enabled            => $self_exclusion_enabled,
         show_allow_professional_client    => $client->landing_company->support_professional_client,
-        show_social_responsibility_client => $sr_check_req,
-        social_responsibility_risk_status => $sr_risk // 'low',
-        professional_status               => get_professional_status($client),
-        show_funds_message                => ($client->residence eq 'gb' and not $client->is_virtual) ? 1 : 0,
+        show_social_responsibility_client => $client->landing_company->social_responsibility_check_required,
+        social_responsibility_risk_status =>
+            BOM::Config::RedisReplicated::redis_events_write()->hget('social_responsibility', $client->loginid . '_sr_risk_status') // 'low',
+        professional_status => get_professional_status($client),
+        show_funds_message  => ($client->residence eq 'gb' and not $client->is_virtual) ? 1 : 0,
         show_risk_approval => ($client->landing_company->short eq 'maltainvest') ? 1 : 0,
         show_tnc_status => ($client->is_virtual) ? 0 : 1,
         show_uploaded_documents            => $show_uploaded_documents,
