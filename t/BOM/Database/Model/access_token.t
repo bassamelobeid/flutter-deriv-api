@@ -8,7 +8,7 @@ use Test::FailWarnings;
 use Test::Exception;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init :disable_cleanup);
 
 use BOM::Database::Model::AccessToken;
 use Date::Utility;
