@@ -277,22 +277,33 @@ sub run_worker_process {
         sub {
             my $job = $_;
 
+            my $name = $job->data('name');
+            my ($queue) = $worker->pending_queues;
+
+            my $tags = {tags => ["rpc:$name", 'queue:' . $queue]};
+
+            my $job_timeout = get_timeout($job);
+
             Future->wait_any(
-                $loop->timeout_future(after => get_timeout($job))->on_fail(
+                $loop->timeout_future(after => $job_timeout)->on_fail(
                     sub {
-                        # add datadog metrics
-                        $log->errorf('Time out');
-                        $job->fail("ERROR");
+
+                        stats_inc("rpc_queue.worker.jobs.timeout", $tags);
+                        $log->errorf('rpc_queue: Timeout error - Not able to get response for %s job, job timeout is configured at %s seconds',
+                            $name, $job_timeout);
+
+                        $job->fail(
+                            encode_json_utf8({
+                                    success => 0,
+                                    error   => "Request timeout"
+                                }));
                     }
                 ),
                 sub {
 
                     my $current_time = Time::Moment->now;
-                    my $name         = $job->data('name');
                     my $params       = decode_json_utf8($job->data('params'));
 
-                    my ($queue) = $worker->pending_queues;
-                    my $tags = {tags => ["rpc:$name", 'queue:' . $queue]};
                     stats_inc("rpc_queue.worker.jobs", $tags);
 
                     # Handle a 'ping' request immediately here
