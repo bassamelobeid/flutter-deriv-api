@@ -887,8 +887,20 @@ foreach my $mt_ac (@mt_logins) {
     my ($id) = $mt_ac =~ /^MT(\d+)$/;
     print "<li>" . encode_entities($mt_ac);
     # If we have group information, display it
-    if (my $group = BOM::Config::RedisReplicated::redis_mt5_user()->get("MT5_USER_GROUP::$id")) {
-        print " (" . encode_entities($group) . ")";
+    my $cache_key = "MT5_USER_GROUP::$id";
+    my $group = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'group');
+
+    if ($group->[0]) {
+        print " (" . encode_entities($group->[0]) . ")";
+
+        my $status = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'rights');
+
+        if ($status->[0] == 483) {
+            print " ( Enabled )";
+        } else {
+            print " ( Disabled )";
+
+        }
     } else {
         # ... and if we don't, queue up the request. This may lead to a few duplicates
         # in the queue - that's fine, we check each one to see if it's already

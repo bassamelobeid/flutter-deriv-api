@@ -40,10 +40,8 @@ sub is_mt5_suspended {
 
 sub group_for_user {
     my ($id) = @_;
-    return BOM::MT5::User::Async::get_user($id)->transform(
-        done => sub {
-            shift->{group};
-        });
+    return BOM::MT5::User::Async::get_user($id);
+
 }
 
 (
@@ -54,9 +52,10 @@ sub group_for_user {
                 my ($id, $queued) = split /:/, $job;
                 $log->debugf('Processing pending ID [%s]', $id);
                 my $cache_key = 'MT5_USER_GROUP::' . $id;
-                $redis->get($cache_key)->then(
+                $redis->hgetall($cache_key)->then(
                     sub {
-                        my ($group) = @_;
+                        my ($data) = @_;
+                        my $group = $data->[0];
 
                         if ($group) {
                             $log->debugf('Existing group found for ID [%s] - %s', $id, $group);
@@ -67,7 +66,7 @@ sub group_for_user {
                         # We avoid the MT5 call if it's suspended, but also pause for
                         # a bit - no need to burn through the queue
                         # too quickly if it's only down temporarily
-                        return $loop->delay_future(after => 60) if is_mt5_suspended();
+                        return $loop->delay_future(after => 59) if is_mt5_suspended();
 
                         group_for_user($id)->else(
                             sub {
@@ -77,18 +76,27 @@ sub group_for_user {
                             }
                             )->then(
                             sub {
-                                my ($group) = @_;
-                                # Keep things around for a week,
+                                my ($data) = @_;
+                                my $group  = $data->{'group'};
+                                my $rights = $data->{'rights'};
+
+                                # Keep things around for a day,
                                 # long enough to be useful but
                                 # try not to keep bad data too long...
                                 # but 5 minutes is good enough for
                                 # a negative cache.
-                                my $ttl = $group ? 7 * 86400 : 300;
+                                my $ttl = $group ? 86400 : 300;
                                 $group //= 'unknown';
                                 stats_inc('mt5.group_populator.item_processed', 1);
-                                $redis->set(
-                                    $cache_key => $group,
-                                    EX         => $ttl,
+                                my $mt5_details = {
+                                    'group'  => $group,
+                                    'rights' => $rights,
+                                };
+
+                                $redis->hmset("MT5_USER_GROUP::$id", %$mt5_details)->then(
+                                    sub {
+                                        $redis->expire("MT5_USER_GROUP::$id", $ttl);
+                                    }
                                     )->on_done(
                                     sub {
                                         $log->debugf('Cached ID [%s] group [%s]', $id, $group);
