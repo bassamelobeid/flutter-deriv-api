@@ -355,18 +355,8 @@ sub setup_db_underlying_mapping {
 
     # TODO: this is a bit of a hack. Not sure if we would figure out a better way to do this
     if ($table eq 'limits_market_mapper') {
-        my $dbic              = BOM::Database::UserDB::rose_db()->dbic;
-        my @uls               = Finance::Underlying::all_underlyings();
-        my @underlying_groups = uniq map { $_->{market} } @uls;
-        my @data              = map { [$_->{symbol}, $_->{market}] } @uls;
-        $dbic->run(
-            ping => sub {
-                my $sth = $_->prepare("INSERT INTO limits.underlying_group VALUES (?)");
-                $sth->execute(($_)) foreach @underlying_groups;
-
-                $sth = $_->prepare("INSERT INTO limits.underlying_group_mapping VALUES(?,?)");
-                $sth->execute(@$_) foreach @data;
-            });
+        BOM::CompanyLimits::Groups::load_underlyings_yml_to_db();
+        BOM::CompanyLimits::Groups::load_contracts_yml_to_db();
 
         # TODO: sync contract groups and underlying group here? Odd
         BOM::CompanyLimits::Groups::sync_underlying_groups();
