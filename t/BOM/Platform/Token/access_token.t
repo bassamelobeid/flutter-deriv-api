@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
+use Test::Exception;
 use BOM::Platform::Token::API;
 use BOM::Database::Model::AccessToken;
 
@@ -20,7 +21,7 @@ use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
 cleanup_redis_tokens();
 BOM::Database::Model::AccessToken->new->dbic->dbh->do("DELETE FROM auth.access_token");
 my $test_loginid = 'CR10002';
-my $m = BOM::Platform::Token::API->new;
+my $m            = BOM::Platform::Token::API->new;
 
 ok not $m->is_name_taken($test_loginid, 'Test Token');
 my $token = $m->create_token($test_loginid, 'Test Token', ['read', 'admin', 'payments']);
@@ -64,5 +65,19 @@ ok $m->remove_by_loginid($test_loginid), 'remove ok';
 $token = $m->create_token($test_loginid, 'Test Token X', ['read', 'admin'], '127.0.0.1');
 $tokens = $m->get_tokens_by_loginid($test_loginid);
 is $tokens->[0]->{valid_for_ip}, '127.0.0.1';
+
+subtest 'error in create token' => sub {
+    my $obj = BOM::Platform::Token::API->new;
+    throws_ok { $obj->create_token() } qr/loginid is required/, 'loginid is required';
+    throws_ok { $obj->create_token('CR123') } qr/display_name is required/, 'loginid is required';
+    my $token = $obj->create_token('CR123', 'A');
+    ok $token->{error}, 'error in token creation';
+    is $token->{error}, 'alphanumeric with space and dash, 2-32 characters';
+    $token = $obj->create_token('CR123', 'taken');
+    ok !ref $token, 'token created';
+    $token = $obj->create_token('CR123', 'taken');
+    ok $token->{error}, 'error in token creation';
+    is $token->{error}, 'The name is taken.';
+};
 
 done_testing();
