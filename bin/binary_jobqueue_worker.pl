@@ -265,7 +265,10 @@ sub run_worker_process {
 
     my %services = map {
         my $method = $_->name;
-        $method => BOM::RPC::wrap_rpc_sub($_)
+        $method => {
+            code     => BOM::RPC::wrap_rpc_sub($_),
+            category => $_->category,
+            }
     } BOM::RPC::Registry::get_service_defs();
 
     # Format:
@@ -280,10 +283,9 @@ sub run_worker_process {
             my $name = $job->data('name');
             my ($queue) = $worker->pending_queues;
 
-            my $tags = {tags => ["rpc:$name", 'queue:' . $queue]};
-
             my $job_timeout = get_timeout($job);
 
+            my $tags = {tags => ["rpc:$name", 'queue:' . $queue]};
             Future->wait_any(
                 $loop->timeout_future(after => $job_timeout)->on_fail(
                     sub {
@@ -318,7 +320,7 @@ sub run_worker_process {
 
                     $log->tracef("Running RPC <%s> for: %s", $name, pp($params));
 
-                    if (my $code = $services{$name}) {
+                    if (my $code = $services{$name}{code}) {
                         my $result = $code->($params);
                         $log->tracef("Results:\n%s", join("\n", map { " | $_" } split m/\n/, pp($result)));
 
