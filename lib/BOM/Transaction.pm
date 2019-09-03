@@ -693,7 +693,7 @@ sub batch_buy {
         my @general_error = ('UnexpectedError', BOM::Platform::Context::localize('An unexpected error occurred'));
 
         try {
-            my $currency   = $self->contract->currency;
+            my $currency = $self->contract->currency;
             # TODO: do batch buy check for trade limits here, but you cannot throw errors; needs to returned, and
             #       passed to known_errors. Buys that passed the trade limits check must be able to continue into
             #       database; one fail does not cancel all buys. In other words, trade limits acts as a filter to
