@@ -39,7 +39,7 @@ GetOptions(
 ) or exit 1;
 
 require Log::Any::Adapter;
-Log::Any::Adapter->import(qw(Stderr), log_level => 'trace');    #$log_level);
+Log::Any::Adapter->import(qw(Stderr), log_level => $log_level);
 
 exit run_worker_process($REDIS) if $FOREGROUND;
 
@@ -253,6 +253,7 @@ sub run_worker_process {
             uri                 => $redis,
             max_concurrent_jobs => 1,
             use_multi           => 1,
+            timeout => 5,
             $queue_prefix ? (prefix => $queue_prefix) : (),
             timeout_for => \&BOM::Config::RpcQueue::worker_job_timeout,
         ));
