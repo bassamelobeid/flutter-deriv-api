@@ -694,6 +694,17 @@ sub batch_buy {
 
         try {
             my $currency   = $self->contract->currency;
+            # TODO: do batch buy check for trade limits here, but you cannot throw errors; needs to returned, and
+            #       passed to known_errors. Buys that passed the trade limits check must be able to continue into
+            #       database; one fail does not cancel all buys. In other words, trade limits acts as a filter to
+            #       incoming batch buys.
+            #
+            #       Upon batch_buy_bet, check database errors. If there is, the buys need to be reverted. Batch sells
+            #       do not need this; we do not revert sells.
+            #
+            #       This solution is not ideal; batch buys causes locks in database because although all buys need
+            #       not succeed, all buys need to complete within a single transaction. We should instead consider
+            #       to execute separate buys as its own transaction, and execute them in parallel.
             my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
                 %$bet_data,
                 # great readablility provided by our tidy rules

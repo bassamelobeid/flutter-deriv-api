@@ -184,7 +184,6 @@ async sub check_turnover {
 sub _check_breaches {
     my ($response, $limits_future, $combinations, $loss_type) = @_;
 
-    # TODO: This makes an additional Redis query. Do we really need to switch this on and off?
     # TODO: Do we want this warning threshold for turnover limits?
     my $is_global_loss_enabled = 1;
     my $is_user_loss_enabled   = 1;
