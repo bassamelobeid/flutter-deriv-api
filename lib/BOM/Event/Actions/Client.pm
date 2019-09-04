@@ -1330,6 +1330,12 @@ sub social_responsibility_check {
             # TODO: Remove this when we move from redis to database
             $redis->hset($hash_key, $loginid . '_sr_risk_status', 'high');
 
+            # We only do the check and send email once every 30 days, after the first has been sent
+            $redis->set(
+                $loginid . '_sr_period_evaluation' => 1,
+                EX                                 => 86400 * 30
+            );
+
             try {
                 $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/social_responsibiliy.html.tt', $data, \my $html);
                 die "Template error: @{[$tt->error]}" if $tt->error;
