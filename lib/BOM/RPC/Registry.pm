@@ -158,7 +158,7 @@ sub register {
         ServiceDef(
         name     => $name,
         code     => $code,
-        category => $args{category} // 'default',
+        category => $args{category},
         is_auth  => !!$args{auth},
         is_async => !!$args{async},
         );

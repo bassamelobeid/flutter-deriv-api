@@ -21,6 +21,7 @@ use Getopt::Long;
 use Log::Any qw($log);
 
 use BOM::Config::RedisReplicated;
+use BOM::RPC::JobTimeout;
 
 my $redis_config = BOM::Config::RedisReplicated::redis_config('queue', 'write');
 
@@ -283,7 +284,7 @@ sub run_worker_process {
             my $name = $job->data('name');
             my ($queue) = $worker->pending_queues;
 
-            my $job_timeout = get_timeout($job);
+            my $job_timeout = BOM::RPC::JobTimeout::get_timeout(category => $services{$name}{category});
 
             my $tags = {tags => ["rpc:$name", 'queue:' . $queue]};
             Future->wait_any(
