@@ -65,14 +65,13 @@ sub sync_contract_groups {
 
 sub load_underlyings_yml_to_db {
     my $dbic = BOM::Database::UserDB::rose_db()->dbic;
-    my @uls  = Finance::Underlying::all_underlyings();
     my $sql  = <<'EOF';
 CREATE TEMP TABLE tt(LIKE limits.underlying_group_mapping) ON COMMIT DROP;
 INSERT INTO tt(underlying, underlying_group) VALUES
 EOF
 
-    my %supported_underlying_symbols = _get_active_offerings('underlying_symbol');
-    $sql .= "('$_->{symbol}','$_->{market}'),\n" for (sort grep { $supported_underlying_symbols{$_->{symbol}} } @uls);
+    my %underlying_groups = get_default_underlying_group_mappings();
+    $sql .= "('$_','$underlying_groups{$_}'),\n" for (keys %underlying_groups);
     $sql =~ s/,\n$/;\n/;    # substitute last comma with ;
 
     $sql .= <<'EOF';
@@ -97,15 +96,14 @@ EOF
 }
 
 sub load_contracts_yml_to_db {
-    my $dbic           = BOM::Database::UserDB::rose_db()->dbic;
-    my $contract_types = Finance::Contract::Category::get_all_contract_types();
-    my $sql            = <<'EOF';
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+    my $sql  = <<'EOF';
 CREATE TEMP TABLE tt(LIKE limits.contract_group_mapping) ON COMMIT DROP;
 INSERT INTO tt(bet_type, contract_group) VALUES
 EOF
 
-    my %supported_contract_types = _get_active_offerings('contract_type');
-    $sql .= "('$_','$contract_types->{$_}->{category}'),\n" for (sort grep { $supported_contract_types{$_} } keys %$contract_types);
+    my %contracts = get_default_contract_group_mappings();
+    $sql .= "('$_','$contracts{$_}'),\n" for (keys %contracts);
     $sql =~ s/,\n$/;\n/;    # substitute last comma with ;
 
     $sql .= <<'EOF';
@@ -127,6 +125,39 @@ EOF
         });
 
     return $output;
+}
+
+sub get_default_underlying_group_mappings {
+    my @uls = Finance::Underlying::all_underlyings();
+
+    my %supported_underlying_symbols = _get_active_offerings('underlying_symbol');
+    my %default_underlying_group;
+
+    if (%supported_underlying_symbols) {
+        $default_underlying_group{$_->{symbol}} = $_->{market} for (sort grep { $supported_underlying_symbols{$_->{symbol}} } @uls);
+    } else {
+        # Supported underlying symbols cannot be empty; so do not filter if none exists
+        warn 'Unable to filter out unused underlyings';
+        $default_underlying_group{$_->{symbol}} = $_->{market} for (@uls);
+    }
+
+    return %default_underlying_group;
+}
+
+sub get_default_contract_group_mappings {
+    my $contract_types           = Finance::Contract::Category::get_all_contract_types();
+    my %supported_contract_types = _get_active_offerings('contract_type');
+    my %default_contract_group;
+
+    if (%supported_contract_types) {
+        $default_contract_group{$_} = $contract_types->{$_}->{category} for (sort grep { $supported_contract_types{$_} } keys %$contract_types);
+    } else {
+        # Supported contract groups cannot be empty; so do not filter if none exists
+        warn 'Unable to filter out unused contracts';
+        $default_contract_group{$_} = $contract_types->{$_}->{category} for (keys %$contract_types);
+    }
+
+    return %default_contract_group;
 }
 
 my $offerings_cache;
