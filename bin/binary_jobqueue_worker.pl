@@ -22,7 +22,6 @@ use Getopt::Long;
 use Log::Any qw($log);
 
 use BOM::Config::RedisReplicated;
-use BOM::Config::RpcQueue;
 
 my $redis_config = BOM::Config::RedisReplicated::redis_config('queue', 'write');
 
@@ -33,9 +32,8 @@ GetOptions(
     'socket|S=s'       => \(my $SOCKETPATH = "/var/run/bom-rpc/binary_jobqueue_worker.sock"),
     'redis|R=s'        => \(my $REDIS = $redis_config->{uri}),
     'log|l=s'          => \(my $log_level = "info"),
-    'queue-prefix|q=s' => \(my $queue_prefix = $ENV{JOB_QUEUE_PREFIX} // read_file('/etc/rmg/environment')),
-    #for BOM::Test::Script compatilibity
-    'pid-file=s' => \(my $PID_FILE),
+    'queue-prefix|q=s' => \(my $queue_prefix = $ENV{JOB_QUEUE_PREFIX} // read_file('/etc/rmg/environment') ),
+    'pid-file=s'       => \(my $PID_FILE),                                                      #for BOM::Test::Script compatilibity
 ) or exit 1;
 
 require Log::Any::Adapter;
@@ -253,9 +251,8 @@ sub run_worker_process {
             uri                 => $redis,
             max_concurrent_jobs => 1,
             use_multi           => 1,
-            timeout => 5,
+            timeout             => 5,
             $queue_prefix ? (prefix => $queue_prefix) : (),
-            timeout_for => \&BOM::Config::RpcQueue::worker_job_timeout,
         ));
 
     my $stopping;
