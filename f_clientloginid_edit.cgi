@@ -893,9 +893,32 @@ foreach my $mt_ac (@mt_logins) {
     if ($group->[0]) {
         print " (" . encode_entities($group->[0]) . ")";
 
-        my $status = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'rights');
+        my $status = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'rights');     
 
-        if ($status->[0] == 483) {
+	# Currently known MT5 mappings from https://support.metaquotes.net/en/docs/mt5/api/reference_user/imtuser/imtuser_enum#enusersrights
+        my %known_rights = (
+            enabled        => 0x0001,
+            password       => 0x0002,
+            trade_disabled => 0x0004,
+            investor       => 0x0008,
+            confirmed      => 0x0010,
+            trailing       => 0x0020,
+            expert         => 0x0040,
+            api            => 0x0080,
+            reports        => 0x0100,
+            readonly       => 0x0200,
+            reset_pass     => 0x0400,
+            otp_enabled    => 0x0800,
+        );
+        my %rights;
+
+	# This should now have the following keys set:
+	# api,enabled,expert,password,reports,trailing 
+	# Example: status (483 => 1E3)
+        $rights{$_} = 1 for grep { $status->[0] & $known_rights{$_} } keys %known_rights;
+
+        if (sum0(@rights{qw(enabled api)}) == 2 and not $rights{trade_disabled}) {
+
             print " ( Enabled )";
         } else {
             print " ( Disabled )";
