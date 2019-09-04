@@ -65,27 +65,7 @@ sub sync_contract_groups {
 
 sub load_underlyings_yml_to_db {
     my $dbic = BOM::Database::UserDB::rose_db()->dbic;
-    my $sql  = <<'EOF';
-CREATE TEMP TABLE tt(LIKE limits.underlying_group_mapping) ON COMMIT DROP;
-INSERT INTO tt(underlying, underlying_group) VALUES
-EOF
-
-    my %underlying_groups = get_default_underlying_group_mappings();
-    $sql .= "('$_','$underlying_groups{$_}'),\n" for (keys %underlying_groups);
-    $sql =~ s/,\n$/;\n/;    # substitute last comma with ;
-
-    $sql .= <<'EOF';
-INSERT INTO limits.underlying_group
-SELECT DISTINCT underlying_group FROM tt
-    ON CONFLICT(underlying_group) DO NOTHING;
-
-INSERT INTO limits.underlying_group_mapping AS m
-SELECT underlying, underlying_group FROM tt
-    ON CONFLICT(underlying) DO UPDATE
-   SET underlying_group=EXCLUDED.underlying_group
- WHERE m.underlying_group IS DISTINCT FROM EXCLUDED.underlying_group
-RETURNING *;
-EOF
+    my $sql  = get_insert_underlying_group_sql();
 
     my $output = $dbic->run(
         fixup => sub {
@@ -97,27 +77,7 @@ EOF
 
 sub load_contracts_yml_to_db {
     my $dbic = BOM::Database::UserDB::rose_db()->dbic;
-    my $sql  = <<'EOF';
-CREATE TEMP TABLE tt(LIKE limits.contract_group_mapping) ON COMMIT DROP;
-INSERT INTO tt(bet_type, contract_group) VALUES
-EOF
-
-    my %contracts = get_default_contract_group_mappings();
-    $sql .= "('$_','$contracts{$_}'),\n" for (keys %contracts);
-    $sql =~ s/,\n$/;\n/;    # substitute last comma with ;
-
-    $sql .= <<'EOF';
-INSERT INTO limits.contract_group
-SELECT DISTINCT contract_group FROM tt
-    ON CONFLICT(contract_group) DO NOTHING;
-
-INSERT INTO limits.contract_group_mapping AS m
-SELECT bet_type, contract_group FROM tt
-    ON CONFLICT(bet_type) DO UPDATE
-   SET contract_group=EXCLUDED.contract_group
- WHERE m.contract_group IS DISTINCT FROM EXCLUDED.contract_group
-RETURNING *;
-EOF
+    my $sql  = get_insert_contract_group_sql();
 
     my $output = $dbic->run(
         fixup => sub {
@@ -142,6 +102,58 @@ sub get_default_underlying_group_mappings {
     }
 
     return %default_underlying_group;
+}
+
+sub get_insert_underlying_group_sql {
+    my $sql = <<'EOF';
+CREATE TEMP TABLE tt(LIKE limits.underlying_group_mapping) ON COMMIT DROP;
+INSERT INTO tt(underlying, underlying_group) VALUES
+EOF
+
+    my %underlying_groups = get_default_underlying_group_mappings();
+    $sql .= "('$_','$underlying_groups{$_}'),\n" for (keys %underlying_groups);
+    $sql =~ s/,\n$/;\n/;    # substitute last comma with ;
+
+    $sql .= <<'EOF';
+INSERT INTO limits.underlying_group
+SELECT DISTINCT underlying_group FROM tt
+    ON CONFLICT(underlying_group) DO NOTHING;
+
+INSERT INTO limits.underlying_group_mapping AS m
+SELECT underlying, underlying_group FROM tt
+    ON CONFLICT(underlying) DO UPDATE
+   SET underlying_group=EXCLUDED.underlying_group
+ WHERE m.underlying_group IS DISTINCT FROM EXCLUDED.underlying_group
+RETURNING *;
+EOF
+
+    return $sql;
+}
+
+sub get_insert_contract_group_sql {
+    my $sql = <<'EOF';
+CREATE TEMP TABLE tt(LIKE limits.contract_group_mapping) ON COMMIT DROP;
+INSERT INTO tt(bet_type, contract_group) VALUES
+EOF
+
+    my %contracts = get_default_contract_group_mappings();
+    $sql .= "('$_','$contracts{$_}'),\n" for (keys %contracts);
+    $sql =~ s/,\n$/;\n/;    # substitute last comma with ;
+
+    $sql .= <<'EOF';
+INSERT INTO limits.contract_group
+SELECT DISTINCT contract_group FROM tt
+    ON CONFLICT(contract_group) DO NOTHING;
+
+INSERT INTO limits.contract_group_mapping AS m
+SELECT bet_type, contract_group FROM tt
+    ON CONFLICT(bet_type) DO UPDATE
+   SET contract_group=EXCLUDED.contract_group
+ WHERE m.contract_group IS DISTINCT FROM EXCLUDED.contract_group
+RETURNING *;
+EOF
+
+    return $sql;
 }
 
 sub get_default_contract_group_mappings {
