@@ -1107,7 +1107,10 @@ sub increment_social_responsibility_values {
     }
 
     # This is only set once; there is no point to queue again and again
-    BOM::Platform::Event::Emitter::emit('social_responsibility_check', {loginid => $loginid}) if $redis->hsetnx($hash_name, $event_name, 1);
+    # Moreover: if an email has already been sent once, there is no need to send
+    # another email for 30 days
+    BOM::Platform::Event::Emitter::emit('social_responsibility_check', {loginid => $loginid})
+        if ($redis->hsetnx($hash_name, $event_name, 1) && !$redis->get($loginid . '_sr_period_evaluation'));
 
     return undef;
 }
