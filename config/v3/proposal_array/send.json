@@ -103,9 +103,7 @@
                   "TICKHIGH",
                   "TICKLOW",
                   "RUNHIGH",
-                  "RUNLOW",
-                  "MULTUP",
-                  "MULTDOWN"
+                  "RUNLOW"
                ]
             }
          ],

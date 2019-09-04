@@ -150,6 +150,23 @@
             "MULTDOWN"
          ],
          "description" : "The proposed contract type"
+      },
+      "limit_order": {
+        "type": "array",
+        "description": "add a order to close the contract once the order condition is met (only for MULTUP and MULTDOWN)",
+        "itme": {
+          "type": "object",
+          "properties": {
+            "order_type": {
+                "enum": ["take_profit"],
+                "description": "The supported type of limit order."
+            },
+            "order_amount": {
+                "type": "number",
+                "description": "Quoted in dollar amount. If it is set to 10 and order_type set to take_profit, the contract will be closed when it hits a profit of 10."
+            }
+          }
+        }
       }
    }
 }
