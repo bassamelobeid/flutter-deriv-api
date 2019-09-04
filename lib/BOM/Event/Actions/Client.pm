@@ -1330,7 +1330,8 @@ sub social_responsibility_check {
             # TODO: Remove this when we move from redis to database
             $redis->hset($hash_key, $loginid . '_sr_risk_status', 'high');
 
-            # We only do the check and send email once every 30 days, after the first has been sent
+            # If thresholds have been breached before, no need to evaluate further
+            # for 30 days
             $redis->set(
                 $loginid . '_sr_period_evaluation' => 1,
                 EX                                 => 86400 * 30
